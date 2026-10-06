@@ -124,7 +124,8 @@
   --strength-color: transparent;
 }
 .onboarding-strength[data-level="common"],
-.onboarding-strength[data-level="weak"] { --strength-color: #d93025; }
+.onboarding-strength[data-level="weak"],
+.onboarding-strength[data-level="fair"] { --strength-color: #d93025; }
 .onboarding-strength[data-level="good"] { --strength-color: #e8a317; }
 .onboarding-strength[data-level="strong"] { --strength-color: #1e9e4a; }
 

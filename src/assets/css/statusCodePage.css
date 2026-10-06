@@ -1,0 +1,56 @@
+/* Status code pages (400, 404, 503, ...) */
+.status-page {
+  max-width: 480px;
+  margin: 80px auto;
+  padding: 40px 28px;
+  box-sizing: border-box;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  text-align: center;
+  animation: status-page-in 0.3s ease;
+}
+
+.status-code {
+  margin: 0;
+  font-size: clamp(4.5rem, 20vw, 7rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+}
+
+.status-page h1 {
+  margin: 12px 0 10px;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.status-message {
+  margin: 0;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+
+@keyframes status-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 520px) {
+  .status-page {
+    margin: 40px 16px;
+    padding: 32px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-page {
+    animation: none;
+  }
+}

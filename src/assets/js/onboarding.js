@@ -1,5 +1,6 @@
 // Onboarding: shows one question at a time with Back/Next.
 // Without JS the form still works as one long page.
+// Which questions exist and how strict they are comes from the site config, via the markup.
 (() => {
     const form = document.querySelector('.onboarding');
     if (!form) return;
@@ -16,14 +17,8 @@
     const classField = form.querySelector('[data-class-field]');
     const classSelect = form.querySelector('#onboarding-class');
 
+    // The picture and description steps can be turned off, so these may be null
     const avatarInput = form.querySelector('#onboarding-avatar');
-    const avatarPreview = form.querySelector('.onboarding-avatar-preview');
-    const avatarDefaultSrc = avatarPreview.getAttribute('src');
-    const avatarRemoveBtn = form.querySelector('[data-action="remove-avatar"]');
-    const avatarError = form.querySelector('[data-avatar-error]');
-    const avatarTypes = avatarInput.accept.split(',');
-    const avatarMaxBytes = Number(avatarInput.dataset.maxBytes);
-
     const description = form.querySelector('#onboarding-description');
 
     const password = form.querySelector('#onboarding-password');
@@ -36,6 +31,7 @@
         for (const field of step.querySelectorAll('input, select, textarea')) {
             // Whitespace-only counts as empty
             if (field.matches('input[type="text"], textarea') && field.value.trim() === '') field.value = '';
+            if (field === description) checkDescription();
             if (!field.checkValidity()) return field;
         }
         return null;
@@ -67,11 +63,11 @@
         if (current < steps.length - 1) showStep(current + 1);
     }
 
-    // The picture and description steps are optional, so "Next" reads "Skip" until they're filled in
+    // Optional picture and description steps read "Skip" until they're filled in
     function updateNextLabel() {
         const step = steps[current];
-        const skippable = (step.contains(avatarInput) && avatarInput.files.length === 0)
-            || (step.contains(description) && description.value.trim() === '');
+        const skippable = (avatarInput && step.contains(avatarInput) && !avatarInput.required && avatarInput.files.length === 0)
+            || (description && step.contains(description) && !description.required && description.value.trim() === '');
         nextBtn.textContent = skippable ? 'Skip' : 'Next';
     }
 
@@ -107,51 +103,71 @@
     });
 
     // Picture preview (data: URL, since the CSP doesn't allow blob: images)
-    function resetAvatar() {
-        avatarInput.value = '';
-        avatarPreview.src = avatarDefaultSrc;
-        avatarPreview.classList.add('is-placeholder');
-        avatarRemoveBtn.hidden = true;
-        updateNextLabel();
-    }
+    if (avatarInput) {
+        const avatarPreview = form.querySelector('.onboarding-avatar-preview');
+        const avatarDefaultSrc = avatarPreview.getAttribute('src');
+        const avatarRemoveBtn = form.querySelector('[data-action="remove-avatar"]');
+        const avatarError = form.querySelector('[data-avatar-error]');
+        const avatarTypes = avatarInput.accept.split(',');
+        const avatarMaxBytes = Number(avatarInput.dataset.maxBytes);
 
-    function showAvatarError(message) {
-        avatarError.textContent = message;
-        avatarError.hidden = message === '';
-    }
+        const resetAvatar = () => {
+            avatarInput.value = '';
+            avatarPreview.src = avatarDefaultSrc;
+            avatarPreview.classList.add('is-placeholder');
+            avatarRemoveBtn.hidden = true;
+            updateNextLabel();
+        };
 
-    avatarInput.addEventListener('change', () => {
-        const file = avatarInput.files[0];
-        showAvatarError('');
-        if (!file) {
-            resetAvatar();
-            return;
-        }
-        if (!avatarTypes.includes(file.type)) {
-            resetAvatar();
-            showAvatarError('Please upload a PNG, JPEG, GIF or WebP image.');
-            return;
-        }
-        if (file.size > avatarMaxBytes) {
-            resetAvatar();
-            showAvatarError('That picture is too big. Please choose one under 5 MB.');
-            return;
-        }
+        const showAvatarError = (message) => {
+            avatarError.textContent = message;
+            avatarError.hidden = message === '';
+        };
 
-        const reader = new FileReader();
-        reader.addEventListener('load', () => {
-            avatarPreview.src = reader.result;
-            avatarPreview.classList.remove('is-placeholder');
+        avatarInput.addEventListener('change', () => {
+            const file = avatarInput.files[0];
+            showAvatarError('');
+            if (!file) {
+                resetAvatar();
+                return;
+            }
+            if (!avatarTypes.includes(file.type)) {
+                resetAvatar();
+                showAvatarError('Please upload a PNG, JPEG, GIF or WebP image.');
+                return;
+            }
+            if (file.size > avatarMaxBytes) {
+                resetAvatar();
+                showAvatarError(`That picture is too big. Please choose one under ${avatarInput.dataset.maxLabel}.`);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.addEventListener('load', () => {
+                avatarPreview.src = reader.result;
+                avatarPreview.classList.remove('is-placeholder');
+            });
+            reader.readAsDataURL(file);
+            avatarRemoveBtn.hidden = false;
+            updateNextLabel();
         });
-        reader.readAsDataURL(file);
-        avatarRemoveBtn.hidden = false;
-        updateNextLabel();
-    });
 
-    avatarRemoveBtn.addEventListener('click', () => {
-        resetAvatar();
-        showAvatarError('');
-        avatarInput.focus();
+        avatarRemoveBtn.addEventListener('click', () => {
+            resetAvatar();
+            showAvatarError('');
+            avatarInput.focus();
+        });
+    }
+
+    // A required description has a minimum length (minlength alone isn't checked on prefilled values)
+    function checkDescription() {
+        const minLength = Number(description.dataset.minLength) || 0;
+        const length = description.value.trim().length;
+        description.setCustomValidity(length > 0 && length < minLength ? `Please write at least ${minLength} characters.` : '');
+    }
+    description?.addEventListener('input', () => {
+        checkDescription();
+        updateNextLabel();
     });
 
     // Live character counters
@@ -175,13 +191,15 @@
             .catch(() => { commonPasswordsRequested = false; });
     }
 
-    // Password strength: at least 8 characters, 3 of the 4 character types and not a common password
+    // Password rules: a minimum length, a number of the 4 character types and not a common password
+    const passwordMinLength = Number(password.dataset.minLength) || 1;
+    const passwordCharTypes = Number(password.dataset.charTypes) || 0;
     const strength = form.querySelector('.onboarding-strength');
     const strengthLabel = form.querySelector('.onboarding-strength-label');
     const strengthBar = form.querySelector('.onboarding-strength-bar');
     const confirmField = form.querySelector('[data-password-confirm-field]');
     const passwordChecks = {
-        length: (value) => value.length >= 8,
+        length: (value) => value.length >= passwordMinLength,
         lower: (value) => /\p{Ll}/u.test(value),
         upper: (value) => /\p{Lu}/u.test(value),
         number: (value) => /\p{N}/u.test(value),
@@ -193,23 +211,28 @@
         const met = {};
         for (const [name, check] of Object.entries(passwordChecks)) {
             met[name] = check(value);
-            form.querySelector(`[data-check="${name}"]`).classList.toggle('is-met', met[name]);
+            form.querySelector(`[data-check="${name}"]`)?.classList.toggle('is-met', met[name]);
         }
         const charTypes = met.lower + met.upper + met.number + met.special;
         const isCommon = commonPasswords !== null && commonPasswords.has(value.toLowerCase());
 
         let message = '';
-        if (!met.length) message = 'Your password needs to be at least 8 characters.';
-        else if (charTypes < 3) message = 'Your password needs at least 3 of: lowercase letters, uppercase letters, numbers and special characters.';
-        else if (isCommon) message = 'That password is too common. Please choose another one.';
+        if (value === '') message = 'Please choose a password.';
+        else if (!met.length) message = `Your password needs to be at least ${passwordMinLength} characters.`;
+        else if (charTypes < passwordCharTypes) {
+            message = passwordCharTypes === 4
+                ? 'Your password needs lowercase letters, uppercase letters, numbers and special characters.'
+                : `Your password needs at least ${passwordCharTypes} of: lowercase letters, uppercase letters, numbers and special characters.`;
+        } else if (isCommon) message = 'That password is too common. Please choose another one.';
         password.setCustomValidity(message);
 
-        // Meter: one point per character type, plus one each for 8+ and 12+ characters
-        const points = charTypes + met.length + (value.length >= 12);
+        // Meter is the same whatever the rules are: one point per character type, plus one each for 8+ and 12+ characters
+        const points = charTypes + (value.length >= 8) + (value.length >= 12);
         let level = 'strong';
         if (value === '') level = 'none';
         else if (isCommon) level = 'common';
         else if (message) level = 'weak';
+        else if (points < 4) level = 'fair';
         else if (points < 6) level = 'good';
 
         strength.dataset.level = level;
@@ -218,6 +241,7 @@
             none: '',
             common: 'Too common - this password is on a list of leaked passwords',
             weak: 'Too weak',
+            fair: 'Weak',
             good: 'Good',
             strong: 'Strong',
         }[level];
@@ -232,7 +256,6 @@
     }
     password.addEventListener('input', updatePassword);
     passwordConfirm.addEventListener('input', checkPasswordsMatch);
-    description.addEventListener('input', updateNextLabel);
 
     // Clear a server-side error once that answer is edited
     form.addEventListener('input', (event) => {
@@ -243,6 +266,7 @@
     form.noValidate = true; // validation is done per step above
     progress.hidden = false;
     updateClassField();
+    if (description) checkDescription();
     updatePassword();
     showStep(Math.min(Math.max(Number(form.dataset.startStep) || 1, 1), steps.length) - 1);
 })();
