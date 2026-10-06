@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: xxx
--- Generation Time: Oct 06, 2026 at 04:20 PM
+-- Generation Time: Oct 06, 2026 at 06:48 PM
 -- Server version: 8.4.11-11
 -- PHP Version: 8.4.26
 
@@ -28,7 +28,7 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `HBHub-Attachments` (
-  `attachmentId` int UNSIGNED  NOT NULL,
+  `attachmentId` int UNSIGNED NOT NULL,
   `attachmentType` varchar(25) NOT NULL,
   `attachmentFile` longblob NOT NULL,
   `attachmentUploadTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -65,8 +65,8 @@ CREATE TABLE `HBHub-Chats` (
   `chatSettings` json DEFAULT NULL,
   `chatIconAttachmentId` int UNSIGNED DEFAULT NULL,
   `chatCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `lastMessageTimestamp` datetime NULL DEFAULT NULL,
-  `chatBannedTimestamp` datetime NULL DEFAULT NULL
+  `lastMessageTimestamp` datetime DEFAULT NULL,
+  `chatBannedTimestamp` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -90,6 +90,19 @@ CREATE TABLE `HBHub-Messages` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-Sessions`
+--
+
+CREATE TABLE `HBHub-Sessions` (
+  `sessionId` char(32) NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `sessionGenerated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `sessionValidUntil` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Users`
 --
 
@@ -101,14 +114,16 @@ CREATE TABLE `HBHub-Users` (
   `userSettings` json DEFAULT NULL,
   `userAvatarAttachmentId` int UNSIGNED DEFAULT NULL,
   `userIpv4AdresseOnAccountCreate` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `userIpv6AdresseOnAccountCreate` int DEFAULT NULL,
   `userIpv4AdresseLastAccessed` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `userIpv6AdresseLastAccessed` int DEFAULT NULL,
   `userPasswordHash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `userFailedLoginCount` smallint NOT NULL,
-  `userStatus` tinyint NOT NULL DEFAULT '1',
-  `userRole` tinyint NOT NULL DEFAULT '1' COMMENT '1 Normal User\r\n2 Admin\r\n3 Banned',
+  `userFailedLoginCount` smallint UNSIGNED NOT NULL DEFAULT '0',
+  `userStatus` tinyint UNSIGNED NOT NULL DEFAULT '1',
+  `userRole` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Normal User\r\n2 Admin\r\n3 Banned',
   `userCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `userLastSeenTimestamp` datetime NOT NULL,
-  `userBannedTimestamp` datetime NULL DEFAULT NULL
+  `userLastSeenTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `userBannedTimestamp` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -151,6 +166,13 @@ ALTER TABLE `HBHub-Messages`
   ADD KEY `fk_messages_replyto` (`messageReplyToId`);
 
 --
+-- Indexes for table `HBHub-Sessions`
+--
+ALTER TABLE `HBHub-Sessions`
+  ADD PRIMARY KEY (`sessionId`),
+  ADD KEY `userId` (`userId`);
+
+--
 -- Indexes for table `HBHub-Users`
 --
 ALTER TABLE `HBHub-Users`
@@ -162,6 +184,12 @@ ALTER TABLE `HBHub-Users`
 --
 -- AUTO_INCREMENT for dumped tables
 --
+
+--
+-- AUTO_INCREMENT for table `HBHub-Attachments`
+--
+ALTER TABLE `HBHub-Attachments`
+  MODIFY `attachmentId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `HBHub-Chats`
@@ -206,6 +234,12 @@ ALTER TABLE `HBHub-Messages`
   ADD CONSTRAINT `fk_messages_chat` FOREIGN KEY (`chatId`) REFERENCES `HBHub-Chats` (`chatId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_messages_replyto` FOREIGN KEY (`messageReplyToId`) REFERENCES `HBHub-Messages` (`messageId`),
   ADD CONSTRAINT `fk_messages_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-Sessions`
+--
+ALTER TABLE `HBHub-Sessions`
+  ADD CONSTRAINT `fk_sessions_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Users`
