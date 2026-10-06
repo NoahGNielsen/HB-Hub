@@ -16,7 +16,7 @@ if (!headers_sent()) {
     <main class="status-page">
         <p class="status-code">403</p>
         <h1>Access denied</h1>
-        <p class="status-message">You don't have permission to view this page.</p>
+        <p class="status-message">You don't have permission to view this page.<br>Either you are not logged in or your account does not have the necessary permissions.</p>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

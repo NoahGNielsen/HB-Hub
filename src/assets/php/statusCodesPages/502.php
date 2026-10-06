@@ -16,7 +16,7 @@ if (!headers_sent()) {
     <main class="status-page">
         <p class="status-code">502</p>
         <h1>Bad gateway</h1>
-        <p class="status-message">The server got an invalid response while handling your request. Please try again later.</p>
+        <p class="status-message">The server got an invalid response while handling your request. Please try again.</p>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>
