@@ -1,0 +1,142 @@
+:root {
+  --nav-bg: #0b1621;
+  --nav-text: #e8f1f8;
+  --nav-hover: rgba(255, 255, 255, 0.08);
+  --nav-top-h: 60px;
+  --nav-side-w: 88px;
+}
+
+body {
+  margin: 0;
+  padding-top: var(--nav-top-h);
+  padding-left: var(--nav-side-w);
+}
+
+/* Icons are black PNGs - turn them white on the dark bars */
+.nav-icon {
+  filter: invert(1);
+}
+
+/* Top bar */
+.nav-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--nav-top-h);
+  padding: 0 20px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--nav-bg);
+  color: var(--nav-text);
+}
+
+.nav-brand {
+  color: var(--nav-text);
+  text-decoration: none;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.nav-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.nav-icon-btn:hover {
+  background: var(--nav-hover);
+}
+
+.nav-icon-btn img {
+  width: 24px;
+  height: 24px;
+}
+
+.nav-avatar-btn img.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Side bar */
+.nav-side {
+  position: fixed;
+  top: var(--nav-top-h);
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+  width: var(--nav-side-w);
+  padding-top: 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--nav-bg);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.nav-side-link {
+  width: 72px;
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border-radius: 10px;
+  color: var(--nav-text);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.nav-side-link img {
+  width: 28px;
+  height: 28px;
+}
+
+.nav-side-link:hover {
+  background: var(--nav-hover);
+}
+
+.nav-side-link.active {
+  background: var(--accent);
+}
+
+/* Small screens: side bar moves to the bottom */
+@media (max-width: 600px) {
+  body {
+    padding-left: 0;
+    padding-bottom: 68px;
+  }
+
+  .nav-side {
+    top: auto;
+    right: 0;
+    width: auto;
+    height: 68px;
+    padding-top: 0;
+    flex-direction: row;
+    justify-content: space-around;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}
