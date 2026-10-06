@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <?php include 'assets/php/header.php'; ?>
+    <link rel="stylesheet" href="https://forum.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime(__DIR__ . '/../css/mainStyle.css') ?>">
     <title>Homepage - HB Hub</title>
-    <description></description>
+    <description>Homepage for the HB Hub</description>
 </head>
 <body>
     <?php include 'assets/php/navPanel.php'; ?>
