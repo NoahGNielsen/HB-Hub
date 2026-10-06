@@ -1,0 +1,106 @@
+# ==============================================================================
+# GENERAL SECURITY CONFIGURATION
+# Disable directory indexing and restrict HTTP methods to prevent discovery.
+# ==============================================================================
+# Disable directory browsing/listing
+Options -Indexes
+
+# Restrict HTTP Request Methods (Allow only standard web methods)
+<LimitExcept GET POST HEAD>
+    Require all denied
+</LimitExcept>
+
+# Hide response headers where possible (Note: Server header requires main server config)
+<IfModule mod_headers.c>
+    Header unset X-Powered-By
+</IfModule>
+
+# Ensure ETags are calculated for automated 304 Not Modified checks
+FileETag MTime Size
+
+# ==============================================================================
+# SECURITY & CACHING HEADERS
+# Provides protections against XSS, Clickjacking, MIME-sniffing, and data leaks.
+# ==============================================================================
+<IfModule mod_headers.c>
+    # Prevent Clickjacking (iframe embedding)
+    Header set X-Frame-Options "SAMEORIGIN"
+
+    # Prevent MIME-type Sniffing
+    Header set X-Content-Type-Options "nosniff"
+
+    # Enforce HTTPS for 1 year, including subdomains
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Limit Referrer Information Shared Off-Site
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Restrict Unused Hardware & Browser APIs
+    Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+    # Cross-Origin Protection Headers
+    Header set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+    Header set Cross-Origin-Resource-Policy "same-origin"
+
+    # Content Security Policy (Google Fonts)
+    Header always set X-XSS-Protection "0"
+    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;
+
+    # --------------------------------------------------------------------------
+    # SMART CACHING STRATEGY (Fixes Security Scanner & Handles 304 Validation)
+    # --------------------------------------------------------------------------
+    # Default for Static Assets (Images, CSS, JS, Fonts): Cache locally for 90 days
+    Header set Cache-Control "max-age=7776000, public"
+
+    # Dynamic Pages (HTML/PHP): Force browser to revalidate with 304 checks every time
+    <FilesMatch "\.(html|htm|php)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
+
+# ==============================================================================
+# REWRITE RULES & FILE ACCESS RESTRICTIONS
+# Protects hidden files, backups, logs, and manages clean URLs.
+# ==============================================================================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect HTTP requests to HTTPS before serving any content.
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+    # 1. ALLOW ACCESS TO .well-known (Required for SSL certificates like Let's Encrypt)
+    RewriteRule ^\.well-known/ - [L]
+
+    # 2. DENY ACCESS TO ALL HIDDEN FILES (dotfiles like .env, .git, .htaccess, etc.)
+    RewriteCond %{REQUEST_URI} ^/\. [OR]
+    RewriteCond %{REQUEST_URI} /\./ [OR]
+    RewriteCond %{REQUEST_URI} /\.[^/]+
+    RewriteRule ^ - [F,L]
+
+    # 3. DENY ACCESS TO SENSITIVE FILE EXTENSIONS (Backups, SQL dumps, configs, logs)
+    RewriteCond %{REQUEST_URI} \.(bak|config|sql|ini|log|sh|inc|swp|dist|env|yml|yaml)$ [NC]
+    RewriteRule ^ - [F,L]
+
+    # --------------------------------------------------------------------------
+    # UNIVERSAL FILE EXTENSION REMOVAL (.html, .php, .htm)
+    # --------------------------------------------------------------------------
+    # A. Redirect external requests containing extensions to their clean URL version
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.(html|htm|php)[\ \?] [NC]
+    RewriteRule ^ /%1 [R=301,L]
+
+    # B. Serve .html if the clean URL matches a .html file
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}\.html -f
+    RewriteRule ^(.*)$ $1.html [L]
+
+    # C. Serve .php if the clean URL matches a .php file
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteRule ^(.*)$ $1.php [L]
+
+    # D. Serve .htm if the clean URL matches a .htm file
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}\.htm -f
+    RewriteRule ^(.*)$ $1.htm [L]
+</IfModule>

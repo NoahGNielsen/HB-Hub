@@ -1,0 +1,6 @@
+Canonical: https://hbhub.noahgajnielsen.dk/.well-known/security.txt
+Contact: mailto:admin@noahgajnielsen.dk
+Expires: 2030-01-01T00:00:00Z
+Encryption: https://noahgajnielsen.dk/assets/publickey.txt
+Preferred-Languages: en, da
+Policy: https://noahgajnielsen.dk/legal/security-policy.md

@@ -1,0 +1,15 @@
+{
+    "name": "noahgnielsen/HB-Hub",
+    "description": "A unblocked messeging service for my school.",
+    "type": "project",
+    "license": "Apache-2.0",
+    "require": {},
+    "authors": [
+        {
+            "name": "Noah G. Nielsen",
+            "email": "noah@noahgajnielsen.dk",
+            "homepage": "https://noahgajnielsen.dk",
+            "role": "Lead Developer"
+        }
+    ]
+}
