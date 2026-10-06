@@ -19,6 +19,22 @@ Options -Indexes
 FileETag MTime Size
 
 # ==============================================================================
+# CUSTOM ERROR PAGES
+# Local paths only (a full URL would turn the error into a 302 redirect, and
+# Apache rejects it outright for 401). Each page sets its own status code.
+# ==============================================================================
+ErrorDocument 400 /assets/php/statusCodesPages/400.php
+ErrorDocument 401 /assets/php/statusCodesPages/401.php
+ErrorDocument 403 /assets/php/statusCodesPages/403.php
+ErrorDocument 404 /assets/php/statusCodesPages/404.php
+ErrorDocument 410 /assets/php/statusCodesPages/410.php
+ErrorDocument 423 /assets/php/statusCodesPages/423.php
+ErrorDocument 500 /assets/php/statusCodesPages/500.php
+ErrorDocument 502 /assets/php/statusCodesPages/502.php
+ErrorDocument 503 /assets/php/statusCodesPages/503.php
+ErrorDocument 504 /assets/php/statusCodesPages/504.php
+
+# ==============================================================================
 # SECURITY & CACHING HEADERS
 # Provides protections against XSS, Clickjacking, MIME-sniffing, and data leaks.
 # ==============================================================================
@@ -44,7 +60,7 @@ FileETag MTime Size
 
     # Content Security Policy (Google Fonts)
     Header always set X-XSS-Protection "0"
-    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;
+    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
 
     # --------------------------------------------------------------------------
     # SMART CACHING STRATEGY (Fixes Security Scanner & Handles 304 Validation)
