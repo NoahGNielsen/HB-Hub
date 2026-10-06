@@ -1,3 +1,18 @@
 #Work in progress
 
 Dev: NoahGNielsen
+
+Setup
+-----
+1. Upload the contents of src/ to the web root (the GitHub workflow does this to hbhub/ on every push to main).
+2. Copy config-examples/hbHubSiteConfig.example.php into the folder one level ABOVE the web root,
+   rename it to hbHubSiteConfig.php, and fill in the values. The site only looks for it there.
+   For local development with src/ as the web root, that means the repo root (it's in .gitignore).
+3. Create the database tables by importing database/schema.sql (e.g. in phpMyAdmin).
+
+Folders
+-------
+src/              The website itself (everything here gets uploaded)
+config-examples/  Templates for config files that live outside the web root
+database/         Database schema and default values (database/defaultUserSettings.json is the
+                  default for the userSettings column in HBHub-Users)

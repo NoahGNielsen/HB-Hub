@@ -1,5 +1,7 @@
 smartftp.json
 config.php
+# Real site config (has the database password) - copied from config-examples/, never commit it
+/hbHubSiteConfig.php
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,windows,macos,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,windows,macos,linux
 

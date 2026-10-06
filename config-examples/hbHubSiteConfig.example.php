@@ -1,9 +1,10 @@
 <?php
 /**
- * HB Hub database configuration template.
+ * HB Hub site configuration template.
  *
- * Copy this file outside the web root
- * then fill in the values.
+ * Copy this file into the folder one level above the web root (the folder that
+ * contains the uploaded src/ files), rename it to hbHubSiteConfig.php, then fill in the values.
+ * The site loads it from exactly that path.
  */
 return [
     'footer_email' => 'me@example.com',
@@ -29,4 +30,3 @@ return [
         'pass' => 'your_db_password',
     ],
 ];
-?>
