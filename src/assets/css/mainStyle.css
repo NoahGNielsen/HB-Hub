@@ -1,34 +1,49 @@
+/* Colour scheme: "Warm Slate & Orange" */
 @media (prefers-color-scheme: light) {
   :root {
-    --text: #071017;
-    --background: #f0f5fa;
-    --primary: #1d4562;
-    --secondary: #9a86da;
-    --accent: #7439c0;
+    --text: #1a1d23;
+    --background: #f5f6f8;
+    --primary: #2f3a4a;
+    --secondary: #e3e7ee;
+    --accent: #f2711c;
   }
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #e8f1f8;
-    --background: #050a0f;
-    --primary: #9bc4e1;
-    --secondary: #392579;
-    --accent: #783fc5;
+    --text: #eceef2;
+    --background: #0e1116;
+    --primary: #aab6c8;
+    --secondary: #1b2029;
+    --accent: #ff8a3d;
   }
 }
 
 :root[data-theme="light"] {
-  --text: #071017;
-  --background: #f0f5fa;
-  --primary: #1d4562;
-  --secondary: #9a86da;
-  --accent: #7439c0;
+  --text: #1a1d23;
+  --background: #f5f6f8;
+  --primary: #2f3a4a;
+  --secondary: #e3e7ee;
+  --accent: #f2711c;
 }
 :root[data-theme="dark"] {
-  --text: #e8f1f8;
-  --background: #050a0f;
-  --primary: #9bc4e1;
-  --secondary: #392579;
-  --accent: #783fc5;
+  --text: #eceef2;
+  --background: #0e1116;
+  --primary: #aab6c8;
+  --secondary: #1b2029;
+  --accent: #ff8a3d;
 }
 
+/* Nav bars stay dark in both themes */
+:root {
+  --nav-bg: #161a21;
+  --nav-side-bg: #222833;
+  --nav-text: #eceef2;
+  --nav-hover: rgba(255, 255, 255, 0.08);
+  --radius: 16px;
+}
+
+body {
+  font-family: "Raleway", sans-serif;
+  background: var(--background);
+  color: var(--text);
+}
