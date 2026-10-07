@@ -40,7 +40,7 @@ $statement = hbHubDatabase()->prepare('SELECT userId, userName, userDescription,
         userCreatedTimestamp,
         GREATEST(TIMESTAMPDIFF(SECOND, userCreatedTimestamp, NOW()), 0) AS memberSeconds,
         GREATEST(TIMESTAMPDIFF(SECOND, userLastSeenTimestamp, NOW()), 0) AS lastSeenSeconds
-    FROM `HBHub-Users` WHERE userId = ? AND userStatus <> ?');
+    FROM `HBHub-Users` WHERE userId = ? AND (userStatus IS NULL OR userStatus <> ?)');
 $statement->execute([(int) $profileUserId, HBHUB_SESSION_STATUS_BANNED]);
 $profile = $statement->fetch();
 if ($profile === false) {

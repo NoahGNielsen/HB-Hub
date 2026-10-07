@@ -40,7 +40,7 @@ if (is_string($after) && ctype_digit($after) && strlen($after) <= 19) {
         JOIN `HBHub-Chats` c ON c.chatId = m.chatId AND c.chatStatus = ?
         JOIN `HBHub-Users` u ON u.userId = m.userId
         WHERE m.messageId > ? AND m.messageId <= ? AND m.userId <> ? AND m.messageDeletedTimestamp IS NULL
-            AND m.messageId > COALESCE(cm.lastReadMessageId, 0) AND u.userStatus <> ?
+            AND m.messageId > COALESCE(cm.lastReadMessageId, 0) AND (u.userStatus IS NULL OR u.userStatus <> ?)
         ORDER BY m.messageId DESC LIMIT ' . HBHUB_NOTIFY_LIMIT);
     $statement->execute([$userId, HBHUB_NOTIFY_CHAT_ACTIVE, (int) $after, $latest, $userId, HBHUB_SESSION_STATUS_BANNED]);
 

@@ -143,6 +143,7 @@ function settingsRemoveAvatar(PDO $db, int $userId): void
  * userLastSeenTimestamp, and the name becomes "Deleted User", so their messages stay but nothing about them does.
  * Their profile picture and every one of their sessions are deleted too.
  * userNameLower and userPasswordHash end up NULL, so nobody can log in to it or find it in the user search.
+ * userStatus, userRole and userFailedLoginCount end up NULL too, so a NULL userStatus means a deleted account.
  */
 function settingsDeleteAccount(PDO $db, int $userId): void
 {
@@ -155,8 +156,8 @@ function settingsDeleteAccount(PDO $db, int $userId): void
         $db->prepare('UPDATE `HBHub-Users` SET userName = ?, userNameLower = NULL, userDescription = NULL, userSettings = NULL,
                 userAvatarAttachmentId = NULL, userIpv4AdresseOnAccountCreate = NULL, userIpv6AdresseOnAccountCreate = NULL,
                 userIpv4AdresseLastAccessed = NULL, userIpv6AdresseLastAccessed = NULL, userPasswordHash = NULL,
-                userTotpSecret = NULL, userTotpLastStep = NULL, userFailedLoginCount = DEFAULT, userStatus = DEFAULT,
-                userRole = DEFAULT, userAccountLockedTimestamp = NULL, userBannedTimestamp = NULL
+                userTotpSecret = NULL, userTotpLastStep = NULL, userFailedLoginCount = NULL, userStatus = NULL,
+                userRole = NULL, userAccountLockedTimestamp = NULL, userBannedTimestamp = NULL
             WHERE userId = ?')
             ->execute([HBHUB_DELETED_USER_NAME, $userId]);
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$userId]);

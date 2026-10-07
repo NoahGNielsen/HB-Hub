@@ -299,7 +299,7 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
         return null;
     }
 
-    // Every picked user has to exist and not be banned
+    // Every picked user has to exist and not be banned or deleted (a deleted account's userStatus is NULL)
     $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-Users`
         WHERE userStatus <> ? AND userId IN (' . implode(', ', array_fill(0, count($memberIds), '?')) . ')');
     $statement->execute([HBHUB_SESSION_STATUS_BANNED, ...$memberIds]);
