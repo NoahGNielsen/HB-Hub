@@ -51,7 +51,7 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
         if ($db !== null && $db->inTransaction()) {
             $db->rollBack();
         }
-        if (($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userName and userNameLower are unique
+        if (($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userNameLower is unique
             return ['name' => 'That name is already taken. Please choose another one.'];
         }
         error_log('Onboarding: could not create the account: ' . $e->getMessage());

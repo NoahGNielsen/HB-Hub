@@ -11,6 +11,8 @@ const HBHUB_TOASTS = [
     'totpOn' => 'Two-factor login is now on.',
     'totpOff' => 'Two-factor login is now off.',
     'blockPending' => 'Saved. Your block will change later, see the settings for when.',
+    'logout' => 'You are now logged out.',
+    'accountDeleted' => 'Your account has been deleted. Goodbye!',
 ];
 
 /**

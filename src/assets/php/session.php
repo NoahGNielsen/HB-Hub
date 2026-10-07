@@ -12,6 +12,7 @@ require_once __DIR__ . '/database.php';
 const HBHUB_SESSION_COOKIE = 'hbHubSession';
 const HBHUB_SESSION_DAYS = 30;
 const HBHUB_SESSION_STATUS_BANNED = 4; // userStatus in HBHub-Users
+const HBHUB_DELETED_USER_NAME = 'Deleted User'; // userName of a deleted account, so nobody else can choose it
 
 /**
  * Stores a new session for the user and returns its id. Pass it to hbHubSetSessionCookie() once
@@ -37,6 +38,28 @@ function hbHubSetSessionCookie(string $sessionId): void
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
+}
+
+/**
+ * Removes the session cookie from the browser, when logging out or deleting the account.
+ */
+function hbHubClearSessionCookie(): void
+{
+    setcookie(HBHUB_SESSION_COOKIE, '', [
+        'expires' => time() - 3600,
+        'path' => '/',
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+/**
+ * Whether the name is the one deleted accounts get (in any capitalisation), so it can't be chosen.
+ */
+function hbHubIsDeletedUserName(string $name): bool
+{
+    return mb_strtolower($name) === mb_strtolower(HBHUB_DELETED_USER_NAME);
 }
 
 /**

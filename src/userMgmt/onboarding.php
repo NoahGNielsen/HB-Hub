@@ -73,6 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $onboardingErrors['name'] = 'That name contains characters that can\'t be used.';
         } elseif (mb_strlen($onboardingValues['name']) > $onboardingNameMax) {
             $onboardingErrors['name'] = "Please keep it to $onboardingNameMax characters or fewer.";
+        } elseif (hbHubIsDeletedUserName($onboardingValues['name'])) {
+            $onboardingErrors['name'] = 'That name can\'t be used. Please choose another one.';
         }
 
         // Class

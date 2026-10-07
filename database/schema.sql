@@ -111,7 +111,7 @@ CREATE TABLE `HBHub-Sessions` (
 CREATE TABLE `HBHub-Users` (
   `userId` int UNSIGNED NOT NULL,
   `userName` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `userNameLower` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `userNameLower` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'NULL for a deleted account',
   `userDescription` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `userSettings` json DEFAULT NULL,
   `userAvatarAttachmentId` int UNSIGNED DEFAULT NULL,
@@ -119,7 +119,7 @@ CREATE TABLE `HBHub-Users` (
   `userIpv6AdresseOnAccountCreate` varchar(62) DEFAULT NULL,
   `userIpv4AdresseLastAccessed` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `userIpv6AdresseLastAccessed` varchar(62) DEFAULT NULL,
-  `userPasswordHash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `userPasswordHash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'NULL for a deleted account',
   `userTotpSecret` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Base32 TOTP secret, NULL when 2FA is off',
   `userTotpLastStep` int UNSIGNED DEFAULT NULL COMMENT 'Time step of the last accepted 2FA code, so a code only works once',
   `userFailedLoginCount` smallint UNSIGNED NOT NULL DEFAULT '0',
@@ -183,7 +183,6 @@ ALTER TABLE `HBHub-Sessions`
 ALTER TABLE `HBHub-Users`
   ADD PRIMARY KEY (`userId`),
   ADD UNIQUE KEY `userNameLower` (`userNameLower`),
-  ADD UNIQUE KEY `userName` (`userName`) USING BTREE,
   ADD KEY `fk_users_avatar` (`userAvatarAttachmentId`);
 
 --

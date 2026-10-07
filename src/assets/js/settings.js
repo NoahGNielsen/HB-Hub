@@ -1,6 +1,15 @@
-// Settings page: draws the QR code for setting up two-factor login, and asks the browser for permission
-// to show notifications once they're turned on. Without JS the 2FA key can still be typed in by hand.
+// Settings page: draws the QR code for setting up two-factor login, asks the browser for permission
+// to show notifications once they're turned on, and asks "are you sure?" before deleting the account.
+// Without JS the 2FA key can still be typed in by hand, and deleting still needs the password.
 (() => {
+    for (const form of document.querySelectorAll('form[data-confirm]')) {
+        form.addEventListener('submit', (event) => {
+            if (!confirm(form.dataset.confirm)) {
+                event.preventDefault();
+            }
+        });
+    }
+
     // qrcode.js (assets/js/vendor) is only loaded while setting up two-factor login
     const qrImage = document.querySelector('.settings-qr[data-qr]');
     if (qrImage && typeof qrcode === 'function') {

@@ -195,6 +195,13 @@
   line-height: 1.45;
 }
 
+/* Between logging out and deleting the account */
+.settings-divider {
+  margin: 22px 0;
+  border: none;
+  border-top: 2px solid var(--background);
+}
+
 /* Year and class side by side */
 .settings-row {
   display: grid;

@@ -5,6 +5,7 @@
 // - Two-factor login: a code from an authenticator app when logging in (assets/php/totp.php)
 // - Notifications: a browser notification for new messages while the site is open (assets/js/notifications.js)
 // - Gambling and Games: blocking them, during school hours or all the time (assets/php/block.php)
+// - Account: logging out, and deleting the account after entering the password
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
@@ -110,7 +111,7 @@ function settingsSave(PDO $db, int $userId, array $values, bool $saveDescription
         if ($db->inTransaction()) {
             $db->rollBack();
         }
-        if (($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userName and userNameLower are unique
+        if (($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userNameLower is unique
             return ['name' => 'That name is already taken. Please choose another one.'];
         }
         error_log('Settings: could not save the profile: ' . $e->getMessage());
@@ -138,6 +139,38 @@ function settingsRemoveAvatar(PDO $db, int $userId): void
 }
 
 /**
+ * Deletes the account. Everything in the user's row is cleared except userId, userCreatedTimestamp and
+ * userLastSeenTimestamp, and the name becomes "Deleted User", so their messages stay but nothing about them does.
+ * Their profile picture and every one of their sessions are deleted too.
+ * userNameLower and userPasswordHash end up NULL, so nobody can log in to it or find it in the user search.
+ */
+function settingsDeleteAccount(PDO $db, int $userId): void
+{
+    $db->beginTransaction();
+    try {
+        $statement = $db->prepare('SELECT userAvatarAttachmentId FROM `HBHub-Users` WHERE userId = ? FOR UPDATE');
+        $statement->execute([$userId]);
+        $avatarId = $statement->fetchColumn() ?: null;
+
+        $db->prepare('UPDATE `HBHub-Users` SET userName = ?, userNameLower = NULL, userDescription = NULL, userSettings = NULL,
+                userAvatarAttachmentId = NULL, userIpv4AdresseOnAccountCreate = NULL, userIpv6AdresseOnAccountCreate = NULL,
+                userIpv4AdresseLastAccessed = NULL, userIpv6AdresseLastAccessed = NULL, userPasswordHash = NULL,
+                userTotpSecret = NULL, userTotpLastStep = NULL, userFailedLoginCount = DEFAULT, userStatus = DEFAULT,
+                userRole = DEFAULT, userAccountLockedTimestamp = NULL, userBannedTimestamp = NULL
+            WHERE userId = ?')
+            ->execute([HBHUB_DELETED_USER_NAME, $userId]);
+        $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$userId]);
+        if ($avatarId !== null) {
+            $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$avatarId]);
+        }
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollBack();
+        throw $e;
+    }
+}
+
+/**
  * Back to the settings page (at the card that was saved) with a toast, so reloading doesn't send the form again.
  */
 function settingsRedirect(string $toast, string $card): never
@@ -145,6 +178,18 @@ function settingsRedirect(string $toast, string $card): never
     require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
     hbHubSetToast($toast);
     header('Location: /otherPages/settings#' . $card, true, 303);
+    exit;
+}
+
+/**
+ * Logged out or the account is gone: the session cookie is removed, and on to the login page with a toast.
+ */
+function settingsRedirectToLogin(string $toast): never
+{
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
+    hbHubClearSessionCookie();
+    hbHubSetToast($toast);
+    header('Location: /userMgmt/login', true, 303);
     exit;
 }
 
@@ -177,6 +222,8 @@ if ($settingsAction === 'profile') {
             $settingsErrors['name'] = 'That name contains characters that can\'t be used.';
         } elseif (mb_strlen($settingsValues['name']) > $settingsNameMax) {
             $settingsErrors['name'] = "Please keep it to $settingsNameMax characters or fewer.";
+        } elseif (hbHubIsDeletedUserName($settingsValues['name'])) {
+            $settingsErrors['name'] = 'That name can\'t be used. Please choose another one.';
         }
 
         // Class
@@ -291,6 +338,22 @@ if ($settingsAction === 'block') {
             return $settings;
         });
         settingsRedirect($blockIsPending ? 'blockPending' : 'settings', 'block');
+    }
+}
+
+if ($settingsAction === 'logout') {
+    // Only this device - the user's other sessions stay logged in
+    $db->prepare('DELETE FROM `HBHub-Sessions` WHERE sessionId = ?')->execute([$_COOKIE[HBHUB_SESSION_COOKIE]]);
+    settingsRedirectToLogin('logout');
+}
+
+if ($settingsAction === 'deleteAccount') {
+    $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+    if ($password === '' || strlen($password) > 72 || !password_verify($password, $settingsUser['userPasswordHash'])) {
+        $settingsErrors['deleteAccount'] = 'That isn\'t your password.';
+    } else {
+        settingsDeleteAccount($db, $userId);
+        settingsRedirectToLogin('accountDeleted');
     }
 }
 
@@ -585,6 +648,45 @@ $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
                 </div>
                 <div class="settings-actions">
                     <button type="submit" class="settings-btn settings-btn-primary">Save</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Account -->
+        <section class="settings-card" id="account" aria-labelledby="settings-account-heading">
+            <h2 id="settings-account-heading">Account</h2>
+
+            <form action="/otherPages/settings" method="post">
+                <input type="hidden" name="action" value="logout">
+                <div class="settings-field">
+                    <span class="settings-label">Log out</span>
+                    <p class="settings-hint">Logs you out on this device. You stay logged in on your other devices.</p>
+                </div>
+                <div class="settings-actions">
+                    <button type="submit" class="settings-btn">Log out</button>
+                </div>
+            </form>
+
+            <hr class="settings-divider">
+
+            <form action="/otherPages/settings#account" method="post" data-confirm="Delete your account? This can't be undone.">
+                <input type="hidden" name="action" value="deleteAccount">
+                <!-- For password managers, so they know which account the password is for -->
+                <input type="text" name="username" value="<?= htmlspecialchars($settingsUser['userName']) ?>" autocomplete="username" hidden>
+                <div class="settings-field">
+                    <label class="settings-label" for="settings-delete-password">Delete account</label>
+                    <p class="settings-hint" id="settings-delete-hint">
+                        Your name, picture, bio and settings are deleted and you're logged out everywhere.
+                        Messages you've sent stay in their chats, from "<?= HBHUB_DELETED_USER_NAME ?>". This can't be undone.
+                    </p>
+                    <input type="password" id="settings-delete-password" name="password" maxlength="72" required autocomplete="current-password"
+                           placeholder="Your password" aria-describedby="settings-delete-hint">
+                    <?php if (isset($settingsErrors['deleteAccount'])): ?>
+                        <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['deleteAccount']) ?></p>
+                    <?php endif; ?>
+                </div>
+                <div class="settings-actions">
+                    <button type="submit" class="settings-btn settings-btn-danger">Delete my account</button>
                 </div>
             </form>
         </section>

@@ -2,6 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 
 const HBHUB_CHAT_TYPE_DM = 1; // chatType in HBHub-Chats
 const HBHUB_CHAT_TYPE_GROUP = 2;
@@ -179,12 +180,9 @@ function chatGifId(?string $content): ?string
  */
 function chatSettings(?string $json): stdClass
 {
-    // Same shape as database/defaultChatSettings.json. The per-user settings are keyed by userId, so they start out empty.
+    // Same shape as database/defaultChatSettings.json. The nicknames are keyed by userId, so they start out empty.
     $settings = (object) [
-        'chatHidden' => new stdClass(),
         'chatNicknames' => new stdClass(),
-        'chatMuted' => false,
-        'chatMutedUntil' => null,
         'chatBackgroundGradientColor' => (object) ['color1' => 'default', 'color2' => 'default', 'gradientAngle' => 90],
     ];
 
@@ -217,14 +215,45 @@ function chatChangeSettings(PDO $db, int $chatId, callable $change): void
 }
 
 /**
- * Hides the chat from the user's chat list until a new message arrives (chatHidden in the chat's settings),
- * or shows it again.
+ * Whether the user hid the chat from their chat list (chatHidden in the user's settings, keyed by chatId).
+ */
+function chatIsHidden(array $userSettings, int $chatId): bool
+{
+    return ($userSettings['chatHidden'][$chatId] ?? false) === true;
+}
+
+/**
+ * Hides the chat from the user's chat list until a new message arrives, or shows it again.
+ * Only hidden chats are saved, so the list doesn't grow with every chat the user ever had.
  */
 function chatSetHidden(PDO $db, int $userId, int $chatId, bool $isHidden): void
 {
-    chatChangeSettings($db, $chatId, function (stdClass $settings) use ($userId, $isHidden): void {
-        $settings->chatHidden->{$userId} = $isHidden;
+    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($chatId, $isHidden): array {
+        $hidden = is_array($settings['chatHidden'] ?? null) ? $settings['chatHidden'] : [];
+        if ($isHidden) {
+            $hidden[$chatId] = true;
+        } else {
+            unset($hidden[$chatId]);
+        }
+        // Saved as an object even when empty, so the keys stay chatIds
+        $settings['chatHidden'] = (object) $hidden;
+        return $settings;
     });
+}
+
+/**
+ * Shows the chat again for every member who hid it, when a new message arrives.
+ */
+function chatUnhideForEveryone(PDO $db, int $chatId): void
+{
+    $statement = $db->prepare('SELECT u.userId, u.userSettings FROM `HBHub-ChatMembers` cm
+        JOIN `HBHub-Users` u ON u.userId = cm.userId WHERE cm.chatId = ?');
+    $statement->execute([$chatId]);
+    foreach ($statement->fetchAll() as $member) {
+        if (chatIsHidden(hbHubUserSettings($member['userSettings']), $chatId)) {
+            chatSetHidden($db, (int) $member['userId'], $chatId, false);
+        }
+    }
 }
 
 /**
@@ -449,9 +478,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db->commit();
 
         // A new message brings the chat back for everyone who hid it
-        chatChangeSettings($db, (int) $chat['chatId'], function (stdClass $settings): void {
-            $settings->chatHidden = new stdClass();
-        });
+        chatUnhideForEveryone($db, (int) $chat['chatId']);
     }
 
     chatRedirect($chat !== null ? $chat['chatId'] : null);
@@ -513,10 +540,11 @@ $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAt
 $statement->execute([$userId, $userId, $userId, $userId, $userId, $userId, $userId, HBHUB_CHAT_STATUS_ACTIVE]);
 $chats = [];
 $chatRequests = []; // chats the user was added to but hasn't accepted yet
+$userSettings = hbHubUserSettings($hbHubUser['userSettings']);
 foreach ($statement->fetchAll() as $chat) {
     $chat['chatTitle'] ??= 'Just you';
     $settings = chatSettings($chat['chatSettings']);
-    $chat['chatHiddenSetting'] = ($settings->chatHidden->{$userId} ?? false) === true;
+    $chat['chatHiddenSetting'] = chatIsHidden($userSettings, (int) $chat['chatId']);
     $nickname = $chat['dmUserId'] !== null ? $settings->chatNicknames->{$chat['dmUserId']} ?? null : null;
     $chat['chatNickname'] = is_string($nickname) ? $nickname : null;
     $chat['chatTitle'] = $chat['chatNickname'] ?? $chat['chatTitle'];
