@@ -1,6 +1,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 
 const HBHUB_CHAT_TYPE_DM = 1; // chatType in HBHub-Chats
 const HBHUB_CHAT_TYPE_GROUP = 2;
@@ -483,6 +484,14 @@ $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAt
             SELECT ou.userName FROM `HBHub-ChatMembers` om JOIN `HBHub-Users` ou ON ou.userId = om.userId
             WHERE om.chatId = c.chatId AND om.userId <> ? AND c.chatType = ' . HBHUB_CHAT_TYPE_DM . ' LIMIT 1
         ) AS dmUserName,
+        (
+            SELECT ou.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' FROM `HBHub-ChatMembers` om JOIN `HBHub-Users` ou ON ou.userId = om.userId
+            WHERE om.chatId = c.chatId AND om.userId <> ? AND c.chatType = ' . HBHUB_CHAT_TYPE_DM . ' LIMIT 1
+        ) AS dmUserBanned,
+        (
+            SELECT ou.userAvatarAttachmentId FROM `HBHub-ChatMembers` om JOIN `HBHub-Users` ou ON ou.userId = om.userId
+            WHERE om.chatId = c.chatId AND om.userId <> ? AND c.chatType = ' . HBHUB_CHAT_TYPE_DM . ' LIMIT 1
+        ) AS dmUserAvatarId,
         COALESCE(NULLIF(c.chatName, \'\'), (
             SELECT GROUP_CONCAT(COALESCE(om.memberNickname, ou.userName) ORDER BY ou.userName SEPARATOR \', \')
             FROM `HBHub-ChatMembers` om JOIN `HBHub-Users` ou ON ou.userId = om.userId
@@ -501,7 +510,7 @@ $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAt
     FROM `HBHub-ChatMembers` cm JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
     WHERE cm.userId = ? AND c.chatStatus = ?
     ORDER BY chatActivity DESC');
-$statement->execute([$userId, $userId, $userId, $userId, $userId, HBHUB_CHAT_STATUS_ACTIVE]);
+$statement->execute([$userId, $userId, $userId, $userId, $userId, $userId, $userId, HBHUB_CHAT_STATUS_ACTIVE]);
 $chats = [];
 $chatRequests = []; // chats the user was added to but hasn't accepted yet
 foreach ($statement->fetchAll() as $chat) {
@@ -561,6 +570,7 @@ if ($openChat !== null) {
             SELECT m.messageId, m.userId, m.messageContent, m.attachmentId, m.messageSentTimestamp,
                 m.messageDeletedTimestamp, m.messageIsEdited, m.messageReplyToId,
                 COALESCE(cm.memberNickname, u.userName) AS senderName,
+                u.userAvatarAttachmentId AS senderAvatarId, u.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' AS senderBanned,
                 r.messageId AS replyId, r.userId AS replyUserId, r.messageContent AS replyContent,
                 r.messageDeletedTimestamp AS replyDeletedTimestamp, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName
             FROM `HBHub-Messages` m
@@ -599,7 +609,8 @@ function chatInitial(string $name): string
 }
 
 /**
- * The round picture for a chat: the group's icon if it has one, otherwise the first letter of its name.
+ * The round picture for a chat: the group's icon, or in a DM the other person's profile picture,
+ * otherwise the first letter of its name.
  * The attachment id in the icon's address changes with every new icon, so an old one is never shown from the cache.
  */
 function chatAvatarHtml(array $chat): string
@@ -608,7 +619,21 @@ function chatAvatarHtml(array $chat): string
         return '<span class="chat-avatar" aria-hidden="true"><img src="/chat/icon?chat=' . (int) $chat['chatId']
             . '&amp;v=' . (int) $chat['chatIconAttachmentId'] . '" alt=""></span>';
     }
+    if ($chat['dmUserId'] !== null && !$chat['dmUserBanned']) {
+        return chatUserAvatarHtml((int) $chat['dmUserId'], $chat['chatTitle'], $chat['dmUserAvatarId']);
+    }
     return '<span class="chat-avatar" aria-hidden="true">' . htmlspecialchars(chatInitial($chat['chatTitle'])) . '</span>';
+}
+
+/**
+ * A user's round profile picture, or the first letter of their name when they don't have one.
+ */
+function chatUserAvatarHtml(int $userId, string $name, mixed $avatarId, string $class = ''): string
+{
+    $src = hbHubAvatarUrl($userId, $avatarId !== null ? (int) $avatarId : null);
+    return '<span class="chat-avatar' . ($class !== '' ? ' ' . $class : '') . '" aria-hidden="true">'
+        . ($src !== null ? '<img src="' . htmlspecialchars($src) . '" alt="" loading="lazy">' : htmlspecialchars(chatInitial($name)))
+        . '</span>';
 }
 
 /**
@@ -771,8 +796,16 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
             <?php else: ?>
                 <header class="chat-window-header">
                     <a class="chat-back" href="/chat/" aria-label="Back to chats">&larr;</a>
-                    <?= chatAvatarHtml($openChat) ?>
-                    <h2 class="chat-window-title"><?= htmlspecialchars($openChat['chatTitle']) ?></h2>
+                    <?php if ($openChat['dmUserId'] !== null && !$openChat['dmUserBanned']): ?>
+                        <!-- In a DM the picture and name both go to the other person's profile -->
+                        <a class="chat-profile-link chat-window-profile" href="<?= htmlspecialchars(hbHubProfileUrl((int) $openChat['dmUserId'])) ?>" title="View profile">
+                            <?= chatAvatarHtml($openChat) ?>
+                            <h2 class="chat-window-title"><?= htmlspecialchars($openChat['chatTitle']) ?></h2>
+                        </a>
+                    <?php else: ?>
+                        <?= chatAvatarHtml($openChat) ?>
+                        <h2 class="chat-window-title"><?= htmlspecialchars($openChat['chatTitle']) ?></h2>
+                    <?php endif; ?>
                 </header>
 
                 <!-- Right-clicking a message opens the message menu (chat.js), the data-message-* attributes say what it offers.
@@ -795,7 +828,12 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
                             data-message-sender="<?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['userId'], $message['senderName'])) ?>"<?=
                             $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $gifId !== null ? ' data-message-gif' : '' ?>>
                             <?php if (!$isOwn && (int) $openChat['chatType'] !== HBHUB_CHAT_TYPE_DM): ?>
-                                <span class="chat-message-sender"><?= htmlspecialchars($message['senderName']) ?></span>
+                                <?php if ($message['senderBanned']): ?>
+                                    <span class="chat-message-sender"><?= chatUserAvatarHtml((int) $message['userId'], $message['senderName'], null, 'is-small') ?><?= htmlspecialchars($message['senderName']) ?></span>
+                                <?php else: ?>
+                                    <a class="chat-message-sender chat-profile-link" href="<?= htmlspecialchars(hbHubProfileUrl((int) $message['userId'])) ?>" title="View profile"><?=
+                                        chatUserAvatarHtml((int) $message['userId'], $message['senderName'], $message['senderAvatarId'], 'is-small') ?><?= htmlspecialchars($message['senderName']) ?></a>
+                                <?php endif; ?>
                             <?php endif; ?>
                             <?php if ($message['messageReplyToId'] !== null && !$isDeleted): ?>
                                 <?= chatReplyHtml($openChat, $userId, $message, isset($shownMessageIds[(int) $message['replyId']])) ?>

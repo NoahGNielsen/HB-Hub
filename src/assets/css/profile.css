@@ -1,0 +1,184 @@
+/* Profile page (otherPages/profile.php) */
+.profile {
+  --profile-online: #2fa36b;
+  --profile-offline: #8a93a3;
+  max-width: 640px;
+  margin: 48px auto;
+  padding: 32px;
+  box-sizing: border-box;
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.profile-avatar-wrap {
+  position: relative;
+  flex: none;
+}
+
+.profile-avatar {
+  display: block;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--background);
+}
+
+/* The default user icon is a black PNG - padded and turned light in dark mode */
+.profile-avatar.is-placeholder {
+  padding: 24px;
+  box-sizing: border-box;
+  object-fit: contain;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .profile-avatar.is-placeholder {
+    filter: invert(1);
+  }
+}
+:root[data-theme="dark"] .profile-avatar.is-placeholder {
+  filter: invert(1);
+}
+
+.profile-status-dot {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 4px solid var(--secondary);
+  border-radius: 50%;
+  background: var(--profile-offline);
+}
+
+.profile-status-dot.is-online {
+  background: var(--profile-online);
+}
+
+.profile-heading {
+  min-width: 0;
+}
+
+.profile-name {
+  margin: 0 0 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.profile-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-status {
+  margin: 0;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.profile-status.is-online {
+  color: var(--profile-online);
+  opacity: 1;
+}
+
+.profile-own {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.profile-section {
+  margin-top: 28px;
+}
+
+.profile-section h2 {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.profile-bio {
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.profile-bio.is-empty {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.profile-details {
+  margin: 28px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-detail {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--background);
+}
+
+.profile-detail dt {
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.profile-detail dd {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.profile-detail-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .profile {
+    margin: 16px;
+    padding: 24px 16px;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .profile-name {
+    justify-content: center;
+  }
+}
