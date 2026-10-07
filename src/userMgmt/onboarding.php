@@ -302,6 +302,6 @@ foreach ($onboardingSteps as $index => $step) {
             <p class="userMgmt-switch">Already have an account? <a href="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to login</a></p>
         </form>
     </main>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+    <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>
 </html>

@@ -16,6 +16,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
         <h1>HB Hub</h1>
         <p>Welcome to the HB Hub!</p>
     </main>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+    <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>
 </html>

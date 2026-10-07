@@ -1,0 +1,89 @@
+/* Legal pages (credits, terms, privacy) */
+.legal-page {
+  max-width: 640px;
+  margin: 64px auto;
+  padding: 36px 32px;
+  box-sizing: border-box;
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.legal-page h1 {
+  margin: 0 0 8px;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.legal-intro {
+  margin: 0 0 24px;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+
+.legal-page a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.legal-page a:hover {
+  text-decoration: underline;
+}
+
+.credits-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.credit {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.credit-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.credit-name {
+  margin: 0 0 2px;
+  font-weight: 700;
+}
+
+.credit-by {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.legal-links {
+  margin: 24px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  text-align: center;
+}
+
+/* The icons are black - invert them on dark backgrounds */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .credit-icon {
+    filter: invert(1);
+  }
+}
+:root[data-theme="dark"] .credit-icon {
+  filter: invert(1);
+}
+
+@media (max-width: 520px) {
+  .legal-page {
+    margin: 32px 16px;
+    padding: 28px 20px;
+  }
+}
