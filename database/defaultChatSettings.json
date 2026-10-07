@@ -1,0 +1,17 @@
+{
+    "chatHidden": {
+        "userId": false,
+        "userId2": false
+    },
+    "chatNicknames": {
+        "userId": null,
+        "userId2": null
+    },
+    "chatMuted": false,
+    "chatMutedUntil": null,
+    "chatBackgroundGradientColor": {
+        "color1": "default",
+        "color2": "default",
+        "gradientAngle": 90
+    }
+}
