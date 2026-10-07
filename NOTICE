@@ -4,3 +4,29 @@ Copyright 2026 Noah Gaj Nedergaard Nielsen
 This product includes software developed by Noah Gaj Nedergaard Nielsen.
 
 Portions of this product were written with the assistance of Claude, developed by Anthropic.
+
+Third-party icons
+-----------------
+The icons in src/assets/images/icons/ are from Flaticon (https://www.flaticon.com)
+and are used under the Flaticon free license, which requires attribution. The
+credits are also shown on the site at /legal/credits.
+
+addFile.png          Add icons created by reussy - Flaticon
+                     https://www.flaticon.com/free-icons/add
+chat.png             Comments icons created by Magnific - Flaticon
+                     https://www.flaticon.com/free-icons/comments
+controler.png        Joystick icons created by Good Ware - Flaticon
+                     https://www.flaticon.com/free-icons/joystick
+dice.png             Dice icons created by Jonggol - Flaticon
+                     https://www.flaticon.com/free-icons/dice
+gif.png              Gif file icons created by Grand Iconic - Flaticon
+                     https://www.flaticon.com/free-icons/gif-file
+notification.png     Notification icons created by Magnific - Flaticon
+                     https://www.flaticon.com/free-icons/notification
+no-notification.png  Notification icons created by JessHG - Flaticon
+                     https://www.flaticon.com/free-icons/notification
+user.png             User icons created by Magnific - Flaticon
+                     https://www.flaticon.com/free-icons/user
+settings.png         Settings icons created by Pixel perfect - Flaticon
+                     https://www.flaticon.com/free-icons/settings
+
