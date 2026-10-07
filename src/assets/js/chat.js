@@ -209,3 +209,19 @@
         else submitBtn.disabled = true; // no double chats from a double click
     });
 })();
+
+// Message requests popup: chats the user was added to but hasn't accepted yet.
+// Accept and Decline are plain form posts, the server does the rest.
+(() => {
+    const dialog = document.querySelector('.chat-requests');
+    if (!dialog) return;
+
+    document.querySelector('[data-requests-open]')?.addEventListener('click', () => dialog.showModal());
+
+    dialog.querySelector('[data-requests-close]').addEventListener('click', () => dialog.close());
+
+    // Clicking the dimmed area around the popup closes it
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+})();

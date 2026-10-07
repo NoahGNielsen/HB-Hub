@@ -16,10 +16,12 @@ $userId = (int) $hbHubUser['userId'];
 
 /**
  * The chat with the id, or null when it doesn't exist, isn't active or the user isn't a member of it.
+ * A chat the user hasn't accepted yet (a message request) only counts when $isRequest is true,
+ * and then it's the only kind that counts.
  *
  * @return ?array{chatId: int, memberMutedUntil: ?string}
  */
-function chatMembership(PDO $db, int $userId, mixed $chatId): ?array
+function chatMembership(PDO $db, int $userId, mixed $chatId, bool $isRequest = false): ?array
 {
     if (!is_scalar($chatId) || !ctype_digit((string) $chatId)) {
         return null;
@@ -27,8 +29,8 @@ function chatMembership(PDO $db, int $userId, mixed $chatId): ?array
 
     $statement = $db->prepare('SELECT c.chatId, cm.memberMutedUntil
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
-        WHERE cm.chatId = ? AND cm.userId = ? AND c.chatStatus = ?');
-    $statement->execute([(int) $chatId, $userId, HBHUB_CHAT_STATUS_ACTIVE]);
+        WHERE cm.chatId = ? AND cm.userId = ? AND c.chatStatus = ? AND cm.userAcknowledgedJoin = ?');
+    $statement->execute([(int) $chatId, $userId, HBHUB_CHAT_STATUS_ACTIVE, $isRequest ? 0 : 1]);
     return $statement->fetch() ?: null;
 }
 
@@ -73,6 +75,9 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
         $statement->execute([$userId, $memberIds[0], HBHUB_CHAT_TYPE_DM, HBHUB_CHAT_STATUS_ACTIVE]);
         $existingChatId = $statement->fetchColumn();
         if ($existingChatId !== false) {
+            // Starting a DM with someone who already sent you a request accepts it
+            $db->prepare('UPDATE `HBHub-ChatMembers` SET userAcknowledgedJoin = 1 WHERE chatId = ? AND userId = ?')
+                ->execute([$existingChatId, $userId]);
             return (int) $existingChatId;
         }
     }
@@ -87,12 +92,13 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
     $chatId = (int) $db->lastInsertId();
 
     // The creator is the group's admin. In a DM both are normal members.
-    $memberRows = [$chatId, $userId, $isGroup ? HBHUB_CHAT_ROLE_ADMIN : HBHUB_CHAT_ROLE_MEMBER];
+    // Everyone but the creator gets the chat as a message request they have to accept first.
+    $memberRows = [$chatId, $userId, $isGroup ? HBHUB_CHAT_ROLE_ADMIN : HBHUB_CHAT_ROLE_MEMBER, 1];
     foreach ($memberIds as $memberId) {
-        array_push($memberRows, $chatId, $memberId, HBHUB_CHAT_ROLE_MEMBER);
+        array_push($memberRows, $chatId, $memberId, HBHUB_CHAT_ROLE_MEMBER, 0);
     }
-    $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole)
-        VALUES ' . implode(', ', array_fill(0, count($memberIds) + 1, '(?, ?, ?)')))
+    $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole, userAcknowledgedJoin)
+        VALUES ' . implode(', ', array_fill(0, count($memberIds) + 1, '(?, ?, ?, ?)')))
         ->execute($memberRows);
     $db->commit();
 
@@ -103,6 +109,22 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'create') {
     $chatId = chatCreate($db, $userId, $_POST['users'] ?? null, $_POST['name'] ?? null);
     header('Location: /chat/' . ($chatId !== null ? '?chat=' . $chatId : ''), true, 303);
+    exit;
+}
+
+// Answering a message request: accepting opens the chat, declining leaves it
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['accept', 'decline'], true)) {
+    $chat = chatMembership($db, $userId, $_POST['chat'] ?? null, true);
+    $isAccepted = $_POST['action'] === 'accept';
+
+    if ($chat !== null) {
+        $db->prepare($isAccepted
+            ? 'UPDATE `HBHub-ChatMembers` SET userAcknowledgedJoin = 1 WHERE chatId = ? AND userId = ?'
+            : 'DELETE FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ?')
+            ->execute([$chat['chatId'], $userId]);
+    }
+
+    header('Location: /chat/' . ($chat !== null && $isAccepted ? '?chat=' . $chat['chatId'] : ''), true, 303);
     exit;
 }
 
@@ -127,8 +149,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Every chat the user is in, newest activity first.
 // DMs (and groups without a name) are named after the other members.
-$statement = $db->prepare('SELECT c.chatId, c.chatType,
+$statement = $db->prepare('SELECT c.chatId, c.chatType, cm.userAcknowledgedJoin,
         COALESCE(c.lastMessageTimestamp, c.chatCreatedTimestamp) AS chatActivity,
+        (SELECT cu.userName FROM `HBHub-Users` cu WHERE cu.userId = c.chatCreatedBy) AS chatCreatorName,
         COALESCE(NULLIF(c.chatName, \'\'), (
             SELECT GROUP_CONCAT(COALESCE(om.memberNickname, ou.userName) ORDER BY ou.userName SEPARATOR \', \')
             FROM `HBHub-ChatMembers` om JOIN `HBHub-Users` ou ON ou.userId = om.userId
@@ -143,12 +166,16 @@ $statement = $db->prepare('SELECT c.chatId, c.chatType,
     WHERE cm.userId = ? AND c.chatStatus = ?
     ORDER BY chatActivity DESC');
 $statement->execute([$userId, $userId, HBHUB_CHAT_STATUS_ACTIVE]);
-$chats = $statement->fetchAll();
-
-foreach ($chats as &$chat) {
+$chats = [];
+$chatRequests = []; // chats the user was added to but hasn't accepted yet
+foreach ($statement->fetchAll() as $chat) {
     $chat['chatTitle'] ??= 'Just you';
+    if ($chat['userAcknowledgedJoin']) {
+        $chats[] = $chat;
+    } else {
+        $chatRequests[] = $chat;
+    }
 }
-unset($chat);
 
 // Without JS the search bar submits ?q= and the list is filtered here instead
 $chatSearch = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
@@ -220,7 +247,16 @@ function chatInitial(string $name): string
                        value="<?= htmlspecialchars($chatSearch) ?>">
             </form>
 
-            <button type="button" class="chat-new-btn" data-new-chat-open>+ New chat</button>
+            <div class="chat-actions">
+                <button type="button" class="chat-new-btn" data-new-chat-open>+ New chat</button>
+                <?php if ($chatRequests !== []): ?>
+                    <button type="button" class="chat-requests-btn" data-requests-open
+                            aria-label="Message requests (<?= count($chatRequests) ?>)" title="Message requests">
+                        <img src="/assets/images/icons/notification.png" alt="">
+                        <span class="chat-requests-count" aria-hidden="true"><?= count($chatRequests) > 9 ? '9+' : count($chatRequests) ?></span>
+                    </button>
+                <?php endif; ?>
+            </div>
 
             <h2 class="chat-list-heading">Open chats</h2>
             <ul class="chat-list">
@@ -327,6 +363,44 @@ function chatInitial(string $name): string
                 </footer>
             </form>
         </dialog>
+
+        <!-- Message requests popup (chat.js): chats the user was added to, to accept or decline (leave) -->
+        <?php if ($chatRequests !== []): ?>
+            <dialog class="chat-requests" aria-labelledby="chat-requests-title">
+                <div class="chat-requests-body">
+                    <header class="chat-new-header">
+                        <h2 id="chat-requests-title">Message requests</h2>
+                        <button type="button" class="chat-new-close" aria-label="Close" data-requests-close>&times;</button>
+                    </header>
+
+                    <ul class="chat-requests-list">
+                        <?php foreach ($chatRequests as $request): ?>
+                            <?php $isGroup = (int) $request['chatType'] !== HBHUB_CHAT_TYPE_DM; ?>
+                            <li class="chat-request">
+                                <span class="chat-avatar" aria-hidden="true"><?= htmlspecialchars(chatInitial($request['chatTitle'])) ?></span>
+                                <span class="chat-list-text">
+                                    <span class="chat-list-top">
+                                        <span class="chat-list-title"><?= htmlspecialchars($request['chatTitle']) ?></span>
+                                        <span class="chat-list-time"><?= chatTime($request['chatActivity']) ?></span>
+                                    </span>
+                                    <span class="chat-list-preview">
+                                        <?= $isGroup ? 'Group, added by ' . htmlspecialchars($request['chatCreatorName'] ?? 'someone') : 'Wants to send you messages' ?>
+                                    </span>
+                                    <?php if ($request['chatLastMessage'] !== null): ?>
+                                        <span class="chat-list-preview chat-request-message"><?= htmlspecialchars($request['chatLastMessage']) ?></span>
+                                    <?php endif; ?>
+                                </span>
+                                <form class="chat-request-answer" action="/chat/" method="post">
+                                    <input type="hidden" name="chat" value="<?= $request['chatId'] ?>">
+                                    <button type="submit" class="chat-btn" name="action" value="decline">Decline</button>
+                                    <button type="submit" class="chat-new-btn" name="action" value="accept">Accept</button>
+                                </form>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            </dialog>
+        <?php endif; ?>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>
