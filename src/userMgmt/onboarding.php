@@ -1,7 +1,15 @@
 <?php
 // Checked here as well as in header.php, so no account is created while the site is in maintenance mode
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/maintenance.php';
+$hbHubSessionOptional = true; // has to work without being logged in
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
+
+// Already logged in, so go straight to where they were headed
+if ($hbHubUser !== null) {
+    header('Location: ' . hbHubReturnPath(), true, 302);
+    exit;
+}
 
 $onboardingYears = ['1', '2', '3'];
 $onboardingClasses = ['T', 'Y', 'X', 'U'];
@@ -140,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$onboardingErrors) {
                 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
                 hbHubSetToast('onboarding');
-                header('Location: /', true, 303);
+                header('Location: ' . hbHubReturnPath(), true, 303);
                 exit;
             }
         }
@@ -167,7 +175,7 @@ foreach ($onboardingSteps as $index => $step) {
 </head>
 <body>
     <main>
-        <form class="onboarding" action="/userMgmt/onboarding" method="post" enctype="multipart/form-data" data-start-step="<?= $onboardingStartStep ?>"
+        <form class="onboarding" action="/userMgmt/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" enctype="multipart/form-data" data-start-step="<?= $onboardingStartStep ?>"
               data-common-passwords="/assets/commonPasswords.txt?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/commonPasswords.txt') ?>">
             <h1>Welcome to HB Hub!</h1>
 
@@ -290,6 +298,8 @@ foreach ($onboardingSteps as $index => $step) {
                 <button type="button" class="onboarding-btn onboarding-btn-primary" data-action="next" hidden>Next</button>
                 <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Create account</button>
             </div>
+
+            <p class="userMgmt-switch">Already have an account? <a href="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to login</a></p>
         </form>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>

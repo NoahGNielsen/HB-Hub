@@ -1,7 +1,15 @@
 <?php
 // Checked here as well as in header.php, so nobody logs in while the site is in maintenance mode
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/maintenance.php';
+$hbHubSessionOptional = true; // has to work without being logged in
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
+
+// Already logged in, so go straight to where they were headed
+if ($hbHubUser !== null) {
+    header('Location: ' . hbHubReturnPath(), true, 302);
+    exit;
+}
 
 // Defaults used when an older config file doesn't have these settings yet
 $loginAttemptsMax = max(1, (int) ($siteConfig['login_attempts_max'] ?? 5));
@@ -25,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($loginError === null) {
             require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
             hbHubSetToast('login');
-            header('Location: /', true, 303);
+            header('Location: ' . hbHubReturnPath(), true, 303);
             exit;
         }
     }
@@ -42,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <main>
-        <form class="login" action="/userMgmt/login" method="post">
+        <form class="login" action="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post">
             <h1>Welcome back!</h1>
 
             <section class="onboarding-step" aria-labelledby="login-q1">
@@ -69,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Log in</button>
             </div>
 
-            <p class="login-switch">New here? <a href="/userMgmt/onboarding">Create an account</a></p>
+            <p class="userMgmt-switch">New here? <a href="/userMgmt/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to onboarding</a></p>
         </form>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>

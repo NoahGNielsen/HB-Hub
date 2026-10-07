@@ -291,14 +291,21 @@
   box-shadow: none;
 }
 
-.login-switch {
+/* Link between login and onboarding */
+.userMgmt-switch {
   margin: 20px 0 0;
   font-size: 0.9rem;
 }
 
-.login-switch a {
+.userMgmt-switch a {
   color: var(--accent);
   font-weight: 600;
+  text-decoration: none;
+}
+
+.userMgmt-switch a:hover,
+.userMgmt-switch a:focus-visible {
+  text-decoration: underline;
 }
 
 @keyframes onboarding-in {
