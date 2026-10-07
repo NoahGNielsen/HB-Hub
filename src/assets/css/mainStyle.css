@@ -157,6 +157,7 @@ body:has(> .site-footer) {
   background: var(--secondary);
   color: var(--text);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
   animation: toast-in 0.3s ease, toast-out 0.3s ease var(--toast-duration) forwards;
 }
 
@@ -164,6 +165,13 @@ body:has(> .site-footer) {
 .toast:hover,
 .toast:hover .toast-timer {
   animation-play-state: paused;
+}
+
+/* Clicking it sends it away straight away (toast.js), hovered or not */
+.toast.is-dismissed,
+.toast.is-dismissed:hover {
+  animation: toast-out 0.3s ease forwards;
+  animation-play-state: running;
 }
 
 .toast-icon {

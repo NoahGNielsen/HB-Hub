@@ -4,13 +4,16 @@
 (() => {
     const searchForm = document.querySelector('.chat-search');
     const search = document.querySelector('#chat-search');
-    const items = document.querySelectorAll('.chat-list [data-chat-title]');
+    const list = document.querySelector('.chat-list');
+    const emptyAll = document.querySelector('[data-empty-all]');
     const emptyHidden = document.querySelector('[data-empty-hidden]');
     const emptySearch = document.querySelector('[data-empty-search]');
 
     // Chats the user hid only show up when searching for them.
     // A DM with a nickname is found by the nickname and by the real username.
+    // The chats are looked up every time, as polling swaps in a new list when something in it changed.
     function filterChats() {
+        const items = list.querySelectorAll('[data-chat-title]');
         const query = search.value.trim().toLowerCase();
         let shown = 0;
         items.forEach((item) => {
@@ -21,6 +24,7 @@
             item.hidden = !matches;
             if (matches) shown++;
         });
+        emptyAll.hidden = items.length > 0;
         emptyHidden.hidden = items.length === 0 || query !== '' || shown > 0;
         emptySearch.hidden = items.length === 0 || query === '' || shown > 0;
     }
@@ -28,6 +32,7 @@
     if (search) {
         search.addEventListener('input', filterChats);
         searchForm.addEventListener('submit', (event) => event.preventDefault());
+        list.addEventListener('chat-list-update', filterChats);
         filterChats();
     }
 
@@ -834,4 +839,82 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
     dialog.addEventListener('close', () => {
         if (!isSending) textarea.focus();
     });
+})();
+
+// Live updates: every 2 seconds asks the chat page what's new (?poll=1), adds the open chat's new messages at the bottom
+// and swaps in the chat list when something in it changed (new messages, unread counts, new chats).
+// Every poll also keeps the user's last seen time up to date, as session.php does that on every request.
+// New messages are only marked read while the page is being looked at, and not at all after "Mark unread" (?unread=1).
+(() => {
+    const POLL_MS = 2000;
+    const list = document.querySelector('.chat-list');
+    const messages = document.querySelector('[data-chat-messages]');
+    const chatMenu = document.querySelector('[data-chat-menu]');
+    if (!list) return;
+
+    const keepUnread = new URLSearchParams(location.search).get('unread') === '1';
+    let shownChatList = null; // the chat list HTML last swapped in, so it's only swapped again when something changed
+
+    function messageItems() {
+        return messages.querySelectorAll('[data-message-id]');
+    }
+
+    function addMessages(html) {
+        if (html.trim() === '') return;
+        // Follows the new messages when already at the bottom, but doesn't pull away from older ones being read
+        const isAtBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 48;
+        messages.querySelector('[data-messages-empty]')?.remove();
+        messages.insertAdjacentHTML('beforeend', html);
+        if (isAtBottom) messages.scrollTop = messages.scrollHeight;
+
+        // In a chat that was empty there was no message to tab to yet, now the newest one is
+        const items = [...messageItems()];
+        if (!items.some((item) => item.tabIndex === 0)) items.at(-1).tabIndex = 0;
+    }
+
+    function updateChatList(html) {
+        if (html === shownChatList) return;
+        // Not while the chat menu or a popup may be about a chat in the list - a later poll swaps it instead
+        if (!chatMenu.hidden || document.querySelector('dialog[open]')) return;
+
+        // Keyboard focus stays on the same chat
+        const focusedChatId = list.contains(document.activeElement)
+            ? document.activeElement.closest('[data-chat-id]')?.dataset.chatId ?? null
+            : null;
+        list.innerHTML = html;
+        shownChatList = html;
+        if (focusedChatId !== null) list.querySelector(`[data-chat-id="${focusedChatId}"] a`)?.focus();
+        list.dispatchEvent(new Event('chat-list-update')); // the search filter runs again on the new list
+    }
+
+    async function poll() {
+        const params = new URLSearchParams({ poll: '1' });
+        if (messages) {
+            const items = messageItems();
+            params.set('chat', messages.dataset.chatMessages);
+            params.set('after', items.length > 0 ? items[items.length - 1].dataset.messageId : '0');
+            if (items.length > 0) params.set('first', items[0].dataset.messageId);
+            if (document.visibilityState === 'visible' && !keepUnread) params.set('read', '1');
+        }
+
+        try {
+            const response = await fetch('/chat/?' + params, { headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error(response.statusText);
+            const data = await response.json();
+
+            if (messages && !data.openChat) {
+                location.href = '/chat/'; // the open chat is gone: left, deleted, or removed from it
+                return;
+            }
+            if (messages) addMessages(data.messages);
+            updateChatList(data.chatList);
+        } catch {
+            // Offline for a moment, or logged out (the login page isn't JSON) - try again next time
+        }
+
+        // The next poll waits for this one, so a slow answer never has two on their way at once
+        setTimeout(poll, POLL_MS);
+    }
+
+    setTimeout(poll, POLL_MS);
 })();

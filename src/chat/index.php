@@ -71,6 +71,32 @@ function chatMessage(PDO $db, int $chatId, mixed $messageId): ?array
 }
 
 /**
+ * Messages in the chat, oldest at the top, each with the message it replies to (r) if any.
+ * Without $afterId it's the newest ones, with it the first ones after that message (the ones polling hasn't shown yet).
+ */
+function chatMessages(PDO $db, int $chatId, ?int $afterId = null): array
+{
+    $statement = $db->prepare('SELECT * FROM (
+            SELECT m.messageId, m.userId, m.messageContent, m.attachmentId, m.messageSentTimestamp,
+                m.messageDeletedTimestamp, m.messageIsEdited, m.messageReplyToId,
+                COALESCE(cm.memberNickname, u.userName) AS senderName,
+                u.userAvatarAttachmentId AS senderAvatarId, u.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' AS senderBanned,
+                r.messageId AS replyId, r.userId AS replyUserId, r.messageContent AS replyContent,
+                r.messageDeletedTimestamp AS replyDeletedTimestamp, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName
+            FROM `HBHub-Messages` m
+            JOIN `HBHub-Users` u ON u.userId = m.userId
+            LEFT JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = m.userId
+            LEFT JOIN `HBHub-Messages` r ON r.messageId = m.messageReplyToId AND r.chatId = m.chatId
+            LEFT JOIN `HBHub-Users` ru ON ru.userId = r.userId
+            LEFT JOIN `HBHub-ChatMembers` rcm ON rcm.chatId = r.chatId AND rcm.userId = r.userId
+            WHERE m.chatId = ? AND m.messageId > ?
+            ORDER BY m.messageId ' . ($afterId === null ? 'DESC' : 'ASC') . ' LIMIT ' . HBHUB_CHAT_MESSAGES_SHOWN . '
+        ) shown ORDER BY messageId ASC');
+    $statement->execute([$chatId, $afterId ?? 0]);
+    return $statement->fetchAll();
+}
+
+/**
  * Back to the chat page after a form post, with the chat open if there is one. 303, so a refresh doesn't post again.
  * With $keepUnread, opening the chat doesn't mark it as read (after "Mark unread").
  */
@@ -489,7 +515,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $openChatId = $_GET['chat'] ?? null;
 $openMembership = chatMembership($db, $userId, $openChatId);
 $lastReadMessageId = $openMembership['lastReadMessageId'] ?? null;
-if ($openMembership !== null && ($_GET['unread'] ?? null) !== '1') {
+
+// chat.js polls the page every 2 seconds (?poll=1, answered as JSON at the end of this file), which also keeps the
+// user's last seen time up to date like any other request. It asks for the open chat's messages after ?after= (the newest
+// one it shows), and marks up to the newest one read only while the page is being looked at (?read=1).
+$isPoll = ($_GET['poll'] ?? null) === '1';
+$pollMessages = [];
+$pollAfter = is_string($_GET['after'] ?? null) && ctype_digit($_GET['after']) && strlen($_GET['after']) <= 19 ? (int) $_GET['after'] : null;
+if ($isPoll && $openMembership !== null && $pollAfter !== null) {
+    $pollMessages = chatMessages($db, (int) $openMembership['chatId'], $pollAfter);
+    if (($_GET['read'] ?? null) === '1') {
+        $readUpTo = $pollMessages !== [] ? (int) end($pollMessages)['messageId'] : $pollAfter;
+        $db->prepare('UPDATE `HBHub-ChatMembers` SET lastReadMessageId = (
+                SELECT MAX(messageId) FROM `HBHub-Messages` WHERE chatId = ? AND messageId <= ?
+            ) WHERE chatId = ? AND userId = ? AND COALESCE(lastReadMessageId, 0) < ?')
+            ->execute([$openMembership['chatId'], $readUpTo, $openMembership['chatId'], $userId, $readUpTo]);
+    }
+}
+
+if (!$isPoll && $openMembership !== null && ($_GET['unread'] ?? null) !== '1') {
     $db->prepare('UPDATE `HBHub-ChatMembers` SET lastReadMessageId = (
             SELECT MAX(messageId) FROM `HBHub-Messages` WHERE chatId = ?
         ) WHERE chatId = ? AND userId = ?')
@@ -592,26 +636,8 @@ foreach ($chats as $chat) {
 
 $shownMessageIds = []; // messageId => true, for the replies that can jump to the message they answer
 $firstUnreadMessageId = null; // the "New messages" line goes above this one
-if ($openChat !== null) {
-    // The newest messages, oldest at the top, each with the message it replies to (r) if any
-    $statement = $db->prepare('SELECT * FROM (
-            SELECT m.messageId, m.userId, m.messageContent, m.attachmentId, m.messageSentTimestamp,
-                m.messageDeletedTimestamp, m.messageIsEdited, m.messageReplyToId,
-                COALESCE(cm.memberNickname, u.userName) AS senderName,
-                u.userAvatarAttachmentId AS senderAvatarId, u.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' AS senderBanned,
-                r.messageId AS replyId, r.userId AS replyUserId, r.messageContent AS replyContent,
-                r.messageDeletedTimestamp AS replyDeletedTimestamp, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName
-            FROM `HBHub-Messages` m
-            JOIN `HBHub-Users` u ON u.userId = m.userId
-            LEFT JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = m.userId
-            LEFT JOIN `HBHub-Messages` r ON r.messageId = m.messageReplyToId AND r.chatId = m.chatId
-            LEFT JOIN `HBHub-Users` ru ON ru.userId = r.userId
-            LEFT JOIN `HBHub-ChatMembers` rcm ON rcm.chatId = r.chatId AND rcm.userId = r.userId
-            WHERE m.chatId = ?
-            ORDER BY m.messageId DESC LIMIT ' . HBHUB_CHAT_MESSAGES_SHOWN . '
-        ) newest ORDER BY messageId ASC');
-    $statement->execute([$openChat['chatId']]);
-    $messages = $statement->fetchAll();
+if ($openChat !== null && !$isPoll) {
+    $messages = chatMessages($db, (int) $openChat['chatId']);
 
     foreach ($messages as $message) {
         $shownMessageIds[(int) $message['messageId']] = true;
@@ -743,6 +769,120 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
     }
     return '<span class="chat-message-reply">' . $label . $sender . $text . '</span>';
 }
+
+/**
+ * A chat in the list on the left, for the page and for polling.
+ * Right-clicking it opens the chat menu (chat.js), the data-chat-* attributes say what it offers.
+ */
+function chatListItem(array $chat): void
+{
+    ?>
+                    <li data-chat-title="<?= htmlspecialchars($chat['chatTitle']) ?>"
+                        data-chat-id="<?= $chat['chatId'] ?>"
+                        data-chat-type="<?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'dm' : 'group' ?>"
+                        data-chat-name="<?= htmlspecialchars($chat['chatName'] ?? '') ?>"<?=
+                        $chat['dmUserName'] !== null ? ' data-chat-username="' . htmlspecialchars($chat['dmUserName']) . '"' : '' ?><?=
+                        $chat['chatNickname'] !== null ? ' data-chat-nickname="' . htmlspecialchars($chat['chatNickname']) . '"' : '' ?><?=
+                        $chat['chatIsGroupAdmin'] ? ' data-chat-admin' : '' ?><?=
+                        $chat['chatIconAttachmentId'] !== null ? ' data-chat-icon' : '' ?><?=
+                        $chat['chatHiddenByUser'] ? ' data-chat-hidden-by-user' : '' ?><?=
+                        $chat['chatHidden'] ? ' hidden' : '' ?>>
+                        <a class="chat-list-item<?= $chat['chatIsOpen'] ? ' active' : '' ?><?= $chat['chatUnreadCount'] > 0 ? ' is-unread' : '' ?>" href="/chat/?chat=<?= $chat['chatId'] ?>"<?= $chat['chatIsOpen'] ? ' aria-current="page"' : '' ?>>
+                            <?= chatAvatarHtml($chat) ?>
+                            <span class="chat-list-text">
+                                <span class="chat-list-top">
+                                    <span class="chat-list-title"><?= htmlspecialchars($chat['chatTitle']) ?></span>
+                                    <span class="chat-list-time"><?= chatTime($chat['chatActivity']) ?></span>
+                                </span>
+                                <span class="chat-list-bottom">
+                                    <span class="chat-list-preview"><?= htmlspecialchars($chat['chatLastMessage'] ?? 'No messages yet') ?></span>
+                                    <?php if ($chat['chatUnreadCount'] > 0): ?>
+                                        <span class="chat-list-unread"><?= $chat['chatUnreadCount'] > 99 ? '99+' : (int) $chat['chatUnreadCount'] ?><span class="chat-visually-hidden"> unread</span></span>
+                                    <?php endif; ?>
+                                </span>
+                            </span>
+                        </a>
+                    </li>
+    <?php
+}
+
+/**
+ * A message in the open chat, for the page and for polling.
+ * Right-clicking it opens the message menu (chat.js), the data-message-* attributes say what it offers.
+ * $replyIsShown: the message it replies to is on the page, so the quote can link to it.
+ */
+function chatMessageItem(array $openChat, int $userId, array $message, bool $replyIsShown): void
+{
+    $isOwn = (int) $message['userId'] === $userId;
+    $isDeleted = $message['messageDeletedTimestamp'] !== null;
+    $gifId = $isDeleted ? null : chatGifId($message['messageContent']);
+    ?>
+                        <li class="chat-message<?= $isOwn ? ' is-own' : '' ?>" id="message-<?= (int) $message['messageId'] ?>" tabindex="-1"
+                            data-message-id="<?= (int) $message['messageId'] ?>"
+                            data-message-sender="<?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['userId'], $message['senderName'])) ?>"<?=
+                            $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $gifId !== null ? ' data-message-gif' : '' ?>>
+                            <?php if (!$isOwn && (int) $openChat['chatType'] !== HBHUB_CHAT_TYPE_DM): ?>
+                                <?php if ($message['senderBanned']): ?>
+                                    <span class="chat-message-sender"><?= chatUserAvatarHtml((int) $message['userId'], $message['senderName'], null, 'is-small') ?><?= htmlspecialchars($message['senderName']) ?></span>
+                                <?php else: ?>
+                                    <a class="chat-message-sender chat-profile-link" href="<?= htmlspecialchars(hbHubProfileUrl((int) $message['userId'])) ?>" title="View profile"><?=
+                                        chatUserAvatarHtml((int) $message['userId'], $message['senderName'], $message['senderAvatarId'], 'is-small') ?><?= htmlspecialchars($message['senderName']) ?></a>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                            <?php if ($message['messageReplyToId'] !== null && !$isDeleted): ?>
+                                <?= chatReplyHtml($openChat, $userId, $message, $replyIsShown) ?>
+                            <?php endif; ?>
+                            <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?>">
+                                <?php if ($isDeleted): ?>
+                                    <p class="chat-message-deleted">Message deleted</p>
+                                <?php else: ?>
+                                    <?php if ($gifId !== null): ?>
+                                        <!-- Giphy's 200px tall version, so a chat full of GIFs doesn't load every full-size one -->
+                                        <img class="chat-message-gif" src="https://media.giphy.com/media/<?= $gifId ?>/200.webp" alt="GIF"
+                                             height="200" loading="lazy" referrerpolicy="no-referrer">
+                                    <?php elseif ($message['messageContent'] !== null): ?>
+                                        <p data-message-text><?= chatMessageHtml($message['messageContent']) ?></p>
+                                    <?php elseif ($message['attachmentId'] !== null): ?>
+                                        <p class="chat-message-deleted">Attachment</p>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </div>
+                            <span class="chat-message-meta">
+                                <time datetime="<?= htmlspecialchars($message['messageSentTimestamp']) ?>"><?= chatTime($message['messageSentTimestamp']) ?></time>
+                                <?= $message['messageIsEdited'] && !$isDeleted ? ' &middot; edited' : '' ?>
+                            </span>
+                        </li>
+    <?php
+}
+
+// The answer to chat.js polling: the open chat's new messages and the whole chat list, both as HTML.
+// openChat is false when the open chat is gone (left, deleted or removed from it), so chat.js can leave it.
+// A reply quote links to the message it answers when that's on the page: chat.js sends the oldest one it shows (?first=),
+// and everything from there on is shown, as the page always shows the newest messages.
+if ($isPoll) {
+    $pollFirst = is_string($_GET['first'] ?? null) && ctype_digit($_GET['first']) ? (int) $_GET['first'] : ($pollAfter ?? 0) + 1;
+
+    ob_start();
+    foreach ($pollMessages as $message) {
+        chatMessageItem($openChat, $userId, $message, $message['replyId'] !== null && (int) $message['replyId'] >= $pollFirst);
+    }
+    $pollMessagesHtml = ob_get_clean();
+
+    ob_start();
+    foreach ($chats as $chat) {
+        chatListItem($chat);
+    }
+    $pollChatListHtml = ob_get_clean();
+
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo json_encode([
+        'openChat' => $openChat !== null,
+        'messages' => $pollMessagesHtml,
+        'chatList' => $pollChatListHtml,
+    ], JSON_INVALID_UTF8_SUBSTITUTE);
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -781,32 +921,7 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
             <!-- Right-clicking a chat opens the chat menu (chat.js), the data-chat-* attributes say what it offers -->
             <ul class="chat-list">
                 <?php foreach ($chats as $chat): ?>
-                    <li data-chat-title="<?= htmlspecialchars($chat['chatTitle']) ?>"
-                        data-chat-id="<?= $chat['chatId'] ?>"
-                        data-chat-type="<?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'dm' : 'group' ?>"
-                        data-chat-name="<?= htmlspecialchars($chat['chatName'] ?? '') ?>"<?=
-                        $chat['dmUserName'] !== null ? ' data-chat-username="' . htmlspecialchars($chat['dmUserName']) . '"' : '' ?><?=
-                        $chat['chatNickname'] !== null ? ' data-chat-nickname="' . htmlspecialchars($chat['chatNickname']) . '"' : '' ?><?=
-                        $chat['chatIsGroupAdmin'] ? ' data-chat-admin' : '' ?><?=
-                        $chat['chatIconAttachmentId'] !== null ? ' data-chat-icon' : '' ?><?=
-                        $chat['chatHiddenByUser'] ? ' data-chat-hidden-by-user' : '' ?><?=
-                        $chat['chatHidden'] ? ' hidden' : '' ?>>
-                        <a class="chat-list-item<?= $chat['chatIsOpen'] ? ' active' : '' ?><?= $chat['chatUnreadCount'] > 0 ? ' is-unread' : '' ?>" href="/chat/?chat=<?= $chat['chatId'] ?>"<?= $chat['chatIsOpen'] ? ' aria-current="page"' : '' ?>>
-                            <?= chatAvatarHtml($chat) ?>
-                            <span class="chat-list-text">
-                                <span class="chat-list-top">
-                                    <span class="chat-list-title"><?= htmlspecialchars($chat['chatTitle']) ?></span>
-                                    <span class="chat-list-time"><?= chatTime($chat['chatActivity']) ?></span>
-                                </span>
-                                <span class="chat-list-bottom">
-                                    <span class="chat-list-preview"><?= htmlspecialchars($chat['chatLastMessage'] ?? 'No messages yet') ?></span>
-                                    <?php if ($chat['chatUnreadCount'] > 0): ?>
-                                        <span class="chat-list-unread"><?= $chat['chatUnreadCount'] > 99 ? '99+' : (int) $chat['chatUnreadCount'] ?><span class="chat-visually-hidden"> unread</span></span>
-                                    <?php endif; ?>
-                                </span>
-                            </span>
-                        </a>
-                    </li>
+                    <?php chatListItem($chat); ?>
                 <?php endforeach; ?>
             </ul>
             <p class="chat-list-empty"<?= $chats !== [] ? ' hidden' : '' ?> data-empty-all>You don't have any chats yet.</p>
@@ -847,56 +962,17 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
                     <?php endif; ?>
                 </header>
 
-                <!-- Right-clicking a message opens the message menu (chat.js), the data-message-* attributes say what it offers.
-                     The arrow keys move between messages (tabindex is set by chat.js). -->
-                <ol class="chat-messages" data-chat-messages>
+                <!-- The arrow keys move between messages (tabindex is set by chat.js), and new ones are added as they come
+                     in (chat.js polls for them). data-chat-messages is the open chat's id. -->
+                <ol class="chat-messages" data-chat-messages="<?= $openChat['chatId'] ?>">
                     <?php if ($messages === []): ?>
-                        <li class="chat-messages-empty">No messages yet - say hi!</li>
+                        <li class="chat-messages-empty" data-messages-empty>No messages yet - say hi!</li>
                     <?php endif; ?>
                     <?php foreach ($messages as $message): ?>
-                        <?php
-                        $isOwn = (int) $message['userId'] === $userId;
-                        $isDeleted = $message['messageDeletedTimestamp'] !== null;
-                        $gifId = $isDeleted ? null : chatGifId($message['messageContent']);
-                        ?>
                         <?php if ((int) $message['messageId'] === $firstUnreadMessageId): ?>
                             <li class="chat-messages-unread" data-unread-divider><span>New messages</span></li>
                         <?php endif; ?>
-                        <li class="chat-message<?= $isOwn ? ' is-own' : '' ?>" id="message-<?= (int) $message['messageId'] ?>" tabindex="-1"
-                            data-message-id="<?= (int) $message['messageId'] ?>"
-                            data-message-sender="<?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['userId'], $message['senderName'])) ?>"<?=
-                            $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $gifId !== null ? ' data-message-gif' : '' ?>>
-                            <?php if (!$isOwn && (int) $openChat['chatType'] !== HBHUB_CHAT_TYPE_DM): ?>
-                                <?php if ($message['senderBanned']): ?>
-                                    <span class="chat-message-sender"><?= chatUserAvatarHtml((int) $message['userId'], $message['senderName'], null, 'is-small') ?><?= htmlspecialchars($message['senderName']) ?></span>
-                                <?php else: ?>
-                                    <a class="chat-message-sender chat-profile-link" href="<?= htmlspecialchars(hbHubProfileUrl((int) $message['userId'])) ?>" title="View profile"><?=
-                                        chatUserAvatarHtml((int) $message['userId'], $message['senderName'], $message['senderAvatarId'], 'is-small') ?><?= htmlspecialchars($message['senderName']) ?></a>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                            <?php if ($message['messageReplyToId'] !== null && !$isDeleted): ?>
-                                <?= chatReplyHtml($openChat, $userId, $message, isset($shownMessageIds[(int) $message['replyId']])) ?>
-                            <?php endif; ?>
-                            <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?>">
-                                <?php if ($isDeleted): ?>
-                                    <p class="chat-message-deleted">Message deleted</p>
-                                <?php else: ?>
-                                    <?php if ($gifId !== null): ?>
-                                        <!-- Giphy's 200px tall version, so a chat full of GIFs doesn't load every full-size one -->
-                                        <img class="chat-message-gif" src="https://media.giphy.com/media/<?= $gifId ?>/200.webp" alt="GIF"
-                                             height="200" loading="lazy" referrerpolicy="no-referrer">
-                                    <?php elseif ($message['messageContent'] !== null): ?>
-                                        <p data-message-text><?= chatMessageHtml($message['messageContent']) ?></p>
-                                    <?php elseif ($message['attachmentId'] !== null): ?>
-                                        <p class="chat-message-deleted">Attachment</p>
-                                    <?php endif; ?>
-                                <?php endif; ?>
-                            </div>
-                            <span class="chat-message-meta">
-                                <time datetime="<?= htmlspecialchars($message['messageSentTimestamp']) ?>"><?= chatTime($message['messageSentTimestamp']) ?></time>
-                                <?= $message['messageIsEdited'] && !$isDeleted ? ' &middot; edited' : '' ?>
-                            </span>
-                        </li>
+                        <?php chatMessageItem($openChat, $userId, $message, isset($shownMessageIds[(int) $message['replyId']])); ?>
                     <?php endforeach; ?>
                 </ol>
 
