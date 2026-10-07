@@ -32,7 +32,7 @@
   background: var(--secondary);
 }
 
-.chat input,
+.chat input:not([type="checkbox"]),
 .chat textarea {
   width: 100%;
   padding: 10px 12px;
@@ -44,7 +44,7 @@
   font: inherit;
 }
 
-.chat input:focus,
+.chat input:not([type="checkbox"]):focus,
 .chat textarea:focus {
   outline: none;
   border-color: var(--accent);
@@ -294,6 +294,237 @@
 .chat-composer textarea {
   max-height: 160px;
   resize: none;
+}
+
+/* New chat popup */
+.chat-new {
+  width: min(480px, calc(100vw - 32px));
+  max-height: min(640px, calc(100dvh - 32px));
+  padding: 0;
+  box-sizing: border-box;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+.chat-new[open] {
+  display: flex;
+  flex-direction: column;
+  animation: chat-new-in 0.2s ease;
+}
+
+.chat-new::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.chat-new-form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+
+.chat-new-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chat-new-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.chat-new-close {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-new-close:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.chat-new-picked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 88px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.chat-new-picked:empty {
+  display: none;
+}
+
+.chat-new-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.chat-new-chip button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-new-chip button:hover {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.chat-new-users {
+  flex: 1;
+  min-height: 120px;
+  margin: 0 -4px;
+  padding: 0 4px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.chat-new-users:empty {
+  display: none;
+}
+
+.chat-new-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.chat-new-user:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.chat-new-user:has(input:checked) {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.chat-new-user:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.chat-new-user input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.chat-new-user .chat-avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 0.9rem;
+}
+
+.chat-new-user-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.chat-new-status {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.chat-new-status:empty {
+  display: none;
+}
+
+.chat-new-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-new-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.chat-new-optional {
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.chat-new-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-new-count {
+  flex: 1;
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.chat-btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-btn:hover {
+  filter: brightness(0.95);
+}
+
+.chat-new-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: none;
+}
+
+@keyframes chat-new-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-new[open] {
+    animation: none;
+  }
 }
 
 /* Default chat icon is black - invert it on dark backgrounds */

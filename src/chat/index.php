@@ -2,7 +2,12 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 const HBHUB_CHAT_TYPE_DM = 1; // chatType in HBHub-Chats
+const HBHUB_CHAT_TYPE_GROUP = 2;
 const HBHUB_CHAT_STATUS_ACTIVE = 1; // chatStatus in HBHub-Chats
+const HBHUB_CHAT_ROLE_MEMBER = 1; // memberRole in HBHub-ChatMembers
+const HBHUB_CHAT_ROLE_ADMIN = 2;
+const HBHUB_CHAT_MEMBERS_MAX = 200; // per group DM, the creator included
+const HBHUB_CHAT_NAME_MAX = 64; // chatName column
 const HBHUB_CHAT_MESSAGE_MAX = 2500; // messageContent column
 const HBHUB_CHAT_MESSAGES_SHOWN = 100;
 
@@ -25,6 +30,80 @@ function chatMembership(PDO $db, int $userId, mixed $chatId): ?array
         WHERE cm.chatId = ? AND cm.userId = ? AND c.chatStatus = ?');
     $statement->execute([(int) $chatId, $userId, HBHUB_CHAT_STATUS_ACTIVE]);
     return $statement->fetch() ?: null;
+}
+
+/**
+ * Starts a chat with the picked users: a DM for one, a group DM for more.
+ * A DM that already exists with that user is reused instead of making a second one.
+ * Returns the chat id, or null when the picked users aren't valid (none, too many, unknown or banned).
+ */
+function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
+{
+    if (!is_array($pickedIds)) {
+        return null;
+    }
+
+    $memberIds = [];
+    foreach ($pickedIds as $pickedId) {
+        if (is_string($pickedId) && ctype_digit($pickedId) && (int) $pickedId !== $userId) {
+            $memberIds[(int) $pickedId] = true;
+        }
+    }
+    $memberIds = array_keys($memberIds);
+
+    if ($memberIds === [] || count($memberIds) + 1 > HBHUB_CHAT_MEMBERS_MAX) {
+        return null;
+    }
+
+    // Every picked user has to exist and not be banned
+    $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-Users`
+        WHERE userStatus <> ? AND userId IN (' . implode(', ', array_fill(0, count($memberIds), '?')) . ')');
+    $statement->execute([HBHUB_SESSION_STATUS_BANNED, ...$memberIds]);
+    if ((int) $statement->fetchColumn() !== count($memberIds)) {
+        return null;
+    }
+
+    $isGroup = count($memberIds) > 1;
+
+    if (!$isGroup) {
+        $statement = $db->prepare('SELECT c.chatId FROM `HBHub-Chats` c
+            JOIN `HBHub-ChatMembers` me ON me.chatId = c.chatId AND me.userId = ?
+            JOIN `HBHub-ChatMembers` them ON them.chatId = c.chatId AND them.userId = ?
+            WHERE c.chatType = ? AND c.chatStatus = ? LIMIT 1');
+        $statement->execute([$userId, $memberIds[0], HBHUB_CHAT_TYPE_DM, HBHUB_CHAT_STATUS_ACTIVE]);
+        $existingChatId = $statement->fetchColumn();
+        if ($existingChatId !== false) {
+            return (int) $existingChatId;
+        }
+    }
+
+    // Only groups get a name - left empty, they're named after the members
+    $chatName = $isGroup && is_string($name) ? trim($name) : '';
+    $chatName = $chatName === '' ? null : mb_substr($chatName, 0, HBHUB_CHAT_NAME_MAX);
+
+    $db->beginTransaction();
+    $db->prepare('INSERT INTO `HBHub-Chats` (chatName, chatType, chatCreatedBy) VALUES (?, ?, ?)')
+        ->execute([$chatName, $isGroup ? HBHUB_CHAT_TYPE_GROUP : HBHUB_CHAT_TYPE_DM, $userId]);
+    $chatId = (int) $db->lastInsertId();
+
+    // The creator is the group's admin. In a DM both are normal members.
+    $memberRows = [$chatId, $userId, $isGroup ? HBHUB_CHAT_ROLE_ADMIN : HBHUB_CHAT_ROLE_MEMBER];
+    foreach ($memberIds as $memberId) {
+        array_push($memberRows, $chatId, $memberId, HBHUB_CHAT_ROLE_MEMBER);
+    }
+    $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole)
+        VALUES ' . implode(', ', array_fill(0, count($memberIds) + 1, '(?, ?, ?)')))
+        ->execute($memberRows);
+    $db->commit();
+
+    return $chatId;
+}
+
+// Starting a new chat, then straight into it
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'create') {
+    $chatId = chatCreate($db, $userId, $_POST['users'] ?? null, $_POST['name'] ?? null);
+    header('Location: /chat/' . ($chatId !== null ? '?chat=' . $chatId : ''), true, 303);
+    exit;
 }
 
 // Sending a message, then back to the chat so a refresh doesn't send it again
@@ -141,7 +220,7 @@ function chatInitial(string $name): string
                        value="<?= htmlspecialchars($chatSearch) ?>">
             </form>
 
-            <button type="button" class="chat-new-btn">+ New chat</button>
+            <button type="button" class="chat-new-btn" data-new-chat-open>+ New chat</button>
 
             <h2 class="chat-list-heading">Open chats</h2>
             <ul class="chat-list">
@@ -208,6 +287,7 @@ function chatInitial(string $name): string
                 </ol>
 
                 <form class="chat-composer" action="/chat/" method="post">
+                    <input type="hidden" name="action" value="send">
                     <input type="hidden" name="chat" value="<?= $openChat['chatId'] ?>">
                     <label class="chat-visually-hidden" for="chat-message">Message</label>
                     <textarea id="chat-message" name="message" rows="1" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required
@@ -216,6 +296,37 @@ function chatInitial(string $name): string
                 </form>
             <?php endif; ?>
         </section>
+
+        <!-- New chat popup (chat.js): one user picked makes a DM, more make a group DM -->
+        <dialog class="chat-new" aria-labelledby="chat-new-title" data-members-max="<?= HBHUB_CHAT_MEMBERS_MAX ?>">
+            <form class="chat-new-form" action="/chat/" method="post">
+                <input type="hidden" name="action" value="create">
+
+                <header class="chat-new-header">
+                    <h2 id="chat-new-title">New chat</h2>
+                    <button type="button" class="chat-new-close" aria-label="Close" data-new-chat-close>&times;</button>
+                </header>
+
+                <label class="chat-visually-hidden" for="chat-new-search">Search users</label>
+                <input type="search" id="chat-new-search" placeholder="Search users" autocomplete="off">
+
+                <ul class="chat-new-picked" aria-label="Picked users" data-picked></ul>
+
+                <ul class="chat-new-users" aria-label="Users" data-users></ul>
+                <p class="chat-new-status" role="status" data-users-status></p>
+
+                <div class="chat-new-group" hidden data-group-fields>
+                    <label for="chat-new-name">Group name <span class="chat-new-optional">(optional)</span></label>
+                    <input type="text" id="chat-new-name" name="name" maxlength="<?= HBHUB_CHAT_NAME_MAX ?>" autocomplete="off">
+                </div>
+
+                <footer class="chat-new-footer">
+                    <p class="chat-new-count" data-picked-count></p>
+                    <button type="button" class="chat-btn" data-new-chat-close>Cancel</button>
+                    <button type="submit" class="chat-new-btn" disabled data-new-chat-submit>Start DM</button>
+                </footer>
+            </form>
+        </dialog>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>
