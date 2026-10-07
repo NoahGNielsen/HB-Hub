@@ -835,15 +835,19 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
                         </span>
                         <button type="button" class="chat-new-close" aria-label="Cancel reply" data-reply-cancel>&times;</button>
                     </div>
-                    <!-- Attach: a small popup above the button (chat.js). File and Voice message don't do anything yet. -->
+                    <!-- Attach: a small popup above the button (chat.js). File and Voice message are coming soon. -->
                     <div class="chat-attach">
                         <button type="button" class="chat-icon-btn" aria-label="Attach" title="Attach"
                                 aria-haspopup="menu" aria-expanded="false" aria-controls="chat-attach-menu" data-attach-open>
                             <img src="/assets/images/icons/addFile.svg" alt="">
                         </button>
                         <div class="chat-menu chat-attach-menu" id="chat-attach-menu" role="menu" aria-label="Attach" hidden data-attach-menu>
-                            <button type="button" role="menuitem">File</button>
-                            <button type="button" role="menuitem">Voice message</button>
+                            <button type="button" role="menuitem" aria-disabled="true" title="Coming soon">
+                                File <span class="chat-menu-soon">Soon</span>
+                            </button>
+                            <button type="button" role="menuitem" aria-disabled="true" title="Coming soon">
+                                Voice message <span class="chat-menu-soon">Soon</span>
+                            </button>
                         </div>
                     </div>
                     <label class="chat-visually-hidden" for="chat-message">Message</label>

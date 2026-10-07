@@ -687,7 +687,7 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
 })();
 
 // Attach popup: the button left of the message box opens a small menu just above it.
-// File and Voice message don't do anything yet - picking one just closes the menu.
+// File and Voice message are coming soon - they're disabled, so picking one does nothing.
 (() => {
     const button = document.querySelector('[data-attach-open]');
     const menu = document.querySelector('[data-attach-menu]');
@@ -705,7 +705,8 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
     button.addEventListener('click', () => setOpen(menu.hidden, true));
 
     menu.addEventListener('click', (event) => {
-        if (event.target.closest('[role="menuitem"]')) setOpen(false, true);
+        const menuItem = event.target.closest('[role="menuitem"]');
+        if (menuItem && !menuItem.hasAttribute('aria-disabled')) setOpen(false, true);
     });
 
     document.addEventListener('pointerdown', (event) => {
