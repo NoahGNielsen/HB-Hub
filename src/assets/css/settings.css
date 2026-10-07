@@ -184,6 +184,45 @@
   font-weight: 600;
 }
 
+/* New password strength, the same as onboarding (userMgmt.css) */
+.settings-strength {
+  --strength-color: transparent;
+}
+.settings-strength[data-level="common"],
+.settings-strength[data-level="weak"],
+.settings-strength[data-level="fair"] { --strength-color: #d93025; }
+.settings-strength[data-level="good"] { --strength-color: #e8a317; }
+.settings-strength[data-level="strong"] { --strength-color: #1e9e4a; }
+
+.settings-strength-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--background);
+  overflow: hidden;
+}
+
+.settings-strength-bar {
+  width: 0;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--strength-color);
+  transition: width 0.2s ease, background-color 0.2s ease;
+}
+
+.settings-strength-label {
+  min-height: 1.2em;
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--strength-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-strength-bar {
+    transition: none;
+  }
+}
+
 /* A block change that's waiting */
 .settings-notice {
   margin: 4px 0 0;

@@ -501,7 +501,14 @@ $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
                 <div class="settings-field">
                     <label class="settings-label" for="settings-new-password">New password</label>
                     <input type="password" id="settings-new-password" name="newPassword" minlength="<?= $settingsPasswordPolicy['minLength'] ?>" maxlength="72"
-                           required autocomplete="new-password" aria-describedby="settings-new-password-hint">
+                           required autocomplete="new-password" aria-describedby="settings-new-password-hint"
+                           data-min-length="<?= $settingsPasswordPolicy['minLength'] ?>" data-char-types="<?= $settingsPasswordPolicy['charTypes'] ?>"
+                           data-common-passwords="/assets/commonPasswords.txt?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/commonPasswords.txt') ?>">
+                    <!-- Filled in by settings.js while typing, the same meter as onboarding -->
+                    <div class="settings-strength" data-level="none" hidden>
+                        <div class="settings-strength-track"><div class="settings-strength-bar"></div></div>
+                        <p class="settings-strength-label" aria-live="polite"></p>
+                    </div>
                     <p class="settings-hint" id="settings-new-password-hint">
                         <?php if ($settingsPasswordPolicy['minLength'] > 1): ?>At least <?= $settingsPasswordPolicy['minLength'] ?> characters.<?php endif; ?>
                         <?php if ($settingsPasswordPolicy['charTypes'] === 4): ?>
