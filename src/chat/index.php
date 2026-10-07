@@ -17,6 +17,15 @@ const HBHUB_CHAT_MESSAGE_MAX = 2500; // messageContent column
 const HBHUB_CHAT_MESSAGES_SHOWN = 100;
 const HBHUB_CHAT_ICON_MAX_BYTES = 2 * 1024 * 1024;
 const HBHUB_CHAT_ICON_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']; // no SVG, it can carry scripts
+// Mute chat in the chat menu: minutes => label, 0 lasts until the user unmutes it
+const HBHUB_CHAT_MUTE_OPTIONS = [
+    15 => 'For 15 minutes',
+    60 => 'For 1 hour',
+    180 => 'For 3 hours',
+    480 => 'For 8 hours',
+    1440 => 'For 24 hours',
+    0 => 'Forever',
+];
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
@@ -268,6 +277,54 @@ function chatSetHidden(PDO $db, int $userId, int $chatId, bool $isHidden): void
 }
 
 /**
+ * Mutes the chat for the user for $minutes (0 until they unmute it), or unmutes it when $minutes is null.
+ * Muted, it sends them no notifications. Saved in their settings like hbHubChatIsMuted() reads it,
+ * and only mutes that haven't run out are kept, so the lists don't grow with every chat the user ever muted.
+ */
+function chatSetMuted(PDO $db, int $userId, int $chatId, ?int $minutes): void
+{
+    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($chatId, $minutes): array {
+        $muted = [];
+        $mutedUntil = [];
+        foreach (hbHubMutedChatIds($settings) as $mutedChatId) {
+            $muted[$mutedChatId] = true;
+            if (isset($settings['chatMutedUntil'][$mutedChatId])) {
+                $mutedUntil[$mutedChatId] = $settings['chatMutedUntil'][$mutedChatId];
+            }
+        }
+
+        unset($muted[$chatId], $mutedUntil[$chatId]);
+        if ($minutes !== null) {
+            $muted[$chatId] = true;
+            if ($minutes > 0) {
+                $mutedUntil[$chatId] = time() + $minutes * 60;
+            }
+        }
+
+        // Saved as objects even when empty, so the keys stay chatIds
+        $settings['chatMuted'] = (object) $muted;
+        $settings['chatMutedUntil'] = (object) $mutedUntil;
+        return $settings;
+    });
+}
+
+/**
+ * How the chat list says the chat is muted: "Muted until 14:30" (with the date when it isn't today),
+ * or just "Muted" until the user unmutes it. Null when it isn't muted.
+ */
+function chatMutedLabel(array $userSettings, int $chatId): ?string
+{
+    if (!hbHubChatIsMuted($userSettings, $chatId)) {
+        return null;
+    }
+    $until = $userSettings['chatMutedUntil'][$chatId] ?? null;
+    if (!is_int($until)) {
+        return 'Muted';
+    }
+    return 'Muted until ' . date(date('Y-m-d', $until) === date('Y-m-d') ? 'H:i' : 'd/m/Y H:i', $until);
+}
+
+/**
  * Shows the chat again for every member who hid it, when a new message arrives.
  */
 function chatUnhideForEveryone(PDO $db, int $chatId): void
@@ -379,10 +436,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'cre
     chatRedirect(chatCreate($db, $userId, $_POST['users'] ?? null, $_POST['name'] ?? null));
 }
 
-// The right-click menu in the chat list: hide or leave a chat, give the other person in a DM a nickname,
+// The right-click menu in the chat list: mute, unmute, hide or leave a chat, give the other person in a DM a nickname,
 // and for group admins rename it, change its icon or delete it.
 // Then back to the chat that was open (sent along as "open"), unless that's the one that was just hidden, left or deleted.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['hide', 'leave', 'nickname', 'rename', 'icon', 'delete'], true)) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST'
+    && in_array($_POST['action'] ?? null, ['mute', 'unmute', 'hide', 'leave', 'nickname', 'rename', 'icon', 'delete'], true)) {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     $openChatId = is_string($_POST['open'] ?? null) && ctype_digit($_POST['open']) ? (int) $_POST['open'] : null;
     $isGroupAdmin = $chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP
@@ -393,6 +451,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
             if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM) {
                 chatSetNickname($db, $userId, (int) $chat['chatId'], $_POST['nickname'] ?? null);
             }
+            break;
+        case 'mute':
+            // Only the lengths Mute chat offers
+            $minutes = is_string($_POST['minutes'] ?? null) && ctype_digit($_POST['minutes']) && strlen($_POST['minutes']) <= 5
+                ? (int) $_POST['minutes'] : null;
+            if ($minutes !== null && array_key_exists($minutes, HBHUB_CHAT_MUTE_OPTIONS)) {
+                chatSetMuted($db, $userId, (int) $chat['chatId'], $minutes);
+            }
+            break;
+        case 'unmute':
+            chatSetMuted($db, $userId, (int) $chat['chatId'], null);
             break;
         case 'hide':
             chatSetHidden($db, $userId, (int) $chat['chatId'], true);
@@ -589,6 +658,7 @@ foreach ($statement->fetchAll() as $chat) {
     $chat['chatTitle'] ??= 'Just you';
     $settings = chatSettings($chat['chatSettings']);
     $chat['chatHiddenSetting'] = chatIsHidden($userSettings, (int) $chat['chatId']);
+    $chat['chatMutedLabel'] = chatMutedLabel($userSettings, (int) $chat['chatId']);
     $nickname = $chat['dmUserId'] !== null ? $settings->chatNicknames->{$chat['dmUserId']} ?? null : null;
     $chat['chatNickname'] = is_string($nickname) ? $nickname : null;
     $chat['chatTitle'] = $chat['chatNickname'] ?? $chat['chatTitle'];
@@ -785,13 +855,18 @@ function chatListItem(array $chat): void
                         $chat['chatNickname'] !== null ? ' data-chat-nickname="' . htmlspecialchars($chat['chatNickname']) . '"' : '' ?><?=
                         $chat['chatIsGroupAdmin'] ? ' data-chat-admin' : '' ?><?=
                         $chat['chatIconAttachmentId'] !== null ? ' data-chat-icon' : '' ?><?=
+                        $chat['chatMutedLabel'] !== null ? ' data-chat-muted' : '' ?><?=
                         $chat['chatHiddenByUser'] ? ' data-chat-hidden-by-user' : '' ?><?=
                         $chat['chatHidden'] ? ' hidden' : '' ?>>
-                        <a class="chat-list-item<?= $chat['chatIsOpen'] ? ' active' : '' ?><?= $chat['chatUnreadCount'] > 0 ? ' is-unread' : '' ?>" href="/chat/?chat=<?= $chat['chatId'] ?>"<?= $chat['chatIsOpen'] ? ' aria-current="page"' : '' ?>>
+                        <a class="chat-list-item<?= $chat['chatIsOpen'] ? ' active' : '' ?><?= $chat['chatUnreadCount'] > 0 ? ' is-unread' : '' ?><?= $chat['chatMutedLabel'] !== null ? ' is-muted' : '' ?>" href="/chat/?chat=<?= $chat['chatId'] ?>"<?= $chat['chatIsOpen'] ? ' aria-current="page"' : '' ?>>
                             <?= chatAvatarHtml($chat) ?>
                             <span class="chat-list-text">
                                 <span class="chat-list-top">
                                     <span class="chat-list-title"><?= htmlspecialchars($chat['chatTitle']) ?></span>
+                                    <?php if ($chat['chatMutedLabel'] !== null): ?>
+                                        <img class="chat-list-muted" src="/assets/images/icons/muted.svg"
+                                             alt="<?= htmlspecialchars($chat['chatMutedLabel']) ?>" title="<?= htmlspecialchars($chat['chatMutedLabel']) ?>">
+                                    <?php endif; ?>
                                     <span class="chat-list-time"><?= chatTime($chat['chatActivity']) ?></span>
                                 </span>
                                 <span class="chat-list-bottom">
@@ -1056,6 +1131,16 @@ if ($isPoll) {
                 Show profile <span class="chat-menu-soon">Soon</span>
             </button>
             <button type="button" role="menuitem" data-menu-action="nickname" data-menu-dm>Give nickname</button>
+            <!-- Mute chat opens its own small menu with how long for, a muted chat gets Unmute chat instead -->
+            <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-controls="chat-mute-menu" data-menu-mute>
+                Mute chat <span class="chat-menu-arrow" aria-hidden="true">&rsaquo;</span>
+            </button>
+            <div class="chat-menu chat-submenu" id="chat-mute-menu" role="menu" aria-label="Mute chat" hidden data-mute-menu>
+                <?php foreach (HBHUB_CHAT_MUTE_OPTIONS as $minutes => $label): ?>
+                    <button type="button" role="menuitem" data-mute-minutes="<?= $minutes ?>"><?= $label ?></button>
+                <?php endforeach; ?>
+            </div>
+            <button type="button" role="menuitem" data-menu-action="unmute">Unmute chat</button>
             <button type="button" role="menuitem" data-menu-action="hide">Hide chat</button>
             <button type="button" role="menuitem" data-menu-action="rename" data-menu-admin>Change name</button>
             <button type="button" role="menuitem" data-menu-action="icon" data-menu-admin>Change group icon</button>
@@ -1155,6 +1240,14 @@ if ($isPoll) {
         <form action="/chat/" method="post" hidden data-chat-hide>
             <input type="hidden" name="action" value="hide">
             <input type="hidden" name="chat">
+            <input type="hidden" name="open" value="<?= $openChat['chatId'] ?? '' ?>">
+        </form>
+
+        <!-- Mute chat and Unmute chat: chat.js sets which, and for how long -->
+        <form action="/chat/" method="post" hidden data-chat-mute>
+            <input type="hidden" name="action" value="mute">
+            <input type="hidden" name="chat">
+            <input type="hidden" name="minutes">
             <input type="hidden" name="open" value="<?= $openChat['chatId'] ?? '' ?>">
         </form>
 

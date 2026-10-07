@@ -231,6 +231,19 @@
   opacity: 0.9;
 }
 
+/* A chat the user muted: a crossed-out bell by its name, and a grey unread count */
+.chat-list-muted {
+  flex: none;
+  align-self: center;
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+}
+
+.chat-list-item.is-muted .chat-list-unread {
+  background: color-mix(in srgb, var(--text) 40%, var(--background));
+}
+
 .chat-list-time,
 .chat-message-meta {
   /* Raleway defaults to old-style numbers */
@@ -1037,6 +1050,19 @@ a.chat-message-reply:hover {
   letter-spacing: 0.05em;
 }
 
+/* Mute chat's small menu, placed next to it by chat.js */
+.chat-menu.chat-submenu {
+  position: absolute;
+  min-width: 170px;
+}
+
+.chat-menu-arrow {
+  margin-left: auto;
+  font-size: 1.1rem;
+  line-height: 1;
+  opacity: 0.6;
+}
+
 .chat-menu-divider {
   width: 100%;
   margin: 5px 0;
@@ -1193,19 +1219,21 @@ a.chat-message-reply:hover {
   }
 }
 
-/* Default chat, requests, attach, GIF and settings icons are black - invert them on dark backgrounds */
+/* Default chat, requests, attach, GIF, settings and muted icons are black - invert them on dark backgrounds */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .chat-placeholder-icon,
   :root:not([data-theme="light"]) .chat-requests-btn img,
   :root:not([data-theme="light"]) .chat-icon-btn img,
-  :root:not([data-theme="light"]) .chat-me-settings img {
+  :root:not([data-theme="light"]) .chat-me-settings img,
+  :root:not([data-theme="light"]) .chat-list-muted {
     filter: invert(1);
   }
 }
 :root[data-theme="dark"] .chat-placeholder-icon,
 :root[data-theme="dark"] .chat-requests-btn img,
 :root[data-theme="dark"] .chat-icon-btn img,
-:root[data-theme="dark"] .chat-me-settings img {
+:root[data-theme="dark"] .chat-me-settings img,
+:root[data-theme="dark"] .chat-list-muted {
   filter: invert(1);
 }
 

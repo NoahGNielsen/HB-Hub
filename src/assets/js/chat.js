@@ -288,11 +288,12 @@
 // Right-clicking an item in `list` (or the menu key / Shift+F10 on it) opens `menu` where the pointer is.
 // Arrow keys, Home and End move through the menu. Escape and Tab close it, back on the item it was opened on.
 // onOpen(item) hides the menu items that don't apply, and skip(event, item) can leave the browser's own menu be.
+// A smaller menu inside it (like Mute chat's) handles its own keys.
 function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false }) {
     let current = null; // the item the menu was opened on
 
     function menuItems() {
-        return [...menu.querySelectorAll('[role="menuitem"]')].filter((item) => !item.hidden);
+        return [...menu.querySelectorAll(':scope > [role="menuitem"]')].filter((item) => !item.hidden);
     }
 
     function open(item, x, y) {
@@ -349,7 +350,7 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
     return { close };
 }
 
-// Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to hide or leave it.
+// Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to mute, hide or leave it.
 // In a DM the other person can be given a nickname. Group admins can also change the group's name or icon, or delete it.
 // Show profile (DMs) and Change background (group admins) are coming later.
 // Every action is a plain form post - the server checks who's allowed to do what.
@@ -359,6 +360,9 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
     if (!menu || !list) return;
 
     const hideForm = document.querySelector('[data-chat-hide]');
+    const muteForm = document.querySelector('[data-chat-mute]');
+    const muteItem = menu.querySelector('[data-menu-mute]');
+    const muteMenu = menu.querySelector('[data-mute-menu]');
     const confirmDialog = document.querySelector('.chat-confirm');
     const nicknameDialog = document.querySelector('.chat-nickname');
     const renameDialog = document.querySelector('.chat-rename');
@@ -378,7 +382,78 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
             menu.querySelectorAll('[data-menu-admin]').forEach((menuItem) => { menuItem.hidden = !isAdmin; });
             // Nobody to give a nickname in a DM the other person left
             if (!item.hasAttribute('data-chat-username')) menu.querySelector('[data-menu-action="nickname"]').hidden = true;
+            const isMuted = item.hasAttribute('data-chat-muted');
+            muteItem.hidden = isMuted;
+            menu.querySelector('[data-menu-action="unmute"]').hidden = !isMuted;
+            closeMuteMenu(false);
         },
+    });
+
+    // Mute chat: how long for is picked in a small menu next to it. Pointing at Mute chat opens it,
+    // and a click, Enter, Space or the right arrow opens it and moves into it. The left arrow and Escape go back.
+    const muteOptions = [...muteMenu.querySelectorAll('[role="menuitem"]')];
+
+    function openMuteMenu(focusFirst) {
+        muteMenu.hidden = false;
+        muteItem.setAttribute('aria-expanded', 'true');
+
+        // To the right of the chat menu, lined up with Mute chat - or on the left when there's no room on the right.
+        // It's placed inside the chat menu, so these are from the chat menu's corner.
+        const menuRect = menu.getBoundingClientRect();
+        const { width, height } = muteMenu.getBoundingClientRect();
+        const fitsRight = menuRect.right + 4 + width <= window.innerWidth - 8;
+        muteMenu.style.left = (fitsRight ? menu.clientWidth + 4 : -width - 4) + 'px';
+        const top = muteItem.offsetTop - 7; // the small menu's border and padding
+        muteMenu.style.top = Math.max(8 - menuRect.top, Math.min(top, window.innerHeight - 8 - height - menuRect.top)) + 'px';
+
+        if (focusFirst) muteOptions[0].focus();
+    }
+
+    function closeMuteMenu(returnFocus) {
+        muteMenu.hidden = true;
+        muteItem.setAttribute('aria-expanded', 'false');
+        if (returnFocus) muteItem.focus();
+    }
+
+    muteItem.addEventListener('pointerenter', () => openMuteMenu(false));
+    muteItem.addEventListener('click', () => openMuteMenu(true));
+    muteItem.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        openMuteMenu(true);
+    });
+
+    // Pointing at or moving to another item in the chat menu closes it
+    ['pointerover', 'focusin'].forEach((type) => {
+        menu.addEventListener(type, (event) => {
+            const menuItem = event.target.closest('[role="menuitem"]');
+            if (menuItem && menuItem.parentElement === menu && menuItem !== muteItem) closeMuteMenu(false);
+        });
+    });
+
+    // Its own keys, so the chat menu doesn't move as well. Tab is left to the chat menu, which closes everything.
+    muteMenu.addEventListener('keydown', (event) => {
+        const index = muteOptions.indexOf(document.activeElement);
+        const moves = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: muteOptions.length - 1 };
+        if (event.key in moves) {
+            muteOptions[(moves[event.key] + muteOptions.length) % muteOptions.length].focus();
+        } else if (event.key === 'ArrowLeft' || event.key === 'Escape') {
+            closeMuteMenu(true);
+        } else {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+    });
+
+    muteMenu.addEventListener('click', (event) => {
+        const option = event.target.closest('[data-mute-minutes]');
+        if (!option) return;
+        chatMenu.close(false);
+        muteForm.elements.action.value = 'mute';
+        muteForm.elements.chat.value = chat.dataset.chatId;
+        muteForm.elements.minutes.value = option.dataset.muteMinutes;
+        muteForm.submit();
     });
 
     function confirmAction(action, title, text, submitLabel) {
@@ -463,6 +538,11 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
     });
 
     const actions = {
+        unmute() {
+            muteForm.elements.action.value = 'unmute';
+            muteForm.elements.chat.value = chat.dataset.chatId;
+            muteForm.submit();
+        },
         hide() {
             hideForm.elements.chat.value = chat.dataset.chatId;
             hideForm.submit();

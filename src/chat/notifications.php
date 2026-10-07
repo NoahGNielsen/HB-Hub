@@ -1,6 +1,7 @@
 <?php
 // New messages for notifications.js: /chat/notifications?after=messageId returns, as JSON, the newest message id
-// in the user's chats (to ask after next time) and the unread messages from others that came after that id.
+// in the user's chats (to ask after next time) and the unread messages from others that came after that id,
+// leaving out the chats the user muted.
 // Without ?after= only the newest id is returned, so turning notifications on doesn't announce old messages.
 // Returns {"enabled": false} when the user has notifications turned off in settings.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
