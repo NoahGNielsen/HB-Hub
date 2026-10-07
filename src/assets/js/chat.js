@@ -31,8 +31,14 @@
         filterChats();
     }
 
+    // At the newest message, unless that would scroll the "New messages" line out of sight above
     const messages = document.querySelector('[data-chat-messages]');
-    if (messages) messages.scrollTop = messages.scrollHeight;
+    if (messages) {
+        messages.scrollTop = messages.scrollHeight;
+        const unread = messages.querySelector('[data-unread-divider]');
+        const offset = unread ? unread.getBoundingClientRect().top - messages.getBoundingClientRect().top : 0;
+        if (offset < 0) messages.scrollTop += offset - 8;
+    }
 
     const composer = document.querySelector('.chat-composer');
     if (!composer) return;
@@ -273,6 +279,71 @@
     });
 })();
 
+// Right-click menus, used by the chat menu and the message menu.
+// Right-clicking an item in `list` (or the menu key / Shift+F10 on it) opens `menu` where the pointer is.
+// Arrow keys, Home and End move through the menu. Escape and Tab close it, back on the item it was opened on.
+// onOpen(item) hides the menu items that don't apply, and skip(event, item) can leave the browser's own menu be.
+function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false }) {
+    let current = null; // the item the menu was opened on
+
+    function menuItems() {
+        return [...menu.querySelectorAll('[role="menuitem"]')].filter((item) => !item.hidden);
+    }
+
+    function open(item, x, y) {
+        current = item;
+        onOpen(item);
+
+        // Where it was opened, but never past the edge of the window
+        menu.hidden = false;
+        const { width, height } = menu.getBoundingClientRect();
+        menu.style.left = Math.max(8, Math.min(x, window.innerWidth - width - 8)) + 'px';
+        menu.style.top = Math.max(8, Math.min(y, window.innerHeight - height - 8)) + 'px';
+        menuItems().find((menuItem) => !menuItem.hasAttribute('aria-disabled'))?.focus();
+    }
+
+    function close(returnFocus) {
+        if (menu.hidden) return;
+        menu.hidden = true;
+        if (returnFocus) focusItem(current);
+    }
+
+    list.addEventListener('contextmenu', (event) => {
+        const item = event.target.closest(items);
+        if (!item || skip(event, item)) return;
+        event.preventDefault();
+        // Opened from the keyboard there's no pointer position, so it goes under the item instead
+        if (event.clientX === 0 && event.clientY === 0) {
+            const rect = item.getBoundingClientRect();
+            open(item, rect.left + 16, rect.bottom);
+        } else {
+            open(item, event.clientX, event.clientY);
+        }
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+        if (!menu.contains(event.target)) close(false);
+    });
+    list.addEventListener('scroll', () => close(false));
+    window.addEventListener('resize', () => close(false));
+    window.addEventListener('blur', () => close(false));
+
+    menu.addEventListener('keydown', (event) => {
+        const menuItemList = menuItems();
+        const index = menuItemList.indexOf(document.activeElement);
+        const moves = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: menuItemList.length - 1 };
+        if (event.key in moves) {
+            event.preventDefault();
+            menuItemList[(moves[event.key] + menuItemList.length) % menuItemList.length].focus();
+        } else if (event.key === 'Escape' || event.key === 'Tab') {
+            event.preventDefault();
+            close(true);
+        }
+    });
+
+    return { close };
+}
+
 // Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to hide or leave it.
 // In a DM the other person can be given a nickname. Group admins can also change the group's name or icon, or delete it.
 // Show profile (DMs) and Change background (group admins) are coming later.
@@ -289,65 +360,20 @@
     const iconDialog = document.querySelector('.chat-icon-edit');
     let chat = null; // the list item the menu was opened on
 
-    function menuItems() {
-        return [...menu.querySelectorAll('[role="menuitem"]')].filter((item) => !item.hidden);
-    }
-
-    function openMenu(item, x, y) {
-        chat = item;
-        const isGroup = item.dataset.chatType === 'group';
-        const isAdmin = item.hasAttribute('data-chat-admin');
-        menu.querySelectorAll('[data-menu-dm]').forEach((menuItem) => { menuItem.hidden = isGroup; });
-        menu.querySelectorAll('[data-menu-admin]').forEach((menuItem) => { menuItem.hidden = !isAdmin; });
-        // Nobody to give a nickname in a DM the other person left
-        if (!item.hasAttribute('data-chat-username')) menu.querySelector('[data-menu-action="nickname"]').hidden = true;
-
-        // Where it was opened, but never past the edge of the window
-        menu.hidden = false;
-        const { width, height } = menu.getBoundingClientRect();
-        menu.style.left = Math.max(8, Math.min(x, window.innerWidth - width - 8)) + 'px';
-        menu.style.top = Math.max(8, Math.min(y, window.innerHeight - height - 8)) + 'px';
-        menuItems().find((menuItem) => !menuItem.hasAttribute('aria-disabled'))?.focus();
-    }
-
-    function closeMenu(returnFocus) {
-        if (menu.hidden) return;
-        menu.hidden = true;
-        if (returnFocus) chat.querySelector('a').focus();
-    }
-
-    list.addEventListener('contextmenu', (event) => {
-        const item = event.target.closest('[data-chat-id]');
-        if (!item) return;
-        event.preventDefault();
-        // Opened from the keyboard there's no pointer position, so it goes under the chat instead
-        if (event.clientX === 0 && event.clientY === 0) {
-            const rect = item.getBoundingClientRect();
-            openMenu(item, rect.left + 16, rect.bottom);
-        } else {
-            openMenu(item, event.clientX, event.clientY);
-        }
-    });
-
-    document.addEventListener('pointerdown', (event) => {
-        if (!menu.contains(event.target)) closeMenu(false);
-    });
-    list.addEventListener('scroll', () => closeMenu(false));
-    window.addEventListener('resize', () => closeMenu(false));
-    window.addEventListener('blur', () => closeMenu(false));
-
-    // Arrow keys, Home and End move through the menu. Escape and Tab close it, back on the chat.
-    menu.addEventListener('keydown', (event) => {
-        const items = menuItems();
-        const index = items.indexOf(document.activeElement);
-        const moves = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: items.length - 1 };
-        if (event.key in moves) {
-            event.preventDefault();
-            items[(moves[event.key] + items.length) % items.length].focus();
-        } else if (event.key === 'Escape' || event.key === 'Tab') {
-            event.preventDefault();
-            closeMenu(true);
-        }
+    const chatMenu = contextMenu({
+        menu,
+        list,
+        items: '[data-chat-id]',
+        focusItem: (item) => item.querySelector('a').focus(),
+        onOpen(item) {
+            chat = item;
+            const isGroup = item.dataset.chatType === 'group';
+            const isAdmin = item.hasAttribute('data-chat-admin');
+            menu.querySelectorAll('[data-menu-dm]').forEach((menuItem) => { menuItem.hidden = isGroup; });
+            menu.querySelectorAll('[data-menu-admin]').forEach((menuItem) => { menuItem.hidden = !isAdmin; });
+            // Nobody to give a nickname in a DM the other person left
+            if (!item.hasAttribute('data-chat-username')) menu.querySelector('[data-menu-action="nickname"]').hidden = true;
+        },
     });
 
     function confirmAction(action, title, text, submitLabel) {
@@ -462,7 +488,7 @@
     menu.addEventListener('click', (event) => {
         const button = event.target.closest('[data-menu-action]');
         if (!button || button.hasAttribute('aria-disabled')) return; // Show profile and Change background aren't ready yet
-        closeMenu(false);
+        chatMenu.close(false);
         actions[button.dataset.menuAction]();
     });
 
@@ -478,5 +504,179 @@
 
         // The menu that opened it is gone, so focus goes back to the chat
         dialog.addEventListener('close', () => chat?.querySelector('a').focus());
+    });
+})();
+
+// Message menu: right-click a message in the open chat (or use the menu key / Shift+F10 on it) to reply to it,
+// or mark the chat unread from it on. Your own messages can also be edited or deleted.
+// Links and selected text keep the browser's own menu, so they can still be copied.
+// The arrow keys, Home and End move between the messages, so the menu can be reached without a mouse.
+(() => {
+    const menu = document.querySelector('[data-message-menu]');
+    const messages = document.querySelector('[data-chat-messages]');
+    const composer = document.querySelector('.chat-composer');
+    if (!menu || !messages || !composer) return;
+
+    const textarea = composer.querySelector('textarea');
+    const replyInput = composer.querySelector('[data-reply-input]');
+    const replyBar = composer.querySelector('[data-reply-bar]');
+    const unreadForm = document.querySelector('[data-message-unread]');
+    const editDialog = document.querySelector('.chat-message-edit');
+    const editForm = editDialog.querySelector('form');
+    const editText = editForm.elements.content;
+    const editSave = editDialog.querySelector('[data-edit-save]');
+    const deleteDialog = document.querySelector('.chat-message-delete');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let message = null; // the message the menu was opened on
+
+    function messageItems() {
+        return [...messages.querySelectorAll('[data-message-id]')];
+    }
+
+    // The message as it was sent - the line breaks are still in the text after each <br>
+    function messageText(item) {
+        return item.querySelector('[data-message-text]')?.textContent ?? '';
+    }
+
+    // Only one message can be tabbed to at a time: the one last focused, at first the newest
+    function focusMessage(item, options) {
+        messageItems().forEach((other) => { other.tabIndex = -1; });
+        item.tabIndex = 0;
+        item.focus(options);
+    }
+
+    const newest = messageItems().at(-1);
+    if (newest) newest.tabIndex = 0;
+
+    messages.addEventListener('focusin', (event) => {
+        if (!event.target.matches('[data-message-id]')) return;
+        messageItems().forEach((other) => { other.tabIndex = other === event.target ? 0 : -1; });
+    });
+
+    messages.addEventListener('keydown', (event) => {
+        if (!event.target.matches('[data-message-id]')) return;
+        const items = messageItems();
+        const index = items.indexOf(event.target);
+        const moves = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: items.length - 1 };
+        if (!(event.key in moves)) return;
+        event.preventDefault();
+        focusMessage(items[Math.max(0, Math.min(moves[event.key], items.length - 1))]);
+    });
+
+    const messageMenu = contextMenu({
+        menu,
+        list: messages,
+        items: '[data-message-id]',
+        focusItem: (item) => focusMessage(item),
+        skip(event, item) {
+            const selection = window.getSelection();
+            return event.target.closest('[data-chat-link]') !== null
+                || (selection !== null && !selection.isCollapsed && item.contains(selection.anchorNode));
+        },
+        onOpen(item) {
+            message = item;
+            const isDeleted = item.hasAttribute('data-message-deleted');
+            const isOwn = item.hasAttribute('data-message-own') && !isDeleted;
+            menu.querySelector('[data-menu-action="reply"]').hidden = isDeleted;
+            menu.querySelector('[data-menu-action="edit"]').hidden = !isOwn || !item.querySelector('[data-message-text]');
+            menu.querySelectorAll('[data-menu-delete]').forEach((menuItem) => { menuItem.hidden = !isOwn; });
+        },
+    });
+
+    // Reply: a bar above the composer says what's being answered, until it's sent or cancelled (× or Escape)
+    function startReply(item) {
+        replyInput.value = item.dataset.messageId;
+        replyBar.querySelector('[data-reply-sender]').textContent =
+            item.hasAttribute('data-message-own') ? 'yourself' : item.dataset.messageSender;
+        replyBar.querySelector('[data-reply-preview]').textContent = messageText(item) || 'Attachment';
+        replyBar.hidden = false;
+        textarea.focus();
+    }
+
+    function cancelReply() {
+        replyInput.value = '';
+        replyBar.hidden = true;
+    }
+
+    replyBar.querySelector('[data-reply-cancel]').addEventListener('click', () => {
+        cancelReply();
+        textarea.focus();
+    });
+
+    textarea.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !replyBar.hidden) cancelReply();
+    });
+
+    // Edit: Enter saves like in the composer, and Save waits until something has changed
+    function openEdit(item) {
+        editForm.elements.message.value = item.dataset.messageId;
+        editText.value = messageText(item);
+        editText.defaultValue = editText.value;
+        editSave.disabled = true;
+        editDialog.showModal();
+        editText.focus();
+        editText.setSelectionRange(editText.value.length, editText.value.length);
+    }
+
+    editText.addEventListener('input', () => {
+        editSave.disabled = editText.value.trim() === '' || editText.value === editText.defaultValue;
+    });
+
+    editText.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+        event.preventDefault();
+        if (!editSave.disabled) editForm.requestSubmit();
+    });
+
+    function openDelete(item) {
+        deleteDialog.querySelector('form').elements.message.value = item.dataset.messageId;
+        deleteDialog.querySelector('[data-delete-preview]').textContent = messageText(item) || 'Attachment';
+        deleteDialog.showModal();
+        deleteDialog.querySelector('.chat-btn[data-dialog-close]').focus(); // the safe choice is the one Enter picks
+    }
+
+    const actions = {
+        reply: startReply,
+        edit: openEdit,
+        delete: openDelete,
+        unread(item) {
+            unreadForm.elements.message.value = item.dataset.messageId;
+            unreadForm.submit();
+        },
+    };
+
+    menu.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-menu-action]');
+        if (!button) return;
+        messageMenu.close(false);
+        actions[button.dataset.menuAction](message);
+    });
+
+    [editDialog, deleteDialog].forEach((dialog) => {
+        dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+            button.addEventListener('click', () => dialog.close());
+        });
+
+        // Clicking the dimmed area around the popup closes it
+        dialog.addEventListener('click', (event) => {
+            if (event.target === dialog) dialog.close();
+        });
+
+        // The menu that opened it is gone, so focus goes back to the message
+        dialog.addEventListener('close', () => {
+            if (message) focusMessage(message, { preventScroll: true });
+        });
+    });
+
+    // The quote above a reply scrolls to the message it answers, which lights up for a moment
+    messages.addEventListener('click', (event) => {
+        const link = event.target.closest('[data-reply-link]');
+        const target = link && document.getElementById(link.getAttribute('href').slice(1));
+        if (!target) return;
+        event.preventDefault();
+        target.scrollIntoView({ block: 'center', behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+        focusMessage(target, { preventScroll: true });
+        target.classList.add('is-highlighted');
+        setTimeout(() => target.classList.remove('is-highlighted'), 1500);
     });
 })();
