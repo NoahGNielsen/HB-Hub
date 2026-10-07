@@ -1,18 +1,16 @@
 HB Hub
 Copyright 2026 Noah Gaj Nedergaard Nielsen
 
-This product includes software developed by Noah Gaj Nedergaard Nielsen.
+This product includes software and icons developed by Noah Gaj Nedergaard Nielsen.
 
 Portions of this product were written with the assistance of Claude, developed by Anthropic.
 
 Third-party icons
 -----------------
-The icons in src/assets/images/icons/ are from Flaticon (https://www.flaticon.com)
+Some icons in src/assets/images/icons/ are from Flaticon (https://www.flaticon.com)
 and are used under the Flaticon free license, which requires attribution. The
-credits are also shown on the site at /legal/credits.
+credits are also shown on the site at src/legal/credits.
 
-addFile.png          Add icons created by reussy - Flaticon
-                     https://www.flaticon.com/free-icons/add
 chat.png             Comments icons created by Magnific - Flaticon
                      https://www.flaticon.com/free-icons/comments
 controler.png        Joystick icons created by Good Ware - Flaticon

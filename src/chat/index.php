@@ -839,7 +839,7 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
                     <div class="chat-attach">
                         <button type="button" class="chat-icon-btn" aria-label="Attach" title="Attach"
                                 aria-haspopup="menu" aria-expanded="false" aria-controls="chat-attach-menu" data-attach-open>
-                            <img src="/assets/images/icons/addFile.png" alt="">
+                            <img src="/assets/images/icons/addFile.svg" alt="">
                         </button>
                         <div class="chat-menu chat-attach-menu" id="chat-attach-menu" role="menu" aria-label="Attach" hidden data-attach-menu>
                             <button type="button" role="menuitem">File</button>
