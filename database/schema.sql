@@ -119,10 +119,11 @@ CREATE TABLE `HBHub-Users` (
   `userIpv6AdresseLastAccessed` varchar(62) DEFAULT NULL,
   `userPasswordHash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `userFailedLoginCount` smallint UNSIGNED NOT NULL DEFAULT '0',
-  `userStatus` tinyint UNSIGNED NOT NULL DEFAULT '1',
-  `userRole` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Normal User\r\n2 Admin\r\n3 Banned',
+  `userStatus` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Online\r\n2 Offiline\r\n3 Account Locked\r\n4 Banned',
+  `userRole` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Normal User\r\n2 Admin',
   `userCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `userLastSeenTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `userAccountLockedTimestamp` datetime DEFAULT NULL,
   `userBannedTimestamp` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

@@ -20,6 +20,9 @@ return [
     'onboarding_avatar_requirements' => '1', // Default: 1 | 0 = required, 1 = optional, 2 = disabled
     'onboarding_password_requirements' => '3', // Default: 3 | 1 = just don't use, 2 = weak, 3 = medium, 4 = strong
     'onboarding_description_requirements' => '1', // Default: 1 | 0 = required (min of 10 characters), 1 = optional, 2 = disabled
+
+    'login_attempts_max' => 5, // Default: 5 | Number of failed login attempts before the user is locked out for a period of time
+    'login_attempts_lockout_time' => 15, // Default: 15 minutes
     
     'user_uploads_maxSize' => 5000, // Default: 5 MB | This is different from the avatar max size. This is for everything else. Don't exceed 4 GB, as the database column is LONGBLOB
 

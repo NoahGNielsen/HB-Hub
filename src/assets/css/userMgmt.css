@@ -1,5 +1,6 @@
-/* Onboarding */
-.onboarding {
+/* Onboarding and login */
+.onboarding,
+.login {
   max-width: 480px;
   margin: 40px auto;
   padding: 32px 28px;
@@ -12,7 +13,8 @@
   display: none !important;
 }
 
-.onboarding h1 {
+.onboarding h1,
+.login h1 {
   margin: 0 0 20px;
   font-size: 1.6rem;
 }
@@ -79,7 +81,8 @@
 .onboarding input[type="text"],
 .onboarding input[type="password"],
 .onboarding select,
-.onboarding textarea {
+.onboarding textarea,
+.login input {
   width: 100%;
   padding: 10px 12px;
   box-sizing: border-box;
@@ -96,7 +99,8 @@
 
 .onboarding input:focus,
 .onboarding select:focus,
-.onboarding textarea:focus {
+.onboarding textarea:focus,
+.login input:focus {
   outline: none;
   border-color: var(--accent);
 }
@@ -262,6 +266,27 @@
   filter: brightness(1.08);
 }
 
+/* Login */
+.login {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login h1 {
+  margin-bottom: 4px;
+}
+
+.login-switch {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.login-switch a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 @keyframes onboarding-in {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
@@ -294,7 +319,8 @@
 }
 
 @media (max-width: 600px) {
-  .onboarding {
+  .onboarding,
+  .login {
     margin: 16px;
     padding: 24px 18px;
   }
