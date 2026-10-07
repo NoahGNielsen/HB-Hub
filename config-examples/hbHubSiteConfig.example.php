@@ -32,4 +32,6 @@ return [
         'user' => 'your_db_username',
         'pass' => 'your_db_password',
     ],
+    'giphy_gif_integration' => true, // Default: true | Set to false to disable Giphy integration
+    'giphy_api_key' => 'your_giphy_api_key', // Required for Giphy integration. Get one at https://developers.giphy.com/
 ];

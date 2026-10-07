@@ -1,5 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
 
 const HBHUB_CHAT_TYPE_DM = 1; // chatType in HBHub-Chats
 const HBHUB_CHAT_TYPE_GROUP = 2;
@@ -17,6 +18,8 @@ const HBHUB_CHAT_ICON_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/we
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
+$siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
+$chatGifsEnabled = hbHubGiphyApiKey($siteConfig) !== null; // the GIF button and picker
 
 /**
  * The chat with the id, or null when it doesn't exist, isn't active or the user isn't a member of it.
@@ -151,6 +154,23 @@ function chatSetIcon(PDO $db, int $chatId, ?array $icon): void
         $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$oldIconId]);
     }
     $db->commit();
+}
+
+/**
+ * A GIF is sent as a message holding just its Giphy address, in this one form.
+ */
+function chatGifUrl(string $gifId): string
+{
+    return 'https://media.giphy.com/media/' . $gifId . '/giphy.gif';
+}
+
+/**
+ * The Giphy id when the message is a GIF (exactly an address from chatGifUrl()), otherwise null.
+ */
+function chatGifId(?string $content): ?string
+{
+    return $content !== null && preg_match('~^https://media\.giphy\.com/media/([A-Za-z0-9]{1,64})/giphy\.gif$~', $content, $match)
+        ? $match[1] : null;
 }
 
 /**
@@ -401,19 +421,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
 }
 
-// Sending a message, maybe as a reply to another one, then back to the chat so a refresh doesn't send it again
+// Sending a message, maybe as a reply to another one, then back to the chat so a refresh doesn't send it again.
+// A GIF picked in the GIF picker comes as "gif" (its Giphy id), with whatever was typed in the box sent just before it.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     $message = is_string($_POST['message'] ?? null) ? trim($_POST['message']) : '';
+    $gifId = $chatGifsEnabled && hbHubGiphyIsId($_POST['gif'] ?? null) ? $_POST['gif'] : null;
 
-    if ($chat !== null && !chatIsMuted($chat) && $message !== '' && mb_strlen($message) <= HBHUB_CHAT_MESSAGE_MAX) {
+    $contents = $message !== '' ? [$message] : [];
+    if ($gifId !== null) {
+        $contents[] = chatGifUrl($gifId);
+    }
+
+    if ($chat !== null && !chatIsMuted($chat) && $contents !== [] && mb_strlen($message) <= HBHUB_CHAT_MESSAGE_MAX) {
         // Only a message in this chat that isn't deleted can be replied to, otherwise it's sent as a normal message
         $replyTo = chatMessage($db, (int) $chat['chatId'], $_POST['reply'] ?? null);
         $replyToId = $replyTo !== null && $replyTo['messageDeletedTimestamp'] === null ? (int) $replyTo['messageId'] : null;
 
         $db->beginTransaction();
-        $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageReplyToId) VALUES (?, ?, ?, ?)')
-            ->execute([$userId, $chat['chatId'], $message, $replyToId]);
+        $statement = $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageReplyToId) VALUES (?, ?, ?, ?)');
+        foreach ($contents as $i => $content) {
+            $statement->execute([$userId, $chat['chatId'], $content, $i === 0 ? $replyToId : null]); // the reply goes on the first
+        }
         $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
             ->execute([$chat['chatId']]);
         $db->commit();
@@ -482,6 +511,9 @@ foreach ($statement->fetchAll() as $chat) {
     $nickname = $chat['dmUserId'] !== null ? $settings->chatNicknames->{$chat['dmUserId']} ?? null : null;
     $chat['chatNickname'] = is_string($nickname) ? $nickname : null;
     $chat['chatTitle'] = $chat['chatNickname'] ?? $chat['chatTitle'];
+    if (chatGifId($chat['chatLastMessage']) !== null) {
+        $chat['chatLastMessage'] = 'GIF';
+    }
     if ($chat['userAcknowledgedJoin']) {
         $chats[] = $chat;
     } else {
@@ -643,6 +675,8 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
             $text = '<span class="chat-message-reply-text is-deleted">Message deleted</span>';
         } elseif ($message['replyContent'] === null) {
             $text = '<span class="chat-message-reply-text is-deleted">Attachment</span>';
+        } elseif (chatGifId($message['replyContent']) !== null) {
+            $text = '<span class="chat-message-reply-text is-deleted">GIF</span>';
         } else {
             // Shortened here too, so a long message isn't sent twice
             $content = preg_replace('~\s+~u', ' ', $message['replyContent']) ?? $message['replyContent'];
@@ -751,6 +785,7 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
                         <?php
                         $isOwn = (int) $message['userId'] === $userId;
                         $isDeleted = $message['messageDeletedTimestamp'] !== null;
+                        $gifId = $isDeleted ? null : chatGifId($message['messageContent']);
                         ?>
                         <?php if ((int) $message['messageId'] === $firstUnreadMessageId): ?>
                             <li class="chat-messages-unread" data-unread-divider><span>New messages</span></li>
@@ -758,18 +793,22 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
                         <li class="chat-message<?= $isOwn ? ' is-own' : '' ?>" id="message-<?= (int) $message['messageId'] ?>" tabindex="-1"
                             data-message-id="<?= (int) $message['messageId'] ?>"
                             data-message-sender="<?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['userId'], $message['senderName'])) ?>"<?=
-                            $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?>>
+                            $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $gifId !== null ? ' data-message-gif' : '' ?>>
                             <?php if (!$isOwn && (int) $openChat['chatType'] !== HBHUB_CHAT_TYPE_DM): ?>
                                 <span class="chat-message-sender"><?= htmlspecialchars($message['senderName']) ?></span>
                             <?php endif; ?>
                             <?php if ($message['messageReplyToId'] !== null && !$isDeleted): ?>
                                 <?= chatReplyHtml($openChat, $userId, $message, isset($shownMessageIds[(int) $message['replyId']])) ?>
                             <?php endif; ?>
-                            <div class="chat-message-bubble">
+                            <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?>">
                                 <?php if ($isDeleted): ?>
                                     <p class="chat-message-deleted">Message deleted</p>
                                 <?php else: ?>
-                                    <?php if ($message['messageContent'] !== null): ?>
+                                    <?php if ($gifId !== null): ?>
+                                        <!-- Giphy's 200px tall version, so a chat full of GIFs doesn't load every full-size one -->
+                                        <img class="chat-message-gif" src="https://media.giphy.com/media/<?= $gifId ?>/200.webp" alt="GIF"
+                                             height="200" loading="lazy" referrerpolicy="no-referrer">
+                                    <?php elseif ($message['messageContent'] !== null): ?>
                                         <p data-message-text><?= chatMessageHtml($message['messageContent']) ?></p>
                                     <?php elseif ($message['attachmentId'] !== null): ?>
                                         <p class="chat-message-deleted">Attachment</p>
@@ -796,9 +835,27 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
                         </span>
                         <button type="button" class="chat-new-close" aria-label="Cancel reply" data-reply-cancel>&times;</button>
                     </div>
+                    <!-- Attach: a small popup above the button (chat.js). File and Voice message don't do anything yet. -->
+                    <div class="chat-attach">
+                        <button type="button" class="chat-icon-btn" aria-label="Attach" title="Attach"
+                                aria-haspopup="menu" aria-expanded="false" aria-controls="chat-attach-menu" data-attach-open>
+                            <img src="/assets/images/icons/addFile.png" alt="">
+                        </button>
+                        <div class="chat-menu chat-attach-menu" id="chat-attach-menu" role="menu" aria-label="Attach" hidden data-attach-menu>
+                            <button type="button" role="menuitem">File</button>
+                            <button type="button" role="menuitem">Voice message</button>
+                        </div>
+                    </div>
                     <label class="chat-visually-hidden" for="chat-message">Message</label>
                     <textarea id="chat-message" name="message" rows="1" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required
                               placeholder="Message <?= htmlspecialchars($openChat['chatTitle']) ?>" autofocus></textarea>
+                    <?php if ($chatGifsEnabled): ?>
+                        <!-- Set by the GIF picker (chat.js), which then sends the form -->
+                        <input type="hidden" name="gif" value="" autocomplete="off" data-gif-input>
+                        <button type="button" class="chat-icon-btn" aria-label="Send a GIF" title="GIF" aria-haspopup="dialog" data-gif-open>
+                            <img src="/assets/images/icons/gif.png" alt="">
+                        </button>
+                    <?php endif; ?>
                     <button type="submit" class="chat-send-btn">Send</button>
                 </form>
             <?php endif; ?>
@@ -914,6 +971,28 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
                     </footer>
                 </form>
             </dialog>
+
+            <?php if ($chatGifsEnabled): ?>
+                <!-- GIF picker (chat.js): searches Giphy through /chat/gifs, trending GIFs before anything is typed.
+                     Picking one sends it straight away. -->
+                <dialog class="chat-dialog chat-gif" aria-labelledby="chat-gif-title">
+                    <div class="chat-requests-body">
+                        <header class="chat-new-header">
+                            <h2 id="chat-gif-title">Send a GIF</h2>
+                            <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                        </header>
+
+                        <label class="chat-visually-hidden" for="chat-gif-search">Search GIFs</label>
+                        <input type="search" id="chat-gif-search" placeholder="Search GIPHY" autocomplete="off">
+
+                        <ul class="chat-gif-results" aria-label="GIFs" data-gif-results></ul>
+                        <p class="chat-new-status" role="status" data-gif-status></p>
+
+                        <!-- Giphy asks for this wherever its GIFs are shown -->
+                        <p class="chat-gif-attribution">Powered by GIPHY</p>
+                    </div>
+                </dialog>
+            <?php endif; ?>
         <?php endif; ?>
 
         <form action="/chat/" method="post" hidden data-chat-hide>

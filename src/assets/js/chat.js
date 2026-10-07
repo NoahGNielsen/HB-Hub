@@ -538,6 +538,11 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
         return item.querySelector('[data-message-text]')?.textContent ?? '';
     }
 
+    // What the reply bar and the delete popup show for the message
+    function messagePreview(item) {
+        return messageText(item) || (item.hasAttribute('data-message-gif') ? 'GIF' : 'Attachment');
+    }
+
     // Only one message can be tabbed to at a time: the one last focused, at first the newest
     function focusMessage(item, options) {
         messageItems().forEach((other) => { other.tabIndex = -1; });
@@ -588,7 +593,7 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
         replyInput.value = item.dataset.messageId;
         replyBar.querySelector('[data-reply-sender]').textContent =
             item.hasAttribute('data-message-own') ? 'yourself' : item.dataset.messageSender;
-        replyBar.querySelector('[data-reply-preview]').textContent = messageText(item) || 'Attachment';
+        replyBar.querySelector('[data-reply-preview]').textContent = messagePreview(item);
         replyBar.hidden = false;
         textarea.focus();
     }
@@ -630,7 +635,7 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
 
     function openDelete(item) {
         deleteDialog.querySelector('form').elements.message.value = item.dataset.messageId;
-        deleteDialog.querySelector('[data-delete-preview]').textContent = messageText(item) || 'Attachment';
+        deleteDialog.querySelector('[data-delete-preview]').textContent = messagePreview(item);
         deleteDialog.showModal();
         deleteDialog.querySelector('.chat-btn[data-dialog-close]').focus(); // the safe choice is the one Enter picks
     }
@@ -678,5 +683,154 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
         focusMessage(target, { preventScroll: true });
         target.classList.add('is-highlighted');
         setTimeout(() => target.classList.remove('is-highlighted'), 1500);
+    });
+})();
+
+// Attach popup: the button left of the message box opens a small menu just above it.
+// File and Voice message don't do anything yet - picking one just closes the menu.
+(() => {
+    const button = document.querySelector('[data-attach-open]');
+    const menu = document.querySelector('[data-attach-menu]');
+    if (!button || !menu) return;
+
+    const menuItems = [...menu.querySelectorAll('[role="menuitem"]')];
+
+    function setOpen(isOpen, returnFocus) {
+        menu.hidden = !isOpen;
+        button.setAttribute('aria-expanded', String(isOpen));
+        if (isOpen) menuItems[0].focus();
+        else if (returnFocus) button.focus();
+    }
+
+    button.addEventListener('click', () => setOpen(menu.hidden, true));
+
+    menu.addEventListener('click', (event) => {
+        if (event.target.closest('[role="menuitem"]')) setOpen(false, true);
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+        if (!menu.hidden && !menu.contains(event.target) && !button.contains(event.target)) setOpen(false, false);
+    });
+
+    // Arrow keys, Home and End move through the menu. Escape and Tab close it, back on the button.
+    menu.addEventListener('keydown', (event) => {
+        const index = menuItems.indexOf(document.activeElement);
+        const moves = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: menuItems.length - 1 };
+        if (event.key in moves) {
+            event.preventDefault();
+            menuItems[(moves[event.key] + menuItems.length) % menuItems.length].focus();
+        } else if (event.key === 'Escape' || event.key === 'Tab') {
+            event.preventDefault();
+            setOpen(false, true);
+        }
+    });
+})();
+
+// GIF picker: the GIF button next to Send searches Giphy through /chat/gifs (which holds the API key),
+// with the trending GIFs shown before anything is typed. Picking one sends it straight away, together with
+// whatever was typed in the message box (the server sends that first) and the reply, if there is one.
+(() => {
+    const dialog = document.querySelector('.chat-gif');
+    const composer = document.querySelector('.chat-composer');
+    if (!dialog || !composer) return;
+
+    const textarea = composer.querySelector('textarea');
+    const gifInput = composer.querySelector('[data-gif-input]');
+    const search = dialog.querySelector('#chat-gif-search');
+    const results = dialog.querySelector('[data-gif-results]');
+    const status = dialog.querySelector('[data-gif-status]');
+    let searchTimer = null;
+    let searchRequest = null;
+    let hasLoaded = false; // opening the picker again keeps the last search instead of asking Giphy again
+    let isSending = false;
+
+    function send(gifId) {
+        if (isSending) return; // no double GIFs from a double click
+        isSending = true;
+        gifInput.value = gifId;
+        dialog.close();
+        composer.submit(); // not requestSubmit: the message box may be empty, which is fine with a GIF
+    }
+
+    function renderGifs(gifs) {
+        results.replaceChildren(...gifs.map((gif) => {
+            const image = document.createElement('img');
+            image.src = gif.preview;
+            image.alt = gif.title || 'GIF';
+            if (gif.width > 0 && gif.height > 0) {
+                // Room for it before it loads, so the grid doesn't jump around
+                image.width = gif.width;
+                image.height = gif.height;
+            }
+            image.loading = 'lazy';
+            image.referrerPolicy = 'no-referrer';
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'chat-gif-pick';
+            button.append(image);
+            button.addEventListener('click', () => send(gif.id));
+
+            const item = document.createElement('li');
+            item.append(button);
+            return item;
+        }));
+        results.scrollTop = 0;
+    }
+
+    async function loadGifs() {
+        clearTimeout(searchTimer);
+        searchRequest?.abort();
+        searchRequest = new AbortController();
+        status.textContent = 'Searching…';
+
+        try {
+            const response = await fetch('/chat/gifs?q=' + encodeURIComponent(search.value.trim()), {
+                signal: searchRequest.signal,
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) throw new Error(response.statusText);
+            const gifs = (await response.json()).gifs;
+            renderGifs(gifs);
+            hasLoaded = true;
+            status.textContent = gifs.length === 0 ? 'No GIFs found.' : '';
+        } catch (error) {
+            if (error.name === 'AbortError') return; // a newer search took over
+            renderGifs([]);
+            hasLoaded = false;
+            status.textContent = "Couldn't load GIFs. Try again.";
+        }
+    }
+
+    search.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(loadGifs, 300);
+    });
+
+    // Enter searches right away instead of waiting
+    search.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        loadGifs();
+    });
+
+    composer.querySelector('[data-gif-open]').addEventListener('click', () => {
+        dialog.showModal();
+        search.focus();
+        search.select();
+        if (!hasLoaded) loadGifs();
+    });
+
+    dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+        button.addEventListener('click', () => dialog.close());
+    });
+
+    // Clicking the dimmed area around the popup closes it
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+
+    dialog.addEventListener('close', () => {
+        if (!isSending) textarea.focus();
     });
 })();

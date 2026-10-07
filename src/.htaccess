@@ -58,9 +58,9 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     Header set Cross-Origin-Opener-Policy "same-origin-allow-popups"
     Header set Cross-Origin-Resource-Policy "same-origin"
 
-    # Content Security Policy (Google Fonts)
+    # Content Security Policy (Google Fonts, and GIFs in the chat from Giphy's image servers)
     Header always set X-XSS-Protection "0"
-    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https://*.giphy.com; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
 
     # --------------------------------------------------------------------------
     # SMART CACHING STRATEGY (Fixes Security Scanner & Handles 304 Validation)

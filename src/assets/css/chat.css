@@ -86,7 +86,8 @@
   height: 42px;
 }
 
-.chat-requests-btn {
+.chat-requests-btn,
+.chat-icon-btn {
   position: relative;
   flex: none;
   width: 42px;
@@ -101,11 +102,13 @@
   cursor: pointer;
 }
 
-.chat-requests-btn:hover {
+.chat-requests-btn:hover,
+.chat-icon-btn:hover {
   background: color-mix(in srgb, var(--accent) 14%, var(--background));
 }
 
-.chat-requests-btn img {
+.chat-requests-btn img,
+.chat-icon-btn img {
   width: 20px;
   height: 20px;
 }
@@ -378,6 +381,22 @@
   text-decoration-thickness: 2px;
 }
 
+/* A GIF fills its bubble, at Giphy's 200px tall size */
+.chat-message-bubble.is-gif,
+.chat-message.is-own .chat-message-bubble.is-gif {
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.chat-message-gif {
+  display: block;
+  height: 200px;
+  min-width: 120px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
 .chat-message-deleted {
   font-style: italic;
   opacity: 0.7;
@@ -484,6 +503,44 @@ a.chat-message-reply:hover {
   min-width: 0;
   max-height: 160px;
   resize: none;
+}
+
+/* Attach (left of the text box) and GIF (next to Send) */
+/* Just the icon, no box around it */
+.chat-composer .chat-icon-btn {
+  flex: none;
+  border: none;
+  background: transparent;
+}
+
+.chat-composer .chat-icon-btn:hover {
+  background: transparent;
+  opacity: 0.7;
+}
+
+.chat-composer .chat-icon-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.chat-composer .chat-icon-btn img {
+  width: 42px;
+  height: 42px;
+}
+
+.chat-attach {
+  position: relative;
+  flex: none;
+  display: flex;
+}
+
+/* The attach popup sits just above its button */
+.chat-menu.chat-attach-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 180px;
+  transform-origin: bottom left;
 }
 
 /* Replying to: a line of its own above the text box */
@@ -955,6 +1012,67 @@ a.chat-message-reply:hover {
   outline-offset: 2px;
 }
 
+/* GIF picker: the results in columns, each GIF at its own height */
+.chat-gif {
+  height: min(640px, calc(100dvh - 32px));
+}
+
+.chat-gif-results {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -4px;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  columns: 130px;
+  column-gap: 8px;
+}
+
+.chat-gif-results:empty {
+  display: none;
+}
+
+.chat-gif-results li {
+  margin-bottom: 8px;
+  break-inside: avoid;
+}
+
+.chat-gif-pick {
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  border-radius: 8px;
+  background: var(--background);
+  cursor: pointer;
+}
+
+.chat-gif-pick:hover {
+  filter: brightness(1.08);
+}
+
+.chat-gif-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.chat-gif-pick img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* "Powered by GIPHY", at the bottom even when there are no results */
+.chat-gif-attribution {
+  margin: auto 0 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: right;
+  opacity: 0.6;
+}
+
 @keyframes chat-menu-in {
   from { opacity: 0; transform: scale(0.97); }
 }
@@ -973,15 +1091,17 @@ a.chat-message-reply:hover {
   }
 }
 
-/* Default chat and requests icons are black - invert them on dark backgrounds */
+/* Default chat, requests, attach and GIF icons are black - invert them on dark backgrounds */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .chat-placeholder-icon,
-  :root:not([data-theme="light"]) .chat-requests-btn img {
+  :root:not([data-theme="light"]) .chat-requests-btn img,
+  :root:not([data-theme="light"]) .chat-icon-btn img {
     filter: invert(1);
   }
 }
 :root[data-theme="dark"] .chat-placeholder-icon,
-:root[data-theme="dark"] .chat-requests-btn img {
+:root[data-theme="dark"] .chat-requests-btn img,
+:root[data-theme="dark"] .chat-icon-btn img {
   filter: invert(1);
 }
 
