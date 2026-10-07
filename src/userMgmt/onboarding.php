@@ -83,13 +83,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Picture
         $avatar = $onboardingAvatarMode === ONBOARDING_DISABLED ? null : ($_FILES['avatar'] ?? null);
         $avatarBlob = null;
+        $avatarType = null;
         if (is_array($avatar) && is_int($avatar['error'] ?? null) && $avatar['error'] !== UPLOAD_ERR_NO_FILE) {
             if (in_array($avatar['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
                 || ($avatar['error'] === UPLOAD_ERR_OK && $avatar['size'] > $onboardingAvatarMaxBytes)) {
                 $onboardingErrors['avatar'] = "That picture is too big. Please choose one under $onboardingAvatarMaxLabel.";
             } elseif ($avatar['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($avatar['tmp_name'])) {
                 $onboardingErrors['avatar'] = 'Something went wrong uploading your picture. Please try again.';
-            } elseif (!in_array((new finfo(FILEINFO_MIME_TYPE))->file($avatar['tmp_name']), $onboardingAvatarTypes, true)
+            } elseif (!in_array($avatarType = (new finfo(FILEINFO_MIME_TYPE))->file($avatar['tmp_name']), $onboardingAvatarTypes, true)
                 || getimagesize($avatar['tmp_name']) === false) {
                 $onboardingErrors['avatar'] = 'Please upload a PNG, JPEG, GIF or WebP image.';
             } else {
@@ -134,8 +135,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!$onboardingErrors) {
-            // TODO: create the account - insert into `HBHub-Users` with password_hash($password, PASSWORD_DEFAULT),
-            // store the description as NULL if it's empty, store $avatarBlob (if any) in `HBHub-Attachments`, save the class, then log in and redirect.
+            require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/onboardingSaveToDB.php';
+            $onboardingErrors = onboardingSaveToDB($onboardingValues, $password, $avatarBlob, $avatarType);
+            if (!$onboardingErrors) {
+                header('Location: /', true, 303);
+                exit;
+            }
         }
     }
 }
