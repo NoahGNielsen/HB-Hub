@@ -247,12 +247,16 @@ foreach ($onboardingSteps as $index => $step) {
                 <h2 id="onboarding-q5">Last but not least, what should your password be?</h2>
                 <div class="onboarding-field">
                     <label for="onboarding-password">Password</label>
-                    <input type="password" id="onboarding-password" name="password" minlength="<?= $onboardingPasswordMin ?>" maxlength="72" required autocomplete="new-password"
-                           aria-describedby="onboarding-password-rules" data-min-length="<?= $onboardingPasswordMin ?>" data-char-types="<?= $onboardingPasswordCharTypes ?>">
+                    <div class="onboarding-input-wrap">
+                        <input type="password" id="onboarding-password" name="password" minlength="<?= $onboardingPasswordMin ?>" maxlength="72" required autocomplete="new-password"
+                               aria-describedby="onboarding-password-rules" data-min-length="<?= $onboardingPasswordMin ?>" data-char-types="<?= $onboardingPasswordCharTypes ?>">
+                    </div>
                 </div>
                 <div class="onboarding-field onboarding-reveal" data-password-confirm-field>
                     <label for="onboarding-password-confirm">Repeat password</label>
-                    <input type="password" id="onboarding-password-confirm" name="passwordConfirm" required autocomplete="new-password">
+                    <div class="onboarding-input-wrap">
+                        <input type="password" id="onboarding-password-confirm" name="passwordConfirm" required autocomplete="new-password">
+                    </div>
                 </div>
                 <div class="onboarding-strength" data-level="none">
                     <div class="onboarding-strength-track"><div class="onboarding-strength-bar"></div></div>

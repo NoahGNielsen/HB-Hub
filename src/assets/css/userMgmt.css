@@ -9,7 +9,8 @@
   background: var(--secondary);
 }
 
-.onboarding [hidden] {
+.onboarding [hidden],
+.login [hidden] {
   display: none !important;
 }
 
@@ -105,7 +106,7 @@
   border-color: var(--accent);
 }
 
-/* Password managers inject icons next to username fields - keep them inside this box so they can't shift the layout */
+/* Password managers inject icons next to username and password fields - keep them inside this box so they can't shift the layout */
 .onboarding-input-wrap {
   position: relative;
   display: grid;
@@ -267,18 +268,31 @@
 }
 
 /* Login */
-.login {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.login .onboarding-error {
+  margin: -12px 0 20px;
 }
 
-.login h1 {
-  margin-bottom: 4px;
+.login .onboarding-btn-primary {
+  flex: 1;
+  margin-left: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+/* Bigger hover once there's a password to log in with */
+.login .onboarding-btn-primary.is-ready:hover,
+.login .onboarding-btn-primary.is-ready:focus-visible {
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.login .onboarding-btn-primary.is-ready:active {
+  transform: none;
+  box-shadow: none;
 }
 
 .login-switch {
-  margin: 0;
+  margin: 20px 0 0;
   font-size: 0.9rem;
 }
 
@@ -296,9 +310,14 @@
   .onboarding-step,
   .onboarding-reveal,
   .onboarding-progress-bar,
-  .onboarding-strength-bar {
+  .onboarding-strength-bar,
+  .login .onboarding-btn-primary {
     animation: none;
     transition: none;
+  }
+  .login .onboarding-btn-primary.is-ready:hover,
+  .login .onboarding-btn-primary.is-ready:focus-visible {
+    transform: none;
   }
 }
 

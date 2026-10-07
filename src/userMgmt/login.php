@@ -34,34 +34,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/login.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/login.js') ?>" defer></script>
     <title>Login - HB Hub</title>
     <meta name="description" content="Login page for the HB Hub">
 </head>
 <body>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main>
         <form class="login" action="/userMgmt/login" method="post">
-            <h1>Log in to HB Hub</h1>
+            <h1>Welcome back!</h1>
+
+            <section class="onboarding-step" aria-labelledby="login-q1">
+                <h2 id="login-q1"><label for="login-name">What are you known as?</label></h2>
+                <div class="onboarding-input-wrap">
+                    <input type="text" id="login-name" name="name" maxlength="64" required autocomplete="username"
+                           value="<?= htmlspecialchars($loginName) ?>"<?= $loginName === '' ? ' autofocus' : '' ?>>
+                </div>
+            </section>
+
+            <section class="onboarding-step onboarding-reveal" aria-labelledby="login-q2" data-password-step>
+                <h2 id="login-q2"><label for="login-password">What's your password?</label></h2>
+                <div class="onboarding-input-wrap">
+                    <input type="password" id="login-password" name="password" maxlength="72" required autocomplete="current-password"<?= $loginName !== '' ? ' autofocus' : '' ?>>
+                </div>
+            </section>
 
             <?php if ($loginError !== null): ?>
                 <p class="onboarding-error" role="alert"><?= htmlspecialchars($loginError) ?></p>
             <?php endif; ?>
 
-            <div class="onboarding-field">
-                <label for="login-name">Name</label>
-                <div class="onboarding-input-wrap">
-                    <input type="text" id="login-name" name="name" maxlength="64" required autocomplete="username"
-                           value="<?= htmlspecialchars($loginName) ?>"<?= $loginName === '' ? ' autofocus' : '' ?>>
-                </div>
-            </div>
-
-            <div class="onboarding-field">
-                <label for="login-password">Password</label>
-                <input type="password" id="login-password" name="password" maxlength="72" required autocomplete="current-password"<?= $loginName !== '' ? ' autofocus' : '' ?>>
-            </div>
-
             <div class="onboarding-nav">
-                <button type="submit" class="onboarding-btn onboarding-btn-primary">Log in</button>
+                <button type="button" class="onboarding-btn onboarding-btn-primary" data-action="next" hidden>Next</button>
+                <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Log in</button>
             </div>
 
             <p class="login-switch">New here? <a href="/userMgmt/onboarding">Create an account</a></p>
