@@ -98,8 +98,9 @@ CREATE TABLE `HBHub-Sessions` (
   `sessionId` char(32) NOT NULL,
   `userId` int UNSIGNED NOT NULL,
   `sessionGenerated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `sessionValidUntil` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `sessionValidUntil` datetime NOT NULL,
+  `sessionTotpPending` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Logged in\r\n1 Right password, waiting for the 2FA code'
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -119,6 +120,8 @@ CREATE TABLE `HBHub-Users` (
   `userIpv4AdresseLastAccessed` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `userIpv6AdresseLastAccessed` varchar(62) DEFAULT NULL,
   `userPasswordHash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `userTotpSecret` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Base32 TOTP secret, NULL when 2FA is off',
+  `userTotpLastStep` int UNSIGNED DEFAULT NULL COMMENT 'Time step of the last accepted 2FA code, so a code only works once',
   `userFailedLoginCount` smallint UNSIGNED NOT NULL DEFAULT '0',
   `userStatus` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Online\r\n2 Offiline\r\n3 Account Locked\r\n4 Banned',
   `userRole` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Normal User\r\n2 Admin',

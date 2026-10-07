@@ -1,4 +1,8 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php'; ?>
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
+hbHubBlockPage($hbHubUser, 'Gambling'); // the block picked in settings
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

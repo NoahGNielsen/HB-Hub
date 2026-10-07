@@ -90,6 +90,54 @@ body:has(> .site-footer) {
   opacity: 0.6;
 }
 
+/* Gambling and Games while the user has them blocked (assets/php/blockedPage.php) */
+.blocked {
+  max-width: 520px;
+  margin: 64px auto;
+  padding: 32px;
+  box-sizing: border-box;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  text-align: center;
+}
+
+.blocked h1 {
+  margin: 0 0 12px;
+  font-size: 1.6rem;
+}
+
+.blocked p {
+  margin: 0 0 24px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+.blocked-link {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.blocked-link:hover {
+  filter: brightness(1.08);
+}
+
+.blocked-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .blocked {
+    margin: 16px;
+    padding: 24px 16px;
+  }
+}
+
 /* Toast notifications (assets/php/toast.php) */
 .toast {
   --toast-duration: 5s;

@@ -43,7 +43,7 @@ function hbHubSetSessionCookie(string $sessionId): void
  * The user behind the session cookie, or null when there's no valid session (missing, expired or banned).
  * Also updates the user's last seen time and IP, so it's only called once per request (at the bottom of this file).
  *
- * @return ?array{userId: int, userName: string, userRole: int, userAvatarAttachmentId: ?int}
+ * @return ?array{userId: int, userName: string, userRole: int, userAvatarAttachmentId: ?int, userSettings: ?string}
  */
 function hbHubSessionUser(): ?array
 {
@@ -58,9 +58,10 @@ function hbHubSessionUser(): ?array
     try {
         $db = hbHubDatabase();
 
-        $statement = $db->prepare('SELECT u.userId, u.userName, u.userRole, u.userAvatarAttachmentId
+        // A login still waiting for its 2FA code (sessionTotpPending) doesn't count until the code is entered
+        $statement = $db->prepare('SELECT u.userId, u.userName, u.userRole, u.userAvatarAttachmentId, u.userSettings
             FROM `HBHub-Sessions` s JOIN `HBHub-Users` u ON u.userId = s.userId
-            WHERE s.sessionId = ? AND s.sessionValidUntil > NOW() AND u.userStatus <> ?');
+            WHERE s.sessionId = ? AND s.sessionValidUntil > NOW() AND s.sessionTotpPending = 0 AND u.userStatus <> ?');
         $statement->execute([$sessionId, HBHUB_SESSION_STATUS_BANNED]);
         $user = $statement->fetch();
 

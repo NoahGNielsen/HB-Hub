@@ -1,0 +1,359 @@
+/* Settings page (otherPages/settings.php): one card per group of settings */
+.settings {
+  --settings-danger: #d64545;
+  --settings-on: #2fa36b;
+  max-width: 640px;
+  margin: 48px auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.settings [hidden] {
+  display: none !important;
+}
+
+.settings h1 {
+  margin: 0 0 20px;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.settings-card {
+  margin-bottom: 20px;
+  padding: 28px 32px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  /* Clear of the fixed top bar when jumped to with #profile, #block etc. */
+  scroll-margin-top: calc(var(--nav-top-h) + 16px);
+}
+
+.settings-card h2 {
+  margin: 0 0 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.settings-intro {
+  margin: -6px 0 18px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+/* "On" / "Off" and "Blocked now" next to a card's heading */
+.settings-status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--background);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.settings-status.is-on {
+  background: var(--settings-on);
+  color: #fff;
+}
+
+.settings form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.settings-optional {
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+.settings-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.settings input[type="text"],
+.settings input[type="password"],
+.settings select,
+.settings textarea {
+  width: 100%;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+}
+
+.settings textarea {
+  resize: vertical;
+}
+
+.settings input[type="text"]:focus,
+.settings input[type="password"]:focus,
+.settings select:focus,
+.settings textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* The 6 digit 2FA code */
+.settings input.settings-code {
+  max-width: 180px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.settings input[type="file"] {
+  max-width: 100%;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.settings input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 14px;
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings input[type="file"]::file-selector-button:hover {
+  background: color-mix(in srgb, var(--accent) 14%, var(--background));
+}
+
+.settings input[type="file"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+.settings-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-checkbox input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.settings-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.7;
+}
+
+.settings-error {
+  margin: 0;
+  color: var(--settings-danger);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* A block change that's waiting */
+.settings-notice {
+  margin: 4px 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--background));
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+/* Year and class side by side */
+.settings-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Current picture, with upload and remove next to it */
+.settings-avatar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.settings-avatar-preview {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--background);
+}
+
+/* The default user icon is a black PNG - padded and turned light in dark mode */
+.settings-avatar-preview.is-placeholder {
+  padding: 20px;
+  box-sizing: border-box;
+  object-fit: contain;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .settings-avatar-preview.is-placeholder {
+    filter: invert(1);
+  }
+}
+:root[data-theme="dark"] .settings-avatar-preview.is-placeholder {
+  filter: invert(1);
+}
+
+.settings-avatar-actions {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Setting up two-factor login */
+.settings-steps {
+  margin: 0 0 18px;
+  padding-left: 1.3em;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  line-height: 1.5;
+}
+
+/* Stays black on white in dark mode too, so it can be scanned */
+.settings-qr {
+  display: block;
+  width: 200px;
+  height: 200px;
+  margin: 12px 0;
+  border-radius: 8px;
+  background: #fff;
+  image-rendering: pixelated;
+}
+
+.settings-steps .settings-hint {
+  display: block;
+}
+
+.settings-steps a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.settings-secret {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--background);
+  font-size: 0.95em;
+  letter-spacing: 0.05em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.settings-btn {
+  padding: 10px 18px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.settings-btn:hover {
+  background: color-mix(in srgb, var(--text) 8%, var(--background));
+}
+
+.settings-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.settings-btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.settings-btn-primary:hover {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
+.settings-btn-danger {
+  border-color: var(--settings-danger);
+  color: var(--settings-danger);
+}
+
+.settings-btn-danger:hover {
+  background: color-mix(in srgb, var(--settings-danger) 12%, var(--background));
+}
+
+.settings-btn-small {
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .settings {
+    margin: 16px auto;
+  }
+
+  .settings-card {
+    padding: 22px 16px;
+  }
+
+  .settings-avatar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .settings-actions {
+    flex-direction: column-reverse;
+  }
+
+  .settings-actions .settings-btn {
+    text-align: center;
+  }
+}

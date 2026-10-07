@@ -15,10 +15,34 @@ if ($hbHubUser !== null) {
 $loginAttemptsMax = max(1, (int) ($siteConfig['login_attempts_max'] ?? 5));
 $loginLockoutMinutes = max(1, (int) ($siteConfig['login_attempts_lockout_time'] ?? 15));
 
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginCheckDB.php';
+
 $loginName = '';
 $loginError = null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+/**
+ * Logged in, so on to where they were headed with the "welcome back" toast.
+ */
+function loginDone(): never
+{
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
+    hbHubSetToast('login');
+    header('Location: ' . hbHubReturnPath(), true, 303);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'cancelTotp') {
+    // "Use another account" on the 2FA step
+    loginCancelPending();
+    header('Location: /userMgmt/login' . hbHubReturnQuery(), true, 303);
+    exit;
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && array_key_exists('code', $_POST)) {
+    // The 2FA code, after the right password
+    $loginError = loginCheckTotp($_POST['code'], $loginAttemptsMax, $loginLockoutMinutes);
+    if ($loginError === null) {
+        loginDone();
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $loginName = is_string($_POST['name'] ?? null) ? trim($_POST['name']) : '';
     $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
 
@@ -28,16 +52,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Longer than the userName column / what onboarding allows, so it can't match an account
         $loginError = 'Wrong name or password.';
     } else {
-        require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginCheckDB.php';
-        $loginError = loginCheckDB($loginName, $password, $loginAttemptsMax, $loginLockoutMinutes);
-        if ($loginError === null) {
-            require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
-            hbHubSetToast('login');
-            header('Location: ' . hbHubReturnPath(), true, 303);
+        $loginError = loginCheckDB($loginName, $password, $loginAttemptsMax, $loginLockoutMinutes, $loginNeedsTotp);
+        if ($loginError === null && $loginNeedsTotp) {
+            // On to the 2FA step, as a GET so reloading doesn't send the password again
+            header('Location: /userMgmt/login' . hbHubReturnQuery(), true, 303);
             exit;
+        }
+        if ($loginError === null) {
+            loginDone();
         }
     }
 }
+
+// The right password was entered and the 2FA code is next
+$loginIsTotpStep = loginPendingUserId() !== null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -50,6 +78,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <main>
+        <?php if ($loginIsTotpStep): ?>
+        <form class="login login-totp" action="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post">
+            <h1>Two-factor login</h1>
+
+            <section class="onboarding-step" aria-labelledby="login-q3">
+                <h2 id="login-q3"><label for="login-code">Enter the code from your authenticator app</label></h2>
+                <div class="onboarding-input-wrap">
+                    <input type="text" id="login-code" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" required
+                           autocomplete="one-time-code" autofocus aria-describedby="login-code-hint">
+                </div>
+                <p class="onboarding-hint" id="login-code-hint">The 6 digit code for HB Hub. It changes every 30 seconds.</p>
+            </section>
+
+            <?php if ($loginError !== null): ?>
+                <p class="onboarding-error" role="alert"><?= htmlspecialchars($loginError) ?></p>
+            <?php endif; ?>
+
+            <div class="onboarding-nav">
+                <!-- Belongs to the form below this one, so pressing Enter in the code field logs in instead -->
+                <button type="submit" class="onboarding-btn" form="login-cancel-totp">Use another account</button>
+                <button type="submit" class="onboarding-btn onboarding-btn-primary">Log in</button>
+            </div>
+        </form>
+        <form id="login-cancel-totp" action="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" hidden>
+            <input type="hidden" name="action" value="cancelTotp">
+        </form>
+        <?php else: ?>
         <form class="login" action="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post">
             <h1>Welcome back!</h1>
 
@@ -79,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <p class="userMgmt-switch">New here? <a href="/userMgmt/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to onboarding</a></p>
         </form>
+        <?php endif; ?>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

@@ -784,6 +784,17 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
             <p class="chat-list-empty"<?= $chats !== [] ? ' hidden' : '' ?> data-empty-all>You don't have any chats yet.</p>
             <p class="chat-list-empty"<?= $chats === [] || $chatSearch !== '' || $chatListHasShown ? ' hidden' : '' ?> data-empty-hidden>All your chats are hidden. Search to find them again.</p>
             <p class="chat-list-empty"<?= $chats === [] || $chatSearch === '' || $chatListHasShown ? ' hidden' : '' ?> data-empty-search>No chats match your search.</p>
+
+            <!-- The logged in user: picture and name go to their profile, the cog to their settings -->
+            <div class="chat-me">
+                <a class="chat-profile-link chat-me-profile" href="/otherPages/profile" title="Your profile">
+                    <?= chatUserAvatarHtml($userId, $hbHubUser['userName'], $hbHubUser['userAvatarAttachmentId']) ?>
+                    <span class="chat-me-name"><?= htmlspecialchars($hbHubUser['userName']) ?></span>
+                </a>
+                <a class="chat-me-settings" href="/otherPages/settings" aria-label="Settings" title="Settings">
+                    <img src="/assets/images/icons/settings.png" alt="">
+                </a>
+            </div>
         </aside>
 
         <!-- Right: the open chat -->

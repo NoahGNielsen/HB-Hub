@@ -6,6 +6,11 @@ const HBHUB_TOAST_COOKIE = 'hbHubToast';
 const HBHUB_TOASTS = [
     'login' => 'You are now logged in. Welcome back!',
     'onboarding' => 'Your account has been created. Welcome to HB Hub!',
+    'settings' => 'Your settings have been saved.',
+    'password' => 'Your password has been changed. Your other devices have been logged out.',
+    'totpOn' => 'Two-factor login is now on.',
+    'totpOff' => 'Two-factor login is now off.',
+    'blockPending' => 'Saved. Your block will change later, see the settings for when.',
 ];
 
 /**

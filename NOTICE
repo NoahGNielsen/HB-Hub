@@ -28,3 +28,13 @@ user.png             User icons created by Magnific - Flaticon
 settings.png         Settings icons created by Pixel perfect - Flaticon
                      https://www.flaticon.com/free-icons/settings
 
+Third-party code
+----------------
+src/assets/js/vendor/qrcode.js is QR Code Generator for JavaScript 1.4.4
+(https://github.com/kazuhikoarase/qrcode-generator), used to show the QR code
+for setting up two-factor login.
+
+Copyright (c) 2009 Kazuhiko Arase
+Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
+The word "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
+

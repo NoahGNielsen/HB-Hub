@@ -1,4 +1,10 @@
 {
     "year": null,
-    "class": null
+    "class": null,
+    "notifications": false,
+    "block": {
+        "mode": "none",
+        "pendingMode": null,
+        "pendingFrom": null
+    }
 }

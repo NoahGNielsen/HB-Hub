@@ -1,8 +1,11 @@
 <?php
 // The logged in user's profile picture links to their profile. Without a picture it's the first letter of their name,
 // and pages open to visitors (session.php's $hbHubUser is null) get a "Log in" link instead.
+// With notifications turned on in settings, every page also checks for new messages (notifications.js).
 require_once __DIR__ . '/userAvatar.php';
+require_once __DIR__ . '/userSettings.php';
 $navUser = $hbHubUser ?? null;
+$navNotifications = $navUser !== null && (hbHubUserSettings($navUser['userSettings'] ?? null)['notifications'] ?? false) === true;
 $navAvatarSrc = $navUser !== null
     ? hbHubAvatarUrl((int) $navUser['userId'], $navUser['userAvatarAttachmentId'] !== null ? (int) $navUser['userAvatarAttachmentId'] : null)
     : null;
@@ -41,3 +44,6 @@ $navItems = [
         </a>
     <?php endforeach; ?>
 </nav>
+<?php if ($navNotifications): ?>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>" defer></script>
+<?php endif; ?>

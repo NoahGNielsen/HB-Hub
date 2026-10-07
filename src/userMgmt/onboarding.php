@@ -33,14 +33,8 @@ if ((int) $siteConfig['site_save_diskspace'] === 2) {
 }
 $onboardingDescriptionMode = (int) $siteConfig['onboarding_description_requirements'];
 
-// 1 = just don't use a common password, 2 = weak, 3 = medium, 4 = strong
-$onboardingPasswordPolicies = [
-    1 => ['minLength' => 1, 'charTypes' => 0],
-    2 => ['minLength' => 8, 'charTypes' => 0],
-    3 => ['minLength' => 8, 'charTypes' => 3],
-    4 => ['minLength' => 12, 'charTypes' => 4],
-];
-$onboardingPasswordPolicy = $onboardingPasswordPolicies[(int) $siteConfig['onboarding_password_requirements']] ?? $onboardingPasswordPolicies[3];
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
+$onboardingPasswordPolicy = hbHubPasswordPolicy($siteConfig);
 $onboardingPasswordMin = $onboardingPasswordPolicy['minLength'];
 $onboardingPasswordCharTypes = $onboardingPasswordPolicy['charTypes'];
 
@@ -120,26 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $onboardingErrors['description'] = "Please write at least $onboardingDescriptionMin characters.";
         }
 
-        // Password (bcrypt only uses the first 72 bytes)
-        $passwordCharTypes = (int) preg_match('/\p{Ll}/u', $password) + (int) preg_match('/\p{Lu}/u', $password)
-            + (int) preg_match('/\p{N}/u', $password) + (int) preg_match('/[^\p{Ll}\p{Lu}\p{N}]/u', $password);
-        $commonPasswords = file($_SERVER['DOCUMENT_ROOT'] . '/assets/commonPasswords.txt', FILE_IGNORE_NEW_LINES) ?: [];
-        $passwordIsCommon = in_array(mb_strtolower($password), array_map(fn ($line) => mb_strtolower(rtrim($line, "\r")), $commonPasswords), true);
-
-        if ($password === '') {
-            $onboardingErrors['password'] = 'Please choose a password.';
-        } elseif (mb_strlen($password) < $onboardingPasswordMin) {
-            $onboardingErrors['password'] = "Your password needs to be at least $onboardingPasswordMin characters.";
-        } elseif (strlen($password) > 72) {
-            $onboardingErrors['password'] = 'Your password is too long. Please keep it to 72 characters or fewer.';
-        } elseif ($passwordCharTypes < $onboardingPasswordCharTypes) {
-            $onboardingErrors['password'] = $onboardingPasswordCharTypes === 4
-                ? 'Your password needs lowercase letters, uppercase letters, numbers and special characters.'
-                : "Your password needs at least $onboardingPasswordCharTypes of: lowercase letters, uppercase letters, numbers and special characters.";
-        } elseif ($passwordIsCommon) {
-            $onboardingErrors['password'] = 'That password is too common. Please choose another one.';
-        } elseif ($password !== $passwordConfirm) {
-            $onboardingErrors['password'] = 'The passwords don\'t match.';
+        // Password
+        $passwordError = hbHubPasswordError($password, $passwordConfirm, $onboardingPasswordPolicy);
+        if ($passwordError !== null) {
+            $onboardingErrors['password'] = $passwordError;
         }
 
         if (!$onboardingErrors) {

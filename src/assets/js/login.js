@@ -1,7 +1,8 @@
 // Login: asks for the name first and only shows the password once a name is entered.
 // Without JS both fields are shown at once.
 (() => {
-    const form = document.querySelector('.login');
+    // Not on the 2FA code step, which is a single field
+    const form = document.querySelector('.login:not(.login-totp)');
     if (!form) return;
 
     const name = form.querySelector('#login-name');
