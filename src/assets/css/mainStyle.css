@@ -47,3 +47,85 @@ body {
   background: var(--background);
   color: var(--text);
 }
+
+/* Toast notifications (assets/php/toast.php) */
+.toast {
+  --toast-duration: 5s;
+  --toast-success: #2fa36b;
+  position: fixed;
+  top: calc(var(--nav-top-h, 0px) + 16px);
+  right: 16px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 14px 18px 18px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: toast-in 0.3s ease, toast-out 0.3s ease var(--toast-duration) forwards;
+}
+
+/* Hovering keeps it open */
+.toast:hover,
+.toast:hover .toast-timer {
+  animation-play-state: paused;
+}
+
+.toast-icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--toast-success);
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.toast-message {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Bar along the bottom that runs down until the toast goes away */
+.toast-timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: var(--toast-success);
+  transform-origin: left;
+  animation: toast-timer var(--toast-duration) linear forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-12px); }
+}
+
+@keyframes toast-out {
+  to { opacity: 0; transform: translateY(-12px); visibility: hidden; }
+}
+
+@keyframes toast-timer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes toast-in {
+    from { opacity: 0; }
+  }
+  @keyframes toast-out {
+    to { opacity: 0; visibility: hidden; }
+  }
+}

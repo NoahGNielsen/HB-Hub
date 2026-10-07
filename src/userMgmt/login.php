@@ -23,6 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginCheckDB.php';
         $loginError = loginCheckDB($loginName, $password, $loginAttemptsMax, $loginLockoutMinutes);
         if ($loginError === null) {
+            require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
+            hbHubSetToast('login');
             header('Location: /', true, 303);
             exit;
         }

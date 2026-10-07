@@ -138,6 +138,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/onboardingSaveToDB.php';
             $onboardingErrors = onboardingSaveToDB($onboardingValues, $password, $avatarBlob, $avatarType);
             if (!$onboardingErrors) {
+                require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
+                hbHubSetToast('onboarding');
                 header('Location: /', true, 303);
                 exit;
             }
