@@ -15,13 +15,15 @@ const HBHUB_NOTIFY_CHAT_GROUP = 2; // chatType in HBHub-Chats
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
-if ((hbHubUserSettings($hbHubUser['userSettings'])['notifications'] ?? false) !== true) {
+$userSettings = hbHubUserSettings($hbHubUser['userSettings']);
+if (($userSettings['notifications'] ?? false) !== true) {
     echo json_encode(['enabled' => false]);
     exit;
 }
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
+$mutedChatIds = hbHubMutedChatIds($userSettings); // muted from the chat menu, so no notifications from them
 
 $statement = $db->prepare('SELECT COALESCE(MAX(m.messageId), 0) FROM `HBHub-Messages` m
     JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = ?
@@ -40,9 +42,10 @@ if (is_string($after) && ctype_digit($after) && strlen($after) <= 19) {
         JOIN `HBHub-Chats` c ON c.chatId = m.chatId AND c.chatStatus = ?
         JOIN `HBHub-Users` u ON u.userId = m.userId
         WHERE m.messageId > ? AND m.messageId <= ? AND m.userId <> ? AND m.messageDeletedTimestamp IS NULL
-            AND m.messageId > COALESCE(cm.lastReadMessageId, 0) AND (u.userStatus IS NULL OR u.userStatus <> ?)
+            AND m.messageId > COALESCE(cm.lastReadMessageId, 0) AND (u.userStatus IS NULL OR u.userStatus <> ?)'
+            . ($mutedChatIds !== [] ? ' AND m.chatId NOT IN (' . implode(', ', array_fill(0, count($mutedChatIds), '?')) . ')' : '') . '
         ORDER BY m.messageId DESC LIMIT ' . HBHUB_NOTIFY_LIMIT);
-    $statement->execute([$userId, HBHUB_NOTIFY_CHAT_ACTIVE, (int) $after, $latest, $userId, HBHUB_SESSION_STATUS_BANNED]);
+    $statement->execute([$userId, HBHUB_NOTIFY_CHAT_ACTIVE, (int) $after, $latest, $userId, HBHUB_SESSION_STATUS_BANNED, ...$mutedChatIds]);
 
     foreach (array_reverse($statement->fetchAll()) as $message) {
         $isGroup = (int) $message['chatType'] === HBHUB_NOTIFY_CHAT_GROUP;

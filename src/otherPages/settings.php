@@ -632,7 +632,7 @@ $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
             <form action="/otherPages/settings#block" method="post">
                 <input type="hidden" name="action" value="block">
                 <div class="settings-field">
-                    <label class="settings-label" for="settings-block">Block them</label>
+                    <label class="settings-label" for="settings-block">Block:</label>
                     <select id="settings-block" name="block" aria-describedby="settings-block-hint">
                         <?php foreach (HBHUB_BLOCK_MODES as $mode => $label): ?>
                             <option value="<?= $mode ?>"<?= ($settingsBlock['pendingMode'] ?? $settingsBlock['mode']) === $mode ? ' selected' : '' ?>><?= htmlspecialchars($label) ?></option>
