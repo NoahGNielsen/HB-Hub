@@ -1023,7 +1023,16 @@ a.chat-message-reply:hover {
   list-style: none;
 }
 
+/* Room for the group admin buttons to the right of the member */
+.chat-members-list > li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .chat-member {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1075,6 +1084,18 @@ a.chat-member:focus-visible {
 .chat-member-badge.is-site-admin {
   background: var(--accent);
   color: #fff;
+}
+
+/* Make admin and Kick, only shown to group admins */
+.chat-member-actions {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+
+.chat-member-actions .chat-btn {
+  padding: 6px 12px;
+  font-size: 0.85rem;
 }
 
 /* Added, but hasn't accepted the group yet */

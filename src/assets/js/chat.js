@@ -288,18 +288,67 @@
 })();
 
 // Members popup: the person button in a group's header lists everyone in it.
+// Group admins can make a member an admin or kick them, both asked about first in a popup on top of it.
 (() => {
     const dialog = document.querySelector('.chat-members');
     if (!dialog) return;
 
+    const confirmDialog = document.querySelector('.chat-member-confirm');
+    let memberButton = null; // the Make admin or Kick button that opened the confirm popup
+
     document.querySelector('[data-members-open]').addEventListener('click', () => dialog.showModal());
 
-    dialog.querySelector('[data-dialog-close]').addEventListener('click', () => dialog.close());
+    function confirmMember(button) {
+        const name = button.dataset.memberName;
+        const form = confirmDialog.querySelector('form');
+        const submit = confirmDialog.querySelector('[data-member-confirm-submit]');
+        const isKick = button.dataset.memberAction === 'kick';
+        memberButton = button;
+        form.elements.member.value = button.dataset.memberId;
+        confirmDialog.querySelector('[data-member-confirm-action]').value = button.dataset.memberAction;
 
-    // Clicking the dimmed area around the popup closes it
+        if (!isKick) {
+            confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Make ${name} an admin?`;
+            confirmDialog.querySelector('[data-member-confirm-text]').textContent =
+                `${name} will be able to rename the group, change its icon, delete messages, make others admin, kick members and delete the group.`;
+            submit.textContent = 'Make admin';
+        } else if (button.hasAttribute('data-member-invited')) {
+            confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Kick ${name}?`;
+            confirmDialog.querySelector('[data-member-confirm-text]').textContent =
+                `${name} hasn't accepted the group yet. Their invite will be taken back.`;
+            submit.textContent = 'Kick';
+        } else {
+            confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Kick ${name}?`;
+            confirmDialog.querySelector('[data-member-confirm-text]').textContent =
+                `${name} will be removed from the group and won't see its messages anymore.`;
+            submit.textContent = 'Kick';
+        }
+        submit.classList.toggle('is-danger', isKick);
+
+        confirmDialog.showModal();
+        confirmDialog.querySelector('.chat-btn[data-dialog-close]').focus(); // the safe choice is the one Enter picks
+    }
+
     dialog.addEventListener('click', (event) => {
-        if (event.target === dialog) dialog.close();
+        const button = event.target.closest('[data-member-action]');
+        if (button) confirmMember(button);
     });
+
+    [dialog, confirmDialog].forEach((popup) => {
+        if (!popup) return; // the confirm popup is only there for group admins
+
+        popup.querySelectorAll('[data-dialog-close]').forEach((button) => {
+            button.addEventListener('click', () => popup.close());
+        });
+
+        // Clicking the dimmed area around the popup closes it
+        popup.addEventListener('click', (event) => {
+            if (event.target === popup) popup.close();
+        });
+    });
+
+    // Back on the button it was opened from, in the Members popup still open below it
+    confirmDialog?.addEventListener('close', () => memberButton?.focus());
 })();
 
 // Right-click menus, used by the chat menu and the message menu.
@@ -611,7 +660,8 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
 })();
 
 // Message menu: right-click a message in the open chat (or use the menu key / Shift+F10 on it) to reply to it,
-// or mark the chat unread from it on. Your own messages can also be edited or deleted.
+// or mark the chat unread from it on. Your own messages can also be edited or deleted,
+// and group admins can delete anyone's (shown as deleted by a group admin).
 // Links and selected text keep the browser's own menu, so they can still be copied.
 // The arrow keys, Home and End move between the messages, so the menu can be reached without a mouse.
 (() => {
@@ -629,6 +679,7 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
     const editText = editForm.elements.content;
     const editSave = editDialog.querySelector('[data-edit-save]');
     const deleteDialog = document.querySelector('.chat-message-delete');
+    const isGroupAdmin = messages.hasAttribute('data-group-admin'); // can delete other members' messages too
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let message = null; // the message the menu was opened on
 
@@ -685,9 +736,10 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
             message = item;
             const isDeleted = item.hasAttribute('data-message-deleted');
             const isOwn = item.hasAttribute('data-message-own') && !isDeleted;
+            const canDelete = isOwn || (isGroupAdmin && !isDeleted);
             menu.querySelector('[data-menu-action="reply"]').hidden = isDeleted;
             menu.querySelector('[data-menu-action="edit"]').hidden = !isOwn || !item.querySelector('[data-message-text]');
-            menu.querySelectorAll('[data-menu-delete]').forEach((menuItem) => { menuItem.hidden = !isOwn; });
+            menu.querySelectorAll('[data-menu-delete]').forEach((menuItem) => { menuItem.hidden = !canDelete; });
         },
     });
 
@@ -736,8 +788,12 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
         if (!editSave.disabled) editForm.requestSubmit();
     });
 
+    // A group admin deleting someone else's message is told it'll say so
     function openDelete(item) {
         deleteDialog.querySelector('form').elements.message.value = item.dataset.messageId;
+        deleteDialog.querySelector('[data-delete-text]').textContent = item.hasAttribute('data-message-own')
+            ? "Everyone in the chat will see it as deleted. This can't be undone."
+            : `Everyone in the chat will see ${item.dataset.messageSender}'s message as deleted by a group admin. This can't be undone.`;
         deleteDialog.querySelector('[data-delete-preview]').textContent = messagePreview(item);
         deleteDialog.showModal();
         deleteDialog.querySelector('.chat-btn[data-dialog-close]').focus(); // the safe choice is the one Enter picks

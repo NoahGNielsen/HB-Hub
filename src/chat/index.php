@@ -88,11 +88,11 @@ function chatMessages(PDO $db, int $chatId, ?int $afterId = null): array
 {
     $statement = $db->prepare('SELECT * FROM (
             SELECT m.messageId, m.userId, m.messageContent, m.attachmentId, m.messageSentTimestamp,
-                m.messageDeletedTimestamp, m.messageIsEdited, m.messageReplyToId,
+                m.messageDeletedTimestamp, m.messageDeletedByAdmin, m.messageIsEdited, m.messageReplyToId,
                 COALESCE(cm.memberNickname, u.userName) AS senderName,
                 u.userAvatarAttachmentId AS senderAvatarId, u.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' AS senderBanned,
                 r.messageId AS replyId, r.userId AS replyUserId, r.messageContent AS replyContent,
-                r.messageDeletedTimestamp AS replyDeletedTimestamp, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName
+                r.messageDeletedTimestamp AS replyDeletedTimestamp, r.messageDeletedByAdmin AS replyDeletedByAdmin, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName
             FROM `HBHub-Messages` m
             JOIN `HBHub-Users` u ON u.userId = m.userId
             LEFT JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = m.userId
@@ -512,12 +512,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
     chatRedirect($chat !== null && $isAccepted ? $chat['chatId'] : null);
 }
 
+// The Members popup, for group admins: make another member an admin too, or kick them out of the group.
+// Only members who accepted the group can be made admin. Anyone but yourself can be kicked, an invite is taken back that way.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['makeAdmin', 'kick'], true)) {
+    $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
+    $isGroupAdmin = $chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP
+        && (int) $chat['memberRole'] === HBHUB_CHAT_ROLE_ADMIN;
+
+    $member = false;
+    if ($isGroupAdmin && is_string($_POST['member'] ?? null) && ctype_digit($_POST['member']) && (int) $_POST['member'] !== $userId) {
+        $statement = $db->prepare('SELECT userId, memberRole, userAcknowledgedJoin FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ?');
+        $statement->execute([$chat['chatId'], (int) $_POST['member']]);
+        $member = $statement->fetch();
+    }
+
+    if ($member !== false && $_POST['action'] === 'makeAdmin') {
+        $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ? AND userAcknowledgedJoin = 1')
+            ->execute([HBHUB_CHAT_ROLE_ADMIN, $chat['chatId'], $member['userId']]);
+    } elseif ($member !== false && $_POST['action'] === 'kick') {
+        chatLeave($db, (int) $member['userId'], $chat);
+    }
+
+    chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
+}
+
 // The right-click menu on a message: edit or delete your own message, or mark the chat unread from that message on
-// (the message before it becomes the last one read). Deleted messages stay in the database, but only show as deleted.
+// (the message before it becomes the last one read). Group admins can also delete other members' messages,
+// which then show as deleted by a group admin. Deleted messages stay in the database, but only show as deleted.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['edit', 'deleteMessage', 'unread'], true)) {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     $message = $chat !== null ? chatMessage($db, (int) $chat['chatId'], $_POST['message'] ?? null) : null;
     $isOwnMessage = $message !== null && (int) $message['userId'] === $userId && $message['messageDeletedTimestamp'] === null;
+    $isGroupAdmin = $chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP
+        && (int) $chat['memberRole'] === HBHUB_CHAT_ROLE_ADMIN;
 
     switch ($message !== null ? $_POST['action'] : null) {
         case 'edit':
@@ -534,6 +561,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
                 $db->prepare('UPDATE `HBHub-Messages` SET messageDeletedTimestamp = NOW()
                     WHERE messageId = ? AND userId = ? AND messageDeletedTimestamp IS NULL')
                     ->execute([$message['messageId'], $userId]);
+            } elseif ($isGroupAdmin && $message['messageDeletedTimestamp'] === null) {
+                $db->prepare('UPDATE `HBHub-Messages` SET messageDeletedTimestamp = NOW(), messageDeletedByAdmin = 1
+                    WHERE messageId = ? AND messageDeletedTimestamp IS NULL')
+                    ->execute([$message['messageId']]);
             }
             break;
         case 'unread':
@@ -836,7 +867,8 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
         $sender = '<span class="chat-message-reply-sender">'
             . htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['replyUserId'], $message['replySenderName'])) . '</span>';
         if ($message['replyDeletedTimestamp'] !== null) {
-            $text = '<span class="chat-message-reply-text is-deleted">Message deleted</span>';
+            $text = '<span class="chat-message-reply-text is-deleted">'
+                . ($message['replyDeletedByAdmin'] ? 'Deleted by Group Admin' : 'Message deleted') . '</span>';
         } elseif ($message['replyContent'] === null) {
             $text = '<span class="chat-message-reply-text is-deleted">Attachment</span>';
         } elseif (chatGifId($message['replyContent']) !== null) {
@@ -955,7 +987,7 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
                             <?php endif; ?>
                             <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?>">
                                 <?php if ($isDeleted): ?>
-                                    <p class="chat-message-deleted">Message deleted</p>
+                                    <p class="chat-message-deleted"><?= $message['messageDeletedByAdmin'] ? 'Deleted by Group Admin' : 'Message deleted' ?></p>
                                 <?php else: ?>
                                     <?php if ($gifId !== null): ?>
                                         <!-- Giphy's 200px tall version, so a chat full of GIFs doesn't load every full-size one -->
@@ -1098,8 +1130,9 @@ if ($isPoll) {
                 </header>
 
                 <!-- The arrow keys move between messages (tabindex is set by chat.js), and new ones are added as they come
-                     in (chat.js polls for them). data-chat-messages is the open chat's id. -->
-                <ol class="chat-messages" data-chat-messages="<?= $openChat['chatId'] ?>">
+                     in (chat.js polls for them). data-chat-messages is the open chat's id,
+                     data-group-admin lets the message menu offer deleting other members' messages. -->
+                <ol class="chat-messages" data-chat-messages="<?= $openChat['chatId'] ?>"<?= $openChat['chatIsGroupAdmin'] ? ' data-group-admin' : '' ?>>
                     <?php if ($messages === []): ?>
                         <li class="chat-messages-empty" data-messages-empty>No messages yet - say hi!</li>
                     <?php endif; ?>
@@ -1214,7 +1247,8 @@ if ($isPoll) {
 
         <?php if ($openChat !== null): ?>
             <!-- Message menu (chat.js): opened by right-clicking a message in the open chat.
-                 Edit and Delete are only for your own messages, and a deleted message can only be marked unread. -->
+                 Edit is only for your own messages, Delete for your own (and everyone's for group admins),
+                 and a deleted message can only be marked unread. -->
             <div class="chat-menu" role="menu" aria-label="Message options" hidden data-message-menu>
                 <button type="button" role="menuitem" data-menu-action="reply">Reply</button>
                 <button type="button" role="menuitem" data-menu-action="edit">Edit message</button>
@@ -1264,7 +1298,7 @@ if ($isPoll) {
                         <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
                     </header>
 
-                    <p class="chat-dialog-text">Everyone in the chat will see it as deleted. This can't be undone.</p>
+                    <p class="chat-dialog-text" data-delete-text>Everyone in the chat will see it as deleted. This can't be undone.</p>
                     <p class="chat-dialog-quote" data-delete-preview></p>
 
                     <footer class="chat-new-footer chat-dialog-footer">
@@ -1276,7 +1310,8 @@ if ($isPoll) {
 
             <?php if ($openChatMembers !== []): ?>
                 <!-- Members popup (chat.js): everyone in the open group, each going to their profile.
-                     Members who haven't accepted the group yet show as invited. -->
+                     Members who haven't accepted the group yet show as invited.
+                     Group admins also get Make admin (for members who accepted) and Kick next to everyone but themselves. -->
                 <dialog class="chat-dialog chat-members" aria-labelledby="chat-members-title">
                     <div class="chat-requests-body">
                         <header class="chat-new-header">
@@ -1302,11 +1337,45 @@ if ($isPoll) {
                                     <?php else: ?>
                                         <a class="chat-member" href="<?= htmlspecialchars(hbHubProfileUrl($memberUserId)) ?>" title="View profile"><?= $memberInner ?></a>
                                     <?php endif; ?>
+                                    <?php if ($openChat['chatIsGroupAdmin'] && $memberUserId !== $userId): ?>
+                                        <span class="chat-member-actions">
+                                            <?php if ((int) $member['memberRole'] !== HBHUB_CHAT_ROLE_ADMIN && $member['userAcknowledgedJoin']): ?>
+                                                <button type="button" class="chat-btn" data-member-action="makeAdmin"
+                                                        data-member-id="<?= $memberUserId ?>" data-member-name="<?= htmlspecialchars($member['memberName']) ?>">Make admin</button>
+                                            <?php endif; ?>
+                                            <button type="button" class="chat-btn is-danger" data-member-action="kick"
+                                                    data-member-id="<?= $memberUserId ?>" data-member-name="<?= htmlspecialchars($member['memberName']) ?>"
+                                                    <?= !$member['userAcknowledgedJoin'] ? 'data-member-invited' : '' ?>>Kick</button>
+                                        </span>
+                                    <?php endif; ?>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
                     </div>
                 </dialog>
+
+                <?php if ($openChat['chatIsGroupAdmin']): ?>
+                    <!-- Make admin and Kick ask first (chat.js fills in which, and who it's about) -->
+                    <dialog class="chat-dialog chat-member-confirm" aria-labelledby="chat-member-confirm-title">
+                        <form class="chat-requests-body" action="/chat/" method="post">
+                            <input type="hidden" name="action" data-member-confirm-action>
+                            <input type="hidden" name="chat" value="<?= $openChat['chatId'] ?>">
+                            <input type="hidden" name="member">
+
+                            <header class="chat-new-header">
+                                <h2 id="chat-member-confirm-title" data-member-confirm-title></h2>
+                                <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                            </header>
+
+                            <p class="chat-dialog-text" data-member-confirm-text></p>
+
+                            <footer class="chat-new-footer chat-dialog-footer">
+                                <button type="button" class="chat-btn" data-dialog-close>Cancel</button>
+                                <button type="submit" class="chat-new-btn" data-member-confirm-submit></button>
+                            </footer>
+                        </form>
+                    </dialog>
+                <?php endif; ?>
             <?php endif; ?>
 
             <?php if ($chatGifsEnabled): ?>
