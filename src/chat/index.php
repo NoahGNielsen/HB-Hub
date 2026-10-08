@@ -10,6 +10,7 @@ const HBHUB_CHAT_STATUS_ACTIVE = 1; // chatStatus in HBHub-Chats
 const HBHUB_CHAT_STATUS_DELETED = 2;
 const HBHUB_CHAT_ROLE_MEMBER = 1; // memberRole in HBHub-ChatMembers
 const HBHUB_CHAT_ROLE_ADMIN = 2;
+const HBHUB_CHAT_SITE_ROLE_ADMIN = 2; // userRole in HBHub-Users, an admin of the whole site
 const HBHUB_CHAT_MEMBERS_MAX = 200; // per group DM, the creator included
 const HBHUB_CHAT_NAME_MAX = 64; // chatName column
 const HBHUB_CHAT_NICKNAME_MAX = 64; // same as userName
@@ -704,6 +705,20 @@ foreach ($chats as $chat) {
     }
 }
 
+// Everyone in the open group, for the Members popup: site admins first, then group admins, then the ones who accepted,
+// then by name. Banned and deleted accounts get no profile link, like their messages.
+$openChatMembers = [];
+if ($openChat !== null && !$isPoll && (int) $openChat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
+    $statement = $db->prepare('SELECT cm.userId, cm.memberRole, cm.userAcknowledgedJoin, u.userRole = ? AS memberIsSiteAdmin,
+            COALESCE(cm.memberNickname, u.userName) AS memberName, u.userAvatarAttachmentId,
+            u.userStatus IS NULL OR u.userStatus = ? AS memberNoProfile
+        FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
+        WHERE cm.chatId = ?
+        ORDER BY memberIsSiteAdmin DESC, cm.memberRole = ? DESC, cm.userAcknowledgedJoin DESC, memberName');
+    $statement->execute([HBHUB_CHAT_SITE_ROLE_ADMIN, HBHUB_SESSION_STATUS_BANNED, $openChat['chatId'], HBHUB_CHAT_ROLE_ADMIN]);
+    $openChatMembers = $statement->fetchAll();
+}
+
 $shownMessageIds = []; // messageId => true, for the replies that can jump to the message they answer
 $firstUnreadMessageId = null; // the "New messages" line goes above this one
 if ($openChat !== null && !$isPoll) {
@@ -882,6 +897,37 @@ function chatListItem(array $chat): void
 }
 
 /**
+ * A message request in the Message requests popup, for the page and for polling.
+ * Accept and Decline are plain form posts.
+ */
+function chatRequestItem(array $request): void
+{
+    $isGroup = (int) $request['chatType'] !== HBHUB_CHAT_TYPE_DM;
+    ?>
+                            <li class="chat-request">
+                                <?= chatAvatarHtml($request) ?>
+                                <span class="chat-list-text">
+                                    <span class="chat-list-top">
+                                        <span class="chat-list-title"><?= htmlspecialchars($request['chatTitle']) ?></span>
+                                        <span class="chat-list-time"><?= chatTime($request['chatActivity']) ?></span>
+                                    </span>
+                                    <span class="chat-list-preview">
+                                        <?= $isGroup ? 'Group, added by ' . htmlspecialchars($request['chatCreatorName'] ?? 'someone') : 'Wants to send you messages' ?>
+                                    </span>
+                                    <?php if ($request['chatLastMessage'] !== null): ?>
+                                        <span class="chat-list-preview chat-request-message"><?= htmlspecialchars($request['chatLastMessage']) ?></span>
+                                    <?php endif; ?>
+                                </span>
+                                <form class="chat-request-answer" action="/chat/" method="post">
+                                    <input type="hidden" name="chat" value="<?= $request['chatId'] ?>">
+                                    <button type="submit" class="chat-btn" name="action" value="decline">Decline</button>
+                                    <button type="submit" class="chat-new-btn" name="action" value="accept">Accept</button>
+                                </form>
+                            </li>
+    <?php
+}
+
+/**
  * A message in the open chat, for the page and for polling.
  * Right-clicking it opens the message menu (chat.js), the data-message-* attributes say what it offers.
  * $replyIsShown: the message it replies to is on the page, so the quote can link to it.
@@ -930,7 +976,7 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
     <?php
 }
 
-// The answer to chat.js polling: the open chat's new messages and the whole chat list, both as HTML.
+// The answer to chat.js polling: the open chat's new messages, the whole chat list and the message requests, all as HTML.
 // openChat is false when the open chat is gone (left, deleted or removed from it), so chat.js can leave it.
 // A reply quote links to the message it answers when that's on the page: chat.js sends the oldest one it shows (?first=),
 // and everything from there on is shown, as the page always shows the newest messages.
@@ -949,12 +995,20 @@ if ($isPoll) {
     }
     $pollChatListHtml = ob_get_clean();
 
+    ob_start();
+    foreach ($chatRequests as $request) {
+        chatRequestItem($request);
+    }
+    $pollRequestsHtml = ob_get_clean();
+
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
     echo json_encode([
         'openChat' => $openChat !== null,
         'messages' => $pollMessagesHtml,
         'chatList' => $pollChatListHtml,
+        'requests' => $pollRequestsHtml,
+        'requestCount' => count($chatRequests),
     ], JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
@@ -983,13 +1037,12 @@ if ($isPoll) {
 
             <div class="chat-actions">
                 <button type="button" class="chat-new-btn" data-new-chat-open>New chat</button>
-                <?php if ($chatRequests !== []): ?>
-                    <button type="button" class="chat-requests-btn" data-requests-open
-                            aria-label="Message requests (<?= count($chatRequests) ?>)" title="Message requests">
-                        <img src="/assets/images/icons/notification.png" alt="">
-                        <span class="chat-requests-count" aria-hidden="true"><?= count($chatRequests) > 9 ? '9+' : count($chatRequests) ?></span>
-                    </button>
-                <?php endif; ?>
+                <!-- Hidden while there are no message requests, chat.js polling shows it when one comes in -->
+                <button type="button" class="chat-requests-btn" data-requests-open
+                        aria-label="Message requests (<?= count($chatRequests) ?>)" title="Message requests"<?= $chatRequests === [] ? ' hidden' : '' ?>>
+                    <img src="/assets/images/icons/notification.png" alt="">
+                    <span class="chat-requests-count" aria-hidden="true" data-requests-count><?= count($chatRequests) > 9 ? '9+' : count($chatRequests) ?></span>
+                </button>
             </div>
 
             <h2 class="chat-list-heading">Chats</h2>
@@ -1034,6 +1087,13 @@ if ($isPoll) {
                     <?php else: ?>
                         <?= chatAvatarHtml($openChat) ?>
                         <h2 class="chat-window-title"><?= htmlspecialchars($openChat['chatTitle']) ?></h2>
+                    <?php endif; ?>
+                    <?php if ($openChatMembers !== []): ?>
+                        <!-- Groups: the person button opens the Members popup (chat.js) -->
+                        <button type="button" class="chat-icon-btn chat-members-btn" aria-label="Members (<?= count($openChatMembers) ?>)"
+                                title="Members" aria-haspopup="dialog" data-members-open>
+                            <img src="/assets/images/icons/user.png" alt="">
+                        </button>
                     <?php endif; ?>
                 </header>
 
@@ -1214,6 +1274,41 @@ if ($isPoll) {
                 </form>
             </dialog>
 
+            <?php if ($openChatMembers !== []): ?>
+                <!-- Members popup (chat.js): everyone in the open group, each going to their profile.
+                     Members who haven't accepted the group yet show as invited. -->
+                <dialog class="chat-dialog chat-members" aria-labelledby="chat-members-title">
+                    <div class="chat-requests-body">
+                        <header class="chat-new-header">
+                            <h2 id="chat-members-title">Members <span class="chat-members-count"><?= count($openChatMembers) ?></span></h2>
+                            <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                        </header>
+
+                        <ul class="chat-members-list">
+                            <?php foreach ($openChatMembers as $member): ?>
+                                <?php
+                                $memberUserId = (int) $member['userId'];
+                                $memberInner = chatUserAvatarHtml($memberUserId, $member['memberName'], $member['memberNoProfile'] ? null : $member['userAvatarAttachmentId'])
+                                    . '<span class="chat-member-name">' . htmlspecialchars($member['memberName'])
+                                    . ($memberUserId === $userId ? ' <span class="chat-member-you">(you)</span>' : '') . '</span>'
+                                    // One admin badge: Site Admin wins over Group Admin
+                                    . ($member['memberIsSiteAdmin'] ? '<span class="chat-member-badge is-site-admin">Site Admin</span>'
+                                        : ((int) $member['memberRole'] === HBHUB_CHAT_ROLE_ADMIN ? '<span class="chat-member-badge">Group Admin</span>' : ''))
+                                    . (!$member['userAcknowledgedJoin'] ? '<span class="chat-member-badge is-invited">Invited</span>' : '');
+                                ?>
+                                <li>
+                                    <?php if ($member['memberNoProfile']): ?>
+                                        <span class="chat-member"><?= $memberInner ?></span>
+                                    <?php else: ?>
+                                        <a class="chat-member" href="<?= htmlspecialchars(hbHubProfileUrl($memberUserId)) ?>" title="View profile"><?= $memberInner ?></a>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </dialog>
+            <?php endif; ?>
+
             <?php if ($chatGifsEnabled): ?>
                 <!-- GIF picker (chat.js): searches Giphy through /chat/gifs, trending GIFs before anything is typed.
                      Picking one sends it straight away. -->
@@ -1372,43 +1467,22 @@ if ($isPoll) {
             </div>
         </dialog>
 
-        <!-- Message requests popup (chat.js): chats the user was added to, to accept or decline (leave) -->
-        <?php if ($chatRequests !== []): ?>
-            <dialog class="chat-requests" aria-labelledby="chat-requests-title">
-                <div class="chat-requests-body">
-                    <header class="chat-new-header">
-                        <h2 id="chat-requests-title">Message requests</h2>
-                        <button type="button" class="chat-new-close" aria-label="Close" data-requests-close>&times;</button>
-                    </header>
+        <!-- Message requests popup (chat.js): chats the user was added to, to accept or decline (leave).
+             Always on the page, so chat.js polling can fill it when a request comes in. -->
+        <dialog class="chat-requests" aria-labelledby="chat-requests-title">
+            <div class="chat-requests-body">
+                <header class="chat-new-header">
+                    <h2 id="chat-requests-title">Message requests</h2>
+                    <button type="button" class="chat-new-close" aria-label="Close" data-requests-close>&times;</button>
+                </header>
 
-                    <ul class="chat-requests-list">
-                        <?php foreach ($chatRequests as $request): ?>
-                            <?php $isGroup = (int) $request['chatType'] !== HBHUB_CHAT_TYPE_DM; ?>
-                            <li class="chat-request">
-                                <?= chatAvatarHtml($request) ?>
-                                <span class="chat-list-text">
-                                    <span class="chat-list-top">
-                                        <span class="chat-list-title"><?= htmlspecialchars($request['chatTitle']) ?></span>
-                                        <span class="chat-list-time"><?= chatTime($request['chatActivity']) ?></span>
-                                    </span>
-                                    <span class="chat-list-preview">
-                                        <?= $isGroup ? 'Group, added by ' . htmlspecialchars($request['chatCreatorName'] ?? 'someone') : 'Wants to send you messages' ?>
-                                    </span>
-                                    <?php if ($request['chatLastMessage'] !== null): ?>
-                                        <span class="chat-list-preview chat-request-message"><?= htmlspecialchars($request['chatLastMessage']) ?></span>
-                                    <?php endif; ?>
-                                </span>
-                                <form class="chat-request-answer" action="/chat/" method="post">
-                                    <input type="hidden" name="chat" value="<?= $request['chatId'] ?>">
-                                    <button type="submit" class="chat-btn" name="action" value="decline">Decline</button>
-                                    <button type="submit" class="chat-new-btn" name="action" value="accept">Accept</button>
-                                </form>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-            </dialog>
-        <?php endif; ?>
+                <ul class="chat-requests-list" data-requests-list>
+                    <?php foreach ($chatRequests as $request): ?>
+                        <?php chatRequestItem($request); ?>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </dialog>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

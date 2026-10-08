@@ -49,10 +49,13 @@
     if (!composer) return;
     const textarea = composer.querySelector('textarea');
 
-    // Grow with the text, up to the max-height in chat.css
+    // Grow with the text, up to the max-height in chat.css, and only scroll once it can't grow any more.
+    // scrollHeight leaves out the border, which border-box sizing counts, so it's added back.
     function resize() {
         textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
+        const border = textarea.offsetHeight - textarea.clientHeight;
+        textarea.style.height = textarea.scrollHeight + border + 'px';
+        textarea.style.overflowY = textarea.scrollHeight > textarea.clientHeight ? 'auto' : 'hidden';
     }
     textarea.addEventListener('input', resize);
 
@@ -277,6 +280,21 @@
     document.querySelector('[data-requests-open]')?.addEventListener('click', () => dialog.showModal());
 
     dialog.querySelector('[data-requests-close]').addEventListener('click', () => dialog.close());
+
+    // Clicking the dimmed area around the popup closes it
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+})();
+
+// Members popup: the person button in a group's header lists everyone in it.
+(() => {
+    const dialog = document.querySelector('.chat-members');
+    if (!dialog) return;
+
+    document.querySelector('[data-members-open]').addEventListener('click', () => dialog.showModal());
+
+    dialog.querySelector('[data-dialog-close]').addEventListener('click', () => dialog.close());
 
     // Clicking the dimmed area around the popup closes it
     dialog.addEventListener('click', (event) => {
@@ -923,6 +941,7 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
 
 // Live updates: every 2 seconds asks the chat page what's new (?poll=1), adds the open chat's new messages at the bottom
 // and swaps in the chat list when something in it changed (new messages, unread counts, new chats).
+// Message requests are swapped in the same way, and the requests button shows up when there are any.
 // Every poll also keeps the user's last seen time up to date, as session.php does that on every request.
 // New messages are only marked read while the page is being looked at, and not at all after "Mark unread" (?unread=1).
 (() => {
@@ -930,10 +949,15 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
     const list = document.querySelector('.chat-list');
     const messages = document.querySelector('[data-chat-messages]');
     const chatMenu = document.querySelector('[data-chat-menu]');
+    const requestsButton = document.querySelector('[data-requests-open]');
+    const requestsCount = document.querySelector('[data-requests-count]');
+    const requestsDialog = document.querySelector('.chat-requests');
+    const requestsList = document.querySelector('[data-requests-list]');
     if (!list) return;
 
     const keepUnread = new URLSearchParams(location.search).get('unread') === '1';
     let shownChatList = null; // the chat list HTML last swapped in, so it's only swapped again when something changed
+    let shownRequests = null; // the same for the message requests
 
     function messageItems() {
         return messages.querySelectorAll('[data-message-id]');
@@ -967,6 +991,18 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
         list.dispatchEvent(new Event('chat-list-update')); // the search filter runs again on the new list
     }
 
+    function updateRequests(html, count) {
+        if (html === shownRequests) return;
+        // Not while the popup is open, so Accept and Decline don't move under the pointer - a later poll swaps it instead
+        if (requestsDialog.open) return;
+
+        requestsList.innerHTML = html;
+        shownRequests = html;
+        requestsButton.hidden = count === 0;
+        requestsButton.setAttribute('aria-label', `Message requests (${count})`);
+        requestsCount.textContent = count > 9 ? '9+' : String(count);
+    }
+
     async function poll() {
         const params = new URLSearchParams({ poll: '1' });
         if (messages) {
@@ -988,6 +1024,7 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
             }
             if (messages) addMessages(data.messages);
             updateChatList(data.chatList);
+            updateRequests(data.requests, data.requestCount);
         } catch {
             // Offline for a moment, or logged out (the login page isn't JSON) - try again next time
         }

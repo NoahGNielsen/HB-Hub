@@ -132,7 +132,7 @@ $loginIsTotpStep = loginPendingUserId() !== null;
                 <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Log in</button>
             </div>
 
-            <p class="userMgmt-switch">New here? <a href="/userMgmt/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to onboarding</a></p>
+            <p class="userMgmt-switch">New here? <a href="/userMgmt/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>">Sign Up!</a></p>
         </form>
         <?php endif; ?>
     </main>
