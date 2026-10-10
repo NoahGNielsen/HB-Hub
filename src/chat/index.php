@@ -10,6 +10,7 @@ const HBHUB_CHAT_STATUS_ACTIVE = 1; // chatStatus in HBHub-Chats
 const HBHUB_CHAT_STATUS_DELETED = 2;
 const HBHUB_CHAT_ROLE_MEMBER = 1; // memberRole in HBHub-ChatMembers
 const HBHUB_CHAT_ROLE_ADMIN = 2;
+const HBHUB_CHAT_ROLE_OWNER = 3; // a group admin who can also remove admins, one per group
 const HBHUB_CHAT_SITE_ROLE_ADMIN = 2; // userRole in HBHub-Users, an admin of the whole site
 const HBHUB_CHAT_MEMBERS_MAX = 200; // per group DM, the creator included
 const HBHUB_CHAT_NAME_MAX = 64; // chatName column
@@ -51,6 +52,27 @@ function chatMembership(PDO $db, int $userId, mixed $chatId, bool $isRequest = f
         WHERE cm.chatId = ? AND cm.userId = ? AND c.chatStatus = ? AND cm.userAcknowledgedJoin = ?');
     $statement->execute([(int) $chatId, $userId, HBHUB_CHAT_STATUS_ACTIVE, $isRequest ? 0 : 1]);
     return $statement->fetch() ?: null;
+}
+
+/**
+ * Whether the user is an admin of the group, the owner included.
+ *
+ * @param array{chatType: int, memberRole: int} $chat from chatMembership()
+ */
+function chatIsGroupAdmin(array $chat): bool
+{
+    return (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP
+        && in_array((int) $chat['memberRole'], [HBHUB_CHAT_ROLE_ADMIN, HBHUB_CHAT_ROLE_OWNER], true);
+}
+
+/**
+ * Whether the user is the group's owner.
+ *
+ * @param array{chatType: int, memberRole: int} $chat from chatMembership()
+ */
+function chatIsGroupOwner(array $chat): bool
+{
+    return (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP && (int) $chat['memberRole'] === HBHUB_CHAT_ROLE_OWNER;
 }
 
 /**
@@ -117,8 +139,9 @@ function chatRedirect(?int $chatId, bool $keepUnread = false): never
 }
 
 /**
- * Takes the user out of the chat. A group is never left without an admin: when the last one leaves,
- * the member who has been in it the longest takes over. A chat with nobody left in it is deleted.
+ * Takes the user out of the chat. A group is never left without an owner: when the owner leaves,
+ * the admin who has been in it the longest takes over, or the longest-standing member when there's no admin left.
+ * A chat with nobody left in it is deleted.
  *
  * @param array{chatId: int, chatType: int} $chat
  */
@@ -136,10 +159,13 @@ function chatLeave(PDO $db, int $userId, array $chat): void
     if ($members === []) {
         $db->prepare('UPDATE `HBHub-Chats` SET chatStatus = ? WHERE chatId = ?')
             ->execute([HBHUB_CHAT_STATUS_DELETED, $chat['chatId']]);
-    } elseif ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP
-        && !in_array(HBHUB_CHAT_ROLE_ADMIN, array_map('intval', array_column($members, 'memberRole')), true)) {
-        $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ?')
-            ->execute([HBHUB_CHAT_ROLE_ADMIN, $chat['chatId'], $members[0]['userId']]);
+    } elseif ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
+        $roles = array_map('intval', array_column($members, 'memberRole'));
+        if (!in_array(HBHUB_CHAT_ROLE_OWNER, $roles, true)) {
+            $adminIndex = array_search(HBHUB_CHAT_ROLE_ADMIN, $roles, true);
+            $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ?')
+                ->execute([HBHUB_CHAT_ROLE_OWNER, $chat['chatId'], $members[$adminIndex === false ? 0 : $adminIndex]['userId']]);
+        }
     }
     $db->commit();
 }
@@ -418,9 +444,9 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
         ->execute([$chatName, $isGroup ? HBHUB_CHAT_TYPE_GROUP : HBHUB_CHAT_TYPE_DM, $userId]);
     $chatId = (int) $db->lastInsertId();
 
-    // The creator is the group's admin. In a DM both are normal members.
+    // The creator is the group's owner. In a DM both are normal members.
     // Everyone but the creator gets the chat as a message request they have to accept first.
-    $memberRows = [$chatId, $userId, $isGroup ? HBHUB_CHAT_ROLE_ADMIN : HBHUB_CHAT_ROLE_MEMBER, 1];
+    $memberRows = [$chatId, $userId, $isGroup ? HBHUB_CHAT_ROLE_OWNER : HBHUB_CHAT_ROLE_MEMBER, 1];
     foreach ($memberIds as $memberId) {
         array_push($memberRows, $chatId, $memberId, HBHUB_CHAT_ROLE_MEMBER, 0);
     }
@@ -444,8 +470,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     && in_array($_POST['action'] ?? null, ['mute', 'unmute', 'hide', 'leave', 'nickname', 'rename', 'icon', 'delete'], true)) {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     $openChatId = is_string($_POST['open'] ?? null) && ctype_digit($_POST['open']) ? (int) $_POST['open'] : null;
-    $isGroupAdmin = $chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP
-        && (int) $chat['memberRole'] === HBHUB_CHAT_ROLE_ADMIN;
+    $isGroupAdmin = $chat !== null && chatIsGroupAdmin($chat);
 
     switch ($chat !== null ? $_POST['action'] : null) {
         case 'nickname':
@@ -513,11 +538,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
 }
 
 // The Members popup, for group admins: make another member an admin too, or kick them out of the group.
-// Only members who accepted the group can be made admin. Anyone but yourself can be kicked, an invite is taken back that way.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['makeAdmin', 'kick'], true)) {
+// Only members who accepted the group can be made admin. Admins can kick normal members, an invite is taken back that way.
+// The group owner can also kick admins, or remove them as admin so they're a normal member again.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['makeAdmin', 'removeAdmin', 'kick'], true)) {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
-    $isGroupAdmin = $chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP
-        && (int) $chat['memberRole'] === HBHUB_CHAT_ROLE_ADMIN;
+    $isGroupAdmin = $chat !== null && chatIsGroupAdmin($chat);
+    $isGroupOwner = $chat !== null && chatIsGroupOwner($chat);
 
     $member = false;
     if ($isGroupAdmin && is_string($_POST['member'] ?? null) && ctype_digit($_POST['member']) && (int) $_POST['member'] !== $userId) {
@@ -526,10 +552,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
         $member = $statement->fetch();
     }
 
-    if ($member !== false && $_POST['action'] === 'makeAdmin') {
-        $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ? AND userAcknowledgedJoin = 1')
-            ->execute([HBHUB_CHAT_ROLE_ADMIN, $chat['chatId'], $member['userId']]);
-    } elseif ($member !== false && $_POST['action'] === 'kick') {
+    $isNormalMember = $member !== false && (int) $member['memberRole'] === HBHUB_CHAT_ROLE_MEMBER;
+
+    if ($isNormalMember && $_POST['action'] === 'makeAdmin') {
+        $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ? AND memberRole = ? AND userAcknowledgedJoin = 1')
+            ->execute([HBHUB_CHAT_ROLE_ADMIN, $chat['chatId'], $member['userId'], HBHUB_CHAT_ROLE_MEMBER]);
+    } elseif ($member !== false && $isGroupOwner && $_POST['action'] === 'removeAdmin') {
+        $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ? AND memberRole = ?')
+            ->execute([HBHUB_CHAT_ROLE_MEMBER, $chat['chatId'], $member['userId'], HBHUB_CHAT_ROLE_ADMIN]);
+    } elseif ($member !== false && ($isNormalMember || $isGroupOwner) && $_POST['action'] === 'kick') {
         chatLeave($db, (int) $member['userId'], $chat);
     }
 
@@ -543,8 +574,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     $message = $chat !== null ? chatMessage($db, (int) $chat['chatId'], $_POST['message'] ?? null) : null;
     $isOwnMessage = $message !== null && (int) $message['userId'] === $userId && $message['messageDeletedTimestamp'] === null;
-    $isGroupAdmin = $chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP
-        && (int) $chat['memberRole'] === HBHUB_CHAT_ROLE_ADMIN;
+    $isGroupAdmin = $chat !== null && chatIsGroupAdmin($chat);
 
     switch ($message !== null ? $_POST['action'] : null) {
         case 'edit':
@@ -710,7 +740,8 @@ foreach ($statement->fetchAll() as $chat) {
 $chatSearch = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
 foreach ($chats as &$chat) {
     $chat['chatIsOpen'] = is_string($openChatId) && (string) $chat['chatId'] === $openChatId;
-    $chat['chatIsGroupAdmin'] = (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP && (int) $chat['memberRole'] === HBHUB_CHAT_ROLE_ADMIN;
+    $chat['chatIsGroupAdmin'] = chatIsGroupAdmin($chat);
+    $chat['chatIsGroupOwner'] = chatIsGroupOwner($chat);
 
     // Opening a hidden chat (found by searching for it) brings it back for good
     if ($chat['chatIsOpen'] && $chat['chatHiddenSetting']) {
@@ -736,7 +767,7 @@ foreach ($chats as $chat) {
     }
 }
 
-// Everyone in the open group, for the Members popup: site admins first, then group admins, then the ones who accepted,
+// Everyone in the open group, for the Members popup: site admins first, then the group owner and admins, then the ones who accepted,
 // then by name. Banned and deleted accounts get no profile link, like their messages.
 $openChatMembers = [];
 if ($openChat !== null && !$isPoll && (int) $openChat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
@@ -745,8 +776,8 @@ if ($openChat !== null && !$isPoll && (int) $openChat['chatType'] === HBHUB_CHAT
             u.userStatus IS NULL OR u.userStatus = ? AS memberNoProfile
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
         WHERE cm.chatId = ?
-        ORDER BY memberIsSiteAdmin DESC, cm.memberRole = ? DESC, cm.userAcknowledgedJoin DESC, memberName');
-    $statement->execute([HBHUB_CHAT_SITE_ROLE_ADMIN, HBHUB_SESSION_STATUS_BANNED, $openChat['chatId'], HBHUB_CHAT_ROLE_ADMIN]);
+        ORDER BY memberIsSiteAdmin DESC, cm.memberRole DESC, cm.userAcknowledgedJoin DESC, memberName');
+    $statement->execute([HBHUB_CHAT_SITE_ROLE_ADMIN, HBHUB_SESSION_STATUS_BANNED, $openChat['chatId']]);
     $openChatMembers = $statement->fetchAll();
 }
 
@@ -901,6 +932,7 @@ function chatListItem(array $chat): void
                         $chat['dmUserName'] !== null ? ' data-chat-username="' . htmlspecialchars($chat['dmUserName']) . '"' : '' ?><?=
                         $chat['chatNickname'] !== null ? ' data-chat-nickname="' . htmlspecialchars($chat['chatNickname']) . '"' : '' ?><?=
                         $chat['chatIsGroupAdmin'] ? ' data-chat-admin' : '' ?><?=
+                        $chat['chatIsGroupOwner'] ? ' data-chat-owner' : '' ?><?=
                         $chat['chatIconAttachmentId'] !== null ? ' data-chat-icon' : '' ?><?=
                         $chat['chatMutedLabel'] !== null ? ' data-chat-muted' : '' ?><?=
                         $chat['chatHiddenByUser'] ? ' data-chat-hidden-by-user' : '' ?><?=
@@ -1311,7 +1343,8 @@ if ($isPoll) {
             <?php if ($openChatMembers !== []): ?>
                 <!-- Members popup (chat.js): everyone in the open group, each going to their profile.
                      Members who haven't accepted the group yet show as invited.
-                     Group admins also get Make admin (for members who accepted) and Kick next to everyone but themselves. -->
+                     Group admins also get Make admin (for members who accepted) and Kick next to normal members.
+                     The group owner also gets Remove admin and Kick next to admins. -->
                 <dialog class="chat-dialog chat-members" aria-labelledby="chat-members-title">
                     <div class="chat-requests-body">
                         <header class="chat-new-header">
@@ -1326,10 +1359,18 @@ if ($isPoll) {
                                 $memberInner = chatUserAvatarHtml($memberUserId, $member['memberName'], $member['memberNoProfile'] ? null : $member['userAvatarAttachmentId'])
                                     . '<span class="chat-member-name">' . htmlspecialchars($member['memberName'])
                                     . ($memberUserId === $userId ? ' <span class="chat-member-you">(you)</span>' : '') . '</span>'
-                                    // One admin badge: Site Admin wins over Group Admin
+                                    // One admin badge: Site Admin wins over Group Owner, which wins over Group Admin
                                     . ($member['memberIsSiteAdmin'] ? '<span class="chat-member-badge is-site-admin">Site Admin</span>'
-                                        : ((int) $member['memberRole'] === HBHUB_CHAT_ROLE_ADMIN ? '<span class="chat-member-badge">Group Admin</span>' : ''))
+                                        : match ((int) $member['memberRole']) {
+                                            HBHUB_CHAT_ROLE_OWNER => '<span class="chat-member-badge is-owner">Group Owner</span>',
+                                            HBHUB_CHAT_ROLE_ADMIN => '<span class="chat-member-badge">Group Admin</span>',
+                                            default => '',
+                                        })
                                     . (!$member['userAcknowledgedJoin'] ? '<span class="chat-member-badge is-invited">Invited</span>' : '');
+                                // Admins can act on normal members, the owner on admins too
+                                $memberRole = (int) $member['memberRole'];
+                                $memberCanKick = $openChat['chatIsGroupAdmin'] && $memberUserId !== $userId
+                                    && ($memberRole === HBHUB_CHAT_ROLE_MEMBER || $openChat['chatIsGroupOwner']);
                                 ?>
                                 <li>
                                     <?php if ($member['memberNoProfile']): ?>
@@ -1337,11 +1378,14 @@ if ($isPoll) {
                                     <?php else: ?>
                                         <a class="chat-member" href="<?= htmlspecialchars(hbHubProfileUrl($memberUserId)) ?>" title="View profile"><?= $memberInner ?></a>
                                     <?php endif; ?>
-                                    <?php if ($openChat['chatIsGroupAdmin'] && $memberUserId !== $userId): ?>
+                                    <?php if ($memberCanKick): ?>
                                         <span class="chat-member-actions">
-                                            <?php if ((int) $member['memberRole'] !== HBHUB_CHAT_ROLE_ADMIN && $member['userAcknowledgedJoin']): ?>
+                                            <?php if ($memberRole === HBHUB_CHAT_ROLE_MEMBER && $member['userAcknowledgedJoin']): ?>
                                                 <button type="button" class="chat-btn" data-member-action="makeAdmin"
                                                         data-member-id="<?= $memberUserId ?>" data-member-name="<?= htmlspecialchars($member['memberName']) ?>">Make admin</button>
+                                            <?php elseif ($memberRole === HBHUB_CHAT_ROLE_ADMIN): ?>
+                                                <button type="button" class="chat-btn" data-member-action="removeAdmin"
+                                                        data-member-id="<?= $memberUserId ?>" data-member-name="<?= htmlspecialchars($member['memberName']) ?>">Remove admin</button>
                                             <?php endif; ?>
                                             <button type="button" class="chat-btn is-danger" data-member-action="kick"
                                                     data-member-id="<?= $memberUserId ?>" data-member-name="<?= htmlspecialchars($member['memberName']) ?>"
@@ -1355,7 +1399,7 @@ if ($isPoll) {
                 </dialog>
 
                 <?php if ($openChat['chatIsGroupAdmin']): ?>
-                    <!-- Make admin and Kick ask first (chat.js fills in which, and who it's about) -->
+                    <!-- Make admin, Remove admin and Kick ask first (chat.js fills in which, and who it's about) -->
                     <dialog class="chat-dialog chat-member-confirm" aria-labelledby="chat-member-confirm-title">
                         <form class="chat-requests-body" action="/chat/" method="post">
                             <input type="hidden" name="action" data-member-confirm-action>

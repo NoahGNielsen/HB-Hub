@@ -1086,7 +1086,12 @@ a.chat-member:focus-visible {
   color: #fff;
 }
 
-/* Make admin and Kick, only shown to group admins */
+/* The group owner, between a group admin and a site admin */
+.chat-member-badge.is-owner {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Make admin, Remove admin and Kick, only shown to group admins */
 .chat-member-actions {
   flex: none;
   display: flex;

@@ -43,7 +43,7 @@ CREATE TABLE `HBHub-Attachments` (
 CREATE TABLE `HBHub-ChatMembers` (
   `chatId` int UNSIGNED NOT NULL,
   `userId` int UNSIGNED NOT NULL,
-  `memberRole` int UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Normal Member\r\n2 Group Admin',
+  `memberRole` int UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Normal Member\r\n2 Group Admin\r\n3 Group Owner',
   `lastReadMessageId` int UNSIGNED DEFAULT NULL,
   `memberJoinedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `memberNickname` varchar(64) DEFAULT NULL,

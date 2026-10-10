@@ -288,13 +288,14 @@
 })();
 
 // Members popup: the person button in a group's header lists everyone in it.
-// Group admins can make a member an admin or kick them, both asked about first in a popup on top of it.
+// Group admins can make a member an admin or kick them, and the group owner can remove an admin,
+// all asked about first in a popup on top of it.
 (() => {
     const dialog = document.querySelector('.chat-members');
     if (!dialog) return;
 
     const confirmDialog = document.querySelector('.chat-member-confirm');
-    let memberButton = null; // the Make admin or Kick button that opened the confirm popup
+    let memberButton = null; // the Make admin, Remove admin or Kick button that opened the confirm popup
 
     document.querySelector('[data-members-open]').addEventListener('click', () => dialog.showModal());
 
@@ -302,16 +303,21 @@
         const name = button.dataset.memberName;
         const form = confirmDialog.querySelector('form');
         const submit = confirmDialog.querySelector('[data-member-confirm-submit]');
-        const isKick = button.dataset.memberAction === 'kick';
+        const action = button.dataset.memberAction;
         memberButton = button;
         form.elements.member.value = button.dataset.memberId;
-        confirmDialog.querySelector('[data-member-confirm-action]').value = button.dataset.memberAction;
+        confirmDialog.querySelector('[data-member-confirm-action]').value = action;
 
-        if (!isKick) {
+        if (action === 'makeAdmin') {
             confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Make ${name} an admin?`;
             confirmDialog.querySelector('[data-member-confirm-text]').textContent =
                 `${name} will be able to rename the group, change its icon, delete messages, make others admin, kick members and delete the group.`;
             submit.textContent = 'Make admin';
+        } else if (action === 'removeAdmin') {
+            confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Remove ${name} as admin?`;
+            confirmDialog.querySelector('[data-member-confirm-text]').textContent =
+                `${name} will stay in the group as a normal member.`;
+            submit.textContent = 'Remove admin';
         } else if (button.hasAttribute('data-member-invited')) {
             confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Kick ${name}?`;
             confirmDialog.querySelector('[data-member-confirm-text]').textContent =
@@ -323,7 +329,7 @@
                 `${name} will be removed from the group and won't see its messages anymore.`;
             submit.textContent = 'Kick';
         }
-        submit.classList.toggle('is-danger', isKick);
+        submit.classList.toggle('is-danger', action !== 'makeAdmin');
 
         confirmDialog.showModal();
         confirmDialog.querySelector('.chat-btn[data-dialog-close]').focus(); // the safe choice is the one Enter picks
@@ -624,7 +630,8 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
             }
             confirmAction('leave', 'Leave group?',
                 `You'll leave ${title} and won't see its messages anymore.`
-                    + (chat.hasAttribute('data-chat-admin') ? " If you're the only admin, the longest-standing member takes over." : ''),
+                    + (chat.hasAttribute('data-chat-owner')
+                        ? " You're the owner, so the longest-standing admin takes over (or member, if there are no admins)." : ''),
                 'Leave group');
         },
         delete() {
