@@ -1206,6 +1206,17 @@ if ($isPoll) {
                     <label class="chat-visually-hidden" for="chat-message">Message</label>
                     <textarea id="chat-message" name="message" rows="1" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required
                               placeholder="Message <?= htmlspecialchars($openChat['chatTitle']) ?>" autofocus></textarea>
+                    <!-- Emoji picker: a popup above the button, filled by chat.js. Hidden on phones, which have emoji on their keyboard. -->
+                    <div class="chat-emoji">
+                        <button type="button" class="chat-icon-btn" aria-label="Emoji" title="Emoji"
+                                aria-haspopup="dialog" aria-expanded="false" aria-controls="chat-emoji-picker" data-emoji-open>
+                            <img src="/assets/images/icons/smiley.svg" alt="">
+                        </button>
+                        <div class="chat-emoji-picker" id="chat-emoji-picker" role="dialog" aria-label="Emoji" hidden data-emoji-picker>
+                            <div class="chat-emoji-tabs" role="toolbar" aria-label="Emoji categories" data-emoji-tabs></div>
+                            <div class="chat-emoji-list" data-emoji-list></div>
+                        </div>
+                    </div>
                     <?php if ($chatGifsEnabled): ?>
                         <!-- Set by the GIF picker (chat.js), which then sends the form -->
                         <input type="hidden" name="gif" value="" autocomplete="off" data-gif-input>

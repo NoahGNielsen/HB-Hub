@@ -893,6 +893,201 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
     });
 })();
 
+// Emoji picker: the smiley left of GIF opens a popup above it with the emoji by category, and the recently used ones first.
+// Picking one puts it where the cursor is in the message box, and the popup stays open for more.
+// chat.css hides it on phones and tablets, which have emoji on their keyboard.
+(() => {
+    const button = document.querySelector('[data-emoji-open]');
+    const picker = document.querySelector('[data-emoji-picker]');
+    const textarea = document.querySelector('.chat-composer textarea');
+    if (!button || !picker || !textarea) return;
+
+    const tabs = picker.querySelector('[data-emoji-tabs]');
+    const list = picker.querySelector('[data-emoji-list]');
+    const RECENT_KEY = 'hbhub-chat-emoji-recent';
+    const RECENT_MAX = 16;
+
+    // [name, tab icon, the emoji with spaces between]
+    const categories = [
+        ['Smileys', '😀', '😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😗 😚 😙 🥲 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 😏 😒 🙄 😬 🤥 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🤧 🥵 🥶 🥴 😵 🤯 🤠 🥳 🥸 😎 🤓 🧐 😕 😟 🙁 ☹️ 😮 😯 😲 😳 🥺 😦 😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 🤬 😈 👿 💀 ☠️ 💩 🤡 👹 👺 👻 👽 👾 🤖 😺 😸 😹 😻 😼 😽 🙀 😿 😾 🙈 🙉 🙊'],
+        ['People', '👋', '👋 🤚 🖐️ ✋ 🖖 👌 🤌 🤏 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 🖕 👇 ☝️ 👍 👎 ✊ 👊 🤛 🤜 👏 🙌 👐 🤲 🤝 🙏 ✍️ 💅 🤳 💪 🦵 🦶 👂 👃 🧠 👀 👁️ 👅 👄 💋 👶 🧒 👦 👧 🧑 👱 👨 🧔 👩 🧓 👴 👵 🙍 🙎 🙅 🙆 💁 🙋 🧏 🙇 🤦 🤷 👮 🕵️ 💂 👷 🤴 👸 🧙 🧚 🧛 🧜 🧝 🧞 🧟 🦸 🦹 🏃 💃 🕺 👯 🧘 👪 💑 💏'],
+        ['Animals & nature', '🐶', '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐤 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🐛 🦋 🐌 🐞 🐜 🕷️ 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🐘 🦛 🦏 🐪 🦒 🦘 🐃 🐄 🐎 🐖 🐏 🐑 🐐 🦌 🐕 🐩 🐈 🐓 🦃 🦚 🦜 🦢 🦩 🕊️ 🐇 🦝 🦨 🦡 🦦 🦥 🐁 🐿️ 🦔 🌵 🎄 🌲 🌳 🌴 🌱 🌿 ☘️ 🍀 🍁 🍂 🍃 🍄 🌷 🌹 🥀 🌺 🌸 🌼 🌻 🌞 🌝 🌚 🌙 ⭐ 🌟 ✨ ⚡ 🔥 🌈 ☀️ ⛅ ☁️ 🌧️ ⛈️ 🌩️ ❄️ ☃️ ⛄ 💨 💧 💦 🌊'],
+        ['Food & drink', '🍔', '🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍈 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🍆 🥑 🥦 🥬 🥒 🌶️ 🌽 🥕 🧄 🧅 🥔 🍠 🥐 🥯 🍞 🥖 🥨 🧀 🥚 🍳 🧈 🥞 🧇 🥓 🥩 🍗 🍖 🌭 🍔 🍟 🍕 🥪 🥙 🧆 🌮 🌯 🥗 🥘 🍝 🍜 🍲 🍛 🍣 🍱 🥟 🍤 🍙 🍚 🍘 🍥 🥠 🍢 🍡 🍧 🍨 🍦 🥧 🧁 🍰 🎂 🍮 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 🥛 🍼 ☕ 🍵 🧃 🥤 🧋 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🧉 🍾 🧊 🥄 🍴 🍽️'],
+        ['Activities', '⚽', '⚽ 🏀 🏈 ⚾ 🥎 🎾 🏐 🏉 🥏 🎱 🪀 🏓 🏸 🏒 🏑 🥍 🏏 🥅 ⛳ 🪁 🏹 🎣 🤿 🥊 🥋 🎽 🛹 🛼 🛷 ⛸️ 🥌 🎿 ⛷️ 🏂 🏋️ 🤸 🤺 ⛹️ 🤾 🏌️ 🏇 🧗 🚴 🏊 🏄 🏆 🥇 🥈 🥉 🏅 🎖️ 🎗️ 🎫 🎟️ 🎪 🎭 🎨 🎬 🎤 🎧 🎼 🎹 🥁 🎷 🎺 🎸 🪕 🎻 🎲 ♟️ 🎯 🎳 🎮 🕹️ 🎰 🧩 🎉 🎊 🎈 🎁 🎀 🎃 🎄 🎆 🎇 🧨'],
+        ['Travel & places', '🚗', '🚗 🚕 🚙 🚌 🚎 🏎️ 🚓 🚑 🚒 🚐 🛻 🚚 🚛 🚜 🛵 🏍️ 🛺 🚲 🛴 🚨 🚔 🚍 🚘 🚖 🚡 🚠 🚟 🚃 🚋 🚞 🚝 🚄 🚅 🚈 🚂 🚆 🚇 🚊 🚉 ✈️ 🛫 🛬 🛩️ 💺 🛰️ 🚀 🛸 🚁 🛶 ⛵ 🚤 🛥️ 🛳️ ⛴️ 🚢 ⚓ ⛽ 🚧 🚦 🚥 🗺️ 🗿 🗽 🗼 🏰 🏯 🏟️ 🎡 🎢 🎠 ⛲ ⛱️ 🏖️ 🏝️ 🏜️ 🌋 ⛰️ 🏔️ 🗻 🏕️ ⛺ 🏠 🏡 🏘️ 🏚️ 🏗️ 🏭 🏢 🏬 🏣 🏤 🏥 🏦 🏨 🏪 🏫 🏩 💒 🏛️ ⛪ 🕌 🕍 🛕 🕋 ⛩️ 🌅 🌄 🌠 🎑 🏙️ 🌃 🌌 🌉 🌁'],
+        ['Objects', '💡', '⌚ 📱 💻 ⌨️ 🖥️ 🖨️ 🖱️ 🕹️ 💽 💾 💿 📀 📷 📸 📹 🎥 📞 ☎️ 📺 📻 🎙️ ⏰ ⌛ ⏳ 📡 🔋 🔌 💡 🔦 🕯️ 🧯 💸 💵 💰 💳 💎 ⚖️ 🧰 🔧 🔨 ⚒️ 🛠️ ⛏️ 🔩 ⚙️ 🧱 ⛓️ 🧲 🔫 💣 🧨 🪓 🔪 🗡️ ⚔️ 🛡️ 🔮 🧿 💈 ⚗️ 🔭 🔬 💊 💉 🩸 🧬 🦠 🧪 🌡️ 🧹 🧺 🧻 🚽 🚿 🛁 🧼 🧽 🔑 🗝️ 🚪 🛋️ 🛏️ 🧸 🖼️ 🛍️ 🛒 🎁 ✉️ 📩 📨 📧 📦 📮 📜 📃 📄 📑 📊 📈 📉 🗒️ 📆 📅 🗑️ 📁 📂 🗂️ 📰 📓 📔 📒 📕 📗 📘 📙 📚 📖 🔖 🔗 📎 🖇️ 📐 📏 📌 📍 ✂️ 🖊️ 🖋️ ✒️ 🖌️ 🖍️ 📝 ✏️ 🔍 🔎 🔏 🔐 🔒 🔓 👓 🕶️ 🥽 👔 👕 👖 🧣 🧤 🧥 🧦 👗 👘 👙 👚 👛 👜 👝 🎒 👞 👟 🥾 👠 👡 👢 👑 👒 🎩 🎓 🧢 ⛑️ 💄 💍 💼'],
+        ['Symbols', '❤️', '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ☮️ ✝️ ☪️ 🕉️ ☸️ ✡️ 🔯 ☯️ ☦️ 🛐 ⛎ ♈ ♉ ♊ ♋ ♌ ♍ ♎ ♏ ♐ ♑ ♒ ♓ 🆔 ⚛️ ☢️ ☣️ 📴 📳 🆚 💮 🉐 🅰️ 🅱️ 🆎 🆑 🅾️ 🆘 ❌ ⭕ 🛑 ⛔ 📛 🚫 💯 💢 ♨️ 🚷 🚯 🚳 🚱 🔞 📵 🚭 ❗ ❕ ❓ ❔ ‼️ ⁉️ 🔅 🔆 ⚠️ 🚸 🔱 ⚜️ 🔰 ♻️ ✅ ❇️ ✳️ ❎ 🌐 💠 Ⓜ️ 🌀 💤 🏧 🚾 ♿ 🅿️ 🚹 🚺 🚼 🚻 🚮 🎦 📶 🆗 🆙 🆒 🆕 🆓 🔟 🔢 #️⃣ *️⃣ ▶️ ⏸️ ⏯️ ⏹️ ⏺️ ⏭️ ⏮️ ⏩ ⏪ 🔀 🔁 🔂 ◀️ 🔼 🔽 ⏫ ⏬ ➡️ ⬅️ ⬆️ ⬇️ ↗️ ↘️ ↙️ ↖️ ↕️ ↔️ ↪️ ↩️ ⤴️ ⤵️ 🔄 🔃 🎵 🎶 ➕ ➖ ➗ ✖️ ♾️ 💲 💱 ™️ ©️ ®️ 〰️ ➰ ➿ 🔚 🔙 🔛 🔝 🔜 ✔️ ☑️ 🔘 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🟤 🔺 🔻 🔸 🔹 🔶 🔷 🔳 🔲 ▪️ ▫️ ◾ ◽ ◼️ ◻️ 🟥 🟧 🟨 🟩 🟦 🟪 ⬛ ⬜ 🟫 🔈 🔇 🔉 🔊 🔔 🔕 📣 📢 💬 💭 🗯️ ♠️ ♣️ ♥️ ♦️ 🃏 🎴 🀄 🕐 🕑 🕒 🕓 🕔 🕕 🕖 🕗 🕘 🕙 🕚 🕛'],
+    ];
+
+    // Browser storage can be blocked (private windows), so the recent ones are just left out then
+    function recentEmoji() {
+        try {
+            const recent = JSON.parse(localStorage.getItem(RECENT_KEY));
+            return Array.isArray(recent) ? recent.filter((emoji) => typeof emoji === 'string').slice(0, RECENT_MAX) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function rememberEmoji(emoji) {
+        try {
+            const recent = [emoji, ...recentEmoji().filter((other) => other !== emoji)].slice(0, RECENT_MAX);
+            localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+        } catch {
+            // not remembered, that's fine
+        }
+    }
+
+    // Built on every open, so the recently used ones are up to date (but don't move around while picking)
+    function render() {
+        const recent = recentEmoji();
+        const sections = (recent.length > 0 ? [['Recently used', '🕘', recent]] : [])
+            .concat(categories.map(([name, icon, emoji]) => [name, icon, emoji.split(' ')]));
+
+        tabs.replaceChildren();
+        list.replaceChildren();
+        sections.forEach(([name, icon, emoji], index) => {
+            const heading = document.createElement('h3');
+            heading.className = 'chat-emoji-heading';
+            heading.id = 'chat-emoji-section-' + index;
+            heading.textContent = name;
+
+            const grid = document.createElement('div');
+            grid.className = 'chat-emoji-grid';
+            grid.setAttribute('role', 'group');
+            grid.setAttribute('aria-labelledby', heading.id);
+            grid.append(...emoji.map((character) => {
+                const pick = document.createElement('button');
+                pick.type = 'button';
+                pick.tabIndex = -1;
+                pick.textContent = character;
+                pick.dataset.emoji = character;
+                return pick;
+            }));
+
+            const section = document.createElement('section');
+            section.append(heading, grid);
+            list.append(section);
+
+            const tab = document.createElement('button');
+            tab.type = 'button';
+            tab.textContent = icon;
+            tab.title = name;
+            tab.setAttribute('aria-label', name);
+            tab.addEventListener('click', () => {
+                list.scrollTop = section.offsetTop - list.offsetTop;
+                setActive(grid.querySelector('button'));
+            });
+            tabs.append(tab);
+        });
+
+        list.scrollTop = 0;
+        markCurrentTab();
+        setActive(list.querySelector('[data-emoji]'));
+    }
+
+    // Only one emoji is a Tab stop, and the arrow keys move between them
+    let active = null;
+    function setActive(pick, focus = true) {
+        if (active) active.tabIndex = -1;
+        active = pick;
+        active.tabIndex = 0;
+        if (focus) active.focus({ preventScroll: true });
+        active.scrollIntoView({ block: 'nearest' });
+    }
+
+    // The tab for the section at the top of the list lights up
+    function markCurrentTab() {
+        const sections = [...list.children];
+        let current = 0;
+        sections.forEach((section, index) => {
+            if (section.offsetTop - list.offsetTop <= list.scrollTop + 1) current = index;
+        });
+        [...tabs.children].forEach((tab, index) => tab.classList.toggle('is-current', index === current));
+    }
+    list.addEventListener('scroll', markCurrentTab, { passive: true });
+
+    // Puts the emoji where the cursor is (or over the selected text), as long as it fits within maxlength
+    function insert(emoji) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        if (textarea.maxLength > 0 && textarea.value.length - (end - start) + emoji.length > textarea.maxLength) return;
+        textarea.setRangeText(emoji, start, end, 'end');
+        textarea.dispatchEvent(new Event('input', { bubbles: true })); // so it grows like when typing
+        rememberEmoji(emoji);
+    }
+
+    function setOpen(isOpen, returnFocus) {
+        picker.hidden = !isOpen;
+        button.setAttribute('aria-expanded', String(isOpen));
+        if (isOpen) render();
+        else if (returnFocus) button.focus();
+    }
+
+    button.addEventListener('click', () => setOpen(picker.hidden, true));
+
+    list.addEventListener('click', (event) => {
+        const pick = event.target.closest('[data-emoji]');
+        if (!pick) return;
+        setActive(pick);
+        insert(pick.dataset.emoji);
+    });
+
+    // The emoji in the next row up or down: the closest one sideways in the nearest row that way
+    function inNextRow(from, direction) {
+        const fromBox = from.getBoundingClientRect();
+        let best = null;
+        let bestScore = Infinity;
+        list.querySelectorAll('[data-emoji]').forEach((pick) => {
+            const box = pick.getBoundingClientRect();
+            const rows = (box.top - fromBox.top) * direction;
+            if (rows < 1) return;
+            const score = rows * 1000 + Math.abs(box.left - fromBox.left);
+            if (score < bestScore) {
+                best = pick;
+                bestScore = score;
+            }
+        });
+        return best;
+    }
+
+    // Arrow keys move through the emoji, Home and End to the first and last. Escape closes, back on the button.
+    picker.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            setOpen(false, true);
+            return;
+        }
+
+        const pick = event.target.closest('[data-emoji]');
+        if (!pick) return;
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            setOpen(false, true);
+            return;
+        }
+
+        const picks = [...list.querySelectorAll('[data-emoji]')];
+        const index = picks.indexOf(pick);
+        const moves = {
+            ArrowLeft: () => picks[index - 1],
+            ArrowRight: () => picks[index + 1],
+            ArrowUp: () => inNextRow(pick, -1),
+            ArrowDown: () => inNextRow(pick, 1),
+            Home: () => picks[0],
+            End: () => picks[picks.length - 1],
+        };
+        if (!(event.key in moves)) return;
+        event.preventDefault();
+        const next = moves[event.key]();
+        if (next) setActive(next);
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+        if (!picker.hidden && !picker.contains(event.target) && !button.contains(event.target)) setOpen(false, false);
+    });
+})();
+
 // GIF picker: the GIF button next to Send searches Giphy through /chat/gifs (which holds the API key),
 // with the trending GIFs shown before anything is typed. Picking one sends it straight away, together with
 // whatever was typed in the message box (the server sends that first) and the reply, if there is one.
