@@ -8,8 +8,8 @@
 
 [hbhub.noahgajnielsen.dk](https://hbhub.noahgajnielsen.dk)
 
-[![Members](https://img.shields.io/endpoint?url=https%3A%2F%2Fhbhub.noahgajnielsen.dk%2Fassets%2Fphp%2Fgithub%2FtotalMembers&style=for-the-badge&logo=handshake&logoColor=white)](https://hbhub.noahgajnielsen.dk)
-[![Messages](https://img.shields.io/endpoint?url=https%3A%2F%2Fhbhub.noahgajnielsen.dk%2Fassets%2Fphp%2Fgithub%2FtotalMesseges&style=for-the-badge&logo=wechat&logoColor=white)](https://hbhub.noahgajnielsen.dk)
+[![Members](https://img.shields.io/endpoint?url=https%3A%2F%2Fhbhub.noahgajnielsen.dk%2Fassets%2Fphp%2Fgithub%2FtotalMembers&logo=handshake&logoColor=white)](https://hbhub.noahgajnielsen.dk)
+[![Messages](https://img.shields.io/endpoint?url=https%3A%2F%2Fhbhub.noahgajnielsen.dk%2Fassets%2Fphp%2Fgithub%2FtotalMesseges&logo=wechat&logoColor=white)](https://hbhub.noahgajnielsen.dk)
 
 ![Uptime Robot ratio (30 days)](https://img.shields.io/uptimerobot/ratio/m804196409-9f05044a7225156afaa387a0)
 ![License](https://img.shields.io/github/license/NoahGNielsen/HB-Hub)
