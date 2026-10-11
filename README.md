@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/assets/images/icons/chat.png" alt="HB Hub" width="96">
+<img src="https://raw.githubusercontent.com/NoahGNielsen/HB-Hub/refs/heads/main/src/assets/images/icons/chat.png" alt="HB Hub" width="96">
 
 # HB Hub
 
