@@ -87,8 +87,9 @@ CREATE TABLE `HBHub-Messages` (
   `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin',
   `messageIsEdited` tinyint NOT NULL DEFAULT '0',
   `messageReplyToId` bigint UNSIGNED DEFAULT NULL,
-  `messageEvent` tinyint UNSIGNED DEFAULT NULL COMMENT 'NULL A normal message\r\nOtherwise a notice about a change, made by userId:\r\n1 Renamed the group (messageContent is the new name, NULL when taken away)\r\n2 Changed the group icon\r\n3 Removed the group icon\r\n4 Changed the background\r\n5 Reset the background\r\n6 Made messageEventUserId a group admin\r\n7 Removed messageEventUserId as group admin\r\n8 Kicked messageEventUserId\r\n9 Joined the group\r\n10 Left the chat',
-  `messageEventUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who the notice is about (messageEvent 6, 7 and 8)'
+  `messageEvent` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 A normal message\r\n1 A notice about a change in the chat, made by userId (messageEventType says which)',
+  `messageEventType` tinyint UNSIGNED DEFAULT NULL COMMENT 'NULL for a normal message\r\n1 Renamed the group (messageContent is the new name, NULL when taken away)\r\n2 Changed the group icon\r\n3 Removed the group icon\r\n4 Changed the background\r\n5 Reset the background\r\n6 Made messageEventUserId a group admin\r\n7 Removed messageEventUserId as group admin\r\n8 Kicked messageEventUserId\r\n9 Joined the group\r\n10 Left the chat\r\n11 Added messageEventUserId to the group\r\n12 Became the group owner when the owner left',
+  `messageEventUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who the notice is about (messageEventType 6, 7, 8, 11 and 12)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------

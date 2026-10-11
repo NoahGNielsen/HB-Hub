@@ -68,25 +68,18 @@
     });
 })();
 
-// New chat popup: search all users and pick who to chat with.
-// One picked user makes a DM, more make a group DM (up to data-members-max, yourself included).
-// The picks stay when the search changes, and go into the form as hidden users[] inputs.
-(() => {
-    const dialog = document.querySelector('.chat-new');
-    if (!dialog) return;
-
-    const form = dialog.querySelector('form');
-    const search = dialog.querySelector('#chat-new-search');
+// User picker in a popup (New chat, Add to chat): searches all users and ticks the picked ones.
+// The picks stay when the search changes, and go into the popup's form as hidden users[] inputs.
+// Users already in the group show, but can't be picked. onChange(number picked) runs after every change.
+function userPicker(dialog, onChange) {
+    const search = dialog.querySelector('input[type="search"]');
     const pickedList = dialog.querySelector('[data-picked]');
     const userList = dialog.querySelector('[data-users]');
     const status = dialog.querySelector('[data-users-status]');
-    const groupFields = dialog.querySelector('[data-group-fields]');
-    const groupName = dialog.querySelector('#chat-new-name');
-    const count = dialog.querySelector('[data-picked-count]');
-    const submitBtn = dialog.querySelector('[data-new-chat-submit]');
-    const pickedMax = Number(dialog.dataset.membersMax) - 1; // the creator takes one spot
 
     const picked = new Map(); // userId -> userName, in the order they were picked
+    let pickedMax = 0;
+    let memberIds = new Set(); // userIds already in the group
     let shownUsers = [];
     let searchTimer = null;
     let searchRequest = null;
@@ -117,6 +110,12 @@
             const label = document.createElement('label');
             label.className = 'chat-new-user';
             label.append(checkbox, avatar(user.userName), name);
+            if (memberIds.has(user.userId)) {
+                const note = document.createElement('span');
+                note.className = 'chat-new-user-note';
+                note.textContent = 'In the group';
+                label.append(note);
+            }
 
             const item = document.createElement('li');
             item.append(label);
@@ -125,13 +124,14 @@
         syncUsers();
     }
 
-    // Ticks the picked users and locks the rest once the group is full.
+    // Ticks the picked users (and the ones in the group already) and locks the rest once the group is full.
     // Updates the checkboxes in place, so keyboard focus stays where it is.
     function syncUsers() {
         userList.querySelectorAll('input').forEach((checkbox) => {
-            const isPicked = picked.has(Number(checkbox.dataset.userId));
-            checkbox.checked = isPicked;
-            checkbox.disabled = !isPicked && picked.size >= pickedMax;
+            const userId = Number(checkbox.dataset.userId);
+            const isPicked = picked.has(userId);
+            checkbox.checked = isPicked || memberIds.has(userId);
+            checkbox.disabled = memberIds.has(userId) || (!isPicked && picked.size >= pickedMax);
         });
     }
 
@@ -160,18 +160,9 @@
     }
 
     function update() {
-        const isGroup = picked.size > 1;
         renderPicked();
         syncUsers();
-
-        groupFields.hidden = !isGroup;
-        submitBtn.disabled = picked.size === 0;
-        submitBtn.textContent = isGroup ? 'Create group' : 'Start DM';
-
-        if (picked.size === 0) count.textContent = 'Pick someone to chat with';
-        else if (!isGroup) count.textContent = 'DM';
-        else if (picked.size >= pickedMax) count.textContent = `Group full: ${picked.size + 1}/${pickedMax + 1} members`;
-        else count.textContent = `Group DM: ${picked.size + 1}/${pickedMax + 1} members`;
+        onChange(picked.size);
     }
 
     async function loadUsers() {
@@ -200,21 +191,57 @@
         searchTimer = setTimeout(loadUsers, 200);
     });
 
-    // Enter in the search shouldn't create the chat
+    // Enter in the search shouldn't send the form
     search.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') event.preventDefault();
     });
 
+    return {
+        picked,
+        // Opens the popup with nobody picked yet. max: how many can be picked, members: userIds already in the group
+        open(max, members = []) {
+            pickedMax = max;
+            memberIds = new Set(members);
+            picked.clear();
+            shownUsers = [];
+            renderUsers();
+            search.value = '';
+            update();
+            dialog.showModal();
+            search.focus();
+            loadUsers();
+        },
+    };
+}
+
+// New chat popup: search all users and pick who to chat with.
+// One picked user makes a DM, more make a group DM (up to data-members-max, yourself included).
+(() => {
+    const dialog = document.querySelector('[data-new-chat]');
+    if (!dialog) return;
+
+    const form = dialog.querySelector('form');
+    const groupFields = dialog.querySelector('[data-group-fields]');
+    const groupName = dialog.querySelector('#chat-new-name');
+    const count = dialog.querySelector('[data-picked-count]');
+    const submitBtn = dialog.querySelector('[data-new-chat-submit]');
+    const pickedMax = Number(dialog.dataset.membersMax) - 1; // the creator takes one spot
+
+    const picker = userPicker(dialog, (pickedCount) => {
+        const isGroup = pickedCount > 1;
+        groupFields.hidden = !isGroup;
+        submitBtn.disabled = pickedCount === 0;
+        submitBtn.textContent = isGroup ? 'Create group' : 'Start DM';
+
+        if (pickedCount === 0) count.textContent = 'Pick someone to chat with';
+        else if (!isGroup) count.textContent = 'DM';
+        else if (pickedCount >= pickedMax) count.textContent = `Group full: ${pickedCount + 1}/${pickedMax + 1} members`;
+        else count.textContent = `Group DM: ${pickedCount + 1}/${pickedMax + 1} members`;
+    });
+
     document.querySelector('[data-new-chat-open]')?.addEventListener('click', () => {
-        picked.clear();
-        shownUsers = [];
-        renderUsers();
-        search.value = '';
         groupName.value = '';
-        update();
-        dialog.showModal();
-        search.focus();
-        loadUsers();
+        picker.open(pickedMax);
     });
 
     dialog.querySelectorAll('[data-new-chat-close]').forEach((button) => {
@@ -227,8 +254,46 @@
     });
 
     form.addEventListener('submit', (event) => {
-        if (picked.size === 0) event.preventDefault();
+        if (picker.picked.size === 0) event.preventDefault();
         else submitBtn.disabled = true; // no double chats from a double click
+    });
+})();
+
+// Add to chat popup (groups): any member can add people, until the group has data-members-max members (invites counted).
+// The ones added get the group as a message request, like when it was made, and everyone sees a notice.
+(() => {
+    const dialog = document.querySelector('.chat-add');
+    if (!dialog) return;
+
+    const form = dialog.querySelector('form');
+    const count = dialog.querySelector('[data-picked-count]');
+    const submitBtn = dialog.querySelector('[data-add-submit]');
+    const memberIds = dialog.dataset.memberIds.split(',').map(Number);
+    const membersMax = Number(dialog.dataset.membersMax);
+    const pickedMax = Math.max(0, membersMax - memberIds.length);
+
+    const picker = userPicker(dialog, (pickedCount) => {
+        const memberCount = memberIds.length + pickedCount;
+        submitBtn.disabled = pickedCount === 0;
+        if (memberCount >= membersMax) count.textContent = `Group full: ${memberCount}/${membersMax} members`;
+        else if (pickedCount === 0) count.textContent = 'Pick who to add';
+        else count.textContent = `Group: ${memberCount}/${membersMax} members`;
+    });
+
+    document.querySelector('[data-add-open]').addEventListener('click', () => picker.open(pickedMax, memberIds));
+
+    dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+        button.addEventListener('click', () => dialog.close());
+    });
+
+    // Clicking the dimmed area around the popup closes it
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+
+    form.addEventListener('submit', (event) => {
+        if (picker.picked.size === 0) event.preventDefault();
+        else submitBtn.disabled = true; // no double adds from a double click
     });
 })();
 

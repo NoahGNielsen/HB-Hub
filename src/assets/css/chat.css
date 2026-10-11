@@ -1159,11 +1159,21 @@ a.chat-message-reply:hover {
   background: var(--secondary);
 }
 
-/* Members popup (groups): opened by the person button at the right of the chat's header */
+/* Add to chat and Members popups (groups): opened by the two buttons at the right of the chat's header */
+.chat-window-header .chat-add-btn,
 .chat-window-header .chat-members-btn {
-  margin-left: auto;
   width: 40px;
   height: 40px;
+}
+
+.chat-window-header .chat-add-btn {
+  margin-left: auto;
+}
+
+/* "In the group" next to someone the Add to chat popup can't add */
+.chat-new-user-note {
+  font-size: 0.75rem;
+  opacity: 0.8;
 }
 
 .chat-members-count {

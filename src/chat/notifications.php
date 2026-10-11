@@ -43,7 +43,7 @@ if (is_string($after) && ctype_digit($after) && strlen($after) <= 19) {
         JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = ?
         JOIN `HBHub-Chats` c ON c.chatId = m.chatId AND c.chatStatus = ?
         JOIN `HBHub-Users` u ON u.userId = m.userId
-        WHERE m.messageId > ? AND m.messageId <= ? AND m.userId <> ? AND m.messageDeletedTimestamp IS NULL AND m.messageEvent IS NULL
+        WHERE m.messageId > ? AND m.messageId <= ? AND m.userId <> ? AND m.messageDeletedTimestamp IS NULL AND m.messageEvent = 0
             AND m.messageId > COALESCE(cm.lastReadMessageId, 0) AND (u.userStatus IS NULL OR u.userStatus <> ?)'
             . ($mutedChatIds !== [] ? ' AND m.chatId NOT IN (' . implode(', ', array_fill(0, count($mutedChatIds), '?')) . ')' : '') . '
         ORDER BY m.messageId DESC LIMIT ' . HBHUB_NOTIFY_LIMIT);

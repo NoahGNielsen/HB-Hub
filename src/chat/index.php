@@ -41,18 +41,20 @@ const HBHUB_CHAT_BACKGROUND_DIRECTIONS = [
 ];
 // chatBackgroundGradientColor in the chat's settings while it has the default background (database/defaultChatSettings.json)
 const HBHUB_CHAT_BACKGROUND_DEFAULT = ['color1' => 'default', 'color2' => 'default', 'gradientAngle' => 90];
-// messageEvent in HBHub-Messages: a notice in the middle of the chat about a change, made by the message's userId.
-// NULL for a normal message.
+// messageEventType in HBHub-Messages: which change a notice in the middle of the chat is about (messageEvent is 1),
+// made by the message's userId
 const HBHUB_CHAT_EVENT_RENAME = 1; // messageContent is the new name, NULL when it was taken away
 const HBHUB_CHAT_EVENT_ICON = 2;
 const HBHUB_CHAT_EVENT_ICON_REMOVE = 3;
 const HBHUB_CHAT_EVENT_BACKGROUND = 4;
 const HBHUB_CHAT_EVENT_BACKGROUND_RESET = 5;
-const HBHUB_CHAT_EVENT_MAKE_ADMIN = 6; // messageEventUserId is who it's about, for these three
+const HBHUB_CHAT_EVENT_MAKE_ADMIN = 6; // messageEventUserId is who it's about, for these three and ADD and OWNER
 const HBHUB_CHAT_EVENT_REMOVE_ADMIN = 7;
 const HBHUB_CHAT_EVENT_KICK = 8;
 const HBHUB_CHAT_EVENT_JOIN = 9;
 const HBHUB_CHAT_EVENT_LEAVE = 10;
+const HBHUB_CHAT_EVENT_ADD = 11;
+const HBHUB_CHAT_EVENT_OWNER = 12; // took over as owner when the owner left, so they're both userId and messageEventUserId
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
@@ -123,7 +125,7 @@ function chatMessage(PDO $db, int $chatId, mixed $messageId): ?array
 
     // Not a notice, so they can't be edited, deleted or replied to
     $statement = $db->prepare('SELECT messageId, userId, messageContent, messageDeletedTimestamp
-        FROM `HBHub-Messages` WHERE messageId = ? AND chatId = ? AND messageEvent IS NULL');
+        FROM `HBHub-Messages` WHERE messageId = ? AND chatId = ? AND messageEvent = 0');
     $statement->execute([(int) $messageId, $chatId]);
     return $statement->fetch() ?: null;
 }
@@ -133,12 +135,13 @@ function chatMessage(PDO $db, int $chatId, mixed $messageId): ?array
  * It's saved as a message, so it shows up in the right place and polling brings it to everyone in the chat.
  *
  * @param int $event one of the HBHUB_CHAT_EVENT_* constants
- * @param ?int $aboutUserId who it's about: the member made or removed as admin, or kicked
+ * @param ?int $aboutUserId who it's about: the member made or removed as admin, kicked or added, or the new owner
  * @param ?string $content the group's new name, for HBHUB_CHAT_EVENT_RENAME
  */
 function chatNotice(PDO $db, int $userId, int $chatId, int $event, ?int $aboutUserId = null, ?string $content = null): void
 {
-    $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageEvent, messageEventUserId) VALUES (?, ?, ?, ?, ?)')
+    $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageEvent, messageEventType, messageEventUserId)
+        VALUES (?, ?, ?, 1, ?, ?)')
         ->execute([$userId, $chatId, $content, $event, $aboutUserId]);
 }
 
@@ -152,7 +155,7 @@ function chatMessages(PDO $db, int $chatId, ?int $afterId = null): array
     $statement = $db->prepare('SELECT * FROM (
             SELECT m.messageId, m.userId, m.messageContent, m.attachmentId, m.messageSentTimestamp,
                 m.messageDeletedTimestamp, m.messageDeletedByAdmin, m.messageIsEdited, m.messageReplyToId,
-                m.messageEvent, m.messageEventUserId, COALESCE(ecm.memberNickname, eu.userName) AS eventUserName,
+                m.messageEvent, m.messageEventType, m.messageEventUserId, COALESCE(ecm.memberNickname, eu.userName) AS eventUserName,
                 COALESCE(cm.memberNickname, u.userName) AS senderName,
                 u.userAvatarAttachmentId AS senderAvatarId, u.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' AS senderBanned,
                 r.messageId AS replyId, r.userId AS replyUserId, r.messageContent AS replyContent,
@@ -183,32 +186,101 @@ function chatRedirect(?int $chatId, bool $keepUnread = false): never
 }
 
 /**
- * Takes the user out of the chat. A group is never left without an owner: when the owner leaves,
- * the admin who has been in it the longest takes over, or the longest-standing member when there's no admin left.
+ * Takes the user out of the chat, with a notice that they left, or that $kickedBy kicked them.
+ * A group is never left without an owner: when the owner leaves, the admin who has been in it the longest takes over,
+ * or the longest-standing member when there's no admin left, and a notice says who.
  * A chat with nobody left in it is deleted.
  *
  * @param array{chatId: int, chatType: int} $chat
  */
-function chatLeave(PDO $db, int $userId, array $chat): void
+function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null): void
 {
+    $chatId = (int) $chat['chatId'];
     $db->beginTransaction();
     $db->prepare('DELETE FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ?')
-        ->execute([$chat['chatId'], $userId]);
+        ->execute([$chatId, $userId]);
 
     $statement = $db->prepare('SELECT userId, memberRole FROM `HBHub-ChatMembers` WHERE chatId = ?
         ORDER BY userAcknowledgedJoin DESC, memberJoinedTimestamp, userId FOR UPDATE');
-    $statement->execute([$chat['chatId']]);
+    $statement->execute([$chatId]);
     $members = $statement->fetchAll();
 
     if ($members === []) {
         $db->prepare('UPDATE `HBHub-Chats` SET chatStatus = ? WHERE chatId = ?')
-            ->execute([HBHUB_CHAT_STATUS_DELETED, $chat['chatId']]);
-    } elseif ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
+            ->execute([HBHUB_CHAT_STATUS_DELETED, $chatId]);
+    } else {
+        if ($kickedBy === null) {
+            chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_LEAVE);
+        } else {
+            chatNotice($db, $kickedBy, $chatId, HBHUB_CHAT_EVENT_KICK, $userId);
+        }
+
         $roles = array_map('intval', array_column($members, 'memberRole'));
-        if (!in_array(HBHUB_CHAT_ROLE_OWNER, $roles, true)) {
+        if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP && !in_array(HBHUB_CHAT_ROLE_OWNER, $roles, true)) {
             $adminIndex = array_search(HBHUB_CHAT_ROLE_ADMIN, $roles, true);
+            $newOwnerId = (int) $members[$adminIndex === false ? 0 : $adminIndex]['userId'];
             $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ?')
-                ->execute([HBHUB_CHAT_ROLE_OWNER, $chat['chatId'], $members[$adminIndex === false ? 0 : $adminIndex]['userId']]);
+                ->execute([HBHUB_CHAT_ROLE_OWNER, $chatId, $newOwnerId]);
+            chatNotice($db, $newOwnerId, $chatId, HBHUB_CHAT_EVENT_OWNER, $newOwnerId);
+        }
+    }
+    $db->commit();
+}
+
+/**
+ * The userIds picked in a user picker (the New chat and Add to chat popups), without duplicates or the user themself.
+ *
+ * @return int[]
+ */
+function chatPickedUserIds(int $userId, mixed $pickedIds): array
+{
+    $memberIds = [];
+    foreach (is_array($pickedIds) ? $pickedIds : [] as $pickedId) {
+        if (is_string($pickedId) && ctype_digit($pickedId) && strlen($pickedId) <= 10 && (int) $pickedId !== $userId) {
+            $memberIds[(int) $pickedId] = true;
+        }
+    }
+    return array_keys($memberIds);
+}
+
+/**
+ * Adds the picked users to the group, with a notice for each. Like when the group was made, they get it as
+ * a message request they have to accept first. Anyone already in it (or invited) is left out, and so are unknown,
+ * banned and deleted users. Nobody is added when they'd make the group bigger than HBHUB_CHAT_MEMBERS_MAX.
+ */
+function chatAddMembers(PDO $db, int $userId, int $chatId, mixed $pickedIds): void
+{
+    $pickedIds = chatPickedUserIds($userId, $pickedIds);
+    if ($pickedIds === [] || count($pickedIds) >= HBHUB_CHAT_MEMBERS_MAX) {
+        return;
+    }
+
+    // Locked, so two people adding at once can't take the group past the limit
+    $db->beginTransaction();
+    $db->prepare('SELECT chatId FROM `HBHub-Chats` WHERE chatId = ? FOR UPDATE')->execute([$chatId]);
+
+    // A deleted account's userStatus is NULL, so it's left out by <> too
+    $statement = $db->prepare('SELECT u.userId FROM `HBHub-Users` u
+        WHERE u.userStatus <> ? AND u.userId IN (' . implode(', ', array_fill(0, count($pickedIds), '?')) . ')
+            AND NOT EXISTS (SELECT 1 FROM `HBHub-ChatMembers` cm WHERE cm.chatId = ? AND cm.userId = u.userId)
+        ORDER BY u.userNameLower');
+    $statement->execute([HBHUB_SESSION_STATUS_BANNED, ...$pickedIds, $chatId]);
+    $newIds = array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
+
+    $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-ChatMembers` WHERE chatId = ?');
+    $statement->execute([$chatId]);
+    $memberCount = (int) $statement->fetchColumn();
+
+    if ($newIds !== [] && $memberCount + count($newIds) <= HBHUB_CHAT_MEMBERS_MAX) {
+        $memberRows = [];
+        foreach ($newIds as $newId) {
+            array_push($memberRows, $chatId, $newId, HBHUB_CHAT_ROLE_MEMBER, 0);
+        }
+        $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole, userAcknowledgedJoin)
+            VALUES ' . implode(', ', array_fill(0, count($newIds), '(?, ?, ?, ?)')))
+            ->execute($memberRows);
+        foreach ($newIds as $newId) {
+            chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_ADD, $newId);
         }
     }
     $db->commit();
@@ -488,18 +560,7 @@ function chatSetNickname(PDO $db, int $userId, int $chatId, mixed $nickname): vo
  */
 function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
 {
-    if (!is_array($pickedIds)) {
-        return null;
-    }
-
-    $memberIds = [];
-    foreach ($pickedIds as $pickedId) {
-        if (is_string($pickedId) && ctype_digit($pickedId) && (int) $pickedId !== $userId) {
-            $memberIds[(int) $pickedId] = true;
-        }
-    }
-    $memberIds = array_keys($memberIds);
-
+    $memberIds = chatPickedUserIds($userId, $pickedIds);
     if ($memberIds === [] || count($memberIds) + 1 > HBHUB_CHAT_MEMBERS_MAX) {
         return null;
     }
@@ -589,7 +650,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
             break;
         case 'leave':
             chatLeave($db, $userId, $chat);
-            chatNotice($db, $userId, (int) $chat['chatId'], HBHUB_CHAT_EVENT_LEAVE);
             break;
         case 'rename':
             // Left empty, the group is named after its members again. Saving the same name again isn't a change.
@@ -677,13 +737,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
         $statement->execute([HBHUB_CHAT_ROLE_MEMBER, $chat['chatId'], $member['userId'], HBHUB_CHAT_ROLE_ADMIN]);
         $event = $statement->rowCount() > 0 ? HBHUB_CHAT_EVENT_REMOVE_ADMIN : null;
     } elseif ($member !== false && ($isNormalMember || $isGroupOwner) && $_POST['action'] === 'kick') {
-        chatLeave($db, (int) $member['userId'], $chat);
-        $event = HBHUB_CHAT_EVENT_KICK;
+        chatLeave($db, (int) $member['userId'], $chat, $userId); // posts the notice itself
     }
     if ($event !== null) {
         chatNotice($db, $userId, (int) $chat['chatId'], $event, (int) $member['userId']);
     }
 
+    chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
+}
+
+// Add to chat, for every member of a group (not only admins): the picked users are invited to it
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'add') {
+    $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
+    if ($chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
+        chatAddMembers($db, $userId, (int) $chat['chatId'], $_POST['users'] ?? null);
+    }
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
 }
 
@@ -795,10 +863,16 @@ if (!$isPoll && $openMembership !== null && ($_GET['unread'] ?? null) !== '1') {
 // DMs (and groups without a name) are named after the other members, or a DM after the nickname the other person was given.
 // Unread messages are the ones from others, not deleted, that came after the last one the user read.
 // Notices (a new group name, someone kicked) aren't the last message and aren't unread.
+// A group request says who added the user: whoever did it with Add to chat, otherwise the one who made the group.
 $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAttachmentId, c.chatSettings,
         cm.userAcknowledgedJoin, cm.memberRole,
         COALESCE(c.lastMessageTimestamp, c.chatCreatedTimestamp) AS chatActivity,
-        (SELECT cu.userName FROM `HBHub-Users` cu WHERE cu.userId = c.chatCreatedBy) AS chatCreatorName,
+        COALESCE((
+            SELECT au.userName FROM `HBHub-Messages` am JOIN `HBHub-Users` au ON au.userId = am.userId
+            WHERE am.chatId = c.chatId AND cm.userAcknowledgedJoin = 0 AND am.messageEventType = ' . HBHUB_CHAT_EVENT_ADD . '
+                AND am.messageEventUserId = cm.userId
+            ORDER BY am.messageId DESC LIMIT 1
+        ), (SELECT cu.userName FROM `HBHub-Users` cu WHERE cu.userId = c.chatCreatedBy)) AS chatAddedByName,
         (
             SELECT om.userId FROM `HBHub-ChatMembers` om
             WHERE om.chatId = c.chatId AND om.userId <> ? AND c.chatType = ' . HBHUB_CHAT_TYPE_DM . ' LIMIT 1
@@ -822,13 +896,13 @@ $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAt
         )) AS chatTitle,
         (
             SELECT m.messageContent FROM `HBHub-Messages` m
-            WHERE m.chatId = c.chatId AND m.messageDeletedTimestamp IS NULL AND m.messageEvent IS NULL
+            WHERE m.chatId = c.chatId AND m.messageDeletedTimestamp IS NULL AND m.messageEvent = 0
             ORDER BY m.messageId DESC LIMIT 1
         ) AS chatLastMessage,
         (
             SELECT COUNT(*) FROM `HBHub-Messages` m
             WHERE m.chatId = c.chatId AND m.messageId > COALESCE(cm.lastReadMessageId, 0)
-                AND m.userId <> ? AND m.messageDeletedTimestamp IS NULL AND m.messageEvent IS NULL
+                AND m.userId <> ? AND m.messageDeletedTimestamp IS NULL AND m.messageEvent = 0
         ) AS chatUnreadCount
     FROM `HBHub-ChatMembers` cm JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
     WHERE cm.userId = ? AND c.chatStatus = ?
@@ -912,7 +986,7 @@ if ($openChat !== null && !$isPoll) {
     foreach ($messages as $message) {
         $shownMessageIds[(int) $message['messageId']] = true;
         if ($firstUnreadMessageId === null && (int) $message['messageId'] > (int) $lastReadMessageId
-            && (int) $message['userId'] !== $userId && $message['messageDeletedTimestamp'] === null && $message['messageEvent'] === null) {
+            && (int) $message['userId'] !== $userId && $message['messageDeletedTimestamp'] === null && !$message['messageEvent']) {
             $firstUnreadMessageId = (int) $message['messageId'];
         }
     }
@@ -1100,7 +1174,7 @@ function chatRequestItem(array $request): void
                                         <span class="chat-list-time"><?= chatTime($request['chatActivity']) ?></span>
                                     </span>
                                     <span class="chat-list-preview">
-                                        <?= $isGroup ? 'Group, added by ' . htmlspecialchars($request['chatCreatorName'] ?? 'someone') : 'Wants to send you messages' ?>
+                                        <?= $isGroup ? 'Group, added by ' . htmlspecialchars($request['chatAddedByName'] ?? 'someone') : 'Wants to send you messages' ?>
                                     </span>
                                     <?php if ($request['chatLastMessage'] !== null): ?>
                                         <span class="chat-list-preview chat-request-message"><?= htmlspecialchars($request['chatLastMessage']) ?></span>
@@ -1131,7 +1205,7 @@ function chatNoticeHtml(array $openChat, int $userId, array $message): string
     });
     $chatWord = (int) $openChat['chatType'] === HBHUB_CHAT_TYPE_GROUP ? 'group' : 'chat';
 
-    return match ((int) $message['messageEvent']) {
+    return match ((int) $message['messageEventType']) {
         HBHUB_CHAT_EVENT_RENAME => $message['messageContent'] === null
             ? $by . ' removed the group name'
             : $by . ' changed the group name to ' . $name($message['messageContent']),
@@ -1144,6 +1218,8 @@ function chatNoticeHtml(array $openChat, int $userId, array $message): string
         HBHUB_CHAT_EVENT_KICK => $by . ' kicked ' . $about . ' from the group',
         HBHUB_CHAT_EVENT_JOIN => $by . ' joined the group',
         HBHUB_CHAT_EVENT_LEAVE => $by . ' left the ' . $chatWord,
+        HBHUB_CHAT_EVENT_ADD => $by . ' added ' . $about . ' to the group',
+        HBHUB_CHAT_EVENT_OWNER => $by . ((int) $message['userId'] === $userId ? ' are' : ' is') . ' now the group owner',
         default => $by . ' changed the ' . $chatWord,
     };
 }
@@ -1169,7 +1245,7 @@ function chatNoticeItem(array $openChat, int $userId, array $message): void
  */
 function chatMessageItem(array $openChat, int $userId, array $message, bool $replyIsShown): void
 {
-    if ($message['messageEvent'] !== null) {
+    if ($message['messageEvent']) {
         chatNoticeItem($openChat, $userId, $message);
         return;
     }
@@ -1331,7 +1407,12 @@ if ($isPoll) {
                         <h2 class="chat-window-title"><?= htmlspecialchars($openChat['chatTitle']) ?></h2>
                     <?php endif; ?>
                     <?php if ($openChatMembers !== []): ?>
-                        <!-- Groups: the person button opens the Members popup (chat.js) -->
+                        <!-- Groups: the person with a plus opens the Add to chat popup (any member can add people),
+                             the person button the Members popup (chat.js) -->
+                        <button type="button" class="chat-icon-btn chat-add-btn" aria-label="Add to chat" title="Add to chat"
+                                aria-haspopup="dialog" data-add-open>
+                            <img src="/assets/images/icons/addUser.svg" alt="">
+                        </button>
                         <button type="button" class="chat-icon-btn chat-members-btn" aria-label="Members (<?= count($openChatMembers) ?>)"
                                 title="Members" aria-haspopup="dialog" data-members-open>
                             <img src="/assets/images/icons/user.png" alt="">
@@ -1411,7 +1492,7 @@ if ($isPoll) {
         </section>
 
         <!-- New chat popup (chat.js): one user picked makes a DM, more make a group DM -->
-        <dialog class="chat-new" aria-labelledby="chat-new-title" data-members-max="<?= HBHUB_CHAT_MEMBERS_MAX ?>">
+        <dialog class="chat-new" aria-labelledby="chat-new-title" data-new-chat data-members-max="<?= HBHUB_CHAT_MEMBERS_MAX ?>">
             <form class="chat-new-form" action="/chat/" method="post">
                 <input type="hidden" name="action" value="create">
 
@@ -1587,6 +1668,35 @@ if ($isPoll) {
                             <?php endforeach; ?>
                         </ul>
                     </div>
+                </dialog>
+
+                <!-- Add to chat popup (chat.js), for every member: search users and pick who to add, like New chat.
+                     Who's in the group already (invited too) shows, but can't be picked. -->
+                <dialog class="chat-new chat-add" aria-labelledby="chat-add-title" data-members-max="<?= HBHUB_CHAT_MEMBERS_MAX ?>"
+                        data-member-ids="<?= implode(',', array_map('intval', array_column($openChatMembers, 'userId'))) ?>">
+                    <form class="chat-new-form" action="/chat/" method="post">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="chat" value="<?= $openChat['chatId'] ?>">
+
+                        <header class="chat-new-header">
+                            <h2 id="chat-add-title">Add to <?= htmlspecialchars($openChat['chatTitle']) ?></h2>
+                            <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                        </header>
+
+                        <label class="chat-visually-hidden" for="chat-add-search">Search users</label>
+                        <input type="search" id="chat-add-search" placeholder="Search users" autocomplete="off">
+
+                        <ul class="chat-new-picked" aria-label="Picked users" data-picked></ul>
+
+                        <ul class="chat-new-users" aria-label="Users" data-users></ul>
+                        <p class="chat-new-status" role="status" data-users-status></p>
+
+                        <footer class="chat-new-footer">
+                            <p class="chat-new-count" data-picked-count></p>
+                            <button type="button" class="chat-btn" data-dialog-close>Cancel</button>
+                            <button type="submit" class="chat-new-btn" disabled data-add-submit>Add</button>
+                        </footer>
+                    </form>
                 </dialog>
 
                 <?php if ($openChat['chatIsGroupAdmin']): ?>
