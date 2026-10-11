@@ -86,7 +86,9 @@ CREATE TABLE `HBHub-Messages` (
   `messageDeletedTimestamp` datetime DEFAULT NULL,
   `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin',
   `messageIsEdited` tinyint NOT NULL DEFAULT '0',
-  `messageReplyToId` bigint UNSIGNED DEFAULT NULL
+  `messageReplyToId` bigint UNSIGNED DEFAULT NULL,
+  `messageEvent` tinyint UNSIGNED DEFAULT NULL COMMENT 'NULL A normal message\r\nOtherwise a notice about a change, made by userId:\r\n1 Renamed the group (messageContent is the new name, NULL when taken away)\r\n2 Changed the group icon\r\n3 Removed the group icon\r\n4 Changed the background\r\n5 Reset the background\r\n6 Made messageEventUserId a group admin\r\n7 Removed messageEventUserId as group admin\r\n8 Kicked messageEventUserId\r\n9 Joined the group\r\n10 Left the chat',
+  `messageEventUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who the notice is about (messageEvent 6, 7 and 8)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -169,7 +171,8 @@ ALTER TABLE `HBHub-Messages`
   ADD KEY `chatId` (`chatId`),
   ADD KEY `fk_messages_attachment` (`attachmentId`),
   ADD KEY `messageTimestamp` (`messageSentTimestamp`,`chatId`),
-  ADD KEY `fk_messages_replyto` (`messageReplyToId`);
+  ADD KEY `fk_messages_replyto` (`messageReplyToId`),
+  ADD KEY `fk_messages_eventuser` (`messageEventUserId`);
 
 --
 -- Indexes for table `HBHub-Sessions`
@@ -238,6 +241,7 @@ ALTER TABLE `HBHub-Messages`
   ADD CONSTRAINT `fk_messages_attachment` FOREIGN KEY (`attachmentId`) REFERENCES `HBHub-Attachments` (`attachmentId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_messages_chat` FOREIGN KEY (`chatId`) REFERENCES `HBHub-Chats` (`chatId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_messages_replyto` FOREIGN KEY (`messageReplyToId`) REFERENCES `HBHub-Messages` (`messageId`),
+  ADD CONSTRAINT `fk_messages_eventuser` FOREIGN KEY (`messageEventUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_messages_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --

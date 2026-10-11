@@ -1259,6 +1259,15 @@ function chatShowBackground(element, background) {
         return messages.querySelectorAll('[data-message-id]');
     }
 
+    // Messages and notices (a new group name, someone kicked...): polling goes on after whichever is newest
+    function shownItems() {
+        return messages.querySelectorAll('[data-message-id], [data-notice-id]');
+    }
+
+    function itemId(item) {
+        return item.dataset.messageId ?? item.dataset.noticeId;
+    }
+
     function addMessages(html) {
         if (html.trim() === '') return;
         // Follows the new messages when already at the bottom, but doesn't pull away from older ones being read
@@ -1267,9 +1276,9 @@ function chatShowBackground(element, background) {
         messages.insertAdjacentHTML('beforeend', html);
         if (isAtBottom) messages.scrollTop = messages.scrollHeight;
 
-        // In a chat that was empty there was no message to tab to yet, now the newest one is
+        // In a chat that was empty there was no message to tab to yet, now the newest one is (only a notice may have come)
         const items = [...messageItems()];
-        if (!items.some((item) => item.tabIndex === 0)) items.at(-1).tabIndex = 0;
+        if (items.length > 0 && !items.some((item) => item.tabIndex === 0)) items.at(-1).tabIndex = 0;
     }
 
     function updateChatList(html) {
@@ -1302,10 +1311,10 @@ function chatShowBackground(element, background) {
     async function poll() {
         const params = new URLSearchParams({ poll: '1' });
         if (messages) {
-            const items = messageItems();
+            const items = shownItems();
             params.set('chat', messages.dataset.chatMessages);
-            params.set('after', items.length > 0 ? items[items.length - 1].dataset.messageId : '0');
-            if (items.length > 0) params.set('first', items[0].dataset.messageId);
+            params.set('after', items.length > 0 ? itemId(items[items.length - 1]) : '0');
+            if (items.length > 0) params.set('first', itemId(items[0]));
             if (document.visibilityState === 'visible' && !keepUnread) params.set('read', '1');
         }
 

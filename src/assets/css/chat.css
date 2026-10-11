@@ -648,6 +648,32 @@ a.chat-message-reply:hover {
   opacity: 0.6;
 }
 
+/* A notice in the middle of the chat about a change: a new group name, someone kicked, a new background... */
+.chat-notice {
+  align-self: center;
+  max-width: min(90%, 560px);
+  text-align: center;
+}
+
+.chat-notice-text {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.chat-notice-time {
+  margin-left: 4px;
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+.chat-messages.has-background .chat-notice-text {
+  background: color-mix(in srgb, var(--secondary) 85%, transparent);
+}
+
 /* A chat with its own background (Change background, the gradient is set by chat.js): what sits right on it,
    outside the bubbles, gets a backing so it stays readable on any colors */
 .chat-messages.has-background .chat-message-sender,
