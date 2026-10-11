@@ -21,3 +21,9 @@ jobs:
         protocol: ftps
         local-dir: src/
         server-dir: hbhub/
+        # The default exclude (**/.git*/**) would also skip src/assets/php/.github/, which has the README shield counters
+        exclude: |
+          **/.git/**
+          **/.gitignore
+          **/.gitattributes
+          **/node_modules/**
