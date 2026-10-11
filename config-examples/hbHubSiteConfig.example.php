@@ -7,7 +7,6 @@
  * The site loads it from exactly that path.
  */
 return [
-    'footer_email' => 'me@example.com',
     'footer_copyrightYear' => '2026',
     'site_maintenance' => false,    // Default: false | Set to true to not allow users to log in or register, and show a maintenance message instead
     'site_maintenance_message' => 'The site is currently undergoing maintenance. Please check back later.', // Default: 'The site is currently undergoing maintenance. Please check back later.' | Message to show when the site is in maintenance mode

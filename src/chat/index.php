@@ -28,6 +28,19 @@ const HBHUB_CHAT_MUTE_OPTIONS = [
     1440 => 'For 24 hours',
     0 => 'Forever',
 ];
+// Change background: which way the gradient goes, as the angle linear-gradient() takes => [arrow, label]
+const HBHUB_CHAT_BACKGROUND_DIRECTIONS = [
+    0 => ['&uarr;', 'Up'],
+    45 => ['&nearr;', 'Up right'],
+    90 => ['&rarr;', 'Right'],
+    135 => ['&searr;', 'Down right'],
+    180 => ['&darr;', 'Down'],
+    225 => ['&swarr;', 'Down left'],
+    270 => ['&larr;', 'Left'],
+    315 => ['&nwarr;', 'Up left'],
+];
+// chatBackgroundGradientColor in the chat's settings while it has the default background (database/defaultChatSettings.json)
+const HBHUB_CHAT_BACKGROUND_DEFAULT = ['color1' => 'default', 'color2' => 'default', 'gradientAngle' => 90];
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
@@ -245,7 +258,7 @@ function chatSettings(?string $json): stdClass
     // Same shape as database/defaultChatSettings.json. The nicknames are keyed by userId, so they start out empty.
     $settings = (object) [
         'chatNicknames' => new stdClass(),
-        'chatBackgroundGradientColor' => (object) ['color1' => 'default', 'color2' => 'default', 'gradientAngle' => 90],
+        'chatBackgroundGradientColor' => (object) HBHUB_CHAT_BACKGROUND_DEFAULT,
     ];
 
     // Decoded as objects, not arrays, so the userId keys are saved as an object again
@@ -274,6 +287,50 @@ function chatChangeSettings(PDO $db, int $chatId, callable $change): void
     $db->prepare('UPDATE `HBHub-Chats` SET chatSettings = ? WHERE chatId = ?')
         ->execute([json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR), $chatId]);
     $db->commit();
+}
+
+/**
+ * A background gradient as [color1, color2, angle], or null when it isn't one Change background could have made:
+ * two colors like #a1b2c3 and one of its directions. Only those are let through, as they end up in the page's CSS.
+ *
+ * @return ?array{0: string, 1: string, 2: int}
+ */
+function chatBackgroundOf(mixed $color1, mixed $color2, mixed $angle): ?array
+{
+    $isColor = fn (mixed $color): bool => is_string($color) && preg_match('~^#[0-9a-f]{6}$~i', $color) === 1;
+    // An int from the saved settings, a string from the form
+    $angle = is_string($angle) && ctype_digit($angle) && strlen($angle) <= 3 ? (int) $angle : $angle;
+
+    if (!$isColor($color1) || !$isColor($color2) || !is_int($angle) || !array_key_exists($angle, HBHUB_CHAT_BACKGROUND_DIRECTIONS)) {
+        return null;
+    }
+    return [strtolower($color1), strtolower($color2), $angle];
+}
+
+/**
+ * The chat's background gradient from its settings as [color1, color2, angle], or null for the default background.
+ *
+ * @return ?array{0: string, 1: string, 2: int}
+ */
+function chatBackground(stdClass $settings): ?array
+{
+    $gradient = $settings->chatBackgroundGradientColor;
+    return $gradient instanceof stdClass
+        ? chatBackgroundOf($gradient->color1 ?? null, $gradient->color2 ?? null, $gradient->gradientAngle ?? null)
+        : null;
+}
+
+/**
+ * Gives the chat a new background gradient, or the default background when $background is null.
+ *
+ * @param ?array{0: string, 1: string, 2: int} $background from chatBackgroundOf()
+ */
+function chatSetBackground(PDO $db, int $chatId, ?array $background): void
+{
+    chatChangeSettings($db, $chatId, function (stdClass $settings) use ($background): void {
+        $settings->chatBackgroundGradientColor = (object) ($background === null ? HBHUB_CHAT_BACKGROUND_DEFAULT
+            : ['color1' => $background[0], 'color2' => $background[1], 'gradientAngle' => $background[2]]);
+    });
 }
 
 /**
@@ -464,10 +521,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'cre
 }
 
 // The right-click menu in the chat list: mute, unmute, hide or leave a chat, give the other person in a DM a nickname,
-// and for group admins rename it, change its icon or delete it.
+// and for group admins rename it, change its icon or delete it. Group admins and both people in a DM can change its background.
 // Then back to the chat that was open (sent along as "open"), unless that's the one that was just hidden, left or deleted.
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
-    && in_array($_POST['action'] ?? null, ['mute', 'unmute', 'hide', 'leave', 'nickname', 'rename', 'icon', 'delete'], true)) {
+    && in_array($_POST['action'] ?? null, ['mute', 'unmute', 'hide', 'leave', 'nickname', 'rename', 'icon', 'background', 'delete'], true)) {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     $openChatId = is_string($_POST['open'] ?? null) && ctype_digit($_POST['open']) ? (int) $_POST['open'] : null;
     $isGroupAdmin = $chat !== null && chatIsGroupAdmin($chat);
@@ -508,6 +565,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
             $icon = $isRemoving ? null : chatIconUpload($_FILES['icon'] ?? null);
             if ($isGroupAdmin && ($isRemoving || $icon !== null)) {
                 chatSetIcon($db, (int) $chat['chatId'], $icon);
+            }
+            break;
+        case 'background':
+            // Reset goes back to the default background
+            $isRemoving = ($_POST['remove'] ?? null) === '1';
+            $background = $isRemoving ? null : chatBackgroundOf($_POST['color1'] ?? null, $_POST['color2'] ?? null, $_POST['angle'] ?? null);
+            if (($isGroupAdmin || (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM) && ($isRemoving || $background !== null)) {
+                chatSetBackground($db, (int) $chat['chatId'], $background);
             }
             break;
         case 'delete':
@@ -724,6 +789,8 @@ foreach ($statement->fetchAll() as $chat) {
     $nickname = $chat['dmUserId'] !== null ? $settings->chatNicknames->{$chat['dmUserId']} ?? null : null;
     $chat['chatNickname'] = is_string($nickname) ? $nickname : null;
     $chat['chatTitle'] = $chat['chatNickname'] ?? $chat['chatTitle'];
+    $background = chatBackground($settings);
+    $chat['chatBackground'] = $background !== null ? implode(' ', $background) : null; // "#a1b2c3 #d4e5f6 90", how chat.js reads it
     if (chatGifId($chat['chatLastMessage']) !== null) {
         $chat['chatLastMessage'] = 'GIF';
     }
@@ -934,6 +1001,7 @@ function chatListItem(array $chat): void
                         $chat['chatIsGroupAdmin'] ? ' data-chat-admin' : '' ?><?=
                         $chat['chatIsGroupOwner'] ? ' data-chat-owner' : '' ?><?=
                         $chat['chatIconAttachmentId'] !== null ? ' data-chat-icon' : '' ?><?=
+                        $chat['chatBackground'] !== null ? ' data-chat-background="' . htmlspecialchars($chat['chatBackground']) . '"' : '' ?><?=
                         $chat['chatMutedLabel'] !== null ? ' data-chat-muted' : '' ?><?=
                         $chat['chatHiddenByUser'] ? ' data-chat-hidden-by-user' : '' ?><?=
                         $chat['chatHidden'] ? ' hidden' : '' ?>>
@@ -1042,6 +1110,7 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
 
 // The answer to chat.js polling: the open chat's new messages, the whole chat list and the message requests, all as HTML.
 // openChat is false when the open chat is gone (left, deleted or removed from it), so chat.js can leave it.
+// background is the open chat's background, so a new one shows up for everyone in it.
 // A reply quote links to the message it answers when that's on the page: chat.js sends the oldest one it shows (?first=),
 // and everything from there on is shown, as the page always shows the newest messages.
 if ($isPoll) {
@@ -1069,6 +1138,7 @@ if ($isPoll) {
     header('Cache-Control: no-store');
     echo json_encode([
         'openChat' => $openChat !== null,
+        'background' => $openChat['chatBackground'] ?? null,
         'messages' => $pollMessagesHtml,
         'chatList' => $pollChatListHtml,
         'requests' => $pollRequestsHtml,
@@ -1163,8 +1233,11 @@ if ($isPoll) {
 
                 <!-- The arrow keys move between messages (tabindex is set by chat.js), and new ones are added as they come
                      in (chat.js polls for them). data-chat-messages is the open chat's id,
-                     data-group-admin lets the message menu offer deleting other members' messages. -->
-                <ol class="chat-messages" data-chat-messages="<?= $openChat['chatId'] ?>"<?= $openChat['chatIsGroupAdmin'] ? ' data-group-admin' : '' ?>>
+                     data-group-admin lets the message menu offer deleting other members' messages.
+                     data-background is the chat's background gradient, which chat.js sets (the content security policy
+                     doesn't allow style attributes). -->
+                <ol class="chat-messages" data-chat-messages="<?= $openChat['chatId'] ?>"<?= $openChat['chatIsGroupAdmin'] ? ' data-group-admin' : '' ?><?=
+                    $openChat['chatBackground'] !== null ? ' data-background="' . htmlspecialchars($openChat['chatBackground']) . '"' : '' ?>>
                     <?php if ($messages === []): ?>
                         <li class="chat-messages-empty" data-messages-empty>No messages yet - say hi!</li>
                     <?php endif; ?>
@@ -1280,9 +1353,8 @@ if ($isPoll) {
             <button type="button" role="menuitem" data-menu-action="hide">Hide chat</button>
             <button type="button" role="menuitem" data-menu-action="rename" data-menu-admin>Change name</button>
             <button type="button" role="menuitem" data-menu-action="icon" data-menu-admin>Change group icon</button>
-            <button type="button" role="menuitem" aria-disabled="true" title="Coming soon" data-menu-action="background" data-menu-admin>
-                Change background <span class="chat-menu-soon">Soon</span>
-            </button>
+            <!-- Group admins, or either person in a DM -->
+            <button type="button" role="menuitem" data-menu-action="background">Change background</button>
             <hr class="chat-menu-divider">
             <button type="button" role="menuitem" class="is-danger" data-menu-action="leave">Leave chat</button>
             <button type="button" role="menuitem" class="is-danger" data-menu-action="delete" data-menu-admin>Delete group</button>
@@ -1566,6 +1638,54 @@ if ($isPoll) {
                     <button type="submit" class="chat-btn is-danger chat-icon-remove" name="remove" value="1" data-icon-remove>Remove icon</button>
                     <button type="button" class="chat-btn" data-dialog-close>Cancel</button>
                     <button type="submit" class="chat-new-btn" disabled data-icon-save>Save</button>
+                </footer>
+            </form>
+        </dialog>
+
+        <!-- Change background (group admins, or either person in a DM): a gradient between two colors, going the way the
+             picked arrow points. chat.js fills in the chat's background as it is now and shows the picked one in the preview. -->
+        <dialog class="chat-dialog chat-background-edit" aria-labelledby="chat-background-title">
+            <form class="chat-requests-body" action="/chat/" method="post">
+                <input type="hidden" name="action" value="background">
+                <input type="hidden" name="chat">
+                <input type="hidden" name="open" value="<?= $openChat['chatId'] ?? '' ?>">
+
+                <header class="chat-new-header">
+                    <h2 id="chat-background-title">Change background</h2>
+                    <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                </header>
+
+                <div class="chat-background-preview" aria-hidden="true" data-background-preview>
+                    <span class="chat-message-bubble">Hey, new background?</span>
+                    <span class="chat-message-bubble is-own">Looks good!</span>
+                </div>
+
+                <div class="chat-background-colors">
+                    <div class="chat-new-group">
+                        <label for="chat-background-color1">From</label>
+                        <input type="color" id="chat-background-color1" name="color1">
+                    </div>
+                    <div class="chat-new-group">
+                        <label for="chat-background-color2">To</label>
+                        <input type="color" id="chat-background-color2" name="color2">
+                    </div>
+                </div>
+
+                <fieldset class="chat-background-directions">
+                    <legend>Direction</legend>
+                    <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [$arrow, $label]): ?>
+                        <label title="<?= $label ?>">
+                            <input type="radio" class="chat-visually-hidden" name="angle" value="<?= $angle ?>">
+                            <span class="chat-background-arrow" aria-hidden="true"><?= $arrow ?></span>
+                            <span class="chat-visually-hidden"><?= $label ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
+
+                <footer class="chat-new-footer chat-dialog-footer">
+                    <button type="submit" class="chat-btn is-danger chat-icon-remove" name="remove" value="1" data-background-remove>Reset</button>
+                    <button type="button" class="chat-btn" data-dialog-close>Cancel</button>
+                    <button type="submit" class="chat-new-btn">Save</button>
                 </footer>
             </form>
         </dialog>

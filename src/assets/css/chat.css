@@ -76,7 +76,7 @@ body:has(> .chat) {
   background: var(--secondary);
 }
 
-.chat input:not([type="checkbox"]),
+.chat input:not([type="checkbox"], [type="radio"], [type="color"]),
 .chat textarea {
   width: 100%;
   padding: 10px 12px;
@@ -88,7 +88,7 @@ body:has(> .chat) {
   font: inherit;
 }
 
-.chat input:not([type="checkbox"]):focus,
+.chat input:not([type="checkbox"], [type="radio"], [type="color"]):focus,
 .chat textarea:focus {
   outline: none;
   border-color: var(--accent);
@@ -646,6 +646,31 @@ a.chat-message-reply:hover {
   flex: 1;
   border-top: 1px solid currentColor;
   opacity: 0.6;
+}
+
+/* A chat with its own background (Change background, the gradient is set by chat.js): what sits right on it,
+   outside the bubbles, gets a backing so it stays readable on any colors */
+.chat-messages.has-background .chat-message-sender,
+.chat-messages.has-background .chat-message-meta,
+.chat-messages.has-background .chat-messages-empty,
+.chat-messages.has-background .chat-messages-unread span {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--secondary) 85%, transparent);
+}
+
+.chat-messages.has-background .chat-message-meta,
+.chat-messages.has-background .chat-messages-empty {
+  opacity: 1;
+  color: color-mix(in srgb, var(--text) 70%, var(--secondary));
+}
+
+.chat-messages.has-background .chat-message-reply {
+  background: color-mix(in srgb, var(--secondary) 85%, transparent);
+}
+
+.chat-messages.has-background a.chat-message-reply:hover {
+  background: var(--secondary);
 }
 
 .chat-composer {
@@ -1400,6 +1425,113 @@ a.chat-member:focus-visible {
 
 /* The file input itself is hidden, so its focus shows on the "Choose image" button */
 .chat-icon-pick input:focus-visible + label {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Change background: a preview with a message each way, the two colors and the direction */
+.chat-background-preview {
+  height: 132px;
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  background: var(--background);
+  font-size: 0.9rem;
+}
+
+.chat-background-preview .chat-message-bubble {
+  align-self: flex-start;
+}
+
+.chat-background-preview .chat-message-bubble.is-own {
+  align-self: flex-end;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.chat-background-colors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.chat-background-colors input {
+  width: 100%;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  cursor: pointer;
+}
+
+.chat-background-colors input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.chat-background-colors input::-webkit-color-swatch {
+  border: 2px solid color-mix(in srgb, var(--text) 15%, transparent);
+  border-radius: 10px;
+}
+
+.chat-background-colors input::-moz-color-swatch {
+  border: 2px solid color-mix(in srgb, var(--text) 15%, transparent);
+  border-radius: 10px;
+}
+
+.chat-background-colors input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.chat-background-directions {
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chat-background-directions legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.chat-background-directions label {
+  position: relative; /* keeps the hidden radio inside it */
+  cursor: pointer;
+}
+
+/* The radio itself is hidden, the arrow is the button */
+.chat-background-arrow {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--background);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.chat-background-directions label:hover .chat-background-arrow {
+  background: color-mix(in srgb, var(--accent) 20%, var(--background));
+}
+
+.chat-background-directions input:checked + .chat-background-arrow {
+  background: var(--accent);
+  color: #fff;
+}
+
+.chat-background-directions input:focus-visible + .chat-background-arrow {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

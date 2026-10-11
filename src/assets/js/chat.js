@@ -39,6 +39,7 @@
     // At the newest message, unless that would scroll the "New messages" line out of sight above
     const messages = document.querySelector('[data-chat-messages]');
     if (messages) {
+        chatShowBackground(messages, messages.dataset.background);
         messages.scrollTop = messages.scrollHeight;
         const unread = messages.querySelector('[data-unread-divider]');
         const offset = unread ? unread.getBoundingClientRect().top - messages.getBoundingClientRect().top : 0;
@@ -311,7 +312,7 @@
         if (action === 'makeAdmin') {
             confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Make ${name} an admin?`;
             confirmDialog.querySelector('[data-member-confirm-text]').textContent =
-                `${name} will be able to rename the group, change its icon, delete messages, make others admin, kick members and delete the group.`;
+                `${name} will be able to rename the group, change its icon and background, delete messages, make others admin, kick members and delete the group.`;
             submit.textContent = 'Make admin';
         } else if (action === 'removeAdmin') {
             confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Remove ${name} as admin?`;
@@ -423,9 +424,19 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
     return { close };
 }
 
+// A chat's background gradient (Change background), from the server as "#a1b2c3 #d4e5f6 90" (two colors and the angle),
+// or nothing for the default background. Set from here, as the site's content security policy doesn't allow style attributes.
+function chatShowBackground(element, background) {
+    const [color1, color2, angle] = (background ?? '').split(' ');
+    const hasBackground = angle !== undefined;
+    element.style.backgroundImage = hasBackground ? `linear-gradient(${angle}deg, ${color1}, ${color2})` : '';
+    element.classList.toggle('has-background', hasBackground);
+}
+
 // Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to mute, hide or leave it.
 // In a DM the other person can be given a nickname. Group admins can also change the group's name or icon, or delete it.
-// Show profile (DMs) and Change background (group admins) are coming later.
+// Group admins and both people in a DM can change the chat's background.
+// Show profile (DMs) is coming later.
 // Every action is a plain form post - the server checks who's allowed to do what.
 (() => {
     const menu = document.querySelector('[data-chat-menu]');
@@ -440,6 +451,7 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
     const nicknameDialog = document.querySelector('.chat-nickname');
     const renameDialog = document.querySelector('.chat-rename');
     const iconDialog = document.querySelector('.chat-icon-edit');
+    const backgroundDialog = document.querySelector('.chat-background-edit');
     let chat = null; // the list item the menu was opened on
 
     const chatMenu = contextMenu({
@@ -453,6 +465,7 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
             const isAdmin = item.hasAttribute('data-chat-admin');
             menu.querySelectorAll('[data-menu-dm]').forEach((menuItem) => { menuItem.hidden = isGroup; });
             menu.querySelectorAll('[data-menu-admin]').forEach((menuItem) => { menuItem.hidden = !isAdmin; });
+            menu.querySelector('[data-menu-action="background"]').hidden = isGroup && !isAdmin;
             // Nobody to give a nickname in a DM the other person left
             if (!item.hasAttribute('data-chat-username')) menu.querySelector('[data-menu-action="nickname"]').hidden = true;
             const isMuted = item.hasAttribute('data-chat-muted');
@@ -610,6 +623,29 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
         iconSave.disabled = false;
     });
 
+    // Change background: the preview shows the gradient as the colors and direction are picked.
+    // A chat with the default background starts out at the site's orange going right into purple.
+    const backgroundForm = backgroundDialog.querySelector('form');
+    const backgroundPreview = backgroundDialog.querySelector('[data-background-preview]');
+
+    function showBackgroundPreview() {
+        const { color1, color2, angle } = backgroundForm.elements;
+        chatShowBackground(backgroundPreview, `${color1.value} ${color2.value} ${angle.value}`);
+    }
+
+    function openBackground() {
+        const [color1, color2, angle] = (chat.dataset.chatBackground ?? '#f2711c #6a4bd6 90').split(' ');
+        backgroundForm.elements.chat.value = chat.dataset.chatId;
+        backgroundForm.elements.color1.value = color1;
+        backgroundForm.elements.color2.value = color2;
+        backgroundForm.elements.angle.value = angle;
+        backgroundDialog.querySelector('[data-background-remove]').hidden = !chat.hasAttribute('data-chat-background');
+        showBackgroundPreview();
+        backgroundDialog.showModal();
+    }
+
+    backgroundForm.addEventListener('input', showBackgroundPreview);
+
     const actions = {
         unmute() {
             muteForm.elements.action.value = 'unmute';
@@ -642,16 +678,17 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
         nickname: openNickname,
         rename: openRename,
         icon: openIcon,
+        background: openBackground,
     };
 
     menu.addEventListener('click', (event) => {
         const button = event.target.closest('[data-menu-action]');
-        if (!button || button.hasAttribute('aria-disabled')) return; // Show profile and Change background aren't ready yet
+        if (!button || button.hasAttribute('aria-disabled')) return; // Show profile isn't ready yet
         chatMenu.close(false);
         actions[button.dataset.menuAction]();
     });
 
-    [confirmDialog, nicknameDialog, renameDialog, iconDialog].forEach((dialog) => {
+    [confirmDialog, nicknameDialog, renameDialog, iconDialog, backgroundDialog].forEach((dialog) => {
         dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
             button.addEventListener('click', () => dialog.close());
         });
@@ -1199,6 +1236,7 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
 
 // Live updates: every 2 seconds asks the chat page what's new (?poll=1), adds the open chat's new messages at the bottom
 // and swaps in the chat list when something in it changed (new messages, unread counts, new chats).
+// The open chat's background is kept up to date too, so a new one shows up without a reload.
 // Message requests are swapped in the same way, and the requests button shows up when there are any.
 // Every poll also keeps the user's last seen time up to date, as session.php does that on every request.
 // New messages are only marked read while the page is being looked at, and not at all after "Mark unread" (?unread=1).
@@ -1280,7 +1318,10 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
                 location.href = '/chat/'; // the open chat is gone: left, deleted, or removed from it
                 return;
             }
-            if (messages) addMessages(data.messages);
+            if (messages) {
+                addMessages(data.messages);
+                chatShowBackground(messages, data.background);
+            }
             updateChatList(data.chatList);
             updateRequests(data.requests, data.requestCount);
         } catch {
