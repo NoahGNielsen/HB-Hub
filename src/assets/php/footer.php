@@ -7,10 +7,11 @@ if (!empty($hbHubShowSiteFooter)):
     $footerYear = (int) ($siteConfig['footer_copyrightYear'] ?? date('Y'));
 ?>
 <footer class="site-footer">
-    <nav class="site-footer-links" aria-label="Legal">
+    <nav class="site-footer-links" aria-label="Footer">
         <a href="/legal/terms">Terms</a>
         <a href="/legal/privacy">Privacy</a>
         <a href="/legal/credits">Credits</a>
+        <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">GitHub</a>
     </nav>
     <p class="site-footer-copyright">&copy; <?= (int) date('Y') > $footerYear ? $footerYear . '&ndash;' . date('Y') : $footerYear ?> Noah Gaj Nedergaard Nielsen</p>
 </footer>
