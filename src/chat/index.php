@@ -1001,6 +1001,15 @@ function chatTime(string $timestamp): string
     return date('Y-m-d', $time) === date('Y-m-d') ? date('H:i', $time) : date('d/m/Y', $time);
 }
 
+/**
+ * Time for a notice in the open chat: just the time for today, otherwise the date and the time.
+ */
+function chatNoticeTime(string $timestamp): string
+{
+    $time = strtotime($timestamp);
+    return date('Y-m-d', $time) === date('Y-m-d') ? date('H:i', $time) : date('d/m/Y • H.i', $time);
+}
+
 function chatInitial(string $name): string
 {
     return mb_strtoupper(mb_substr($name, 0, 1));
@@ -1233,7 +1242,7 @@ function chatNoticeItem(array $openChat, int $userId, array $message): void
     ?>
                         <li class="chat-notice" data-notice-id="<?= (int) $message['messageId'] ?>">
                             <span class="chat-notice-text"><?= chatNoticeHtml($openChat, $userId, $message) ?>
-                                <time class="chat-notice-time" datetime="<?= htmlspecialchars($message['messageSentTimestamp']) ?>"><?= chatTime($message['messageSentTimestamp']) ?></time></span>
+                                <time class="chat-notice-time" datetime="<?= htmlspecialchars($message['messageSentTimestamp']) ?>"><?= chatNoticeTime($message['messageSentTimestamp']) ?></time></span>
                         </li>
     <?php
 }
