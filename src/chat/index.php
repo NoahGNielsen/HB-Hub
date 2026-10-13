@@ -1038,7 +1038,7 @@ if ($openChat !== null && !$isPoll) {
 }
 
 /**
- * Short time for the chat list and messages: just the time for today, otherwise the date.
+ * Short time for the chat list: just the time for today, otherwise the date.
  */
 function chatTime(string $timestamp): string
 {
@@ -1047,9 +1047,9 @@ function chatTime(string $timestamp): string
 }
 
 /**
- * Time for a notice in the open chat: just the time for today, otherwise the date and the time.
+ * Time for a message or notice in the open chat: just the time for today, otherwise the date and the time.
  */
-function chatNoticeTime(string $timestamp): string
+function chatMessageTime(string $timestamp): string
 {
     $time = strtotime($timestamp);
     return date('Y-m-d', $time) === date('Y-m-d') ? date('H:i', $time) : date('d/m/Y • H.i', $time);
@@ -1287,7 +1287,7 @@ function chatNoticeItem(array $openChat, int $userId, array $message): void
     ?>
                         <li class="chat-notice" data-notice-id="<?= (int) $message['messageId'] ?>">
                             <span class="chat-notice-text"><?= chatNoticeHtml($openChat, $userId, $message) ?>
-                                <time class="chat-notice-time" datetime="<?= htmlspecialchars($message['messageSentTimestamp']) ?>"><?= chatNoticeTime($message['messageSentTimestamp']) ?></time></span>
+                                <time class="chat-notice-time" datetime="<?= htmlspecialchars($message['messageSentTimestamp']) ?>"><?= chatMessageTime($message['messageSentTimestamp']) ?></time></span>
                         </li>
     <?php
 }
@@ -1339,7 +1339,7 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
                                 <?php endif; ?>
                             </div>
                             <span class="chat-message-meta">
-                                <time datetime="<?= htmlspecialchars($message['messageSentTimestamp']) ?>"><?= chatTime($message['messageSentTimestamp']) ?></time>
+                                <time datetime="<?= htmlspecialchars($message['messageSentTimestamp']) ?>"><?= chatMessageTime($message['messageSentTimestamp']) ?></time>
                                 <?= $message['messageIsEdited'] && !$isDeleted ? ' &middot; edited' : '' ?>
                             </span>
                         </li>
