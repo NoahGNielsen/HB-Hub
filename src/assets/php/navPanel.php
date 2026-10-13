@@ -2,6 +2,8 @@
 // The logged in user's profile picture links to their profile. Without a picture it's the first letter of their name,
 // and pages open to visitors (session.php's $hbHubUser is null) get a "Log in" link instead.
 // With notifications turned on in settings, every page also checks for new messages (notifications.js).
+// The bell lists the logged in user's notifications (notificationBell.js), with the number of unread ones on it.
+require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/userAvatar.php';
 require_once __DIR__ . '/userSettings.php';
 $navUser = $hbHubUser ?? null;
@@ -9,6 +11,15 @@ $navNotifications = $navUser !== null && (hbHubUserSettings($navUser['userSettin
 $navAvatarSrc = $navUser !== null
     ? hbHubAvatarUrl((int) $navUser['userId'], $navUser['userAvatarAttachmentId'] !== null ? (int) $navUser['userAvatarAttachmentId'] : null)
     : null;
+
+$navUnread = 0;
+if ($navUser !== null) {
+    try {
+        $navUnread = hbHubUnreadNotificationCount(hbHubDatabase(), (int) $navUser['userId']);
+    } catch (PDOException $e) {
+        error_log('Nav panel: could not count notifications: ' . $e->getMessage()); // the page still works without the number
+    }
+}
 
 $navSection = explode('/', trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'))[0];
 $navItems = [
@@ -20,9 +31,20 @@ $navItems = [
 <header class="nav-top">
     <a class="nav-brand" href="/">HB Hub</a>
     <div class="nav-top-actions">
-        <button type="button" class="nav-icon-btn" aria-label="Notifications">
-            <img class="nav-icon" src="/assets/images/icons/no-notification.png" alt="">
-        </button>
+        <?php if ($navUser !== null): ?>
+            <div class="nav-notifications" data-notifications>
+                <button type="button" class="nav-icon-btn nav-bell" aria-expanded="false" aria-controls="nav-notifications-panel"
+                        aria-label="Notifications<?= $navUnread > 0 ? ' (' . $navUnread . ' new)' : '' ?>" title="Notifications" data-notifications-bell>
+                    <img class="nav-icon" src="/assets/images/icons/<?= $navUnread > 0 ? 'notification.png' : 'no-notification.png' ?>" alt="" data-notifications-icon>
+                    <span class="nav-bell-count" aria-hidden="true" data-notifications-count<?= $navUnread === 0 ? ' hidden' : '' ?>><?= $navUnread > 9 ? '9+' : $navUnread ?></span>
+                </button>
+                <div class="nav-notifications-panel" id="nav-notifications-panel" role="region" aria-label="Notifications" hidden data-notifications-panel>
+                    <h2 class="nav-notifications-title">Notifications</h2>
+                    <ul class="nav-notifications-list" data-notifications-list></ul>
+                    <p class="nav-notifications-empty" data-notifications-empty>Loading…</p>
+                </div>
+            </div>
+        <?php endif; ?>
         <?php if ($navUser === null): ?>
             <a class="nav-login" href="/userMgmt/login?return=<?= htmlspecialchars(rawurlencode($_SERVER['REQUEST_URI'] ?? '/')) ?>">Log in</a>
         <?php else: ?>
@@ -44,6 +66,9 @@ $navItems = [
         </a>
     <?php endforeach; ?>
 </nav>
+<?php if ($navUser !== null): ?>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/notificationBell.js?v=<?= filemtime(__DIR__ . '/../js/notificationBell.js') ?>" defer></script>
+<?php endif; ?>
 <?php if ($navNotifications): ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>" defer></script>
 <?php endif; ?>

@@ -68,6 +68,165 @@ body {
   height: 24px;
 }
 
+.nav-icon-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Notifications: the bell, with the number of unread ones over it, opens the list below it (notificationBell.js) */
+.nav-notifications {
+  position: relative;
+}
+
+.nav-bell {
+  position: relative;
+}
+
+.nav-bell-count {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--nav-bg); /* cuts it out of the bell */
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.nav-bell-count[hidden] {
+  display: none;
+}
+
+.nav-notifications-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 360px;
+  max-height: min(480px, calc(100vh - var(--nav-top-h) - 24px));
+  max-height: min(480px, calc(100dvh - var(--nav-top-h) - 24px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--text);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  animation: nav-notifications-in 0.12s ease;
+}
+
+.nav-notifications-panel[hidden] {
+  display: none;
+}
+
+.nav-notifications-title {
+  margin: 0;
+  padding: 14px 16px 10px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.nav-notifications-list {
+  margin: 0;
+  padding: 0 6px 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.nav-notifications-empty {
+  margin: 0;
+  padding: 8px 16px 20px;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.nav-notification {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  color: inherit;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+a.nav-notification:hover,
+a.nav-notification:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+/* New since the list was last opened */
+.nav-notification.is-unread {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+a.nav-notification.is-unread:hover,
+a.nav-notification.is-unread:focus-visible {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.nav-notification-avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.nav-notification-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The icon of the part of the site it's from (a black PNG, made white on the accent colour) */
+.nav-notification-avatar img.nav-notification-icon {
+  width: 20px;
+  height: 20px;
+  filter: invert(1);
+}
+
+.nav-notification-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nav-notification-time {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  opacity: 0.65;
+}
+
+@keyframes nav-notifications-in {
+  from { opacity: 0; transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-notifications-panel {
+    animation: none;
+  }
+}
+
 .nav-avatar-btn {
   text-decoration: none;
 }
@@ -218,5 +377,15 @@ body {
     max-height: 1.2em;
     margin-top: 4px;
     opacity: 1;
+  }
+
+  /* The list goes across the screen, just below the top bar */
+  .nav-notifications-panel {
+    position: fixed;
+    top: calc(var(--nav-top-h) + 8px);
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: calc(100dvh - var(--nav-top-h) - 68px - 16px); /* above the bottom bar */
   }
 }

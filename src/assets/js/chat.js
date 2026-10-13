@@ -339,11 +339,20 @@ function userPicker(dialog, onChange) {
 
 // Message requests popup: chats the user was added to but hasn't accepted yet.
 // Accept and Decline are plain form posts, the server does the rest.
+// A message request notification links to /chat/?requests=1, which opens it straight away (when there still are any).
 (() => {
     const dialog = document.querySelector('.chat-requests');
     if (!dialog) return;
 
-    document.querySelector('[data-requests-open]')?.addEventListener('click', () => dialog.showModal());
+    const openButton = document.querySelector('[data-requests-open]');
+    openButton?.addEventListener('click', () => dialog.showModal());
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('requests') === '1') {
+        params.delete('requests'); // so a refresh doesn't open it again
+        history.replaceState(null, '', location.pathname + (params.size > 0 ? '?' + params : ''));
+        if (openButton && !openButton.hidden) dialog.showModal();
+    }
 
     dialog.querySelector('[data-requests-close]').addEventListener('click', () => dialog.close());
 

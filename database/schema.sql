@@ -95,6 +95,22 @@ CREATE TABLE `HBHub-Messages` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-Notifications`
+--
+
+CREATE TABLE `HBHub-Notifications` (
+  `notificationId` bigint UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who gets the notification',
+  `notificationType` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'section.kind, like chat.kicked (src/assets/php/notificationTypes/ lists them)',
+  `notificationByUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who did it, NULL when nobody did (like a game result)',
+  `notificationData` json DEFAULT NULL COMMENT 'What the kind needs to say what happened, like {"chatId": 5, "chatName": "Gamers"}',
+  `notificationCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `notificationReadTimestamp` datetime DEFAULT NULL COMMENT 'NULL until the user opens the notifications'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Sessions`
 --
 
@@ -176,6 +192,14 @@ ALTER TABLE `HBHub-Messages`
   ADD KEY `fk_messages_eventuser` (`messageEventUserId`);
 
 --
+-- Indexes for table `HBHub-Notifications`
+--
+ALTER TABLE `HBHub-Notifications`
+  ADD PRIMARY KEY (`notificationId`),
+  ADD KEY `userUnread` (`userId`,`notificationReadTimestamp`),
+  ADD KEY `fk_notifications_by` (`notificationByUserId`);
+
+--
 -- Indexes for table `HBHub-Sessions`
 --
 ALTER TABLE `HBHub-Sessions`
@@ -213,6 +237,12 @@ ALTER TABLE `HBHub-Messages`
   MODIFY `messageId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `HBHub-Notifications`
+--
+ALTER TABLE `HBHub-Notifications`
+  MODIFY `notificationId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-Users`
 --
 ALTER TABLE `HBHub-Users`
@@ -244,6 +274,13 @@ ALTER TABLE `HBHub-Messages`
   ADD CONSTRAINT `fk_messages_replyto` FOREIGN KEY (`messageReplyToId`) REFERENCES `HBHub-Messages` (`messageId`),
   ADD CONSTRAINT `fk_messages_eventuser` FOREIGN KEY (`messageEventUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_messages_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-Notifications`
+--
+ALTER TABLE `HBHub-Notifications`
+  ADD CONSTRAINT `fk_notifications_by` FOREIGN KEY (`notificationByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_notifications_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Sessions`

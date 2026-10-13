@@ -1,6 +1,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 
@@ -146,6 +147,20 @@ function chatNotice(PDO $db, int $userId, int $chatId, int $event, ?int $aboutUs
 }
 
 /**
+ * What a chat notification needs to know about the chat (assets/php/notificationTypes/chat.php):
+ * its id, its name right now and whether it's a group.
+ *
+ * @return array{chatId: int, chatName: ?string, isGroup: bool}
+ */
+function chatNotificationData(PDO $db, int $chatId): array
+{
+    $statement = $db->prepare('SELECT chatName, chatType FROM `HBHub-Chats` WHERE chatId = ?');
+    $statement->execute([$chatId]);
+    $chat = $statement->fetch() ?: ['chatName' => null, 'chatType' => HBHUB_CHAT_TYPE_DM];
+    return ['chatId' => $chatId, 'chatName' => $chat['chatName'], 'isGroup' => (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP];
+}
+
+/**
  * Messages in the chat, oldest at the top, each with the message it replies to (r) if any.
  * Notices are in there too, with the name of who they're about (eventUserName).
  * Without $afterId it's the newest ones, with it the first ones after that message (the ones polling hasn't shown yet).
@@ -187,6 +202,7 @@ function chatRedirect(?int $chatId, bool $keepUnread = false): never
 
 /**
  * Takes the user out of the chat, with a notice that they left, or that $kickedBy kicked them.
+ * When they leave a DM, the other person gets a notification about it (once they've accepted it).
  * A group is never left without an owner: when the owner leaves, the admin who has been in it the longest takes over,
  * or the longest-standing member when there's no admin left, and a notice says who.
  * A chat with nobody left in it is deleted.
@@ -200,7 +216,7 @@ function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null): vo
     $db->prepare('DELETE FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ?')
         ->execute([$chatId, $userId]);
 
-    $statement = $db->prepare('SELECT userId, memberRole FROM `HBHub-ChatMembers` WHERE chatId = ?
+    $statement = $db->prepare('SELECT userId, memberRole, userAcknowledgedJoin FROM `HBHub-ChatMembers` WHERE chatId = ?
         ORDER BY userAcknowledgedJoin DESC, memberJoinedTimestamp, userId FOR UPDATE');
     $statement->execute([$chatId]);
     $members = $statement->fetchAll();
@@ -211,6 +227,13 @@ function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null): vo
     } else {
         if ($kickedBy === null) {
             chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_LEAVE);
+            if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM) {
+                foreach ($members as $member) {
+                    if ($member['userAcknowledgedJoin']) {
+                        hbHubNotify($db, (int) $member['userId'], 'chat.leftDm', $userId, chatNotificationData($db, $chatId));
+                    }
+                }
+            }
         } else {
             chatNotice($db, $kickedBy, $chatId, HBHUB_CHAT_EVENT_KICK, $userId);
         }
@@ -245,7 +268,7 @@ function chatPickedUserIds(int $userId, mixed $pickedIds): array
 
 /**
  * Adds the picked users to the group, with a notice for each. Like when the group was made, they get it as
- * a message request they have to accept first. Anyone already in it (or invited) is left out, and so are unknown,
+ * a message request they have to accept first, and a notification about it. Anyone already in it (or invited) is left out, and so are unknown,
  * banned and deleted users. Nobody is added when they'd make the group bigger than HBHUB_CHAT_MEMBERS_MAX.
  */
 function chatAddMembers(PDO $db, int $userId, int $chatId, mixed $pickedIds): void
@@ -279,8 +302,10 @@ function chatAddMembers(PDO $db, int $userId, int $chatId, mixed $pickedIds): vo
         $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole, userAcknowledgedJoin)
             VALUES ' . implode(', ', array_fill(0, count($newIds), '(?, ?, ?, ?)')))
             ->execute($memberRows);
+        $notificationData = chatNotificationData($db, $chatId);
         foreach ($newIds as $newId) {
             chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_ADD, $newId);
+            hbHubNotify($db, $newId, 'chat.messageRequest', $userId, $notificationData);
         }
     }
     $db->commit();
@@ -586,6 +611,7 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
             // Starting a DM with someone who already sent you a request accepts it, and a hidden one comes back
             $db->prepare('UPDATE `HBHub-ChatMembers` SET userAcknowledgedJoin = 1 WHERE chatId = ? AND userId = ?')
                 ->execute([$existingChatId, $userId]);
+            hbHubMarkNotificationsReadAbout($db, $userId, 'chat.messageRequest', ['chatId' => (int) $existingChatId]);
             chatSetHidden($db, $userId, (int) $existingChatId, false);
             return (int) $existingChatId;
         }
@@ -601,7 +627,7 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
     $chatId = (int) $db->lastInsertId();
 
     // The creator is the group's owner. In a DM both are normal members.
-    // Everyone but the creator gets the chat as a message request they have to accept first.
+    // Everyone but the creator gets the chat as a message request they have to accept first, and a notification about it.
     $memberRows = [$chatId, $userId, $isGroup ? HBHUB_CHAT_ROLE_OWNER : HBHUB_CHAT_ROLE_MEMBER, 1];
     foreach ($memberIds as $memberId) {
         array_push($memberRows, $chatId, $memberId, HBHUB_CHAT_ROLE_MEMBER, 0);
@@ -609,6 +635,10 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
     $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole, userAcknowledgedJoin)
         VALUES ' . implode(', ', array_fill(0, count($memberIds) + 1, '(?, ?, ?, ?)')))
         ->execute($memberRows);
+    $notificationData = chatNotificationData($db, $chatId);
+    foreach ($memberIds as $memberId) {
+        hbHubNotify($db, $memberId, 'chat.messageRequest', $userId, $notificationData);
+    }
     $db->commit();
 
     return $chatId;
@@ -691,7 +721,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
     chatRedirect($isGone && (int) $chat['chatId'] === $openChatId ? null : $openChatId);
 }
 
-// Answering a message request: accepting opens the chat, declining leaves it
+// Answering a message request: accepting opens the chat, declining leaves it. Either way its notification has been seen.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['accept', 'decline'], true)) {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null, true);
     $isAccepted = $_POST['action'] === 'accept';
@@ -701,6 +731,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
             ? 'UPDATE `HBHub-ChatMembers` SET userAcknowledgedJoin = 1 WHERE chatId = ? AND userId = ?'
             : 'DELETE FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ?')
             ->execute([$chat['chatId'], $userId]);
+        hbHubMarkNotificationsReadAbout($db, $userId, 'chat.messageRequest', ['chatId' => (int) $chat['chatId']]);
         // The group sees who joined. A DM request accepted is just the chat starting.
         if ($isAccepted && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
             chatNotice($db, $userId, (int) $chat['chatId'], HBHUB_CHAT_EVENT_JOIN);
@@ -713,6 +744,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
 // The Members popup, for group admins: make another member an admin too, or kick them out of the group.
 // Only members who accepted the group can be made admin. Admins can kick normal members, an invite is taken back that way.
 // The group owner can also kick admins, or remove them as admin so they're a normal member again.
+// The member gets a notification about it, except for an invite taken back: then its message request notification goes.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['makeAdmin', 'removeAdmin', 'kick'], true)) {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     $isGroupAdmin = $chat !== null && chatIsGroupAdmin($chat);
@@ -728,19 +760,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
     $isNormalMember = $member !== false && (int) $member['memberRole'] === HBHUB_CHAT_ROLE_MEMBER;
 
     $event = null; // the notice for the change, when there was one
+    $notification = null; // and the member's notification about it (its type)
     if ($isNormalMember && $_POST['action'] === 'makeAdmin') {
         $statement = $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ? AND memberRole = ? AND userAcknowledgedJoin = 1');
         $statement->execute([HBHUB_CHAT_ROLE_ADMIN, $chat['chatId'], $member['userId'], HBHUB_CHAT_ROLE_MEMBER]);
-        $event = $statement->rowCount() > 0 ? HBHUB_CHAT_EVENT_MAKE_ADMIN : null;
+        if ($statement->rowCount() > 0) {
+            [$event, $notification] = [HBHUB_CHAT_EVENT_MAKE_ADMIN, 'chat.madeAdmin'];
+        }
     } elseif ($member !== false && $isGroupOwner && $_POST['action'] === 'removeAdmin') {
         $statement = $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ? AND memberRole = ?');
         $statement->execute([HBHUB_CHAT_ROLE_MEMBER, $chat['chatId'], $member['userId'], HBHUB_CHAT_ROLE_ADMIN]);
-        $event = $statement->rowCount() > 0 ? HBHUB_CHAT_EVENT_REMOVE_ADMIN : null;
+        if ($statement->rowCount() > 0) {
+            [$event, $notification] = [HBHUB_CHAT_EVENT_REMOVE_ADMIN, 'chat.removedAdmin'];
+        }
     } elseif ($member !== false && ($isNormalMember || $isGroupOwner) && $_POST['action'] === 'kick') {
         chatLeave($db, (int) $member['userId'], $chat, $userId); // posts the notice itself
+        if ($member['userAcknowledgedJoin']) {
+            $notification = 'chat.kicked';
+        } else {
+            hbHubRemoveNotifications($db, (int) $member['userId'], 'chat.messageRequest', ['chatId' => (int) $chat['chatId']]);
+        }
     }
     if ($event !== null) {
         chatNotice($db, $userId, (int) $chat['chatId'], $event, (int) $member['userId']);
+    }
+    if ($notification !== null) {
+        hbHubNotify($db, (int) $member['userId'], $notification, $userId, chatNotificationData($db, (int) $chat['chatId']));
     }
 
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
