@@ -1,0 +1,53 @@
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+name: 🏷️ Update README badges
+# shields.io can't always reach the site itself (Simply.com rate limits some of its servers, so the badges would
+# say "rate limited by upstream service"). This copies the counters to the badges branch every hour instead,
+# and the README badges read them from raw.githubusercontent.com.
+permissions:
+  contents: write
+jobs:
+  update-badges:
+    name: 🏷️ Update badges
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - name: 🔢 Fetch counts and push to the badges branch
+      run: |
+        remote="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        git init -q badges && cd badges
+        git config user.name "github-actions[bot]"
+        git config user.email "41898599+github-actions[bot]@users.noreply.github.com"
+
+        # Start from the current counts, so one that can't be fetched this time keeps its last value
+        git fetch -q --depth 1 "$remote" badges && git checkout -q FETCH_HEAD || echo "No badges branch yet"
+
+        for counter in totalMembers totalMesseges; do
+          # Simply.com blocks curl's own User-Agent (it answers 455)
+          if curl -fsS --retry 3 --retry-all-errors --max-time 20 -o "$counter.tmp" \
+              -A "HB-Hub badges (+https://github.com/${GITHUB_REPOSITORY})" \
+              "https://hbhub.noahgajnielsen.dk/assets/php/github/$counter" \
+              && jq -e '.schemaVersion == 1 and .isError != true' "$counter.tmp" > /dev/null; then
+            mv "$counter.tmp" "$counter.json"
+          else
+            echo "::warning::Couldn't fetch $counter, keeping its last count"
+            rm -f "$counter.tmp"
+          fi
+        done
+
+        git add -A
+        if [ -z "$(git ls-files)" ]; then
+          echo "::error::No counts to publish yet"
+          exit 1
+        fi
+        if git rev-parse -q --verify HEAD > /dev/null && git diff --cached --quiet; then
+          echo "Counts haven't changed"
+          exit 0
+        fi
+        # Keep the branch at a single commit instead of one per update
+        git checkout -q --orphan latest
+        git commit -q -m "Update badge counts"
+        git push -q -f "$remote" HEAD:badges
