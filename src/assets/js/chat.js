@@ -84,11 +84,20 @@ function userPicker(dialog, onChange) {
     let searchTimer = null;
     let searchRequest = null;
 
-    function avatar(name) {
+    // The user's profile picture, or the first letter of their name when they don't have one
+    function avatar(user) {
         const span = document.createElement('span');
         span.className = 'chat-avatar';
         span.setAttribute('aria-hidden', 'true');
-        span.textContent = name.charAt(0).toUpperCase();
+        if (user.avatar) {
+            const img = document.createElement('img');
+            img.src = user.avatar;
+            img.alt = '';
+            img.loading = 'lazy';
+            span.append(img);
+        } else {
+            span.textContent = user.userName.charAt(0).toUpperCase();
+        }
         return span;
     }
 
@@ -109,7 +118,7 @@ function userPicker(dialog, onChange) {
 
             const label = document.createElement('label');
             label.className = 'chat-new-user';
-            label.append(checkbox, avatar(user.userName), name);
+            label.append(checkbox, avatar(user), name);
             if (memberIds.has(user.userId)) {
                 const note = document.createElement('span');
                 note.className = 'chat-new-user-note';

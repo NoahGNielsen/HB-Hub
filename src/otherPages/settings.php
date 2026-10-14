@@ -397,7 +397,7 @@ $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
                         <?php if ($settingsAvatarSrc !== null): ?>
                             <img class="settings-avatar-preview" src="<?= htmlspecialchars($settingsAvatarSrc) ?>" alt="Your profile picture">
                         <?php else: ?>
-                            <img class="settings-avatar-preview is-placeholder" src="/assets/images/icons/user.png" alt="">
+                            <span class="settings-avatar-preview settings-avatar-initial" aria-hidden="true"><?= htmlspecialchars(mb_strtoupper(mb_substr($settingsUser['userName'], 0, 1))) ?></span>
                         <?php endif; ?>
                         <div class="settings-avatar-actions">
                             <?php if ($settingsCanUploadAvatar): ?>

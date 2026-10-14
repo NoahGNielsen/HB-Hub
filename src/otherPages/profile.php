@@ -75,7 +75,7 @@ $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvata
                 <?php if ($profileAvatarSrc !== null): ?>
                     <img class="profile-avatar" src="<?= htmlspecialchars($profileAvatarSrc) ?>" alt="Profile picture of <?= htmlspecialchars($profile['userName']) ?>">
                 <?php else: ?>
-                    <img class="profile-avatar is-placeholder" src="/assets/images/icons/user.png" alt="">
+                    <span class="profile-avatar profile-avatar-initial" aria-hidden="true"><?= htmlspecialchars(mb_strtoupper(mb_substr($profile['userName'], 0, 1))) ?></span>
                 <?php endif; ?>
                 <span class="profile-status-dot<?= $profileIsOnline ? ' is-online' : '' ?>" aria-hidden="true"></span>
             </div>

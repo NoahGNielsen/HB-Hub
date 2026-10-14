@@ -30,20 +30,15 @@
   background: var(--background);
 }
 
-/* The default user icon is a black PNG - padded and turned light in dark mode */
-.profile-avatar.is-placeholder {
-  padding: 24px;
-  box-sizing: border-box;
-  object-fit: contain;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .profile-avatar.is-placeholder {
-    filter: invert(1);
-  }
-}
-:root[data-theme="dark"] .profile-avatar.is-placeholder {
-  filter: invert(1);
+/* No profile picture: the first letter of the name */
+.profile-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 48px;
+  font-weight: 700;
 }
 
 .profile-status-dot {
