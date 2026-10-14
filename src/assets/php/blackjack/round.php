@@ -23,6 +23,8 @@
 // $seats, passed to most of these, is who sits at the table now: [{userId, seat, away, sittingOut}] (room.php).
 // A player who leaves during a hand stays in the round without a seat, and plays like an away player: their hands
 // stand when their turn comes. What they win still goes to their chips.
+//
+// Every player's part of a round is stored when it's paid out (hbHubBlackjackRecordPlayer()), for the leaderboard.
 require_once __DIR__ . '/cards.php';
 require_once __DIR__ . '/../casino/wallet.php';
 
@@ -555,6 +557,7 @@ function hbHubBlackjackSettle(PDO $db, array &$room, int $now): void
         if ($insurancePayout > 0) {
             hbHubCasinoChange($db, $player['userId'], $insurancePayout, 'insurancePayout', HBHUB_BLACKJACK_GAME, $round['id']);
         }
+        hbHubBlackjackRecordPlayer($db, $room, $player, count($round['players']), $handsPayout, $insurancePayout);
     }
     unset($player);
 
@@ -568,13 +571,67 @@ function hbHubBlackjackSettle(PDO $db, array &$room, int $now): void
 }
 
 /**
+ * Stores how the round went for the player (HBHub-BlackjackPlayerRounds), for the leaderboard and any stats later.
+ * The result is from the hands, not insurance: blackjack for a blackjack, otherwise whether the hands won or lost
+ * chips together - so a split with one hand won and one lost (the same bets) is a push.
+ */
+function hbHubBlackjackRecordPlayer(PDO $db, array $room, array $player, int $playerCount, int $handsPayout, int $insurancePayout): void
+{
+    $wagered = array_sum(array_column($player['hands'], 'bet'));
+    $handsNet = $handsPayout - $wagered;
+    $result = match (true) {
+        count($player['hands']) === 1 && $player['hands'][0]['result'] === 'blackjack' => 'blackjack',
+        $handsNet > 0 => 'win',
+        $handsNet < 0 => 'loss',
+        default => 'push',
+    };
+    $hands = array_map(static fn (array $hand): array => [
+        'cards' => $hand['cards'],
+        'bet' => $hand['bet'],
+        'doubled' => $hand['doubled'],
+        'result' => $hand['result'],
+        'payout' => $hand['payout'],
+    ], $player['hands']);
+    $stats = $player['stats'];
+
+    $db->prepare('INSERT INTO `HBHub-BlackjackPlayerRounds` (roundId, roomId, roomType, userId, seatNumber, playersInRound,
+            playerBet, playerWagered, playerInsurance, playerPayout, playerInsurancePayout, playerNet, playerResult, playerHands,
+            playerHits, playerStands, playerDoubles, playerSplits, playerAutoStands, playerInsuranceTaken, playerHandsDetail, playerTimestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())')
+        ->execute([
+            $room['state']['round']['id'],
+            $room['roomId'],
+            $room['roomType'],
+            $player['userId'],
+            $player['seat'],
+            $playerCount,
+            $player['bet'],
+            $wagered,
+            (int) $player['insurance'],
+            $handsPayout,
+            $insurancePayout,
+            $player['net'],
+            $result,
+            count($player['hands']),
+            $stats['hits'],
+            $stats['stands'],
+            $stats['doubles'],
+            $stats['splits'],
+            $stats['autoStands'],
+            $player['insurance'] > 0 ? 1 : 0,
+            json_encode($hands, JSON_THROW_ON_ERROR),
+        ]);
+}
+
+/**
  * The table as $viewerId may see it, for blackjackTable.js: without the shoe, and with the hole card as null until
  * it's turned over. Everyone sees everyone's cards and bets, as at a real table.
  *
  * @param array<int, array{name: string, avatar: ?string}> $people everyone at the table or in the hand, by userId
  * @param int $chips the viewer's chips, so double and split are only offered when they can afford them
+ * @param ?int $hostUserId the room's host, who can invite people
  */
-function hbHubBlackjackTableView(array $state, array $seats, array $people, int $viewerId, int $chips, int $now): array
+function hbHubBlackjackTableView(array $state, array $seats, array $people, int $viewerId, int $chips, ?int $hostUserId, int $now): array
 {
     $round = $state['round'];
     $turn = $state['phase'] === 'playing' ? $round['turn'] : null;
@@ -612,6 +669,7 @@ function hbHubBlackjackTableView(array $state, array $seats, array $people, int 
             'name' => $people[$userId]['name'] ?? '',
             'avatar' => $people[$userId]['avatar'] ?? null,
             'isYou' => $userId === $viewerId,
+            'isHost' => $userId === $hostUserId && !$seat['left'],
             'away' => $seat['away'],
             'sittingOut' => $seat['sittingOut'],
             'left' => $seat['left'],
@@ -627,6 +685,8 @@ function hbHubBlackjackTableView(array $state, array $seats, array $people, int 
         $betIndex = hbHubBlackjackBetIndex($state, $viewerId);
         $you = [
             'seat' => $yourSeat['seat'],
+            'isHost' => $viewerId === $hostUserId,
+            'sittingOut' => $yourSeat['sittingOut'],
             'nextBet' => $betIndex !== null ? $state['bets'][$betIndex]['amount'] : null,
             'canBet' => in_array($state['phase'], ['waiting', 'betting', 'results'], true) && !$yourSeat['sittingOut'] && $betIndex === null,
             'canClearBet' => in_array($state['phase'], ['betting', 'results'], true) && $betIndex !== null,

@@ -43,8 +43,60 @@
   opacity: 0.75;
 }
 
-.bj-header .casino-btn {
+.bj-header-actions {
   flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The join code: a click copies it */
+.bj-code {
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 2px dashed color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.bj-code:hover {
+  border-color: var(--accent);
+}
+
+.bj-code:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.bj-code-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.bj-code-value {
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bj-code-copied {
+  color: var(--bj-win);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.bj-code-copied:empty {
+  display: none;
 }
 
 /* The table: dealer at the top, what's happening in the middle, the seats along the bottom */
@@ -240,6 +292,17 @@
   opacity: 0.6;
 }
 
+.bj-seat.is-empty {
+  justify-content: center;
+  border: 2px dashed color-mix(in srgb, var(--text) 15%, transparent);
+}
+
+.bj-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.5;
+}
+
 .bj-hands {
   display: flex;
   flex-wrap: wrap;
@@ -328,10 +391,11 @@
 
 .bj-player {
   max-width: 100%;
-  margin: 0;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  gap: 6px;
+  gap: 4px 6px;
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -368,6 +432,11 @@
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.bj-badge.is-host {
+  background: var(--accent);
+  color: #fff;
 }
 
 /* What the player can do now */
@@ -577,6 +646,43 @@
   justify-content: flex-end;
 }
 
+.bj-invite[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bj-invite p {
+  margin: 0;
+}
+
+.bj-invite-list {
+  max-height: min(320px, 45dvh);
+  margin: 4px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.bj-invite-user {
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.bj-invite-user .casino-btn {
+  flex: none;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+.bj-invite .bj-hint:empty {
+  display: none;
+}
+
 @media (max-width: 600px) {
   .bj {
     --bj-card-w: 48px;
@@ -588,16 +694,53 @@
     font-size: 1.3rem;
   }
 
+  .bj-header {
+    flex-direction: column;
+  }
+
+  .bj-header-actions {
+    justify-content: flex-start;
+  }
+
   .bj-table {
     min-height: 0;
     padding: 16px 8px;
     border-radius: var(--radius);
   }
 
+  /* Your seat first and full width, the others two by two with smaller cards, the empty ones left out */
+  .bj-seats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
   .bj-seat {
-    flex-basis: 130px;
+    max-width: none;
     min-height: 0;
     padding: 8px 4px;
+  }
+
+  .bj-seat.is-you {
+    order: -1;
+    grid-column: 1 / -1;
+  }
+
+  .bj-seat:not(.is-you) {
+    --bj-card-w: 38px;
+    --bj-card-h: 54px;
+  }
+
+  .bj-seat:not(.is-you) .bj-card-corner {
+    font-size: 0.75rem;
+  }
+
+  .bj-seat:not(.is-you) .bj-card-pip {
+    font-size: 1.1rem;
+  }
+
+  .bj-seat.is-empty {
+    display: none;
   }
 
   .bj-card-corner {

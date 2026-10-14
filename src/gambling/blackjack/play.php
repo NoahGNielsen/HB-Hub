@@ -1,11 +1,13 @@
 <?php
 // The Blackjack table's JSON, for blackjackTable.js (the page around it is table.php). Only for the user's own table:
-// - GET ?room=id&rev=n is the table as the user may see it (hbHubBlackjackTableView() in round.php), with their chips.
-//   When nothing has changed since revision n it's just {"rev": n, "same": true}. The table asks every second.
+// - GET ?room=id&v=version is the table as the user may see it (hbHubBlackjackTableView() in round.php), with their
+//   chips and the table's version (hbHubBlackjackVersion() in room.php). When the version hasn't changed it's just
+//   {"v": version, "same": true}. The table asks every second.
 // - POST room=id&action=... does something at the table, and answers with the whole table the same way, plus "error"
 //   (a message to show) when it couldn't be done. The actions:
-//     bet (amount), clearBet, insurance (take: 1 or 0), leave, and hit, stand, double and split (turn: the turnId the
-//     table showed when it was clicked, so a double click only counts once)
+//     bet (amount), clearBet, insurance (take: 1 or 0), hit, stand, double and split (turn: the turnId the table
+//     showed when it was clicked, so a double click only counts once), sitOut (out: 1 or 0), invite (user: their id,
+//     only for the host) and leave
 // Answers 404 with {"error": "notSeated"} when the user doesn't sit at that table (anymore).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
@@ -44,6 +46,10 @@ $do = match ($action) {
         => hbHubBlackjackInsurance($db, $room, $userId, ($input['take'] ?? null) === '1'),
     'hit', 'stand', 'double', 'split' => fn (array &$room, array &$seats, int $now): ?string
         => hbHubBlackjackMove($db, $room, $userId, $action, $input['turn'] ?? null, $now),
+    'sitOut' => fn (array &$room, array &$seats, int $now): ?string
+        => hbHubBlackjackSitOut($db, $room, $seats, $userId, ($input['out'] ?? null) === '1', $now),
+    'invite' => fn (array &$room, array &$seats, int $now): ?string
+        => hbHubBlackjackInvite($db, $room, $seats, $userId, $input['user'] ?? null),
     default => false,
 };
 if ($do === false) {
@@ -52,24 +58,26 @@ if ($do === false) {
     exit;
 }
 
-// Just looking: while nothing is timed (waiting for the first bet) there's nothing to catch up with, so the room
-// doesn't need locking
-$room = $do === null ? hbHubBlackjackRoom($db, $roomId) : null;
-if ($room !== null && $room['state']['deadline'] === null) {
-    $played = [$room, hbHubBlackjackSeats($db, $roomId), null];
-} else {
-    $played = hbHubBlackjackPlay($db, $roomId, $do);
+// Just looking only locks the room when there's something to move on (a timer is running, or someone has gone)
+$played = null;
+if ($do === null) {
+    $room = hbHubBlackjackRoom($db, $roomId);
+    $seats = $room !== null ? hbHubBlackjackSeats($db, $roomId) : [];
+    if ($room !== null && !hbHubBlackjackNeedsPlay($room, $seats)) {
+        $played = [$room, $seats, null];
+    }
 }
-if ($played === null) {
+$played ??= hbHubBlackjackPlay($db, $roomId, $do);
+if ($played === null || !empty($played[0]['isDeleted']) || hbHubBlackjackSeatOf($played[1], $userId) === null) {
     http_response_code(404);
-    echo json_encode(['error' => 'notSeated']); // the room was deleted meanwhile
+    echo json_encode(['error' => 'notSeated']); // the room is gone, or the user was taken off it (gone too long)
     exit;
 }
 [$room, $seats, $error] = $played;
 
-$rev = $room['roomRevision'];
-if (!$isPost && ($input['rev'] ?? null) === (string) $rev) {
-    echo json_encode(['rev' => $rev, 'same' => true]);
+$version = hbHubBlackjackVersion($room, $seats);
+if (!$isPost && ($input['v'] ?? null) === $version) {
+    echo json_encode(['v' => $version, 'same' => true]);
     exit;
 }
 
@@ -80,7 +88,7 @@ $people = hbHubBlackjackPeople($db, [
 ]);
 
 $response = [
-    'rev' => $rev,
+    'v' => $version,
     'chips' => $chips,
     'table' => [
         'room' => [
@@ -90,8 +98,9 @@ $response = [
             'type' => HBHUB_BLACKJACK_ROOM_TYPES[$room['roomType']] ?? 'public',
             'minBet' => $room['roomMinBet'],
             'seats' => hbHubBlackjackMaxSeats($room['roomType']),
+            'players' => count($seats),
         ],
-    ] + hbHubBlackjackTableView($room['state'], $seats, $people, $userId, $chips, hbHubBlackjackNow()),
+    ] + hbHubBlackjackTableView($room['state'], $seats, $people, $userId, $chips, $room['roomHostUserId'], hbHubBlackjackNow()),
 ];
 if (is_string($error)) {
     $response['error'] = $error;

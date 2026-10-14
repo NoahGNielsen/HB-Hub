@@ -1,6 +1,8 @@
 <?php
 // A Blackjack table (?room=id). This is just the page around it: blackjackTable.js draws the table and plays it
-// through /gambling/blackjack/play. Only for the table the user sits at - anyone else is sent to the Blackjack page.
+// through /gambling/blackjack/play. Only for the table the user sits at - anyone else is sent to the Blackjack page,
+// where tables are joined. At a table for more players there's also its join code, sitting out, and for the host,
+// inviting people (searched for with the chat's /chat/users).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
@@ -19,6 +21,8 @@ if ($room === null) {
 
 $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
 $tableChips = [10, 50, 100, 500, 1000]; // the chips to make up a bet with
+$tableIsSolo = $room['roomType'] === HBHUB_BLACKJACK_ROOM_SOLO;
+$tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,9 +39,27 @@ $tableChips = [10, 50, 100, 500, 1000]; // the chips to make up a bet with
         <div class="bj-header">
             <div class="bj-heading">
                 <h1 class="bj-title"><?= htmlspecialchars($room['roomName']) ?></h1>
-                <p class="bj-meta">Minimum bet <?= number_format($room['roomMinBet']) ?> &middot; Blackjack pays 3:2 &middot; Dealer stands on soft 17</p>
+                <p class="bj-meta">
+                    <?= HBHUB_BLACKJACK_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Table' ?>
+                    <?php if (!$tableIsSolo): ?>
+                        &middot; <span data-bj-players>1</span>/<?= $tableSeats ?> players
+                    <?php endif; ?>
+                    &middot; Minimum bet <?= number_format($room['roomMinBet']) ?> &middot; Blackjack pays 3:2 &middot; Dealer stands on soft 17
+                </p>
             </div>
-            <button type="button" class="casino-btn" data-bj-leave>Leave table</button>
+            <div class="bj-header-actions">
+                <?php if (!$tableIsSolo): ?>
+                    <button type="button" class="bj-code" data-bj-code="<?= htmlspecialchars($room['roomCode']) ?>"
+                            aria-label="Join code <?= htmlspecialchars(implode(' ', str_split($room['roomCode']))) ?>, copy it">
+                        <span class="bj-code-label">Code</span>
+                        <strong class="bj-code-value"><?= htmlspecialchars($room['roomCode']) ?></strong>
+                        <span class="bj-code-copied" data-bj-code-copied aria-live="polite"></span>
+                    </button>
+                    <button type="button" class="casino-btn" data-bj-invite hidden>Invite</button>
+                    <button type="button" class="casino-btn" data-bj-sit-out hidden>Sit out</button>
+                <?php endif; ?>
+                <button type="button" class="casino-btn" data-bj-leave>Leave table</button>
+            </div>
         </div>
 
         <section class="bj-table" aria-label="The table" data-bj-table>
@@ -120,6 +142,25 @@ $tableChips = [10, 50, 100, 500, 1000]; // the chips to make up a bet with
             <summary>Rules</summary>
             <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/blackjack/rules.php'; ?>
         </details>
+
+        <?php if (!$tableIsSolo): ?>
+            <dialog class="bj-dialog bj-invite" aria-labelledby="bj-invite-title" data-bj-invite-dialog>
+                <h2 id="bj-invite-title">Invite people</h2>
+                <p>
+                    <?php if ($room['roomType'] === HBHUB_BLACKJACK_ROOM_INVITE): ?>
+                        Only people you invite can join this table.
+                    <?php endif; ?>
+                    They get a notification, and join from the Blackjack page.
+                </p>
+                <label class="casino-label" for="bj-invite-search">Find people</label>
+                <input type="search" id="bj-invite-search" class="casino-input" placeholder="Search by name" autocomplete="off" data-bj-invite-search>
+                <ul class="bj-invite-list" data-bj-invite-list></ul>
+                <p class="bj-hint" role="status" data-bj-invite-status></p>
+                <div class="bj-panel-actions">
+                    <button type="button" class="casino-btn" data-bj-invite-close>Done</button>
+                </div>
+            </dialog>
+        <?php endif; ?>
 
         <dialog class="bj-dialog" aria-labelledby="bj-leave-title" data-bj-leave-dialog>
             <h2 id="bj-leave-title">Leave the table?</h2>

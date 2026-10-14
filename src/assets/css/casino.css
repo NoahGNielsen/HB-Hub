@@ -264,6 +264,309 @@ a.casino-game:focus-visible {
   line-height: 1.5;
 }
 
+.casino-title-row {
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.casino .casino-title-row h1 {
+  margin: 0;
+}
+
+.casino-alert {
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--casino-down) 14%, var(--secondary));
+  font-weight: 600;
+}
+
+.casino-your-table {
+  margin-bottom: 20px;
+  border: 2px solid var(--accent);
+}
+
+.casino-your-table .casino-hint {
+  margin-bottom: 16px;
+}
+
+.casino-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.casino-actions form {
+  margin: 0;
+}
+
+/* The lobby's forms (gambling/blackjack/) */
+.casino-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.casino-fieldset:disabled {
+  opacity: 0.5;
+}
+
+.casino-form {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.casino-label {
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.casino-optional {
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+.casino-input {
+  width: 100%;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+}
+
+.casino-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.casino-inline {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+}
+
+.casino-inline .casino-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.casino-code-input {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.casino-code-input::placeholder {
+  font-weight: 500;
+  opacity: 0.4;
+}
+
+.casino-choices {
+  width: 100%;
+  margin: 4px 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.casino-choices legend {
+  margin-bottom: 8px;
+}
+
+.casino-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.casino-choice input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.casino-choice .casino-hint {
+  display: block;
+}
+
+.casino-form .casino-btn {
+  margin-top: 4px;
+}
+
+/* The lists of tables */
+.casino-list-card {
+  margin-bottom: 20px;
+  scroll-margin-top: calc(var(--nav-top-h) + 16px);
+}
+
+.casino-rooms {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.casino-rooms:empty {
+  display: none;
+}
+
+.casino-room {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 12px;
+  background: var(--background);
+}
+
+.casino-room-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.casino-room-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.casino-room-meta {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.casino-room form {
+  flex: none;
+  margin: 0;
+}
+
+/* Leaderboard (gambling/blackjack/leaderboard.php) */
+.casino-table-wrap {
+  overflow-x: auto;
+}
+
+.casino-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.casino-table th,
+.casino-table td {
+  padding: 10px 12px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.casino-table th:nth-child(2),
+.casino-table td:nth-child(2) {
+  text-align: left;
+}
+
+.casino-table thead th {
+  border-bottom: 2px solid color-mix(in srgb, var(--text) 15%, transparent);
+  font-size: 0.85rem;
+}
+
+.casino-table tbody tr + tr td {
+  border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.casino-table tbody tr.is-you td {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.casino-sort {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.casino-sort:hover,
+.casino-sort:focus-visible,
+.casino-sort.is-active {
+  color: var(--accent);
+}
+
+.casino-sort-arrow {
+  display: inline-block;
+  width: 1em;
+}
+
+.casino-rank {
+  opacity: 0.6;
+}
+
+.casino-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.casino-player:hover,
+.casino-player:focus-visible {
+  color: var(--accent);
+}
+
+.casino-player-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.casino-avatar {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.casino-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.casino-unranked {
+  opacity: 0.5;
+}
+
 @media (max-width: 700px) {
   .casino-overview {
     grid-template-columns: minmax(0, 1fr);
@@ -285,6 +588,20 @@ a.casino-game:focus-visible {
 
   .casino-daily .casino-btn {
     align-self: stretch;
+  }
+
+  .casino-room {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .casino-room .casino-btn {
+    width: 100%;
+  }
+
+  .casino-table th,
+  .casino-table td {
+    padding: 8px 8px;
   }
 }
 

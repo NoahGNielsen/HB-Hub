@@ -3,7 +3,8 @@
 // shows it, and only ever knows the cards that are face up.
 //
 // Asks what's new every second while the page is in view, and every 4 seconds while it isn't (so the table doesn't count
-// the player as away, which takes 10 seconds without hearing from them). The whole table only comes back when it changed.
+// the player as away, which takes 10 seconds without hearing from them). The whole table only comes back when its
+// version changed: something happened, or someone joined, left, went away or came back.
 (() => {
     const root = document.querySelector('[data-blackjack]');
     if (!root) return;
@@ -14,12 +15,14 @@
     const BET_STEP = 10;
     const roomId = root.dataset.room;
     const minBet = Number(root.dataset.minBet);
+    const baseTitle = document.title;
 
     const SUITS = { S: '♠', H: '♥', D: '♦', C: '♣' };
     const SUIT_NAMES = { S: 'spades', H: 'hearts', D: 'diamonds', C: 'clubs' };
     const RANK_NAMES = { A: 'Ace', T: '10', J: 'Jack', Q: 'Queen', K: 'King' };
     const RESULTS = { blackjack: 'Blackjack!', win: 'Win', push: 'Push', lose: 'Lose', bust: 'Bust' };
     const MOVE_KEYS = { h: 'hit', s: 'stand', d: 'double', p: 'split' };
+    const IN_HAND_PHASES = ['insurance', 'playing', 'dealer'];
 
     const find = (selector) => root.querySelector(selector);
     const tableElement = find('[data-bj-table]');
@@ -47,11 +50,18 @@
     const insuranceButtons = [...root.querySelectorAll('[data-bj-insurance]')];
     const moveButtons = [...root.querySelectorAll('[data-bj-move]')];
     const waitText = find('[data-bj-wait]');
+    const playersText = find('[data-bj-players]');
+    const codeButton = find('[data-bj-code]');
+    const codeCopied = find('[data-bj-code-copied]');
+    const sitOutButton = find('[data-bj-sit-out]');
+    const inviteButton = find('[data-bj-invite]');
+    const inviteDialog = find('[data-bj-invite-dialog]');
     const leaveButton = find('[data-bj-leave]');
     const leaveDialog = find('[data-bj-leave-dialog]');
     const leaveText = find('[data-bj-leave-text]');
 
-    let rev = null; // the table's revision that's shown
+    let version = null; // the table's version that's shown
+    let revision = -1; // the room's revision in it, to tell older answers from newer ones
     let table = null;
     let chips = null;
     let pendingBet = minBet; // the bet being made up. Kept for the next hand, so the same bet is one click.
@@ -67,13 +77,14 @@
 
     const formatChips = (amount) => amount.toLocaleString('en-US');
     const signed = (amount) => (amount > 0 ? '+' : '−') + formatChips(Math.abs(amount));
+    const isInHand = () => IN_HAND_PHASES.includes(table.phase);
 
     async function request(options, query = '') {
         try {
             const response = await fetch(API + query, { headers: { Accept: 'application/json' }, ...options });
             const data = await response.json().catch(() => null);
             if (response.status === 404 && data?.error === 'notSeated') {
-                location.assign('/gambling/blackjack/'); // left in another tab, or the table is gone
+                location.assign('/gambling/blackjack/'); // left in another tab, gone too long, or the table is gone
                 return null;
             }
             if (response.status === 403) {
@@ -88,8 +99,10 @@
 
     // A newer answer may already be shown (one from a click can overtake the check before it), so older ones are dropped
     function apply(data) {
-        if (data.same || (rev !== null && data.rev < rev)) return;
-        rev = data.rev;
+        const dataRevision = parseInt(data.v, 10);
+        if (data.same || dataRevision < revision) return;
+        version = data.v;
+        revision = dataRevision;
         table = data.table;
         if (typeof data.chips === 'number' && data.chips !== chips) {
             chips = data.chips;
@@ -107,12 +120,16 @@
         clearTimeout(pollTimer);
 
         const query = new URLSearchParams({ room: roomId });
-        if (rev !== null) query.set('rev', String(rev));
+        if (version !== null) query.set('v', version);
         const data = await request({}, '?' + query);
         if (data !== null) apply(data);
 
         isPolling = false;
         pollTimer = setTimeout(poll, document.visibilityState === 'visible' ? POLL_MS : HIDDEN_POLL_MS);
+    }
+
+    function post(action, fields = {}) {
+        return request({ method: 'POST', body: new URLSearchParams({ room: roomId, action, ...fields }) });
     }
 
     async function act(action, fields = {}) {
@@ -121,7 +138,7 @@
         showMessage('');
         render();
 
-        const data = await request({ method: 'POST', body: new URLSearchParams({ room: roomId, action, ...fields }) });
+        const data = await post(action, fields);
         isBusy = false;
         if (data === null) {
             showMessage('Something went wrong. Please try again.');
@@ -142,12 +159,23 @@
             shownCards = {};
             shownRound = table.roundId;
         }
+        renderHeader();
         renderDealer();
-        seatList.replaceChildren(...table.seats.map(seatElement));
+        renderSeats();
         statusText.textContent = statusFor();
         renderControls();
         tickTimer();
         isFirstDraw = false;
+    }
+
+    function renderHeader() {
+        if (playersText) playersText.textContent = String(table.room.players);
+        if (inviteButton) inviteButton.hidden = !table.you?.isHost;
+        if (sitOutButton) {
+            sitOutButton.hidden = !table.you;
+            sitOutButton.textContent = table.you?.sittingOut ? 'Sit back in' : 'Sit out';
+            sitOutButton.disabled = isBusy;
+        }
     }
 
     function renderDealer() {
@@ -200,6 +228,26 @@
     function totalText(total, soft, blackjack) {
         if (blackjack) return 'Blackjack';
         return soft && total < 21 ? (total - 10) + '/' + total : String(total);
+    }
+
+    // Every seat at the table in order, the empty ones too
+    function renderSeats() {
+        const slots = [];
+        for (let number = 1; number <= table.room.seats; number++) {
+            const seat = table.seats.find((candidate) => candidate.seat === number);
+            slots.push(seat ? seatElement(seat) : emptySeat());
+        }
+        seatList.replaceChildren(...slots);
+    }
+
+    function emptySeat() {
+        const item = document.createElement('li');
+        item.className = 'bj-seat is-empty';
+        const text = document.createElement('p');
+        text.className = 'bj-empty';
+        text.textContent = 'Empty seat';
+        item.append(text);
+        return item;
     }
 
     // Built with textContent, as names are typed in by users
@@ -277,7 +325,7 @@
     }
 
     function playerTag(seat) {
-        const tag = document.createElement('p');
+        const tag = document.createElement('div');
         tag.className = 'bj-player';
 
         const avatar = document.createElement('span');
@@ -297,12 +345,17 @@
         name.textContent = seat.isYou ? 'You' : seat.name;
         tag.append(avatar, name);
 
-        const badge = seat.left ? 'Left' : seat.away ? 'Away' : seat.sittingOut ? 'Sitting out' : null;
-        if (badge) {
-            const element = document.createElement('span');
-            element.className = 'bj-badge';
-            element.textContent = badge;
-            tag.append(element);
+        const badges = [];
+        if (seat.isHost && table.room.type !== 'solo') badges.push(['Host', 'is-host']);
+        if (seat.left) badges.push(['Left', '']);
+        else if (seat.away) badges.push(['Away', '']);
+        else if (seat.sittingOut) badges.push(['Sitting out', '']);
+        else if (isInHand() && !seat.player) badges.push(['Next hand', '']);
+        for (const [text, className] of badges) {
+            const badge = document.createElement('span');
+            badge.className = 'bj-badge' + (className ? ' ' + className : '');
+            badge.textContent = text;
+            tag.append(badge);
         }
         return tag;
     }
@@ -353,6 +406,9 @@
         else if (you?.nextBet !== null && you?.nextBet !== undefined) panel = 'placed';
         for (const [name, element] of Object.entries(panels)) element.hidden = name !== panel;
 
+        // So a player in another tab can see it's their turn
+        document.title = (panel === 'moves' || panel === 'insurance' ? 'Your turn - ' : '') + baseTitle;
+
         if (panel === 'bet') {
             pendingBet = Math.min(pendingBet, maxBet());
             pendingText.textContent = formatChips(pendingBet);
@@ -382,6 +438,9 @@
     }
 
     function waitingFor() {
+        if (table.you?.sittingOut) return 'You\'re sitting out. Sit back in to play the next hand.';
+        const isInThisHand = table.seats.some((seat) => seat.isYou && seat.player);
+        if (isInHand() && !isInThisHand) return 'You\'re in from the next hand.';
         switch (table.phase) {
             case 'insurance':
                 return 'Waiting for the others to decide on insurance.';
@@ -390,9 +449,7 @@
             case 'dealer':
                 return 'The dealer is playing.';
             default:
-                return table.you?.canBet === false && table.seats.find((seat) => seat.isYou)?.sittingOut
-                    ? 'You\'re sitting out.'
-                    : '';
+                return '';
         }
     }
 
@@ -441,7 +498,8 @@
     }
     moveButtons.forEach((button) => button.addEventListener('click', () => move(button.dataset.bjMove)));
     document.addEventListener('keydown', (event) => {
-        if (panels.moves.hidden || leaveDialog.open || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (panels.moves.hidden || leaveDialog.open || inviteDialog?.open) return;
+        if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
         if (event.target.closest?.('input, textarea, select, [contenteditable]')) return;
         const name = MOVE_KEYS[event.key.toLowerCase()];
         if (name) {
@@ -450,9 +508,97 @@
         }
     });
 
+    sitOutButton?.addEventListener('click', () => act('sitOut', { out: table?.you?.sittingOut ? '0' : '1' }));
+
+    // The join code: a click copies it, to send to others
+    codeButton?.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(codeButton.dataset.bjCode);
+            codeCopied.textContent = 'Copied';
+        } catch {
+            codeCopied.textContent = ''; // no clipboard access: the code is right there to read
+        }
+        setTimeout(() => (codeCopied.textContent = ''), 2000);
+    });
+
+    // Inviting (only the host sees the button): find people with the chat's user search
+    if (inviteDialog) {
+        const search = inviteDialog.querySelector('[data-bj-invite-search]');
+        const list = inviteDialog.querySelector('[data-bj-invite-list]');
+        const status = inviteDialog.querySelector('[data-bj-invite-status]');
+        let searchTimer = null;
+        let searchNumber = 0;
+
+        async function loadUsers() {
+            const number = ++searchNumber;
+            let data = null;
+            try {
+                const response = await fetch('/chat/users?q=' + encodeURIComponent(search.value.trim()), { headers: { Accept: 'application/json' } });
+                data = response.ok ? await response.json() : null;
+            } catch {
+                data = null;
+            }
+            if (number !== searchNumber) return; // a newer search is on its way
+            if (data === null) {
+                status.textContent = 'Could not search. Please try again.';
+                return;
+            }
+            const seated = new Set(table?.seats.map((seat) => seat.userId) ?? []);
+            list.replaceChildren(...data.users.map((user) => userItem(user, seated.has(Number(user.userId)))));
+            status.textContent = data.users.length === 0 ? 'Nobody found.' : '';
+        }
+
+        function userItem(user, isSeated) {
+            const item = document.createElement('li');
+            item.className = 'bj-invite-user';
+            const name = document.createElement('span');
+            name.className = 'bj-player-name';
+            name.textContent = user.userName;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'casino-btn';
+            button.textContent = isSeated ? 'At the table' : 'Invite';
+            button.disabled = isSeated;
+            button.addEventListener('click', () => invite(user, button));
+            item.append(name, button);
+            return item;
+        }
+
+        async function invite(user, button) {
+            button.disabled = true;
+            const data = await post('invite', { user: String(user.userId) });
+            if (data === null) {
+                status.textContent = 'Something went wrong. Please try again.';
+                button.disabled = false;
+                return;
+            }
+            apply(data);
+            if (data.error) {
+                status.textContent = data.error;
+                button.disabled = false;
+            } else {
+                status.textContent = user.userName + ' is invited.';
+                button.textContent = 'Invited';
+            }
+        }
+
+        inviteButton.addEventListener('click', () => {
+            search.value = '';
+            status.textContent = '';
+            inviteDialog.showModal();
+            search.focus();
+            loadUsers();
+        });
+        search.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(loadUsers, 200);
+        });
+        inviteDialog.querySelector('[data-bj-invite-close]').addEventListener('click', () => inviteDialog.close());
+    }
+
     // Leaving: asked first when there are chips on the table
     async function leave() {
-        const data = await request({ method: 'POST', body: new URLSearchParams({ room: roomId, action: 'leave' }) });
+        const data = await post('leave');
         if (data?.left) {
             location.assign('/gambling/blackjack/');
         } else {
@@ -461,13 +607,13 @@
     }
 
     leaveButton.addEventListener('click', () => {
-        const isInHand = ['insurance', 'playing', 'dealer'].includes(table?.phase) && table.seats.some((seat) => seat.isYou && seat.player);
+        const isPlaying = table !== null && isInHand() && table.seats.some((seat) => seat.isYou && seat.player);
         const hasBet = table?.you?.nextBet !== null && table?.you?.nextBet !== undefined;
-        if (!isInHand && !hasBet) {
+        if (!isPlaying && !hasBet) {
             leave();
             return;
         }
-        leaveText.textContent = isInHand
+        leaveText.textContent = isPlaying
             ? 'You\'re in the middle of a hand. Your hand will stand, and anything it wins still goes to your chips.'
             : 'Your bet on the next hand will be given back.';
         leaveDialog.showModal();
