@@ -37,6 +37,133 @@ CREATE TABLE `HBHub-Attachments` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-BlackjackInvites`
+--
+
+CREATE TABLE `HBHub-BlackjackInvites` (
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who is invited',
+  `invitedByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The host who invited them, NULL once that account is gone',
+  `inviteTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-BlackjackPlayerRounds`
+--
+
+CREATE TABLE `HBHub-BlackjackPlayerRounds` (
+  `playerRoundId` bigint UNSIGNED NOT NULL,
+  `roundId` bigint UNSIGNED NOT NULL,
+  `roomId` int UNSIGNED DEFAULT NULL COMMENT 'NULL once the room is gone',
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT 'The room''s type then: 1 Public, 2 Invite-only, 3 Code, 4 Solo',
+  `userId` int UNSIGNED NOT NULL,
+  `seatNumber` tinyint UNSIGNED NOT NULL,
+  `playersInRound` tinyint UNSIGNED NOT NULL COMMENT 'How many players were dealt in, this one included',
+  `playerBet` bigint UNSIGNED NOT NULL COMMENT 'The bet the hand was dealt with',
+  `playerWagered` bigint UNSIGNED NOT NULL COMMENT 'Everything bet on the hands: the bet, doubles and splits (not insurance)',
+  `playerInsurance` bigint UNSIGNED NOT NULL DEFAULT '0' COMMENT 'What insurance cost, 0 without',
+  `playerPayout` bigint UNSIGNED NOT NULL COMMENT 'What the hands paid back, the bets included',
+  `playerInsurancePayout` bigint UNSIGNED NOT NULL DEFAULT '0',
+  `playerNet` bigint NOT NULL COMMENT 'Chips won (positive) or lost (negative) in the round, insurance included',
+  `playerResult` varchar(9) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'From the hands, not insurance: blackjack, otherwise win, loss or push by whether the hands won or lost chips together',
+  `playerHands` tinyint UNSIGNED NOT NULL COMMENT '1, or up to 3 after splitting',
+  `playerHits` smallint UNSIGNED NOT NULL DEFAULT '0',
+  `playerStands` smallint UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Stood by the player (not counting doubles, or 21 standing by itself)',
+  `playerDoubles` smallint UNSIGNED NOT NULL DEFAULT '0',
+  `playerSplits` smallint UNSIGNED NOT NULL DEFAULT '0',
+  `playerAutoStands` smallint UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Stood for the player: out of time, away or gone',
+  `playerInsuranceTaken` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 when insurance was offered and taken',
+  `playerHandsDetail` json NOT NULL COMMENT 'Every hand: [{"cards": ["AS", "KD"], "bet": 10, "doubled": false, "result": "blackjack", "payout": 25}]',
+  `playerTimestamp` datetime NOT NULL COMMENT 'UTC, when the round was paid out'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-BlackjackRooms`
+--
+
+CREATE TABLE `HBHub-BlackjackRooms` (
+  `roomId` int UNSIGNED NOT NULL,
+  `roomName` varchar(48) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT '1 Public (listed in the lobby)\r\n2 Invite-only (only invited users can join, also with the code)\r\n3 Code (anyone with the code can join)\r\n4 Solo (just the one who made it)',
+  `roomCode` char(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Join code: capital letters and digits, without 0 O 1 I L',
+  `roomMinBet` int UNSIGNED NOT NULL,
+  `roomHostUserId` int UNSIGNED DEFAULT NULL,
+  `roomPhase` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Waiting for bets\r\n2 Betting\r\n3 Insurance\r\n4 Players'' turns\r\n5 Dealer''s turn\r\n6 Results (the same as in roomState)',
+  `roomRevision` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Goes up on every change, so the table can tell when nothing changed since it last asked',
+  `roomDeadline` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in milliseconds when a timer runs out and the round moves on by itself, NULL when nothing is timed',
+  `roomState` json NOT NULL COMMENT 'The shoe, bets and hands (src/assets/php/blackjack/round.php). Never sent to players as it is, as it has the hole card and the order of the cards',
+  `roomCreatedTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-BlackjackRounds`
+--
+
+CREATE TABLE `HBHub-BlackjackRounds` (
+  `roundId` bigint UNSIGNED NOT NULL,
+  `roomId` int UNSIGNED DEFAULT NULL COMMENT 'NULL once the room is gone',
+  `roundStartedTimestamp` datetime NOT NULL COMMENT 'UTC, the first bet on it',
+  `roundDealtTimestamp` datetime DEFAULT NULL COMMENT 'UTC, NULL when it was never dealt (every bet was taken back)',
+  `roundEndedTimestamp` datetime DEFAULT NULL COMMENT 'UTC, when it was paid out',
+  `roundDealerCards` varchar(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The dealer''s cards once it has ended, like "AS 9H" (rank and suit)',
+  `roundDealerTotal` tinyint UNSIGNED DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-BlackjackSeats`
+--
+
+CREATE TABLE `HBHub-BlackjackSeats` (
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `seatNumber` tinyint UNSIGNED NOT NULL COMMENT '1-5, left to right, and the order players take their turns in',
+  `seatSittingOut` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 Sitting out, so the next hands are dealt without them',
+  `seatJoinedTimestamp` datetime NOT NULL COMMENT 'UTC',
+  `seatLastSeenTimestamp` datetime NOT NULL COMMENT 'UTC, kept up to date while the table is open, to tell who is away'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-CasinoTransactions`
+--
+
+CREATE TABLE `HBHub-CasinoTransactions` (
+  `transactionId` bigint UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `transactionAmount` bigint NOT NULL COMMENT 'Chips added (positive) or taken (negative)',
+  `transactionBalance` bigint NOT NULL COMMENT 'walletChips right after the change',
+  `transactionReason` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'start (starting chips), dailyBonus, or the game''s own, like bet and payout',
+  `transactionGame` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'NULL for the casino''s own changes (start, dailyBonus), otherwise the game, like blackjack',
+  `transactionReference` bigint UNSIGNED DEFAULT NULL COMMENT 'The game''s id for what it was about, like the blackjack round',
+  `transactionTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-CasinoWallets`
+--
+
+CREATE TABLE `HBHub-CasinoWallets` (
+  `userId` int UNSIGNED NOT NULL,
+  `walletChips` bigint NOT NULL COMMENT 'Only changed through hbHubCasinoChange() (src/assets/php/casino/wallet.php), which logs it in HBHub-CasinoTransactions',
+  `walletDailyDay` date DEFAULT NULL COMMENT 'The casino day (Danish date, starting at 3 AM) the daily chips were last collected on, NULL if never',
+  `walletCreatedTimestamp` datetime NOT NULL COMMENT 'UTC',
+  CONSTRAINT `chk_casinowallets_chips` CHECK (`walletChips` >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-ChatMembers`
 --
 
@@ -163,6 +290,62 @@ ALTER TABLE `HBHub-Attachments`
   ADD KEY `attachmentType` (`attachmentType`);
 
 --
+-- Indexes for table `HBHub-BlackjackInvites`
+--
+ALTER TABLE `HBHub-BlackjackInvites`
+  ADD PRIMARY KEY (`roomId`,`userId`),
+  ADD KEY `userId` (`userId`),
+  ADD KEY `fk_blackjackinvites_by` (`invitedByUserId`);
+
+--
+-- Indexes for table `HBHub-BlackjackPlayerRounds`
+--
+ALTER TABLE `HBHub-BlackjackPlayerRounds`
+  ADD PRIMARY KEY (`playerRoundId`),
+  ADD UNIQUE KEY `roundUser` (`roundId`,`userId`),
+  ADD KEY `userTime` (`userId`,`playerTimestamp`),
+  ADD KEY `playerTimestamp` (`playerTimestamp`),
+  ADD KEY `fk_blackjackplayerrounds_room` (`roomId`);
+
+--
+-- Indexes for table `HBHub-BlackjackRooms`
+--
+ALTER TABLE `HBHub-BlackjackRooms`
+  ADD PRIMARY KEY (`roomId`),
+  ADD UNIQUE KEY `roomCode` (`roomCode`),
+  ADD KEY `roomType` (`roomType`),
+  ADD KEY `fk_blackjackrooms_host` (`roomHostUserId`);
+
+--
+-- Indexes for table `HBHub-BlackjackRounds`
+--
+ALTER TABLE `HBHub-BlackjackRounds`
+  ADD PRIMARY KEY (`roundId`),
+  ADD KEY `fk_blackjackrounds_room` (`roomId`);
+
+--
+-- Indexes for table `HBHub-BlackjackSeats`
+--
+ALTER TABLE `HBHub-BlackjackSeats`
+  ADD PRIMARY KEY (`roomId`,`seatNumber`),
+  ADD UNIQUE KEY `userId` (`userId`) COMMENT 'One table at a time',
+  ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
+
+--
+-- Indexes for table `HBHub-CasinoTransactions`
+--
+ALTER TABLE `HBHub-CasinoTransactions`
+  ADD PRIMARY KEY (`transactionId`),
+  ADD KEY `userTime` (`userId`,`transactionTimestamp`),
+  ADD KEY `gameReference` (`transactionGame`,`transactionReference`);
+
+--
+-- Indexes for table `HBHub-CasinoWallets`
+--
+ALTER TABLE `HBHub-CasinoWallets`
+  ADD PRIMARY KEY (`userId`);
+
+--
 -- Indexes for table `HBHub-ChatMembers`
 --
 ALTER TABLE `HBHub-ChatMembers`
@@ -225,6 +408,30 @@ ALTER TABLE `HBHub-Attachments`
   MODIFY `attachmentId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `HBHub-BlackjackPlayerRounds`
+--
+ALTER TABLE `HBHub-BlackjackPlayerRounds`
+  MODIFY `playerRoundId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-BlackjackRooms`
+--
+ALTER TABLE `HBHub-BlackjackRooms`
+  MODIFY `roomId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-BlackjackRounds`
+--
+ALTER TABLE `HBHub-BlackjackRounds`
+  MODIFY `roundId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-CasinoTransactions`
+--
+ALTER TABLE `HBHub-CasinoTransactions`
+  MODIFY `transactionId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-Chats`
 --
 ALTER TABLE `HBHub-Chats`
@@ -251,6 +458,53 @@ ALTER TABLE `HBHub-Users`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `HBHub-BlackjackInvites`
+--
+ALTER TABLE `HBHub-BlackjackInvites`
+  ADD CONSTRAINT `fk_blackjackinvites_by` FOREIGN KEY (`invitedByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_blackjackinvites_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-BlackjackRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_blackjackinvites_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-BlackjackPlayerRounds`
+--
+ALTER TABLE `HBHub-BlackjackPlayerRounds`
+  ADD CONSTRAINT `fk_blackjackplayerrounds_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-BlackjackRooms` (`roomId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_blackjackplayerrounds_round` FOREIGN KEY (`roundId`) REFERENCES `HBHub-BlackjackRounds` (`roundId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_blackjackplayerrounds_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-BlackjackRooms`
+--
+ALTER TABLE `HBHub-BlackjackRooms`
+  ADD CONSTRAINT `fk_blackjackrooms_host` FOREIGN KEY (`roomHostUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-BlackjackRounds`
+--
+ALTER TABLE `HBHub-BlackjackRounds`
+  ADD CONSTRAINT `fk_blackjackrounds_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-BlackjackRooms` (`roomId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-BlackjackSeats`
+--
+ALTER TABLE `HBHub-BlackjackSeats`
+  ADD CONSTRAINT `fk_blackjackseats_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-BlackjackRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_blackjackseats_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-CasinoTransactions`
+--
+ALTER TABLE `HBHub-CasinoTransactions`
+  ADD CONSTRAINT `fk_casinotransactions_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-CasinoWallets`
+--
+ALTER TABLE `HBHub-CasinoWallets`
+  ADD CONSTRAINT `fk_casinowallets_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-ChatMembers`
