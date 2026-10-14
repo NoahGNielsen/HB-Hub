@@ -506,6 +506,50 @@ body:has(> .chat) {
   color: var(--accent);
 }
 
+/* A group admin's header: the name is a button that turns into a text box to change it (chat.js).
+   Both are pulled left by their padding, so the name doesn't move when switching between them. */
+.chat-window-title.is-editable {
+  margin-left: -8px;
+}
+
+.chat-window-rename {
+  display: block;
+  max-width: 100%;
+  padding: 4px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: text;
+}
+
+.chat-window-rename:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+/* Inside the button, as the title cuts off anything outside it */
+.chat-window-rename:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.chat-window-rename-form {
+  flex: 0 1 360px;
+  min-width: 0;
+  margin-left: -8px;
+}
+
+.chat .chat-window-rename-form input {
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
 .chat-avatar.is-small {
   width: 22px;
   height: 22px;

@@ -82,10 +82,10 @@ body {
   position: relative;
 }
 
-.nav-bell-count {
+/* The red number, also on Chat in the side bar for the unread chats (chatUnread.js) */
+.nav-bell-count,
+.nav-side-count {
   position: absolute;
-  top: 2px;
-  right: 0;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
@@ -93,7 +93,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--nav-bg); /* cuts it out of the bell */
+  border: 2px solid var(--nav-bg); /* the bar's colour, so it's cut out of the icon */
   border-radius: 999px;
   background: #e5484d;
   color: #fff;
@@ -103,7 +103,13 @@ body {
   pointer-events: none;
 }
 
-.nav-bell-count[hidden] {
+.nav-bell-count {
+  top: 2px;
+  right: 0;
+}
+
+.nav-bell-count[hidden],
+.nav-side-count[hidden] {
   display: none;
 }
 
@@ -357,19 +363,39 @@ a.nav-notification.is-unread:focus-visible {
   white-space: nowrap;
 }
 
+.nav-side-icon {
+  position: relative;
+  display: flex;
+}
+
 .nav-side-link img {
   width: 28px;
   height: 28px;
 }
 
-.nav-side-link span {
+/* The number of unread chats on Chat, made like the one on the bell. Its border is the link's background, to cut it out. */
+.nav-side-count {
+  top: -6px;
+  right: -8px;
+  border-color: var(--nav-side-bg);
+}
+
+.nav-side-link:hover .nav-side-count {
+  border-color: color-mix(in srgb, #fff 8%, var(--nav-side-bg)); /* --nav-hover on top of the side bar */
+}
+
+.nav-side-link.active .nav-side-count {
+  border-color: var(--accent);
+}
+
+.nav-side-label {
   max-height: 0;
   opacity: 0;
   transition: max-height 0.2s ease, opacity 0.2s ease, margin-top 0.2s ease;
 }
 
-.nav-side:hover .nav-side-link span,
-.nav-side:focus-within .nav-side-link span {
+.nav-side:hover .nav-side-label,
+.nav-side:focus-within .nav-side-label {
   max-height: 1.2em;
   margin-top: 6px;
   opacity: 1;
@@ -412,7 +438,7 @@ a.nav-notification.is-unread:focus-visible {
     padding: 6px 0;
   }
 
-  .nav-side-link span {
+  .nav-side-label {
     max-height: 1.2em;
     margin-top: 4px;
     opacity: 1;

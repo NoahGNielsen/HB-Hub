@@ -1,5 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatUnread.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
@@ -1381,6 +1382,7 @@ if ($isPoll) {
         'chatList' => $pollChatListHtml,
         'requests' => $pollRequestsHtml,
         'requestCount' => count($chatRequests),
+        'unreadChats' => hbHubUnreadChatCount($db, $userId, $userSettings), // the number on Chat in the side bar
     ], JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
@@ -1456,6 +1458,21 @@ if ($isPoll) {
                             <?= chatAvatarHtml($openChat) ?>
                             <h2 class="chat-window-title"><?= htmlspecialchars($openChat['chatTitle']) ?></h2>
                         </a>
+                    <?php elseif ($openChat['chatIsGroupAdmin']): ?>
+                        <!-- Group admins: clicking the name turns it into a text box (chat.js), Enter saves it and Escape puts it back -->
+                        <?= chatAvatarHtml($openChat) ?>
+                        <h2 class="chat-window-title is-editable">
+                            <button type="button" class="chat-window-rename" title="Change name" data-rename-open><?= htmlspecialchars($openChat['chatTitle']) ?></button>
+                        </h2>
+                        <form class="chat-window-rename-form" action="/chat/" method="post" hidden data-rename-form>
+                            <input type="hidden" name="action" value="rename">
+                            <input type="hidden" name="chat" value="<?= $openChat['chatId'] ?>">
+                            <input type="hidden" name="open" value="<?= $openChat['chatId'] ?>">
+                            <label class="chat-visually-hidden" for="chat-window-name">Group name</label>
+                            <input type="text" id="chat-window-name" name="name" maxlength="<?= HBHUB_CHAT_NAME_MAX ?>" autocomplete="off"
+                                   value="<?= htmlspecialchars($openChat['chatName'] ?? '') ?>" placeholder="Named after its members"
+                                   title="Enter saves, Escape cancels. Leave it empty to name the group after its members.">
+                        </form>
                     <?php else: ?>
                         <?= chatAvatarHtml($openChat) ?>
                         <h2 class="chat-window-title"><?= htmlspecialchars($openChat['chatTitle']) ?></h2>

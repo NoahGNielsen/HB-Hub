@@ -3,31 +3,38 @@
 // and pages open to visitors (session.php's $hbHubUser is null) get a "Log in" link instead.
 // With notifications turned on in settings, every page also checks for new messages (notifications.js).
 // The bell lists the logged in user's notifications (notificationBell.js), with the number of unread ones on it.
+// Chat in the side bar has the number of chats with unread messages on it, kept up to date by chatUnread.js.
 // Casino pages set $navCasinoChips (the user's chips) before including this, to show them in the top bar too,
 // kept up to date by casino.js.
+require_once __DIR__ . '/chatUnread.php';
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/userAvatar.php';
 require_once __DIR__ . '/userSettings.php';
 $navUser = $hbHubUser ?? null;
-$navNotifications = $navUser !== null && (hbHubUserSettings($navUser['userSettings'] ?? null)['notifications'] ?? false) === true;
+$navSettings = hbHubUserSettings($navUser['userSettings'] ?? null);
+$navNotifications = $navUser !== null && ($navSettings['notifications'] ?? false) === true;
 $navAvatarSrc = $navUser !== null
     ? hbHubAvatarUrl((int) $navUser['userId'], $navUser['userAvatarAttachmentId'] !== null ? (int) $navUser['userAvatarAttachmentId'] : null)
     : null;
 
 $navUnread = 0;
+$navUnreadChats = 0;
 if ($navUser !== null) {
     try {
         $navUnread = hbHubUnreadNotificationCount(hbHubDatabase(), (int) $navUser['userId']);
+        $navUnreadChats = hbHubUnreadChatCount(hbHubDatabase(), (int) $navUser['userId'], $navSettings);
     } catch (PDOException $e) {
-        error_log('Nav panel: could not count notifications: ' . $e->getMessage()); // the page still works without the number
+        error_log('Nav panel: could not count notifications or unread chats: ' . $e->getMessage()); // the page still works without the numbers
     }
 }
 
 $navCasinoChips ??= null;
 
+// A count of unread things (null for none) is shown as a red number on the item's icon, 9+ above 9, and hidden while
+// it's 0. Visitors, who aren't logged in, have no chats to count.
 $navSection = explode('/', trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'))[0];
 $navItems = [
-    'chat'     => ['label' => 'Chat',     'icon' => 'chat.png'],
+    'chat'     => ['label' => 'Chat',     'icon' => 'chat.png', 'count' => $navUser !== null ? $navUnreadChats : null],
     'gambling' => ['label' => 'Gambling', 'icon' => 'dice.png'],
     'games'    => ['label' => 'Games',    'icon' => 'controler.png'],
 ];
@@ -71,14 +78,23 @@ $navItems = [
 </header>
 <nav class="nav-side" aria-label="Main">
     <?php foreach ($navItems as $slug => $item): ?>
-        <a class="nav-side-link<?= $navSection === $slug ? ' active' : '' ?>" href="/<?= $slug ?>/"<?= $navSection === $slug ? ' aria-current="page"' : '' ?>>
-            <img class="nav-icon" src="/assets/images/icons/<?= $item['icon'] ?>" alt="">
-            <span><?= $item['label'] ?></span>
+        <?php $navCount = $item['count'] ?? null; ?>
+        <a class="nav-side-link<?= $navSection === $slug ? ' active' : '' ?>" href="/<?= $slug ?>/"<?= $navSection === $slug ? ' aria-current="page"' : '' ?><?=
+            $navCount > 0 ? ' aria-label="' . $item['label'] . ' (' . $navCount . ' unread)"' : '' ?>>
+            <span class="nav-side-icon">
+                <img class="nav-icon" src="/assets/images/icons/<?= $item['icon'] ?>" alt="">
+                <?php if ($navCount !== null): ?>
+                    <span class="nav-side-count" aria-hidden="true" data-nav-count="<?= $slug ?>"<?=
+                        $navCount === 0 ? ' hidden' : '' ?>><?= $navCount > 9 ? '9+' : $navCount ?></span>
+                <?php endif; ?>
+            </span>
+            <span class="nav-side-label"><?= $item['label'] ?></span>
         </a>
     <?php endforeach; ?>
 </nav>
 <?php if ($navUser !== null): ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/notificationBell.js?v=<?= filemtime(__DIR__ . '/../js/notificationBell.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/chatUnread.js?v=<?= filemtime(__DIR__ . '/../js/chatUnread.js') ?>" defer></script>
 <?php endif; ?>
 <?php if ($navNotifications): ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>" defer></script>

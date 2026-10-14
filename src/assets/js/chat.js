@@ -777,6 +777,55 @@ function chatShowBackground(element, background) {
     });
 })();
 
+// Group admins can change the group's name right in the open chat's header: clicking the name turns it into a text box.
+// Enter saves it (a plain form post, like Change name in the chat menu), Escape or clicking away puts the name back.
+// Left empty, the group is named after its members again.
+(() => {
+    const openButton = document.querySelector('[data-rename-open]');
+    const form = document.querySelector('[data-rename-form]');
+    if (!openButton || !form) return;
+
+    const title = openButton.parentElement;
+    const input = form.elements.name;
+    const savedName = input.value;
+    let isSaving = false;
+
+    function close(returnFocus) {
+        if (form.hidden) return;
+        form.hidden = true;
+        title.hidden = false;
+        input.value = savedName;
+        if (returnFocus) openButton.focus();
+    }
+
+    openButton.addEventListener('click', () => {
+        title.hidden = true;
+        form.hidden = false;
+        input.focus();
+        input.select();
+    });
+
+    form.addEventListener('submit', (event) => {
+        // Pressing Enter twice doesn't send it twice, and the same name again isn't worth a reload
+        if (isSaving || input.value.trim() === savedName) {
+            event.preventDefault();
+            if (!isSaving) close(true);
+            return;
+        }
+        isSaving = true;
+    });
+
+    input.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        event.preventDefault();
+        close(true);
+    });
+
+    input.addEventListener('blur', () => {
+        if (!isSaving) close(false);
+    });
+})();
+
 // Message menu: right-click a message in the open chat (or use the menu key / Shift+F10 on it) to reply to it,
 // or mark the chat unread from it on. Your own messages can also be edited or deleted,
 // and group admins can delete anyone's (shown as deleted by a group admin).
@@ -1312,6 +1361,7 @@ function chatShowBackground(element, background) {
 // and swaps in the chat list when something in it changed (new messages, unread counts, new chats).
 // The open chat's background is kept up to date too, so a new one shows up without a reload.
 // Message requests are swapped in the same way, and the requests button shows up when there are any.
+// The number of unread chats is passed on to the red number on Chat in the side bar.
 // Every poll also keeps the user's last seen time up to date, as session.php does that on every request.
 // New messages are only marked read while the page is being looked at, and not at all after "Mark unread" (?unread=1).
 (() => {
@@ -1407,6 +1457,7 @@ function chatShowBackground(element, background) {
             }
             updateChatList(data.chatList);
             updateRequests(data.requests, data.requestCount);
+            document.dispatchEvent(new CustomEvent('chat:unread', { detail: { unreadChats: data.unreadChats } })); // chatUnread.js
         } catch {
             // Offline for a moment, or logged out (the login page isn't JSON) - try again next time
         }
