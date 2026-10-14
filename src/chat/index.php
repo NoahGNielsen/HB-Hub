@@ -1597,9 +1597,8 @@ if ($isPoll) {
                 <a role="menuitem" href="/admin/user" data-menu-site-admin>Admin panel</a>
                 <hr class="chat-menu-divider" data-menu-site-admin>
             <?php endif; ?>
-            <button type="button" role="menuitem" aria-disabled="true" title="Coming soon" data-menu-action="profile" data-menu-dm>
-                Show profile <span class="chat-menu-soon">Soon</span>
-            </button>
+            <!-- On a DM: the other person's profile (chat.js sets the address) -->
+            <a role="menuitem" href="/otherPages/profile" data-menu-profile data-menu-dm>Show profile</a>
             <button type="button" role="menuitem" data-menu-action="nickname" data-menu-dm>Give nickname</button>
             <!-- Mute chat opens its own small menu with how long for, a muted chat gets Unmute chat instead -->
             <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-controls="chat-mute-menu" data-menu-mute>
