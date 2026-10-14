@@ -27,7 +27,7 @@ const SETTINGS_OPTIONAL = 1;
 const SETTINGS_DISABLED = 2;
 
 // Limits are capped to what the database columns can hold
-$settingsNameMax = max(1, min(64, (int) $siteConfig['user_name_maxSize']));
+$settingsNameMax = max(1, min(35, (int) $siteConfig['user_name_maxSize'])); // names are capped at 35
 $settingsDescriptionMax = max(1, min(255, (int) $siteConfig['user_description_maxSize']));
 $settingsDescriptionMin = 10; // only when the description is required
 $settingsAvatarMaxBytes = max(1, (int) $siteConfig['user_avatar_maxSize']) * 1000; // setting is in KB

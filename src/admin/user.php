@@ -33,7 +33,7 @@ $targetId = (int) $targetId;
 
 $db = hbHubDatabase();
 [, $adminLockoutMinutes] = hbHubLoginLimits($siteConfig);
-$adminNameMax = max(1, min(64, (int) $siteConfig['user_name_maxSize']));
+$adminNameMax = max(1, min(35, (int) $siteConfig['user_name_maxSize'])); // names are capped at 35
 $adminDescriptionMax = max(1, min(255, (int) $siteConfig['user_description_maxSize']));
 $adminPasswordPolicy = hbHubPasswordPolicy($siteConfig);
 
@@ -600,7 +600,7 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                             Their name, picture, bio and settings are deleted and they're logged out everywhere.
                             Their messages stay in their chats, from "<?= HBHUB_DELETED_USER_NAME ?>". This can't be undone.
                         </p>
-                        <input type="text" id="admin-delete-name" name="confirmName" maxlength="64" required autocomplete="off"
+                        <input type="text" id="admin-delete-name" name="confirmName" maxlength="35" required autocomplete="off"
                                placeholder="<?= htmlspecialchars($target['userName']) ?>" aria-describedby="admin-delete-hint">
                         <?php if (isset($adminErrors['delete'])): ?>
                             <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['delete']) ?></p>
