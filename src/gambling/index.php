@@ -64,6 +64,12 @@ function casinoCountdown(int $seconds): string
                         <span class="casino-game-text">Get closer to 21 than the dealer without going over, alone or with up to 5 players.</span>
                     </a>
                 </li>
+                <li>
+                    <a class="casino-game" href="/gambling/roulette/">
+                        <span class="casino-game-name">Roulette</span>
+                        <span class="casino-game-text">Bet on a number, a color or anything in between, and see where the ball lands.</span>
+                    </a>
+                </li>
             </ul>
         </section>
     </main>

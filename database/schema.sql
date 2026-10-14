@@ -253,6 +253,23 @@ CREATE TABLE `HBHub-Notifications` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-RouletteSpins`
+--
+
+CREATE TABLE `HBHub-RouletteSpins` (
+  `spinId` bigint UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `spinNumber` tinyint UNSIGNED NOT NULL COMMENT '0-36, where the ball landed',
+  `spinWagered` bigint UNSIGNED NOT NULL COMMENT 'Every bet on the spin together',
+  `spinPayout` bigint UNSIGNED NOT NULL COMMENT 'What the winning bets paid back, the bets included, 0 when none won',
+  `spinNet` bigint NOT NULL COMMENT 'Chips won (positive) or lost (negative) on the spin',
+  `spinBets` json NOT NULL COMMENT 'Every bet and its chips, like {"17": 10, "0-1-2-3": 20, "red": 50} (src/assets/php/casino/roulette/roulette.php)',
+  `spinTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Sessions`
 --
 
@@ -405,6 +422,13 @@ ALTER TABLE `HBHub-Notifications`
   ADD KEY `fk_notifications_by` (`notificationByUserId`);
 
 --
+-- Indexes for table `HBHub-RouletteSpins`
+--
+ALTER TABLE `HBHub-RouletteSpins`
+  ADD PRIMARY KEY (`spinId`),
+  ADD KEY `userTime` (`userId`,`spinTimestamp`);
+
+--
 -- Indexes for table `HBHub-Sessions`
 --
 ALTER TABLE `HBHub-Sessions`
@@ -470,6 +494,12 @@ ALTER TABLE `HBHub-Messages`
 --
 ALTER TABLE `HBHub-Notifications`
   MODIFY `notificationId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-RouletteSpins`
+--
+ALTER TABLE `HBHub-RouletteSpins`
+  MODIFY `spinId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `HBHub-Users`
@@ -563,6 +593,12 @@ ALTER TABLE `HBHub-Messages`
 ALTER TABLE `HBHub-Notifications`
   ADD CONSTRAINT `fk_notifications_by` FOREIGN KEY (`notificationByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_notifications_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-RouletteSpins`
+--
+ALTER TABLE `HBHub-RouletteSpins`
+  ADD CONSTRAINT `fk_roulettespins_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Sessions`

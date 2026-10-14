@@ -1,0 +1,597 @@
+/* Roulette (gambling/roulette/, played by roulette.js). Loaded after casino.css. */
+.rl {
+  --rl-felt: #1d6b45;
+  --rl-line: rgba(255, 255, 255, 0.6);
+  --rl-red: #c8323c;
+  --rl-black: #1a1d23;
+  --rl-green: #2fa36b;
+  --rl-gold: #e0b84f;
+  --rl-win: #2fa36b;
+  --rl-lose: #d64545;
+  max-width: 1040px;
+  margin: 32px auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.rl [hidden] {
+  display: none !important;
+}
+
+.rl-header {
+  margin-bottom: 16px;
+}
+
+.rl-title {
+  margin: 0 0 4px;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.rl-meta,
+.rl-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+/* The wheel, and next to it the result and the last spins */
+.rl-top {
+  margin-bottom: 16px;
+  padding: 24px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  align-items: center;
+  gap: 32px;
+  border-radius: 28px;
+  background: radial-gradient(ellipse at 30% 50%, color-mix(in srgb, var(--accent) 12%, var(--secondary)), var(--secondary) 70%);
+}
+
+.rl-wheel svg {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.rl-wheel-rim {
+  fill: #4a2f18;
+  stroke: var(--rl-gold);
+  stroke-width: 2;
+}
+
+.rl-pocket {
+  stroke: var(--rl-gold);
+  stroke-width: 0.8;
+}
+
+.rl-pocket-red { fill: var(--rl-red); }
+.rl-pocket-black { fill: var(--rl-black); }
+.rl-pocket-green { fill: var(--rl-green); }
+
+.rl-pocket-number {
+  fill: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.rl-wheel-cone {
+  fill: #6b4524;
+  stroke: var(--rl-gold);
+  stroke-width: 2;
+}
+
+.rl-wheel-hub {
+  fill: var(--rl-gold);
+}
+
+/* Both turn around the wheel's middle (roulette.js sets the turn and how long it takes) */
+.rl-wheel-rotor,
+.rl-wheel-ball {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.rl-ball {
+  fill: #fdfdfd;
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 1;
+}
+
+.rl-wheel-pointer {
+  fill: var(--rl-gold);
+}
+
+.rl-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rl-result {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.rl-result.is-win {
+  color: var(--rl-win);
+}
+
+.rl-result.is-lose {
+  color: var(--rl-lose);
+}
+
+.rl-detail {
+  margin: 0;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.rl-detail:empty {
+  display: none;
+}
+
+.rl-label {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.rl-history {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+}
+
+.rl-history:empty {
+  display: none;
+}
+
+.rl-history-item {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rl-history-item:first-child {
+  box-shadow: 0 0 0 3px var(--rl-gold);
+}
+
+.rl-history-item.rl-red { background: var(--rl-red); }
+.rl-history-item.rl-black { background: var(--rl-black); }
+.rl-history-item.rl-green { background: var(--rl-green); }
+
+/* The table. Lines are the gaps between the cells, so the bets on a line (rl-spot-next and the like) sit 1 px outside
+   their cell, on the line's middle. Across: 0 on the left, the numbers in 12 columns of 3 (1 at the bottom left),
+   the columns' bets on the right, the dozens and the even-money bets underneath. */
+.rl-board-wrap {
+  padding: 16px;
+  border-radius: 28px;
+  background: var(--rl-felt);
+}
+
+.rl-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(12, minmax(0, 1fr)) minmax(0, 1.2fr);
+  grid-template-rows: repeat(3, 58px) 46px 46px;
+  gap: 2px;
+  padding: 2px;
+  background: var(--rl-line);
+  color: #fff;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.rl-cell {
+  position: relative;
+  background: var(--rl-felt);
+}
+
+/* Where each cell goes across. rl-row-* is the row of 3 a number is in (1-3 is row 1), rl-place-* where in it. */
+.rl-at-zero { grid-column: 1; grid-row: 1 / span 3; }
+.rl-row-1 { grid-column: 2; }
+.rl-row-2 { grid-column: 3; }
+.rl-row-3 { grid-column: 4; }
+.rl-row-4 { grid-column: 5; }
+.rl-row-5 { grid-column: 6; }
+.rl-row-6 { grid-column: 7; }
+.rl-row-7 { grid-column: 8; }
+.rl-row-8 { grid-column: 9; }
+.rl-row-9 { grid-column: 10; }
+.rl-row-10 { grid-column: 11; }
+.rl-row-11 { grid-column: 12; }
+.rl-row-12 { grid-column: 13; }
+.rl-place-1 { grid-row: 3; }
+.rl-place-2 { grid-row: 2; }
+.rl-place-3 { grid-row: 1; }
+.rl-at-column1 { grid-column: 14; grid-row: 3; }
+.rl-at-column2 { grid-column: 14; grid-row: 2; }
+.rl-at-column3 { grid-column: 14; grid-row: 1; }
+.rl-at-dozen1 { grid-column: 2 / span 4; grid-row: 4; }
+.rl-at-dozen2 { grid-column: 6 / span 4; grid-row: 4; }
+.rl-at-dozen3 { grid-column: 10 / span 4; grid-row: 4; }
+.rl-at-low { grid-column: 2 / span 2; grid-row: 5; }
+.rl-at-even { grid-column: 4 / span 2; grid-row: 5; }
+.rl-at-red { grid-column: 6 / span 2; grid-row: 5; }
+.rl-at-black { grid-column: 8 / span 2; grid-row: 5; }
+.rl-at-odd { grid-column: 10 / span 2; grid-row: 5; }
+.rl-at-high { grid-column: 12 / span 2; grid-row: 5; }
+
+.rl-cell.rl-red { background: var(--rl-red); }
+.rl-cell.rl-black { background: var(--rl-black); }
+.rl-cell.rl-green { background: var(--rl-green); }
+
+/* Numbers covered by the bet under the pointer, and the number the ball landed on */
+.rl-cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.rl-cell.is-covered::after {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.rl-cell.is-winner::after {
+  box-shadow: inset 0 0 0 4px var(--rl-gold);
+  animation: rl-winner 1s ease 3;
+}
+
+@keyframes rl-winner {
+  50% { background: rgba(224, 184, 79, 0.45); }
+}
+
+.rl-number {
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rl-spot {
+  position: absolute;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rl-spot:disabled {
+  cursor: default;
+}
+
+.rl-spot-fill {
+  inset: 0;
+  z-index: 1;
+}
+
+.rl-spot-fill:focus-visible {
+  outline: 3px solid var(--rl-gold);
+  outline-offset: -3px;
+}
+
+/* The bets on a line or a corner: above the numbers' own buttons, the corners above the lines */
+.rl-spot-next,
+.rl-spot-side,
+.rl-spot-street,
+.rl-spot-zero {
+  z-index: 2;
+}
+
+.rl-spot-corner,
+.rl-spot-line,
+.rl-spot-trio,
+.rl-spot-four {
+  z-index: 3;
+  width: 20px;
+  height: 20px;
+}
+
+/* The line or dot that shows which one the pointer is on */
+.rl-spot:not(.rl-spot-fill)::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .rl-spot:not(.rl-spot-fill):not(:disabled):hover::before {
+    opacity: 1;
+  }
+}
+
+/* Across: right = the next row of 3 (n + 3), up = the next number in its row (n + 1) */
+.rl-spot-next   { inset: 18% -8px 18% auto; width: 14px; height: auto; }
+.rl-spot-side   { inset: -8px 18% auto 18%; width: auto; height: 14px; }
+.rl-spot-corner { inset: -11px -11px auto auto; }
+.rl-spot-street { inset: auto 18% -8px 18%; width: auto; height: 14px; }
+.rl-spot-line   { inset: auto -11px -11px auto; }
+.rl-spot-zero   { inset: 18% auto 18% -8px; width: 14px; height: auto; }
+.rl-spot-trio   { inset: -11px auto auto -11px; }
+.rl-spot-four   { inset: auto auto -11px -11px; }
+
+.rl-diamond {
+  width: 22px;
+  height: 22px;
+  transform: rotate(45deg) scaleX(0.7);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.rl-diamond-red { background: var(--rl-red); }
+.rl-diamond-black { background: var(--rl-black); }
+
+/* A bet's chips on the table (roulette.js) */
+.rl-marker {
+  --chip-color: var(--accent);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 2px dashed rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  background: var(--chip-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  animation: rl-marker 0.15s ease;
+}
+
+.rl-marker.is-win {
+  box-shadow: 0 0 0 3px var(--rl-gold), 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.rl-marker.is-lost {
+  opacity: 0.45;
+}
+
+@keyframes rl-marker {
+  from { transform: translate(-50%, -50%) scale(0.6); }
+}
+
+/* Betting */
+.rl-controls {
+  margin-top: 16px;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  text-align: center;
+}
+
+.rl-message {
+  margin: 0;
+  color: var(--rl-lose);
+  font-weight: 600;
+}
+
+.rl-message:empty {
+  display: none;
+}
+
+.rl-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.rl-chip {
+  --chip-color: var(--accent);
+  width: 54px;
+  height: 54px;
+  border: 4px dashed rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: var(--chip-color);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 3px var(--chip-color);
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.rl-chip:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.rl-chip[aria-pressed="true"] {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3), 0 0 0 3px var(--chip-color), 0 0 0 6px var(--text);
+}
+
+.rl-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 8px;
+}
+
+.rl-chip:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* The chips' colours, the same as at the Blackjack tables. After .rl-chip and .rl-marker, so these win. */
+.rl-chip-10 { --chip-color: #3a7bd5; }
+.rl-chip-50 { --chip-color: #2fa36b; }
+.rl-chip-100 { --chip-color: #2f3a4a; }
+.rl-chip-500 { --chip-color: #8e44ad; }
+.rl-chip-1000 { --chip-color: #f2711c; }
+
+.rl-bet-line {
+  margin: 0;
+  font-weight: 600;
+}
+
+.rl-bet-amount {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.rl-spin {
+  min-width: 140px;
+}
+
+.rl-rules {
+  margin-top: 16px;
+}
+
+.rl-rules summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rl-rules .casino-rule-list {
+  margin-top: 12px;
+}
+
+/* Narrow screens: the table goes down instead, 0 at the top, the numbers in 12 rows of 3 (1 at the top left), the
+   columns' bets at the bottom, and the even-money bets and dozens on the left. Every line bet turns with it: what was
+   on the right of its number is now underneath, what was on top is now on the right. */
+@media (max-width: 760px) {
+  .rl-top {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 20px 16px;
+    text-align: center;
+  }
+
+  .rl-wheel svg {
+    max-width: 240px;
+  }
+
+  .rl-history {
+    justify-content: center;
+  }
+
+  .rl-board-wrap {
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .rl-board {
+    max-width: 400px;
+    margin: 0 auto;
+    grid-template-columns: 34px 38px repeat(3, minmax(0, 1fr));
+    grid-template-rows: 46px repeat(12, 42px) 42px;
+  }
+
+  .rl-at-zero { grid-column: 3 / span 3; grid-row: 1; }
+  .rl-row-1 { grid-row: 2; }
+  .rl-row-2 { grid-row: 3; }
+  .rl-row-3 { grid-row: 4; }
+  .rl-row-4 { grid-row: 5; }
+  .rl-row-5 { grid-row: 6; }
+  .rl-row-6 { grid-row: 7; }
+  .rl-row-7 { grid-row: 8; }
+  .rl-row-8 { grid-row: 9; }
+  .rl-row-9 { grid-row: 10; }
+  .rl-row-10 { grid-row: 11; }
+  .rl-row-11 { grid-row: 12; }
+  .rl-row-12 { grid-row: 13; }
+  .rl-place-1 { grid-column: 3; }
+  .rl-place-2 { grid-column: 4; }
+  .rl-place-3 { grid-column: 5; }
+  .rl-at-column1 { grid-column: 3; grid-row: 14; }
+  .rl-at-column2 { grid-column: 4; grid-row: 14; }
+  .rl-at-column3 { grid-column: 5; grid-row: 14; }
+  .rl-at-dozen1 { grid-column: 2; grid-row: 2 / span 4; }
+  .rl-at-dozen2 { grid-column: 2; grid-row: 6 / span 4; }
+  .rl-at-dozen3 { grid-column: 2; grid-row: 10 / span 4; }
+  .rl-at-low { grid-column: 1; grid-row: 2 / span 2; }
+  .rl-at-even { grid-column: 1; grid-row: 4 / span 2; }
+  .rl-at-red { grid-column: 1; grid-row: 6 / span 2; }
+  .rl-at-black { grid-column: 1; grid-row: 8 / span 2; }
+  .rl-at-odd { grid-column: 1; grid-row: 10 / span 2; }
+  .rl-at-high { grid-column: 1; grid-row: 12 / span 2; }
+
+  .rl-outside-long .rl-spot {
+    writing-mode: vertical-rl;
+  }
+
+  .rl-spot-next   { inset: auto 18% -8px 18%; width: auto; height: 14px; }
+  .rl-spot-side   { inset: 18% -8px 18% auto; width: 14px; height: auto; }
+  .rl-spot-corner { inset: auto -11px -11px auto; }
+  .rl-spot-street { inset: 18% auto 18% -8px; width: 14px; height: auto; }
+  .rl-spot-line   { inset: auto auto -11px -11px; }
+  .rl-spot-zero   { inset: -8px 18% auto 18%; width: auto; height: 14px; }
+  .rl-spot-trio   { inset: -11px -11px auto auto; }
+  .rl-spot-four   { inset: -11px auto auto -11px; }
+
+  .rl-marker {
+    width: 24px;
+    height: 24px;
+    font-size: 0.55rem;
+  }
+
+  .rl-chip {
+    width: 46px;
+    height: 46px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .rl {
+    margin: 16px auto;
+  }
+
+  .rl-controls {
+    padding: 16px 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rl-chip,
+  .rl-marker,
+  .rl-cell.is-winner::after {
+    transition: none;
+    animation: none;
+  }
+}
