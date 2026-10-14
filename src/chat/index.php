@@ -10,7 +10,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 const HBHUB_CHAT_SITE_ROLE_ADMIN = 2; // userRole in HBHub-Users, an admin of the whole site
 const HBHUB_CHAT_MEMBERS_MAX = 200; // per group DM, the creator included
 const HBHUB_CHAT_REQUESTS_PER_HOUR = 100; // message requests one user can send in an hour, new chats and Add to chat together
-const HBHUB_CHAT_NICKNAME_MAX = 64; // same as userName
+const HBHUB_CHAT_NICKNAME_MAX = 35; // same as userName
 const HBHUB_CHAT_MESSAGE_MAX = 2500; // messageContent column
 const HBHUB_CHAT_MESSAGES_SHOWN = 100;
 const HBHUB_CHAT_ICON_MAX_BYTES = 2 * 1024 * 1024;

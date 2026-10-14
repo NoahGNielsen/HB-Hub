@@ -48,7 +48,7 @@ const ONBOARDING_OPTIONAL = 1;
 const ONBOARDING_DISABLED = 2;
 
 // Limits are capped to what the database columns can hold
-$onboardingNameMax = max(1, min(64, (int) $siteConfig['user_name_maxSize']));
+$onboardingNameMax = max(1, min(35, (int) $siteConfig['user_name_maxSize'])); // names are capped at 35
 $onboardingDescriptionMax = max(1, min(255, (int) $siteConfig['user_description_maxSize']));
 $onboardingDescriptionMin = 10; // only when the description is required
 $onboardingAvatarMaxBytes = max(1, (int) $siteConfig['user_avatar_maxSize']) * 1000; // setting is in KB

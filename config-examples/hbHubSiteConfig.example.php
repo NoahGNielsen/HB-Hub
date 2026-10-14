@@ -12,7 +12,7 @@ return [
     'site_maintenance_message' => 'The site is currently undergoing maintenance. Please check back later.', // Default: 'The site is currently undergoing maintenance. Please check back later.' | Message to show when the site is in maintenance mode
     'site_save_diskspace' => 0, // Default: 0 | 0 is off, Set to 1 to not store files over 5 MB for more than 72 hours, and set to 2 to not allow user uploads at all.
 
-    'user_name_maxSize' => 64, // Default: 64 characters | Don't exceed 64 characters, as the database column is VARCHAR(64)
+    'user_name_maxSize' => 35, // Default: 35 characters | Anything above 35 is capped to 35
     'user_description_maxSize' => 255, // Default: 255 characters | Don't exceed 255 characters, as the database column is VARCHAR(255)
     'user_avatar_maxSize' => 5000, // Default: 5 MB | Don't exceed 4 GB, as the database column is LONGBLOB
 
@@ -33,6 +33,7 @@ return [
         'pass' => 'your_db_password',
     ],
     'casino_access' => 1, // Default: 1 | Who can open the casino (the Gambling pages): 0 = nobody, 1 = everyone, 2 = only admins (userRole 2)
+    'games_access' => 1, // Default: 1 | Who can open the Games pages (Matador): 0 = nobody, 1 = everyone, 2 = only admins (userRole 2)
 
     'giphy_gif_integration' => true, // Default: true | Set to false to disable Giphy integration
     'giphy_api_key' => 'your_giphy_api_key', // Required for Giphy integration. Get one at https://developers.giphy.com/
