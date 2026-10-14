@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'can
 
     if ($loginName === '' || $password === '') {
         $loginError = 'Please enter your name and password.';
-    } elseif (mb_strlen($loginName) > 64 || strlen($password) > 72) {
+    } elseif (mb_strlen($loginName) > 35 || strlen($password) > 72) {
         // Longer than the userName column / what onboarding allows, so it can't match an account
         $loginError = 'Wrong name or password.';
     } else {
@@ -108,7 +108,7 @@ $loginIsTotpStep = loginPendingUserId() !== null;
             <section class="onboarding-step" aria-labelledby="login-q1">
                 <h2 id="login-q1"><label for="login-name">What are you known as?</label></h2>
                 <div class="onboarding-input-wrap">
-                    <input type="text" id="login-name" name="name" maxlength="64" required autocomplete="username"
+                    <input type="text" id="login-name" name="name" maxlength="35" required autocomplete="username"
                            value="<?= htmlspecialchars($loginName) ?>"<?= $loginName === '' ? ' autofocus' : '' ?>>
                 </div>
             </section>

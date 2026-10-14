@@ -365,8 +365,8 @@ CREATE TABLE `HBHub-Sessions` (
 
 CREATE TABLE `HBHub-Users` (
   `userId` int UNSIGNED NOT NULL,
-  `userName` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `userNameLower` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'NULL for a deleted account',
+  `userName` varchar(35) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `userNameLower` varchar(35) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'NULL for a deleted account',
   `userDescription` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `userSettings` json DEFAULT NULL,
   `userAvatarAttachmentId` int UNSIGNED DEFAULT NULL,

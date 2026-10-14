@@ -13,7 +13,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
 const ADMIN_LIST_SHOWN = 50; // per page
-const ADMIN_SEARCH_MAX = 64; // as long as a name can be
+const ADMIN_SEARCH_MAX = 35; // as long as a name can be
 
 adminOnly($hbHubUser);
 

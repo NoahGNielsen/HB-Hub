@@ -12,7 +12,7 @@ return [
     'site_maintenance_message' => 'The site is currently undergoing maintenance. Please check back later.', // Default: 'The site is currently undergoing maintenance. Please check back later.' | Message to show when the site is in maintenance mode
     'site_save_diskspace' => 0, // Default: 0 | 0 is off, Set to 1 to not store files over 5 MB for more than 72 hours, and set to 2 to not allow user uploads at all.
 
-    'user_name_maxSize' => 64, // Default: 64 characters | Don't exceed 64 characters, as the database column is VARCHAR(64)
+    'user_name_maxSize' => 35, // Default: 35 characters | Anything above 35 is capped to 35
     'user_description_maxSize' => 255, // Default: 255 characters | Don't exceed 255 characters, as the database column is VARCHAR(255)
     'user_avatar_maxSize' => 5000, // Default: 5 MB | Don't exceed 4 GB, as the database column is LONGBLOB
 

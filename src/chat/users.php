@@ -8,7 +8,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 const HBHUB_USER_SEARCH_LIMIT = 50;
 
 $query = is_string($_GET['q'] ?? null) ? mb_strtolower(trim($_GET['q'])) : '';
-$query = mb_substr($query, 0, 64); // the userName column can't be longer
+$query = mb_substr($query, 0, 35); // the userName column can't be longer
 
 // Treat % and _ as plain characters, not LIKE wildcards
 $pattern = '%' . addcslashes($query, '\\%_') . '%';
