@@ -11,6 +11,33 @@ if ($hbHubUser !== null) {
     exit;
 }
 
+// A banned account was used in this browser (session.php), so no new account is made here instead of the form
+if (hbHubBannedCookieUserId() !== null):
+    http_response_code(403);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
+    <title>Onboarding - HB Hub</title>
+    <meta name="description" content="Onboarding process for the HB Hub">
+</head>
+<body>
+    <main>
+        <div class="login">
+            <h1>You can't sign up here</h1>
+            <p class="onboarding-hint">An account that was used on this device has been banned, so a new account can't be made from it.</p>
+            <p class="userMgmt-switch">Already have an account? <a href="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to login</a></p>
+        </div>
+    </main>
+    <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+</body>
+</html>
+<?php
+    exit;
+endif;
+
 $onboardingYears = ['1', '2', '3'];
 $onboardingClasses = ['T', 'Y', 'X', 'U'];
 $onboardingAvatarTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
@@ -124,7 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$onboardingErrors) {
             require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/onboardingSaveToDB.php';
-            $onboardingErrors = onboardingSaveToDB($onboardingValues, $password, $avatarBlob, $avatarType);
+            // A whole class signing up at school shares one address, so the default leaves room for that
+            $onboardingAccountsPerHour = max(1, (int) ($siteConfig['onboarding_accounts_per_ip_hour'] ?? 20));
+            $onboardingErrors = onboardingSaveToDB($onboardingValues, $password, $avatarBlob, $avatarType, $onboardingAccountsPerHour);
             if (!$onboardingErrors) {
                 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
                 hbHubSetToast('onboarding');

@@ -1381,6 +1381,7 @@ a.chat-member:focus-visible {
   font-size: 0.95rem;
   font-weight: 600;
   text-align: left;
+  text-decoration: none; /* Admin panel is a link */
   cursor: pointer;
 }
 

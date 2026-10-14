@@ -264,20 +264,15 @@
   background: var(--background);
 }
 
-/* The default user icon is a black PNG - padded and turned light in dark mode */
-.settings-avatar-preview.is-placeholder {
-  padding: 20px;
-  box-sizing: border-box;
-  object-fit: contain;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .settings-avatar-preview.is-placeholder {
-    filter: invert(1);
-  }
-}
-:root[data-theme="dark"] .settings-avatar-preview.is-placeholder {
-  filter: invert(1);
+/* No profile picture: the first letter of the name */
+.settings-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 40px;
+  font-weight: 700;
 }
 
 .settings-avatar-actions {

@@ -15,6 +15,7 @@ const HBHUB_CHAT_ROLE_ADMIN = 2;
 const HBHUB_CHAT_ROLE_OWNER = 3; // a group admin who can also remove admins, one per group
 const HBHUB_CHAT_SITE_ROLE_ADMIN = 2; // userRole in HBHub-Users, an admin of the whole site
 const HBHUB_CHAT_MEMBERS_MAX = 200; // per group DM, the creator included
+const HBHUB_CHAT_REQUESTS_PER_HOUR = 100; // message requests one user can send in an hour, new chats and Add to chat together
 const HBHUB_CHAT_NAME_MAX = 64; // chatName column
 const HBHUB_CHAT_NICKNAME_MAX = 64; // same as userName
 const HBHUB_CHAT_MESSAGE_MAX = 2500; // messageContent column
@@ -57,9 +58,14 @@ const HBHUB_CHAT_EVENT_JOIN = 9;
 const HBHUB_CHAT_EVENT_LEAVE = 10;
 const HBHUB_CHAT_EVENT_ADD = 11;
 const HBHUB_CHAT_EVENT_OWNER = 12; // took over as owner when the owner left, so they're both userId and messageEventUserId
+// messageDeletedByAdmin in HBHub-Messages: who deleted a deleted message => what it shows as.
+// Site admins delete messages from the admin panel (admin/user.php).
+const HBHUB_CHAT_DELETED_LABELS = [0 => 'Message deleted', 1 => 'Deleted by Group Admin', 2 => 'Deleted by Site Admin'];
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
+// Site admins get "Admin panel" in the right-click menus on DMs, messages and group members
+$chatIsSiteAdmin = (int) $hbHubUser['userRole'] === HBHUB_CHAT_SITE_ROLE_ADMIN;
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 $chatGifsEnabled = hbHubGiphyApiKey($siteConfig) !== null; // the GIF button and picker
 
@@ -270,32 +276,42 @@ function chatPickedUserIds(int $userId, mixed $pickedIds): array
 /**
  * Adds the picked users to the group, with a notice for each. Like when the group was made, they get it as
  * a message request they have to accept first, and a notification about it. Anyone already in it (or invited) is left out, and so are unknown,
- * banned and deleted users. Nobody is added when they'd make the group bigger than HBHUB_CHAT_MEMBERS_MAX.
+ * banned and deleted users, and anyone who blocked the user from sending them requests. Nobody is added when they'd make
+ * the group bigger than HBHUB_CHAT_MEMBERS_MAX, or the user would send more requests this hour than HBHUB_CHAT_REQUESTS_PER_HOUR.
+ *
+ * @param array $userSettings the user's settings, as picking someone they blocked unblocks them
  */
-function chatAddMembers(PDO $db, int $userId, int $chatId, mixed $pickedIds): void
+function chatAddMembers(PDO $db, int $userId, array $userSettings, int $chatId, mixed $pickedIds): void
 {
     $pickedIds = chatPickedUserIds($userId, $pickedIds);
     if ($pickedIds === [] || count($pickedIds) >= HBHUB_CHAT_MEMBERS_MAX) {
         return;
     }
+    chatUnblockPicked($db, $userId, $userSettings, $pickedIds);
+    $requestsLeft = chatRequestsLeft($db, $userId);
 
     // Locked, so two people adding at once can't take the group past the limit
     $db->beginTransaction();
     $db->prepare('SELECT chatId FROM `HBHub-Chats` WHERE chatId = ? FOR UPDATE')->execute([$chatId]);
 
     // A deleted account's userStatus is NULL, so it's left out by <> too
-    $statement = $db->prepare('SELECT u.userId FROM `HBHub-Users` u
+    $statement = $db->prepare('SELECT u.userId, u.userSettings FROM `HBHub-Users` u
         WHERE u.userStatus <> ? AND u.userId IN (' . implode(', ', array_fill(0, count($pickedIds), '?')) . ')
             AND NOT EXISTS (SELECT 1 FROM `HBHub-ChatMembers` cm WHERE cm.chatId = ? AND cm.userId = u.userId)
         ORDER BY u.userNameLower');
     $statement->execute([HBHUB_SESSION_STATUS_BANNED, ...$pickedIds, $chatId]);
-    $newIds = array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
+    $newIds = [];
+    foreach ($statement->fetchAll() as $picked) {
+        if (!chatHasBlocked(hbHubUserSettings($picked['userSettings']), $userId)) {
+            $newIds[] = (int) $picked['userId'];
+        }
+    }
 
     $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-ChatMembers` WHERE chatId = ?');
     $statement->execute([$chatId]);
     $memberCount = (int) $statement->fetchColumn();
 
-    if ($newIds !== [] && $memberCount + count($newIds) <= HBHUB_CHAT_MEMBERS_MAX) {
+    if ($newIds !== [] && count($newIds) <= $requestsLeft && $memberCount + count($newIds) <= HBHUB_CHAT_MEMBERS_MAX) {
         $memberRows = [];
         foreach ($newIds as $newId) {
             array_push($memberRows, $chatId, $newId, HBHUB_CHAT_ROLE_MEMBER, 0);
@@ -497,6 +513,64 @@ function chatSetHidden(PDO $db, int $userId, int $chatId, bool $isHidden): void
 }
 
 /**
+ * Whether the user blocked $fromUserId from sending them message requests (chatBlocked in the user's settings, keyed by
+ * userId), with Block on a request from them. It lasts until the user starts a chat with them or adds them to one.
+ */
+function chatHasBlocked(array $userSettings, int $fromUserId): bool
+{
+    return ($userSettings['chatBlocked'][$fromUserId] ?? false) === true;
+}
+
+/**
+ * Blocks the users from sending the user message requests, or unblocks them.
+ *
+ * @param int[] $fromUserIds
+ */
+function chatSetBlocked(PDO $db, int $userId, array $fromUserIds, bool $isBlocked): void
+{
+    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($fromUserIds, $isBlocked): array {
+        $blocked = is_array($settings['chatBlocked'] ?? null) ? $settings['chatBlocked'] : [];
+        foreach ($fromUserIds as $fromUserId) {
+            if ($isBlocked) {
+                $blocked[$fromUserId] = true;
+            } else {
+                unset($blocked[$fromUserId]);
+            }
+        }
+        // Saved as an object even when empty, so the keys stay userIds
+        $settings['chatBlocked'] = (object) $blocked;
+        return $settings;
+    });
+}
+
+/**
+ * Starting a chat with people, or adding them to one, unblocks the ones the user had blocked.
+ * Not inside a transaction, as changing the settings is one of its own.
+ *
+ * @param array $userSettings the user's settings, to only change them when someone picked was blocked
+ * @param int[] $pickedIds
+ */
+function chatUnblockPicked(PDO $db, int $userId, array $userSettings, array $pickedIds): void
+{
+    $blockedIds = array_values(array_filter($pickedIds, fn (int $pickedId): bool => chatHasBlocked($userSettings, $pickedId)));
+    if ($blockedIds !== []) {
+        chatSetBlocked($db, $userId, $blockedIds, false);
+    }
+}
+
+/**
+ * How many more message requests the user can send this hour (HBHUB_CHAT_REQUESTS_PER_HOUR), counted from the
+ * notifications people got about the ones they sent.
+ */
+function chatRequestsLeft(PDO $db, int $userId): int
+{
+    $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-Notifications`
+        WHERE notificationByUserId = ? AND notificationType = ? AND notificationCreatedTimestamp > NOW() - INTERVAL 1 HOUR');
+    $statement->execute([$userId, 'chat.messageRequest']);
+    return max(0, HBHUB_CHAT_REQUESTS_PER_HOUR - (int) $statement->fetchColumn());
+}
+
+/**
  * Mutes the chat for the user for $minutes (0 until they unmute it), or unmutes it when $minutes is null.
  * Muted, it sends them no notifications. Saved in their settings like hbHubChatIsMuted() reads it,
  * and only mutes that haven't run out are kept, so the lists don't grow with every chat the user ever muted.
@@ -582,9 +656,14 @@ function chatSetNickname(PDO $db, int $userId, int $chatId, mixed $nickname): vo
 /**
  * Starts a chat with the picked users: a DM for one, a group DM for more.
  * A DM that already exists with that user is reused instead of making a second one.
- * Returns the chat id, or null when the picked users aren't valid (none, too many, unknown or banned).
+ * Anyone who blocked the user from sending them requests is left out of a new chat, and picking someone the user
+ * blocked unblocks them.
+ * Returns the chat id, or null when the picked users aren't valid (none, too many, unknown or banned), when everyone
+ * picked blocked the user, or when it would be more requests this hour than HBHUB_CHAT_REQUESTS_PER_HOUR.
+ *
+ * @param array $userSettings the user's settings
  */
-function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
+function chatCreate(PDO $db, int $userId, array $userSettings, mixed $pickedIds, mixed $name): ?int
 {
     $memberIds = chatPickedUserIds($userId, $pickedIds);
     if ($memberIds === [] || count($memberIds) + 1 > HBHUB_CHAT_MEMBERS_MAX) {
@@ -592,12 +671,14 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
     }
 
     // Every picked user has to exist and not be banned or deleted (a deleted account's userStatus is NULL)
-    $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-Users`
+    $statement = $db->prepare('SELECT userId, userSettings FROM `HBHub-Users`
         WHERE userStatus <> ? AND userId IN (' . implode(', ', array_fill(0, count($memberIds), '?')) . ')');
     $statement->execute([HBHUB_SESSION_STATUS_BANNED, ...$memberIds]);
-    if ((int) $statement->fetchColumn() !== count($memberIds)) {
+    $memberSettings = array_column($statement->fetchAll(), 'userSettings', 'userId');
+    if (count($memberSettings) !== count($memberIds)) {
         return null;
     }
+    chatUnblockPicked($db, $userId, $userSettings, $memberIds);
 
     $isGroup = count($memberIds) > 1;
 
@@ -616,6 +697,13 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
             chatSetHidden($db, $userId, (int) $existingChatId, false);
             return (int) $existingChatId;
         }
+    }
+
+    // Only a new chat sends requests, so only then are the people who blocked the user left out, and the hourly limit checked
+    $memberIds = array_values(array_filter($memberIds,
+        fn (int $memberId): bool => !chatHasBlocked(hbHubUserSettings($memberSettings[$memberId]), $userId)));
+    if ($memberIds === [] || count($memberIds) > chatRequestsLeft($db, $userId)) {
+        return null;
     }
 
     // Only groups get a name - left empty, they're named after the members
@@ -647,7 +735,7 @@ function chatCreate(PDO $db, int $userId, mixed $pickedIds, mixed $name): ?int
 
 // Starting a new chat, then straight into it
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'create') {
-    chatRedirect(chatCreate($db, $userId, $_POST['users'] ?? null, $_POST['name'] ?? null));
+    chatRedirect(chatCreate($db, $userId, hbHubUserSettings($hbHubUser['userSettings']), $_POST['users'] ?? null, $_POST['name'] ?? null));
 }
 
 // The right-click menu in the chat list: mute, unmute, hide or leave a chat, give the other person in a DM a nickname,
@@ -723,9 +811,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
 }
 
 // Answering a message request: accepting opens the chat, declining leaves it. Either way its notification has been seen.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['accept', 'decline'], true)) {
+// Block declines it too, and stops whoever sent it from sending the user new requests (chatHasBlocked()). Without that,
+// a declined DM could just be sent again straight away.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['accept', 'decline', 'block'], true)) {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null, true);
     $isAccepted = $_POST['action'] === 'accept';
+
+    if ($chat !== null && $_POST['action'] === 'block') {
+        // Who sent it: whoever added the user to the group with Add to chat, otherwise whoever made the chat
+        $statement = $db->prepare('SELECT COALESCE((
+                SELECT m.userId FROM `HBHub-Messages` m
+                WHERE m.chatId = c.chatId AND m.messageEventType = ? AND m.messageEventUserId = ?
+                ORDER BY m.messageId DESC LIMIT 1
+            ), c.chatCreatedBy) FROM `HBHub-Chats` c WHERE c.chatId = ?');
+        $statement->execute([HBHUB_CHAT_EVENT_ADD, $userId, $chat['chatId']]);
+        $fromUserId = (int) $statement->fetchColumn();
+        if ($fromUserId !== $userId) {
+            chatSetBlocked($db, $userId, [$fromUserId], true);
+        }
+    }
 
     if ($chat !== null) {
         $db->prepare($isAccepted
@@ -796,7 +900,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'add') {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     if ($chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
-        chatAddMembers($db, $userId, (int) $chat['chatId'], $_POST['users'] ?? null);
+        chatAddMembers($db, $userId, hbHubUserSettings($hbHubUser['userSettings']), (int) $chat['chatId'], $_POST['users'] ?? null);
     }
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
 }
@@ -1138,6 +1242,14 @@ function chatSenderName(array $openChat, int $userId, int $senderId, ?string $se
 }
 
 /**
+ * What a deleted message shows instead of itself, from its messageDeletedByAdmin.
+ */
+function chatDeletedLabel(mixed $deletedByAdmin): string
+{
+    return HBHUB_CHAT_DELETED_LABELS[(int) $deletedByAdmin] ?? HBHUB_CHAT_DELETED_LABELS[0];
+}
+
+/**
  * The quote above a reply: who and what it answers, on one line.
  * A link to the original when it's on the page, so it can be scrolled to.
  */
@@ -1150,8 +1262,7 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
         $sender = '<span class="chat-message-reply-sender">'
             . htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['replyUserId'], $message['replySenderName'])) . '</span>';
         if ($message['replyDeletedTimestamp'] !== null) {
-            $text = '<span class="chat-message-reply-text is-deleted">'
-                . ($message['replyDeletedByAdmin'] ? 'Deleted by Group Admin' : 'Message deleted') . '</span>';
+            $text = '<span class="chat-message-reply-text is-deleted">' . chatDeletedLabel($message['replyDeletedByAdmin']) . '</span>';
         } elseif ($message['replyContent'] === null) {
             $text = '<span class="chat-message-reply-text is-deleted">Attachment</span>';
         } elseif (chatGifId($message['replyContent']) !== null) {
@@ -1181,6 +1292,7 @@ function chatListItem(array $chat): void
                         data-chat-id="<?= $chat['chatId'] ?>"
                         data-chat-type="<?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'dm' : 'group' ?>"
                         data-chat-name="<?= htmlspecialchars($chat['chatName'] ?? '') ?>"<?=
+                        $chat['dmUserId'] !== null ? ' data-chat-user-id="' . (int) $chat['dmUserId'] . '"' : '' ?><?=
                         $chat['dmUserName'] !== null ? ' data-chat-username="' . htmlspecialchars($chat['dmUserName']) . '"' : '' ?><?=
                         $chat['chatNickname'] !== null ? ' data-chat-nickname="' . htmlspecialchars($chat['chatNickname']) . '"' : '' ?><?=
                         $chat['chatIsGroupAdmin'] ? ' data-chat-admin' : '' ?><?=
@@ -1215,7 +1327,7 @@ function chatListItem(array $chat): void
 
 /**
  * A message request in the Message requests popup, for the page and for polling.
- * Accept and Decline are plain form posts.
+ * Block, Decline and Accept are plain form posts.
  */
 function chatRequestItem(array $request): void
 {
@@ -1237,6 +1349,8 @@ function chatRequestItem(array $request): void
                                 </span>
                                 <form class="chat-request-answer" action="/chat/" method="post">
                                     <input type="hidden" name="chat" value="<?= $request['chatId'] ?>">
+                                    <button type="submit" class="chat-btn is-danger" name="action" value="block"
+                                            title="Decline, and stop <?= $isGroup ? 'whoever added you' : 'them' ?> sending you new requests">Block</button>
                                     <button type="submit" class="chat-btn" name="action" value="decline">Decline</button>
                                     <button type="submit" class="chat-new-btn" name="action" value="accept">Accept</button>
                                 </form>
@@ -1310,7 +1424,7 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
     $gifId = $isDeleted ? null : chatGifId($message['messageContent']);
     ?>
                         <li class="chat-message<?= $isOwn ? ' is-own' : '' ?>" id="message-<?= (int) $message['messageId'] ?>" tabindex="-1"
-                            data-message-id="<?= (int) $message['messageId'] ?>"
+                            data-message-id="<?= (int) $message['messageId'] ?>" data-message-user-id="<?= (int) $message['userId'] ?>"
                             data-message-sender="<?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['userId'], $message['senderName'])) ?>"<?=
                             $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $gifId !== null ? ' data-message-gif' : '' ?>>
                             <?php if (!$isOwn && (int) $openChat['chatType'] !== HBHUB_CHAT_TYPE_DM): ?>
@@ -1326,7 +1440,7 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
                             <?php endif; ?>
                             <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?>">
                                 <?php if ($isDeleted): ?>
-                                    <p class="chat-message-deleted"><?= $message['messageDeletedByAdmin'] ? 'Deleted by Group Admin' : 'Message deleted' ?></p>
+                                    <p class="chat-message-deleted"><?= chatDeletedLabel($message['messageDeletedByAdmin']) ?></p>
                                 <?php else: ?>
                                     <?php if ($gifId !== null): ?>
                                         <!-- Giphy's 200px tall version, so a chat full of GIFs doesn't load every full-size one -->
@@ -1596,9 +1710,13 @@ if ($isPoll) {
         <!-- Chat menu (chat.js): opened by right-clicking a chat in the list. Each form below sends "open",
              so the server can go back to the chat that's open now. -->
         <div class="chat-menu" role="menu" aria-label="Chat options" hidden data-chat-menu>
-            <button type="button" role="menuitem" aria-disabled="true" title="Coming soon" data-menu-action="profile" data-menu-dm>
-                Show profile <span class="chat-menu-soon">Soon</span>
-            </button>
+            <?php if ($chatIsSiteAdmin): ?>
+                <!-- Site admins, on a DM: the other person's admin panel (chat.js sets the address) -->
+                <a role="menuitem" href="/admin/user" data-menu-site-admin>Admin panel</a>
+                <hr class="chat-menu-divider" data-menu-site-admin>
+            <?php endif; ?>
+            <!-- On a DM: the other person's profile (chat.js sets the address) -->
+            <a role="menuitem" href="/otherPages/profile" data-menu-profile data-menu-dm>Show profile</a>
             <button type="button" role="menuitem" data-menu-action="nickname" data-menu-dm>Give nickname</button>
             <!-- Mute chat opens its own small menu with how long for, a muted chat gets Unmute chat instead -->
             <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-controls="chat-mute-menu" data-menu-mute>
@@ -1630,6 +1748,11 @@ if ($isPoll) {
                 <button type="button" role="menuitem" data-menu-action="unread">Mark unread</button>
                 <hr class="chat-menu-divider" data-menu-delete>
                 <button type="button" role="menuitem" class="is-danger" data-menu-action="delete" data-menu-delete>Delete message</button>
+                <?php if ($chatIsSiteAdmin): ?>
+                    <!-- Site admins, on someone else's message: the sender's admin panel (chat.js sets the address) -->
+                    <hr class="chat-menu-divider" data-menu-site-admin>
+                    <a role="menuitem" href="/admin/user" data-menu-site-admin>Admin panel</a>
+                <?php endif; ?>
             </div>
 
             <form action="/chat/" method="post" hidden data-message-unread>
@@ -1687,7 +1810,8 @@ if ($isPoll) {
                 <!-- Members popup (chat.js): everyone in the open group, each going to their profile.
                      Members who haven't accepted the group yet show as invited.
                      Group admins also get Make admin (for members who accepted) and Kick next to normal members.
-                     The group owner also gets Remove admin and Kick next to admins. -->
+                     The group owner also gets Remove admin and Kick next to admins.
+                     Site admins can right-click anyone else for their admin panel (data-member-user-id). -->
                 <dialog class="chat-dialog chat-members" aria-labelledby="chat-members-title">
                     <div class="chat-requests-body">
                         <header class="chat-new-header">
@@ -1715,7 +1839,7 @@ if ($isPoll) {
                                 $memberCanKick = $openChat['chatIsGroupAdmin'] && $memberUserId !== $userId
                                     && ($memberRole === HBHUB_CHAT_ROLE_MEMBER || $openChat['chatIsGroupOwner']);
                                 ?>
-                                <li>
+                                <li<?= $chatIsSiteAdmin && $memberUserId !== $userId ? ' data-member-user-id="' . $memberUserId . '"' : '' ?>>
                                     <?php if ($member['memberNoProfile']): ?>
                                         <span class="chat-member"><?= $memberInner ?></span>
                                     <?php else: ?>
@@ -1738,6 +1862,14 @@ if ($isPoll) {
                                 </li>
                             <?php endforeach; ?>
                         </ul>
+
+                        <?php if ($chatIsSiteAdmin): ?>
+                            <!-- Member menu (chat.js), for site admins: opened by right-clicking someone in the list.
+                                 Inside the popup, as everything outside it can't be clicked while it's open. -->
+                            <div class="chat-menu" role="menu" aria-label="Member options" hidden data-member-menu>
+                                <a role="menuitem" href="/admin/user" data-menu-site-admin>Admin panel</a>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </dialog>
 
@@ -2000,7 +2132,7 @@ if ($isPoll) {
             </div>
         </dialog>
 
-        <!-- Message requests popup (chat.js): chats the user was added to, to accept or decline (leave).
+        <!-- Message requests popup (chat.js): chats the user was added to, to accept, decline (leave) or block.
              Always on the page, so chat.js polling can fill it when a request comes in. -->
         <dialog class="chat-requests" aria-labelledby="chat-requests-title">
             <div class="chat-requests-body">
@@ -2008,6 +2140,7 @@ if ($isPoll) {
                     <h2 id="chat-requests-title">Message requests</h2>
                     <button type="button" class="chat-new-close" aria-label="Close" data-requests-close>&times;</button>
                 </header>
+                <p class="chat-dialog-hint">Block declines a request and stops whoever sent it sending you new ones, until you start a chat with them yourself.</p>
 
                 <ul class="chat-requests-list" data-requests-list>
                     <?php foreach ($chatRequests as $request): ?>

@@ -1,0 +1,175 @@
+/* Admin panel (admin/user.php). Built on the settings page's cards, fields and buttons (settings.css), wider for the tables. */
+.admin {
+  max-width: 920px;
+}
+
+.admin-kicker {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Picture, name and status */
+.admin-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.admin-header-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-header h1 {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 1.8rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-header-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-status.admin-status-banned,
+.settings-status.admin-status-deleted {
+  background: var(--settings-danger);
+  color: #fff;
+}
+
+.settings-status.admin-status-locked {
+  background: #e8a317;
+  color: #1a1d23;
+}
+
+/* Information: label above value, as many columns as fit */
+.admin-details {
+  margin: 0 0 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px 20px;
+}
+
+.admin-details dt {
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.admin-details dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.admin-bio {
+  margin: 6px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--background);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.admin-mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+}
+
+.admin-muted {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.admin-small {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+.admin-nowrap {
+  white-space: nowrap;
+}
+
+/* Password field with Generate next to it */
+.admin-password-row {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-password-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Sessions, messages, chats and chips. Scroll sideways on a small screen instead of squashing. */
+.admin-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  background: var(--background);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 9px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-table th {
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.admin-table tbody tr {
+  border-top: 1px solid var(--secondary);
+}
+
+.admin-table form {
+  display: block;
+}
+
+.admin-message-text {
+  min-width: 220px;
+  overflow-wrap: anywhere;
+}
+
+/* A deleted message is still shown, faded */
+.admin-messages tr.is-deleted td {
+  opacity: 0.55;
+}
+
+.admin-messages-actions {
+  margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-password-row {
+    flex-direction: column;
+  }
+}

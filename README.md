@@ -29,15 +29,16 @@
 
 | | |
 |---|---|
-| 💬 **Direct messages & group chats** | Message requests, replies, edits, deletions and unread tracking |
+| 💬 **Direct messages & group chats** | Message requests (with Block, to stop someone sending more), replies, edits, deletions and unread tracking |
 | 👑 **Group roles** | Group owners and admins can rename the group, change its icon and background, add, kick and promote members |
 | 📢 **Chat notices** | Changes in a group (new name, new admin, someone joined) show up in the chat |
 | 🎞️ **GIFs & smileys** | GIF picker powered by Giphy, plus a smiley menu |
 | 🔔 **Notifications** | Browser notifications for new messages, with per-chat muting |
 | 🔐 **Two-factor login** | TOTP codes from any authenticator app, set up with a QR code |
-| 🛡️ **Login protection** | Password strength rules, a common-password list and lockout after failed attempts |
+| 🛡️ **Login protection** | Password strength rules, a common-password list and lockout after failed attempts. Devices you've logged in on before have their own lock, so nobody can lock you out by guessing |
 | ⏳ **Self-blocking** | Block the Games and Gambling pages during school hours or all the time. Turning a block off doesn't happen straight away |
 | 👤 **Profiles** | Profile picture, name, year, class and bio |
+| 🛠️ **Admin panel** | Site admins right-click a user for their info, logins and messages, and can ban, edit, reset or delete them |
 | 🧰 **Maintenance mode** | Turn off logins and show a message from the site config |
 
 ## 🧱 Tech stack

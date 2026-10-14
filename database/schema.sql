@@ -95,7 +95,7 @@ CREATE TABLE `HBHub-BlackjackRooms` (
   `roomPhase` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Waiting for bets\r\n2 Betting\r\n3 Insurance\r\n4 Players'' turns\r\n5 Dealer''s turn\r\n6 Results (the same as in roomState)',
   `roomRevision` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Goes up on every change, so the table can tell when nothing changed since it last asked',
   `roomDeadline` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in milliseconds when a timer runs out and the round moves on by itself, NULL when nothing is timed',
-  `roomState` json NOT NULL COMMENT 'The shoe, bets and hands (src/assets/php/blackjack/round.php). Never sent to players as it is, as it has the hole card and the order of the cards',
+  `roomState` json NOT NULL COMMENT 'The shoe, bets and hands (src/assets/php/casino/blackjack/round.php). Never sent to players as it is, as it has the hole card and the order of the cards',
   `roomCreatedTimestamp` datetime NOT NULL COMMENT 'UTC'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -200,6 +200,21 @@ CREATE TABLE `HBHub-Chats` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-LoginDevices`
+--
+
+CREATE TABLE `HBHub-LoginDevices` (
+  `deviceTokenHash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'SHA-256 of the hbHubDevice cookie',
+  `userId` int UNSIGNED NOT NULL,
+  `deviceFailedLoginCount` smallint UNSIGNED NOT NULL DEFAULT '0',
+  `deviceLockedTimestamp` datetime DEFAULT NULL,
+  `deviceCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deviceLastUsedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Last login from it, a known device for 180 days after'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Browsers that have logged in to the account, with their own login lock (src/assets/php/loginLimit.php)';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Messages`
 --
 
@@ -211,7 +226,7 @@ CREATE TABLE `HBHub-Messages` (
   `attachmentId` int UNSIGNED DEFAULT NULL,
   `messageSentTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `messageDeletedTimestamp` datetime DEFAULT NULL,
-  `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin',
+  `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin\r\n2 Deleted by a site admin (admin panel)',
   `messageIsEdited` tinyint NOT NULL DEFAULT '0',
   `messageReplyToId` bigint UNSIGNED DEFAULT NULL,
   `messageEvent` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 A normal message\r\n1 A notice about a change in the chat, made by userId (messageEventType says which)',
@@ -360,6 +375,13 @@ ALTER TABLE `HBHub-Chats`
   ADD KEY `chatName` (`chatName`),
   ADD KEY `chatCreatedBy` (`chatCreatedBy`),
   ADD KEY `fk_chats_icon` (`chatIconAttachmentId`);
+
+--
+-- Indexes for table `HBHub-LoginDevices`
+--
+ALTER TABLE `HBHub-LoginDevices`
+  ADD PRIMARY KEY (`deviceTokenHash`,`userId`),
+  ADD KEY `userLastUsed` (`userId`,`deviceLastUsedTimestamp`);
 
 --
 -- Indexes for table `HBHub-Messages`
@@ -518,6 +540,12 @@ ALTER TABLE `HBHub-ChatMembers`
 --
 ALTER TABLE `HBHub-Chats`
   ADD CONSTRAINT `fk_chats_icon` FOREIGN KEY (`chatIconAttachmentId`) REFERENCES `HBHub-Attachments` (`attachmentId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-LoginDevices`
+--
+ALTER TABLE `HBHub-LoginDevices`
+  ADD CONSTRAINT `fk_logindevices_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Messages`

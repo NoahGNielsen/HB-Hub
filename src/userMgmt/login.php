@@ -11,11 +11,8 @@ if ($hbHubUser !== null) {
     exit;
 }
 
-// Defaults used when an older config file doesn't have these settings yet
-$loginAttemptsMax = max(1, (int) ($siteConfig['login_attempts_max'] ?? 5));
-$loginLockoutMinutes = max(1, (int) ($siteConfig['login_attempts_lockout_time'] ?? 15));
-
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginCheckDB.php';
+[$loginAttemptsMax, $loginLockoutMinutes] = hbHubLoginLimits($siteConfig);
 
 $loginName = '';
 $loginError = null;

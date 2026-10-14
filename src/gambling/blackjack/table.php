@@ -6,7 +6,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/blackjack/room.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/room.php';
 hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
 
 $db = hbHubDatabase();
@@ -44,7 +44,7 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
                     <?php if (!$tableIsSolo): ?>
                         &middot; <span data-bj-players>1</span>/<?= $tableSeats ?> players
                     <?php endif; ?>
-                    &middot; Minimum bet <?= number_format($room['roomMinBet']) ?> &middot; Blackjack pays 3:2 &middot; Dealer stands on soft 17
+                    &middot; Minimum bet <?= number_format($room['roomMinBet']) ?> &middot; Blackjack pays 3:2 &middot; Dealer stands on 17
                 </p>
             </div>
             <div class="bj-header-actions">
@@ -140,7 +140,7 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
 
         <details class="bj-rules casino-card">
             <summary>Rules</summary>
-            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/blackjack/rules.php'; ?>
+            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/rules.php'; ?>
         </details>
 
         <?php if (!$tableIsSolo): ?>

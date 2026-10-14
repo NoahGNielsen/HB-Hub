@@ -18,5 +18,9 @@
     "chatMutedUntil": {
         "chatId": null,
         "chatId2": null
+    },
+    "chatBlocked": {
+        "userId": true,
+        "userId2": true
     }
 }

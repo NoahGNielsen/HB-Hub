@@ -6,7 +6,10 @@
 // - Notifications: a browser notification for new messages while the site is open (assets/js/notifications.js)
 // - Gambling and Games: blocking them, during school hours or all the time (assets/php/block.php)
 // - Account: logging out, and deleting the account after entering the password
+// The password and 2FA codes typed in to confirm a change count towards the login lock (assets/php/loginLimit.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
@@ -122,56 +125,6 @@ function settingsSave(PDO $db, int $userId, array $values, bool $saveDescription
 }
 
 /**
- * Takes away the user's profile picture.
- */
-function settingsRemoveAvatar(PDO $db, int $userId): void
-{
-    $db->beginTransaction();
-    $statement = $db->prepare('SELECT userAvatarAttachmentId FROM `HBHub-Users` WHERE userId = ? FOR UPDATE');
-    $statement->execute([$userId]);
-    $avatarId = $statement->fetchColumn() ?: null;
-
-    $db->prepare('UPDATE `HBHub-Users` SET userAvatarAttachmentId = NULL WHERE userId = ?')->execute([$userId]);
-    if ($avatarId !== null) {
-        $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$avatarId]);
-    }
-    $db->commit();
-}
-
-/**
- * Deletes the account. Everything in the user's row is cleared except userId, userCreatedTimestamp and
- * userLastSeenTimestamp, and the name becomes "Deleted User", so their messages stay but nothing about them does.
- * Their profile picture and every one of their sessions are deleted too.
- * userNameLower and userPasswordHash end up NULL, so nobody can log in to it or find it in the user search.
- * userStatus, userRole and userFailedLoginCount end up NULL too, so a NULL userStatus means a deleted account.
- */
-function settingsDeleteAccount(PDO $db, int $userId): void
-{
-    $db->beginTransaction();
-    try {
-        $statement = $db->prepare('SELECT userAvatarAttachmentId FROM `HBHub-Users` WHERE userId = ? FOR UPDATE');
-        $statement->execute([$userId]);
-        $avatarId = $statement->fetchColumn() ?: null;
-
-        $db->prepare('UPDATE `HBHub-Users` SET userName = ?, userNameLower = NULL, userDescription = NULL, userSettings = NULL,
-                userAvatarAttachmentId = NULL, userIpv4AdresseOnAccountCreate = NULL, userIpv6AdresseOnAccountCreate = NULL,
-                userIpv4AdresseLastAccessed = NULL, userIpv6AdresseLastAccessed = NULL, userPasswordHash = NULL,
-                userTotpSecret = NULL, userTotpLastStep = NULL, userFailedLoginCount = NULL, userStatus = NULL,
-                userRole = NULL, userAccountLockedTimestamp = NULL, userBannedTimestamp = NULL
-            WHERE userId = ?')
-            ->execute([HBHUB_DELETED_USER_NAME, $userId]);
-        $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$userId]);
-        if ($avatarId !== null) {
-            $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$avatarId]);
-        }
-        $db->commit();
-    } catch (Throwable $e) {
-        $db->rollBack();
-        throw $e;
-    }
-}
-
-/**
  * Back to the settings page (at the card that was saved) with a toast, so reloading doesn't send the form again.
  */
 function settingsRedirect(string $toast, string $card): never
@@ -194,11 +147,39 @@ function settingsRedirectToLogin(string $toast): never
     exit;
 }
 
+/**
+ * Checks the password or 2FA code typed in to confirm a change. A wrong one counts like a wrong one at the login,
+ * so a session left open on someone else's computer can't be used to guess the password or turn off two-factor login.
+ * Returns null when $isRight() says it's right, otherwise the message to show. The wrong one that locks the browser
+ * out logs it out too, and it's on to the login page.
+ *
+ * @param callable(): bool $isRight
+ */
+function settingsConfirm(PDO $db, int $userId, array $siteConfig, callable $isRight, string $wrongMessage): ?string
+{
+    [$attemptsMax, $lockoutMinutes] = hbHubLoginLimits($siteConfig);
+
+    // Checked first, so guessing can't carry on while locked
+    $lockMinutesLeft = hbHubLoginLockMinutesLeft($db, $userId, $lockoutMinutes);
+    if ($lockMinutesLeft > 0) {
+        return hbHubLoginLockedMessage($lockMinutesLeft);
+    }
+    if ($isRight()) {
+        hbHubLoginForgetFailures($db, $userId);
+        return null;
+    }
+    if (hbHubLoginRecordFailure($db, $userId, $attemptsMax)) {
+        $db->prepare('DELETE FROM `HBHub-Sessions` WHERE sessionId = ?')->execute([$_COOKIE[HBHUB_SESSION_COOKIE]]);
+        settingsRedirectToLogin('lockedOut');
+    }
+    return $wrongMessage;
+}
+
 $settingsAction = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? 'profile') : null;
 
 if ($settingsAction === 'removeAvatar') {
     if ($settingsCanRemoveAvatar) {
-        settingsRemoveAvatar($db, $userId);
+        hbHubRemoveAvatar($db, $userId);
     }
     settingsRedirect('settings', 'profile');
 }
@@ -217,14 +198,8 @@ if ($settingsAction === 'profile') {
         }
 
         // Name
-        if ($settingsValues['name'] === '') {
-            $settingsErrors['name'] = 'Please tell us what you should be known as.';
-        } elseif (preg_match('/^[^\p{Cc}]+$/u', $settingsValues['name']) !== 1) {
-            $settingsErrors['name'] = 'That name contains characters that can\'t be used.';
-        } elseif (mb_strlen($settingsValues['name']) > $settingsNameMax) {
-            $settingsErrors['name'] = "Please keep it to $settingsNameMax characters or fewer.";
-        } elseif (hbHubIsDeletedUserName($settingsValues['name'])) {
-            $settingsErrors['name'] = 'That name can\'t be used. Please choose another one.';
+        if (($nameError = hbHubNameError($settingsValues['name'], $settingsNameMax)) !== null) {
+            $settingsErrors['name'] = $nameError;
         }
 
         // Class
@@ -277,8 +252,12 @@ if ($settingsAction === 'password') {
     $newPassword = is_string($_POST['newPassword'] ?? null) ? $_POST['newPassword'] : '';
     $newPasswordConfirm = is_string($_POST['newPasswordConfirm'] ?? null) ? $_POST['newPasswordConfirm'] : '';
 
-    if ($currentPassword === '' || strlen($currentPassword) > 72 || !password_verify($currentPassword, $settingsUser['userPasswordHash'])) {
-        $settingsErrors['currentPassword'] = 'That isn\'t your current password.';
+    $currentPasswordError = settingsConfirm($db, $userId, $siteConfig,
+        fn (): bool => strlen($currentPassword) <= 72 && password_verify($currentPassword, $settingsUser['userPasswordHash']),
+        'That isn\'t your current password.');
+
+    if ($currentPasswordError !== null) {
+        $settingsErrors['currentPassword'] = $currentPasswordError;
     } elseif (($passwordError = hbHubPasswordError($newPassword, $newPasswordConfirm, $settingsPasswordPolicy, 'Your new password')) !== null) {
         $settingsErrors['newPassword'] = $passwordError;
     } elseif ($newPassword === $currentPassword) {
@@ -310,8 +289,11 @@ if ($settingsAction === 'totpEnable' && !$settingsTotpIsOn) {
 
 if ($settingsAction === 'totpDisable' && $settingsTotpIsOn) {
     $lastStep = $settingsUser['userTotpLastStep'] !== null ? (int) $settingsUser['userTotpLastStep'] : null;
-    if (hbHubTotpVerify($settingsUser['userTotpSecret'], $_POST['code'] ?? null, $lastStep) === null) {
-        $settingsErrors['totp'] = 'That code isn\'t right. Please try the newest code from your app.';
+    $totpError = settingsConfirm($db, $userId, $siteConfig,
+        fn (): bool => hbHubTotpVerify($settingsUser['userTotpSecret'], $_POST['code'] ?? null, $lastStep) !== null,
+        'That code isn\'t right. Please try the newest code from your app.');
+    if ($totpError !== null) {
+        $settingsErrors['totp'] = $totpError;
     } else {
         $db->prepare('UPDATE `HBHub-Users` SET userTotpSecret = NULL, userTotpLastStep = NULL WHERE userId = ?')->execute([$userId]);
         settingsRedirect('totpOff', 'totp');
@@ -350,10 +332,13 @@ if ($settingsAction === 'logout') {
 
 if ($settingsAction === 'deleteAccount') {
     $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
-    if ($password === '' || strlen($password) > 72 || !password_verify($password, $settingsUser['userPasswordHash'])) {
-        $settingsErrors['deleteAccount'] = 'That isn\'t your password.';
+    $deleteError = settingsConfirm($db, $userId, $siteConfig,
+        fn (): bool => strlen($password) <= 72 && password_verify($password, $settingsUser['userPasswordHash']),
+        'That isn\'t your password.');
+    if ($deleteError !== null) {
+        $settingsErrors['deleteAccount'] = $deleteError;
     } else {
-        settingsDeleteAccount($db, $userId);
+        hbHubDeleteAccount($db, $userId);
         settingsRedirectToLogin('accountDeleted');
     }
 }
@@ -397,7 +382,7 @@ $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
                         <?php if ($settingsAvatarSrc !== null): ?>
                             <img class="settings-avatar-preview" src="<?= htmlspecialchars($settingsAvatarSrc) ?>" alt="Your profile picture">
                         <?php else: ?>
-                            <img class="settings-avatar-preview is-placeholder" src="/assets/images/icons/user.png" alt="">
+                            <span class="settings-avatar-preview settings-avatar-initial" aria-hidden="true"><?= htmlspecialchars(mb_strtoupper(mb_substr($settingsUser['userName'], 0, 1))) ?></span>
                         <?php endif; ?>
                         <div class="settings-avatar-actions">
                             <?php if ($settingsCanUploadAvatar): ?>

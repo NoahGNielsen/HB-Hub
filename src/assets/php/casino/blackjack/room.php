@@ -11,9 +11,9 @@
 // request at a time moves a table on, whatever the players click at the same time. That's also where players who
 // haven't been seen for the grace period leave the table, the host moves on when they've gone, and an empty room is
 // deleted. hbHubBlackjackSweep() does the same for tables nobody has open anymore.
-require_once __DIR__ . '/../database.php';
-require_once __DIR__ . '/../notifications.php';
-require_once __DIR__ . '/../userAvatar.php';
+require_once __DIR__ . '/../../database.php';
+require_once __DIR__ . '/../../notifications.php';
+require_once __DIR__ . '/../../userAvatar.php';
 require_once __DIR__ . '/round.php';
 
 const HBHUB_BLACKJACK_ROOM_PUBLIC = 1; // roomType
