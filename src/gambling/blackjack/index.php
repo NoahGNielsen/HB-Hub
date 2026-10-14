@@ -6,7 +6,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/blackjack/room.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/room.php';
 hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
 
 $db = hbHubDatabase();
@@ -127,8 +127,7 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
             <h1>Blackjack</h1>
             <a class="casino-btn" href="/gambling/blackjack/leaderboard">Leaderboard</a>
         </div>
-        <p class="casino-intro">Get closer to 21 than the dealer without going over. Up to 5 players at a table, played with your casino chips.</p>
-
+        <p class="casino-intro">Get closer to 21 than the dealer without going over, up to 5 players at a table.</p>
         <?php if (isset($lobbyErrors['list'])): ?>
             <p class="casino-alert" role="alert"><?= htmlspecialchars($lobbyErrors['list']) ?></p>
         <?php endif; ?>
@@ -167,7 +166,7 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
 
                     <form method="post" class="casino-form">
                         <input type="hidden" name="action" value="solo">
-                        <p class="casino-hint">Or play on your own against the dealer, from <?= HBHUB_BLACKJACK_SOLO_MIN_BET ?> chips:</p>
+                        <p class="casino-hint">Or play on your own against the dealer:</p>
                         <button type="submit" class="casino-btn">Play solo</button>
                         <?php if (isset($lobbyErrors['solo'])): ?>
                             <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['solo']) ?></p>
@@ -230,7 +229,7 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
 
         <section class="casino-card casino-rules" aria-labelledby="lobby-rules-title">
             <h2 id="lobby-rules-title">Rules</h2>
-            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/blackjack/rules.php'; ?>
+            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/rules.php'; ?>
         </section>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
