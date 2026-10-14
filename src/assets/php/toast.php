@@ -13,6 +13,16 @@ const HBHUB_TOASTS = [
     'blockPending' => 'Saved. Your block will change later, see the settings for when.',
     'logout' => 'You are now logged out.',
     'accountDeleted' => 'Your account has been deleted. Goodbye!',
+    // The admin panel (admin/user.php)
+    'adminSaved' => 'Saved.',
+    'adminBanned' => 'The user has been banned.',
+    'adminUnbanned' => 'The user has been unbanned.',
+    'adminPassword' => 'The password has been reset and the user has been logged out everywhere.',
+    'adminTotpOff' => 'Two-factor login has been removed.',
+    'adminLoggedOut' => 'The user has been logged out of every session.',
+    'adminMessageDeleted' => 'The message has been deleted.',
+    'adminMessagesDeleted' => 'All of the user\'s messages have been deleted.',
+    'adminAccountDeleted' => 'The account has been deleted.',
 ];
 
 /**

@@ -56,9 +56,14 @@ const HBHUB_CHAT_EVENT_JOIN = 9;
 const HBHUB_CHAT_EVENT_LEAVE = 10;
 const HBHUB_CHAT_EVENT_ADD = 11;
 const HBHUB_CHAT_EVENT_OWNER = 12; // took over as owner when the owner left, so they're both userId and messageEventUserId
+// messageDeletedByAdmin in HBHub-Messages: who deleted a deleted message => what it shows as.
+// Site admins delete messages from the admin panel (admin/user.php).
+const HBHUB_CHAT_DELETED_LABELS = [0 => 'Message deleted', 1 => 'Deleted by Group Admin', 2 => 'Deleted by Site Admin'];
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
+// Site admins get "Admin panel" in the right-click menus on DMs, messages and group members
+$chatIsSiteAdmin = (int) $hbHubUser['userRole'] === HBHUB_CHAT_SITE_ROLE_ADMIN;
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 $chatGifsEnabled = hbHubGiphyApiKey($siteConfig) !== null; // the GIF button and picker
 
@@ -1137,6 +1142,14 @@ function chatSenderName(array $openChat, int $userId, int $senderId, ?string $se
 }
 
 /**
+ * What a deleted message shows instead of itself, from its messageDeletedByAdmin.
+ */
+function chatDeletedLabel(mixed $deletedByAdmin): string
+{
+    return HBHUB_CHAT_DELETED_LABELS[(int) $deletedByAdmin] ?? HBHUB_CHAT_DELETED_LABELS[0];
+}
+
+/**
  * The quote above a reply: who and what it answers, on one line.
  * A link to the original when it's on the page, so it can be scrolled to.
  */
@@ -1149,8 +1162,7 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
         $sender = '<span class="chat-message-reply-sender">'
             . htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['replyUserId'], $message['replySenderName'])) . '</span>';
         if ($message['replyDeletedTimestamp'] !== null) {
-            $text = '<span class="chat-message-reply-text is-deleted">'
-                . ($message['replyDeletedByAdmin'] ? 'Deleted by Group Admin' : 'Message deleted') . '</span>';
+            $text = '<span class="chat-message-reply-text is-deleted">' . chatDeletedLabel($message['replyDeletedByAdmin']) . '</span>';
         } elseif ($message['replyContent'] === null) {
             $text = '<span class="chat-message-reply-text is-deleted">Attachment</span>';
         } elseif (chatGifId($message['replyContent']) !== null) {
@@ -1180,6 +1192,7 @@ function chatListItem(array $chat): void
                         data-chat-id="<?= $chat['chatId'] ?>"
                         data-chat-type="<?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'dm' : 'group' ?>"
                         data-chat-name="<?= htmlspecialchars($chat['chatName'] ?? '') ?>"<?=
+                        $chat['dmUserId'] !== null ? ' data-chat-user-id="' . (int) $chat['dmUserId'] . '"' : '' ?><?=
                         $chat['dmUserName'] !== null ? ' data-chat-username="' . htmlspecialchars($chat['dmUserName']) . '"' : '' ?><?=
                         $chat['chatNickname'] !== null ? ' data-chat-nickname="' . htmlspecialchars($chat['chatNickname']) . '"' : '' ?><?=
                         $chat['chatIsGroupAdmin'] ? ' data-chat-admin' : '' ?><?=
@@ -1309,7 +1322,7 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
     $gifId = $isDeleted ? null : chatGifId($message['messageContent']);
     ?>
                         <li class="chat-message<?= $isOwn ? ' is-own' : '' ?>" id="message-<?= (int) $message['messageId'] ?>" tabindex="-1"
-                            data-message-id="<?= (int) $message['messageId'] ?>"
+                            data-message-id="<?= (int) $message['messageId'] ?>" data-message-user-id="<?= (int) $message['userId'] ?>"
                             data-message-sender="<?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['userId'], $message['senderName'])) ?>"<?=
                             $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $gifId !== null ? ' data-message-gif' : '' ?>>
                             <?php if (!$isOwn && (int) $openChat['chatType'] !== HBHUB_CHAT_TYPE_DM): ?>
@@ -1325,7 +1338,7 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
                             <?php endif; ?>
                             <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?>">
                                 <?php if ($isDeleted): ?>
-                                    <p class="chat-message-deleted"><?= $message['messageDeletedByAdmin'] ? 'Deleted by Group Admin' : 'Message deleted' ?></p>
+                                    <p class="chat-message-deleted"><?= chatDeletedLabel($message['messageDeletedByAdmin']) ?></p>
                                 <?php else: ?>
                                     <?php if ($gifId !== null): ?>
                                         <!-- Giphy's 200px tall version, so a chat full of GIFs doesn't load every full-size one -->
@@ -1579,6 +1592,11 @@ if ($isPoll) {
         <!-- Chat menu (chat.js): opened by right-clicking a chat in the list. Each form below sends "open",
              so the server can go back to the chat that's open now. -->
         <div class="chat-menu" role="menu" aria-label="Chat options" hidden data-chat-menu>
+            <?php if ($chatIsSiteAdmin): ?>
+                <!-- Site admins, on a DM: the other person's admin panel (chat.js sets the address) -->
+                <a role="menuitem" href="/admin/user" data-menu-site-admin>Admin panel</a>
+                <hr class="chat-menu-divider" data-menu-site-admin>
+            <?php endif; ?>
             <button type="button" role="menuitem" aria-disabled="true" title="Coming soon" data-menu-action="profile" data-menu-dm>
                 Show profile <span class="chat-menu-soon">Soon</span>
             </button>
@@ -1613,6 +1631,11 @@ if ($isPoll) {
                 <button type="button" role="menuitem" data-menu-action="unread">Mark unread</button>
                 <hr class="chat-menu-divider" data-menu-delete>
                 <button type="button" role="menuitem" class="is-danger" data-menu-action="delete" data-menu-delete>Delete message</button>
+                <?php if ($chatIsSiteAdmin): ?>
+                    <!-- Site admins, on someone else's message: the sender's admin panel (chat.js sets the address) -->
+                    <hr class="chat-menu-divider" data-menu-site-admin>
+                    <a role="menuitem" href="/admin/user" data-menu-site-admin>Admin panel</a>
+                <?php endif; ?>
             </div>
 
             <form action="/chat/" method="post" hidden data-message-unread>
@@ -1670,7 +1693,8 @@ if ($isPoll) {
                 <!-- Members popup (chat.js): everyone in the open group, each going to their profile.
                      Members who haven't accepted the group yet show as invited.
                      Group admins also get Make admin (for members who accepted) and Kick next to normal members.
-                     The group owner also gets Remove admin and Kick next to admins. -->
+                     The group owner also gets Remove admin and Kick next to admins.
+                     Site admins can right-click anyone else for their admin panel (data-member-user-id). -->
                 <dialog class="chat-dialog chat-members" aria-labelledby="chat-members-title">
                     <div class="chat-requests-body">
                         <header class="chat-new-header">
@@ -1698,7 +1722,7 @@ if ($isPoll) {
                                 $memberCanKick = $openChat['chatIsGroupAdmin'] && $memberUserId !== $userId
                                     && ($memberRole === HBHUB_CHAT_ROLE_MEMBER || $openChat['chatIsGroupOwner']);
                                 ?>
-                                <li>
+                                <li<?= $chatIsSiteAdmin && $memberUserId !== $userId ? ' data-member-user-id="' . $memberUserId . '"' : '' ?>>
                                     <?php if ($member['memberNoProfile']): ?>
                                         <span class="chat-member"><?= $memberInner ?></span>
                                     <?php else: ?>
@@ -1721,6 +1745,14 @@ if ($isPoll) {
                                 </li>
                             <?php endforeach; ?>
                         </ul>
+
+                        <?php if ($chatIsSiteAdmin): ?>
+                            <!-- Member menu (chat.js), for site admins: opened by right-clicking someone in the list.
+                                 Inside the popup, as everything outside it can't be clicked while it's open. -->
+                            <div class="chat-menu" role="menu" aria-label="Member options" hidden data-member-menu>
+                                <a role="menuitem" href="/admin/user" data-menu-site-admin>Admin panel</a>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </dialog>
 

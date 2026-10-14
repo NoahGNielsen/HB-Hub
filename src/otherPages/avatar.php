@@ -1,8 +1,10 @@
 <?php
 // Profile pictures: /otherPages/avatar?user=id sends the user's profile picture. For any logged in user,
-// except for banned users' pictures (they don't have a profile).
+// except for banned users' pictures (they don't have a profile) - only site admins see those, in the admin panel.
 // The page adds &v=<attachment id>, so a changed picture gets a new address and the old one can be cached for good.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+
+const AVATAR_ROLE_ADMIN = 2; // userRole in HBHub-Users
 
 $userId = $_GET['user'] ?? null;
 if (!is_string($userId) || !ctype_digit($userId)) {
@@ -12,8 +14,8 @@ if (!is_string($userId) || !ctype_digit($userId)) {
 
 $db = hbHubDatabase();
 $statement = $db->prepare('SELECT userAvatarAttachmentId FROM `HBHub-Users`
-    WHERE userId = ? AND userStatus <> ? AND userAvatarAttachmentId IS NOT NULL');
-$statement->execute([(int) $userId, HBHUB_SESSION_STATUS_BANNED]);
+    WHERE userId = ? AND (userStatus <> ? OR ?) AND userAvatarAttachmentId IS NOT NULL');
+$statement->execute([(int) $userId, HBHUB_SESSION_STATUS_BANNED, (int) ((int) $hbHubUser['userRole'] === AVATAR_ROLE_ADMIN)]);
 $avatarId = $statement->fetchColumn();
 if ($avatarId === false) {
     http_response_code(404);

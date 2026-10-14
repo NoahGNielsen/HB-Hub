@@ -95,6 +95,8 @@ $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvata
                 </p>
                 <?php if ($profileIsOwn): ?>
                     <p class="profile-own">This is your profile</p>
+                <?php elseif ((int) $hbHubUser['userRole'] === PROFILE_ROLE_ADMIN): ?>
+                    <a class="profile-admin-link" href="/admin/user?user=<?= (int) $profile['userId'] ?>">Admin panel</a>
                 <?php endif; ?>
             </div>
         </div>

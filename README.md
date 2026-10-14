@@ -38,6 +38,7 @@
 | 🛡️ **Login protection** | Password strength rules, a common-password list and lockout after failed attempts |
 | ⏳ **Self-blocking** | Block the Games and Gambling pages during school hours or all the time. Turning a block off doesn't happen straight away |
 | 👤 **Profiles** | Profile picture, name, year, class and bio |
+| 🛠️ **Admin panel** | Site admins right-click a user for their info, logins and messages, and can ban, edit, reset or delete them |
 | 🧰 **Maintenance mode** | Turn off logins and show a message from the site config |
 
 ## 🧱 Tech stack

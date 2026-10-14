@@ -7,6 +7,7 @@
 // - Gambling and Games: blocking them, during school hours or all the time (assets/php/block.php)
 // - Account: logging out, and deleting the account after entering the password
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
@@ -122,56 +123,6 @@ function settingsSave(PDO $db, int $userId, array $values, bool $saveDescription
 }
 
 /**
- * Takes away the user's profile picture.
- */
-function settingsRemoveAvatar(PDO $db, int $userId): void
-{
-    $db->beginTransaction();
-    $statement = $db->prepare('SELECT userAvatarAttachmentId FROM `HBHub-Users` WHERE userId = ? FOR UPDATE');
-    $statement->execute([$userId]);
-    $avatarId = $statement->fetchColumn() ?: null;
-
-    $db->prepare('UPDATE `HBHub-Users` SET userAvatarAttachmentId = NULL WHERE userId = ?')->execute([$userId]);
-    if ($avatarId !== null) {
-        $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$avatarId]);
-    }
-    $db->commit();
-}
-
-/**
- * Deletes the account. Everything in the user's row is cleared except userId, userCreatedTimestamp and
- * userLastSeenTimestamp, and the name becomes "Deleted User", so their messages stay but nothing about them does.
- * Their profile picture and every one of their sessions are deleted too.
- * userNameLower and userPasswordHash end up NULL, so nobody can log in to it or find it in the user search.
- * userStatus, userRole and userFailedLoginCount end up NULL too, so a NULL userStatus means a deleted account.
- */
-function settingsDeleteAccount(PDO $db, int $userId): void
-{
-    $db->beginTransaction();
-    try {
-        $statement = $db->prepare('SELECT userAvatarAttachmentId FROM `HBHub-Users` WHERE userId = ? FOR UPDATE');
-        $statement->execute([$userId]);
-        $avatarId = $statement->fetchColumn() ?: null;
-
-        $db->prepare('UPDATE `HBHub-Users` SET userName = ?, userNameLower = NULL, userDescription = NULL, userSettings = NULL,
-                userAvatarAttachmentId = NULL, userIpv4AdresseOnAccountCreate = NULL, userIpv6AdresseOnAccountCreate = NULL,
-                userIpv4AdresseLastAccessed = NULL, userIpv6AdresseLastAccessed = NULL, userPasswordHash = NULL,
-                userTotpSecret = NULL, userTotpLastStep = NULL, userFailedLoginCount = NULL, userStatus = NULL,
-                userRole = NULL, userAccountLockedTimestamp = NULL, userBannedTimestamp = NULL
-            WHERE userId = ?')
-            ->execute([HBHUB_DELETED_USER_NAME, $userId]);
-        $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$userId]);
-        if ($avatarId !== null) {
-            $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$avatarId]);
-        }
-        $db->commit();
-    } catch (Throwable $e) {
-        $db->rollBack();
-        throw $e;
-    }
-}
-
-/**
  * Back to the settings page (at the card that was saved) with a toast, so reloading doesn't send the form again.
  */
 function settingsRedirect(string $toast, string $card): never
@@ -198,7 +149,7 @@ $settingsAction = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? '
 
 if ($settingsAction === 'removeAvatar') {
     if ($settingsCanRemoveAvatar) {
-        settingsRemoveAvatar($db, $userId);
+        hbHubRemoveAvatar($db, $userId);
     }
     settingsRedirect('settings', 'profile');
 }
@@ -217,14 +168,8 @@ if ($settingsAction === 'profile') {
         }
 
         // Name
-        if ($settingsValues['name'] === '') {
-            $settingsErrors['name'] = 'Please tell us what you should be known as.';
-        } elseif (preg_match('/^[^\p{Cc}]+$/u', $settingsValues['name']) !== 1) {
-            $settingsErrors['name'] = 'That name contains characters that can\'t be used.';
-        } elseif (mb_strlen($settingsValues['name']) > $settingsNameMax) {
-            $settingsErrors['name'] = "Please keep it to $settingsNameMax characters or fewer.";
-        } elseif (hbHubIsDeletedUserName($settingsValues['name'])) {
-            $settingsErrors['name'] = 'That name can\'t be used. Please choose another one.';
+        if (($nameError = hbHubNameError($settingsValues['name'], $settingsNameMax)) !== null) {
+            $settingsErrors['name'] = $nameError;
         }
 
         // Class
@@ -353,7 +298,7 @@ if ($settingsAction === 'deleteAccount') {
     if ($password === '' || strlen($password) > 72 || !password_verify($password, $settingsUser['userPasswordHash'])) {
         $settingsErrors['deleteAccount'] = 'That isn\'t your password.';
     } else {
-        settingsDeleteAccount($db, $userId);
+        hbHubDeleteAccount($db, $userId);
         settingsRedirectToLogin('accountDeleted');
     }
 }

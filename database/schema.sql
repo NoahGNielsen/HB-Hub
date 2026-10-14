@@ -211,7 +211,7 @@ CREATE TABLE `HBHub-Messages` (
   `attachmentId` int UNSIGNED DEFAULT NULL,
   `messageSentTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `messageDeletedTimestamp` datetime DEFAULT NULL,
-  `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin',
+  `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin\r\n2 Deleted by a site admin (admin panel)',
   `messageIsEdited` tinyint NOT NULL DEFAULT '0',
   `messageReplyToId` bigint UNSIGNED DEFAULT NULL,
   `messageEvent` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 A normal message\r\n1 A notice about a change in the chat, made by userId (messageEventType says which)',

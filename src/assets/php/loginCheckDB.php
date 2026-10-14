@@ -57,6 +57,7 @@ function loginCheckDB(string $name, string $password, int $attemptsMax, int $loc
 
         // Only said after the right password, so it doesn't reveal anything about other people's accounts
         if ((int) $user['userStatus'] === LOGIN_STATUS_BANNED) {
+            hbHubSetBannedCookie($userId); // so a new account can't be made from this browser instead
             return 'This account has been banned.';
         }
 
@@ -212,10 +213,15 @@ function loginCancelPending(): void
 /**
  * Logs the user in, once the password (and 2FA code) were right: resets the wrong password count and the lock,
  * and stores a new session. Run inside a transaction, then pass the id to hbHubSetSessionCookie() once committed.
+ * A browser marked for this account being banned isn't anymore, as it's been unbanned since.
  */
 function loginFinish(PDO $db, int $userId): string
 {
     [$ipv4, $ipv6] = hbHubClientIp();
+
+    if (hbHubBannedCookieUserId() === $userId) {
+        hbHubClearBannedCookie();
+    }
 
     $db->prepare('UPDATE `HBHub-Users` SET userFailedLoginCount = 0, userAccountLockedTimestamp = NULL, userStatus = ?,
             userLastSeenTimestamp = NOW(), userIpv4AdresseLastAccessed = ?, userIpv6AdresseLastAccessed = ? WHERE userId = ?')

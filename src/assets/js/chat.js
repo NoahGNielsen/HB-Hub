@@ -441,6 +441,27 @@ function userPicker(dialog, onChange) {
     confirmDialog?.addEventListener('close', () => memberButton?.focus());
 })();
 
+// Member menu, for site admins: right-click someone in the Members popup (or use the menu key / Shift+F10 on them)
+// for Admin panel, which opens their admin panel (admin/user.php).
+(() => {
+    const dialog = document.querySelector('.chat-members');
+    const menu = document.querySelector('[data-member-menu]');
+    if (!dialog || !menu) return;
+
+    const adminLink = menu.querySelector('[data-menu-site-admin]');
+    const memberMenu = contextMenu({
+        menu,
+        list: dialog.querySelector('.chat-members-list'),
+        items: '[data-member-user-id]',
+        focusItem: (item) => item.querySelector('a, button')?.focus(),
+        onOpen(item) {
+            adminLink.href = '/admin/user?user=' + item.dataset.memberUserId;
+        },
+    });
+
+    dialog.addEventListener('close', () => memberMenu.close(false));
+})();
+
 // Right-click menus, used by the chat menu and the message menu.
 // Right-clicking an item in `list` (or the menu key / Shift+F10 on it) opens `menu` where the pointer is.
 // Arrow keys, Home and End move through the menu. Escape and Tab close it, back on the item it was opened on.
@@ -519,12 +540,15 @@ function chatShowBackground(element, background) {
 // Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to mute, hide or leave it.
 // In a DM the other person can be given a nickname. Group admins can also change the group's name or icon, or delete it.
 // Group admins and both people in a DM can change the chat's background.
+// Site admins also get Admin panel on a DM, which opens the other person's admin panel (admin/user.php).
 // Show profile (DMs) is coming later.
 // Every action is a plain form post - the server checks who's allowed to do what.
 (() => {
     const menu = document.querySelector('[data-chat-menu]');
     const list = document.querySelector('.chat-list');
     if (!menu || !list) return;
+
+    const siteAdminItems = menu.querySelectorAll('[data-menu-site-admin]'); // only on the page for site admins
 
     const hideForm = document.querySelector('[data-chat-hide]');
     const muteForm = document.querySelector('[data-chat-mute]');
@@ -554,6 +578,12 @@ function chatShowBackground(element, background) {
             const isMuted = item.hasAttribute('data-chat-muted');
             muteItem.hidden = isMuted;
             menu.querySelector('[data-menu-action="unmute"]').hidden = !isMuted;
+            // Nobody's admin panel to open in a group, or a DM the other person left
+            const dmUserId = isGroup ? undefined : item.dataset.chatUserId;
+            siteAdminItems.forEach((menuItem) => {
+                menuItem.hidden = dmUserId === undefined;
+                if (menuItem instanceof HTMLAnchorElement && dmUserId !== undefined) menuItem.href = '/admin/user?user=' + dmUserId;
+            });
             closeMuteMenu(false);
         },
     });
@@ -789,6 +819,7 @@ function chatShowBackground(element, background) {
 // Message menu: right-click a message in the open chat (or use the menu key / Shift+F10 on it) to reply to it,
 // or mark the chat unread from it on. Your own messages can also be edited or deleted,
 // and group admins can delete anyone's (shown as deleted by a group admin).
+// Site admins also get Admin panel on other people's messages, which opens the sender's admin panel (admin/user.php).
 // Links and selected text keep the browser's own menu, so they can still be copied.
 // The arrow keys, Home and End move between the messages, so the menu can be reached without a mouse.
 (() => {
@@ -807,6 +838,7 @@ function chatShowBackground(element, background) {
     const editSave = editDialog.querySelector('[data-edit-save]');
     const deleteDialog = document.querySelector('.chat-message-delete');
     const isGroupAdmin = messages.hasAttribute('data-group-admin'); // can delete other members' messages too
+    const siteAdminItems = menu.querySelectorAll('[data-menu-site-admin]'); // only on the page for site admins
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let message = null; // the message the menu was opened on
 
@@ -867,6 +899,11 @@ function chatShowBackground(element, background) {
             menu.querySelector('[data-menu-action="reply"]').hidden = isDeleted;
             menu.querySelector('[data-menu-action="edit"]').hidden = !isOwn || !item.querySelector('[data-message-text]');
             menu.querySelectorAll('[data-menu-delete]').forEach((menuItem) => { menuItem.hidden = !canDelete; });
+            const isFromOther = !item.hasAttribute('data-message-own');
+            siteAdminItems.forEach((menuItem) => {
+                menuItem.hidden = !isFromOther;
+                if (menuItem instanceof HTMLAnchorElement) menuItem.href = '/admin/user?user=' + item.dataset.messageUserId;
+            });
         },
     });
 
