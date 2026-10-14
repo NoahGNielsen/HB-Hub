@@ -467,7 +467,7 @@ a.casino-game:focus-visible {
   margin: 0;
 }
 
-/* Leaderboard (gambling/blackjack/leaderboard.php) */
+/* Leaderboards (gambling/blackjack/leaderboard.php, gambling/roulette/leaderboard.php) */
 .casino-table-wrap {
   overflow-x: auto;
 }
@@ -565,6 +565,15 @@ a.casino-game:focus-visible {
 
 .casino-unranked {
   opacity: 0.5;
+}
+
+/* Chips won or lost (gambling/roulette/leaderboard.php) */
+.casino-net-up {
+  color: var(--casino-up);
+}
+
+.casino-net-down {
+  color: var(--casino-down);
 }
 
 @media (max-width: 700px) {

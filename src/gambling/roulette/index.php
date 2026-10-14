@@ -90,8 +90,11 @@ function rouletteWheelPockets(): string
     <main class="rl" data-roulette data-chips="<?= $navCasinoChips ?>" data-bet-step="<?= HBHUB_ROULETTE_BET_STEP ?>">
         <a class="casino-back" href="/gambling/">&larr; Casino</a>
         <div class="rl-header">
-            <h1 class="rl-title">Roulette</h1>
-            <p class="rl-meta">Single zero &middot; A number pays 35:1 &middot; Bets in steps of <?= HBHUB_ROULETTE_BET_STEP ?></p>
+            <div>
+                <h1 class="rl-title">Roulette</h1>
+                <p class="rl-meta">Single zero &middot; A number pays 35:1 &middot; Bets in steps of <?= HBHUB_ROULETTE_BET_STEP ?></p>
+            </div>
+            <a class="casino-btn" href="/gambling/roulette/leaderboard">Leaderboard</a>
         </div>
 
         <section class="rl-top" aria-label="The wheel">
