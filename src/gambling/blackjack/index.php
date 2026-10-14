@@ -43,7 +43,7 @@ function lobbyCreate(PDO $db, array $user, string $name, int $type, int $minBet)
 
 $lobbyErrors = [];
 $lobbyValues = ['name' => '', 'type' => 'public', 'minBet' => HBHUB_BLACKJACK_MIN_BETS[0], 'code' => ''];
-$action = $_SERVER['REQUEST_METHOD'] === 'POST' && hbHubCasinoIsSameSite() ? ($_POST['action'] ?? null) : null;
+$action = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? null) : null; // only from the site itself (session.php)
 
 if (in_array($action, ['solo', 'create'], true)) {
     $seat = hbHubBlackjackUserSeat($db, $userId);

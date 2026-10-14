@@ -19,8 +19,9 @@ return [
     'onboarding_avatar_requirements' => '1', // Default: 1 | 0 = required, 1 = optional, 2 = disabled
     'onboarding_password_requirements' => '3', // Default: 3 | 1 = just don't use, 2 = weak, 3 = medium, 4 = strong
     'onboarding_description_requirements' => '1', // Default: 1 | 0 = required (min of 10 characters), 1 = optional, 2 = disabled
+    'onboarding_accounts_per_ip_hour' => 20, // Default: 20 | How many accounts can be made from one IP address in an hour. A school network shares one address, so leave room for a class signing up together
 
-    'login_attempts_max' => 5, // Default: 5 | Number of failed login attempts before the user is locked out for a period of time
+    'login_attempts_max' => 5, // Default: 5 | Number of failed login attempts before the user is locked out for a period of time. A device the account has logged in on before has its own count, so others can't lock the owner out
     'login_attempts_lockout_time' => 15, // Default: 15 minutes
     
     'user_uploads_maxSize' => 5000, // Default: 5 MB | This is different from the avatar max size. This is for everything else. Don't exceed 4 GB, as the database column is LONGBLOB

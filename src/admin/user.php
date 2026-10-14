@@ -14,6 +14,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
 const ADMIN_ROLE_ADMIN = 2; // userRole in HBHub-Users
@@ -41,7 +42,7 @@ if (!is_string($targetId) || !ctype_digit($targetId) || strlen($targetId) > 10) 
 $targetId = (int) $targetId;
 
 $db = hbHubDatabase();
-$adminLockoutMinutes = max(1, (int) ($siteConfig['login_attempts_lockout_time'] ?? 15));
+[, $adminLockoutMinutes] = hbHubLoginLimits($siteConfig);
 $adminNameMax = max(1, min(64, (int) $siteConfig['user_name_maxSize']));
 $adminDescriptionMax = max(1, min(255, (int) $siteConfig['user_description_maxSize']));
 $adminPasswordPolicy = hbHubPasswordPolicy($siteConfig);
@@ -274,7 +275,7 @@ switch ($adminAction) {
         adminRedirect($targetId, 'adminSaved', 'block');
 
     case 'password':
-        // Shown to the admin as it's typed (or generated), to pass on to the user. Their lock is lifted too.
+        // Shown to the admin as it's typed (or generated), to pass on to the user. Their locks are lifted too, their devices' as well.
         $newPassword = is_string($_POST['newPassword'] ?? null) ? $_POST['newPassword'] : '';
         $adminValues['newPassword'] = $newPassword;
         $passwordError = hbHubPasswordError($newPassword, $newPassword, $adminPasswordPolicy, 'The new password');
@@ -287,6 +288,7 @@ switch ($adminAction) {
                 userStatus = IF(userStatus = ?, ?, userStatus)
             WHERE userId = ?')
             ->execute([password_hash($newPassword, PASSWORD_DEFAULT), ADMIN_STATUS_LOCKED, ADMIN_STATUS_OFFLINE, $targetId]);
+        hbHubLoginUnlockAll($db, $targetId);
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$targetId]);
         $db->commit();
         adminRedirect($targetId, 'adminPassword', 'security');

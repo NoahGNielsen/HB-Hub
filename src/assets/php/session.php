@@ -2,8 +2,9 @@
 // Login sessions: a row in HBHub-Sessions plus a cookie holding its id.
 // Shared by onboarding (new account) and login.
 //
-// Every page includes this with require_once at the very top, before any output. It checks the session cookie,
-// updates the user's last seen time and IP, and sends visitors without a valid session to the login page.
+// Every page includes this with require_once at the very top, before any output. It turns away POSTs from other
+// sites, checks the session cookie, updates the user's last seen time and IP, and sends visitors without a valid
+// session to the login page.
 // Pages that work without being logged in set $hbHubSessionOptional = true before including it.
 // The logged in user ends up in $hbHubUser (null when not logged in).
 require_once __DIR__ . '/maintenance.php'; // so the database isn't touched while the site is in maintenance mode
@@ -185,6 +186,29 @@ function hbHubReturnQuery(): string
 {
     $path = hbHubReturnPath();
     return $path === '/' ? '' : '?return=' . rawurlencode($path);
+}
+
+/**
+ * Whether the request came from the site's own pages (or the user themself, like reloading a form they sent).
+ * SameSite=Lax on the session cookie isn't enough on its own: every other subdomain of noahgajnielsen.dk counts as
+ * the same site, so a page there could still post a form here with the user's session.
+ */
+function hbHubIsSameOriginRequest(): bool
+{
+    $fetchSite = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? null;
+    if ($fetchSite !== null) {
+        return $fetchSite === 'same-origin' || $fetchSite === 'none';
+    }
+    // Older browsers without Sec-Fetch-Site still send Origin with a POST
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
+    return $origin === null || $origin === 'https://' . ($_SERVER['HTTP_HOST'] ?? '');
+}
+
+// Every form and script on the site posts to the site itself, so a POST from anywhere else is turned away
+// before it can change anything
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hbHubIsSameOriginRequest()) {
+    require __DIR__ . '/statusCodesPages/403.php';
+    exit;
 }
 
 $hbHubUser = hbHubSessionUser();

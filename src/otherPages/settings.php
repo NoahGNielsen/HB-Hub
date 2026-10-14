@@ -6,7 +6,9 @@
 // - Notifications: a browser notification for new messages while the site is open (assets/js/notifications.js)
 // - Gambling and Games: blocking them, during school hours or all the time (assets/php/block.php)
 // - Account: logging out, and deleting the account after entering the password
+// The password and 2FA codes typed in to confirm a change count towards the login lock (assets/php/loginLimit.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
@@ -145,6 +147,34 @@ function settingsRedirectToLogin(string $toast): never
     exit;
 }
 
+/**
+ * Checks the password or 2FA code typed in to confirm a change. A wrong one counts like a wrong one at the login,
+ * so a session left open on someone else's computer can't be used to guess the password or turn off two-factor login.
+ * Returns null when $isRight() says it's right, otherwise the message to show. The wrong one that locks the browser
+ * out logs it out too, and it's on to the login page.
+ *
+ * @param callable(): bool $isRight
+ */
+function settingsConfirm(PDO $db, int $userId, array $siteConfig, callable $isRight, string $wrongMessage): ?string
+{
+    [$attemptsMax, $lockoutMinutes] = hbHubLoginLimits($siteConfig);
+
+    // Checked first, so guessing can't carry on while locked
+    $lockMinutesLeft = hbHubLoginLockMinutesLeft($db, $userId, $lockoutMinutes);
+    if ($lockMinutesLeft > 0) {
+        return hbHubLoginLockedMessage($lockMinutesLeft);
+    }
+    if ($isRight()) {
+        hbHubLoginForgetFailures($db, $userId);
+        return null;
+    }
+    if (hbHubLoginRecordFailure($db, $userId, $attemptsMax)) {
+        $db->prepare('DELETE FROM `HBHub-Sessions` WHERE sessionId = ?')->execute([$_COOKIE[HBHUB_SESSION_COOKIE]]);
+        settingsRedirectToLogin('lockedOut');
+    }
+    return $wrongMessage;
+}
+
 $settingsAction = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? 'profile') : null;
 
 if ($settingsAction === 'removeAvatar') {
@@ -222,8 +252,12 @@ if ($settingsAction === 'password') {
     $newPassword = is_string($_POST['newPassword'] ?? null) ? $_POST['newPassword'] : '';
     $newPasswordConfirm = is_string($_POST['newPasswordConfirm'] ?? null) ? $_POST['newPasswordConfirm'] : '';
 
-    if ($currentPassword === '' || strlen($currentPassword) > 72 || !password_verify($currentPassword, $settingsUser['userPasswordHash'])) {
-        $settingsErrors['currentPassword'] = 'That isn\'t your current password.';
+    $currentPasswordError = settingsConfirm($db, $userId, $siteConfig,
+        fn (): bool => strlen($currentPassword) <= 72 && password_verify($currentPassword, $settingsUser['userPasswordHash']),
+        'That isn\'t your current password.');
+
+    if ($currentPasswordError !== null) {
+        $settingsErrors['currentPassword'] = $currentPasswordError;
     } elseif (($passwordError = hbHubPasswordError($newPassword, $newPasswordConfirm, $settingsPasswordPolicy, 'Your new password')) !== null) {
         $settingsErrors['newPassword'] = $passwordError;
     } elseif ($newPassword === $currentPassword) {
@@ -255,8 +289,11 @@ if ($settingsAction === 'totpEnable' && !$settingsTotpIsOn) {
 
 if ($settingsAction === 'totpDisable' && $settingsTotpIsOn) {
     $lastStep = $settingsUser['userTotpLastStep'] !== null ? (int) $settingsUser['userTotpLastStep'] : null;
-    if (hbHubTotpVerify($settingsUser['userTotpSecret'], $_POST['code'] ?? null, $lastStep) === null) {
-        $settingsErrors['totp'] = 'That code isn\'t right. Please try the newest code from your app.';
+    $totpError = settingsConfirm($db, $userId, $siteConfig,
+        fn (): bool => hbHubTotpVerify($settingsUser['userTotpSecret'], $_POST['code'] ?? null, $lastStep) !== null,
+        'That code isn\'t right. Please try the newest code from your app.');
+    if ($totpError !== null) {
+        $settingsErrors['totp'] = $totpError;
     } else {
         $db->prepare('UPDATE `HBHub-Users` SET userTotpSecret = NULL, userTotpLastStep = NULL WHERE userId = ?')->execute([$userId]);
         settingsRedirect('totpOff', 'totp');
@@ -295,8 +332,11 @@ if ($settingsAction === 'logout') {
 
 if ($settingsAction === 'deleteAccount') {
     $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
-    if ($password === '' || strlen($password) > 72 || !password_verify($password, $settingsUser['userPasswordHash'])) {
-        $settingsErrors['deleteAccount'] = 'That isn\'t your password.';
+    $deleteError = settingsConfirm($db, $userId, $siteConfig,
+        fn (): bool => strlen($password) <= 72 && password_verify($password, $settingsUser['userPasswordHash']),
+        'That isn\'t your password.');
+    if ($deleteError !== null) {
+        $settingsErrors['deleteAccount'] = $deleteError;
     } else {
         hbHubDeleteAccount($db, $userId);
         settingsRedirectToLogin('accountDeleted');

@@ -2,13 +2,14 @@
 // Checks a name and password against HBHub-Users and logs the user in when they match.
 // With two-factor login turned on (userTotpSecret), the right password only starts the login: it's kept as a
 // session waiting for the code (sessionTotpPending) for a few minutes, and loginCheckTotp() finishes it.
+// Wrong passwords and codes are counted, and locked out, by loginLimit.php.
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/totp.php';
+require_once __DIR__ . '/loginLimit.php';
 
 // userStatus: 1 Online, 2 Offline, 3 Account Locked, 4 Banned
 const LOGIN_STATUS_ONLINE = 1;
-const LOGIN_STATUS_LOCKED = 3;
 const LOGIN_STATUS_BANNED = 4;
 
 const LOGIN_PENDING_COOKIE = 'hbHubPendingLogin'; // the session waiting for the 2FA code, never the real session cookie
@@ -17,7 +18,7 @@ const LOGIN_PENDING_MINUTES = 5; // how long there is to enter the code
 /**
  * Returns null when the password was right, otherwise a message to show on the form.
  * $needsTotp is set to true when the user isn't logged in yet, because the 2FA code is needed next.
- * After $attemptsMax wrong passwords (or 2FA codes) in a row the account is locked for $lockoutMinutes.
+ * After $attemptsMax wrong passwords (or 2FA codes) in a row the browser is locked out for $lockoutMinutes (loginLimit.php).
  */
 function loginCheckDB(string $name, string $password, int $attemptsMax, int $lockoutMinutes, ?bool &$needsTotp = null): ?string
 {
@@ -28,11 +29,9 @@ function loginCheckDB(string $name, string $password, int $attemptsMax, int $loc
     try {
         $db = hbHubDatabase();
 
-        // lockMinutesLeft is NULL when the account has never been locked, 0 or less once the lock has run out
-        $statement = $db->prepare('SELECT userId, userPasswordHash, userStatus, userTotpSecret,
-                CEIL(TIMESTAMPDIFF(SECOND, NOW(), userAccountLockedTimestamp + INTERVAL ? MINUTE) / 60) AS lockMinutesLeft
+        $statement = $db->prepare('SELECT userId, userPasswordHash, userStatus, userTotpSecret
             FROM `HBHub-Users` WHERE userNameLower = ?');
-        $statement->execute([$lockoutMinutes, mb_strtolower($name)]);
+        $statement->execute([mb_strtolower($name)]);
         $user = $statement->fetch();
 
         if ($user === false) {
@@ -44,13 +43,14 @@ function loginCheckDB(string $name, string $password, int $attemptsMax, int $loc
         $userId = (int) $user['userId'];
 
         // Checked before the password, so guessing can't carry on while locked
-        if ((int) $user['lockMinutesLeft'] > 0) {
-            return loginLockedMessage((int) $user['lockMinutesLeft']);
+        $lockMinutesLeft = hbHubLoginLockMinutesLeft($db, $userId, $lockoutMinutes);
+        if ($lockMinutesLeft > 0) {
+            return hbHubLoginLockedMessage($lockMinutesLeft);
         }
 
         if (!password_verify($password, $user['userPasswordHash'])) {
-            if (loginRecordFailure($db, $userId, $attemptsMax)) {
-                return 'Too many wrong passwords. ' . loginLockedMessage($lockoutMinutes);
+            if (hbHubLoginRecordFailure($db, $userId, $attemptsMax)) {
+                return 'Too many wrong passwords. ' . hbHubLoginLockedMessage($lockoutMinutes);
             }
             return $wrongMessage;
         }
@@ -113,12 +113,11 @@ function loginCheckTotp(mixed $code, int $attemptsMax, int $lockoutMinutes): ?st
 
         $user = null;
         if ($pendingId !== null) {
-            $statement = $db->prepare('SELECT u.userId, u.userTotpSecret, u.userTotpLastStep,
-                    CEIL(TIMESTAMPDIFF(SECOND, NOW(), u.userAccountLockedTimestamp + INTERVAL ? MINUTE) / 60) AS lockMinutesLeft
+            $statement = $db->prepare('SELECT u.userId, u.userTotpSecret, u.userTotpLastStep
                 FROM `HBHub-Sessions` s JOIN `HBHub-Users` u ON u.userId = s.userId
                 WHERE s.sessionId = ? AND s.sessionTotpPending = 1 AND s.sessionValidUntil > NOW()
                     AND u.userStatus <> ? AND u.userTotpSecret IS NOT NULL');
-            $statement->execute([$lockoutMinutes, $pendingId, LOGIN_STATUS_BANNED]);
+            $statement->execute([$pendingId, LOGIN_STATUS_BANNED]);
             $user = $statement->fetch() ?: null;
         }
 
@@ -129,16 +128,17 @@ function loginCheckTotp(mixed $code, int $attemptsMax, int $lockoutMinutes): ?st
 
         $userId = (int) $user['userId'];
 
-        if ((int) $user['lockMinutesLeft'] > 0) {
+        $lockMinutesLeft = hbHubLoginLockMinutesLeft($db, $userId, $lockoutMinutes);
+        if ($lockMinutesLeft > 0) {
             loginCancelPending();
-            return loginLockedMessage((int) $user['lockMinutesLeft']);
+            return hbHubLoginLockedMessage($lockMinutesLeft);
         }
 
         $step = hbHubTotpVerify($user['userTotpSecret'], $code, $user['userTotpLastStep'] !== null ? (int) $user['userTotpLastStep'] : null);
         if ($step === null) {
-            if (loginRecordFailure($db, $userId, $attemptsMax)) {
+            if (hbHubLoginRecordFailure($db, $userId, $attemptsMax)) {
                 loginCancelPending();
-                return 'Too many wrong codes. ' . loginLockedMessage($lockoutMinutes);
+                return 'Too many wrong codes. ' . hbHubLoginLockedMessage($lockoutMinutes);
             }
             return 'That code isn\'t right. Please try again.';
         }
@@ -211,9 +211,9 @@ function loginCancelPending(): void
 }
 
 /**
- * Logs the user in, once the password (and 2FA code) were right: resets the wrong password count and the lock,
- * and stores a new session. Run inside a transaction, then pass the id to hbHubSetSessionCookie() once committed.
- * A browser marked for this account being banned isn't anymore, as it's been unbanned since.
+ * Logs the user in, once the password (and 2FA code) were right: makes the browser a known device for the account
+ * (loginLimit.php) and stores a new session. Run inside a transaction, then pass the id to hbHubSetSessionCookie()
+ * once committed. A browser marked for this account being banned isn't anymore, as it's been unbanned since.
  */
 function loginFinish(PDO $db, int $userId): string
 {
@@ -223,28 +223,16 @@ function loginFinish(PDO $db, int $userId): string
         hbHubClearBannedCookie();
     }
 
-    $db->prepare('UPDATE `HBHub-Users` SET userFailedLoginCount = 0, userAccountLockedTimestamp = NULL, userStatus = ?,
-            userLastSeenTimestamp = NOW(), userIpv4AdresseLastAccessed = ?, userIpv6AdresseLastAccessed = ? WHERE userId = ?')
+    // From a new browser the right password lifts the lock that new browsers share. From a known device it only lifts
+    // that device's own lock (hbHubLoginTrustDevice()), so logging in on your phone doesn't let someone carry on guessing.
+    $isKnownDevice = hbHubKnownDevice($db, $userId) !== null;
+    $db->prepare('UPDATE `HBHub-Users` SET ' . ($isKnownDevice ? '' : 'userFailedLoginCount = 0, userAccountLockedTimestamp = NULL, ')
+            . 'userStatus = ?, userLastSeenTimestamp = NOW(), userIpv4AdresseLastAccessed = ?, userIpv6AdresseLastAccessed = ?
+        WHERE userId = ?')
         ->execute([LOGIN_STATUS_ONLINE, $ipv4, $ipv6, $userId]);
+    hbHubLoginTrustDevice($db, $userId);
 
     return hbHubCreateSession($db, $userId);
-}
-
-/**
- * Counts a wrong password or code. Returns true when that locked the account.
- */
-function loginRecordFailure(PDO $db, int $userId, int $attemptsMax): bool
-{
-    $db->prepare('UPDATE `HBHub-Users` SET userFailedLoginCount = LEAST(userFailedLoginCount + 1, 65535) WHERE userId = ?')
-        ->execute([$userId]);
-
-    // The count starts over once locked, so there are $attemptsMax new tries after the lock runs out.
-    // The WHERE makes sure only one of several simultaneous wrong attempts does the locking.
-    $lock = $db->prepare('UPDATE `HBHub-Users` SET userFailedLoginCount = 0, userAccountLockedTimestamp = NOW(),
-            userStatus = IF(userStatus = ' . LOGIN_STATUS_BANNED . ', userStatus, ' . LOGIN_STATUS_LOCKED . ')
-        WHERE userId = ? AND userFailedLoginCount >= ?');
-    $lock->execute([$userId, $attemptsMax]);
-    return $lock->rowCount() > 0;
 }
 
 function loginPendingId(): ?string
@@ -273,9 +261,4 @@ function loginClearPendingCookie(): void
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
-}
-
-function loginLockedMessage(int $minutes): string
-{
-    return 'This account is locked. Please try again in ' . $minutes . ($minutes === 1 ? ' minute.' : ' minutes.');
 }

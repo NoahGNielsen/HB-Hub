@@ -151,7 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$onboardingErrors) {
             require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/onboardingSaveToDB.php';
-            $onboardingErrors = onboardingSaveToDB($onboardingValues, $password, $avatarBlob, $avatarType);
+            // A whole class signing up at school shares one address, so the default leaves room for that
+            $onboardingAccountsPerHour = max(1, (int) ($siteConfig['onboarding_accounts_per_ip_hour'] ?? 20));
+            $onboardingErrors = onboardingSaveToDB($onboardingValues, $password, $avatarBlob, $avatarType, $onboardingAccountsPerHour);
             if (!$onboardingErrors) {
                 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
                 hbHubSetToast('onboarding');

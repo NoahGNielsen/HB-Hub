@@ -44,7 +44,8 @@ function hbHubCasinoPage(array $user): void
 
 /**
  * For the casino's JSON endpoints: sends the JSON headers, and answers 403 with {"error": "blocked"} (blocked in
- * settings), "closed" (not open to the user) or "forbidden" (a POST from another site) and stops when it can't go on.
+ * settings) or "closed" (not open to the user) and stops when it can't go on.
+ * A POST from another site never gets this far, session.php turns those away for the whole site.
  */
 function hbHubCasinoJson(array $user): void
 {
@@ -54,7 +55,6 @@ function hbHubCasinoJson(array $user): void
     $error = match (true) {
         hbHubBlockIsActive(hbHubBlockSettings(hbHubUserSettings($user['userSettings'] ?? null))) => 'blocked',
         !hbHubCasinoIsOpenTo($user) => 'closed',
-        $_SERVER['REQUEST_METHOD'] === 'POST' && !hbHubCasinoIsSameSite() => 'forbidden',
         default => null,
     };
 
@@ -63,19 +63,4 @@ function hbHubCasinoJson(array $user): void
         echo json_encode(['error' => $error]);
         exit;
     }
-}
-
-/**
- * Whether the request came from the site's own pages. The session cookie is SameSite=Lax, so other sites can't send
- * it with a POST anyway - this is just a second lock on the door, as POSTs here spend chips.
- */
-function hbHubCasinoIsSameSite(): bool
-{
-    $fetchSite = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? null;
-    if ($fetchSite !== null) {
-        return $fetchSite === 'same-origin';
-    }
-    // Older browsers without Sec-Fetch-Site still send Origin with a POST
-    $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
-    return $origin === null || $origin === 'https://' . ($_SERVER['HTTP_HOST'] ?? '');
 }

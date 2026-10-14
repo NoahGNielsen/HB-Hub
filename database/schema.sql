@@ -200,6 +200,21 @@ CREATE TABLE `HBHub-Chats` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-LoginDevices`
+--
+
+CREATE TABLE `HBHub-LoginDevices` (
+  `deviceTokenHash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'SHA-256 of the hbHubDevice cookie',
+  `userId` int UNSIGNED NOT NULL,
+  `deviceFailedLoginCount` smallint UNSIGNED NOT NULL DEFAULT '0',
+  `deviceLockedTimestamp` datetime DEFAULT NULL,
+  `deviceCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deviceLastUsedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Last login from it, a known device for 180 days after'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Browsers that have logged in to the account, with their own login lock (src/assets/php/loginLimit.php)';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Messages`
 --
 
@@ -362,6 +377,13 @@ ALTER TABLE `HBHub-Chats`
   ADD KEY `fk_chats_icon` (`chatIconAttachmentId`);
 
 --
+-- Indexes for table `HBHub-LoginDevices`
+--
+ALTER TABLE `HBHub-LoginDevices`
+  ADD PRIMARY KEY (`deviceTokenHash`,`userId`),
+  ADD KEY `userLastUsed` (`userId`,`deviceLastUsedTimestamp`);
+
+--
 -- Indexes for table `HBHub-Messages`
 --
 ALTER TABLE `HBHub-Messages`
@@ -518,6 +540,12 @@ ALTER TABLE `HBHub-ChatMembers`
 --
 ALTER TABLE `HBHub-Chats`
   ADD CONSTRAINT `fk_chats_icon` FOREIGN KEY (`chatIconAttachmentId`) REFERENCES `HBHub-Attachments` (`attachmentId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-LoginDevices`
+--
+ALTER TABLE `HBHub-LoginDevices`
+  ADD CONSTRAINT `fk_logindevices_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Messages`

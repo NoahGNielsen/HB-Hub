@@ -12,6 +12,7 @@ const HBHUB_TOASTS = [
     'totpOff' => 'Two-factor login is now off.',
     'blockPending' => 'Saved. Your block will change later, see the settings for when.',
     'logout' => 'You are now logged out.',
+    'lockedOut' => 'Too many wrong passwords or codes, so you have been logged out.',
     'accountDeleted' => 'Your account has been deleted. Goodbye!',
     // The admin panel (admin/user.php)
     'adminSaved' => 'Saved.',
