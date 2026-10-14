@@ -26,7 +26,7 @@
 //
 // Every player's part of a round is stored when it's paid out (hbHubBlackjackRecordPlayer()), for the leaderboard.
 require_once __DIR__ . '/cards.php';
-require_once __DIR__ . '/../casino/wallet.php';
+require_once __DIR__ . '/../wallet.php';
 
 const HBHUB_BLACKJACK_GAME = 'blackjack'; // transactionGame in HBHub-CasinoTransactions
 const HBHUB_BLACKJACK_PHASES = ['waiting' => 1, 'betting' => 2, 'insurance' => 3, 'playing' => 4, 'dealer' => 5, 'results' => 6]; // roomPhase

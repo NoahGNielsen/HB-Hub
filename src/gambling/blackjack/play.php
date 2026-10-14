@@ -12,7 +12,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/blackjack/room.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/room.php';
 hbHubCasinoJson($hbHubUser); // blocked in settings, or not open yet
 
 $db = hbHubDatabase();

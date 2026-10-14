@@ -30,7 +30,6 @@ function casinoCountdown(int $seconds): string
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="casino">
         <h1>Casino</h1>
-        <p class="casino-intro">Every game here is played with virtual chips. They're just for fun: there's no real money, and chips can't be bought or cashed out.</p>
 
         <div class="casino-overview">
             <section class="casino-card" aria-labelledby="casino-chips-title">
@@ -47,7 +46,6 @@ function casinoCountdown(int $seconds): string
                 <h2 id="casino-daily-title">Daily chips</h2>
                 <p class="casino-hint">
                     Collect <?= number_format($casinoDaily['amount']) ?> free chips once a day.
-                    A new day starts at 3 AM Danish time, and days you miss don't add up.
                 </p>
                 <button type="button" class="casino-btn casino-btn-primary" data-casino-claim<?= $casinoDaily['ready'] ? '' : ' disabled' ?>>Collect daily chips</button>
                 <p class="casino-daily-timer" role="timer" data-casino-daily-timer>
@@ -64,12 +62,6 @@ function casinoCountdown(int $seconds): string
                     <a class="casino-game" href="/gambling/blackjack/">
                         <span class="casino-game-name">Blackjack</span>
                         <span class="casino-game-text">Get closer to 21 than the dealer without going over, alone or with up to 5 players.</span>
-                    </a>
-                </li>
-                <li>
-                    <a class="casino-game" href="/gambling/blackjack/leaderboard">
-                        <span class="casino-game-name">Blackjack leaderboard</span>
-                        <span class="casino-game-text">Who wins the most hands, and who has the most chips.</span>
                     </a>
                 </li>
             </ul>

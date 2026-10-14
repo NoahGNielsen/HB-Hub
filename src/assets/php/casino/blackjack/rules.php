@@ -18,6 +18,5 @@
     </li>
     <li>
         Joining during a hand, you're dealt in from the next one. Sit out to skip hands without leaving.
-        If you're away for <?= HBHUB_BLACKJACK_AWAY_SECONDS ?> seconds your hand stands, and after <?= HBHUB_BLACKJACK_GRACE_SECONDS ?> seconds you leave the table.
     </li>
 </ul>

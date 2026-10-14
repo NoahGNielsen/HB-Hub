@@ -95,7 +95,7 @@ CREATE TABLE `HBHub-BlackjackRooms` (
   `roomPhase` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Waiting for bets\r\n2 Betting\r\n3 Insurance\r\n4 Players'' turns\r\n5 Dealer''s turn\r\n6 Results (the same as in roomState)',
   `roomRevision` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Goes up on every change, so the table can tell when nothing changed since it last asked',
   `roomDeadline` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in milliseconds when a timer runs out and the round moves on by itself, NULL when nothing is timed',
-  `roomState` json NOT NULL COMMENT 'The shoe, bets and hands (src/assets/php/blackjack/round.php). Never sent to players as it is, as it has the hole card and the order of the cards',
+  `roomState` json NOT NULL COMMENT 'The shoe, bets and hands (src/assets/php/casino/blackjack/round.php). Never sent to players as it is, as it has the hole card and the order of the cards',
   `roomCreatedTimestamp` datetime NOT NULL COMMENT 'UTC'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

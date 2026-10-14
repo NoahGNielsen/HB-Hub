@@ -7,7 +7,7 @@
 return [
     'icon' => '/assets/images/icons/dice.png',
     'kinds' => [
-        // The host of a Blackjack table invited the user (assets/php/blackjack/room.php). Data: roomId, roomName.
+        // The host of a Blackjack table invited the user (assets/php/casino/blackjack/room.php). Data: roomId, roomName.
         // The lobby lists their invites with a Join button, as joining is a form post.
         'blackjackInvite' => [
             'text' => static fn (array $data): string => 'invited you to Blackjack at ' . ($data['roomName'] ?? 'their table'),
