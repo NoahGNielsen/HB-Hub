@@ -61,11 +61,10 @@ function casinoCountdown(int $seconds): string
             <h2 id="casino-games-title">Games</h2>
             <ul class="casino-game-list">
                 <li>
-                    <div class="casino-game is-soon">
+                    <a class="casino-game" href="/gambling/blackjack/">
                         <span class="casino-game-name">Blackjack</span>
-                        <span class="casino-game-text">Get closer to 21 than the dealer, with up to 5 players at a table.</span>
-                        <span class="casino-game-badge">Coming soon</span>
-                    </div>
+                        <span class="casino-game-text">Get closer to 21 than the dealer without going over.</span>
+                    </a>
                 </li>
             </ul>
         </section>
