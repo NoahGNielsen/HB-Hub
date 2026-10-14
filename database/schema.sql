@@ -215,6 +215,82 @@ CREATE TABLE `HBHub-LoginDevices` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-MatadorChat`
+--
+
+CREATE TABLE `HBHub-MatadorChat` (
+  `chatMessageId` int UNSIGNED NOT NULL,
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who wrote it',
+  `chatText` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `chatTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-MatadorInvites`
+--
+
+CREATE TABLE `HBHub-MatadorInvites` (
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who is invited',
+  `invitedByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The host who invited them, NULL for their own seat kept after they left, or once that account is gone',
+  `inviteSeat` tinyint UNSIGNED DEFAULT NULL COMMENT 'The seat kept for them in a game that has started, NULL for an invite before it starts',
+  `inviteTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-MatadorRooms`
+--
+
+CREATE TABLE `HBHub-MatadorRooms` (
+  `roomId` int UNSIGNED NOT NULL,
+  `roomName` varchar(48) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT '1 Public (listed in the lobby)\r\n2 Invite-only (only invited users can join, also with the code)\r\n3 Code (anyone with the code can join)',
+  `roomCode` char(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Join code: capital letters and digits, without 0 O 1 I L',
+  `roomHostUserId` int UNSIGNED DEFAULT NULL,
+  `roomOwnerUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who opened the game: it''s saved in their slot in HBHub-MatadorSaves',
+  `roomPhase` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Waiting for players\r\n2 A saved game waiting for its players\r\n3 Being played\r\n4 Won (the same as in roomState)',
+  `roomRevision` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Goes up on every change, so the game can tell when nothing changed since it last asked',
+  `roomState` json NOT NULL COMMENT 'The game (src/assets/php/games/matador/game.php). Never sent to players as it is, as it has the order of the cards',
+  `roomCreatedTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-MatadorSaves`
+--
+
+CREATE TABLE `HBHub-MatadorSaves` (
+  `userId` int UNSIGNED NOT NULL COMMENT 'Whose save slot: one saved game per user',
+  `saveName` varchar(48) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `saveState` json NOT NULL COMMENT 'The game as roomState had it',
+  `saveSummary` json NOT NULL COMMENT 'The players and the round, for the Matador page',
+  `saveRoomId` int UNSIGNED DEFAULT NULL COMMENT 'The room playing it right now, which saves to it after every change. NULL when nobody is',
+  `saveTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-MatadorSeats`
+--
+
+CREATE TABLE `HBHub-MatadorSeats` (
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `seatNumber` tinyint UNSIGNED NOT NULL COMMENT '1-4, the player''s seat in roomState (the turn order is drawn when the game starts)',
+  `seatJoinedTimestamp` datetime NOT NULL COMMENT 'UTC',
+  `seatLastSeenTimestamp` datetime NOT NULL COMMENT 'UTC, kept up to date while the game is open, to tell who is away'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Messages`
 --
 
@@ -401,6 +477,47 @@ ALTER TABLE `HBHub-LoginDevices`
   ADD KEY `userLastUsed` (`userId`,`deviceLastUsedTimestamp`);
 
 --
+-- Indexes for table `HBHub-MatadorChat`
+--
+ALTER TABLE `HBHub-MatadorChat`
+  ADD PRIMARY KEY (`chatMessageId`),
+  ADD KEY `roomMessage` (`roomId`,`chatMessageId`),
+  ADD KEY `userTime` (`userId`,`chatTimestamp`);
+
+--
+-- Indexes for table `HBHub-MatadorInvites`
+--
+ALTER TABLE `HBHub-MatadorInvites`
+  ADD PRIMARY KEY (`roomId`,`userId`),
+  ADD KEY `userId` (`userId`),
+  ADD KEY `fk_matadorinvites_by` (`invitedByUserId`);
+
+--
+-- Indexes for table `HBHub-MatadorRooms`
+--
+ALTER TABLE `HBHub-MatadorRooms`
+  ADD PRIMARY KEY (`roomId`),
+  ADD UNIQUE KEY `roomCode` (`roomCode`),
+  ADD KEY `typePhase` (`roomType`,`roomPhase`),
+  ADD KEY `fk_matadorrooms_host` (`roomHostUserId`),
+  ADD KEY `fk_matadorrooms_owner` (`roomOwnerUserId`);
+
+--
+-- Indexes for table `HBHub-MatadorSaves`
+--
+ALTER TABLE `HBHub-MatadorSaves`
+  ADD PRIMARY KEY (`userId`),
+  ADD KEY `fk_matadorsaves_room` (`saveRoomId`);
+
+--
+-- Indexes for table `HBHub-MatadorSeats`
+--
+ALTER TABLE `HBHub-MatadorSeats`
+  ADD PRIMARY KEY (`roomId`,`seatNumber`),
+  ADD UNIQUE KEY `userId` (`userId`) COMMENT 'One game at a time',
+  ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
+
+--
 -- Indexes for table `HBHub-Messages`
 --
 ALTER TABLE `HBHub-Messages`
@@ -482,6 +599,18 @@ ALTER TABLE `HBHub-CasinoTransactions`
 --
 ALTER TABLE `HBHub-Chats`
   MODIFY `chatId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-MatadorChat`
+--
+ALTER TABLE `HBHub-MatadorChat`
+  MODIFY `chatMessageId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-MatadorRooms`
+--
+ALTER TABLE `HBHub-MatadorRooms`
+  MODIFY `roomId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `HBHub-Messages`
@@ -576,6 +705,42 @@ ALTER TABLE `HBHub-Chats`
 --
 ALTER TABLE `HBHub-LoginDevices`
   ADD CONSTRAINT `fk_logindevices_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-MatadorChat`
+--
+ALTER TABLE `HBHub-MatadorChat`
+  ADD CONSTRAINT `fk_matadorchat_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-MatadorRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_matadorchat_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-MatadorInvites`
+--
+ALTER TABLE `HBHub-MatadorInvites`
+  ADD CONSTRAINT `fk_matadorinvites_by` FOREIGN KEY (`invitedByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_matadorinvites_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-MatadorRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_matadorinvites_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-MatadorRooms`
+--
+ALTER TABLE `HBHub-MatadorRooms`
+  ADD CONSTRAINT `fk_matadorrooms_host` FOREIGN KEY (`roomHostUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_matadorrooms_owner` FOREIGN KEY (`roomOwnerUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-MatadorSaves`
+--
+ALTER TABLE `HBHub-MatadorSaves`
+  ADD CONSTRAINT `fk_matadorsaves_room` FOREIGN KEY (`saveRoomId`) REFERENCES `HBHub-MatadorRooms` (`roomId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_matadorsaves_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-MatadorSeats`
+--
+ALTER TABLE `HBHub-MatadorSeats`
+  ADD CONSTRAINT `fk_matadorseats_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-MatadorRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_matadorseats_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Messages`
