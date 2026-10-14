@@ -37,6 +37,37 @@ CREATE TABLE `HBHub-Attachments` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-CasinoTransactions`
+--
+
+CREATE TABLE `HBHub-CasinoTransactions` (
+  `transactionId` bigint UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `transactionAmount` bigint NOT NULL COMMENT 'Chips added (positive) or taken (negative)',
+  `transactionBalance` bigint NOT NULL COMMENT 'walletChips right after the change',
+  `transactionReason` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'start (starting chips), dailyBonus, or the game''s own, like bet and payout',
+  `transactionGame` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'NULL for the casino''s own changes (start, dailyBonus), otherwise the game, like blackjack',
+  `transactionReference` bigint UNSIGNED DEFAULT NULL COMMENT 'The game''s id for what it was about, like the blackjack round',
+  `transactionTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-CasinoWallets`
+--
+
+CREATE TABLE `HBHub-CasinoWallets` (
+  `userId` int UNSIGNED NOT NULL,
+  `walletChips` bigint NOT NULL COMMENT 'Only changed through hbHubCasinoChange() (src/assets/php/casino/wallet.php), which logs it in HBHub-CasinoTransactions',
+  `walletDailyDay` date DEFAULT NULL COMMENT 'The casino day (Danish date, starting at 3 AM) the daily chips were last collected on, NULL if never',
+  `walletCreatedTimestamp` datetime NOT NULL COMMENT 'UTC',
+  CONSTRAINT `chk_casinowallets_chips` CHECK (`walletChips` >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-ChatMembers`
 --
 
@@ -163,6 +194,20 @@ ALTER TABLE `HBHub-Attachments`
   ADD KEY `attachmentType` (`attachmentType`);
 
 --
+-- Indexes for table `HBHub-CasinoTransactions`
+--
+ALTER TABLE `HBHub-CasinoTransactions`
+  ADD PRIMARY KEY (`transactionId`),
+  ADD KEY `userTime` (`userId`,`transactionTimestamp`),
+  ADD KEY `gameReference` (`transactionGame`,`transactionReference`);
+
+--
+-- Indexes for table `HBHub-CasinoWallets`
+--
+ALTER TABLE `HBHub-CasinoWallets`
+  ADD PRIMARY KEY (`userId`);
+
+--
 -- Indexes for table `HBHub-ChatMembers`
 --
 ALTER TABLE `HBHub-ChatMembers`
@@ -225,6 +270,12 @@ ALTER TABLE `HBHub-Attachments`
   MODIFY `attachmentId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `HBHub-CasinoTransactions`
+--
+ALTER TABLE `HBHub-CasinoTransactions`
+  MODIFY `transactionId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-Chats`
 --
 ALTER TABLE `HBHub-Chats`
@@ -251,6 +302,18 @@ ALTER TABLE `HBHub-Users`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `HBHub-CasinoTransactions`
+--
+ALTER TABLE `HBHub-CasinoTransactions`
+  ADD CONSTRAINT `fk_casinotransactions_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-CasinoWallets`
+--
+ALTER TABLE `HBHub-CasinoWallets`
+  ADD CONSTRAINT `fk_casinowallets_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-ChatMembers`

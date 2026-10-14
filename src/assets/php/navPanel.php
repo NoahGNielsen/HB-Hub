@@ -3,6 +3,8 @@
 // and pages open to visitors (session.php's $hbHubUser is null) get a "Log in" link instead.
 // With notifications turned on in settings, every page also checks for new messages (notifications.js).
 // The bell lists the logged in user's notifications (notificationBell.js), with the number of unread ones on it.
+// Casino pages set $navCasinoChips (the user's chips) before including this, to show them in the top bar too,
+// kept up to date by casino.js.
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/userAvatar.php';
 require_once __DIR__ . '/userSettings.php';
@@ -21,6 +23,8 @@ if ($navUser !== null) {
     }
 }
 
+$navCasinoChips ??= null;
+
 $navSection = explode('/', trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'))[0];
 $navItems = [
     'chat'     => ['label' => 'Chat',     'icon' => 'chat.png'],
@@ -31,6 +35,13 @@ $navItems = [
 <header class="nav-top">
     <a class="nav-brand" href="/">HB Hub</a>
     <div class="nav-top-actions">
+        <?php if ($navCasinoChips !== null): ?>
+            <a class="nav-chips" href="/gambling/" title="Your chips">
+                <img class="nav-chips-icon" src="/assets/images/icons/chip.svg" alt="">
+                <span data-casino-chips="<?= (int) $navCasinoChips ?>"><?= number_format($navCasinoChips) ?></span>
+                <span class="nav-visually-hidden">chips</span>
+            </a>
+        <?php endif; ?>
         <?php if ($navUser !== null): ?>
             <div class="nav-notifications" data-notifications>
                 <button type="button" class="nav-icon-btn nav-bell" aria-expanded="false" aria-controls="nav-notifications-panel"
@@ -71,4 +82,7 @@ $navItems = [
 <?php endif; ?>
 <?php if ($navNotifications): ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>" defer></script>
+<?php endif; ?>
+<?php if ($navCasinoChips !== null): ?>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/casino.js?v=<?= filemtime(__DIR__ . '/../js/casino.js') ?>" defer></script>
 <?php endif; ?>
