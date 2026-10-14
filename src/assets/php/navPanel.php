@@ -6,6 +6,7 @@
 // Chat in the side bar has the number of chats with unread messages on it, kept up to date by chatUnread.js.
 // Casino pages set $navCasinoChips (the user's chips) before including this, to show them in the top bar too,
 // kept up to date by casino.js.
+// Site admins also get Admin in the side bar, the admin panel's lists of users and chats (admin/index.php).
 require_once __DIR__ . '/chatUnread.php';
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/userAvatar.php';
@@ -38,6 +39,9 @@ $navItems = [
     'gambling' => ['label' => 'Gambling', 'icon' => 'dice.png'],
     'games'    => ['label' => 'Games',    'icon' => 'controler.png'],
 ];
+if ($navUser !== null && (int) $navUser['userRole'] === 2) { // userRole in HBHub-Users, a site admin
+    $navItems['admin'] = ['label' => 'Admin', 'icon' => 'admin.svg'];
+}
 ?>
 <header class="nav-top">
     <a class="nav-brand" href="/">HB Hub</a>

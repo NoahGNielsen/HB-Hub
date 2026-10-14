@@ -188,7 +188,7 @@ CREATE TABLE `HBHub-Chats` (
   `chatId` int UNSIGNED NOT NULL,
   `chatName` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `chatType` tinyint NOT NULL COMMENT '1 DM''s\r\n2 GDM''s',
-  `chatStatus` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Active\r\n2 Deleted\r\n3 Banned by Admin',
+  `chatStatus` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Active\r\n2 Deleted (everyone left, or a group admin deleted it)\r\n3 Deleted by a site admin (admin panel), at chatBannedTimestamp',
   `chatCreatedBy` int UNSIGNED NOT NULL,
   `chatSettings` json DEFAULT NULL,
   `chatIconAttachmentId` int UNSIGNED DEFAULT NULL,
@@ -230,7 +230,7 @@ CREATE TABLE `HBHub-Messages` (
   `messageIsEdited` tinyint NOT NULL DEFAULT '0',
   `messageReplyToId` bigint UNSIGNED DEFAULT NULL,
   `messageEvent` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 A normal message\r\n1 A notice about a change in the chat, made by userId (messageEventType says which)',
-  `messageEventType` tinyint UNSIGNED DEFAULT NULL COMMENT 'NULL for a normal message\r\n1 Renamed the group (messageContent is the new name, NULL when taken away)\r\n2 Changed the group icon\r\n3 Removed the group icon\r\n4 Changed the background\r\n5 Reset the background\r\n6 Made messageEventUserId a group admin\r\n7 Removed messageEventUserId as group admin\r\n8 Kicked messageEventUserId\r\n9 Joined the group\r\n10 Left the chat\r\n11 Added messageEventUserId to the group\r\n12 Became the group owner when the owner left',
+  `messageEventType` tinyint UNSIGNED DEFAULT NULL COMMENT 'NULL for a normal message\r\n1 Renamed the group (messageContent is the new name, NULL when taken away)\r\n2 Changed the group icon\r\n3 Removed the group icon\r\n4 Changed the background\r\n5 Reset the background\r\n6 Made messageEventUserId a group admin\r\n7 Removed messageEventUserId as group admin\r\n8 Kicked messageEventUserId\r\n9 Joined the group\r\n10 Left the chat\r\n11 Added messageEventUserId to the group\r\n12 Became the group owner when the owner left\r\n100 + one of these: the same change made by a site admin from the admin panel (101 renamed the group), the notice says "A site admin"',
   `messageEventUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who the notice is about (messageEventType 6, 7, 8, 11 and 12)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

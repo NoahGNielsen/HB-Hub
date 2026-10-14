@@ -1,6 +1,7 @@
 <?php
-// Admin panel for one user: /admin/user?user=id. Site admins (userRole 2) open it from "Admin panel" in the chat's
-// right-click menus (on a DM, on someone's message, on a group member) and from the user's profile.
+// Admin panel for one user: /admin/user?user=id. Site admins (userRole 2) open it from the list of users on the admin
+// panel's start page (admin/index.php), from "Admin panel" in the chat's right-click menus (on a DM, on someone's
+// message, on a group member), from a chat's members in its admin panel (admin/chat.php) and from the user's profile.
 // Everyone else gets a 404, so it doesn't show that the page is here.
 //
 // Shows what there is about the user: their account, sessions (their logins), messages in every chat, chats and casino
@@ -9,6 +10,7 @@
 // reset the password, remove two-factor login, log out every session, delete messages and delete the account.
 // Site admins can't be changed here (yourself included), and a deleted account only has its messages left to delete.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
@@ -17,27 +19,15 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
-const ADMIN_ROLE_ADMIN = 2; // userRole in HBHub-Users
 const ADMIN_STATUS_OFFLINE = 2; // userStatus in HBHub-Users (HBHUB_SESSION_STATUS_BANNED is 4)
 const ADMIN_STATUS_LOCKED = 3;
-const ADMIN_CHAT_TYPE_DM = 1; // chatType in HBHub-Chats
-const ADMIN_CHAT_STATUS_ACTIVE = 1; // chatStatus in HBHub-Chats
-const ADMIN_CHAT_ROLES = [1 => 'Member', 2 => 'Group admin', 3 => 'Group owner']; // memberRole in HBHub-ChatMembers
-// messageDeletedByAdmin in HBHub-Messages: 0 by the sender, 1 by a group admin, 2 by a site admin (here)
-const ADMIN_MESSAGE_DELETED_LABELS = [0 => 'Deleted by the user', 1 => 'Deleted by a group admin', 2 => 'Deleted by a site admin'];
-const ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN = 2;
-const ADMIN_MESSAGES_SHOWN = 50; // per page
 const ADMIN_TRANSACTIONS_SHOWN = 25;
 
-if ((int) $hbHubUser['userRole'] !== ADMIN_ROLE_ADMIN) {
-    require $_SERVER['DOCUMENT_ROOT'] . '/assets/php/statusCodesPages/404.php';
-    exit;
-}
+adminOnly($hbHubUser);
 
 $targetId = $_GET['user'] ?? null;
 if (!is_string($targetId) || !ctype_digit($targetId) || strlen($targetId) > 10) {
-    require $_SERVER['DOCUMENT_ROOT'] . '/assets/php/statusCodesPages/404.php';
-    exit;
+    adminNotFound();
 }
 $targetId = (int) $targetId;
 
@@ -57,8 +47,7 @@ $statement = $db->prepare('SELECT userId, userName, userDescription, userSetting
 $statement->execute([$adminLockoutMinutes, $targetId]);
 $target = $statement->fetch();
 if ($target === false) {
-    require $_SERVER['DOCUMENT_ROOT'] . '/assets/php/statusCodesPages/404.php';
-    exit;
+    adminNotFound();
 }
 
 $targetIsDeleted = $target['userStatus'] === null;
@@ -69,20 +58,8 @@ $adminCanChange = !$targetIsDeleted && !$targetIsAdmin;
 $adminCanDeleteMessages = !$targetIsAdmin;
 
 /**
- * The SQL for a chat's name as the admin panel shows it: its own name, otherwise the other members' names
- * (for a DM, just the other person). $memberColumn is the column holding the user the list is about.
- */
-function adminChatTitleSql(string $memberColumn): string
-{
-    return 'COALESCE(NULLIF(c.chatName, \'\'), (
-            SELECT GROUP_CONCAT(ou.userName ORDER BY ou.userName SEPARATOR \', \')
-            FROM `HBHub-ChatMembers` om JOIN `HBHub-Users` ou ON ou.userId = om.userId
-            WHERE om.chatId = c.chatId AND om.userId <> ' . $memberColumn . '
-        ), \'Nobody else\')';
-}
-
-/**
- * Every chat the user is in (message requests too), newest first.
+ * Every chat the user is in (message requests too), newest first. Named after the other members when it has no name
+ * (for a DM, just the other person).
  */
 function adminChats(PDO $db, int $userId): array
 {
@@ -92,7 +69,7 @@ function adminChats(PDO $db, int $userId): array
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
         WHERE cm.userId = ? AND c.chatStatus = ?
         ORDER BY cm.memberJoinedTimestamp DESC');
-    $statement->execute([$userId, ADMIN_CHAT_STATUS_ACTIVE]);
+    $statement->execute([$userId, HBHUB_CHAT_STATUS_ACTIVE]);
     return $statement->fetchAll();
 }
 
@@ -355,21 +332,6 @@ $statement = $db->prepare('SELECT COUNT(*) AS total, COUNT(messageDeletedTimesta
 $statement->execute([$targetId]);
 $adminMessageCounts = $statement->fetch();
 
-$adminStatus = match (true) {
-    $targetIsDeleted => 'Deleted',
-    $targetIsBanned => 'Banned',
-    (bool) $target['isLocked'] => 'Locked',
-    default => 'Active',
-};
-
-/**
- * A database timestamp as the rest of the site shows dates and times, or a dash when there isn't one.
- */
-function adminTime(?string $timestamp): string
-{
-    return $timestamp !== null ? date('d/m/Y H:i', strtotime($timestamp)) : '–';
-}
-
 /**
  * The addresses, IPv4 and/or IPv6, or a dash when neither was saved.
  */
@@ -377,21 +339,6 @@ function adminIps(?string $ipv4, ?string $ipv6): string
 {
     $ips = array_filter([$ipv4, $ipv6], fn (?string $ip): bool => $ip !== null && $ip !== '');
     return $ips !== [] ? implode(' / ', $ips) : '–';
-}
-
-/**
- * A message's text for the message list, as HTML: GIFs and attachments are named, not shown.
- */
-function adminMessageHtml(array $message): string
-{
-    $content = $message['messageContent'];
-    if ($content === null) {
-        return '<span class="admin-muted">' . ($message['attachmentId'] !== null ? 'Attachment' : 'Empty') . '</span>';
-    }
-    if (preg_match('~^https://media\.giphy\.com/media/[A-Za-z0-9]{1,64}/giphy\.gif$~', $content) === 1) {
-        return '<span class="admin-muted">GIF</span> <span class="admin-small">' . htmlspecialchars($content) . '</span>';
-    }
-    return nl2br(htmlspecialchars($content));
 }
 ?>
 <!DOCTYPE html>
@@ -407,7 +354,7 @@ function adminMessageHtml(array $message): string
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="settings admin">
-        <p class="admin-kicker">Admin panel</p>
+        <a class="admin-kicker" href="/admin/">&larr; Admin panel</a>
 
         <!-- Who it is -->
         <section class="settings-card admin-header" id="overview" aria-labelledby="admin-name-heading">
@@ -419,7 +366,7 @@ function adminMessageHtml(array $message): string
             <div class="admin-header-text">
                 <h1 id="admin-name-heading">
                     <?= htmlspecialchars($target['userName']) ?>
-                    <span class="settings-status<?= $adminStatus === 'Active' ? ' is-on' : ' admin-status-' . strtolower($adminStatus) ?>"><?= $adminStatus ?></span>
+                    <?= adminStatusHtml(adminUserStatus($target)) ?>
                     <?php if ($targetIsAdmin): ?>
                         <span class="settings-status">Site admin</span>
                     <?php endif; ?>
@@ -710,10 +657,10 @@ function adminMessageHtml(array $message): string
                                 <tr<?= $isDeleted ? ' class="is-deleted"' : '' ?>>
                                     <td class="admin-nowrap"><?= adminTime($message['messageSentTimestamp']) ?></td>
                                     <td>
-                                        <?= htmlspecialchars($message['chatTitle']) ?>
+                                        <a class="admin-link" href="/admin/chat?chat=<?= (int) $message['chatId'] ?>"><?= htmlspecialchars($message['chatTitle']) ?></a>
                                         <span class="admin-small">
-                                            <?= (int) $message['chatType'] === ADMIN_CHAT_TYPE_DM ? 'DM' : 'Group' ?><?=
-                                            (int) $message['chatStatus'] !== ADMIN_CHAT_STATUS_ACTIVE ? ', chat deleted' : '' ?>
+                                            <?= (int) $message['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?><?=
+                                            (int) $message['chatStatus'] !== HBHUB_CHAT_STATUS_ACTIVE ? ', chat deleted' : '' ?>
                                         </span>
                                     </td>
                                     <td class="admin-message-text">
@@ -769,8 +716,8 @@ function adminMessageHtml(array $message): string
                         <tbody>
                             <?php foreach ($adminChats as $chat): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($chat['chatTitle']) ?></td>
-                                    <td><?= (int) $chat['chatType'] === ADMIN_CHAT_TYPE_DM ? 'DM' : 'Group' ?></td>
+                                    <td><a class="admin-link" href="/admin/chat?chat=<?= (int) $chat['chatId'] ?>"><?= htmlspecialchars($chat['chatTitle']) ?></a></td>
+                                    <td><?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?></td>
                                     <td><?= (int) $chat['memberCount'] ?></td>
                                     <td><?= $chat['userAcknowledgedJoin'] ? htmlspecialchars(ADMIN_CHAT_ROLES[(int) $chat['memberRole']] ?? 'Member') : 'Not accepted yet' ?></td>
                                     <td class="admin-nowrap"><?= adminTime($chat['memberJoinedTimestamp']) ?></td>

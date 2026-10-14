@@ -38,7 +38,7 @@
 | 🛡️ **Login protection** | Password strength rules, a common-password list and lockout after failed attempts. Devices you've logged in on before have their own lock, so nobody can lock you out by guessing |
 | ⏳ **Self-blocking** | Block the Games and Gambling pages during school hours or all the time. Turning a block off doesn't happen straight away |
 | 👤 **Profiles** | Profile picture, name, year, class and bio |
-| 🛠️ **Admin panel** | Site admins right-click a user for their info, logins and messages, and can ban, edit, reset or delete them |
+| 🛠️ **Admin panel** | Site admins pick any user or chat from a list (or right-click one in the chat). Users: info, logins and messages, and ban, edit, reset or delete them. Chats: members and messages, and rename, remove the icon, change the background, kick members or delete it |
 | 🧰 **Maintenance mode** | Turn off logins and show a message from the site config |
 
 ## 🧱 Tech stack

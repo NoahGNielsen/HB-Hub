@@ -541,7 +541,8 @@ function chatShowBackground(element, background) {
 // In a DM the other person's profile can be opened (otherPages/profile.php) and they can be given a nickname.
 // Group admins can also change the group's name or icon, or delete it.
 // Group admins and both people in a DM can change the chat's background.
-// Site admins also get Admin panel on a DM, which opens the other person's admin panel (admin/user.php).
+// Site admins also get Admin panel, which opens the other person's admin panel on a DM (admin/user.php)
+// and the chat's own on a group, or on a DM the other person left (admin/chat.php).
 // Every action is a plain form post - the server checks who's allowed to do what.
 (() => {
     const menu = document.querySelector('[data-chat-menu]');
@@ -579,13 +580,14 @@ function chatShowBackground(element, background) {
             const isMuted = item.hasAttribute('data-chat-muted');
             muteItem.hidden = isMuted;
             menu.querySelector('[data-menu-action="unmute"]').hidden = !isMuted;
-            // Nobody's profile or admin panel to open in a group, or a DM the other person left
+            // Nobody's profile to open in a group, or a DM the other person left. Their admin panel is the chat's own then.
             const dmUserId = isGroup ? undefined : item.dataset.chatUserId;
             profileItem.hidden = dmUserId === undefined;
             if (dmUserId !== undefined) profileItem.href = '/otherPages/profile?user=' + dmUserId;
             siteAdminItems.forEach((menuItem) => {
-                menuItem.hidden = dmUserId === undefined;
-                if (menuItem instanceof HTMLAnchorElement && dmUserId !== undefined) menuItem.href = '/admin/user?user=' + dmUserId;
+                if (menuItem instanceof HTMLAnchorElement) {
+                    menuItem.href = dmUserId !== undefined ? '/admin/user?user=' + dmUserId : '/admin/chat?chat=' + item.dataset.chatId;
+                }
             });
             closeMuteMenu(false);
         },

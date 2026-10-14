@@ -1,6 +1,7 @@
-// Admin panel (admin/user.php): asks "are you sure?" before the forms with data-confirm (ban, delete and so on),
-// and Generate fills in a random password for Reset password, shown so it can be passed on to the user.
-// Without JS the forms are sent straight away, and the password has to be typed in.
+// Admin panel (admin/user.php and admin/chat.php): asks "are you sure?" before the forms with data-confirm (ban, delete,
+// kick and so on), Generate fills in a random password for Reset password, shown so it can be passed on to the user,
+// and the chat's Background card shows the gradient as it's picked.
+// Without JS the forms are sent straight away, the password has to be typed in and there's no preview.
 (() => {
     for (const form of document.querySelectorAll('form[data-confirm]')) {
         form.addEventListener('submit', (event) => {
@@ -9,7 +10,9 @@
             }
         });
     }
+})();
 
+(() => {
     const generate = document.querySelector('[data-password-generate]');
     if (!generate) return;
     const input = document.querySelector('#admin-new-password');
@@ -40,4 +43,20 @@
         input.focus();
         input.select();
     });
+})();
+
+// Background (admin/chat.php): the preview shows the gradient from the two colors, going the way the picked arrow points.
+// Set from here, as the site's content security policy doesn't allow style attributes.
+(() => {
+    const preview = document.querySelector('[data-background-preview]');
+    if (!preview) return;
+    const form = preview.closest('form');
+
+    function showPreview() {
+        const { color1, color2, angle } = form.elements;
+        preview.style.backgroundImage = `linear-gradient(${angle.value}deg, ${color1.value}, ${color2.value})`;
+    }
+
+    showPreview();
+    form.addEventListener('input', showPreview);
 })();

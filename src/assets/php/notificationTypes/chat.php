@@ -1,5 +1,6 @@
 <?php
-// Chat notifications (types "chat.<kind>"), sent from chat/index.php. See assets/php/notifications.php.
+// Chat notifications (types "chat.<kind>"), sent from chat/index.php and the admin panel (admin/chat.php).
+// See assets/php/notifications.php.
 //
 // Each kind's text is what comes after the name of who did it, like "<strong>Alice</strong> kicked you from Gamers".
 // A notification without anyone who did it shows the text on its own, so then it has to be the whole sentence.
@@ -22,6 +23,10 @@ return [
         // No link, the user isn't in the group anymore
         'kicked' => [
             'text' => static fn (array $data): string => 'kicked you from ' . $group($data),
+        ],
+        // Kicked from the admin panel, which doesn't say who did it, so this is the whole sentence
+        'kickedBySiteAdmin' => [
+            'text' => static fn (array $data): string => 'A site admin kicked you from ' . $group($data),
         ],
         // The other person left the DM
         'leftDm' => [
