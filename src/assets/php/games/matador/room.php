@@ -299,11 +299,11 @@ function hbHubMatadorPlay(PDO $db, int $roomId, ?callable $action = null): ?arra
 
 /**
  * Whether just looking at the game has to go through hbHubMatadorPlay(), as there's something to move on: someone has
- * been gone for the grace period, or the host isn't in the game.
+ * been gone for the grace period, the host isn't in the game, or the player whose turn it is has run out of time.
  */
 function hbHubMatadorNeedsPlay(array $room, array $seats): bool
 {
-    if (!hbHubMatadorSeated($seats, (int) $room['roomHostUserId'])) {
+    if (!hbHubMatadorSeated($seats, (int) $room['roomHostUserId']) || hbHubMatadorTimeUp($room['state'])) {
         return true;
     }
     foreach ($seats as $seat) {
@@ -586,6 +586,7 @@ function hbHubMatadorStart(PDO $db, array &$room, int $userId): ?string
             return 'Wait for at least ' . HBHUB_MATADOR_MIN_PLAYERS . ' players to be back.';
         }
         $state['phase'] = 'playing';
+        hbHubMatadorResetTimer($state); // the saved deadline is long gone
         hbHubMatadorLog($state, 'The game goes on where it was saved.');
         return null;
     }

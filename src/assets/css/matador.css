@@ -65,6 +65,33 @@
   gap: 8px;
 }
 
+/* Invite, Sound, Save & stop and Leave game: icons, with their names in title and aria-label */
+.mt-icon-btn {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mt-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The sound button shows the icon for how it is now (aria-pressed, set by matadorGame.js) */
+.mt-icon-btn[aria-pressed="true"] .mt-icon-sound-off,
+.mt-icon-btn[aria-pressed="false"] .mt-icon-sound-on {
+  display: none;
+}
+
 /* The join code: a click copies it */
 .mt-code {
   padding: 8px 14px;
@@ -394,6 +421,48 @@
   margin: 0;
   font-size: clamp(0.85rem, 1.6vw, 1.15rem);
   font-weight: 700;
+}
+
+/* The turn's timer: the bar empties as the time runs out, and turns red near the end */
+.mt-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mt-timer-bar {
+  width: clamp(70px, 16vw, 160px);
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 15%, transparent);
+}
+
+.mt-timer-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  transition: transform 0.25s linear;
+}
+
+.mt-timer-text {
+  font-size: clamp(0.7rem, 1.2vw, 0.85rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mt-timer.is-low .mt-timer-fill {
+  background: var(--mt-hotel);
+}
+
+.mt-timer.is-low .mt-timer-text {
+  color: var(--mt-hotel);
+}
+
+/* Paused while the player whose turn it is owes money: a full, grey bar */
+.mt-timer.is-paused .mt-timer-fill {
+  background: color-mix(in srgb, var(--text) 35%, transparent);
 }
 
 /* A Prøv lykken card looks like a card in both themes */
@@ -912,5 +981,9 @@
   .mt-die.is-rolling,
   .mt-card.is-new {
     animation: none;
+  }
+
+  .mt-timer-fill {
+    transition: none;
   }
 }

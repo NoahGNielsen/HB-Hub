@@ -47,7 +47,7 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="mt" data-matador data-room="<?= $room['roomId'] ?>">
+    <main class="mt" data-matador data-room="<?= $room['roomId'] ?>" data-turn-seconds="<?= HBHUB_MATADOR_TURN_SECONDS ?>">
         <div class="mt-header">
             <div class="mt-heading">
                 <h1 class="mt-title"><?= htmlspecialchars($room['roomName']) ?></h1>
@@ -64,10 +64,32 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                     <strong class="mt-code-value"><?= htmlspecialchars($room['roomCode']) ?></strong>
                     <span class="mt-code-copied" data-mt-code-copied aria-live="polite"></span>
                 </button>
-                <button type="button" class="casino-btn" title="A ping when it's your turn" data-mt-sound>Sound on</button>
-                <button type="button" class="casino-btn" data-mt-invite hidden>Invite</button>
-                <button type="button" class="casino-btn" data-mt-save-stop hidden>Save &amp; stop</button>
-                <button type="button" class="casino-btn" data-mt-leave>Leave game</button>
+                <!-- Icons drawn in currentColor, so they follow the theme. matadorGame.js sets the sound button's
+                     aria-pressed, which picks the icon shown, and its title. -->
+                <button type="button" class="casino-btn mt-icon-btn" aria-label="Invite people" title="Invite people"
+                        aria-haspopup="dialog" data-mt-invite hidden>
+                    <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>
+                    </svg>
+                </button>
+                <button type="button" class="casino-btn mt-icon-btn" aria-label="Sound" title="Sound" aria-pressed="true" data-mt-sound>
+                    <svg class="mt-icon mt-icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>
+                    </svg>
+                    <svg class="mt-icon mt-icon-sound-off" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>
+                    </svg>
+                </button>
+                <button type="button" class="casino-btn mt-icon-btn" aria-label="Save &amp; stop" title="Save &amp; stop" data-mt-save-stop hidden>
+                    <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>
+                    </svg>
+                </button>
+                <button type="button" class="casino-btn mt-icon-btn" aria-label="Leave game" title="Leave game" data-mt-leave>
+                    <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>
+                    </svg>
+                </button>
             </div>
         </div>
 
@@ -106,6 +128,10 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                     <p class="mt-logo" aria-hidden="true">MATADOR</p>
                     <div class="mt-die" role="img" aria-label="The die" data-mt-die>⚀</div>
                     <p class="mt-status" role="status" data-mt-status>Loading the game…</p>
+                    <div class="mt-timer" data-mt-timer hidden>
+                        <span class="mt-timer-bar" aria-hidden="true"><span class="mt-timer-fill" data-mt-timer-fill></span></span>
+                        <span class="mt-timer-text" data-mt-timer-text></span>
+                    </div>
                     <div class="mt-card" data-mt-card hidden>
                         <p class="mt-card-title">Prøv lykken</p>
                         <p class="mt-card-text" data-mt-card-text></p>

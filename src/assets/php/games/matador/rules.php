@@ -44,6 +44,11 @@
         (or back to the bank). The last player left wins.
     </li>
     <li>
+        You have <?= HBHUB_MATADOR_TURN_SECONDS ?> seconds to do something in your turn, and the time starts again with
+        everything you do. Run out of time and your turn is passed on: a property you landed on stays with the bank.
+        While you owe money the timer is paused, and the game waits for you to pay or go bankrupt.
+    </li>
+    <li>
         The game is saved after every move, in the save slot of whoever opened it. Leave, and your seat is kept for you while
         your turns are skipped. The host can give an empty seat to someone else, or save the game and stop it.
     </li>

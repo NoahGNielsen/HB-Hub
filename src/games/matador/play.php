@@ -11,6 +11,7 @@
 //       getCash, getCards), answer (trade: its id, answer: accept, decline or cancel) and leave
 //     For the host: start, invite (user), giveSeat (seat, user) and saveStop
 //     chat (text) writes in the game's chat (chat.php), for anyone in the game
+//   Anything the player whose turn it is does (not the chat) starts their 30 seconds again (hbHubMatadorPlayerActed()).
 //   The game has the chat's newest messages in "chat", each with the seat of who wrote it (null when they have none).
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore), or "stopped" when it's gone.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -65,15 +66,21 @@ $turn = static fn (callable $move): callable => static function (array &$room) u
     if ($error === null && $state['phase'] === 'playing') {
         $state['turn']['id']++;
     }
+    hbHubMatadorPlayerActed($state, $seat);
     return $error;
 };
 
 /**
- * Anything else a player does in the game, with their seat.
+ * Anything else a player does in the game, with their seat. In their turn it also starts their time again, like a move.
  */
 $player = static fn (callable $do): callable => static function (array &$room) use ($do, $userId): ?string {
     $seat = hbHubMatadorSeatOfUser($room['state'], $userId);
-    return $seat !== null ? $do($room['state'], $seat) : 'You aren\'t playing in this game.';
+    if ($seat === null) {
+        return 'You aren\'t playing in this game.';
+    }
+    $error = $do($room['state'], $seat);
+    hbHubMatadorPlayerActed($room['state'], $seat);
+    return $error;
 };
 
 $field = isset($input['field']) && is_string($input['field']) && ctype_digit($input['field']) && strlen($input['field']) <= 2

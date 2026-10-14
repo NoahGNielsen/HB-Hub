@@ -14,7 +14,8 @@
 //   fields      by field number, the properties: owner (a seat or null for the bank), houses (5 is a hotel), mortgaged
 //   deck        the Prøv lykken cards (cards.php) in the order they'll be drawn
 //   turn        seat, id (goes up with every move, so a double click only counts once), step ('roll', 'wait' while
-//               something has to be answered, 'end') and next (the step after that: 'roll' after a 6)
+//               something has to be answered, 'end'), next (the step after that: 'roll' after a 6) and deadline (in
+//               Unix milliseconds: when the player hasn't done anything by then, their turn is passed on for them)
 //   pending     what the player whose turn it is has to answer: buy (field), tax, or debt (amount, to: a seat or null
 //               for the bank, reason, move: steps to move once it's paid - after the third try in jail)
 //   trades      offers between players: id, from, to, give and get ({fields, cash, cards})
@@ -27,6 +28,7 @@ require_once __DIR__ . '/cards.php';
 const HBHUB_MATADOR_MAX_PLAYERS = 4;
 const HBHUB_MATADOR_MIN_PLAYERS = 2;
 const HBHUB_MATADOR_LOG_KEPT = 40;
+const HBHUB_MATADOR_TURN_SECONDS = 30; // the time a player has to do something in their turn, before it's passed on
 
 function hbHubMatadorNewState(string $roomName, int $roomType): array
 {
@@ -98,6 +100,7 @@ function hbHubMatadorBegin(array &$state): void
     $state['round'] = 1;
     $first = $state['players'][0]['seat'];
     $state['turn'] = ['seat' => $first, 'id' => 1, 'step' => 'roll', 'next' => 'end'];
+    hbHubMatadorResetTimer($state);
     hbHubMatadorLog($state, 'The game has started. ' . hbHubMatadorName($state, $first) . ' goes first.');
 }
 
@@ -565,6 +568,7 @@ function hbHubMatadorNextTurn(array &$state): void
                 $state['round']++;
             }
             $state['turn'] = ['seat' => $state['players'][$i]['seat'], 'id' => $state['turn']['id'] + 1, 'step' => 'roll', 'next' => 'end'];
+            hbHubMatadorResetTimer($state);
             $state['pending'] = null;
             if ($state['lastCard'] !== null) {
                 $state['lastCard']['over'] = true; // only shown in the turn it was drawn in (its n still counts on)
@@ -584,16 +588,65 @@ function hbHubMatadorSettle(array &$state): void
     }
 }
 
+function hbHubMatadorNowMs(): int
+{
+    return (int) floor(microtime(true) * 1000);
+}
+
 /**
- * Moves the game on past players who aren't there: when the player whose turn it is has an empty seat (they left or
- * have been gone too long), what they had to answer is answered for them - they don't buy, pay the cheaper tax, and
- * raise what they owe (hbHubMatadorRaise()) - and their turn is skipped. Waits when nobody still in the game is there.
+ * Gives the player whose turn it is HBHUB_MATADOR_TURN_SECONDS again, from now: when their turn starts, and whenever
+ * they do something in the game (play.php).
+ */
+function hbHubMatadorResetTimer(array &$state): void
+{
+    $state['turn']['deadline'] = hbHubMatadorNowMs() + HBHUB_MATADOR_TURN_SECONDS * 1000;
+}
+
+/**
+ * The seat's player did something in the game (play.php): when it's their turn, they aren't AFK, so their time starts again.
+ */
+function hbHubMatadorPlayerActed(array &$state, int $seat): void
+{
+    if ($state['phase'] === 'playing' && $state['turn']['seat'] === $seat) {
+        hbHubMatadorResetTimer($state);
+    }
+}
+
+/**
+ * Whether the timer is paused: the player whose turn it is owes money, and the game waits for them to raise it or go
+ * bankrupt. Paying it is a move, so they get their full time again after it.
+ */
+function hbHubMatadorTimerPaused(array $state): bool
+{
+    return ($state['pending']['type'] ?? null) === 'debt';
+}
+
+/**
+ * Whether the player whose turn it is has run out of time. Also true for a game from before the timer, which has no
+ * deadline yet, so hbHubMatadorAdvance() gives it one.
+ */
+function hbHubMatadorTimeUp(array $state): bool
+{
+    return $state['phase'] === 'playing' && !hbHubMatadorTimerPaused($state)
+        && ($state['turn']['deadline'] ?? 0) <= hbHubMatadorNowMs();
+}
+
+/**
+ * Moves the game on past players who aren't there or are AFK: when the player whose turn it is has an empty seat (they
+ * left or have been gone too long), or hasn't done anything for HBHUB_MATADOR_TURN_SECONDS, what they had to answer is
+ * answered for them - they don't buy, pay the cheaper tax, and raise what they owe (hbHubMatadorRaise()) - and their
+ * turn is passed on. An empty seat waits when nobody still in the game is there. A player who's there is never made to
+ * raise money or go bankrupt: when they owe money (also from the tax paid for them), the game waits for them.
  */
 function hbHubMatadorAdvance(array &$state): void
 {
+    if ($state['phase'] === 'playing' && !isset($state['turn']['deadline'])) {
+        hbHubMatadorResetTimer($state); // a game from before the timer
+    }
     for ($guard = 0; $guard < 50 && $state['phase'] === 'playing'; $guard++) {
         $player = hbHubMatadorPlayerOf($state, $state['turn']['seat']);
-        if ($player !== null && $player['userId'] !== null && !$player['bankrupt']) {
+        $isHere = $player !== null && $player['userId'] !== null && !$player['bankrupt'];
+        if ($isHere && !hbHubMatadorTimeUp($state)) {
             return;
         }
         $anyoneHere = array_filter(hbHubMatadorActivePlayers($state), static fn (array $other): bool => $other['userId'] !== null);
@@ -604,15 +657,22 @@ function hbHubMatadorAdvance(array &$state): void
         $seat = $state['turn']['seat'];
         for ($answered = 0; $answered < 20 && $state['phase'] === 'playing' && $state['pending'] !== null && $state['turn']['seat'] === $seat; $answered++) {
             $pending = $state['pending'];
+            if ($isHere && $pending['type'] === 'debt') {
+                return; // the timer is paused until they've paid (hbHubMatadorTimerPaused())
+            }
             $state['pending'] = null;
             match ($pending['type']) {
-                'buy' => null,
+                'buy' => hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' didn\'t buy ' . hbHubMatadorFieldName($pending['field'])
+                    . '. It stays with the bank.'),
                 'tax' => hbHubMatadorPayBank($state, $seat, min(HBHUB_MATADOR_TAX_FIXED, hbHubMatadorPercentTax($state, $seat)), 'Indkomstskat'),
                 'debt' => hbHubMatadorRaiseAndPay($state, $seat, $pending),
             };
         }
         if ($state['phase'] === 'playing' && $state['turn']['seat'] === $seat) {
-            if ($player !== null && !$player['bankrupt']) {
+            if ($isHere) {
+                hbHubMatadorLog($state, $player['name'] . ' didn\'t do anything for ' . HBHUB_MATADOR_TURN_SECONDS
+                    . ' seconds, so their turn is passed on.');
+            } elseif ($player !== null && !$player['bankrupt']) {
                 hbHubMatadorLog($state, $player['name'] . ' isn\'t here, so their turn is skipped.');
             }
             hbHubMatadorNextTurn($state);
@@ -1213,6 +1273,11 @@ function hbHubMatadorView(array $state, array $people, array $away, int $userId,
         'fields' => $fields,
         'bank' => $state['phase'] === 'lobby' ? null : hbHubMatadorBank($state),
         'turn' => $state['turn'],
+        // In milliseconds, from when this was worked out: the server's clock and the player's don't have to agree
+        // Null while it isn't counting: the game isn't being played, or the timer is paused
+        'timeLeft' => $state['phase'] === 'playing' && !hbHubMatadorTimerPaused($state)
+            ? max(0, ($state['turn']['deadline'] ?? 0) - hbHubMatadorNowMs())
+            : null,
         'pending' => $pending,
         'trades' => $state['trades'],
         'lastRoll' => $state['lastRoll'],

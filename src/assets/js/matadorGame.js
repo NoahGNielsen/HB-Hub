@@ -8,6 +8,9 @@
 // version changed: something happened, someone wrote in the chat, or someone joined, left, went away or came back.
 //
 // A ping is played when the player's turn starts, unless they turned the sound off (remembered in this browser).
+//
+// The turn's timer counts down here, from the time left the server sent (the server's and the player's clocks don't
+// have to agree). The server passes the turn on once it runs out; this only shows it.
 (() => {
     const root = document.querySelector('[data-matador]');
     if (!root) return;
@@ -18,6 +21,8 @@
     const STEP_MS = 140; // a piece moving one field
     const MAX_STEPPED = 12; // further than this (a card, jail) the piece just jumps
     const FIELD_COUNT = 40;
+    const TURN_MS = Number(root.dataset.turnSeconds) * 1000;
+    const TIMER_LOW_SECONDS = 10; // the timer turns red from here
     const roomId = root.dataset.room;
     const baseTitle = document.title;
     const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
@@ -36,6 +41,9 @@
     const logList = find('[data-mt-log]');
     const die = find('[data-mt-die]');
     const statusText = find('[data-mt-status]');
+    const timer = find('[data-mt-timer]');
+    const timerFill = find('[data-mt-timer-fill]');
+    const timerText = find('[data-mt-timer-text]');
     const card = find('[data-mt-card]');
     const cardText = find('[data-mt-card-text]');
     const cardWho = find('[data-mt-card-who]');
@@ -88,6 +96,8 @@
     let pingedTurn = null; // the turn of the player's that's been pinged for (round:seat), null when it isn't theirs
     let shownChat = null; // the newest chat message drawn (its id)
     let shownChatCount = 0; // the newest chat message seen in an answer, so older answers don't take it away again
+    let turnEndsAt = null; // when the turn's time runs out, on performance.now()'s clock
+    let hasAskedAtTurnEnd = false; // the server has been asked about it since it ran out
 
     const kr = (amount) => amount.toLocaleString('en-US') + ' kr';
     const playerOf = (seat) => game.players.find((player) => player.seat === seat) ?? null;
@@ -128,6 +138,8 @@
         revision = dataRevision;
         shownChatCount = dataChat;
         game = data.game;
+        turnEndsAt = game.timeLeft !== null ? performance.now() + game.timeLeft : null;
+        hasAskedAtTurnEnd = false;
         render();
     }
 
@@ -301,6 +313,7 @@
         }
 
         statusText.textContent = statusFor();
+        renderTimer();
 
         const drawn = game.lastCard;
         card.hidden = !drawn || game.phase === 'lobby';
@@ -328,6 +341,34 @@
                 return isMyTurn() ? 'Your turn' : nameOf(game.turn.seat) + '\'s turn';
         }
     }
+
+    // The bar empties as the time runs out. Not read out (it changes every second): the moves panel says what to do.
+    // Once it's out, the server is asked straight away, so the turn is passed on without waiting for the next check.
+    // While the player whose turn it is owes money, the timer is paused (the server sends no time left).
+    function renderTimer() {
+        const isPaused = game !== null && isPlaying() && game.pending?.type === 'debt';
+        timer.hidden = game === null || !isPlaying() || (turnEndsAt === null && !isPaused);
+        if (timer.hidden) return;
+        timer.classList.toggle('is-paused', isPaused);
+        if (isPaused) {
+            timer.classList.remove('is-low');
+            timerFill.style.transform = 'scaleX(1)';
+            timerText.textContent = 'Paused until ' + (isMyTurn() ? 'you pay' : nameOf(game.turn.seat) + ' pays');
+            return;
+        }
+        const left = Math.max(0, turnEndsAt - performance.now());
+        const seconds = Math.ceil(left / 1000);
+        timer.classList.toggle('is-low', seconds <= TIMER_LOW_SECONDS);
+        timerFill.style.transform = 'scaleX(' + Math.min(1, left / TURN_MS) + ')';
+        timerText.textContent = seconds + ' s' + (isMyTurn() ? ' left of your turn' : '');
+        if (left === 0 && !hasAskedAtTurnEnd) {
+            hasAskedAtTurnEnd = true;
+            poll();
+        }
+    }
+    setInterval(() => {
+        if (game !== null) renderTimer();
+    }, 250);
 
     // ----- The players
 
@@ -790,9 +831,10 @@
         });
     }
 
+    // aria-pressed also picks the icon (matador.css)
     function renderSound() {
-        soundButton.textContent = isSoundOn ? 'Sound on' : 'Sound off';
         soundButton.setAttribute('aria-pressed', String(isSoundOn));
+        soundButton.title = isSoundOn ? 'Sound on: a ping when it\'s your turn' : 'Sound off';
     }
 
     soundButton.addEventListener('click', () => {
