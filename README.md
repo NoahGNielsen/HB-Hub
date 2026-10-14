@@ -4,7 +4,7 @@
 
 # HB Hub
 
-**An unblocked messaging hub for my school, with a casino on the side.**
+**An unblocked messaging hub for my school, with a casino and games on the side.**
 
 [hbhub.noahgajnielsen.dk](https://hbhub.noahgajnielsen.dk)
 
@@ -17,6 +17,8 @@
 ![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?logo=php&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?logo=mysql&logoColor=white)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/NoahGNielsen/HB-Hub/ftp-upload.yml?branch=main&label=deploy)](https://github.com/NoahGNielsen/HB-Hub/actions/workflows/ftp-upload.yml)
+
+[Features](#-features) · [Tech stack](#-tech-stack) · [Setup](#-setup) · [Folders](#-folders) · [License](#-license)
 
 </div>
 
@@ -44,10 +46,21 @@ Played with virtual chips only. No real money is involved anywhere.
 
 | | |
 |---|---|
-| **Chip wallet** | Every account starts with 2,500 chips and can collect 2,500 more once a day. All games share the same chips |
+| **Chip wallet** | Every account starts with 2,500 chips and can collect 2,500 more once a day. All casino games share the same chips |
 | **Blackjack** | Play solo or at a table with up to 5 players. Tables can be public, joined with a 6-character code, or invite-only, and the host picks the minimum bet. Insurance, splits and doubling, with timers so nobody can stall the table |
 | **Roulette** | European roulette (single zero). Every inside and outside bet can be placed straight on the board |
 | **Leaderboards** | Separate leaderboards for Blackjack and Roulette that can be sorted by any column. Win % only counts once you've played 20 rounds |
+
+### 🎲 Games
+
+| | |
+|---|---|
+| **Matador** | The Danish Monopoly for 2-4 players. Games can be public, joined with a 6-character code, or invite-only |
+| **House rules** | One dice (a 6 gives another roll), no auctions: a property nobody buys stays with the bank. Get out of jail by paying, using a "benådet" card or rolling a 6 |
+| **Full game** | Houses and hotels, mortgages, Prøv lykken cards, the income tax choice, and trading properties, money and cards with the other players at any time |
+| **Turn timer** | 30 seconds to act, reset by every move. Run out and your turn is passed on. The timer pauses while you owe money |
+| **Saves** | The game saves after every move. Leave and your seat is kept for you. The host can give an empty seat to someone else, or save and stop the game to continue it later |
+| **In-game chat** | A chat for each game, plus a sound when it's your turn |
 
 ### 🔔 Notifications
 
@@ -63,20 +76,16 @@ Played with virtual chips only. No real money is involved anywhere.
 | **Profiles** | Profile picture, name, year, class and bio |
 | **Two-factor login** | TOTP codes from any authenticator app, set up with a QR code |
 | **Login protection** | Password strength rules, a common-password list and lockout after failed attempts. Devices you've logged in on before have their own lock, so nobody can lock you out by guessing |
-| **Self-blocking** | Block the Games and Gambling pages during school hours or all the time. Turning a block off doesn't happen straight away |
+| **Self-blocking** | Block the Casino and Games pages during school hours (8 AM - 3 PM) or all the time. Turning a block off waits until school is over, or 6 hours for "All the time", so it can't be switched off in the moment |
 | **Account deletion** | Delete your account and its data from the settings page |
 
 ### 🛠️ For site admins
 
 | | |
 |---|---|
-| **Admin panel** | Pick any user or chat from a list (or right-click one in the chat). Users: info, logins and messages, and ban, edit, reset or delete them. Chats: members and messages, and rename, remove the icon, change the background, kick members or delete it |
+| **Admin panel** | Search every user or chat by name or id (or right-click one in the chat). Users: info, logins and messages, and ban, edit, reset or delete them. Chats: members and messages, and rename, remove the icon, change the background, kick members or delete it |
 | **Maintenance mode** | Turn off logins and show a message, straight from the site config |
-| **Section switches** | Open the casino to everyone, only to admins, or to nobody |
-
-### 🎲 Coming soon
-
-- **Games:** multiplayer Matador (the Danish Monopoly) for 2-4 players, with saves and an in-game chat.
+| **Section switches** | Open the Casino and the Games section to everyone, only to admins, or to nobody |
 
 ## 🧱 Tech stack
 
@@ -93,6 +102,10 @@ Played with virtual chips only. No real money is involved anywhere.
    > For local development with `src/` as the web root, that means the repo root (it's in `.gitignore`).
 3. **Create the database.** Import [`database/schema.sql`](database/schema.sql), for example in phpMyAdmin. It always holds the full, current schema.
 
+### 🔄 Updating the database
+
+Every change to `schema.sql` also gets its own file in [`database/updates/`](database/updates/), named after the date and what changed. To update an existing database, run the files newer than your last update, oldest first.
+
 ### ⚙️ Config options
 
 Every option is explained in the [example config](config-examples/hbHubSiteConfig.example.php). The main ones:
@@ -101,10 +114,11 @@ Every option is explained in the [example config](config-examples/hbHubSiteConfi
 |---|---|
 | `database_credentials` | Host, database name, user and password |
 | `site_maintenance`, `site_maintenance_message` | Turn off logins and show a message instead |
-| `casino_access` | Who can open the casino: `0` nobody, `1` everyone, `2` only admins |
+| `casino_access`, `games_access` | Who can open the Casino and the Games section: `0` nobody, `1` everyone, `2` only admins |
 | `giphy_gif_integration`, `giphy_api_key` | The GIF picker. Get a key at [developers.giphy.com](https://developers.giphy.com/) |
 | `login_attempts_max`, `login_attempts_lockout_time` | Failed logins before a lockout, and how many minutes it lasts |
 | `onboarding_*` | What sign-up requires (profile picture, password strength, bio) and how many accounts one IP can make per hour |
+| `user_*_maxSize` | The longest name and bio, and the biggest profile picture |
 
 ## 📁 Folders
 
@@ -113,14 +127,14 @@ HB-Hub/
 ├── src/                 The website itself (everything here gets uploaded)
 │   ├── chat/            Messages and group chats
 │   ├── gambling/        The casino: chips, Blackjack and Roulette
-│   ├── games/           The Games section
+│   ├── games/           The Games section: Matador
 │   ├── admin/           The admin panel
 │   ├── userMgmt/        Login and sign-up
 │   ├── otherPages/      Profile, settings and notifications
 │   ├── legal/           Terms, privacy policy and credits
 │   └── assets/          CSS, JavaScript, images and the shared PHP code
 ├── config-examples/     Templates for config files that live outside the web root
-├── database/            Database schema and default values
+├── database/            Database schema, update scripts and default values
 │                        (defaultUserSettings.json and defaultChatSettings.json are the
 │                        defaults for the settings columns on users and chats)
 └── .github/workflows/   Deploying, and updating the README badges every hour
