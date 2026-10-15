@@ -243,6 +243,24 @@ CREATE TABLE `HBHub-MatadorInvites` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-MatadorResults`
+--
+
+CREATE TABLE `HBHub-MatadorResults` (
+  `resultId` bigint UNSIGNED NOT NULL,
+  `roomId` int UNSIGNED DEFAULT NULL COMMENT 'The room it was won in, NULL once the room is gone',
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT 'The room''s type then: 1 Public, 2 Invite-only, 3 Code',
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who played the seat at the end (who took it over, when the host gave it away)',
+  `seatNumber` tinyint UNSIGNED NOT NULL,
+  `playersInGame` tinyint UNSIGNED NOT NULL COMMENT 'How many players the game had, this one included',
+  `playerWon` tinyint(1) NOT NULL COMMENT '1 for the winner, 0 for everyone who went bankrupt',
+  `gameRounds` smallint UNSIGNED NOT NULL COMMENT 'The round the game was won in',
+  `resultTimestamp` datetime NOT NULL COMMENT 'UTC, when the game was won'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-MatadorRooms`
 --
 
@@ -493,6 +511,15 @@ ALTER TABLE `HBHub-MatadorInvites`
   ADD KEY `fk_matadorinvites_by` (`invitedByUserId`);
 
 --
+-- Indexes for table `HBHub-MatadorResults`
+--
+ALTER TABLE `HBHub-MatadorResults`
+  ADD PRIMARY KEY (`resultId`),
+  ADD KEY `userWon` (`userId`,`playerWon`),
+  ADD KEY `resultTimestamp` (`resultTimestamp`),
+  ADD KEY `fk_matadorresults_room` (`roomId`);
+
+--
 -- Indexes for table `HBHub-MatadorRooms`
 --
 ALTER TABLE `HBHub-MatadorRooms`
@@ -605,6 +632,12 @@ ALTER TABLE `HBHub-Chats`
 --
 ALTER TABLE `HBHub-MatadorChat`
   MODIFY `chatMessageId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-MatadorResults`
+--
+ALTER TABLE `HBHub-MatadorResults`
+  MODIFY `resultId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `HBHub-MatadorRooms`
@@ -720,6 +753,13 @@ ALTER TABLE `HBHub-MatadorInvites`
   ADD CONSTRAINT `fk_matadorinvites_by` FOREIGN KEY (`invitedByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_matadorinvites_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-MatadorRooms` (`roomId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_matadorinvites_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-MatadorResults`
+--
+ALTER TABLE `HBHub-MatadorResults`
+  ADD CONSTRAINT `fk_matadorresults_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-MatadorRooms` (`roomId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_matadorresults_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-MatadorRooms`

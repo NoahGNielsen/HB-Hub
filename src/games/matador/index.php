@@ -144,7 +144,10 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="casino games" data-mt-lobby data-seated="<?= $lobbyRoom !== null ? '1' : '0' ?>">
         <a class="casino-back" href="/games/">&larr; Games</a>
-        <h1>Matador</h1>
+        <div class="casino-title-row">
+            <h1>Matador</h1>
+            <a class="casino-btn" href="/games/matador/leaderboard">Leaderboard</a>
+        </div>
         <p class="casino-intro">Buy streets in Copenhagen, build houses and hotels, and make the others go bankrupt. 2 to 4 players.</p>
         <?php if ($lobbyStopped): ?>
             <p class="casino-alert games-notice" role="status">The game was saved and stopped. Whoever opened it can continue it from their saved game.</p>

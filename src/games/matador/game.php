@@ -125,7 +125,10 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                 <?php endforeach; ?>
 
                 <div class="mt-center">
-                    <p class="mt-logo" aria-hidden="true">MATADOR</p>
+                    <div class="mt-brand" aria-hidden="true">
+                        <p class="mt-logo">MATADOR</p>
+                        <p class="mt-edition">HTX Edition</p>
+                    </div>
                     <div class="mt-die" role="img" aria-label="The die" data-mt-die>⚀</div>
                     <p class="mt-status" role="status" data-mt-status>Loading the game…</p>
                     <div class="mt-timer" data-mt-timer hidden>

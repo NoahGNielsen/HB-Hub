@@ -17,6 +17,7 @@ require_once __DIR__ . '/../../userAvatar.php';
 require_once __DIR__ . '/game.php';
 require_once __DIR__ . '/save.php';
 require_once __DIR__ . '/chat.php';
+require_once __DIR__ . '/results.php';
 
 const HBHUB_MATADOR_ROOM_PUBLIC = 1; // roomType
 const HBHUB_MATADOR_ROOM_INVITE = 2;
@@ -253,6 +254,9 @@ function hbHubMatadorPlay(PDO $db, int $roomId, ?callable $action = null): ?arra
             if ($action !== null) {
                 $result = $action($room, $seats);
                 hbHubMatadorAdvance($room['state']); // like the next turn, when the player whose turn it is left
+            }
+            if ($before[0]['phase'] === 'playing' && $room['state']['phase'] === 'ended') {
+                hbHubMatadorRecordResults($db, $room); // for the leaderboard
             }
 
             if ($seats === [] || !empty($room['stop'])) {
