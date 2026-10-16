@@ -32,12 +32,41 @@ body {
   color: var(--nav-text);
 }
 
+/* The same logo as the frontpage's top bar (homepage.css): a tilted red "HB" tile, then "Hub" */
 .nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--nav-text);
   text-decoration: none;
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.nav-brand-mark {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  transform: rotate(-6deg);
+  transition: transform 0.2s ease;
+}
+
+.nav-brand:hover .nav-brand-mark {
+  transform: rotate(0deg) scale(1.05);
+}
+
+.nav-brand:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 
 .nav-top-actions {

@@ -1,0 +1,1278 @@
+/* Frontpage (index.php). It has its own top bar instead of the app's nav panel, so the padding navPanel.css gives
+   body for the nav bars is taken away again. The hero and the last call are always dark, like the app's bars. */
+.home-body {
+  --home-max: 1120px;
+  --home-gutter: 20px;
+  --home-dark: #0e1116;
+  --home-dark-raised: #1b2029;
+  --home-dark-text: #eceef2;
+  --home-red: #e5484d;
+  padding: 0;
+}
+
+/* The fanned out cards and floating bits may stick out past the edge, but never make the page scroll sideways */
+.home-body > main {
+  overflow-x: clip;
+}
+
+html.home {
+  scroll-padding-top: 80px; /* anchors land below the sticky top bar */
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.home {
+    scroll-behavior: smooth;
+  }
+}
+
+.home-body h1,
+.home-body h2,
+.home-body h3 {
+  text-wrap: balance;
+}
+
+.home-body p {
+  text-wrap: pretty;
+}
+
+/* ---------- Top bar ---------- */
+.home-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 64px;
+  padding: 0 max(var(--home-gutter), calc((100% - var(--home-max)) / 2));
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: color-mix(in srgb, var(--nav-bg) 82%, transparent);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--nav-text);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.home-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--nav-text);
+  text-decoration: none;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.home-brand-mark {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  transform: rotate(-6deg);
+  transition: transform 0.2s ease;
+}
+
+.home-brand:hover .home-brand-mark {
+  transform: rotate(0deg) scale(1.05);
+}
+
+.home-nav-links {
+  display: flex;
+  gap: 4px;
+  margin-left: 16px;
+}
+
+.home-nav-links a {
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: var(--nav-text);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  opacity: 0.8;
+}
+
+.home-nav-links a:hover {
+  background: var(--nav-hover);
+  opacity: 1;
+}
+
+.home-nav-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-avatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.home-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-body a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ---------- Buttons ---------- */
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 18px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+}
+
+.home-btn:hover {
+  transform: translateY(-1px);
+}
+
+.home-btn:active {
+  transform: translateY(0);
+}
+
+.home-btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.home-btn-primary:hover {
+  filter: brightness(1.08);
+}
+
+.home-btn-ghost {
+  color: var(--nav-text);
+}
+
+.home-btn-ghost:hover {
+  background: var(--nav-hover);
+}
+
+.home-btn-glass {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--home-dark-text);
+}
+
+.home-btn-glass:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.home-btn-lg {
+  padding: 14px 26px;
+  font-size: 1rem;
+}
+
+/* ---------- Hero ---------- */
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 72px max(var(--home-gutter), calc((100% - var(--home-max)) / 2)) 0;
+  background:
+    radial-gradient(60% 70% at 85% 10%, rgba(255, 138, 61, 0.2), transparent 70%),
+    radial-gradient(50% 60% at 0% 100%, rgba(170, 182, 200, 0.1), transparent 70%),
+    var(--home-dark);
+  color: var(--home-dark-text);
+}
+
+/* Dotted paper, fading out towards the bottom */
+.home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 90%);
+  mask-image: linear-gradient(to bottom, #000 30%, transparent 90%);
+  pointer-events: none;
+}
+
+.home-hero-glow {
+  position: absolute;
+  top: 18%;
+  right: 8%;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 138, 61, 0.35), transparent 65%);
+  filter: blur(30px);
+  pointer-events: none;
+  animation: home-drift 14s ease-in-out infinite alternate;
+}
+
+.home-hero-inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  align-items: center;
+  gap: 48px;
+}
+
+.home-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 6px 14px 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.home-eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2fa36b;
+  box-shadow: 0 0 0 4px rgba(47, 163, 107, 0.2);
+}
+
+.home-hero h1 {
+  margin: 0 0 22px;
+  font-size: clamp(2.6rem, 6vw, 4.6rem);
+  font-weight: 850;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+.home-hero-accent {
+  background: linear-gradient(90deg, #ff8a3d, #ffc37a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.home-lead {
+  max-width: 34em;
+  margin: 0 0 32px;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  opacity: 0.78;
+}
+
+.home-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-welcome {
+  width: 100%;
+  margin: 0 0 4px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* The made-up group chat with a chip, a card and a die floating around it */
+.home-stage {
+  position: relative;
+  min-height: 460px;
+  display: grid;
+  place-items: center;
+}
+
+.home-chat {
+  position: relative;
+  z-index: 2;
+  width: min(360px, 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  background: var(--home-dark-raised);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), 0 0 0 6px rgba(255, 255, 255, 0.02);
+  transform: rotate(-2deg);
+}
+
+.home-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.home-chat-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+}
+
+.home-chat-title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.home-chat-sub {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  opacity: 0.55;
+}
+
+.home-chat-thread {
+  margin: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+}
+
+.home-msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  animation: home-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.home-msg:nth-child(1) { animation-delay: 0.3s; }
+.home-msg:nth-child(2) { animation-delay: 0.9s; }
+.home-msg:nth-child(3) { animation-delay: 1.5s; }
+.home-msg:nth-child(4) { animation-delay: 2.1s; }
+.home-msg:nth-child(5) { animation-delay: 2.6s; }
+
+.home-msg p {
+  max-width: 78%;
+  margin: 0;
+  padding: 9px 13px;
+  border-radius: 16px 16px 16px 4px;
+  background: #262d39;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.home-msg b {
+  display: block;
+  margin-bottom: 2px;
+  color: #ffb27a;
+  font-size: 0.72rem;
+}
+
+.home-msg-me {
+  justify-content: flex-end;
+}
+
+.home-msg-me p {
+  border-radius: 16px 16px 4px 16px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.home-msg-notice {
+  justify-content: center;
+}
+
+.home-msg-notice p {
+  max-width: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.home-msg-avatar,
+.home-inbox-avatar {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #5b6577;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.home-msg-avatar-a { background: #3e7bfa; }
+.home-msg-avatar-b { background: #30a46c; }
+.home-msg-avatar-c { background: #8e5bd1; }
+
+/* Someone typing: three bouncing dots */
+.home-msg-typing p {
+  display: flex;
+  gap: 4px;
+  padding: 12px 14px;
+}
+
+.home-msg-typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+  animation: home-typing 1.2s ease-in-out infinite;
+}
+
+.home-msg-typing i:nth-child(2) { animation-delay: 0.15s; }
+.home-msg-typing i:nth-child(3) { animation-delay: 0.3s; }
+
+.home-float {
+  position: absolute;
+  z-index: 3;
+  animation: home-bob 6s ease-in-out infinite;
+}
+
+.home-float-chip {
+  top: 4%;
+  right: 4%;
+  width: 92px;
+  height: 92px;
+  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.45));
+  animation: home-bob 6s ease-in-out infinite, home-spin 24s linear infinite;
+}
+
+.home-float-card {
+  bottom: 6%;
+  left: 0;
+  --home-tilt: -14deg;
+  animation-delay: -2s;
+}
+
+.home-float-die {
+  bottom: 14%;
+  right: 2%;
+  --home-tilt: 12deg;
+  width: 62px;
+  height: 62px;
+  padding: 11px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  place-items: center;
+  border-radius: 14px;
+  background: #fbfaf6;
+  box-shadow: inset 0 -4px 0 #d9d4c7, 0 14px 24px rgba(0, 0, 0, 0.4);
+  animation-delay: -4s;
+}
+
+.home-float-die i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1a1d23;
+}
+
+/* Playing cards, in the hero and the casino */
+.home-float-card,
+.home-card {
+  position: absolute;
+  width: 88px;
+  height: 124px;
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #fbfaf6;
+  color: #c8102e;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.4);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.home-card-corner {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  width: 1em;
+}
+
+.home-card-pip {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 2.6rem;
+}
+
+.home-card-black {
+  color: #1a1d23;
+}
+
+/* Live numbers along the bottom of the hero */
+.home-stats {
+  position: relative;
+  margin: 56px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.home-stats div {
+  padding: 26px 0 30px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+}
+
+.home-stats div + div {
+  padding-left: 24px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.home-stats dt {
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.home-stats dd {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-stats div:last-child dd {
+  color: var(--accent);
+}
+
+/* ---------- Feature sections ---------- */
+.home-feature {
+  max-width: var(--home-max);
+  margin: 0 auto;
+  padding: 112px var(--home-gutter) 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 64px;
+}
+
+.home-feature-flip .home-feature-text {
+  order: 2;
+}
+
+.home-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 6px 14px 6px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.home-kicker img {
+  width: 18px;
+  height: 18px;
+}
+
+.home-soon {
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+
+.home-feature h2,
+.home-safety h2,
+.home-cta h2 {
+  margin: 0 0 16px;
+  font-size: clamp(2rem, 4vw, 2.9rem);
+  font-weight: 850;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.home-feature-text > p {
+  margin: 0 0 22px;
+  font-size: 1.08rem;
+  line-height: 1.65;
+  opacity: 0.8;
+}
+
+.home-ticks {
+  margin: 0 0 28px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.home-ticks li {
+  position: relative;
+  padding-left: 32px;
+  font-weight: 600;
+}
+
+/* Check mark in an orange circle */
+.home-ticks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.home-ticks li::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  width: 5px;
+  height: 10px;
+  border: solid var(--accent);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.home-link {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.home-link span {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.home-link:hover span {
+  transform: translateX(4px);
+}
+
+.home-feature-art {
+  position: relative;
+}
+
+/* Chat: an inbox */
+.home-inbox {
+  margin: 0;
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+  border-radius: 22px;
+  background: var(--secondary);
+  list-style: none;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.12);
+  transform: rotate(1.5deg);
+}
+
+.home-inbox li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+}
+
+.home-inbox li:first-child {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.home-inbox-avatar {
+  width: 44px;
+  height: 44px;
+  font-size: 0.9rem;
+}
+
+.home-inbox-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
+
+.home-inbox-text b {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 1rem;
+  opacity: 1;
+}
+
+.home-inbox-count {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--home-red);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.home-inbox-request {
+  margin-top: 6px;
+  border: 2px dashed color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+.home-inbox-request .home-inbox-avatar {
+  background: color-mix(in srgb, var(--text) 25%, transparent);
+}
+
+.home-inbox-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.home-inbox-actions span {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.home-inbox-actions span:first-child {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Casino: a bit of green felt */
+.home-felt {
+  min-height: 380px;
+  padding: 36px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  overflow: hidden;
+  border-radius: 28px;
+  background:
+    radial-gradient(80% 70% at 50% 40%, #237a51, #124330 80%);
+  box-shadow: inset 0 0 0 10px #5a3a22, inset 0 0 0 12px #3d2716, 0 24px 50px rgba(0, 0, 0, 0.2);
+  color: #f4e7c5;
+}
+
+.home-hand {
+  position: relative;
+  width: 160px;
+  height: 130px;
+}
+
+.home-hand .home-card:first-child {
+  left: 14px;
+  transform: rotate(-9deg);
+}
+
+.home-hand .home-card:last-child {
+  right: 14px;
+  transform: rotate(8deg) translateY(-4px);
+}
+
+.home-felt-label {
+  margin: 0;
+  padding: 4px 16px;
+  border: 1px solid rgba(244, 231, 197, 0.4);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.home-wheel-strip {
+  display: flex;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.home-wheel-strip span {
+  width: 34px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-wheel-strip .is-red { background: #c8102e; }
+.home-wheel-strip .is-black { background: #1a1d23; }
+.home-wheel-strip .is-green { background: #1d8a4e; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4); }
+
+.home-wheel-strip .is-hit {
+  outline: 3px solid #ffc37a;
+  outline-offset: 2px;
+  transform: translateY(-4px);
+}
+
+.home-chip-stack {
+  position: absolute;
+  top: 26px;
+  right: 26px;
+  width: 56px;
+  height: 70px;
+}
+
+.home-chip-stack img {
+  position: absolute;
+  left: 0;
+  width: 56px;
+  height: 56px;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.35));
+}
+
+.home-chip-stack img:nth-child(1) { bottom: 0; }
+.home-chip-stack img:nth-child(2) { bottom: 7px; transform: rotate(40deg); }
+.home-chip-stack img:nth-child(3) { bottom: 14px; transform: rotate(80deg); }
+
+/* Games: three Matador title deeds, fanned out, in the board's colours (matador.css) */
+.home-deeds {
+  height: 380px;
+}
+
+.home-deed {
+  --home-deed-colour: #3d6fd6;
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  width: 180px;
+  margin-left: -90px;
+  padding: 10px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: #fbfaf6;
+  color: #1a1d23;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.home-deed-g1 { --home-deed-colour: #3d6fd6; }
+.home-deed-g5 { --home-deed-colour: #e04848; }
+.home-deed-g8 { --home-deed-colour: #8e5bd1; }
+
+.home-deed:nth-child(1) { transform: translateX(-160px) translateY(18px) rotate(-10deg); }
+.home-deed:nth-child(2) { transform: translateY(-10px); z-index: 1; }
+.home-deed:nth-child(3) { transform: translateX(160px) translateY(18px) rotate(10deg); z-index: 2; }
+
+.home-deeds:hover .home-deed:nth-child(1) { transform: translateX(-180px) translateY(10px) rotate(-14deg); }
+.home-deeds:hover .home-deed:nth-child(2) { transform: translateY(-26px); }
+.home-deeds:hover .home-deed:nth-child(3) { transform: translateX(180px) translateY(10px) rotate(14deg); }
+
+.home-deed-band {
+  margin: 0 0 12px;
+  padding: 12px 8px;
+  border-radius: 6px;
+  background: var(--home-deed-colour);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.home-deed-band b {
+  display: block;
+  margin-top: 4px;
+  font-size: 1rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.home-deed dl {
+  margin: 0 4px;
+  display: grid;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.home-deed dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.home-deed dt {
+  opacity: 0.65;
+}
+
+.home-deed dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-deed-price {
+  margin: 14px 4px 4px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(26, 29, 35, 0.25);
+  font-weight: 800;
+  text-align: center;
+}
+
+/* ---------- Safety ---------- */
+.home-safety {
+  max-width: var(--home-max);
+  margin: 0 auto;
+  padding: 128px var(--home-gutter) 0;
+  text-align: center;
+}
+
+.home-kicker-center {
+  padding-left: 14px;
+}
+
+.home-safety-grid {
+  margin: 40px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  list-style: none;
+  text-align: left;
+}
+
+.home-safety-grid li {
+  padding: 26px 22px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  transition: transform 0.2s ease;
+}
+
+.home-safety-grid li:hover {
+  transform: translateY(-4px);
+}
+
+.home-safety-grid svg {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-safety-grid h3 {
+  margin: 16px 0 8px;
+  font-size: 1.1rem;
+}
+
+.home-safety-grid p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  opacity: 0.75;
+}
+
+/* ---------- Last call ---------- */
+.home-cta {
+  position: relative;
+  max-width: var(--home-max);
+  margin: 128px auto 32px;
+  padding: 72px 24px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07); /* shows its edge when the page is dark too */
+  border-radius: 28px;
+  background:
+    radial-gradient(60% 120% at 50% 120%, rgba(255, 138, 61, 0.35), transparent 70%),
+    var(--home-dark);
+  color: var(--home-dark-text);
+  text-align: center;
+}
+
+.home-cta p {
+  margin: 0 0 28px;
+  font-size: 1.1rem;
+  opacity: 0.75;
+}
+
+.home-cta .home-hero-actions {
+  justify-content: center;
+}
+
+/* The black PNG icons turn white on dark backgrounds */
+@media (prefers-color-scheme: dark) {
+  .home-kicker img {
+    filter: invert(1);
+  }
+}
+
+/* ---------- Motion ---------- */
+@keyframes home-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.92); }
+}
+
+@keyframes home-typing {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes home-bob {
+  0%, 100% { translate: 0 0; rotate: var(--home-tilt, 0deg); }
+  50% { translate: 0 -12px; rotate: calc(var(--home-tilt, 0deg) + 3deg); }
+}
+
+@keyframes home-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes home-drift {
+  to { transform: translate(-60px, 40px) scale(1.15); }
+}
+
+@keyframes home-reveal {
+  from { opacity: 0; transform: translateY(40px); }
+}
+
+@keyframes home-nav-solid {
+  to {
+    background: var(--nav-bg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+}
+
+/* Sections slide in as they're scrolled to, and the top bar turns solid. Only where the browser can tie
+   animations to scrolling - everywhere else it all just shows. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .home-feature-text,
+    .home-feature-art,
+    .home-safety-grid li,
+    .home-cta {
+      animation: home-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+
+    .home-nav {
+      animation: home-nav-solid linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 160px;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-glow,
+  .home-float,
+  .home-float-chip,
+  .home-msg,
+  .home-msg-typing i {
+    animation: none;
+  }
+
+  .home-float-card,
+  .home-float-die {
+    rotate: var(--home-tilt);
+  }
+}
+
+/* ---------- Smaller screens ---------- */
+@media (max-width: 960px) {
+  .home-hero-inner,
+  .home-feature {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-feature {
+    gap: 40px;
+    padding-top: 88px;
+  }
+
+  .home-feature-flip .home-feature-text {
+    order: 0;
+  }
+
+  .home-stage {
+    max-width: 460px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .home-safety-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .home-cta {
+    margin-left: var(--home-gutter);
+    margin-right: var(--home-gutter);
+  }
+}
+
+@media (max-width: 760px) {
+  .home-nav-links {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-body {
+    --home-gutter: 16px;
+    padding: 0; /* navPanel.css leaves room for the app's bottom bar here */
+  }
+
+  .home-nav {
+    height: 58px;
+    gap: 12px;
+  }
+
+  .home-nav .home-btn {
+    padding: 8px 14px;
+  }
+
+  .home-hero {
+    padding-top: 48px;
+  }
+
+  .home-lead {
+    font-size: 1.05rem;
+  }
+
+  .home-hero-actions .home-btn-lg {
+    flex: 1 1 100%;
+  }
+
+  .home-stage {
+    min-height: 420px;
+  }
+
+  .home-float-chip {
+    width: 68px;
+    height: 68px;
+    right: 0;
+  }
+
+  .home-float-card {
+    width: 70px;
+    height: 100px;
+  }
+
+  .home-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .home-stats div,
+  .home-stats div + div {
+    padding: 20px 0;
+    border-left: 0;
+  }
+
+  .home-stats div:nth-child(even) {
+    padding-left: 16px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .home-stats div:nth-child(n + 3) {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .home-stats dd {
+    font-size: 1.6rem;
+  }
+
+  .home-inbox {
+    transform: none; /* tilted, its corners would be cut off at the edge of the screen */
+  }
+
+  .home-felt {
+    min-height: 340px;
+    padding: 28px 16px;
+  }
+
+  .home-chip-stack {
+    top: 18px;
+    right: 18px;
+    transform: scale(0.8);
+  }
+
+  .home-wheel-strip span {
+    width: 26px;
+    height: 34px;
+    font-size: 0.75rem;
+  }
+
+  .home-wheel-strip span:nth-child(n + 9) {
+    display: none;
+  }
+
+  .home-deeds {
+    height: 320px;
+  }
+
+  .home-deed {
+    width: 142px;
+    margin-left: -71px;
+    padding: 8px;
+  }
+
+  .home-deed-band b {
+    font-size: 0.8rem;
+  }
+
+  .home-deed dl {
+    font-size: 0.72rem;
+  }
+
+  .home-deed:nth-child(1),
+  .home-deeds:hover .home-deed:nth-child(1) { transform: translateX(-104px) translateY(16px) rotate(-10deg); }
+  .home-deed:nth-child(2),
+  .home-deeds:hover .home-deed:nth-child(2) { transform: translateY(-8px); }
+  .home-deed:nth-child(3),
+  .home-deeds:hover .home-deed:nth-child(3) { transform: translateX(104px) translateY(16px) rotate(10deg); }
+
+  .home-safety-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-cta {
+    padding: 56px 20px;
+  }
+}
