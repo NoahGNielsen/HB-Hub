@@ -1173,7 +1173,7 @@ html.home {
   margin: 40px 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   list-style: none;
   text-align: left;
@@ -1214,6 +1214,11 @@ html.home {
   font-size: 0.92rem;
   line-height: 1.55;
   opacity: 0.75;
+}
+
+.home-safety-grid a {
+  color: var(--accent);
+  text-underline-offset: 2px;
 }
 
 /* ---------- Last call ---------- */

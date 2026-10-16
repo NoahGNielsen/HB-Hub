@@ -331,6 +331,16 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                     <p>Strong password rules and a lockout after too many wrong guesses, without locking you out.</p>
                 </li>
                 <li>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/></svg>
+                    <h3>Passwords stay secret</h3>
+                    <p>Passwords are hashed, never stored in plain text. Nobody can read yours, not even the admins.</p>
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8l-5 4 5 4"/><path d="M16 8l5 4-5 4"/><path d="M13.5 5l-3 14"/></svg>
+                    <h3>Open source</h3>
+                    <p>All of the code is public, so you don't have to take our word for it. <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">See for yourself on GitHub</a>.</p>
+                </li>
+                <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
                     <h3>Your account, your call</h3>
                     <p>Delete your account and its data from the settings page whenever you want.</p>
