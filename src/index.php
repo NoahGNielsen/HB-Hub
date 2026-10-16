@@ -225,9 +225,9 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                     you're out is bragging rights.
                 </p>
                 <ul class="home-ticks">
-                    <li>Blackjack alone or at a table of up to 5</li>
+                    <li>Blackjack solo, or at a table of up to 5</li>
                     <li>European Roulette, every bet on the board</li>
-                    <li>Leaderboards for both, if you're that good</li>
+                    <li>Leaderboards, if you're that good!</li>
                 </ul>
                 <a class="home-link" href="/gambling/">Open the casino <span aria-hidden="true">→</span></a>
             </div>
@@ -276,10 +276,10 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                     clock from 3 to 30 minutes, or none at all.
                 </p>
                 <ul class="home-ticks">
-                    <li>Public games, a 6-character code or invite only</li>
                     <li>Matador saves after every move, so you can finish tomorrow</li>
                     <li>Draw offers and rematches in chess</li>
-                    <li>A chat and a leaderboard for both</li>
+                    <li>Chats and a leaderboards</li>
+                    <li>Public, private with a code or invite only mode</li>
                 </ul>
                 <a class="home-link" href="/games/">Open games <span aria-hidden="true">→</span></a>
             </div>
