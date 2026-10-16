@@ -196,22 +196,36 @@ foreach ([1, 21, 39] as $homeField) {
                 </ul>
                 <a class="home-link" href="/gambling/">Open the casino <span aria-hidden="true">→</span></a>
             </div>
-            <div class="home-feature-art home-felt" aria-hidden="true">
-                <div class="home-hand">
-                    <div class="home-card home-card-black"><span class="home-card-corner">K<br>♠</span><span class="home-card-pip">♠</span></div>
-                    <div class="home-card"><span class="home-card-corner">A<br>♥</span><span class="home-card-pip">♥</span></div>
+            <div class="home-feature-art home-casino-art" aria-hidden="true">
+                <!-- A blackjack table seen from above: the dealer's hand at the top, the table's print in an arc,
+                     and your hand (a blackjack) next to your bet at the bottom -->
+                <div class="home-felt">
+                    <div class="home-hand home-hand-dealer">
+                        <div class="home-card home-card-back"></div>
+                        <div class="home-card home-card-black"><span class="home-card-corner">9<br>♣</span><span class="home-card-pip">♣</span></div>
+                    </div>
+                    <svg class="home-felt-print" viewBox="0 0 300 84">
+                        <path id="home-felt-arc-big" d="M 6 8 Q 150 92 294 8" fill="none"/>
+                        <path id="home-felt-arc-small" d="M 40 34 Q 150 108 260 34" fill="none"/>
+                        <text class="home-felt-print-big"><textPath href="#home-felt-arc-big" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
+                        <text class="home-felt-print-small"><textPath href="#home-felt-arc-small" startOffset="50%" text-anchor="middle">DEALER STANDS ON 17</textPath></text>
+                    </svg>
+                    <div class="home-felt-player">
+                        <div class="home-hand">
+                            <div class="home-card home-card-black"><span class="home-card-corner">K<br>♠</span><span class="home-card-pip">♠</span></div>
+                            <div class="home-card"><span class="home-card-corner">A<br>♥</span><span class="home-card-pip">♥</span></div>
+                            <span class="home-hand-total">21</span>
+                        </div>
+                        <div class="home-bet">
+                            <img src="/assets/images/icons/chip.svg" alt="">
+                            <img src="/assets/images/icons/chip.svg" alt="">
+                            <img src="/assets/images/icons/chip.svg" alt="">
+                        </div>
+                    </div>
                 </div>
-                <p class="home-felt-label">Blackjack pays 3 to 2</p>
-                <div class="home-wheel-strip">
-                    <?php // A stretch of the European wheel in order, landing on 17 ?>
-                    <?php foreach ([0 => 'green', 32 => 'red', 15 => 'black', 19 => 'red', 4 => 'black', 21 => 'red', 2 => 'black', 25 => 'red', 17 => 'black', 34 => 'red'] as $homeNumber => $homeColour): ?>
-                        <span class="is-<?= $homeColour ?><?= $homeNumber === 17 ? ' is-hit' : '' ?>"><?= $homeNumber ?></span>
-                    <?php endforeach; ?>
-                </div>
-                <div class="home-chip-stack">
-                    <img src="/assets/images/icons/chip.svg" alt="">
-                    <img src="/assets/images/icons/chip.svg" alt="">
-                    <img src="/assets/images/icons/chip.svg" alt="">
+                <!-- And a European roulette wheel in front of it, the ball resting on 17 -->
+                <div class="home-roulette">
+                    <div class="home-roulette-pockets"><span class="home-roulette-ball"></span></div>
                 </div>
             </div>
         </section>
