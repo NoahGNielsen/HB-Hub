@@ -38,14 +38,49 @@ $homeDeeds = [];
 foreach ([1, 21, 39] as $homeField) {
     $homeDeeds[] = HBHUB_MATADOR_FIELDS[$homeField];
 }
+
+// The chessboard in the Games section: Scholar's mate (1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6?? 4. Qxf7#), a8 first like
+// HBHUB_CHESS_START_BOARD is written, white pieces upper case. The last move (h5 to f7) and the king in check are marked.
+$homeChessBoard = 'r.bqkb.r' . 'pppp.Qpp' . '..n..n..' . '....p...' . '..B.P...' . '........' . 'PPPP.PPP' . 'RNB.K.NR';
+$homeChessLast = ['h5', 'f7'];
+$homeChessCheck = 'e8';
+// Each piece is the filled chess letter (the pawn told not to turn into an emoji), with the outlined one on top as
+// White's edge, like chess.css draws them. The 12 letters come from the Noto Sans Symbols 2 font.
+$homeChessFilled = ['k' => '♚', 'q' => '♛', 'r' => '♜', 'b' => '♝', 'n' => '♞', 'p' => "♟\u{FE0E}"];
+$homeChessOutlined = ['k' => '♔', 'q' => '♕', 'r' => '♖', 'b' => '♗', 'n' => '♘', 'p' => '♙'];
+$homeChessSquares = []; // [['class' => 'is-light is-last', 'piece' => '<span ...>'], ...] for the 64 squares, a8 first
+for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
+    $homeFile = $homeIndex % 8;
+    $homeRank = 8 - intdiv($homeIndex, 8);
+    $homeName = chr(ord('a') + $homeFile) . $homeRank;
+    $homeClass = ($homeFile + $homeRank) % 2 === 0 ? 'is-light' : 'is-dark'; // a1 is dark, h1 light
+    if (in_array($homeName, $homeChessLast, true)) {
+        $homeClass .= ' is-last';
+    }
+    if ($homeName === $homeChessCheck) {
+        $homeClass .= ' is-check';
+    }
+
+    $homePiece = $homeChessBoard[$homeIndex];
+    $homeType = strtolower($homePiece);
+    $homePieceHtml = '';
+    if ($homePiece !== '.') {
+        $homePieceHtml = $homePiece !== $homeType
+            ? '<span class="home-piece is-white" data-edge="' . $homeChessOutlined[$homeType] . '">' . $homeChessFilled[$homeType] . '</span>'
+            : '<span class="home-piece">' . $homeChessFilled[$homeType] . '</span>';
+    }
+    $homeChessSquares[] = ['class' => $homeClass, 'piece' => $homePieceHtml];
+}
+$homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&display=block&text=' . rawurlencode('♔♕♖♗♘♙♚♛♜♝♞♟');
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <link href="<?= htmlspecialchars($homePieceFontUrl) ?>" rel="stylesheet">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <title>HB Hub - Chat, casino and games for HB's students</title>
-    <meta name="description" content="HB Hub is where school hangs out online: group chats and DMs, Blackjack and Roulette with play chips, and Matador with your friends.">
+    <meta name="description" content="HB Hub is where school hangs out online: group chats and DMs, Blackjack and Roulette with play chips, and Matador and chess with your friends.">
 </head>
 <body class="home-body">
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -234,30 +269,44 @@ foreach ([1, 21, 39] as $homeField) {
         <section class="home-feature" id="games" aria-labelledby="home-games-title">
             <div class="home-feature-text">
                 <p class="home-kicker"><img src="/assets/images/icons/controler.png" alt="">Games<?php if (!$homeGamesOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
-                <h2 id="home-games-title">Matador, without the box.</h2>
+                <h2 id="home-games-title">Board games, without the box.</h2>
                 <p>
-                    The Danish classic for 2 to 4 players, with houses, hotels, Prøv lykken and trading.
-                    One die, no auctions and a 30 second turn timer, so nobody can stall when they're losing.
+                    Matador, the Danish classic for 2 to 4 players, with houses, hotels and Prøv lykken, and a
+                    30 second turn timer so nobody can stall when they're losing. Or chess against a friend, with a
+                    clock from 3 to 30 minutes, or none at all.
                 </p>
                 <ul class="home-ticks">
                     <li>Public games, a 6-character code or invite only</li>
-                    <li>Saves after every move, so you can finish tomorrow</li>
-                    <li>A chat for every game</li>
+                    <li>Matador saves after every move, so you can finish tomorrow</li>
+                    <li>Draw offers and rematches in chess</li>
+                    <li>A chat and a leaderboard for both</li>
                 </ul>
                 <a class="home-link" href="/games/">Open games <span aria-hidden="true">→</span></a>
             </div>
-            <div class="home-feature-art home-deeds" aria-hidden="true">
-                <?php foreach ($homeDeeds as $homeDeed): ?>
-                    <div class="home-deed home-deed-g<?= (int) $homeDeed['group'] ?>">
-                        <p class="home-deed-band">Skøde<b><?= htmlspecialchars($homeDeed['name']) ?></b></p>
-                        <dl>
-                            <div><dt>Leje</dt><dd>kr. <?= homeKroner($homeDeed['rent'][0]) ?></dd></div>
-                            <div><dt>Med hotel</dt><dd>kr. <?= homeKroner($homeDeed['rent'][5]) ?></dd></div>
-                            <div><dt>Hus</dt><dd>kr. <?= homeKroner($homeDeed['house']) ?></dd></div>
-                        </dl>
-                        <p class="home-deed-price">kr. <?= homeKroner($homeDeed['price']) ?></p>
+            <div class="home-feature-art home-games-art" aria-hidden="true">
+                <!-- A chessboard just after Scholar's mate -->
+                <div class="home-chess">
+                    <div class="home-chess-board">
+                        <?php foreach ($homeChessSquares as $homeChessSquare): ?>
+                            <span class="home-chess-square <?= $homeChessSquare['class'] ?>"><?= $homeChessSquare['piece'] ?></span>
+                        <?php endforeach; ?>
                     </div>
-                <?php endforeach; ?>
+                    <span class="home-chess-tag">Checkmate in 4</span>
+                </div>
+                <!-- And three Matador title deeds fanned out in front of its corner -->
+                <div class="home-deeds">
+                    <?php foreach ($homeDeeds as $homeDeed): ?>
+                        <div class="home-deed home-deed-g<?= (int) $homeDeed['group'] ?>">
+                            <p class="home-deed-band">Skøde<b><?= htmlspecialchars($homeDeed['name']) ?></b></p>
+                            <dl>
+                                <div><dt>Leje</dt><dd>kr. <?= homeKroner($homeDeed['rent'][0]) ?></dd></div>
+                                <div><dt>Med hotel</dt><dd>kr. <?= homeKroner($homeDeed['rent'][5]) ?></dd></div>
+                                <div><dt>Hus</dt><dd>kr. <?= homeKroner($homeDeed['house']) ?></dd></div>
+                            </dl>
+                            <p class="home-deed-price">kr. <?= homeKroner($homeDeed['price']) ?></p>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </section>
 

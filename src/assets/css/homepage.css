@@ -986,21 +986,106 @@ html.home {
   }
 }
 
-/* Games: three Matador title deeds, fanned out, in the board's colours (matador.css) */
+/* Games: a chessboard in the chess page's colours (chess.css), with three Matador title deeds fanned out in front of
+   its corner in the board's colours (matador.css) */
+.home-games-art {
+  height: 460px;
+}
+
+.home-chess {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 340px;
+  max-width: 76%;
+  padding: 12px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #6b4529, #4a2f1b);
+  box-shadow: 0 0 0 2px #3d2716, 0 24px 50px rgba(0, 0, 0, 0.22);
+  transform: rotate(2deg);
+}
+
+.home-chess-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  overflow: hidden;
+  border-radius: 4px;
+  container-type: inline-size; /* the pieces are sized after the board */
+}
+
+.home-chess-square {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  background: var(--home-square);
+}
+
+.home-chess-square.is-light { --home-square: #f0d9b5; }
+.home-chess-square.is-dark { --home-square: #b58863; }
+
+/* The last move, and the king that's been mated */
+.home-chess-square.is-last {
+  background: linear-gradient(rgba(255, 214, 0, 0.42), rgba(255, 214, 0, 0.42)), var(--home-square);
+}
+
+.home-chess-square.is-check {
+  background: radial-gradient(circle, #e5484d 0%, color-mix(in srgb, #e5484d 60%, transparent) 40%, transparent 72%), var(--home-square);
+}
+
+/* A piece: the filled letter in its colour, and for White the outlined letter (data-edge) on top as its edge */
+.home-piece {
+  position: relative;
+  font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", sans-serif;
+  font-size: calc(100cqi / 8 * 0.8);
+  line-height: 1;
+  color: #1c1c1c;
+}
+
+.home-piece.is-white {
+  color: #fff;
+}
+
+.home-piece.is-white::after {
+  content: attr(data-edge);
+  position: absolute;
+  inset: 0;
+  color: #1c1c1c;
+}
+
+/* Like the blackjack hand's total */
+.home-chess-tag {
+  position: absolute;
+  top: -14px;
+  right: 22px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
 .home-deeds {
-  height: 380px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 290px;
+  height: 250px;
 }
 
 .home-deed {
   --home-deed-colour: #3d6fd6;
   position: absolute;
-  top: 40px;
+  top: 30px;
   left: 50%;
-  width: 180px;
-  margin-left: -90px;
-  padding: 10px;
+  width: 156px;
+  margin-left: -78px;
+  padding: 9px;
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: 11px;
   background: #fbfaf6;
   color: #1a1d23;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
@@ -1011,21 +1096,21 @@ html.home {
 .home-deed-g5 { --home-deed-colour: #e04848; }
 .home-deed-g8 { --home-deed-colour: #8e5bd1; }
 
-.home-deed:nth-child(1) { transform: translateX(-160px) translateY(18px) rotate(-10deg); }
-.home-deed:nth-child(2) { transform: translateY(-10px); z-index: 1; }
-.home-deed:nth-child(3) { transform: translateX(160px) translateY(18px) rotate(10deg); z-index: 2; }
+.home-deed:nth-child(1) { transform: translateX(-72px) translateY(20px) rotate(-12deg); }
+.home-deed:nth-child(2) { transform: translateY(-4px); z-index: 1; }
+.home-deed:nth-child(3) { transform: translateX(72px) translateY(20px) rotate(10deg); z-index: 2; }
 
-.home-deeds:hover .home-deed:nth-child(1) { transform: translateX(-180px) translateY(10px) rotate(-14deg); }
-.home-deeds:hover .home-deed:nth-child(2) { transform: translateY(-26px); }
-.home-deeds:hover .home-deed:nth-child(3) { transform: translateX(180px) translateY(10px) rotate(14deg); }
+.home-deeds:hover .home-deed:nth-child(1) { transform: translateX(-86px) translateY(12px) rotate(-16deg); }
+.home-deeds:hover .home-deed:nth-child(2) { transform: translateY(-18px); }
+.home-deeds:hover .home-deed:nth-child(3) { transform: translateX(86px) translateY(12px) rotate(14deg); }
 
 .home-deed-band {
-  margin: 0 0 12px;
-  padding: 12px 8px;
+  margin: 0 0 10px;
+  padding: 10px 6px;
   border-radius: 6px;
   background: var(--home-deed-colour);
   color: #fff;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-align: center;
@@ -1035,22 +1120,22 @@ html.home {
 .home-deed-band b {
   display: block;
   margin-top: 4px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   letter-spacing: 0;
   text-transform: none;
 }
 
 .home-deed dl {
-  margin: 0 4px;
+  margin: 0 3px;
   display: grid;
-  gap: 6px;
-  font-size: 0.82rem;
+  gap: 5px;
+  font-size: 0.74rem;
 }
 
 .home-deed dl div {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
 .home-deed dt {
@@ -1064,9 +1149,10 @@ html.home {
 }
 
 .home-deed-price {
-  margin: 14px 4px 4px;
-  padding-top: 10px;
+  margin: 12px 3px 3px;
+  padding-top: 8px;
   border-top: 1px dashed rgba(26, 29, 35, 0.25);
+  font-size: 0.9rem;
   font-weight: 800;
   text-align: center;
 }
@@ -1256,7 +1342,8 @@ html.home {
     margin: 0 auto;
   }
 
-  .home-casino-art {
+  .home-casino-art,
+  .home-games-art {
     max-width: 540px;
     width: 100%;
     margin: 0 auto;
@@ -1397,30 +1484,56 @@ html.home {
     height: 120px;
   }
 
+  .home-games-art {
+    height: 400px;
+  }
+
+  .home-chess {
+    padding: 9px;
+    border-radius: 12px;
+  }
+
   .home-deeds {
-    height: 320px;
+    width: 220px;
+    height: 210px;
   }
 
   .home-deed {
-    width: 142px;
-    margin-left: -71px;
-    padding: 8px;
+    top: 24px;
+    width: 126px;
+    margin-left: -63px;
+    padding: 7px;
+  }
+
+  .home-deed-band {
+    margin-bottom: 8px;
+    padding: 8px 4px;
+    font-size: 0.5rem;
   }
 
   .home-deed-band b {
-    font-size: 0.8rem;
-  }
-
-  .home-deed dl {
     font-size: 0.72rem;
   }
 
+  .home-deed dl {
+    margin: 0 2px;
+    gap: 4px;
+    font-size: 0.6rem;
+  }
+
+  .home-deed-price {
+    margin-top: 8px;
+    padding-top: 6px;
+    font-size: 0.75rem;
+  }
+
+  /* The fan stays put, as there's no hover on a phone and no room to spread out */
   .home-deed:nth-child(1),
-  .home-deeds:hover .home-deed:nth-child(1) { transform: translateX(-104px) translateY(16px) rotate(-10deg); }
+  .home-deeds:hover .home-deed:nth-child(1) { transform: translateX(-54px) translateY(16px) rotate(-12deg); }
   .home-deed:nth-child(2),
-  .home-deeds:hover .home-deed:nth-child(2) { transform: translateY(-8px); }
+  .home-deeds:hover .home-deed:nth-child(2) { transform: translateY(-4px); }
   .home-deed:nth-child(3),
-  .home-deeds:hover .home-deed:nth-child(3) { transform: translateX(104px) translateY(16px) rotate(10deg); }
+  .home-deeds:hover .home-deed:nth-child(3) { transform: translateX(54px) translateY(16px) rotate(10deg); }
 
   .home-safety-grid {
     grid-template-columns: 1fr;
