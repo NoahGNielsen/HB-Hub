@@ -1,17 +1,13 @@
 <?php
-// The frontpage: what HB Hub is, for visitors, with its own top bar instead of the app's nav panel (navPanel.php).
-// Logged in users get a way back into the app instead of Log in / Sign up.
+// The frontpage: what HB Hub is, for visitors, with its own top bar (homeNav.php) instead of the app's nav panel
+// (navPanel.php). Logged in users get a way back into the app instead of Log in / Sign up.
 $hbHubSessionOptional = true; // the frontpage is open to everyone
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/matador/board.php';
 $siteConfig ??= require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
 $homeUser = $hbHubUser ?? null;
-$homeAvatarSrc = $homeUser !== null
-    ? hbHubAvatarUrl((int) $homeUser['userId'], $homeUser['userAvatarAttachmentId'] !== null ? (int) $homeUser['userAvatarAttachmentId'] : null)
-    : null;
 
 // Casino and Games get a "Coming soon" tag while they aren't open to everyone (casino_access / games_access)
 $homeCasinoOpen = (int) ($siteConfig['casino_access'] ?? 2) === 1;
@@ -52,33 +48,7 @@ foreach ([1, 21, 39] as $homeField) {
     <meta name="description" content="HB Hub is where school hangs out online: group chats and DMs, Blackjack and Roulette with play chips, and Matador with your friends.">
 </head>
 <body class="home-body">
-    <header class="home-nav">
-        <a class="home-brand" href="/" aria-label="HB Hub, frontpage">
-            <span class="home-brand-mark" aria-hidden="true">HB</span>
-            <span class="home-brand-name">Hub</span>
-        </a>
-        <nav class="home-nav-links" aria-label="Frontpage sections">
-            <a href="#chat">Chat</a>
-            <a href="#casino">Casino</a>
-            <a href="#games">Games</a>
-            <a href="#safety">Safety</a>
-        </nav>
-        <div class="home-nav-actions">
-            <?php if ($homeUser === null): ?>
-                <a class="home-btn home-btn-ghost" href="/userMgmt/login">Log in</a>
-                <a class="home-btn home-btn-primary" href="/userMgmt/onboarding">Sign up</a>
-            <?php else: ?>
-                <a class="home-btn home-btn-primary" href="/chat/">Open HB Hub</a>
-                <a class="home-avatar" href="/otherPages/profile" aria-label="Your profile" title="Your profile">
-                    <?php if ($homeAvatarSrc !== null): ?>
-                        <img src="<?= htmlspecialchars($homeAvatarSrc) ?>" alt="">
-                    <?php else: ?>
-                        <span aria-hidden="true"><?= htmlspecialchars(mb_strtoupper(mb_substr($homeUser['userName'], 0, 1))) ?></span>
-                    <?php endif; ?>
-                </a>
-            <?php endif; ?>
-        </div>
-    </header>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
 
     <main>
         <!-- Hero: always dark, like the app's bars -->
@@ -125,14 +95,14 @@ foreach ([1, 21, 39] as $homeField) {
                         <ul class="home-chat-thread">
                             <li class="home-msg">
                                 <span class="home-msg-avatar home-msg-avatar-a">M</span>
-                                <p><b>Maja</b>blackjack after 6th period?</p>
+                                <p><b>Maja</b>Blackjack after the lesson?</p>
                             </li>
                             <li class="home-msg">
                                 <span class="home-msg-avatar home-msg-avatar-b">O</span>
-                                <p><b>Oliver</b>only if I get my 2,500 chips back</p>
+                                <p><b>Oliver</b>Only if I get my 2,500 chips back</p>
                             </li>
                             <li class="home-msg home-msg-me">
-                                <p>matador instead. I call Rådhuspladsen</p>
+                                <p>Nah, i call matador instead :)</p>
                             </li>
                             <li class="home-msg home-msg-notice">
                                 <p>Maja invited you to a Matador game</p>
