@@ -1,7 +1,7 @@
 <?php require_once __DIR__ . '/maintenance.php'; ?>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/x-icon" href="#">
+<link rel="icon" type="image/svg+xml" href="https://hbhub.noahgajnielsen.dk/assets/images/favicon.svg?v=<?= filemtime(__DIR__ . '/../images/favicon.svg') ?>">
 <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mainStyle.css?v=<?= filemtime(__DIR__ . '/../css/mainStyle.css') ?>">
 <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
 <link rel="terms-of-service" href="https://hbhub.noahgajnielsen.dk/legal/terms.html">

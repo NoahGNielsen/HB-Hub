@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The frontpage logo's mark (.home-brand-mark in homepage.css): an orange tile tilted -6deg with a white "HB".
+       The letters are paths, since a favicon can't load the Raleway web font. -->
+  <g transform="rotate(-6 32 32)">
+    <rect x="4" y="4" width="56" height="56" rx="17" fill="#f2711c"/>
+    <path fill="#fff" fill-rule="evenodd" d="M15 22h5.5v7.8h6V22H32v20h-5.5v-7.6h-6V42H15z
+      M34 22h8.2c3.6 0 5.8 2 5.8 4.9 0 2-1 3.5-2.7 4.2 2.3.6 3.7 2.4 3.7 4.8 0 3.4-2.5 6.1-6.4 6.1H34z
+      M39.5 26.2h2.4c1 0 1.6.6 1.6 1.7s-.6 1.7-1.6 1.7h-2.4z
+      M39.5 33.6h2.9c1.2 0 1.9.8 1.9 2.1s-.7 2.1-1.9 2.1h-2.9z"/>
+  </g>
+</svg>
