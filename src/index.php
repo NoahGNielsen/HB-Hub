@@ -171,8 +171,8 @@ foreach ([1, 21, 39] as $homeField) {
                         <span class="home-inbox-count">9+</span>
                     </li>
                     <li class="home-inbox-request">
-                        <span class="home-inbox-avatar">?</span>
-                        <span class="home-inbox-text"><b>Message request</b>Someone wants to chat</span>
+                        <span class="home-inbox-avatar">P</span>
+                        <span class="home-inbox-text"><b>Message request</b>Patrick wants to chat</span>
                         <span class="home-inbox-actions"><span>Accept</span><span>Block</span></span>
                     </li>
                 </ul>
