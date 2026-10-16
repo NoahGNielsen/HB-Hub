@@ -2,7 +2,7 @@
 // Games notifications (types "games.<kind>"). See assets/php/notifications.php.
 //
 // Each kind's text is what comes after the name of who did it, like "<strong>Alice</strong> invited you to Matador
-// at Friday night". They all link to the Matador page's invites, as joining a game is a form post there.
+// at Friday night". They all link to the invites on the game's page, as joining a game is a form post there.
 
 return [
     'icon' => '/assets/images/icons/controler.png',
@@ -25,6 +25,12 @@ return [
         'matadorContinue' => [
             'text' => static fn (array $data): string => 'is continuing your Matador game ' . ($data['roomName'] ?? '') . '. Your seat is waiting',
             'link' => static fn (array $data): string => '/games/matador/#invites',
+        ],
+        // The host of a chess game invited the user while it waits for a player (assets/php/games/chess/room.php).
+        // Data: roomId, roomName.
+        'chessInvite' => [
+            'text' => static fn (array $data): string => 'invited you to a game of chess at ' . ($data['roomName'] ?? 'their game'),
+            'link' => static fn (array $data): string => '/games/chess/#invites',
         ],
     ],
 ];

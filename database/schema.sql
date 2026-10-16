@@ -200,6 +200,85 @@ CREATE TABLE `HBHub-Chats` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-ChessChat`
+--
+
+CREATE TABLE `HBHub-ChessChat` (
+  `chatMessageId` int UNSIGNED NOT NULL,
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who wrote it',
+  `chatText` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `chatTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-ChessInvites`
+--
+
+CREATE TABLE `HBHub-ChessInvites` (
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who is invited',
+  `invitedByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The host who invited them, NULL once that account is gone',
+  `inviteTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-ChessResults`
+--
+
+CREATE TABLE `HBHub-ChessResults` (
+  `resultId` bigint UNSIGNED NOT NULL,
+  `roomId` int UNSIGNED DEFAULT NULL COMMENT 'The room it was played in, NULL once the room is gone',
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT 'The room''s type then: 1 Public, 2 Invite-only, 3 Code',
+  `userId` int UNSIGNED NOT NULL,
+  `opponentUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who they played, NULL once that account is gone',
+  `playerColour` char(1) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'w White, b Black',
+  `playerResult` tinyint UNSIGNED NOT NULL COMMENT '0 Lost\r\n1 Draw\r\n2 Won',
+  `resultReason` varchar(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'How it ended: checkmate, resign, time, abandoned, left, stalemate, repetition, fiftyMoves, material or agreement',
+  `gameMoves` smallint UNSIGNED NOT NULL COMMENT 'Full moves played (White''s and Black''s count as one)',
+  `gameClock` varchar(8) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The time control, like 10+0 (minutes + seconds per move), NULL without a clock',
+  `resultTimestamp` datetime NOT NULL COMMENT 'UTC, when the game ended'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-ChessRooms`
+--
+
+CREATE TABLE `HBHub-ChessRooms` (
+  `roomId` int UNSIGNED NOT NULL,
+  `roomName` varchar(48) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT '1 Public (listed in the lobby)\r\n2 Invite-only (only invited users can join, also with the code)\r\n3 Code (anyone with the code can join)',
+  `roomCode` char(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Join code: capital letters and digits, without 0 O 1 I L',
+  `roomHostUserId` int UNSIGNED DEFAULT NULL,
+  `roomPhase` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Waiting for a player\r\n2 Being played\r\n3 Over, both players still there (the same as in roomState)',
+  `roomRevision` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Goes up on every change, so the game can tell when nothing changed since it last asked',
+  `roomState` json NOT NULL COMMENT 'The game (src/assets/php/games/chess/game.php)',
+  `roomCreatedTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-ChessSeats`
+--
+
+CREATE TABLE `HBHub-ChessSeats` (
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `seatNumber` tinyint UNSIGNED NOT NULL COMMENT '1-2, the player''s seat in roomState (the colours are drawn when a game starts)',
+  `seatJoinedTimestamp` datetime NOT NULL COMMENT 'UTC',
+  `seatLastSeenTimestamp` datetime NOT NULL COMMENT 'UTC, kept up to date while the game is open, to tell who is away'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-LoginDevices`
 --
 
@@ -488,6 +567,49 @@ ALTER TABLE `HBHub-Chats`
   ADD KEY `fk_chats_icon` (`chatIconAttachmentId`);
 
 --
+-- Indexes for table `HBHub-ChessChat`
+--
+ALTER TABLE `HBHub-ChessChat`
+  ADD PRIMARY KEY (`chatMessageId`),
+  ADD KEY `roomMessage` (`roomId`,`chatMessageId`),
+  ADD KEY `userTime` (`userId`,`chatTimestamp`);
+
+--
+-- Indexes for table `HBHub-ChessInvites`
+--
+ALTER TABLE `HBHub-ChessInvites`
+  ADD PRIMARY KEY (`roomId`,`userId`),
+  ADD KEY `userId` (`userId`),
+  ADD KEY `fk_chessinvites_by` (`invitedByUserId`);
+
+--
+-- Indexes for table `HBHub-ChessResults`
+--
+ALTER TABLE `HBHub-ChessResults`
+  ADD PRIMARY KEY (`resultId`),
+  ADD KEY `userResult` (`userId`,`playerResult`),
+  ADD KEY `resultTimestamp` (`resultTimestamp`),
+  ADD KEY `fk_chessresults_room` (`roomId`),
+  ADD KEY `fk_chessresults_opponent` (`opponentUserId`);
+
+--
+-- Indexes for table `HBHub-ChessRooms`
+--
+ALTER TABLE `HBHub-ChessRooms`
+  ADD PRIMARY KEY (`roomId`),
+  ADD UNIQUE KEY `roomCode` (`roomCode`),
+  ADD KEY `typePhase` (`roomType`,`roomPhase`),
+  ADD KEY `fk_chessrooms_host` (`roomHostUserId`);
+
+--
+-- Indexes for table `HBHub-ChessSeats`
+--
+ALTER TABLE `HBHub-ChessSeats`
+  ADD PRIMARY KEY (`roomId`,`seatNumber`),
+  ADD UNIQUE KEY `userId` (`userId`) COMMENT 'One chess game at a time',
+  ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
+
+--
 -- Indexes for table `HBHub-LoginDevices`
 --
 ALTER TABLE `HBHub-LoginDevices`
@@ -628,6 +750,24 @@ ALTER TABLE `HBHub-Chats`
   MODIFY `chatId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `HBHub-ChessChat`
+--
+ALTER TABLE `HBHub-ChessChat`
+  MODIFY `chatMessageId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-ChessResults`
+--
+ALTER TABLE `HBHub-ChessResults`
+  MODIFY `resultId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-ChessRooms`
+--
+ALTER TABLE `HBHub-ChessRooms`
+  MODIFY `roomId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-MatadorChat`
 --
 ALTER TABLE `HBHub-MatadorChat`
@@ -732,6 +872,42 @@ ALTER TABLE `HBHub-ChatMembers`
 --
 ALTER TABLE `HBHub-Chats`
   ADD CONSTRAINT `fk_chats_icon` FOREIGN KEY (`chatIconAttachmentId`) REFERENCES `HBHub-Attachments` (`attachmentId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-ChessChat`
+--
+ALTER TABLE `HBHub-ChessChat`
+  ADD CONSTRAINT `fk_chesschat_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-ChessRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_chesschat_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-ChessInvites`
+--
+ALTER TABLE `HBHub-ChessInvites`
+  ADD CONSTRAINT `fk_chessinvites_by` FOREIGN KEY (`invitedByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_chessinvites_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-ChessRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_chessinvites_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-ChessResults`
+--
+ALTER TABLE `HBHub-ChessResults`
+  ADD CONSTRAINT `fk_chessresults_opponent` FOREIGN KEY (`opponentUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_chessresults_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-ChessRooms` (`roomId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_chessresults_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-ChessRooms`
+--
+ALTER TABLE `HBHub-ChessRooms`
+  ADD CONSTRAINT `fk_chessrooms_host` FOREIGN KEY (`roomHostUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-ChessSeats`
+--
+ALTER TABLE `HBHub-ChessSeats`
+  ADD CONSTRAINT `fk_chessseats_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-ChessRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_chessseats_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-LoginDevices`

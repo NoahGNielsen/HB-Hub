@@ -1,0 +1,707 @@
+/* A chess game (games/chess/game.php, drawn by chessGame.js). Loaded after casino.css and games.css.
+   The board is an 8 x 8 grid of buttons, a8 first (h1 first when Black is below). The pieces are the chess letters of
+   the Noto Sans Symbols 2 font: the filled one in the piece's colour, with the outlined one on top for White's. */
+.ch {
+  --ch-light: #f0d9b5;
+  --ch-dark: #b58863;
+  --ch-last: rgba(255, 214, 0, 0.42);
+  --ch-selected: rgba(20, 85, 30, 0.5);
+  --ch-target: rgba(20, 85, 30, 0.45);
+  --ch-check: #e5484d;
+  --ch-red: #e5484d;
+  --ch-green: #30a46c;
+  --ch-pieces: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", sans-serif;
+  max-width: 1240px;
+  margin: 24px auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.ch [hidden] {
+  display: none !important;
+}
+
+.ch-header {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ch-heading {
+  min-width: 0;
+}
+
+.ch-title {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.ch-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.ch-header-actions {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Invite, Turn around, Sound and Leave game: icons, with their names in title and aria-label */
+.ch-icon-btn {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ch-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The sound button shows the icon for how it is now (aria-pressed, set by chessGame.js) */
+.ch-icon-btn[aria-pressed="true"] .ch-icon-sound-off,
+.ch-icon-btn[aria-pressed="false"] .ch-icon-sound-on {
+  display: none;
+}
+
+/* The join code: a click copies it */
+.ch-code {
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 2px dashed color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ch-code:hover {
+  border-color: var(--accent);
+}
+
+.ch-code:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ch-code-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.ch-code-value {
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+}
+
+.ch-code-copied {
+  color: var(--ch-green);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.ch-code-copied:empty {
+  display: none;
+}
+
+/* The board with a player above and below it on the left, the game, the moves and the chat on the right */
+.ch-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+  gap: 20px;
+}
+
+.ch-play {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ch-bar-top { order: 0; }
+.ch-board { order: 1; }
+.ch-bar-bottom { order: 2; }
+
+/* A player: picture, name, colour and status, the pieces they've taken, and their clock */
+.ch-bar {
+  min-height: 48px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--secondary);
+}
+
+.ch-bar.is-turn {
+  border-color: var(--accent);
+}
+
+.ch-bar.is-empty {
+  opacity: 0.7;
+}
+
+.ch-avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 12%, var(--secondary));
+  font-weight: 700;
+}
+
+.ch-avatar:empty {
+  visibility: hidden;
+}
+
+.ch-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ch-bar-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ch-bar-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.ch-bar-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  font-size: 0.8rem;
+}
+
+.ch-bar-status {
+  opacity: 0.75;
+}
+
+.ch-captured {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 1.05rem;
+}
+
+.ch-captured .ch-piece {
+  margin-right: -0.2em;
+}
+
+/* Off the board Black's pieces get an edge in the text's colour, so they show on the dark theme too */
+.ch-captured .ch-piece.is-black {
+  filter: drop-shadow(0 0 1px color-mix(in srgb, var(--text) 80%, transparent));
+}
+
+.ch-advantage {
+  margin-left: 0.4em;
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.ch-clock {
+  flex: none;
+  min-width: 4.5em;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--background);
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  opacity: 0.7;
+}
+
+.ch-clock.is-running {
+  background: var(--accent);
+  color: #fff;
+  opacity: 1;
+}
+
+.ch-clock.is-low {
+  color: var(--ch-red);
+}
+
+.ch-clock.is-running.is-low {
+  background: var(--ch-red);
+  color: #fff;
+}
+
+/* The board. Its squares size the pieces (cqi: a hundredth of the board's width) */
+.ch-board {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  container-type: inline-size;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ch-board.is-waiting .ch-piece {
+  opacity: 0.45;
+}
+
+.ch-square {
+  position: relative;
+  min-width: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0;
+  background: var(--ch-square);
+  font: inherit;
+  cursor: default;
+}
+
+.ch-square.is-light { --ch-square: var(--ch-light); --ch-coord: var(--ch-dark); }
+.ch-square.is-dark { --ch-square: var(--ch-dark); --ch-coord: var(--ch-light); }
+
+.ch-square:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+  z-index: 1;
+}
+
+.ch-square.is-last {
+  background: linear-gradient(var(--ch-last), var(--ch-last)), var(--ch-square);
+}
+
+.ch-square.is-selected {
+  background: linear-gradient(var(--ch-selected), var(--ch-selected)), var(--ch-square);
+}
+
+.ch-square.is-check {
+  background: radial-gradient(circle, var(--ch-check) 0%, color-mix(in srgb, var(--ch-check) 60%, transparent) 40%, transparent 72%), var(--ch-square);
+}
+
+.ch-square.is-movable,
+.ch-square.is-target {
+  cursor: pointer;
+  touch-action: none; /* dragging a piece doesn't scroll the page */
+}
+
+/* Where the picked-up piece can go: a dot on an empty square, a ring round a piece it takes */
+.ch-square.is-target::after {
+  content: "";
+  position: absolute;
+  width: 32%;
+  height: 32%;
+  border-radius: 50%;
+  background: var(--ch-target);
+  pointer-events: none;
+}
+
+.ch-square.is-capture::after {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  background: none;
+  border: calc(100cqi / 8 * 0.08) solid var(--ch-target);
+}
+
+@media (hover: hover) {
+  .ch-square.is-target:hover {
+    background: linear-gradient(var(--ch-target), var(--ch-target)), var(--ch-square);
+  }
+}
+
+.ch-square.is-dragged .ch-piece {
+  opacity: 0.3;
+}
+
+.ch-coord {
+  position: absolute;
+  color: var(--ch-coord);
+  font-size: max(9px, calc(100cqi / 8 * 0.17));
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.ch-coord-rank {
+  top: 4%;
+  left: 5%;
+}
+
+.ch-coord-file {
+  right: 5%;
+  bottom: 4%;
+}
+
+/* A piece: the filled letter in its colour, and for White the outlined letter on top as its edge */
+.ch-piece {
+  position: relative;
+  display: inline-block;
+  font-family: var(--ch-pieces);
+  font-weight: 400;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.ch-square .ch-piece,
+.ch-ghost .ch-piece {
+  font-size: calc(100cqi / 8 * 0.8);
+}
+
+.ch-piece.is-white { color: #fff; }
+.ch-piece.is-black { color: #1c1c1c; }
+
+.ch-piece.is-white::after {
+  position: absolute;
+  inset: 0;
+  color: #1c1c1c;
+}
+
+.ch-piece.is-k::before { content: "\265A"; }
+.ch-piece.is-q::before { content: "\265B"; }
+.ch-piece.is-r::before { content: "\265C"; }
+.ch-piece.is-b::before { content: "\265D"; }
+.ch-piece.is-n::before { content: "\265E"; }
+.ch-piece.is-p::before { content: "\265F\FE0E"; }
+.ch-piece.is-white.is-k::after { content: "\2654"; }
+.ch-piece.is-white.is-q::after { content: "\2655"; }
+.ch-piece.is-white.is-r::after { content: "\2656"; }
+.ch-piece.is-white.is-b::after { content: "\2657"; }
+.ch-piece.is-white.is-n::after { content: "\2658"; }
+.ch-piece.is-white.is-p::after { content: "\2659"; }
+
+/* The piece being dragged follows the pointer (chessGame.js sets where) */
+.ch-ghost {
+  position: absolute;
+  left: var(--ch-ghost-x);
+  top: var(--ch-ghost-y);
+  width: var(--ch-ghost-size);
+  height: var(--ch-ghost-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%) scale(1.1);
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+}
+
+/* The panels on the right */
+.ch-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ch-panel {
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.ch-panel-title {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.ch-small-btn {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.ch-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.75;
+}
+
+.ch-hint:empty {
+  display: none;
+}
+
+.ch-status {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.ch-message {
+  margin: 0 0 10px;
+  color: var(--ch-red);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.ch-message:empty {
+  display: none;
+}
+
+.ch-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ch-actions:empty {
+  display: none;
+}
+
+.ch-action-text {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.ch-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ch-action-buttons:empty {
+  display: none;
+}
+
+/* The moves, two to a line */
+.ch-moves {
+  max-height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.ch-moves:empty {
+  display: none;
+}
+
+.ch-move-line {
+  display: grid;
+  grid-template-columns: 2.6em 1fr 1fr;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+
+.ch-move-line:nth-child(odd) {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.ch-move-number {
+  opacity: 0.6;
+}
+
+.ch-move {
+  font-weight: 600;
+}
+
+.ch-move.is-last {
+  color: var(--accent);
+}
+
+/* The chat, the newest last */
+.ch-chat {
+  max-height: 240px;
+  margin: 0 0 10px;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.ch-chat:empty {
+  display: none;
+}
+
+.ch-chat-item {
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--background);
+  overflow-wrap: anywhere;
+}
+
+.ch-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.ch-chat-name {
+  font-weight: 700;
+}
+
+.ch-chat-time {
+  margin-left: auto;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.ch-chat-text {
+  margin: 2px 0 0;
+}
+
+.ch-chat-form {
+  margin-top: 10px;
+}
+
+.ch-rules {
+  margin-top: 20px;
+}
+
+.ch-rules summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ch-rules .casino-rule-list {
+  margin-top: 12px;
+}
+
+/* Promoting a pawn */
+.ch-promotion-choices {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.ch-promotion-choice {
+  aspect-ratio: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--ch-light);
+  cursor: pointer;
+}
+
+.ch-promotion-choice:hover,
+.ch-promotion-choice:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.ch-promotion-choice .ch-piece {
+  font-size: 3rem;
+}
+
+/* Inviting someone */
+.ch-invite[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ch-invite p {
+  margin: 0;
+}
+
+.ch-invite-list {
+  max-height: min(320px, 45dvh);
+  margin: 4px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.ch-invite-user {
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+@media (max-width: 1000px) {
+  .ch-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .ch {
+    margin: 12px auto;
+  }
+
+  .ch-header {
+    flex-direction: column;
+  }
+
+  .ch-header-actions {
+    justify-content: flex-start;
+  }
+
+  .ch-title {
+    font-size: 1.3rem;
+  }
+
+  .ch-bar {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
+  .ch-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .ch-clock {
+    font-size: 1.05rem;
+  }
+}

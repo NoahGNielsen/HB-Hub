@@ -61,6 +61,8 @@ Played with virtual chips only. No real money is involved anywhere.
 | **Turn timer** | 30 seconds to act, reset by every move. Run out and your turn is passed on. The timer pauses while you owe money |
 | **Saves** | The game saves after every move. Leave and your seat is kept for you. The host can give an empty seat to someone else, or save and stop the game to continue it later |
 | **In-game chat** | A chat for each game, plus a sound when it's your turn |
+| **Chess** | Two-player chess with every rule: castling, en passant, promotion, and draws by stalemate, repetition, the 50-move rule and too few pieces. Public, code or invite-only games, with or without a clock (3+2 up to 30 minutes) |
+| **Chess extras** | Draw offers, resigning, aborting before both have moved, claiming the win when your opponent has gone, rematches with swapped colours, an in-game chat and a leaderboard |
 
 ### 🔔 Notifications
 
@@ -127,7 +129,7 @@ HB-Hub/
 ├── src/                 The website itself (everything here gets uploaded)
 │   ├── chat/            Messages and group chats
 │   ├── gambling/        The casino: chips, Blackjack and Roulette
-│   ├── games/           The Games section: Matador
+│   ├── games/           The Games section: Matador and Chess
 │   ├── admin/           The admin panel
 │   ├── userMgmt/        Login and sign-up
 │   ├── otherPages/      Profile, settings and notifications

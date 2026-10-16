@@ -33,7 +33,7 @@ return [
         'pass' => 'your_db_password',
     ],
     'casino_access' => 1, // Default: 1 | Who can open the casino (the Gambling pages): 0 = nobody, 1 = everyone, 2 = only admins (userRole 2)
-    'games_access' => 1, // Default: 1 | Who can open the Games pages (Matador): 0 = nobody, 1 = everyone, 2 = only admins (userRole 2)
+    'games_access' => 1, // Default: 1 | Who can open the Games pages (Matador, Chess): 0 = nobody, 1 = everyone, 2 = only admins (userRole 2)
 
     'giphy_gif_integration' => true, // Default: true | Set to false to disable Giphy integration
     'giphy_api_key' => 'your_giphy_api_key', // Required for Giphy integration. Get one at https://developers.giphy.com/

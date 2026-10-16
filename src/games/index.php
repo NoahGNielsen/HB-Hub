@@ -29,6 +29,12 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                         <span class="casino-game-text">The classic Danish board game. Buy streets in Copenhagen, build houses and hotels, and don't go bankrupt. 2 to 4 players.</span>
                     </a>
                 </li>
+                <li>
+                    <a class="casino-game" href="/games/chess/">
+                        <span class="casino-game-name">Chess</span>
+                        <span class="casino-game-text">Play chess against your friends, with or without a clock. Draw offers, rematches and a leaderboard. 2 players.</span>
+                    </a>
+                </li>
             </ul>
         </section>
     </main>
