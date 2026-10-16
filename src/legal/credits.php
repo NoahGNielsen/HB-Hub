@@ -90,7 +90,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                         <span class="credits-card-icon"><img src="/assets/images/icons/<?= htmlspecialchars($creditsIcon['file']) ?>" alt="" width="28" height="28"></span>
                         <h3><?= htmlspecialchars($creditsIcon['name']) ?></h3>
                         <p class="credits-card-use"><?= htmlspecialchars($creditsIcon['use']) ?></p>
-                        <p class="credits-card-by"><a href="<?= htmlspecialchars($creditsIcon['href']) ?>" title="<?= htmlspecialchars($creditsIcon['title']) ?>"><?= htmlspecialchars($creditsIcon['text']) ?></a></p>
+                        <p class="credits-card-by"><a  target="_blank" rel="noopener noreferrer" href="<?= htmlspecialchars($creditsIcon['href']) ?>" title="<?= htmlspecialchars($creditsIcon['title']) ?>"><?= htmlspecialchars($creditsIcon['text']) ?></a></p>
                     </li>
                 <?php endforeach; ?>
             </ul>
@@ -115,7 +115,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <?php endforeach; ?>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/kazuhikoarase/qrcode-generator">QR Code Generator for JavaScript</a></h3>
+                    <h3><a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener noreferrer">QR Code Generator for JavaScript</a></h3>
                     <p>By Kazuhiko Arase. Draws the QR code you scan to set up two-factor login.</p>
                     <p class="credits-license">MIT license</p>
                 </div>
