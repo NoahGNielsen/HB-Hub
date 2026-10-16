@@ -76,10 +76,6 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <dt>Code libraries</dt>
                     <dd>1</dd>
                 </div>
-                <div>
-                    <dt>Thank yous</dt>
-                    <dd>Lots</dd>
-                </div>
             </dl>
         </section>
 
@@ -125,23 +121,6 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
             </div>
             <p class="credits-fineprint">"QR Code" is a registered trademark of DENSO WAVE INCORPORATED.</p>
-        </section>
-
-        <!-- Last call, like the frontpage's -->
-        <section class="home-cta" aria-labelledby="credits-cta-title">
-            <h2 id="credits-cta-title">Go see them at work.</h2>
-            <?php if ($creditsUser === null): ?>
-                <p>Every icon on this page is waiting for you inside. Bring your class.</p>
-                <div class="home-hero-actions">
-                    <a class="home-btn home-btn-primary home-btn-lg" href="/userMgmt/onboarding">Sign up</a>
-                    <a class="home-btn home-btn-glass home-btn-lg" href="/">Back to the frontpage</a>
-                </div>
-            <?php else: ?>
-                <p>Your chats are waiting.</p>
-                <div class="home-hero-actions">
-                    <a class="home-btn home-btn-primary home-btn-lg" href="/chat/">Open HB Hub</a>
-                </div>
-            <?php endif; ?>
         </section>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
