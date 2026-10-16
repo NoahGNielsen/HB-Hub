@@ -44,7 +44,10 @@ if ($navUser !== null && (int) $navUser['userRole'] === 2) { // userRole in HBHu
 }
 ?>
 <header class="nav-top">
-    <a class="nav-brand" href="/">HB Hub</a>
+    <a class="nav-brand" href="/" aria-label="HB Hub, frontpage">
+        <span class="nav-brand-mark" aria-hidden="true">HB</span>
+        <span class="nav-brand-name">Hub</span>
+    </a>
     <div class="nav-top-actions">
         <?php if ($navCasinoChips !== null): ?>
             <a class="nav-chips" href="/gambling/" title="Your chips">
