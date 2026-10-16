@@ -349,15 +349,16 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
 
         <!-- Last call -->
         <section class="home-cta" aria-labelledby="home-cta-title">
-            <h2 id="home-cta-title">The bell's about to ring.</h2>
             <?php if ($homeUser === null): ?>
-                <p>Making an account takes about a minute. Bring your class.</p>
+                <h2 id="home-cta-title">Your class is already in here.</h2>
+                <p>Sign up in under a minute and stop missing the joke.</p>
                 <div class="home-hero-actions">
                     <a class="home-btn home-btn-primary home-btn-lg" href="/userMgmt/onboarding">Sign up</a>
                     <a class="home-btn home-btn-glass home-btn-lg" href="/userMgmt/login">Log in</a>
                 </div>
             <?php else: ?>
-                <p>Your chats are waiting.</p>
+                <h2 id="home-cta-title">Miss anything?</h2>
+                <p>Probably. Go catch up.</p>
                 <div class="home-hero-actions">
                     <a class="home-btn home-btn-primary home-btn-lg" href="/chat/">Open HB Hub</a>
                 </div>
