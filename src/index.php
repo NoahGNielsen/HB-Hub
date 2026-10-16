@@ -291,7 +291,6 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                             <span class="home-chess-square <?= $homeChessSquare['class'] ?>"><?= $homeChessSquare['piece'] ?></span>
                         <?php endforeach; ?>
                     </div>
-                    <span class="home-chess-tag">Checkmate in 4</span>
                 </div>
                 <!-- And three Matador title deeds fanned out in front of its corner -->
                 <div class="home-deeds">
