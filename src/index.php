@@ -226,6 +226,7 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                 </p>
                 <ul class="home-ticks">
                     <li>Blackjack solo, or at a table of up to 5</li>
+                    <li>Baccarat with 2-6 friends: Player or Banker?</li>
                     <li>European Roulette, every bet on the board</li>
                     <li>Leaderboards, if you're that good!</li>
                 </ul>

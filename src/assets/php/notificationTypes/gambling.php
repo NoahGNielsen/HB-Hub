@@ -13,5 +13,10 @@ return [
             'text' => static fn (array $data): string => 'invited you to Blackjack at ' . ($data['roomName'] ?? 'their table'),
             'link' => static fn (array $data): string => '/gambling/blackjack/#invites',
         ],
+        // The host of a Baccarat table invited the user (assets/php/casino/baccarat/room.php). Data: roomId, roomName.
+        'baccaratInvite' => [
+            'text' => static fn (array $data): string => 'invited you to Baccarat at ' . ($data['roomName'] ?? 'their table'),
+            'link' => static fn (array $data): string => '/gambling/baccarat/#invites',
+        ],
     ],
 ];

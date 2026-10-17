@@ -567,6 +567,21 @@ a.casino-game:focus-visible {
   opacity: 0.5;
 }
 
+/* Baccarat's two hands: the Player is blue and the Banker red, wherever they're named (and at the table, baccarat.css) */
+:root {
+  --bac-player: #2f6fd6;
+  --bac-banker: #d23c3c;
+  --bac-tie: #2fa36b;
+}
+
+.casino-bac-player {
+  color: color-mix(in srgb, var(--bac-player) 80%, var(--text));
+}
+
+.casino-bac-banker {
+  color: color-mix(in srgb, var(--bac-banker) 80%, var(--text));
+}
+
 /* Chips won or lost (gambling/roulette/leaderboard.php) */
 .casino-net-up {
   color: var(--casino-up);

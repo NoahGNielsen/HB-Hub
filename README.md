@@ -48,8 +48,9 @@ Played with virtual chips only. No real money is involved anywhere.
 |---|---|
 | **Chip wallet** | Every account starts with 2,500 chips and can collect 2,500 more once a day. All casino games share the same chips |
 | **Blackjack** | Play solo or at a table with up to 5 players. Tables can be public, joined with a 6-character code, or invite-only, and the host picks the minimum bet. Insurance, splits and doubling, with timers so nobody can stall the table |
+| **Baccarat** | Punto banco at a table of 2-6 players, public, with a code or invite-only. Bet on Player (1:1), Banker (1:1), Tie (8:1) and the pairs (11:1). 8 decks, shuffled at 75% with a notice to everyone at the table |
 | **Roulette** | European roulette (single zero). Every inside and outside bet can be placed straight on the board |
-| **Leaderboards** | Separate leaderboards for Blackjack and Roulette that can be sorted by any column. Win % only counts once you've played 20 rounds |
+| **Leaderboards** | Separate leaderboards for Blackjack, Baccarat and Roulette that can be sorted by any column. Win % only counts once you've played 20 rounds |
 
 ### 🎲 Games
 
@@ -128,7 +129,7 @@ Every option is explained in the [example config](config-examples/hbHubSiteConfi
 HB-Hub/
 ├── src/                 The website itself (everything here gets uploaded)
 │   ├── chat/            Messages and group chats
-│   ├── gambling/        The casino: chips, Blackjack and Roulette
+│   ├── gambling/        The casino: chips, Blackjack, Baccarat and Roulette
 │   ├── games/           The Games section: Matador and Chess
 │   ├── admin/           The admin panel
 │   ├── userMgmt/        Login and sign-up

@@ -1,0 +1,984 @@
+/* A Baccarat table (gambling/baccarat/table.php, drawn by baccaratTable.js). Loaded after casino.css, which has the
+   Player (blue), Banker (red) and Tie (green) colors. */
+.bac {
+  --bac-card-w: 64px;
+  --bac-card-h: 90px;
+  --bac-card-face: #fdfdfd;
+  --bac-card-red: #c8323c;
+  --bac-card-black: #1a1d23;
+  --bac-win: #2fa36b;
+  --bac-lose: #d64545;
+  --bac-player-text: color-mix(in srgb, var(--bac-player) 80%, var(--text));
+  --bac-banker-text: color-mix(in srgb, var(--bac-banker) 80%, var(--text));
+  --bac-tie-text: color-mix(in srgb, var(--bac-tie) 80%, var(--text));
+  max-width: 1040px;
+  margin: 32px auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.bac [hidden] {
+  display: none !important;
+}
+
+.bac-header {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.bac-heading {
+  min-width: 0;
+}
+
+.bac-title {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.bac-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.bac-header-actions {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The join code: a click copies it */
+.bac-code {
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 2px dashed color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.bac-code:hover {
+  border-color: var(--accent);
+}
+
+.bac-code:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.bac-code-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.bac-code-value {
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bac-code-copied {
+  color: var(--bac-win);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.bac-code-copied:empty {
+  display: none;
+}
+
+/* The shoe was shuffled: hard to miss, and it pulses once when it appears */
+.bac-shoe-notice {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-left: 6px solid var(--accent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--secondary));
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.bac-shoe-notice.is-new {
+  animation: bac-notice 0.9s ease-out;
+}
+
+@keyframes bac-notice {
+  0% {
+    transform: scale(0.97);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  60% {
+    transform: scale(1.01);
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+/* The table: what's happening at the top, the Player and the Banker in the middle, the seats along the bottom */
+.bac-table {
+  min-height: 440px;
+  padding: 24px 20px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  border-radius: 28px;
+  background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 12%, var(--secondary)), var(--secondary) 70%);
+}
+
+.bac-status {
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.bac-status-text {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.bac-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bac-timer-track {
+  width: 160px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--background);
+}
+
+.bac-timer-bar {
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  transition: transform 0.2s linear;
+}
+
+.bac-timer.is-low .bac-timer-bar {
+  background: var(--bac-lose);
+}
+
+.bac-timer-text {
+  min-width: 3ch;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The two hands side by side, the Player blue and the Banker red */
+.bac-coup {
+  width: 100%;
+  max-width: 640px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.bac-hand {
+  --side: var(--bac-player);
+  --side-text: var(--bac-player-text);
+  min-height: calc(var(--bac-card-h) + 92px);
+  padding: 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border: 3px solid color-mix(in srgb, var(--side) 55%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--side) 12%, var(--background));
+  transition: opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.bac-hand.is-banker {
+  --side: var(--bac-banker);
+  --side-text: var(--bac-banker-text);
+}
+
+.bac-hand.is-winner {
+  border-color: var(--side);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--side) 30%, transparent), 0 6px 24px color-mix(in srgb, var(--side) 35%, transparent);
+}
+
+.bac-hand.is-loser {
+  opacity: 0.55;
+}
+
+.bac-hand-label {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--side-text);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bac-total {
+  min-width: 1.6em;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--side);
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.bac-total:empty {
+  display: none;
+}
+
+.bac-hand-note {
+  min-height: 1.2em;
+  margin: 0;
+  color: var(--side-text);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* Cards, fanned out so each one's corner shows */
+.bac-cards {
+  min-height: var(--bac-card-h);
+  display: flex;
+  justify-content: center;
+}
+
+.bac-card {
+  position: relative;
+  flex: none;
+  width: var(--bac-card-w);
+  height: var(--bac-card-h);
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--bac-card-face);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  color: var(--bac-card-black);
+}
+
+.bac-card + .bac-card {
+  margin-left: calc(var(--bac-card-w) * -0.35);
+}
+
+.bac-card.is-red {
+  color: var(--bac-card-red);
+}
+
+.bac-card-corner {
+  position: absolute;
+  top: 5px;
+  left: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.bac-card-pip {
+  position: absolute;
+  right: 7px;
+  bottom: 5px;
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.bac-card.is-back {
+  border: 3px solid var(--bac-card-face);
+  background: repeating-linear-gradient(45deg, var(--accent) 0 6px, color-mix(in srgb, var(--accent) 70%, #000) 6px 12px);
+}
+
+.bac-card.is-new {
+  animation: bac-deal 0.35s ease-out;
+}
+
+@keyframes bac-deal {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.92);
+  }
+}
+
+/* Who won, in their color */
+.bac-result {
+  margin: 0;
+  padding: 6px 20px;
+  border-radius: 999px;
+  background: var(--bac-tie);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bac-result.is-player {
+  background: var(--bac-player);
+}
+
+.bac-result.is-banker {
+  background: var(--bac-banker);
+}
+
+/* How far through the shoe the table is: the bar is the cards left, the mark where it's shuffled */
+.bac-shoe {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.bac-shoe-track {
+  position: relative;
+  width: 140px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--background);
+}
+
+.bac-shoe-bar {
+  height: 100%;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 45%, transparent);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.bac-shoe-cut {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 12px;
+  background: var(--accent);
+}
+
+.bac-shoe-text {
+  opacity: 0.75;
+}
+
+/* Until the next hand is dealt, the last one stays on the table, faded */
+.bac-table.is-between .bac-cards,
+.bac-table.is-between .bac-total,
+.bac-table.is-between .bac-hand-note,
+.bac-table.is-between .bac-result,
+.bac-table.is-between .bac-bets,
+.bac-table.is-between .bac-seat-net {
+  opacity: 0.4;
+}
+
+/* Seats */
+.bac-seats {
+  width: 100%;
+  margin: auto 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  list-style: none;
+}
+
+.bac-seat {
+  min-width: 0;
+  min-height: 130px;
+  padding: 10px 6px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+}
+
+.bac-seat.is-you {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+}
+
+.bac-seat.is-away {
+  opacity: 0.6;
+}
+
+.bac-seat.is-empty {
+  justify-content: center;
+  border: 2px dashed color-mix(in srgb, var(--text) 15%, transparent);
+}
+
+.bac-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.5;
+}
+
+/* A player's bets as little tags in the spot's color */
+.bac-bets,
+.bac-bet-list {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  list-style: none;
+}
+
+.bac-bet {
+  --side: var(--bac-tie);
+  padding: 2px 8px;
+  border: 2px solid var(--side);
+  border-radius: 999px;
+  background: var(--side);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bac-bet.is-player,
+.bac-bet.is-playerPair {
+  --side: var(--bac-player);
+}
+
+.bac-bet.is-banker,
+.bac-bet.is-bankerPair {
+  --side: var(--bac-banker);
+}
+
+/* The pairs are the side bets, so they're outlined */
+.bac-bet.is-playerPair,
+.bac-bet.is-bankerPair {
+  background: transparent;
+  color: color-mix(in srgb, var(--side) 80%, var(--text));
+}
+
+.bac-bet.is-won {
+  box-shadow: 0 0 0 2px var(--bac-win);
+}
+
+.bac-bet.is-lost {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.bac-seat-net {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.bac-seat-net.is-up {
+  color: var(--bac-win);
+}
+
+.bac-seat-net.is-down {
+  color: var(--bac-lose);
+}
+
+.bac-seat-bet {
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.bac-player {
+  max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.bac-avatar {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.bac-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bac-player-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bac-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--background);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bac-badge.is-host {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Betting */
+.bac-controls {
+  min-height: 96px;
+  margin-top: 16px;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.bac-message {
+  margin: 0;
+  color: var(--bac-lose);
+  font-weight: 600;
+  text-align: center;
+}
+
+.bac-message:empty {
+  display: none;
+}
+
+.bac-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.bac-bet-line {
+  margin: 0;
+  font-weight: 600;
+}
+
+.bac-bet-amount {
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.bac-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.75;
+}
+
+.bac-bet-line .bac-hint {
+  display: block;
+  margin-top: 2px;
+}
+
+.bac-hint a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.bac-hint:empty {
+  display: none;
+}
+
+/* The betting board: the pairs and the tie on top, the Player and the Banker below */
+.bac-board {
+  width: 100%;
+  max-width: 620px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bac-spot {
+  --side: var(--bac-tie);
+  grid-column: span 2;
+  min-height: 72px;
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 3px solid var(--side);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--side) 14%, var(--background));
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.bac-spot.is-player,
+.bac-spot.is-banker {
+  grid-column: span 3;
+  min-height: 96px;
+  background: var(--side);
+  color: #fff;
+}
+
+.bac-spot.is-player,
+.bac-spot.is-playerPair {
+  --side: var(--bac-player);
+}
+
+.bac-spot.is-banker,
+.bac-spot.is-bankerPair {
+  --side: var(--bac-banker);
+}
+
+.bac-spot-name {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bac-spot.is-player .bac-spot-name,
+.bac-spot.is-banker .bac-spot-name {
+  font-size: 1.25rem;
+}
+
+.bac-spot-pays {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* The chips on a spot, like a stack in the middle of it */
+.bac-spot-chips {
+  min-width: 2.4em;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border: 2px dashed rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.bac-spot-chips:empty {
+  display: none;
+}
+
+.bac-spot:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.bac-spot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.bac-spot:disabled {
+  cursor: not-allowed;
+}
+
+.bac-spot:disabled:not(.has-chips),
+.bac-spot.is-blocked {
+  opacity: 0.4;
+}
+
+.bac-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.bac-chip {
+  --chip-color: var(--accent);
+  width: 50px;
+  height: 50px;
+  border: 4px dashed rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: var(--chip-color);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 3px var(--chip-color);
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.bac-chip-10 { --chip-color: #5b6b82; }
+.bac-chip-50 { --chip-color: #2fa36b; }
+.bac-chip-100 { --chip-color: #2f3a4a; }
+.bac-chip-500 { --chip-color: #8e44ad; }
+.bac-chip-1000 { --chip-color: #f2711c; }
+
+/* The chip a tap puts down is lifted, with a ring round it */
+.bac-chip[aria-pressed="true"] {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35), 0 0 0 3px var(--chip-color), 0 0 0 6px var(--text);
+}
+
+.bac-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 8px;
+}
+
+.bac-chip:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.bac-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.bac-rules {
+  margin-top: 16px;
+}
+
+.bac-rules summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bac-rules .casino-rule-list {
+  margin-top: 12px;
+}
+
+.bac-dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  box-sizing: border-box;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+.bac-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.bac-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.bac-dialog p {
+  margin: 0 0 20px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.bac-dialog .bac-panel-actions {
+  justify-content: flex-end;
+}
+
+.bac-invite[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bac-invite p {
+  margin: 0;
+}
+
+.bac-invite-list {
+  max-height: min(320px, 45dvh);
+  margin: 4px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.bac-invite-user {
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.bac-invite-user .casino-btn {
+  flex: none;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 860px) {
+  .bac-seats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .bac {
+    --bac-card-w: 48px;
+    --bac-card-h: 68px;
+    margin: 12px auto;
+  }
+
+  .bac-title {
+    font-size: 1.3rem;
+  }
+
+  .bac-header {
+    flex-direction: column;
+  }
+
+  .bac-header-actions {
+    justify-content: flex-start;
+  }
+
+  .bac-table {
+    min-height: 0;
+    padding: 16px 8px;
+    border-radius: var(--radius);
+  }
+
+  .bac-coup {
+    gap: 8px;
+  }
+
+  .bac-hand {
+    padding: 10px 4px;
+  }
+
+  .bac-hand-label {
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+  }
+
+  /* Your seat first and full width, the others two by two, the empty ones left out */
+  .bac-seats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .bac-seat {
+    min-height: 0;
+    padding: 8px 4px;
+  }
+
+  .bac-seat.is-you {
+    order: -1;
+    grid-column: 1 / -1;
+  }
+
+  .bac-seat.is-empty {
+    display: none;
+  }
+
+  .bac-card-corner {
+    top: 4px;
+    left: 4px;
+    font-size: 0.85rem;
+  }
+
+  .bac-card-pip {
+    right: 5px;
+    bottom: 4px;
+    font-size: 1.4rem;
+  }
+
+  .bac-controls {
+    padding: 16px 12px;
+  }
+
+  .bac-board {
+    gap: 6px;
+  }
+
+  .bac-spot {
+    min-height: 64px;
+    padding: 8px 2px;
+  }
+
+  .bac-spot-name {
+    font-size: 0.75rem;
+  }
+
+  .bac-spot.is-player,
+  .bac-spot.is-banker {
+    min-height: 80px;
+  }
+
+  .bac-spot.is-player .bac-spot-name,
+  .bac-spot.is-banker .bac-spot-name {
+    font-size: 1.05rem;
+  }
+
+  .bac-chip {
+    width: 44px;
+    height: 44px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bac-card.is-new,
+  .bac-shoe-notice.is-new {
+    animation: none;
+  }
+
+  .bac-timer-bar,
+  .bac-shoe-bar,
+  .bac-chip,
+  .bac-spot,
+  .bac-hand {
+    transition: none;
+  }
+}
