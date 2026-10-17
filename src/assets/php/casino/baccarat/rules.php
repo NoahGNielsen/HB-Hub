@@ -16,8 +16,9 @@
         when it was 4-7 and on 6 when it was a 6 or 7.
     </li>
     <li>
-        Player and Banker pay 1:1, and you get your bet back when they tie. Tie pays 8:1. Player Pair and Banker Pair pay
-        11:1 when that hand's first two cards are the same rank, like two kings.
+        Player pays 1:1. Banker pays 1:1 less <?= HBHUB_BACCARAT_BANKER_COMMISSION / 10 ?>% of the win (rounded to a whole
+        chip), as the Banker wins a little more often. You get your bet back on either when they tie. Tie pays 8:1. Player
+        Pair and Banker Pair pay 11:1 when that hand's first two cards are the same rank, like two kings.
     </li>
     <li>
         You can bet on Player or Banker, not both, and on Tie and the pairs as well. Bets go in steps of

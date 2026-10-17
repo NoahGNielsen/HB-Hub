@@ -458,7 +458,7 @@
                 button.classList.toggle('has-chips', amount > 0);
                 button.classList.toggle('is-blocked', OTHER_SIDE[spot] !== undefined && pending[OTHER_SIDE[spot]] > 0);
                 button.disabled = isBusy || total + chip > maxBet();
-                button.setAttribute('aria-label', SPOT_NAMES[spot] + ', pays ' + button.dataset.bacPays + ' to 1'
+                button.setAttribute('aria-label', SPOT_NAMES[spot] + ', pays ' + button.dataset.bacPays
                     + (amount > 0 ? ', ' + formatChips(amount) + ' on it' : ''));
             }
             for (const button of chipButtons) {

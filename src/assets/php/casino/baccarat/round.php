@@ -35,6 +35,9 @@ const HBHUB_BACCARAT_GAME = 'baccarat'; // transactionGame in HBHub-CasinoTransa
 const HBHUB_BACCARAT_PHASES = ['waiting' => 1, 'betting' => 2, 'dealing' => 3, 'results' => 4]; // roomPhase
 const HBHUB_BACCARAT_SPOTS = ['player', 'banker', 'tie', 'playerPair', 'bankerPair']; // what can be bet on
 const HBHUB_BACCARAT_PAYS = ['player' => 1, 'banker' => 1, 'tie' => 8, 'playerPair' => 11, 'bankerPair' => 11]; // to 1
+// What's taken off a winning Banker bet's win, in thousandths (2.7%). The Banker wins a little more often than the
+// Player (45.9% to 44.6% of hands), so at a full 1:1 always betting Banker would win chips. 2.7% evens that out.
+const HBHUB_BACCARAT_BANKER_COMMISSION = 27;
 const HBHUB_BACCARAT_MIN_PLAYERS = 2; // at the table (and not sitting out or away) before bets can be placed
 const HBHUB_BACCARAT_BET_STEP = 10;
 const HBHUB_BACCARAT_BET_MAX_DIGITS = 9;
@@ -294,7 +297,7 @@ function hbHubBaccaratTurnCard(PDO $db, array &$room, int $now): void
 }
 
 /**
- * Pays out the hand: Player and Banker 1:1 (given back on a tie), Tie 8:1, and the pairs 11:1. Then, once 75% of the
+ * Pays out the hand: Player 1:1, Banker 1:1 less 2.7% (both given back on a tie), Tie 8:1, and the pairs 11:1. Then, once 75% of the
  * shoe has been dealt, it's shuffled into a new one before anyone bets on the next hand.
  */
 function hbHubBaccaratSettle(PDO $db, array &$room, int $now): void
@@ -356,9 +359,18 @@ function hbHubBaccaratSpotPayout(string $spot, int $amount, array $round): int
         default => false,
     };
     if ($isWin) {
-        return $amount * (1 + HBHUB_BACCARAT_PAYS[$spot]);
+        return $amount * (1 + HBHUB_BACCARAT_PAYS[$spot]) - ($spot === 'banker' ? hbHubBaccaratCommission($amount) : 0);
     }
     return $round['winner'] === 'tie' && in_array($spot, ['player', 'banker'], true) ? $amount : 0;
+}
+
+/**
+ * The commission on a winning Banker bet of $amount: 2.7% of it, rounded to the nearest whole chip (so a bet of 10
+ * pays 10, 20 pays 19 and 100 pays 97).
+ */
+function hbHubBaccaratCommission(int $amount): int
+{
+    return intdiv($amount * HBHUB_BACCARAT_BANKER_COMMISSION + 500, 1000);
 }
 
 /**

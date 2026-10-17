@@ -21,12 +21,13 @@ if ($room === null) {
 
 $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
 $tableChips = [10, 50, 100, 500, 1000]; // the chips to make up the bets with
-$tableSpots = [ // the betting board, in the order it's laid out: [name, pays]
-    'playerPair' => ['Player pair', HBHUB_BACCARAT_PAYS['playerPair']],
-    'tie' => ['Tie', HBHUB_BACCARAT_PAYS['tie']],
-    'bankerPair' => ['Banker pair', HBHUB_BACCARAT_PAYS['bankerPair']],
-    'player' => ['Player', HBHUB_BACCARAT_PAYS['player']],
-    'banker' => ['Banker', HBHUB_BACCARAT_PAYS['banker']],
+$tableCommission = (HBHUB_BACCARAT_BANKER_COMMISSION / 10) . '%'; // taken off a winning Banker bet's win, like "2.7%"
+$tableSpots = [ // the betting board, in the order it's laid out: [name, what it pays]
+    'playerPair' => ['Player pair', HBHUB_BACCARAT_PAYS['playerPair'] . ':1'],
+    'tie' => ['Tie', HBHUB_BACCARAT_PAYS['tie'] . ':1'],
+    'bankerPair' => ['Banker pair', HBHUB_BACCARAT_PAYS['bankerPair'] . ':1'],
+    'player' => ['Player', HBHUB_BACCARAT_PAYS['player'] . ':1'],
+    'banker' => ['Banker', HBHUB_BACCARAT_PAYS['banker'] . ':1 less ' . $tableCommission],
 ];
 ?>
 <!DOCTYPE html>
@@ -48,7 +49,7 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, pays]
                     <?= HBHUB_BACCARAT_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Table' ?>
                     &middot; <span data-bac-players>1</span>/<?= HBHUB_BACCARAT_SEATS ?> players
                     &middot; Minimum bet <?= number_format($room['roomMinBet']) ?>
-                    &middot; Player &amp; Banker 1:1 &middot; Tie 8:1 &middot; Pairs 11:1
+                    &middot; Player 1:1 &middot; Banker 1:1 less <?= $tableCommission ?> &middot; Tie 8:1 &middot; Pairs 11:1
                 </p>
             </div>
             <div class="bac-header-actions">
@@ -111,7 +112,7 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, pays]
                     <?php foreach ($tableSpots as $spot => [$spotName, $pays]): ?>
                         <button type="button" class="bac-spot is-<?= $spot ?>" data-bac-spot="<?= $spot ?>" data-bac-pays="<?= $pays ?>">
                             <span class="bac-spot-name"><?= $spotName ?></span>
-                            <span class="bac-spot-pays">pays <?= $pays ?>:1</span>
+                            <span class="bac-spot-pays">pays <?= $pays ?></span>
                             <span class="bac-spot-chips" data-bac-spot-chips></span>
                         </button>
                     <?php endforeach; ?>
