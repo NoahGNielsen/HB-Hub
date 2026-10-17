@@ -27,7 +27,7 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, what it
     'tie' => ['Tie', HBHUB_BACCARAT_PAYS['tie'] . ':1'],
     'bankerPair' => ['Banker pair', HBHUB_BACCARAT_PAYS['bankerPair'] . ':1'],
     'player' => ['Player', HBHUB_BACCARAT_PAYS['player'] . ':1'],
-    'banker' => ['Banker', HBHUB_BACCARAT_PAYS['banker'] . ':1 less ' . $tableCommission],
+    'banker' => ['Banker', HBHUB_BACCARAT_PAYS['banker'] . ':1 with ' . $tableCommission . ' cut'],
 ];
 ?>
 <!DOCTYPE html>
@@ -49,7 +49,7 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, what it
                     <?= HBHUB_BACCARAT_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Table' ?>
                     &middot; <span data-bac-players>1</span>/<?= HBHUB_BACCARAT_SEATS ?> players
                     &middot; Minimum bet <?= number_format($room['roomMinBet']) ?>
-                    &middot; Player 1:1 &middot; Banker 1:1 with <?= $tableCommission ?> &middot cut; Tie 8:1 &middot; Pairs 11:1
+                    &middot; Player 1:1 &middot; Banker 1:1 with <?= $tableCommission ?> cut &middot; Tie 8:1 &middot; Pairs 11:1
                 </p>
             </div>
             <div class="bac-header-actions">
