@@ -15,6 +15,7 @@ const HBHUB_CHAT_MESSAGE_MAX = 2500; // messageContent column
 const HBHUB_CHAT_MESSAGES_SHOWN = 20; // the newest ones when a chat opens, and how many more each time chat.js loads older ones
 const HBHUB_CHAT_MESSAGES_UNREAD_MAX = 100; // with more unread than SHOWN, a chat opens with up to this many, so the "New messages" line is there
 const HBHUB_CHAT_MESSAGES_POLLED = 100; // new ones per poll, a later poll gets the rest
+const HBHUB_CHAT_MESSAGES_JUMP_MAX = 500; // per request when clicking a reply quote loads back to its message, chat.js asks again for the rest
 const HBHUB_CHAT_ICON_MAX_BYTES = 2 * 1024 * 1024;
 const HBHUB_CHAT_ICON_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']; // no SVG, it can carry scripts
 // Mute chat in the chat menu: minutes => label, 0 lasts until the user unmutes it
@@ -110,7 +111,8 @@ function chatMessage(PDO $db, int $chatId, mixed $messageId): ?array
  * Messages in the chat, oldest at the top, each with the message it replies to (r) if any.
  * Notices are in there too, with the name of who they're about (eventUserName).
  * Without $afterId it's the newest $limit ones (before $beforeId, if given, for scrolling up),
- * with it the first ones after that message (the ones polling hasn't shown yet).
+ * with only $afterId the first ones after that message (the ones polling hasn't shown yet),
+ * and with both the newest ones between them (loading back to the message a reply quote answers).
  */
 function chatMessages(PDO $db, int $chatId, int $limit, ?int $afterId = null, ?int $beforeId = null): array
 {
@@ -131,26 +133,28 @@ function chatMessages(PDO $db, int $chatId, int $limit, ?int $afterId = null, ?i
             LEFT JOIN `HBHub-Users` eu ON eu.userId = m.messageEventUserId
             LEFT JOIN `HBHub-ChatMembers` ecm ON ecm.chatId = m.chatId AND ecm.userId = m.messageEventUserId
             WHERE m.chatId = ? AND m.messageId > ? AND m.messageId < ?
-            ORDER BY m.messageId ' . ($afterId === null ? 'DESC' : 'ASC') . ' LIMIT ' . $limit . '
+            ORDER BY m.messageId ' . ($afterId !== null && $beforeId === null ? 'ASC' : 'DESC') . ' LIMIT ' . $limit . '
         ) shown ORDER BY messageId ASC');
     $statement->execute([$chatId, $afterId ?? 0, $beforeId ?? PHP_INT_MAX]);
     return $statement->fetchAll();
 }
 
 /**
- * The newest $limit messages (before $beforeId, if given), and whether there are older ones left for chat.js to load.
- * One extra is asked for, just to know if there's more.
+ * The newest $limit messages (before $beforeId, if given, and back to $fromId at the furthest),
+ * and whether there are older ones left for chat.js to load.
  *
  * @return array{0: array, 1: bool}
  */
-function chatMessagesPage(PDO $db, int $chatId, int $limit, ?int $beforeId = null): array
+function chatMessagesPage(PDO $db, int $chatId, int $limit, ?int $beforeId = null, ?int $fromId = null): array
 {
-    $messages = chatMessages($db, $chatId, $limit + 1, null, $beforeId);
-    $hasOlder = count($messages) > $limit;
-    if ($hasOlder) {
-        array_shift($messages);
+    $messages = chatMessages($db, $chatId, $limit, $fromId !== null ? $fromId - 1 : null, $beforeId);
+    if ($messages === []) {
+        return [[], false];
     }
-    return [$messages, $hasOlder];
+
+    $statement = $db->prepare('SELECT EXISTS (SELECT 1 FROM `HBHub-Messages` WHERE chatId = ? AND messageId < ?)');
+    $statement->execute([$chatId, $messages[0]['messageId']]);
+    return [$messages, (bool) $statement->fetchColumn()];
 }
 
 /**
@@ -785,8 +789,14 @@ if ($isPoll && $openMembership !== null && $pollAfter !== null) {
 }
 
 // Scrolling up to the top of the open chat makes chat.js ask for the messages before ?older= (the oldest one it shows),
-// answered as JSON at the end of this file too. Neither that nor polling is the page itself, so they don't count as opening the chat.
+// answered as JSON at the end of this file too. Clicking a reply quote whose message isn't loaded yet asks the same way,
+// with ?until= that message, to get everything back to it at once.
+// Neither that nor polling is the page itself, so they don't count as opening the chat.
 $olderThan = is_string($_GET['older'] ?? null) && ctype_digit($_GET['older']) && strlen($_GET['older']) <= 19 ? (int) $_GET['older'] : null;
+$olderUntil = is_string($_GET['until'] ?? null) && ctype_digit($_GET['until']) && strlen($_GET['until']) <= 19 ? (int) $_GET['until'] : null;
+if ($olderUntil !== null && $olderUntil >= ($olderThan ?? 0)) {
+    $olderUntil = null; // already on the page, so just the next batch
+}
 $isOlder = !$isPoll && $olderThan !== null;
 $isPage = !$isPoll && !$isOlder;
 
@@ -916,7 +926,6 @@ if ($openChat !== null && $isPage && (int) $openChat['chatType'] === HBHUB_CHAT_
     $openChatMembers = $statement->fetchAll();
 }
 
-$shownMessageIds = []; // messageId => true, for the replies that can jump to the message they answer
 $firstUnreadMessageId = null; // the "New messages" line goes above this one
 $messagesHaveOlder = false; // there are older messages than the ones shown, which chat.js loads when scrolling up
 if ($openChat !== null && $isPage) {
@@ -927,7 +936,6 @@ if ($openChat !== null && $isPage) {
     [$messages, $messagesHaveOlder] = chatMessagesPage($db, (int) $openChat['chatId'], $messagesShown);
 
     foreach ($messages as $message) {
-        $shownMessageIds[(int) $message['messageId']] = true;
         if ($firstUnreadMessageId === null && (int) $message['messageId'] > (int) $lastReadMessageId
             && (int) $message['userId'] !== $userId && $message['messageDeletedTimestamp'] === null && !$message['messageEvent']) {
             $firstUnreadMessageId = (int) $message['messageId'];
@@ -1029,10 +1037,10 @@ function chatDeletedLabel(mixed $deletedByAdmin): string
 
 /**
  * The quote above a reply: who and what it answers, on one line.
- * A link to the original when it's on the page, so it can be scrolled to. Otherwise it has data-reply-id,
- * so chat.js can make it a link once scrolling up has loaded the original.
+ * A link to the original, unless it's gone, so it can be scrolled to. When the original isn't loaded yet
+ * (only the newest messages are at first), chat.js loads back to it first (data-reply-id).
  */
-function chatReplyHtml(array $openChat, int $userId, array $message, bool $isShown): string
+function chatReplyHtml(array $openChat, int $userId, array $message): string
 {
     if ($message['replyId'] === null) {
         $sender = '';
@@ -1054,11 +1062,11 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
     }
 
     $label = '<span class="chat-visually-hidden">Reply to </span>';
-    if ($isShown) {
-        return '<a class="chat-message-reply" href="#message-' . (int) $message['replyId'] . '" data-reply-link>' . $label . $sender . $text . '</a>';
+    if ($message['replyId'] === null) {
+        return '<span class="chat-message-reply">' . $label . $sender . $text . '</span>';
     }
-    $replyId = $message['replyId'] !== null ? ' data-reply-id="' . (int) $message['replyId'] . '"' : '';
-    return '<span class="chat-message-reply"' . $replyId . '>' . $label . $sender . $text . '</span>';
+    return '<a class="chat-message-reply" href="#message-' . (int) $message['replyId'] . '" data-reply-link data-reply-id="'
+        . (int) $message['replyId'] . '">' . $label . $sender . $text . '</a>';
 }
 
 /**
@@ -1155,9 +1163,8 @@ function chatNoticeItem(array $openChat, int $userId, array $message): void
 /**
  * A message in the open chat, for the page and for polling.
  * Right-clicking it opens the message menu (chat.js), the data-message-* attributes say what it offers.
- * $replyIsShown: the message it replies to is on the page, so the quote can link to it.
  */
-function chatMessageItem(array $openChat, int $userId, array $message, bool $replyIsShown): void
+function chatMessageItem(array $openChat, int $userId, array $message): void
 {
     if ($message['messageEvent']) {
         chatNoticeItem($openChat, $userId, $message);
@@ -1181,7 +1188,7 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
                                 <?php endif; ?>
                             <?php endif; ?>
                             <?php if ($message['messageReplyToId'] !== null && !$isDeleted): ?>
-                                <?= chatReplyHtml($openChat, $userId, $message, $replyIsShown) ?>
+                                <?= chatReplyHtml($openChat, $userId, $message) ?>
                             <?php endif; ?>
                             <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?>">
                                 <?php if ($isDeleted): ?>
@@ -1207,8 +1214,7 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
 }
 
 // The answer to chat.js scrolling up (?older=): the messages before that one as HTML, and whether there are even older ones.
-// Everything from ?older= on is already on the page, so a reply quote links to the message it answers when that's
-// in this batch or newer.
+// With ?until= it's every message back to that one, as many as JUMP_MAX at a time.
 if ($isOlder) {
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
@@ -1218,11 +1224,12 @@ if ($isOlder) {
         exit;
     }
 
-    [$olderMessages, $hasOlder] = chatMessagesPage($db, (int) $openChat['chatId'], HBHUB_CHAT_MESSAGES_SHOWN, $olderThan);
-    $olderFirst = $olderMessages !== [] ? (int) $olderMessages[0]['messageId'] : $olderThan;
+    [$olderMessages, $hasOlder] = $olderUntil !== null
+        ? chatMessagesPage($db, (int) $openChat['chatId'], HBHUB_CHAT_MESSAGES_JUMP_MAX, $olderThan, $olderUntil)
+        : chatMessagesPage($db, (int) $openChat['chatId'], HBHUB_CHAT_MESSAGES_SHOWN, $olderThan);
     ob_start();
     foreach ($olderMessages as $message) {
-        chatMessageItem($openChat, $userId, $message, $message['replyId'] !== null && (int) $message['replyId'] >= $olderFirst);
+        chatMessageItem($openChat, $userId, $message);
     }
     echo json_encode(['messages' => ob_get_clean(), 'hasOlder' => $hasOlder], JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
@@ -1231,14 +1238,10 @@ if ($isOlder) {
 // The answer to chat.js polling: the open chat's new messages, the whole chat list and the message requests, all as HTML.
 // openChat is false when the open chat is gone (left, deleted or removed from it), so chat.js can leave it.
 // background is the open chat's background, so a new one shows up for everyone in it.
-// A reply quote links to the message it answers when that's on the page: chat.js sends the oldest one it shows (?first=),
-// and everything from there on is shown, as the page always shows the newest messages.
 if ($isPoll) {
-    $pollFirst = is_string($_GET['first'] ?? null) && ctype_digit($_GET['first']) ? (int) $_GET['first'] : ($pollAfter ?? 0) + 1;
-
     ob_start();
     foreach ($pollMessages as $message) {
-        chatMessageItem($openChat, $userId, $message, $message['replyId'] !== null && (int) $message['replyId'] >= $pollFirst);
+        chatMessageItem($openChat, $userId, $message);
     }
     $pollMessagesHtml = ob_get_clean();
 
@@ -1391,7 +1394,7 @@ if ($isPoll) {
                         <?php if ((int) $message['messageId'] === $firstUnreadMessageId): ?>
                             <li class="chat-messages-unread" data-unread-divider><span>New messages</span></li>
                         <?php endif; ?>
-                        <?php chatMessageItem($openChat, $userId, $message, isset($shownMessageIds[(int) $message['replyId']])); ?>
+                        <?php chatMessageItem($openChat, $userId, $message); ?>
                     <?php endforeach; ?>
                 </ol>
 

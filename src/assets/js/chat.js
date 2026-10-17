@@ -1050,16 +1050,34 @@ function chatShowBackground(element, background) {
         });
     });
 
-    // The quote above a reply scrolls to the message it answers, which lights up for a moment
-    messages.addEventListener('click', (event) => {
-        const link = event.target.closest('[data-reply-link]');
-        const target = link && document.getElementById(link.getAttribute('href').slice(1));
-        if (!target) return;
-        event.preventDefault();
+    // The quote above a reply scrolls to the message it answers, which lights up for a moment.
+    // When that message isn't loaded yet, the older messages part below loads back to it first (chat:load-until).
+    function jumpTo(target) {
         target.scrollIntoView({ block: 'center', behavior: reducedMotion.matches ? 'auto' : 'smooth' });
         focusMessage(target, { preventScroll: true });
         target.classList.add('is-highlighted');
         setTimeout(() => target.classList.remove('is-highlighted'), 1500);
+    }
+
+    messages.addEventListener('click', (event) => {
+        const link = event.target.closest('[data-reply-link]');
+        if (!link) return;
+        event.preventDefault();
+        const targetId = 'message-' + link.dataset.replyId;
+        const target = document.getElementById(targetId);
+        if (target) {
+            jumpTo(target);
+            return;
+        }
+        messages.dispatchEvent(new CustomEvent('chat:load-until', {
+            detail: {
+                messageId: link.dataset.replyId,
+                onDone() {
+                    const loaded = document.getElementById(targetId);
+                    if (loaded) jumpTo(loaded);
+                },
+            },
+        }));
     });
 })();
 
@@ -1412,38 +1430,26 @@ function chatShowBackground(element, background) {
 // line is at the top (data-messages-older). Scrolling up close to it asks the chat page for the ones before the oldest shown
 // (?older=, answered as { messages: html, hasOlder }) and puts them in above, a batch at a time, until there are none left
 // and the line goes. What's on screen stays where it is while they go in.
-// Reply quotes for messages that weren't on the page yet become links once they are, like the ones the page starts with.
+// Clicking a reply quote whose message isn't loaded yet sends chat:load-until (from the messages part above):
+// then it's everything back to that message (?until=), and onDone is called once it's there (or can't be loaded).
 (() => {
     const LOAD_WITHIN_PX = 300; // how close to the top scrolling has to get
     const messages = document.querySelector('[data-chat-messages]');
     if (!messages) return;
-    let isLoading = false;
+    let loading = null; // the request on its way, so only one is at a time
 
-    function linkReplies() {
-        messages.querySelectorAll('span.chat-message-reply[data-reply-id]').forEach((quote) => {
-            const id = quote.dataset.replyId;
-            if (!document.getElementById('message-' + id)) return;
-            const link = document.createElement('a');
-            link.className = quote.className;
-            link.href = '#message-' + id;
-            link.setAttribute('data-reply-link', '');
-            link.append(...quote.childNodes);
-            quote.replaceWith(link);
-        });
-    }
-
-    async function loadOlder() {
+    // One batch above the oldest shown, or with untilId everything back to that message. Whether it got any.
+    async function loadOlder(untilId = null) {
         const marker = messages.querySelector('[data-messages-older]');
         const oldest = messages.querySelector('[data-message-id], [data-notice-id]');
-        if (isLoading || !marker || !oldest) return;
-        isLoading = true;
+        if (!marker || !oldest) return false;
 
-        let isLoaded = false;
         try {
             const params = new URLSearchParams({
                 chat: messages.dataset.chatMessages,
                 older: oldest.dataset.messageId ?? oldest.dataset.noticeId,
             });
+            if (untilId !== null) params.set('until', untilId);
             const response = await fetch('/chat/?' + params, { headers: { Accept: 'application/json' } });
             if (!response.ok) throw new Error(response.statusText);
             const data = await response.json();
@@ -1453,23 +1459,39 @@ function chatShowBackground(element, background) {
             marker.insertAdjacentHTML('afterend', data.messages);
             if (!data.hasOlder) marker.remove();
             messages.scrollTop = messages.scrollHeight - fromBottom;
-            linkReplies();
-            isLoaded = true;
+            return true;
         } catch {
-            // Offline for a moment - scrolling again tries again
+            return false; // offline for a moment - scrolling or clicking again tries again
         }
-        isLoading = false;
-
-        // Still close to the top (a quick scroll, or a tall screen the batch didn't fill), so the next batch too
-        if (isLoaded) loadIfNearTop();
     }
 
+    // Still close to the top after a batch (a quick scroll, or a tall screen it didn't fill), so the next one too
     function loadIfNearTop() {
-        if (messages.scrollTop < LOAD_WITHIN_PX) loadOlder();
+        if (loading || messages.scrollTop >= LOAD_WITHIN_PX) return;
+        loading = loadOlder().then((isLoaded) => {
+            loading = null;
+            if (isLoaded) loadIfNearTop();
+        });
     }
 
     messages.addEventListener('scroll', loadIfNearTop, { passive: true });
     loadIfNearTop();
+
+    // Waits for a batch already on its way, and asks again while JUMP_MAX in chat/index.php wasn't enough
+    messages.addEventListener('chat:load-until', async (event) => {
+        const { messageId, onDone } = event.detail;
+        while (!document.getElementById('message-' + messageId)) {
+            if (loading) {
+                await loading;
+                continue;
+            }
+            loading = loadOlder(messageId);
+            const isLoaded = await loading;
+            loading = null;
+            if (!isLoaded) break;
+        }
+        onDone();
+    });
 })();
 
 // Live updates: every 2 seconds asks the chat page what's new (?poll=1), adds the open chat's new messages at the bottom
@@ -1553,7 +1575,6 @@ function chatShowBackground(element, background) {
             const items = shownItems();
             params.set('chat', messages.dataset.chatMessages);
             params.set('after', items.length > 0 ? itemId(items[items.length - 1]) : '0');
-            if (items.length > 0) params.set('first', itemId(items[0]));
             if (document.visibilityState === 'visible' && !keepUnread) params.set('read', '1');
         }
 
