@@ -706,6 +706,8 @@ function hbHubBlackjackTableView(array $state, array $seats, array $people, int 
         'roundId' => $round['id'] ?? null,
         'settled' => $round['settled'] ?? false,
         'reshuffled' => $round['reshuffled'] ?? false,
+        // Only how many cards are left. The hole card is already out of the shoe, as it is at a real table.
+        'shoe' => ['left' => count($state['shoe']), 'size' => HBHUB_BLACKJACK_SHOE_SIZE, 'reshuffleAt' => HBHUB_BLACKJACK_RESHUFFLE_LEFT],
         'insuranceOffered' => $round['insurance'] ?? false,
         'dealer' => $dealer,
         'seats' => $seatViews,

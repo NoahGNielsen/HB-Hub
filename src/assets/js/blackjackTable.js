@@ -29,6 +29,10 @@
     const dealerCards = find('[data-bj-dealer-cards]');
     const dealerTotal = find('[data-bj-dealer-total]');
     const shuffledNote = find('[data-bj-shuffled]');
+    const shoe = find('[data-bj-shoe]');
+    const shoeBar = find('[data-bj-shoe-bar]');
+    const shoeCut = find('[data-bj-shoe-cut]');
+    const shoeText = find('[data-bj-shoe-text]');
     const statusText = find('[data-bj-status]');
     const timer = find('[data-bj-timer]');
     const timerBar = find('[data-bj-timer-bar]');
@@ -161,6 +165,7 @@
         }
         renderHeader();
         renderDealer();
+        renderShoe();
         renderSeats();
         statusText.textContent = statusFor();
         renderControls();
@@ -185,6 +190,17 @@
         shuffledNote.hidden = !table.reshuffled || ['waiting', 'betting'].includes(table.phase);
         // Before the next hand is dealt, the last one stays on the table, faded
         tableElement.classList.toggle('is-between', ['waiting', 'betting'].includes(table.phase));
+    }
+
+    // How far through the shoe the table is, with a mark where it's shuffled. It's shuffled when the next hand is
+    // dealt, so once the cards left are down to the mark, the next hand comes from a new shoe.
+    function renderShoe() {
+        const { left, size, reshuffleAt } = table.shoe;
+        shoe.hidden = false;
+        shoeBar.style.transform = 'scaleX(' + left / size + ')';
+        shoeCut.style.left = (reshuffleAt / size) * 100 + '%';
+        shoeText.textContent = formatChips(left) + ' cards left in the shoe. '
+            + (left <= reshuffleAt ? 'It\'s shuffled before the next hand.' : 'It\'s shuffled at ' + reshuffleAt + '.');
     }
 
     function renderCards(container, key, cards) {

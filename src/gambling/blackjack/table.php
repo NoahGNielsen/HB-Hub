@@ -77,6 +77,14 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
                 </div>
             </div>
 
+            <div class="bj-shoe" data-bj-shoe hidden>
+                <div class="bj-shoe-track" aria-hidden="true">
+                    <div class="bj-shoe-bar" data-bj-shoe-bar></div>
+                    <div class="bj-shoe-cut" data-bj-shoe-cut></div>
+                </div>
+                <span class="bj-shoe-text" data-bj-shoe-text></span>
+            </div>
+
             <ol class="bj-seats" data-bj-seats></ol>
         </section>
 

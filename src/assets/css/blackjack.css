@@ -190,6 +190,44 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* How far through the shoe the table is: the bar is the cards left, the mark where it's shuffled */
+.bj-shoe {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.bj-shoe-track {
+  position: relative;
+  width: 140px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--background);
+}
+
+.bj-shoe-bar {
+  height: 100%;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 45%, transparent);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.bj-shoe-cut {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 12px;
+  background: var(--accent);
+}
+
+.bj-shoe-text {
+  opacity: 0.75;
+}
+
 /* Cards, fanned out so each one's corner shows */
 .bj-cards {
   min-height: var(--bj-card-h);
@@ -781,6 +819,7 @@
   }
 
   .bj-timer-bar,
+  .bj-shoe-bar,
   .bj-chip {
     transition: none;
   }

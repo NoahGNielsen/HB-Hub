@@ -106,7 +106,7 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, what it
             <div class="bac-panel" data-bac-panel="bet" hidden>
                 <p class="bac-bet-line">
                     Your bets: <strong class="bac-bet-amount" data-bac-pending>0</strong>
-                    <span class="bac-hint">at least <?= number_format($room['roomMinBet']) ?> together, in steps of <?= HBHUB_BACCARAT_BET_STEP ?>. Tap a spot to put a chip on it.</span>
+                    <span class="bac-hint">at least <?= number_format($room['roomMinBet']) ?> together, in steps of <?= HBHUB_BACCARAT_BET_STEP ?>. Tap a spot to put a chip on it, right-click it to take one off.</span>
                 </p>
                 <div class="bac-board" role="group" aria-label="Betting spots">
                     <?php foreach ($tableSpots as $spot => [$spotName, $pays]): ?>

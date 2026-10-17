@@ -2,8 +2,8 @@
 // player's bets. Everything is decided on the server - the cards, the payouts, when the shoe is shuffled. This only
 // shows it, and only ever knows the cards that have been turned over.
 //
-// Bets are made up here first (a chip on a spot per tap), then placed all at once. The bets made up are kept for the
-// next hand, so betting the same again is one click.
+// Bets are made up here first (a chip on a spot per tap, and a right-click takes one off again), then placed all at
+// once. The bets made up are kept for the next hand, so betting the same again is one click.
 //
 // Asks what's new every second while the page is in view, and every 4 seconds while it isn't (so the table doesn't count
 // the player as away, which takes 10 seconds without hearing from them), and straight away when the next card is due.
@@ -457,7 +457,8 @@
                 button.querySelector('[data-bac-spot-chips]').textContent = amount > 0 ? formatChips(amount) : '';
                 button.classList.toggle('has-chips', amount > 0);
                 button.classList.toggle('is-blocked', OTHER_SIDE[spot] !== undefined && pending[OTHER_SIDE[spot]] > 0);
-                button.disabled = isBusy || total + chip > maxBet();
+                // A spot with chips on stays enabled when there's no room for another, so they can still be right-clicked off
+                button.disabled = isBusy || (total + chip > maxBet() && amount === 0);
                 button.setAttribute('aria-label', SPOT_NAMES[spot] + ', pays ' + button.dataset.bacPays
                     + (amount > 0 ? ', ' + formatChips(amount) + ' on it' : ''));
             }
@@ -522,9 +523,18 @@
             showMessage('Bet on Player or Banker, not both. Clear your bets to switch.');
             return;
         }
-        if (sum(pending) + chip > maxBet()) return; // the spots are disabled then too
+        if (sum(pending) + chip > maxBet()) return; // the empty spots are disabled then too
         showMessage('');
         pending[spot] += chip;
+        renderControls();
+    }));
+    // A right-click takes off what a click puts down: the chip picked (or what's left, if that's less)
+    spotButtons.forEach((button) => button.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        const spot = button.dataset.bacSpot;
+        if (isBusy || pending[spot] === 0) return;
+        showMessage('');
+        pending[spot] = Math.max(0, pending[spot] - chip);
         renderControls();
     }));
     clearButton.addEventListener('click', () => {
