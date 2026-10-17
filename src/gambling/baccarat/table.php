@@ -112,7 +112,7 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, what it
                     <?php foreach ($tableSpots as $spot => [$spotName, $pays]): ?>
                         <button type="button" class="bac-spot is-<?= $spot ?>" data-bac-spot="<?= $spot ?>" data-bac-pays="<?= $pays ?>">
                             <span class="bac-spot-name"><?= $spotName ?></span>
-                            <span class="bac-spot-pays">pays <?= $pays ?></span>
+                            <span class="bac-spot-pays">Pays <?= $pays ?></span>
                             <span class="bac-spot-chips" data-bac-spot-chips></span>
                         </button>
                     <?php endforeach; ?>
