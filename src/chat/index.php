@@ -12,7 +12,9 @@ const HBHUB_CHAT_MEMBERS_MAX = 200; // per group DM, the creator included
 const HBHUB_CHAT_REQUESTS_PER_HOUR = 100; // message requests one user can send in an hour, new chats and Add to chat together
 const HBHUB_CHAT_NICKNAME_MAX = 35; // same as userName
 const HBHUB_CHAT_MESSAGE_MAX = 2500; // messageContent column
-const HBHUB_CHAT_MESSAGES_SHOWN = 100;
+const HBHUB_CHAT_MESSAGES_SHOWN = 20; // the newest ones when a chat opens, and how many more each time chat.js loads older ones
+const HBHUB_CHAT_MESSAGES_UNREAD_MAX = 100; // with more unread than SHOWN, a chat opens with up to this many, so the "New messages" line is there
+const HBHUB_CHAT_MESSAGES_POLLED = 100; // new ones per poll, a later poll gets the rest
 const HBHUB_CHAT_ICON_MAX_BYTES = 2 * 1024 * 1024;
 const HBHUB_CHAT_ICON_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']; // no SVG, it can carry scripts
 // Mute chat in the chat menu: minutes => label, 0 lasts until the user unmutes it
@@ -107,9 +109,10 @@ function chatMessage(PDO $db, int $chatId, mixed $messageId): ?array
 /**
  * Messages in the chat, oldest at the top, each with the message it replies to (r) if any.
  * Notices are in there too, with the name of who they're about (eventUserName).
- * Without $afterId it's the newest ones, with it the first ones after that message (the ones polling hasn't shown yet).
+ * Without $afterId it's the newest $limit ones (before $beforeId, if given, for scrolling up),
+ * with it the first ones after that message (the ones polling hasn't shown yet).
  */
-function chatMessages(PDO $db, int $chatId, ?int $afterId = null): array
+function chatMessages(PDO $db, int $chatId, int $limit, ?int $afterId = null, ?int $beforeId = null): array
 {
     $statement = $db->prepare('SELECT * FROM (
             SELECT m.messageId, m.userId, m.messageContent, m.attachmentId, m.messageSentTimestamp,
@@ -127,11 +130,27 @@ function chatMessages(PDO $db, int $chatId, ?int $afterId = null): array
             LEFT JOIN `HBHub-ChatMembers` rcm ON rcm.chatId = r.chatId AND rcm.userId = r.userId
             LEFT JOIN `HBHub-Users` eu ON eu.userId = m.messageEventUserId
             LEFT JOIN `HBHub-ChatMembers` ecm ON ecm.chatId = m.chatId AND ecm.userId = m.messageEventUserId
-            WHERE m.chatId = ? AND m.messageId > ?
-            ORDER BY m.messageId ' . ($afterId === null ? 'DESC' : 'ASC') . ' LIMIT ' . HBHUB_CHAT_MESSAGES_SHOWN . '
+            WHERE m.chatId = ? AND m.messageId > ? AND m.messageId < ?
+            ORDER BY m.messageId ' . ($afterId === null ? 'DESC' : 'ASC') . ' LIMIT ' . $limit . '
         ) shown ORDER BY messageId ASC');
-    $statement->execute([$chatId, $afterId ?? 0]);
+    $statement->execute([$chatId, $afterId ?? 0, $beforeId ?? PHP_INT_MAX]);
     return $statement->fetchAll();
+}
+
+/**
+ * The newest $limit messages (before $beforeId, if given), and whether there are older ones left for chat.js to load.
+ * One extra is asked for, just to know if there's more.
+ *
+ * @return array{0: array, 1: bool}
+ */
+function chatMessagesPage(PDO $db, int $chatId, int $limit, ?int $beforeId = null): array
+{
+    $messages = chatMessages($db, $chatId, $limit + 1, null, $beforeId);
+    $hasOlder = count($messages) > $limit;
+    if ($hasOlder) {
+        array_shift($messages);
+    }
+    return [$messages, $hasOlder];
 }
 
 /**
@@ -755,7 +774,7 @@ $isPoll = ($_GET['poll'] ?? null) === '1';
 $pollMessages = [];
 $pollAfter = is_string($_GET['after'] ?? null) && ctype_digit($_GET['after']) && strlen($_GET['after']) <= 19 ? (int) $_GET['after'] : null;
 if ($isPoll && $openMembership !== null && $pollAfter !== null) {
-    $pollMessages = chatMessages($db, (int) $openMembership['chatId'], $pollAfter);
+    $pollMessages = chatMessages($db, (int) $openMembership['chatId'], HBHUB_CHAT_MESSAGES_POLLED, $pollAfter);
     if (($_GET['read'] ?? null) === '1') {
         $readUpTo = $pollMessages !== [] ? (int) end($pollMessages)['messageId'] : $pollAfter;
         $db->prepare('UPDATE `HBHub-ChatMembers` SET lastReadMessageId = (
@@ -765,7 +784,13 @@ if ($isPoll && $openMembership !== null && $pollAfter !== null) {
     }
 }
 
-if (!$isPoll && $openMembership !== null && ($_GET['unread'] ?? null) !== '1') {
+// Scrolling up to the top of the open chat makes chat.js ask for the messages before ?older= (the oldest one it shows),
+// answered as JSON at the end of this file too. Neither that nor polling is the page itself, so they don't count as opening the chat.
+$olderThan = is_string($_GET['older'] ?? null) && ctype_digit($_GET['older']) && strlen($_GET['older']) <= 19 ? (int) $_GET['older'] : null;
+$isOlder = !$isPoll && $olderThan !== null;
+$isPage = !$isPoll && !$isOlder;
+
+if ($isPage && $openMembership !== null && ($_GET['unread'] ?? null) !== '1') {
     $db->prepare('UPDATE `HBHub-ChatMembers` SET lastReadMessageId = (
             SELECT MAX(messageId) FROM `HBHub-Messages` WHERE chatId = ?
         ) WHERE chatId = ? AND userId = ?')
@@ -880,7 +905,7 @@ foreach ($chats as $chat) {
 // Everyone in the open group, for the Members popup: site admins first, then the group owner and admins, then the ones who accepted,
 // then by name. Banned and deleted accounts get no profile link, like their messages.
 $openChatMembers = [];
-if ($openChat !== null && !$isPoll && (int) $openChat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
+if ($openChat !== null && $isPage && (int) $openChat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
     $statement = $db->prepare('SELECT cm.userId, cm.memberRole, cm.userAcknowledgedJoin, u.userRole = ? AS memberIsSiteAdmin,
             COALESCE(cm.memberNickname, u.userName) AS memberName, u.userAvatarAttachmentId,
             u.userStatus IS NULL OR u.userStatus = ? AS memberNoProfile
@@ -893,8 +918,13 @@ if ($openChat !== null && !$isPoll && (int) $openChat['chatType'] === HBHUB_CHAT
 
 $shownMessageIds = []; // messageId => true, for the replies that can jump to the message they answer
 $firstUnreadMessageId = null; // the "New messages" line goes above this one
-if ($openChat !== null && !$isPoll) {
-    $messages = chatMessages($db, (int) $openChat['chatId']);
+$messagesHaveOlder = false; // there are older messages than the ones shown, which chat.js loads when scrolling up
+if ($openChat !== null && $isPage) {
+    // The newest ones, or when more are unread, enough to start at the last one read (up to a limit), so the "New messages" line is there
+    $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-Messages` WHERE chatId = ? AND messageId > ?');
+    $statement->execute([$openChat['chatId'], (int) $lastReadMessageId]);
+    $messagesShown = min(max(HBHUB_CHAT_MESSAGES_SHOWN, (int) $statement->fetchColumn() + 1), HBHUB_CHAT_MESSAGES_UNREAD_MAX);
+    [$messages, $messagesHaveOlder] = chatMessagesPage($db, (int) $openChat['chatId'], $messagesShown);
 
     foreach ($messages as $message) {
         $shownMessageIds[(int) $message['messageId']] = true;
@@ -999,7 +1029,8 @@ function chatDeletedLabel(mixed $deletedByAdmin): string
 
 /**
  * The quote above a reply: who and what it answers, on one line.
- * A link to the original when it's on the page, so it can be scrolled to.
+ * A link to the original when it's on the page, so it can be scrolled to. Otherwise it has data-reply-id,
+ * so chat.js can make it a link once scrolling up has loaded the original.
  */
 function chatReplyHtml(array $openChat, int $userId, array $message, bool $isShown): string
 {
@@ -1026,7 +1057,8 @@ function chatReplyHtml(array $openChat, int $userId, array $message, bool $isSho
     if ($isShown) {
         return '<a class="chat-message-reply" href="#message-' . (int) $message['replyId'] . '" data-reply-link>' . $label . $sender . $text . '</a>';
     }
-    return '<span class="chat-message-reply">' . $label . $sender . $text . '</span>';
+    $replyId = $message['replyId'] !== null ? ' data-reply-id="' . (int) $message['replyId'] . '"' : '';
+    return '<span class="chat-message-reply"' . $replyId . '>' . $label . $sender . $text . '</span>';
 }
 
 /**
@@ -1172,6 +1204,28 @@ function chatMessageItem(array $openChat, int $userId, array $message, bool $rep
                             </span>
                         </li>
     <?php
+}
+
+// The answer to chat.js scrolling up (?older=): the messages before that one as HTML, and whether there are even older ones.
+// Everything from ?older= on is already on the page, so a reply quote links to the message it answers when that's
+// in this batch or newer.
+if ($isOlder) {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    if ($openChat === null) {
+        http_response_code(404);
+        echo json_encode(['error' => 'chatNotFound']);
+        exit;
+    }
+
+    [$olderMessages, $hasOlder] = chatMessagesPage($db, (int) $openChat['chatId'], HBHUB_CHAT_MESSAGES_SHOWN, $olderThan);
+    $olderFirst = $olderMessages !== [] ? (int) $olderMessages[0]['messageId'] : $olderThan;
+    ob_start();
+    foreach ($olderMessages as $message) {
+        chatMessageItem($openChat, $userId, $message, $message['replyId'] !== null && (int) $message['replyId'] >= $olderFirst);
+    }
+    echo json_encode(['messages' => ob_get_clean(), 'hasOlder' => $hasOlder], JSON_INVALID_UTF8_SUBSTITUTE);
+    exit;
 }
 
 // The answer to chat.js polling: the open chat's new messages, the whole chat list and the message requests, all as HTML.
@@ -1322,9 +1376,14 @@ if ($isPoll) {
                      in (chat.js polls for them). data-chat-messages is the open chat's id,
                      data-group-admin lets the message menu offer deleting other members' messages.
                      data-background is the chat's background gradient, which chat.js sets (the content security policy
-                     doesn't allow style attributes). -->
+                     doesn't allow style attributes).
+                     Only the newest messages are on the page at first: while there are older ones, the line at the top
+                     (data-messages-older) is there, and scrolling up to it makes chat.js load them above it. -->
                 <ol class="chat-messages" data-chat-messages="<?= $openChat['chatId'] ?>"<?= $openChat['chatIsGroupAdmin'] ? ' data-group-admin' : '' ?><?=
                     $openChat['chatBackground'] !== null ? ' data-background="' . htmlspecialchars($openChat['chatBackground']) . '"' : '' ?>>
+                    <?php if ($messagesHaveOlder): ?>
+                        <li class="chat-messages-older" data-messages-older>Loading older messages...</li>
+                    <?php endif; ?>
                     <?php if ($messages === []): ?>
                         <li class="chat-messages-empty" data-messages-empty>No messages yet - say hi!</li>
                     <?php endif; ?>

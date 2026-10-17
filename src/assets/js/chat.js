@@ -1408,6 +1408,70 @@ function chatShowBackground(element, background) {
     });
 })();
 
+// Older messages: a chat opens with only its newest messages, and while there are older ones the "Loading older messages..."
+// line is at the top (data-messages-older). Scrolling up close to it asks the chat page for the ones before the oldest shown
+// (?older=, answered as { messages: html, hasOlder }) and puts them in above, a batch at a time, until there are none left
+// and the line goes. What's on screen stays where it is while they go in.
+// Reply quotes for messages that weren't on the page yet become links once they are, like the ones the page starts with.
+(() => {
+    const LOAD_WITHIN_PX = 300; // how close to the top scrolling has to get
+    const messages = document.querySelector('[data-chat-messages]');
+    if (!messages) return;
+    let isLoading = false;
+
+    function linkReplies() {
+        messages.querySelectorAll('span.chat-message-reply[data-reply-id]').forEach((quote) => {
+            const id = quote.dataset.replyId;
+            if (!document.getElementById('message-' + id)) return;
+            const link = document.createElement('a');
+            link.className = quote.className;
+            link.href = '#message-' + id;
+            link.setAttribute('data-reply-link', '');
+            link.append(...quote.childNodes);
+            quote.replaceWith(link);
+        });
+    }
+
+    async function loadOlder() {
+        const marker = messages.querySelector('[data-messages-older]');
+        const oldest = messages.querySelector('[data-message-id], [data-notice-id]');
+        if (isLoading || !marker || !oldest) return;
+        isLoading = true;
+
+        let isLoaded = false;
+        try {
+            const params = new URLSearchParams({
+                chat: messages.dataset.chatMessages,
+                older: oldest.dataset.messageId ?? oldest.dataset.noticeId,
+            });
+            const response = await fetch('/chat/?' + params, { headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error(response.statusText);
+            const data = await response.json();
+
+            // Kept the same distance from the bottom, so the messages being read don't jump down
+            const fromBottom = messages.scrollHeight - messages.scrollTop;
+            marker.insertAdjacentHTML('afterend', data.messages);
+            if (!data.hasOlder) marker.remove();
+            messages.scrollTop = messages.scrollHeight - fromBottom;
+            linkReplies();
+            isLoaded = true;
+        } catch {
+            // Offline for a moment - scrolling again tries again
+        }
+        isLoading = false;
+
+        // Still close to the top (a quick scroll, or a tall screen the batch didn't fill), so the next batch too
+        if (isLoaded) loadIfNearTop();
+    }
+
+    function loadIfNearTop() {
+        if (messages.scrollTop < LOAD_WITHIN_PX) loadOlder();
+    }
+
+    messages.addEventListener('scroll', loadIfNearTop, { passive: true });
+    loadIfNearTop();
+})();
+
 // Live updates: every 2 seconds asks the chat page what's new (?poll=1), adds the open chat's new messages at the bottom
 // and swaps in the chat list when something in it changed (new messages, unread counts, new chats).
 // The open chat's background is kept up to date too, so a new one shows up without a reload.
