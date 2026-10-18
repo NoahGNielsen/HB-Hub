@@ -10,8 +10,11 @@ if (!empty($hbHubShowSiteFooter)):
     <nav class="site-footer-links" aria-label="Footer">
         <a href="/legal/terms">Terms</a>
         <a href="/legal/privacy">Privacy</a>
+        <a href="/legal/code-of-conduct">Code of Conduct</a>
+        <a href="/legal/do-not-sell-or-share-my-personal-information">Do not sell or share my data</a>
         <a href="/legal/credits">Credits</a>
         <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">Report Security Concern</a>
     </nav>
     <p class="site-footer-copyright">&copy; <?= (int) date('Y') > $footerYear ? $footerYear . '&ndash;' . date('Y') : $footerYear ?> Noah Gaj Nedergaard Nielsen</p>
 </footer>
