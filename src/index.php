@@ -39,6 +39,14 @@ foreach ([1, 21, 39] as $homeField) {
     $homeDeeds[] = HBHUB_MATADOR_FIELDS[$homeField];
 }
 
+// The Baccarat scoreboard's bead plate in the Casino section: one bead per round, filled column by column (4 to a
+// column, 8 columns), P for Player, B for Banker and T for Tie. The last one is this round's Banker win, the rest are
+// left empty.
+$homeBeadSides = ['P' => 'player', 'B' => 'banker', 'T' => 'tie'];
+$homeBeadRounds = 'BPPBBTPBBBPPBPTBBPPPBBPBTPBBB';
+$homeBeads = str_split(str_pad($homeBeadRounds, 32));
+$homeBeadNewest = strlen($homeBeadRounds) - 1;
+
 // The chessboard in the Games section: Scholar's mate (1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6?? 4. Qxf7#), a8 first like
 // HBHUB_CHESS_START_BOARD is written, white pieces upper case. The last move (h5 to f7) and the king in check are marked.
 $homeChessBoard = 'r.bqkb.r' . 'pppp.Qpp' . '..n..n..' . '....p...' . '..B.P...' . '........' . 'PPPP.PPP' . 'RNB.K.NR';
@@ -263,24 +271,17 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                 <div class="home-roulette">
                     <div class="home-roulette-pockets"><span class="home-roulette-ball"></span></div>
                 </div>
-                <!-- And a Baccarat hand in the other corner: the Player on 5, the Banker on a natural 9 with the chip on it -->
+                <!-- And a Baccarat scoreboard in the other corner, like the screens next to real tables: this round's
+                     Player and Banker on top, and the rounds before it as beads, the newest one pulsing -->
                 <div class="home-baccarat">
-                    <img class="home-baccarat-chip" src="/assets/images/icons/chip.svg" alt="">
-                    <div class="home-baccarat-side is-player">
-                        <p class="home-baccarat-name">Player</p>
-                        <div class="home-baccarat-cards">
-                            <span class="home-baccarat-card">3<br>♦</span>
-                            <span class="home-baccarat-card is-black">2<br>♣</span>
-                        </div>
-                        <span class="home-baccarat-total">5</span>
+                    <div class="home-baccarat-score">
+                        <p class="is-player">Player<b>5</b></p>
+                        <p class="is-banker is-win">Banker<b>9</b></p>
                     </div>
-                    <div class="home-baccarat-side is-banker is-win">
-                        <p class="home-baccarat-name">Banker</p>
-                        <div class="home-baccarat-cards">
-                            <span class="home-baccarat-card is-black">K<br>♠</span>
-                            <span class="home-baccarat-card">9<br>♥</span>
-                        </div>
-                        <span class="home-baccarat-total">9</span>
+                    <div class="home-baccarat-beads">
+                        <?php foreach ($homeBeads as $homeBeadIndex => $homeBead): ?>
+                            <span class="home-bead<?= $homeBead === ' ' ? '' : ' is-' . $homeBeadSides[$homeBead] ?><?= $homeBeadIndex === $homeBeadNewest ? ' is-new' : '' ?>"><?= trim($homeBead) ?></span>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>
