@@ -1020,7 +1020,7 @@ html.home {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* the Player's name sits at the top, level with the Banker's above its chips */
   gap: 6px;
   border: 2px solid var(--home-side);
   border-radius: 10px;
