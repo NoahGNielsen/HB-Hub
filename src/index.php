@@ -273,7 +273,7 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                     <p class="home-baccarat-spot is-side is-banker">B Pair<small><?= HBHUB_BACCARAT_PAYS['bankerPair'] ?> to 1</small></p>
                     <p class="home-baccarat-spot">Player<small><?= HBHUB_BACCARAT_PAYS['player'] ?> to 1</small></p>
                     <p class="home-baccarat-spot is-banker">
-                        Banker<small><?= HBHUB_BACCARAT_PAYS['banker'] ?> to 1<br>less <?= HBHUB_BACCARAT_BANKER_COMMISSION / 10 ?>%</small>
+                        Banker<small><?= HBHUB_BACCARAT_PAYS['banker'] ?> to 1<br>with <?= HBHUB_BACCARAT_BANKER_COMMISSION / 10 ?>% cut</small>
                         <span class="home-baccarat-chips">
                             <img src="/assets/images/icons/chip.svg" alt="">
                             <img src="/assets/images/icons/chip.svg" alt="">
