@@ -146,11 +146,14 @@ function chatFormatShortcut(event, textarea) {
 // which goes around the selected text (chatFormatApply above). The browser's own menu is replaced,
 // so Cut, Copy and Paste are in it too. Shift+right-click still opens the browser's menu (for spelling suggestions),
 // and phones keep theirs, as it comes with the handles for selecting text.
-// Edit is a modal popup, where nothing outside it can be clicked, so the menu moves into the popup it's opened in.
+// Edit is a modal popup, where nothing outside it can be clicked, so the menu moves into the popup it's opened in,
+// and back to where it started for the message box (inside .chat, whose [hidden] rule is what hides it again).
+// Clicking anywhere, an item (even a greyed-out one), or Enter, Delete or Backspace closes it again.
 (() => {
     const menu = document.querySelector('[data-format-menu]');
     if (!menu) return;
 
+    const home = menu.parentElement; // where it is on the page, for the message box
     const isTouch = window.matchMedia('(hover: none)');
     const needsSelection = menu.querySelectorAll('[data-format="cut"], [data-format="copy"]');
     let textarea = null; // the message box the menu was opened on
@@ -166,7 +169,7 @@ function chatFormatShortcut(event, textarea) {
         skip: (event) => (event.shiftKey && event.clientX !== 0) || isTouch.matches, // clientX is 0 from Shift+F10
         onOpen(item) {
             textarea = item;
-            const host = item.closest('dialog') ?? document.body;
+            const host = item.closest('dialog') ?? home;
             if (menu.parentElement !== host) host.append(menu);
             const hasSelection = item.selectionStart !== item.selectionEnd;
             needsSelection.forEach((menuItem) => {
@@ -186,8 +189,9 @@ function chatFormatShortcut(event, textarea) {
 
     menu.addEventListener('click', async (event) => {
         const item = event.target.closest('[data-format]');
-        if (!item || item.getAttribute('aria-disabled') === 'true') return;
+        if (!item) return;
         formatMenu.close(true); // back in the message box first, which brings its selection back
+        if (item.getAttribute('aria-disabled') === 'true') return;
         const format = item.dataset.format;
         const selected = textarea.value.slice(textarea.selectionStart, textarea.selectionEnd);
 
@@ -205,6 +209,13 @@ function chatFormatShortcut(event, textarea) {
         } catch {
             // The browser said no to the clipboard (or the user did, when it asked), so nothing happens
         }
+    });
+
+    // Delete and Backspace close it, back in the message box (Enter is a click on the focused item, above)
+    menu.addEventListener('keydown', (event) => {
+        if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+        event.preventDefault();
+        formatMenu.close(true);
     });
 })();
 
