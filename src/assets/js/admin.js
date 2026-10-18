@@ -22,7 +22,13 @@
     const charSets = ['abcdefghijkmnopqrstuvwxyz', 'ABCDEFGHJKLMNPQRSTUVWXYZ', '23456789', '!?#%+-='];
 
     function randomIndex(length) {
-        return crypto.getRandomValues(new Uint32Array(1))[0] % length;
+        const range = 0x100000000;
+        const limit = range - (range % length);
+        let value;
+        do {
+            value = crypto.getRandomValues(new Uint32Array(1))[0];
+        } while (value >= limit);
+        return value % length;
     }
 
     function randomPassword() {
