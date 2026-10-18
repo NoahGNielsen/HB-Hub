@@ -32,6 +32,91 @@
   text-decoration: underline;
 }
 
+/* The privacy policy (privacy.php): a long read, so a date, a table of contents and numbered sections */
+.legal-updated {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  opacity: 0.6;
+}
+
+.legal-toc {
+  margin: 0 0 8px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.legal-toc ol {
+  margin: 0;
+  padding-left: 1.4em;
+  line-height: 1.8;
+}
+
+.legal-page section {
+  scroll-margin-top: 96px; /* so the top bar doesn't cover the heading when a contents link is followed */
+}
+
+.legal-page h2 {
+  margin: 36px 0 12px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.legal-page h3 {
+  margin: 20px 0 8px;
+  font-size: 1.02rem;
+}
+
+.legal-page section p,
+.legal-page section li {
+  line-height: 1.6;
+}
+
+.legal-page section ul {
+  padding-left: 1.3em;
+}
+
+.legal-page section li + li {
+  margin-top: 6px;
+}
+
+.legal-note {
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* Cookies and local storage keys: the name, what it's for and how long it's kept */
+.legal-cookies {
+  margin: 0 0 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.legal-cookies div {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.legal-cookies dt code {
+  font-size: 0.92rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.legal-cookies dd {
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+
+.legal-cookies .legal-cookie-kept {
+  font-size: 0.85rem;
+  opacity: 0.65;
+}
+
 .legal-links {
   margin: 24px 0 0;
   padding-top: 20px;

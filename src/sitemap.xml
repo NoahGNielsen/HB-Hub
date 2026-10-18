@@ -11,6 +11,9 @@
         <loc>https://hbhub.noahgajnielsen.dk/userMgmt/login</loc>
     </url>
     <url>
+        <loc>https://hbhub.noahgajnielsen.dk/legal/privacy</loc>
+    </url>
+    <url>
         <loc>https://hbhub.noahgajnielsen.dk/legal/credits</loc>
     </url>
 </urlset>
