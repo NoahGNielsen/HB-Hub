@@ -227,3 +227,52 @@ body:has(> .site-footer) {
     to { opacity: 0; visibility: hidden; }
   }
 }
+
+/* Cookie notice (assets/php/footer.php + cookieNotice.js) - a small box in the bottom-left corner */
+.cookie-notice {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 190;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 14px 16px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: toast-in 0.3s ease;
+}
+
+.cookie-notice[hidden] {
+  display: none;
+}
+
+.cookie-notice-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.cookie-notice-text a {
+  color: var(--accent);
+}
+
+.cookie-notice-ok {
+  flex: none;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cookie-notice-ok:hover {
+  filter: brightness(1.1);
+}

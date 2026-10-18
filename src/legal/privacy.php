@@ -6,10 +6,10 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '18 October 2026';
+const HBHUB_PRIVACY_UPDATED = '19 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
-// (logging in, the login lock, bans), so there's no cookie banner.
+// (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
 const HBHUB_PRIVACY_COOKIES = [
     'hbHubSession' => ['Keeps you logged in. Holds a random id that points at your login.', '30 days, or until you log out'],
     'hbHubPendingLogin' => ['Remembers that you typed the right password while you enter your two-factor code.', '5 minutes'],
@@ -23,6 +23,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'The smileys you used most recently in the chat.',
     'hbHubNotifiedMessageId' => 'The last message you got a browser notification for, so you don\'t get it twice.',
     'hbHubChessSound, hbHubMatadorSound' => 'Whether you turned the game sounds on or off.',
+    'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',
 ];
 ?>
 <!DOCTYPE html>
@@ -170,8 +171,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
             <section id="cookies" aria-labelledby="privacy-cookies">
                 <h2 id="privacy-cookies">6. Cookies and local storage</h2>
                 <p>
-                    HB Hub only uses cookies it needs to work. There are no tracking or advertising cookies, which is
-                    why there's no cookie banner. All of them are only sent to HB Hub, over HTTPS, and scripts can't read them.
+                    HB Hub only uses cookies it needs to work. There are no tracking or advertising cookies, so the
+                    small cookie notice only tells you about them: by using the site, you agree to them. All of them
+                    are only sent to HB Hub, over HTTPS, and scripts can't read them.
                 </p>
                 <dl class="legal-cookies">
                     <?php foreach (HBHUB_PRIVACY_COOKIES as $privacyCookie => [$privacyCookieUse, $privacyCookieKept]): ?>
