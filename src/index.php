@@ -172,7 +172,7 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                     <dd><?= number_format(HBHUB_CASINO_DAILY_CHIPS) ?></dd>
                 </div>
                 <div>
-                    <dt>Real money involved</dt>
+                    <dt>Teachers involved</dt>
                     <dd>0</dd>
                 </div>
             </dl>
