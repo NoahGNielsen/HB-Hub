@@ -68,8 +68,8 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # Default for Static Assets (Images, CSS, JS, Fonts): Cache locally for 90 days
     Header set Cache-Control "max-age=7776000, public"
 
-    # Dynamic Pages (HTML/PHP): Force browser to revalidate with 304 checks every time
-    <FilesMatch "\.(html|htm|php)$">
+    # Dynamic Pages (HTML/PHP), robots.txt and the sitemap: Force browser to revalidate with 304 checks every time
+    <FilesMatch "(\.(html|htm|php)|^robots\.txt|^sitemap\.xml)$">
         Header set Cache-Control "no-cache"
     </FilesMatch>
 </IfModule>

@@ -70,8 +70,8 @@ $loginIsTotpStep = loginPendingUserId() !== null;
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/login.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/login.js') ?>" defer></script>
-    <title>Login - HB Hub</title>
-    <meta name="description" content="Login page for the HB Hub">
+    <title>Log in - HB Hub</title>
+    <meta name="description" content="Log in to HB Hub, the chat, casino and games site for HB's students.">
 </head>
 <body>
     <main>

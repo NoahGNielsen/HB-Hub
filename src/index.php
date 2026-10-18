@@ -82,6 +82,10 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <title>HB Hub - Chat, casino and games for HB's students</title>
     <meta name="description" content="HB Hub is where school hangs out online: group chats and DMs, Blackjack, Baccarat and Roulette with play chips, and Matador and chess with your friends.">
+    <meta property="og:title" content="HB Hub - The whole school, one tab away">
+    <meta property="og:description" content="Group chats with your class, Blackjack with chips that aren't real money, and Matador and chess with your friends. All in your browser.">
+    <!-- Tells Google the site's name for search results. A data block, not a script, so the CSP doesn't stop it. -->
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "HB Hub", "alternateName": "HBHub", "url": "https://hbhub.noahgajnielsen.dk/"}</script>
 </head>
 <body class="home-body">
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>

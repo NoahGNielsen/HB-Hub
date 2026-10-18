@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The pages visitors can open without logging in (robots.txt points here). The rest of the site needs an account. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/userMgmt/onboarding</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/userMgmt/login</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/legal/credits</loc>
+    </url>
+</urlset>

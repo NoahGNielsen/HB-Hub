@@ -20,8 +20,8 @@ if (hbHubBannedCookieUserId() !== null):
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
-    <title>Onboarding - HB Hub</title>
-    <meta name="description" content="Onboarding process for the HB Hub">
+    <title>Sign up - HB Hub</title>
+    <meta name="robots" content="noindex">
 </head>
 <body>
     <main>
@@ -179,8 +179,8 @@ foreach ($onboardingSteps as $index => $step) {
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/onboarding.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/onboarding.js') ?>" defer></script>
-    <title>Onboarding - HB Hub</title>
-    <meta name="description" content="Onboarding process for the HB Hub">
+    <title>Sign up - HB Hub</title>
+    <meta name="description" content="Make an HB Hub account: group chats with your class, a casino with play chips, and Matador and chess with your friends.">
 </head>
 <body>
     <main>

@@ -1,14 +1,44 @@
-<?php require_once __DIR__ . '/maintenance.php'; ?>
+<?php
+// The shared bits of every page's <head>: charset, favicon, the main stylesheets and fonts, and what search engines
+// and link previews (Discord, Snapchat, iMessage, ...) read. Each page adds its own <title> and description after it.
+//
+// The canonical URL is the page's clean path without the query string, so /userMgmt/login?return=%2Fchat (where
+// session.php sends visitors who aren't logged in) counts as /userMgmt/login, and /index as /. Error pages (anything
+// that isn't a 200) are noindex, so they get none.
+require_once __DIR__ . '/maintenance.php';
+
+$headerCanonical = null;
+if (http_response_code() === 200) {
+    $headerPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $headerPath = is_string($headerPath) && str_starts_with($headerPath, '/') ? $headerPath : '/';
+    $headerCanonical = 'https://hbhub.noahgajnielsen.dk' . preg_replace('~(^|/)index$~', '$1', $headerPath);
+}
+?>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="https://hbhub.noahgajnielsen.dk/assets/images/favicon.svg?v=<?= filemtime(__DIR__ . '/../images/favicon.svg') ?>">
+<link rel="apple-touch-icon" href="https://hbhub.noahgajnielsen.dk/assets/images/appleTouchIcon.png?v=<?= filemtime(__DIR__ . '/../images/appleTouchIcon.png') ?>">
+<meta name="theme-color" content="#161a21">
 <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mainStyle.css?v=<?= filemtime(__DIR__ . '/../css/mainStyle.css') ?>">
 <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
-<link rel="terms-of-service" href="https://hbhub.noahgajnielsen.dk/legal/terms.html">
-<link rel="privacy-policy" href="https://hbhub.noahgajnielsen.dk/legal/privacy.html">
+<link rel="terms-of-service" href="https://hbhub.noahgajnielsen.dk/legal/terms">
+<link rel="privacy-policy" href="https://hbhub.noahgajnielsen.dk/legal/privacy">
+
+<!-- Search engines and link previews. og:title/og:description fall back to the page's <title> and description. -->
+<?php if ($headerCanonical !== null): ?>
+<link rel="canonical" href="<?= htmlspecialchars($headerCanonical) ?>">
+<meta property="og:url" content="<?= htmlspecialchars($headerCanonical) ?>">
+<?php endif; ?>
+<meta property="og:site_name" content="HB Hub">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:image" content="https://hbhub.noahgajnielsen.dk/assets/images/shareImage.png?v=<?= filemtime(__DIR__ . '/../images/shareImage.png') ?>">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HB Hub: The whole school, one tab away. Chat, Casino, Games.">
+<meta name="twitter:card" content="summary_large_image">
 
 <!--Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
- 

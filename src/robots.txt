@@ -1,5 +1,9 @@
+# Only the frontpage, login, sign-up and credits are open to visitors; everything else sends them to the login page.
+# CSS, JS and images stay crawlable so search engines can render the pages and show the favicon.
 User-agent: *
 Allow: /
-Disallow: /assets/
+Disallow: /assets/php/
 Disallow: /.well-known/
 Disallow: /admin/
+
+Sitemap: https://hbhub.noahgajnielsen.dk/sitemap.xml
