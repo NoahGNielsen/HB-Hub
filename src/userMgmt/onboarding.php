@@ -300,6 +300,7 @@ foreach ($onboardingSteps as $index => $step) {
                 <?php if (isset($onboardingErrors['password'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['password']) ?></p>
                 <?php endif; ?>
+                <p class="onboarding-hint">By creating an account, you agree to the <a href="/legal/terms" target="_blank">Terms of Service</a> and the <a href="/legal/privacy" target="_blank">Privacy Policy</a>.</p>
             </section>
 
             <div class="onboarding-nav">
