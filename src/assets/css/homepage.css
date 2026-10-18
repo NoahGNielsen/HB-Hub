@@ -773,7 +773,8 @@ html.home {
   color: #fff;
 }
 
-/* Casino: a half-moon blackjack table, with a roulette wheel in front of its corner */
+/* Casino: a half-moon blackjack table, with a roulette wheel in front of one corner and a Baccarat hand in front of
+   the other */
 .home-casino-art {
   height: 460px;
 }
@@ -984,6 +985,97 @@ html.home {
   .home-roulette-pockets {
     animation: home-spin 40s linear infinite;
   }
+}
+
+/* The Baccarat hand: the Player and the Banker side by side in casino.css' blue and red, the winner outlined */
+.home-baccarat {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  border-radius: 14px;
+  background: #fbfaf6;
+  color: #1a1d23;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  transform: rotate(3deg);
+}
+
+.home-baccarat-side {
+  --home-side: #2f6fd6;
+  padding: 6px 6px 8px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--home-side) 10%, #fff);
+  text-align: center;
+}
+
+.home-baccarat-side.is-banker {
+  --home-side: #d23c3c;
+}
+
+.home-baccarat-side.is-win {
+  box-shadow: inset 0 0 0 2px var(--home-side);
+}
+
+.home-baccarat-name {
+  margin: 0;
+  padding: 4px 6px;
+  border-radius: 5px;
+  background: var(--home-side);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.home-baccarat-cards {
+  margin-top: 7px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.home-baccarat-card {
+  width: 32px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: #fff;
+  color: #c8102e;
+  box-shadow: 0 0 0 1px rgba(26, 29, 35, 0.12), 0 3px 6px rgba(0, 0, 0, 0.15);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.home-baccarat-card.is-black {
+  color: #1a1d23;
+}
+
+.home-baccarat-total {
+  display: block;
+  margin-top: 5px;
+  color: var(--home-side);
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* The bet, on the Banker */
+.home-baccarat-chip {
+  position: absolute;
+  top: -18px;
+  right: -12px;
+  width: 40px;
+  height: 40px;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.35));
 }
 
 /* Games: a chessboard in the chess page's colours (chess.css), with three Matador title deeds fanned out in front of
@@ -1487,6 +1579,42 @@ html.home {
   .home-roulette {
     width: 120px;
     height: 120px;
+  }
+
+  .home-baccarat {
+    padding: 6px;
+    gap: 5px;
+  }
+
+  .home-baccarat-side {
+    padding: 5px 5px 6px;
+  }
+
+  .home-baccarat-name {
+    padding: 3px 4px;
+    font-size: 0.5rem;
+  }
+
+  .home-baccarat-cards {
+    margin-top: 5px;
+    gap: 3px;
+  }
+
+  .home-baccarat-card {
+    width: 26px;
+    height: 36px;
+    font-size: 0.66rem;
+  }
+
+  .home-baccarat-total {
+    font-size: 1.05rem;
+  }
+
+  .home-baccarat-chip {
+    top: -14px;
+    right: -6px;
+    width: 32px;
+    height: 32px;
   }
 
   .home-games-art {

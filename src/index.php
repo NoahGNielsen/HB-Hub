@@ -80,7 +80,7 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
     <link href="<?= htmlspecialchars($homePieceFontUrl) ?>" rel="stylesheet">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <title>HB Hub - Chat, casino and games for HB's students</title>
-    <meta name="description" content="HB Hub is where school hangs out online: group chats and DMs, Blackjack and Roulette with play chips, and Matador and chess with your friends.">
+    <meta name="description" content="HB Hub is where school hangs out online: group chats and DMs, Blackjack, Baccarat and Roulette with play chips, and Matador and chess with your friends.">
 </head>
 <body class="home-body">
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -262,6 +262,26 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                 <!-- And a European roulette wheel in front of it, the ball resting on 17 -->
                 <div class="home-roulette">
                     <div class="home-roulette-pockets"><span class="home-roulette-ball"></span></div>
+                </div>
+                <!-- And a Baccarat hand in the other corner: the Player on 5, the Banker on a natural 9 with the chip on it -->
+                <div class="home-baccarat">
+                    <img class="home-baccarat-chip" src="/assets/images/icons/chip.svg" alt="">
+                    <div class="home-baccarat-side is-player">
+                        <p class="home-baccarat-name">Player</p>
+                        <div class="home-baccarat-cards">
+                            <span class="home-baccarat-card">3<br>♦</span>
+                            <span class="home-baccarat-card is-black">2<br>♣</span>
+                        </div>
+                        <span class="home-baccarat-total">5</span>
+                    </div>
+                    <div class="home-baccarat-side is-banker is-win">
+                        <p class="home-baccarat-name">Banker</p>
+                        <div class="home-baccarat-cards">
+                            <span class="home-baccarat-card is-black">K<br>♠</span>
+                            <span class="home-baccarat-card">9<br>♥</span>
+                        </div>
+                        <span class="home-baccarat-total">9</span>
+                    </div>
                 </div>
             </div>
         </section>
