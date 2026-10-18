@@ -1487,6 +1487,25 @@ a.chat-member:focus-visible {
   letter-spacing: 0.05em;
 }
 
+/* Formatting menu (right-click the message box): each item looks like what it does.
+   It's long, so it's a little tighter, and scrolls in a window too short for all of it. */
+.chat-menu.chat-format-menu {
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+}
+
+.chat-format-menu [role="menuitem"] {
+  padding: 7px 12px;
+}
+
+.chat-menu-shortcut {
+  margin-left: auto;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.55;
+}
+
 /* Mute chat's small menu, placed next to it by chat.js */
 .chat-menu.chat-submenu {
   position: absolute;

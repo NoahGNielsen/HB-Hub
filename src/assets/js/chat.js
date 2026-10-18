@@ -69,24 +69,144 @@
     });
 })();
 
-// Formatting while typing a message (the composer and Edit): Ctrl+B, Ctrl+I and Ctrl+U put **bold**, *italic*
-// and __underline__ around the selected text, or around the cursor so it can be typed in between.
-// The formatting itself is worked out by the server when the message is shown (assets/php/chatFormat.php).
-// Returns whether the key was one of them.
-function chatFormatShortcut(event, textarea) {
-    const marks = { b: '**', i: '*', u: '__' };
-    const mark = marks[event.key.toLowerCase()];
-    if (!mark || !(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey) return false;
-    event.preventDefault();
+// Formatting while typing a message (the composer and Edit), from the formatting menu below or Ctrl+B, Ctrl+I and Ctrl+U.
+// The formatting itself is worked out by the server when the message is shown (assets/php/chatFormat.php),
+// this only types the ** and so on for the user:
+//   bold, italic, underline, strike, code: around the selected text, or around the cursor so it can be typed in between
+//   codeBlock: ``` around the selected text, each on a line of its own
+//   heading, list, numberedList: "# ", "- " or "1. ", "2. " in front of every selected line (the cursor's line without a selection)
+//   link: [the selected text](https://), with https:// selected to paste the address over - or the other way round
+//         when the selected text is an address
+// Nothing changes when the result would be longer than the box allows.
+function chatFormatApply(textarea, format) {
+    const { value, selectionStart: start, selectionEnd: end } = textarea;
+    const selected = value.slice(start, end);
+    const marks = { bold: '**', italic: '*', underline: '__', strike: '~~', code: '`' };
+    let from = start;
+    let to = end;
+    let text;
+    let selectFrom; // what's selected afterwards, from where the new text starts
+    let selectTo;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    if (textarea.maxLength > 0 && textarea.value.length + mark.length * 2 > textarea.maxLength) return true;
-    textarea.setRangeText(mark + textarea.value.slice(start, end) + mark, start, end);
-    textarea.setSelectionRange(start + mark.length, end + mark.length); // the same text stays selected, now inside them
-    textarea.dispatchEvent(new Event('input', { bubbles: true })); // so it grows like when typing
+    if (format in marks) {
+        const mark = marks[format];
+        text = mark + selected + mark;
+        [selectFrom, selectTo] = [mark.length, mark.length + selected.length]; // the same text, now inside them
+    } else if (format === 'codeBlock') {
+        const before = start > 0 && value[start - 1] !== '\n' ? '\n' : '';
+        const after = end < value.length && value[end] !== '\n' ? '\n' : '';
+        text = before + '```\n' + selected + '\n```' + after;
+        selectFrom = before.length + 4;
+        selectTo = selectFrom + selected.length;
+    } else if (format === 'link') {
+        if (/^https?:\/\/\S+$/i.test(selected)) {
+            text = `[](${selected})`;
+            [selectFrom, selectTo] = [1, 1]; // the text to show goes between the [ ]
+        } else {
+            const label = selected || 'text';
+            text = `[${label}](https://)`;
+            [selectFrom, selectTo] = selected ? [label.length + 3, label.length + 11] : [1, 1 + label.length];
+        }
+    } else {
+        // Whole lines: from the start of the first selected line to the end of the last one.
+        // A selection ending right after a line break (three lines selected by dragging down) leaves the next line be.
+        from = start > 0 ? value.lastIndexOf('\n', start - 1) + 1 : 0;
+        to = value.indexOf('\n', end > start && value[end - 1] === '\n' ? end - 1 : end);
+        if (to === -1) to = value.length;
+        let number = 0;
+        text = value.slice(from, to).split('\n').map((line) => {
+            // Empty lines among the selected ones stay empty, and don't count in a numbered list.
+            // The cursor's own line gets it even when empty, to start typing there.
+            if (line.trim() === '' && start !== end) return line;
+            number++;
+            return (format === 'heading' ? '# ' : format === 'list' ? '- ' : `${number}. `) + line;
+        }).join('\n');
+        // With nothing selected the cursor stays where it was in the line, otherwise the lines stay selected
+        const cursor = start - from + text.length - (to - from);
+        [selectFrom, selectTo] = start === end ? [cursor, cursor] : [0, text.length];
+    }
+
+    if (textarea.maxLength > 0 && value.length - (to - from) + text.length > textarea.maxLength) return;
+    textarea.setRangeText(text, from, to);
+    textarea.setSelectionRange(from + selectFrom, from + selectTo);
+    textarea.dispatchEvent(new Event('input', { bubbles: true })); // so it grows like when typing, and Edit's Save wakes up
+}
+
+// Ctrl+B, Ctrl+I and Ctrl+U in a message box. Returns whether the key was one of them.
+function chatFormatShortcut(event, textarea) {
+    const formats = { b: 'bold', i: 'italic', u: 'underline' };
+    const format = formats[event.key.toLowerCase()];
+    if (!format || !(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey) return false;
+    event.preventDefault();
+    chatFormatApply(textarea, format);
     return true;
 }
+
+// Formatting menu: right-clicking the message box (or Edit's) opens a menu with every kind of formatting,
+// which goes around the selected text (chatFormatApply above). The browser's own menu is replaced,
+// so Cut, Copy and Paste are in it too. Shift+right-click still opens the browser's menu (for spelling suggestions),
+// and phones keep theirs, as it comes with the handles for selecting text.
+// Edit is a modal popup, where nothing outside it can be clicked, so the menu moves into the popup it's opened in.
+(() => {
+    const menu = document.querySelector('[data-format-menu]');
+    if (!menu) return;
+
+    const isTouch = window.matchMedia('(hover: none)');
+    const needsSelection = menu.querySelectorAll('[data-format="cut"], [data-format="copy"]');
+    let textarea = null; // the message box the menu was opened on
+
+    // Firefox only lets websites read the clipboard from version 125 on
+    menu.querySelector('[data-format="paste"]').hidden = !navigator.clipboard?.readText;
+
+    const formatMenu = contextMenu({
+        menu,
+        list: document.body,
+        items: '[data-format-target]',
+        focusItem: (item) => item.focus(), // and the selection is still there, for the next formatting
+        skip: (event) => (event.shiftKey && event.clientX !== 0) || isTouch.matches, // clientX is 0 from Shift+F10
+        onOpen(item) {
+            textarea = item;
+            const host = item.closest('dialog') ?? document.body;
+            if (menu.parentElement !== host) host.append(menu);
+            const hasSelection = item.selectionStart !== item.selectionEnd;
+            needsSelection.forEach((menuItem) => {
+                if (hasSelection) menuItem.removeAttribute('aria-disabled');
+                else menuItem.setAttribute('aria-disabled', 'true');
+            });
+        },
+    });
+
+    // Text put in from here goes where the browser's own paste would, cut short when the box would be too full
+    function insert(text) {
+        const { selectionStart: start, selectionEnd: end } = textarea;
+        const room = textarea.maxLength > 0 ? textarea.maxLength - (textarea.value.length - (end - start)) : text.length;
+        textarea.setRangeText(text.slice(0, Math.max(0, room)), start, end, 'end');
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    menu.addEventListener('click', async (event) => {
+        const item = event.target.closest('[data-format]');
+        if (!item || item.getAttribute('aria-disabled') === 'true') return;
+        formatMenu.close(true); // back in the message box first, which brings its selection back
+        const format = item.dataset.format;
+        const selected = textarea.value.slice(textarea.selectionStart, textarea.selectionEnd);
+
+        try {
+            if (format === 'copy') {
+                await navigator.clipboard.writeText(selected);
+            } else if (format === 'cut') {
+                await navigator.clipboard.writeText(selected);
+                insert('');
+            } else if (format === 'paste') {
+                insert(await navigator.clipboard.readText());
+            } else {
+                chatFormatApply(textarea, format);
+            }
+        } catch {
+            // The browser said no to the clipboard (or the user did, when it asked), so nothing happens
+        }
+    });
+})();
 
 // Whether the cursor is inside a ``` code block that hasn't been closed yet, where Enter starts a new line instead of sending
 function chatInCodeBlock(textarea) {

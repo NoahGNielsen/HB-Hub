@@ -38,7 +38,7 @@
 | **Chat notices** | Changes in a group (new name, new admin, someone joined) show up in the chat |
 | **Nicknames & profiles** | Give people nicknames, and open the profile of whoever you're DMing straight from the chat |
 | **GIFs & smileys** | GIF picker powered by Giphy, plus a smiley menu |
-| **Formatting** | Discord-style `**bold**`, `*italic*`, `__underline__`, `~~strikethrough~~`, `` `code` `` and code blocks, `#` headings, lists and `[masked](https://links)` (Ctrl+B / I / U too) |
+| **Formatting** | Discord-style `**bold**`, `*italic*`, `__underline__`, `~~strikethrough~~`, `` `code` `` and code blocks, `#` headings, lists and `[masked](https://links)`, from a right-click menu on the message box or Ctrl+B / I / U |
 | **Chat menu** | Right-click a chat to mute its notifications for a while, hide it or leave it |
 
 ### 🎰 Casino

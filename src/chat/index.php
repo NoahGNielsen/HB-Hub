@@ -1399,7 +1399,7 @@ if ($isPoll) {
                         </div>
                     </div>
                     <label class="chat-visually-hidden" for="chat-message">Message</label>
-                    <textarea id="chat-message" name="message" rows="1" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required
+                    <textarea id="chat-message" name="message" rows="1" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required data-format-target
                               placeholder="Message <?= htmlspecialchars($openChat['chatTitle']) ?>" autofocus></textarea>
                     <!-- Emoji picker: a popup above the button, filled by chat.js. Hidden on phones, which have emoji on their keyboard. -->
                     <div class="chat-emoji">
@@ -1503,6 +1503,27 @@ if ($isPoll) {
                 <?php endif; ?>
             </div>
 
+            <!-- Formatting menu: right-click the message box (or Edit's) to put formatting around the selected text (chat.js).
+                 Each item shows what it does, and data-format is the formatting chatFormatApply() puts in. -->
+            <div class="chat-menu chat-format-menu" role="menu" aria-label="Formatting" hidden data-format-menu>
+                <button type="button" role="menuitem" data-format="bold"><strong>Bold</strong><kbd class="chat-menu-shortcut">Ctrl+B</kbd></button>
+                <button type="button" role="menuitem" data-format="italic"><em>Italic</em><kbd class="chat-menu-shortcut">Ctrl+I</kbd></button>
+                <button type="button" role="menuitem" data-format="underline"><u>Underline</u><kbd class="chat-menu-shortcut">Ctrl+U</kbd></button>
+                <button type="button" role="menuitem" data-format="strike"><s>Strikethrough</s></button>
+                <button type="button" role="menuitem" data-format="code"><code class="chat-message-code">Code</code></button>
+                <button type="button" role="menuitem" data-format="codeBlock">Code block</button>
+                <hr class="chat-menu-divider">
+                <button type="button" role="menuitem" data-format="heading">Heading</button>
+                <button type="button" role="menuitem" data-format="list">List</button>
+                <button type="button" role="menuitem" data-format="numberedList">Numbered list</button>
+                <button type="button" role="menuitem" data-format="link">Link</button>
+                <hr class="chat-menu-divider">
+                <!-- The browser's own menu is replaced, so these are here instead (Shift+right-click still opens it) -->
+                <button type="button" role="menuitem" data-format="cut">Cut</button>
+                <button type="button" role="menuitem" data-format="copy">Copy</button>
+                <button type="button" role="menuitem" data-format="paste">Paste</button>
+            </div>
+
             <form action="/chat/" method="post" hidden data-message-unread>
                 <input type="hidden" name="action" value="unread">
                 <input type="hidden" name="chat" value="<?= $openChat['chatId'] ?>">
@@ -1522,8 +1543,8 @@ if ($isPoll) {
                     </header>
 
                     <label class="chat-visually-hidden" for="chat-edit-content">Message</label>
-                    <textarea id="chat-edit-content" name="content" rows="4" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required></textarea>
-                    <p class="chat-dialog-hint">Enter to save, Shift+Enter for a new line. **bold**, *italic*, __underline__, ~~strikethrough~~ and `code` work here too.</p>
+                    <textarea id="chat-edit-content" name="content" rows="4" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required data-format-target></textarea>
+                    <p class="chat-dialog-hint">Enter to save, Shift+Enter for a new line. Right-click the text for formatting.</p>
 
                     <footer class="chat-new-footer chat-dialog-footer">
                         <button type="button" class="chat-btn" data-dialog-close>Cancel</button>
