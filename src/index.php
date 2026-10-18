@@ -264,19 +264,21 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                 <div class="home-roulette">
                     <div class="home-roulette-pockets"><span class="home-roulette-ball"></span></div>
                 </div>
-                <!-- And a piece of a Baccarat table in the other corner: the betting spots in the order they lie on a
-                     real one, the Tie furthest away and the Player nearest, with a bet on the Banker. The payouts
-                     are the table's own (round.php). -->
+                <!-- And a piece of a Baccarat table in the other corner: the Player and the Banker side by side, with
+                     the side bets above them (each pair over its own side, the Tie in between), and a bet on the
+                     Banker. The payouts are the table's own (round.php). -->
                 <div class="home-baccarat">
-                    <p class="home-baccarat-spot is-tie">Tie<small><?= HBHUB_BACCARAT_PAYS['tie'] ?> to 1</small></p>
+                    <p class="home-baccarat-spot is-side">P Pair<small><?= HBHUB_BACCARAT_PAYS['playerPair'] ?> to 1</small></p>
+                    <p class="home-baccarat-spot is-side is-tie">Tie<small><?= HBHUB_BACCARAT_PAYS['tie'] ?> to 1</small></p>
+                    <p class="home-baccarat-spot is-side is-banker">B Pair<small><?= HBHUB_BACCARAT_PAYS['bankerPair'] ?> to 1</small></p>
+                    <p class="home-baccarat-spot">Player<small><?= HBHUB_BACCARAT_PAYS['player'] ?> to 1</small></p>
                     <p class="home-baccarat-spot is-banker">
-                        <span>Banker<small><?= HBHUB_BACCARAT_PAYS['banker'] ?> to 1, less <?= HBHUB_BACCARAT_BANKER_COMMISSION / 10 ?>%</small></span>
+                        Banker<small><?= HBHUB_BACCARAT_PAYS['banker'] ?> to 1<br>less <?= HBHUB_BACCARAT_BANKER_COMMISSION / 10 ?>%</small>
                         <span class="home-baccarat-chips">
                             <img src="/assets/images/icons/chip.svg" alt="">
                             <img src="/assets/images/icons/chip.svg" alt="">
                         </span>
                     </p>
-                    <p class="home-baccarat-spot is-player"><span>Player<small><?= HBHUB_BACCARAT_PAYS['player'] ?> to 1</small></span></p>
                 </div>
             </div>
         </section>
