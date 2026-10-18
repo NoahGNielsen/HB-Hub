@@ -109,7 +109,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 <h3>Casino and games</h3>
                 <ul>
                     <li>Your chip balance and every change to it (bets, payouts, the daily chips).</li>
-                    <li>The rounds you played in Blackjack, Baccarat and Roulette, used for the leaderboards.</li>
+                    <li>The rounds you played in the casino games, for example but not limited to Blackjack, Baccarat and Roulette, used for the leaderboards.</li>
                     <li>Your Chess and Matador games: seats, moves, saves, results and the in-game chat.</li>
                 </ul>
                 <p>Chips are virtual. HB Hub never asks for, or stores, any payment details.</p>
@@ -234,8 +234,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
             <section id="changes" aria-labelledby="privacy-changes">
                 <h2 id="privacy-changes">9. Changes to this policy</h2>
                 <p>
-                    HB Hub changes as new features are added, and this page changes with it. The date at the top shows
-                    when it was last updated.
+                    HB Hub changes as new features are added, and this page tries to changes with it. However, this is a small side project, and i will try to make sure this stays up to date. If you notice it aint, please contract me at admin@noahgajnielsen.dk The date at the top shows when it was last updated.
                 </p>
             </section>
 
