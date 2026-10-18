@@ -68,8 +68,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     responsible for the data stored on it (the "data controller" under the GDPR).
                 </p>
                 <p>
-                    Questions about your data, or a request to see or delete it: send a message to a site admin in the
-                    chat, or get in touch through <a href="https://noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">noahgajnielsen.dk</a>.
+                    Questions about your data, or a request to download or delete it: email
+                    <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.
                 </p>
             </section>
 
@@ -158,10 +158,6 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 <ul>
                     <li><strong>Simply.com</strong> (Denmark) hosts the website and the database. Everything above is stored there, in the EU.</li>
                     <li>
-                        <strong>Cloudflare</strong> sits in front of the site to keep it fast and protected, so your
-                        requests pass through it. Its cookie-free Web Analytics counts visits without identifying you.
-                    </li>
-                    <li>
                         <strong>Giphy</strong> provides the GIFs. Your GIF searches go through HB Hub's server, so Giphy
                         doesn't learn who searched. GIFs in the chat load straight from Giphy, which means Giphy sees your
                         IP address when your browser shows one.
@@ -211,7 +207,11 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 <p>
                     What stays is what other people need for their chats and games to make sense: the messages you sent
                     (shown as from "Deleted User"), your game results and chip history. None of it is connected to your
-                    name any more. If you want your messages removed too, ask an admin before or after deleting.
+                    name any more.
+                </p>
+                <p class="legal-note">
+                    To <strong>completely delete</strong> all your data, messages included, or to <strong>download</strong>
+                    a copy of all of it, email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.
                 </p>
             </section>
 
@@ -225,8 +225,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <li>object to how your data is used, or have it used less.</li>
                 </ul>
                 <p>
-                    Ask in the way described under <a href="#who">Who runs HB Hub</a>, and you'll get an answer within a
-                    month. If you think your data is being handled wrongly, you can complain to the Danish Data
+                    Email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>, and you'll get an answer
+                    within a month. If you think your data is being handled wrongly, you can complain to the Danish Data
                     Protection Agency, <a href="https://www.datatilsynet.dk" target="_blank" rel="noopener noreferrer">Datatilsynet</a>.
                 </p>
             </section>
@@ -235,7 +235,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 <h2 id="privacy-changes">9. Changes to this policy</h2>
                 <p>
                     HB Hub changes as new features are added, and this page changes with it. The date at the top shows
-                    when it was last updated. Bigger changes, like a new outside service, will be announced on the site.
+                    when it was last updated.
                 </p>
             </section>
 
