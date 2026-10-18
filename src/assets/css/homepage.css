@@ -773,8 +773,8 @@ html.home {
   color: #fff;
 }
 
-/* Casino: a half-moon blackjack table, with a roulette wheel in front of one corner and a Baccarat scoreboard in
-   front of the other */
+/* Casino: a half-moon blackjack table, with a roulette wheel in front of one corner and a piece of a Baccarat
+   table in front of the other */
 .home-casino-art {
   height: 460px;
 }
@@ -987,99 +987,90 @@ html.home {
   }
 }
 
-/* The Baccarat scoreboard: a dark screen with this round's Player and Banker on top and the bead plate below, in
-   casino.css' blue (Player), red (Banker) and green (Tie) */
+/* The piece of a Baccarat table: charcoal felt behind a padded rail, so it stands apart from the green blackjack
+   felt, with the betting spots outlined in casino.css' Player blue, Banker red and Tie green */
 .home-baccarat {
   position: absolute;
   right: 0;
   bottom: 0;
   z-index: 1;
-  padding: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  background: linear-gradient(#1b2029, #0e1116);
-  color: #eceef2;
-  box-shadow: 0 0 0 2px #05070a, 0 24px 40px rgba(0, 0, 0, 0.35);
-  transform: rotate(-2deg);
-}
-
-.home-baccarat .is-player { --home-side: #2f6fd6; }
-.home-baccarat .is-banker { --home-side: #d23c3c; }
-.home-baccarat .is-tie { --home-side: #2fa36b; }
-
-.home-baccarat-score {
-  margin-bottom: 8px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.home-baccarat-score p {
+  width: 220px;
   margin: 0;
-  padding: 5px 8px;
+  padding: 10px;
+  box-sizing: border-box;
+  display: grid;
+  gap: 7px;
+  border: 7px solid #2b1b0f;
+  border-radius: 20px;
+  background: radial-gradient(120% 90% at 50% 20%, #2a2f3a, #14171d 85%);
+  box-shadow: 0 0 0 2px #5a3a22, inset 0 0 0 1px rgba(244, 231, 197, 0.12), 0 24px 40px rgba(0, 0, 0, 0.3);
+  color: #f4e7c5;
+  transform: rotate(-4deg);
+}
+
+.home-baccarat-spot {
+  --home-side: #2f6fd6;
+  position: relative;
+  margin: 0;
+  padding: 7px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--home-side) 22%, transparent);
+  border: 2px solid var(--home-side);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--home-side) 16%, transparent);
   color: color-mix(in srgb, var(--home-side) 55%, #fff);
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1.1;
   text-transform: uppercase;
 }
 
-.home-baccarat-score b {
-  color: #fff;
-  font-size: 1.15rem;
-  letter-spacing: 0;
-  font-variant-numeric: tabular-nums;
+.home-baccarat-spot small {
+  display: block;
+  margin-top: 3px;
+  color: #f4e7c5;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
 }
 
-.home-baccarat-score .is-win {
-  box-shadow: inset 0 0 0 2px var(--home-side), 0 0 14px color-mix(in srgb, var(--home-side) 45%, transparent);
+/* The Tie is a narrow strip, with its payout on the same line */
+.home-baccarat-spot.is-tie {
+  --home-side: #2fa36b;
+  padding: 4px 10px;
+  font-size: 0.7rem;
 }
 
-/* One bead per round, down the columns like a real bead plate */
-.home-baccarat-beads {
-  padding: 6px;
-  display: grid;
-  grid-template-rows: repeat(4, 14px);
-  grid-auto-columns: 14px;
-  grid-auto-flow: column;
-  justify-content: center; /* when the score above is the wider of the two */
-  gap: 3px;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.04);
+.home-baccarat-spot.is-tie small {
+  margin: 0;
 }
 
-.home-bead {
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  font-size: 0.5rem;
-  font-weight: 800;
-  line-height: 1;
+.home-baccarat-spot.is-banker {
+  --home-side: #d23c3c;
 }
 
-.home-bead.is-player,
-.home-bead.is-banker,
-.home-bead.is-tie {
-  background: var(--home-side);
+/* The bet: two chips stacked on the Banker */
+.home-baccarat-chips {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex: none;
 }
 
-@keyframes home-bead-pulse {
-  from { box-shadow: 0 0 0 0 var(--home-side); }
-  to { box-shadow: 0 0 0 6px transparent; }
+.home-baccarat-chips img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45));
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .home-bead.is-new {
-    animation: home-bead-pulse 1.6s ease-out infinite;
-  }
+.home-baccarat-chips img:nth-child(2) {
+  transform: translateY(-5px) rotate(40deg);
 }
 
 /* Games: a chessboard in the chess page's colours (chess.css), with three Matador title deeds fanned out in front of
@@ -1586,34 +1577,31 @@ html.home {
   }
 
   .home-baccarat {
-    padding: 8px;
+    width: 176px;
+    padding: 7px;
+    gap: 5px;
+    border-width: 5px;
+    border-radius: 16px;
   }
 
-  .home-baccarat-score {
-    margin-bottom: 6px;
-    gap: 4px;
+  .home-baccarat-spot {
+    padding: 5px 8px;
+    border-radius: 8px;
+    font-size: 0.7rem;
   }
 
-  .home-baccarat-score p {
-    padding: 4px 6px;
-    gap: 4px;
+  .home-baccarat-spot small {
     font-size: 0.5rem;
-    letter-spacing: 0.1em;
   }
 
-  .home-baccarat-score b {
-    font-size: 0.95rem;
+  .home-baccarat-spot.is-tie {
+    padding: 3px 8px;
+    font-size: 0.58rem;
   }
 
-  .home-baccarat-beads {
-    padding: 5px;
-    grid-template-rows: repeat(4, 12px);
-    grid-auto-columns: 12px;
-    gap: 2px;
-  }
-
-  .home-bead {
-    font-size: 0.42rem;
+  .home-baccarat-chips {
+    width: 26px;
+    height: 26px;
   }
 
   .home-games-art {

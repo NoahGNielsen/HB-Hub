@@ -4,6 +4,7 @@
 $hbHubSessionOptional = true; // the frontpage is open to everyone
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/baccarat/round.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/matador/board.php';
 $siteConfig ??= require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
@@ -38,14 +39,6 @@ $homeDeeds = [];
 foreach ([1, 21, 39] as $homeField) {
     $homeDeeds[] = HBHUB_MATADOR_FIELDS[$homeField];
 }
-
-// The Baccarat scoreboard's bead plate in the Casino section: one bead per round, filled column by column (4 to a
-// column, 8 columns), P for Player, B for Banker and T for Tie. The last one is this round's Banker win, the rest are
-// left empty.
-$homeBeadSides = ['P' => 'player', 'B' => 'banker', 'T' => 'tie'];
-$homeBeadRounds = 'BPPBBTPBBBPPBPTBBPPPBBPBTPBBB';
-$homeBeads = str_split(str_pad($homeBeadRounds, 32));
-$homeBeadNewest = strlen($homeBeadRounds) - 1;
 
 // The chessboard in the Games section: Scholar's mate (1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6?? 4. Qxf7#), a8 first like
 // HBHUB_CHESS_START_BOARD is written, white pieces upper case. The last move (h5 to f7) and the king in check are marked.
@@ -271,18 +264,19 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                 <div class="home-roulette">
                     <div class="home-roulette-pockets"><span class="home-roulette-ball"></span></div>
                 </div>
-                <!-- And a Baccarat scoreboard in the other corner, like the screens next to real tables: this round's
-                     Player and Banker on top, and the rounds before it as beads, the newest one pulsing -->
+                <!-- And a piece of a Baccarat table in the other corner: the betting spots in the order they lie on a
+                     real one, the Tie furthest away and the Player nearest, with a bet on the Banker. The payouts
+                     are the table's own (round.php). -->
                 <div class="home-baccarat">
-                    <div class="home-baccarat-score">
-                        <p class="is-player">Player<b>5</b></p>
-                        <p class="is-banker is-win">Banker<b>9</b></p>
-                    </div>
-                    <div class="home-baccarat-beads">
-                        <?php foreach ($homeBeads as $homeBeadIndex => $homeBead): ?>
-                            <span class="home-bead<?= $homeBead === ' ' ? '' : ' is-' . $homeBeadSides[$homeBead] ?><?= $homeBeadIndex === $homeBeadNewest ? ' is-new' : '' ?>"><?= trim($homeBead) ?></span>
-                        <?php endforeach; ?>
-                    </div>
+                    <p class="home-baccarat-spot is-tie">Tie<small><?= HBHUB_BACCARAT_PAYS['tie'] ?> to 1</small></p>
+                    <p class="home-baccarat-spot is-banker">
+                        <span>Banker<small><?= HBHUB_BACCARAT_PAYS['banker'] ?> to 1, less <?= HBHUB_BACCARAT_BANKER_COMMISSION / 10 ?>%</small></span>
+                        <span class="home-baccarat-chips">
+                            <img src="/assets/images/icons/chip.svg" alt="">
+                            <img src="/assets/images/icons/chip.svg" alt="">
+                        </span>
+                    </p>
+                    <p class="home-baccarat-spot is-player"><span>Player<small><?= HBHUB_BACCARAT_PAYS['player'] ?> to 1</small></span></p>
                 </div>
             </div>
         </section>
