@@ -563,8 +563,11 @@ body:has(> .chat) {
   font-size: 0.7rem;
 }
 
+/* Never wider than the message, so a code block with long lines scrolls inside it instead */
 .chat-message-bubble {
+  max-width: 100%;
   padding: 8px 12px;
+  box-sizing: border-box;
   border-radius: 14px 14px 14px 4px;
   background: var(--background);
   overflow-wrap: anywhere;
@@ -588,6 +591,61 @@ body:has(> .chat) {
 
 .chat-message-link:hover {
   text-decoration-thickness: 2px;
+}
+
+/* Formatting in a message (assets/php/chatFormat.php): headings, lists and code, a little apart from the text around them */
+.chat-message-text > * + * {
+  margin-top: 6px;
+}
+
+.chat-message-heading {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.chat-message-heading.is-level-1 {
+  font-size: 1.4rem;
+}
+
+.chat-message-heading.is-level-2 {
+  font-size: 1.2rem;
+}
+
+.chat-message-heading.is-level-3 {
+  font-size: 1.05rem;
+}
+
+.chat-message-list {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+/* Code, on a slightly darker background than the bubble - in the user's own (accent) bubbles too */
+.chat-message-code,
+.chat-message-codeblock {
+  --chat-code-bg: color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 4px;
+  background: var(--chat-code-bg);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.88em;
+}
+
+.chat-message.is-own .chat-message-code,
+.chat-message.is-own .chat-message-codeblock {
+  --chat-code-bg: color-mix(in srgb, #000 18%, transparent);
+}
+
+.chat-message-code {
+  padding: 1px 4px;
+}
+
+/* A code block keeps its spaces and line breaks, and scrolls sideways when a line is too long for the bubble */
+.chat-message-codeblock {
+  margin: 0;
+  padding: 8px 10px;
+  overflow-x: auto;
+  white-space: pre;
+  overflow-wrap: normal;
 }
 
 /* A GIF fills its bubble, at Giphy's 200px tall size */

@@ -1,6 +1,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chat.php'; // the kinds of chat, roles, notices and the changes the admin panel makes too
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatFormat.php'; // **bold**, lists, code blocks and links in messages
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatUnread.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php';
@@ -871,6 +872,8 @@ foreach ($statement->fetchAll() as $chat) {
     $chat['chatBackground'] = $background !== null ? implode(' ', $background) : null; // "#a1b2c3 #d4e5f6 90", how chat.js reads it
     if (chatGifId($chat['chatLastMessage']) !== null) {
         $chat['chatLastMessage'] = 'GIF';
+    } elseif ($chat['chatLastMessage'] !== null) {
+        $chat['chatLastMessage'] = chatFormatPlain($chat['chatLastMessage']); // "bold", not "**bold**"
     }
     if ($chat['userAcknowledgedJoin']) {
         $chats[] = $chat;
@@ -995,39 +998,6 @@ function chatUserAvatarHtml(int $userId, string $name, mixed $avatarId, string $
 }
 
 /**
- * A message as HTML: escaped, with line breaks, and every http:// or https:// address made a link.
- * The links open in a new tab, after chat.js has warned about following links from strangers.
- */
-function chatMessageHtml(string $content): string
-{
-    $html = '';
-    $parts = preg_split('~(?<![\w/])(https?://[^\s<>"]+)~iu', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
-    if ($parts === false) {
-        return nl2br(htmlspecialchars($content)); // not valid UTF-8, so no links
-    }
-
-    foreach ($parts as $i => $part) {
-        if ($i % 2 === 0) {
-            $html .= htmlspecialchars($part);
-            continue;
-        }
-
-        // Punctuation at the end belongs to the sentence, not the address ("see https://x.dk.")
-        $url = preg_replace('~[.,!?;:\'")\]]+$~u', '', $part);
-        $trailing = substr($part, strlen($url));
-        if (preg_match('~^https?://[^/?#]~i', $url)) {
-            $html .= '<a class="chat-message-link" href="' . htmlspecialchars($url) . '" target="_blank" rel="noopener noreferrer nofollow ugc" data-chat-link>'
-                . htmlspecialchars($url) . '</a>';
-        } else {
-            $html .= htmlspecialchars($url); // just "https://" with no address after it
-        }
-        $html .= htmlspecialchars($trailing);
-    }
-
-    return nl2br($html);
-}
-
-/**
  * What a deleted message shows instead of itself, from its messageDeletedByAdmin.
  */
 function chatDeletedLabel(mixed $deletedByAdmin): string
@@ -1055,8 +1025,9 @@ function chatReplyHtml(array $openChat, int $userId, array $message): string
         } elseif (chatGifId($message['replyContent']) !== null) {
             $text = '<span class="chat-message-reply-text is-deleted">GIF</span>';
         } else {
-            // Shortened here too, so a long message isn't sent twice
-            $content = preg_replace('~\s+~u', ' ', $message['replyContent']) ?? $message['replyContent'];
+            // Shortened here too, so a long message isn't sent twice. Without its formatting, it's only one line.
+            $content = chatFormatPlain($message['replyContent']);
+            $content = preg_replace('~\s+~u', ' ', $content) ?? $content;
             $text = '<span class="chat-message-reply-text">' . htmlspecialchars(mb_substr($content, 0, 150)) . '</span>';
         }
     }
@@ -1199,7 +1170,9 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
                                         <img class="chat-message-gif" src="https://media.giphy.com/media/<?= $gifId ?>/200.webp" alt="GIF"
                                              height="200" loading="lazy" referrerpolicy="no-referrer">
                                     <?php elseif ($message['messageContent'] !== null): ?>
-                                        <p data-message-text><?= chatMessageHtml($message['messageContent']) ?></p>
+                                        <!-- data-message-source is the text as it was typed, for Edit (chat.js) - only on the user's own -->
+                                        <div class="chat-message-text" data-message-text<?= $isOwn ? ' data-message-source="' . htmlspecialchars($message['messageContent']) . '"' : ''
+                                            ?>><?= chatFormatHtml($message['messageContent']) ?></div>
                                     <?php elseif ($message['attachmentId'] !== null): ?>
                                         <p class="chat-message-deleted">Attachment</p>
                                     <?php endif; ?>
@@ -1550,7 +1523,7 @@ if ($isPoll) {
 
                     <label class="chat-visually-hidden" for="chat-edit-content">Message</label>
                     <textarea id="chat-edit-content" name="content" rows="4" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required></textarea>
-                    <p class="chat-dialog-hint">Enter to save, Shift+Enter for a new line.</p>
+                    <p class="chat-dialog-hint">Enter to save, Shift+Enter for a new line. **bold**, *italic*, __underline__, ~~strikethrough~~ and `code` work here too.</p>
 
                     <footer class="chat-new-footer chat-dialog-footer">
                         <button type="button" class="chat-btn" data-dialog-close>Cancel</button>

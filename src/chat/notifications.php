@@ -5,6 +5,7 @@
 // Without ?after= only the newest id is returned, so turning notifications on doesn't announce old messages.
 // Returns {"enabled": false} when the user has notifications turned off in settings.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatFormat.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 
@@ -65,6 +66,7 @@ if (is_string($after) && ctype_digit($after) && strlen($after) <= 19) {
         } elseif (preg_match('~^https://media\.giphy\.com/media/[A-Za-z0-9]{1,64}/giphy\.gif$~', $content) === 1) {
             $body = 'Sent a GIF'; // a GIF message is just its address, see chatGifUrl() in chat/index.php
         } else {
+            $content = chatFormatPlain($content); // without the ** and __ (assets/php/chatFormat.php)
             $content = preg_replace('~\s+~u', ' ', $content) ?? $content;
             $body = mb_strlen($content) > HBHUB_NOTIFY_BODY_MAX ? mb_substr($content, 0, HBHUB_NOTIFY_BODY_MAX - 1) . '…' : $content;
         }

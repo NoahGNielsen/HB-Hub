@@ -61,12 +61,37 @@
     textarea.addEventListener('input', resize);
 
     textarea.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+        if (chatFormatShortcut(event, textarea)) return;
+        if (event.key !== 'Enter' || event.shiftKey || event.isComposing || chatInCodeBlock(textarea)) return;
         event.preventDefault();
         if (textarea.value.trim() === '') return;
         composer.requestSubmit();
     });
 })();
+
+// Formatting while typing a message (the composer and Edit): Ctrl+B, Ctrl+I and Ctrl+U put **bold**, *italic*
+// and __underline__ around the selected text, or around the cursor so it can be typed in between.
+// The formatting itself is worked out by the server when the message is shown (assets/php/chatFormat.php).
+// Returns whether the key was one of them.
+function chatFormatShortcut(event, textarea) {
+    const marks = { b: '**', i: '*', u: '__' };
+    const mark = marks[event.key.toLowerCase()];
+    if (!mark || !(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey) return false;
+    event.preventDefault();
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (textarea.maxLength > 0 && textarea.value.length + mark.length * 2 > textarea.maxLength) return true;
+    textarea.setRangeText(mark + textarea.value.slice(start, end) + mark, start, end);
+    textarea.setSelectionRange(start + mark.length, end + mark.length); // the same text stays selected, now inside them
+    textarea.dispatchEvent(new Event('input', { bubbles: true })); // so it grows like when typing
+    return true;
+}
+
+// Whether the cursor is inside a ``` code block that hasn't been closed yet, where Enter starts a new line instead of sending
+function chatInCodeBlock(textarea) {
+    return textarea.value.slice(0, textarea.selectionStart).split('```').length % 2 === 0;
+}
 
 // User picker in a popup (New chat, Add to chat): searches all users and ticks the picked ones.
 // The picks stay when the search changes, and go into the popup's form as hidden users[] inputs.
@@ -900,9 +925,14 @@ function chatShowBackground(element, background) {
         return [...messages.querySelectorAll('[data-message-id]')];
     }
 
-    // The message as it was sent - the line breaks are still in the text after each <br>
+    // The message as it's shown, without the formatting - the line breaks are still in the text after each <br>
     function messageText(item) {
-        return item.querySelector('[data-message-text]')?.textContent ?? '';
+        return item.querySelector('[data-message-text]')?.textContent.trim() ?? '';
+    }
+
+    // The message as it was typed, ** and all, which the user's own messages carry for Edit
+    function messageSource(item) {
+        return item.querySelector('[data-message-text]')?.dataset.messageSource ?? messageText(item);
     }
 
     // What the reply bar and the delete popup show for the message
@@ -988,7 +1018,7 @@ function chatShowBackground(element, background) {
     // Edit: Enter saves like in the composer, and Save waits until something has changed
     function openEdit(item) {
         editForm.elements.message.value = item.dataset.messageId;
-        editText.value = messageText(item);
+        editText.value = messageSource(item);
         editText.defaultValue = editText.value;
         editSave.disabled = true;
         editDialog.showModal();
@@ -1001,7 +1031,8 @@ function chatShowBackground(element, background) {
     });
 
     editText.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+        if (chatFormatShortcut(event, editText)) return;
+        if (event.key !== 'Enter' || event.shiftKey || event.isComposing || chatInCodeBlock(editText)) return;
         event.preventDefault();
         if (!editSave.disabled) editForm.requestSubmit();
     });
