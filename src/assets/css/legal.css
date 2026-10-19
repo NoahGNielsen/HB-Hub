@@ -1,115 +1,261 @@
-/* Legal pages. Terms and privacy are a single card (.legal-page). Credits (credits.php) is built like the frontpage,
-   so it loads homepage.css first and only adds its own bits here (.credits-*). */
+/* Legal pages: terms, privacy, code of conduct and do-not-sell. They sit under the frontpage's top bar (homeNav.php)
+   and load homepage.css first, so they share its colours and kicker. Each one is a single .legal-page article:
+   a dark hero (.legal-hero) with the title, intro and date, then .legal-layout with the contents (.legal-toc) as a
+   sticky column next to the text (.legal-body). On small screens the contents sit on top instead.
+   Credits (credits.php) is built like the frontpage, and only adds its own bits further down (.credits-*). */
 .legal-page {
-  max-width: 640px;
-  margin: 64px auto;
-  padding: 36px 32px;
-  box-sizing: border-box;
-  border-radius: var(--radius);
-  background: var(--secondary);
+  --legal-toc-width: 220px;
+  --legal-text-width: 720px;
+  --legal-gap: 64px;
+  --legal-width: calc(var(--legal-toc-width) + var(--legal-gap) + var(--legal-text-width));
 }
 
-.legal-page h1 {
-  margin: 0 0 8px;
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+/* ---------- Hero ---------- */
+.legal-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 72px var(--home-gutter) 56px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(55% 90% at 90% 0%, rgba(255, 138, 61, 0.18), transparent 70%),
+    radial-gradient(45% 80% at 0% 100%, rgba(170, 182, 200, 0.08), transparent 70%),
+    var(--home-dark);
+  color: var(--home-dark-text);
+}
+
+/* Dotted paper fading out towards the bottom, like the frontpage's hero */
+.legal-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 20%, transparent 95%);
+  mask-image: linear-gradient(to bottom, #000 20%, transparent 95%);
+  pointer-events: none;
+}
+
+.legal-hero-inner {
+  position: relative;
+  max-width: var(--legal-width);
+  margin: 0 auto;
+}
+
+.legal-kicker {
+  padding-left: 14px; /* no icon in front, so even padding */
+}
+
+.legal-hero h1 {
+  max-width: 16em;
+  margin: 0 0 18px;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 850;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 
 .legal-intro {
+  max-width: 40em;
   margin: 0 0 24px;
-  line-height: 1.5;
-  opacity: 0.75;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  opacity: 0.78;
 }
 
-.legal-page a {
+.legal-hero a {
   color: var(--accent);
   font-weight: 600;
-  text-decoration: none;
 }
 
-.legal-page a:hover {
-  text-decoration: underline;
-}
-
-/* The privacy policy (privacy.php): a long read, so a date, a table of contents and numbered sections */
 .legal-updated {
-  margin: 0 0 16px;
-  font-size: 0.9rem;
-  opacity: 0.6;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.55;
 }
 
+/* ---------- Contents and text ---------- */
+.legal-layout {
+  max-width: var(--legal-width);
+  margin: 0 auto;
+  padding: 56px var(--home-gutter) 96px;
+  display: grid;
+  grid-template-columns: var(--legal-toc-width) minmax(0, var(--legal-text-width));
+  align-items: start;
+  gap: var(--legal-gap);
+}
+
+/* The contents follow along while reading. Numbered with a counter, since the <ol>'s own numbers can't be coloured
+   separately from the link. */
 .legal-toc {
-  margin: 0 0 8px;
-  padding: 16px 20px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--text) 5%, transparent);
+  position: sticky;
+  top: 88px; /* below the top bar */
+  max-height: calc(100vh - 112px);
+  overflow-y: auto;
+  font-size: 0.92rem;
+}
+
+.legal-toc-title {
+  margin: 0 0 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.5;
 }
 
 .legal-toc ol {
   margin: 0;
-  padding-left: 1.4em;
-  line-height: 1.8;
+  padding: 0;
+  list-style: none;
+  counter-reset: legal-toc;
+  border-left: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
 }
 
-.legal-page section {
-  scroll-margin-top: 96px; /* so the top bar doesn't cover the heading when a contents link is followed */
+.legal-toc li {
+  counter-increment: legal-toc;
 }
 
-.legal-page h2 {
-  margin: 36px 0 12px;
-  font-size: 1.35rem;
+.legal-toc a {
+  margin-left: -1px; /* so the hover line covers the grey one */
+  padding: 6px 0 6px 14px;
+  display: flex;
+  gap: 10px;
+  border-left: 2px solid transparent;
+  color: inherit;
+  line-height: 1.35;
+  text-decoration: none;
+  opacity: 0.7;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.legal-toc a::before {
+  content: counter(legal-toc);
+  min-width: 1.3em;
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.legal-toc a:hover,
+.legal-toc a:focus-visible {
+  border-left-color: var(--accent);
+  opacity: 1;
+}
+
+.legal-body > section {
+  scroll-margin-top: 88px; /* so the top bar doesn't cover the heading when a contents link is followed */
+}
+
+.legal-body > section + section {
+  margin-top: 48px;
+  padding-top: 40px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.legal-body h2 {
+  margin: 0 0 16px;
+  font-size: 1.55rem;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
 }
 
-.legal-page h3 {
-  margin: 20px 0 8px;
+.legal-body h3 {
+  margin: 28px 0 10px;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+/* Body text a bit softer than the headings, bold bits at full strength */
+.legal-body p,
+.legal-body li {
+  color: color-mix(in srgb, var(--text) 84%, var(--background));
   font-size: 1.02rem;
+  line-height: 1.7;
 }
 
-.legal-page section p,
-.legal-page section li {
-  line-height: 1.6;
+.legal-body strong {
+  color: var(--text);
 }
 
-.legal-page section ul {
-  padding-left: 1.3em;
+.legal-body ul {
+  margin: 12px 0;
+  padding-left: 1.25em;
 }
 
-.legal-page section li + li {
-  margin-top: 6px;
+.legal-body li::marker {
+  color: var(--accent);
+}
+
+.legal-body li + li {
+  margin-top: 8px;
+}
+
+.legal-body a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s ease;
+}
+
+.legal-body a:hover {
+  text-decoration-color: currentColor;
+}
+
+.legal-body code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  font-size: 0.88em;
 }
 
 .legal-note {
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-left: 3px solid var(--accent);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 12px 12px 0;
   background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.legal-body .legal-note {
+  color: var(--text);
+}
+
+/* A note before the first section (do-not-sell's Global Privacy Control one) */
+.legal-body > .legal-note {
+  margin: 0 0 40px;
 }
 
 /* Cookies and local storage keys: the name, what it's for and how long it's kept */
 .legal-cookies {
-  margin: 0 0 16px;
+  margin: 16px 0 24px;
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
 }
 
 .legal-cookies div {
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--text) 5%, transparent);
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  background: var(--secondary);
 }
 
 .legal-cookies dt code {
+  padding: 0;
+  background: none;
+  color: var(--accent);
   font-size: 0.92rem;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
 
 .legal-cookies dd {
-  margin: 4px 0 0;
-  line-height: 1.5;
+  margin: 6px 0 0;
+  font-size: 0.94rem;
+  line-height: 1.55;
 }
 
 .legal-cookies .legal-cookie-kept {
@@ -117,17 +263,77 @@
   opacity: 0.65;
 }
 
+/* The other legal pages, as pills under the last section */
 .legal-links {
-  margin: 24px 0 0;
-  padding-top: 20px;
-  border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
-  text-align: center;
+  margin: 64px 0 0;
+  padding-top: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
 }
 
-@media (max-width: 520px) {
-  .legal-page {
-    margin: 32px 16px;
-    padding: 28px 20px;
+.legal-body .legal-links a {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--secondary);
+  color: var(--text);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.legal-body .legal-links a:hover {
+  background: color-mix(in srgb, var(--accent) 16%, var(--secondary));
+  color: var(--accent);
+}
+
+.legal-body .legal-links .legal-links-home {
+  margin-left: auto;
+  background: var(--accent);
+  color: #fff;
+}
+
+.legal-body .legal-links .legal-links-home:hover {
+  background: color-mix(in srgb, var(--accent) 85%, #fff);
+  color: #fff;
+}
+
+/* ---------- Legal pages: smaller screens ---------- */
+@media (max-width: 960px) {
+  .legal-layout {
+    padding-top: 32px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  /* The contents become a box above the text */
+  .legal-toc {
+    position: static;
+    max-height: none;
+    padding: 18px 20px;
+    border-radius: var(--radius);
+    background: var(--secondary);
+  }
+}
+
+@media (max-width: 600px) {
+  .legal-hero {
+    padding-top: 48px;
+    padding-bottom: 40px;
+  }
+
+  .legal-body h2 {
+    font-size: 1.35rem;
+  }
+
+  .legal-body > section + section {
+    margin-top: 36px;
+    padding-top: 32px;
+  }
+
+  .legal-body .legal-links .legal-links-home {
+    margin-left: 0;
   }
 }
 
