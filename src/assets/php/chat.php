@@ -134,20 +134,22 @@ function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null, boo
 
 /**
  * Renames the group, with a notice about it. Left empty, the group is named after its members again.
- * Saving the same name again isn't a change, so there's no notice then.
+ * Saving the same name again isn't a change, so there's no notice then. Returns whether it was a change.
  *
  * @param bool $bySiteAdmin renamed from the admin panel, so the notice says a site admin did it
  */
-function chatRename(PDO $db, int $userId, int $chatId, mixed $name, bool $bySiteAdmin = false): void
+function chatRename(PDO $db, int $userId, int $chatId, mixed $name, bool $bySiteAdmin = false): bool
 {
     $chatName = is_string($name) ? trim($name) : '';
     $chatName = $chatName === '' ? null : mb_substr($chatName, 0, HBHUB_CHAT_NAME_MAX);
 
     $statement = $db->prepare('UPDATE `HBHub-Chats` SET chatName = ? WHERE chatId = ? AND NOT (chatName <=> ?)');
     $statement->execute([$chatName, $chatId, $chatName]);
-    if ($statement->rowCount() > 0) {
-        chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_RENAME, null, $chatName, $bySiteAdmin);
+    if ($statement->rowCount() === 0) {
+        return false;
     }
+    chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_RENAME, null, $chatName, $bySiteAdmin);
+    return true;
 }
 
 /**

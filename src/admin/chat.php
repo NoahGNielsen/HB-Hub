@@ -10,6 +10,7 @@
 // their messages can't be deleted here. A deleted chat can only be looked at.
 // The side menu (adminPageMenuHtml()) links to the cards in the order they're on the page: Information, then Manage
 // (name and icon, background), Activity (members, messages) and the Danger zone (delete) last.
+// Opening the page and every change are logged in the admin log (assets/php/adminLog.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php';
@@ -102,12 +103,15 @@ switch ($adminAction) {
         if (!$adminIsGroup) {
             adminChatRedirect($chatId, null, 'overview');
         }
-        chatRename($db, $adminId, $chatId, $_POST['name'] ?? null, true);
+        if (chatRename($db, $adminId, $chatId, $_POST['name'] ?? null, true)) {
+            adminLog($db, $adminId, 'chat.rename', null, $chatId);
+        }
         adminChatRedirect($chatId, 'adminSaved', 'group');
 
     case 'removeIcon':
         if (chatSetIcon($db, $chatId, null)) {
             chatNotice($db, $adminId, $chatId, HBHUB_CHAT_EVENT_ICON_REMOVE, null, null, true);
+            adminLog($db, $adminId, 'chat.icon', null, $chatId);
         }
         adminChatRedirect($chatId, 'adminSaved', 'group');
 
@@ -121,6 +125,7 @@ switch ($adminAction) {
         }
         if (chatSetBackground($db, $chatId, $background)) {
             chatNotice($db, $adminId, $chatId, $isResetting ? HBHUB_CHAT_EVENT_BACKGROUND_RESET : HBHUB_CHAT_EVENT_BACKGROUND, null, null, true);
+            adminLog($db, $adminId, 'chat.background', null, $chatId, ['reset' => $isResetting]);
         }
         adminChatRedirect($chatId, 'adminSaved', 'background');
 
@@ -146,6 +151,7 @@ switch ($adminAction) {
         } else {
             hbHubRemoveNotifications($db, (int) $member['userId'], 'chat.messageRequest', ['chatId' => $chatId]);
         }
+        adminLog($db, $adminId, 'chat.kick', (int) $member['userId'], $chatId, ['invite' => !$member['userAcknowledgedJoin']]);
         adminChatRedirect($chatId, 'adminMemberKicked', 'members');
 
     case 'deleteMessage':
@@ -159,6 +165,9 @@ switch ($adminAction) {
             $statement->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, (int) $messageId, $chatId, ADMIN_ROLE_ADMIN]);
             if ($statement->rowCount() > 0) {
                 hbHubRemoveNotifications($db, null, 'chat.mention', ['messageId' => (int) $messageId]); // whoever it @mentioned
+                $statement = $db->prepare('SELECT userId FROM `HBHub-Messages` WHERE messageId = ?');
+                $statement->execute([(int) $messageId]);
+                adminLog($db, $adminId, 'message.delete', (int) $statement->fetchColumn(), $chatId, ['messageId' => (int) $messageId]);
             }
             // Its attachment goes too (assets/php/chatAttachments.php), giving the sender back its tickets
             hbHubChatAttachmentsRemove($db, 'm.messageId = ? AND m.chatId = ? AND m.messageDeletedTimestamp IS NOT NULL', [(int) $messageId, $chatId]);
@@ -169,11 +178,13 @@ switch ($adminAction) {
         // Gone for everyone in it, like when a group admin deletes a group, but marked as done by a site admin
         $db->prepare('UPDATE `HBHub-Chats` SET chatStatus = ?, chatBannedTimestamp = NOW() WHERE chatId = ? AND chatStatus = ?')
             ->execute([HBHUB_CHAT_STATUS_DELETED_BY_SITE_ADMIN, $chatId, HBHUB_CHAT_STATUS_ACTIVE]);
+        adminLog($db, $adminId, 'chat.delete', null, $chatId);
         hbHubChatAttachmentsRemove($db, 'a.chatId = ?', [$chatId]); // and its attachments with it
         adminChatRedirect($chatId, 'adminChatDeleted', 'overview');
 }
 
-// What the page shows
+// What the page shows, which is logged: it has all the chat's messages
+adminLogView($db, $adminId, 'chat.view', null, $chatId);
 $adminBackground = chatBackground(chatSettings($chat['chatSettings']));
 // The default background starts the picker at the site's orange going right into purple, like in the chat (chat.js)
 [$adminColor1, $adminColor2, $adminAngle] = $adminBackground ?? ['#f2711c', '#6a4bd6', 90];
@@ -236,6 +247,9 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
                                 <?= adminStatusHtml(adminChatStatus((int) $chat['chatStatus'])) ?>
                                 <span class="settings-status"><?= $adminIsGroup ? 'Group' : 'DM' ?></span>
                             </h1>
+                            <div class="admin-header-links">
+                                <a class="settings-btn settings-btn-small" href="/admin/log?chat=<?= $chatId ?>">Admin log</a>
+                            </div>
                         </div>
                     </div>
 

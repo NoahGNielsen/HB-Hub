@@ -57,22 +57,25 @@ function hbHubFeedbackSend(PDO $db, int $userId, string $content, ?string $page)
 
 /**
  * Marks feedback as done by a site admin, or as new again with $done false. Marking it done twice keeps who did it first.
+ * Returns whether it changed anything.
  */
-function hbHubFeedbackSetDone(PDO $db, int $feedbackId, bool $done, int $adminId): void
+function hbHubFeedbackSetDone(PDO $db, int $feedbackId, bool $done, int $adminId): bool
 {
-    if ($done) {
-        $db->prepare('UPDATE `HBHub-Feedback` SET feedbackDoneTimestamp = NOW(), feedbackDoneByUserId = ?
-            WHERE feedbackId = ? AND feedbackDoneTimestamp IS NULL')->execute([$adminId, $feedbackId]);
-    } else {
-        $db->prepare('UPDATE `HBHub-Feedback` SET feedbackDoneTimestamp = NULL, feedbackDoneByUserId = NULL
-            WHERE feedbackId = ?')->execute([$feedbackId]);
-    }
+    $statement = $done
+        ? $db->prepare('UPDATE `HBHub-Feedback` SET feedbackDoneTimestamp = NOW(), feedbackDoneByUserId = ?
+            WHERE feedbackId = ? AND feedbackDoneTimestamp IS NULL')
+        : $db->prepare('UPDATE `HBHub-Feedback` SET feedbackDoneTimestamp = NULL, feedbackDoneByUserId = NULL
+            WHERE feedbackId = ? AND feedbackDoneTimestamp IS NOT NULL');
+    $statement->execute($done ? [$adminId, $feedbackId] : [$feedbackId]);
+    return $statement->rowCount() > 0;
 }
 
 /**
- * Deletes feedback for good.
+ * Deletes feedback for good. Returns whether there was any to delete.
  */
-function hbHubFeedbackDelete(PDO $db, int $feedbackId): void
+function hbHubFeedbackDelete(PDO $db, int $feedbackId): bool
 {
-    $db->prepare('DELETE FROM `HBHub-Feedback` WHERE feedbackId = ?')->execute([$feedbackId]);
+    $statement = $db->prepare('DELETE FROM `HBHub-Feedback` WHERE feedbackId = ?');
+    $statement->execute([$feedbackId]);
+    return $statement->rowCount() > 0;
 }

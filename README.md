@@ -95,6 +95,7 @@ Played with virtual chips only. No real money is involved anywhere.
 | **Admin panel** | Search every user or chat by name or id (or right-click one in the chat). Users: info, logins and messages, and ban, edit, reset or delete them. Chats: members and messages, and rename, remove the icon, change the background, kick members or delete it |
 | **Banned pictures** | Banning someone bans their profile picture too: any account that uploads the same picture (or a resized or slightly cropped copy), or signs up with it, is banned straight away. Add, view and remove pictures under Banned pictures in the admin panel's side menu |
 | **Feedback inbox** | Read what users send with the Feedback button, with who sent it and from which page, under Feedback in the admin panel's side menu. Mark it as done or delete it; the number of new ones shows on Admin in the side bar |
+| **Admin log** | Everything admins do in the admin panel is logged, opening a user or chat included (as that shows their messages and personal info): who did what to whom, and when. Under Admin log in the admin panel's side menu, or the Admin log button on a user or chat. Can't be changed or deleted, kept for a year |
 | **Maintenance mode** | Turn off logins and show a message, straight from the site config |
 | **Section switches** | Open the Casino and the Games section to everyone, only to admins, or to nobody |
 
@@ -112,7 +113,7 @@ Played with virtual chips only. No real money is involved anywhere.
 2. **Add the config.** Copy [`config-examples/hbHubSiteConfig.example.php`](config-examples/hbHubSiteConfig.example.php) into the folder **one level above** the web root, rename it to `hbHubSiteConfig.php` and fill in the values. The site only looks for it there.
    > For local development with `src/` as the web root, that means the repo root (it's in `.gitignore`).
 3. **Create the database.** Import [`database/schema.sql`](database/schema.sql), for example in phpMyAdmin. It always holds the full, current schema.
-4. **Add the nightly clean-up.** Log in over SSH, run `crontab -e` and add the line below (with the path to your web root). It deletes expired chat attachments and tidies up abandoned game rooms at 2:30 every night. The site also does this bit by bit as people use it, so it works without, just slower to free up space.
+4. **Add the nightly clean-up.** Log in over SSH, run `crontab -e` and add the line below (with the path to your web root). It deletes expired chat attachments, tidies up abandoned game rooms and removes admin log rows older than a year at 2:30 every night. The site also does this bit by bit as people use it, so it works without, just slower to free up space.
    ```text
    30 2 * * * /usr/local/bin/php /var/www/noahgajnielsen.dk/hbhub/cron/nightly.php
    ```
