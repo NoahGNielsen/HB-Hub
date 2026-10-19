@@ -2,6 +2,12 @@
 // The shared bits of every page's <head>: charset, favicon, the main stylesheets and fonts, and what search engines
 // and link previews (Discord, Snapchat, iMessage, ...) read. Each page adds its own <title> and description after it.
 //
+// /manifest.json is the web app manifest, so the site can be added to a phone's home screen and opens without the
+// browser bars (JSON can't hold comments, so it's explained here). Its "any" icons are the favicon's tilted tile
+// (appIcon192/512.png); the "maskable" ones are full-bleed orange (appIconMaskable192/512.png) with the HB inside
+// the middle 80%, since Android crops them to a circle or squircle. Shortcuts (long-press the icon) open Chat, Casino
+// and Games. iOS still uses appleTouchIcon.png for the icon.
+//
 // The canonical URL is the page's clean path without the query string, so /userMgmt/login?return=%2Fchat (where
 // session.php sends visitors who aren't logged in) counts as /userMgmt/login, and /index as /. Error pages (anything
 // that isn't a 200) are noindex, so they get none.
@@ -18,6 +24,8 @@ if (http_response_code() === 200) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="https://hbhub.noahgajnielsen.dk/assets/images/favicon.svg?v=<?= filemtime(__DIR__ . '/../images/favicon.svg') ?>">
 <link rel="apple-touch-icon" href="https://hbhub.noahgajnielsen.dk/assets/images/appleTouchIcon.png?v=<?= filemtime(__DIR__ . '/../images/appleTouchIcon.png') ?>">
+<link rel="manifest" href="https://hbhub.noahgajnielsen.dk/manifest.json?v=<?= filemtime(__DIR__ . '/../../manifest.json') ?>">
+<meta name="apple-mobile-web-app-title" content="HB Hub">
 <meta name="theme-color" content="#161a21">
 <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mainStyle.css?v=<?= filemtime(__DIR__ . '/../css/mainStyle.css') ?>">
 <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
