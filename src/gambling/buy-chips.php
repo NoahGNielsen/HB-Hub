@@ -51,7 +51,7 @@ $buyChipsSellerId = $statement->fetchColumn();
                     <strong><?= htmlspecialchars(BUY_CHIPS_SELLER_NAME) ?></strong>
                 <?php endif; ?>
                 in the chat, or hit me up somewhere else, and we'll make the deal. The chips are added to your account
-                by hand once you've paid.
+                by hand once you've paid. NOTE! The price is the price and not negotiable!
             </p>
         </section>
 
