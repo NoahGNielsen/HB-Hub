@@ -25,7 +25,7 @@ no-notification.png  Notification icons created by JessHG - Flaticon
                      https://www.flaticon.com/free-icons/notification
 user.png             User icons created by Magnific - Flaticon
                      https://www.flaticon.com/free-icons/user
-settings.png         Settings icons created by Pixel perfect - Flaticon
+settings.png         Settings icons created by Pixel Perfect - Flaticon
                      https://www.flaticon.com/free-icons/settings
 
 Third-party code
@@ -37,4 +37,28 @@ for setting up two-factor login.
 Copyright (c) 2009 Kazuhiko Arase
 Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 The word "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
+
+src/assets/js/vendor/jxl/ is the JPEG XL codec from jSquash
+(https://github.com/jamsinclair/jSquash), built on Google's Squoosh, which runs
+libjxl (https://github.com/libjxl/libjxl) as WebAssembly. It turns pictures
+attached in the chat into JPEG XL, and shows JPEG XL pictures in browsers that
+can't yet.
+
+jSquash: Copyright Jamie Sinclair and the Squoosh authors.
+Licensed under the Apache License 2.0, see src/assets/js/vendor/jxl/LICENSE-jSquash.txt
+libjxl: Copyright (c) the JPEG XL Project Authors.
+Licensed under the BSD 3-Clause license, see src/assets/js/vendor/jxl/LICENSE-libjxl.txt
+
+Third-party lists
+-----------------
+Most of the domains in src/assets/urlBlacklist.txt come from these lists (the
+IP loggers at the top are picked by hand). Domains have been added and removed,
+as noted in the file's comments.
+
+URL shorteners       url-shorteners by Peter Dave Hello
+                     https://github.com/PeterDaveHello/url-shorteners
+                     Licensed under CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/
+Crypto scam sites    CryptoScamDB blacklist by CryptoScamDB
+                     https://github.com/CryptoScamDB/blacklist
+                     Turned from its YAML into a plain list of domains.
 
