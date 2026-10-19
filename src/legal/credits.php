@@ -177,11 +177,11 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
             </div>
         </section>
 
-        <!-- Words: where the words Ordle accepts as guesses come from (assets/php/games/ordle/words/). The daily words are picked by hand. -->
+        <!-- Words: where the words Wordle accepts as guesses come from (assets/php/games/wordle/words/). The daily words are picked by hand. -->
         <section class="credits-section" id="words" aria-labelledby="credits-words-title">
             <p class="home-kicker credits-kicker">Words</p>
             <h2 id="credits-words-title">Every word you can guess.</h2>
-            <p class="credits-section-lead">Ordle checks your guesses against these dictionaries. The daily words are picked from them by hand.</p>
+            <p class="credits-section-lead">Wordle checks your guesses against these dictionaries. The daily words are picked from them by hand.</p>
             <div class="credits-library">
                 <!-- A guess on a card, its tiles going green on hover like a solved word -->
                 <div class="credits-words" aria-hidden="true">
@@ -189,7 +189,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/dolph/dictionary" target="_blank" rel="noopener noreferrer">ENABLE</a></h3>
-                    <p>The Enhanced North American Benchmark Lexicon, a word list made for word games. Its five-letter words are the English ones Ordle accepts.</p>
+                    <p>The Enhanced North American Benchmark Lexicon, a word list made for word games. Its five-letter words are the English ones Wordle accepts.</p>
                     <p class="credits-license">Public domain</p>
                 </div>
             </div>
@@ -202,12 +202,12 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <p>
                         The Danish dictionary by Foreningen for frit tilgængelige sprogværktøjer, based on data from Det
                         Danske Sprog- og Litteraturselskab. Every form of its five-letter words (like "huset" and "spist")
-                        is a Danish word Ordle accepts.
+                        is a Danish word Wordle accepts.
                     </p>
                     <p class="credits-license">GPL 2.0, LGPL 2.1 and MPL 1.1 licenses</p>
                 </div>
             </div>
-            <p class="credits-fineprint">Ordle is inspired by Wordle by Josh Wardle. "Wordle" is a trademark of The New York Times Company, which has nothing to do with HB Hub.</p>
+            <p class="credits-fineprint">HB Hub's Wordle is a copy of Wordle by Josh Wardle. "Wordle" is a trademark of The New York Times Company, which has nothing to do with HB Hub.</p>
         </section>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>

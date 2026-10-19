@@ -37,8 +37,8 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     </a>
                 </li>
                 <li>
-                    <a class="casino-game" href="/games/ordle/">
-                        <span class="casino-game-name">Ordle</span>
+                    <a class="casino-game" href="/games/wordle/">
+                        <span class="casino-game-name">Wordle</span>
                         <span class="casino-game-text">Guess the daily five-letter word in six tries, in English and in Danish. Keep your streak going and climb the leaderboards.</span>
                     </a>
                 </li>

@@ -171,7 +171,7 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                             </li>
                             <li>Games have timers. If you leave or don't make your move in time, the game carries on without you, and that can cost you the game.</li>
                             <li>
-                                Ordle has one English and one Danish word a day, and you get one go at each. A word you start
+                                Wordle has one English and one Danish word a day, and you get one go at each. A word you start
                                 but don't guess by midnight (Danish time) counts as missed, and ends your streak. Don't spoil
                                 the day's word for others, for example in a group chat, before the day is over.
                             </li>

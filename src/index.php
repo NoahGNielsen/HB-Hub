@@ -302,7 +302,7 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
                 <ul class="home-ticks">
                     <li>Matador saves after every move, so you can finish tomorrow</li>
                     <li>Draw offers and rematches in chess</li>
-                    <li>Ordle: a new word to guess every day, in English and Danish</li>
+                    <li>Wordle: a new word to guess every day, in English and Danish</li>
                     <li>Chats and a leaderboards</li>
                     <li>Public, private with a code or invite only mode</li>
                 </ul>

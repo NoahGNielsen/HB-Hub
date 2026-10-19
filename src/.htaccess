@@ -99,6 +99,9 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     RewriteCond %{HTTPS} !=on
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
+    # Wordle used to be called Ordle and live at /games/ordle/, so old links and bookmarks still work.
+    RewriteRule ^games/ordle(/.*)?$ /games/wordle$1 [R=301,L]
+
     # 1. ALLOW ACCESS TO .well-known (Required for SSL certificates like Let's Encrypt)
     RewriteRule ^\.well-known/ - [L]
 

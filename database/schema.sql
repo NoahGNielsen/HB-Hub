@@ -622,10 +622,10 @@ CREATE TABLE `HBHub-Notifications` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `HBHub-OrdleGames`
+-- Table structure for table `HBHub-WordleGames`
 --
 
-CREATE TABLE `HBHub-OrdleGames` (
+CREATE TABLE `HBHub-WordleGames` (
   `userId` int UNSIGNED NOT NULL,
   `gameLanguage` char(2) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'en English, da Danish',
   `gameDate` date NOT NULL COMMENT 'The day of the word, in Danish time',
@@ -638,13 +638,13 @@ CREATE TABLE `HBHub-OrdleGames` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `HBHub-OrdleWords`
+-- Table structure for table `HBHub-WordleWords`
 --
 
-CREATE TABLE `HBHub-OrdleWords` (
+CREATE TABLE `HBHub-WordleWords` (
   `wordLanguage` char(2) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'en English, da Danish',
   `wordDate` date NOT NULL COMMENT 'The day, in Danish time',
-  `wordText` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'The word everyone guesses that day, lowercase, from src/assets/php/games/ordle/words/<language>-answers.txt'
+  `wordText` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'The word everyone guesses that day, lowercase, from src/assets/php/games/wordle/words/<language>-answers.txt'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -1009,16 +1009,16 @@ ALTER TABLE `HBHub-Notifications`
   ADD KEY `fk_notifications_by` (`notificationByUserId`);
 
 --
--- Indexes for table `HBHub-OrdleGames`
+-- Indexes for table `HBHub-WordleGames`
 --
-ALTER TABLE `HBHub-OrdleGames`
+ALTER TABLE `HBHub-WordleGames`
   ADD PRIMARY KEY (`userId`,`gameLanguage`,`gameDate`) COMMENT 'One game per user, language and day',
   ADD KEY `languageDate` (`gameLanguage`,`gameDate`);
 
 --
--- Indexes for table `HBHub-OrdleWords`
+-- Indexes for table `HBHub-WordleWords`
 --
-ALTER TABLE `HBHub-OrdleWords`
+ALTER TABLE `HBHub-WordleWords`
   ADD PRIMARY KEY (`wordLanguage`,`wordDate`),
   ADD KEY `languageWord` (`wordLanguage`,`wordText`);
 
@@ -1430,10 +1430,10 @@ ALTER TABLE `HBHub-Notifications`
   ADD CONSTRAINT `fk_notifications_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
--- Constraints for table `HBHub-OrdleGames`
+-- Constraints for table `HBHub-WordleGames`
 --
-ALTER TABLE `HBHub-OrdleGames`
-  ADD CONSTRAINT `fk_ordlegames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+ALTER TABLE `HBHub-WordleGames`
+  ADD CONSTRAINT `fk_wordlegames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-RouletteSpins`

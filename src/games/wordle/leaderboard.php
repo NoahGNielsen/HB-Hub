@@ -1,12 +1,12 @@
 <?php
-// Ordle leaderboard, one for each language (?lang=en or ?lang=da, as tabs), from HBHub-OrdleGames: games played and
-// won, win %, the average guesses in a win, and the current and longest streak of days in a row won (hbHubOrdleStats()
-// in ordle.php works them all out). Sorted by any column with ?sort=column&dir=asc|desc, which the headings link to.
+// Wordle leaderboard, one for each language (?lang=en or ?lang=da, as tabs), from HBHub-WordleGames: games played and
+// won, win %, the average guesses in a win, and the current and longest streak of days in a row won (hbHubWordleStats()
+// in wordle.php works them all out). Sorted by any column with ?sort=column&dir=asc|desc, which the headings link to.
 // Win % only counts from LEADERBOARD_RANKED_GAMES games, so one lucky day doesn't top it: anyone with fewer has "–",
 // and comes after everyone with one when sorting by it (whichever way). The same for the average without a win.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/ordle/ordle.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/wordle/wordle.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 
@@ -26,17 +26,17 @@ const LEADERBOARD_NULLABLE = ['winRate', 'averageGuesses']; // "–" when there'
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
-$today = hbHubOrdleToday();
+$today = hbHubWordleToday();
 
-$language = is_string($_GET['lang'] ?? null) && isset(HBHUB_ORDLE_LANGUAGES[$_GET['lang']]) ? $_GET['lang'] : 'en';
+$language = is_string($_GET['lang'] ?? null) && isset(HBHUB_WORDLE_LANGUAGES[$_GET['lang']]) ? $_GET['lang'] : 'en';
 $sort = is_string($_GET['sort'] ?? null) && isset(LEADERBOARD_COLUMNS[$_GET['sort']]) ? $_GET['sort'] : 'currentStreak';
 $dir = in_array($_GET['dir'] ?? null, ['asc', 'desc'], true) ? $_GET['dir'] : LEADERBOARD_COLUMNS[$sort][1];
 
 // Every counted game in the language, grouped by player below. Banned and deleted accounts (userStatus NULL) are left out.
 $statement = $db->prepare('SELECT g.userId, u.userName, u.userAvatarAttachmentId, g.gameDate, g.gameResult, g.gameGuesses
-    FROM `HBHub-OrdleGames` g
+    FROM `HBHub-WordleGames` g
     JOIN `HBHub-Users` u ON u.userId = g.userId
-    WHERE g.gameLanguage = ? AND ' . HBHUB_ORDLE_COUNTED_SQL . ' AND u.userStatus IS NOT NULL AND u.userStatus <> ?
+    WHERE g.gameLanguage = ? AND ' . HBHUB_WORDLE_COUNTED_SQL . ' AND u.userStatus IS NOT NULL AND u.userStatus <> ?
     ORDER BY g.userId, g.gameDate');
 $statement->execute([$language, $today, LEADERBOARD_STATUS_BANNED]);
 
@@ -47,12 +47,12 @@ foreach ($statement->fetchAll() as $row) {
         'avatarId' => $row['userAvatarAttachmentId'] !== null ? (int) $row['userAvatarAttachmentId'] : null,
         'games' => [],
     ];
-    $players[(int) $row['userId']]['games'][] = hbHubOrdleStatsGame($row);
+    $players[(int) $row['userId']]['games'][] = hbHubWordleStatsGame($row);
 }
 
 $rows = [];
 foreach ($players as $playerId => $player) {
-    $stats = hbHubOrdleStats($player['games'], $today);
+    $stats = hbHubWordleStats($player['games'], $today);
     $rows[] = [
         'userId' => $playerId,
         'player' => $player['player'],
@@ -97,34 +97,34 @@ function leaderboardSortUrl(string $language, string $column, string $sort, stri
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/ordle.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/ordle.css') ?>">
-    <title>Ordle leaderboard - HB Hub</title>
+    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/wordle.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/wordle.css') ?>">
+    <title>Wordle leaderboard - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Who guesses the daily word best on the HB Hub, in English and Danish">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino games ordle">
-        <a class="casino-back" href="/games/ordle/?lang=<?= $language ?>">&larr; Ordle</a>
-        <h1>Ordle leaderboard</h1>
+    <main class="casino games wordle">
+        <a class="casino-back" href="/games/wordle/?lang=<?= $language ?>">&larr; Wordle</a>
+        <h1>Wordle leaderboard</h1>
         <p class="casino-intro">
             English and Danish have a leaderboard each. A streak is the days in a row someone guessed the word, and the
             current one ends with a day they missed or didn't get it. Win % is only shown from <?= LEADERBOARD_RANKED_GAMES ?>
             games, so one lucky day doesn't top the board. Avg. guesses is how many tries a win takes.
         </p>
 
-        <nav class="ordle-languages ordle-leaderboard-languages" aria-label="Language">
-            <?php foreach (HBHUB_ORDLE_LANGUAGES as $code => $name): ?>
-                <a class="ordle-language<?= $code === $language ? ' is-active' : '' ?>"
+        <nav class="wordle-languages wordle-leaderboard-languages" aria-label="Language">
+            <?php foreach (HBHUB_WORDLE_LANGUAGES as $code => $name): ?>
+                <a class="wordle-language<?= $code === $language ? ' is-active' : '' ?>"
                    href="?<?= htmlspecialchars(http_build_query(['lang' => $code, 'sort' => $sort, 'dir' => $dir])) ?>"<?= $code === $language ? ' aria-current="page"' : '' ?>>
-                    <span class="ordle-language-name"><?= $name ?></span>
+                    <span class="wordle-language-name"><?= $name ?></span>
                 </a>
             <?php endforeach; ?>
         </nav>
 
-        <section class="casino-card" aria-label="<?= HBHUB_ORDLE_LANGUAGES[$language] ?> leaderboard">
+        <section class="casino-card" aria-label="<?= HBHUB_WORDLE_LANGUAGES[$language] ?> leaderboard">
             <?php if ($rows === []): ?>
-                <p class="casino-hint">Nobody has finished a <?= HBHUB_ORDLE_LANGUAGES[$language] ?> word yet. <a href="/games/ordle/?lang=<?= $language ?>">Be the first!</a></p>
+                <p class="casino-hint">Nobody has finished a <?= HBHUB_WORDLE_LANGUAGES[$language] ?> word yet. <a href="/games/wordle/?lang=<?= $language ?>">Be the first!</a></p>
             <?php else: ?>
                 <div class="casino-table-wrap">
                     <table class="casino-table">

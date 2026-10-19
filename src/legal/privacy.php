@@ -159,9 +159,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>The rounds you played in the casino games, for example but not limited to Blackjack, Baccarat and Roulette, used for the leaderboards.</li>
                             <li>Your Chess and Matador games: seats, moves, saves, results and the in-game chat.</li>
                             <li>
-                                Your Ordle games: for each day and language you play, the words you guessed, whether you got
+                                Your Wordle games: for each day and language you play, the words you guessed, whether you got
                                 it, and when you started and finished. They make up your stats and streaks, and your spot on
-                                the Ordle leaderboards. Other people only see the totals there (games, wins, win %, average
+                                the Wordle leaderboards. Other people only see the totals there (games, wins, win %, average
                                 guesses and streaks), never your guesses.
                             </li>
                         </ul>

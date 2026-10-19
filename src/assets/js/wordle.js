@@ -1,11 +1,11 @@
-// Ordle (games/ordle/): the board, the on-screen keyboard, the stats and the result. The page gives the game in
+// Wordle (games/wordle/): the board, the on-screen keyboard, the stats and the result. The page gives the game in
 // data-game ({guesses: [{word, score: ['correct' | 'present' | 'absent', ...]}], result: 'playing' | 'won' | 'lost',
 // answer: the word once it's over, else null}) and the stats in data-stats (played, wins, winRate, averageGuesses,
 // distribution {1..6: wins}, currentStreak, longestStreak). Typing works with the keyboard or by tapping the keys;
-// Enter posts the guess to /games/ordle/guess, which checks it and answers with the game and stats the same way.
+// Enter posts the guess to /games/wordle/guess, which checks it and answers with the game and stats the same way.
 // A new guess flips its tiles over one by one (not when the device asks for less motion).
 (() => {
-    const root = document.querySelector('[data-ordle]');
+    const root = document.querySelector('[data-wordle]');
     if (!root) return;
 
     const LANGUAGE = root.dataset.lang;
@@ -14,21 +14,21 @@
     const NEXT_WORD_AT = Number(root.dataset.next);
     const ALPHABET = [...root.dataset.alphabet];
     const LENGTH = Number(root.dataset.length);
-    const FLIP_MS = 250; // between two tiles turning, as in ordle.css
+    const FLIP_MS = 250; // between two tiles turning, as in wordle.css
     const STATUS_RANK = { absent: 1, present: 2, correct: 3 }; // a key shows the best a letter has done
     const STATUS_WORDS = { correct: 'right place', present: 'wrong place', absent: 'not in the word' };
     const RESULT_STATUS = { playing: ['playing', 'Playing'], won: ['won', 'Solved'], lost: ['lost', 'Missed'] };
     const WIN_WORDS = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
 
-    const rows = [...root.querySelectorAll('.ordle-row')];
+    const rows = [...root.querySelectorAll('.wordle-row')];
     const keys = new Map([...root.querySelectorAll('[data-key]')].map((key) => [key.dataset.key, key]));
-    const message = root.querySelector('[data-ordle-message]');
-    const result = root.querySelector('[data-ordle-result]');
-    const resultTitle = root.querySelector('[data-ordle-result-title]');
-    const resultText = root.querySelector('[data-ordle-result-text]');
-    const nextWord = root.querySelector('[data-ordle-next]');
-    const shareButton = root.querySelector('[data-ordle-share]');
-    const tabStatus = root.querySelector('[data-ordle-status]');
+    const message = root.querySelector('[data-wordle-message]');
+    const result = root.querySelector('[data-wordle-result]');
+    const resultTitle = root.querySelector('[data-wordle-result-title]');
+    const resultText = root.querySelector('[data-wordle-result-text]');
+    const nextWord = root.querySelector('[data-wordle-next]');
+    const shareButton = root.querySelector('[data-wordle-share]');
+    const tabStatus = root.querySelector('[data-wordle-status]');
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
     let game = JSON.parse(root.dataset.game);
@@ -48,7 +48,7 @@
         const letters = guess ? [...guess.word] : (index === game.guesses.length ? typed : []);
         [...row.children].forEach((tile, position) => {
             tile.textContent = letters[position] ?? '';
-            tile.className = 'ordle-tile';
+            tile.className = 'wordle-tile';
             if (letters[position]) tile.classList.add('is-filled');
             if (guess) tile.classList.add('is-' + guess.score[position]);
             if (guess && flip) tile.classList.add('is-flipping');
@@ -69,7 +69,7 @@
         }
         for (const [letter, key] of keys) {
             if (letter.length !== 1) continue; // Enter and Delete
-            key.className = 'ordle-key' + (best.has(letter) ? ' is-' + best.get(letter) : '');
+            key.className = 'wordle-key' + (best.has(letter) ? ' is-' + best.get(letter) : '');
             key.setAttribute('aria-label', letter.toUpperCase() + (best.has(letter) ? ', ' + STATUS_WORDS[best.get(letter)] : ''));
         }
     }
@@ -79,7 +79,7 @@
     }
 
     function drawStats(stats) {
-        const set = (name, value) => { root.querySelector('[data-ordle-stat="' + name + '"]').textContent = value; };
+        const set = (name, value) => { root.querySelector('[data-wordle-stat="' + name + '"]').textContent = value; };
         set('played', stats.played);
         set('winRate', stats.winRate === null ? '–' : Math.round(stats.winRate * 100));
         set('currentStreak', stats.currentStreak);
@@ -87,10 +87,10 @@
 
         const most = Math.max(1, ...Object.values(stats.distribution));
         const lastTries = game.result === 'won' ? game.guesses.length : 0;
-        root.querySelectorAll('[data-ordle-distribution] li').forEach((item, index) => {
+        root.querySelectorAll('[data-wordle-distribution] li').forEach((item, index) => {
             const count = stats.distribution[index + 1] ?? 0;
-            item.querySelector('.ordle-distribution-bar').style.transform = 'scaleX(' + count / most + ')';
-            item.querySelector('.ordle-distribution-count').textContent = count;
+            item.querySelector('.wordle-distribution-bar').style.transform = 'scaleX(' + count / most + ')';
+            item.querySelector('.wordle-distribution-count').textContent = count;
             item.classList.toggle('is-today', lastTries === index + 1);
         });
     }
@@ -98,7 +98,7 @@
     function drawResult() {
         const [statusClass, statusName] = RESULT_STATUS[game.result];
         if (tabStatus) {
-            tabStatus.className = 'ordle-language-status is-' + statusClass;
+            tabStatus.className = 'wordle-language-status is-' + statusClass;
             tabStatus.textContent = statusName;
         }
         result.hidden = game.result === 'playing';
@@ -149,7 +149,7 @@
         const before = game.guesses.length;
         let response;
         try {
-            response = await fetch('/games/ordle/guess', {
+            response = await fetch('/games/wordle/guess', {
                 method: 'POST',
                 headers: { Accept: 'application/json' },
                 body: new URLSearchParams({ action: 'guess', lang: LANGUAGE, date: DATE, turn: String(before), word: typed.join('') }),
@@ -213,7 +213,7 @@
         drawRow(game.guesses.length);
     }
 
-    root.querySelector('[data-ordle-keyboard]').addEventListener('click', (event) => {
+    root.querySelector('[data-wordle-keyboard]').addEventListener('click', (event) => {
         const key = event.target.closest('[data-key]');
         if (key) press(key.dataset.key);
     });
@@ -224,7 +224,7 @@
         // here instead, so it doesn't also click the key that has focus.
         const target = event.target;
         if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
-        if (target.closest('a, button') && !target.closest('[data-ordle-keyboard]')) return;
+        if (target.closest('a, button') && !target.closest('[data-wordle-keyboard]')) return;
 
         const key = event.key === 'Enter' || event.key === 'Backspace' ? event.key : event.key.toLowerCase();
         if (key === 'Enter' || key === 'Backspace' || ALPHABET.includes(key)) {
@@ -239,7 +239,7 @@
     shareButton.addEventListener('click', async () => {
         const squares = { correct: '🟩', present: '🟨', absent: '⬛' };
         const [year, month, day] = DATE.split('-');
-        const text = 'HB Hub Ordle (' + LANGUAGE_NAME + ') ' + day + '/' + month + '/' + year + ' '
+        const text = 'HB Hub Wordle (' + LANGUAGE_NAME + ') ' + day + '/' + month + '/' + year + ' '
             + (game.result === 'won' ? game.guesses.length : 'X') + '/' + rows.length + '\n\n'
             + game.guesses.map((guess) => guess.score.map((status) => squares[status]).join('')).join('\n');
         try {

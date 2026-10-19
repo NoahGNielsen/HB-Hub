@@ -1,52 +1,52 @@
 <?php
-// Ordle, a Wordle-style word game: guess the day's five-letter word in six tries, in English or Danish. Everyone gets
+// Wordle, the daily word game: guess the day's five-letter word in six tries, in English or Danish. Everyone gets
 // the same two words each day (one per language), picked at random from words/<language>-answers.txt the first time
-// someone asks for that day's word, and stored in HBHub-OrdleWords so it stays the same all day. A word isn't picked
-// again until every other one has been used (and then only after HBHUB_ORDLE_REPEAT_DAYS).
-// Each user plays each language once a day: one row in HBHub-OrdleGames per user, language and day, made by their
+// someone asks for that day's word, and stored in HBHub-WordleWords so it stays the same all day. A word isn't picked
+// again until every other one has been used (and then only after HBHUB_WORDLE_REPEAT_DAYS).
+// Each user plays each language once a day: one row in HBHub-WordleGames per user, language and day, made by their
 // first guess, with the guesses so far ("crane,slate") and how it's going (gameResult). The guesses are checked here,
-// so the browser never knows the word until the game is over (hbHubOrdleView()).
+// so the browser never knows the word until the game is over (hbHubWordleView()).
 // A day is a day in Denmark: the new words come at midnight there. A game that isn't won by the end of its day counts
 // as lost, so giving up halfway doesn't save a streak or the win %.
-// Used by games/ordle/ (the page), games/ordle/guess (the JSON the page sends guesses to) and games/ordle/leaderboard.
+// Used by games/wordle/ (the page), games/wordle/guess (the JSON the page sends guesses to) and games/wordle/leaderboard.
 require_once __DIR__ . '/../../database.php';
 
-const HBHUB_ORDLE_LANGUAGES = ['en' => 'English', 'da' => 'Danish']; // wordLanguage / gameLanguage
-const HBHUB_ORDLE_LANGUAGE_NAMES = ['en' => 'English', 'da' => 'Dansk']; // what each one is called on its own tab
-const HBHUB_ORDLE_ALPHABETS = ['en' => 'abcdefghijklmnopqrstuvwxyz', 'da' => 'abcdefghijklmnopqrstuvwxyzæøå'];
-const HBHUB_ORDLE_KEYBOARDS = [ // the on-screen keyboard's rows of letters, like the language's own keyboard
+const HBHUB_WORDLE_LANGUAGES = ['en' => 'English', 'da' => 'Danish']; // wordLanguage / gameLanguage
+const HBHUB_WORDLE_LANGUAGE_NAMES = ['en' => 'English', 'da' => 'Dansk']; // what each one is called on its own tab
+const HBHUB_WORDLE_ALPHABETS = ['en' => 'abcdefghijklmnopqrstuvwxyz', 'da' => 'abcdefghijklmnopqrstuvwxyzæøå'];
+const HBHUB_WORDLE_KEYBOARDS = [ // the on-screen keyboard's rows of letters, like the language's own keyboard
     'en' => ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'],
     'da' => ['qwertyuiopå', 'asdfghjklæø', 'zxcvbnm'],
 ];
-const HBHUB_ORDLE_LENGTH = 5;
-const HBHUB_ORDLE_TRIES = 6;
-const HBHUB_ORDLE_TIME_ZONE = 'Europe/Copenhagen';
-const HBHUB_ORDLE_REPEAT_DAYS = 365;
+const HBHUB_WORDLE_LENGTH = 5;
+const HBHUB_WORDLE_TRIES = 6;
+const HBHUB_WORDLE_TIME_ZONE = 'Europe/Copenhagen';
+const HBHUB_WORDLE_REPEAT_DAYS = 365;
 
-const HBHUB_ORDLE_PLAYING = 0; // gameResult in HBHub-OrdleGames
-const HBHUB_ORDLE_WON = 1;
-const HBHUB_ORDLE_LOST = 2;
+const HBHUB_WORDLE_PLAYING = 0; // gameResult in HBHub-WordleGames
+const HBHUB_WORDLE_WON = 1;
+const HBHUB_WORDLE_LOST = 2;
 
 /**
  * Today's date in Denmark, like 2026-10-19: which words are being played.
  */
-function hbHubOrdleToday(): string
+function hbHubWordleToday(): string
 {
-    return (new DateTimeImmutable('now', new DateTimeZone(HBHUB_ORDLE_TIME_ZONE)))->format('Y-m-d');
+    return (new DateTimeImmutable('now', new DateTimeZone(HBHUB_WORDLE_TIME_ZONE)))->format('Y-m-d');
 }
 
 /**
  * When the next words come (midnight in Denmark), in Unix milliseconds, for the countdown on the page.
  */
-function hbHubOrdleNextWordAt(): int
+function hbHubWordleNextWordAt(): int
 {
-    return (new DateTimeImmutable('tomorrow', new DateTimeZone(HBHUB_ORDLE_TIME_ZONE)))->getTimestamp() * 1000;
+    return (new DateTimeImmutable('tomorrow', new DateTimeZone(HBHUB_WORDLE_TIME_ZONE)))->getTimestamp() * 1000;
 }
 
 /**
  * A date like 2026-10-19 as a number that goes up by one a day, to tell whether two days follow each other.
  */
-function hbHubOrdleDayNumber(string $date): int
+function hbHubWordleDayNumber(string $date): int
 {
     return intdiv((new DateTimeImmutable($date, new DateTimeZone('UTC')))->getTimestamp(), 86400);
 }
@@ -57,7 +57,7 @@ function hbHubOrdleDayNumber(string $date): int
  *
  * @return string[]
  */
-function hbHubOrdleWords(string $language, string $list): array
+function hbHubWordleWords(string $language, string $list): array
 {
     static $lists = [];
     return $lists[$language . $list] ??= array_values(array_filter(
@@ -67,30 +67,30 @@ function hbHubOrdleWords(string $language, string $list): array
 }
 
 /**
- * Whether a (clean, see hbHubOrdleCleanGuess()) guess is a real word in the language.
+ * Whether a (clean, see hbHubWordleCleanGuess()) guess is a real word in the language.
  */
-function hbHubOrdleIsWord(string $language, string $word): bool
+function hbHubWordleIsWord(string $language, string $word): bool
 {
     static $words = [];
-    $words[$language] ??= array_flip(hbHubOrdleWords($language, 'words'));
+    $words[$language] ??= array_flip(hbHubWordleWords($language, 'words'));
     return isset($words[$language][$word]);
 }
 
 /**
  * A guess as it's stored: lowercase, or null when it isn't five letters of the language's alphabet.
  */
-function hbHubOrdleCleanGuess(string $language, mixed $word): ?string
+function hbHubWordleCleanGuess(string $language, mixed $word): ?string
 {
     if (!is_string($word)) {
         return null;
     }
     $word = mb_strtolower(trim($word));
     $letters = mb_str_split($word);
-    if (count($letters) !== HBHUB_ORDLE_LENGTH) {
+    if (count($letters) !== HBHUB_WORDLE_LENGTH) {
         return null;
     }
     foreach ($letters as $letter) {
-        if (!str_contains(HBHUB_ORDLE_ALPHABETS[$language], $letter)) {
+        if (!str_contains(HBHUB_WORDLE_ALPHABETS[$language], $letter)) {
             return null;
         }
     }
@@ -101,9 +101,9 @@ function hbHubOrdleCleanGuess(string $language, mixed $word): ?string
  * The word for the language on a day (normally today), picking it first if nobody has asked for it yet. Two requests
  * picking at once is fine: only the first one's word is stored (INSERT IGNORE), and both read that one back.
  */
-function hbHubOrdleDailyWord(PDO $db, string $language, string $date): string
+function hbHubWordleDailyWord(PDO $db, string $language, string $date): string
 {
-    $select = $db->prepare('SELECT wordText FROM `HBHub-OrdleWords` WHERE wordLanguage = ? AND wordDate = ?');
+    $select = $db->prepare('SELECT wordText FROM `HBHub-WordleWords` WHERE wordLanguage = ? AND wordDate = ?');
     $select->execute([$language, $date]);
     $word = $select->fetchColumn();
     if ($word !== false) {
@@ -111,16 +111,16 @@ function hbHubOrdleDailyWord(PDO $db, string $language, string $date): string
     }
 
     // The words that haven't been used yet. Once they all have, the ones not used for a year, and failing that, any.
-    $statement = $db->prepare('SELECT wordText, MAX(wordDate) AS lastUsed FROM `HBHub-OrdleWords` WHERE wordLanguage = ? GROUP BY wordText');
+    $statement = $db->prepare('SELECT wordText, MAX(wordDate) AS lastUsed FROM `HBHub-WordleWords` WHERE wordLanguage = ? GROUP BY wordText');
     $statement->execute([$language]);
     $lastUsed = array_column($statement->fetchAll(), 'lastUsed', 'wordText');
-    $answers = hbHubOrdleWords($language, 'answers');
-    $repeatFrom = (new DateTimeImmutable($date))->modify('-' . HBHUB_ORDLE_REPEAT_DAYS . ' days')->format('Y-m-d');
+    $answers = hbHubWordleWords($language, 'answers');
+    $repeatFrom = (new DateTimeImmutable($date))->modify('-' . HBHUB_WORDLE_REPEAT_DAYS . ' days')->format('Y-m-d');
     $candidates = array_values(array_filter($answers, static fn (string $answer): bool => !isset($lastUsed[$answer])))
         ?: array_values(array_filter($answers, static fn (string $answer): bool => $lastUsed[$answer] < $repeatFrom))
         ?: $answers;
 
-    $db->prepare('INSERT IGNORE INTO `HBHub-OrdleWords` (wordLanguage, wordDate, wordText) VALUES (?, ?, ?)')
+    $db->prepare('INSERT IGNORE INTO `HBHub-WordleWords` (wordLanguage, wordDate, wordText) VALUES (?, ?, ?)')
         ->execute([$language, $date, $candidates[random_int(0, count($candidates) - 1)]]);
     $select->execute([$language, $date]);
     return $select->fetchColumn();
@@ -133,7 +133,7 @@ function hbHubOrdleDailyWord(PDO $db, string $language, string $date): string
  *
  * @return string[]
  */
-function hbHubOrdleScore(string $guess, string $answer): array
+function hbHubWordleScore(string $guess, string $answer): array
 {
     $guessLetters = mb_str_split($guess);
     $answerLetters = mb_str_split($answer);
@@ -159,9 +159,9 @@ function hbHubOrdleScore(string $guess, string $answer): array
 /**
  * The user's game for a language and day, or null before their first guess: ['guesses' => string[], 'result' => int].
  */
-function hbHubOrdleGame(PDO $db, int $userId, string $language, string $date, bool $lock = false): ?array
+function hbHubWordleGame(PDO $db, int $userId, string $language, string $date, bool $lock = false): ?array
 {
-    $statement = $db->prepare('SELECT gameGuesses, gameResult FROM `HBHub-OrdleGames` WHERE userId = ? AND gameLanguage = ? AND gameDate = ?'
+    $statement = $db->prepare('SELECT gameGuesses, gameResult FROM `HBHub-WordleGames` WHERE userId = ? AND gameLanguage = ? AND gameDate = ?'
         . ($lock ? ' FOR UPDATE' : ''));
     $statement->execute([$userId, $language, $date]);
     $row = $statement->fetch();
@@ -177,23 +177,23 @@ function hbHubOrdleGame(PDO $db, int $userId, string $language, string $date, bo
  * won or lost) or 'stale' (the guess was made on an older view of the game, like a double click or another tab: $turn
  * is how many guesses the page had shown).
  */
-function hbHubOrdleGuess(PDO $db, int $userId, string $language, mixed $word, mixed $turn): ?string
+function hbHubWordleGuess(PDO $db, int $userId, string $language, mixed $word, mixed $turn): ?string
 {
-    $guess = hbHubOrdleCleanGuess($language, $word);
-    if ($guess === null || !hbHubOrdleIsWord($language, $guess)) {
+    $guess = hbHubWordleCleanGuess($language, $word);
+    if ($guess === null || !hbHubWordleIsWord($language, $guess)) {
         return 'notWord';
     }
-    $date = hbHubOrdleToday();
-    $answer = hbHubOrdleDailyWord($db, $language, $date);
+    $date = hbHubWordleToday();
+    $answer = hbHubWordleDailyWord($db, $language, $date);
 
     $db->beginTransaction();
     try {
-        $db->prepare('INSERT IGNORE INTO `HBHub-OrdleGames` (userId, gameLanguage, gameDate, gameGuesses, gameResult, gameStartTimestamp)
-            VALUES (?, ?, ?, \'\', ?, UTC_TIMESTAMP())')->execute([$userId, $language, $date, HBHUB_ORDLE_PLAYING]);
-        $game = hbHubOrdleGame($db, $userId, $language, $date, true);
+        $db->prepare('INSERT IGNORE INTO `HBHub-WordleGames` (userId, gameLanguage, gameDate, gameGuesses, gameResult, gameStartTimestamp)
+            VALUES (?, ?, ?, \'\', ?, UTC_TIMESTAMP())')->execute([$userId, $language, $date, HBHUB_WORDLE_PLAYING]);
+        $game = hbHubWordleGame($db, $userId, $language, $date, true);
 
         $error = match (true) {
-            $game['result'] !== HBHUB_ORDLE_PLAYING => 'finished',
+            $game['result'] !== HBHUB_WORDLE_PLAYING => 'finished',
             !is_string($turn) || $turn !== (string) count($game['guesses']) => 'stale',
             default => null,
         };
@@ -204,14 +204,14 @@ function hbHubOrdleGuess(PDO $db, int $userId, string $language, mixed $word, mi
 
         $game['guesses'][] = $guess;
         $result = match (true) {
-            $guess === $answer => HBHUB_ORDLE_WON,
-            count($game['guesses']) >= HBHUB_ORDLE_TRIES => HBHUB_ORDLE_LOST,
-            default => HBHUB_ORDLE_PLAYING,
+            $guess === $answer => HBHUB_WORDLE_WON,
+            count($game['guesses']) >= HBHUB_WORDLE_TRIES => HBHUB_WORDLE_LOST,
+            default => HBHUB_WORDLE_PLAYING,
         };
-        $db->prepare('UPDATE `HBHub-OrdleGames` SET gameGuesses = ?, gameResult = ?,
+        $db->prepare('UPDATE `HBHub-WordleGames` SET gameGuesses = ?, gameResult = ?,
                 gameEndTimestamp = IF(? = ?, NULL, UTC_TIMESTAMP())
             WHERE userId = ? AND gameLanguage = ? AND gameDate = ?')
-            ->execute([implode(',', $game['guesses']), $result, $result, HBHUB_ORDLE_PLAYING, $userId, $language, $date]);
+            ->execute([implode(',', $game['guesses']), $result, $result, HBHUB_WORDLE_PLAYING, $userId, $language, $date]);
         $db->commit();
         return null;
     } catch (Throwable $e) {
@@ -225,20 +225,20 @@ function hbHubOrdleGuess(PDO $db, int $userId, string $language, mixed $word, mi
  * The game as the page shows it: every guess with how its letters did, 'playing', 'won' or 'lost', and the word,
  * but only once the game is over.
  */
-function hbHubOrdleView(?array $game, string $answer): array
+function hbHubWordleView(?array $game, string $answer): array
 {
-    $result = $game['result'] ?? HBHUB_ORDLE_PLAYING;
+    $result = $game['result'] ?? HBHUB_WORDLE_PLAYING;
     return [
         'guesses' => array_map(static fn (string $guess): array => [
             'word' => $guess,
-            'score' => hbHubOrdleScore($guess, $answer),
+            'score' => hbHubWordleScore($guess, $answer),
         ], $game['guesses'] ?? []),
         'result' => match ($result) {
-            HBHUB_ORDLE_WON => 'won',
-            HBHUB_ORDLE_LOST => 'lost',
+            HBHUB_WORDLE_WON => 'won',
+            HBHUB_WORDLE_LOST => 'lost',
             default => 'playing',
         },
-        'answer' => $result !== HBHUB_ORDLE_PLAYING ? $answer : null,
+        'answer' => $result !== HBHUB_WORDLE_PLAYING ? $answer : null,
     ];
 }
 
@@ -246,7 +246,7 @@ function hbHubOrdleView(?array $game, string $answer): array
  * The SQL condition for the games that count in stats: finished ones, and ones from before today (not won in time,
  * so lost). Today's game counts once it's over. Takes today's date as its one parameter.
  */
-const HBHUB_ORDLE_COUNTED_SQL = '(g.gameResult <> ' . HBHUB_ORDLE_PLAYING . ' OR g.gameDate < ?)';
+const HBHUB_WORDLE_COUNTED_SQL = '(g.gameResult <> ' . HBHUB_WORDLE_PLAYING . ' OR g.gameDate < ?)';
 
 /**
  * Stats from one user's counted games in one language, oldest first (['date' => 'Y-m-d', 'won' => bool,
@@ -255,10 +255,10 @@ const HBHUB_ORDLE_COUNTED_SQL = '(g.gameResult <> ' . HBHUB_ORDLE_PLAYING . ' OR
  * The current streak is still going when the last win was today or yesterday (today's word may just not be done yet),
  * and ends with a loss or a day without a win.
  */
-function hbHubOrdleStats(array $games, string $today): array
+function hbHubWordleStats(array $games, string $today): array
 {
     $stats = ['played' => count($games), 'wins' => 0, 'winRate' => null, 'averageGuesses' => null,
-        'distribution' => array_fill(1, HBHUB_ORDLE_TRIES, 0), 'currentStreak' => 0, 'longestStreak' => 0];
+        'distribution' => array_fill(1, HBHUB_WORDLE_TRIES, 0), 'currentStreak' => 0, 'longestStreak' => 0];
     $run = 0;
     $lastWinDay = null;
     foreach ($games as $game) {
@@ -267,7 +267,7 @@ function hbHubOrdleStats(array $games, string $today): array
             $lastWinDay = null;
             continue;
         }
-        $day = hbHubOrdleDayNumber($game['date']);
+        $day = hbHubWordleDayNumber($game['date']);
         $run = $lastWinDay === $day - 1 ? $run + 1 : 1;
         $lastWinDay = $day;
         $stats['longestStreak'] = max($stats['longestStreak'], $run);
@@ -275,7 +275,7 @@ function hbHubOrdleStats(array $games, string $today): array
         $stats['distribution'][$game['guesses']]++;
     }
 
-    if ($lastWinDay !== null && $lastWinDay >= hbHubOrdleDayNumber($today) - 1) {
+    if ($lastWinDay !== null && $lastWinDay >= hbHubWordleDayNumber($today) - 1) {
         $stats['currentStreak'] = $run;
     }
     if ($stats['played'] > 0) {
@@ -292,25 +292,25 @@ function hbHubOrdleStats(array $games, string $today): array
 }
 
 /**
- * A games row from the database, as hbHubOrdleStats() takes it.
+ * A games row from the database, as hbHubWordleStats() takes it.
  */
-function hbHubOrdleStatsGame(array $row): array
+function hbHubWordleStatsGame(array $row): array
 {
     return [
         'date' => $row['gameDate'],
-        'won' => (int) $row['gameResult'] === HBHUB_ORDLE_WON,
+        'won' => (int) $row['gameResult'] === HBHUB_WORDLE_WON,
         'guesses' => substr_count($row['gameGuesses'], ',') + 1,
     ];
 }
 
 /**
- * The user's own stats in a language (hbHubOrdleStats()), for the page.
+ * The user's own stats in a language (hbHubWordleStats()), for the page.
  */
-function hbHubOrdleUserStats(PDO $db, int $userId, string $language): array
+function hbHubWordleUserStats(PDO $db, int $userId, string $language): array
 {
-    $today = hbHubOrdleToday();
-    $statement = $db->prepare('SELECT g.gameDate, g.gameResult, g.gameGuesses FROM `HBHub-OrdleGames` g
-        WHERE g.userId = ? AND g.gameLanguage = ? AND ' . HBHUB_ORDLE_COUNTED_SQL . ' ORDER BY g.gameDate');
+    $today = hbHubWordleToday();
+    $statement = $db->prepare('SELECT g.gameDate, g.gameResult, g.gameGuesses FROM `HBHub-WordleGames` g
+        WHERE g.userId = ? AND g.gameLanguage = ? AND ' . HBHUB_WORDLE_COUNTED_SQL . ' ORDER BY g.gameDate');
     $statement->execute([$userId, $language, $today]);
-    return hbHubOrdleStats(array_map('hbHubOrdleStatsGame', $statement->fetchAll()), $today);
+    return hbHubWordleStats(array_map('hbHubWordleStatsGame', $statement->fetchAll()), $today);
 }

@@ -721,7 +721,7 @@
   from { scale: 1.6; opacity: 0; }
 }
 
-/* The dictionaries (Ordle's words): a guess of five tiles on a card, which all go green on hover, like a solved word */
+/* The dictionaries (Wordle's words): a guess of five tiles on a card, which all go green on hover, like a solved word */
 .credits-words {
   flex: none;
   width: 150px;
