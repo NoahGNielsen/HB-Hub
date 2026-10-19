@@ -76,8 +76,7 @@
 //   bold, italic, underline, strike, code: around the selected text, or around the cursor so it can be typed in between
 //   codeBlock: ``` around the selected text, each on a line of its own
 //   heading, list, numberedList: "# ", "- " or "1. ", "2. " in front of every selected line (the cursor's line without a selection)
-//   link: [the selected text](https://), with https:// selected to paste the address over - or the other way round
-//         when the selected text is an address
+// (Link has a popup of its own, chatLinkPopup below.)
 // Nothing changes when the result would be longer than the box allows.
 function chatFormatApply(textarea, format) {
     const { value, selectionStart: start, selectionEnd: end } = textarea;
@@ -99,15 +98,6 @@ function chatFormatApply(textarea, format) {
         text = before + '```\n' + selected + '\n```' + after;
         selectFrom = before.length + 4;
         selectTo = selectFrom + selected.length;
-    } else if (format === 'link') {
-        if (/^https?:\/\/\S+$/i.test(selected)) {
-            text = `[](${selected})`;
-            [selectFrom, selectTo] = [1, 1]; // the text to show goes between the [ ]
-        } else {
-            const label = selected || 'text';
-            text = `[${label}](https://)`;
-            [selectFrom, selectTo] = selected ? [label.length + 3, label.length + 11] : [1, 1 + label.length];
-        }
     } else {
         // Whole lines: from the start of the first selected line to the end of the last one.
         // A selection ending right after a line break (three lines selected by dragging down) leaves the next line be.
@@ -143,6 +133,99 @@ function chatFormatShortcut(event, textarea) {
     return true;
 }
 
+// Link popup: the formatting menu's Link opens it with a Text and a Link box, and Done puts [text](address) in the
+// message box (or Edit's) where the selection was - or just the address when Text is left empty.
+// What was selected starts in Link when it's an address and in Text otherwise, and a selected [text](address) fills both.
+// The address gets https:// in front when it has nothing there, and the characters a link in a message can't hold
+// (spaces, brackets, < > and ") are %-encoded, so chatFormat.php still sees all of it.
+// Returns { open(textarea) }, or null when the page has no popup.
+function chatLinkPopup() {
+    const dialog = document.querySelector('.chat-link-edit');
+    if (!dialog) return null;
+
+    const form = dialog.querySelector('form');
+    const textInput = dialog.querySelector('[data-link-text]');
+    const urlInput = dialog.querySelector('[data-link-url]');
+    const error = dialog.querySelector('[data-link-error]');
+    let textarea = null; // the message box it was opened on
+    let start = 0; // the selection there, which Done replaces
+    let end = 0;
+
+    function showError(message, input) {
+        error.textContent = message;
+        error.hidden = message === '';
+        input?.focus();
+    }
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        let address = urlInput.value.trim();
+        if (address === '') return showError('Put in where the link goes.', urlInput);
+        if (!/^https?:\/\//i.test(address)) {
+            // mailto:, javascript: and the like aren't links in a message ("example.com:8080" is just missing https://)
+            if (/^[a-z][a-z\d+.-]*:(?!\d)/i.test(address)) return showError('Links have to start with http:// or https://.', urlInput);
+            address = 'https://' + address;
+        }
+        address = address.replace(/[\s<>"()]/g, (char) => '%' + char.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'));
+        let host = '';
+        try {
+            host = new URL(address).hostname;
+        } catch {
+            // Not an address at all, caught just below
+        }
+        if (!/^https?:\/\/[^/?#]/i.test(address) || !host.includes('.')) return showError("That doesn't look like a link.", urlInput);
+
+        // [ and ] would end the text early, and a \ at the end would hide the ] after it
+        const label = textInput.value.replace(/\[/g, '(').replace(/]/g, ')').trim().replace(/\\+$/, '');
+        const text = label === '' ? address : `[${label}](${address})`;
+        if (textarea.maxLength > 0 && textarea.value.length - (end - start) + text.length > textarea.maxLength) {
+            return showError("That's too long to fit in the message.", textInput);
+        }
+
+        dialog.close();
+        textarea.setRangeText(text, start, end, 'end');
+        textarea.dispatchEvent(new Event('input', { bubbles: true })); // so it grows like when typing, and Edit's Save wakes up
+    });
+
+    dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+        button.addEventListener('click', () => dialog.close());
+    });
+
+    // Clicking the dimmed area around the popup closes it
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+
+    // Back in the message box, to keep typing
+    dialog.addEventListener('close', () => textarea?.focus());
+
+    return {
+        open(target) {
+            textarea = target;
+            ({ selectionStart: start, selectionEnd: end } = target);
+            // Spaces around the selection (double-clicking a word takes the space after it) stay where they are
+            const raw = target.value.slice(start, end);
+            if (raw.trim() !== '') {
+                start += raw.length - raw.trimStart().length;
+                end -= raw.length - raw.trimEnd().length;
+            }
+            const selected = raw.trim();
+            const masked = selected.match(/^\[([^\[\]\n]+)\]\((\S+)\)$/);
+
+            textInput.value = '';
+            urlInput.value = '';
+            if (masked) [, textInput.value, urlInput.value] = masked;
+            else if (/^(https?:\/\/|www\.)\S+$/i.test(selected)) urlInput.value = selected;
+            else textInput.value = selected.replace(/\s*\n\s*/g, ' ');
+            showError('');
+
+            dialog.showModal();
+            // Straight to the box that's still empty
+            (textInput.value !== '' && urlInput.value === '' ? urlInput : textInput).focus();
+        },
+    };
+}
+
 // Formatting menu: right-clicking the message box (or Edit's) opens a menu with every kind of formatting,
 // which goes around the selected text (chatFormatApply above). The browser's own menu is replaced,
 // so Cut, Copy and Paste are in it too. Shift+right-click still opens the browser's menu (for spelling suggestions),
@@ -157,6 +240,7 @@ function chatFormatShortcut(event, textarea) {
     const home = menu.parentElement; // where it is on the page, for the message box
     const isTouch = window.matchMedia('(hover: none)');
     const needsSelection = menu.querySelectorAll('[data-format="cut"], [data-format="copy"]');
+    const linkPopup = chatLinkPopup();
     let textarea = null; // the message box the menu was opened on
 
     // Firefox only lets websites read the clipboard from version 125 on
@@ -204,6 +288,8 @@ function chatFormatShortcut(event, textarea) {
                 insert('');
             } else if (format === 'paste') {
                 insert(await navigator.clipboard.readText());
+            } else if (format === 'link') {
+                linkPopup.open(textarea);
             } else {
                 chatFormatApply(textarea, format);
             }

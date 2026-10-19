@@ -1735,6 +1735,34 @@ if ($isPoll) {
                 </form>
             </dialog>
 
+            <!-- Link popup: the formatting menu's Link opens it (on the message box or Edit's), and Done puts
+                 [text](address) in where the selection was (chat.js). A selected address starts in Link, other text in Text. -->
+            <dialog class="chat-dialog chat-link-edit" aria-labelledby="chat-link-title">
+                <form class="chat-requests-body" action="/chat/" method="post" novalidate>
+                    <header class="chat-new-header">
+                        <h2 id="chat-link-title">Add link</h2>
+                        <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                    </header>
+
+                    <div class="chat-new-group">
+                        <label for="chat-link-text">Text</label>
+                        <input type="text" id="chat-link-text" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" autocomplete="off"
+                               placeholder="What the link says" data-link-text>
+                    </div>
+                    <div class="chat-new-group">
+                        <label for="chat-link-url">Link</label>
+                        <input type="text" id="chat-link-url" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" autocomplete="off"
+                               inputmode="url" spellcheck="false" placeholder="https://" data-link-url>
+                    </div>
+                    <p class="chat-dialog-hint is-error" role="alert" hidden data-link-error></p>
+
+                    <footer class="chat-new-footer chat-dialog-footer">
+                        <button type="button" class="chat-btn" data-dialog-close>Cancel</button>
+                        <button type="submit" class="chat-new-btn">Done</button>
+                    </footer>
+                </form>
+            </dialog>
+
             <!-- Delete message asks first, showing the message it's about -->
             <dialog class="chat-dialog chat-message-delete" aria-labelledby="chat-delete-title">
                 <form class="chat-requests-body" action="/chat/" method="post">

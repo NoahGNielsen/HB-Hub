@@ -1750,6 +1750,11 @@ a.chat-member:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.chat-dialog-hint.is-error {
+  color: var(--chat-danger);
+  opacity: 1;
+}
+
 .chat-dialog-footer {
   justify-content: flex-end;
 }
