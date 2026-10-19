@@ -333,6 +333,8 @@ switch ($adminAction) {
             $db->prepare('UPDATE `HBHub-Messages` SET messageDeletedTimestamp = NOW(), messageDeletedByAdmin = ?
                 WHERE messageId = ? AND userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL')
                 ->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, (int) $messageId, $targetId]);
+            // Its attachment goes too (assets/php/chatAttachments.php), giving the user back its tickets
+            hbHubChatAttachmentsRemove($db, 'm.messageId = ? AND m.userId = ? AND m.messageDeletedTimestamp IS NOT NULL', [(int) $messageId, $targetId]);
         }
         adminRedirect($targetId, 'adminMessageDeleted', 'messages', $adminMessagesBefore !== null ? '&before=' . $adminMessagesBefore : '');
 
@@ -340,6 +342,7 @@ switch ($adminAction) {
         $db->prepare('UPDATE `HBHub-Messages` SET messageDeletedTimestamp = NOW(), messageDeletedByAdmin = ?
             WHERE userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL')
             ->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, $targetId]);
+        hbHubChatAttachmentsRemove($db, 'a.userId = ?', [$targetId]); // every attachment was in one of them
         adminRedirect($targetId, 'adminMessagesDeleted', 'messages');
 
     case 'deleteAccount':

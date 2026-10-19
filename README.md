@@ -38,6 +38,7 @@
 | **Chat notices** | Changes in a group (new name, new admin, someone joined) show up in the chat |
 | **Nicknames & profiles** | Give people nicknames, and open the profile of whoever you're DMing straight from the chat |
 | **GIFs & smileys** | GIF picker powered by Giphy, plus a smiley menu |
+| **Attachments** | Send files and pictures. Pictures are turned into lossless JPEG XL in the browser, other files are zipped on the server. Everyone has 10 tickets of 5 MB, which come back when an attachment expires (90 days, or 3 for big ones) or is deleted |
 | **Formatting** | Discord-style `**bold**`, `*italic*`, `__underline__`, `~~strikethrough~~`, `` `code` `` and code blocks, `#` headings, lists and `[masked](https://links)`, from a right-click menu on the message box or Ctrl+B / I / U |
 | **Chat menu** | Right-click a chat to mute its notifications for a while, hide it or leave it |
 
@@ -124,6 +125,7 @@ Every option is explained in the [example config](config-examples/hbHubSiteConfi
 | `login_attempts_max`, `login_attempts_lockout_time` | Failed logins before a lockout, and how many minutes it lasts |
 | `onboarding_*` | What sign-up requires (profile picture, password strength, bio) and how many accounts one IP can make per hour |
 | `user_*_maxSize` | The longest name and bio, and the biggest profile picture |
+| `attachments_path`, `attachments_max_total_bytes` | Where chat attachments are kept on disk, and how much space they may take together (9 GB by default) before nobody can send new ones |
 
 ## 📁 Folders
 

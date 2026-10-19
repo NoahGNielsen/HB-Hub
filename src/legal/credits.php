@@ -74,7 +74,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div>
                     <dt>Code libraries</dt>
-                    <dd>1</dd>
+                    <dd>2</dd>
                 </div>
             </dl>
         </section>
@@ -99,7 +99,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
         <!-- Code -->
         <section class="credits-section" id="code" aria-labelledby="credits-code-title">
             <p class="home-kicker credits-kicker">Code</p>
-            <h2 id="credits-code-title">One library, no frameworks.</h2>
+            <h2 id="credits-code-title">Two libraries, no frameworks.</h2>
             <p class="credits-section-lead">Everything else on HB Hub is plain PHP, HTML, CSS and JavaScript.</p>
             <div class="credits-library">
                 <div class="credits-qr" aria-hidden="true">
@@ -118,6 +118,22 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <h3><a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener noreferrer">QR Code Generator for JavaScript</a></h3>
                     <p>By Kazuhiko Arase. Draws the QR code you scan to set up two-factor login.</p>
                     <p class="credits-license">MIT license</p>
+                </div>
+            </div>
+            <div class="credits-library">
+                <!-- A made-up picture file, squeezed: JPEG XL's logo letters on a card -->
+                <div class="credits-jxl" aria-hidden="true">
+                    <span class="credits-jxl-letters">JXL</span>
+                    <span class="credits-jxl-bar"></span>
+                </div>
+                <div class="credits-library-text">
+                    <h3><a href="https://github.com/jamsinclair/jSquash" target="_blank" rel="noopener noreferrer">jSquash</a> with <a href="https://github.com/libjxl/libjxl" target="_blank" rel="noopener noreferrer">libjxl</a></h3>
+                    <p>
+                        jSquash by Jamie Sinclair (built on Google's Squoosh) runs libjxl, the JPEG XL Project's encoder and
+                        decoder, in your browser. It turns pictures you attach in the chat into lossless JPEG XL, and shows
+                        JPEG XL pictures in browsers that can't yet.
+                    </p>
+                    <p class="credits-license">Apache 2.0 and BSD 3-Clause licenses</p>
                 </div>
             </div>
             <p class="credits-fineprint">"QR Code" is a registered trademark of DENSO WAVE INCORPORATED.</p>

@@ -18,6 +18,17 @@ Options -Indexes
 # Ensure ETags are calculated for automated 304 Not Modified checks
 FileETag MTime Size
 
+# WebAssembly (the chat's JPEG XL codec) has to be sent as application/wasm for browsers to compile it as it downloads
+AddType application/wasm .wasm
+
+# ==============================================================================
+# PHP LIMITS
+# Chat attachments can be up to 50 MB (all 10 tickets, assets/php/chatAttachments.php), plus the rest of the form.
+# Simply.com reads these from .htaccess.
+# ==============================================================================
+php_value upload_max_filesize 51M
+php_value post_max_size 52M
+
 # ==============================================================================
 # CUSTOM ERROR PAGES
 # Local paths only (a full URL would turn the error into a 302 redirect, and
@@ -58,9 +69,11 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     Header set Cross-Origin-Opener-Policy "same-origin-allow-popups"
     Header set Cross-Origin-Resource-Policy "same-origin"
 
-    # Content Security Policy (Google Fonts, and GIFs in the chat from Giphy's image servers)
+    # Content Security Policy (Google Fonts, and GIFs in the chat from Giphy's image servers).
+    # 'wasm-unsafe-eval' lets the chat run the JPEG XL codec (WebAssembly, assets/js/vendor/jxl/) - it only allows
+    # compiling WebAssembly, not eval() or inline scripts.
     Header always set X-XSS-Protection "0"
-    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https://*.giphy.com; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https://*.giphy.com; script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
 
     # --------------------------------------------------------------------------
     # SMART CACHING STRATEGY (Fixes Security Scanner & Handles 304 Validation)

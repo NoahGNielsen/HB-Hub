@@ -4,6 +4,7 @@
 // renaming a group, its icon, its background and taking someone out of it, each with a notice in the chat about it.
 // From the admin panel the notice says a site admin made the change, not who (HBHUB_CHAT_EVENT_BY_SITE_ADMIN).
 require_once __DIR__ . '/notifications.php';
+require_once __DIR__ . '/chatAttachments.php'; // a deleted chat's attachments are deleted with it
 
 const HBHUB_CHAT_TYPE_DM = 1; // chatType in HBHub-Chats
 const HBHUB_CHAT_TYPE_GROUP = 2;
@@ -81,7 +82,7 @@ function chatNotificationData(PDO $db, int $chatId): array
  * When they leave a DM, the other person gets a notification about it (once they've accepted it).
  * A group is never left without an owner: when the owner leaves, the admin who has been in it the longest takes over,
  * or the longest-standing member when there's no admin left, and a notice says who.
- * A chat with nobody left in it is deleted.
+ * A chat with nobody left in it is deleted, and so are its attachments.
  *
  * @param array{chatId: int, chatType: int} $chat
  * @param bool $kickedBySiteAdmin kicked from the admin panel, so the notice says a site admin did it
@@ -125,6 +126,10 @@ function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null, boo
         }
     }
     $db->commit();
+
+    if ($members === []) {
+        hbHubChatAttachmentsRemove($db, 'a.chatId = ?', [$chatId]);
+    }
 }
 
 /**

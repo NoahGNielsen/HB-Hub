@@ -91,12 +91,19 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
             <section id="content" aria-labelledby="terms-content">
                 <h2 id="terms-content">4. What you post</h2>
                 <p>
-                    What you write and upload (messages, profile pictures, group icons and backgrounds) is still yours.
-                    By posting it, you let HB Hub store it and show it to the people it's meant for, which is needed for
-                    the site to work.
+                    What you write and upload (messages, attachments, profile pictures, group icons and backgrounds) is
+                    still yours. By posting it, you let HB Hub store it and show it to the people it's meant for, which is
+                    needed for the site to work. That includes turning pictures you attach into JPEG XL, without losing
+                    any detail, and zipping other files, so they take less space.
                 </p>
                 <ul>
-                    <li>Only upload pictures you're allowed to share. Don't post photos of other people without asking them.</li>
+                    <li>Only upload pictures and files you're allowed to share. Don't post photos of other people without asking them.</li>
+                    <li>
+                        Attachments don't stay forever. Everyone has 10 tickets, and every started 5 MB of an attachment
+                        takes one. It's deleted after 90 days (3 days when it takes more than 5 tickets), and then the
+                        tickets can be used again. HB Hub isn't a backup, so keep your own copy of anything that matters.
+                        When the server's space for attachments is full, nobody can send new ones until some are deleted.
+                    </li>
                     <li>You're responsible for what you post. Admins can remove anything that breaks these terms.</li>
                     <li>
                         Messages aren't end-to-end encrypted, and admins can read them when they look into a report
@@ -155,7 +162,7 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                 <h2 id="terms-moderation">7. When the rules are broken</h2>
                 <p>Depending on how serious it is, admins can:</p>
                 <ul>
-                    <li>delete messages, pictures or groups,</li>
+                    <li>delete messages, attachments, pictures or groups,</li>
                     <li>reset or take away chips, or remove game results from the leaderboards,</li>
                     <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture.</li>
                 </ul>

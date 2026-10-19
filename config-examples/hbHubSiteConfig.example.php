@@ -10,7 +10,9 @@ return [
     'footer_copyrightYear' => '2026',
     'site_maintenance' => false,    // Default: false | Set to true to not allow users to log in or register, and show a maintenance message instead
     'site_maintenance_message' => 'The site is currently undergoing maintenance. Please check back later.', // Default: 'The site is currently undergoing maintenance. Please check back later.' | Message to show when the site is in maintenance mode
-    'site_save_diskspace' => 0, // Default: 0 | 0 is off, Set to 1 to not store files over 5 MB for more than 72 hours, and set to 2 to not allow user uploads at all.
+    'site_save_diskspace' => 0, // Default: 0 | 0 is off, Set to 1 to not store files over 5 MB for more than 72 hours, and set to 2 to not allow user uploads at all (chat attachments included).
+    'attachments_path' => null, // Default: null, a folder called hbHubAttachments next to this file | Where chat attachments are kept on disk, as a full path. Keep it outside the web root; it's made (with a .htaccess that denies everything) the first time it's needed
+    'attachments_max_total_bytes' => 9 * 1024 * 1024 * 1024, // Default: 9 GB | Once all chat attachments together take this much disk space, nobody can send new ones until some expire or are deleted
 
     'user_name_maxSize' => 35, // Default: 35 characters | Anything above 35 is capped to 35
     'user_description_maxSize' => 255, // Default: 255 characters | Don't exceed 255 characters, as the database column is VARCHAR(255)

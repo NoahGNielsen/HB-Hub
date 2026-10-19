@@ -155,6 +155,8 @@ switch ($adminAction) {
                 WHERE m.messageId = ? AND m.chatId = ? AND m.messageEvent = 0 AND m.messageDeletedTimestamp IS NULL
                     AND NOT (u.userRole <=> ?)')
                 ->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, (int) $messageId, $chatId, ADMIN_ROLE_ADMIN]);
+            // Its attachment goes too (assets/php/chatAttachments.php), giving the sender back its tickets
+            hbHubChatAttachmentsRemove($db, 'm.messageId = ? AND m.chatId = ? AND m.messageDeletedTimestamp IS NOT NULL', [(int) $messageId, $chatId]);
         }
         adminChatRedirect($chatId, 'adminMessageDeleted', 'messages', $adminMessagesBefore !== null ? '&before=' . $adminMessagesBefore : '');
 
@@ -162,6 +164,7 @@ switch ($adminAction) {
         // Gone for everyone in it, like when a group admin deletes a group, but marked as done by a site admin
         $db->prepare('UPDATE `HBHub-Chats` SET chatStatus = ?, chatBannedTimestamp = NOW() WHERE chatId = ? AND chatStatus = ?')
             ->execute([HBHUB_CHAT_STATUS_DELETED_BY_SITE_ADMIN, $chatId, HBHUB_CHAT_STATUS_ACTIVE]);
+        hbHubChatAttachmentsRemove($db, 'a.chatId = ?', [$chatId]); // and its attachments with it
         adminChatRedirect($chatId, 'adminChatDeleted', 'overview');
 }
 
