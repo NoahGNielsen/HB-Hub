@@ -11,7 +11,7 @@
   --ch-red: #e5484d;
   --ch-green: #30a46c;
   --ch-pieces: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", sans-serif;
-  max-width: 1240px;
+  max-width: 1400px;
   margin: 24px auto;
   padding: 0 16px;
   box-sizing: border-box;
@@ -21,12 +21,13 @@
   display: none !important;
 }
 
+/* The game's name with the code and buttons under it, above the panels on the right */
 .ch-header {
-  margin-bottom: 16px;
+  grid-area: header;
+  min-width: 0;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .ch-heading {
@@ -48,10 +49,8 @@
 }
 
 .ch-header-actions {
-  flex: none;
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
   align-items: center;
   gap: 8px;
 }
@@ -131,18 +130,25 @@
   display: none;
 }
 
-/* The board with a player above and below it on the left, the game, the moves and the chat on the right */
+/* The board with a player above and below it on the left, with everything else in a column on the right. The board's
+   column grows up to as tall as the window below the nav bar (less the page's margins and the two player bars, about
+   170px), so the whole board and both clocks are in view without scrolling - but never so small that it can't be
+   played on. The second row takes any height the board has over the header, so the panels sit right under it. */
 .ch-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, min(900px, max(320px, calc(100dvh - var(--nav-top-h, 60px) - 170px)))) 340px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "play header"
+    "play side";
+  justify-content: center;
   align-items: start;
-  gap: 20px;
+  gap: 16px 24px;
 }
 
 .ch-play {
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
+  grid-area: play;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -436,6 +442,8 @@
 
 /* The panels on the right */
 .ch-side {
+  grid-area: side;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -600,17 +608,17 @@
   margin-top: 10px;
 }
 
-.ch-rules {
-  margin-top: 20px;
-}
-
+/* The rules: a small box under the panels, opened with a click */
 .ch-rules summary {
-  font-weight: 700;
+  margin: 0;
   cursor: pointer;
 }
 
 .ch-rules .casino-rule-list {
-  margin-top: 12px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  gap: 6px;
+  line-height: 1.45;
 }
 
 /* Promoting a pawn */
@@ -670,23 +678,21 @@
   border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
 }
 
+/* One column: the name and buttons, then the board, then the panels */
 @media (max-width: 1000px) {
   .ch-layout {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, min(900px, max(320px, calc(100dvh - var(--nav-top-h, 60px) - 170px))));
+    grid-template-rows: auto;
+    grid-template-areas:
+      "header"
+      "play"
+      "side";
   }
 }
 
 @media (max-width: 600px) {
   .ch {
     margin: 12px auto;
-  }
-
-  .ch-header {
-    flex-direction: column;
-  }
-
-  .ch-header-actions {
-    justify-content: flex-start;
   }
 
   .ch-title {

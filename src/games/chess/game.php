@@ -36,57 +36,57 @@ $pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&di
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="ch" data-chess data-room="<?= $room['roomId'] ?>">
-        <div class="ch-header">
-            <div class="ch-heading">
-                <h1 class="ch-title"><?= htmlspecialchars($room['roomName']) ?></h1>
-                <p class="ch-meta"><?= $gameTypeName ?> &middot; <?= $gameClockName ?></p>
-            </div>
-            <div class="ch-header-actions">
-                <button type="button" class="ch-code" data-ch-code="<?= htmlspecialchars($room['roomCode']) ?>"
-                        aria-label="Join code <?= htmlspecialchars(implode(' ', str_split($room['roomCode']))) ?>, copy it">
-                    <span class="ch-code-label">Code</span>
-                    <strong class="ch-code-value"><?= htmlspecialchars($room['roomCode']) ?></strong>
-                    <span class="ch-code-copied" data-ch-code-copied aria-live="polite"></span>
-                </button>
-                <!-- Icons drawn in currentColor, so they follow the theme. chessGame.js sets the sound and pause
-                     buttons' aria-pressed, which picks the icon shown, and their titles. -->
-                <button type="button" class="casino-btn ch-icon-btn" aria-label="Invite people" title="Invite people"
-                        aria-haspopup="dialog" data-ch-invite hidden>
-                    <svg class="ch-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>
-                    </svg>
-                </button>
-                <button type="button" class="casino-btn ch-icon-btn" aria-label="Pause the game" title="Pause the game" aria-pressed="false"
-                        data-ch-pause hidden>
-                    <svg class="ch-icon ch-icon-pause" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M9 5v14"/><path d="M15 5v14"/>
-                    </svg>
-                    <svg class="ch-icon ch-icon-resume" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M7 4.5v15l12-7.5z"/>
-                    </svg>
-                </button>
-                <button type="button" class="casino-btn ch-icon-btn" aria-label="Turn the board around" title="Turn the board around" data-ch-flip>
-                    <svg class="ch-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M7 4v16"/><path d="m3 8 4-4 4 4"/><path d="M17 20V4"/><path d="m21 16-4 4-4-4"/>
-                    </svg>
-                </button>
-                <button type="button" class="casino-btn ch-icon-btn" aria-label="Sound" title="Sound" aria-pressed="true" data-ch-sound>
-                    <svg class="ch-icon ch-icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>
-                    </svg>
-                    <svg class="ch-icon ch-icon-sound-off" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>
-                    </svg>
-                </button>
-                <button type="button" class="casino-btn ch-icon-btn" aria-label="Leave game" title="Leave game" data-ch-leave>
-                    <svg class="ch-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-
         <div class="ch-layout">
+            <div class="ch-header">
+                <div class="ch-heading">
+                    <h1 class="ch-title"><?= htmlspecialchars($room['roomName']) ?></h1>
+                    <p class="ch-meta"><?= $gameTypeName ?> &middot; <?= $gameClockName ?></p>
+                </div>
+                <div class="ch-header-actions">
+                    <button type="button" class="ch-code" data-ch-code="<?= htmlspecialchars($room['roomCode']) ?>"
+                            aria-label="Join code <?= htmlspecialchars(implode(' ', str_split($room['roomCode']))) ?>, copy it">
+                        <span class="ch-code-label">Code</span>
+                        <strong class="ch-code-value"><?= htmlspecialchars($room['roomCode']) ?></strong>
+                        <span class="ch-code-copied" data-ch-code-copied aria-live="polite"></span>
+                    </button>
+                    <!-- Icons drawn in currentColor, so they follow the theme. chessGame.js sets the sound and pause
+                         buttons' aria-pressed, which picks the icon shown, and their titles. -->
+                    <button type="button" class="casino-btn ch-icon-btn" aria-label="Invite people" title="Invite people"
+                            aria-haspopup="dialog" data-ch-invite hidden>
+                        <svg class="ch-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="casino-btn ch-icon-btn" aria-label="Pause the game" title="Pause the game" aria-pressed="false"
+                            data-ch-pause hidden>
+                        <svg class="ch-icon ch-icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 5v14"/><path d="M15 5v14"/>
+                        </svg>
+                        <svg class="ch-icon ch-icon-resume" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M7 4.5v15l12-7.5z"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="casino-btn ch-icon-btn" aria-label="Turn the board around" title="Turn the board around" data-ch-flip>
+                        <svg class="ch-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M7 4v16"/><path d="m3 8 4-4 4 4"/><path d="M17 20V4"/><path d="m21 16-4 4-4-4"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="casino-btn ch-icon-btn" aria-label="Sound" title="Sound" aria-pressed="true" data-ch-sound>
+                        <svg class="ch-icon ch-icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>
+                        </svg>
+                        <svg class="ch-icon ch-icon-sound-off" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="casino-btn ch-icon-btn" aria-label="Leave game" title="Leave game" data-ch-leave>
+                        <svg class="ch-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
             <section class="ch-play" aria-label="The board">
                 <?php foreach (['top', 'bottom'] as $place): ?>
                     <div class="ch-bar ch-bar-<?= $place ?>" data-ch-bar="<?= $place ?>">
@@ -129,13 +129,13 @@ $pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&di
                         <button type="submit" class="casino-btn casino-btn-primary">Send</button>
                     </form>
                 </section>
+
+                <details class="ch-panel ch-rules">
+                    <summary class="ch-panel-title">Rules</summary>
+                    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/chess/rules.php'; ?>
+                </details>
             </aside>
         </div>
-
-        <details class="ch-rules casino-card">
-            <summary>Rules</summary>
-            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/chess/rules.php'; ?>
-        </details>
 
         <dialog class="games-dialog ch-promotion" aria-labelledby="ch-promotion-title" data-ch-promotion>
             <h2 id="ch-promotion-title">Promote your pawn to</h2>
