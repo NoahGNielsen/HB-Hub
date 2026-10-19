@@ -21,6 +21,8 @@ const HBHUB_CHAT_MESSAGES_UNREAD_MAX = 100; // with more unread than SHOWN, a ch
 const HBHUB_CHAT_MESSAGES_POLLED = 100; // new ones per poll, a later poll gets the rest
 const HBHUB_CHAT_MESSAGES_JUMP_MAX = 500; // per request when clicking a reply quote loads back to its message, chat.js asks again for the rest
 const HBHUB_CHAT_REACTIONS_MAX = 20; // different emoji under one message
+const HBHUB_CHAT_LOOKING_SECONDS = 10; // a member whose open chat hasn't checked in for this long isn't looking at it (no @mention notification then)
+const HBHUB_CHAT_LOOKING_EVERY = 4; // seconds between updates of memberLastViewedTimestamp, as chat.js checks in every 2
 const HBHUB_CHAT_REACTION_LENGTH_MAX = 32; // reactionEmoji column, in characters (👨‍👩‍👧‍👦 is 7 joined together)
 const HBHUB_CHAT_REACTION_NAMES_SHOWN = 10; // who reacted, when pointing at a reaction, before it says "and 4 others"
 // What a reaction can be made of besides the emoji names may use (HBHUB_LATIN_TEXT_EMOJI): the few emoji outside those
@@ -263,7 +265,20 @@ function chatMentionPeople(PDO $db, int $chatId, int $userId): array
 }
 
 /**
- * Tells everyone the message @mentions about it (chat.mention), unless they muted the chat or blocked the sender.
+ * Notes that the user has the chat open and is looking at it (memberLastViewedTimestamp), so being @mentioned in it
+ * doesn't send them a notification. At most every HBHUB_CHAT_LOOKING_EVERY seconds, as chat.js checks in every 2.
+ */
+function chatMarkLooking(PDO $db, int $chatId, int $userId): void
+{
+    $db->prepare('UPDATE `HBHub-ChatMembers` SET memberLastViewedTimestamp = UTC_TIMESTAMP()
+        WHERE chatId = ? AND userId = ? AND (memberLastViewedTimestamp IS NULL
+            OR memberLastViewedTimestamp <= UTC_TIMESTAMP() - INTERVAL ' . HBHUB_CHAT_LOOKING_EVERY . ' SECOND)')
+        ->execute([$chatId, $userId]);
+}
+
+/**
+ * Tells everyone the message @mentions about it (chat.mention), unless they muted the chat, blocked the sender, or have
+ * the chat open in front of them right now (chatMarkLooking()) - they can see it already.
  * Only a new message does - editing a mention into one doesn't, like on Discord.
  */
 function chatNotifyMentions(PDO $db, int $userId, int $chatId, int $messageId, string $content): void
@@ -274,12 +289,16 @@ function chatNotifyMentions(PDO $db, int $userId, int $chatId, int $messageId, s
     }
 
     $data = chatNotificationData($db, $chatId) + ['messageId' => $messageId];
-    $statement = $db->prepare('SELECT userId, userSettings FROM `HBHub-Users`
-        WHERE userId IN (' . implode(', ', array_fill(0, count($mentionedIds), '?')) . ')');
-    $statement->execute($mentionedIds);
+    // The time is worked out by the database, so PHP's time zone doesn't matter
+    $statement = $db->prepare('SELECT u.userId, u.userSettings,
+            COALESCE(TIMESTAMPDIFF(SECOND, cm.memberLastViewedTimestamp, UTC_TIMESTAMP()) < ' . HBHUB_CHAT_LOOKING_SECONDS . ', 0) AS isLooking
+        FROM `HBHub-Users` u
+        JOIN `HBHub-ChatMembers` cm ON cm.userId = u.userId AND cm.chatId = ?
+        WHERE u.userId IN (' . implode(', ', array_fill(0, count($mentionedIds), '?')) . ')');
+    $statement->execute([$chatId, ...$mentionedIds]);
     foreach ($statement->fetchAll() as $mentioned) {
         $settings = hbHubUserSettings($mentioned['userSettings']);
-        if (!hbHubChatIsMuted($settings, $chatId) && !chatHasBlocked($settings, $userId)) {
+        if (!$mentioned['isLooking'] && !hbHubChatIsMuted($settings, $chatId) && !chatHasBlocked($settings, $userId)) {
             hbHubNotify($db, (int) $mentioned['userId'], 'chat.mention', $userId, $data);
         }
     }
@@ -982,6 +1001,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
             $attachmentId = (int) $db->lastInsertId();
             $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, attachmentId, messageReplyToId) VALUES (?, ?, ?, ?, ?)')
                 ->execute([$userId, $chat['chatId'], $message !== '' ? $message : null, $attachmentId, $replyToId]);
+            $messageId = (int) $db->lastInsertId();
             $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
                 ->execute([$chat['chatId']]);
             $db->commit();
@@ -1001,6 +1021,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
         chatUploadAnswer(...$error);
     }
     chatUnhideForEveryone($db, (int) $chat['chatId']); // a new message brings the chat back for everyone who hid it
+    if ($message !== '') {
+        chatNotifyMentions($db, $userId, (int) $chat['chatId'], $messageId, $message); // the text with the file can @mention too
+    }
     chatUploadAnswer(200, ['chatId' => (int) $chat['chatId']]);
 }
 
@@ -1100,6 +1123,8 @@ $lastReadMessageId = $openMembership['lastReadMessageId'] ?? null;
 // chat.js polls the page every 2 seconds (?poll=1, answered as JSON at the end of this file), which also keeps the
 // user's last seen time up to date like any other request. It asks for the open chat's messages after ?after= (the newest
 // one it shows), and marks up to the newest one read only while the page is being looked at (?read=1).
+// While it's being looked at (?looking=1, even after "Mark unread") the user counts as having the chat in front of them,
+// so @mentions in it don't send a notification (chatMarkLooking()).
 // The reactions on the messages it already shows, from ?from= (the oldest one) to ?after=, come along too, as they change
 // on old messages as well.
 $isPoll = ($_GET['poll'] ?? null) === '1';
@@ -1107,6 +1132,9 @@ $pollMessages = [];
 $pollReactions = [];
 $pollAfter = is_string($_GET['after'] ?? null) && ctype_digit($_GET['after']) && strlen($_GET['after']) <= 19 ? (int) $_GET['after'] : null;
 $pollFrom = is_string($_GET['from'] ?? null) && ctype_digit($_GET['from']) && strlen($_GET['from']) <= 19 ? (int) $_GET['from'] : null;
+if ($isPoll && $openMembership !== null && ($_GET['looking'] ?? null) === '1') {
+    chatMarkLooking($db, (int) $openMembership['chatId'], $userId);
+}
 if ($isPoll && $openMembership !== null && $pollAfter !== null) {
     if ($pollFrom !== null && $pollFrom <= $pollAfter) {
         $pollReactions = chatReactions($db, (int) $openMembership['chatId'], $pollFrom, $pollAfter);
@@ -1145,6 +1173,9 @@ if ($isPage) {
     $chatAttachBlocked = hbHubChatAttachmentsBlocked($db);
 }
 
+if ($isPage && $openMembership !== null) {
+    chatMarkLooking($db, (int) $openMembership['chatId'], $userId); // just opened it, so they're looking at it
+}
 if ($isPage && $openMembership !== null && ($_GET['unread'] ?? null) !== '1') {
     $db->prepare('UPDATE `HBHub-ChatMembers` SET lastReadMessageId = (
             SELECT MAX(messageId) FROM `HBHub-Messages` WHERE chatId = ?
