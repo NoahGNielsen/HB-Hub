@@ -1,5 +1,5 @@
 <?php
-// Credits: the third-party icons and code HB Hub uses, and who made them. Built like the frontpage (index.php) - its
+// Credits: the third-party icons, code and link lists HB Hub uses, and who made them. Built like the frontpage (index.php) - its
 // top bar (homeNav.php), a dark hero, a grid of cards and a dark last call - with homepage.css plus legal.css.
 // Open to everyone, like the frontpage.
 $hbHubSessionOptional = true;
@@ -37,7 +37,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <title>Credits - HB Hub</title>
-    <meta name="description" content="Credits for the third-party icons and code used on HB Hub.">
+    <meta name="description" content="Credits for the third-party icons, code and lists used on HB Hub.">
 </head>
 <body class="home-body">
     <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -137,6 +137,26 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
             </div>
             <p class="credits-fineprint">"QR Code" is a registered trademark of DENSO WAVE INCORPORATED.</p>
+        </section>
+
+        <!-- Lists: where most of the blocked links in assets/urlBlacklist.txt come from (the IP loggers are picked by hand) -->
+        <section class="credits-section" id="lists" aria-labelledby="credits-lists-title">
+            <p class="home-kicker credits-kicker">Lists</p>
+            <h2 id="credits-lists-title">The links you can't send.</h2>
+            <p class="credits-section-lead">Most of the sites the chat won't let you link to come from these two lists.</p>
+            <div class="credits-library">
+                <div class="credits-library-text">
+                    <h3><a href="https://github.com/PeterDaveHello/url-shorteners" target="_blank" rel="noopener noreferrer">url-shorteners</a></h3>
+                    <p>By Peter Dave Hello. URL shorteners, which can hide where a link really goes.</p>
+                    <p class="credits-license">CC BY-SA 4.0 license</p>
+                </div>
+            </div>
+            <div class="credits-library">
+                <div class="credits-library-text">
+                    <h3><a href="https://github.com/CryptoScamDB/blacklist" target="_blank" rel="noopener noreferrer">CryptoScamDB blacklist</a></h3>
+                    <p>By CryptoScamDB. Crypto scam and phishing sites, turned from its YAML into a plain list of domains.</p>
+                </div>
+            </div>
         </section>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>

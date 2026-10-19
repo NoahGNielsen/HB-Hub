@@ -601,19 +601,24 @@ function userPicker(dialog, onChange) {
 // The URL blacklist (assets/php/urlBlacklist.php): whether the text has a blacklisted domain (or a subdomain of one)
 // anywhere in it, in which case the blocked link popup opens to say it can't be sent. Checked before sending, saving an
 // edit and adding a link, so nothing is lost; the server checks again anyway. Works out the same as the server does,
-// %-encoding, other full stops and invisible characters included, from the list in data-url-blacklist.
+// %-encoding, other full stops and invisible characters included, from the list in data-url-blacklist: every run of
+// dotted names in the text is looked up in it, and so is each domain it's under (a.grabify.link -> grabify.link -> link).
+let chatUrlBlacklist = null; // a Set, read from data-url-blacklist the first time it's needed
 function chatBlockedLink(text) {
     const dialog = document.querySelector('.chat-link-blocked');
-    const domains = dialog ? JSON.parse(dialog.dataset.urlBlacklist || '[]') : [];
-    if (domains.length === 0) return false;
+    chatUrlBlacklist ??= new Set(dialog ? JSON.parse(dialog.dataset.urlBlacklist || '[]') : []);
+    if (chatUrlBlacklist.size === 0) return false;
 
-    const escaped = domains.map((domain) => domain.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'));
-    const pattern = new RegExp(`(?<![\\p{L}\\p{N}_.-])(?:[\\p{L}\\p{N}_-]+\\.)*(?:${escaped.join('|')})(?![\\p{L}\\p{N}_-]|\\.[\\p{L}\\p{N}])`, 'iu');
     const plain = text
         .replace(/%([0-9a-f]{2})/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
         .replace(/[。．｡]/g, '.')
         .replace(/\p{Cf}+/gu, '');
-    if (!pattern.test(plain)) return false;
+    const names = plain.match(/(?<![\p{L}\p{N}_.-])[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+/gu) || [];
+    const blocked = names.some((name) => {
+        const labels = name.toLowerCase().split('.');
+        return labels.slice(0, -1).some((label, i) => chatUrlBlacklist.has(labels.slice(i).join('.')));
+    });
+    if (!blocked) return false;
 
     dialog.showModal();
     dialog.querySelector('.chat-new-btn[data-dialog-close]').focus();

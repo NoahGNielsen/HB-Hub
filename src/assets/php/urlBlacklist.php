@@ -5,6 +5,8 @@
 // game chats (games/*/chat.php). chat.js gets the list too (data-url-blacklist on the blocked link popup), so it can
 // stop the message before it's sent and the text stays in the box, but the server's check is the one that counts.
 // A domain counts anywhere in the text, with or without https://, so it can't be sent as plain text to copy either.
+// The list has thousands of domains (too many for one regex, PCRE won't compile it), so the check picks out everything in
+// the text that looks like a domain and looks it up, and every domain it's a subdomain of, in the list.
 
 const HBHUB_URL_BLACKLIST_FILE = __DIR__ . '/../urlBlacklist.txt';
 const HBHUB_URL_BLACKLIST_MESSAGE = 'Woah, hold up! Looks like you are sending a dangerous link or a link that compromises people\'s privacy!';
@@ -39,16 +41,25 @@ function hbHubUrlBlacklist(): array
  */
 function hbHubUrlBlacklisted(string $text): bool
 {
-    static $pattern = null;
-    $domains = hbHubUrlBlacklist();
-    if ($domains === []) {
+    static $blocked = null;
+    $blocked ??= array_flip(hbHubUrlBlacklist()); // domain => index, for isset()
+    if ($blocked === []) {
         return false;
     }
-    $pattern ??= '/(?<![\p{L}\p{N}_.-])(?:[\p{L}\p{N}_-]+\.)*(?:'
-        . implode('|', array_map(static fn (string $domain): string => preg_quote($domain, '/'), $domains))
-        . ')(?![\p{L}\p{N}_-]|\.[\p{L}\p{N}])/iu';
 
     $text = mb_scrub(rawurldecode($text), 'UTF-8'); // decoding can leave bytes that aren't UTF-8, which /u can't read
     $text = preg_replace('/\p{Cf}+/u', '', str_replace(['。', '．', '｡'], '.', $text)) ?? $text;
-    return preg_match($pattern, $text) === 1;
+
+    // Every run of dotted names, as long as it goes ("a.grabify.link.evil.com" is one), then it and each domain it's
+    // under: a.grabify.link -> grabify.link -> link. So "evil.com" behind a blocked name is a different site and fine.
+    preg_match_all('/(?<![\p{L}\p{N}_.-])[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+/u', $text, $matches);
+    foreach ($matches[0] as $name) {
+        $labels = explode('.', mb_strtolower($name));
+        for ($i = 0, $last = count($labels) - 1; $i < $last; $i++) {
+            if (isset($blocked[implode('.', array_slice($labels, $i))])) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
