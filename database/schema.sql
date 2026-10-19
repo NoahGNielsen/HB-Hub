@@ -616,7 +616,9 @@ CREATE TABLE `HBHub-Sessions` (
   `userId` int UNSIGNED NOT NULL,
   `sessionGenerated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `sessionValidUntil` datetime NOT NULL,
-  `sessionTotpPending` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Logged in\r\n1 Right password, waiting for the 2FA code'
+  `sessionTotpPending` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Logged in\r\n1 Right password, waiting for the 2FA code',
+  `sessionDevice` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Browser and system, like "Chrome on Windows" (never the whole user agent)',
+  `sessionLastSeen` datetime DEFAULT NULL COMMENT 'Last request with this session, written at most once a minute'
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------

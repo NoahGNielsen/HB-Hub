@@ -113,9 +113,13 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <h3>Logins</h3>
                         <p>
-                            Each login is stored with when it started and when it runs out. Browsers you've logged in from are
-                            remembered by a random token (only a hash of it is stored) and how many wrong passwords they've tried.
-                            No browser or device names are stored.
+                            Each login is stored with when it started, when it was last used (updated at most once a minute)
+                            and when it runs out, plus a short name for the browser and system it's on, like "Chrome on
+                            Windows". That name is worked out from what your browser sends (its user agent), and only the
+                            short name is stored, never the rest. It's there so you can see where you're logged in under
+                            Logged in devices on the <a href="/otherPages/settings#devices">settings page</a>, and log out
+                            any of them, or all of them at once. Browsers you've logged in from are also remembered by a
+                            random token (only a hash of it is stored) and how many wrong passwords they've tried.
                         </p>
                         <h3>Messages and chats</h3>
                         <ul>
@@ -245,7 +249,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-keep">7. How long it's kept</h2>
                         <p>
                             Your data is kept for as long as you have an account. Logins run out after 30 days, and a browser
-                            stops counting as a known device after 180 days without a login.
+                            stops counting as a known device after 180 days without a login. Logging out a device, or
+                            logging out everywhere, deletes those logins right away.
                         </p>
                         <p>
                             <strong>Attachments</strong> are kept for 90 days, or for 3 days when one is bigger than 25 MB, and

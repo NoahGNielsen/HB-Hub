@@ -6,6 +6,8 @@
 // - Two-factor login: a code from an authenticator app when logging in (assets/php/totp.php)
 // - Notifications: a browser notification for new messages while the site is open (assets/js/notifications.js)
 // - Gambling and Games: blocking them, during school hours or all the time (assets/php/block.php)
+// - Logged in devices: every session (HBHub-Sessions) with its browser and system and when it was last used, a button
+//   to log out each of the others, and one to log out everywhere (this device too)
 // - Account: logging out, and deleting the account after entering the password
 // The password and 2FA codes typed in to confirm a change count towards the login lock (assets/php/loginLimit.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -177,6 +179,21 @@ function settingsConfirm(PDO $db, int $userId, array $siteConfig, callable $isRi
         settingsRedirectToLogin('lockedOut');
     }
     return $wrongMessage;
+}
+
+/**
+ * The user's logged in sessions, the one that was used last first. Logins still waiting for their 2FA code aren't
+ * logged in yet, so they're left out. The ids are never put on the page (they'd log you in), so each one is pointed at
+ * by deviceKey, a hash of its id, and isCurrent is this browser's own session.
+ */
+function settingsDevices(PDO $db, int $userId): array
+{
+    $statement = $db->prepare('SELECT SHA2(sessionId, 256) AS deviceKey, sessionId = ? AS isCurrent,
+            sessionDevice, sessionGenerated, sessionLastSeen
+        FROM `HBHub-Sessions` WHERE userId = ? AND sessionTotpPending = 0 AND sessionValidUntil > NOW()
+        ORDER BY isCurrent DESC, COALESCE(sessionLastSeen, sessionGenerated) DESC');
+    $statement->execute([$_COOKIE[HBHUB_SESSION_COOKIE], $userId]);
+    return $statement->fetchAll();
 }
 
 $settingsAction = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? 'profile') : null;
@@ -352,6 +369,22 @@ if ($settingsAction === 'logout') {
     settingsRedirectToLogin('logout');
 }
 
+if ($settingsAction === 'logoutDevice') {
+    // One of the others, by its deviceKey from settingsDevices(). This device has the Log out button for itself.
+    $deviceKey = $_POST['device'] ?? null;
+    if (is_string($deviceKey) && strlen($deviceKey) === 64 && ctype_xdigit($deviceKey)) {
+        $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ? AND sessionId <> ? AND SHA2(sessionId, 256) = ?')
+            ->execute([$userId, $_COOKIE[HBHUB_SESSION_COOKIE], strtolower($deviceKey)]);
+    }
+    settingsRedirect('deviceLoggedOut', 'devices');
+}
+
+if ($settingsAction === 'logoutEverywhere') {
+    // Every session, this one included, and logins waiting for their 2FA code too
+    $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$userId]);
+    settingsRedirectToLogin('logoutEverywhere');
+}
+
 if ($settingsAction === 'deleteAccount') {
     $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
     $deleteError = settingsConfirm($db, $userId, $siteConfig,
@@ -369,6 +402,15 @@ $settingsAvatarSrc = hbHubAvatarUrl($userId, $settingsAvatarId);
 $settingsNotificationsOn = ($savedSettings['notifications'] ?? false) === true;
 $settingsBlock = hbHubBlockSettings($savedSettings);
 $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
+$settingsDevices = settingsDevices($db, $userId);
+
+/**
+ * A time from the database for the list of devices, like 19/10/2026 14:05 (the same as the admin panel).
+ */
+function settingsTime(?string $timestamp): string
+{
+    return $timestamp !== null ? date('d/m/Y H:i', strtotime($timestamp)) : '–';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -663,6 +705,48 @@ $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
                 </div>
                 <div class="settings-actions">
                     <button type="submit" class="settings-btn settings-btn-primary">Save</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Logged in devices -->
+        <section class="settings-card" id="devices" aria-labelledby="settings-devices-heading">
+            <h2 id="settings-devices-heading">Logged in devices</h2>
+            <p class="settings-intro">
+                Everywhere you're logged in right now. If there's one you don't recognise, log it out and change your password.
+            </p>
+
+            <ul class="settings-devices">
+                <?php foreach ($settingsDevices as $device): ?>
+                    <li class="settings-device">
+                        <div class="settings-device-text">
+                            <span class="settings-label">
+                                <?= htmlspecialchars($device['sessionDevice'] ?? 'Unknown device') ?>
+                                <?php if ($device['isCurrent']): ?>
+                                    <span class="settings-status is-on">This device</span>
+                                <?php endif; ?>
+                            </span>
+                            <span class="settings-hint">
+                                Logged in <?= settingsTime($device['sessionGenerated']) ?>
+                                · <?= $device['isCurrent'] ? 'Active now' : 'Last active ' . settingsTime($device['sessionLastSeen'] ?? $device['sessionGenerated']) ?>
+                            </span>
+                        </div>
+                        <?php if (!$device['isCurrent']): ?>
+                            <form action="/otherPages/settings#devices" method="post">
+                                <input type="hidden" name="action" value="logoutDevice">
+                                <input type="hidden" name="device" value="<?= htmlspecialchars($device['deviceKey']) ?>">
+                                <button type="submit" class="settings-btn settings-btn-small">Log out</button>
+                            </form>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+
+            <form action="/otherPages/settings" method="post" data-confirm="Log out on every device, this one too?">
+                <input type="hidden" name="action" value="logoutEverywhere">
+                <p class="settings-hint">Logs you out on every device, this one too. You can log in again with your password.</p>
+                <div class="settings-actions">
+                    <button type="submit" class="settings-btn settings-btn-danger">Log out everywhere</button>
                 </div>
             </form>
         </section>

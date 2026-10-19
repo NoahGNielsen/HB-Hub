@@ -234,6 +234,50 @@
   line-height: 1.45;
 }
 
+/* Logged in devices: one row each, with a Log out button on the others */
+.settings-devices {
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-device {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--background);
+}
+
+.settings-device-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-device .settings-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+/* On the darker row, so the badge and button stand out from it */
+.settings-device .settings-btn {
+  background: var(--secondary);
+}
+
+.settings-device .settings-btn:hover {
+  background: color-mix(in srgb, var(--text) 8%, var(--secondary));
+}
+
 /* Between logging out and deleting the account */
 .settings-divider {
   margin: 22px 0;

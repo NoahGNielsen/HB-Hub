@@ -102,7 +102,7 @@ function adminMessages(PDO $db, int $userId, ?int $beforeId = null, ?int $limit 
  */
 function adminSessions(PDO $db, int $userId): array
 {
-    $statement = $db->prepare('SELECT sessionGenerated, sessionValidUntil, sessionTotpPending, sessionValidUntil > NOW() AS isValid
+    $statement = $db->prepare('SELECT sessionDevice, sessionGenerated, sessionLastSeen, sessionValidUntil, sessionTotpPending, sessionValidUntil > NOW() AS isValid
         FROM `HBHub-Sessions` WHERE userId = ? ORDER BY sessionGenerated DESC');
     $statement->execute([$userId]);
     return $statement->fetchAll();
@@ -686,11 +686,13 @@ function adminIps(?string $ipv4, ?string $ipv6): string
             <?php else: ?>
                 <div class="admin-table-wrap">
                     <table class="admin-table">
-                        <thead><tr><th scope="col">Logged in</th><th scope="col">Lasts until</th><th scope="col">State</th></tr></thead>
+                        <thead><tr><th scope="col">Device</th><th scope="col">Logged in</th><th scope="col">Last active</th><th scope="col">Lasts until</th><th scope="col">State</th></tr></thead>
                         <tbody>
                             <?php foreach ($adminSessions as $session): ?>
                                 <tr>
+                                    <td><?= htmlspecialchars($session['sessionDevice'] ?? '–') ?></td>
                                     <td><?= adminTime($session['sessionGenerated']) ?></td>
+                                    <td><?= adminTime($session['sessionLastSeen']) ?></td>
                                     <td><?= adminTime($session['sessionValidUntil']) ?></td>
                                     <td><?= !$session['isValid'] ? '<span class="admin-muted">Ran out</span>'
                                         : ($session['sessionTotpPending'] ? 'Waiting for the 2FA code' : 'Logged in') ?></td>

@@ -3,8 +3,8 @@
 // Shared by onboarding (new account) and login.
 //
 // Every page includes this with require_once at the very top, before any output. It turns away POSTs from other
-// sites, checks the session cookie, updates the user's last seen time and IP, and sends visitors without a valid
-// session to the login page.
+// sites, checks the session cookie, updates the user's last seen time and IP (and the session's, for the list of
+// logged in devices in settings), and sends visitors without a valid session to the login page.
 // Pages that work without being logged in set $hbHubSessionOptional = true before including it.
 // The logged in user ends up in $hbHubUser (null when not logged in).
 require_once __DIR__ . '/maintenance.php'; // so the database isn't touched while the site is in maintenance mode
@@ -19,6 +19,8 @@ const HBHUB_DELETED_USER_NAME = 'Deleted User'; // userName of a deleted account
 const HBHUB_BANNED_COOKIE = 'hbHubBanned';
 const HBHUB_BANNED_COOKIE_DAYS = 400; // the longest browsers keep a cookie
 
+const HBHUB_SESSION_LAST_SEEN_MINUTES = 1; // how often sessionLastSeen is written, so polling doesn't write on every request
+
 /**
  * Stores a new session for the user and returns its id. Pass it to hbHubSetSessionCookie() once
  * the surrounding transaction (if any) is committed.
@@ -27,11 +29,49 @@ function hbHubCreateSession(PDO $db, int $userId): string
 {
     $sessionId = bin2hex(random_bytes(16)); // 32 characters, matches the CHAR(32) column
 
-    $db->prepare('INSERT INTO `HBHub-Sessions` (sessionId, userId, sessionValidUntil)
-        VALUES (?, ?, NOW() + INTERVAL ' . HBHUB_SESSION_DAYS . ' DAY)')
-        ->execute([$sessionId, $userId]);
+    $db->prepare('INSERT INTO `HBHub-Sessions` (sessionId, userId, sessionValidUntil, sessionDevice, sessionLastSeen)
+        VALUES (?, ?, NOW() + INTERVAL ' . HBHUB_SESSION_DAYS . ' DAY, ?, NOW())')
+        ->execute([$sessionId, $userId, hbHubSessionDevice()]);
 
     return $sessionId;
+}
+
+/**
+ * A short name for the browser and system the request came from, like "Chrome on Windows", for the list of logged in
+ * devices on the settings page. Only this name is stored (sessionDevice), never the whole user agent.
+ */
+function hbHubSessionDevice(): string
+{
+    $agent = is_string($_SERVER['HTTP_USER_AGENT'] ?? null) ? $_SERVER['HTTP_USER_AGENT'] : '';
+
+    // Order matters: Edge, Opera and Samsung Internet say "Chrome" too, and Chrome says "Safari"
+    $browser = match (true) {
+        str_contains($agent, 'Edg/') || str_contains($agent, 'EdgiOS/') || str_contains($agent, 'EdgA/') => 'Edge',
+        str_contains($agent, 'OPR/') || str_contains($agent, 'OPiOS/') => 'Opera',
+        str_contains($agent, 'SamsungBrowser/') => 'Samsung Internet',
+        str_contains($agent, 'Firefox/') || str_contains($agent, 'FxiOS/') => 'Firefox',
+        str_contains($agent, 'Chrome/') || str_contains($agent, 'CriOS/') => 'Chrome',
+        str_contains($agent, 'Safari/') && str_contains($agent, 'Version/') => 'Safari',
+        default => null,
+    };
+    // iPhone and iPad before Mac, as they say "like Mac OS X". Android before Linux, as it says "Linux" too.
+    $system = match (true) {
+        str_contains($agent, 'iPhone') || str_contains($agent, 'iPod') => 'iPhone',
+        str_contains($agent, 'iPad') => 'iPad',
+        str_contains($agent, 'Android') => 'Android',
+        str_contains($agent, 'Windows') => 'Windows',
+        str_contains($agent, 'CrOS') => 'ChromeOS',
+        str_contains($agent, 'Macintosh') || str_contains($agent, 'Mac OS X') => 'Mac',
+        str_contains($agent, 'Linux') => 'Linux',
+        default => null,
+    };
+
+    return match (true) {
+        $browser !== null && $system !== null => "$browser on $system",
+        $browser !== null => $browser,
+        $system !== null => $system,
+        default => 'Unknown device',
+    };
 }
 
 function hbHubSetSessionCookie(string $sessionId): void
@@ -124,7 +164,8 @@ function hbHubSessionUser(): ?array
 
         // A login still waiting for its 2FA code (sessionTotpPending) doesn't count until the code is entered.
         // A deleted account's userStatus is NULL.
-        $statement = $db->prepare('SELECT u.userId, u.userName, u.userRole, u.userAvatarAttachmentId, u.userSettings, u.userStatus
+        $statement = $db->prepare('SELECT u.userId, u.userName, u.userRole, u.userAvatarAttachmentId, u.userSettings, u.userStatus,
+                COALESCE(s.sessionLastSeen < NOW() - INTERVAL ' . HBHUB_SESSION_LAST_SEEN_MINUTES . ' MINUTE, 1) AS sessionIsStale
             FROM `HBHub-Sessions` s JOIN `HBHub-Users` u ON u.userId = s.userId
             WHERE s.sessionId = ? AND s.sessionValidUntil > NOW() AND s.sessionTotpPending = 0 AND u.userStatus IS NOT NULL');
         $statement->execute([$sessionId]);
@@ -138,7 +179,13 @@ function hbHubSessionUser(): ?array
             hbHubSetBannedCookie((int) $user['userId']);
             return null;
         }
-        unset($user['userStatus']);
+        // When this device was last used, for the settings page. The device name is refreshed too, in case the
+        // browser or system changed (or the session is from before device names were saved).
+        if ($user['sessionIsStale']) {
+            $db->prepare('UPDATE `HBHub-Sessions` SET sessionLastSeen = NOW(), sessionDevice = ? WHERE sessionId = ?')
+                ->execute([hbHubSessionDevice(), $sessionId]);
+        }
+        unset($user['userStatus'], $user['sessionIsStale']);
 
         $db->prepare('UPDATE `HBHub-Users` SET userLastSeenTimestamp = NOW(),
                 userIpv4AdresseLastAccessed = ?, userIpv6AdresseLastAccessed = ? WHERE userId = ?')
