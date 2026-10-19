@@ -64,6 +64,17 @@ onbit.pro
 #
 # License:
 # Creative Commons Attribution-ShareAlike 4.0 International License(CC-BY-SA-4.0) (https://creativecommons.org/licenses/by-sa/4.0/)
+#
+# Taken out of it: the known good ones, which big sites use for links to their own pages only, so they can't hide an
+# IP logger - youtu.be, discord.gg, t.me, forms.gle, g.co, goo.gle, goo.gl (no new links since 2019, and it's still
+# used by maps.app.goo.gl), g.page, aka.ms, 1drv.ms, msft.it, apple.co, apple.news, amzn.to, amzn.asia, amzn.com, a.co,
+# fb.me, fb.watch, m.me, wa.me, instagr.am, dis.gd, spotify.link, spoti.fi, redd.it, pin.it, tmblr.co, flic.kr, git.io,
+# github.co, db.tt, w.wiki, nflx.it, imdb.to, rblx.co, ro.blox.com, snd.sc, dai.ly, yhoo.it, y.ahoo.it, ebay.to,
+# etsy.me, abnb.me, booki.ng, kck.st, gofund.me, yelp.to, lego.build, go.nasa.gov, go.aws, mzl.la, rpf.io, jb.gg, hf.co,
+# stanford.io, slidesha.re, blizz.ly, sqex.to, and news sites' (nyti.ms, wapo.st, bbc.in, cnn.it, reut.rs, bloom.bg,
+# n.pr, politi.co, huffp.st, econ.st, on.ft.com, on.wsj.com, on.natgeo.com, on.nba.com, nbcnews.to, cnet.co, zd.net,
+# bzfd.it, axios.link, thetim.es, apne.ws, abcn.ws, cbsn.ws, fxn.ws, usat.ly, lemde.fr, aje.io, sc.mp), and dw.com and
+# f1.com, which are whole sites. Shorteners that wrap any link (t.co, lnkd.in, ift.tt, ...) stay blocked.
 
 0.gp
 02faq.com
@@ -71,7 +82,6 @@ onbit.pro
 101.gg
 12ne.ws
 17mimei.club
-1drv.ms
 1ea.ir
 1kh.de
 1o2.ir
@@ -119,7 +129,6 @@ onbit.pro
 9mp.com
 9splay.store
 a.189.cn
-a.co
 a360.co
 aarp.info
 ab.co
@@ -129,10 +138,8 @@ abc13.co
 abc7.la
 abc7.ws
 abc7ne.ws
-abcn.ws
 abe.ma
 abelinc.me
-abnb.me
 abr.ai
 abre.ai
 accntu.re
@@ -153,8 +160,6 @@ adweek.it
 aet.na
 agrd.io
 ai6.net
-aje.io
-aka.ms
 al.st
 alexa.design
 alli.pub
@@ -169,10 +174,7 @@ amex.co
 ampr.gs
 amrep.org
 amz.run
-amzn.asia
-amzn.com
 amzn.pw
-amzn.to
 ana.ms
 anch.co
 ancstry.me
@@ -181,10 +183,7 @@ anon.to
 anyimage.io
 aol.it
 aon.io
-apne.ws
 app.philz.us
-apple.co
-apple.news
 aptg.tw
 arah.in
 arc.ht
@@ -202,7 +201,6 @@ autode.sk
 avlne.ws
 avlr.co
 avydn.co
-axios.link
 axoni.us
 ay.gy
 azc.cc
@@ -214,7 +212,6 @@ b23.tv
 b2n.ir
 baratun.de
 bayareane.ws
-bbc.in
 bbva.info
 bc.vc
 bca.id
@@ -240,8 +237,6 @@ bl.ink
 blap.net
 blbrd.cm
 blck.by
-blizz.ly
-bloom.bg
 blstg.news
 blur.by
 bmai.cc
@@ -252,7 +247,6 @@ boa.la
 boile.rs
 bom.so
 bonap.it
-booki.ng
 bookstw.link
 bose.life
 boston25.com
@@ -273,7 +267,6 @@ bung.ie
 bwnews.pr
 by2.io
 bytl.fr
-bzfd.it
 bzh.me
 c11.kr
 c87.to
@@ -292,7 +285,6 @@ cathaysec.tw
 cb.com
 cbj.co
 cbsloc.al
-cbsn.ws
 cbt.gg
 cc.cc
 cdl.booksy.com
@@ -329,9 +321,7 @@ cmu.is
 cmy.tw
 cna.asia
 cnb.cx
-cnet.co
 cnfl.io
-cnn.it
 cnnmon.ie
 cnvrge.co
 cockroa.ch
@@ -366,12 +356,10 @@ cyb.ec
 cybr.rocks
 d-sh.io
 da.gd
-dai.ly
 dailym.ai
 dainik-b.in
 datayi.cn
 davidbombal.wiki
-db.tt
 dbricks.co
 dcps.co
 dd.ma
@@ -384,9 +372,7 @@ dems.me
 dhk.gg
 di.sn
 dibb.me
-dis.gd
 dis.tl
-discord.gg
 discvr.co
 disq.us
 dive.pub
@@ -408,15 +394,12 @@ dtsx.io
 dub.sh
 dv.gd
 dvrv.ai
-dw.com
 dwz.tax
 dxc.to
 dy.fi
 dy.si
 e.lilly
 e.vg
-ebay.to
-econ.st
 ed.gr
 edin.ac
 edu.nl
@@ -441,11 +424,9 @@ esqr.co
 esun.co
 etoro.tw
 etp.tw
-etsy.me
 everri.ch
 exe.io
 exitl.ag
-f1.com
 f5yo.com
 fa.by
 fal.cn
@@ -457,8 +438,6 @@ faras.link
 faturl.com
 fav.me
 fave.co
-fb.me
-fb.watch
 fbstw.link
 fce.gg
 fetnet.tw
@@ -467,7 +446,6 @@ ff.im
 fifa.fans
 firsturl.de
 firsturl.net
-flic.kr
 flip.it
 flomuz.io
 flq.us
@@ -479,7 +457,6 @@ fnb.lc
 foodtv.com
 fooji.info
 ford.to
-forms.gle
 forr.com
 found.ee
 fox.tv
@@ -489,11 +466,8 @@ ftnt.net
 fumacrom.com
 fvrr.co
 fwme.eu
-fxn.ws
 g-web.in
 g.asia
-g.co
-g.page
 ga.co
 gandi.link
 garyvee.com
@@ -512,8 +486,6 @@ gh.io
 ghkp.us
 gi.lt
 gigaz.in
-git.io
-github.co
 gizmo.do
 gjk.id
 glblctzn.co
@@ -524,7 +496,6 @@ glo.bo
 gma.abc
 gmj.tw
 go-link.ru
-go.aws
 go.btwrdn.co
 go.cwtv.com
 go.dbs.com
@@ -537,7 +508,6 @@ go.intigriti.com
 go.lamotte.fr
 go.lu-h.de
 go.ly
-go.nasa.gov
 go.nowth.is
 go.osu.edu
 go.qb.by
@@ -549,12 +519,9 @@ go.tinder.com
 go.ustwo.games
 go.vic.gov.au
 godrk.de
-gofund.me
 gomomento.co
 goo-gl.me
 goo.by
-goo.gl
-goo.gle
 goo.su
 goolink.cc
 goolnk.com
@@ -582,7 +549,6 @@ hbaz.co
 hbom.ax
 her.is
 herff.ly
-hf.co
 hi.kktv.to
 hi.sat.cool
 hi.switchy.io
@@ -604,7 +570,6 @@ httpslink.com
 hubs.la
 hubs.li
 hubs.ly
-huffp.st
 hulu.tv
 huma.na
 hyperurl.co
@@ -631,14 +596,12 @@ ilang.in
 illin.is
 iln.io
 ilnk.io
-imdb.to
 ind.pn
 indeedhi.re
 indy.st
 infy.com
 inlnk.ru
 insig.ht
-instagr.am
 intel.ly
 interc.pt
 intuit.me
@@ -661,7 +624,6 @@ j.gs
 j.mp
 ja.cat
 ja.ma
-jb.gg
 jcp.is
 jkf.lv
 jnfusa.org
@@ -672,7 +634,6 @@ kas.pr
 kask.us
 katzr.net
 kbank.co
-kck.st
 kf.org
 kfrc.co
 kg.games
@@ -707,8 +668,6 @@ lativ.tw
 lbtw.tw
 lc.cx
 learn.to
-lego.build
-lemde.fr
 letsharu.cc
 lft.to
 lih.kg
@@ -775,7 +734,6 @@ luminary.link
 lurl.cc
 lyksoomu.com
 lzd.co
-m.me
 m.tb.cn
 m101.org
 m1p.fr
@@ -820,7 +778,6 @@ mou.sr
 mpl.pm
 mrte.ch
 mrx.cl
-msft.it
 msi.gm
 mstr.cl
 mttr.io
@@ -837,9 +794,7 @@ mysp.ac
 myumi.ch
 myurls.ca
 mz.cm
-mzl.la
 n.opn.tl
-n.pr
 n9.cl
 name.ly
 nature.ly
@@ -849,12 +804,10 @@ nbc4dc.com
 nbcbay.com
 nbcchi.com
 nbcct.co
-nbcnews.to
 nbzp.cz
 nchcnh.info
 nej.md
 neti.cc
-nflx.it
 ngrid.com
 njersy.co
 nkbp.jp
@@ -881,7 +834,6 @@ nydn.us
 nyer.cm
 nyp.st
 nyr.kr
-nyti.ms
 o.vg
 oal.lu
 obank.tw
@@ -896,16 +848,12 @@ okt.to
 omni.ag
 on.bcg.com
 on.bp.com
-on.ft.com
 on.louisvuitton.com
 on.mktw.net
-on.natgeo.com
-on.nba.com
 on.ny.gov
 on.nyc.gov
 on.nypl.org
 on.tcs.com
-on.wsj.com
 on9news.tv
 onelink.to
 onepl.us
@@ -956,7 +904,6 @@ pgat.us
 pgrs.in
 philips.to
 piee.pw
-pin.it
 pipr.es
 pj.pizza
 pldthome.info
@@ -965,7 +912,6 @@ pnsne.ws
 pod.fo
 poie.ma
 pojonews.co
-politi.co
 popm.ch
 posh.mk
 pplx.ai
@@ -1003,7 +949,6 @@ qvc.co
 r-7.co
 rb.gy
 rbl.ms
-rblx.co
 rch.lt
 rd.gt
 rdbl.co
@@ -1016,7 +961,6 @@ rebrand.ly
 reconis.co
 red.ht
 redaz.in
-redd.it
 redir.ec
 redir.is
 redsto.ne
@@ -1029,7 +973,6 @@ renew.ge
 replug.link
 rethinktw.cc
 reurl.cc
-reut.rs
 rev.cm
 revr.ec
 rfr.bz
@@ -1041,13 +984,11 @@ ritea.id
 rizy.ir
 rlu.ru
 rnm.me
-ro.blox.com
 rog.gg
 roge.rs
 rol.st
 rotf.lol
 rozhl.as
-rpf.io
 rptl.io
 rsc.li
 rsh.md
@@ -1077,7 +1018,6 @@ samcart.me
 sbird.co
 sbux.co
 sbux.jp
-sc.mp
 sc.org
 sched.co
 sck.io
@@ -1136,7 +1076,6 @@ skl.sh
 skr.rs
 skrat.it
 skyurl.cc
-slidesha.re
 small.cat
 smart.link
 smarturl.it
@@ -1148,7 +1087,6 @@ smsng.us
 smtvj.com
 smu.gs
 sn.rs
-snd.sc
 sndn.link
 snip.ly
 snyk.co
@@ -1167,19 +1105,15 @@ spgrp.sg
 spigen.co
 split.to
 splk.it
-spoti.fi
-spotify.link
 spr.ly
 spr.tn
 sprtsnt.ca
-sqex.to
 sqrx.io
 squ.re
 srnk.us
 ssur.cc
 st.news
 st8.fm
-stanford.io
 starz.tv
 stmodel.com
 storycor.ps
@@ -1208,7 +1142,6 @@ t.cn
 t.co
 t.iotex.me
 t.ly
-t.me
 t.tl
 t1p.de
 t2m.io
@@ -1232,7 +1165,6 @@ thedo.do
 thefp.pub
 thein.fo
 thesne.ws
-thetim.es
 thght.works
 thinfi.com
 thls.co
@@ -1256,7 +1188,6 @@ tktwb.tw
 tl.gd
 tlil.nl
 tlrk.it
-tmblr.co
 tmsnrt.rs
 tmz.me
 tnne.ws
@@ -1342,7 +1273,6 @@ urlz.fr
 urlzs.com
 urt.io
 usanet.tv
-usat.ly
 utm.to
 utn.pl
 utraker.com
@@ -1375,16 +1305,13 @@ vxn.link
 vypij.bar
 vz.to
 w.idg.de
-w.wiki
 w5n.co
 wa.link
-wa.me
 wa.sv
 waa.ai
 waad.co
 wahoowa.net
 walk.sc
-wapo.st
 warby.me
 warp.plus
 wartsi.ly
@@ -1441,26 +1368,21 @@ xrds.ca
 xrl.us
 xurl.es
 xvirt.it
-y.ahoo.it
 y2u.be
 yadi.sk
 yal.su
-yelp.to
 yex.tt
-yhoo.it
 yji.tw
 ynews.page.link
 yoox.ly
 your.ls
 yourls.org
 yourwish.es
-youtu.be
 yubi.co
 z23.ru
 zaya.io
 zc.vg
 zcu.io
-zd.net
 zdrive.li
 zdsk.co
 zecz.ec
