@@ -1,4 +1,5 @@
 <div align="center">
+   
 # HB Hub
 
 **An unblocked messaging hub for my school, with a casino and games on the side.**
