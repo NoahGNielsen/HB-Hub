@@ -65,6 +65,7 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                 <ul>
                     <li><strong>One account per person.</strong> Don't make extra accounts, for example to get more daily chips or to get around a ban.</li>
                     <li><strong>Be yourself.</strong> Use a name people from school will recognise you by, and don't pretend to be someone else.</li>
+                    <li>Names and bios can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them.</li>
                     <li><strong>Keep it to yourself.</strong> Don't share your password or let others use your account. You're responsible for what happens on it.</li>
                     <li>Turning on two-factor login in your <a href="/otherPages/settings">settings</a> is a good idea. If you think someone else has got into your account, change your password and tell an admin.</li>
                 </ul>
@@ -109,6 +110,11 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                         Messages aren't end-to-end encrypted, and admins can read them when they look into a report
                         (see the <a href="/legal/privacy#see">Privacy Policy</a>). Don't send anything you wouldn't want an admin to see.
                     </li>
+                    <li>
+                        Feedback you send with the Feedback button goes to the site admins only. They can use your ideas
+                        to change the site, without owing you anything for them. Don't use it to spam, harass or insult anyone,
+                        the same rules apply as in the chat.
+                    </li>
                 </ul>
             </section>
 
@@ -150,8 +156,8 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                 <ul>
                     <li>Play fair. No cheating, no using scripts or bots, and no teaming up to ruin a game for others.</li>
                     <li>
-                        Found a bug, for example one that gives you free chips? Please report it to
-                        <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> instead of using it. Using
+                        Found a bug, for example one that gives you free chips? Please report it with the Feedback
+                        button in the side bar, or to <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>, instead of using it. Using
                         it on purpose counts as cheating.
                     </li>
                     <li>Games have timers. If you leave or don't make your move in time, the game carries on without you, and that can cost you the game.</li>

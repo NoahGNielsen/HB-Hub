@@ -6,8 +6,12 @@
 // Chat in the side bar has the number of chats with unread messages on it, kept up to date by chatUnread.js.
 // Casino pages set $navCasinoChips (the user's chips) before including this, to show them in the top bar too,
 // kept up to date by casino.js.
-// Site admins also get Admin in the side bar, the admin panel's lists of users and chats (admin/index.php).
+// Site admins also get Admin in the side bar, the admin panel's lists of users and chats (admin/index.php), with the
+// number of new feedback on it.
+// Feedback, at the bottom of the side bar (at the end of the bottom bar on a phone), opens otherPages/feedback.php with
+// the path of the page it was pressed on, so the feedback says where it came from and the user is sent back there.
 require_once __DIR__ . '/chatUnread.php';
+require_once __DIR__ . '/feedback.php';
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/userAvatar.php';
 require_once __DIR__ . '/userSettings.php';
@@ -18,14 +22,19 @@ $navAvatarSrc = $navUser !== null
     ? hbHubAvatarUrl((int) $navUser['userId'], $navUser['userAvatarAttachmentId'] !== null ? (int) $navUser['userAvatarAttachmentId'] : null)
     : null;
 
+$navIsAdmin = $navUser !== null && (int) $navUser['userRole'] === 2; // userRole in HBHub-Users, a site admin
 $navUnread = 0;
 $navUnreadChats = 0;
+$navNewFeedback = 0;
 if ($navUser !== null) {
     try {
         $navUnread = hbHubUnreadNotificationCount(hbHubDatabase(), (int) $navUser['userId']);
         $navUnreadChats = hbHubUnreadChatCount(hbHubDatabase(), (int) $navUser['userId'], $navSettings);
+        if ($navIsAdmin) {
+            $navNewFeedback = (int) hbHubDatabase()->query('SELECT COUNT(*) FROM `HBHub-Feedback` WHERE feedbackDoneTimestamp IS NULL')->fetchColumn();
+        }
     } catch (PDOException $e) {
-        error_log('Nav panel: could not count notifications or unread chats: ' . $e->getMessage()); // the page still works without the numbers
+        error_log('Nav panel: could not count notifications, unread chats or new feedback: ' . $e->getMessage()); // the page still works without the numbers
     }
 }
 
@@ -33,15 +42,23 @@ $navCasinoChips ??= null;
 
 // A count of unread things (null for none) is shown as a red number on the item's icon, 9+ above 9, and hidden while
 // it's 0. Visitors, who aren't logged in, have no chats to count.
-$navSection = explode('/', trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'))[0];
+$navPath = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$navSection = explode('/', trim($navPath, '/'))[0];
 $navItems = [
     'chat'     => ['label' => 'Chat',     'icon' => 'chat.png', 'count' => $navUser !== null ? $navUnreadChats : null],
     'gambling' => ['label' => 'Gambling', 'icon' => 'dice.png'],
     'games'    => ['label' => 'Games',    'icon' => 'controler.png'],
 ];
-if ($navUser !== null && (int) $navUser['userRole'] === 2) { // userRole in HBHub-Users, a site admin
-    $navItems['admin'] = ['label' => 'Admin', 'icon' => 'admin.svg'];
+if ($navIsAdmin) {
+    $navItems['admin'] = ['label' => 'Admin', 'icon' => 'admin.svg', 'count' => $navNewFeedback, 'countWord' => 'new feedback'];
 }
+
+// On the feedback page itself the link keeps the page it came from
+$navOnFeedback = rtrim($navPath, '/') === HBHUB_FEEDBACK_PAGE;
+$navFeedbackFrom = hbHubFeedbackReturn($_SERVER['REQUEST_URI']);
+$navFeedbackHref = $navOnFeedback
+    ? $_SERVER['REQUEST_URI']
+    : HBHUB_FEEDBACK_PAGE . ($navFeedbackFrom !== null ? '?from=' . rawurlencode($navFeedbackFrom) : '');
 ?>
 <header class="nav-top">
     <a class="nav-brand" href="/" aria-label="HB Hub, frontpage">
@@ -87,7 +104,7 @@ if ($navUser !== null && (int) $navUser['userRole'] === 2) { // userRole in HBHu
     <?php foreach ($navItems as $slug => $item): ?>
         <?php $navCount = $item['count'] ?? null; ?>
         <a class="nav-side-link<?= $navSection === $slug ? ' active' : '' ?>" href="/<?= $slug ?>/"<?= $navSection === $slug ? ' aria-current="page"' : '' ?><?=
-            $navCount > 0 ? ' aria-label="' . $item['label'] . ' (' . $navCount . ' unread)"' : '' ?>>
+            $navCount > 0 ? ' aria-label="' . $item['label'] . ' (' . $navCount . ' ' . ($item['countWord'] ?? 'unread') . ')"' : '' ?>>
             <span class="nav-side-icon">
                 <img class="nav-icon" src="/assets/images/icons/<?= $item['icon'] ?>" alt="">
                 <?php if ($navCount !== null): ?>
@@ -98,6 +115,15 @@ if ($navUser !== null && (int) $navUser['userRole'] === 2) { // userRole in HBHu
             <span class="nav-side-label"><?= $item['label'] ?></span>
         </a>
     <?php endforeach; ?>
+    <?php if ($navUser !== null): ?>
+        <a class="nav-side-link nav-side-feedback<?= $navOnFeedback ? ' active' : '' ?>" href="<?= htmlspecialchars($navFeedbackHref) ?>"<?=
+            $navOnFeedback ? ' aria-current="page"' : '' ?> title="Send feedback to the admins">
+            <span class="nav-side-icon">
+                <img class="nav-icon" src="/assets/images/icons/feedback.svg" alt="">
+            </span>
+            <span class="nav-side-label">Feedback</span>
+        </a>
+    <?php endif; ?>
 </nav>
 <?php if ($navUser !== null): ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/notificationBell.js?v=<?= filemtime(__DIR__ . '/../js/notificationBell.js') ?>" defer></script>

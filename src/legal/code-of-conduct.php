@@ -111,7 +111,8 @@ const HBHUB_CONDUCT_UPDATED = '19 October 2026';
                 <p>
                     Your name, profile picture and bio are seen by everyone on HB Hub, so the same rules apply to them as to
                     messages. Use a name people from school recognise you by, and don't make your profile look like
-                    someone else's.
+                    someone else's. Names and bios can only be written with the Latin alphabet (like a-z, æ, ø and å),
+                    numbers, punctuation and emoji, so everyone can read them.
                 </p>
                 <p>
                     A banned account's profile picture can't be used again. Uploading it, or a resized or cropped copy of
@@ -151,7 +152,8 @@ const HBHUB_CONDUCT_UPDATED = '19 October 2026';
             <section id="report" aria-labelledby="conduct-report">
                 <h2 id="conduct-report">8. Reporting someone</h2>
                 <p>
-                    If someone breaks this code of conduct, or makes you feel unsafe, tell a site admin or email
+                    If someone breaks this code of conduct, or makes you feel unsafe, tell a site admin, use the Feedback
+                    button at the bottom of the side bar (only site admins can read it), or email
                     <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. It helps to say who it was, which
                     chat or game it happened in, and roughly when. Reports are kept private, and the person you report
                     isn't told who reported them.

@@ -464,7 +464,16 @@
   line-height: 1;
 }
 
-.mt-die.is-rolling {
+/* Each die is its own box, so with 2 dice both roll at once but each one stays in its place */
+.mt-die-face {
+  display: inline-block;
+}
+
+.mt-die-face + .mt-die-face {
+  margin-left: 0.25em;
+}
+
+.mt-die.is-rolling .mt-die-face {
   animation: mt-roll 0.6s ease-out;
 }
 
@@ -1053,7 +1062,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mt-field-tokens .mt-token.is-turn,
-  .mt-die.is-rolling,
+  .mt-die.is-rolling .mt-die-face,
   .mt-card.is-new {
     animation: none;
   }

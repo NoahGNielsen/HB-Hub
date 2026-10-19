@@ -316,14 +316,27 @@
         }
     }
 
+    /**
+     * Puts the faces in the middle of the board, each die in its own span so that a roll spins every die around its
+     * own centre (side by side, at the same time) instead of the pair turning around each other.
+     */
+    function showDice(values) {
+        die.replaceChildren(...values.map((value) => {
+            const face = document.createElement('span');
+            face.className = 'mt-die-face';
+            face.textContent = DIE_FACES[value - 1];
+            return face;
+        }));
+    }
+
     function renderCenter() {
         const roll = game.lastRoll;
         die.hidden = game.phase === 'lobby';
         if (!roll) {
-            die.textContent = Array(game.settings.dice).fill(DIE_FACES[0]).join(' ');
+            showDice(Array(game.settings.dice).fill(1));
         } else if (roll.n !== shownRoll) {
             const dice = roll.dice ?? [roll.value]; // a roll from before the settings has only the total
-            die.textContent = dice.map((value) => DIE_FACES[value - 1]).join(' ');
+            showDice(dice);
             die.setAttribute('aria-label', nameOf(roll.seat) + ' rolled ' + (dice.length === 1 ? 'a ' + roll.value : dice.join(' and ') + ', ' + roll.value));
             if (!isFirstDraw && !reduceMotion) {
                 die.classList.remove('is-rolling');
