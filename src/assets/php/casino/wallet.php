@@ -17,6 +17,7 @@ const HBHUB_CASINO_START_CHIPS = 2500;
 const HBHUB_CASINO_DAILY_CHIPS = 2500;
 const HBHUB_CASINO_TIME_ZONE = 'Europe/Copenhagen';
 const HBHUB_CASINO_DAY_START = 3; // 3 AM, when a new casino day starts
+const HBHUB_CASINO_CHIPS_PER_KRONE = 100; // what 1 kr buys, when someone buys extra chips from the owner (gambling/buy-chips.php)
 
 // transactionReason of the casino's own changes. Games use their own (like "bet" and "payout"), with transactionGame set.
 const HBHUB_CASINO_REASON_START = 'start';

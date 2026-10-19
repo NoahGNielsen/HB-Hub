@@ -124,7 +124,11 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <li>The rounds you played in the casino games, for example but not limited to Blackjack, Baccarat and Roulette, used for the leaderboards.</li>
                     <li>Your Chess and Matador games: seats, moves, saves, results and the in-game chat.</li>
                 </ul>
-                <p>Chips are virtual. HB Hub never asks for, or stores, any payment details.</p>
+                <p>
+                    Chips are virtual. HB Hub never asks for, or stores, any payment details. If you buy extra chips
+                    from the owner, the payment and the talk about it happen outside the site's casino (in a chat
+                    message or somewhere else), and the chips you get show up as a change to your balance like any other.
+                </p>
                 <h3>What isn't stored</h3>
                 <p>
                     No email address, phone number, real address or date of birth. No analytics profile, no advertising
