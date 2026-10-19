@@ -374,6 +374,18 @@ CREATE TABLE `HBHub-ChessSeats` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-GifCache`
+--
+
+CREATE TABLE `HBHub-GifCache` (
+  `gifCacheKey` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'SHA-256 of the cleaned search, or the empty string for trending',
+  `gifCacheGifs` json NOT NULL COMMENT 'The GIFs /chat/gifs sends: [{id, title, preview, width, height}]',
+  `gifCacheExpiresTimestamp` datetime NOT NULL COMMENT 'UTC, 15 minutes after Giphy was asked'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Giphy answers kept for 15 minutes to save API calls (src/assets/php/giphy.php)';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-LoginDevices`
 --
 
@@ -745,6 +757,13 @@ ALTER TABLE `HBHub-ChessSeats`
   ADD PRIMARY KEY (`roomId`,`seatNumber`),
   ADD UNIQUE KEY `userId` (`userId`) COMMENT 'One chess game at a time',
   ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
+
+--
+-- Indexes for table `HBHub-GifCache`
+--
+ALTER TABLE `HBHub-GifCache`
+  ADD PRIMARY KEY (`gifCacheKey`),
+  ADD KEY `gifCacheExpires` (`gifCacheExpiresTimestamp`);
 
 --
 -- Indexes for table `HBHub-LoginDevices`

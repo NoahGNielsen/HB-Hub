@@ -1,7 +1,9 @@
 <?php
 // GIF search for the GIF picker: /chat/gifs?q=cats returns matching GIFs from Giphy as JSON, an empty q the trending ones.
 // Asked through here, so the API key never reaches the browser. 404 when GIFs are turned off in hbHubSiteConfig.php.
+// A search asked in the last 15 minutes (by anyone) is answered from `HBHub-GifCache` without asking Giphy again.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/database.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
 
 const HBHUB_GIF_SEARCH_LIMIT = 30;
@@ -14,8 +16,16 @@ if ($apiKey === null) {
 }
 
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
 
-$query = is_string($_GET['q'] ?? null) ? mb_substr(trim($_GET['q']), 0, 50) : ''; // Giphy allows 50 characters
+$query = hbHubGiphyCleanQuery(is_string($_GET['q'] ?? null) ? mb_substr(trim($_GET['q']), 0, 50) : ''); // Giphy allows 50 characters
+
+$db = hbHubDatabase();
+$cachedGifs = hbHubGiphyCacheGet($db, $query);
+if ($cachedGifs !== null) {
+    echo json_encode(['gifs' => $cachedGifs]);
+    exit;
+}
 
 $parameters = ['api_key' => $apiKey, 'limit' => HBHUB_GIF_SEARCH_LIMIT, 'rating' => HBHUB_GIF_RATING];
 if ($query !== '') {
@@ -57,4 +67,5 @@ foreach ($response['data'] as $gif) {
     ];
 }
 
+hbHubGiphyCacheSave($db, $query, $gifs);
 echo json_encode(['gifs' => $gifs]);

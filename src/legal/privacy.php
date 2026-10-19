@@ -160,7 +160,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <li><strong>Simply.com</strong> (Denmark) hosts the website and the database. Everything above is stored there, in the EU.</li>
                     <li>
                         <strong>Giphy</strong> provides the GIFs. Your GIF searches go through HB Hub's server, so Giphy
-                        doesn't learn who searched. GIFs in the chat load straight from Giphy, which means Giphy sees your
+                        doesn't learn who searched. To ask Giphy less often, the results of each search are kept on HB
+                        Hub's server for 15 minutes, without who searched for it, and shown to anyone who searches the
+                        same thing in that time. GIFs in the chat load straight from Giphy, which means Giphy sees your
                         IP address when your browser shows one.
                     </li>
                     <li><strong>Google Fonts</strong> serves the site's font, so Google sees your IP address when your browser loads it.</li>

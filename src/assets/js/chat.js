@@ -1492,6 +1492,7 @@ function chatShowBackground(element, background) {
     const search = dialog.querySelector('#chat-gif-search');
     const results = dialog.querySelector('[data-gif-results]');
     const status = dialog.querySelector('[data-gif-status]');
+    const SEARCH_DELAY_MS = 350; // wait this long after the last key press, so typing "cats" is one search, not four
     let searchTimer = null;
     let searchRequest = null;
     let hasLoaded = false; // opening the picker again keeps the last search instead of asking Giphy again
@@ -1557,7 +1558,7 @@ function chatShowBackground(element, background) {
 
     search.addEventListener('input', () => {
         clearTimeout(searchTimer);
-        searchTimer = setTimeout(loadGifs, 300);
+        searchTimer = setTimeout(loadGifs, SEARCH_DELAY_MS);
     });
 
     // Enter searches right away instead of waiting
