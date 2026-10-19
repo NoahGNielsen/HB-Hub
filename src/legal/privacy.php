@@ -125,10 +125,17 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <li>Your Chess and Matador games: seats, moves, saves, results and the in-game chat.</li>
                 </ul>
                 <p>Chips are virtual. HB Hub never asks for, or stores, any payment details.</p>
+                <h3>Feedback</h3>
+                <p>
+                    When you send feedback with the Feedback button in the side bar, what you wrote is stored with your
+                    account, the time, and the address of the page you were on when you pressed the button (only the
+                    page, like <code>/chat/</code>, not which chat or what you searched for). Site admins can also mark it
+                    as done, which stores which admin did it and when.
+                </p>
                 <h3>What isn't stored</h3>
                 <p>
                     No email address, phone number, real address or date of birth. No analytics profile, no advertising
-                    ids, and no record of which pages you open.
+                    ids, and no record of which pages you open, apart from the one page you send feedback from.
                 </p>
             </section>
 
@@ -138,6 +145,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <li><strong>To run the site</strong>: your account, messages and games are the site. Without them there's nothing to show you.</li>
                     <li><strong>To keep it safe</strong>: IP addresses, failed logins and the device cookie stop people from breaking into accounts, spamming sign-ups and dodging bans. The banned pictures list stops a banned person from coming back with a copy of their old profile.</li>
                     <li><strong>To keep it friendly</strong>: messages are kept so admins can act on bullying or abuse.</li>
+                    <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want.</li>
                 </ul>
                 <p>
                     Under the GDPR, this is "necessary to provide the service you signed up for" and HB Hub's
@@ -154,8 +162,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
                     <li>
                         <strong>Site admins</strong> can see everything about an account in the admin panel, including
-                        messages in every chat (also deleted ones), IP addresses and logins, and the list of banned
-                        pictures. They use it to deal with abuse, bans and broken accounts. They can never see your password or your two-factor secret.
+                        messages in every chat (also deleted ones), IP addresses and logins, the list of banned
+                        pictures, and all feedback. They use it to deal with abuse, bans and broken accounts, and to
+                        improve the site. Feedback is only ever seen by site admins, never by other users. They can never see your password or your two-factor secret.
                     </li>
                 </ul>
                 <p class="legal-note">
@@ -221,12 +230,16 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 </p>
                 <p>
                     What stays is what other people need for their chats and games to make sense: the messages you sent
-                    (shown as from "Deleted User"), your game results and chip history. None of it is connected to your
+                    (shown as from "Deleted User"), your game results and chip history, and any feedback you sent. None of it is connected to your
                     name any more.
                 </p>
                 <p>
                     A picture on the list of banned pictures stays there until the account it came from is unbanned or an
                     admin takes it off, also if that account is deleted.
+                </p>
+                <p>
+                    Feedback is kept until a site admin deletes it. If you delete your account, your feedback stays,
+                    shown as from "Deleted User", like your messages.
                 </p>
                 <p class="legal-note">
                     To <strong>completely delete</strong> all your data, messages included, or to <strong>download</strong>

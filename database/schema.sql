@@ -393,6 +393,22 @@ CREATE TABLE `HBHub-ChessSeats` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-Feedback`
+--
+
+CREATE TABLE `HBHub-Feedback` (
+  `feedbackId` int UNSIGNED NOT NULL,
+  `feedbackUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who sent it, NULL once that account is gone',
+  `feedbackContent` varchar(2000) NOT NULL COMMENT 'As it was typed',
+  `feedbackPage` varchar(255) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The path of the page it was sent from (no query), NULL when not known',
+  `feedbackDoneByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The site admin who marked it as done',
+  `feedbackDoneTimestamp` datetime DEFAULT NULL COMMENT 'NULL while it is new',
+  `feedbackCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Feedback sent from the Feedback button in the side bar, read on the admin panel (src/assets/php/feedback.php)';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-GifCache`
 --
 
@@ -788,6 +804,14 @@ ALTER TABLE `HBHub-ChessSeats`
   ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
 
 --
+-- Indexes for table `HBHub-Feedback`
+--
+ALTER TABLE `HBHub-Feedback`
+  ADD PRIMARY KEY (`feedbackId`),
+  ADD KEY `userTime` (`feedbackUserId`,`feedbackCreatedTimestamp`),
+  ADD KEY `fk_feedback_done` (`feedbackDoneByUserId`);
+
+--
 -- Indexes for table `HBHub-GifCache`
 --
 ALTER TABLE `HBHub-GifCache`
@@ -977,6 +1001,12 @@ ALTER TABLE `HBHub-ChessRooms`
   MODIFY `roomId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `HBHub-Feedback`
+--
+ALTER TABLE `HBHub-Feedback`
+  MODIFY `feedbackId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-MatadorChat`
 --
 ALTER TABLE `HBHub-MatadorChat`
@@ -1159,6 +1189,13 @@ ALTER TABLE `HBHub-ChessRooms`
 ALTER TABLE `HBHub-ChessSeats`
   ADD CONSTRAINT `fk_chessseats_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-ChessRooms` (`roomId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_chessseats_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-Feedback`
+--
+ALTER TABLE `HBHub-Feedback`
+  ADD CONSTRAINT `fk_feedback_done` FOREIGN KEY (`feedbackDoneByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_feedback_user` FOREIGN KEY (`feedbackUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `HBHub-LoginDevices`

@@ -438,6 +438,11 @@ a.nav-notification.is-unread:focus-visible {
   background: var(--accent);
 }
 
+/* Feedback (otherPages/feedback.php) sits at the bottom of the side bar, away from the sections */
+.nav-side-feedback {
+  margin-top: auto;
+}
+
 /* Small screens: side bar becomes a bottom bar with labels always shown */
 @media (max-width: 600px) {
   body {
@@ -465,6 +470,11 @@ a.nav-notification.is-unread:focus-visible {
     width: auto;
     flex: 1;
     padding: 6px 0;
+  }
+
+  /* Just the last one in the row, not pushed down */
+  .nav-side-feedback {
+    margin-top: 0;
   }
 
   .nav-side-label {

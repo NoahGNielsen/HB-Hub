@@ -150,7 +150,8 @@ const HBHUB_CONDUCT_UPDATED = '19 October 2026';
             <section id="report" aria-labelledby="conduct-report">
                 <h2 id="conduct-report">8. Reporting someone</h2>
                 <p>
-                    If someone breaks this code of conduct, or makes you feel unsafe, tell a site admin or email
+                    If someone breaks this code of conduct, or makes you feel unsafe, tell a site admin, use the Feedback
+                    button at the bottom of the side bar (only site admins can read it), or email
                     <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. It helps to say who it was, which
                     chat or game it happened in, and roughly when. Reports are kept private, and the person you report
                     isn't told who reported them.

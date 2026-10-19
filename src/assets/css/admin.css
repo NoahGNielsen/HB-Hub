@@ -1,4 +1,4 @@
-/* Admin panel (admin/index.php, admin/banned.php, admin/user.php and admin/chat.php). Built on the settings page's
+/* Admin panel (admin/index.php, admin/banned.php, admin/feedback.php, admin/user.php and admin/chat.php). Built on the settings page's
    cards, fields and buttons (settings.css), wider for the tables. */
 .admin {
   max-width: 920px;
@@ -387,6 +387,67 @@
 
 .admin-banned-item .settings-btn {
   width: 100%;
+}
+
+/* Feedback (admin/feedback.php): one box per message, who sent it and from where above the text, the buttons below */
+.admin-feedback-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-feedback-item {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 10px;
+  background: var(--background);
+}
+
+.admin-feedback-head,
+.admin-feedback-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.admin-feedback-from {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+
+.admin-feedback-head .settings-status {
+  margin-left: auto;
+}
+
+.admin-feedback-text {
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Marked as done: the text fades, the buttons stay readable */
+.admin-feedback-item.is-done .admin-feedback-text {
+  opacity: 0.65;
+}
+
+.admin-feedback-foot {
+  justify-content: flex-end;
+}
+
+.admin-feedback-foot .admin-small {
+  margin-right: auto;
+}
+
+.admin-feedback-foot form {
+  display: block;
 }
 
 /* A chat's background: the preview, set by admin.js, with two messages on it like Change background in the chat */

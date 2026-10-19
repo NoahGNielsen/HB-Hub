@@ -5,7 +5,8 @@
 // Lists every user (?list=users, the default) or every chat (?list=chats), to pick one and open its admin panel:
 // admin/user.php for a user, admin/chat.php for a chat. Deleted accounts and chats are in the lists too, at the end.
 // ?q= searches the list by name (a chat by its name or its members' names), or by id when it's a number,
-// and ?page= goes through it ADMIN_LIST_SHOWN at a time. The third tab, Banned pictures, is its own page (admin/banned.php).
+// and ?page= goes through it ADMIN_LIST_SHOWN at a time. The third and fourth tabs, Banned pictures and Feedback, are
+// their own pages (admin/banned.php, admin/feedback.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';

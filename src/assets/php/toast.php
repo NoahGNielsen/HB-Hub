@@ -14,7 +14,8 @@ const HBHUB_TOASTS = [
     'logout' => 'You are now logged out.',
     'lockedOut' => 'Too many wrong passwords or codes, so you have been logged out.',
     'accountDeleted' => 'Your account has been deleted. Goodbye!',
-    // The admin panel (admin/user.php, admin/chat.php and admin/banned.php)
+    'feedbackSent' => 'Thanks! Your feedback has been sent to the admins.',
+    // The admin panel (admin/user.php, admin/chat.php, admin/banned.php and admin/feedback.php)
     'adminSaved' => 'Saved.',
     'adminBanned' => 'The user has been banned.',
     'adminUnbanned' => 'The user has been unbanned.',
@@ -28,6 +29,9 @@ const HBHUB_TOASTS = [
     'adminChatDeleted' => 'The chat has been deleted.',
     'adminBannedPictureAdded' => 'The picture has been added to the banned pictures.',
     'adminBannedPictureRemoved' => 'The picture has been removed from the banned pictures.',
+    'adminFeedbackDone' => 'The feedback has been marked as done.',
+    'adminFeedbackNew' => 'The feedback has been marked as new.',
+    'adminFeedbackDeleted' => 'The feedback has been deleted.',
 ];
 
 /**
