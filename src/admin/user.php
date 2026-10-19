@@ -221,7 +221,7 @@ switch ($adminAction) {
 
     case 'name':
         $adminValues['name'] = is_string($_POST['name'] ?? null) ? trim($_POST['name']) : '';
-        $nameError = hbHubNameError($adminValues['name'], $adminNameMax);
+        $nameError = hbHubNameError($adminValues['name'], $adminNameMax, $target['userName']);
         if ($nameError === null) {
             try {
                 $db->prepare('UPDATE `HBHub-Users` SET userName = ?, userNameLower = ? WHERE userId = ?')
@@ -242,8 +242,8 @@ switch ($adminAction) {
         $description = ($_POST['remove'] ?? null) === '1' || !is_string($_POST['description'] ?? null)
             ? '' : trim(str_replace("\r\n", "\n", $_POST['description']));
         $adminValues['description'] = $description;
-        if (preg_match('/^[^\p{Cc}]*$/u', str_replace("\n", '', $description)) !== 1) {
-            $adminErrors['bio'] = 'The bio contains characters that can\'t be used.';
+        if ($description !== ($target['userDescription'] ?? '') && !hbHubIsLatinText($description, true)) {
+            $adminErrors['bio'] = 'The bio can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.';
         } elseif (mb_strlen($description) > $adminDescriptionMax) {
             $adminErrors['bio'] = "Please keep it to $adminDescriptionMax characters or fewer.";
         } else {

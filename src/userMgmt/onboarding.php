@@ -61,6 +61,7 @@ if ((int) $siteConfig['site_save_diskspace'] === 2) {
 $onboardingDescriptionMode = (int) $siteConfig['onboarding_description_requirements'];
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php'; // the name rules and the allow list of characters
 $onboardingPasswordPolicy = hbHubPasswordPolicy($siteConfig);
 $onboardingPasswordMin = $onboardingPasswordPolicy['minLength'];
 $onboardingPasswordCharTypes = $onboardingPasswordPolicy['charTypes'];
@@ -93,15 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
         $passwordConfirm = is_string($_POST['passwordConfirm'] ?? null) ? $_POST['passwordConfirm'] : '';
 
-        // Name
-        if ($onboardingValues['name'] === '') {
-            $onboardingErrors['name'] = 'Please tell us what you should be known as.';
-        } elseif (preg_match('/^[^\p{Cc}]+$/u', $onboardingValues['name']) !== 1) {
-            $onboardingErrors['name'] = 'That name contains characters that can\'t be used.';
-        } elseif (mb_strlen($onboardingValues['name']) > $onboardingNameMax) {
-            $onboardingErrors['name'] = "Please keep it to $onboardingNameMax characters or fewer.";
-        } elseif (hbHubIsDeletedUserName($onboardingValues['name'])) {
-            $onboardingErrors['name'] = 'That name can\'t be used. Please choose another one.';
+        // Name - the same rules as in settings (account.php), including the allow list of characters
+        if (($nameError = hbHubNameError($onboardingValues['name'], $onboardingNameMax)) !== null) {
+            $onboardingErrors['name'] = $nameError;
         }
 
         // Class
@@ -133,8 +128,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Description
         $descriptionLength = mb_strlen($onboardingValues['description']);
-        if (preg_match('/^[^\p{Cc}]*$/u', str_replace("\n", '', $onboardingValues['description'])) !== 1) {
-            $onboardingErrors['description'] = 'Your description contains characters that can\'t be used.';
+        if (!hbHubIsLatinText($onboardingValues['description'], true)) {
+            $onboardingErrors['description'] = 'Your description can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.';
         } elseif ($descriptionLength > $onboardingDescriptionMax) {
             $onboardingErrors['description'] = "Please keep it to $onboardingDescriptionMax characters or fewer.";
         } elseif ($onboardingDescriptionMode === ONBOARDING_REQUIRED && $descriptionLength === 0) {

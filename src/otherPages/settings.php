@@ -201,7 +201,7 @@ if ($settingsAction === 'profile') {
         }
 
         // Name
-        if (($nameError = hbHubNameError($settingsValues['name'], $settingsNameMax)) !== null) {
+        if (($nameError = hbHubNameError($settingsValues['name'], $settingsNameMax, $settingsUser['userName'])) !== null) {
             $settingsErrors['name'] = $nameError;
         }
 
@@ -243,11 +243,12 @@ if ($settingsAction === 'profile') {
             exit;
         }
 
-        // Bio
+        // Bio - one saved before the allow list (account.php) can be kept as it is
         if ($settingsDescriptionMode !== SETTINGS_DISABLED) {
             $descriptionLength = mb_strlen($settingsValues['description']);
-            if (preg_match('/^[^\p{Cc}]*$/u', str_replace("\n", '', $settingsValues['description'])) !== 1) {
-                $settingsErrors['description'] = 'Your bio contains characters that can\'t be used.';
+            if ($settingsValues['description'] !== ($settingsUser['userDescription'] ?? '')
+                && !hbHubIsLatinText($settingsValues['description'], true)) {
+                $settingsErrors['description'] = 'Your bio can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.';
             } elseif ($descriptionLength > $settingsDescriptionMax) {
                 $settingsErrors['description'] = "Please keep it to $settingsDescriptionMax characters or fewer.";
             } elseif ($settingsDescriptionMode === SETTINGS_REQUIRED && $descriptionLength < $settingsDescriptionMin) {
