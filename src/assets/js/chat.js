@@ -68,6 +68,14 @@
         if (textarea.value.trim() === '' && !composer.hasAttribute('data-has-attachment')) return;
         composer.requestSubmit();
     });
+
+    // A blacklisted link stops it before anything is sent, the attachments part below included, as this listener
+    // comes first. The text stays in the box, so the link can be taken out.
+    composer.addEventListener('submit', (event) => {
+        if (!chatBlockedLink(textarea.value)) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    });
 })();
 
 // Formatting while typing a message (the composer and Edit), from the formatting menu below or Ctrl+B, Ctrl+I and Ctrl+U.
@@ -178,6 +186,7 @@ function chatLinkPopup() {
         // [ and ] would end the text early, and a \ at the end would hide the ] after it
         const label = textInput.value.replace(/\[/g, '(').replace(/]/g, ')').trim().replace(/\\+$/, '');
         const text = label === '' ? address : `[${label}](${address})`;
+        if (chatBlockedLink(text)) return; // the popup stays open behind it, to put in another link
         if (textarea.maxLength > 0 && textarea.value.length - (end - start) + text.length > textarea.maxLength) {
             return showError("That's too long to fit in the message.", textInput);
         }
@@ -587,6 +596,50 @@ function userPicker(dialog, onChange) {
     dialog.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close();
     });
+})();
+
+// The URL blacklist (assets/php/urlBlacklist.php): whether the text has a blacklisted domain (or a subdomain of one)
+// anywhere in it, in which case the blocked link popup opens to say it can't be sent. Checked before sending, saving an
+// edit and adding a link, so nothing is lost; the server checks again anyway. Works out the same as the server does,
+// %-encoding, other full stops and invisible characters included, from the list in data-url-blacklist.
+function chatBlockedLink(text) {
+    const dialog = document.querySelector('.chat-link-blocked');
+    const domains = dialog ? JSON.parse(dialog.dataset.urlBlacklist || '[]') : [];
+    if (domains.length === 0) return false;
+
+    const escaped = domains.map((domain) => domain.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'));
+    const pattern = new RegExp(`(?<![\\p{L}\\p{N}_.-])(?:[\\p{L}\\p{N}_-]+\\.)*(?:${escaped.join('|')})(?![\\p{L}\\p{N}_-]|\\.[\\p{L}\\p{N}])`, 'iu');
+    const plain = text
+        .replace(/%([0-9a-f]{2})/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/[。．｡]/g, '.')
+        .replace(/\p{Cf}+/gu, '');
+    if (!pattern.test(plain)) return false;
+
+    dialog.showModal();
+    dialog.querySelector('.chat-new-btn[data-dialog-close]').focus();
+    return true;
+}
+
+// Blocked link popup: Okay, × or the dimmed area closes it. It opens by itself when the server stopped a message
+// (?linkBlocked=1), which is then taken out of the address so a refresh doesn't open it again.
+(() => {
+    const dialog = document.querySelector('.chat-link-blocked');
+    if (!dialog) return;
+
+    dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+        button.addEventListener('click', () => dialog.close());
+    });
+
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+
+    if (dialog.hasAttribute('data-link-blocked-open')) {
+        const url = new URL(location.href);
+        url.searchParams.delete('linkBlocked');
+        history.replaceState(null, '', url);
+        dialog.showModal();
+    }
 })();
 
 // Message requests popup: chats the user was added to but hasn't accepted yet.
@@ -1255,6 +1308,11 @@ function chatShowBackground(element, background) {
         if (!editSave.disabled) editForm.requestSubmit();
     });
 
+    // A blacklisted link isn't saved, and Edit stays open behind the blocked link popup to take it out
+    editForm.addEventListener('submit', (event) => {
+        if (chatBlockedLink(editText.value)) event.preventDefault();
+    });
+
     // A group admin deleting someone else's message is told it'll say so. An attachment in it is deleted for good too.
     function openDelete(item) {
         const hasAttachment = item.hasAttribute('data-message-attachment');
@@ -1496,6 +1554,7 @@ function chatJxlWorker() {
         empty: 'That file is empty.',
         muted: "You're muted in this chat, so you can't send anything.",
         messageTooLong: 'The message is too long.',
+        linkBlocked: "The message has a blocked link in it. Take it out and try again.", // chatBlockedLink() normally catches it first
         storageFull: "HB Hub's storage is full. Attachments can be sent again once some expire or are deleted.",
         disabled: 'Attachments are turned off for now.',
         busy: 'Lots of attachments are being sent right now. Try again in a moment.',
@@ -2209,9 +2268,10 @@ function chatJxlWorker() {
 
     function send(gifId) {
         if (isSending) return; // no double GIFs from a double click
+        dialog.close();
+        if (chatBlockedLink(textarea.value)) return; // the text in the box goes with it, so a blacklisted link stops the GIF too
         isSending = true;
         gifInput.value = gifId;
-        dialog.close();
         composer.submit(); // not requestSubmit: the message box may be empty, which is fine with a GIF
     }
 

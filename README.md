@@ -41,6 +41,7 @@
 | **Attachments** | Send files and pictures. Pictures are turned into JPEG XL in the browser (lossless, or visually lossless for JPEGs), other files are zipped on the server. Everyone has 10 tickets of 5 MB, which come back when an attachment expires (90 days, or 3 for big ones) or is deleted |
 | **Formatting** | Discord-style `**bold**`, `*italic*`, `__underline__`, `~~strikethrough~~`, `` `code` `` and code blocks, `#` headings, lists and `[masked](https://links)`, from a right-click menu on the message box or Ctrl+B / I / U |
 | **Chat menu** | Right-click a chat to mute its notifications for a while, hide it or leave it |
+| **Link safety** | Links ask before they open, and links to IP loggers and other sites on the URL blacklist (`src/assets/urlBlacklist.txt`) can't be sent at all, in chats or game chats |
 
 ### 🎰 Casino
 

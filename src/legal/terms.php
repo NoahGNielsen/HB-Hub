@@ -78,7 +78,7 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                     <li>bullying, harassment, threats or hate against anyone, for example because of their race, religion, gender, sexuality or disability,</li>
                     <li>sexual or violent content, or anything else you wouldn't show in a classroom (GIFs and pictures count too),</li>
                     <li>sharing other people's private information, photos or messages without their permission,</li>
-                    <li>spam, scams, or links to harmful sites,</li>
+                    <li>spam, scams, or links to harmful sites (links to IP loggers and other sites that are dangerous or give away where someone is are blocked, and can't be sent at all - don't try to get around that),</li>
                     <li>anything illegal, or encouraging others to do something illegal or dangerous,</li>
                     <li>trying to break into other accounts, overload the site, or get around its security.</li>
                 </ul>

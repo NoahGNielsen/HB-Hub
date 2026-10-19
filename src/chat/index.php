@@ -6,6 +6,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatFormat.php'; // **bold
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatUnread.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be sent
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 
@@ -170,6 +171,17 @@ function chatMessagesPage(PDO $db, int $chatId, int $limit, ?int $beforeId = nul
 function chatRedirect(?int $chatId, bool $keepUnread = false): never
 {
     header('Location: /chat/' . ($chatId !== null ? '?chat=' . $chatId . ($keepUnread ? '&unread=1' : '') : ''), true, 303);
+    exit;
+}
+
+/**
+ * Back to the chat after a message with a blacklisted link wasn't sent or saved (assets/php/urlBlacklist.php).
+ * ?linkBlocked=1 opens the blocked link popup, which says why. chat.js normally stops it before it gets here,
+ * so this is only for when it didn't (no JS, or the GIF picker sending the text in the box with a GIF).
+ */
+function chatRedirectLinkBlocked(int $chatId): never
+{
+    header('Location: /chat/?chat=' . $chatId . '&linkBlocked=1', true, 303);
     exit;
 }
 
@@ -712,6 +724,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
     switch ($message !== null ? $_POST['action'] : null) {
         case 'edit':
             $content = is_string($_POST['content'] ?? null) ? trim($_POST['content']) : '';
+            if ($isOwnMessage && hbHubUrlBlacklisted($content)) {
+                chatRedirectLinkBlocked((int) $chat['chatId']); // the message stays as it was
+            }
             if ($isOwnMessage && !chatIsMuted($chat) && $message['messageContent'] !== null && $content !== ''
                 && mb_strlen($content) <= HBHUB_CHAT_MESSAGE_MAX && $content !== $message['messageContent']) {
                 $db->prepare('UPDATE `HBHub-Messages` SET messageContent = ?, messageIsEdited = 1
@@ -779,6 +794,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
     if (mb_strlen($message) > HBHUB_CHAT_MESSAGE_MAX) {
         chatUploadAnswer(400, ['error' => 'messageTooLong']);
     }
+    if (hbHubUrlBlacklisted($message)) {
+        chatUploadAnswer(400, ['error' => 'linkBlocked']);
+    }
 
     hbHubChatAttachmentsSweep($db); // expired ones first, so their tickets and space count as free
     $blocked = hbHubChatAttachmentsBlocked($db);
@@ -845,10 +863,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
 
 // Sending a message, maybe as a reply to another one, then back to the chat so a refresh doesn't send it again.
 // A GIF picked in the GIF picker comes as "gif" (its Giphy id), with whatever was typed in the box sent just before it.
+// A message with a blacklisted link isn't sent at all, not even the GIF with it.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     $message = is_string($_POST['message'] ?? null) ? trim($_POST['message']) : '';
     $gifId = $chatGifsEnabled && hbHubGiphyIsId($_POST['gif'] ?? null) ? $_POST['gif'] : null;
+    if ($chat !== null && hbHubUrlBlacklisted($message)) {
+        chatRedirectLinkBlocked((int) $chat['chatId']);
+    }
 
     $contents = $message !== '' ? [$message] : [];
     if ($gifId !== null) {
@@ -2138,6 +2160,27 @@ if ($isPoll) {
                 <footer class="chat-new-footer">
                     <button type="button" class="chat-btn" data-link-warning-close>Stay here</button>
                     <a class="chat-new-btn" href="#" target="_blank" rel="noopener noreferrer nofollow" data-link-warning-open>Open link</a>
+                </footer>
+            </div>
+        </dialog>
+
+        <!-- Blocked link popup (chat.js): shown instead of sending a message with a blacklisted link in it
+             (assets/php/urlBlacklist.php), whose list chat.js checks against (data-url-blacklist).
+             Opens by itself when the server stopped one (?linkBlocked=1, data-link-blocked-open). -->
+        <dialog class="chat-dialog chat-link-blocked" aria-labelledby="chat-link-blocked-title"
+                data-url-blacklist="<?= htmlspecialchars(json_encode(hbHubUrlBlacklist())) ?>"
+                <?= ($_GET['linkBlocked'] ?? null) === '1' ? 'data-link-blocked-open' : '' ?>>
+            <div class="chat-requests-body">
+                <header class="chat-new-header">
+                    <h2 id="chat-link-blocked-title">Link blocked</h2>
+                    <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                </header>
+
+                <p class="chat-dialog-text"><?= htmlspecialchars(HBHUB_URL_BLACKLIST_MESSAGE) ?></p>
+                <p class="chat-dialog-text">It hasn't gone through. Take the link out and try again.</p>
+
+                <footer class="chat-new-footer chat-dialog-footer">
+                    <button type="button" class="chat-new-btn" data-dialog-close>Okay</button>
                 </footer>
             </div>
         </dialog>

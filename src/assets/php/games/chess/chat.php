@@ -3,6 +3,7 @@
 // and goes when the room does. The newest message's id is part of the game's version (room.php's hbHubChessVersion()),
 // so chessGame.js gets the chat again when there's something new. Built the same way as Matador's (games/matador/chat.php).
 require_once __DIR__ . '/../../database.php';
+require_once __DIR__ . '/../../urlBlacklist.php'; // IP loggers and other links that can't be sent
 
 const HBHUB_CHESS_CHAT_MAX = 300; // chatText column
 const HBHUB_CHESS_CHAT_SHOWN = 50; // the newest messages sent to the game
@@ -20,6 +21,9 @@ function hbHubChessSay(PDO $db, int $roomId, int $userId, mixed $text): ?string
     }
     if (mb_strlen($text) > HBHUB_CHESS_CHAT_MAX) {
         return 'A message can be up to ' . HBHUB_CHESS_CHAT_MAX . ' characters.';
+    }
+    if (hbHubUrlBlacklisted($text)) {
+        return HBHUB_URL_BLACKLIST_MESSAGE;
     }
 
     $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-ChessChat`

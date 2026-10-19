@@ -1,0 +1,49 @@
+# The URL blacklist: messages with an address on one of these sites can't be sent (assets/php/urlBlacklist.php).
+# One domain per line, without https:// or a path. Its subdomains are blocked too, so "iplogger.org" also blocks
+# "www.iplogger.org". Lines starting with # are comments, and so is anything after a # on a line.
+# It's mostly IP loggers, which find out where someone is (and what device they use) the moment they open the link.
+
+# Grabify and the other addresses it hands out
+grabify.link
+lovebird.guru
+trulove.guru
+dateing.club
+otherhalf.life
+shrekis.life
+datasig.io
+datauth.io
+headshot.monster
+gaming-at-my.best
+progaming.monster
+yourmy.monster
+screenshare.host
+imageshare.best
+screenshot.best
+gamingfun.me
+catsnthing.com
+catsnthings.fun
+mypic.icu
+curiouscat.club
+joinmy.site
+fortnitechat.site
+fortnight.space
+freegiftcards.co
+stopify.co
+leancoding.co
+
+# IPLogger and its short addresses
+iplogger.org
+iplogger.com
+iplogger.ru
+iplogger.co
+2no.co
+yip.su
+iplis.ru
+ezstat.ru
+ps3cfw.com
+maper.info
+
+# Other IP loggers
+blasze.com
+blasze.tk
+whatstheirip.com
