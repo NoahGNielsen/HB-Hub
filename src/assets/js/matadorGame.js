@@ -15,8 +15,8 @@
 // The host can pause the game (the button in the header, game.paused). Nothing can be done in it then but the chat,
 // so the moves, trades, building and keyboard shortcuts are left out until it goes on.
 //
-// The room's settings (game.settings: dice and jailRent) are shown in their dialog, where the host changes them before
-// the game starts. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
+// The room's settings (game.settings: dice, jailRent and parkingPot) are shown in their dialog, where the host changes
+// them before the game starts. With parkingPot, what's in Parkering's account (game.pot) is shown on its field. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
 // on (after asking) and Backspace leaves it with the bank, and Enter ends the turn.
 (() => {
     const root = document.querySelector('[data-matador]');
@@ -41,6 +41,7 @@
     const actions = find('[data-mt-actions]');
     const playerList = find('[data-mt-players]');
     const bankText = find('[data-mt-bank]');
+    const potText = find('[data-mt-pot]');
     const tradesPanel = find('[data-mt-trades-panel]');
     const tradeList = find('[data-mt-trades]');
     const tradesEmpty = find('[data-mt-trades-empty]');
@@ -254,6 +255,9 @@
             field.houses.replaceChildren(...buildings);
             field.element.setAttribute('aria-label', fieldLabel(number));
         });
+        // What's in Parkering's account (game.pot), on its field. Null when the room doesn't have it
+        potText.hidden = game.pot === null;
+        potText.textContent = game.pot !== null ? kr(game.pot) : '';
         placePieces();
     }
 
@@ -273,6 +277,7 @@
             else if (property.houses > 0) parts.push(property.houses + (property.houses === 1 ? ' house' : ' houses'));
             if (property.mortgaged) parts.push('mortgaged');
         }
+        if (field.type === 'parking' && game.pot !== null) parts.push(kr(game.pot) + ' in its account');
         const here = game.players.filter((player) => !player.bankrupt && game.phase !== 'lobby' && player.position === number);
         if (here.length > 0) parts.push('here: ' + here.map((player) => player.name).join(', '));
         return parts.join(', ');
@@ -414,7 +419,8 @@
     function renderPlayers() {
         playerList.replaceChildren(...game.players.map(playerItem));
         const bank = game.bank;
-        bankText.textContent = bank ? 'The bank has ' + bank.houses + ' houses and ' + bank.hotels + ' hotels left.' : '';
+        bankText.textContent = (bank ? 'The bank has ' + bank.houses + ' houses and ' + bank.hotels + ' hotels left.' : '')
+            + (game.pot !== null ? ' Parkering\'s account has ' + kr(game.pot) + '.' : '');
     }
 
     function playerItem(player) {
@@ -1107,13 +1113,15 @@
     const settingsSave = find('[data-mt-settings-save]');
     const canChangeSettings = () => game.isHost && game.phase === 'lobby';
     const JAIL_RENT_TEXT = { yes: 'rent is paid in jail', no: 'no rent in jail', bank: 'rent in jail goes to the bank' };
-    const settingsText = () => (game.settings.dice === 2 ? '2 dice' : '1 die') + ', ' + JAIL_RENT_TEXT[game.settings.jailRent];
+    const settingsText = () => (game.settings.dice === 2 ? '2 dice' : '1 die') + ', ' + JAIL_RENT_TEXT[game.settings.jailRent]
+        + ', ' + (game.settings.parkingPot ? 'taxes and fines go to Parkering' : 'no Parkering account');
 
     // The choices are only filled in from the game when it opens, or while it can't be changed (so a poll doesn't
     // undo what the host has just clicked)
     function fillSettings() {
         settingsForm.elements.dice.value = String(game.settings.dice);
         settingsForm.elements.jailRent.value = game.settings.jailRent;
+        settingsForm.elements.parkingPot.value = game.settings.parkingPot ? 'on' : 'off';
     }
 
     function renderSettings() {
@@ -1142,6 +1150,7 @@
         const data = await act('settings', {
             dice: settingsForm.elements.dice.value,
             jailRent: settingsForm.elements.jailRent.value,
+            parkingPot: settingsForm.elements.parkingPot.value,
         }, settingsMessage);
         if (data && !data.error) settingsDialog.close();
     });

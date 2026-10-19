@@ -141,6 +141,8 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                                     <span class="mt-field-price">10 % or <?= number_format(HBHUB_MATADOR_TAX_FIXED) ?> kr</span>
                                 <?php elseif ($info['type'] === 'extraTax'): ?>
                                     <span class="mt-field-price"><?= number_format($info['amount']) ?> kr</span>
+                                <?php elseif ($info['type'] === 'parking'): ?>
+                                    <span class="mt-field-price" data-mt-pot hidden></span>
                                 <?php endif; ?>
                                 <span class="mt-field-houses" data-mt-houses></span>
                                 <span class="mt-field-tokens" data-mt-tokens></span>
@@ -299,6 +301,18 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                                 <strong><?= htmlspecialchars($label) ?><?= $value === HBHUB_MATADOR_DEFAULT_SETTINGS['jailRent'] ? ' (default)' : '' ?></strong>
                                 <span class="casino-hint"><?= htmlspecialchars($hint) ?></span>
                             </span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
+                <fieldset class="casino-choices" data-mt-settings-fields>
+                    <legend class="casino-label">Parkering's account</legend>
+                    <?php foreach ([
+                        'on' => ['On (default)', 'Taxes and the Prøv lykken cards you pay for go into an account. Land on Parkering and you get all of it.'],
+                        'off' => ['Off', 'That money goes to the bank, and Parkering is just a free rest.'],
+                    ] as $value => [$label, $hint]): ?>
+                        <label class="casino-choice">
+                            <input type="radio" name="parkingPot" value="<?= $value ?>">
+                            <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
                         </label>
                     <?php endforeach; ?>
                 </fieldset>

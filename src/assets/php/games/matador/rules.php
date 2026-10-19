@@ -30,6 +30,8 @@
     <li>
         Indkomstskat: pay <?= hbHubMatadorKr(HBHUB_MATADOR_TAX_FIXED) ?> or <?= HBHUB_MATADOR_TAX_PERCENT ?> % of everything you're worth,
         chosen before it's worked out. Ekstraordinær statsskat is <?= hbHubMatadorKr(HBHUB_MATADOR_FIELDS[38]['amount']) ?>.
+        These taxes, and what the Prøv lykken cards make you pay, go into Parkering's account: land on Parkering and you
+        get everything in it. The host can turn this off in the room's settings, and then the money goes to the bank and
         Parkering is a free rest.
     </li>
     <li>

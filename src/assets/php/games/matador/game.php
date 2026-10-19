@@ -7,12 +7,15 @@
 // Getting out of jail is paying 1,000 kr, a "benådet" card, or rolling a 6 (3 tries, then the bail has to be paid).
 // Building, selling and mortgaging can only be done in your own turn (trading at any time).
 // The host can change some of this in the room's settings before the game starts (hbHubMatadorSettings()): two dice,
-// where doubles take the place of the 6, and whether rent is paid to a player who's in jail.
+// where doubles take the place of the 6, whether rent is paid to a player who's in jail, and Parkering's account
+// (parkingPot, on by default): the taxes and what the Prøv lykken cards make you pay go into it instead of to the bank,
+// and whoever lands on Parkering gets all of it.
 //
 // The state:
 //   phase       'lobby' (waiting for players), 'resume' (a saved game waiting for its players), 'playing' or 'ended'
-//   settings    the room's settings: dice (1 or 2) and jailRent ('yes', 'no' or 'bank'). Missing in games from before
-//               them, so always read through hbHubMatadorSettings()
+//   settings    the room's settings: dice (1 or 2), jailRent ('yes', 'no' or 'bank') and parkingPot (true or false).
+//               Missing in games from before them, so always read through hbHubMatadorSettings()
+//   pot         the money in Parkering's account (with the parkingPot setting). Missing in games from before it
 //   players     in turn order: seat (1-4, the seat in HBHub-MatadorSeats), userId (who plays it, null while it's
 //               empty), originalUserId (who it's kept for when they leave), reservedFor (who the host gave it to),
 //               name, cash, position (0-39), inJail, jailTries, cards (the "benådet" cards held), bankrupt
@@ -24,7 +27,8 @@
 //   paused      the host has paused the game (hbHubMatadorPause() in room.php): nobody can do anything in it, and no
 //               turn runs out or is skipped, until the host lets it go on. Missing in games from before pausing
 //   pending     what the player whose turn it is has to answer: buy (field), tax, or debt (amount, to: a seat or null
-//               for the bank, reason, move: steps to move once it's paid - after the third try in jail)
+//               for the bank, reason, move: steps to move once it's paid - after the third try in jail, pot: true when
+//               it goes into Parkering's account once it's paid)
 //   trades      offers between players: id, from, to, give and get ({fields, cash, cards})
 //   lastRoll, lastCard  for matadorGame.js to show (n counts them, so it knows a new one from the last one). lastRoll
 //               has the total (value) and each die (dice - not in rolls from before the settings). lastCard
@@ -43,12 +47,12 @@ const HBHUB_MATADOR_JAIL_RENT_CHOICES = [ // the jailRent setting: what happens 
     'no' => 'No',
     'bank' => 'Yes, but the bank gets the money',
 ];
-const HBHUB_MATADOR_DEFAULT_SETTINGS = ['dice' => 1, 'jailRent' => 'yes'];
+const HBHUB_MATADOR_DEFAULT_SETTINGS = ['dice' => 1, 'jailRent' => 'yes', 'parkingPot' => true];
 
 /**
  * The room's settings, with the defaults for anything a game from before them doesn't have.
  *
- * @return array{dice: int, jailRent: string}
+ * @return array{dice: int, jailRent: string, parkingPot: bool}
  */
 function hbHubMatadorSettings(array $state): array
 {
@@ -56,22 +60,23 @@ function hbHubMatadorSettings(array $state): array
 }
 
 /**
- * The settings as sent from the room's settings (dice: "1" or "2", jailRent: one of the choices), or null when they
- * can't be.
+ * The settings as sent from the room's settings (dice: "1" or "2", jailRent: one of the choices, parkingPot: "on" or
+ * "off"), or null when they can't be.
  *
- * @return ?array{dice: int, jailRent: string}
+ * @return ?array{dice: int, jailRent: string, parkingPot: bool}
  */
-function hbHubMatadorCleanSettings(mixed $dice, mixed $jailRent): ?array
+function hbHubMatadorCleanSettings(mixed $dice, mixed $jailRent, mixed $parkingPot): ?array
 {
     $dice = is_string($dice) && ctype_digit($dice) && strlen($dice) === 1 ? (int) $dice : null;
-    if (!in_array($dice, HBHUB_MATADOR_DICE_CHOICES, true) || !is_string($jailRent) || !isset(HBHUB_MATADOR_JAIL_RENT_CHOICES[$jailRent])) {
+    if (!in_array($dice, HBHUB_MATADOR_DICE_CHOICES, true) || !is_string($jailRent) || !isset(HBHUB_MATADOR_JAIL_RENT_CHOICES[$jailRent])
+        || !in_array($parkingPot, ['on', 'off'], true)) {
         return null;
     }
-    return ['dice' => $dice, 'jailRent' => $jailRent];
+    return ['dice' => $dice, 'jailRent' => $jailRent, 'parkingPot' => $parkingPot === 'on'];
 }
 
 /**
- * The settings in a few words, for the log: "2 dice, no rent in jail".
+ * The settings in a few words, for the log: "2 dice, no rent in jail, no Parkering account".
  */
 function hbHubMatadorSettingsText(array $settings): string
 {
@@ -80,7 +85,8 @@ function hbHubMatadorSettingsText(array $settings): string
         'no' => 'no rent in jail',
         'bank' => 'rent in jail goes to the bank',
     };
-    return ($settings['dice'] === 1 ? '1 die' : $settings['dice'] . ' dice') . ', ' . $rent;
+    return ($settings['dice'] === 1 ? '1 die' : $settings['dice'] . ' dice') . ', ' . $rent
+        . ', ' . ($settings['parkingPot'] ? 'taxes and fines go to Parkering' : 'no Parkering account');
 }
 
 function hbHubMatadorNewState(string $roomName, int $roomType): array
@@ -90,6 +96,7 @@ function hbHubMatadorNewState(string $roomName, int $roomType): array
         'roomName' => $roomName, // to open the game again with, from a save
         'roomType' => $roomType,
         'settings' => HBHUB_MATADOR_DEFAULT_SETTINGS,
+        'pot' => 0,
         'players' => [],
         'fields' => [],
         'deck' => [],
@@ -151,6 +158,7 @@ function hbHubMatadorBegin(array &$state): void
         }
     }
     $state['deck'] = hbHubMatadorShuffle(array_keys(HBHUB_MATADOR_CARDS));
+    $state['pot'] = 0;
     $state['phase'] = 'playing';
     $state['round'] = 1;
     $first = $state['players'][0]['seat'];
@@ -309,21 +317,36 @@ function hbHubMatadorRent(array $state, int $field, int $roll, int $multiplier =
 /**
  * The player whose turn it is pays $amount to the seat $to (or the bank), when they have it. When they don't, it's
  * owed (pending debt) until they raise the money or go bankrupt, and $move is how far they move once it's paid.
+ * $toPot: money for the bank that goes into Parkering's account instead, when the room has it (hbHubMatadorPayOwed()).
  */
-function hbHubMatadorOwe(array &$state, int $seat, int $amount, ?int $to, string $reason, ?int $move = null): void
+function hbHubMatadorOwe(array &$state, int $seat, int $amount, ?int $to, string $reason, ?int $move = null, bool $toPot = false): void
 {
+    $toPot = $toPot && $to === null && hbHubMatadorSettings($state)['parkingPot'];
     $i = hbHubMatadorIndex($state, $seat);
     if ($state['players'][$i]['cash'] >= $amount) {
-        hbHubMatadorTransfer($state, $seat, $to, $amount);
-        if ($move !== null) {
-            hbHubMatadorMoveBy($state, $seat, $move);
-        }
+        hbHubMatadorPayOwed($state, $seat, ['amount' => $amount, 'to' => $to, 'move' => $move, 'pot' => $toPot]);
         return;
     }
 
-    $state['pending'] = ['type' => 'debt', 'amount' => $amount, 'to' => $to, 'reason' => $reason, 'move' => $move];
+    $state['pending'] = ['type' => 'debt', 'amount' => $amount, 'to' => $to, 'reason' => $reason, 'move' => $move, 'pot' => $toPot];
     hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' owes ' . hbHubMatadorKr($amount) . ' for ' . $reason
         . ' and has to raise the money.');
+}
+
+/**
+ * Pays what's owed (a pending debt, or one paid straight away by hbHubMatadorOwe()): to $debt['to'], or into Parkering's
+ * account when $debt['pot'] (missing in debts from before it), then moves the player on when $debt['move'] says to.
+ * The player has to have the money.
+ */
+function hbHubMatadorPayOwed(array &$state, int $seat, array $debt): void
+{
+    hbHubMatadorTransfer($state, $seat, $debt['to'], $debt['amount']);
+    if (!empty($debt['pot'])) {
+        $state['pot'] = ($state['pot'] ?? 0) + $debt['amount'];
+    }
+    if ($debt['move'] !== null) {
+        hbHubMatadorMoveBy($state, $seat, $debt['move']);
+    }
 }
 
 /**
@@ -403,14 +426,32 @@ function hbHubMatadorLand(array &$state, int $seat, int $multiplier = 1): void
         'incomeTax' => $state['pending'] = ['type' => 'tax'],
         'extraTax' => hbHubMatadorPayBank($state, $seat, $info['amount'], 'Ekstraordinær statsskat'),
         'goToJail' => hbHubMatadorJail($state, $seat),
-        default => null, // START, jail (just visiting) and Parkering: nothing happens
+        'parking' => hbHubMatadorEmptyPot($state, $seat),
+        default => null, // START and jail (just visiting): nothing happens
     };
 }
 
+/**
+ * A tax (Indkomstskat, Ekstraordinær statsskat): to the bank, or into Parkering's account when the room has it.
+ */
 function hbHubMatadorPayBank(array &$state, int $seat, int $amount, string $reason): void
 {
     hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' pays ' . hbHubMatadorKr($amount) . ' (' . $reason . ').');
-    hbHubMatadorOwe($state, $seat, $amount, null, $reason);
+    hbHubMatadorOwe($state, $seat, $amount, null, $reason, null, true);
+}
+
+/**
+ * The player landed on Parkering: they get everything in its account (with the parkingPot setting).
+ */
+function hbHubMatadorEmptyPot(array &$state, int $seat): void
+{
+    $pot = $state['pot'] ?? 0;
+    if (!hbHubMatadorSettings($state)['parkingPot'] || $pot <= 0) {
+        return;
+    }
+    $state['players'][hbHubMatadorIndex($state, $seat)]['cash'] += $pot;
+    $state['pot'] = 0;
+    hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' parked and gets the ' . hbHubMatadorKr($pot) . ' in Parkering\'s account!');
 }
 
 /**
@@ -464,7 +505,7 @@ function hbHubMatadorDrawCard(array &$state, int $seat): void
             hbHubMatadorJail($state, $seat);
             break;
         case 'pay':
-            hbHubMatadorOwe($state, $seat, $value, null, 'Prøv lykken');
+            hbHubMatadorOwe($state, $seat, $value, null, 'Prøv lykken', null, true);
             break;
         case 'receive':
             $state['players'][$i]['cash'] += $value;
@@ -478,7 +519,7 @@ function hbHubMatadorDrawCard(array &$state, int $seat): void
             }
             if ($cost > 0) {
                 hbHubMatadorLog($state, $name . ' pays ' . hbHubMatadorKr($cost) . ' for their houses and hotels.');
-                hbHubMatadorOwe($state, $seat, $cost, null, 'Prøv lykken');
+                hbHubMatadorOwe($state, $seat, $cost, null, 'Prøv lykken', null, true);
             }
             break;
         case 'fromEach':
@@ -765,10 +806,7 @@ function hbHubMatadorRaiseAndPay(array &$state, int $seat, array $debt): void
         hbHubMatadorBankrupt($state, $seat, $debt['to']);
         return;
     }
-    hbHubMatadorTransfer($state, $seat, $debt['to'], $debt['amount']);
-    if ($debt['move'] !== null) {
-        hbHubMatadorMoveBy($state, $seat, $debt['move']);
-    }
+    hbHubMatadorPayOwed($state, $seat, $debt);
 }
 
 function hbHubMatadorPercentTax(array $state, int $seat): int
@@ -928,11 +966,8 @@ function hbHubMatadorPayDebt(array &$state, int $seat): ?string
     }
 
     $state['pending'] = null;
-    hbHubMatadorTransfer($state, $seat, $debt['to'], $debt['amount']);
     hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' paid the ' . hbHubMatadorKr($debt['amount']) . ' they owed.');
-    if ($debt['move'] !== null) {
-        hbHubMatadorMoveBy($state, $seat, $debt['move']);
-    }
+    hbHubMatadorPayOwed($state, $seat, $debt);
     hbHubMatadorSettle($state);
     return null;
 }
@@ -1359,6 +1394,8 @@ function hbHubMatadorView(array $state, array $people, array $away, int $userId,
         'phase' => $state['phase'],
         'round' => $state['round'],
         'settings' => hbHubMatadorSettings($state),
+        // What's in Parkering's account, or null when the room doesn't have it (or the game hasn't started)
+        'pot' => hbHubMatadorSettings($state)['parkingPot'] && $state['phase'] !== 'lobby' ? ($state['pot'] ?? 0) : null,
         'you' => $you,
         'isHost' => $hostId === $userId,
         'players' => array_map(static function (array $player) use ($people, $away, $userId, $hostId, $state): array {

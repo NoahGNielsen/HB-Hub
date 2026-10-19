@@ -600,10 +600,11 @@ function hbHubMatadorStart(PDO $db, array &$room, int $userId): ?string
 }
 
 /**
- * The host changes the room's settings (game.php's hbHubMatadorSettings(), as sent: dice and jailRent), before the game
- * starts. A saved game keeps the ones it was started with. Returns null when they're changed, otherwise why not.
+ * The host changes the room's settings (game.php's hbHubMatadorSettings(), as sent: dice, jailRent and parkingPot),
+ * before the game starts. A saved game keeps the ones it was started with. Returns null when they're changed, otherwise
+ * why not.
  */
-function hbHubMatadorChangeSettings(array &$room, int $userId, mixed $dice, mixed $jailRent): ?string
+function hbHubMatadorChangeSettings(array &$room, int $userId, mixed $dice, mixed $jailRent, mixed $parkingPot): ?string
 {
     $state = &$room['state'];
     if ($room['roomHostUserId'] !== $userId) {
@@ -612,7 +613,7 @@ function hbHubMatadorChangeSettings(array &$room, int $userId, mixed $dice, mixe
     if ($state['phase'] !== 'lobby') {
         return 'The settings can only be changed before the game starts.';
     }
-    $settings = hbHubMatadorCleanSettings($dice, $jailRent);
+    $settings = hbHubMatadorCleanSettings($dice, $jailRent, $parkingPot);
     if ($settings === null) {
         return 'Choose the settings.';
     }

@@ -11,7 +11,8 @@
 //     Any time: offer (to, giveFields, giveCash, giveCards, getFields, getCash, getCards), answer (trade: its id,
 //       answer: accept, decline or cancel) and leave
 //     For the host: start, invite (user), giveSeat (seat, user), saveStop, pause and resume (room.php's
-//       hbHubMatadorPause()), and settings (dice: 1 or 2, jailRent: yes, no or bank - before the game starts)
+//       hbHubMatadorPause()), and settings (dice: 1 or 2, jailRent: yes, no or bank, parkingPot: on or off - before
+//       the game starts)
 //     chat (text) writes in the game's chat (chat.php), for anyone in the game
 //   Anything the player whose turn it is does (not the chat) starts their 30 seconds again (hbHubMatadorPlayerActed()).
 //   While the host has paused the game, the moves, building and trades are turned down. The chat, leaving and the
@@ -129,7 +130,8 @@ $do = match ($action) {
     'giveSeat' => static fn (array &$room): ?string => hbHubMatadorGiveSeat($db, $room, $userId, $input['seat'] ?? null, $input['user'] ?? null),
     'saveStop' => static fn (array &$room): ?string => hbHubMatadorSaveAndStop($db, $room, $userId),
     'pause', 'resume' => static fn (array &$room): ?string => hbHubMatadorPause($room, $userId, $action === 'pause'),
-    'settings' => static fn (array &$room): ?string => hbHubMatadorChangeSettings($room, $userId, $input['dice'] ?? null, $input['jailRent'] ?? null),
+    'settings' => static fn (array &$room): ?string => hbHubMatadorChangeSettings($room, $userId, $input['dice'] ?? null,
+        $input['jailRent'] ?? null, $input['parkingPot'] ?? null),
     default => false,
 };
 if ($do === false) {
