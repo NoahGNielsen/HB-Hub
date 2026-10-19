@@ -68,6 +68,7 @@ Played with virtual chips only. No real money is involved anywhere.
 | **In-game chat** | A chat for each game, plus a sound when it's your turn |
 | **Chess** | Two-player chess with every rule: castling, en passant, promotion, and draws by stalemate, repetition, the 50-move rule and too few pieces. Public, code or invite-only games, with or without a clock (3+2 up to 30 minutes) |
 | **Chess extras** | Draw offers, resigning, aborting before both have moved, claiming the win when your opponent has gone, the host pausing the game (and the clocks), rematches with swapped colours, arrows and highlighted squares drawn with the right mouse button (like chess.com), an in-game chat and a leaderboard |
+| **Ordle** | A Wordle-style daily word game: guess the five-letter word in six tries. There's an English and a Danish word every day (the Danish keyboard has æ, ø and å), the same for everyone, with stats, sharing and a leaderboard for each language with win %, average guesses and the current and longest streak |
 
 ### 🔔 Notifications
 
@@ -144,7 +145,7 @@ HB-Hub/
 ├── src/                 The website itself (everything here gets uploaded)
 │   ├── chat/            Messages and group chats
 │   ├── gambling/        The casino: chips, Blackjack, Baccarat and Roulette
-│   ├── games/           The Games section: Matador and Chess
+│   ├── games/           The Games section: Matador, Chess and Ordle
 │   ├── admin/           The admin panel
 │   ├── userMgmt/        Login and sign-up
 │   ├── otherPages/      Profile, settings and notifications

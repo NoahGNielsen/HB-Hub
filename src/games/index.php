@@ -36,6 +36,12 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                         <span class="casino-game-text">Play chess against your friends, with or without a clock. Draw offers, rematches and a leaderboard. 2 players.</span>
                     </a>
                 </li>
+                <li>
+                    <a class="casino-game" href="/games/ordle/">
+                        <span class="casino-game-name">Ordle</span>
+                        <span class="casino-game-text">Guess the daily five-letter word in six tries, in English and in Danish. Keep your streak going and climb the leaderboards.</span>
+                    </a>
+                </li>
             </ul>
         </section>
     </main>

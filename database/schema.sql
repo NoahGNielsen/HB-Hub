@@ -621,6 +621,34 @@ CREATE TABLE `HBHub-Notifications` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-OrdleGames`
+--
+
+CREATE TABLE `HBHub-OrdleGames` (
+  `userId` int UNSIGNED NOT NULL,
+  `gameLanguage` char(2) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'en English, da Danish',
+  `gameDate` date NOT NULL COMMENT 'The day of the word, in Danish time',
+  `gameGuesses` varchar(35) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'The guesses so far, oldest first and lowercase, like crane,slate (up to 6 words of 5 letters)',
+  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing (counted as lost once its day is over)\r\n1 Won\r\n2 Lost',
+  `gameStartTimestamp` datetime NOT NULL COMMENT 'UTC, the first guess',
+  `gameEndTimestamp` datetime DEFAULT NULL COMMENT 'UTC, when it was won or lost, NULL while playing'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-OrdleWords`
+--
+
+CREATE TABLE `HBHub-OrdleWords` (
+  `wordLanguage` char(2) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'en English, da Danish',
+  `wordDate` date NOT NULL COMMENT 'The day, in Danish time',
+  `wordText` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'The word everyone guesses that day, lowercase, from src/assets/php/games/ordle/words/<language>-answers.txt'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-RouletteSpins`
 --
 
@@ -978,6 +1006,20 @@ ALTER TABLE `HBHub-Notifications`
   ADD PRIMARY KEY (`notificationId`),
   ADD KEY `userUnread` (`userId`,`notificationReadTimestamp`),
   ADD KEY `fk_notifications_by` (`notificationByUserId`);
+
+--
+-- Indexes for table `HBHub-OrdleGames`
+--
+ALTER TABLE `HBHub-OrdleGames`
+  ADD PRIMARY KEY (`userId`,`gameLanguage`,`gameDate`) COMMENT 'One game per user, language and day',
+  ADD KEY `languageDate` (`gameLanguage`,`gameDate`);
+
+--
+-- Indexes for table `HBHub-OrdleWords`
+--
+ALTER TABLE `HBHub-OrdleWords`
+  ADD PRIMARY KEY (`wordLanguage`,`wordDate`),
+  ADD KEY `languageWord` (`wordLanguage`,`wordText`);
 
 --
 -- Indexes for table `HBHub-RouletteSpins`
@@ -1385,6 +1427,12 @@ ALTER TABLE `HBHub-Messages`
 ALTER TABLE `HBHub-Notifications`
   ADD CONSTRAINT `fk_notifications_by` FOREIGN KEY (`notificationByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_notifications_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-OrdleGames`
+--
+ALTER TABLE `HBHub-OrdleGames`
+  ADD CONSTRAINT `fk_ordlegames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-RouletteSpins`

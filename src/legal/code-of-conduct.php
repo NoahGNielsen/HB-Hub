@@ -137,6 +137,7 @@ const HBHUB_CONDUCT_UPDATED = '19 October 2026';
                             <li>Trash talk should stay friendly. Say "good game" whether you won or lost.</li>
                             <li>Don't stall a game on purpose, or leave a table just because you're losing. Others are waiting on you.</li>
                             <li>No cheating, scripts or teaming up against one player. Found a bug? Report it, don't use it.</li>
+                            <li>Don't spoil the day's Ordle word for others. Share your coloured squares, not the word, until the day is over.</li>
                             <li>Don't pressure anyone into playing, betting, or giving you their chips.</li>
                             <li>Chips are just for fun. Never trade them, or game results, with each other for real money or real things. The only way to buy chips is from the owner (see the <a href="/legal/terms#chips">terms</a>).</li>
                         </ul>

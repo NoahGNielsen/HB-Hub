@@ -1,0 +1,400 @@
+/* Ordle (games/ordle/): the language tabs, the board, the on-screen keyboard, the result and the stats. Loaded after
+   casino.css and games.css. A tile's colours come from its is-correct / is-present / is-absent class (ordle.js). */
+.ordle {
+  --ordle-correct: #2fa36b;
+  --ordle-present: #c9a227;
+  --ordle-absent: #3a414d;
+  --ordle-empty-border: color-mix(in srgb, var(--text) 18%, transparent);
+  --ordle-filled-border: color-mix(in srgb, var(--text) 45%, transparent);
+  --ordle-key: color-mix(in srgb, var(--text) 16%, var(--secondary));
+}
+
+/* Language tabs */
+.ordle-languages {
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.ordle-language {
+  padding: 10px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 10px;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.ordle-language:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.ordle-language:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ordle-language.is-active {
+  background: var(--background);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.ordle-language-name {
+  font-weight: 700;
+}
+
+.ordle-language-status {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.ordle-language-status.is-new {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.ordle-language-status.is-won {
+  background: color-mix(in srgb, var(--ordle-correct) 30%, transparent);
+}
+
+.ordle-language-status.is-lost {
+  background: color-mix(in srgb, var(--casino-down) 28%, transparent);
+}
+
+/* The board and keyboard */
+.ordle-play {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.ordle-board {
+  width: min(330px, 100%);
+  display: grid;
+  grid-template-rows: repeat(6, auto);
+  gap: 6px;
+}
+
+.ordle-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ordle-tile {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 2px solid var(--ordle-empty-border);
+  border-radius: 6px;
+  font-size: clamp(1.4rem, 7vw, 2rem);
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.ordle-tile.is-filled {
+  border-color: var(--ordle-filled-border);
+}
+
+.ordle-tile.is-correct,
+.ordle-tile.is-present,
+.ordle-tile.is-absent {
+  border-color: var(--ordle-tile);
+  background: var(--ordle-tile);
+  color: #fff;
+}
+
+.ordle-tile.is-correct,
+.ordle-key.is-correct,
+.ordle-rule-tile.is-correct {
+  --ordle-tile: var(--ordle-correct);
+}
+
+.ordle-tile.is-present,
+.ordle-key.is-present,
+.ordle-rule-tile.is-present {
+  --ordle-tile: var(--ordle-present);
+}
+
+.ordle-tile.is-absent,
+.ordle-key.is-absent,
+.ordle-rule-tile.is-absent {
+  --ordle-tile: var(--ordle-absent);
+}
+
+/* A new guess turns over tile by tile, showing its colour halfway (when it's edge-on) */
+.ordle-tile.is-flipping {
+  animation: ordle-flip 0.5s ease-in-out backwards;
+}
+
+.ordle-tile.is-flipping:nth-child(2) { animation-delay: 0.25s; }
+.ordle-tile.is-flipping:nth-child(3) { animation-delay: 0.5s; }
+.ordle-tile.is-flipping:nth-child(4) { animation-delay: 0.75s; }
+.ordle-tile.is-flipping:nth-child(5) { animation-delay: 1s; }
+
+@keyframes ordle-flip {
+  0% {
+    transform: rotateX(0);
+    border-color: var(--ordle-filled-border);
+    background: transparent;
+    color: var(--text);
+  }
+  49% {
+    transform: rotateX(90deg);
+    border-color: var(--ordle-filled-border);
+    background: transparent;
+    color: var(--text);
+  }
+  50% {
+    transform: rotateX(90deg);
+    border-color: var(--ordle-tile);
+    background: var(--ordle-tile);
+    color: #fff;
+  }
+  100% {
+    transform: rotateX(0);
+  }
+}
+
+.ordle-tile.is-filled:not(.is-correct, .is-present, .is-absent) {
+  animation: ordle-pop 0.1s ease-out;
+}
+
+@keyframes ordle-pop {
+  50% { transform: scale(1.08); }
+}
+
+.ordle-row.is-shaking {
+  animation: ordle-shake 0.4s ease-in-out;
+}
+
+@keyframes ordle-shake {
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ordle-tile.is-flipping,
+  .ordle-tile.is-filled,
+  .ordle-row.is-shaking {
+    animation: none;
+  }
+}
+
+.ordle-message {
+  min-height: 1.5em;
+  margin: 0;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ordle-keyboard {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ordle-keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.ordle-key {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 44px;
+  height: 54px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: var(--ordle-key);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation; /* no double-tap zoom when typing fast */
+  user-select: none;
+}
+
+.ordle-key:hover {
+  background: color-mix(in srgb, var(--text) 24%, var(--secondary));
+}
+
+.ordle-key:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ordle-key.is-wide {
+  flex-grow: 1.6;
+  max-width: 72px;
+  font-size: 0.8rem;
+}
+
+.ordle-key.is-correct,
+.ordle-key.is-present,
+.ordle-key.is-absent {
+  background: var(--ordle-tile);
+  color: #fff;
+}
+
+.ordle-key.is-absent {
+  opacity: 0.55;
+}
+
+.ordle-key-icon {
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* The result and stats */
+.ordle-result {
+  margin-bottom: 20px;
+  border: 2px solid var(--accent);
+}
+
+.ordle-result-text {
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.ordle-next {
+  margin-top: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ordle-next a {
+  color: var(--accent);
+}
+
+.ordle-stats {
+  margin-bottom: 20px;
+}
+
+.ordle-numbers {
+  margin: 0 0 20px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  text-align: center;
+}
+
+.ordle-numbers div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+}
+
+.ordle-numbers dt {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.ordle-numbers dd {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.ordle-distribution-title {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.ordle-distribution {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ordle-distribution li {
+  display: grid;
+  grid-template-columns: 1.2em minmax(0, 1fr) 3ch;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ordle-distribution-tries {
+  font-weight: 700;
+}
+
+.ordle-distribution-track {
+  height: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.ordle-distribution-bar {
+  display: block;
+  height: 100%;
+  background: var(--ordle-absent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+
+.ordle-distribution li.is-today .ordle-distribution-bar {
+  background: var(--ordle-correct);
+}
+
+.ordle-distribution-count {
+  text-align: right;
+}
+
+.ordle-rule-tile {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--ordle-tile);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* The leaderboard's language tabs sit above its table */
+.ordle-leaderboard-languages {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 560px) {
+  .ordle-numbers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ordle-key {
+    height: 50px;
+    font-size: 0.9rem;
+  }
+
+  .ordle-keyboard-row {
+    gap: 4px;
+  }
+}

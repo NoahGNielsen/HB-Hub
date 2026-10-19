@@ -721,6 +721,66 @@
   from { scale: 1.6; opacity: 0; }
 }
 
+/* The dictionaries (Ordle's words): a guess of five tiles on a card, which all go green on hover, like a solved word */
+.credits-words {
+  flex: none;
+  width: 150px;
+  aspect-ratio: 1;
+  padding: 14px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #fbfaf6;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
+  color: #1a1d23;
+  rotate: -3deg;
+  transition: rotate 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+.credits-words.is-danish {
+  rotate: 3deg;
+}
+
+.credits-library:hover .credits-words {
+  rotate: 0deg;
+}
+
+.credits-words-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.credits-words-row i {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: #3a414d;
+  color: #fff;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 800;
+  text-transform: uppercase;
+  transition: background 0.3s ease;
+}
+
+.credits-words-row .is-present {
+  background: #c9a227;
+}
+
+.credits-words-row .is-correct,
+.credits-library:hover .credits-words-row i {
+  background: #2fa36b;
+}
+
+.credits-library:hover .credits-words-row i:nth-child(2) { transition-delay: 0.08s; }
+.credits-library:hover .credits-words-row i:nth-child(3) { transition-delay: 0.16s; }
+.credits-library:hover .credits-words-row i:nth-child(4) { transition-delay: 0.24s; }
+.credits-library:hover .credits-words-row i:nth-child(5) { transition-delay: 0.32s; }
+
 /* ---------- Credits: motion ---------- */
 /* The cards slide in as they're scrolled to, like the frontpage's sections */
 @supports (animation-timeline: view()) {

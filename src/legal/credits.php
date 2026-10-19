@@ -1,5 +1,5 @@
 <?php
-// Credits: the third-party icons, code and link lists HB Hub uses, and who made them. Built like the frontpage (index.php) - its
+// Credits: the third-party icons, code, link lists and dictionaries HB Hub uses, and who made them. Built like the frontpage (index.php) - its
 // top bar (homeNav.php), a dark hero, a grid of cards and a dark last call - with homepage.css plus legal.css.
 // Open to everyone, like the frontpage.
 $hbHubSessionOptional = true;
@@ -77,6 +77,10 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div>
                     <dt>Blacklists</dt>
+                    <dd>2</dd>
+                </div>
+                <div>
+                    <dt>Dictionaries</dt>
                     <dd>2</dd>
                 </div>
             </dl>
@@ -171,6 +175,39 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <p>By CryptoScamDB. Crypto scam and phishing sites, turned from its YAML into a plain list of domains.</p>
                 </div>
             </div>
+        </section>
+
+        <!-- Words: where the words Ordle accepts as guesses come from (assets/php/games/ordle/words/). The daily words are picked by hand. -->
+        <section class="credits-section" id="words" aria-labelledby="credits-words-title">
+            <p class="home-kicker credits-kicker">Words</p>
+            <h2 id="credits-words-title">Every word you can guess.</h2>
+            <p class="credits-section-lead">Ordle checks your guesses against these dictionaries. The daily words are picked from them by hand.</p>
+            <div class="credits-library">
+                <!-- A guess on a card, its tiles going green on hover like a solved word -->
+                <div class="credits-words" aria-hidden="true">
+                    <span class="credits-words-row"><i>w</i><i class="is-present">o</i><i>r</i><i class="is-correct">d</i><i>s</i></span>
+                </div>
+                <div class="credits-library-text">
+                    <h3><a href="https://github.com/dolph/dictionary" target="_blank" rel="noopener noreferrer">ENABLE</a></h3>
+                    <p>The Enhanced North American Benchmark Lexicon, a word list made for word games. Its five-letter words are the English ones Ordle accepts.</p>
+                    <p class="credits-license">Public domain</p>
+                </div>
+            </div>
+            <div class="credits-library">
+                <div class="credits-words is-danish" aria-hidden="true">
+                    <span class="credits-words-row"><i class="is-correct">b</i><i>j</i><i class="is-present">ø</i><i>r</i><i>n</i></span>
+                </div>
+                <div class="credits-library-text">
+                    <h3><a href="https://www.stavekontrolden.dk" target="_blank" rel="noopener noreferrer">Stavekontrolden</a></h3>
+                    <p>
+                        The Danish dictionary by Foreningen for frit tilgængelige sprogværktøjer, based on data from Det
+                        Danske Sprog- og Litteraturselskab. Every form of its five-letter words (like "huset" and "spist")
+                        is a Danish word Ordle accepts.
+                    </p>
+                    <p class="credits-license">GPL 2.0, LGPL 2.1 and MPL 1.1 licenses</p>
+                </div>
+            </div>
+            <p class="credits-fineprint">Ordle is inspired by Wordle by Josh Wardle. "Wordle" is a trademark of The New York Times Company, which has nothing to do with HB Hub.</p>
         </section>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
