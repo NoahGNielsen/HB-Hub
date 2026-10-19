@@ -301,14 +301,6 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             HB Hub changes as new features are added, and this page tries to changes with it. However, this is a small side project, and i will try to make sure this stays up to date. If you notice it aint, please contract me at admin@noahgajnielsen.dk The date at the top shows when it was last updated.
                         </p>
                     </section>
-
-                    <nav class="legal-links" aria-label="More pages">
-                        <a href="/legal/terms">Terms of Service</a>
-                        <a href="/legal/code-of-conduct">Code of Conduct</a>
-                        <a href="/legal/do-not-sell-or-share-my-personal-information">Do Not Sell My Info</a>
-                        <a href="/legal/credits">Credits</a>
-                        <a class="legal-links-home" href="/">Back to HB Hub</a>
-                    </nav>
                 </div>
             </div>
         </article>

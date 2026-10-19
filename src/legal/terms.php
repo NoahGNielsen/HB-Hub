@@ -239,14 +239,6 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                             <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.
                         </p>
                     </section>
-
-                    <nav class="legal-links" aria-label="More pages">
-                        <a href="/legal/privacy">Privacy Policy</a>
-                        <a href="/legal/code-of-conduct">Code of Conduct</a>
-                        <a href="/legal/do-not-sell-or-share-my-personal-information">Do Not Sell My Info</a>
-                        <a href="/legal/credits">Credits</a>
-                        <a class="legal-links-home" href="/">Back to HB Hub</a>
-                    </nav>
                 </div>
             </div>
         </article>

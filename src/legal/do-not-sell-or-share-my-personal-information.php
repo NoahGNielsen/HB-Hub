@@ -130,14 +130,6 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                             HB Hub. Your other rights are listed in the <a href="/legal/privacy#rights">Privacy Policy</a>.
                         </p>
                     </section>
-
-                    <nav class="legal-links" aria-label="More pages">
-                        <a href="/legal/terms">Terms of Service</a>
-                        <a href="/legal/privacy">Privacy Policy</a>
-                        <a href="/legal/code-of-conduct">Code of Conduct</a>
-                        <a href="/legal/credits">Credits</a>
-                        <a class="legal-links-home" href="/">Back to HB Hub</a>
-                    </nav>
                 </div>
             </div>
         </article>
