@@ -38,7 +38,7 @@
 | **Chat notices** | Changes in a group (new name, new admin, someone joined) show up in the chat |
 | **Nicknames & profiles** | Give people nicknames, and open the profile of whoever you're DMing straight from the chat |
 | **GIFs & smileys** | GIF picker powered by Giphy, plus a smiley menu |
-| **Attachments** | Send files and pictures. Pictures are turned into lossless JPEG XL in the browser, other files are zipped on the server. Everyone has 10 tickets of 5 MB, which come back when an attachment expires (90 days, or 3 for big ones) or is deleted |
+| **Attachments** | Send files and pictures. Pictures are turned into JPEG XL in the browser (lossless, or visually lossless for JPEGs), other files are zipped on the server. Everyone has 10 tickets of 5 MB, which come back when an attachment expires (90 days, or 3 for big ones) or is deleted |
 | **Formatting** | Discord-style `**bold**`, `*italic*`, `__underline__`, `~~strikethrough~~`, `` `code` `` and code blocks, `#` headings, lists and `[masked](https://links)`, from a right-click menu on the message box or Ctrl+B / I / U |
 | **Chat menu** | Right-click a chat to mute its notifications for a while, hide it or leave it |
 

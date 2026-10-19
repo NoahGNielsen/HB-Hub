@@ -94,8 +94,9 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                 <p>
                     What you write and upload (messages, attachments, profile pictures, group icons and backgrounds) is
                     still yours. By posting it, you let HB Hub store it and show it to the people it's meant for, which is
-                    needed for the site to work. That includes turning pictures you attach into JPEG XL, without losing
-                    any detail, and zipping other files, so they take less space.
+                    needed for the site to work. That includes turning pictures you attach into JPEG XL (without losing
+                    any detail, except JPEG photos, which are made smaller in a way that looks the same), and zipping
+                    other files, so they take less space.
                 </p>
                 <ul>
                     <li>Only upload pictures and files you're allowed to share. Don't post photos of other people without asking them.</li>

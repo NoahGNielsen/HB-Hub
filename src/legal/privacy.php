@@ -115,8 +115,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         Files and pictures you attach to a message, with their name, size and type, which chat they were
                         sent in, and when they were sent and run out. They're kept as files on HB Hub's server, not in the
                         database. Pictures are turned into JPEG XL in your own browser before they're sent (unless you
-                        tick the box to keep the original), so they never go anywhere else to be converted. Other files
-                        are zipped on the server to take less space.
+                        tick the box to keep the original), so they never go anywhere else to be converted. A converted
+                        picture doesn't keep the details a camera or phone saves in it, like where a photo was taken.
+                        Other files are zipped on the server to take less space.
                     </li>
                     <li>The chats you're in, group names, icons and backgrounds, and nicknames you give people.</li>
                     <li>

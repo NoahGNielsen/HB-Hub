@@ -3,7 +3,8 @@
 // and decoder are only loaded the first time they're needed. The site's content security policy allows WebAssembly
 // with 'wasm-unsafe-eval' (src/.htaccess).
 //
-// Messages in: { id, type: 'encode', file }    a picture (File or Blob) to turn into lossless JPEG XL
+// Messages in: { id, type: 'encode', file }    a picture (File or Blob) to turn into JPEG XL: lossless, or for a JPEG
+//                                              one that looks the same (see JPEG_OPTIONS)
 //              { id, type: 'decode', buffer }  a JPEG XL file (ArrayBuffer) to turn into pixels, for browsers that can't show it
 // Messages out: { id, buffer }                         encode: the .jxl file
 //               { id, pixels, width, height }          decode: RGBA pixels, 4 bytes each
@@ -22,6 +23,11 @@ const ENCODE_OPTIONS = {
     photonNoiseIso: 0,
     lossyModular: false,
 };
+// JPEGs have lost detail already, and a lossless copy of their pixels is several times bigger than the JPEG. (libjxl
+// can repack a JPEG without any loss, but this build of it can only take pixels.) So they get quality 90, distance 1
+// in libjxl's terms: its own default, made to look the same as the original. Effort 7 is the encoder's default too,
+// as the slower ones barely make photos smaller.
+const JPEG_OPTIONS = { ...ENCODE_OPTIONS, effort: 7, quality: 90 };
 const MAX_PIXELS = 50_000_000; // bigger pictures would need more memory than the encoder can have
 
 let encoder = null;
@@ -32,9 +38,17 @@ function load(path) {
     return import(path).then((codec) => codec.default({ noInitialRun: true }));
 }
 
+// Whether the file is a JPEG, by its first bytes
+async function isJpeg(file) {
+    const start = new Uint8Array(await file.slice(0, 3).arrayBuffer());
+    return start[0] === 0xFF && start[1] === 0xD8 && start[2] === 0xFF;
+}
+
 async function encode(file) {
-    // premultiplyAlpha 'none' keeps half see-through pixels exactly as they are
-    const bitmap = await createImageBitmap(file, { premultiplyAlpha: 'none' });
+    const options = await isJpeg(file) ? JPEG_OPTIONS : ENCODE_OPTIONS;
+    // premultiplyAlpha 'none' keeps half see-through pixels exactly as they are, and imageOrientation turns a photo
+    // the way its EXIF says, as the JPEG XL doesn't keep that (or any other EXIF, like where it was taken)
+    const bitmap = await createImageBitmap(file, { premultiplyAlpha: 'none', imageOrientation: 'from-image' });
     const { width, height } = bitmap;
     if (width * height > MAX_PIXELS) {
         bitmap.close();
@@ -48,7 +62,7 @@ async function encode(file) {
 
     encoder ??= load('./vendor/jxl/jxl_enc.js');
     const module = await encoder;
-    const result = module.encode(pixels, width, height, ENCODE_OPTIONS);
+    const result = module.encode(pixels, width, height, options);
     if (!result) throw new Error('encodeFailed');
     // Only the bytes of the result, even if it's a view into a bigger buffer
     return result.byteLength === result.buffer.byteLength ? result.buffer : result.slice().buffer;

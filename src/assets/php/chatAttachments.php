@@ -10,8 +10,8 @@
 // the chat page and the upload call. Once all attachments together take the attachments_max_total_bytes in the
 // config (9 GB by default), nobody can send new ones until some expire or are deleted.
 //
-// Pictures are turned into lossless JPEG XL in the browser before they're sent (chat.js, chatJxlWorker.js), unless
-// the user ticks the box to keep the original. They're stored as they come. Any other file is zipped here and
+// Pictures are turned into JPEG XL in the browser before they're sent (chat.js, chatJxlWorker.js), unless the user
+// ticks the box to keep the original: lossless, except JPEGs, which get one that looks the same. They're stored as they come. Any other file is zipped here and
 // unzipped again when it's downloaded.
 //
 // Files live on disk, not in the database: attachments_path in the config, by default a folder next to the config
@@ -31,7 +31,7 @@ const HBHUB_CHAT_ATTACHMENT_DEFAULT_MAX_TOTAL = 9 * 1024 * 1024 * 1024; // attac
 
 // attachmentKind in HBHub-ChatAttachments: how it's stored
 const HBHUB_CHAT_ATTACHMENT_KIND_IMAGE = 0; // a picture, stored as it came (the user kept the original, or it's a kind that isn't converted)
-const HBHUB_CHAT_ATTACHMENT_KIND_JXL = 1; // a picture the browser turned into lossless JPEG XL
+const HBHUB_CHAT_ATTACHMENT_KIND_JXL = 1; // a picture the browser turned into JPEG XL
 const HBHUB_CHAT_ATTACHMENT_KIND_ZIP = 2; // any other file, zipped
 const HBHUB_CHAT_ATTACHMENT_KIND_FILE = 3; // any other file, stored as it came because zipping didn't make it smaller
 

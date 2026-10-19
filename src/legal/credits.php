@@ -130,7 +130,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <h3><a href="https://github.com/jamsinclair/jSquash" target="_blank" rel="noopener noreferrer">jSquash</a> with <a href="https://github.com/libjxl/libjxl" target="_blank" rel="noopener noreferrer">libjxl</a></h3>
                     <p>
                         jSquash by Jamie Sinclair (built on Google's Squoosh) runs libjxl, the JPEG XL Project's encoder and
-                        decoder, in your browser. It turns pictures you attach in the chat into lossless JPEG XL, and shows
+                        decoder, in your browser. It turns pictures you attach in the chat into JPEG XL, and shows
                         JPEG XL pictures in browsers that can't yet.
                     </p>
                     <p class="credits-license">Apache 2.0 and BSD 3-Clause licenses</p>

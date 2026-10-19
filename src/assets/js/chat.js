@@ -1375,9 +1375,10 @@ function chatJxlWorker() {
 // Attachments: File in the Attach menu (or pasting or dropping a file on the message box) picks a file or picture to send.
 // It waits in a bar above the message box until Send, and goes with whatever is typed, as one message.
 // Pictures without loss to squeeze out (PNG, BMP, lossless WebP) are turned into lossless JPEG XL straight away by
-// the JPEG XL worker, unless "Keep the original picture" is ticked. The original is sent instead when the JPEG XL
-// isn't smaller. Pictures that are already compressed with loss (JPEG, AVIF, lossy WebP) are sent as they are, as a
-// lossless copy of them would only be bigger, and so are animated ones, which would lose their animation.
+// the JPEG XL worker, unless "Keep the original picture" is ticked, and JPEGs into a JPEG XL that looks the same
+// (chatJxlWorker.js). The original is sent instead when the JPEG XL isn't smaller. Other pictures that are already
+// compressed with loss (AVIF, lossy WebP) are sent as they are, and so are animated ones, which would lose their
+// animation.
 // Anything else is zipped by the server.
 // The upload goes to the chat page (action=upload, answered as JSON), and the page reloads with the message in it.
 // Attachments are paid for with tickets. When a file needs more than the user has free, the server says so, and the
@@ -1432,9 +1433,10 @@ function chatJxlWorker() {
         return `${count} ${count === 1 ? 'ticket' : 'tickets'}`;
     }
 
-    // What kind of attachment the file is, by its first bytes rather than its name. Only pictures stored without loss
-    // are worth converting: PNG and BMP, and WebP when it's the lossless kind (a VP8L chunk). Animated ones (an acTL chunk
-    // before the PNG's image data, an ANIM chunk in a WebP) are left alone. Other pictures the server shows as pictures.
+    // What kind of attachment the file is, by its first bytes rather than its name. Pictures worth converting are the
+    // ones stored without loss, PNG and BMP, and WebP when it's the lossless kind (a VP8L chunk), plus JPEG. Animated
+    // ones (an acTL chunk before the PNG's image data, an ANIM chunk in a WebP) are left alone. Other pictures the
+    // server shows as pictures.
     async function kindOf(file) {
         // One character per byte, in pieces, as too many arguments at once is too many for fromCharCode
         const bytes = new Uint8Array(await file.slice(0, 64 * 1024).arrayBuffer());
@@ -1445,11 +1447,11 @@ function chatJxlWorker() {
             const imageData = text.indexOf('IDAT');
             return animation !== -1 && (imageData === -1 || animation < imageData) ? 'image' : 'convert';
         }
-        if (text.startsWith('BM')) return 'convert';
+        if (text.startsWith('BM') || text.startsWith('\xFF\xD8\xFF')) return 'convert';
         if (text.startsWith('RIFF') && text.slice(8, 12) === 'WEBP') {
             return text.includes('VP8L') && !text.includes('ANIM') ? 'convert' : 'image';
         }
-        const isImage = text.startsWith('\xFF\xD8\xFF') || text.startsWith('GIF8') || text.slice(4, 12).startsWith('ftypavi')
+        const isImage = text.startsWith('GIF8') || text.slice(4, 12).startsWith('ftypavi')
             || text.startsWith('\xFF\x0A') || text.startsWith('\x00\x00\x00\x0CJXL ');
         return isImage ? 'image' : 'file';
     }
