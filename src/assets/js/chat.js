@@ -1438,11 +1438,8 @@ function chatShowBackground(element, background) {
         setTimeout(() => target.classList.remove('is-highlighted'), 1500);
     }
 
-    messages.addEventListener('click', (event) => {
-        const link = event.target.closest('[data-reply-link]');
-        if (!link) return;
-        event.preventDefault();
-        const targetId = 'message-' + link.dataset.replyId;
+    function jumpToId(messageId) {
+        const targetId = 'message-' + messageId;
         const target = document.getElementById(targetId);
         if (target) {
             jumpTo(target);
@@ -1450,14 +1447,26 @@ function chatShowBackground(element, background) {
         }
         messages.dispatchEvent(new CustomEvent('chat:load-until', {
             detail: {
-                messageId: link.dataset.replyId,
+                messageId,
                 onDone() {
                     const loaded = document.getElementById(targetId);
                     if (loaded) jumpTo(loaded);
                 },
             },
         }));
+    }
+
+    messages.addEventListener('click', (event) => {
+        const link = event.target.closest('[data-reply-link]');
+        if (!link) return;
+        event.preventDefault();
+        jumpToId(link.dataset.replyId);
     });
+
+    // A mention notification links to its message (#message-id), which is jumped to the same way once the page is up.
+    // After the rest of this file has run, as the part that loads older messages comes further down.
+    const linked = /^#message-(\d+)$/.exec(location.hash);
+    if (linked) setTimeout(() => jumpToId(linked[1]));
 })();
 
 // Attach popup: the button left of the message box opens a small menu just above it.

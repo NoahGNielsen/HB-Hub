@@ -2,7 +2,11 @@
 // A Matador game's chat (HBHub-MatadorChat): the players in the game write to each other. It's kept with the room and
 // goes when the room does - a saved game that's continued starts with an empty chat. The newest message's id is part of
 // the game's version (room.php's hbHubMatadorVersion()), so matadorGame.js gets the chat again when there's something new.
+// @mentions (assets/php/mentions.php) work for the players in the room: they light up, and one whose game isn't open
+// gets a notification (games.matadorMention) - just the one until they're back, however often they're mentioned.
 require_once __DIR__ . '/../../database.php';
+require_once __DIR__ . '/../../mentions.php';
+require_once __DIR__ . '/../../notifications.php';
 require_once __DIR__ . '/../../urlBlacklist.php'; // IP loggers and other links that can't be sent
 
 const HBHUB_MATADOR_CHAT_MAX = 300; // chatText column
@@ -35,7 +39,45 @@ function hbHubMatadorSay(PDO $db, int $roomId, int $userId, mixed $text): ?strin
 
     $db->prepare('INSERT INTO `HBHub-MatadorChat` (roomId, userId, chatText, chatTimestamp) VALUES (?, ?, ?, UTC_TIMESTAMP())')
         ->execute([$roomId, $userId, $text]);
+
+    // The players it @mentions who aren't looking at the game hear about it, once until they're back
+    $people = hbHubMatadorChatPeople($db, $roomId, $userId);
+    foreach (hbHubMentionedUserIds($text, hbHubMentionLookup($people)) as $mentionedId) {
+        if ($people[$mentionedId]['isAway']
+            && !hbHubHasUnreadNotificationAbout($db, $mentionedId, 'games.matadorMention', ['roomId' => $roomId])) {
+            $statement = $db->prepare('SELECT roomName FROM `HBHub-MatadorRooms` WHERE roomId = ?');
+            $statement->execute([$roomId]);
+            hbHubNotify($db, $mentionedId, 'games.matadorMention', $userId, ['roomId' => $roomId, 'roomName' => $statement->fetchColumn() ?: null]);
+        }
+    }
     return null;
+}
+
+/**
+ * Everyone in the room's seats, who can be @mentioned in its chat: by userId, their name (for hbHubMentionLookup()),
+ * whether it's the user, and whether they're away (their game hasn't checked in for HBHUB_MATADOR_AWAY_SECONDS).
+ *
+ * @return array<int, array{name: string, names: list<string>, isYou: bool, isAway: bool}>
+ */
+function hbHubMatadorChatPeople(PDO $db, int $roomId, int $userId): array
+{
+    // The time is worked out by the database, so PHP's time zone doesn't matter
+    $statement = $db->prepare('SELECT s.userId, u.userName,
+            TIMESTAMPDIFF(SECOND, s.seatLastSeenTimestamp, UTC_TIMESTAMP()) >= ' . HBHUB_MATADOR_AWAY_SECONDS . ' AS isAway
+        FROM `HBHub-MatadorSeats` s JOIN `HBHub-Users` u ON u.userId = s.userId
+        WHERE s.roomId = ? AND u.userStatus IS NOT NULL');
+    $statement->execute([$roomId]);
+
+    $people = [];
+    foreach ($statement->fetchAll() as $seat) {
+        $people[(int) $seat['userId']] = [
+            'name' => $seat['userName'],
+            'names' => [$seat['userName']],
+            'isYou' => (int) $seat['userId'] === $userId,
+            'isAway' => (bool) $seat['isAway'],
+        ];
+    }
+    return $people;
 }
 
 /**

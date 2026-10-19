@@ -1,0 +1,80 @@
+/* @mentions (assets/php/mentions.php), in the chat and the games' chats: the @Name in a message, and the list that
+   comes up while typing one (mentions.js). The message a mention of the user is in lights up in chat.css, chess.css
+   and matador.css. */
+
+/* @Name in a message. The user's own is brighter. */
+.chat-mention {
+  padding: 0 3px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.chat-mention:hover {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.chat-mention.is-you {
+  background: color-mix(in srgb, var(--accent) 38%, transparent);
+  color: var(--text);
+}
+
+/* On the user's own messages, which are orange already (chat.css) */
+.chat-message.is-own .chat-mention {
+  background: color-mix(in srgb, #fff 22%, transparent);
+  color: inherit;
+}
+
+.chat-message.is-own a.chat-mention:hover {
+  background: color-mix(in srgb, #fff 34%, transparent);
+}
+
+/* The list while typing @. A popover, placed by mentions.js, so the browser's own margin and inset for popovers go. */
+.mentions-list {
+  position: fixed;
+  inset: auto;
+  width: max-content;
+  min-width: 180px;
+  max-width: min(320px, calc(100vw - 16px));
+  max-height: 260px;
+  margin: 0;
+  padding: 6px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--text);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.mentions-option {
+  padding: 8px 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mentions-option:hover,
+.mentions-option[aria-selected="true"] {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.mentions-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+/* A nickname's real username */
+.mentions-username {
+  flex: none;
+  color: color-mix(in srgb, var(--text) 60%, transparent);
+  font-size: 0.85rem;
+}

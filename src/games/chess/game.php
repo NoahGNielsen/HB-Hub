@@ -30,6 +30,7 @@ $pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&di
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/chess.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/chess.css') ?>">
+    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mentions.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/mentions.css') ?>">
     <title><?= htmlspecialchars($room['roomName']) ?> - Chess - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="A game of chess on the HB Hub">
@@ -130,7 +131,7 @@ $pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&di
                     <form class="ch-chat-form casino-inline" data-ch-chat-form>
                         <label class="games-visually-hidden" for="ch-chat-text">Message</label>
                         <input type="text" id="ch-chat-text" class="casino-input" maxlength="<?= HBHUB_CHESS_CHAT_MAX ?>"
-                               placeholder="Write a message" autocomplete="off" required data-ch-chat-text>
+                               placeholder="Write a message" autocomplete="off" required data-ch-chat-text data-mentions="[]">
                         <button type="submit" class="casino-btn casino-btn-primary">Send</button>
                     </form>
                 </section>
@@ -174,5 +175,6 @@ $pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&di
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/chessGame.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chessGame.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/boardZoom.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/boardZoom.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/mentions.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/mentions.js') ?>" defer></script>
 </body>
 </html>

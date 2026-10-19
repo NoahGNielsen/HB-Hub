@@ -152,11 +152,14 @@ switch ($adminAction) {
         // Shows as deleted by a site admin in the chat. The page of messages it was on stays open.
         $messageId = $_POST['message'] ?? null;
         if (is_string($messageId) && ctype_digit($messageId) && strlen($messageId) <= 19) {
-            $db->prepare('UPDATE `HBHub-Messages` m JOIN `HBHub-Users` u ON u.userId = m.userId
+            $statement = $db->prepare('UPDATE `HBHub-Messages` m JOIN `HBHub-Users` u ON u.userId = m.userId
                 SET m.messageDeletedTimestamp = NOW(), m.messageDeletedByAdmin = ?
                 WHERE m.messageId = ? AND m.chatId = ? AND m.messageEvent = 0 AND m.messageDeletedTimestamp IS NULL
-                    AND NOT (u.userRole <=> ?)')
-                ->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, (int) $messageId, $chatId, ADMIN_ROLE_ADMIN]);
+                    AND NOT (u.userRole <=> ?)');
+            $statement->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, (int) $messageId, $chatId, ADMIN_ROLE_ADMIN]);
+            if ($statement->rowCount() > 0) {
+                hbHubRemoveNotifications($db, null, 'chat.mention', ['messageId' => (int) $messageId]); // whoever it @mentioned
+            }
             // Its attachment goes too (assets/php/chatAttachments.php), giving the sender back its tickets
             hbHubChatAttachmentsRemove($db, 'm.messageId = ? AND m.chatId = ? AND m.messageDeletedTimestamp IS NOT NULL', [(int) $messageId, $chatId]);
         }

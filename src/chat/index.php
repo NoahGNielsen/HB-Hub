@@ -229,6 +229,63 @@ function chatNamesContext(PDO $db, int $userId, array $chat): array
 }
 
 /**
+ * Everyone who can be @mentioned in the chat (assets/php/mentions.php): the members who have accepted it, leaving out
+ * banned and deleted accounts. By userId, each with the name the chat shows them by and every name they can be
+ * mentioned by: their username, and their nickname in the chat if they have one (a group's memberNickname, or the one
+ * given in a DM). The user is in there too (isYou), so their own name lights up in others' messages.
+ *
+ * @return array<int, array{name: string, names: list<string>, userName: string, isYou: bool}>
+ */
+function chatMentionPeople(PDO $db, int $chatId, int $userId): array
+{
+    $statement = $db->prepare('SELECT cm.userId, cm.memberNickname, u.userName, c.chatType, c.chatSettings
+        FROM `HBHub-ChatMembers` cm
+        JOIN `HBHub-Users` u ON u.userId = cm.userId
+        JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
+        WHERE cm.chatId = ? AND cm.userAcknowledgedJoin = 1 AND u.userStatus IS NOT NULL AND u.userStatus <> ?');
+    $statement->execute([$chatId, HBHUB_SESSION_STATUS_BANNED]);
+
+    $people = [];
+    foreach ($statement->fetchAll() as $member) {
+        $memberId = (int) $member['userId'];
+        $nickname = (int) $member['chatType'] === HBHUB_CHAT_TYPE_DM
+            ? chatSettings($member['chatSettings'])->chatNicknames->{$memberId} ?? null
+            : $member['memberNickname'];
+        $nickname = is_string($nickname) && $nickname !== '' ? $nickname : null;
+        $people[$memberId] = [
+            'name' => $nickname ?? $member['userName'],
+            'names' => $nickname !== null ? [$member['userName'], $nickname] : [$member['userName']],
+            'userName' => $member['userName'],
+            'isYou' => $memberId === $userId,
+        ];
+    }
+    return $people;
+}
+
+/**
+ * Tells everyone the message @mentions about it (chat.mention), unless they muted the chat or blocked the sender.
+ * Only a new message does - editing a mention into one doesn't, like on Discord.
+ */
+function chatNotifyMentions(PDO $db, int $userId, int $chatId, int $messageId, string $content): void
+{
+    $mentionedIds = chatFormatMentionedUserIds($content, hbHubMentionLookup(chatMentionPeople($db, $chatId, $userId)));
+    if ($mentionedIds === []) {
+        return;
+    }
+
+    $data = chatNotificationData($db, $chatId) + ['messageId' => $messageId];
+    $statement = $db->prepare('SELECT userId, userSettings FROM `HBHub-Users`
+        WHERE userId IN (' . implode(', ', array_fill(0, count($mentionedIds), '?')) . ')');
+    $statement->execute($mentionedIds);
+    foreach ($statement->fetchAll() as $mentioned) {
+        $settings = hbHubUserSettings($mentioned['userSettings']);
+        if (!hbHubChatIsMuted($settings, $chatId) && !chatHasBlocked($settings, $userId)) {
+            hbHubNotify($db, (int) $mentioned['userId'], 'chat.mention', $userId, $data);
+        }
+    }
+}
+
+/**
  * The newest $limit messages (before $beforeId, if given, and back to $fromId at the furthest),
  * and whether there are older ones left for chat.js to load.
  *
@@ -828,6 +885,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
                     ->execute([$message['messageId']]);
                 hbHubChatAttachmentsRemove($db, 'm.messageId = ?', [$message['messageId']]);
             }
+            if ($isOwnMessage || ($isGroupAdmin && $message['messageDeletedTimestamp'] === null)) {
+                // Whoever it mentioned isn't told about it anymore
+                hbHubRemoveNotifications($db, null, 'chat.mention', ['messageId' => $message['messageId']]);
+            }
             break;
         case 'unread':
             $db->prepare('UPDATE `HBHub-ChatMembers` SET lastReadMessageId = (
@@ -1011,15 +1072,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $db->beginTransaction();
         $statement = $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageReplyToId) VALUES (?, ?, ?, ?)');
+        $messageIds = [];
         foreach ($contents as $i => $content) {
             $statement->execute([$userId, $chat['chatId'], $content, $i === 0 ? $replyToId : null]); // the reply goes on the first
+            $messageIds[] = (int) $db->lastInsertId();
         }
         $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
             ->execute([$chat['chatId']]);
         $db->commit();
 
-        // A new message brings the chat back for everyone who hid it
+        // A new message brings the chat back for everyone who hid it, and the ones it @mentions hear about it
         chatUnhideForEveryone($db, (int) $chat['chatId']);
+        if ($message !== '') {
+            chatNotifyMentions($db, $userId, (int) $chat['chatId'], $messageIds[0], $message);
+        }
     }
 
     chatRedirect($chat !== null ? $chat['chatId'] : null);
@@ -1052,6 +1118,10 @@ if ($isPoll && $openMembership !== null && $pollAfter !== null) {
                 SELECT MAX(messageId) FROM `HBHub-Messages` WHERE chatId = ? AND messageId <= ?
             ) WHERE chatId = ? AND userId = ? AND COALESCE(lastReadMessageId, 0) < ?')
             ->execute([$openMembership['chatId'], $readUpTo, $openMembership['chatId'], $userId, $readUpTo]);
+        if ($pollMessages !== []) {
+            // Seen being mentioned, so the bell doesn't say it again
+            hbHubMarkNotificationsReadAbout($db, $userId, 'chat.mention', ['chatId' => $openMembership['chatId']]);
+        }
     }
 }
 
@@ -1080,6 +1150,7 @@ if ($isPage && $openMembership !== null && ($_GET['unread'] ?? null) !== '1') {
             SELECT MAX(messageId) FROM `HBHub-Messages` WHERE chatId = ?
         ) WHERE chatId = ? AND userId = ?')
         ->execute([$openMembership['chatId'], $openMembership['chatId'], $userId]);
+    hbHubMarkNotificationsReadAbout($db, $userId, 'chat.mention', ['chatId' => $openMembership['chatId']]); // its mentions too
 }
 
 // Every chat the user is in, newest activity first.
@@ -1187,6 +1258,21 @@ foreach ($chats as $chat) {
         $openChat = $chat;
         break;
     }
+}
+
+// Who can be @mentioned in the open chat, for the mentions in its messages (chatMentions, only worked out when there
+// are messages to show) and for the list that comes up when typing @ in the message box or Edit (mentions.js),
+// which leaves out the user: [{name: the name shown, userName: what goes in the message}]
+$openChatMentionChoices = [];
+if ($openChat !== null && ($isPage || $isOlder || $pollMessages !== [])) {
+    $mentionPeople = chatMentionPeople($db, (int) $openChat['chatId'], $userId);
+    $openChat['chatMentions'] = hbHubMentionLookup($mentionPeople);
+    foreach ($mentionPeople as $person) {
+        if (!$person['isYou']) {
+            $openChatMentionChoices[] = ['name' => $person['name'], 'userName' => $person['userName']];
+        }
+    }
+    usort($openChatMentionChoices, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 }
 
 // Everyone in the open group, for the Members popup: site admins first, then the group owner and admins, then the ones who accepted,
@@ -1487,8 +1573,13 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
     $isDeleted = $message['messageDeletedTimestamp'] !== null;
     $gifId = $isDeleted ? null : chatGifId($message['messageContent']);
     $hasAttachment = !$isDeleted && $message['attachmentId'] !== null;
+    // The text with its formatting and @mentions. One that mentions the user lights up (is-mention).
+    $textHtml = !$isDeleted && $gifId === null && $message['messageContent'] !== null
+        ? chatFormatHtml($message['messageContent'], $openChat['chatMentions'] ?? [])
+        : null;
+    $isMention = !$isOwn && $textHtml !== null && str_contains($textHtml, ' data-mention-you');
     ?>
-                        <li class="chat-message<?= $isOwn ? ' is-own' : '' ?>" id="message-<?= (int) $message['messageId'] ?>" tabindex="-1"
+                        <li class="chat-message<?= $isOwn ? ' is-own' : '' ?><?= $isMention ? ' is-mention' : '' ?>" id="message-<?= (int) $message['messageId'] ?>" tabindex="-1"
                             data-message-id="<?= (int) $message['messageId'] ?>" data-message-user-id="<?= (int) $message['userId'] ?>"
                             data-message-sender="<?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['userId'], $message['senderName'])) ?>"<?=
                             $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $gifId !== null ? ' data-message-gif' : '' ?><?=
@@ -1513,10 +1604,10 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
                                          height="200" loading="lazy" referrerpolicy="no-referrer">
                                 <?php else: ?>
                                     <?= $hasAttachment ? chatAttachmentHtml($message) : '' ?>
-                                    <?php if ($message['messageContent'] !== null): ?>
+                                    <?php if ($textHtml !== null): ?>
                                         <!-- data-message-source is the text as it was typed, for Edit (chat.js) - only on the user's own -->
                                         <div class="chat-message-text" data-message-text<?= $isOwn ? ' data-message-source="' . htmlspecialchars($message['messageContent']) . '"' : ''
-                                            ?>><?= chatFormatHtml($message['messageContent']) ?></div>
+                                            ?>><?= $textHtml ?></div>
                                     <?php endif; ?>
                                 <?php endif; ?>
                             </div>
@@ -1602,7 +1693,9 @@ if ($isPoll) {
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/chat.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/chat.css') ?>">
+    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mentions.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/mentions.css') ?>">
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/chat.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chat.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/mentions.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/mentions.js') ?>" defer></script>
     <title><?= $openChat !== null ? htmlspecialchars($openChat['chatTitle']) . ' - ' : '' ?>Chat - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Chat page for the HB Hub">
@@ -1787,6 +1880,7 @@ if ($isPoll) {
                     </div>
                     <label class="chat-visually-hidden" for="chat-message">Message</label>
                     <textarea id="chat-message" name="message" rows="1" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required data-format-target
+                              data-mentions="<?= htmlspecialchars(json_encode($openChatMentionChoices, JSON_INVALID_UTF8_SUBSTITUTE)) ?>"
                               placeholder="Message <?= htmlspecialchars($openChat['chatTitle']) ?>" autofocus></textarea>
                     <!-- Emoji picker: a popup above the button, filled by chat.js. Hidden on phones, which have emoji on their keyboard. -->
                     <div class="chat-emoji">
@@ -1940,7 +2034,8 @@ if ($isPoll) {
                     </header>
 
                     <label class="chat-visually-hidden" for="chat-edit-content">Message</label>
-                    <textarea id="chat-edit-content" name="content" rows="4" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required data-format-target></textarea>
+                    <textarea id="chat-edit-content" name="content" rows="4" maxlength="<?= HBHUB_CHAT_MESSAGE_MAX ?>" required data-format-target
+                              data-mentions="<?= htmlspecialchars(json_encode($openChatMentionChoices, JSON_INVALID_UTF8_SUBSTITUTE)) ?>"></textarea>
                     <p class="chat-dialog-hint">Enter to save, Shift+Enter for a new line. Right-click the text for formatting.</p>
 
                     <footer class="chat-new-footer chat-dialog-footer">

@@ -2,7 +2,8 @@
 // Games notifications (types "games.<kind>"). See assets/php/notifications.php.
 //
 // Each kind's text is what comes after the name of who did it, like "<strong>Alice</strong> invited you to Matador
-// at Friday night". They all link to the invites on the game's page, as joining a game is a form post there.
+// at Friday night". The invites link to the invites on the game's page, as joining a game is a form post there, and
+// the mentions straight to the game.
 
 return [
     'icon' => '/assets/images/icons/controler.png',
@@ -26,11 +27,23 @@ return [
             'text' => static fn (array $data): string => 'is continuing your Matador game ' . ($data['roomName'] ?? '') . '. Your seat is waiting',
             'link' => static fn (array $data): string => '/games/matador/#invites',
         ],
+        // Another player @mentioned the user in the game's chat while their game wasn't open
+        // (assets/php/games/matador/chat.php). Data: roomId, roomName.
+        'matadorMention' => [
+            'text' => static fn (array $data): string => 'mentioned you in the chat of your Matador game at ' . ($data['roomName'] ?? 'their game'),
+            'link' => static fn (array $data): string => '/games/matador/game?room=' . (int) ($data['roomId'] ?? 0),
+        ],
         // The host of a chess game invited the user while it waits for a player (assets/php/games/chess/room.php).
         // Data: roomId, roomName.
         'chessInvite' => [
             'text' => static fn (array $data): string => 'invited you to a game of chess at ' . ($data['roomName'] ?? 'their game'),
             'link' => static fn (array $data): string => '/games/chess/#invites',
+        ],
+        // The other player @mentioned the user in the game's chat while their game wasn't open
+        // (assets/php/games/chess/chat.php). Data: roomId, roomName.
+        'chessMention' => [
+            'text' => static fn (array $data): string => 'mentioned you in the chat of your chess game at ' . ($data['roomName'] ?? 'their game'),
+            'link' => static fn (array $data): string => '/games/chess/game?room=' . (int) ($data['roomId'] ?? 0),
         ],
     ],
 ];

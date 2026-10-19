@@ -17,7 +17,9 @@
 //   Anything the player whose turn it is does (not the chat) starts their 30 seconds again (hbHubMatadorPlayerActed()).
 //   While the host has paused the game, the moves, building and trades are turned down. The chat, leaving and the
 //   host's actions still work.
-//   The game has the chat's newest messages in "chat", each with the seat of who wrote it (null when they have none).
+//   The game has the chat's newest messages in "chat", each with the seat of who wrote it (null when they have none) and
+//   the text cut up into its @mentions in "parts" (hbHubMentionParts()), and who can be mentioned in "chatMentions"
+//   (for mentions.js).
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore), or "stopped" when it's gone.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
@@ -186,14 +188,26 @@ foreach ($state['players'] as $player) {
         }
     }
 }
+// The chat's @mentions (assets/php/mentions.php) are of the players in the room. Being back in the game means the user
+// has seen any they were sent a notification about.
+$chatPeople = hbHubMatadorChatPeople($db, $roomId, $userId);
+$chatMentions = hbHubMentionLookup($chatPeople);
+hbHubMarkNotificationsReadAbout($db, $userId, 'games.matadorMention', ['roomId' => $roomId]);
 $chat = array_map(static fn (array $message): array => [
     'id' => $message['id'],
     'seat' => $chatSeats[$message['userId']] ?? null,
     'name' => $message['name'],
     'text' => $message['text'],
+    'parts' => hbHubMentionParts($message['text'], $chatMentions),
     'time' => $message['time'],
     'isYou' => $message['userId'] === $userId,
 ], hbHubMatadorChat($db, $roomId));
+$chatNames = [];
+foreach ($chatPeople as $person) {
+    if (!$person['isYou']) {
+        $chatNames[] = ['name' => $person['name'], 'userName' => $person['name']];
+    }
+}
 
 $response = [
     'v' => $version,
@@ -207,7 +221,8 @@ $response = [
             'owner' => $room['roomOwnerUserId'] !== null ? ($people[$room['roomOwnerUserId']]['name'] ?? null) : null,
             'isOwner' => $room['roomOwnerUserId'] === $userId,
         ],
-    ] + hbHubMatadorView($state, $people, $away, $userId, $room['roomHostUserId']) + ['chat' => $chat],
+    ] + hbHubMatadorView($state, $people, $away, $userId, $room['roomHostUserId'])
+        + ['chat' => $chat, 'chatMentions' => $chatNames],
 ];
 if (is_string($error)) {
     $response['error'] = $error;

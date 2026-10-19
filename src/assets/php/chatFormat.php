@@ -10,18 +10,22 @@
 //   # Heading, ## Smaller heading, ### Smallest heading  (at the start of a line, with a space after the #)
 //   - a list, * a list or 1. a numbered list  (indent a line to put it in a list inside the one above)
 //   [the text shown](https://the.address)  a masked link, and plain http(s):// addresses become links too
+//   @Name  a mention of someone in the chat (assets/php/mentions.php), when chatFormatHtml() is told who's in it
 //   \* in front of any of these characters shows it as it is instead
 //
 // Everything else is escaped, and links only ever go to http:// or https:// addresses.
+require_once __DIR__ . '/mentions.php';
+require_once __DIR__ . '/userAvatar.php'; // hbHubProfileUrl(), where a mention goes
 
 // Every inline style, in the order they're tried where more than one could start at the same place.
 // The (?!\*) and (?!_) let ***bold italic*** and ___underlined italic___ find their inner pair.
 // _italic_ needs a space or punctuation on both sides, so snake_case_names stay as they are.
 const HBHUB_CHAT_FORMAT_INLINE = '%
-      \\\\(?<escaped>[\\\\*_~`\[\]()#>|.+-])
+      \\\\(?<escaped>[\\\\*_~`\[\]()#>|.+@-])
     | `(?<code>[^`\n]+)`
     | \[(?<label>[^\[\]\n]+)\]\((?<href>https?://(?:[^\s<>"()]|\([^\s<>"()]*\))+)\)
     | (?<![\w/])(?<url>https?://[^\s<>"]+)
+    | (?<![\p{L}\p{N}_])(?<mention>@)
     | \*\*(?<bold>.+?)\*\*(?!\*)
     | __(?<underline>.+?)__(?!_)
     | ~~(?<strike>.+?)~~
@@ -33,7 +37,7 @@ const HBHUB_CHAT_FORMAT_LIST_DEPTH = 3; // lists inside lists, deeper indents th
 /**
  * A message as HTML: paragraphs (with the line breaks kept), headings, lists and code blocks, each one on its own line.
  */
-function chatFormatHtml(string $content): string
+function chatFormatHtml(string $content, array $mentions = []): string
 {
     if (!mb_check_encoding($content, 'UTF-8')) {
         return '<p>' . nl2br(htmlspecialchars($content)) . '</p>'; // the patterns need valid UTF-8, so no formatting
@@ -83,7 +87,7 @@ function chatFormatPlain(string $content): string
  * @param string[] $lines
  * @return string[]
  */
-function chatFormatLines(array $lines): array
+function chatFormatLines(array $lines, array $mentions = []): array
 {
     $groups = []; // [kind, [line or list item, ...]]
     foreach ($lines as $line) {
@@ -111,11 +115,11 @@ function chatFormatLines(array $lines): array
     foreach ($groups as [$kind, $items]) {
         if ($kind === 'heading') {
             [$level, $text] = $items[0];
-            $blocks[] = '<p class="chat-message-heading is-level-' . $level . '">' . chatFormatInline($text) . '</p>';
+            $blocks[] = '<p class="chat-message-heading is-level-' . $level . '">' . chatFormatInline($text, true, $mentions) . '</p>';
         } elseif ($kind === 'list') {
-            $blocks[] = chatFormatList($items);
+            $blocks[] = chatFormatList($items, $mentions);
         } else {
-            $blocks[] = '<p>' . implode("<br>\n", array_map('chatFormatInline', $items)) . '</p>';
+            $blocks[] = '<p>' . implode("<br>\n", array_map(static fn (string $line): string => chatFormatInline($line, true, $mentions), $items)) . '</p>';
         }
     }
     return $blocks;
@@ -127,7 +131,7 @@ function chatFormatLines(array $lines): array
  *
  * @param array<array{int, bool, int, string}> $items [indent in spaces, numbered, its number, text]
  */
-function chatFormatList(array $items): string
+function chatFormatList(array $items, array $mentions = []): string
 {
     $html = '';
     $open = []; // the lists open right now, outermost first: [indent, 'ul' or 'ol']
@@ -154,7 +158,7 @@ function chatFormatList(array $items): string
             $start = $isNumbered && $number !== 1 ? ' start="' . $number . '"' : '';
             $html .= '<' . $tag . ' class="chat-message-list"' . $start . '><li>';
         }
-        $html .= chatFormatInline($text);
+        $html .= chatFormatInline($text, true, $mentions);
     }
 
     while ($open !== []) {
@@ -164,10 +168,11 @@ function chatFormatList(array $items): string
 }
 
 /**
- * One line of text as HTML: bold, italic, underline, strikethrough, code and links, which can be inside each other
- * (**bold with _italic_ in it**). Inside a masked link's text, addresses aren't made links again ($allowLinks).
+ * One line of text as HTML: bold, italic, underline, strikethrough, code, links and mentions, which can be inside each
+ * other (**bold with _italic_ in it**). Inside a masked link's text, addresses aren't made links again ($allowLinks).
+ * $mentions is the chat's lookup from hbHubMentionLookup() (assets/php/mentions.php), empty for no mentions.
  */
-function chatFormatInline(string $text, bool $allowLinks = true): string
+function chatFormatInline(string $text, bool $allowLinks = true, array $mentions = []): string
 {
     $html = '';
     $offset = 0;
@@ -181,7 +186,7 @@ function chatFormatInline(string $text, bool $allowLinks = true): string
         } elseif ($match['code'][0] !== null) {
             $html .= '<code class="chat-message-code">' . htmlspecialchars($match['code'][0]) . '</code>';
         } elseif ($match['label'][0] !== null) {
-            $html .= chatFormatMaskedLink($match['label'][0], $match['href'][0], $allowLinks);
+            $html .= chatFormatMaskedLink($match['label'][0], $match['href'][0], $allowLinks, $mentions);
         } elseif ($match['url'][0] !== null) {
             // Punctuation at the end belongs to the sentence, not the address ("see https://x.dk."),
             // so it's left for the next round, where it might also close a **bold** the address is in
@@ -190,14 +195,22 @@ function chatFormatInline(string $text, bool $allowLinks = true): string
             $html .= $allowLinks && preg_match('~^https?://[^/?#]~i', $url) === 1
                 ? chatFormatLink($url, htmlspecialchars($url))
                 : htmlspecialchars($url); // just "https://" with no address after it
+        } elseif ($match['mention'][0] !== null) {
+            $person = hbHubMentionAt($text, $offset, $mentions);
+            if ($person !== null) {
+                $offset += $person['length'];
+                $html .= chatFormatMention($person, $allowLinks);
+            } else {
+                $html .= '@'; // nobody in the chat by that name
+            }
         } elseif ($match['bold'][0] !== null) {
-            $html .= '<strong>' . chatFormatInline($match['bold'][0], $allowLinks) . '</strong>';
+            $html .= '<strong>' . chatFormatInline($match['bold'][0], $allowLinks, $mentions) . '</strong>';
         } elseif ($match['underline'][0] !== null) {
-            $html .= '<u>' . chatFormatInline($match['underline'][0], $allowLinks) . '</u>';
+            $html .= '<u>' . chatFormatInline($match['underline'][0], $allowLinks, $mentions) . '</u>';
         } elseif ($match['strike'][0] !== null) {
-            $html .= '<s>' . chatFormatInline($match['strike'][0], $allowLinks) . '</s>';
+            $html .= '<s>' . chatFormatInline($match['strike'][0], $allowLinks, $mentions) . '</s>';
         } else {
-            $html .= '<em>' . chatFormatInline($match['italic'][0] ?? $match['italicUnderscore'][0], $allowLinks) . '</em>';
+            $html .= '<em>' . chatFormatInline($match['italic'][0] ?? $match['italicUnderscore'][0], $allowLinks, $mentions) . '</em>';
         }
     }
 
@@ -209,15 +222,44 @@ function chatFormatInline(string $text, bool $allowLinks = true): string
  * instead, so [https://school.dk](https://somewhere-else.dk) can't pretend to go somewhere it doesn't.
  * Hovering shows the address, and chat.js's link warning shows it again before it opens.
  */
-function chatFormatMaskedLink(string $label, string $href, bool $allowLinks): string
+function chatFormatMaskedLink(string $label, string $href, bool $allowLinks, array $mentions = []): string
 {
     if (!$allowLinks || preg_match('~^https?://[^/?#]~i', $href) !== 1) {
-        return htmlspecialchars('[') . chatFormatInline($label, false) . htmlspecialchars('](' . $href . ')');
+        return htmlspecialchars('[') . chatFormatInline($label, false, $mentions) . htmlspecialchars('](' . $href . ')');
     }
     if (preg_match('~[a-z][\w+.-]*://|\bwww\.|[\p{L}\p{N}-]\.[a-z]{2,}\b~iu', $label) === 1) {
         return chatFormatLink($href, htmlspecialchars($href));
     }
-    return chatFormatLink($href, chatFormatInline($label, false));
+    return chatFormatLink($href, chatFormatInline($label, false, $mentions));
+}
+
+/**
+ * @Name in a message: the name the chat shows them by, linking to their profile (just the name inside a masked link's
+ * text, as a link can't be inside a link). data-mention is who it is, for chatFormatMentionedUserIds(), and
+ * data-mention-you marks the user's own, which light up more (chat.css), and so does the message they're in.
+ *
+ * @param array{userId: int, name: string, isYou: bool} $person from hbHubMentionAt()
+ */
+function chatFormatMention(array $person, bool $allowLinks): string
+{
+    $attributes = ' class="chat-mention' . ($person['isYou'] ? ' is-you' : '') . '" data-mention="' . $person['userId'] . '"'
+        . ($person['isYou'] ? ' data-mention-you' : '');
+    $name = htmlspecialchars('@' . $person['name']);
+    return $allowLinks
+        ? '<a href="' . htmlspecialchars(hbHubProfileUrl($person['userId'])) . '"' . $attributes . '>' . $name . '</a>'
+        : '<span' . $attributes . '>' . $name . '</span>';
+}
+
+/**
+ * Everyone a message mentions as it's shown (so not an @Name inside `code`), once each, leaving out the user themselves.
+ * $mentions is the chat's lookup, like for chatFormatHtml().
+ *
+ * @return list<int> their userIds
+ */
+function chatFormatMentionedUserIds(string $content, array $mentions): array
+{
+    preg_match_all('~<(?:a|span) [^>]*data-mention="(\d+)"(?! data-mention-you)~', chatFormatHtml($content, $mentions), $matches);
+    return array_values(array_unique(array_map('intval', $matches[1])));
 }
 
 /**

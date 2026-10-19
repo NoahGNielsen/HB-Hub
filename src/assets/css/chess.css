@@ -678,6 +678,12 @@
   margin: 2px 0 0;
 }
 
+/* The other player's message that @mentions the user (mentions.css has the @Name itself) */
+.ch-chat-item.is-mention {
+  background: color-mix(in srgb, var(--accent) 12%, var(--background));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
 .ch-chat-form {
   margin-top: 10px;
 }

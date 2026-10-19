@@ -23,6 +23,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php'; // taking back the @mentions in deleted messages
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be in a bio
@@ -335,9 +336,12 @@ switch ($adminAction) {
         // Shows as deleted by a site admin in the chat. The page of messages it was on stays open.
         $messageId = $_POST['message'] ?? null;
         if (is_string($messageId) && ctype_digit($messageId) && strlen($messageId) <= 19) {
-            $db->prepare('UPDATE `HBHub-Messages` SET messageDeletedTimestamp = NOW(), messageDeletedByAdmin = ?
-                WHERE messageId = ? AND userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL')
-                ->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, (int) $messageId, $targetId]);
+            $statement = $db->prepare('UPDATE `HBHub-Messages` SET messageDeletedTimestamp = NOW(), messageDeletedByAdmin = ?
+                WHERE messageId = ? AND userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL');
+            $statement->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, (int) $messageId, $targetId]);
+            if ($statement->rowCount() > 0) {
+                hbHubRemoveNotifications($db, null, 'chat.mention', ['messageId' => (int) $messageId]); // whoever it @mentioned
+            }
             // Its attachment goes too (assets/php/chatAttachments.php), giving the user back its tickets
             hbHubChatAttachmentsRemove($db, 'm.messageId = ? AND m.userId = ? AND m.messageDeletedTimestamp IS NOT NULL', [(int) $messageId, $targetId]);
         }
@@ -348,6 +352,9 @@ switch ($adminAction) {
             WHERE userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL')
             ->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, $targetId]);
         hbHubChatAttachmentsRemove($db, 'a.userId = ?', [$targetId]); // every attachment was in one of them
+        // and every @mention in them (chat.mention notifications), which only ever come from the one who wrote them
+        $db->prepare('DELETE FROM `HBHub-Notifications` WHERE notificationType = ? AND notificationByUserId = ?')
+            ->execute(['chat.mention', $targetId]);
         adminRedirect($targetId, 'adminMessagesDeleted', 'messages');
 
     case 'deleteAccount':

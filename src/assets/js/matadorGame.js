@@ -844,6 +844,7 @@
     function renderChat() {
         const messages = game.chat;
         const newest = messages.at(-1)?.id ?? 0;
+        chatText.dataset.mentions = JSON.stringify(game.chatMentions ?? []); // who the @ list offers (mentions.js)
         chatEmpty.hidden = messages.length > 0;
         if (newest === shownChat) return;
 
@@ -853,10 +854,12 @@
         shownChat = newest;
     }
 
-    // Built with textContent, as it's all typed in by users
+    // Built with textContent, as it's all typed in by users. The text comes cut up into its @mentions (play.php's
+    // parts), which get a span each, and another player's message that mentions the user lights up.
     function chatItem(entry) {
+        const parts = entry.parts ?? [{ text: entry.text }];
         const item = document.createElement('li');
-        item.className = 'mt-chat-item';
+        item.className = 'mt-chat-item' + (!entry.isYou && parts.some((part) => part.isYou) ? ' is-mention' : '');
 
         const head = document.createElement('div');
         head.className = 'mt-chat-head';
@@ -877,7 +880,13 @@
 
         const text = document.createElement('p');
         text.className = 'mt-chat-text';
-        text.textContent = entry.text;
+        text.append(...parts.map((part) => {
+            if (!part.mention) return part.text;
+            const mention = document.createElement('span');
+            mention.className = 'chat-mention' + (part.isYou ? ' is-you' : '');
+            mention.textContent = part.text;
+            return mention;
+        }));
 
         item.append(head, text);
         return item;

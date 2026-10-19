@@ -37,6 +37,12 @@ return [
             'text' => static fn (array $data): string => 'made you an admin in ' . $group($data),
             'link' => $openChat,
         ],
+        // Someone @mentioned the user in a message (chat/index.php's chatNotifyMentions()). Its data has messageId too,
+        // which the link scrolls to (chat.js), and which takes the notification back when the message is deleted.
+        'mention' => [
+            'text' => static fn (array $data): string => 'mentioned you in ' . (!empty($data['isGroup']) ? $group($data) : 'your DM'),
+            'link' => static fn (array $data): string => $openChat($data) . '#message-' . (int) ($data['messageId'] ?? 0),
+        ],
         'removedAdmin' => [
             'text' => static fn (array $data): string => 'removed you as admin in ' . $group($data),
             'link' => $openChat,

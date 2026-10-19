@@ -143,6 +143,14 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 way. An attachment in it isn't kept: its file and name are deleted for good.
                             </li>
                             <li>Notifications under the bell: what happened, who did it and whether you've seen it.</li>
+                            <li>
+                                When someone @mentions you, in a chat or a Chess or Matador game's chat, you get one of those
+                                notifications, saying who it was and which chat, message or game it was in. Nothing else is
+                                stored for a mention: it's worked out from the message each time it's shown. You don't get one
+                                from a chat you muted or from someone you blocked, and in a game only while you aren't looking
+                                at it. Deleting the message (by you, a group admin or a site admin) deletes the notifications
+                                about it too.
+                            </li>
                         </ul>
                         <h3>Casino and games</h3>
                         <ul>

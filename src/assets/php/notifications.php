@@ -67,13 +67,14 @@ function hbHubNotify(PDO $db, int $userId, string $type, ?int $byUserId = null, 
 
 /**
  * The WHERE for the user's notifications of the type whose data has the values in $about, like ['chatId' => 5].
+ * A null $userId is everyone's.
  *
  * @return array{0: string, 1: list<mixed>} [sql, parameters]
  */
-function hbHubNotificationsAbout(int $userId, string $type, array $about): array
+function hbHubNotificationsAbout(?int $userId, string $type, array $about): array
 {
-    $sql = 'userId = ? AND notificationType = ?';
-    $parameters = [$userId, $type];
+    $sql = $userId !== null ? 'userId = ? AND notificationType = ?' : 'notificationType = ?';
+    $parameters = $userId !== null ? [$userId, $type] : [$type];
     foreach ($about as $key => $value) {
         $sql .= ' AND JSON_UNQUOTE(JSON_EXTRACT(notificationData, ?)) = ?';
         array_push($parameters, '$.' . $key, (string) $value);
@@ -83,11 +84,24 @@ function hbHubNotificationsAbout(int $userId, string $type, array $about): array
 
 /**
  * Takes back the user's notifications of the type about $about, like a message request when the invite is taken back.
+ * A null $userId takes them back from everyone, like the mentions in a message that was deleted.
  */
-function hbHubRemoveNotifications(PDO $db, int $userId, string $type, array $about = []): void
+function hbHubRemoveNotifications(PDO $db, ?int $userId, string $type, array $about = []): void
 {
     [$where, $parameters] = hbHubNotificationsAbout($userId, $type, $about);
     $db->prepare('DELETE FROM `HBHub-Notifications` WHERE ' . $where)->execute($parameters);
+}
+
+/**
+ * Whether the user has a notification of the type about $about they haven't seen yet, so it isn't sent again
+ * (like being mentioned in a game's chat while they're away from it).
+ */
+function hbHubHasUnreadNotificationAbout(PDO $db, int $userId, string $type, array $about = []): bool
+{
+    [$where, $parameters] = hbHubNotificationsAbout($userId, $type, $about);
+    $statement = $db->prepare('SELECT EXISTS (SELECT 1 FROM `HBHub-Notifications` WHERE notificationReadTimestamp IS NULL AND ' . $where . ')');
+    $statement->execute($parameters);
+    return (bool) $statement->fetchColumn();
 }
 
 /**

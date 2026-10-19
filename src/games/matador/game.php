@@ -42,6 +42,7 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/matador.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/matador.css') ?>">
+    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mentions.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/mentions.css') ?>">
     <title><?= htmlspecialchars($room['roomName']) ?> - Matador - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="A game of Matador on the HB Hub">
@@ -200,7 +201,7 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                     <form class="mt-chat-form casino-inline" data-mt-chat-form>
                         <label class="games-visually-hidden" for="mt-chat-text">Message</label>
                         <input type="text" id="mt-chat-text" class="casino-input" maxlength="<?= HBHUB_MATADOR_CHAT_MAX ?>"
-                               placeholder="Write a message" autocomplete="off" required data-mt-chat-text>
+                               placeholder="Write a message" autocomplete="off" required data-mt-chat-text data-mentions="[]">
                         <button type="submit" class="casino-btn casino-btn-primary">Send</button>
                     </form>
                 </section>
@@ -336,5 +337,6 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/matadorGame.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/matadorGame.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/boardZoom.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/boardZoom.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/mentions.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/mentions.js') ?>" defer></script>
 </body>
 </html>

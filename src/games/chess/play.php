@@ -11,7 +11,8 @@
 //     invite (user), for the host while the room waits for a player
 //     pause and resume, for the host while a game is being played (game.php's hbHubChessPause())
 //     chat (text) writes in the game's chat (chat.php), and leave
-//   The game has the chat's newest messages in "chat", with isYou on the user's own.
+//   The game has the chat's newest messages in "chat", with isYou on the user's own and the text cut up into its
+//   @mentions in "parts" (hbHubMentionParts()), and who can be mentioned in "chatMentions" (for mentions.js).
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
@@ -118,13 +119,25 @@ $people = hbHubChessPeople($db, array_filter([
     $state['game']['black']['userId'] ?? null,
 ], static fn (?int $id): bool => $id !== null));
 
+// The chat's @mentions (assets/php/mentions.php) are of the players in the room. Being back in the game means the user
+// has seen any they were sent a notification about.
+$chatPeople = hbHubChessChatPeople($db, $roomId, $userId);
+$chatMentions = hbHubMentionLookup($chatPeople);
+hbHubMarkNotificationsReadAbout($db, $userId, 'games.chessMention', ['roomId' => $roomId]);
 $chat = array_map(static fn (array $message): array => [
     'id' => $message['id'],
     'name' => $message['name'],
     'text' => $message['text'],
+    'parts' => hbHubMentionParts($message['text'], $chatMentions),
     'time' => $message['time'],
     'isYou' => $message['userId'] === $userId,
 ], hbHubChessChat($db, $roomId));
+$chatNames = [];
+foreach ($chatPeople as $person) {
+    if (!$person['isYou']) {
+        $chatNames[] = ['name' => $person['name'], 'userName' => $person['name']];
+    }
+}
 
 $response = [
     'v' => $version,
@@ -135,7 +148,8 @@ $response = [
             'code' => $room['roomCode'],
             'type' => HBHUB_CHESS_ROOM_TYPES[$room['roomType']] ?? 'public',
         ],
-    ] + hbHubChessView($state, $people, $seats, $userId, $room['roomHostUserId'], hbHubChessNowMs()) + ['chat' => $chat],
+    ] + hbHubChessView($state, $people, $seats, $userId, $room['roomHostUserId'], hbHubChessNowMs())
+        + ['chat' => $chat, 'chatMentions' => $chatNames],
 ];
 if (is_string($error)) {
     $response['error'] = $error;
