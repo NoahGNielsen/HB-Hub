@@ -1493,6 +1493,8 @@ function chatShowBackground(element, background) {
     const results = dialog.querySelector('[data-gif-results]');
     const status = dialog.querySelector('[data-gif-status]');
     const SEARCH_DELAY_MS = 350; // wait this long after the last key press, so typing "cats" is one search, not four
+    const COLUMN_MIN_WIDTH = 130; // px; as many columns as fit
+    const GAP = 8; // px between the GIFs, both ways
     let searchTimer = null;
     let searchRequest = null;
     let hasLoaded = false; // opening the picker again keeps the last search instead of asking Giphy again
@@ -1506,12 +1508,37 @@ function chatShowBackground(element, background) {
         composer.submit(); // not requestSubmit: the message box may be empty, which is fine with a GIF
     }
 
+    /**
+     * Lays the GIFs out in columns, in order across the rows (1, 2, 3 on top, then 4, 5, 6), each one going in the
+     * shortest column so far. The grid has 1px rows and every GIF spans as many as it is tall, worked out from its
+     * size so nothing has to load first. Called again whenever the picker changes width.
+     */
+    function layoutGifs() {
+        const style = getComputedStyle(results);
+        const width = results.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        if (width <= 0) return; // closed or empty; the ResizeObserver lays it out once it shows
+
+        const columnCount = Math.max(1, Math.floor((width + GAP) / (COLUMN_MIN_WIDTH + GAP)));
+        const columnWidth = (width - GAP * (columnCount - 1)) / columnCount;
+        const columnHeights = new Array(columnCount).fill(0);
+        results.style.gridTemplateColumns = `repeat(${columnCount}, 1fr)`;
+
+        for (const item of results.children) {
+            const column = columnHeights.indexOf(Math.min(...columnHeights));
+            const rows = Math.ceil(columnWidth * Number(item.dataset.gifRatio)) + GAP;
+            item.style.gridColumn = String(column + 1);
+            item.style.gridRow = `${columnHeights[column] + 1} / span ${rows}`;
+            columnHeights[column] += rows;
+        }
+    }
+
     function renderGifs(gifs) {
         results.replaceChildren(...gifs.map((gif) => {
+            const hasSize = gif.width > 0 && gif.height > 0;
             const image = document.createElement('img');
             image.src = gif.preview;
             image.alt = gif.title || 'GIF';
-            if (gif.width > 0 && gif.height > 0) {
+            if (hasSize) {
                 // Room for it before it loads, so the grid doesn't jump around
                 image.width = gif.width;
                 image.height = gif.height;
@@ -1526,11 +1553,16 @@ function chatShowBackground(element, background) {
             button.addEventListener('click', () => send(gif.id));
 
             const item = document.createElement('li');
+            item.dataset.gifRatio = hasSize ? gif.height / gif.width : 1; // height per px of width; square if unknown
             item.append(button);
             return item;
         }));
+        layoutGifs();
         results.scrollTop = 0;
     }
+
+    // Opening the picker or resizing the window changes how many columns fit
+    new ResizeObserver(layoutGifs).observe(results);
 
     async function loadGifs() {
         clearTimeout(searchTimer);

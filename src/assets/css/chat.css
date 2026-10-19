@@ -1703,7 +1703,8 @@ a.chat-member:focus-visible {
   outline-offset: 2px;
 }
 
-/* GIF picker: the results in columns, each GIF at its own height */
+/* GIF picker: the results in columns, each GIF at its own height, in order across the rows.
+   chat.js sets the columns and places every GIF on the 1px rows (each spans its height plus the 8px gap). */
 .chat-gif {
   height: min(640px, calc(100dvh - 32px));
 }
@@ -1714,18 +1715,16 @@ a.chat-member:focus-visible {
   margin: 0 -4px;
   padding: 4px;
   overflow-y: auto;
+  scrollbar-gutter: stable; /* the scrollbar showing up doesn't change the width, so no second layout */
   list-style: none;
-  columns: 130px;
+  display: grid;
+  grid-auto-rows: 1px;
   column-gap: 8px;
+  align-items: start;
 }
 
 .chat-gif-results:empty {
   display: none;
-}
-
-.chat-gif-results li {
-  margin-bottom: 8px;
-  break-inside: avoid;
 }
 
 .chat-gif-pick {
