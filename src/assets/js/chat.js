@@ -1381,6 +1381,8 @@ function chatJxlWorker() {
 // animation.
 // Anything else is zipped by the server.
 // The upload goes to the chat page (action=upload, answered as JSON), and the page reloads with the message in it.
+// From Send until then, the message is shown faded at the bottom of the chat with "Sending…", so it's clear Send worked
+// while a picture is still being converted and uploaded.
 // Attachments are paid for with tickets. When a file needs more than the user has free, the server says so, and the
 // Your attachments popup opens with how many it needs, so attachments can be deleted to make room and the file sent.
 // The popup can also be opened from the Attach menu, and lists the attachments still taking tickets (/chat/attachments).
@@ -1388,7 +1390,8 @@ function chatJxlWorker() {
     const composer = document.querySelector('.chat-composer');
     const input = document.querySelector('[data-attach-input]');
     const ticketsDialog = document.querySelector('.chat-tickets');
-    if (!composer || !input || !ticketsDialog) return;
+    const messages = document.querySelector('[data-chat-messages]');
+    if (!composer || !input || !ticketsDialog || !messages) return;
 
     const textarea = composer.querySelector('textarea');
     const replyInput = composer.querySelector('[data-reply-input]');
@@ -1420,6 +1423,7 @@ function chatJxlWorker() {
     let pending = null;
     let isSending = false; // from Send until the answer, waiting for a conversion included
     let isUploading = false; // only while the file is on its way, when it can't be taken back any more
+    let sending = null; // the faded message shown while it's being sent: { item, meta, size, url }
 
     function sizeLabel(bytes) {
         return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1).replace(/\.0$/, '')} MB`;
@@ -1605,6 +1609,101 @@ function chatJxlWorker() {
         }
     });
 
+    // A file card like the server's (chatAttachmentHtml in chat/index.php), without the download
+    function fileCard(name) {
+        const card = document.createElement('div');
+        card.className = 'chat-attachment is-file';
+        const icon = document.createElement('img');
+        icon.className = 'chat-attachment-icon';
+        icon.src = '/assets/images/icons/addFile.svg';
+        icon.alt = '';
+        const text = document.createElement('span');
+        text.className = 'chat-attachment-text';
+        const nameText = document.createElement('span');
+        nameText.className = 'chat-attachment-name';
+        nameText.textContent = name;
+        const size = document.createElement('span');
+        size.className = 'chat-attachment-size';
+        text.append(nameText, size);
+        card.append(icon, text);
+        return card;
+    }
+
+    // The message as it'll look, faded at the bottom of the chat until the page reloads with the real one: the picture
+    // straight from the user's device (or a file card, also when the browser can't show the picture), and the text as
+    // typed. It has no data-message-id, so polling and the message menu leave it alone, and polling adds new messages
+    // above it (addMessages below).
+    function showSending(job) {
+        const name = job.file.name || 'Pasted picture';
+        const item = document.createElement('li');
+        item.className = 'chat-message is-own is-sending';
+        item.setAttribute('data-message-sending', '');
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-message-bubble has-attachment';
+        let url = null;
+        if (job.kind === 'file') {
+            bubble.append(fileCard(name));
+        } else {
+            url = URL.createObjectURL(job.file);
+            const figure = document.createElement('figure');
+            figure.className = 'chat-attachment is-image';
+            const image = document.createElement('img');
+            image.className = 'chat-attachment-image';
+            image.alt = name;
+            image.height = 200;
+            const caption = document.createElement('figcaption');
+            caption.className = 'chat-attachment-caption';
+            const nameText = document.createElement('span');
+            nameText.className = 'chat-attachment-download';
+            nameText.textContent = name;
+            const size = document.createElement('span');
+            size.className = 'chat-attachment-size';
+            caption.append(nameText, size);
+            figure.append(image, caption);
+            bubble.append(figure);
+            // A picture this browser can't show (JPEG XL in most, say) becomes a file card, taking its size line along
+            image.addEventListener('error', () => {
+                const card = fileCard(name);
+                card.querySelector('.chat-attachment-size').replaceWith(size);
+                figure.replaceWith(card);
+            });
+            image.src = url;
+        }
+        if (textarea.value.trim() !== '') {
+            const text = document.createElement('div');
+            text.className = 'chat-message-text';
+            text.textContent = textarea.value;
+            bubble.append(text);
+        }
+        const meta = document.createElement('span');
+        meta.className = 'chat-message-meta';
+        meta.setAttribute('role', 'status');
+        meta.textContent = 'Sending…';
+        item.append(bubble, meta);
+
+        const empty = messages.querySelector('[data-messages-empty]');
+        if (empty) empty.hidden = true;
+        messages.append(item);
+        messages.scrollTop = messages.scrollHeight;
+        sending = { item, meta, size: item.querySelector('.chat-attachment-size'), url };
+        sendingSize(job);
+    }
+
+    // How big it is: the picture's size changes once it's converted
+    function sendingSize(job) {
+        if (sending) sending.size.textContent = sizeLabel((job.converted ?? job.file).size);
+    }
+
+    // Taken away again when it wasn't sent after all (an error, not enough tickets, or × while waiting)
+    function hideSending() {
+        if (!sending) return;
+        sending.item.remove();
+        if (sending.url) URL.revokeObjectURL(sending.url);
+        sending = null;
+        const empty = messages.querySelector('[data-messages-empty]');
+        if (empty) empty.hidden = false;
+    }
+
     // XMLHttpRequest rather than fetch, as only it says how far an upload has got
     function upload(body) {
         return new Promise((resolve, reject) => {
@@ -1613,7 +1712,10 @@ function chatJxlWorker() {
             request.setRequestHeader('Accept', 'application/json');
             request.responseType = 'json';
             request.upload.addEventListener('progress', (event) => {
-                if (event.lengthComputable) setStatus(`Sending… ${Math.round((event.loaded / event.total) * 100)}%`);
+                if (!event.lengthComputable) return;
+                const text = `Sending… ${Math.round((event.loaded / event.total) * 100)}%`;
+                setStatus(text);
+                if (sending) sending.meta.textContent = text;
             });
             request.addEventListener('load', () => resolve({ status: request.status, data: request.response ?? {} }));
             request.addEventListener('error', reject);
@@ -1631,12 +1733,15 @@ function chatJxlWorker() {
             // A picture is only sent once it's known whether to convert it, and the conversion is done.
             // Ticking "Keep the original" meanwhile stops waiting and sends the original.
             await job.ready;
-            while (job.converting) await job.converting;
             if (pending !== job) return; // taken away with × while waiting
+            showSending(job);
+            while (job.converting) await job.converting;
+            if (pending !== job) return;
             if (job.error) {
                 describe();
                 return;
             }
+            sendingSize(job);
             const file = job.converted ?? job.file;
             const name = job.converted ? (job.file.name || 'picture').replace(/\.[^.]*$/, '') + '.jxl' : job.file.name || 'picture.png';
             const body = new FormData();
@@ -1665,6 +1770,7 @@ function chatJxlWorker() {
             setStatus("Couldn't send it. Check your connection and try again.", true);
         } finally {
             if (!isSent) {
+                hideSending();
                 isSending = false;
                 isUploading = false;
                 sendButton.disabled = false;
@@ -2244,7 +2350,10 @@ function chatJxlWorker() {
         // Follows the new messages when already at the bottom, but doesn't pull away from older ones being read
         const isAtBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 48;
         messages.querySelector('[data-messages-empty]')?.remove();
-        messages.insertAdjacentHTML('beforeend', html);
+        // Above an attachment still being sent (the faded message from the attachments part), which stays at the bottom
+        const sending = messages.querySelector('[data-message-sending]');
+        if (sending) sending.insertAdjacentHTML('beforebegin', html);
+        else messages.insertAdjacentHTML('beforeend', html);
         if (isAtBottom) messages.scrollTop = messages.scrollHeight;
 
         // In a chat that was empty there was no message to tab to yet, now the newest one is (only a notice may have come)

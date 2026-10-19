@@ -767,6 +767,20 @@ body:has(> .chat) {
   opacity: 0.6;
 }
 
+/* An attachment on its way (chat.js): faded, with "Sending…" under it, until the page reloads with the real message.
+   Its text isn't formatted yet, so line breaks are kept as typed. */
+.chat-message.is-sending {
+  opacity: 0.55;
+}
+
+.chat-message.is-sending .chat-message-text {
+  white-space: pre-wrap;
+}
+
+.chat-message.is-sending .chat-attachment.is-file:hover {
+  background: color-mix(in srgb, #000 14%, transparent);
+}
+
 /* Reached with the arrow keys (chat.js), so the message menu can be opened from the keyboard */
 .chat-message:focus {
   outline: none;
