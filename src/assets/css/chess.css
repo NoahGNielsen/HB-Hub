@@ -296,6 +296,22 @@
   scrollbar-width: thin;
 }
 
+/* The board glows while it's the player's move, over the frame's own shadow (steady when motion is turned down) */
+.ch-board-view.is-my-turn {
+  box-shadow: 0 0 16px 4px color-mix(in srgb, var(--accent) 60%, transparent), 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ch-board-view.is-my-turn {
+    animation: ch-board-glow 2s ease-in-out infinite;
+  }
+}
+
+@keyframes ch-board-glow {
+  0%, 100% { box-shadow: 0 0 10px 2px color-mix(in srgb, var(--accent) 45%, transparent), 0 6px 24px rgba(0, 0, 0, 0.25); }
+  50% { box-shadow: 0 0 22px 6px color-mix(in srgb, var(--accent) 75%, transparent), 0 6px 24px rgba(0, 0, 0, 0.25); }
+}
+
 /* The board. Its squares size the pieces (cqi: a hundredth of the board's width) */
 .ch-board {
   position: relative;

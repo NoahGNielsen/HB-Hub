@@ -177,6 +177,16 @@
   scrollbar-width: thin;
 }
 
+/* The board glows while it's the player's turn */
+.mt-board-wrap.is-my-turn {
+  animation: mt-board-glow 2s ease-in-out infinite;
+}
+
+@keyframes mt-board-glow {
+  0%, 100% { box-shadow: 0 0 10px 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+  50% { box-shadow: 0 0 22px 6px color-mix(in srgb, var(--accent) 75%, transparent); }
+}
+
 .mt-board-wrap.is-zoomed .mt-board {
   transform: scale(var(--board-zoom));
   transform-origin: 0 0;
@@ -1062,9 +1072,15 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mt-field-tokens .mt-token.is-turn,
+  .mt-board-wrap.is-my-turn,
   .mt-die.is-rolling .mt-die-face,
   .mt-card.is-new {
     animation: none;
+  }
+
+  /* A steady glow instead */
+  .mt-board-wrap.is-my-turn {
+    box-shadow: 0 0 16px 4px color-mix(in srgb, var(--accent) 60%, transparent);
   }
 
   .mt-timer-fill {

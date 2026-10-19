@@ -103,7 +103,7 @@ $pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&di
                     </div>
                 <?php endforeach; ?>
                 <!-- The frame keeps the board's size; zoomed in, the board grows inside it and it scrolls (boardZoom.js) -->
-                <div class="ch-board-view" data-board-zoom="hbHubChessZoom">
+                <div class="ch-board-view" data-board-zoom="hbHubChessZoom" data-ch-board-view>
                     <div class="ch-board" data-ch-board></div>
                 </div>
                 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/boardZoom.php'; ?>

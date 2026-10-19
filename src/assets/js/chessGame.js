@@ -33,6 +33,7 @@
 
     const find = (selector) => root.querySelector(selector);
     const boardElement = find('[data-ch-board]');
+    const boardView = find('[data-ch-board-view]');
     const statusText = find('[data-ch-status]');
     const message = find('[data-ch-message]');
     const actions = find('[data-ch-actions]');
@@ -172,6 +173,7 @@
         renderMoves();
         renderChat();
         document.title = (isMyMove() ? '● Your move - ' : '') + baseTitle;
+        boardView.classList.toggle('is-my-turn', isMyMove()); // the board glows (chess.css)
 
         const myPly = isMyMove() ? game.game.ply : null;
         if (myPly !== null && myPly !== pingedPly && !isFirstDraw) ping();

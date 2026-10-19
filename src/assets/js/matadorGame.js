@@ -49,6 +49,7 @@
     const logList = find('[data-mt-log]');
     const die = find('[data-mt-die]');
     const statusText = find('[data-mt-status]');
+    const boardFrame = find('[data-mt-board-frame]');
     const timer = find('[data-mt-timer]');
     const timerFill = find('[data-mt-timer-fill]');
     const timerText = find('[data-mt-timer-text]');
@@ -209,6 +210,7 @@
         if (deedField !== null) renderDeed();
         if (settingsDialog.open) renderSettings();
         document.title = (isMyTurn() ? '● Your turn - ' : '') + baseTitle;
+        boardFrame.classList.toggle('is-my-turn', isMyTurn() && !isPaused()); // the board glows (matador.css)
 
         // Pinged once when the turn starts (not again after a 6), and not for a turn that was already going on when the page opened
         const myTurn = isMyTurn() ? game.round + ':' + game.turn.seat : null;

@@ -116,7 +116,7 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
             <!-- The wrapper is the board's size container, so the board's text and pieces scale with it (cqi in matador.css).
                  It's also the frame the board is zoomed in (boardZoom.js): it keeps its size and scrolls. -->
             <div class="mt-board-area">
-                <div class="mt-board-wrap" data-board-zoom="hbHubMatadorZoom">
+                <div class="mt-board-wrap" data-board-zoom="hbHubMatadorZoom" data-mt-board-frame>
                     <section class="mt-board" aria-label="The board" data-mt-board>
                         <?php foreach (HBHUB_MATADOR_FIELDS as $field => $info):
                             [$row, $column, $side] = gameFieldPlace($field);
