@@ -143,7 +143,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
         <section class="credits-section" id="lists" aria-labelledby="credits-lists-title">
             <p class="home-kicker credits-kicker">Lists</p>
             <h2 id="credits-lists-title">The links you can't send.</h2>
-            <p class="credits-section-lead">Most of the sites the chat and bios won't let you link to come from these two lists.</p>
+            <p class="credits-section-lead">Most of the links in these lists are blocked in the chat and bios.</p>
             <div class="credits-library">
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/PeterDaveHello/url-shorteners" target="_blank" rel="noopener noreferrer">url-shorteners</a></h3>
