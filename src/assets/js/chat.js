@@ -2750,8 +2750,9 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
             // The reactions on every message shown, from the oldest one on
             if (items.length > 0) params.set('from', itemId(items[0]));
             if (document.visibilityState === 'visible' && !keepUnread) params.set('read', '1');
-            // Looking at the chat, so being @mentioned in it doesn't send a notification
-            if (document.visibilityState === 'visible') params.set('looking', '1');
+            // Looking at the chat, so being @mentioned in it doesn't send a notification. The window has to have focus
+            // too: one that's only showing behind or beside another window still counts as visible.
+            if (document.visibilityState === 'visible' && document.hasFocus()) params.set('looking', '1');
         }
 
         try {

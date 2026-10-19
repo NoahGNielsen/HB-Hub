@@ -1001,6 +1001,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
             $attachmentId = (int) $db->lastInsertId();
             $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, attachmentId, messageReplyToId) VALUES (?, ?, ?, ?, ?)')
                 ->execute([$userId, $chat['chatId'], $message !== '' ? $message : null, $attachmentId, $replyToId]);
+            $messageId = (int) $db->lastInsertId();
             $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
                 ->execute([$chat['chatId']]);
             $db->commit();
@@ -1020,6 +1021,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
         chatUploadAnswer(...$error);
     }
     chatUnhideForEveryone($db, (int) $chat['chatId']); // a new message brings the chat back for everyone who hid it
+    if ($message !== '') {
+        chatNotifyMentions($db, $userId, (int) $chat['chatId'], $messageId, $message); // the text with the file can @mention too
+    }
     chatUploadAnswer(200, ['chatId' => (int) $chat['chatId']]);
 }
 
