@@ -78,14 +78,13 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                     <li>bullying, harassment, threats or hate against anyone, for example because of their race, religion, gender, sexuality or disability,</li>
                     <li>sexual or violent content, or anything else you wouldn't show in a classroom (GIFs and pictures count too),</li>
                     <li>sharing other people's private information, photos or messages without their permission,</li>
-                    <li>spam, scams, or links to harmful sites (links to IP loggers, URL shorteners that can hide where a link goes, crypto scam and phishing sites, and other sites that are dangerous or give away where someone is are blocked, and can't be sent at all - don't try to get around that),</li>
+                    <li>spam, scams, or links to harmful sites (links to IP loggers, URL shorteners that can hide where a link goes, crypto scam and phishing sites, and other sites that are dangerou),</li>
                     <li>anything illegal, or encouraging others to do something illegal or dangerous,</li>
                     <li>trying to break into other accounts, overload the site, or get around its security.</li>
                 </ul>
                 <p>
                     If someone breaks these rules, or makes you feel unsafe, tell an admin or email
-                    <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. If something is serious, also
-                    talk to a teacher or another adult you trust.
+                    <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.
                 </p>
             </section>
 
