@@ -155,11 +155,31 @@
   gap: 16px 24px;
 }
 
-/* Text, pieces and the middle of the board are sized in cqi: hundredths of the board's width */
-.mt-board-wrap {
+/* The board with the zoom buttons under it, far enough down to be just out of view (the board's column leaves 24px
+   under the board) */
+.mt-board-area {
   grid-area: board;
   min-width: 0;
+}
+
+.mt-board-area .games-zoom {
+  margin-top: 28px;
+}
+
+/* Text, pieces and the middle of the board are sized in cqi: hundredths of the board's width. This is also the frame
+   the board is zoomed in: zoomed in (boardZoom.js sets --board-zoom), the board is drawn that much bigger and the
+   frame scrolls. It's scaled rather than made wider, as the board's text and pieces stop growing at a set size. */
+.mt-board-wrap {
+  min-width: 0;
   container-type: inline-size;
+  overflow: auto;
+  border-radius: 12px;
+  scrollbar-width: thin;
+}
+
+.mt-board-wrap.is-zoomed .mt-board {
+  transform: scale(var(--board-zoom));
+  transform-origin: 0 0;
 }
 
 .mt-board {
@@ -997,6 +1017,10 @@
 
   .mt-board {
     font-size: clamp(0.4rem, calc(100cqi / 64), 0.95rem);
+  }
+
+  .mt-board-area .games-zoom {
+    margin-top: 12px;
   }
 }
 
