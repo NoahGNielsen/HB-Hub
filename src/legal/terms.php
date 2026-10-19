@@ -65,7 +65,7 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                 <ul>
                     <li><strong>One account per person.</strong> Don't make extra accounts, for example to get more daily chips or to get around a ban.</li>
                     <li><strong>Be yourself.</strong> Use a name people from school will recognise you by, and don't pretend to be someone else.</li>
-                    <li>Names and bios can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them.</li>
+                    <li>Names and bios can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them. A bio can't have a link to one of the blocked sites in it either (see section 3).</li>
                     <li><strong>Keep it to yourself.</strong> Don't share your password or let others use your account. You're responsible for what happens on it.</li>
                     <li>Turning on two-factor login in your <a href="/otherPages/settings">settings</a> is a good idea. If you think someone else has got into your account, change your password and tell an admin.</li>
                 </ul>
