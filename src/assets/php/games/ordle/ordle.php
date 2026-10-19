@@ -53,7 +53,7 @@ function hbHubOrdleDayNumber(string $date): int
 
 /**
  * A word list from words/: 'answers' (the daily words) or 'words' (everything that can be guessed), skipping the
- * # comments at the top. Read once per request.
+ * # comments at the top. Read once per request. Lines are trimmed, so the lists work with Windows line endings too.
  *
  * @return string[]
  */
@@ -61,8 +61,8 @@ function hbHubOrdleWords(string $language, string $list): array
 {
     static $lists = [];
     return $lists[$language . $list] ??= array_values(array_filter(
-        file(__DIR__ . '/words/' . $language . '-' . $list . '.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES),
-        static fn (string $line): bool => !str_starts_with($line, '#'),
+        array_map('trim', file(__DIR__ . '/words/' . $language . '-' . $list . '.txt', FILE_IGNORE_NEW_LINES)),
+        static fn (string $line): bool => $line !== '' && !str_starts_with($line, '#'),
     ));
 }
 
