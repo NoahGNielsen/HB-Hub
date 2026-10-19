@@ -76,6 +76,10 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <dt>Code libraries</dt>
                     <dd>2</dd>
                 </div>
+                <div>
+                    <dt>Blacklists</dt>
+                    <dd>2</dd>
+                </div>
             </dl>
         </section>
 
@@ -145,6 +149,12 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
             <h2 id="credits-lists-title">The links you can't send.</h2>
             <p class="credits-section-lead">Most of the links in these lists are blocked in the chat and bios.</p>
             <div class="credits-library">
+                <!-- A long link squeezed into a short one: the long one blurs away on hover, like it does behind a shortener -->
+                <div class="credits-short" aria-hidden="true">
+                    <span class="credits-short-long"><i></i><i></i><i></i></span>
+                    <span class="credits-short-arrow">&darr;</span>
+                    <span class="credits-short-link">bit.ly/hb</span>
+                </div>
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/PeterDaveHello/url-shorteners" target="_blank" rel="noopener noreferrer">url-shorteners</a></h3>
                     <p>By Peter Dave Hello. URL shorteners, which can hide where a link really goes.</p>
@@ -152,6 +162,11 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
             </div>
             <div class="credits-library">
+                <!-- A made-up scam address with a "Blocked" stamp on it, which stamps down again on hover -->
+                <div class="credits-scam" aria-hidden="true">
+                    <span class="credits-scam-url">free-c0ins.io</span>
+                    <span class="credits-scam-stamp">Blocked</span>
+                </div>
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/CryptoScamDB/blacklist" target="_blank" rel="noopener noreferrer">CryptoScamDB blacklist</a></h3>
                     <p>By CryptoScamDB. Crypto scam and phishing sites, turned from its YAML into a plain list of domains.</p>
