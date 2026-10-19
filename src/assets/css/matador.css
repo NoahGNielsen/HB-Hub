@@ -488,7 +488,7 @@
   background: color-mix(in srgb, var(--text) 35%, transparent);
 }
 
-/* A Prøv lykken card looks like a card in both themes */
+/* A Prøv lykken card looks like a paper card on the dark page */
 .mt-card {
   max-width: 340px;
   padding: 10px 14px;

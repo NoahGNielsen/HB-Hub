@@ -189,7 +189,7 @@
   margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #d93025;
+  color: #ff6b5e;
 }
 
 /* Picture */
@@ -208,10 +208,12 @@
   background: var(--background);
 }
 
+/* The default user icon is black - inverted so it shows on the dark background */
 .onboarding-avatar-preview.is-placeholder {
   padding: 20px;
   box-sizing: border-box;
   opacity: 0.6;
+  filter: invert(1);
 }
 
 .onboarding-avatar-actions {
@@ -326,22 +328,6 @@
   .login .onboarding-btn-primary.is-ready:focus-visible {
     transform: none;
   }
-}
-
-/* Default user icon is black - invert it on dark backgrounds */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .onboarding-avatar-preview.is-placeholder {
-    filter: invert(1);
-  }
-  :root:not([data-theme="light"]) .onboarding-error {
-    color: #ff6b5e;
-  }
-}
-:root[data-theme="dark"] .onboarding-avatar-preview.is-placeholder {
-  filter: invert(1);
-}
-:root[data-theme="dark"] .onboarding-error {
-  color: #ff6b5e;
 }
 
 @media (max-width: 600px) {

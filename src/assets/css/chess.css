@@ -229,7 +229,7 @@
   margin-right: -0.2em;
 }
 
-/* Off the board Black's pieces get an edge in the text's colour, so they show on the dark theme too */
+/* Off the board Black's pieces get an edge in the text's colour, so they show on the dark background */
 .ch-captured .ch-piece.is-black {
   filter: drop-shadow(0 0 1px color-mix(in srgb, var(--text) 80%, transparent));
 }

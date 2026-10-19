@@ -1346,11 +1346,9 @@ html.home {
   justify-content: center;
 }
 
-/* The black PNG icons turn white on dark backgrounds */
-@media (prefers-color-scheme: dark) {
-  .home-kicker img {
-    filter: invert(1);
-  }
+/* The black PNG icons turn white for the dark background */
+.home-kicker img {
+  filter: invert(1);
 }
 
 /* ---------- Motion ---------- */

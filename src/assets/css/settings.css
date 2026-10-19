@@ -293,7 +293,7 @@
   line-height: 1.5;
 }
 
-/* Stays black on white in dark mode too, so it can be scanned */
+/* Black on white even though the site is dark, so it can be scanned */
 .settings-qr {
   display: block;
   width: 200px;

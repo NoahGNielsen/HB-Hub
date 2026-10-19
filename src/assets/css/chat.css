@@ -1783,21 +1783,12 @@ a.chat-member:focus-visible {
   }
 }
 
-/* Default chat, requests, attach, emoji, GIF, settings and muted icons are black - invert them on dark backgrounds */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .chat-placeholder-icon,
-  :root:not([data-theme="light"]) .chat-requests-btn img,
-  :root:not([data-theme="light"]) .chat-icon-btn img,
-  :root:not([data-theme="light"]) .chat-me-settings img,
-  :root:not([data-theme="light"]) .chat-list-muted {
-    filter: invert(1);
-  }
-}
-:root[data-theme="dark"] .chat-placeholder-icon,
-:root[data-theme="dark"] .chat-requests-btn img,
-:root[data-theme="dark"] .chat-icon-btn img,
-:root[data-theme="dark"] .chat-me-settings img,
-:root[data-theme="dark"] .chat-list-muted {
+/* Default chat, requests, attach, emoji, GIF, settings and muted icons are black - invert them for the dark background */
+.chat-placeholder-icon,
+.chat-requests-btn img,
+.chat-icon-btn img,
+.chat-me-settings img,
+.chat-list-muted {
   filter: invert(1);
 }
 

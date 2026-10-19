@@ -349,14 +349,8 @@
   opacity: 0.6;
 }
 
-/* The black PNG icons turn white on dark backgrounds (not the stickers, they're on white tiles) */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .credits-card-icon img {
-    filter: invert(1);
-  }
-}
-
-:root[data-theme="dark"] .credits-card-icon img {
+/* The black PNG icons turn white for the dark background (not the stickers, they're on white tiles) */
+.credits-card-icon img {
   filter: invert(1);
 }
 

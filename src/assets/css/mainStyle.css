@@ -1,40 +1,14 @@
-/* Colour scheme: "Warm Slate & Orange" */
-@media (prefers-color-scheme: light) {
-  :root {
-    --text: #1a1d23;
-    --background: #f5f6f8;
-    --primary: #2f3a4a;
-    --secondary: #e3e7ee;
-    --accent: #f2711c;
-  }
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #eceef2;
-    --background: #0e1116;
-    --primary: #aab6c8;
-    --secondary: #1b2029;
-    --accent: #ff8a3d;
-  }
-}
-
-:root[data-theme="light"] {
-  --text: #1a1d23;
-  --background: #f5f6f8;
-  --primary: #2f3a4a;
-  --secondary: #e3e7ee;
-  --accent: #f2711c;
-}
-:root[data-theme="dark"] {
+/* Colour scheme: "Warm Slate & Orange". The site is dark mode only, whatever the device is set to -
+   color-scheme makes the browser draw its own bits (scrollbars, form controls) dark too */
+:root {
+  color-scheme: dark;
   --text: #eceef2;
   --background: #0e1116;
   --primary: #aab6c8;
   --secondary: #1b2029;
   --accent: #ff8a3d;
-}
 
-/* Nav bars stay dark in both themes */
-:root {
+  /* Nav bars */
   --nav-bg: #161a21;
   --nav-side-bg: #222833;
   --nav-text: #eceef2;
