@@ -146,9 +146,12 @@
   gap: 20px;
 }
 
+/* At most as tall as the window below the nav bar and the game's header (about 170px), so the whole board is in view
+   without zooming out - but never so small that it can't be read */
 .mt-board {
   width: 100%;
-  max-width: 820px;
+  max-width: min(700px, max(360px, calc(100dvh - var(--nav-top-h, 60px) - 170px)));
+  justify-self: center;
   aspect-ratio: 1;
   padding: 3px;
   box-sizing: border-box;
@@ -158,7 +161,8 @@
   gap: 2px;
   border-radius: 12px;
   background: var(--mt-line);
-  font-size: clamp(0.45rem, 0.85vw, 0.68rem);
+  /* Follows the board's size: by the window's width, or its height when that's what limits the board */
+  font-size: clamp(0.45rem, min(0.73vw, calc((100dvh - var(--nav-top-h, 60px) - 170px) / 73)), 0.6rem);
 }
 
 .mt-r-1 { grid-row: 1; }
@@ -947,6 +951,23 @@
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+/* The room's settings */
+.mt-settings .casino-choices {
+  margin: 14px 0;
+}
+
+.mt-settings .casino-choices:disabled .casino-choice {
+  cursor: default;
+  opacity: 0.75;
+}
+
+/* The keyboard shortcuts are only mentioned where there's a mouse, so most likely a keyboard too */
+@media (hover: none) {
+  .mt-keys {
+    display: none;
+  }
 }
 
 @media (max-width: 1000px) {

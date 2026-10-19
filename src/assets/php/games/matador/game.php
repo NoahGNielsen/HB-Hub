@@ -5,9 +5,14 @@
 // The house rules (decided with the site's owner, they differ from the real game): one die, and a 6 gives another
 // roll (as many as come, never jail for it). A property that isn't bought stays with the bank - there are no auctions.
 // Getting out of jail is paying 1,000 kr, a "benådet" card, or rolling a 6 (3 tries, then the bail has to be paid).
+// Building, selling and mortgaging can only be done in your own turn (trading at any time).
+// The host can change some of this in the room's settings before the game starts (hbHubMatadorSettings()): two dice,
+// where doubles take the place of the 6, and whether rent is paid to a player who's in jail.
 //
 // The state:
 //   phase       'lobby' (waiting for players), 'resume' (a saved game waiting for its players), 'playing' or 'ended'
+//   settings    the room's settings: dice (1 or 2) and jailRent ('yes', 'no' or 'bank'). Missing in games from before
+//               them, so always read through hbHubMatadorSettings()
 //   players     in turn order: seat (1-4, the seat in HBHub-MatadorSeats), userId (who plays it, null while it's
 //               empty), originalUserId (who it's kept for when they leave), reservedFor (who the host gave it to),
 //               name, cash, position (0-39), inJail, jailTries, cards (the "benådet" cards held), bankrupt
@@ -19,7 +24,8 @@
 //   pending     what the player whose turn it is has to answer: buy (field), tax, or debt (amount, to: a seat or null
 //               for the bank, reason, move: steps to move once it's paid - after the third try in jail)
 //   trades      offers between players: id, from, to, give and get ({fields, cash, cards})
-//   lastRoll, lastCard  for matadorGame.js to show (n counts them, so it knows a new one from the last one). lastCard
+//   lastRoll, lastCard  for matadorGame.js to show (n counts them, so it knows a new one from the last one). lastRoll
+//               has the total (value) and each die (dice - not in rolls from before the settings). lastCard
 //               gets over: true once the turn it was drawn in has ended, and isn't shown anymore
 //   log         what happened, the newest last
 require_once __DIR__ . '/board.php';
@@ -29,6 +35,51 @@ const HBHUB_MATADOR_MAX_PLAYERS = 4;
 const HBHUB_MATADOR_MIN_PLAYERS = 2;
 const HBHUB_MATADOR_LOG_KEPT = 40;
 const HBHUB_MATADOR_TURN_SECONDS = 30; // the time a player has to do something in their turn, before it's passed on
+const HBHUB_MATADOR_DICE_CHOICES = [1, 2]; // the dice setting
+const HBHUB_MATADOR_JAIL_RENT_CHOICES = [ // the jailRent setting: what happens to rent for a player who's in jail
+    'yes' => 'Yes',
+    'no' => 'No',
+    'bank' => 'Yes, but the bank gets the money',
+];
+const HBHUB_MATADOR_DEFAULT_SETTINGS = ['dice' => 1, 'jailRent' => 'yes'];
+
+/**
+ * The room's settings, with the defaults for anything a game from before them doesn't have.
+ *
+ * @return array{dice: int, jailRent: string}
+ */
+function hbHubMatadorSettings(array $state): array
+{
+    return ($state['settings'] ?? []) + HBHUB_MATADOR_DEFAULT_SETTINGS;
+}
+
+/**
+ * The settings as sent from the room's settings (dice: "1" or "2", jailRent: one of the choices), or null when they
+ * can't be.
+ *
+ * @return ?array{dice: int, jailRent: string}
+ */
+function hbHubMatadorCleanSettings(mixed $dice, mixed $jailRent): ?array
+{
+    $dice = is_string($dice) && ctype_digit($dice) && strlen($dice) === 1 ? (int) $dice : null;
+    if (!in_array($dice, HBHUB_MATADOR_DICE_CHOICES, true) || !is_string($jailRent) || !isset(HBHUB_MATADOR_JAIL_RENT_CHOICES[$jailRent])) {
+        return null;
+    }
+    return ['dice' => $dice, 'jailRent' => $jailRent];
+}
+
+/**
+ * The settings in a few words, for the log: "2 dice, no rent in jail".
+ */
+function hbHubMatadorSettingsText(array $settings): string
+{
+    $rent = match ($settings['jailRent']) {
+        'yes' => 'rent is paid in jail',
+        'no' => 'no rent in jail',
+        'bank' => 'rent in jail goes to the bank',
+    };
+    return ($settings['dice'] === 1 ? '1 die' : $settings['dice'] . ' dice') . ', ' . $rent;
+}
 
 function hbHubMatadorNewState(string $roomName, int $roomType): array
 {
@@ -36,6 +87,7 @@ function hbHubMatadorNewState(string $roomName, int $roomType): array
         'phase' => 'lobby',
         'roomName' => $roomName, // to open the game again with, from a save
         'roomType' => $roomType,
+        'settings' => HBHUB_MATADOR_DEFAULT_SETTINGS,
         'players' => [],
         'fields' => [],
         'deck' => [],
@@ -326,6 +378,17 @@ function hbHubMatadorLand(array &$state, int $seat, int $multiplier = 1): void
             }
             $rent = hbHubMatadorRent($state, $field, $state['lastRoll']['value'] ?? 1, $multiplier);
             $owner = hbHubMatadorName($state, $property['owner']);
+            $jailRent = hbHubMatadorSettings($state)['jailRent'];
+            if ($jailRent !== 'yes' && (hbHubMatadorPlayerOf($state, $property['owner'])['inJail'] ?? false)) {
+                if ($jailRent === 'no') {
+                    hbHubMatadorLog($state, $owner . ' is in jail, so ' . $name . ' pays no rent for ' . $info['name'] . '.');
+                    return;
+                }
+                hbHubMatadorLog($state, $owner . ' is in jail, so ' . $name . ' pays the ' . hbHubMatadorKr($rent) . ' in rent for '
+                    . $info['name'] . ' to the bank.');
+                hbHubMatadorOwe($state, $seat, $rent, null, 'rent to the bank');
+                return;
+            }
             hbHubMatadorLog($state, $name . ' pays ' . $owner . ' ' . hbHubMatadorKr($rent) . ' in rent for ' . $info['name'] . '.');
             hbHubMatadorOwe($state, $seat, $rent, $property['owner'], 'rent to ' . $owner);
         }
@@ -727,39 +790,59 @@ function hbHubMatadorRoll(array &$state, int $seat): ?string
         return $problem;
     }
 
-    $value = random_int(1, 6);
-    $state['lastRoll'] = ['seat' => $seat, 'value' => $value, 'n' => ($state['lastRoll']['n'] ?? 0) + 1];
+    $dice = [];
+    for ($n = 0; $n < hbHubMatadorSettings($state)['dice']; $n++) {
+        $dice[] = random_int(1, 6);
+    }
+    $value = array_sum($dice);
+    $isLucky = count($dice) === 1 ? $value === 6 : count(array_unique($dice)) === 1; // a 6, or doubles with two dice
+    $rolled = hbHubMatadorRollText($dice);
+    $state['lastRoll'] = ['seat' => $seat, 'value' => $value, 'dice' => $dice, 'n' => ($state['lastRoll']['n'] ?? 0) + 1];
     $state['turn']['step'] = 'wait';
     $i = hbHubMatadorIndex($state, $seat);
     $name = $state['players'][$i]['name'];
 
     if ($state['players'][$i]['inJail']) {
-        if ($value === 6) {
+        if ($isLucky) {
             $state['players'][$i]['inJail'] = false;
             $state['players'][$i]['jailTries'] = 0;
             $state['turn']['next'] = 'roll';
-            hbHubMatadorLog($state, $name . ' rolled a 6 and is out of jail.');
+            hbHubMatadorLog($state, $name . ' rolled ' . $rolled . ' and is out of jail.');
             hbHubMatadorMoveBy($state, $seat, $value);
         } elseif (++$state['players'][$i]['jailTries'] < HBHUB_MATADOR_JAIL_TRIES) {
             $state['turn']['next'] = 'end';
-            hbHubMatadorLog($state, $name . ' rolled a ' . $value . ' and stays in jail.');
+            hbHubMatadorLog($state, $name . ' rolled ' . $rolled . ' and stays in jail.');
         } else {
             $state['players'][$i]['inJail'] = false;
             $state['players'][$i]['jailTries'] = 0;
             $state['turn']['next'] = 'end';
-            hbHubMatadorLog($state, $name . ' rolled a ' . $value . ' on their last try, so they pay '
+            hbHubMatadorLog($state, $name . ' rolled ' . $rolled . ' on their last try, so they pay '
                 . hbHubMatadorKr(HBHUB_MATADOR_BAIL) . ' to get out of jail.');
             hbHubMatadorOwe($state, $seat, HBHUB_MATADOR_BAIL, null, 'getting out of jail', $value);
         }
     } else {
-        $state['turn']['next'] = $value === 6 ? 'roll' : 'end';
+        $state['turn']['next'] = $isLucky ? 'roll' : 'end';
         $target = ($state['players'][$i]['position'] + $value) % HBHUB_MATADOR_FIELD_COUNT;
-        hbHubMatadorLog($state, $name . ' rolled a ' . $value . ' and moves to ' . hbHubMatadorFieldName($target) . '.');
+        hbHubMatadorLog($state, $name . ' rolled ' . $rolled . ' and moves to ' . hbHubMatadorFieldName($target) . '.');
         hbHubMatadorMoveBy($state, $seat, $value);
     }
 
     hbHubMatadorSettle($state);
     return null;
+}
+
+/**
+ * A roll the way the log writes it: "a 4" with one die, "a 2 and a 5 (7)" or "double 3s (6)" with two.
+ *
+ * @param list<int> $dice
+ */
+function hbHubMatadorRollText(array $dice): string
+{
+    if (count($dice) === 1) {
+        return 'a ' . $dice[0];
+    }
+    $total = ' (' . array_sum($dice) . ')';
+    return $dice[0] === $dice[1] ? 'double ' . $dice[0] . 's' . $total : 'a ' . $dice[0] . ' and a ' . $dice[1] . $total;
 }
 
 function hbHubMatadorBuy(array &$state, int $seat): ?string
@@ -904,7 +987,19 @@ function hbHubMatadorEndTurn(array &$state, int $seat): ?string
     return null;
 }
 
-// ----- Building and mortgaging: any time during the game, also in other players' turns.
+// ----- Building and mortgaging: only in the player's own turn (play.php checks that with hbHubMatadorOwnTurnProblem()).
+// hbHubMatadorRaise() also sells and mortgages for players in other players' turns, so these don't check it themselves.
+
+/**
+ * Why the seat can't build, sell or mortgage right now (or null when they can): only in their own turn.
+ */
+function hbHubMatadorOwnTurnProblem(array $state, int $seat): ?string
+{
+    if ($state['phase'] === 'playing' && $state['turn']['seat'] !== $seat) {
+        return 'You can only build, sell and mortgage in your own turn.';
+    }
+    return null;
+}
 
 /**
  * Why the seat can't do anything with the property (or null when they can): it has to be theirs, during the game.
@@ -1248,6 +1343,7 @@ function hbHubMatadorView(array $state, array $people, array $away, int $userId,
     return [
         'phase' => $state['phase'],
         'round' => $state['round'],
+        'settings' => hbHubMatadorSettings($state),
         'you' => $you,
         'isHost' => $hostId === $userId,
         'players' => array_map(static function (array $player) use ($people, $away, $userId, $hostId, $state): array {

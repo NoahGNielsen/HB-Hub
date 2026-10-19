@@ -11,6 +11,10 @@
 //
 // The turn's timer counts down here, from the time left the server sent (the server's and the player's clocks don't
 // have to agree). The server passes the turn on once it runs out; this only shows it.
+//
+// The room's settings (game.settings: dice and jailRent) are shown in their dialog, where the host changes them before
+// the game starts. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
+// on (after asking) and Backspace leaves it with the bank, and Enter ends the turn.
 (() => {
     const root = document.querySelector('[data-matador]');
     if (!root) return;
@@ -56,6 +60,7 @@
     const saveStopButton = find('[data-mt-save-stop]');
     const leaveButton = find('[data-mt-leave]');
     const soundButton = find('[data-mt-sound]');
+    const settingsButton = find('[data-mt-settings]');
     const chatList = find('[data-mt-chat]');
     const chatEmpty = find('[data-mt-chat-empty]');
     const chatMessage = find('[data-mt-chat-message]');
@@ -105,6 +110,8 @@
     const me = () => (game.you !== null ? playerOf(game.you) : null);
     const isMyTurn = () => game.phase === 'playing' && game.turn?.seat === game.you;
     const isPlaying = () => game.phase === 'playing';
+    const lucky = () => (game.settings.dice === 2 ? 'doubles' : 'a 6'); // what gives another roll and gets you out of jail
+    const theDice = () => (game.settings.dice === 2 ? 'the dice' : 'the die');
 
     async function request(options, query = '') {
         try {
@@ -194,6 +201,7 @@
         renderLog();
         renderChat();
         if (deedField !== null) renderDeed();
+        if (settingsDialog.open) renderSettings();
         document.title = (isMyTurn() ? '● Your turn - ' : '') + baseTitle;
 
         // Pinged once when the turn starts (not again after a 6), and not for a turn that was already going on when the page opened
@@ -301,9 +309,12 @@
     function renderCenter() {
         const roll = game.lastRoll;
         die.hidden = game.phase === 'lobby';
-        if (roll && roll.n !== shownRoll) {
-            die.textContent = DIE_FACES[roll.value - 1];
-            die.setAttribute('aria-label', nameOf(roll.seat) + ' rolled a ' + roll.value);
+        if (!roll) {
+            die.textContent = Array(game.settings.dice).fill(DIE_FACES[0]).join(' ');
+        } else if (roll.n !== shownRoll) {
+            const dice = roll.dice ?? [roll.value]; // a roll from before the settings has only the total
+            die.textContent = dice.map((value) => DIE_FACES[value - 1]).join(' ');
+            die.setAttribute('aria-label', nameOf(roll.seat) + ' rolled ' + (dice.length === 1 ? 'a ' + roll.value : dice.join(' and ') + ', ' + roll.value));
             if (!isFirstDraw && !reduceMotion) {
                 die.classList.remove('is-rolling');
                 void die.offsetWidth; // so the animation starts again
@@ -450,12 +461,14 @@
 
     // ----- What the player can do
 
-    function button(text, onClick, { primary = false, disabled = false } = {}) {
+    // `keys` is its keyboard shortcut (aria-keyshortcuts), when it has one
+    function button(text, onClick, { primary = false, disabled = false, keys = null } = {}) {
         const element = document.createElement('button');
         element.type = 'button';
         element.className = 'casino-btn' + (primary ? ' casino-btn-primary' : '');
         element.textContent = text;
         element.disabled = disabled || isBusy;
+        if (keys !== null) element.setAttribute('aria-keyshortcuts', keys);
         element.addEventListener('click', onClick);
         return element;
     }
@@ -481,11 +494,16 @@
     function actionContent() {
         const you = me();
         if (game.phase === 'lobby') {
-            if (!game.isHost) return [paragraph('Waiting for the host to start the game.')];
+            const settings = paragraph('Room settings: ' + settingsText() + '.', 'mt-hint');
+            if (!game.isHost) return [paragraph('Waiting for the host to start the game.'), settings];
             const enough = game.players.length >= 2;
             return [
                 paragraph(enough ? 'Start when everyone is in. Up to 4 players.' : 'Invite people, or give them the code. 2 to 4 players.'),
-                buttons(button('Start the game', () => act('start'), { primary: true, disabled: !enough })),
+                settings,
+                buttons(
+                    button('Start the game', () => act('start'), { primary: true, disabled: !enough }),
+                    button('Room settings', openSettings),
+                ),
             ];
         }
         if (game.phase === 'resume') {
@@ -517,10 +535,11 @@
                 content.push(paragraph('You have ' + kr(you.cash) + '. Mortgage or sell something first (click your properties on the board) to afford it.', 'mt-hint'));
             }
             content.push(buttons(
-                button('Buy it', () => turnAct('buy'), { primary: true, disabled: you.cash < field.price }),
-                button('Leave it with the bank', () => turnAct('decline')),
+                button('Buy it', () => turnAct('buy'), { primary: true, disabled: you.cash < field.price, keys: 'Enter' }),
+                button('Leave it with the bank', () => turnAct('decline'), { keys: 'Backspace' }),
                 button('See the card', () => openDeed(pending.field)),
             ));
+            content.push(keysHint('Enter buys it, Backspace leaves it with the bank.'));
             return content;
         }
         if (pending?.type === 'tax') {
@@ -546,25 +565,31 @@
         if (game.turn.step === 'roll') {
             if (you.inJail) {
                 return [
-                    paragraph('You\'re in jail. Roll a 6 to get out (try ' + (you.jailTries + 1) + ' of 3), or pay to get out first.'),
+                    paragraph('You\'re in jail. Roll ' + lucky() + ' to get out (try ' + (you.jailTries + 1) + ' of 3), or pay to get out first.'),
                     buttons(
-                        button('Roll', () => turnAct('roll'), { primary: true }),
+                        button('Roll', () => turnAct('roll'), { primary: true, keys: 'Enter Space' }),
                         button('Pay 1,000 kr', () => turnAct('payBail'), { disabled: you.cash < 1000 }),
                         ...(you.cards > 0 ? [button('Use your "benådet" card', () => turnAct('useCard'))] : []),
                     ),
+                    keysHint('Enter or Space rolls.'),
                 ];
             }
             const again = game.turn.next === 'roll';
             return [
-                paragraph(again ? 'You rolled a 6. Roll again!' : 'Your turn. Roll the die.'),
-                buttons(button(again ? 'Roll again' : 'Roll', () => turnAct('roll'), { primary: true })),
+                paragraph(again ? 'You rolled ' + lucky() + '. Roll again!' : 'Your turn. Roll ' + theDice() + '.'),
+                buttons(button(again ? 'Roll again' : 'Roll', () => turnAct('roll'), { primary: true, keys: 'Enter Space' })),
+                keysHint('Enter or Space rolls.'),
             ];
         }
         return [
             paragraph('Build, mortgage or trade if you like, then end your turn.', 'mt-hint'),
-            buttons(button('End turn', () => turnAct('endTurn'), { primary: true })),
+            buttons(button('End turn', () => turnAct('endTurn'), { primary: true, keys: 'Enter' })),
+            keysHint('Enter ends your turn.'),
         ];
     }
+
+    // Only shown on screens with a mouse (matador.css), as touch screens have no keyboard to use them with
+    const keysHint = (text) => paragraph('Keyboard: ' + text, 'mt-hint mt-keys');
 
     function othersTurn() {
         const name = nameOf(game.turn.seat);
@@ -574,13 +599,58 @@
             : pending?.type === 'debt' ? name + ' owes ' + kr(pending.amount) + ' and is raising the money.'
             : game.turn.step === 'roll' ? name + ' is about to roll.'
             : name + ' can build or trade before ending their turn.';
-        return [paragraph(text), paragraph('You can build, mortgage and trade at any time: click your properties on the board.', 'mt-hint')];
+        return [paragraph(text), paragraph('You can trade at any time, and build and mortgage in your own turn (click your properties on the board).', 'mt-hint')];
     }
 
     async function confirmBankruptcy(to) {
         const ok = await confirmDialog('Go bankrupt?', 'Everything you have goes to ' + to + ', and you\'re out of the game.', 'Go bankrupt');
         if (ok) turnAct('bankrupt');
     }
+
+    // Buying with the keyboard asks first, as Enter is easily pressed once too often. It's only bought when it's still
+    // the same question when they say yes (the turn could have been passed on meanwhile).
+    async function confirmBuy() {
+        const field = FIELDS[game.pending.field];
+        const turnId = game.turn.id;
+        if (me().cash < field.price) {
+            message.textContent = 'You don\'t have ' + kr(field.price) + '. Mortgage or sell something first, or leave it with the bank.';
+            return;
+        }
+        const ok = await confirmDialog('Buy ' + field.name + '?',
+            'It costs ' + kr(field.price) + ', and you have ' + kr(me().cash) + '. Enter buys it, Backspace goes back.',
+            'Buy it', { focusOk: true });
+        if (ok && game.turn.id === turnId && game.pending?.type === 'buy') turnAct('buy');
+    }
+
+    // ----- Keyboard shortcuts in the player's turn. Not while they type, a dialog is open, or a button or link has
+    // the focus (Enter and Space press that instead).
+
+    function shortcutFor(key) {
+        const you = me();
+        if (!isMyTurn() || isBusy || !you || you.bankrupt) return null;
+        const pending = game.pending;
+        if (pending?.type === 'buy') {
+            if (key === 'Enter') return confirmBuy;
+            if (key === 'Backspace') return () => turnAct('decline');
+            return null;
+        }
+        if (pending) return null; // tax and debt need a choice made with the buttons
+        if (game.turn.step === 'roll' && (key === 'Enter' || key === ' ')) return () => turnAct('roll');
+        if (game.turn.step === 'end' && key === 'Enter') return () => turnAct('endTurn');
+        return null;
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (game === null || event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+        if (document.querySelector('dialog[open]')) return;
+        const target = event.target instanceof Element ? event.target : document.body;
+        if (target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+        if ((event.key === 'Enter' || event.key === ' ') && target.closest('button, a, summary')) return;
+        const shortcut = shortcutFor(event.key);
+        if (shortcut === null) return;
+        event.preventDefault(); // Space would scroll the page, Backspace could go back in some browsers
+        shortcut();
+    });
 
     // ----- Trades
 
@@ -927,7 +997,10 @@
         deedOwner.textContent = parts.join(' · ');
 
         const list = [];
-        if (owner !== null && owner === game.you && isPlaying() && !me()?.bankrupt) {
+        const isMine = owner !== null && owner === game.you && isPlaying() && !me()?.bankrupt;
+        if (isMine && !isMyTurn()) {
+            list.push(paragraph('You can build, sell and mortgage in your own turn.', 'mt-hint'));
+        } else if (isMine) {
             const houses = property.houses;
             const groupBuilt = GROUP_FIELDS[field.group].some((other) => (game.fields[other]?.houses ?? 0) > 0);
             if (field.type === 'street') {
@@ -959,13 +1032,15 @@
 
     // ----- Confirming
 
+    // Enter picks the safe choice (Cancel), unless `focusOk` (buying with the keyboard, where Enter is meant to say yes).
+    // Backspace and Escape cancel.
     const confirmBox = find('[data-mt-confirm]');
-    function confirmDialog(title, text, okText) {
+    function confirmDialog(title, text, okText, { focusOk = false } = {}) {
         find('[data-mt-confirm-title]').textContent = title;
         find('[data-mt-confirm-text]').textContent = text;
         find('[data-mt-confirm-ok]').textContent = okText;
         confirmBox.showModal();
-        find('[data-mt-confirm-cancel]').focus(); // the safe choice is the one Enter picks
+        find(focusOk ? '[data-mt-confirm-ok]' : '[data-mt-confirm-cancel]').focus();
         return new Promise((resolve) => {
             const done = (answer) => {
                 confirmBox.removeEventListener('close', onClose);
@@ -978,6 +1053,59 @@
     }
     find('[data-mt-confirm-cancel]').addEventListener('click', () => confirmBox.close('cancel'));
     find('[data-mt-confirm-ok]').addEventListener('click', () => confirmBox.close('ok'));
+    confirmBox.addEventListener('keydown', (event) => {
+        if (event.key === 'Backspace') {
+            event.preventDefault();
+            confirmBox.close('cancel');
+        }
+    });
+
+    // ----- The room's settings: the host changes them before the game starts, everyone else only sees them
+
+    const settingsDialog = find('[data-mt-settings-dialog]');
+    const settingsForm = find('[data-mt-settings-form]');
+    const settingsMessage = find('[data-mt-settings-message]');
+    const settingsSave = find('[data-mt-settings-save]');
+    const canChangeSettings = () => game.isHost && game.phase === 'lobby';
+    const JAIL_RENT_TEXT = { yes: 'rent is paid in jail', no: 'no rent in jail', bank: 'rent in jail goes to the bank' };
+    const settingsText = () => (game.settings.dice === 2 ? '2 dice' : '1 die') + ', ' + JAIL_RENT_TEXT[game.settings.jailRent];
+
+    // The choices are only filled in from the game when it opens, or while it can't be changed (so a poll doesn't
+    // undo what the host has just clicked)
+    function fillSettings() {
+        settingsForm.elements.dice.value = String(game.settings.dice);
+        settingsForm.elements.jailRent.value = game.settings.jailRent;
+    }
+
+    function renderSettings() {
+        const canChange = canChangeSettings();
+        if (!canChange) fillSettings();
+        settingsForm.querySelectorAll('[data-mt-settings-fields]').forEach((fields) => (fields.disabled = !canChange));
+        settingsSave.hidden = !canChange;
+        settingsSave.disabled = isBusy;
+        find('[data-mt-settings-text]').textContent = canChange ? 'Choose how this game is played. They can be changed until you start it.'
+            : game.phase === 'lobby' ? 'Only the host can change these, before the game starts.'
+            : 'The game has started, so these can\'t be changed anymore.';
+    }
+
+    function openSettings() {
+        if (game === null) return;
+        settingsMessage.textContent = '';
+        fillSettings();
+        renderSettings();
+        settingsDialog.showModal();
+    }
+
+    settingsButton.addEventListener('click', openSettings);
+    find('[data-mt-settings-close]').addEventListener('click', () => settingsDialog.close());
+    settingsForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); // it's closed once it's saved, not straight away
+        const data = await act('settings', {
+            dice: settingsForm.elements.dice.value,
+            jailRent: settingsForm.elements.jailRent.value,
+        }, settingsMessage);
+        if (data && !data.error) settingsDialog.close();
+    });
 
     // ----- Inviting, and giving an empty seat to someone: find people with the chat's user search
 

@@ -72,6 +72,13 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>
                     </svg>
                 </button>
+                <button type="button" class="casino-btn mt-icon-btn" aria-label="Room settings" title="Room settings"
+                        aria-haspopup="dialog" data-mt-settings>
+                    <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/>
+                        <path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/>
+                    </svg>
+                </button>
                 <button type="button" class="casino-btn mt-icon-btn" aria-label="Sound" title="Sound" aria-pressed="true" data-mt-sound>
                     <svg class="mt-icon mt-icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>
@@ -129,7 +136,7 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                         <p class="mt-logo">MATADOR</p>
                         <p class="mt-edition">HTX Edition</p>
                     </div>
-                    <div class="mt-die" role="img" aria-label="The die" data-mt-die>⚀</div>
+                    <div class="mt-die" role="img" aria-label="The dice" data-mt-die>⚀</div>
                     <p class="mt-status" role="status" data-mt-status>Loading the game…</p>
                     <div class="mt-timer" data-mt-timer hidden>
                         <span class="mt-timer-bar" aria-hidden="true"><span class="mt-timer-fill" data-mt-timer-fill></span></span>
@@ -239,6 +246,49 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
             <div class="games-dialog-actions">
                 <button type="button" class="casino-btn" data-mt-invite-close>Done</button>
             </div>
+        </dialog>
+
+        <!-- The room's settings: the host changes them before the game starts, everyone else (and the host once it has
+             started) only sees them. matadorGame.js fills in the choices from the game and sends them as "settings". -->
+        <dialog class="games-dialog mt-settings" aria-labelledby="mt-settings-title" data-mt-settings-dialog>
+            <form method="dialog" data-mt-settings-form>
+                <h2 id="mt-settings-title">Room settings</h2>
+                <p class="mt-hint" data-mt-settings-text></p>
+                <fieldset class="casino-choices" data-mt-settings-fields>
+                    <legend class="casino-label">Dice</legend>
+                    <?php foreach ([
+                        1 => ['1 die (default)', 'A 6 gives another roll, and gets you out of jail.'],
+                        2 => ['2 dice', 'Doubles give another roll, and get you out of jail.'],
+                    ] as $value => [$label, $hint]): ?>
+                        <label class="casino-choice">
+                            <input type="radio" name="dice" value="<?= $value ?>">
+                            <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
+                <fieldset class="casino-choices" data-mt-settings-fields>
+                    <legend class="casino-label">Collect rent while in jail</legend>
+                    <?php foreach (HBHUB_MATADOR_JAIL_RENT_CHOICES as $value => $label):
+                        $hint = match ($value) {
+                            'yes' => 'Players in jail still get the rent for their properties.',
+                            'no' => 'Nobody pays rent to a player who\'s in jail.',
+                            'bank' => 'The rent is still paid, but to the bank, not to the player in jail.',
+                        }; ?>
+                        <label class="casino-choice">
+                            <input type="radio" name="jailRent" value="<?= $value ?>">
+                            <span>
+                                <strong><?= htmlspecialchars($label) ?><?= $value === HBHUB_MATADOR_DEFAULT_SETTINGS['jailRent'] ? ' (default)' : '' ?></strong>
+                                <span class="casino-hint"><?= htmlspecialchars($hint) ?></span>
+                            </span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
+                <p class="mt-message" role="alert" data-mt-settings-message></p>
+                <div class="games-dialog-actions">
+                    <button type="button" class="casino-btn" data-mt-settings-close>Close</button>
+                    <button type="submit" class="casino-btn casino-btn-primary" value="save" data-mt-settings-save>Save</button>
+                </div>
+            </form>
         </dialog>
 
         <dialog class="games-dialog" aria-labelledby="mt-confirm-title" data-mt-confirm>

@@ -599,6 +599,30 @@ function hbHubMatadorStart(PDO $db, array &$room, int $userId): ?string
 }
 
 /**
+ * The host changes the room's settings (game.php's hbHubMatadorSettings(), as sent: dice and jailRent), before the game
+ * starts. A saved game keeps the ones it was started with. Returns null when they're changed, otherwise why not.
+ */
+function hbHubMatadorChangeSettings(array &$room, int $userId, mixed $dice, mixed $jailRent): ?string
+{
+    $state = &$room['state'];
+    if ($room['roomHostUserId'] !== $userId) {
+        return 'Only the host can change the room\'s settings.';
+    }
+    if ($state['phase'] !== 'lobby') {
+        return 'The settings can only be changed before the game starts.';
+    }
+    $settings = hbHubMatadorCleanSettings($dice, $jailRent);
+    if ($settings === null) {
+        return 'Choose the settings.';
+    }
+    if ($settings !== hbHubMatadorSettings($state)) {
+        $state['settings'] = $settings;
+        hbHubMatadorLog($state, 'The host changed the room\'s settings: ' . hbHubMatadorSettingsText($settings) . '.');
+    }
+    return null;
+}
+
+/**
  * The host saves the game and stops it for everyone (hbHubMatadorPlay() deletes the room). It's continued from the
  * owner's saved game on the Matador page. Returns null when it's done, otherwise why not.
  */

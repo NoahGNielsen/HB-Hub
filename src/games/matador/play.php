@@ -7,9 +7,11 @@
 //   (a message to show) when it couldn't be done. The actions:
 //     In your turn (with turn: the turn id the game showed when it was clicked, so a double click only counts once):
 //       roll, buy, decline, tax (choice: fixed or percent), payDebt, bankrupt, payBail, useCard and endTurn
-//     Any time: build, sell, mortgage and unmortgage (field), offer (to, giveFields, giveCash, giveCards, getFields,
-//       getCash, getCards), answer (trade: its id, answer: accept, decline or cancel) and leave
-//     For the host: start, invite (user), giveSeat (seat, user) and saveStop
+//     In your turn, but as often as you like: build, sell, mortgage and unmortgage (field)
+//     Any time: offer (to, giveFields, giveCash, giveCards, getFields, getCash, getCards), answer (trade: its id,
+//       answer: accept, decline or cancel) and leave
+//     For the host: start, invite (user), giveSeat (seat, user), saveStop, and settings (dice: 1 or 2, jailRent: yes,
+//       no or bank - before the game starts)
 //     chat (text) writes in the game's chat (chat.php), for anyone in the game
 //   Anything the player whose turn it is does (not the chat) starts their 30 seconds again (hbHubMatadorPlayerActed()).
 //   The game has the chat's newest messages in "chat", each with the seat of who wrote it (null when they have none).
@@ -83,6 +85,12 @@ $player = static fn (callable $do): callable => static function (array &$room) u
     return $error;
 };
 
+/**
+ * Building, selling and mortgaging: like $player, but only in the player's own turn.
+ */
+$ownTurn = static fn (callable $do): callable => $player(
+    static fn (array &$state, int $seat): ?string => hbHubMatadorOwnTurnProblem($state, $seat) ?? $do($state, $seat));
+
 $field = isset($input['field']) && is_string($input['field']) && ctype_digit($input['field']) && strlen($input['field']) <= 2
     ? (int) $input['field']
     : null;
@@ -98,10 +106,10 @@ $do = match ($action) {
     'payBail' => $turn(static fn (array &$state, int $seat): ?string => hbHubMatadorPayBail($state, $seat)),
     'useCard' => $turn(static fn (array &$state, int $seat): ?string => hbHubMatadorUseCard($state, $seat)),
     'endTurn' => $turn(static fn (array &$state, int $seat): ?string => hbHubMatadorEndTurn($state, $seat)),
-    'build' => $player(static fn (array &$state, int $seat): ?string => hbHubMatadorBuild($state, $seat, $field)),
-    'sell' => $player(static fn (array &$state, int $seat): ?string => hbHubMatadorSell($state, $seat, $field)),
-    'mortgage' => $player(static fn (array &$state, int $seat): ?string => hbHubMatadorMortgage($state, $seat, $field)),
-    'unmortgage' => $player(static fn (array &$state, int $seat): ?string => hbHubMatadorUnmortgage($state, $seat, $field)),
+    'build' => $ownTurn(static fn (array &$state, int $seat): ?string => hbHubMatadorBuild($state, $seat, $field)),
+    'sell' => $ownTurn(static fn (array &$state, int $seat): ?string => hbHubMatadorSell($state, $seat, $field)),
+    'mortgage' => $ownTurn(static fn (array &$state, int $seat): ?string => hbHubMatadorMortgage($state, $seat, $field)),
+    'unmortgage' => $ownTurn(static fn (array &$state, int $seat): ?string => hbHubMatadorUnmortgage($state, $seat, $field)),
     'offer' => $player(static fn (array &$state, int $seat): ?string => hbHubMatadorOffer($state, $seat, $input['to'] ?? null,
         hbHubMatadorTradeSide($input['giveFields'] ?? '', $input['giveCash'] ?? '', $input['giveCards'] ?? ''),
         hbHubMatadorTradeSide($input['getFields'] ?? '', $input['getCash'] ?? '', $input['getCards'] ?? ''))),
@@ -112,6 +120,7 @@ $do = match ($action) {
     'invite' => static fn (array &$room): ?string => hbHubMatadorInvite($db, $room, $userId, $input['user'] ?? null),
     'giveSeat' => static fn (array &$room): ?string => hbHubMatadorGiveSeat($db, $room, $userId, $input['seat'] ?? null, $input['user'] ?? null),
     'saveStop' => static fn (array &$room): ?string => hbHubMatadorSaveAndStop($db, $room, $userId),
+    'settings' => static fn (array &$room): ?string => hbHubMatadorChangeSettings($room, $userId, $input['dice'] ?? null, $input['jailRent'] ?? null),
     default => false,
 };
 if ($do === false) {
