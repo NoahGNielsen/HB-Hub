@@ -328,6 +328,7 @@ CREATE TABLE `HBHub-ChatMembers` (
   `memberJoinedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `memberNickname` varchar(64) DEFAULT NULL,
   `memberMutedUntil` timestamp NULL DEFAULT NULL,
+  `memberLastViewedTimestamp` datetime DEFAULT NULL COMMENT 'UTC, last time the member had the chat open and in view',
   `userAcknowledgedJoin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Message request, not accepted yet\r\n1 Accepted'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
