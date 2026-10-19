@@ -1,8 +1,8 @@
 <?php
 // The admin panel's pages: the lists of users and chats (admin/index.php), the banned pictures (admin/banned.php), the
 // feedback (admin/feedback.php), and one user (admin/user.php) or chat (admin/chat.php). Only site admins (userRole 2) get in, everyone else gets a 404 so
-// it doesn't show they're there. What the pages share is here: who gets in, the tabs at the top of the lists, and how
-// dates, statuses, pictures, messages and chat names are shown.
+// it doesn't show they're there. What the pages share is here: who gets in, the side menus (the settings page's,
+// settings.css), and how dates, statuses, pictures, messages and chat names are shown.
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/chat.php';
 
@@ -12,6 +12,7 @@ const ADMIN_CHAT_ROLES = [1 => 'Member', 2 => 'Group admin', 3 => 'Group owner']
 const ADMIN_MESSAGE_DELETED_LABELS = [0 => 'Deleted by the user', 1 => 'Deleted by a group admin', 2 => 'Deleted by a site admin'];
 const ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN = 2;
 const ADMIN_MESSAGES_SHOWN = 50; // per page
+const ADMIN_MENU_DANGER = 'Danger zone'; // the group of a side menu whose links are red (ban, delete)
 
 /**
  * Shows the 404 page and stops.
@@ -33,29 +34,60 @@ function adminOnly(array $user): void
 }
 
 /**
- * The tabs at the top of the admin panel's start page: Users, Chats (both admin/index.php), Banned pictures
- * (admin/banned.php) and Feedback (admin/feedback.php), each with how many there are in all, or for Feedback how many
- * are new. $active is 'users', 'chats', 'banned' or 'feedback'.
+ * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), Banned pictures (admin/banned.php)
+ * and Feedback (admin/feedback.php), each with how many there are in all, or for Feedback how many are new.
+ * $active is 'users', 'chats', 'banned' or 'feedback'.
  */
-function adminTabsHtml(PDO $db, string $active): string
+function adminListsMenuHtml(PDO $db, string $active): string
 {
     $totals = $db->query('SELECT (SELECT COUNT(*) FROM `HBHub-Users`) AS users, (SELECT COUNT(*) FROM `HBHub-Chats`) AS chats,
         (SELECT COUNT(*) FROM `HBHub-BannedAvatars`) AS banned,
         (SELECT COUNT(*) FROM `HBHub-Feedback` WHERE feedbackDoneTimestamp IS NULL) AS feedback')->fetch();
-    $tabs = [
+    $lists = [
         'users' => ['Users', '/admin/?list=users'],
         'chats' => ['Chats', '/admin/?list=chats'],
         'banned' => ['Banned pictures', '/admin/banned'],
         'feedback' => ['Feedback', '/admin/feedback'],
     ];
 
-    $html = '<nav class="admin-tabs" aria-label="Lists">';
-    foreach ($tabs as $tab => [$label, $href]) {
-        $isActive = $tab === $active;
-        $html .= '<a class="admin-tab' . ($isActive ? ' is-active' : '') . '" href="' . $href . '"' . ($isActive ? ' aria-current="page"' : '') . '>'
-            . $label . ' <span class="admin-tab-count">' . number_format((int) $totals[$tab]) . '</span></a>';
+    $html = '<nav class="settings-menu" aria-label="Admin panel"><div class="settings-menu-links"><div class="settings-menu-group">'
+        . '<p class="settings-menu-heading">Lists</p><ul class="settings-menu-list">';
+    foreach ($lists as $list => [$label, $href]) {
+        $count = (int) $totals[$list];
+        $html .= '<li><a class="settings-menu-link" href="' . $href . '"' . ($list === $active ? ' aria-current="page"' : '') . '>'
+            . $label . ' <span class="settings-menu-count' . ($list === 'feedback' && $count > 0 ? ' is-new' : '') . '">'
+            . number_format($count) . '</span></a></li>';
     }
-    return $html . '</nav>';
+    return $html . '</ul></div></div></nav>';
+}
+
+/**
+ * The side menu of one user's or chat's admin panel: back to the list, its picture, name and status, then links to
+ * the cards on the page, which settingsMenu.js marks while scrolling. $groups is heading => [card id => label], in the
+ * order the cards are on the page; the links in the ADMIN_MENU_DANGER group are red. An empty group is left out.
+ *
+ * @param array<string, array<string, string>> $groups
+ */
+function adminPageMenuHtml(string $backHref, string $backLabel, ?string $avatarSrc, string $name, string $statusHtml, array $groups): string
+{
+    $html = '<nav class="settings-menu" aria-label="Sections" data-settings-menu>'
+        . '<a class="settings-menu-back" href="' . htmlspecialchars($backHref) . '">&larr; ' . htmlspecialchars($backLabel) . '</a>'
+        . '<div class="settings-menu-who"><span class="settings-menu-avatar" aria-hidden="true">'
+        . ($avatarSrc !== null ? '<img src="' . htmlspecialchars($avatarSrc) . '" alt="">' : htmlspecialchars(mb_strtoupper(mb_substr($name, 0, 1))))
+        . '</span><div class="settings-menu-who-text"><span class="settings-menu-who-name">' . htmlspecialchars($name) . '</span>'
+        . $statusHtml . '</div></div><div class="settings-menu-links">';
+    foreach ($groups as $heading => $links) {
+        if ($links === []) {
+            continue;
+        }
+        $html .= '<div class="settings-menu-group"><p class="settings-menu-heading">' . htmlspecialchars($heading) . '</p><ul class="settings-menu-list">';
+        foreach ($links as $card => $label) {
+            $html .= '<li><a class="settings-menu-link' . ($heading === ADMIN_MENU_DANGER ? ' is-danger' : '') . '" href="#' . $card . '">'
+                . htmlspecialchars($label) . '</a></li>';
+        }
+        $html .= '</ul></div>';
+    }
+    return $html . '</div></nav>';
 }
 
 /**

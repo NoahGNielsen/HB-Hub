@@ -1,5 +1,5 @@
 <?php
-// Admin panel's feedback: /admin/feedback, the fourth tab on the admin panel's start page (admin/index.php).
+// Admin panel's feedback: /admin/feedback, the fourth list in the admin panel's side menu (adminListsMenuHtml()).
 // Everyone but site admins gets a 404, so it doesn't show that the page is here.
 //
 // The feedback users have sent from the Feedback button in the side bar (otherPages/feedback.php,
@@ -61,80 +61,89 @@ $adminFormAction = '/admin/feedback' . ($adminPage > 1 ? '?page=' . $adminPage :
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="settings admin">
-        <h1>Admin panel</h1>
+    <main class="settings settings-page admin">
+        <div class="settings-layout">
+            <!-- Users, chats, banned pictures or feedback, each with how many there are in all (new feedback only) -->
+            <?= adminListsMenuHtml($db, 'feedback') ?>
 
-        <!-- Users, chats, banned pictures or feedback, each with how many there are (new feedback only) -->
-        <?= adminTabsHtml($db, 'feedback') ?>
+            <div class="settings-content">
+                <h1>Admin panel</h1>
 
-        <section class="settings-card" id="list" aria-labelledby="admin-list-heading">
-            <h2 id="admin-list-heading">Feedback</h2>
+                <section class="settings-card" id="list" aria-labelledby="admin-list-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-list-heading">Feedback</h2>
+                            <p class="settings-intro">What users have sent with the Feedback button in the side bar. Mark it as done once it's dealt with.</p>
+                        </div>
+                    </div>
 
-            <?php if ($adminFeedback === []): ?>
-                <p class="settings-hint">Nobody has sent any feedback yet.</p>
-            <?php else: ?>
-                <p class="settings-hint admin-list-count">
-                    <?= number_format(($adminPage - 1) * ADMIN_FEEDBACK_SHOWN + 1) ?>&ndash;<?= number_format(($adminPage - 1) * ADMIN_FEEDBACK_SHOWN + count($adminFeedback)) ?>
-                    of <?= number_format($adminTotal) ?>, new ones first
-                </p>
-                <ul class="admin-feedback-list">
-                    <?php foreach ($adminFeedback as $feedback): ?>
-                        <?php
-                        $feedbackId = (int) $feedback['feedbackId'];
-                        $feedbackDone = $feedback['feedbackDoneTimestamp'] !== null;
-                        $feedbackName = $feedback['userName'] ?? 'Deleted User';
-                        ?>
-                        <li class="admin-feedback-item<?= $feedbackDone ? ' is-done' : '' ?>">
-                            <div class="admin-feedback-head">
-                                <span class="admin-feedback-from">
-                                    <?php if ($feedback['feedbackUserId'] !== null): ?>
-                                        <?= adminAvatarHtml(hbHubAvatarUrl((int) $feedback['feedbackUserId'], $feedback['userAvatarAttachmentId'] !== null ? (int) $feedback['userAvatarAttachmentId'] : null), $feedbackName) ?>
-                                        <a class="admin-link" href="/admin/user?user=<?= (int) $feedback['feedbackUserId'] ?>"><?= htmlspecialchars($feedbackName) ?></a>
-                                    <?php else: ?>
-                                        <?= adminAvatarHtml(null, $feedbackName) ?>
-                                        <span class="admin-muted"><?= htmlspecialchars($feedbackName) ?></span>
-                                    <?php endif; ?>
-                                </span>
-                                <span class="admin-small"><?= adminTime($feedback['feedbackCreatedTimestamp']) ?></span>
-                                <?php if ($feedback['feedbackPage'] !== null): ?>
-                                    <span class="admin-small">from <a class="admin-link admin-mono" href="<?= htmlspecialchars($feedback['feedbackPage']) ?>"><?= htmlspecialchars($feedback['feedbackPage']) ?></a></span>
-                                <?php endif; ?>
-                                <span class="settings-status<?= $feedbackDone ? '' : ' is-on' ?>"><?= $feedbackDone ? 'Done' : 'New' ?></span>
-                            </div>
-                            <p class="admin-feedback-text"><?= nl2br(htmlspecialchars($feedback['feedbackContent'])) ?></p>
-                            <div class="admin-feedback-foot">
-                                <?php if ($feedbackDone): ?>
-                                    <span class="admin-small">Done <?= adminTime($feedback['feedbackDoneTimestamp']) ?><?php if ($feedback['feedbackDoneByUserId'] !== null): ?>
-                                        by <a class="admin-link" href="/admin/user?user=<?= (int) $feedback['feedbackDoneByUserId'] ?>"><?= htmlspecialchars($feedback['doneByName']) ?></a><?php endif; ?></span>
-                                <?php endif; ?>
-                                <form action="<?= $adminFormAction ?>" method="post">
-                                    <input type="hidden" name="action" value="<?= $feedbackDone ? 'new' : 'done' ?>">
-                                    <input type="hidden" name="feedback" value="<?= $feedbackId ?>">
-                                    <button type="submit" class="settings-btn settings-btn-small<?= $feedbackDone ? '' : ' settings-btn-primary' ?>"><?= $feedbackDone ? 'Mark as new' : 'Mark as done' ?></button>
-                                </form>
-                                <form action="<?= $adminFormAction ?>" method="post" data-confirm="Delete this feedback? It can't be brought back.">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="feedback" value="<?= $feedbackId ?>">
-                                    <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Delete</button>
-                                </form>
-                            </div>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-
-            <?php if ($adminPages > 1): ?>
-                <nav class="admin-pages" aria-label="Pages">
-                    <?php if ($adminPage > 1): ?>
-                        <a class="settings-btn" href="/admin/feedback<?= $adminPage > 2 ? '?page=' . ($adminPage - 1) : '' ?>#list" rel="prev">Previous</a>
+                    <?php if ($adminFeedback === []): ?>
+                        <p class="settings-hint">Nobody has sent any feedback yet.</p>
+                    <?php else: ?>
+                        <p class="settings-hint admin-list-count">
+                            <?= number_format(($adminPage - 1) * ADMIN_FEEDBACK_SHOWN + 1) ?>&ndash;<?= number_format(($adminPage - 1) * ADMIN_FEEDBACK_SHOWN + count($adminFeedback)) ?>
+                            of <?= number_format($adminTotal) ?>, new ones first
+                        </p>
+                        <ul class="admin-feedback-list">
+                            <?php foreach ($adminFeedback as $feedback): ?>
+                                <?php
+                                $feedbackId = (int) $feedback['feedbackId'];
+                                $feedbackDone = $feedback['feedbackDoneTimestamp'] !== null;
+                                $feedbackName = $feedback['userName'] ?? 'Deleted User';
+                                ?>
+                                <li class="admin-feedback-item<?= $feedbackDone ? ' is-done' : '' ?>">
+                                    <div class="admin-feedback-head">
+                                        <span class="admin-feedback-from">
+                                            <?php if ($feedback['feedbackUserId'] !== null): ?>
+                                                <?= adminAvatarHtml(hbHubAvatarUrl((int) $feedback['feedbackUserId'], $feedback['userAvatarAttachmentId'] !== null ? (int) $feedback['userAvatarAttachmentId'] : null), $feedbackName) ?>
+                                                <a class="admin-link" href="/admin/user?user=<?= (int) $feedback['feedbackUserId'] ?>"><?= htmlspecialchars($feedbackName) ?></a>
+                                            <?php else: ?>
+                                                <?= adminAvatarHtml(null, $feedbackName) ?>
+                                                <span class="admin-muted"><?= htmlspecialchars($feedbackName) ?></span>
+                                            <?php endif; ?>
+                                        </span>
+                                        <span class="admin-small"><?= adminTime($feedback['feedbackCreatedTimestamp']) ?></span>
+                                        <?php if ($feedback['feedbackPage'] !== null): ?>
+                                            <span class="admin-small">from <a class="admin-link admin-mono" href="<?= htmlspecialchars($feedback['feedbackPage']) ?>"><?= htmlspecialchars($feedback['feedbackPage']) ?></a></span>
+                                        <?php endif; ?>
+                                        <span class="settings-status<?= $feedbackDone ? '' : ' is-on' ?>"><?= $feedbackDone ? 'Done' : 'New' ?></span>
+                                    </div>
+                                    <p class="admin-feedback-text"><?= nl2br(htmlspecialchars($feedback['feedbackContent'])) ?></p>
+                                    <div class="admin-feedback-foot">
+                                        <?php if ($feedbackDone): ?>
+                                            <span class="admin-small">Done <?= adminTime($feedback['feedbackDoneTimestamp']) ?><?php if ($feedback['feedbackDoneByUserId'] !== null): ?>
+                                                by <a class="admin-link" href="/admin/user?user=<?= (int) $feedback['feedbackDoneByUserId'] ?>"><?= htmlspecialchars($feedback['doneByName']) ?></a><?php endif; ?></span>
+                                        <?php endif; ?>
+                                        <form action="<?= $adminFormAction ?>" method="post">
+                                            <input type="hidden" name="action" value="<?= $feedbackDone ? 'new' : 'done' ?>">
+                                            <input type="hidden" name="feedback" value="<?= $feedbackId ?>">
+                                            <button type="submit" class="settings-btn settings-btn-small<?= $feedbackDone ? '' : ' settings-btn-primary' ?>"><?= $feedbackDone ? 'Mark as new' : 'Mark as done' ?></button>
+                                        </form>
+                                        <form action="<?= $adminFormAction ?>" method="post" data-confirm="Delete this feedback? It can't be brought back.">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="feedback" value="<?= $feedbackId ?>">
+                                            <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Delete</button>
+                                        </form>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
                     <?php endif; ?>
-                    <span class="admin-pages-text">Page <?= $adminPage ?> of <?= $adminPages ?></span>
-                    <?php if ($adminPage < $adminPages): ?>
-                        <a class="settings-btn" href="/admin/feedback?page=<?= $adminPage + 1 ?>#list" rel="next">Next</a>
+
+                    <?php if ($adminPages > 1): ?>
+                        <nav class="admin-pages" aria-label="Pages">
+                            <?php if ($adminPage > 1): ?>
+                                <a class="settings-btn" href="/admin/feedback<?= $adminPage > 2 ? '?page=' . ($adminPage - 1) : '' ?>#list" rel="prev">Previous</a>
+                            <?php endif; ?>
+                            <span class="admin-pages-text">Page <?= $adminPage ?> of <?= $adminPages ?></span>
+                            <?php if ($adminPage < $adminPages): ?>
+                                <a class="settings-btn" href="/admin/feedback?page=<?= $adminPage + 1 ?>#list" rel="next">Next</a>
+                            <?php endif; ?>
+                        </nav>
                     <?php endif; ?>
-                </nav>
-            <?php endif; ?>
-        </section>
+                </section>
+            </div>
+        </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

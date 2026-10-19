@@ -1,5 +1,5 @@
 <?php
-// Admin panel's banned pictures: /admin/banned, the third tab on the admin panel's start page (admin/index.php).
+// Admin panel's banned pictures: /admin/banned, the third list in the admin panel's side menu (adminListsMenuHtml()).
 // Everyone but site admins gets a 404, so it doesn't show that the page is here.
 //
 // The list of profile pictures that get an account banned straight away when it uploads one (assets/php/bannedAvatars.php).
@@ -98,110 +98,118 @@ $adminPictures = $db->query('SELECT b.bannedAvatarId, b.bannedAvatarFromUserId, 
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="settings admin">
-        <h1>Admin panel</h1>
+    <main class="settings settings-page admin">
+        <div class="settings-layout">
+            <!-- Users, chats, banned pictures or feedback, each with how many there are in all (new feedback only) -->
+            <?= adminListsMenuHtml($db, 'banned') ?>
 
-        <!-- Users, chats or banned pictures, each with how many there are in all -->
-        <?= adminTabsHtml($db, 'banned') ?>
+            <div class="settings-content">
+                <h1>Admin panel</h1>
 
-        <!-- Add a picture -->
-        <section class="settings-card" id="add" aria-labelledby="admin-add-heading">
-            <h2 id="admin-add-heading">Add a picture</h2>
-            <p class="settings-intro">
-                Any account that uploads one of these as its profile picture, or signs up with it, is banned straight away.
-                Copies count too when they look at least <?= $adminSimilarity ?>% the same: resized, re-saved, or cropped by up to
-                about a fifth from any side or to a square. A heavier crop, a mirrored copy or one drawn over isn't caught, and a
-                very plain picture (one colour, a smooth gradient) only catches the exact same file, so it doesn't ban other plain
-                pictures. Site admins are never banned by it.
-                Banning an account puts its picture here too, and unbanning it takes the picture off again.
-            </p>
-            <form action="/admin/banned#add" method="post" enctype="multipart/form-data">
-                <input type="hidden" name="action" value="add">
-                <div class="settings-field">
-                    <label class="settings-label" for="admin-banned-picture">Picture</label>
-                    <input type="file" id="admin-banned-picture" name="picture" accept="<?= implode(',', ADMIN_BANNED_TYPES) ?>" required aria-describedby="admin-banned-picture-hint">
-                    <p class="settings-hint" id="admin-banned-picture-hint">PNG, JPEG, GIF or WebP, up to <?= $adminPictureMaxLabel ?>.</p>
-                    <?php if ($adminError !== null): ?>
-                        <p class="settings-error" role="alert"><?= htmlspecialchars($adminError) ?></p>
+                <!-- Add a picture -->
+                <section class="settings-card" id="add" aria-labelledby="admin-add-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-add-heading">Add a banned picture</h2>
+                            <p class="settings-intro">
+                                Any account that uploads one of these as its profile picture, or signs up with it, is banned straight away.
+                                Copies count too when they look at least <?= $adminSimilarity ?>% the same: resized, re-saved, or cropped by up to
+                                about a fifth from any side or to a square. A heavier crop, a mirrored copy or one drawn over isn't caught, and a
+                                very plain picture (one colour, a smooth gradient) only catches the exact same file, so it doesn't ban other plain
+                                pictures. Site admins are never banned by it.
+                                Banning an account puts its picture here too, and unbanning it takes the picture off again.
+                            </p>
+                        </div>
+                    </div>
+                    <form action="/admin/banned#add" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="add">
+                        <div class="settings-field">
+                            <label class="settings-label" for="admin-banned-picture">Picture</label>
+                            <input type="file" id="admin-banned-picture" name="picture" accept="<?= implode(',', ADMIN_BANNED_TYPES) ?>" required aria-describedby="admin-banned-picture-hint">
+                            <p class="settings-hint" id="admin-banned-picture-hint">PNG, JPEG, GIF or WebP, up to <?= $adminPictureMaxLabel ?>.</p>
+                            <?php if ($adminError !== null): ?>
+                                <p class="settings-error" role="alert"><?= htmlspecialchars($adminError) ?></p>
+                            <?php endif; ?>
+                        </div>
+                        <div class="settings-actions">
+                            <button type="submit" class="settings-btn settings-btn-primary">Add to banned pictures</button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- The list -->
+                <section class="settings-card" id="list" aria-labelledby="admin-list-heading">
+                    <h2 id="admin-list-heading">Banned pictures</h2>
+
+                    <?php if ($adminPictures === []): ?>
+                        <p class="settings-hint">There are no banned pictures yet.</p>
+                    <?php else: ?>
+                        <p class="settings-hint admin-list-count">
+                            <?= number_format(($adminPage - 1) * ADMIN_BANNED_SHOWN + 1) ?>&ndash;<?= number_format(($adminPage - 1) * ADMIN_BANNED_SHOWN + count($adminPictures)) ?>
+                            of <?= number_format($adminTotal) ?>
+                        </p>
+                        <ul class="admin-banned-grid">
+                            <?php foreach ($adminPictures as $picture): ?>
+                                <?php
+                                $pictureId = (int) $picture['bannedAvatarId'];
+                                $pictureSrc = '/admin/bannedPicture?picture=' . $pictureId;
+                                $pictureMatches = (int) $picture['bannedAvatarMatchCount'];
+                                ?>
+                                <li class="admin-banned-item">
+                                    <a class="admin-banned-image" href="<?= $pictureSrc ?>" target="_blank" rel="noopener">
+                                        <!-- admin.js loads it, a few at a time (see there) -->
+                                        <img data-banned-picture="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>">
+                                        <noscript><img src="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>" loading="lazy"></noscript>
+                                    </a>
+                                    <dl class="admin-banned-details">
+                                        <div>
+                                            <dt>From</dt>
+                                            <dd><?php if ($picture['bannedAvatarFromUserId'] !== null): ?>
+                                                <a class="admin-link" href="/admin/user?user=<?= (int) $picture['bannedAvatarFromUserId'] ?>"><?= htmlspecialchars($picture['fromName']) ?></a>
+                                            <?php else: ?>
+                                                Uploaded by an admin
+                                            <?php endif; ?></dd>
+                                        </div>
+                                        <div>
+                                            <dt>Added</dt>
+                                            <dd><?= adminTime($picture['bannedAvatarCreatedTimestamp']) ?><?php if ($picture['bannedAvatarAddedByUserId'] !== null): ?>
+                                                <span class="admin-small">by <a class="admin-link" href="/admin/user?user=<?= (int) $picture['bannedAvatarAddedByUserId'] ?>"><?= htmlspecialchars($picture['addedByName']) ?></a></span><?php endif; ?></dd>
+                                        </div>
+                                        <div>
+                                            <dt>Catches</dt>
+                                            <dd><?= $picture['catchesSimilar'] ? 'Similar copies too' : 'Only the exact file' ?></dd>
+                                        </div>
+                                        <div>
+                                            <dt>Caught</dt>
+                                            <dd><?= number_format($pictureMatches) ?> <?= $pictureMatches === 1 ? 'upload' : 'uploads' ?><?php if ($picture['bannedAvatarLastMatchTimestamp'] !== null): ?>
+                                                <span class="admin-small">last <?= adminTime($picture['bannedAvatarLastMatchTimestamp']) ?></span><?php endif; ?></dd>
+                                        </div>
+                                    </dl>
+                                    <form action="/admin/banned<?= $adminPage > 1 ? '?page=' . $adminPage : '' ?>#list" method="post"
+                                          data-confirm="Remove this picture from the banned pictures? Accounts can upload it again without being banned.">
+                                        <input type="hidden" name="action" value="remove">
+                                        <input type="hidden" name="picture" value="<?= $pictureId ?>">
+                                        <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Remove</button>
+                                    </form>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
                     <?php endif; ?>
-                </div>
-                <div class="settings-actions">
-                    <button type="submit" class="settings-btn settings-btn-primary">Add to banned pictures</button>
-                </div>
-            </form>
-        </section>
 
-        <!-- The list -->
-        <section class="settings-card" id="list" aria-labelledby="admin-list-heading">
-            <h2 id="admin-list-heading">Banned pictures</h2>
-
-            <?php if ($adminPictures === []): ?>
-                <p class="settings-hint">There are no banned pictures yet.</p>
-            <?php else: ?>
-                <p class="settings-hint admin-list-count">
-                    <?= number_format(($adminPage - 1) * ADMIN_BANNED_SHOWN + 1) ?>&ndash;<?= number_format(($adminPage - 1) * ADMIN_BANNED_SHOWN + count($adminPictures)) ?>
-                    of <?= number_format($adminTotal) ?>
-                </p>
-                <ul class="admin-banned-grid">
-                    <?php foreach ($adminPictures as $picture): ?>
-                        <?php
-                        $pictureId = (int) $picture['bannedAvatarId'];
-                        $pictureSrc = '/admin/bannedPicture?picture=' . $pictureId;
-                        $pictureMatches = (int) $picture['bannedAvatarMatchCount'];
-                        ?>
-                        <li class="admin-banned-item">
-                            <a class="admin-banned-image" href="<?= $pictureSrc ?>" target="_blank" rel="noopener">
-                                <!-- admin.js loads it, a few at a time (see there) -->
-                                <img data-banned-picture="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>">
-                                <noscript><img src="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>" loading="lazy"></noscript>
-                            </a>
-                            <dl class="admin-banned-details">
-                                <div>
-                                    <dt>From</dt>
-                                    <dd><?php if ($picture['bannedAvatarFromUserId'] !== null): ?>
-                                        <a class="admin-link" href="/admin/user?user=<?= (int) $picture['bannedAvatarFromUserId'] ?>"><?= htmlspecialchars($picture['fromName']) ?></a>
-                                    <?php else: ?>
-                                        Uploaded by an admin
-                                    <?php endif; ?></dd>
-                                </div>
-                                <div>
-                                    <dt>Added</dt>
-                                    <dd><?= adminTime($picture['bannedAvatarCreatedTimestamp']) ?><?php if ($picture['bannedAvatarAddedByUserId'] !== null): ?>
-                                        <span class="admin-small">by <a class="admin-link" href="/admin/user?user=<?= (int) $picture['bannedAvatarAddedByUserId'] ?>"><?= htmlspecialchars($picture['addedByName']) ?></a></span><?php endif; ?></dd>
-                                </div>
-                                <div>
-                                    <dt>Catches</dt>
-                                    <dd><?= $picture['catchesSimilar'] ? 'Similar copies too' : 'Only the exact file' ?></dd>
-                                </div>
-                                <div>
-                                    <dt>Caught</dt>
-                                    <dd><?= number_format($pictureMatches) ?> <?= $pictureMatches === 1 ? 'upload' : 'uploads' ?><?php if ($picture['bannedAvatarLastMatchTimestamp'] !== null): ?>
-                                        <span class="admin-small">last <?= adminTime($picture['bannedAvatarLastMatchTimestamp']) ?></span><?php endif; ?></dd>
-                                </div>
-                            </dl>
-                            <form action="/admin/banned<?= $adminPage > 1 ? '?page=' . $adminPage : '' ?>#list" method="post"
-                                  data-confirm="Remove this picture from the banned pictures? Accounts can upload it again without being banned.">
-                                <input type="hidden" name="action" value="remove">
-                                <input type="hidden" name="picture" value="<?= $pictureId ?>">
-                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Remove</button>
-                            </form>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-
-            <?php if ($adminPages > 1): ?>
-                <nav class="admin-pages" aria-label="Pages">
-                    <?php if ($adminPage > 1): ?>
-                        <a class="settings-btn" href="/admin/banned<?= $adminPage > 2 ? '?page=' . ($adminPage - 1) : '' ?>#list" rel="prev">Previous</a>
+                    <?php if ($adminPages > 1): ?>
+                        <nav class="admin-pages" aria-label="Pages">
+                            <?php if ($adminPage > 1): ?>
+                                <a class="settings-btn" href="/admin/banned<?= $adminPage > 2 ? '?page=' . ($adminPage - 1) : '' ?>#list" rel="prev">Previous</a>
+                            <?php endif; ?>
+                            <span class="admin-pages-text">Page <?= $adminPage ?> of <?= $adminPages ?></span>
+                            <?php if ($adminPage < $adminPages): ?>
+                                <a class="settings-btn" href="/admin/banned?page=<?= $adminPage + 1 ?>#list" rel="next">Next</a>
+                            <?php endif; ?>
+                        </nav>
                     <?php endif; ?>
-                    <span class="admin-pages-text">Page <?= $adminPage ?> of <?= $adminPages ?></span>
-                    <?php if ($adminPage < $adminPages): ?>
-                        <a class="settings-btn" href="/admin/banned?page=<?= $adminPage + 1 ?>#list" rel="next">Next</a>
-                    <?php endif; ?>
-                </nav>
-            <?php endif; ?>
-        </section>
+                </section>
+            </div>
+        </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

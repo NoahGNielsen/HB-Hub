@@ -1,9 +1,16 @@
-/* Settings page (otherPages/settings.php): one card per group of settings */
+/* Settings page (otherPages/settings.php), and the building blocks the admin panel (admin.css) and the feedback page
+   (otherPages/feedback.php) use too: cards, fields, buttons and badges.
+   .settings on its own is one narrow column (the feedback page). .settings-page makes it wide, with a side menu
+   (.settings-menu) next to the cards (.settings-content); settingsMenu.js marks the link to the card on screen.
+   On a small screen the menu becomes a row of links across the top that stays under the top bar. */
 .settings {
-  --settings-danger: #d64545;
+  --settings-danger: #e05252;
   --settings-on: #2fa36b;
+  --settings-line: color-mix(in srgb, var(--text) 8%, transparent);
+  --settings-card-pad: 28px;
+  --settings-menu-row-h: 0px; /* how tall the menu is when it's a row across the top (small screens) */
   max-width: 640px;
-  margin: 48px auto;
+  margin: 40px auto 48px;
   padding: 0 16px;
   box-sizing: border-box;
 }
@@ -19,13 +26,250 @@
   letter-spacing: -0.02em;
 }
 
+/* Smooth jumps between the cards from the side menu, unless the device asks for less motion */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.settings-menu) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ---------- Page with a side menu ---------- */
+
+.settings.settings-page {
+  max-width: 1100px;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.settings-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-content > h1 {
+  margin-bottom: 0;
+}
+
+/* The menu: who it's about at the top, then the links in groups */
+.settings-menu {
+  position: sticky;
+  top: calc(var(--nav-top-h) + 24px);
+  max-height: calc(100vh - var(--nav-top-h) - 48px);
+  max-height: calc(100dvh - var(--nav-top-h) - 48px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  scrollbar-width: thin;
+}
+
+/* Back to the lists, above a user's or chat's menu in the admin panel */
+.settings-menu-back {
+  align-self: flex-start;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.settings-menu-back:hover {
+  text-decoration: underline;
+}
+
+/* Picture, name and a line under it */
+.settings-menu-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--settings-line);
+  border-radius: 14px;
+  background: var(--secondary);
+}
+
+.settings-menu-who-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.settings-menu-who-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-menu-who-text a {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.settings-menu-who-text a:hover {
+  text-decoration: underline;
+}
+
+.settings-menu-avatar {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.settings-menu-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-menu-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* A heading with its links under it */
+.settings-menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-menu-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-menu-heading {
+  margin: 0;
+  padding: 0 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.settings-menu-link {
+  position: relative;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: 10px;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+  opacity: 0.75;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.settings-menu-link:hover {
+  background: var(--secondary);
+  opacity: 1;
+}
+
+/* The page or card it's on: settingsMenu.js sets is-active while scrolling, aria-current is set for pages */
+.settings-menu-link.is-active,
+.settings-menu-link[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 16%, var(--secondary));
+  color: var(--text);
+  opacity: 1;
+}
+
+.settings-menu-link.is-active::before,
+.settings-menu-link[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.settings-menu-link.is-danger {
+  color: var(--settings-danger);
+}
+
+.settings-menu-link:focus-visible,
+.settings-menu-back:focus-visible,
+.settings-menu-who-text a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* How many there are (the admin panel's lists) */
+.settings-menu-count {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--background);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.settings-menu-count.is-new {
+  background: var(--accent);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-menu-link {
+    transition: none;
+  }
+}
+
+/* ---------- Cards ---------- */
+
 .settings-card {
   margin-bottom: 20px;
-  padding: 28px 32px;
+  padding: 24px var(--settings-card-pad);
+  border: 1px solid var(--settings-line);
   border-radius: var(--radius);
   background: var(--secondary);
-  /* Clear of the fixed top bar when jumped to with #profile, #block etc. */
-  scroll-margin-top: calc(var(--nav-top-h) + 16px);
+  /* Clear of the fixed top bar (and the menu row on a small screen) when jumped to with #profile, #block etc. */
+  scroll-margin-top: calc(var(--nav-top-h) + var(--settings-menu-row-h) + 16px);
+}
+
+.settings-content > .settings-card {
+  margin-bottom: 0;
+}
+
+/* Delete account, ban and the like */
+.settings-card.is-danger {
+  border-color: color-mix(in srgb, var(--settings-danger) 45%, transparent);
+}
+
+.settings-card.is-danger h2 {
+  color: var(--settings-danger);
 }
 
 .settings-card h2 {
@@ -34,14 +278,36 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
+}
+
+/* A card's title with a line about it under it, and a badge on the right */
+.settings-card-head {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.settings-card-head h2 {
+  margin: 0;
+}
+
+.settings-card-head .settings-intro {
+  margin: 6px 0 0;
+}
+
+.settings-card-head > .settings-status {
+  flex: none;
+  margin-top: 3px;
 }
 
 .settings-intro {
   margin: -6px 0 18px;
   line-height: 1.5;
-  opacity: 0.8;
+  opacity: 0.75;
 }
 
 /* "On" / "Off" and "Blocked now" next to a card's heading */
@@ -49,16 +315,19 @@
   padding: 3px 10px;
   border-radius: 999px;
   background: var(--background);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .settings-status.is-on {
   background: var(--settings-on);
   color: #fff;
 }
+
+/* ---------- Forms ---------- */
 
 .settings form {
   display: flex;
@@ -93,16 +362,18 @@
 
 .settings input[type="text"],
 .settings input[type="password"],
+.settings input[type="search"],
 .settings select,
 .settings textarea {
   width: 100%;
   padding: 10px 12px;
   box-sizing: border-box;
-  border: 2px solid transparent;
+  border: 1px solid var(--settings-line);
   border-radius: 10px;
   background: var(--background);
   color: var(--text);
   font: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .settings textarea {
@@ -111,10 +382,12 @@
 
 .settings input[type="text"]:focus,
 .settings input[type="password"]:focus,
+.settings input[type="search"]:focus,
 .settings select:focus,
 .settings textarea:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 /* The 6 digit 2FA code */
@@ -135,7 +408,7 @@
 .settings input[type="file"]::file-selector-button {
   margin-right: 12px;
   padding: 8px 14px;
-  border: 2px solid var(--accent);
+  border: 1px solid var(--accent);
   border-radius: 10px;
   background: var(--background);
   color: var(--text);
@@ -163,11 +436,56 @@
 }
 
 .settings-checkbox input {
+  flex: none;
   width: 20px;
   height: 20px;
   margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
+}
+
+/* A checkbox drawn as an on/off switch: <input type="checkbox" class="settings-switch"> */
+.settings-checkbox input.settings-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  appearance: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 22%, var(--background));
+  transition: background-color 0.15s ease;
+}
+
+.settings-checkbox input.settings-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+.settings-checkbox input.settings-switch:checked {
+  background: var(--accent);
+}
+
+.settings-checkbox input.settings-switch:checked::after {
+  transform: translateX(20px);
+}
+
+.settings-checkbox input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings input,
+  .settings-checkbox input.settings-switch,
+  .settings-checkbox input.settings-switch::after {
+    transition: none;
+  }
 }
 
 .settings-hint {
@@ -223,7 +541,7 @@
   }
 }
 
-/* A block change that's waiting */
+/* A block change that's waiting, and other things to know */
 .settings-notice {
   margin: 4px 0 0;
   padding: 10px 14px;
@@ -232,6 +550,81 @@
   background: color-mix(in srgb, var(--accent) 12%, var(--background));
   font-size: 0.9rem;
   line-height: 1.45;
+}
+
+/* Year and class side by side */
+.settings-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Between two forms in one card */
+.settings-divider {
+  margin: 22px calc(-1 * var(--settings-card-pad));
+  border: none;
+  border-top: 1px solid var(--settings-line);
+}
+
+/* ---------- Rows: what it does on the left, its button on the right ---------- */
+
+.settings-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-item {
+  padding: 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  border-top: 1px solid var(--settings-line);
+}
+
+.settings-item:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.settings-item:last-child {
+  padding-bottom: 0;
+}
+
+/* A row that is a form of its own */
+.settings form.settings-item {
+  flex-direction: row;
+  gap: 12px 20px;
+}
+
+.settings-item-text {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* A card that's just one row (Log out) has its heading here */
+.settings-card .settings-item-title {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.settings-item-text .settings-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.settings-item > .settings-btn,
+.settings-item > form {
+  flex: none;
 }
 
 /* Logged in devices: one row each, with a Log out button on the others */
@@ -251,8 +644,13 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 10px;
+  border: 1px solid var(--settings-line);
+  border-radius: 12px;
   background: var(--background);
+}
+
+.settings-device.is-current {
+  border-color: color-mix(in srgb, var(--settings-on) 55%, transparent);
 }
 
 .settings-device-text {
@@ -278,19 +676,7 @@
   background: color-mix(in srgb, var(--text) 8%, var(--secondary));
 }
 
-/* Between logging out and deleting the account */
-.settings-divider {
-  margin: 22px 0;
-  border: none;
-  border-top: 2px solid var(--background);
-}
-
-/* Year and class side by side */
-.settings-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
+/* ---------- Profile picture ---------- */
 
 /* Current picture, with upload and remove next to it */
 .settings-avatar {
@@ -306,6 +692,7 @@
   border-radius: 50%;
   object-fit: cover;
   background: var(--background);
+  box-shadow: 0 0 0 4px var(--background);
 }
 
 /* No profile picture: the first letter of the name */
@@ -327,7 +714,8 @@
   gap: 8px;
 }
 
-/* Setting up two-factor login */
+/* ---------- Two-factor login set-up ---------- */
+
 .settings-steps {
   margin: 0 0 18px;
   padding-left: 1.3em;
@@ -367,6 +755,8 @@
   user-select: all;
 }
 
+/* ---------- Buttons ---------- */
+
 .settings-actions {
   display: flex;
   justify-content: flex-end;
@@ -376,13 +766,16 @@
 
 .settings-btn {
   padding: 10px 18px;
-  border: 2px solid transparent;
+  border: 1px solid var(--settings-line);
   border-radius: 10px;
   background: var(--background);
   color: var(--text);
   font: inherit;
   font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -396,6 +789,7 @@
 }
 
 .settings-btn-primary {
+  border-color: var(--accent);
   background: var(--accent);
   color: #fff;
 }
@@ -414,19 +808,122 @@
   background: color-mix(in srgb, var(--settings-danger) 12%, var(--background));
 }
 
+/* Filled red, for the last step of something that can't be undone */
+.settings-btn-danger.settings-btn-solid {
+  background: var(--settings-danger);
+  color: #fff;
+}
+
+.settings-btn-danger.settings-btn-solid:hover {
+  background: var(--settings-danger);
+  filter: brightness(1.08);
+}
+
 .settings-btn-small {
   align-self: flex-start;
   padding: 6px 12px;
   font-size: 0.9rem;
 }
 
+/* ---------- Smaller screens ---------- */
+
+/* The menu becomes a row of links across the top, under the top bar, that scrolls sideways */
+@media (max-width: 900px) {
+  .settings.settings-page {
+    --settings-menu-row-h: 56px;
+    margin-top: 0;
+  }
+
+  .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .settings-menu {
+    z-index: 50; /* under the top bar (navPanel.css) */
+    top: var(--nav-top-h);
+    max-height: none;
+    margin: 0 -16px;
+    padding: 10px 16px;
+    overflow: visible;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--settings-line);
+    background: var(--background);
+  }
+
+  .settings-menu-who,
+  .settings-menu-heading {
+    display: none;
+  }
+
+  .settings-menu-back {
+    flex: none;
+  }
+
+  .settings-menu-links {
+    min-width: 0;
+    flex: 1;
+    flex-direction: row;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .settings-menu-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-menu-group,
+  .settings-menu-list {
+    flex: none;
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .settings-menu-link {
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--secondary);
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .settings-menu-link.is-active::before,
+  .settings-menu-link[aria-current="page"]::before {
+    display: none;
+  }
+
+  .settings-menu-link.is-active,
+  .settings-menu-link[aria-current="page"] {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .settings-menu-link.is-active .settings-menu-count,
+  .settings-menu-link[aria-current="page"] .settings-menu-count {
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
+  }
+
+  .settings-content {
+    padding-top: 8px;
+  }
+}
+
 @media (max-width: 600px) {
   .settings {
+    --settings-card-pad: 16px;
     margin: 16px auto;
   }
 
   .settings-card {
-    padding: 22px 16px;
+    padding: 22px var(--settings-card-pad);
+  }
+
+  .settings-card-head {
+    flex-direction: column;
   }
 
   .settings-avatar {
@@ -438,7 +935,16 @@
     flex-direction: column-reverse;
   }
 
-  .settings-actions .settings-btn {
-    text-align: center;
+  .settings-actions .settings-btn,
+  .settings-item > .settings-btn,
+  .settings-item > form,
+  .settings-item > form .settings-btn,
+  .settings form.settings-item .settings-btn {
+    width: 100%;
+  }
+
+  .settings-item > .settings-btn,
+  .settings form.settings-item > .settings-btn {
+    flex: 1 1 100%;
   }
 }

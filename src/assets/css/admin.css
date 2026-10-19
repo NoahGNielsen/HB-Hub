@@ -1,29 +1,8 @@
 /* Admin panel (admin/index.php, admin/banned.php, admin/feedback.php, admin/user.php and admin/chat.php). Built on the settings page's
-   cards, fields and buttons (settings.css), wider for the tables. */
-.admin {
-  max-width: 920px;
-}
+   side menu, cards, fields and buttons (settings.css); this is what only the admin panel has: tables, lists and details. */
 
-/* Above a user's or chat's card: back to the lists */
-.admin-kicker {
-  display: inline-block;
-  margin: 0 0 8px;
-  color: var(--accent);
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-decoration: none;
-}
-
-.admin-kicker:hover {
-  text-decoration: underline;
-}
-
-.admin-kicker:focus-visible,
 .admin-link:focus-visible,
-.admin-list-link:focus-visible,
-.admin-tab:focus-visible {
+.admin-list-link:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
@@ -41,7 +20,7 @@
   color: var(--accent);
 }
 
-/* Picture, name and status */
+/* Picture, name and status at the top of a user's or chat's Information card */
 .admin-header {
   display: flex;
   align-items: center;
@@ -82,9 +61,14 @@
   color: #1a1d23;
 }
 
+/* A deleted account or chat, or a site admin: nothing to change */
+.admin-overview-notice {
+  margin-top: 16px;
+}
+
 /* Information: label above value, as many columns as fit */
 .admin-details {
-  margin: 0 0 16px;
+  margin: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 14px 20px;
@@ -100,6 +84,10 @@
   margin: 2px 0 0;
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+
+.admin-details + .settings-label {
+  margin: 16px 0 0;
 }
 
 .admin-bio {
@@ -246,43 +234,7 @@
   object-fit: cover;
 }
 
-/* Users or chats on the start page */
-.admin-tabs {
-  margin-bottom: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.admin-tab {
-  padding: 10px 18px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: 999px;
-  background: var(--secondary);
-  color: var(--text);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.admin-tab:hover {
-  background: color-mix(in srgb, var(--accent) 14%, var(--secondary));
-}
-
-.admin-tab.is-active {
-  background: var(--accent);
-  color: #fff;
-}
-
-.admin-tab-count {
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--background);
-  color: var(--text);
-  font-size: 0.8rem;
-}
-
+/* Searching the users or chats (the field itself is styled in settings.css) */
 .settings form.admin-search {
   margin-bottom: 16px;
   flex-direction: row;
@@ -290,21 +242,10 @@
   gap: 8px;
 }
 
-.admin-search input[type="search"] {
+.settings .admin-search input[type="search"] {
   flex: 1;
+  width: auto;
   min-width: 0;
-  padding: 10px 12px;
-  box-sizing: border-box;
-  border: 2px solid transparent;
-  border-radius: 10px;
-  background: var(--background);
-  color: var(--text);
-  font: inherit;
-}
-
-.admin-search input[type="search"]:focus {
-  outline: none;
-  border-color: var(--accent);
 }
 
 .admin-list-count {

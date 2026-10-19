@@ -13,6 +13,8 @@
 // Banning puts their picture on the banned pictures list (admin/banned.php) too, unless that's unticked, and
 // unbanning takes it off again.
 // Site admins can't be changed here (yourself included), and a deleted account only has its messages left to delete.
+// The side menu (adminPageMenuHtml()) links to the cards in the order they're on the page: Information, then Manage
+// (profile, block, login), Activity (sessions, messages, chats, casino) and the Danger zone (ban, delete) last.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
@@ -397,458 +399,517 @@ function adminIps(?string $ipv4, ?string $ipv6): string
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/settings.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/settings.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/admin.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/admin.css') ?>">
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/settingsMenu.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/settingsMenu.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/admin.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/admin.js') ?>" defer></script>
     <title><?= htmlspecialchars($target['userName']) ?> - Admin panel - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="settings admin">
-        <a class="admin-kicker" href="/admin/">&larr; Admin panel</a>
+    <main class="settings settings-page admin">
+        <div class="settings-layout">
+            <!-- Links to the cards, in the order they're on the page -->
+            <?= adminPageMenuHtml('/admin/', 'All users', $adminAvatarSrc, $target['userName'], adminStatusHtml(adminUserStatus($target)), [
+                'Overview' => ['overview' => 'Information'],
+                'Manage' => $adminCanChange ? ['profile' => 'Profile', 'block' => 'Gambling block', 'security' => 'Login'] : [],
+                'Activity' => ['sessions' => 'Sessions', 'messages' => 'Messages', 'chats' => 'Chats', 'casino' => 'Casino'],
+                ADMIN_MENU_DANGER => $adminCanChange ? ['ban' => $targetIsBanned ? 'Unban' : 'Ban', 'delete' => 'Delete account'] : [],
+            ]) ?>
 
-        <!-- Who it is -->
-        <section class="settings-card admin-header" id="overview" aria-labelledby="admin-name-heading">
-            <?php if ($adminAvatarSrc !== null): ?>
-                <img class="settings-avatar-preview" src="<?= htmlspecialchars($adminAvatarSrc) ?>" alt="Profile picture of <?= htmlspecialchars($target['userName']) ?>">
-            <?php else: ?>
-                <span class="settings-avatar-preview settings-avatar-initial" aria-hidden="true"><?= htmlspecialchars(mb_strtoupper(mb_substr($target['userName'], 0, 1))) ?></span>
-            <?php endif; ?>
-            <div class="admin-header-text">
-                <h1 id="admin-name-heading">
-                    <?= htmlspecialchars($target['userName']) ?>
-                    <?= adminStatusHtml(adminUserStatus($target)) ?>
-                    <?php if ($targetIsAdmin): ?>
-                        <span class="settings-status">Site admin</span>
-                    <?php endif; ?>
-                </h1>
-                <div class="admin-header-links">
-                    <?php if (!$targetIsDeleted && !$targetIsBanned): ?>
-                        <a class="settings-btn settings-btn-small" href="<?= htmlspecialchars(hbHubProfileUrl($targetId)) ?>">View profile</a>
-                    <?php endif; ?>
-                    <a class="settings-btn settings-btn-small" href="/admin/user?user=<?= $targetId ?>&amp;export=1" download>Download all data (JSON)</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Information -->
-        <section class="settings-card" aria-labelledby="admin-info-heading">
-            <h2 id="admin-info-heading">Information</h2>
-            <dl class="admin-details">
-                <div><dt>User ID</dt><dd><?= $targetId ?></dd></div>
-                <div><dt>Role</dt><dd><?= $targetIsAdmin ? 'Site admin' : ($targetIsDeleted ? '–' : 'User') ?></dd></div>
-                <div><dt>Joined</dt><dd><?= adminTime($target['userCreatedTimestamp']) ?></dd></div>
-                <div><dt>Last seen</dt><dd><?= adminTime($target['userLastSeenTimestamp']) ?></dd></div>
-                <?php if ($targetIsBanned): ?>
-                    <div><dt>Banned</dt><dd><?= adminTime($target['userBannedTimestamp']) ?><?php if ((int) $target['userBannedReason'] === HBHUB_BAN_REASON_AVATAR): ?>
-                        <span class="admin-small">(automatically, for uploading a <a class="admin-link" href="/admin/banned">banned picture</a>)</span><?php endif; ?></dd></div>
-                <?php endif; ?>
-                <div><dt>Class</dt><dd><?= $adminYear !== '' && $adminClass !== '' ? htmlspecialchars($adminYear . '.' . $adminClass) : '–' ?></dd></div>
-                <div><dt>Two-factor login</dt><dd><?= $target['totpIsOn'] ? 'On' : 'Off' ?></dd></div>
-                <div><dt>Wrong passwords in a row</dt><dd><?= (int) $target['userFailedLoginCount'] ?></dd></div>
-                <div><dt>Last locked</dt><dd><?= adminTime($target['userAccountLockedTimestamp']) ?><?= $target['isLocked'] ? ' (still locked)' : '' ?></dd></div>
-                <div><dt>IP when signing up</dt><dd class="admin-mono"><?= htmlspecialchars(adminIps($target['userIpv4AdresseOnAccountCreate'], $target['userIpv6AdresseOnAccountCreate'])) ?></dd></div>
-                <div><dt>Last IP</dt><dd class="admin-mono"><?= htmlspecialchars(adminIps($target['userIpv4AdresseLastAccessed'], $target['userIpv6AdresseLastAccessed'])) ?></dd></div>
-                <div><dt>Gambling block</dt><dd><?= htmlspecialchars(HBHUB_BLOCK_MODES[$adminBlock['mode']]) ?><?php if ($adminBlock['pendingMode'] !== null): ?>
-                    <span class="admin-small">(changing to "<?= htmlspecialchars(HBHUB_BLOCK_MODES[$adminBlock['pendingMode']]) ?>" at <?= htmlspecialchars(hbHubBlockFormatTime($adminBlock['pendingFrom'])) ?>)</span><?php endif; ?></dd></div>
-                <div><dt>Chips</dt><dd><?= $adminWallet !== null ? number_format((int) $adminWallet['walletChips']) : 'Never opened the casino' ?></dd></div>
-                <div><dt>Messages sent</dt><dd><?= number_format((int) $adminMessageCounts['total']) ?> <span class="admin-small">(<?= number_format((int) $adminMessageCounts['deleted']) ?> deleted)</span></dd></div>
-                <div><dt>Chats</dt><dd><?= count($adminChats) ?></dd></div>
-                <div><dt>Logged in sessions</dt><dd><?= $adminActiveSessions ?></dd></div>
-            </dl>
-            <?php if ($target['userDescription'] !== null && trim($target['userDescription']) !== ''): ?>
-                <p class="settings-label">Bio</p>
-                <p class="admin-bio"><?= nl2br(htmlspecialchars($target['userDescription'])) ?></p>
-            <?php endif; ?>
-        </section>
-
-        <?php if ($targetIsDeleted): ?>
-            <p class="settings-notice">This account has been deleted, so there's nothing left to change. Its messages can still be deleted below.</p>
-        <?php elseif ($targetIsAdmin): ?>
-            <p class="settings-notice">
-                <?= $targetIsSelf ? 'This is you.' : htmlspecialchars($target['userName']) . ' is a site admin.' ?>
-                Site admins can't be changed from the admin panel.
-            </p>
-        <?php else: ?>
-            <!-- Profile: name, bio and picture -->
-            <section class="settings-card" id="profile" aria-labelledby="admin-profile-heading">
-                <h2 id="admin-profile-heading">Profile</h2>
-
-                <form action="/admin/user?user=<?= $targetId ?>#profile" method="post">
-                    <input type="hidden" name="action" value="name">
-                    <div class="settings-field">
-                        <label class="settings-label" for="admin-name">Name</label>
-                        <input type="text" id="admin-name" name="name" maxlength="<?= $adminNameMax ?>" required autocomplete="off"
-                               value="<?= htmlspecialchars($adminValues['name']) ?>" aria-describedby="admin-name-hint">
-                        <p class="settings-hint" id="admin-name-hint">They log in with it too, so tell them when it changes.</p>
-                        <?php if (isset($adminErrors['name'])): ?>
-                            <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['name']) ?></p>
-                        <?php endif; ?>
-                    </div>
-                    <div class="settings-actions">
-                        <button type="submit" class="settings-btn settings-btn-primary">Save name</button>
-                    </div>
-                </form>
-
-                <hr class="settings-divider">
-
-                <form action="/admin/user?user=<?= $targetId ?>#profile" method="post">
-                    <input type="hidden" name="action" value="bio">
-                    <div class="settings-field">
-                        <label class="settings-label" for="admin-bio">Bio</label>
-                        <textarea id="admin-bio" name="description" maxlength="<?= $adminDescriptionMax ?>" rows="3"><?= htmlspecialchars($adminValues['description']) ?></textarea>
-                        <?php if (isset($adminErrors['bio'])): ?>
-                            <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['bio']) ?></p>
-                        <?php endif; ?>
-                    </div>
-                    <div class="settings-actions">
-                        <?php if ($target['userDescription'] !== null): ?>
-                            <button type="submit" class="settings-btn settings-btn-danger" name="remove" value="1" formnovalidate>Remove bio</button>
-                        <?php endif; ?>
-                        <button type="submit" class="settings-btn settings-btn-primary">Save bio</button>
-                    </div>
-                </form>
-
-                <?php if ($adminAvatarSrc !== null): ?>
-                    <hr class="settings-divider">
-                    <form action="/admin/user?user=<?= $targetId ?>#profile" method="post" data-confirm="Remove <?= htmlspecialchars($target['userName']) ?>'s profile picture?">
-                        <input type="hidden" name="action" value="removeAvatar">
-                        <div class="settings-field">
-                            <span class="settings-label">Profile picture</span>
-                            <p class="settings-hint">Their picture is deleted, and the first letter of their name is shown instead.</p>
-                        </div>
-                        <div class="settings-actions">
-                            <button type="submit" class="settings-btn settings-btn-danger">Remove picture</button>
-                        </div>
-                    </form>
-                <?php endif; ?>
-            </section>
-
-            <!-- Gambling block, straight away -->
-            <section class="settings-card" id="block" aria-labelledby="admin-block-heading">
-                <h2 id="admin-block-heading">Gambling and Games block</h2>
-                <form action="/admin/user?user=<?= $targetId ?>#block" method="post">
-                    <input type="hidden" name="action" value="block">
-                    <div class="settings-field">
-                        <label class="settings-label" for="admin-block">Block:</label>
-                        <select id="admin-block" name="block" aria-describedby="admin-block-hint">
-                            <?php foreach (HBHUB_BLOCK_MODES as $mode => $label): ?>
-                                <option value="<?= $mode ?>"<?= $adminBlock['mode'] === $mode ? ' selected' : '' ?>><?= htmlspecialchars($label) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <p class="settings-hint" id="admin-block-hint">
-                            Changes straight away, also when it's turned down: there's no wait like when they change it themselves.
-                            A change they were waiting for is cancelled.
-                        </p>
-                        <?php if (isset($adminErrors['block'])): ?>
-                            <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['block']) ?></p>
-                        <?php endif; ?>
-                    </div>
-                    <div class="settings-actions">
-                        <button type="submit" class="settings-btn settings-btn-primary">Save</button>
-                    </div>
-                </form>
-            </section>
-
-            <!-- Password, 2FA and sessions -->
-            <section class="settings-card" id="security" aria-labelledby="admin-security-heading">
-                <h2 id="admin-security-heading">Login</h2>
-
-                <form action="/admin/user?user=<?= $targetId ?>#security" method="post">
-                    <input type="hidden" name="action" value="password">
-                    <div class="settings-field">
-                        <label class="settings-label" for="admin-new-password">Reset password</label>
-                        <div class="admin-password-row">
-                            <!-- Plain text, so it can be passed on to the user -->
-                            <input type="text" id="admin-new-password" name="newPassword" minlength="<?= $adminPasswordPolicy['minLength'] ?>" maxlength="72"
-                                   required autocomplete="off" spellcheck="false" class="admin-mono"
-                                   value="<?= htmlspecialchars($adminValues['newPassword']) ?>" aria-describedby="admin-password-hint">
-                            <button type="button" class="settings-btn" data-password-generate hidden>Generate</button>
-                        </div>
-                        <p class="settings-hint" id="admin-password-hint">
-                            Type a new password or generate one, then give it to them. It has to follow the same rules as any other password.
-                            They're logged out everywhere, and a lock from wrong passwords is lifted.
-                        </p>
-                        <?php if (isset($adminErrors['password'])): ?>
-                            <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['password']) ?></p>
-                        <?php endif; ?>
-                    </div>
-                    <div class="settings-actions">
-                        <button type="submit" class="settings-btn settings-btn-primary">Reset password</button>
-                    </div>
-                </form>
-
-                <?php if ($target['totpIsOn']): ?>
-                    <hr class="settings-divider">
-                    <form action="/admin/user?user=<?= $targetId ?>#security" method="post" data-confirm="Remove two-factor login from <?= htmlspecialchars($target['userName']) ?>'s account?">
-                        <input type="hidden" name="action" value="removeTotp">
-                        <div class="settings-field">
-                            <span class="settings-label">Two-factor login <span class="settings-status is-on">On</span></span>
-                            <p class="settings-hint">For when they've lost their authenticator app. They log in with just their password, and can set it up again in settings.</p>
-                        </div>
-                        <div class="settings-actions">
-                            <button type="submit" class="settings-btn settings-btn-danger">Remove two-factor login</button>
-                        </div>
-                    </form>
-                <?php endif; ?>
-
-                <hr class="settings-divider">
-                <form action="/admin/user?user=<?= $targetId ?>#security" method="post" data-confirm="Log <?= htmlspecialchars($target['userName']) ?> out everywhere?">
-                    <input type="hidden" name="action" value="logoutAll">
-                    <div class="settings-field">
-                        <span class="settings-label">Log out of every session</span>
-                        <p class="settings-hint">
-                            Logged in on <?= $adminActiveSessions ?> <?= $adminActiveSessions === 1 ? 'device' : 'devices' ?> right now (see Sessions below).
-                            They can log in again with their password.
-                        </p>
-                    </div>
-                    <div class="settings-actions">
-                        <button type="submit" class="settings-btn settings-btn-danger">Log out everywhere</button>
-                    </div>
-                </form>
-            </section>
-
-            <!-- Ban -->
-            <section class="settings-card" id="ban" aria-labelledby="admin-ban-heading">
-                <h2 id="admin-ban-heading">
-                    Ban
-                    <?php if ($targetIsBanned): ?>
-                        <span class="settings-status admin-status-banned">Banned</span>
-                    <?php endif; ?>
-                </h2>
-                <?php if ($targetIsBanned): ?>
-                    <form action="/admin/user?user=<?= $targetId ?>#ban" method="post" data-confirm="Unban <?= htmlspecialchars($target['userName']) ?>?">
-                        <input type="hidden" name="action" value="unban">
-                        <p class="settings-hint">
-                            Banned <?= adminTime($target['userBannedTimestamp']) ?><?= (int) $target['userBannedReason'] === HBHUB_BAN_REASON_AVATAR
-                                ? ' automatically, as the profile picture they uploaded is on the <a class="admin-link" href="/admin/banned">banned pictures</a> list' : '' ?>.
-                            Unbanning lets them log in again, and their profile and picture come back.
-                            A browser marked by the ban stops being marked once they log in there.
-                            A picture their ban put on the banned pictures list comes off it.
-                        </p>
-                        <div class="settings-actions">
-                            <button type="submit" class="settings-btn settings-btn-primary">Unban</button>
-                        </div>
-                    </form>
-                <?php else: ?>
-                    <form action="/admin/user?user=<?= $targetId ?>#ban" method="post" data-confirm="Ban <?= htmlspecialchars($target['userName']) ?>?">
-                        <input type="hidden" name="action" value="ban">
-                        <p class="settings-hint">
-                            They're logged out and can't log in again. Their profile and picture are hidden, they can't be added to chats,
-                            and their messages stay. The next time they open the site, or try to log in, their browser is marked so it can't make a new account.
-                        </p>
+            <div class="settings-content">
+                <!-- Who it is, and what there is to know about them -->
+                <section class="settings-card" id="overview" aria-labelledby="admin-name-heading">
+                    <div class="admin-header">
                         <?php if ($adminAvatarSrc !== null): ?>
-                            <label class="settings-checkbox">
-                                <input type="checkbox" name="banAvatar" value="1" checked aria-describedby="admin-ban-avatar-hint">
-                                <span>Ban their profile picture too</span>
-                            </label>
-                            <p class="settings-hint" id="admin-ban-avatar-hint">
-                                It goes on the <a class="admin-link" href="/admin/banned">banned pictures</a> list: any account that uploads
-                                it, or a resized or slightly cropped copy, or signs up with it, is banned straight away.
-                            </p>
+                            <img class="settings-avatar-preview" src="<?= htmlspecialchars($adminAvatarSrc) ?>" alt="Profile picture of <?= htmlspecialchars($target['userName']) ?>">
+                        <?php else: ?>
+                            <span class="settings-avatar-preview settings-avatar-initial" aria-hidden="true"><?= htmlspecialchars(mb_strtoupper(mb_substr($target['userName'], 0, 1))) ?></span>
                         <?php endif; ?>
-                        <div class="settings-actions">
-                            <button type="submit" class="settings-btn settings-btn-danger">Ban <?= htmlspecialchars($target['userName']) ?></button>
+                        <div class="admin-header-text">
+                            <h1 id="admin-name-heading">
+                                <?= htmlspecialchars($target['userName']) ?>
+                                <?= adminStatusHtml(adminUserStatus($target)) ?>
+                                <?php if ($targetIsAdmin): ?>
+                                    <span class="settings-status">Site admin</span>
+                                <?php endif; ?>
+                            </h1>
+                            <div class="admin-header-links">
+                                <?php if (!$targetIsDeleted && !$targetIsBanned): ?>
+                                    <a class="settings-btn settings-btn-small" href="<?= htmlspecialchars(hbHubProfileUrl($targetId)) ?>">View profile</a>
+                                <?php endif; ?>
+                                <a class="settings-btn settings-btn-small" href="/admin/user?user=<?= $targetId ?>&amp;export=1" download>Download all data (JSON)</a>
+                            </div>
                         </div>
-                    </form>
-                <?php endif; ?>
-            </section>
+                    </div>
 
-            <!-- Delete account -->
-            <section class="settings-card" id="delete" aria-labelledby="admin-delete-heading">
-                <h2 id="admin-delete-heading">Delete account</h2>
-                <form action="/admin/user?user=<?= $targetId ?>#delete" method="post" data-confirm="Delete <?= htmlspecialchars($target['userName']) ?>'s account? This can't be undone.">
-                    <input type="hidden" name="action" value="deleteAccount">
-                    <div class="settings-field">
-                        <label class="settings-label" for="admin-delete-name">Type their name to confirm</label>
-                        <p class="settings-hint" id="admin-delete-hint">
-                            Their name, picture, bio and settings are deleted and they're logged out everywhere.
-                            Their messages stay in their chats, from "<?= HBHUB_DELETED_USER_NAME ?>". This can't be undone.
+                    <hr class="settings-divider">
+
+                    <h2 class="settings-visually-hidden">Information</h2>
+                    <dl class="admin-details">
+                        <div><dt>User ID</dt><dd><?= $targetId ?></dd></div>
+                        <div><dt>Role</dt><dd><?= $targetIsAdmin ? 'Site admin' : ($targetIsDeleted ? '–' : 'User') ?></dd></div>
+                        <div><dt>Joined</dt><dd><?= adminTime($target['userCreatedTimestamp']) ?></dd></div>
+                        <div><dt>Last seen</dt><dd><?= adminTime($target['userLastSeenTimestamp']) ?></dd></div>
+                        <?php if ($targetIsBanned): ?>
+                            <div><dt>Banned</dt><dd><?= adminTime($target['userBannedTimestamp']) ?><?php if ((int) $target['userBannedReason'] === HBHUB_BAN_REASON_AVATAR): ?>
+                                <span class="admin-small">(automatically, for uploading a <a class="admin-link" href="/admin/banned">banned picture</a>)</span><?php endif; ?></dd></div>
+                        <?php endif; ?>
+                        <div><dt>Class</dt><dd><?= $adminYear !== '' && $adminClass !== '' ? htmlspecialchars($adminYear . '.' . $adminClass) : '–' ?></dd></div>
+                        <div><dt>Two-factor login</dt><dd><?= $target['totpIsOn'] ? 'On' : 'Off' ?></dd></div>
+                        <div><dt>Wrong passwords in a row</dt><dd><?= (int) $target['userFailedLoginCount'] ?></dd></div>
+                        <div><dt>Last locked</dt><dd><?= adminTime($target['userAccountLockedTimestamp']) ?><?= $target['isLocked'] ? ' (still locked)' : '' ?></dd></div>
+                        <div><dt>IP when signing up</dt><dd class="admin-mono"><?= htmlspecialchars(adminIps($target['userIpv4AdresseOnAccountCreate'], $target['userIpv6AdresseOnAccountCreate'])) ?></dd></div>
+                        <div><dt>Last IP</dt><dd class="admin-mono"><?= htmlspecialchars(adminIps($target['userIpv4AdresseLastAccessed'], $target['userIpv6AdresseLastAccessed'])) ?></dd></div>
+                        <div><dt>Gambling block</dt><dd><?= htmlspecialchars(HBHUB_BLOCK_MODES[$adminBlock['mode']]) ?><?php if ($adminBlock['pendingMode'] !== null): ?>
+                            <span class="admin-small">(changing to "<?= htmlspecialchars(HBHUB_BLOCK_MODES[$adminBlock['pendingMode']]) ?>" at <?= htmlspecialchars(hbHubBlockFormatTime($adminBlock['pendingFrom'])) ?>)</span><?php endif; ?></dd></div>
+                        <div><dt>Chips</dt><dd><?= $adminWallet !== null ? number_format((int) $adminWallet['walletChips']) : 'Never opened the casino' ?></dd></div>
+                        <div><dt>Messages sent</dt><dd><?= number_format((int) $adminMessageCounts['total']) ?> <span class="admin-small">(<?= number_format((int) $adminMessageCounts['deleted']) ?> deleted)</span></dd></div>
+                        <div><dt>Chats</dt><dd><?= count($adminChats) ?></dd></div>
+                        <div><dt>Logged in sessions</dt><dd><?= $adminActiveSessions ?></dd></div>
+                    </dl>
+                    <?php if ($target['userDescription'] !== null && trim($target['userDescription']) !== ''): ?>
+                        <p class="settings-label">Bio</p>
+                        <p class="admin-bio"><?= nl2br(htmlspecialchars($target['userDescription'])) ?></p>
+                    <?php endif; ?>
+
+                    <?php if ($targetIsDeleted): ?>
+                        <p class="settings-notice admin-overview-notice">This account has been deleted, so there's nothing left to change. Its messages can still be deleted below.</p>
+                    <?php elseif ($targetIsAdmin): ?>
+                        <p class="settings-notice admin-overview-notice">
+                            <?= $targetIsSelf ? 'This is you.' : htmlspecialchars($target['userName']) . ' is a site admin.' ?>
+                            Site admins can't be changed from the admin panel.
                         </p>
-                        <input type="text" id="admin-delete-name" name="confirmName" maxlength="35" required autocomplete="off"
-                               placeholder="<?= htmlspecialchars($target['userName']) ?>" aria-describedby="admin-delete-hint">
-                        <?php if (isset($adminErrors['delete'])): ?>
-                            <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['delete']) ?></p>
+                    <?php endif; ?>
+                </section>
+
+                <?php if ($adminCanChange): ?>
+                    <!-- Profile: name, bio and picture -->
+                    <section class="settings-card" id="profile" aria-labelledby="admin-profile-heading">
+                        <div class="settings-card-head">
+                            <div>
+                                <h2 id="admin-profile-heading">Profile</h2>
+                                <p class="settings-intro">Their name, bio and picture, for when something on their profile breaks the rules.</p>
+                            </div>
+                        </div>
+
+                        <form action="/admin/user?user=<?= $targetId ?>#profile" method="post">
+                            <input type="hidden" name="action" value="name">
+                            <div class="settings-field">
+                                <label class="settings-label" for="admin-name">Name</label>
+                                <input type="text" id="admin-name" name="name" maxlength="<?= $adminNameMax ?>" required autocomplete="off"
+                                       value="<?= htmlspecialchars($adminValues['name']) ?>" aria-describedby="admin-name-hint">
+                                <p class="settings-hint" id="admin-name-hint">They log in with it too, so tell them when it changes.</p>
+                                <?php if (isset($adminErrors['name'])): ?>
+                                    <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['name']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="settings-actions">
+                                <button type="submit" class="settings-btn settings-btn-primary">Save name</button>
+                            </div>
+                        </form>
+
+                        <hr class="settings-divider">
+
+                        <form action="/admin/user?user=<?= $targetId ?>#profile" method="post">
+                            <input type="hidden" name="action" value="bio">
+                            <div class="settings-field">
+                                <label class="settings-label" for="admin-bio">Bio</label>
+                                <textarea id="admin-bio" name="description" maxlength="<?= $adminDescriptionMax ?>" rows="3"><?= htmlspecialchars($adminValues['description']) ?></textarea>
+                                <?php if (isset($adminErrors['bio'])): ?>
+                                    <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['bio']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="settings-actions">
+                                <?php if ($target['userDescription'] !== null): ?>
+                                    <button type="submit" class="settings-btn settings-btn-danger" name="remove" value="1" formnovalidate>Remove bio</button>
+                                <?php endif; ?>
+                                <button type="submit" class="settings-btn settings-btn-primary">Save bio</button>
+                            </div>
+                        </form>
+
+                        <?php if ($adminAvatarSrc !== null): ?>
+                            <hr class="settings-divider">
+                            <form class="settings-item" action="/admin/user?user=<?= $targetId ?>#profile" method="post" data-confirm="Remove <?= htmlspecialchars($target['userName']) ?>'s profile picture?">
+                                <input type="hidden" name="action" value="removeAvatar">
+                                <div class="settings-item-text">
+                                    <span class="settings-label">Profile picture</span>
+                                    <p class="settings-hint">Their picture is deleted, and the first letter of their name is shown instead.</p>
+                                </div>
+                                <button type="submit" class="settings-btn settings-btn-danger">Remove picture</button>
+                            </form>
+                        <?php endif; ?>
+                    </section>
+
+                    <!-- Gambling block, straight away -->
+                    <section class="settings-card" id="block" aria-labelledby="admin-block-heading">
+                        <div class="settings-card-head">
+                            <div>
+                                <h2 id="admin-block-heading">Gambling and Games block</h2>
+                                <p class="settings-intro">
+                                    Changes straight away, also when it's turned down: there's no wait like when they change it themselves.
+                                    A change they were waiting for is cancelled.
+                                </p>
+                            </div>
+                        </div>
+                        <form action="/admin/user?user=<?= $targetId ?>#block" method="post">
+                            <input type="hidden" name="action" value="block">
+                            <div class="settings-field">
+                                <label class="settings-label" for="admin-block">Block</label>
+                                <select id="admin-block" name="block">
+                                    <?php foreach (HBHUB_BLOCK_MODES as $mode => $label): ?>
+                                        <option value="<?= $mode ?>"<?= $adminBlock['mode'] === $mode ? ' selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php if (isset($adminErrors['block'])): ?>
+                                    <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['block']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="settings-actions">
+                                <button type="submit" class="settings-btn settings-btn-primary">Save</button>
+                            </div>
+                        </form>
+                    </section>
+
+                    <!-- Password, 2FA and sessions -->
+                    <section class="settings-card" id="security" aria-labelledby="admin-security-heading">
+                        <div class="settings-card-head">
+                            <div>
+                                <h2 id="admin-security-heading">Login</h2>
+                                <p class="settings-intro">For when they can't get in, or someone else has.</p>
+                            </div>
+                            <span class="settings-status<?= $target['totpIsOn'] ? ' is-on' : '' ?>">2FA <?= $target['totpIsOn'] ? 'on' : 'off' ?></span>
+                        </div>
+
+                        <form action="/admin/user?user=<?= $targetId ?>#security" method="post">
+                            <input type="hidden" name="action" value="password">
+                            <div class="settings-field">
+                                <label class="settings-label" for="admin-new-password">Reset password</label>
+                                <div class="admin-password-row">
+                                    <!-- Plain text, so it can be passed on to the user -->
+                                    <input type="text" id="admin-new-password" name="newPassword" minlength="<?= $adminPasswordPolicy['minLength'] ?>" maxlength="72"
+                                           required autocomplete="off" spellcheck="false" class="admin-mono"
+                                           value="<?= htmlspecialchars($adminValues['newPassword']) ?>" aria-describedby="admin-password-hint">
+                                    <button type="button" class="settings-btn" data-password-generate hidden>Generate</button>
+                                </div>
+                                <p class="settings-hint" id="admin-password-hint">
+                                    Type a new password or generate one, then give it to them. It has to follow the same rules as any other password.
+                                    They're logged out everywhere, and a lock from wrong passwords is lifted.
+                                </p>
+                                <?php if (isset($adminErrors['password'])): ?>
+                                    <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['password']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="settings-actions">
+                                <button type="submit" class="settings-btn settings-btn-primary">Reset password</button>
+                            </div>
+                        </form>
+
+                        <hr class="settings-divider">
+
+                        <div class="settings-items">
+                            <?php if ($target['totpIsOn']): ?>
+                                <form class="settings-item" action="/admin/user?user=<?= $targetId ?>#security" method="post" data-confirm="Remove two-factor login from <?= htmlspecialchars($target['userName']) ?>'s account?">
+                                    <input type="hidden" name="action" value="removeTotp">
+                                    <div class="settings-item-text">
+                                        <span class="settings-label">Two-factor login</span>
+                                        <p class="settings-hint">For when they've lost their authenticator app. They log in with just their password, and can set it up again in settings.</p>
+                                    </div>
+                                    <button type="submit" class="settings-btn settings-btn-danger">Remove two-factor login</button>
+                                </form>
+                            <?php endif; ?>
+                            <form class="settings-item" action="/admin/user?user=<?= $targetId ?>#security" method="post" data-confirm="Log <?= htmlspecialchars($target['userName']) ?> out everywhere?">
+                                <input type="hidden" name="action" value="logoutAll">
+                                <div class="settings-item-text">
+                                    <span class="settings-label">Log out of every session</span>
+                                    <p class="settings-hint">
+                                        Logged in on <?= $adminActiveSessions ?> <?= $adminActiveSessions === 1 ? 'device' : 'devices' ?> right now (see <a class="admin-link" href="#sessions">Sessions</a>).
+                                        They can log in again with their password.
+                                    </p>
+                                </div>
+                                <button type="submit" class="settings-btn settings-btn-danger">Log out everywhere</button>
+                            </form>
+                        </div>
+                    </section>
+                <?php endif; ?>
+
+                <!-- Sessions: one per login, so this is their login history for the last 30 days -->
+                <section class="settings-card" id="sessions" aria-labelledby="admin-sessions-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-sessions-heading">Sessions</h2>
+                            <p class="settings-intro">One for every time they logged in. A session lasts 30 days, unless they log out or are logged out.</p>
+                        </div>
+                        <span class="settings-status"><?= count($adminSessions) ?></span>
+                    </div>
+                    <?php if ($adminSessions === []): ?>
+                        <p class="settings-hint">No sessions.</p>
+                    <?php else: ?>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead><tr><th scope="col">Device</th><th scope="col">Logged in</th><th scope="col">Last active</th><th scope="col">Lasts until</th><th scope="col">State</th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($adminSessions as $session): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($session['sessionDevice'] ?? '–') ?></td>
+                                            <td><?= adminTime($session['sessionGenerated']) ?></td>
+                                            <td><?= adminTime($session['sessionLastSeen']) ?></td>
+                                            <td><?= adminTime($session['sessionValidUntil']) ?></td>
+                                            <td><?= !$session['isValid'] ? '<span class="admin-muted">Ran out</span>'
+                                                : ($session['sessionTotpPending'] ? 'Waiting for the 2FA code' : 'Logged in') ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </section>
+
+                <!-- Messages in every chat -->
+                <section class="settings-card" id="messages" aria-labelledby="admin-messages-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-messages-heading">Messages</h2>
+                            <p class="settings-intro">
+                                Everything they've sent, in every chat, newest first. Deleted messages are still here, but only shown as deleted in the chat.
+                                Deleting one here shows it as deleted by a site admin.
+                            </p>
+                        </div>
+                        <span class="settings-status"><?= number_format((int) $adminMessageCounts['total']) ?></span>
+                    </div>
+                    <?php if ($adminMessages === []): ?>
+                        <p class="settings-hint"><?= $adminMessagesBefore !== null ? 'No older messages.' : 'No messages.' ?></p>
+                    <?php else: ?>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table admin-messages">
+                                <thead><tr><th scope="col">Sent</th><th scope="col">Chat</th><th scope="col">Message</th><th scope="col"><span class="settings-visually-hidden">Actions</span></th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($adminMessages as $message): ?>
+                                        <?php $isDeleted = $message['messageDeletedTimestamp'] !== null; ?>
+                                        <tr<?= $isDeleted ? ' class="is-deleted"' : '' ?>>
+                                            <td class="admin-nowrap"><?= adminTime($message['messageSentTimestamp']) ?></td>
+                                            <td>
+                                                <a class="admin-link" href="/admin/chat?chat=<?= (int) $message['chatId'] ?>"><?= htmlspecialchars($message['chatTitle']) ?></a>
+                                                <span class="admin-small">
+                                                    <?= (int) $message['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?><?=
+                                                    (int) $message['chatStatus'] !== HBHUB_CHAT_STATUS_ACTIVE ? ', chat deleted' : '' ?>
+                                                </span>
+                                            </td>
+                                            <td class="admin-message-text">
+                                                <?= adminMessageHtml($message) ?>
+                                                <?php if ($message['messageIsEdited'] || $isDeleted): ?>
+                                                    <span class="admin-small"><?= $isDeleted
+                                                        ? htmlspecialchars(ADMIN_MESSAGE_DELETED_LABELS[(int) $message['messageDeletedByAdmin']] ?? 'Deleted') . ' ' . adminTime($message['messageDeletedTimestamp'])
+                                                        : 'Edited' ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php if (!$isDeleted && $adminCanDeleteMessages): ?>
+                                                    <form action="/admin/user?user=<?= $targetId ?><?= $adminMessagesBefore !== null ? '&amp;before=' . $adminMessagesBefore : '' ?>#messages"
+                                                          method="post" data-confirm="Delete this message?">
+                                                        <input type="hidden" name="action" value="deleteMessage">
+                                                        <input type="hidden" name="message" value="<?= (int) $message['messageId'] ?>">
+                                                        <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Delete</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                    <div class="settings-actions admin-messages-actions">
+                        <?php if ($adminMessagesBefore !== null): ?>
+                            <a class="settings-btn" href="/admin/user?user=<?= $targetId ?>#messages">Back to the newest</a>
+                        <?php endif; ?>
+                        <?php if ($adminMessagesHasOlder): ?>
+                            <a class="settings-btn" href="/admin/user?user=<?= $targetId ?>&amp;before=<?= (int) end($adminMessages)['messageId'] ?>#messages">Older messages</a>
+                        <?php endif; ?>
+                        <?php if ($adminCanDeleteMessages && (int) $adminMessageCounts['total'] > (int) $adminMessageCounts['deleted']): ?>
+                            <form action="/admin/user?user=<?= $targetId ?>#messages" method="post"
+                                  data-confirm="Delete all <?= number_format((int) $adminMessageCounts['total'] - (int) $adminMessageCounts['deleted']) ?> of <?= htmlspecialchars($target['userName']) ?>'s messages? This can't be undone.">
+                                <input type="hidden" name="action" value="deleteAllMessages">
+                                <button type="submit" class="settings-btn settings-btn-danger">Delete all their messages</button>
+                            </form>
                         <?php endif; ?>
                     </div>
-                    <div class="settings-actions">
-                        <button type="submit" class="settings-btn settings-btn-danger">Delete account</button>
+                </section>
+
+                <!-- Chats they're in -->
+                <section class="settings-card" id="chats" aria-labelledby="admin-chats-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-chats-heading">Chats</h2>
+                            <p class="settings-intro">Every chat they're in, message requests too, the newest first.</p>
+                        </div>
+                        <span class="settings-status"><?= count($adminChats) ?></span>
                     </div>
-                </form>
-            </section>
-        <?php endif; ?>
+                    <?php if ($adminChats === []): ?>
+                        <p class="settings-hint">Not in any chats.</p>
+                    <?php else: ?>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead><tr><th scope="col">Chat</th><th scope="col">Type</th><th scope="col">Members</th><th scope="col">Role</th><th scope="col">Joined</th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($adminChats as $chat): ?>
+                                        <tr>
+                                            <td><a class="admin-link" href="/admin/chat?chat=<?= (int) $chat['chatId'] ?>"><?= htmlspecialchars($chat['chatTitle']) ?></a></td>
+                                            <td><?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?></td>
+                                            <td><?= (int) $chat['memberCount'] ?></td>
+                                            <td><?= $chat['userAcknowledgedJoin'] ? htmlspecialchars(ADMIN_CHAT_ROLES[(int) $chat['memberRole']] ?? 'Member') : 'Not accepted yet' ?></td>
+                                            <td class="admin-nowrap"><?= adminTime($chat['memberJoinedTimestamp']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </section>
 
-        <!-- Sessions: one per login, so this is their login history for the last 30 days -->
-        <section class="settings-card" id="sessions" aria-labelledby="admin-sessions-heading">
-            <h2 id="admin-sessions-heading">Sessions</h2>
-            <p class="settings-intro">One for every time they logged in. A session lasts 30 days, unless they log out or are logged out.</p>
-            <?php if ($adminSessions === []): ?>
-                <p class="settings-hint">No sessions.</p>
-            <?php else: ?>
-                <div class="admin-table-wrap">
-                    <table class="admin-table">
-                        <thead><tr><th scope="col">Device</th><th scope="col">Logged in</th><th scope="col">Last active</th><th scope="col">Lasts until</th><th scope="col">State</th></tr></thead>
-                        <tbody>
-                            <?php foreach ($adminSessions as $session): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($session['sessionDevice'] ?? '–') ?></td>
-                                    <td><?= adminTime($session['sessionGenerated']) ?></td>
-                                    <td><?= adminTime($session['sessionLastSeen']) ?></td>
-                                    <td><?= adminTime($session['sessionValidUntil']) ?></td>
-                                    <td><?= !$session['isValid'] ? '<span class="admin-muted">Ran out</span>'
-                                        : ($session['sessionTotpPending'] ? 'Waiting for the 2FA code' : 'Logged in') ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </section>
+                <!-- Casino chips -->
+                <section class="settings-card" id="casino" aria-labelledby="admin-casino-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-casino-heading">Casino</h2>
+                            <p class="settings-intro">
+                                <?php if ($adminWallet === null): ?>
+                                    They've never opened the casino.
+                                <?php else: ?>
+                                    The newest <?= ADMIN_TRANSACTIONS_SHOWN ?> changes to their chips are below, the download at the top has all of them.
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                        <?php if ($adminWallet !== null): ?>
+                            <span class="settings-status is-on"><?= number_format((int) $adminWallet['walletChips']) ?> chips</span>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($adminCanChange): ?>
+                        <form action="/admin/user?user=<?= $targetId ?>#casino" method="post" data-confirm="Change <?= htmlspecialchars($target['userName']) ?>'s chips?">
+                            <input type="hidden" name="action" value="chips">
+                            <div class="settings-field">
+                                <label class="settings-label" for="admin-chips">Add or remove chips</label>
+                                <input type="text" id="admin-chips" name="chips" inputmode="numeric" maxlength="13" required autocomplete="off"
+                                       value="<?= htmlspecialchars($adminValues['chips']) ?>" aria-describedby="admin-chips-hint">
+                                <p class="settings-hint" id="admin-chips-hint">
+                                    For chips they've bought, or to take away chips got from a bug or cheating. Up to <?= number_format(ADMIN_CHIPS_MAX) ?> at once.
+                                    It shows in their chip history as changed by you.<?= $adminWallet === null
+                                        ? ' They\'ve never opened the casino, so they get the ' . number_format(HBHUB_CASINO_START_CHIPS) . ' starting chips first.' : '' ?>
+                                </p>
+                                <?php if (isset($adminErrors['chips'])): ?>
+                                    <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['chips']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="settings-actions">
+                                <button type="submit" class="settings-btn settings-btn-danger" name="direction" value="remove">Remove chips</button>
+                                <button type="submit" class="settings-btn settings-btn-primary" name="direction" value="add">Add chips</button>
+                            </div>
+                        </form>
+                    <?php endif; ?>
+                    <?php if ($adminTransactions !== []): ?>
+                        <?php if ($adminCanChange): ?>
+                            <hr class="settings-divider">
+                        <?php endif; ?>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead><tr><th scope="col">When</th><th scope="col">Change</th><th scope="col">Chips after</th><th scope="col">Why</th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($adminTransactions as $transaction): ?>
+                                        <tr>
+                                            <td class="admin-nowrap"><?= adminTime($transaction['transactionTimestamp']) ?></td>
+                                            <td class="admin-nowrap"><?= (int) $transaction['transactionAmount'] > 0 ? '+' : '' ?><?= number_format((int) $transaction['transactionAmount']) ?></td>
+                                            <td><?= number_format((int) $transaction['transactionBalance']) ?></td>
+                                            <td><?= htmlspecialchars($transaction['adminName'] !== null
+                                                ? 'By ' . $transaction['adminName'] . ' (admin)'
+                                                : ($transaction['transactionGame'] !== null ? $transaction['transactionGame'] . ': ' : '') . $transaction['transactionReason']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </section>
 
-        <!-- Messages in every chat -->
-        <section class="settings-card" id="messages" aria-labelledby="admin-messages-heading">
-            <h2 id="admin-messages-heading">Messages</h2>
-            <p class="settings-intro">
-                Everything they've sent, in every chat, newest first. Deleted messages are still here, but only shown as deleted in the chat.
-                Deleting one here shows it as deleted by a site admin.
-            </p>
-            <?php if ($adminMessages === []): ?>
-                <p class="settings-hint"><?= $adminMessagesBefore !== null ? 'No older messages.' : 'No messages.' ?></p>
-            <?php else: ?>
-                <div class="admin-table-wrap">
-                    <table class="admin-table admin-messages">
-                        <thead><tr><th scope="col">Sent</th><th scope="col">Chat</th><th scope="col">Message</th><th scope="col"><span class="settings-visually-hidden">Actions</span></th></tr></thead>
-                        <tbody>
-                            <?php foreach ($adminMessages as $message): ?>
-                                <?php $isDeleted = $message['messageDeletedTimestamp'] !== null; ?>
-                                <tr<?= $isDeleted ? ' class="is-deleted"' : '' ?>>
-                                    <td class="admin-nowrap"><?= adminTime($message['messageSentTimestamp']) ?></td>
-                                    <td>
-                                        <a class="admin-link" href="/admin/chat?chat=<?= (int) $message['chatId'] ?>"><?= htmlspecialchars($message['chatTitle']) ?></a>
-                                        <span class="admin-small">
-                                            <?= (int) $message['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?><?=
-                                            (int) $message['chatStatus'] !== HBHUB_CHAT_STATUS_ACTIVE ? ', chat deleted' : '' ?>
-                                        </span>
-                                    </td>
-                                    <td class="admin-message-text">
-                                        <?= adminMessageHtml($message) ?>
-                                        <?php if ($message['messageIsEdited'] || $isDeleted): ?>
-                                            <span class="admin-small"><?= $isDeleted
-                                                ? htmlspecialchars(ADMIN_MESSAGE_DELETED_LABELS[(int) $message['messageDeletedByAdmin']] ?? 'Deleted') . ' ' . adminTime($message['messageDeletedTimestamp'])
-                                                : 'Edited' ?></span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if (!$isDeleted && $adminCanDeleteMessages): ?>
-                                            <form action="/admin/user?user=<?= $targetId ?><?= $adminMessagesBefore !== null ? '&amp;before=' . $adminMessagesBefore : '' ?>#messages"
-                                                  method="post" data-confirm="Delete this message?">
-                                                <input type="hidden" name="action" value="deleteMessage">
-                                                <input type="hidden" name="message" value="<?= (int) $message['messageId'] ?>">
-                                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Delete</button>
-                                            </form>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-            <div class="settings-actions admin-messages-actions">
-                <?php if ($adminMessagesBefore !== null): ?>
-                    <a class="settings-btn" href="/admin/user?user=<?= $targetId ?>#messages">Back to the newest</a>
-                <?php endif; ?>
-                <?php if ($adminMessagesHasOlder): ?>
-                    <a class="settings-btn" href="/admin/user?user=<?= $targetId ?>&amp;before=<?= (int) end($adminMessages)['messageId'] ?>#messages">Older messages</a>
-                <?php endif; ?>
-                <?php if ($adminCanDeleteMessages && (int) $adminMessageCounts['total'] > (int) $adminMessageCounts['deleted']): ?>
-                    <form action="/admin/user?user=<?= $targetId ?>#messages" method="post"
-                          data-confirm="Delete all <?= number_format((int) $adminMessageCounts['total'] - (int) $adminMessageCounts['deleted']) ?> of <?= htmlspecialchars($target['userName']) ?>'s messages? This can't be undone.">
-                        <input type="hidden" name="action" value="deleteAllMessages">
-                        <button type="submit" class="settings-btn settings-btn-danger">Delete all their messages</button>
-                    </form>
+                <?php if ($adminCanChange): ?>
+                    <!-- Ban -->
+                    <section class="settings-card<?= $targetIsBanned ? '' : ' is-danger' ?>" id="ban" aria-labelledby="admin-ban-heading">
+                        <div class="settings-card-head">
+                            <div>
+                                <h2 id="admin-ban-heading"><?= $targetIsBanned ? 'Unban' : 'Ban' ?></h2>
+                                <p class="settings-intro">
+                                    <?php if ($targetIsBanned): ?>
+                                        Banned <?= adminTime($target['userBannedTimestamp']) ?><?= (int) $target['userBannedReason'] === HBHUB_BAN_REASON_AVATAR
+                                            ? ' automatically, as the profile picture they uploaded is on the <a class="admin-link" href="/admin/banned">banned pictures</a> list' : '' ?>.
+                                        Unbanning lets them log in again, and their profile and picture come back.
+                                        A browser marked by the ban stops being marked once they log in there.
+                                        A picture their ban put on the banned pictures list comes off it.
+                                    <?php else: ?>
+                                        They're logged out and can't log in again. Their profile and picture are hidden, they can't be added to chats,
+                                        and their messages stay. The next time they open the site, or try to log in, their browser is marked so it can't make a new account.
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                            <?php if ($targetIsBanned): ?>
+                                <span class="settings-status admin-status-banned">Banned</span>
+                            <?php endif; ?>
+                        </div>
+                        <?php if ($targetIsBanned): ?>
+                            <form action="/admin/user?user=<?= $targetId ?>#ban" method="post" data-confirm="Unban <?= htmlspecialchars($target['userName']) ?>?">
+                                <input type="hidden" name="action" value="unban">
+                                <div class="settings-actions">
+                                    <button type="submit" class="settings-btn settings-btn-primary">Unban <?= htmlspecialchars($target['userName']) ?></button>
+                                </div>
+                            </form>
+                        <?php else: ?>
+                            <form action="/admin/user?user=<?= $targetId ?>#ban" method="post" data-confirm="Ban <?= htmlspecialchars($target['userName']) ?>?">
+                                <input type="hidden" name="action" value="ban">
+                                <?php if ($adminAvatarSrc !== null): ?>
+                                    <div class="settings-field">
+                                        <label class="settings-checkbox">
+                                            <input type="checkbox" name="banAvatar" value="1" checked aria-describedby="admin-ban-avatar-hint">
+                                            <span>Ban their profile picture too</span>
+                                        </label>
+                                        <p class="settings-hint" id="admin-ban-avatar-hint">
+                                            It goes on the <a class="admin-link" href="/admin/banned">banned pictures</a> list: any account that uploads
+                                            it, or a resized or slightly cropped copy, or signs up with it, is banned straight away.
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                                <div class="settings-actions">
+                                    <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid">Ban <?= htmlspecialchars($target['userName']) ?></button>
+                                </div>
+                            </form>
+                        <?php endif; ?>
+                    </section>
+
+                    <!-- Delete account -->
+                    <section class="settings-card is-danger" id="delete" aria-labelledby="admin-delete-heading">
+                        <div class="settings-card-head">
+                            <div>
+                                <h2 id="admin-delete-heading">Delete account</h2>
+                                <p class="settings-intro" id="admin-delete-hint">
+                                    Their name, picture, bio and settings are deleted and they're logged out everywhere.
+                                    Their messages stay in their chats, from "<?= HBHUB_DELETED_USER_NAME ?>". This can't be undone.
+                                </p>
+                            </div>
+                        </div>
+                        <form action="/admin/user?user=<?= $targetId ?>#delete" method="post" data-confirm="Delete <?= htmlspecialchars($target['userName']) ?>'s account? This can't be undone.">
+                            <input type="hidden" name="action" value="deleteAccount">
+                            <div class="settings-field">
+                                <label class="settings-label" for="admin-delete-name">Type their name to confirm</label>
+                                <input type="text" id="admin-delete-name" name="confirmName" maxlength="35" required autocomplete="off"
+                                       placeholder="<?= htmlspecialchars($target['userName']) ?>" aria-describedby="admin-delete-hint">
+                                <?php if (isset($adminErrors['delete'])): ?>
+                                    <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['delete']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="settings-actions">
+                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid">Delete account</button>
+                            </div>
+                        </form>
+                    </section>
                 <?php endif; ?>
             </div>
-        </section>
-
-        <!-- Chats they're in -->
-        <section class="settings-card" id="chats" aria-labelledby="admin-chats-heading">
-            <h2 id="admin-chats-heading">Chats</h2>
-            <?php if ($adminChats === []): ?>
-                <p class="settings-hint">Not in any chats.</p>
-            <?php else: ?>
-                <div class="admin-table-wrap">
-                    <table class="admin-table">
-                        <thead><tr><th scope="col">Chat</th><th scope="col">Type</th><th scope="col">Members</th><th scope="col">Role</th><th scope="col">Joined</th></tr></thead>
-                        <tbody>
-                            <?php foreach ($adminChats as $chat): ?>
-                                <tr>
-                                    <td><a class="admin-link" href="/admin/chat?chat=<?= (int) $chat['chatId'] ?>"><?= htmlspecialchars($chat['chatTitle']) ?></a></td>
-                                    <td><?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?></td>
-                                    <td><?= (int) $chat['memberCount'] ?></td>
-                                    <td><?= $chat['userAcknowledgedJoin'] ? htmlspecialchars(ADMIN_CHAT_ROLES[(int) $chat['memberRole']] ?? 'Member') : 'Not accepted yet' ?></td>
-                                    <td class="admin-nowrap"><?= adminTime($chat['memberJoinedTimestamp']) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </section>
-
-        <!-- Casino chips -->
-        <section class="settings-card" id="casino" aria-labelledby="admin-casino-heading">
-            <h2 id="admin-casino-heading">Casino</h2>
-            <?php if ($adminCanChange): ?>
-                <form action="/admin/user?user=<?= $targetId ?>#casino" method="post" data-confirm="Change <?= htmlspecialchars($target['userName']) ?>'s chips?">
-                    <input type="hidden" name="action" value="chips">
-                    <div class="settings-field">
-                        <label class="settings-label" for="admin-chips">Add or remove chips</label>
-                        <input type="text" id="admin-chips" name="chips" inputmode="numeric" maxlength="13" required autocomplete="off"
-                               value="<?= htmlspecialchars($adminValues['chips']) ?>" aria-describedby="admin-chips-hint">
-                        <p class="settings-hint" id="admin-chips-hint">
-                            For chips they've bought, or to take away chips got from a bug or cheating. Up to <?= number_format(ADMIN_CHIPS_MAX) ?> at once.
-                            It shows in their chip history as changed by you.<?= $adminWallet === null
-                                ? ' They\'ve never opened the casino, so they get the ' . number_format(HBHUB_CASINO_START_CHIPS) . ' starting chips first.' : '' ?>
-                        </p>
-                        <?php if (isset($adminErrors['chips'])): ?>
-                            <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['chips']) ?></p>
-                        <?php endif; ?>
-                    </div>
-                    <div class="settings-actions">
-                        <button type="submit" class="settings-btn settings-btn-danger" name="direction" value="remove">Remove chips</button>
-                        <button type="submit" class="settings-btn settings-btn-primary" name="direction" value="add">Add chips</button>
-                    </div>
-                </form>
-                <hr class="settings-divider">
-            <?php endif; ?>
-            <?php if ($adminWallet === null): ?>
-                <p class="settings-hint">They've never opened the casino.</p>
-            <?php else: ?>
-                <p class="settings-intro">
-                    <?= number_format((int) $adminWallet['walletChips']) ?> chips. The newest <?= ADMIN_TRANSACTIONS_SHOWN ?> changes to them are below,
-                    the download above has all of them.
-                </p>
-                <?php if ($adminTransactions !== []): ?>
-                    <div class="admin-table-wrap">
-                        <table class="admin-table">
-                            <thead><tr><th scope="col">When</th><th scope="col">Change</th><th scope="col">Chips after</th><th scope="col">Why</th></tr></thead>
-                            <tbody>
-                                <?php foreach ($adminTransactions as $transaction): ?>
-                                    <tr>
-                                        <td class="admin-nowrap"><?= adminTime($transaction['transactionTimestamp']) ?></td>
-                                        <td class="admin-nowrap"><?= (int) $transaction['transactionAmount'] > 0 ? '+' : '' ?><?= number_format((int) $transaction['transactionAmount']) ?></td>
-                                        <td><?= number_format((int) $transaction['transactionBalance']) ?></td>
-                                        <td><?= htmlspecialchars($transaction['adminName'] !== null
-                                            ? 'By ' . $transaction['adminName'] . ' (admin)'
-                                            : ($transaction['transactionGame'] !== null ? $transaction['transactionGame'] . ': ' : '') . $transaction['transactionReason']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            <?php endif; ?>
-        </section>
+        </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

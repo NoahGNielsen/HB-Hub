@@ -8,6 +8,8 @@
 // the chat, kick members and delete messages. Each change shows up in the chat as made by "A site admin" (chat.php),
 // and someone kicked gets a notification that says the same. Like in admin/user.php, site admins can't be kicked and
 // their messages can't be deleted here. A deleted chat can only be looked at.
+// The side menu (adminPageMenuHtml()) links to the cards in the order they're on the page: Information, then Manage
+// (name and icon, background), Activity (members, messages) and the Danger zone (delete) last.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php';
@@ -197,295 +199,323 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/settings.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/settings.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/admin.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/admin.css') ?>">
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/settingsMenu.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/settingsMenu.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/admin.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/admin.js') ?>" defer></script>
     <title><?= htmlspecialchars($chat['chatTitle']) ?> - Admin panel - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="settings admin">
-        <a class="admin-kicker" href="/admin/?list=chats">&larr; Admin panel</a>
+    <main class="settings settings-page admin">
+        <div class="settings-layout">
+            <!-- Links to the cards, in the order they're on the page -->
+            <?= adminPageMenuHtml('/admin/?list=chats', 'All chats', $adminIconSrc, $chat['chatTitle'], adminStatusHtml(adminChatStatus((int) $chat['chatStatus'])), [
+                'Overview' => ['overview' => 'Information'],
+                'Manage' => $adminIsActive
+                    ? ($adminIsGroup || $adminIconSrc !== null ? ['group' => $adminIsGroup ? 'Name and icon' : 'Icon'] : []) + ['background' => 'Background']
+                    : [],
+                'Activity' => ['members' => 'Members', 'messages' => 'Messages'],
+                ADMIN_MENU_DANGER => $adminIsActive ? ['delete' => 'Delete chat'] : [],
+            ]) ?>
 
-        <!-- Which chat it is -->
-        <section class="settings-card admin-header" id="overview" aria-labelledby="admin-name-heading">
-            <?php if ($adminIconSrc !== null): ?>
-                <img class="settings-avatar-preview" src="<?= htmlspecialchars($adminIconSrc) ?>" alt="Icon of <?= htmlspecialchars($chat['chatTitle']) ?>">
-            <?php else: ?>
-                <span class="settings-avatar-preview settings-avatar-initial" aria-hidden="true"><?= htmlspecialchars(mb_strtoupper(mb_substr($chat['chatTitle'], 0, 1))) ?></span>
-            <?php endif; ?>
-            <div class="admin-header-text">
-                <h1 id="admin-name-heading">
-                    <?= htmlspecialchars($chat['chatTitle']) ?>
-                    <?= adminStatusHtml(adminChatStatus((int) $chat['chatStatus'])) ?>
-                    <span class="settings-status"><?= $adminIsGroup ? 'Group' : 'DM' ?></span>
-                </h1>
-            </div>
-        </section>
-
-        <!-- Information -->
-        <section class="settings-card" aria-labelledby="admin-info-heading">
-            <h2 id="admin-info-heading">Information</h2>
-            <dl class="admin-details">
-                <div><dt>Chat ID</dt><dd><?= $chatId ?></dd></div>
-                <div><dt>Type</dt><dd><?= $adminIsGroup ? 'Group' : 'DM' ?></dd></div>
-                <?php if ($adminIsGroup): ?>
-                    <div><dt>Name</dt><dd><?= $chat['chatName'] !== null && $chat['chatName'] !== ''
-                        ? htmlspecialchars($chat['chatName']) : '<span class="admin-muted">Named after its members</span>' ?></dd></div>
-                <?php endif; ?>
-                <div><dt>Made by</dt><dd><?= $chat['creatorName'] !== null
-                    ? '<a class="admin-link" href="/admin/user?user=' . (int) $chat['chatCreatedBy'] . '">' . htmlspecialchars($chat['creatorName']) . '</a>' : '–' ?></dd></div>
-                <div><dt>Made</dt><dd><?= adminTime($chat['chatCreatedTimestamp']) ?></dd></div>
-                <div><dt>Last message</dt><dd><?= $chat['lastMessageTimestamp'] !== null ? adminTime($chat['lastMessageTimestamp']) : 'No messages yet' ?></dd></div>
-                <?php if ((int) $chat['chatStatus'] === HBHUB_CHAT_STATUS_DELETED_BY_SITE_ADMIN): ?>
-                    <div><dt>Deleted by a site admin</dt><dd><?= adminTime($chat['chatBannedTimestamp']) ?></dd></div>
-                <?php endif; ?>
-                <div><dt>Members</dt><dd><?= count($adminMembers) ?><?= $adminInvited > 0 ? ' <span class="admin-small">(' . $adminInvited . ' not accepted yet)</span>' : '' ?></dd></div>
-                <div><dt>Messages sent</dt><dd><?= number_format((int) $adminMessageCounts['total']) ?> <span class="admin-small">(<?= number_format((int) $adminMessageCounts['deleted']) ?> deleted)</span></dd></div>
-                <div><dt>Background</dt><dd><?= $adminBackground !== null
-                    ? htmlspecialchars($adminColor1 . ' to ' . $adminColor2 . ', ' . HBHUB_CHAT_BACKGROUND_DIRECTIONS[$adminAngle][1])
-                    : 'Default' ?></dd></div>
-            </dl>
-        </section>
-
-        <?php if (!$adminIsActive): ?>
-            <p class="settings-notice">
-                <?= (int) $chat['chatStatus'] === HBHUB_CHAT_STATUS_DELETED_BY_SITE_ADMIN
-                    ? 'A site admin deleted this chat.'
-                    : 'This chat has been deleted: everyone left it, or a group admin deleted it.' ?>
-                There's nothing left to change, but its members and messages are still here to look at.
-            </p>
-        <?php else: ?>
-            <?php if ($adminIsGroup || $adminIconSrc !== null): ?>
-                <!-- A group's name and icon -->
-                <section class="settings-card" id="group" aria-labelledby="admin-group-heading">
-                    <h2 id="admin-group-heading"><?= $adminIsGroup ? 'Name and icon' : 'Icon' ?></h2>
-
-                    <?php if ($adminIsGroup): ?>
-                        <form action="<?= $adminFormAction ?>#group" method="post">
-                            <input type="hidden" name="action" value="rename">
-                            <div class="settings-field">
-                                <label class="settings-label" for="admin-chat-name">Name</label>
-                                <input type="text" id="admin-chat-name" name="name" maxlength="<?= HBHUB_CHAT_NAME_MAX ?>" autocomplete="off"
-                                       value="<?= htmlspecialchars($chat['chatName'] ?? '') ?>" placeholder="Named after its members"
-                                       aria-describedby="admin-chat-name-hint">
-                                <p class="settings-hint" id="admin-chat-name-hint">
-                                    Leave it empty to name the group after its members. The group gets a notice that a site admin changed it.
-                                </p>
-                            </div>
-                            <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-primary">Save name</button>
-                            </div>
-                        </form>
-                    <?php endif; ?>
-
-                    <?php if ($adminIconSrc !== null): ?>
-                        <?php if ($adminIsGroup): ?>
-                            <hr class="settings-divider">
+            <div class="settings-content">
+                <!-- Which chat it is, and what there is to know about it -->
+                <section class="settings-card" id="overview" aria-labelledby="admin-name-heading">
+                    <div class="admin-header">
+                        <?php if ($adminIconSrc !== null): ?>
+                            <img class="settings-avatar-preview" src="<?= htmlspecialchars($adminIconSrc) ?>" alt="Icon of <?= htmlspecialchars($chat['chatTitle']) ?>">
+                        <?php else: ?>
+                            <span class="settings-avatar-preview settings-avatar-initial" aria-hidden="true"><?= htmlspecialchars(mb_strtoupper(mb_substr($chat['chatTitle'], 0, 1))) ?></span>
                         <?php endif; ?>
-                        <form action="<?= $adminFormAction ?>#group" method="post" data-confirm="Remove the icon of <?= htmlspecialchars($chat['chatTitle']) ?>?">
-                            <input type="hidden" name="action" value="removeIcon">
-                            <div class="settings-field">
-                                <span class="settings-label">Icon</span>
-                                <p class="settings-hint">
-                                    The icon (at the top) is deleted, and the first letter of the name is shown instead.
-                                    The group gets a notice that a site admin removed it.
-                                </p>
-                            </div>
-                            <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-danger">Remove icon</button>
-                            </div>
-                        </form>
+                        <div class="admin-header-text">
+                            <h1 id="admin-name-heading">
+                                <?= htmlspecialchars($chat['chatTitle']) ?>
+                                <?= adminStatusHtml(adminChatStatus((int) $chat['chatStatus'])) ?>
+                                <span class="settings-status"><?= $adminIsGroup ? 'Group' : 'DM' ?></span>
+                            </h1>
+                        </div>
+                    </div>
+
+                    <hr class="settings-divider">
+
+                    <h2 class="settings-visually-hidden">Information</h2>
+                    <dl class="admin-details">
+                        <div><dt>Chat ID</dt><dd><?= $chatId ?></dd></div>
+                        <div><dt>Type</dt><dd><?= $adminIsGroup ? 'Group' : 'DM' ?></dd></div>
+                        <?php if ($adminIsGroup): ?>
+                            <div><dt>Name</dt><dd><?= $chat['chatName'] !== null && $chat['chatName'] !== ''
+                                ? htmlspecialchars($chat['chatName']) : '<span class="admin-muted">Named after its members</span>' ?></dd></div>
+                        <?php endif; ?>
+                        <div><dt>Made by</dt><dd><?= $chat['creatorName'] !== null
+                            ? '<a class="admin-link" href="/admin/user?user=' . (int) $chat['chatCreatedBy'] . '">' . htmlspecialchars($chat['creatorName']) . '</a>' : '–' ?></dd></div>
+                        <div><dt>Made</dt><dd><?= adminTime($chat['chatCreatedTimestamp']) ?></dd></div>
+                        <div><dt>Last message</dt><dd><?= $chat['lastMessageTimestamp'] !== null ? adminTime($chat['lastMessageTimestamp']) : 'No messages yet' ?></dd></div>
+                        <?php if ((int) $chat['chatStatus'] === HBHUB_CHAT_STATUS_DELETED_BY_SITE_ADMIN): ?>
+                            <div><dt>Deleted by a site admin</dt><dd><?= adminTime($chat['chatBannedTimestamp']) ?></dd></div>
+                        <?php endif; ?>
+                        <div><dt>Members</dt><dd><?= count($adminMembers) ?><?= $adminInvited > 0 ? ' <span class="admin-small">(' . $adminInvited . ' not accepted yet)</span>' : '' ?></dd></div>
+                        <div><dt>Messages sent</dt><dd><?= number_format((int) $adminMessageCounts['total']) ?> <span class="admin-small">(<?= number_format((int) $adminMessageCounts['deleted']) ?> deleted)</span></dd></div>
+                        <div><dt>Background</dt><dd><?= $adminBackground !== null
+                            ? htmlspecialchars($adminColor1 . ' to ' . $adminColor2 . ', ' . HBHUB_CHAT_BACKGROUND_DIRECTIONS[$adminAngle][1])
+                            : 'Default' ?></dd></div>
+                    </dl>
+
+                    <?php if (!$adminIsActive): ?>
+                        <p class="settings-notice admin-overview-notice">
+                            <?= (int) $chat['chatStatus'] === HBHUB_CHAT_STATUS_DELETED_BY_SITE_ADMIN
+                                ? 'A site admin deleted this chat.'
+                                : 'This chat has been deleted: everyone left it, or a group admin deleted it.' ?>
+                            There's nothing left to change, but its members and messages are still here to look at.
+                        </p>
                     <?php endif; ?>
                 </section>
-            <?php endif; ?>
 
-            <!-- Background: a gradient between two colors going the way the picked arrow points, like Change background in the chat -->
-            <section class="settings-card" id="background" aria-labelledby="admin-background-heading">
-                <h2 id="admin-background-heading">
-                    Background
-                    <span class="settings-status"><?= $adminBackground !== null ? 'Custom' : 'Default' ?></span>
-                </h2>
-                <form action="<?= $adminFormAction ?>#background" method="post">
-                    <input type="hidden" name="action" value="background">
-                    <!-- admin.js shows the picked gradient here, as the content security policy doesn't allow style attributes -->
-                    <div class="admin-background-preview" aria-hidden="true" data-background-preview>
-                        <span class="admin-bubble">Hey, new background?</span>
-                        <span class="admin-bubble is-own">Looks good!</span>
-                    </div>
-                    <div class="settings-row">
-                        <div class="settings-field">
-                            <label class="settings-label" for="admin-background-color1">From</label>
-                            <input type="color" class="admin-color" id="admin-background-color1" name="color1" value="<?= htmlspecialchars($adminColor1) ?>">
+                <?php if ($adminIsActive): ?>
+                    <?php if ($adminIsGroup || $adminIconSrc !== null): ?>
+                        <!-- A group's name and icon -->
+                        <section class="settings-card" id="group" aria-labelledby="admin-group-heading">
+                            <div class="settings-card-head">
+                                <div>
+                                    <h2 id="admin-group-heading"><?= $adminIsGroup ? 'Name and icon' : 'Icon' ?></h2>
+                                    <p class="settings-intro">The chat gets a notice that a site admin changed it.</p>
+                                </div>
+                            </div>
+
+                            <?php if ($adminIsGroup): ?>
+                                <form action="<?= $adminFormAction ?>#group" method="post">
+                                    <input type="hidden" name="action" value="rename">
+                                    <div class="settings-field">
+                                        <label class="settings-label" for="admin-chat-name">Name</label>
+                                        <input type="text" id="admin-chat-name" name="name" maxlength="<?= HBHUB_CHAT_NAME_MAX ?>" autocomplete="off"
+                                               value="<?= htmlspecialchars($chat['chatName'] ?? '') ?>" placeholder="Named after its members"
+                                               aria-describedby="admin-chat-name-hint">
+                                        <p class="settings-hint" id="admin-chat-name-hint">Leave it empty to name the group after its members.</p>
+                                    </div>
+                                    <div class="settings-actions">
+                                        <button type="submit" class="settings-btn settings-btn-primary">Save name</button>
+                                    </div>
+                                </form>
+                            <?php endif; ?>
+
+                            <?php if ($adminIconSrc !== null): ?>
+                                <?php if ($adminIsGroup): ?>
+                                    <hr class="settings-divider">
+                                <?php endif; ?>
+                                <form class="settings-item" action="<?= $adminFormAction ?>#group" method="post" data-confirm="Remove the icon of <?= htmlspecialchars($chat['chatTitle']) ?>?">
+                                    <input type="hidden" name="action" value="removeIcon">
+                                    <div class="settings-item-text">
+                                        <span class="settings-label">Icon</span>
+                                        <p class="settings-hint">The icon (at the top) is deleted, and the first letter of the name is shown instead.</p>
+                                    </div>
+                                    <button type="submit" class="settings-btn settings-btn-danger">Remove icon</button>
+                                </form>
+                            <?php endif; ?>
+                        </section>
+                    <?php endif; ?>
+
+                    <!-- Background: a gradient between two colors going the way the picked arrow points, like Change background in the chat -->
+                    <section class="settings-card" id="background" aria-labelledby="admin-background-heading">
+                        <div class="settings-card-head">
+                            <div>
+                                <h2 id="admin-background-heading">Background</h2>
+                                <p class="settings-intro">Everyone in the chat gets a notice that a site admin changed it.</p>
+                            </div>
+                            <span class="settings-status"><?= $adminBackground !== null ? 'Custom' : 'Default' ?></span>
                         </div>
-                        <div class="settings-field">
-                            <label class="settings-label" for="admin-background-color2">To</label>
-                            <input type="color" class="admin-color" id="admin-background-color2" name="color2" value="<?= htmlspecialchars($adminColor2) ?>">
+                        <form action="<?= $adminFormAction ?>#background" method="post">
+                            <input type="hidden" name="action" value="background">
+                            <!-- admin.js shows the picked gradient here, as the content security policy doesn't allow style attributes -->
+                            <div class="admin-background-preview" aria-hidden="true" data-background-preview>
+                                <span class="admin-bubble">Hey, new background?</span>
+                                <span class="admin-bubble is-own">Looks good!</span>
+                            </div>
+                            <div class="settings-row">
+                                <div class="settings-field">
+                                    <label class="settings-label" for="admin-background-color1">From</label>
+                                    <input type="color" class="admin-color" id="admin-background-color1" name="color1" value="<?= htmlspecialchars($adminColor1) ?>">
+                                </div>
+                                <div class="settings-field">
+                                    <label class="settings-label" for="admin-background-color2">To</label>
+                                    <input type="color" class="admin-color" id="admin-background-color2" name="color2" value="<?= htmlspecialchars($adminColor2) ?>">
+                                </div>
+                            </div>
+                            <fieldset class="admin-directions">
+                                <legend class="settings-label">Direction</legend>
+                                <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [$arrow, $label]): ?>
+                                    <label title="<?= $label ?>">
+                                        <input type="radio" class="settings-visually-hidden" name="angle" value="<?= $angle ?>"<?= $angle === $adminAngle ? ' checked' : '' ?>>
+                                        <span class="admin-direction" aria-hidden="true"><?= $arrow ?></span>
+                                        <span class="settings-visually-hidden"><?= $label ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </fieldset>
+                            <?php if (isset($adminErrors['background'])): ?>
+                                <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['background']) ?></p>
+                            <?php endif; ?>
+                            <div class="settings-actions">
+                                <?php if ($adminBackground !== null): ?>
+                                    <button type="submit" class="settings-btn settings-btn-danger" name="remove" value="1">Reset to default</button>
+                                <?php endif; ?>
+                                <button type="submit" class="settings-btn settings-btn-primary">Save background</button>
+                            </div>
+                        </form>
+                    </section>
+                <?php endif; ?>
+
+                <!-- Members, invited ones too -->
+                <section class="settings-card" id="members" aria-labelledby="admin-members-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-members-heading">Members</h2>
+                            <?php if ($adminIsActive && $adminIsGroup): ?>
+                                <p class="settings-intro">
+                                    Kicking someone takes them out of the group, with a notice in it that a site admin did it, and they get a notification.
+                                    Kicking someone who hasn't accepted yet takes back their invite. When the owner is kicked, the admin who has been in the
+                                    group the longest takes over (or the longest-standing member). Site admins can't be kicked.
+                                </p>
+                            <?php elseif ($adminIsActive): ?>
+                                <p class="settings-intro">Nobody can be kicked from a DM. Delete the chat instead.</p>
+                            <?php endif; ?>
                         </div>
+                        <span class="settings-status"><?= count($adminMembers) ?></span>
                     </div>
-                    <fieldset class="admin-directions">
-                        <legend class="settings-label">Direction</legend>
-                        <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [$arrow, $label]): ?>
-                            <label title="<?= $label ?>">
-                                <input type="radio" class="settings-visually-hidden" name="angle" value="<?= $angle ?>"<?= $angle === $adminAngle ? ' checked' : '' ?>>
-                                <span class="admin-direction" aria-hidden="true"><?= $arrow ?></span>
-                                <span class="settings-visually-hidden"><?= $label ?></span>
-                            </label>
-                        <?php endforeach; ?>
-                    </fieldset>
-                    <p class="settings-hint">Everyone in the chat gets a notice that a site admin changed it.</p>
-                    <?php if (isset($adminErrors['background'])): ?>
-                        <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['background']) ?></p>
+                    <?php if ($adminMembers === []): ?>
+                        <p class="settings-hint">Nobody is in this chat anymore.</p>
+                    <?php else: ?>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table admin-list">
+                                <thead><tr><th scope="col">Member</th><th scope="col">Role</th><th scope="col">Joined</th><th scope="col"><span class="settings-visually-hidden">Actions</span></th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($adminMembers as $member): ?>
+                                        <?php
+                                        $memberUserId = (int) $member['userId'];
+                                        $memberIsSiteAdmin = (int) $member['userRole'] === ADMIN_ROLE_ADMIN;
+                                        $memberStatus = adminUserStatus($member + ['isLocked' => false]); // Active, Banned or Deleted
+                                        ?>
+                                        <tr>
+                                            <td>
+                                                <a class="admin-list-link" href="/admin/user?user=<?= $memberUserId ?>">
+                                                    <?= adminAvatarHtml(hbHubAvatarUrl($memberUserId, $member['userAvatarAttachmentId'] !== null ? (int) $member['userAvatarAttachmentId'] : null), $member['userName']) ?>
+                                                    <span class="admin-list-name"><?= htmlspecialchars($member['userName']) ?></span>
+                                                </a>
+                                                <?php if ($memberIsSiteAdmin): ?>
+                                                    <span class="admin-small">Site admin</span>
+                                                <?php endif; ?>
+                                                <?php if ($memberStatus !== 'Active'): ?>
+                                                    <?= adminStatusHtml($memberStatus) ?>
+                                                <?php endif; ?>
+                                                <?php if ($member['memberNickname'] !== null): ?>
+                                                    <span class="admin-small">Goes by "<?= htmlspecialchars($member['memberNickname']) ?>" here</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= $member['userAcknowledgedJoin'] ? htmlspecialchars(ADMIN_CHAT_ROLES[(int) $member['memberRole']] ?? 'Member') : 'Not accepted yet' ?></td>
+                                            <td class="admin-nowrap"><?= adminTime($member['memberJoinedTimestamp']) ?></td>
+                                            <td>
+                                                <?php if ($adminIsActive && $adminIsGroup && !$memberIsSiteAdmin): ?>
+                                                    <form action="<?= $adminFormAction ?>#members" method="post"
+                                                          data-confirm="<?= htmlspecialchars($member['userAcknowledgedJoin']
+                                                              ? 'Kick ' . $member['userName'] . ' from ' . $chat['chatTitle'] . '?'
+                                                              : 'Take back ' . $member['userName'] . '\'s invite to ' . $chat['chatTitle'] . '?') ?>">
+                                                        <input type="hidden" name="action" value="kick">
+                                                        <input type="hidden" name="member" value="<?= $memberUserId ?>">
+                                                        <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Kick</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     <?php endif; ?>
-                    <div class="settings-actions">
-                        <?php if ($adminBackground !== null): ?>
-                            <button type="submit" class="settings-btn settings-btn-danger" name="remove" value="1">Reset to default</button>
-                        <?php endif; ?>
-                        <button type="submit" class="settings-btn settings-btn-primary">Save background</button>
+                </section>
+
+                <!-- Messages, with the notices about changes to the chat -->
+                <section class="settings-card" id="messages" aria-labelledby="admin-messages-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-messages-heading">Messages</h2>
+                            <p class="settings-intro">
+                                Everything sent in the chat, newest first, with the notices about changes to it. Deleted messages are still here,
+                                but only shown as deleted in the chat.<?= $adminIsActive ? ' Deleting one here shows it as deleted by a site admin.' : '' ?>
+                            </p>
+                        </div>
+                        <span class="settings-status"><?= number_format((int) $adminMessageCounts['total']) ?></span>
                     </div>
-                </form>
-            </section>
-
-            <!-- Delete chat -->
-            <section class="settings-card" id="delete" aria-labelledby="admin-delete-heading">
-                <h2 id="admin-delete-heading">Delete chat</h2>
-                <form action="<?= $adminFormAction ?>#overview" method="post"
-                      data-confirm="Delete <?= htmlspecialchars($chat['chatTitle']) ?> for everyone in it? This can't be undone.">
-                    <input type="hidden" name="action" value="deleteChat">
-                    <p class="settings-hint">
-                        The chat is gone for everyone in it, and nothing more can be sent in it. It stays here in the admin panel
-                        with its members and messages, marked as deleted by a site admin. This can't be undone.
-                    </p>
-                    <div class="settings-actions">
-                        <button type="submit" class="settings-btn settings-btn-danger">Delete chat</button>
-                    </div>
-                </form>
-            </section>
-        <?php endif; ?>
-
-        <!-- Members, invited ones too -->
-        <section class="settings-card" id="members" aria-labelledby="admin-members-heading">
-            <h2 id="admin-members-heading">Members <span class="settings-status"><?= count($adminMembers) ?></span></h2>
-            <?php if ($adminIsActive && $adminIsGroup): ?>
-                <p class="settings-intro">
-                    Kicking someone takes them out of the group, with a notice in it that a site admin did it, and they get a notification.
-                    Kicking someone who hasn't accepted yet takes back their invite. When the owner is kicked, the admin who has been in the
-                    group the longest takes over (or the longest-standing member). Site admins can't be kicked.
-                </p>
-            <?php elseif ($adminIsActive): ?>
-                <p class="settings-intro">Nobody can be kicked from a DM. Delete the chat instead.</p>
-            <?php endif; ?>
-            <?php if ($adminMembers === []): ?>
-                <p class="settings-hint">Nobody is in this chat anymore.</p>
-            <?php else: ?>
-                <div class="admin-table-wrap">
-                    <table class="admin-table admin-list">
-                        <thead><tr><th scope="col">Member</th><th scope="col">Role</th><th scope="col">Joined</th><th scope="col"><span class="settings-visually-hidden">Actions</span></th></tr></thead>
-                        <tbody>
-                            <?php foreach ($adminMembers as $member): ?>
-                                <?php
-                                $memberUserId = (int) $member['userId'];
-                                $memberIsSiteAdmin = (int) $member['userRole'] === ADMIN_ROLE_ADMIN;
-                                $memberStatus = adminUserStatus($member + ['isLocked' => false]); // Active, Banned or Deleted
-                                ?>
-                                <tr>
-                                    <td>
-                                        <a class="admin-list-link" href="/admin/user?user=<?= $memberUserId ?>">
-                                            <?= adminAvatarHtml(hbHubAvatarUrl($memberUserId, $member['userAvatarAttachmentId'] !== null ? (int) $member['userAvatarAttachmentId'] : null), $member['userName']) ?>
-                                            <span class="admin-list-name"><?= htmlspecialchars($member['userName']) ?></span>
-                                        </a>
-                                        <?php if ($memberIsSiteAdmin): ?>
-                                            <span class="admin-small">Site admin</span>
-                                        <?php endif; ?>
-                                        <?php if ($memberStatus !== 'Active'): ?>
-                                            <?= adminStatusHtml($memberStatus) ?>
-                                        <?php endif; ?>
-                                        <?php if ($member['memberNickname'] !== null): ?>
-                                            <span class="admin-small">Goes by "<?= htmlspecialchars($member['memberNickname']) ?>" here</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?= $member['userAcknowledgedJoin'] ? htmlspecialchars(ADMIN_CHAT_ROLES[(int) $member['memberRole']] ?? 'Member') : 'Not accepted yet' ?></td>
-                                    <td class="admin-nowrap"><?= adminTime($member['memberJoinedTimestamp']) ?></td>
-                                    <td>
-                                        <?php if ($adminIsActive && $adminIsGroup && !$memberIsSiteAdmin): ?>
-                                            <form action="<?= $adminFormAction ?>#members" method="post"
-                                                  data-confirm="<?= htmlspecialchars($member['userAcknowledgedJoin']
-                                                      ? 'Kick ' . $member['userName'] . ' from ' . $chat['chatTitle'] . '?'
-                                                      : 'Take back ' . $member['userName'] . '\'s invite to ' . $chat['chatTitle'] . '?') ?>">
-                                                <input type="hidden" name="action" value="kick">
-                                                <input type="hidden" name="member" value="<?= $memberUserId ?>">
-                                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Kick</button>
-                                            </form>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </section>
-
-        <!-- Messages, with the notices about changes to the chat -->
-        <section class="settings-card" id="messages" aria-labelledby="admin-messages-heading">
-            <h2 id="admin-messages-heading">Messages</h2>
-            <p class="settings-intro">
-                Everything sent in the chat, newest first, with the notices about changes to it. Deleted messages are still here,
-                but only shown as deleted in the chat.<?= $adminIsActive ? ' Deleting one here shows it as deleted by a site admin.' : '' ?>
-            </p>
-            <?php if ($adminMessages === []): ?>
-                <p class="settings-hint"><?= $adminMessagesBefore !== null ? 'No older messages.' : 'No messages.' ?></p>
-            <?php else: ?>
-                <div class="admin-table-wrap">
-                    <table class="admin-table admin-messages">
-                        <thead><tr><th scope="col">Sent</th><th scope="col">From</th><th scope="col">Message</th><th scope="col"><span class="settings-visually-hidden">Actions</span></th></tr></thead>
-                        <tbody>
-                            <?php foreach ($adminMessages as $message): ?>
-                                <?php
-                                $isNotice = (bool) $message['messageEvent'];
-                                $isDeleted = $message['messageDeletedTimestamp'] !== null;
-                                ?>
-                                <tr<?= $isNotice ? ' class="is-notice"' : ($isDeleted ? ' class="is-deleted"' : '') ?>>
-                                    <td class="admin-nowrap"><?= adminTime($message['messageSentTimestamp']) ?></td>
-                                    <td><a class="admin-link" href="/admin/user?user=<?= (int) $message['userId'] ?>"><?= htmlspecialchars($message['senderName']) ?></a></td>
-                                    <td class="admin-message-text">
-                                        <?php if ($isNotice): ?>
-                                            <span class="admin-notice"><?= chatNoticeHtml($adminNoticeChat, 0, $message) ?></span>
-                                        <?php else: ?>
-                                            <?= adminMessageHtml($message) ?>
-                                            <?php if ($message['messageIsEdited'] || $isDeleted): ?>
-                                                <span class="admin-small"><?= $isDeleted
-                                                    ? htmlspecialchars(ADMIN_MESSAGE_DELETED_LABELS[(int) $message['messageDeletedByAdmin']] ?? 'Deleted') . ' ' . adminTime($message['messageDeletedTimestamp'])
-                                                    : 'Edited' ?></span>
-                                            <?php endif; ?>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($adminIsActive && !$isNotice && !$isDeleted && (int) $message['senderRole'] !== ADMIN_ROLE_ADMIN): ?>
-                                            <form action="<?= $adminFormAction ?><?= $adminMessagesBefore !== null ? '&amp;before=' . $adminMessagesBefore : '' ?>#messages"
-                                                  method="post" data-confirm="Delete this message?">
-                                                <input type="hidden" name="action" value="deleteMessage">
-                                                <input type="hidden" name="message" value="<?= (int) $message['messageId'] ?>">
-                                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Delete</button>
-                                            </form>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-            <?php if ($adminMessagesBefore !== null || $adminMessagesHasOlder): ?>
-                <div class="settings-actions admin-messages-actions">
-                    <?php if ($adminMessagesBefore !== null): ?>
-                        <a class="settings-btn" href="<?= $adminFormAction ?>#messages">Back to the newest</a>
+                    <?php if ($adminMessages === []): ?>
+                        <p class="settings-hint"><?= $adminMessagesBefore !== null ? 'No older messages.' : 'No messages.' ?></p>
+                    <?php else: ?>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table admin-messages">
+                                <thead><tr><th scope="col">Sent</th><th scope="col">From</th><th scope="col">Message</th><th scope="col"><span class="settings-visually-hidden">Actions</span></th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($adminMessages as $message): ?>
+                                        <?php
+                                        $isNotice = (bool) $message['messageEvent'];
+                                        $isDeleted = $message['messageDeletedTimestamp'] !== null;
+                                        ?>
+                                        <tr<?= $isNotice ? ' class="is-notice"' : ($isDeleted ? ' class="is-deleted"' : '') ?>>
+                                            <td class="admin-nowrap"><?= adminTime($message['messageSentTimestamp']) ?></td>
+                                            <td><a class="admin-link" href="/admin/user?user=<?= (int) $message['userId'] ?>"><?= htmlspecialchars($message['senderName']) ?></a></td>
+                                            <td class="admin-message-text">
+                                                <?php if ($isNotice): ?>
+                                                    <span class="admin-notice"><?= chatNoticeHtml($adminNoticeChat, 0, $message) ?></span>
+                                                <?php else: ?>
+                                                    <?= adminMessageHtml($message) ?>
+                                                    <?php if ($message['messageIsEdited'] || $isDeleted): ?>
+                                                        <span class="admin-small"><?= $isDeleted
+                                                            ? htmlspecialchars(ADMIN_MESSAGE_DELETED_LABELS[(int) $message['messageDeletedByAdmin']] ?? 'Deleted') . ' ' . adminTime($message['messageDeletedTimestamp'])
+                                                            : 'Edited' ?></span>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php if ($adminIsActive && !$isNotice && !$isDeleted && (int) $message['senderRole'] !== ADMIN_ROLE_ADMIN): ?>
+                                                    <form action="<?= $adminFormAction ?><?= $adminMessagesBefore !== null ? '&amp;before=' . $adminMessagesBefore : '' ?>#messages"
+                                                          method="post" data-confirm="Delete this message?">
+                                                        <input type="hidden" name="action" value="deleteMessage">
+                                                        <input type="hidden" name="message" value="<?= (int) $message['messageId'] ?>">
+                                                        <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Delete</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     <?php endif; ?>
-                    <?php if ($adminMessagesHasOlder): ?>
-                        <a class="settings-btn" href="<?= $adminFormAction ?>&amp;before=<?= (int) end($adminMessages)['messageId'] ?>#messages">Older messages</a>
+                    <?php if ($adminMessagesBefore !== null || $adminMessagesHasOlder): ?>
+                        <div class="settings-actions admin-messages-actions">
+                            <?php if ($adminMessagesBefore !== null): ?>
+                                <a class="settings-btn" href="<?= $adminFormAction ?>#messages">Back to the newest</a>
+                            <?php endif; ?>
+                            <?php if ($adminMessagesHasOlder): ?>
+                                <a class="settings-btn" href="<?= $adminFormAction ?>&amp;before=<?= (int) end($adminMessages)['messageId'] ?>#messages">Older messages</a>
+                            <?php endif; ?>
+                        </div>
                     <?php endif; ?>
-                </div>
-            <?php endif; ?>
-        </section>
+                </section>
+
+                <?php if ($adminIsActive): ?>
+                    <!-- Delete chat -->
+                    <section class="settings-card is-danger" id="delete" aria-labelledby="admin-delete-heading">
+                        <form class="settings-item" action="<?= $adminFormAction ?>#overview" method="post"
+                              data-confirm="Delete <?= htmlspecialchars($chat['chatTitle']) ?> for everyone in it? This can't be undone.">
+                            <input type="hidden" name="action" value="deleteChat">
+                            <div class="settings-item-text">
+                                <h2 class="settings-item-title" id="admin-delete-heading">Delete chat</h2>
+                                <p class="settings-hint">
+                                    The chat is gone for everyone in it, and nothing more can be sent in it. It stays here in the admin panel
+                                    with its members and messages, marked as deleted by a site admin. This can't be undone.
+                                </p>
+                            </div>
+                            <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid">Delete chat</button>
+                        </form>
+                    </section>
+                <?php endif; ?>
+            </div>
+        </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

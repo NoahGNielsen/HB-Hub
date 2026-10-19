@@ -5,8 +5,8 @@
 // Lists every user (?list=users, the default) or every chat (?list=chats), to pick one and open its admin panel:
 // admin/user.php for a user, admin/chat.php for a chat. Deleted accounts and chats are in the lists too, at the end.
 // ?q= searches the list by name (a chat by its name or its members' names), or by id when it's a number,
-// and ?page= goes through it ADMIN_LIST_SHOWN at a time. The third and fourth tabs, Banned pictures and Feedback, are
-// their own pages (admin/banned.php, admin/feedback.php).
+// and ?page= goes through it ADMIN_LIST_SHOWN at a time. The side menu (adminListsMenuHtml()) switches between the two,
+// and goes to the other lists, Banned pictures and Feedback, which are their own pages (admin/banned.php, admin/feedback.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
@@ -135,97 +135,108 @@ $adminNoun = $adminList === 'users' ? 'users' : 'chats';
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="settings admin">
-        <h1>Admin panel</h1>
+    <main class="settings settings-page admin">
+        <div class="settings-layout">
+            <!-- Users, chats, banned pictures or feedback, each with how many there are in all (new feedback only) -->
+            <?= adminListsMenuHtml($db, $adminList) ?>
 
-        <!-- Users, chats or banned pictures, each with how many there are in all -->
-        <?= adminTabsHtml($db, $adminList) ?>
+            <div class="settings-content">
+                <h1>Admin panel</h1>
 
-        <section class="settings-card" aria-labelledby="admin-list-heading">
-            <h2 class="settings-visually-hidden" id="admin-list-heading"><?= $adminList === 'users' ? 'Users' : 'Chats' ?></h2>
+                <section class="settings-card" aria-labelledby="admin-list-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-list-heading"><?= $adminList === 'users' ? 'Users' : 'Chats' ?></h2>
+                            <p class="settings-intro"><?= $adminList === 'users'
+                                ? 'Everyone with an account, deleted accounts last. Open one to see and change everything about it.'
+                                : 'Every DM and group, the newest activity first and deleted chats last. Open one to see its members and messages.' ?></p>
+                        </div>
+                    </div>
 
-            <form class="admin-search" action="/admin/" method="get" role="search">
-                <input type="hidden" name="list" value="<?= $adminList ?>">
-                <label class="settings-visually-hidden" for="admin-search">Search <?= $adminNoun ?></label>
-                <input type="search" id="admin-search" name="q" maxlength="<?= ADMIN_SEARCH_MAX ?>" autocomplete="off"
-                       value="<?= htmlspecialchars($adminSearch) ?>"
-                       placeholder="<?= $adminList === 'users' ? 'Search by name or ID' : 'Search by name, member or ID' ?>">
-                <button type="submit" class="settings-btn settings-btn-primary">Search</button>
-                <?php if ($adminSearch !== ''): ?>
-                    <a class="settings-btn" href="<?= adminListUrl($adminList) ?>">Clear</a>
-                <?php endif; ?>
-            </form>
+                    <form class="admin-search" action="/admin/" method="get" role="search">
+                        <input type="hidden" name="list" value="<?= $adminList ?>">
+                        <label class="settings-visually-hidden" for="admin-search">Search <?= $adminNoun ?></label>
+                        <input type="search" id="admin-search" name="q" maxlength="<?= ADMIN_SEARCH_MAX ?>" autocomplete="off"
+                               value="<?= htmlspecialchars($adminSearch) ?>"
+                               placeholder="<?= $adminList === 'users' ? 'Search by name or ID' : 'Search by name, member or ID' ?>">
+                        <button type="submit" class="settings-btn settings-btn-primary">Search</button>
+                        <?php if ($adminSearch !== ''): ?>
+                            <a class="settings-btn" href="<?= adminListUrl($adminList) ?>">Clear</a>
+                        <?php endif; ?>
+                    </form>
 
-            <?php if ($adminRows === []): ?>
-                <p class="settings-hint"><?= $adminSearch !== ''
-                    ? 'No ' . $adminNoun . ' match "' . htmlspecialchars($adminSearch) . '".'
-                    : 'There are no ' . $adminNoun . ' yet.' ?></p>
-            <?php else: ?>
-                <p class="settings-hint admin-list-count">
-                    <?= number_format(($adminPage - 1) * ADMIN_LIST_SHOWN + 1) ?>&ndash;<?= number_format(($adminPage - 1) * ADMIN_LIST_SHOWN + count($adminRows)) ?>
-                    of <?= number_format($adminFound) ?><?= $adminSearch !== '' ? ' matching "' . htmlspecialchars($adminSearch) . '"' : '' ?>
-                </p>
-                <div class="admin-table-wrap">
-                    <?php if ($adminList === 'users'): ?>
-                        <table class="admin-table admin-list">
-                            <thead><tr><th scope="col">User</th><th scope="col">Status</th><th scope="col">Joined</th><th scope="col">Last seen</th></tr></thead>
-                            <tbody>
-                                <?php foreach ($adminRows as $user): ?>
-                                    <?php $listUserId = (int) $user['userId']; ?>
-                                    <tr>
-                                        <td>
-                                            <a class="admin-list-link" href="/admin/user?user=<?= $listUserId ?>">
-                                                <?= adminAvatarHtml(hbHubAvatarUrl($listUserId, $user['userAvatarAttachmentId'] !== null ? (int) $user['userAvatarAttachmentId'] : null), $user['userName']) ?>
-                                                <span class="admin-list-name"><?= htmlspecialchars($user['userName']) ?></span>
-                                            </a>
-                                            <?php if ((int) $user['userRole'] === ADMIN_ROLE_ADMIN): ?>
-                                                <span class="admin-small">Site admin</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?= adminStatusHtml(adminUserStatus($user)) ?></td>
-                                        <td class="admin-nowrap"><?= adminTime($user['userCreatedTimestamp']) ?></td>
-                                        <td class="admin-nowrap"><?= adminTime($user['userLastSeenTimestamp']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                    <?php if ($adminRows === []): ?>
+                        <p class="settings-hint"><?= $adminSearch !== ''
+                            ? 'No ' . $adminNoun . ' match "' . htmlspecialchars($adminSearch) . '".'
+                            : 'There are no ' . $adminNoun . ' yet.' ?></p>
                     <?php else: ?>
-                        <table class="admin-table admin-list">
-                            <thead><tr><th scope="col">Chat</th><th scope="col">Type</th><th scope="col">Members</th><th scope="col">Last activity</th><th scope="col">Status</th></tr></thead>
-                            <tbody>
-                                <?php foreach ($adminRows as $chat): ?>
-                                    <?php $listChatId = (int) $chat['chatId']; ?>
-                                    <tr>
-                                        <td>
-                                            <a class="admin-list-link" href="/admin/chat?chat=<?= $listChatId ?>">
-                                                <?= adminAvatarHtml(adminChatIconUrl($listChatId, $chat['chatIconAttachmentId']), $chat['chatTitle']) ?>
-                                                <span class="admin-list-name"><?= htmlspecialchars($chat['chatTitle']) ?></span>
-                                            </a>
-                                        </td>
-                                        <td><?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?></td>
-                                        <td><?= (int) $chat['memberCount'] ?></td>
-                                        <td class="admin-nowrap"><?= adminTime($chat['chatActivity']) ?></td>
-                                        <td><?= adminStatusHtml(adminChatStatus((int) $chat['chatStatus'])) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                        <p class="settings-hint admin-list-count">
+                            <?= number_format(($adminPage - 1) * ADMIN_LIST_SHOWN + 1) ?>&ndash;<?= number_format(($adminPage - 1) * ADMIN_LIST_SHOWN + count($adminRows)) ?>
+                            of <?= number_format($adminFound) ?><?= $adminSearch !== '' ? ' matching "' . htmlspecialchars($adminSearch) . '"' : '' ?>
+                        </p>
+                        <div class="admin-table-wrap">
+                            <?php if ($adminList === 'users'): ?>
+                                <table class="admin-table admin-list">
+                                    <thead><tr><th scope="col">User</th><th scope="col">Status</th><th scope="col">Joined</th><th scope="col">Last seen</th></tr></thead>
+                                    <tbody>
+                                        <?php foreach ($adminRows as $user): ?>
+                                            <?php $listUserId = (int) $user['userId']; ?>
+                                            <tr>
+                                                <td>
+                                                    <a class="admin-list-link" href="/admin/user?user=<?= $listUserId ?>">
+                                                        <?= adminAvatarHtml(hbHubAvatarUrl($listUserId, $user['userAvatarAttachmentId'] !== null ? (int) $user['userAvatarAttachmentId'] : null), $user['userName']) ?>
+                                                        <span class="admin-list-name"><?= htmlspecialchars($user['userName']) ?></span>
+                                                    </a>
+                                                    <?php if ((int) $user['userRole'] === ADMIN_ROLE_ADMIN): ?>
+                                                        <span class="admin-small">Site admin</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td><?= adminStatusHtml(adminUserStatus($user)) ?></td>
+                                                <td class="admin-nowrap"><?= adminTime($user['userCreatedTimestamp']) ?></td>
+                                                <td class="admin-nowrap"><?= adminTime($user['userLastSeenTimestamp']) ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php else: ?>
+                                <table class="admin-table admin-list">
+                                    <thead><tr><th scope="col">Chat</th><th scope="col">Type</th><th scope="col">Members</th><th scope="col">Last activity</th><th scope="col">Status</th></tr></thead>
+                                    <tbody>
+                                        <?php foreach ($adminRows as $chat): ?>
+                                            <?php $listChatId = (int) $chat['chatId']; ?>
+                                            <tr>
+                                                <td>
+                                                    <a class="admin-list-link" href="/admin/chat?chat=<?= $listChatId ?>">
+                                                        <?= adminAvatarHtml(adminChatIconUrl($listChatId, $chat['chatIconAttachmentId']), $chat['chatTitle']) ?>
+                                                        <span class="admin-list-name"><?= htmlspecialchars($chat['chatTitle']) ?></span>
+                                                    </a>
+                                                </td>
+                                                <td><?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?></td>
+                                                <td><?= (int) $chat['memberCount'] ?></td>
+                                                <td class="admin-nowrap"><?= adminTime($chat['chatActivity']) ?></td>
+                                                <td><?= adminStatusHtml(adminChatStatus((int) $chat['chatStatus'])) ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php endif; ?>
+                        </div>
                     <?php endif; ?>
-                </div>
-            <?php endif; ?>
 
-            <?php if ($adminPages > 1): ?>
-                <nav class="admin-pages" aria-label="Pages">
-                    <?php if ($adminPage > 1): ?>
-                        <a class="settings-btn" href="<?= adminListUrl($adminList, $adminSearch, $adminPage - 1) ?>" rel="prev">Previous</a>
+                    <?php if ($adminPages > 1): ?>
+                        <nav class="admin-pages" aria-label="Pages">
+                            <?php if ($adminPage > 1): ?>
+                                <a class="settings-btn" href="<?= adminListUrl($adminList, $adminSearch, $adminPage - 1) ?>" rel="prev">Previous</a>
+                            <?php endif; ?>
+                            <span class="admin-pages-text">Page <?= $adminPage ?> of <?= $adminPages ?></span>
+                            <?php if ($adminPage < $adminPages): ?>
+                                <a class="settings-btn" href="<?= adminListUrl($adminList, $adminSearch, $adminPage + 1) ?>" rel="next">Next</a>
+                            <?php endif; ?>
+                        </nav>
                     <?php endif; ?>
-                    <span class="admin-pages-text">Page <?= $adminPage ?> of <?= $adminPages ?></span>
-                    <?php if ($adminPage < $adminPages): ?>
-                        <a class="settings-btn" href="<?= adminListUrl($adminList, $adminSearch, $adminPage + 1) ?>" rel="next">Next</a>
-                    <?php endif; ?>
-                </nav>
-            <?php endif; ?>
-        </section>
+                </section>
+            </div>
+        </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>
