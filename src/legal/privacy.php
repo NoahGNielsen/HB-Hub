@@ -111,10 +111,19 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 <h3>Messages and chats</h3>
                 <ul>
                     <li>Every message you send, with the time, which chat it's in, what it replies to and any GIF.</li>
+                    <li>
+                        Files and pictures you attach to a message, with their name, size and type, which chat they were
+                        sent in, and when they were sent and run out. They're kept as files on HB Hub's server, not in the
+                        database. Pictures are turned into JPEG XL in your own browser before they're sent (unless you
+                        tick the box to keep the original), so they never go anywhere else to be converted. A converted
+                        picture doesn't keep the details a camera or phone saves in it, like where a photo was taken.
+                        Other files are zipped on the server to take less space.
+                    </li>
                     <li>The chats you're in, group names, icons and backgrounds, and nicknames you give people.</li>
                     <li>
                         Deleting a message hides it for everyone in the chat, but the message itself is kept, so site
-                        admins can still look into reports of abuse.
+                        admins can still look into reports of abuse. An attachment in it isn't kept: its file and name
+                        are deleted for good.
                     </li>
                     <li>Notifications under the bell: what happened, who did it and whether you've seen it.</li>
                 </ul>
@@ -162,13 +171,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 <h2 id="privacy-see">4. Who can see what</h2>
                 <ul>
                     <li><strong>Everyone with an account</strong> can see your name, profile picture, bio, year, class, when you were last online, and your spot on the leaderboards.</li>
-                    <li><strong>People in a chat with you</strong> can see the messages in that chat. Group owners and admins can delete messages and remove members in their group.</li>
+                    <li><strong>People in a chat with you</strong> can see the messages in that chat, and open and download its attachments. Group owners and admins can delete messages (and with them their attachments) and remove members in their group.</li>
                     <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
                     <li>
                         <strong>Site admins</strong> can see everything about an account in the admin panel, including
                         messages in every chat (also deleted ones), IP addresses and logins, the list of banned
-                        pictures, and all feedback. They use it to deal with abuse, bans and broken accounts, and to
-                        improve the site. Feedback is only ever seen by site admins, never by other users. They can never see your password or your two-factor secret.
+                        pictures, and all feedback. The admin panel only shows that a message has an attachment, but the
+                        site's owner can reach attachment files on the server. They use it to deal with abuse, bans and
+                        broken accounts, and to improve the site. Feedback is only ever seen by site admins, never by
+                        other users. They can never see your password or your two-factor secret.
                     </li>
                 </ul>
                 <p class="legal-note">
@@ -181,7 +192,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 <h2 id="privacy-services">5. Outside services</h2>
                 <p>Your data is never sold or shared for marketing. These services are involved in running the site:</p>
                 <ul>
-                    <li><strong>Simply.com</strong> (Denmark) hosts the website and the database. Everything above is stored there, in the EU.</li>
+                    <li><strong>Simply.com</strong> (Denmark) hosts the website, the database and chat attachments. Everything above is stored there, in the EU.</li>
                     <li>
                         <strong>Giphy</strong> provides the GIFs. Your GIF searches go through HB Hub's server, so Giphy
                         doesn't learn who searched. To ask Giphy less often, the results of each search are kept on HB
@@ -228,9 +239,17 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     stops counting as a known device after 180 days without a login.
                 </p>
                 <p>
+                    <strong>Attachments</strong> are kept for 90 days, or for 3 days when one is bigger than 25 MB, and
+                    then deleted by themselves. They're deleted sooner when you delete them (in Your attachments in the
+                    chat, or by deleting their message), when an admin deletes their message, when their chat is deleted,
+                    or when your account is deleted. After that only a note that the message had an attachment stays
+                    with it (how big it was, its type and the dates), never the file or its name.
+                </p>
+                <p>
                     You can <strong>delete your account</strong> yourself on the <a href="/otherPages/settings">settings page</a>.
                     That right away removes your name, profile picture, bio, year, class, settings, password, two-factor
-                    secret, IP addresses, logins and known devices. Your name is replaced with "Deleted User".
+                    secret, IP addresses, logins, known devices and the files you attached in chats. Your name is replaced
+                    with "Deleted User".
                 </p>
                 <p>
                     What stays is what other people need for their chats and games to make sense: the messages you sent

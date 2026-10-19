@@ -278,6 +278,29 @@ CREATE TABLE `HBHub-CasinoWallets` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-ChatAttachments`
+--
+
+CREATE TABLE `HBHub-ChatAttachments` (
+  `attachmentId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who sent it, whose tickets it takes',
+  `chatId` int UNSIGNED NOT NULL,
+  `attachmentKey` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Random name of the file on disk, in attachments_path from the config',
+  `attachmentName` varchar(255) DEFAULT NULL COMMENT 'The file name as sent (ending in .jxl when converted), NULL once the file is gone',
+  `attachmentType` varchar(100) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Content-Type it is sent back with: a picture type, or application/octet-stream for any other file',
+  `attachmentKind` tinyint UNSIGNED NOT NULL COMMENT '0 Picture, stored as sent\r\n1 Picture the browser converted to lossless JPEG XL\r\n2 Other file, stored zipped\r\n3 Other file, stored as sent (zipping did not make it smaller)',
+  `attachmentSize` bigint UNSIGNED NOT NULL COMMENT 'Bytes when downloaded (unzipped)',
+  `attachmentStoredSize` bigint UNSIGNED NOT NULL COMMENT 'Bytes on disk, what the tickets and attachments_max_total_bytes count',
+  `attachmentTickets` tinyint UNSIGNED NOT NULL COMMENT 'One per started 5 MB of attachmentStoredSize',
+  `attachmentStatus` tinyint UNSIGNED NOT NULL DEFAULT '0' COMMENT '0 The file is there and takes its tickets\r\n1 Deleted (with its message, from the attachments popup, or with its chat or account)\r\n2 Expired',
+  `attachmentUploadedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `attachmentExpiresTimestamp` datetime NOT NULL COMMENT '90 days after upload, 3 days when it takes more than 5 tickets',
+  `attachmentRemovedTimestamp` datetime DEFAULT NULL COMMENT 'When attachmentStatus stopped being 0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-ChatMembers`
 --
 
@@ -538,7 +561,7 @@ CREATE TABLE `HBHub-Messages` (
   `userId` int UNSIGNED NOT NULL,
   `chatId` int UNSIGNED NOT NULL,
   `messageContent` varchar(2500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `attachmentId` int UNSIGNED DEFAULT NULL,
+  `attachmentId` int UNSIGNED DEFAULT NULL COMMENT 'A file or picture sent with it (HBHub-ChatAttachments), still pointed at once the file is gone',
   `messageSentTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `messageDeletedTimestamp` datetime DEFAULT NULL,
   `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin\r\n2 Deleted by a site admin (admin panel)',
@@ -743,6 +766,16 @@ ALTER TABLE `HBHub-CasinoTransactions`
 --
 ALTER TABLE `HBHub-CasinoWallets`
   ADD PRIMARY KEY (`userId`);
+
+--
+-- Indexes for table `HBHub-ChatAttachments`
+--
+ALTER TABLE `HBHub-ChatAttachments`
+  ADD PRIMARY KEY (`attachmentId`),
+  ADD UNIQUE KEY `attachmentKey` (`attachmentKey`),
+  ADD KEY `userStatus` (`userId`,`attachmentStatus`),
+  ADD KEY `statusExpires` (`attachmentStatus`,`attachmentExpiresTimestamp`),
+  ADD KEY `fk_chatattachments_chat` (`chatId`);
 
 --
 -- Indexes for table `HBHub-ChatMembers`
@@ -977,6 +1010,12 @@ ALTER TABLE `HBHub-CasinoTransactions`
   MODIFY `transactionId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `HBHub-ChatAttachments`
+--
+ALTER TABLE `HBHub-ChatAttachments`
+  MODIFY `attachmentId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-Chats`
 --
 ALTER TABLE `HBHub-Chats`
@@ -1142,6 +1181,13 @@ ALTER TABLE `HBHub-CasinoWallets`
   ADD CONSTRAINT `fk_casinowallets_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `HBHub-ChatAttachments`
+--
+ALTER TABLE `HBHub-ChatAttachments`
+  ADD CONSTRAINT `fk_chatattachments_chat` FOREIGN KEY (`chatId`) REFERENCES `HBHub-Chats` (`chatId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_chatattachments_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `HBHub-ChatMembers`
 --
 ALTER TABLE `HBHub-ChatMembers`
@@ -1250,7 +1296,7 @@ ALTER TABLE `HBHub-MatadorSeats`
 -- Constraints for table `HBHub-Messages`
 --
 ALTER TABLE `HBHub-Messages`
-  ADD CONSTRAINT `fk_messages_attachment` FOREIGN KEY (`attachmentId`) REFERENCES `HBHub-Attachments` (`attachmentId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_messages_attachment` FOREIGN KEY (`attachmentId`) REFERENCES `HBHub-ChatAttachments` (`attachmentId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_messages_chat` FOREIGN KEY (`chatId`) REFERENCES `HBHub-Chats` (`chatId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_messages_replyto` FOREIGN KEY (`messageReplyToId`) REFERENCES `HBHub-Messages` (`messageId`),
   ADD CONSTRAINT `fk_messages_eventuser` FOREIGN KEY (`messageEventUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
