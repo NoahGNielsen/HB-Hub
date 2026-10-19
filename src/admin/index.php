@@ -5,7 +5,7 @@
 // Lists every user (?list=users, the default) or every chat (?list=chats), to pick one and open its admin panel:
 // admin/user.php for a user, admin/chat.php for a chat. Deleted accounts and chats are in the lists too, at the end.
 // ?q= searches the list by name (a chat by its name or its members' names), or by id when it's a number,
-// and ?page= goes through it ADMIN_LIST_SHOWN at a time.
+// and ?page= goes through it ADMIN_LIST_SHOWN at a time. The third tab, Banned pictures, is its own page (admin/banned.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
@@ -117,9 +117,6 @@ function adminListUrl(string $list, string $search = '', int $page = 1): string
     return htmlspecialchars('/admin/?' . http_build_query($query));
 }
 
-// How many there are in all, for the tabs
-$adminTotals = $db->query('SELECT (SELECT COUNT(*) FROM `HBHub-Users`) AS users, (SELECT COUNT(*) FROM `HBHub-Chats`) AS chats')->fetch();
-
 [$adminRows, $adminFound, $adminPage] = $adminList === 'users'
     ? adminUserList($db, $adminSearch, $adminPage, $adminLockoutMinutes)
     : adminChatList($db, $adminSearch, $adminPage);
@@ -140,14 +137,8 @@ $adminNoun = $adminList === 'users' ? 'users' : 'chats';
     <main class="settings admin">
         <h1>Admin panel</h1>
 
-        <!-- Users or chats, each with how many there are in all -->
-        <nav class="admin-tabs" aria-label="Lists">
-            <?php foreach (['users' => 'Users', 'chats' => 'Chats'] as $list => $label): ?>
-                <a class="admin-tab<?= $adminList === $list ? ' is-active' : '' ?>" href="<?= adminListUrl($list) ?>"<?= $adminList === $list ? ' aria-current="page"' : '' ?>>
-                    <?= $label ?> <span class="admin-tab-count"><?= number_format((int) $adminTotals[$list]) ?></span>
-                </a>
-            <?php endforeach; ?>
-        </nav>
+        <!-- Users, chats or banned pictures, each with how many there are in all -->
+        <?= adminTabsHtml($db, $adminList) ?>
 
         <section class="settings-card" aria-labelledby="admin-list-heading">
             <h2 class="settings-visually-hidden" id="admin-list-heading"><?= $adminList === 'users' ? 'Users' : 'Chats' ?></h2>

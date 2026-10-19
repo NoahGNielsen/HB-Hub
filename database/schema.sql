@@ -132,6 +132,24 @@ CREATE TABLE `HBHub-BaccaratSeats` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-BannedAvatars`
+--
+
+CREATE TABLE `HBHub-BannedAvatars` (
+  `bannedAvatarId` int UNSIGNED NOT NULL,
+  `bannedAvatarHash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'SHA-256 of the file, as lowercase hex',
+  `bannedAvatarType` varchar(25) NOT NULL,
+  `bannedAvatarFile` longblob NOT NULL COMMENT 'A copy, so it can still be seen after the account changes or loses its picture',
+  `bannedAvatarFromUserId` int UNSIGNED DEFAULT NULL COMMENT 'The banned account it was the picture of, NULL when an admin uploaded it',
+  `bannedAvatarAddedByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The site admin who banned the account or uploaded the picture',
+  `bannedAvatarMatchCount` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'How many uploads it has caught (and banned)',
+  `bannedAvatarLastMatchTimestamp` datetime DEFAULT NULL,
+  `bannedAvatarCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Profile pictures that ban the account uploading them (src/assets/php/bannedAvatars.php)';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-BlackjackInvites`
 --
 
@@ -587,7 +605,8 @@ CREATE TABLE `HBHub-Users` (
   `userCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `userLastSeenTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `userAccountLockedTimestamp` datetime DEFAULT NULL,
-  `userBannedTimestamp` datetime DEFAULT NULL
+  `userBannedTimestamp` datetime DEFAULT NULL,
+  `userBannedReason` tinyint UNSIGNED DEFAULT NULL COMMENT '1 By a site admin\r\n2 Automatically, for uploading a banned profile picture\r\nNULL when not banned'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -642,6 +661,15 @@ ALTER TABLE `HBHub-BaccaratSeats`
   ADD PRIMARY KEY (`roomId`,`seatNumber`),
   ADD UNIQUE KEY `userId` (`userId`) COMMENT 'One Baccarat table at a time',
   ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
+
+--
+-- Indexes for table `HBHub-BannedAvatars`
+--
+ALTER TABLE `HBHub-BannedAvatars`
+  ADD PRIMARY KEY (`bannedAvatarId`),
+  ADD UNIQUE KEY `bannedAvatarHash` (`bannedAvatarHash`),
+  ADD KEY `fk_bannedavatars_from` (`bannedAvatarFromUserId`),
+  ADD KEY `fk_bannedavatars_by` (`bannedAvatarAddedByUserId`);
 
 --
 -- Indexes for table `HBHub-BlackjackInvites`
@@ -894,6 +922,12 @@ ALTER TABLE `HBHub-BaccaratRounds`
   MODIFY `roundId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `HBHub-BannedAvatars`
+--
+ALTER TABLE `HBHub-BannedAvatars`
+  MODIFY `bannedAvatarId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-BlackjackPlayerRounds`
 --
 ALTER TABLE `HBHub-BlackjackPlayerRounds`
@@ -1021,6 +1055,13 @@ ALTER TABLE `HBHub-BaccaratRounds`
 ALTER TABLE `HBHub-BaccaratSeats`
   ADD CONSTRAINT `fk_baccaratseats_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-BaccaratRooms` (`roomId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_baccaratseats_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-BannedAvatars`
+--
+ALTER TABLE `HBHub-BannedAvatars`
+  ADD CONSTRAINT `fk_bannedavatars_by` FOREIGN KEY (`bannedAvatarAddedByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_bannedavatars_from` FOREIGN KEY (`bannedAvatarFromUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `HBHub-BlackjackInvites`

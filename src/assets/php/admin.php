@@ -1,7 +1,8 @@
 <?php
-// The admin panel's pages: the lists of users and chats (admin/index.php), and one user (admin/user.php) or chat
-// (admin/chat.php). Only site admins (userRole 2) get in, everyone else gets a 404 so it doesn't show they're there.
-// What the pages share is here: who gets in, and how dates, statuses, pictures, messages and chat names are shown.
+// The admin panel's pages: the lists of users and chats (admin/index.php), the banned pictures (admin/banned.php), and
+// one user (admin/user.php) or chat (admin/chat.php). Only site admins (userRole 2) get in, everyone else gets a 404 so
+// it doesn't show they're there. What the pages share is here: who gets in, the tabs at the top of the lists, and how
+// dates, statuses, pictures, messages and chat names are shown.
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/chat.php';
 
@@ -29,6 +30,29 @@ function adminOnly(array $user): void
     if ((int) $user['userRole'] !== ADMIN_ROLE_ADMIN) {
         adminNotFound();
     }
+}
+
+/**
+ * The tabs at the top of the admin panel's start page: Users, Chats (both admin/index.php) and Banned pictures
+ * (admin/banned.php), each with how many there are in all. $active is 'users', 'chats' or 'banned'.
+ */
+function adminTabsHtml(PDO $db, string $active): string
+{
+    $totals = $db->query('SELECT (SELECT COUNT(*) FROM `HBHub-Users`) AS users, (SELECT COUNT(*) FROM `HBHub-Chats`) AS chats,
+        (SELECT COUNT(*) FROM `HBHub-BannedAvatars`) AS banned')->fetch();
+    $tabs = [
+        'users' => ['Users', '/admin/?list=users'],
+        'chats' => ['Chats', '/admin/?list=chats'],
+        'banned' => ['Banned pictures', '/admin/banned'],
+    ];
+
+    $html = '<nav class="admin-tabs" aria-label="Lists">';
+    foreach ($tabs as $tab => [$label, $href]) {
+        $isActive = $tab === $active;
+        $html .= '<a class="admin-tab' . ($isActive ? ' is-active' : '') . '" href="' . $href . '"' . ($isActive ? ' aria-current="page"' : '') . '>'
+            . $label . ' <span class="admin-tab-count">' . number_format((int) $totals[$tab]) . '</span></a>';
+    }
+    return $html . '</nav>';
 }
 
 /**

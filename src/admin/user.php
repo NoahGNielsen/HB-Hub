@@ -8,9 +8,12 @@
 // chips, and ?export=1 downloads all of it as JSON. The actions are one form per card, like the settings page:
 // ban or unban, change the name or bio, remove the picture, set the gambling block (straight away, without the wait),
 // reset the password, remove two-factor login, log out every session, delete messages and delete the account.
+// Banning puts their picture on the banned pictures list (admin/banned.php) too, unless that's unticked, and
+// unbanning takes it off again.
 // Site admins can't be changed here (yourself included), and a deleted account only has its messages left to delete.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
@@ -41,7 +44,7 @@ $adminPasswordPolicy = hbHubPasswordPolicy($siteConfig);
 $statement = $db->prepare('SELECT userId, userName, userDescription, userSettings, userAvatarAttachmentId,
         userIpv4AdresseOnAccountCreate, userIpv6AdresseOnAccountCreate, userIpv4AdresseLastAccessed, userIpv6AdresseLastAccessed,
         userTotpSecret IS NOT NULL AS totpIsOn, userFailedLoginCount, userStatus, userRole, userCreatedTimestamp, userLastSeenTimestamp,
-        userAccountLockedTimestamp, userBannedTimestamp,
+        userAccountLockedTimestamp, userBannedTimestamp, userBannedReason,
         COALESCE(userAccountLockedTimestamp + INTERVAL ? MINUTE > NOW(), 0) AS isLocked
     FROM `HBHub-Users` WHERE userId = ?');
 $statement->execute([$adminLockoutMinutes, $targetId]);
@@ -186,17 +189,24 @@ if ($adminAction !== null && !($adminIsMessageAction ? $adminCanDeleteMessages :
 
 switch ($adminAction) {
     case 'ban':
-        // The sessions stay until the user's next visit: session.php then marks their browser, so they can't just make a new account
-        $db->prepare('UPDATE `HBHub-Users` SET userStatus = ?, userBannedTimestamp = NOW() WHERE userId = ? AND userStatus <> ?')
-            ->execute([HBHUB_SESSION_STATUS_BANNED, $targetId, HBHUB_SESSION_STATUS_BANNED]);
+        // The sessions stay until the user's next visit: session.php then marks their browser, so they can't just make a new account.
+        // Their picture goes on the banned list, so a new account can't use it either.
+        $db->beginTransaction();
+        hbHubBanUser($db, $targetId, HBHUB_BAN_REASON_ADMIN);
+        if (($_POST['banAvatar'] ?? null) === '1') {
+            hbHubBannedAvatarAddFromUser($db, $targetId, (int) $hbHubUser['userId']);
+        }
+        $db->commit();
         adminRedirect($targetId, 'adminBanned', 'ban');
 
     case 'unban':
-        // Sessions from before the ban don't come back, they log in again
+        // Sessions from before the ban don't come back, they log in again. The pictures their ban put on the banned
+        // list come off it, so uploading their own picture again doesn't ban them.
         $db->beginTransaction();
-        $db->prepare('UPDATE `HBHub-Users` SET userStatus = ?, userBannedTimestamp = NULL WHERE userId = ? AND userStatus = ?')
+        $db->prepare('UPDATE `HBHub-Users` SET userStatus = ?, userBannedTimestamp = NULL, userBannedReason = NULL WHERE userId = ? AND userStatus = ?')
             ->execute([ADMIN_STATUS_OFFLINE, $targetId, HBHUB_SESSION_STATUS_BANNED]);
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$targetId]);
+        hbHubBannedAvatarRemoveFromUser($db, $targetId);
         $db->commit();
         adminRedirect($targetId, 'adminUnbanned', 'ban');
 
@@ -389,7 +399,8 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                 <div><dt>Joined</dt><dd><?= adminTime($target['userCreatedTimestamp']) ?></dd></div>
                 <div><dt>Last seen</dt><dd><?= adminTime($target['userLastSeenTimestamp']) ?></dd></div>
                 <?php if ($targetIsBanned): ?>
-                    <div><dt>Banned</dt><dd><?= adminTime($target['userBannedTimestamp']) ?></dd></div>
+                    <div><dt>Banned</dt><dd><?= adminTime($target['userBannedTimestamp']) ?><?php if ((int) $target['userBannedReason'] === HBHUB_BAN_REASON_AVATAR): ?>
+                        <span class="admin-small">(automatically, for uploading a <a class="admin-link" href="/admin/banned">banned picture</a>)</span><?php endif; ?></dd></div>
                 <?php endif; ?>
                 <div><dt>Class</dt><dd><?= $adminYear !== '' && $adminClass !== '' ? htmlspecialchars($adminYear . '.' . $adminClass) : '–' ?></dd></div>
                 <div><dt>Two-factor login</dt><dd><?= $target['totpIsOn'] ? 'On' : 'Off' ?></dd></div>
@@ -568,8 +579,11 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                     <form action="/admin/user?user=<?= $targetId ?>#ban" method="post" data-confirm="Unban <?= htmlspecialchars($target['userName']) ?>?">
                         <input type="hidden" name="action" value="unban">
                         <p class="settings-hint">
-                            Banned <?= adminTime($target['userBannedTimestamp']) ?>. Unbanning lets them log in again, and their profile and picture come back.
+                            Banned <?= adminTime($target['userBannedTimestamp']) ?><?= (int) $target['userBannedReason'] === HBHUB_BAN_REASON_AVATAR
+                                ? ' automatically, as the profile picture they uploaded is on the <a class="admin-link" href="/admin/banned">banned pictures</a> list' : '' ?>.
+                            Unbanning lets them log in again, and their profile and picture come back.
                             A browser marked by the ban stops being marked once they log in there.
+                            A picture their ban put on the banned pictures list comes off it.
                         </p>
                         <div class="settings-actions">
                             <button type="submit" class="settings-btn settings-btn-primary">Unban</button>
@@ -582,6 +596,16 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                             They're logged out and can't log in again. Their profile and picture are hidden, they can't be added to chats,
                             and their messages stay. The next time they open the site, or try to log in, their browser is marked so it can't make a new account.
                         </p>
+                        <?php if ($adminAvatarSrc !== null): ?>
+                            <label class="settings-checkbox">
+                                <input type="checkbox" name="banAvatar" value="1" checked aria-describedby="admin-ban-avatar-hint">
+                                <span>Ban their profile picture too</span>
+                            </label>
+                            <p class="settings-hint" id="admin-ban-avatar-hint">
+                                It goes on the <a class="admin-link" href="/admin/banned">banned pictures</a> list: any account that uploads
+                                the exact same picture, or signs up with it, is banned straight away.
+                            </p>
+                        <?php endif; ?>
                         <div class="settings-actions">
                             <button type="submit" class="settings-btn settings-btn-danger">Ban <?= htmlspecialchars($target['userName']) ?></button>
                         </div>

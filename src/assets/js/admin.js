@@ -1,5 +1,5 @@
-// Admin panel (admin/user.php and admin/chat.php): asks "are you sure?" before the forms with data-confirm (ban, delete,
-// kick and so on), Generate fills in a random password for Reset password, shown so it can be passed on to the user,
+// Admin panel (admin/user.php, admin/chat.php and admin/banned.php): asks "are you sure?" before the forms with
+// data-confirm (ban, delete, kick, removing a banned picture and so on), Generate fills in a random password for Reset password, shown so it can be passed on to the user,
 // and the chat's Background card shows the gradient as it's picked.
 // Without JS the forms are sent straight away, the password has to be typed in and there's no preview.
 (() => {

@@ -1,6 +1,7 @@
 <?php
 // Settings page for the logged in user, one form per card:
-// - Profile: picture, name, class and bio, with the same rules as onboarding (userMgmt/onboarding.php)
+// - Profile: picture, name, class and bio, with the same rules as onboarding (userMgmt/onboarding.php).
+//   A picture on the banned list bans the account (assets/php/bannedAvatars.php).
 // - Password: a new one, after entering the current one. Logs out every other session.
 // - Two-factor login: a code from an authenticator app when logging in (assets/php/totp.php)
 // - Notifications: a browser notification for new messages while the site is open (assets/js/notifications.js)
@@ -15,8 +16,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/totp.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
+const SETTINGS_ROLE_ADMIN = 2; // userRole in HBHub-Users
 const SETTINGS_YEARS = ['1', '2', '3']; // the same choices as onboarding
 const SETTINGS_CLASSES = ['T', 'Y', 'X', 'U'];
 const SETTINGS_AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']; // no SVG, it can carry scripts
@@ -224,6 +227,20 @@ if ($settingsAction === 'profile') {
             } else {
                 $avatar = [$avatarType, file_get_contents($avatarFile['tmp_name'])];
             }
+        }
+
+        // A picture on the banned list (bannedAvatars.php) bans the account, whatever else is on the form.
+        // Site admins can't be banned, so it doesn't happen to them.
+        if ($avatar !== null && (int) $hbHubUser['userRole'] !== SETTINGS_ROLE_ADMIN
+            && ($bannedAvatarId = hbHubBannedAvatarFind($db, $avatar[1])) !== null) {
+            hbHubBannedAvatarBanUploader($db, $userId, $avatar, $bannedAvatarId);
+            // What session.php does on a banned account's next visit, straight away here: the browser is marked and
+            // this session is gone. Their other browsers get the same on their next visit.
+            hbHubSetBannedCookie($userId);
+            $db->prepare('DELETE FROM `HBHub-Sessions` WHERE sessionId = ?')->execute([$_COOKIE[HBHUB_SESSION_COOKIE]]);
+            hbHubClearSessionCookie();
+            header('Location: /userMgmt/login', true, 303);
+            exit;
         }
 
         // Bio

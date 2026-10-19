@@ -1,5 +1,5 @@
-/* Admin panel (admin/index.php, admin/user.php and admin/chat.php). Built on the settings page's cards, fields and
-   buttons (settings.css), wider for the tables. */
+/* Admin panel (admin/index.php, admin/banned.php, admin/user.php and admin/chat.php). Built on the settings page's
+   cards, fields and buttons (settings.css), wider for the tables. */
 .admin {
   max-width: 920px;
 }
@@ -324,6 +324,69 @@
   font-size: 0.9rem;
   font-weight: 600;
   opacity: 0.8;
+}
+
+/* Banned pictures (admin/banned.php): a square picture with where it came from under it, as many across as fit */
+.admin-banned-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.admin-banned-item {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 10px;
+  background: var(--background);
+}
+
+.admin-banned-image {
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--secondary);
+}
+
+.admin-banned-image:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.admin-banned-image img {
+  width: 100%;
+  aspect-ratio: 1;
+  display: block;
+  object-fit: cover;
+}
+
+.admin-banned-details {
+  margin: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.admin-banned-details dt {
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.admin-banned-details dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.admin-banned-item .settings-btn {
+  width: 100%;
 }
 
 /* A chat's background: the preview, set by admin.js, with two messages on it like Change background in the chat */

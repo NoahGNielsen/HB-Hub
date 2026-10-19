@@ -143,8 +143,13 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                 <ul>
                     <li>delete messages, pictures or groups,</li>
                     <li>reset or take away chips, or remove game results from the leaderboards,</li>
-                    <li>ban the account, for a while or for good. A ban also covers the browser it was used in.</li>
+                    <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture.</li>
                 </ul>
+                <p>
+                    Using a banned profile picture is against the rules too: an account that uploads one, or signs up with
+                    one, is banned straight away, without an admin having to do anything. Banned pictures are the
+                    pictures of banned accounts, and other pictures admins have added.
+                </p>
                 <p>
                     Admins decide what breaks the rules, also for things these terms don't list. If you think a decision
                     was wrong, email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> and explain why.

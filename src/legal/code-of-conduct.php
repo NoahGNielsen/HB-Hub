@@ -112,6 +112,10 @@ const HBHUB_CONDUCT_UPDATED = '19 October 2026';
                     messages. Use a name people from school recognise you by, and don't make your profile look like
                     someone else's.
                 </p>
+                <p>
+                    A banned account's profile picture can't be used again. Uploading it, also when signing up, bans the
+                    account straight away, so don't use a picture from someone who has been banned.
+                </p>
             </section>
 
             <section id="games" aria-labelledby="conduct-games">

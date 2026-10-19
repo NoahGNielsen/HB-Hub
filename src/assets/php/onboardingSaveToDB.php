@@ -1,12 +1,16 @@
 <?php
 // Creates the account once the onboarding form is valid, then logs the new user in.
+// When the picture is on the banned list (bannedAvatars.php), the account is made banned instead, and it's on to the
+// login page with the browser marked, like a banned account's (session.php).
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/loginLimit.php';
+require_once __DIR__ . '/bannedAvatars.php';
 
 /**
  * Returns [] when the account was created, otherwise step name => message to show on the form.
  * No more than $accountsPerHour accounts are made from the same address in an hour.
+ * A banned picture doesn't return: the banned account is made and it redirects to the login page.
  */
 function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob, ?string $avatarType, int $accountsPerHour): array
 {
@@ -16,6 +20,7 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
     $settings = json_encode(['year' => (int) $values['year'], 'class' => $values['class']]);
 
     $db = null;
+    $bannedAvatarId = null;
     try {
         $db = hbHubDatabase();
 
@@ -26,6 +31,8 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
         if ((int) $statement->fetchColumn() >= $accountsPerHour) {
             return ['password' => 'Too many accounts have been made from this network in the last hour. Please try again later.'];
         }
+
+        $bannedAvatarId = $avatarBlob !== null ? hbHubBannedAvatarFind($db, $avatarBlob) : null;
 
         $db->beginTransaction();
 
@@ -55,8 +62,14 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
             ]);
         $userId = (int) $db->lastInsertId();
 
-        hbHubLoginTrustDevice($db, $userId); // made here, so it's one of the account's own devices
-        $sessionId = hbHubCreateSession($db, $userId);
+        if ($bannedAvatarId !== null) {
+            // Kept with the picture, so admins can see what got it banned. No login and no known device for it.
+            hbHubBanUser($db, $userId, HBHUB_BAN_REASON_AVATAR);
+            hbHubBannedAvatarCountMatch($db, $bannedAvatarId);
+        } else {
+            hbHubLoginTrustDevice($db, $userId); // made here, so it's one of the account's own devices
+            $sessionId = hbHubCreateSession($db, $userId);
+        }
 
         $db->commit();
     } catch (PDOException $e) {
@@ -68,6 +81,12 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
         }
         error_log('Onboarding: could not create the account: ' . $e->getMessage());
         return ['password' => 'Something went wrong creating your account. Please try again.'];
+    }
+
+    if ($bannedAvatarId !== null) {
+        hbHubSetBannedCookie($userId);
+        header('Location: /userMgmt/login', true, 303);
+        exit;
     }
 
     hbHubSetSessionCookie($sessionId);

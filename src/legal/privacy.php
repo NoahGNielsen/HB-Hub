@@ -83,8 +83,16 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <li>The secret behind your two-factor codes, if you turn two-factor login on.</li>
                     <li>Your settings, like which chats you've muted, hidden or blocked, and whether you've blocked the Casino and Games.</li>
                     <li>When you made the account and when you were last on the site.</li>
-                    <li>Failed logins, and whether the account is locked or banned.</li>
+                    <li>Failed logins, whether the account is locked or banned, and whether a ban was by an admin or automatic.</li>
                 </ul>
+                <h3>Banned pictures</h3>
+                <p>
+                    When an account is banned, a copy of its profile picture is usually put on a list of banned pictures,
+                    together with which account it came from and which admin banned it. Admins can also add pictures to
+                    the list themselves. When you upload a profile picture, or sign up with one, a fingerprint of the file
+                    (its SHA-256 hash) is compared with the list. If it's the exact same file, the account is banned
+                    straight away and keeps the picture, so admins can see why. Fingerprints of other pictures aren't stored.
+                </p>
                 <h3>IP addresses</h3>
                 <p>
                     The IP address you signed up from, and the one you used most recently. Only the latest one is kept,
@@ -125,7 +133,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 <h2 id="privacy-why">3. Why it's stored</h2>
                 <ul>
                     <li><strong>To run the site</strong>: your account, messages and games are the site. Without them there's nothing to show you.</li>
-                    <li><strong>To keep it safe</strong>: IP addresses, failed logins and the device cookie stop people from breaking into accounts, spamming sign-ups and dodging bans.</li>
+                    <li><strong>To keep it safe</strong>: IP addresses, failed logins and the device cookie stop people from breaking into accounts, spamming sign-ups and dodging bans. The banned pictures list stops a banned person from coming back with a copy of their old profile.</li>
                     <li><strong>To keep it friendly</strong>: messages are kept so admins can act on bullying or abuse.</li>
                 </ul>
                 <p>
@@ -143,8 +151,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
                     <li>
                         <strong>Site admins</strong> can see everything about an account in the admin panel, including
-                        messages in every chat (also deleted ones), IP addresses and logins. They use it to deal with
-                        abuse, bans and broken accounts. They can never see your password or your two-factor secret.
+                        messages in every chat (also deleted ones), IP addresses and logins, and the list of banned
+                        pictures. They use it to deal with abuse, bans and broken accounts. They can never see your password or your two-factor secret.
                     </li>
                 </ul>
                 <p class="legal-note">
@@ -212,6 +220,10 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     What stays is what other people need for their chats and games to make sense: the messages you sent
                     (shown as from "Deleted User"), your game results and chip history. None of it is connected to your
                     name any more.
+                </p>
+                <p>
+                    A picture on the list of banned pictures stays there until the account it came from is unbanned or an
+                    admin takes it off, also if that account is deleted.
                 </p>
                 <p class="legal-note">
                     To <strong>completely delete</strong> all your data, messages included, or to <strong>download</strong>
