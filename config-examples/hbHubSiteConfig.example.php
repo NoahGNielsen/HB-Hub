@@ -15,6 +15,7 @@ return [
     'user_name_maxSize' => 35, // Default: 35 characters | Anything above 35 is capped to 35
     'user_description_maxSize' => 255, // Default: 255 characters | Don't exceed 255 characters, as the database column is VARCHAR(255)
     'user_avatar_maxSize' => 5000, // Default: 5 MB | Don't exceed 4 GB, as the database column is LONGBLOB
+    'banned_avatar_similarity' => 97.5, // Default: 97.5 | How alike (in percent) an uploaded profile picture has to look to a banned one to get the account banned. Kept between 90 and 100: lower catches more edited copies, but also bans people for pictures that only look a bit alike
 
     'onboarding_avatar_requirements' => '1', // Default: 1 | 0 = required, 1 = optional, 2 = disabled
     'onboarding_password_requirements' => '3', // Default: 3 | 1 = just don't use, 2 = weak, 3 = medium, 4 = strong

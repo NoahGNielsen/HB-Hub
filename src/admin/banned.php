@@ -70,13 +70,16 @@ if ($adminAction === 'remove') {
     adminBannedRedirect('adminBannedPictureRemoved', 'list', $adminPage);
 }
 
-// The page of the list, without the files (admin/bannedPicture.php sends those)
+// The page of the list, without the files (admin/bannedPicture.php sends those), with the pictures' fingerprints
+// worked out first, so the page can say which ones only catch the exact file
+hbHubBannedAvatarFillFingerprints($db);
+$adminSimilarity = rtrim(rtrim(number_format(hbHubBannedAvatarSimilarity(), 1, '.', ''), '0'), '.');
 $adminTotal = (int) $db->query('SELECT COUNT(*) FROM `HBHub-BannedAvatars`')->fetchColumn();
 $adminPages = max(1, intdiv($adminTotal + ADMIN_BANNED_SHOWN - 1, ADMIN_BANNED_SHOWN));
 $adminPage = min($adminPage, $adminPages);
 $adminPictures = $db->query('SELECT b.bannedAvatarId, b.bannedAvatarFromUserId, fu.userName AS fromName,
         b.bannedAvatarAddedByUserId, au.userName AS addedByName, b.bannedAvatarMatchCount, b.bannedAvatarLastMatchTimestamp,
-        b.bannedAvatarCreatedTimestamp
+        b.bannedAvatarCreatedTimestamp, LENGTH(b.bannedAvatarFingerprints) > 0 AS catchesSimilar
     FROM `HBHub-BannedAvatars` b
     LEFT JOIN `HBHub-Users` fu ON fu.userId = b.bannedAvatarFromUserId
     LEFT JOIN `HBHub-Users` au ON au.userId = b.bannedAvatarAddedByUserId
@@ -106,7 +109,10 @@ $adminPictures = $db->query('SELECT b.bannedAvatarId, b.bannedAvatarFromUserId, 
             <h2 id="admin-add-heading">Add a picture</h2>
             <p class="settings-intro">
                 Any account that uploads one of these as its profile picture, or signs up with it, is banned straight away.
-                Only the exact same file counts: a resized, cropped or re-saved copy isn't caught. Site admins are never banned by it.
+                Copies count too when they look at least <?= $adminSimilarity ?>% the same: resized, re-saved, or cropped by up to
+                about a fifth from any side or to a square. A heavier crop, a mirrored copy or one drawn over isn't caught, and a
+                very plain picture (one colour, a smooth gradient) only catches the exact same file, so it doesn't ban other plain
+                pictures. Site admins are never banned by it.
                 Banning an account puts its picture here too, and unbanning it takes the picture off again.
             </p>
             <form action="/admin/banned#add" method="post" enctype="multipart/form-data">
@@ -160,6 +166,10 @@ $adminPictures = $db->query('SELECT b.bannedAvatarId, b.bannedAvatarFromUserId, 
                                     <dt>Added</dt>
                                     <dd><?= adminTime($picture['bannedAvatarCreatedTimestamp']) ?><?php if ($picture['bannedAvatarAddedByUserId'] !== null): ?>
                                         <span class="admin-small">by <a class="admin-link" href="/admin/user?user=<?= (int) $picture['bannedAvatarAddedByUserId'] ?>"><?= htmlspecialchars($picture['addedByName']) ?></a></span><?php endif; ?></dd>
+                                </div>
+                                <div>
+                                    <dt>Catches</dt>
+                                    <dd><?= $picture['catchesSimilar'] ? 'Similar copies too' : 'Only the exact file' ?></dd>
                                 </div>
                                 <div>
                                     <dt>Caught</dt>

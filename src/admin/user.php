@@ -197,6 +197,7 @@ switch ($adminAction) {
             hbHubBannedAvatarAddFromUser($db, $targetId, (int) $hbHubUser['userId']);
         }
         $db->commit();
+        hbHubBannedAvatarFillFingerprints($db); // after the commit, so the ban doesn't wait on it
         adminRedirect($targetId, 'adminBanned', 'ban');
 
     case 'unban':
@@ -603,7 +604,7 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                             </label>
                             <p class="settings-hint" id="admin-ban-avatar-hint">
                                 It goes on the <a class="admin-link" href="/admin/banned">banned pictures</a> list: any account that uploads
-                                the exact same picture, or signs up with it, is banned straight away.
+                                it, or a resized or slightly cropped copy, or signs up with it, is banned straight away.
                             </p>
                         <?php endif; ?>
                         <div class="settings-actions">
