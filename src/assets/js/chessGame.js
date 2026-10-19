@@ -12,6 +12,11 @@
 // The host can pause the game (the button in the header): the server then sends no running clock and no legal moves.
 //
 // A ping is played when it becomes the player's move, unless they turned the sound off (remembered in this browser).
+//
+// Like on chess.com, the right mouse button draws on the board: dragged from one square to another it draws an arrow,
+// and clicked on a square it colours the square in. Shift, Ctrl and Alt pick other colours, and drawing the same one
+// again takes it away. Only the player sees them (they're never sent anywhere), and they go away with a left click on
+// the board or when a move is played.
 (() => {
     const root = document.querySelector('[data-chess]');
     if (!root) return;
@@ -28,6 +33,7 @@
     const VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
     const COLOUR_NAMES = { w: 'White', b: 'Black' };
     const PROMOTIONS = ['q', 'r', 'b', 'n'];
+    const SVG = 'http://www.w3.org/2000/svg';
     const roomId = root.dataset.room;
     const baseTitle = document.title;
 
@@ -225,7 +231,7 @@
         if (blackBelow === shownBlackBelow) return;
         shownBlackBelow = blackBelow;
         const names = Object.keys(squares); // a8 ... h1
-        boardElement.replaceChildren(...(blackBelow ? names.reverse() : names).map((name) => squares[name].element));
+        boardElement.replaceChildren(...(blackBelow ? names.reverse() : names).map((name) => squares[name].element), arrowLayer);
         for (const [name, square] of Object.entries(squares)) {
             square.rankLabel.hidden = name[0] !== (blackBelow ? 'h' : 'a'); // on the left edge
             square.fileLabel.hidden = name[1] !== (blackBelow ? '8' : '1'); // on the bottom edge
@@ -253,7 +259,132 @@
             element.setAttribute('aria-label', name + (colour !== null ? ', ' + COLOUR_NAMES[colour].toLowerCase() + ' ' + PIECE_NAMES[piece.toLowerCase()] : '')
                 + (selected === name ? ', picked up' : '') + (targets.includes(name) ? ', you can move here' : ''));
         }
+        renderDrawings();
     }
+
+    // ----- Drawing on the board with the right mouse button: arrows, and squares coloured in. An SVG on top of the
+    // squares (one unit a square) has the arrows; the coloured squares are a class on the square, so the piece stays on top.
+
+    const DRAW_COLOURS = ['orange', 'red', 'green', 'blue']; // chess.css has them
+    const arrowLayer = document.createElementNS(SVG, 'svg');
+    arrowLayer.classList.add('ch-arrows');
+    arrowLayer.setAttribute('viewBox', '0 0 8 8');
+    arrowLayer.setAttribute('aria-hidden', 'true');
+
+    let arrows = []; // { from, to, colour }, like { from: 'e2', to: 'e4', colour: 'orange' }
+    let marks = {}; // square => colour
+    let drawing = null; // the right button is held down: { from, pointerId, to, colour }
+    let drawnPly = null; // the move the drawings are for: they go when it's played
+
+    // Shift, Ctrl and Alt pick the colour; an arrow is orange and a square red without them
+    const drawColour = (event, isArrow) => (event.altKey ? 'blue' : event.shiftKey ? 'green' : event.ctrlKey ? 'red' : isArrow ? 'orange' : 'red');
+
+    // The middle of a square on the board as it's shown, in squares from the top left
+    function centreOf(square) {
+        const file = FILES.indexOf(square[0]);
+        const rank = Number(square[1]);
+        return isBlackBelow() ? { x: 7 - file + 0.5, y: rank - 0.5 } : { x: file + 0.5, y: 8 - rank + 0.5 };
+    }
+
+    // An arrow from the middle of one square to the other. A knight's move bends: the long way first, then the short.
+    function arrowShape(from, to, colour) {
+        const HEAD_LENGTH = 0.45;
+        const HEAD_WIDTH = 0.5;
+        const START_GAP = 0.25; // it starts a little way out from the middle
+        const a = centreOf(from);
+        const b = centreOf(to);
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const isKnight = (Math.abs(dx) === 1 && Math.abs(dy) === 2) || (Math.abs(dx) === 2 && Math.abs(dy) === 1);
+        const corner = isKnight ? (Math.abs(dx) > Math.abs(dy) ? { x: b.x, y: a.y } : { x: a.x, y: b.y }) : null;
+
+        const unit = (p, q) => {
+            const length = Math.hypot(q.x - p.x, q.y - p.y);
+            return { x: (q.x - p.x) / length, y: (q.y - p.y) / length };
+        };
+        const first = unit(a, corner ?? b);
+        const last = unit(corner ?? a, b);
+        const start = { x: a.x + first.x * START_GAP, y: a.y + first.y * START_GAP };
+        const neck = { x: b.x - last.x * HEAD_LENGTH, y: b.y - last.y * HEAD_LENGTH }; // where the head starts
+        const side = { x: -last.y * HEAD_WIDTH / 2, y: last.x * HEAD_WIDTH / 2 };
+        const point = (p) => p.x.toFixed(3) + ',' + p.y.toFixed(3);
+
+        // A group, so its see-through colour doesn't get darker where the line and the head overlap (chess.css)
+        const group = document.createElementNS(SVG, 'g');
+        group.setAttribute('class', 'ch-arrow is-draw-' + colour);
+        const line = document.createElementNS(SVG, 'polyline');
+        line.setAttribute('points', [start, ...(corner ? [corner] : []), neck].map(point).join(' '));
+        const head = document.createElementNS(SVG, 'polygon');
+        head.setAttribute('points', [b, { x: neck.x + side.x, y: neck.y + side.y }, { x: neck.x - side.x, y: neck.y - side.y }].map(point).join(' '));
+        group.append(line, head);
+        return group;
+    }
+
+    function renderDrawings() {
+        const ply = game?.game?.ply ?? null;
+        if (ply !== drawnPly) {
+            drawnPly = ply;
+            arrows = [];
+            marks = {};
+        }
+        for (const [name, square] of Object.entries(squares)) {
+            for (const colour of DRAW_COLOURS) square.element.classList.toggle('is-draw-' + colour, marks[name] === colour);
+        }
+        const shown = arrows.filter((arrow) => drawing === null || arrow.from !== drawing.from || arrow.to !== drawing.to);
+        if (drawing !== null && drawing.to !== null && drawing.to !== drawing.from) shown.push(drawing); // the one being drawn
+        arrowLayer.replaceChildren(...shown.map((arrow) => arrowShape(arrow.from, arrow.to, arrow.colour)));
+    }
+
+    function clearDrawings() {
+        if (arrows.length === 0 && Object.keys(marks).length === 0) return;
+        arrows = [];
+        marks = {};
+        renderDrawings();
+    }
+
+    const squareAt = (event) => document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-square]')?.dataset.square ?? null;
+
+    boardElement.addEventListener('contextmenu', (event) => event.preventDefault());
+
+    boardElement.addEventListener('pointerdown', (event) => {
+        const element = event.target.closest('[data-square]');
+        if (!element || event.button !== 2 || drag !== null) return;
+        event.preventDefault();
+        boardElement.setPointerCapture(event.pointerId);
+        drawing = { from: element.dataset.square, to: element.dataset.square, pointerId: event.pointerId, colour: drawColour(event, false) };
+    });
+
+    boardElement.addEventListener('pointermove', (event) => {
+        if (drawing === null || event.pointerId !== drawing.pointerId) return;
+        const to = squareAt(event);
+        const colour = drawColour(event, to !== drawing.from);
+        if (to === drawing.to && colour === drawing.colour) return;
+        drawing.to = to;
+        drawing.colour = colour;
+        renderDrawings();
+    });
+
+    // Let go on the square it started on: that square is coloured in. On another: an arrow to it. Off the board: nothing.
+    // The same colour again takes it away, another colour swaps it.
+    function endDrawing(event, isDropped) {
+        if (drawing === null || event.pointerId !== drawing.pointerId) return;
+        const { from } = drawing;
+        const to = isDropped ? squareAt(event) : null;
+        drawing = null;
+        if (to === from) {
+            const colour = drawColour(event, false);
+            if (marks[from] === colour) delete marks[from];
+            else marks[from] = colour;
+        } else if (to !== null) {
+            const colour = drawColour(event, true);
+            const old = arrows.find((arrow) => arrow.from === from && arrow.to === to);
+            arrows = arrows.filter((arrow) => arrow !== old);
+            if (old?.colour !== colour) arrows.push({ from, to, colour });
+        }
+        renderDrawings();
+    }
+    boardElement.addEventListener('pointerup', (event) => endDrawing(event, true));
+    boardElement.addEventListener('pointercancel', (event) => endDrawing(event, false));
 
     // ----- The players, above and below the board
 
@@ -543,7 +674,8 @@
         moveList.scrollTop = moveList.scrollHeight;
     }
 
-    // ----- Moving: click (or Enter on) a piece and then where it goes, or drag it there
+    // ----- Moving: click (or Enter on) a piece and then where it goes, or drag it there (with the left button; the right
+    // one draws, see above)
 
     function choose(square) {
         if (selected !== null && targetsOf(selected).includes(square)) {
@@ -581,6 +713,7 @@
     boardElement.addEventListener('pointerdown', (event) => {
         const element = event.target.closest('[data-square]');
         if (!element || event.button !== 0) return;
+        clearDrawings(); // a left click takes the arrows away, like on chess.com
         const square = element.dataset.square;
         const wasSelected = selected === square;
         if (selected !== null && targetsOf(selected).includes(square)) {

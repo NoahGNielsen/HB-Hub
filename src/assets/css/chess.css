@@ -10,6 +10,10 @@
   --ch-check: #e5484d;
   --ch-red: #e5484d;
   --ch-green: #30a46c;
+  --ch-draw-orange: rgb(255, 170, 0); /* drawn on the board with the right mouse button (chessGame.js) */
+  --ch-draw-red: rgb(235, 97, 80);
+  --ch-draw-green: rgb(21, 120, 27);
+  --ch-draw-blue: rgb(0, 72, 186);
   --ch-pieces: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", sans-serif;
   max-width: 1400px;
   margin: 24px auto;
@@ -398,6 +402,44 @@
 
 .ch-square.is-dragged .ch-piece {
   opacity: 0.3;
+}
+
+/* Drawn with the right mouse button (chessGame.js): a square coloured in under its piece, and arrows on top of the
+   pieces. An arrow's group is see-through as a whole, so the line and the head don't get darker where they meet. */
+.is-draw-orange { --ch-draw: var(--ch-draw-orange); }
+.is-draw-red { --ch-draw: var(--ch-draw-red); }
+.is-draw-green { --ch-draw: var(--ch-draw-green); }
+.is-draw-blue { --ch-draw: var(--ch-draw-blue); }
+
+.ch-square.is-draw-orange,
+.ch-square.is-draw-red,
+.ch-square.is-draw-green,
+.ch-square.is-draw-blue {
+  background: linear-gradient(color-mix(in srgb, var(--ch-draw) 80%, transparent), color-mix(in srgb, var(--ch-draw) 80%, transparent)), var(--ch-square);
+}
+
+.ch-arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ch-arrow {
+  opacity: 0.8;
+}
+
+.ch-arrow polyline {
+  fill: none;
+  stroke: var(--ch-draw);
+  stroke-width: 0.2;
+  stroke-linejoin: miter;
+}
+
+.ch-arrow polygon {
+  fill: var(--ch-draw);
 }
 
 .ch-coord {

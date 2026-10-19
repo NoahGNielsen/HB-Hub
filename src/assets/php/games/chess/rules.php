@@ -29,4 +29,8 @@
         the host can't claim the win while it's paused (their opponent still can, if the host's game is closed).
     </li>
     <li>When the game is over, you can both ask for a rematch. You swap colours.</li>
+    <li>
+        With a mouse, drag with the right button to draw an arrow, or right-click a square to colour it in (hold Shift,
+        Ctrl or Alt for other colours). Only you see them, and a left click on the board or the next move clears them.
+    </li>
 </ul>

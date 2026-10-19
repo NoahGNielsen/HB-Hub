@@ -66,7 +66,7 @@ Played with virtual chips only. No real money is involved anywhere.
 | **Saves** | The game saves after every move. Leave and your seat is kept for you. The host can give an empty seat to someone else, or save and stop the game to continue it later |
 | **In-game chat** | A chat for each game, plus a sound when it's your turn |
 | **Chess** | Two-player chess with every rule: castling, en passant, promotion, and draws by stalemate, repetition, the 50-move rule and too few pieces. Public, code or invite-only games, with or without a clock (3+2 up to 30 minutes) |
-| **Chess extras** | Draw offers, resigning, aborting before both have moved, claiming the win when your opponent has gone, the host pausing the game (and the clocks), rematches with swapped colours, an in-game chat and a leaderboard |
+| **Chess extras** | Draw offers, resigning, aborting before both have moved, claiming the win when your opponent has gone, the host pausing the game (and the clocks), rematches with swapped colours, arrows and highlighted squares drawn with the right mouse button (like chess.com), an in-game chat and a leaderboard |
 
 ### 🔔 Notifications
 
