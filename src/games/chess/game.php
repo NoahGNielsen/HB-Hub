@@ -101,7 +101,11 @@ $pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&di
                         <span class="ch-clock" role="timer" data-ch-clock hidden></span>
                     </div>
                 <?php endforeach; ?>
-                <div class="ch-board" data-ch-board></div>
+                <!-- The frame keeps the board's size; zoomed in, the board grows inside it and it scrolls (boardZoom.js) -->
+                <div class="ch-board-view" data-board-zoom="hbHubChessZoom">
+                    <div class="ch-board" data-ch-board></div>
+                </div>
+                <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/boardZoom.php'; ?>
             </section>
 
             <aside class="ch-side">
@@ -168,5 +172,6 @@ $pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&di
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/chessGame.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chessGame.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/boardZoom.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/boardZoom.js') ?>" defer></script>
 </body>
 </html>

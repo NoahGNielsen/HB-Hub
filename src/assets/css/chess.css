@@ -155,8 +155,15 @@
 }
 
 .ch-bar-top { order: 0; }
-.ch-board { order: 1; }
+.ch-board-view { order: 1; }
 .ch-bar-bottom { order: 2; }
+
+/* The zoom buttons under the bottom player, far enough down to be just out of view (the board's column leaves 30px
+   under that player) */
+.ch-play .games-zoom {
+  order: 3;
+  margin-top: 24px;
+}
 
 /* A player: picture, name, colour and status, the pieces they've taken, and their clock */
 .ch-bar {
@@ -278,17 +285,26 @@
   color: #fff;
 }
 
+/* The frame the board is in: the board's size without zooming. Zoomed in (boardZoom.js sets --board-zoom), the board
+   is that much wider inside it, and it scrolls. */
+.ch-board-view {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: auto;
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  scrollbar-width: thin;
+}
+
 /* The board. Its squares size the pieces (cqi: a hundredth of the board's width) */
 .ch-board {
   position: relative;
-  width: 100%;
+  width: calc(100% * var(--board-zoom, 1));
   aspect-ratio: 1;
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(8, 1fr);
   overflow: hidden;
-  border-radius: 6px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
   container-type: inline-size;
   user-select: none;
   -webkit-user-select: none;
@@ -687,6 +703,10 @@
       "header"
       "play"
       "side";
+  }
+
+  .ch-play .games-zoom {
+    margin-top: 0;
   }
 }
 

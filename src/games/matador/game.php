@@ -112,56 +112,60 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                 </div>
             </div>
 
-            <!-- The wrapper is the board's size container, so the board's text and pieces scale with it (cqi in matador.css) -->
-            <div class="mt-board-wrap">
-                <section class="mt-board" aria-label="The board" data-mt-board>
-                    <?php foreach (HBHUB_MATADOR_FIELDS as $field => $info):
-                        [$row, $column, $side] = gameFieldPlace($field);
-                        $isCorner = in_array($field, [0, 10, 20, 30], true);
-                        $classes = 'mt-field mt-r-' . $row . ' mt-c-' . $column . ' mt-side-' . $side . ' mt-type-' . $info['type']
-                            . (isset($info['group']) ? ' mt-group-' . $info['group'] : '') . ($isCorner ? ' is-corner' : '');
-                        $isProperty = isset($info['price']); ?>
-                        <button type="button" class="<?= $classes ?>" data-field="<?= $field ?>"
-                                data-name="<?= htmlspecialchars($info['name']) ?>" data-type="<?= $info['type'] ?>"
-                                <?php if ($isProperty): ?>
-                                    data-group="<?= $info['group'] ?>" data-price="<?= $info['price'] ?>"
-                                    <?php if ($info['type'] === 'street'): ?>data-house="<?= $info['house'] ?>" data-rent="<?= implode(',', $info['rent']) ?>"<?php endif; ?>
+            <!-- The wrapper is the board's size container, so the board's text and pieces scale with it (cqi in matador.css).
+                 It's also the frame the board is zoomed in (boardZoom.js): it keeps its size and scrolls. -->
+            <div class="mt-board-area">
+                <div class="mt-board-wrap" data-board-zoom="hbHubMatadorZoom">
+                    <section class="mt-board" aria-label="The board" data-mt-board>
+                        <?php foreach (HBHUB_MATADOR_FIELDS as $field => $info):
+                            [$row, $column, $side] = gameFieldPlace($field);
+                            $isCorner = in_array($field, [0, 10, 20, 30], true);
+                            $classes = 'mt-field mt-r-' . $row . ' mt-c-' . $column . ' mt-side-' . $side . ' mt-type-' . $info['type']
+                                . (isset($info['group']) ? ' mt-group-' . $info['group'] : '') . ($isCorner ? ' is-corner' : '');
+                            $isProperty = isset($info['price']); ?>
+                            <button type="button" class="<?= $classes ?>" data-field="<?= $field ?>"
+                                    data-name="<?= htmlspecialchars($info['name']) ?>" data-type="<?= $info['type'] ?>"
+                                    <?php if ($isProperty): ?>
+                                        data-group="<?= $info['group'] ?>" data-price="<?= $info['price'] ?>"
+                                        <?php if ($info['type'] === 'street'): ?>data-house="<?= $info['house'] ?>" data-rent="<?= implode(',', $info['rent']) ?>"<?php endif; ?>
+                                    <?php endif; ?>
+                                    aria-label="<?= htmlspecialchars($info['name']) ?>">
+                                <?php if (isset($info['group']) && is_int($info['group'])): ?>
+                                    <span class="mt-field-colour" aria-hidden="true"></span>
                                 <?php endif; ?>
-                                aria-label="<?= htmlspecialchars($info['name']) ?>">
-                            <?php if (isset($info['group']) && is_int($info['group'])): ?>
-                                <span class="mt-field-colour" aria-hidden="true"></span>
-                            <?php endif; ?>
-                            <span class="mt-field-name"><?= htmlspecialchars($info['name']) ?></span>
-                            <?php if ($isProperty): ?>
-                                <span class="mt-field-price"><?= number_format($info['price']) ?> kr</span>
-                            <?php elseif ($info['type'] === 'incomeTax'): ?>
-                                <span class="mt-field-price">10 % or <?= number_format(HBHUB_MATADOR_TAX_FIXED) ?> kr</span>
-                            <?php elseif ($info['type'] === 'extraTax'): ?>
-                                <span class="mt-field-price"><?= number_format($info['amount']) ?> kr</span>
-                            <?php endif; ?>
-                            <span class="mt-field-houses" data-mt-houses></span>
-                            <span class="mt-field-tokens" data-mt-tokens></span>
-                        </button>
-                    <?php endforeach; ?>
-
-                    <div class="mt-center">
-                        <div class="mt-brand" aria-hidden="true">
-                            <p class="mt-logo">MATADOR</p>
-                            <p class="mt-edition">HTX Edition</p>
+                                <span class="mt-field-name"><?= htmlspecialchars($info['name']) ?></span>
+                                <?php if ($isProperty): ?>
+                                    <span class="mt-field-price"><?= number_format($info['price']) ?> kr</span>
+                                <?php elseif ($info['type'] === 'incomeTax'): ?>
+                                    <span class="mt-field-price">10 % or <?= number_format(HBHUB_MATADOR_TAX_FIXED) ?> kr</span>
+                                <?php elseif ($info['type'] === 'extraTax'): ?>
+                                    <span class="mt-field-price"><?= number_format($info['amount']) ?> kr</span>
+                                <?php endif; ?>
+                                <span class="mt-field-houses" data-mt-houses></span>
+                                <span class="mt-field-tokens" data-mt-tokens></span>
+                            </button>
+                        <?php endforeach; ?>
+    
+                        <div class="mt-center">
+                            <div class="mt-brand" aria-hidden="true">
+                                <p class="mt-logo">MATADOR</p>
+                                <p class="mt-edition">HTX Edition</p>
+                            </div>
+                            <div class="mt-die" role="img" aria-label="The dice" data-mt-die>⚀</div>
+                            <p class="mt-status" role="status" data-mt-status>Loading the game…</p>
+                            <div class="mt-timer" data-mt-timer hidden>
+                                <span class="mt-timer-bar" aria-hidden="true"><span class="mt-timer-fill" data-mt-timer-fill></span></span>
+                                <span class="mt-timer-text" data-mt-timer-text></span>
+                            </div>
+                            <div class="mt-card" data-mt-card hidden>
+                                <p class="mt-card-title">Prøv lykken</p>
+                                <p class="mt-card-text" data-mt-card-text></p>
+                                <p class="mt-card-who" data-mt-card-who></p>
+                            </div>
                         </div>
-                        <div class="mt-die" role="img" aria-label="The dice" data-mt-die>⚀</div>
-                        <p class="mt-status" role="status" data-mt-status>Loading the game…</p>
-                        <div class="mt-timer" data-mt-timer hidden>
-                            <span class="mt-timer-bar" aria-hidden="true"><span class="mt-timer-fill" data-mt-timer-fill></span></span>
-                            <span class="mt-timer-text" data-mt-timer-text></span>
-                        </div>
-                        <div class="mt-card" data-mt-card hidden>
-                            <p class="mt-card-title">Prøv lykken</p>
-                            <p class="mt-card-text" data-mt-card-text></p>
-                            <p class="mt-card-who" data-mt-card-who></p>
-                        </div>
-                    </div>
-                </section>
+                    </section>
+                </div>
+                <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/boardZoom.php'; ?>
             </div>
 
             <aside class="mt-side">
@@ -316,5 +320,6 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/matadorGame.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/matadorGame.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/boardZoom.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/boardZoom.js') ?>" defer></script>
 </body>
 </html>
