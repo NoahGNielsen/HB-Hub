@@ -9,6 +9,7 @@
 //       a double click only counts once), resign, abort, offerDraw, answerDraw (answer: accept or decline), claim
 //       (the win, when the other player has gone), rematch and cancelRematch
 //     invite (user), for the host while the room waits for a player
+//     pause and resume, for the host while a game is being played (game.php's hbHubChessPause())
 //     chat (text) writes in the game's chat (chat.php), and leave
 //   The game has the chat's newest messages in "chat", with isYou on the user's own.
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore).
@@ -46,14 +47,14 @@ if ($action === 'chat') {
 }
 
 /**
- * Something the user does as a player of the game: $do gets the state, their colour and the seats.
+ * Something the user does as a player of the game: $do gets the state, their colour, the seats and the host's userId.
  */
 $player = static fn (callable $do): callable => static function (array &$room, array &$seats) use ($do, $userId): ?string {
     $colour = hbHubChessColourOfUser($room['state'], $userId);
     if ($colour === null || $room['state']['phase'] === 'lobby') {
         return 'You aren\'t playing a game right now.';
     }
-    return $do($room['state'], $colour, $seats);
+    return $do($room['state'], $colour, $seats, $room['roomHostUserId']);
 };
 
 $do = match ($action) {
@@ -66,11 +67,13 @@ $do = match ($action) {
     'abort' => $player(static fn (array &$state): ?string => hbHubChessAbort($state, hbHubChessNowMs())),
     'offerDraw' => $player(static fn (array &$state, string $colour): ?string => hbHubChessOfferDraw($state, $colour, hbHubChessNowMs())),
     'answerDraw' => $player(static fn (array &$state, string $colour): ?string => hbHubChessAnswerDraw($state, $colour, $input['answer'] ?? null, hbHubChessNowMs())),
-    'claim' => $player(static function (array &$state, string $colour, array $seats): ?string {
+    'claim' => $player(static function (array &$state, string $colour, array $seats, ?int $hostId): ?string {
         $otherId = $state['game'][$colour === 'w' ? 'black' : 'white']['userId'];
         $other = array_values(array_filter($seats, static fn (array $seat): bool => $seat['userId'] === $otherId))[0] ?? null;
-        return hbHubChessClaim($state, $colour, $other['idleSeconds'] ?? PHP_INT_MAX, hbHubChessNowMs());
+        return hbHubChessClaim($state, $colour, $other['idleSeconds'] ?? PHP_INT_MAX, $otherId === $hostId, hbHubChessNowMs());
     }),
+    'pause', 'resume' => $player(static fn (array &$state, string $colour, array $seats, ?int $hostId): ?string => hbHubChessPause(
+        $state, $hostId === $userId, $action === 'pause', hbHubChessNowMs())),
     'rematch', 'cancelRematch' => static fn (array &$room): ?string => hbHubChessColourOfUser($room['state'], $userId) !== null
         ? hbHubChessRematch($room['state'], hbHubChessColourOfUser($room['state'], $userId), $action === 'rematch', $room['roomHostUserId'])
         : 'You aren\'t in this game.',

@@ -89,6 +89,16 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                             <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>
                         </svg>
                     </button>
+                    <!-- matadorGame.js sets aria-pressed (which picks the icon shown) and the title -->
+                    <button type="button" class="casino-btn mt-icon-btn" aria-label="Pause the game" title="Pause the game" aria-pressed="false"
+                            data-mt-pause hidden>
+                        <svg class="mt-icon mt-icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 5v14"/><path d="M15 5v14"/>
+                        </svg>
+                        <svg class="mt-icon mt-icon-resume" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M7 4.5v15l12-7.5z"/>
+                        </svg>
+                    </button>
                     <button type="button" class="casino-btn mt-icon-btn" aria-label="Save &amp; stop" title="Save &amp; stop" data-mt-save-stop hidden>
                         <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>

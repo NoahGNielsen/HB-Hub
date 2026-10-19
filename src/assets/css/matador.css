@@ -85,9 +85,11 @@
   stroke-linejoin: round;
 }
 
-/* The sound button shows the icon for how it is now (aria-pressed, set by matadorGame.js) */
+/* The sound and pause buttons show the icon for how it is now (aria-pressed, set by matadorGame.js) */
 .mt-icon-btn[aria-pressed="true"] .mt-icon-sound-off,
-.mt-icon-btn[aria-pressed="false"] .mt-icon-sound-on {
+.mt-icon-btn[aria-pressed="false"] .mt-icon-sound-on,
+.mt-icon-btn[aria-pressed="true"] .mt-icon-pause,
+.mt-icon-btn[aria-pressed="false"] .mt-icon-resume {
   display: none;
 }
 
@@ -493,7 +495,7 @@
   color: var(--mt-hotel);
 }
 
-/* Paused while the player whose turn it is owes money: a full, grey bar */
+/* Paused while the player whose turn it is owes money, or the host paused the game: a full, grey bar */
 .mt-timer.is-paused .mt-timer-fill {
   background: color-mix(in srgb, var(--text) 35%, transparent);
 }

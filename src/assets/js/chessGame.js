@@ -9,6 +9,7 @@
 //
 // The clocks count down here, from the time the server sent (the server's and the player's clocks don't have to
 // agree). The server ends the game once a clock runs out; this only shows it, and asks straight away when it does.
+// The host can pause the game (the button in the header): the server then sends no running clock and no legal moves.
 //
 // A ping is played when it becomes the player's move, unless they turned the sound off (remembered in this browser).
 (() => {
@@ -40,6 +41,7 @@
     const codeButton = find('[data-ch-code]');
     const codeCopied = find('[data-ch-code-copied]');
     const inviteButton = find('[data-ch-invite]');
+    const pauseButton = find('[data-ch-pause]');
     const flipButton = find('[data-ch-flip]');
     const soundButton = find('[data-ch-sound]');
     const leaveButton = find('[data-ch-leave]');
@@ -75,7 +77,8 @@
     let shownMoves = -1; // how many moves the move list has
 
     const isPlaying = () => game !== null && game.phase === 'playing' && game.game !== null;
-    const isMyMove = () => isPlaying() && game.you !== null && game.game.turn === game.you;
+    const isPaused = () => isPlaying() && game.game.paused;
+    const isMyMove = () => isPlaying() && !isPaused() && game.you !== null && game.game.turn === game.you;
     const other = (colour) => (colour === 'w' ? 'b' : 'w');
     const playerOf = (colour) => game.game[colour === 'w' ? 'white' : 'black'];
     const nameOf = (colour) => (playerOf(colour).isYou ? 'You' : playerOf(colour).name);
@@ -176,8 +179,13 @@
         isFirstDraw = false;
     }
 
+    // aria-pressed also picks the pause button's icon (chess.css)
     function renderHeader() {
         inviteButton.hidden = !(game.isHost && game.phase === 'lobby');
+        pauseButton.hidden = !(game.isHost && isPlaying());
+        pauseButton.disabled = isBusy;
+        pauseButton.setAttribute('aria-pressed', String(isPaused()));
+        pauseButton.title = isPaused() ? 'Paused: go on with the game' : 'Pause the game';
     }
 
     // ----- The board: 64 buttons, a8 first as it's read (or h1 first when it's turned around)
@@ -426,9 +434,18 @@
         const you = game.you;
         const opponent = playerOf(other(you));
         const list = [];
-        let status = isMyMove()
-            ? (state.check !== null ? 'Your move. You\'re in check!' : 'Your move.')
+        let status = isPaused() ? 'The game is paused.'
+            : isMyMove() ? (state.check !== null ? 'Your move. You\'re in check!' : 'Your move.')
             : 'Waiting for ' + opponent.name + ' to move.';
+
+        if (isPaused()) {
+            if (isHost) {
+                list.push(paragraph('You paused the game. The clocks are stopped, and nobody can move until you go on.'));
+                list.push(row(button('Go on with the game', () => act('resume'), { primary: true })));
+            } else {
+                list.push(paragraph(opponent.name + ' paused the game. The clocks are stopped, and nobody can move until they go on.'));
+            }
+        }
 
         if (state.drawOffer === other(you)) {
             list.push(paragraph(opponent.name + ' offers a draw.'));
@@ -779,6 +796,12 @@
     renderSound();
     document.addEventListener('pointerdown', wakeAudio, { once: true });
     document.addEventListener('keydown', wakeAudio, { once: true });
+
+    // ----- Pausing the game (the host)
+
+    pauseButton.addEventListener('click', () => {
+        if (isPlaying()) act(isPaused() ? 'resume' : 'pause');
+    });
 
     // ----- Turning the board around
 

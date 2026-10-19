@@ -48,12 +48,21 @@ $pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&di
                     <strong class="ch-code-value"><?= htmlspecialchars($room['roomCode']) ?></strong>
                     <span class="ch-code-copied" data-ch-code-copied aria-live="polite"></span>
                 </button>
-                <!-- Icons drawn in currentColor, so they follow the theme. chessGame.js sets the sound button's
-                     aria-pressed, which picks the icon shown, and its title. -->
+                <!-- Icons drawn in currentColor, so they follow the theme. chessGame.js sets the sound and pause
+                     buttons' aria-pressed, which picks the icon shown, and their titles. -->
                 <button type="button" class="casino-btn ch-icon-btn" aria-label="Invite people" title="Invite people"
                         aria-haspopup="dialog" data-ch-invite hidden>
                     <svg class="ch-icon" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>
+                    </svg>
+                </button>
+                <button type="button" class="casino-btn ch-icon-btn" aria-label="Pause the game" title="Pause the game" aria-pressed="false"
+                        data-ch-pause hidden>
+                    <svg class="ch-icon ch-icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9 5v14"/><path d="M15 5v14"/>
+                    </svg>
+                    <svg class="ch-icon ch-icon-resume" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M7 4.5v15l12-7.5z"/>
                     </svg>
                 </button>
                 <button type="button" class="casino-btn ch-icon-btn" aria-label="Turn the board around" title="Turn the board around" data-ch-flip>

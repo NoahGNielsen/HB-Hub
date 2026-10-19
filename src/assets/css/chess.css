@@ -77,9 +77,11 @@
   stroke-linejoin: round;
 }
 
-/* The sound button shows the icon for how it is now (aria-pressed, set by chessGame.js) */
+/* The sound and pause buttons show the icon for how it is now (aria-pressed, set by chessGame.js) */
 .ch-icon-btn[aria-pressed="true"] .ch-icon-sound-off,
-.ch-icon-btn[aria-pressed="false"] .ch-icon-sound-on {
+.ch-icon-btn[aria-pressed="false"] .ch-icon-sound-on,
+.ch-icon-btn[aria-pressed="true"] .ch-icon-pause,
+.ch-icon-btn[aria-pressed="false"] .ch-icon-resume {
   display: none;
 }
 

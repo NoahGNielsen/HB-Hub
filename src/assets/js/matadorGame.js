@@ -12,6 +12,9 @@
 // The turn's timer counts down here, from the time left the server sent (the server's and the player's clocks don't
 // have to agree). The server passes the turn on once it runs out; this only shows it.
 //
+// The host can pause the game (the button in the header, game.paused). Nothing can be done in it then but the chat,
+// so the moves, trades, building and keyboard shortcuts are left out until it goes on.
+//
 // The room's settings (game.settings: dice and jailRent) are shown in their dialog, where the host changes them before
 // the game starts. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
 // on (after asking) and Backspace leaves it with the bank, and Enter ends the turn.
@@ -58,6 +61,7 @@
     const codeCopied = find('[data-mt-code-copied]');
     const inviteButton = find('[data-mt-invite]');
     const saveStopButton = find('[data-mt-save-stop]');
+    const pauseButton = find('[data-mt-pause]');
     const leaveButton = find('[data-mt-leave]');
     const soundButton = find('[data-mt-sound]');
     const settingsButton = find('[data-mt-settings]');
@@ -110,6 +114,7 @@
     const me = () => (game.you !== null ? playerOf(game.you) : null);
     const isMyTurn = () => game.phase === 'playing' && game.turn?.seat === game.you;
     const isPlaying = () => game.phase === 'playing';
+    const isPaused = () => isPlaying() && game.paused;
     const lucky = () => (game.settings.dice === 2 ? 'doubles' : 'a 6'); // what gives another roll and gets you out of jail
     const theDice = () => (game.settings.dice === 2 ? 'the dice' : 'the die');
 
@@ -223,6 +228,11 @@
         }
         inviteButton.hidden = !(game.isHost && game.phase === 'lobby');
         saveStopButton.hidden = !(game.isHost && (isPlaying() || game.phase === 'resume')) || game.unsaved;
+        // aria-pressed also picks the pause button's icon (matador.css)
+        pauseButton.hidden = !(game.isHost && isPlaying());
+        pauseButton.disabled = isBusy;
+        pauseButton.setAttribute('aria-pressed', String(isPaused()));
+        pauseButton.title = isPaused() ? 'Paused: go on with the game' : 'Pause the game';
     }
 
     // ----- The board
@@ -349,22 +359,26 @@
             case 'ended':
                 return game.winner !== null ? nameOf(game.winner) + ' won the game!' : 'The game is over';
             default:
+                if (isPaused()) return 'The game is paused';
                 return isMyTurn() ? 'Your turn' : nameOf(game.turn.seat) + '\'s turn';
         }
     }
 
     // The bar empties as the time runs out. Not read out (it changes every second): the moves panel says what to do.
     // Once it's out, the server is asked straight away, so the turn is passed on without waiting for the next check.
-    // While the player whose turn it is owes money, the timer is paused (the server sends no time left).
+    // While the player whose turn it is owes money, or the host has paused the game, the timer is paused (the server
+    // sends no time left).
     function renderTimer() {
-        const isPaused = game !== null && isPlaying() && game.pending?.type === 'debt';
-        timer.hidden = game === null || !isPlaying() || (turnEndsAt === null && !isPaused);
+        const isOwing = game !== null && isPlaying() && game.pending?.type === 'debt';
+        const isStopped = game !== null && (isPaused() || isOwing);
+        timer.hidden = game === null || !isPlaying() || (turnEndsAt === null && !isStopped);
         if (timer.hidden) return;
-        timer.classList.toggle('is-paused', isPaused);
-        if (isPaused) {
+        timer.classList.toggle('is-paused', isStopped);
+        if (isStopped) {
             timer.classList.remove('is-low');
             timerFill.style.transform = 'scaleX(1)';
-            timerText.textContent = 'Paused until ' + (isMyTurn() ? 'you pay' : nameOf(game.turn.seat) + ' pays');
+            timerText.textContent = isPaused() ? 'Paused by the host'
+                : 'Paused until ' + (isMyTurn() ? 'you pay' : nameOf(game.turn.seat) + ' pays');
             return;
         }
         const left = Math.max(0, turnEndsAt - performance.now());
@@ -520,6 +534,16 @@
                 buttons(button('Back to Matador', leave, { primary: true })),
             ];
         }
+        if (isPaused()) {
+            if (game.isHost) {
+                return [
+                    paragraph('You paused the game. Nobody can roll, build or trade until you go on.'),
+                    buttons(button('Go on with the game', () => act('resume'), { primary: true })),
+                ];
+            }
+            const host = game.players.find((player) => player.isHost);
+            return [paragraph((host ? host.name : 'The host') + ' paused the game. Nobody can roll, build or trade until they go on.')];
+        }
         if (you?.bankrupt) {
             return [paragraph('You\'re bankrupt and out of the game. You can stay and watch, or leave.')];
         }
@@ -627,7 +651,7 @@
 
     function shortcutFor(key) {
         const you = me();
-        if (!isMyTurn() || isBusy || !you || you.bankrupt) return null;
+        if (!isMyTurn() || isPaused() || isBusy || !you || you.bankrupt) return null;
         const pending = game.pending;
         if (pending?.type === 'buy') {
             if (key === 'Enter') return confirmBuy;
@@ -659,8 +683,8 @@
         if (!isPlaying()) return;
         const you = me();
         const hasOffer = game.trades.some((trade) => trade.from === game.you);
-        tradeOpenButton.disabled = isBusy || !you || you.bankrupt || hasOffer || tradePartners().length === 0;
-        tradeOpenButton.title = hasOffer ? 'Take back your offer first' : '';
+        tradeOpenButton.disabled = isBusy || isPaused() || !you || you.bankrupt || hasOffer || tradePartners().length === 0;
+        tradeOpenButton.title = isPaused() ? 'The game is paused' : hasOffer ? 'Take back your offer first' : '';
         tradeList.replaceChildren(...game.trades.map(tradeItem));
         tradesEmpty.hidden = game.trades.length > 0;
     }
@@ -683,14 +707,14 @@
             item.append(
                 paragraph(nameOf(trade.from) + ' offers you ' + sideText(trade.give) + ', for ' + sideText(trade.get) + '.'),
                 buttons(
-                    button('Accept', () => act('answer', { trade: String(trade.id), answer: 'accept' }), { primary: true }),
-                    button('Decline', () => act('answer', { trade: String(trade.id), answer: 'decline' })),
+                    button('Accept', () => act('answer', { trade: String(trade.id), answer: 'accept' }), { primary: true, disabled: isPaused() }),
+                    button('Decline', () => act('answer', { trade: String(trade.id), answer: 'decline' }), { disabled: isPaused() }),
                 ),
             );
         } else if (trade.from === game.you) {
             item.append(
                 paragraph('You offered ' + nameOf(trade.to) + ' ' + sideText(trade.give) + ', for ' + sideText(trade.get) + '.'),
-                buttons(button('Take it back', () => act('answer', { trade: String(trade.id), answer: 'cancel' }))),
+                buttons(button('Take it back', () => act('answer', { trade: String(trade.id), answer: 'cancel' }), { disabled: isPaused() })),
             );
         } else {
             item.append(paragraph(nameOf(trade.from) + ' offered ' + nameOf(trade.to) + ' ' + sideText(trade.give) + ', for ' + sideText(trade.get) + '.'));
@@ -998,7 +1022,9 @@
 
         const list = [];
         const isMine = owner !== null && owner === game.you && isPlaying() && !me()?.bankrupt;
-        if (isMine && !isMyTurn()) {
+        if (isMine && isPaused()) {
+            list.push(paragraph('The game is paused. You can build, sell and mortgage again once the host goes on.', 'mt-hint'));
+        } else if (isMine && !isMyTurn()) {
             list.push(paragraph('You can build, sell and mortgage in your own turn.', 'mt-hint'));
         } else if (isMine) {
             const houses = property.houses;
@@ -1211,7 +1237,7 @@
         setTimeout(() => (codeCopied.textContent = ''), 2000);
     });
 
-    // ----- Leaving, and saving and stopping (the host)
+    // ----- Leaving, and pausing and saving and stopping (the host)
 
     async function leave() {
         const data = await post('leave');
@@ -1232,6 +1258,10 @@
             if (!ok) return;
         }
         leave();
+    });
+
+    pauseButton.addEventListener('click', () => {
+        if (isPlaying()) act(isPaused() ? 'resume' : 'pause');
     });
 
     saveStopButton.addEventListener('click', async () => {

@@ -590,6 +590,7 @@ function hbHubMatadorStart(PDO $db, array &$room, int $userId): ?string
             return 'Wait for at least ' . HBHUB_MATADOR_MIN_PLAYERS . ' players to be back.';
         }
         $state['phase'] = 'playing';
+        $state['paused'] = false; // saved while it was paused
         hbHubMatadorResetTimer($state); // the saved deadline is long gone
         hbHubMatadorLog($state, 'The game goes on where it was saved.');
         return null;
@@ -618,6 +619,35 @@ function hbHubMatadorChangeSettings(array &$room, int $userId, mixed $dice, mixe
     if ($settings !== hbHubMatadorSettings($state)) {
         $state['settings'] = $settings;
         hbHubMatadorLog($state, 'The host changed the room\'s settings: ' . hbHubMatadorSettingsText($settings) . '.');
+    }
+    return null;
+}
+
+/**
+ * The host pauses the game ($pause) or lets it go on (game.php's hbHubMatadorIsPaused()). While it's paused nobody can
+ * do anything in the game (play.php), and no turn runs out or is skipped. The player whose turn it is gets their full
+ * time again when it goes on. Returns null when it's done, otherwise why not.
+ */
+function hbHubMatadorPause(array &$room, int $userId, bool $pause): ?string
+{
+    $state = &$room['state'];
+    if ($room['roomHostUserId'] !== $userId) {
+        return 'Only the host can pause the game.';
+    }
+    if ($state['phase'] !== 'playing') {
+        return 'The game isn\'t being played right now.';
+    }
+    if ($pause === hbHubMatadorIsPaused($state)) {
+        return null; // it already is (a double click, or another tab)
+    }
+    $seat = hbHubMatadorSeatOfUser($state, $userId);
+    $name = $seat !== null ? hbHubMatadorName($state, $seat) : 'The host';
+    $state['paused'] = $pause;
+    if ($pause) {
+        hbHubMatadorLog($state, $name . ' paused the game.');
+    } else {
+        hbHubMatadorResetTimer($state);
+        hbHubMatadorLog($state, $name . ' let the game go on.');
     }
     return null;
 }

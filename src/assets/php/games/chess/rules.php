@@ -24,5 +24,9 @@
         Leaving the game loses it. If your opponent's game has been closed for <?= HBHUB_CHESS_CLAIM_SECONDS ?> seconds,
         you can claim the win.
     </li>
+    <li>
+        The host can pause the game. The clocks stop and nobody can move or offer a draw until the host goes on, and
+        the host can't claim the win while it's paused (their opponent still can, if the host's game is closed).
+    </li>
     <li>When the game is over, you can both ask for a rematch. You swap colours.</li>
 </ul>

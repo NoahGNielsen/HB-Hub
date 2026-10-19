@@ -10,10 +10,12 @@
 //     In your turn, but as often as you like: build, sell, mortgage and unmortgage (field)
 //     Any time: offer (to, giveFields, giveCash, giveCards, getFields, getCash, getCards), answer (trade: its id,
 //       answer: accept, decline or cancel) and leave
-//     For the host: start, invite (user), giveSeat (seat, user), saveStop, and settings (dice: 1 or 2, jailRent: yes,
-//       no or bank - before the game starts)
+//     For the host: start, invite (user), giveSeat (seat, user), saveStop, pause and resume (room.php's
+//       hbHubMatadorPause()), and settings (dice: 1 or 2, jailRent: yes, no or bank - before the game starts)
 //     chat (text) writes in the game's chat (chat.php), for anyone in the game
 //   Anything the player whose turn it is does (not the chat) starts their 30 seconds again (hbHubMatadorPlayerActed()).
+//   While the host has paused the game, the moves, building and trades are turned down. The chat, leaving and the
+//   host's actions still work.
 //   The game has the chat's newest messages in "chat", each with the seat of who wrote it (null when they have none).
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore), or "stopped" when it's gone.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -64,6 +66,9 @@ $turn = static fn (callable $move): callable => static function (array &$room) u
     if ($seat === null || $state['phase'] !== 'playing' || ($input['turn'] ?? null) !== (string) $state['turn']['id']) {
         return null;
     }
+    if (hbHubMatadorIsPaused($state)) {
+        return 'The game is paused.';
+    }
     $error = $move($state, $seat);
     if ($error === null && $state['phase'] === 'playing') {
         $state['turn']['id']++;
@@ -79,6 +84,9 @@ $player = static fn (callable $do): callable => static function (array &$room) u
     $seat = hbHubMatadorSeatOfUser($room['state'], $userId);
     if ($seat === null) {
         return 'You aren\'t playing in this game.';
+    }
+    if (hbHubMatadorIsPaused($room['state'])) {
+        return 'The game is paused.';
     }
     $error = $do($room['state'], $seat);
     hbHubMatadorPlayerActed($room['state'], $seat);
@@ -120,6 +128,7 @@ $do = match ($action) {
     'invite' => static fn (array &$room): ?string => hbHubMatadorInvite($db, $room, $userId, $input['user'] ?? null),
     'giveSeat' => static fn (array &$room): ?string => hbHubMatadorGiveSeat($db, $room, $userId, $input['seat'] ?? null, $input['user'] ?? null),
     'saveStop' => static fn (array &$room): ?string => hbHubMatadorSaveAndStop($db, $room, $userId),
+    'pause', 'resume' => static fn (array &$room): ?string => hbHubMatadorPause($room, $userId, $action === 'pause'),
     'settings' => static fn (array &$room): ?string => hbHubMatadorChangeSettings($room, $userId, $input['dice'] ?? null, $input['jailRent'] ?? null),
     default => false,
 };

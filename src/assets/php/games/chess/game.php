@@ -1,6 +1,7 @@
 <?php
 // A chess game between two players, without the database: the room's state (roomState in HBHub-ChessRooms), playing a
-// move with the clocks, draw offers, resigning, aborting, claiming the win when the other player has gone, rematches,
+// move with the clocks, draw offers, resigning, aborting, claiming the win when the other player has gone, the host
+// pausing it, rematches,
 // and what the players are sent (hbHubChessView()). The rules of the board are in board.php, and room.php loads and
 // saves the state around all of this.
 //
@@ -18,6 +19,8 @@
 //     repetitions: how many times each position has come up (hbHubChessPositionKey()), for threefold repetition
 //     clocks: {w, b} the time each player has left in ms, or null without a clock
 //     clockSince: Unix ms when the clock of the player to move started, null before White's first move and once it ends
+//     pausedSince: Unix ms when the host paused the game, null while it goes on (missing in games from before pausing).
+//       The clocks stand still and nobody can move while it's paused (hbHubChessPause())
 //     drawOffer: the colour offering a draw, or null. drawOffered: {w, b} the move count of their last offer
 //     result: null while it's played, then {winner: "w", "b" or null for a draw, reason}
 //     rematch: the colours that want another game
@@ -137,6 +140,7 @@ function hbHubChessBegin(array &$state, ?int $hostUserId): void
         'repetitions' => [],
         'clocks' => $clock !== null ? ['w' => $clock[0] * 60000, 'b' => $clock[0] * 60000] : null,
         'clockSince' => null,
+        'pausedSince' => null,
         'drawOffer' => null,
         'drawOffered' => ['w' => -1, 'b' => -1],
         'result' => null,
@@ -150,7 +154,16 @@ function hbHubChessBegin(array &$state, ?int $hostUserId): void
 }
 
 /**
- * The time the colour has left in ms right now, counting down the clock of the player to move. Null without a clock.
+ * Whether the host has paused the game (hbHubChessPause()).
+ */
+function hbHubChessIsPaused(array $game): bool
+{
+    return $game['result'] === null && ($game['pausedSince'] ?? null) !== null;
+}
+
+/**
+ * The time the colour has left in ms right now, counting down the clock of the player to move (only up to when the
+ * game was paused, while it is). Null without a clock.
  */
 function hbHubChessTimeLeft(array $game, string $colour, int $now): ?int
 {
@@ -159,7 +172,7 @@ function hbHubChessTimeLeft(array $game, string $colour, int $now): ?int
     }
     $left = $game['clocks'][$colour];
     if ($game['result'] === null && $game['clockSince'] !== null && $game['position']['turn'] === $colour) {
-        $left -= $now - $game['clockSince'];
+        $left -= ($game['pausedSince'] ?? $now) - $game['clockSince'];
     }
     return max(0, $left);
 }
@@ -196,6 +209,7 @@ function hbHubChessEnd(array &$state, ?string $winner, string $reason, int $now)
         $game['clocks'][$turn] = hbHubChessTimeLeft($game, $turn, $now);
     }
     $game['clockSince'] = null;
+    $game['pausedSince'] = null;
     $game['drawOffer'] = null;
     $game['result'] = ['winner' => $winner, 'reason' => $reason];
     $state['phase'] = 'ended';
@@ -211,6 +225,9 @@ function hbHubChessMove(array &$state, string $colour, mixed $from, mixed $to, m
         return 'The game is over.';
     }
     $game = &$state['game'];
+    if (hbHubChessIsPaused($game)) {
+        return 'The game is paused.';
+    }
     $position = $game['position'];
     if ($position['turn'] !== $colour) {
         return 'It\'s not your move.';
@@ -311,6 +328,9 @@ function hbHubChessOfferDraw(array &$state, string $colour, int $now): ?string
     if (count($game['moves']) < HBHUB_CHESS_ABORT_MOVES) {
         return 'Nobody has moved yet, so abort the game instead.';
     }
+    if (hbHubChessIsPaused($game)) {
+        return 'The game is paused.';
+    }
     if ($game['drawOffer'] === $colour) {
         return 'You\'ve offered a draw already.';
     }
@@ -342,17 +362,50 @@ function hbHubChessAnswerDraw(array &$state, string $colour, mixed $answer, int 
 
 /**
  * The colour wins because the other player has been gone for HBHUB_CHESS_CLAIM_SECONDS ($otherIdleSeconds is how long
- * since their game last checked in).
+ * since their game last checked in). Not while the game is paused, unless the one gone is the host ($otherIsHost), as
+ * only they can let it go on.
  */
-function hbHubChessClaim(array &$state, string $colour, int $otherIdleSeconds, int $now): ?string
+function hbHubChessClaim(array &$state, string $colour, int $otherIdleSeconds, bool $otherIsHost, int $now): ?string
 {
     if ($state['phase'] !== 'playing') {
         return 'The game is over.';
+    }
+    if (hbHubChessIsPaused($state['game']) && !$otherIsHost) {
+        return 'The game is paused, so the win can\'t be claimed.';
     }
     if ($otherIdleSeconds < HBHUB_CHESS_CLAIM_SECONDS) {
         return 'They haven\'t been gone long enough for that.';
     }
     hbHubChessEnd($state, $colour, 'abandoned', $now);
+    return null;
+}
+
+/**
+ * The host pauses the game ($pause) or lets it go on. While it's paused the clocks stand still, and nobody can move or
+ * offer a draw (resigning, aborting, answering a draw offer and leaving still work). Going on moves the start of the
+ * running clock on by how long it was paused, so the pause doesn't come off anyone's time.
+ */
+function hbHubChessPause(array &$state, bool $isHost, bool $pause, int $now): ?string
+{
+    if (!$isHost) {
+        return 'Only the host can pause the game.';
+    }
+    if ($state['phase'] !== 'playing') {
+        return 'The game is over.';
+    }
+    $game = &$state['game'];
+    $since = $game['pausedSince'] ?? null;
+    if ($pause === ($since !== null)) {
+        return null; // it already is (a double click, or another tab)
+    }
+    if ($pause) {
+        $game['pausedSince'] = $now;
+    } else {
+        if ($game['clockSince'] !== null) {
+            $game['clockSince'] += $now - $since;
+        }
+        $game['pausedSince'] = null;
+    }
     return null;
 }
 
@@ -399,8 +452,10 @@ function hbHubChessCaptured(string $board): array
 function hbHubChessView(array $state, array $people, array $seats, int $userId, ?int $hostUserId, int $now): array
 {
     $seatOf = array_column($seats, null, 'userId');
-    $person = static function (int $playerId, string $name) use ($people, $seatOf, $userId, $hostUserId): array {
+    $isPaused = $state['phase'] === 'playing' && hbHubChessIsPaused($state['game']);
+    $person = static function (int $playerId, string $name) use ($people, $seatOf, $userId, $hostUserId, $isPaused): array {
         $seat = $seatOf[$playerId] ?? null;
+        $canBeClaimed = $seat !== null && $seat['away'] && (!$isPaused || $playerId === $hostUserId); // hbHubChessClaim()
         return [
             'name' => $people[$playerId]['name'] ?? $name,
             'avatar' => $people[$playerId]['avatar'] ?? null,
@@ -409,7 +464,7 @@ function hbHubChessView(array $state, array $people, array $seats, int $userId, 
             'here' => $seat !== null,
             'away' => $seat !== null && $seat['away'],
             // Seconds until the other player can claim the win, while this one is away
-            'claimIn' => $seat !== null && $seat['away'] ? max(0, HBHUB_CHESS_CLAIM_SECONDS - $seat['idleSeconds']) : null,
+            'claimIn' => $canBeClaimed ? max(0, HBHUB_CHESS_CLAIM_SECONDS - $seat['idleSeconds']) : null,
         ];
     };
 
@@ -431,7 +486,7 @@ function hbHubChessView(array $state, array $people, array $seats, int $userId, 
     $position = $game['position'];
     $isPlaying = $state['phase'] === 'playing';
     $legal = [];
-    if ($isPlaying && $view['you'] === $position['turn']) {
+    if ($isPlaying && !$isPaused && $view['you'] === $position['turn']) {
         foreach (hbHubChessLegalMoves($position) as [$from, $to]) {
             $legal[hbHubChessSquareName($from)][] = hbHubChessSquareName($to); // a promotion is there 4 times
         }
@@ -452,11 +507,12 @@ function hbHubChessView(array $state, array $people, array $seats, int $userId, 
         'clocks' => $game['clocks'] !== null
             ? ['w' => hbHubChessTimeLeft($game, 'w', $now), 'b' => hbHubChessTimeLeft($game, 'b', $now)]
             : null,
-        'running' => $isPlaying && $game['clockSince'] !== null ? $position['turn'] : null,
+        'running' => $isPlaying && !$isPaused && $game['clockSince'] !== null ? $position['turn'] : null,
+        'paused' => $isPaused,
         'result' => $game['result'],
         'drawOffer' => $game['drawOffer'],
         'canAbort' => $isPlaying && count($game['moves']) < HBHUB_CHESS_ABORT_MOVES,
-        'canOfferDraw' => $isPlaying && $view['you'] !== null && count($game['moves']) >= HBHUB_CHESS_ABORT_MOVES
+        'canOfferDraw' => $isPlaying && !$isPaused && $view['you'] !== null && count($game['moves']) >= HBHUB_CHESS_ABORT_MOVES
             && $game['drawOffer'] === null && $game['drawOffered'][$view['you']] !== count($game['moves']),
         'ply' => count($game['moves']),
         'captured' => hbHubChessCaptured($position['board']),

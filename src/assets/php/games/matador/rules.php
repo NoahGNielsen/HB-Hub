@@ -55,4 +55,8 @@
         The game is saved after every move, in the save slot of whoever opened it. Leave, and your seat is kept for you while
         your turns are skipped. The host can give an empty seat to someone else, or save the game and stop it.
     </li>
+    <li>
+        The host can pause the game. Nobody can roll, build or trade, and no turn runs out or is skipped, until the host
+        goes on. Then the player whose turn it is gets their full <?= HBHUB_MATADOR_TURN_SECONDS ?> seconds again.
+    </li>
 </ul>
