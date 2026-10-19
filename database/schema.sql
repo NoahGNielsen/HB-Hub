@@ -24,6 +24,22 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-AdminLog`
+--
+
+CREATE TABLE `HBHub-AdminLog` (
+  `adminLogId` bigint UNSIGNED NOT NULL,
+  `adminLogByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The site admin who did it',
+  `adminLogAction` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'What was done, like user.view or chat.kick (ADMIN_LOG_ACTIONS in src/assets/php/adminLog.php)',
+  `adminLogUserId` int UNSIGNED DEFAULT NULL COMMENT 'The user it was about, NULL when it was not about one',
+  `adminLogChatId` int UNSIGNED DEFAULT NULL COMMENT 'The chat it was about, NULL when it was not about one',
+  `adminLogData` json DEFAULT NULL COMMENT 'Details, like {"amount": -500} for chips or {"messageId": 12}. Never a password, name or message text',
+  `adminLogTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Everything site admins do in the admin panel, opening a user or chat included. Kept for a year (src/assets/php/adminLog.php)';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Attachments`
 --
 
@@ -670,6 +686,16 @@ CREATE TABLE `HBHub-Users` (
 --
 
 --
+-- Indexes for table `HBHub-AdminLog`
+--
+ALTER TABLE `HBHub-AdminLog`
+  ADD PRIMARY KEY (`adminLogId`),
+  ADD KEY `byTime` (`adminLogByUserId`,`adminLogTimestamp`),
+  ADD KEY `user` (`adminLogUserId`),
+  ADD KEY `chat` (`adminLogChatId`),
+  ADD KEY `time` (`adminLogTimestamp`);
+
+--
 -- Indexes for table `HBHub-Attachments`
 --
 ALTER TABLE `HBHub-Attachments`
@@ -980,6 +1006,12 @@ ALTER TABLE `HBHub-Users`
 --
 
 --
+-- AUTO_INCREMENT for table `HBHub-AdminLog`
+--
+ALTER TABLE `HBHub-AdminLog`
+  MODIFY `adminLogId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-Attachments`
 --
 ALTER TABLE `HBHub-Attachments`
@@ -1120,6 +1152,14 @@ ALTER TABLE `HBHub-Users`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `HBHub-AdminLog`
+--
+ALTER TABLE `HBHub-AdminLog`
+  ADD CONSTRAINT `fk_adminlog_by` FOREIGN KEY (`adminLogByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_adminlog_chat` FOREIGN KEY (`adminLogChatId`) REFERENCES `HBHub-Chats` (`chatId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_adminlog_user` FOREIGN KEY (`adminLogUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `HBHub-BaccaratInvites`

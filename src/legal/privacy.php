@@ -162,10 +162,19 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             page, like <code>/chat/</code>, not which chat or what you searched for). Site admins can also mark it
                             as done, which stores which admin did it and when.
                         </p>
+                        <h3>Admin log</h3>
+                        <p>
+                            Everything a site admin does in the admin panel is written to an admin log: which admin it was, when,
+                            what they did, and which account or chat it was about. That includes just opening your account or a
+                            chat you're in, since that shows your messages and personal info, and downloading your data. It also
+                            keeps a few details, like how many chips were added or which message was deleted, but never a
+                            password, a name or what a message said.
+                        </p>
                         <h3>What isn't stored</h3>
                         <p>
                             No email address, phone number, real address or date of birth. No analytics profile, no advertising
-                            ids, and no record of which pages you open, apart from the one page you send feedback from.
+                            ids, and no record of which pages you open, apart from the one page you send feedback from (and, for
+                            site admins, the admin log above).
                         </p>
                     </section>
 
@@ -196,7 +205,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 pictures, and all feedback. The admin panel only shows that a message has an attachment, but the
                                 site's owner can reach attachment files on the server. They use it to deal with abuse, bans and
                                 broken accounts, and to improve the site. Feedback is only ever seen by site admins, never by
-                                other users. They can never see your password or your two-factor secret.
+                                other users. They can never see your password or your two-factor secret. Everything they do
+                                there, also just looking at your account or a chat you're in, goes in the admin log, which only
+                                site admins can read and nobody can change or delete.
                             </li>
                         </ul>
                         <p class="legal-note">
@@ -281,6 +292,10 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             Feedback is kept until a site admin deletes it. If you delete your account, your feedback stays,
                             shown as from "Deleted User", like your messages.
+                        </p>
+                        <p>
+                            The admin log is kept for a year, and then deleted by itself (at the latest the night after). If you
+                            delete your account, what's in it about you stays until then, shown as about "Deleted User".
                         </p>
                         <p class="legal-note">
                             To <strong>completely delete</strong> all your data, messages included, or to <strong>download</strong>

@@ -1,10 +1,12 @@
 <?php
 // The admin panel's pages: the lists of users and chats (admin/index.php), the banned pictures (admin/banned.php), the
-// feedback (admin/feedback.php), and one user (admin/user.php) or chat (admin/chat.php). Only site admins (userRole 2) get in, everyone else gets a 404 so
-// it doesn't show they're there. What the pages share is here: who gets in, the side menus (the settings page's,
-// settings.css), and how dates, statuses, pictures, messages and chat names are shown.
+// feedback (admin/feedback.php), the admin log (admin/log.php), and one user (admin/user.php) or chat (admin/chat.php).
+// Only site admins (userRole 2) get in, everyone else gets a 404 so it doesn't show they're there. What the pages share
+// is here: who gets in, the side menus (the settings page's, settings.css), and how dates, statuses, pictures, messages
+// and chat names are shown. Everything they do is logged with adminLog.php.
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/chat.php';
+require_once __DIR__ . '/adminLog.php';
 
 const ADMIN_ROLE_ADMIN = 2; // userRole in HBHub-Users
 const ADMIN_CHAT_ROLES = [1 => 'Member', 2 => 'Group admin', 3 => 'Group owner']; // memberRole in HBHub-ChatMembers
@@ -34,20 +36,22 @@ function adminOnly(array $user): void
 }
 
 /**
- * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), Banned pictures (admin/banned.php)
- * and Feedback (admin/feedback.php), each with how many there are in all, or for Feedback how many are new.
- * $active is 'users', 'chats', 'banned' or 'feedback'.
+ * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), Banned pictures (admin/banned.php),
+ * Feedback (admin/feedback.php) and Admin log (admin/log.php), each with how many there are in all, or for Feedback
+ * how many are new. $active is 'users', 'chats', 'banned', 'feedback' or 'log'.
  */
 function adminListsMenuHtml(PDO $db, string $active): string
 {
     $totals = $db->query('SELECT (SELECT COUNT(*) FROM `HBHub-Users`) AS users, (SELECT COUNT(*) FROM `HBHub-Chats`) AS chats,
         (SELECT COUNT(*) FROM `HBHub-BannedAvatars`) AS banned,
-        (SELECT COUNT(*) FROM `HBHub-Feedback` WHERE feedbackDoneTimestamp IS NULL) AS feedback')->fetch();
+        (SELECT COUNT(*) FROM `HBHub-Feedback` WHERE feedbackDoneTimestamp IS NULL) AS feedback,
+        (SELECT COUNT(*) FROM `HBHub-AdminLog`) AS log')->fetch();
     $lists = [
         'users' => ['Users', '/admin/?list=users'],
         'chats' => ['Chats', '/admin/?list=chats'],
         'banned' => ['Banned pictures', '/admin/banned'],
         'feedback' => ['Feedback', '/admin/feedback'],
+        'log' => ['Admin log', '/admin/log'],
     ];
 
     $html = '<nav class="settings-menu" aria-label="Admin panel"><div class="settings-menu-links"><div class="settings-menu-group">'

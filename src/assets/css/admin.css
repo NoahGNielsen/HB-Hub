@@ -1,4 +1,4 @@
-/* Admin panel (admin/index.php, admin/banned.php, admin/feedback.php, admin/user.php and admin/chat.php). Built on the settings page's
+/* Admin panel (admin/index.php, admin/banned.php, admin/feedback.php, admin/log.php, admin/user.php and admin/chat.php). Built on the settings page's
    side menu, cards, fields and buttons (settings.css); this is what only the admin panel has: tables, lists and details. */
 
 .admin-link:focus-visible,

@@ -12,6 +12,7 @@
 // admin's userId, so the chip history shows who did it.
 // Banning puts their picture on the banned pictures list (admin/banned.php) too, unless that's unticked, and
 // unbanning takes it off again.
+// Opening the page, downloading the data and every change are logged in the admin log (assets/php/adminLog.php).
 // Site admins can't be changed here (yourself included), and a deleted account only has its messages left to delete.
 // The side menu (adminPageMenuHtml()) links to the cards in the order they're on the page: Information, then Manage
 // (profile, block, login), Activity (sessions, messages, chats, casino) and the Danger zone (ban, delete) last.
@@ -40,6 +41,7 @@ if (!is_string($targetId) || !ctype_digit($targetId) || strlen($targetId) > 10) 
     adminNotFound();
 }
 $targetId = (int) $targetId;
+$adminId = (int) $hbHubUser['userId'];
 
 $db = hbHubDatabase();
 [, $adminLockoutMinutes] = hbHubLoginLimits($siteConfig);
@@ -164,6 +166,7 @@ if (($_GET['export'] ?? null) === '1') {
         return $row;
     }, $statement->fetchAll());
 
+    adminLog($db, $adminId, 'user.export', $targetId);
     header('Content-Type: application/json; charset=utf-8');
     header('Content-Disposition: attachment; filename="hbhub-user-' . $targetId . '.json"');
     header('Cache-Control: no-store');
@@ -204,9 +207,11 @@ switch ($adminAction) {
         // Their picture goes on the banned list, so a new account can't use it either.
         $db->beginTransaction();
         hbHubBanUser($db, $targetId, HBHUB_BAN_REASON_ADMIN);
-        if (($_POST['banAvatar'] ?? null) === '1') {
-            hbHubBannedAvatarAddFromUser($db, $targetId, (int) $hbHubUser['userId']);
+        $banAvatar = ($_POST['banAvatar'] ?? null) === '1';
+        if ($banAvatar) {
+            hbHubBannedAvatarAddFromUser($db, $targetId, $adminId);
         }
+        adminLog($db, $adminId, 'user.ban', $targetId, null, ['avatar' => $banAvatar]);
         $db->commit();
         hbHubBannedAvatarFillFingerprints($db); // after the commit, so the ban doesn't wait on it
         adminRedirect($targetId, 'adminBanned', 'ban');
@@ -219,6 +224,7 @@ switch ($adminAction) {
             ->execute([ADMIN_STATUS_OFFLINE, $targetId, HBHUB_SESSION_STATUS_BANNED]);
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$targetId]);
         hbHubBannedAvatarRemoveFromUser($db, $targetId);
+        adminLog($db, $adminId, 'user.unban', $targetId);
         $db->commit();
         adminRedirect($targetId, 'adminUnbanned', 'ban');
 
@@ -229,6 +235,7 @@ switch ($adminAction) {
             try {
                 $db->prepare('UPDATE `HBHub-Users` SET userName = ?, userNameLower = ? WHERE userId = ?')
                     ->execute([$adminValues['name'], mb_strtolower($adminValues['name']), $targetId]);
+                adminLog($db, $adminId, 'user.name', $targetId);
                 adminRedirect($targetId, 'adminSaved', 'profile');
             } catch (PDOException $e) {
                 if (($e->errorInfo[1] ?? null) !== 1062) { // duplicate key - userNameLower is unique
@@ -254,12 +261,14 @@ switch ($adminAction) {
         } else {
             $db->prepare('UPDATE `HBHub-Users` SET userDescription = ? WHERE userId = ?')
                 ->execute([$description === '' ? null : $description, $targetId]);
+            adminLog($db, $adminId, 'user.bio', $targetId, null, ['removed' => $description === '']);
             adminRedirect($targetId, 'adminSaved', 'profile');
         }
         break;
 
     case 'removeAvatar':
         hbHubRemoveAvatar($db, $targetId);
+        adminLog($db, $adminId, 'user.avatar', $targetId);
         adminRedirect($targetId, 'adminSaved', 'profile');
 
     case 'block':
@@ -273,6 +282,7 @@ switch ($adminAction) {
             $settings['block'] = ['mode' => $blockMode, 'pendingMode' => null, 'pendingFrom' => null];
             return $settings;
         });
+        adminLog($db, $adminId, 'user.block', $targetId, null, ['mode' => $blockMode]);
         adminRedirect($targetId, 'adminSaved', 'block');
 
     case 'password':
@@ -291,6 +301,7 @@ switch ($adminAction) {
             ->execute([password_hash($newPassword, PASSWORD_DEFAULT), ADMIN_STATUS_LOCKED, ADMIN_STATUS_OFFLINE, $targetId]);
         hbHubLoginUnlockAll($db, $targetId);
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$targetId]);
+        adminLog($db, $adminId, 'user.password', $targetId); // never the password itself
         $db->commit();
         adminRedirect($targetId, 'adminPassword', 'security');
 
@@ -299,11 +310,13 @@ switch ($adminAction) {
         $db->beginTransaction();
         $db->prepare('UPDATE `HBHub-Users` SET userTotpSecret = NULL, userTotpLastStep = NULL WHERE userId = ?')->execute([$targetId]);
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ? AND sessionTotpPending = 1')->execute([$targetId]);
+        adminLog($db, $adminId, 'user.totp', $targetId);
         $db->commit();
         adminRedirect($targetId, 'adminTotpOff', 'security');
 
     case 'logoutAll':
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$targetId]);
+        adminLog($db, $adminId, 'user.logout', $targetId);
         adminRedirect($targetId, 'adminLoggedOut', 'security');
 
     case 'chips':
@@ -325,28 +338,35 @@ switch ($adminAction) {
             break;
         }
         $chipsAmount = $chipsDirection === 'add' ? (int) $chipsInput : -(int) $chipsInput;
-        if (hbHubCasinoChange($db, $targetId, $chipsAmount, HBHUB_CASINO_REASON_ADMIN, null, (int) $hbHubUser['userId']) === null) {
+        if (hbHubCasinoChange($db, $targetId, $chipsAmount, HBHUB_CASINO_REASON_ADMIN, null, $adminId) === null) {
             $adminErrors['chips'] = 'They only have ' . number_format(hbHubCasinoWallet($db, $targetId)['chips']) . ' chips, so that many can\'t be removed.';
             break;
         }
+        adminLog($db, $adminId, 'user.chips', $targetId, null, ['amount' => $chipsAmount]);
         adminRedirect($targetId, $chipsAmount > 0 ? 'adminChipsAdded' : 'adminChipsRemoved', 'casino');
 
     case 'deleteMessage':
         // Shows as deleted by a site admin in the chat. The page of messages it was on stays open.
         $messageId = $_POST['message'] ?? null;
         if (is_string($messageId) && ctype_digit($messageId) && strlen($messageId) <= 19) {
-            $db->prepare('UPDATE `HBHub-Messages` SET messageDeletedTimestamp = NOW(), messageDeletedByAdmin = ?
-                WHERE messageId = ? AND userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL')
-                ->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, (int) $messageId, $targetId]);
+            $statement = $db->prepare('UPDATE `HBHub-Messages` SET messageDeletedTimestamp = NOW(), messageDeletedByAdmin = ?
+                WHERE messageId = ? AND userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL');
+            $statement->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, (int) $messageId, $targetId]);
+            if ($statement->rowCount() > 0) {
+                $statement = $db->prepare('SELECT chatId FROM `HBHub-Messages` WHERE messageId = ?');
+                $statement->execute([(int) $messageId]);
+                adminLog($db, $adminId, 'message.delete', $targetId, (int) $statement->fetchColumn(), ['messageId' => (int) $messageId]);
+            }
             // Its attachment goes too (assets/php/chatAttachments.php), giving the user back its tickets
             hbHubChatAttachmentsRemove($db, 'm.messageId = ? AND m.userId = ? AND m.messageDeletedTimestamp IS NOT NULL', [(int) $messageId, $targetId]);
         }
         adminRedirect($targetId, 'adminMessageDeleted', 'messages', $adminMessagesBefore !== null ? '&before=' . $adminMessagesBefore : '');
 
     case 'deleteAllMessages':
-        $db->prepare('UPDATE `HBHub-Messages` SET messageDeletedTimestamp = NOW(), messageDeletedByAdmin = ?
-            WHERE userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL')
-            ->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, $targetId]);
+        $statement = $db->prepare('UPDATE `HBHub-Messages` SET messageDeletedTimestamp = NOW(), messageDeletedByAdmin = ?
+            WHERE userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL');
+        $statement->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, $targetId]);
+        adminLog($db, $adminId, 'user.messages', $targetId, null, ['count' => $statement->rowCount()]);
         hbHubChatAttachmentsRemove($db, 'a.userId = ?', [$targetId]); // every attachment was in one of them
         adminRedirect($targetId, 'adminMessagesDeleted', 'messages');
 
@@ -358,10 +378,12 @@ switch ($adminAction) {
             break;
         }
         hbHubDeleteAccount($db, $targetId);
+        adminLog($db, $adminId, 'user.delete', $targetId);
         adminRedirect($targetId, 'adminAccountDeleted', 'overview');
 }
 
-// What the page shows
+// What the page shows, which is logged: it has all their messages and personal info
+adminLogView($db, $adminId, 'user.view', $targetId, null);
 $adminSettings = hbHubUserSettings($target['userSettings']);
 $adminYear = is_scalar($adminSettings['year'] ?? null) ? (string) $adminSettings['year'] : '';
 $adminClass = is_scalar($adminSettings['class'] ?? null) ? (string) $adminSettings['class'] : '';
@@ -438,6 +460,7 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                     <a class="settings-btn settings-btn-small" href="<?= htmlspecialchars(hbHubProfileUrl($targetId)) ?>">View profile</a>
                                 <?php endif; ?>
                                 <a class="settings-btn settings-btn-small" href="/admin/user?user=<?= $targetId ?>&amp;export=1" download>Download all data (JSON)</a>
+                                <a class="settings-btn settings-btn-small" href="/admin/log?user=<?= $targetId ?>">Admin log</a>
                             </div>
                         </div>
                     </div>

@@ -6,6 +6,7 @@
 // assets/php/feedback.php): new ones first, then the ones marked as done, each newest first, ADMIN_FEEDBACK_SHOWN at a
 // time (?page=). Each shows who sent it, when, the page they were on and what they wrote.
 // Forms (action=, feedback=id): done marks it as done, new marks it as new again, delete removes it for good.
+// Each one is logged in the admin log (assets/php/adminLog.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/feedback.php';
@@ -23,10 +24,11 @@ $adminAction = $_SERVER['REQUEST_METHOD'] === 'POST' && is_string($_POST['action
 if ($adminAction !== null && isset(ADMIN_FEEDBACK_TOASTS[$adminAction])) {
     $feedbackId = $_POST['feedback'] ?? null;
     if (is_string($feedbackId) && ctype_digit($feedbackId) && strlen($feedbackId) <= 10) {
-        if ($adminAction === 'delete') {
-            hbHubFeedbackDelete($db, (int) $feedbackId);
-        } else {
-            hbHubFeedbackSetDone($db, (int) $feedbackId, $adminAction === 'done', (int) $hbHubUser['userId']);
+        $isChanged = $adminAction === 'delete'
+            ? hbHubFeedbackDelete($db, (int) $feedbackId)
+            : hbHubFeedbackSetDone($db, (int) $feedbackId, $adminAction === 'done', (int) $hbHubUser['userId']);
+        if ($isChanged) {
+            adminLog($db, (int) $hbHubUser['userId'], 'feedback.' . $adminAction, null, null, ['feedbackId' => (int) $feedbackId]);
         }
     }
 

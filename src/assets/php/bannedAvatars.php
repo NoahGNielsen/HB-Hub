@@ -308,11 +308,13 @@ function hbHubBannedAvatarRemoveFromUser(PDO $db, int $userId): void
 }
 
 /**
- * Takes one picture off the list, from the Banned pictures page.
+ * Takes one picture off the list, from the Banned pictures page. Returns whether it was on it.
  */
-function hbHubBannedAvatarRemove(PDO $db, int $bannedAvatarId): void
+function hbHubBannedAvatarRemove(PDO $db, int $bannedAvatarId): bool
 {
-    $db->prepare('DELETE FROM `HBHub-BannedAvatars` WHERE bannedAvatarId = ?')->execute([$bannedAvatarId]);
+    $statement = $db->prepare('DELETE FROM `HBHub-BannedAvatars` WHERE bannedAvatarId = ?');
+    $statement->execute([$bannedAvatarId]);
+    return $statement->rowCount() > 0;
 }
 
 /**

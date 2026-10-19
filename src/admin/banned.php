@@ -8,6 +8,7 @@
 // The pictures themselves come from admin/bannedPicture.php, loaded by admin.js a few at a time.
 // Forms (action=): add uploads a picture to the list, remove takes one off (picture=id). Banning an account on its
 // admin panel (admin/user.php) also puts its picture here, and unbanning takes it off again.
+// Adding and removing are logged in the admin log (assets/php/adminLog.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
@@ -58,6 +59,7 @@ if ($adminAction === 'add') {
     } elseif (!hbHubBannedAvatarAdd($db, $fileType, file_get_contents($file['tmp_name']), (int) $hbHubUser['userId'])) {
         $adminError = 'That picture is already on the list.';
     } else {
+        adminLog($db, (int) $hbHubUser['userId'], 'banned.add', null, null, ['pictureId' => (int) $db->lastInsertId()]);
         adminBannedRedirect('adminBannedPictureAdded', 'list');
     }
 }
@@ -65,7 +67,9 @@ if ($adminAction === 'add') {
 if ($adminAction === 'remove') {
     $pictureId = $_POST['picture'] ?? null;
     if (is_string($pictureId) && ctype_digit($pictureId) && strlen($pictureId) <= 10) {
-        hbHubBannedAvatarRemove($db, (int) $pictureId);
+        if (hbHubBannedAvatarRemove($db, (int) $pictureId)) {
+            adminLog($db, (int) $hbHubUser['userId'], 'banned.remove', null, null, ['pictureId' => (int) $pictureId]);
+        }
     }
     adminBannedRedirect('adminBannedPictureRemoved', 'list', $adminPage);
 }
