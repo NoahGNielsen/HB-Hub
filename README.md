@@ -1,7 +1,5 @@
 <div align="center">
-
-<img src="https://raw.githubusercontent.com/NoahGNielsen/HB-Hub/refs/heads/main/src/assets/images/icons/chat.png" alt="HB Hub" width="96">
-
+   
 # HB Hub
 
 **An unblocked messaging hub for my school, with a casino and games on the side.**
