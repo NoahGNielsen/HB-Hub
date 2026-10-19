@@ -14,12 +14,15 @@ $homeUser = $hbHubUser ?? null;
 $homeCasinoOpen = (int) ($siteConfig['casino_access'] ?? 2) === 1;
 $homeGamesOpen = (int) ($siteConfig['games_access'] ?? 2) === 1;
 
-// The same numbers as the README badges (assets/php/github/), left out when the database can't be reached
+// The same numbers as the README badges (assets/php/github/), left out when the database can't be reached. Members
+// leave out deleted (userStatus NULL) and banned accounts.
 $homeMembers = null;
 $homeMessages = null;
 try {
     $homeDb = hbHubDatabase();
-    $homeMembers = (int) $homeDb->query('SELECT COUNT(*) FROM `HBHub-Users`')->fetchColumn();
+    $homeStatement = $homeDb->prepare('SELECT COUNT(*) FROM `HBHub-Users` WHERE userStatus IS NOT NULL AND userStatus <> ?');
+    $homeStatement->execute([HBHUB_SESSION_STATUS_BANNED]);
+    $homeMembers = (int) $homeStatement->fetchColumn();
     $homeMessages = (int) $homeDb->query('SELECT COUNT(*) FROM `HBHub-Messages`
         WHERE messageEvent = 0 AND messageDeletedTimestamp IS NULL')->fetchColumn();
 } catch (PDOException $e) {
