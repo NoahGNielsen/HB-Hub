@@ -240,7 +240,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 </p>
                 <p>
                     <strong>Attachments</strong> are kept for 90 days, or for 3 days when one is bigger than 25 MB, and
-                    then deleted by themselves. They're deleted sooner when you delete them (in Your attachments in the
+                    then deleted by themselves, at the latest the night after. They're deleted sooner when you delete them (in Your attachments in the
                     chat, or by deleting their message), when an admin deletes their message, when their chat is deleted,
                     or when your account is deleted. After that only a note that the message had an attachment stays
                     with it (how big it was, its type and the dates), never the file or its name.

@@ -6,8 +6,8 @@
 // and each started HBHUB_CHAT_ATTACHMENT_TICKET_BYTES of a file (as it's stored, so after compressing) takes one.
 // A file keeps its tickets for 90 days, or only 3 when it takes more than 5 of them, and then it expires: the file
 // is deleted and the tickets are free again. Deleting the message (or just the attachment) frees them straight away.
-// Nothing runs on a timer on shared hosting, so expired files are swept up by hbHubChatAttachmentsSweep(), which
-// the chat page and the upload call. Once all attachments together take the attachments_max_total_bytes in the
+// Expired files are swept up by hbHubChatAttachmentsSweep(), which the chat page and the upload call, and which the
+// server's crontab runs every night until they're all gone (cron/nightly.php). Once all attachments together take the attachments_max_total_bytes in the
 // config (9 GB by default), nobody can send new ones until some expire or are deleted.
 //
 // Pictures are turned into JPEG XL in the browser before they're sent (chat.js, chatJxlWorker.js), unless the user
@@ -164,10 +164,11 @@ function hbHubChatAttachmentsRemove(PDO $db, string $condition, array $params, i
 
 /**
  * Deletes the files whose tickets have run out, a batch at a time, so a request is never held up for long.
+ * Returns how many were removed (the nightly cron/nightly.php sweeps again until it's 0).
  */
-function hbHubChatAttachmentsSweep(PDO $db): void
+function hbHubChatAttachmentsSweep(PDO $db): int
 {
-    hbHubChatAttachmentsRemove($db, 'a.attachmentId IN (SELECT attachmentId FROM (
+    return hbHubChatAttachmentsRemove($db, 'a.attachmentId IN (SELECT attachmentId FROM (
             SELECT attachmentId FROM `HBHub-ChatAttachments`
             WHERE attachmentStatus = ' . HBHUB_CHAT_ATTACHMENT_KEPT . ' AND attachmentExpiresTimestamp <= NOW()
             LIMIT 50

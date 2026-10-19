@@ -1,0 +1,2 @@
+# Scripts the server's crontab runs (nightly.php), never pages for a browser
+Require all denied
