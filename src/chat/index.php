@@ -1577,14 +1577,17 @@ if ($isPoll) {
                     </div>
                     <!-- No name, so it's never sent with the form itself: chat.js sends the file on its own -->
                     <input type="file" class="chat-visually-hidden" tabindex="-1" aria-hidden="true" data-attach-input>
-                    <!-- Attach: a small popup above the button (chat.js). File picks something to send, Your attachments opens
-                         the tickets popup. File is greyed out while new attachments can't be sent. Voice message is coming soon. -->
+                    <!-- Attach: a small popup above the button (chat.js). Your attachments (on top, with a line under it) opens
+                         the tickets popup, File picks something to send. File is greyed out while new attachments can't be sent.
+                         Voice message is coming soon. -->
                     <div class="chat-attach">
                         <button type="button" class="chat-icon-btn" aria-label="Attach" title="Attach"
                                 aria-haspopup="menu" aria-expanded="false" aria-controls="chat-attach-menu" data-attach-open>
                             <img src="/assets/images/icons/addFile.svg" alt="">
                         </button>
                         <div class="chat-menu chat-attach-menu" id="chat-attach-menu" role="menu" aria-label="Attach" hidden data-attach-menu>
+                            <button type="button" role="menuitem" data-attach-tickets>Your attachments</button>
+                            <hr class="chat-menu-divider">
                             <?php if ($chatAttachBlocked === 'storageFull'): ?>
                                 <button type="button" role="menuitem" aria-disabled="true" title="HB Hub's storage is full. Attachments can be sent again once some expire or are deleted.">
                                     File <span class="chat-menu-soon">Full</span>
@@ -1596,7 +1599,6 @@ if ($isPoll) {
                             <?php else: ?>
                                 <button type="button" role="menuitem" data-attach-file>File</button>
                             <?php endif; ?>
-                            <button type="button" role="menuitem" data-attach-tickets>Your attachments</button>
                             <button type="button" role="menuitem" aria-disabled="true" title="Coming soon">
                                 Voice message <span class="chat-menu-soon">Soon</span>
                             </button>
