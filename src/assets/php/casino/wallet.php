@@ -22,6 +22,7 @@ const HBHUB_CASINO_CHIPS_PER_KRONE = 100; // what 1 kr buys, when someone buys e
 // transactionReason of the casino's own changes. Games use their own (like "bet" and "payout"), with transactionGame set.
 const HBHUB_CASINO_REASON_START = 'start';
 const HBHUB_CASINO_REASON_DAILY = 'dailyBonus';
+const HBHUB_CASINO_REASON_ADMIN = 'admin'; // added or taken by a site admin (admin/user.php), transactionReference is the admin's userId
 const HBHUB_CASINO_NAME_PATTERN = '~^[A-Za-z][A-Za-z0-9]{0,31}$~'; // transactionReason and transactionGame (ascii, 32 long)
 
 /**

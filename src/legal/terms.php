@@ -114,7 +114,7 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                 <ul>
                     <li><strong>Chips are not money.</strong> They can't be swapped back into real money, gift cards or anything else, and nothing you win in the casino can be paid out.</li>
                     <li>Don't sell, buy or bet chips, accounts or casino results for real money or real things between each other, on HB Hub or anywhere else.</li>
-                    <li>Chip balances can be corrected or reset, for example after a bug, or if chips were got by cheating.</li>
+                    <li>Site admins can add chips to an account or take them away. That's how bought chips are added, and how balances are corrected or reset, for example after a bug, or if chips were got by cheating.</li>
                 </ul>
                 <h3>Buying extra chips</h3>
                 <p>
