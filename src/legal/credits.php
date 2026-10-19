@@ -48,7 +48,6 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
             <div class="home-hero-glow" aria-hidden="true"></div>
             <div class="home-hero-inner">
                 <div class="home-hero-text">
-                    <p class="home-eyebrow">Credits</p>
                     <h1 id="credits-title">Made at school,<br><span class="home-hero-accent">with a little help.</span></h1>
                     <p class="home-lead">
                         HB Hub is written by hand, but not everything on it is drawn by hand.
