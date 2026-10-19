@@ -21,7 +21,7 @@ const HBHUB_PRIVACY_COOKIES = [
 
 // What the site keeps in your browser's local storage. It never leaves your browser.
 const HBHUB_PRIVACY_LOCAL_STORAGE = [
-    'hbhub-chat-emoji-recent' => 'The smileys you used most recently in the chat.',
+    'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
     'hbHubNotifiedMessageId' => 'The last message you got a browser notification for, so you don\'t get it twice.',
     'hbHubChessSound, hbHubMatadorSound' => 'Whether you turned the game sounds on or off.',
     'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',
@@ -132,11 +132,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 picture doesn't keep the details a camera or phone saves in it, like where a photo was taken.
                                 Other files are zipped on the server to take less space.
                             </li>
+                            <li>
+                                Reactions you put on messages: which emoji, on which message, and when. Taking a reaction back
+                                deletes it.
+                            </li>
                             <li>The chats you're in, group names, icons and backgrounds, and nicknames you give people.</li>
                             <li>
                                 Deleting a message hides it for everyone in the chat, but the message itself is kept, so site
-                                admins can still look into reports of abuse. An attachment in it isn't kept: its file and name
-                                are deleted for good.
+                                admins can still look into reports of abuse. Its reactions are hidden with it, and kept the same
+                                way. An attachment in it isn't kept: its file and name are deleted for good.
                             </li>
                             <li>Notifications under the bell: what happened, who did it and whether you've seen it.</li>
                         </ul>
@@ -184,7 +188,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-see">4. Who can see what</h2>
                         <ul>
                             <li><strong>Everyone with an account</strong> can see your name, profile picture, bio, year, class, when you were last online, and your spot on the leaderboards.</li>
-                            <li><strong>People in a chat with you</strong> can see the messages in that chat, and open and download its attachments. Group owners and admins can delete messages (and with them their attachments) and remove members in their group.</li>
+                            <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments. Group owners and admins can delete messages (and with them their attachments) and remove members in their group.</li>
                             <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
                             <li>
                                 <strong>Site admins</strong> can see everything about an account in the admin panel, including
@@ -267,7 +271,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <p>
                             What stays is what other people need for their chats and games to make sense: the messages you sent
-                            (shown as from "Deleted User"), your game results and chip history, and any feedback you sent. None of it is connected to your
+                            and your reactions to messages (shown as from "Deleted User"), your game results and chip history, and any feedback you sent. None of it is connected to your
                             name any more.
                         </p>
                         <p>

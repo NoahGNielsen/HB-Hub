@@ -69,13 +69,13 @@ const HBHUB_CONDUCT_UPDATED = '19 October 2026';
 
                     <section id="chat" aria-labelledby="conduct-chat">
                         <h2 id="conduct-chat">2. In the chat</h2>
-                        <p>Not okay, in private chats, groups, game chats, GIFs and attachments alike:</p>
+                        <p>Not okay, in private chats, groups, game chats, GIFs, reactions and attachments alike:</p>
                         <ul>
                             <li>bullying, mocking or ganging up on someone, also "just for fun",</li>
                             <li>threats, or telling someone to hurt themselves,</li>
                             <li>hate or slurs against anyone, for example because of their race, religion, gender, sexuality or disability,</li>
                             <li>sexual content, gore, or anything meant to shock,</li>
-                            <li>spamming messages, GIFs, attachments or notifications, or flooding a chat so others can't talk,</li>
+                            <li>spamming messages, GIFs, reactions, attachments or notifications, or flooding a chat so others can't talk,</li>
                             <li>scams, fake giveaways, or links to harmful or dodgy sites - links to IP loggers (which find out where someone is the moment they click), URL shorteners that can hide where a link goes, crypto scam and phishing sites, and other known bad sites are blocked, and changing the link to sneak one through is just as bad,</li>
                             <li>sending viruses or other harmful files, or files that don't belong to you to share (like pirated films, games or music).</li>
                         </ul>

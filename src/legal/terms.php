@@ -100,7 +100,7 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                     <section id="content" aria-labelledby="terms-content">
                         <h2 id="terms-content">4. What you post</h2>
                         <p>
-                            What you write and upload (messages, attachments, profile pictures, group icons and backgrounds) is
+                            What you write and upload (messages, reactions, attachments, profile pictures, group icons and backgrounds) is
                             still yours. By posting it, you let HB Hub store it and show it to the people it's meant for, which is
                             needed for the site to work. That includes turning pictures you attach into JPEG XL (without losing
                             any detail, except JPEG photos, which are made smaller in a way that looks the same), and zipping

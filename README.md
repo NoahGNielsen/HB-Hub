@@ -33,7 +33,7 @@
 
 | | |
 |---|---|
-| **Direct messages & group chats** | Message requests (with Block, to stop someone sending more), replies, edits, deletions and unread counts |
+| **Direct messages & group chats** | Message requests (with Block, to stop someone sending more), replies, emoji reactions, edits, deletions and unread counts |
 | **Group roles** | Group owners and admins can rename the group, change its icon and background, and add, kick, mute and promote members |
 | **Chat notices** | Changes in a group (new name, new admin, someone joined) show up in the chat |
 | **Nicknames & profiles** | Give people nicknames, and open the profile of whoever you're DMing straight from the chat |

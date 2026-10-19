@@ -768,11 +768,20 @@ function chatBlockedLink(text) {
 // Arrow keys, Home and End move through the menu. Escape and Tab close it, back on the item it was opened on.
 // onOpen(item) hides the menu items that don't apply, and skip(event, item) can leave the browser's own menu be.
 // A smaller menu inside it (like Mute chat's) handles its own keys.
+// Items side by side in a row (data-menu-row, like the message menu's reactions) are one stop for the up and down keys,
+// and the left and right keys move along the row.
 function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false }) {
     let current = null; // the item the menu was opened on
 
     function menuItems() {
-        return [...menu.querySelectorAll(':scope > [role="menuitem"]')].filter((item) => !item.hidden);
+        return [...menu.querySelectorAll(':scope > [role="menuitem"], :scope > [data-menu-row]:not([hidden]) > [role="menuitem"]')]
+            .filter((item) => !item.hidden);
+    }
+
+    // The first item of the row a menu item is in, or the item itself when it isn't in one
+    function stopOf(menuItem, menuItemList) {
+        const row = menuItem?.closest('[data-menu-row]');
+        return row ? menuItemList.find((other) => row.contains(other)) : menuItem;
     }
 
     function open(item, x, y) {
@@ -815,11 +824,21 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
 
     menu.addEventListener('keydown', (event) => {
         const menuItemList = menuItems();
-        const index = menuItemList.indexOf(document.activeElement);
-        const moves = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: menuItemList.length - 1 };
+        const row = document.activeElement.closest('[data-menu-row]');
+        if (row && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+            event.preventDefault();
+            const rowItems = menuItemList.filter((menuItem) => row.contains(menuItem));
+            const index = rowItems.indexOf(document.activeElement) + (event.key === 'ArrowRight' ? 1 : -1);
+            rowItems[(index + rowItems.length) % rowItems.length].focus();
+            return;
+        }
+
+        const stops = menuItemList.filter((menuItem) => stopOf(menuItem, menuItemList) === menuItem);
+        const index = stops.indexOf(stopOf(document.activeElement, menuItemList));
+        const moves = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: stops.length - 1 };
         if (event.key in moves) {
             event.preventDefault();
-            menuItemList[(moves[event.key] + menuItemList.length) % menuItemList.length].focus();
+            stops[(moves[event.key] + stops.length) % stops.length].focus();
         } else if (event.key === 'Escape' || event.key === 'Tab') {
             event.preventDefault();
             close(true);
@@ -1171,9 +1190,11 @@ function chatShowBackground(element, background) {
     });
 })();
 
-// Message menu: right-click a message in the open chat (or use the menu key / Shift+F10 on it) to reply to it,
-// or mark the chat unread from it on. Your own messages can also be edited or deleted,
+// Message menu: right-click a message in the open chat (or use the menu key / Shift+F10 on it) to react to it, reply to
+// it, or mark the chat unread from it on. Your own messages can also be edited or deleted,
 // and group admins can delete anyone's (shown as deleted by a group admin).
+// Along the top are the emoji used most recently (chatQuickReactions()) and + for all of them, which the reactions part
+// below handles (chat:react and chat:react-more). An emoji the user already reacted with is lit up, and takes it back.
 // Site admins also get Admin panel on other people's messages, which opens the sender's admin panel (admin/user.php).
 // Links and selected text keep the browser's own menu, so they can still be copied.
 // The arrow keys, Home and End move between the messages, so the menu can be reached without a mouse.
@@ -1193,9 +1214,37 @@ function chatShowBackground(element, background) {
     const editSave = editDialog.querySelector('[data-edit-save]');
     const deleteDialog = document.querySelector('.chat-message-delete');
     const isGroupAdmin = messages.hasAttribute('data-group-admin'); // can delete other members' messages too
+    const isMuted = messages.hasAttribute('data-muted'); // can't react, like they can't send
     const siteAdminItems = menu.querySelectorAll('[data-menu-site-admin]'); // only on the page for site admins
+    const reactionRow = menu.querySelector('[data-menu-reactions].chat-menu-reactions');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let message = null; // the message the menu was opened on
+
+    // The reaction row, made again on every open, as the recently used emoji and the message's reactions change
+    function fillReactions(item) {
+        const mine = chatOwnReactions(item);
+        const reactItems = chatQuickReactions().map((emoji) => {
+            const reactItem = document.createElement('button');
+            reactItem.type = 'button';
+            reactItem.setAttribute('role', 'menuitem');
+            reactItem.dataset.react = emoji;
+            reactItem.textContent = emoji;
+            reactItem.classList.toggle('is-mine', mine.has(emoji));
+            reactItem.title = mine.has(emoji) ? `Take back your ${emoji}` : `React with ${emoji}`;
+            reactItem.setAttribute('aria-label', reactItem.title);
+            return reactItem;
+        });
+        const moreItem = document.createElement('button');
+        moreItem.type = 'button';
+        moreItem.className = 'chat-menu-reactions-more';
+        moreItem.setAttribute('role', 'menuitem');
+        moreItem.setAttribute('aria-haspopup', 'dialog');
+        moreItem.dataset.reactMore = '';
+        moreItem.textContent = '+';
+        moreItem.title = 'More reactions';
+        moreItem.setAttribute('aria-label', moreItem.title);
+        reactionRow.replaceChildren(...reactItems, moreItem);
+    }
 
     function messageItems() {
         return [...messages.querySelectorAll('[data-message-id]')];
@@ -1256,6 +1305,9 @@ function chatShowBackground(element, background) {
             const isDeleted = item.hasAttribute('data-message-deleted');
             const isOwn = item.hasAttribute('data-message-own') && !isDeleted;
             const canDelete = isOwn || (isGroupAdmin && !isDeleted);
+            const canReact = !isDeleted && !isMuted;
+            menu.querySelectorAll('[data-menu-reactions]').forEach((menuItem) => { menuItem.hidden = !canReact; });
+            if (canReact) fillReactions(item);
             menu.querySelector('[data-menu-action="reply"]').hidden = isDeleted;
             menu.querySelector('[data-menu-action="edit"]').hidden = !isOwn || !item.querySelector('[data-message-text]');
             menu.querySelectorAll('[data-menu-delete]').forEach((menuItem) => { menuItem.hidden = !canDelete; });
@@ -1341,6 +1393,20 @@ function chatShowBackground(element, background) {
     };
 
     menu.addEventListener('click', (event) => {
+        const reactItem = event.target.closest('[data-react]');
+        if (reactItem) {
+            messageMenu.close(true);
+            messages.dispatchEvent(new CustomEvent('chat:react', { detail: { item: message, emoji: reactItem.dataset.react } }));
+            return;
+        }
+        if (event.target.closest('[data-react-more]')) {
+            // The picker opens where the menu was, so it's measured before the menu is hidden
+            const { left, top } = menu.getBoundingClientRect();
+            messageMenu.close(false);
+            messages.dispatchEvent(new CustomEvent('chat:react-more', { detail: { item: message, x: left, y: top } }));
+            return;
+        }
+
         const button = event.target.closest('[data-menu-action]');
         if (!button) return;
         messageMenu.close(false);
@@ -2055,19 +2121,46 @@ function chatJxlWorker() {
     ticketsDialog.addEventListener('close', () => textarea.focus());
 })();
 
-// Emoji picker: the smiley left of GIF opens a popup above it with the emoji by category, and the recently used ones first.
-// Picking one puts it where the cursor is in the message box, and the popup stays open for more.
-// chat.css hides it on phones and tablets, which have emoji on their keyboard.
-(() => {
-    const button = document.querySelector('[data-emoji-open]');
-    const picker = document.querySelector('[data-emoji-picker]');
-    const textarea = document.querySelector('.chat-composer textarea');
-    if (!button || !picker || !textarea) return;
+// The emoji the user typed or reacted with most recently, newest first, kept in browser storage.
+// Storage can be blocked (private windows), so there are just none then, and nothing is remembered.
+const CHAT_EMOJI_RECENT_KEY = 'hbhub-chat-emoji-recent';
+const CHAT_EMOJI_RECENT_MAX = 16;
 
+function chatRecentEmoji() {
+    try {
+        const recent = JSON.parse(localStorage.getItem(CHAT_EMOJI_RECENT_KEY));
+        return Array.isArray(recent) ? recent.filter((emoji) => typeof emoji === 'string').slice(0, CHAT_EMOJI_RECENT_MAX) : [];
+    } catch {
+        return [];
+    }
+}
+
+function chatRememberEmoji(emoji) {
+    try {
+        const recent = [emoji, ...chatRecentEmoji().filter((other) => other !== emoji)].slice(0, CHAT_EMOJI_RECENT_MAX);
+        localStorage.setItem(CHAT_EMOJI_RECENT_KEY, JSON.stringify(recent));
+    } catch {
+        // not remembered, that's fine
+    }
+}
+
+// The emoji along the top of the message menu, to react with: the 6 used most recently, topped up with common ones
+function chatQuickReactions() {
+    return [...new Set([...chatRecentEmoji(), '👍', '❤️', '😂', '😮', '😢', '🔥'])].slice(0, 6);
+}
+
+// The emoji the user reacted with on a message (the lit up ones under it, chat/index.php)
+function chatOwnReactions(item) {
+    return new Set([...item.querySelectorAll('[data-reactions] .is-mine')].map((reaction) => reaction.dataset.reaction));
+}
+
+// An emoji picker (the message box's and Add reaction's): category tabs along the top, and below them the emoji by
+// category, with the recently used ones first. render() fills it in each time it opens, so the recent ones are up to date
+// (but don't move around while picking). onPick(emoji) is called when one is picked, and onClose(returnFocus) when
+// Escape or Tab should close it. The arrow keys, Home and End move through the emoji.
+function chatEmojiPicker(picker, { onPick, onClose }) {
     const tabs = picker.querySelector('[data-emoji-tabs]');
     const list = picker.querySelector('[data-emoji-list]');
-    const RECENT_KEY = 'hbhub-chat-emoji-recent';
-    const RECENT_MAX = 16;
 
     // [name, tab icon, the emoji with spaces between]
     const categories = [
@@ -2081,28 +2174,8 @@ function chatJxlWorker() {
         ['Symbols', '❤️', '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ☮️ ✝️ ☪️ 🕉️ ☸️ ✡️ 🔯 ☯️ ☦️ 🛐 ⛎ ♈ ♉ ♊ ♋ ♌ ♍ ♎ ♏ ♐ ♑ ♒ ♓ 🆔 ⚛️ ☢️ ☣️ 📴 📳 🆚 💮 🉐 🅰️ 🅱️ 🆎 🆑 🅾️ 🆘 ❌ ⭕ 🛑 ⛔ 📛 🚫 💯 💢 ♨️ 🚷 🚯 🚳 🚱 🔞 📵 🚭 ❗ ❕ ❓ ❔ ‼️ ⁉️ 🔅 🔆 ⚠️ 🚸 🔱 ⚜️ 🔰 ♻️ ✅ ❇️ ✳️ ❎ 🌐 💠 Ⓜ️ 🌀 💤 🏧 🚾 ♿ 🅿️ 🚹 🚺 🚼 🚻 🚮 🎦 📶 🆗 🆙 🆒 🆕 🆓 🔟 🔢 #️⃣ *️⃣ ▶️ ⏸️ ⏯️ ⏹️ ⏺️ ⏭️ ⏮️ ⏩ ⏪ 🔀 🔁 🔂 ◀️ 🔼 🔽 ⏫ ⏬ ➡️ ⬅️ ⬆️ ⬇️ ↗️ ↘️ ↙️ ↖️ ↕️ ↔️ ↪️ ↩️ ⤴️ ⤵️ 🔄 🔃 🎵 🎶 ➕ ➖ ➗ ✖️ ♾️ 💲 💱 ™️ ©️ ®️ 〰️ ➰ ➿ 🔚 🔙 🔛 🔝 🔜 ✔️ ☑️ 🔘 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🟤 🔺 🔻 🔸 🔹 🔶 🔷 🔳 🔲 ▪️ ▫️ ◾ ◽ ◼️ ◻️ 🟥 🟧 🟨 🟩 🟦 🟪 ⬛ ⬜ 🟫 🔈 🔇 🔉 🔊 🔔 🔕 📣 📢 💬 💭 🗯️ ♠️ ♣️ ♥️ ♦️ 🃏 🎴 🀄 🕐 🕑 🕒 🕓 🕔 🕕 🕖 🕗 🕘 🕙 🕚 🕛'],
     ];
 
-    // Browser storage can be blocked (private windows), so the recent ones are just left out then
-    function recentEmoji() {
-        try {
-            const recent = JSON.parse(localStorage.getItem(RECENT_KEY));
-            return Array.isArray(recent) ? recent.filter((emoji) => typeof emoji === 'string').slice(0, RECENT_MAX) : [];
-        } catch {
-            return [];
-        }
-    }
-
-    function rememberEmoji(emoji) {
-        try {
-            const recent = [emoji, ...recentEmoji().filter((other) => other !== emoji)].slice(0, RECENT_MAX);
-            localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
-        } catch {
-            // not remembered, that's fine
-        }
-    }
-
-    // Built on every open, so the recently used ones are up to date (but don't move around while picking)
     function render() {
-        const recent = recentEmoji();
+        const recent = chatRecentEmoji();
         const sections = (recent.length > 0 ? [['Recently used', '🕘', recent]] : [])
             .concat(categories.map(([name, icon, emoji]) => [name, icon, emoji.split(' ')]));
 
@@ -2169,30 +2242,11 @@ function chatJxlWorker() {
     }
     list.addEventListener('scroll', markCurrentTab, { passive: true });
 
-    // Puts the emoji where the cursor is (or over the selected text), as long as it fits within maxlength
-    function insert(emoji) {
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        if (textarea.maxLength > 0 && textarea.value.length - (end - start) + emoji.length > textarea.maxLength) return;
-        textarea.setRangeText(emoji, start, end, 'end');
-        textarea.dispatchEvent(new Event('input', { bubbles: true })); // so it grows like when typing
-        rememberEmoji(emoji);
-    }
-
-    function setOpen(isOpen, returnFocus) {
-        picker.hidden = !isOpen;
-        button.setAttribute('aria-expanded', String(isOpen));
-        if (isOpen) render();
-        else if (returnFocus) button.focus();
-    }
-
-    button.addEventListener('click', () => setOpen(picker.hidden, true));
-
     list.addEventListener('click', (event) => {
         const pick = event.target.closest('[data-emoji]');
         if (!pick) return;
         setActive(pick);
-        insert(pick.dataset.emoji);
+        onPick(pick.dataset.emoji);
     });
 
     // The emoji in the next row up or down: the closest one sideways in the nearest row that way
@@ -2213,11 +2267,11 @@ function chatJxlWorker() {
         return best;
     }
 
-    // Arrow keys move through the emoji, Home and End to the first and last. Escape closes, back on the button.
+    // Arrow keys move through the emoji, Home and End to the first and last. Escape closes, back where it was opened from.
     picker.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
             event.preventDefault();
-            setOpen(false, true);
+            onClose(true);
             return;
         }
 
@@ -2225,7 +2279,7 @@ function chatJxlWorker() {
         if (!pick) return;
         if (event.key === 'Tab' && !event.shiftKey) {
             event.preventDefault();
-            setOpen(false, true);
+            onClose(true);
             return;
         }
 
@@ -2245,8 +2299,145 @@ function chatJxlWorker() {
         if (next) setActive(next);
     });
 
+    return { render };
+}
+
+// Emoji picker: the smiley left of GIF opens a popup above it with the emoji by category, and the recently used ones first.
+// Picking one puts it where the cursor is in the message box, and the popup stays open for more.
+// chat.css hides it on phones and tablets, which have emoji on their keyboard.
+(() => {
+    const button = document.querySelector('[data-emoji-open]');
+    const picker = document.querySelector('[data-emoji-picker]');
+    const textarea = document.querySelector('.chat-composer textarea');
+    if (!button || !picker || !textarea) return;
+
+    const emojiPicker = chatEmojiPicker(picker, { onPick: insert, onClose: (returnFocus) => setOpen(false, returnFocus) });
+
+    // Puts the emoji where the cursor is (or over the selected text), as long as it fits within maxlength
+    function insert(emoji) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        if (textarea.maxLength > 0 && textarea.value.length - (end - start) + emoji.length > textarea.maxLength) return;
+        textarea.setRangeText(emoji, start, end, 'end');
+        textarea.dispatchEvent(new Event('input', { bubbles: true })); // so it grows like when typing
+        chatRememberEmoji(emoji);
+    }
+
+    function setOpen(isOpen, returnFocus) {
+        picker.hidden = !isOpen;
+        button.setAttribute('aria-expanded', String(isOpen));
+        if (isOpen) emojiPicker.render();
+        else if (returnFocus) button.focus();
+    }
+
+    button.addEventListener('click', () => setOpen(picker.hidden, true));
+
     document.addEventListener('pointerdown', (event) => {
         if (!picker.hidden && !picker.contains(event.target) && !button.contains(event.target)) setOpen(false, false);
+    });
+})();
+
+// Reactions: under a message is a button for each emoji someone reacted with and how many did (chat/index.php), lit up
+// when the user is one of them. Clicking one adds the user's own, or takes it back when it's lit up.
+// The message menu reacts too (chat:react), and its + (chat:react-more) opens the Add reaction picker where the menu was,
+// with every emoji. The ones used to react with are remembered with the recently used emoji, so they're first next time.
+// Each one is sent to the chat page (action=react), whose answer is the message's reactions as HTML, which go in in place
+// of the old ones. Polling brings everyone else's (chat:reactions, from the live updates part below).
+// A muted user can't react (data-muted), like they can't send messages - the server checks that too.
+(() => {
+    const messages = document.querySelector('[data-chat-messages]');
+    const picker = document.querySelector('[data-reaction-picker]');
+    if (!messages || !picker) return;
+
+    const isMuted = messages.hasAttribute('data-muted');
+    const sending = new Set(); // "messageId emoji" on its way, so a double click only sends it once
+    const reactedAt = new Map(); // messageId -> when a reaction to it was last sent (performance.now())
+    let pickerFor = null; // the message Add reaction is open for
+
+    // The message's reactions, from the server as HTML. Left alone when nothing changed, so the pointer and keyboard
+    // focus aren't disturbed, and otherwise focus stays on the same emoji.
+    function showReactions(item, html) {
+        const shown = item.querySelector('[data-reactions]');
+        if (!shown) return; // a deleted message
+        const fresh = shown.cloneNode(false);
+        fresh.innerHTML = html;
+        if (fresh.isEqualNode(shown)) return;
+        const focused = shown.contains(document.activeElement) ? document.activeElement.dataset.reaction : undefined;
+        shown.replaceWith(fresh);
+        if (focused !== undefined) [...fresh.children].find((reaction) => reaction.dataset.reaction === focused)?.focus();
+    }
+
+    async function react(item, emoji) {
+        const key = item.dataset.messageId + ' ' + emoji;
+        if (isMuted || sending.has(key)) return;
+        const isRemoving = chatOwnReactions(item).has(emoji);
+        if (!isRemoving) chatRememberEmoji(emoji);
+        sending.add(key);
+        reactedAt.set(item.dataset.messageId, performance.now());
+
+        try {
+            const body = new URLSearchParams({ action: 'react', chat: messages.dataset.chatMessages, message: item.dataset.messageId, emoji });
+            if (isRemoving) body.set('remove', '1');
+            const response = await fetch('/chat/', { method: 'POST', body, headers: { Accept: 'application/json' } });
+            const data = await response.json();
+            if (response.ok) showReactions(item, data.reactions);
+        } catch {
+            // Offline for a moment - nothing changed, so it can just be clicked again
+        } finally {
+            sending.delete(key);
+        }
+    }
+
+    messages.addEventListener('click', (event) => {
+        const reaction = event.target.closest('[data-reaction]');
+        const item = reaction?.closest('[data-message-id]');
+        if (item) react(item, reaction.dataset.reaction);
+    });
+
+    messages.addEventListener('chat:react', (event) => react(event.detail.item, event.detail.emoji));
+
+    // Add reaction: where the message menu was, but never past the edge of the window
+    const emojiPicker = chatEmojiPicker(picker, {
+        onPick(emoji) {
+            const item = pickerFor;
+            close(true);
+            react(item, emoji);
+        },
+        onClose: (returnFocus) => close(returnFocus),
+    });
+
+    function close(returnFocus) {
+        if (picker.hidden) return;
+        picker.hidden = true;
+        if (returnFocus) pickerFor.focus({ preventScroll: true }); // back on the message, as the menu is gone
+    }
+
+    messages.addEventListener('chat:react-more', (event) => {
+        const { item, x, y } = event.detail;
+        pickerFor = item;
+        picker.hidden = false;
+        // Its size is set in chat.css, so it's in place before render() scrolls to the first emoji
+        const { width, height } = picker.getBoundingClientRect();
+        picker.style.left = Math.max(8, Math.min(x, window.innerWidth - width - 8)) + 'px';
+        picker.style.top = Math.max(8, Math.min(y, window.innerHeight - height - 8)) + 'px';
+        emojiPicker.render();
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+        if (!picker.contains(event.target)) close(false);
+    });
+    window.addEventListener('resize', () => close(false));
+
+    // Polling: { reactions: messageId -> HTML for the ones that have any, from, to, sentAt }. Every message from `from` to
+    // `to` (the ones shown when the poll was sent) gets its own, and the ones not in it have none any more. A message the
+    // user reacted to after the poll was sent is left alone, as the answer may be from before that.
+    messages.addEventListener('chat:reactions', (event) => {
+        const { reactions, from, to, sentAt } = event.detail;
+        messages.querySelectorAll('[data-message-id]').forEach((item) => {
+            const id = Number(item.dataset.messageId);
+            if (id < from || id > to || (reactedAt.get(item.dataset.messageId) ?? -Infinity) > sentAt) return;
+            showReactions(item, reactions[id] ?? '');
+        });
     });
 })();
 
@@ -2463,7 +2654,8 @@ function chatJxlWorker() {
 
 // Live updates: every 2 seconds asks the chat page what's new (?poll=1), adds the open chat's new messages at the bottom
 // and swaps in the chat list when something in it changed (new messages, unread counts, new chats).
-// The open chat's background is kept up to date too, so a new one shows up without a reload.
+// The open chat's background is kept up to date too, so a new one shows up without a reload, and so are the reactions
+// on the messages already shown (?from= the oldest one), which change on old messages as well.
 // Message requests are swapped in the same way, and the requests button shows up when there are any.
 // The number of unread chats is passed on to the red number on Chat in the side bar.
 // Every poll also keeps the user's last seen time up to date, as session.php does that on every request.
@@ -2541,10 +2733,13 @@ function chatJxlWorker() {
 
     async function poll() {
         const params = new URLSearchParams({ poll: '1' });
+        const sentAt = performance.now();
         if (messages) {
             const items = shownItems();
             params.set('chat', messages.dataset.chatMessages);
             params.set('after', items.length > 0 ? itemId(items[items.length - 1]) : '0');
+            // The reactions on every message shown, from the oldest one on
+            if (items.length > 0) params.set('from', itemId(items[0]));
             if (document.visibilityState === 'visible' && !keepUnread) params.set('read', '1');
         }
 
@@ -2558,6 +2753,12 @@ function chatJxlWorker() {
                 return;
             }
             if (messages) {
+                // Before the new messages go in, which came with their reactions already
+                if (params.has('from')) {
+                    messages.dispatchEvent(new CustomEvent('chat:reactions', { // the reactions part above
+                        detail: { reactions: data.reactions ?? {}, from: Number(params.get('from')), to: Number(params.get('after')), sentAt },
+                    }));
+                }
                 addMessages(data.messages);
                 chatShowBackground(messages, data.background);
             }

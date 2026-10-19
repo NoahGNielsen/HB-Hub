@@ -1,5 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php'; // the emoji names may use, which reactions are made of too
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chat.php'; // the kinds of chat, roles, notices and the changes the admin panel makes too
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatAttachments.php'; // files and pictures in messages, and the tickets they take
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatFormat.php'; // **bold**, lists, code blocks and links in messages
@@ -19,6 +20,14 @@ const HBHUB_CHAT_MESSAGES_SHOWN = 20; // the newest ones when a chat opens, and 
 const HBHUB_CHAT_MESSAGES_UNREAD_MAX = 100; // with more unread than SHOWN, a chat opens with up to this many, so the "New messages" line is there
 const HBHUB_CHAT_MESSAGES_POLLED = 100; // new ones per poll, a later poll gets the rest
 const HBHUB_CHAT_MESSAGES_JUMP_MAX = 500; // per request when clicking a reply quote loads back to its message, chat.js asks again for the rest
+const HBHUB_CHAT_REACTIONS_MAX = 20; // different emoji under one message
+const HBHUB_CHAT_REACTION_LENGTH_MAX = 32; // reactionEmoji column, in characters (👨‍👩‍👧‍👦 is 7 joined together)
+const HBHUB_CHAT_REACTION_NAMES_SHOWN = 10; // who reacted, when pointing at a reaction, before it says "and 4 others"
+// What a reaction can be made of besides the emoji names may use (HBHUB_LATIN_TEXT_EMOJI): the few emoji outside those
+// ranges (© ® ‼ ⁉ ™ ℹ Ⓜ ▪ ▶ ◀ ◻ ⤴ ⤵ 〰 〽 ㊗ ㊙), and what changes or joins emoji (the emoji look, joiners, flag tags)
+const HBHUB_CHAT_REACTION_EXTRA_EMOJI = '\x{A9}\x{AE}\x{203C}\x{2049}\x{2122}\x{2139}\x{24C2}\x{25AA}-\x{25FE}\x{2934}\x{2935}'
+    . '\x{3030}\x{303D}\x{3297}\x{3299}';
+const HBHUB_CHAT_REACTION_JOINERS = '\x{FE0F}\x{200D}\x{E0020}-\x{E007F}'; // skin tones (1F3FB-1F3FF) are already among the emoji
 const HBHUB_CHAT_ICON_MAX_BYTES = 2 * 1024 * 1024;
 const HBHUB_CHAT_ICON_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']; // no SVG, it can carry scripts
 // Mute chat in the chat menu: minutes => label, 0 lasts until the user unmutes it
@@ -117,6 +126,7 @@ function chatMessage(PDO $db, int $chatId, mixed $messageId): ?array
  * Without $afterId it's the newest $limit ones (before $beforeId, if given, for scrolling up),
  * with only $afterId the first ones after that message (the ones polling hasn't shown yet),
  * and with both the newest ones between them (loading back to the message a reply quote answers).
+ * Each one has its reactions too (reactions, from chatReactions()).
  */
 function chatMessages(PDO $db, int $chatId, int $limit, ?int $afterId = null, ?int $beforeId = null): array
 {
@@ -143,7 +153,79 @@ function chatMessages(PDO $db, int $chatId, int $limit, ?int $afterId = null, ?i
             ORDER BY m.messageId ' . ($afterId !== null && $beforeId === null ? 'ASC' : 'DESC') . ' LIMIT ' . $limit . '
         ) shown ORDER BY messageId ASC');
     $statement->execute([$chatId, $afterId ?? 0, $beforeId ?? PHP_INT_MAX]);
-    return $statement->fetchAll();
+    $messages = $statement->fetchAll();
+    if ($messages === []) {
+        return [];
+    }
+
+    $reactions = chatReactions($db, $chatId, (int) $messages[0]['messageId'], (int) end($messages)['messageId']);
+    foreach ($messages as &$message) {
+        $message['reactions'] = $reactions[(int) $message['messageId']] ?? [];
+    }
+    unset($message);
+    return $messages;
+}
+
+/**
+ * The reactions under the chat's messages from $fromId to $toId (both included), leaving out deleted messages, as
+ * [messageId => [emoji => [userId => name]]]. The emoji are in the order they were first used on the message, and
+ * the people in the order they reacted. The names are the ones the chat shows, so a group's nicknames.
+ *
+ * @return array<int, array<string, array<int, string>>>
+ */
+function chatReactions(PDO $db, int $chatId, int $fromId, int $toId): array
+{
+    $statement = $db->prepare('SELECT r.messageId, r.reactionEmoji, r.userId, COALESCE(cm.memberNickname, u.userName) AS reactorName
+        FROM `HBHub-MessageReactions` r
+        JOIN `HBHub-Messages` m ON m.messageId = r.messageId
+        JOIN `HBHub-Users` u ON u.userId = r.userId
+        LEFT JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = r.userId
+        WHERE m.chatId = ? AND m.messageId BETWEEN ? AND ? AND m.messageDeletedTimestamp IS NULL
+        ORDER BY r.reactionId');
+    $statement->execute([$chatId, $fromId, $toId]);
+    $reactions = [];
+    foreach ($statement->fetchAll() as $reaction) {
+        $reactions[(int) $reaction['messageId']][$reaction['reactionEmoji']][(int) $reaction['userId']] = $reaction['reactorName'];
+    }
+    return $reactions;
+}
+
+/**
+ * Whether it's one emoji - one character as it's shown, like 👍, 👍🏽, ❤️, 1️⃣, 🇩🇰 or 👨‍👩‍👧 - so a reaction can't be text.
+ */
+function chatIsReactionEmoji(mixed $emoji): bool
+{
+    if (!is_string($emoji) || $emoji === '' || mb_strlen($emoji) > HBHUB_CHAT_REACTION_LENGTH_MAX) {
+        return false;
+    }
+    $emojiChars = HBHUB_LATIN_TEXT_EMOJI . HBHUB_CHAT_REACTION_EXTRA_EMOJI;
+    // \X is one character as it's shown, however many it's built from. Both are false on invalid UTF-8 too.
+    return preg_match('/^\X\z/u', $emoji) === 1
+        && preg_match('/^(?:[0-9#*]\x{FE0F}?\x{20E3}' // a keycap
+            . '|[' . $emojiChars . '][' . $emojiChars . HBHUB_CHAT_REACTION_JOINERS . ']*)\z/u', $emoji) === 1;
+}
+
+/**
+ * What chatSenderName() needs to know about the chat (its type, and in a DM the nickname the other person was given),
+ * for answers that come before the chat list, which works it out for $openChat.
+ *
+ * @param array{chatId: int, chatType: int} $chat from chatMembership()
+ * @return array{chatType: int, chatNickname: ?string}
+ */
+function chatNamesContext(PDO $db, int $userId, array $chat): array
+{
+    $nickname = null;
+    if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM) {
+        $statement = $db->prepare('SELECT c.chatSettings, om.userId AS dmUserId FROM `HBHub-Chats` c
+            LEFT JOIN `HBHub-ChatMembers` om ON om.chatId = c.chatId AND om.userId <> ?
+            WHERE c.chatId = ? LIMIT 1');
+        $statement->execute([$userId, $chat['chatId']]);
+        $dm = $statement->fetch();
+        if ($dm !== false && $dm['dmUserId'] !== null) {
+            $nickname = chatSettings($dm['chatSettings'])->chatNicknames->{$dm['dmUserId']} ?? null;
+        }
+    }
+    return ['chatType' => (int) $chat['chatType'], 'chatNickname' => is_string($nickname) ? $nickname : null];
 }
 
 /**
@@ -861,6 +943,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
     chatUploadAnswer(200, ['chatId' => (int) $chat['chatId']]);
 }
 
+// Reacting to a message (chat.js, with fetch - answered as JSON like an upload): puts an emoji under it, or with
+// remove=1 takes the user's own back. Like sending, not while muted, and not on a deleted message or a notice.
+// A message can have up to HBHUB_CHAT_REACTIONS_MAX different emoji, and each person can use each of them once.
+// The answer is the message's reactions as they are now, as HTML, which chat.js puts in place of the old ones.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'react') {
+    $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
+    $message = $chat !== null ? chatMessage($db, (int) $chat['chatId'], $_POST['message'] ?? null) : null;
+    $emoji = $_POST['emoji'] ?? null;
+    if ($message === null || $message['messageDeletedTimestamp'] !== null) {
+        chatUploadAnswer(404, ['error' => 'messageNotFound']);
+    }
+    if (chatIsMuted($chat)) {
+        chatUploadAnswer(403, ['error' => 'muted']);
+    }
+    if (!chatIsReactionEmoji($emoji)) {
+        chatUploadAnswer(400, ['error' => 'invalidEmoji']);
+    }
+
+    // The message is locked, so two people reacting at once can't take it past the limit
+    $messageId = (int) $message['messageId'];
+    $db->beginTransaction();
+    $db->prepare('SELECT messageId FROM `HBHub-Messages` WHERE messageId = ? FOR UPDATE')->execute([$messageId]);
+    if (($_POST['remove'] ?? null) === '1') {
+        $db->prepare('DELETE FROM `HBHub-MessageReactions` WHERE messageId = ? AND userId = ? AND reactionEmoji = ?')
+            ->execute([$messageId, $userId, $emoji]);
+    } else {
+        // A new emoji only while there's room for one more. One that's already there can always be added to.
+        $statement = $db->prepare('SELECT COUNT(DISTINCT reactionEmoji) AS emojiCount, COALESCE(SUM(reactionEmoji = ?), 0) AS emojiIsThere
+            FROM `HBHub-MessageReactions` WHERE messageId = ?');
+        $statement->execute([$emoji, $messageId]);
+        $counts = $statement->fetch();
+        if ((int) $counts['emojiIsThere'] === 0 && (int) $counts['emojiCount'] >= HBHUB_CHAT_REACTIONS_MAX) {
+            $db->rollBack();
+            chatUploadAnswer(409, ['error' => 'tooManyReactions']);
+        }
+        // IGNORE, so a double click only adds it once (messageUserEmoji is unique)
+        $db->prepare('INSERT IGNORE INTO `HBHub-MessageReactions` (messageId, userId, reactionEmoji) VALUES (?, ?, ?)')
+            ->execute([$messageId, $userId, $emoji]);
+    }
+    $db->commit();
+
+    $reactions = chatReactions($db, (int) $chat['chatId'], $messageId, $messageId)[$messageId] ?? [];
+    chatUploadAnswer(200, ['reactions' => chatReactionsHtml(chatNamesContext($db, $userId, $chat), $userId, $reactions)]);
+}
+
 // Sending a message, maybe as a reply to another one, then back to the chat so a refresh doesn't send it again.
 // A GIF picked in the GIF picker comes as "gif" (its Giphy id), with whatever was typed in the box sent just before it.
 // A message with a blacklisted link isn't sent at all, not even the GIF with it.
@@ -907,10 +1034,17 @@ $lastReadMessageId = $openMembership['lastReadMessageId'] ?? null;
 // chat.js polls the page every 2 seconds (?poll=1, answered as JSON at the end of this file), which also keeps the
 // user's last seen time up to date like any other request. It asks for the open chat's messages after ?after= (the newest
 // one it shows), and marks up to the newest one read only while the page is being looked at (?read=1).
+// The reactions on the messages it already shows, from ?from= (the oldest one) to ?after=, come along too, as they change
+// on old messages as well.
 $isPoll = ($_GET['poll'] ?? null) === '1';
 $pollMessages = [];
+$pollReactions = [];
 $pollAfter = is_string($_GET['after'] ?? null) && ctype_digit($_GET['after']) && strlen($_GET['after']) <= 19 ? (int) $_GET['after'] : null;
+$pollFrom = is_string($_GET['from'] ?? null) && ctype_digit($_GET['from']) && strlen($_GET['from']) <= 19 ? (int) $_GET['from'] : null;
 if ($isPoll && $openMembership !== null && $pollAfter !== null) {
+    if ($pollFrom !== null && $pollFrom <= $pollAfter) {
+        $pollReactions = chatReactions($db, (int) $openMembership['chatId'], $pollFrom, $pollAfter);
+    }
     $pollMessages = chatMessages($db, (int) $openMembership['chatId'], HBHUB_CHAT_MESSAGES_POLLED, $pollAfter);
     if (($_GET['read'] ?? null) === '1') {
         $readUpTo = $pollMessages !== [] ? (int) end($pollMessages)['messageId'] : $pollAfter;
@@ -1181,6 +1315,40 @@ function chatReplyHtml(array $openChat, int $userId, array $message): string
 }
 
 /**
+ * The reactions under a message, for the page, polling and reacting: a button for each emoji with how many reacted
+ * with it, which adds the user's own or takes it back (chat.js). The user's own are lit up (is-mine), and pointing at
+ * one says who reacted, by the names the chat shows. Nothing at all when there are none, so chat.css can hide the row.
+ *
+ * @param array<string, array<int, string>> $reactions emoji => [userId => name], one message's from chatReactions()
+ */
+function chatReactionsHtml(array $openChat, int $userId, array $reactions): string
+{
+    $html = '';
+    foreach ($reactions as $emoji => $reactors) {
+        $emoji = (string) $emoji;
+        $names = [];
+        foreach ($reactors as $reactorId => $name) {
+            $names[] = chatSenderName($openChat, $userId, (int) $reactorId, $name);
+        }
+        // "You, Alice and 3 others reacted with 👍"
+        $shown = array_slice($names, 0, HBHUB_CHAT_REACTION_NAMES_SHOWN);
+        $others = count($names) - count($shown);
+        if ($others > 0) {
+            $shown[] = $others . ($others === 1 ? ' other' : ' others');
+        }
+        $last = array_pop($shown);
+        $who = htmlspecialchars(($shown !== [] ? implode(', ', $shown) . ' and ' : '') . $last . ' reacted with ' . $emoji);
+
+        $isMine = isset($reactors[$userId]);
+        $html .= '<button type="button" class="chat-reaction' . ($isMine ? ' is-mine' : '') . '" data-reaction="' . htmlspecialchars($emoji)
+            . '" aria-pressed="' . ($isMine ? 'true' : 'false') . '" aria-label="' . $who . '" title="' . $who . '">'
+            . '<span class="chat-reaction-emoji">' . htmlspecialchars($emoji) . '</span>'
+            . '<span class="chat-reaction-count">' . count($reactors) . '</span></button>';
+    }
+    return $html;
+}
+
+/**
  * A chat in the list on the left, for the page and for polling.
  * Right-clicking it opens the chat menu (chat.js), the data-chat-* attributes say what it offers.
  */
@@ -1352,6 +1520,10 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
                                     <?php endif; ?>
                                 <?php endif; ?>
                             </div>
+                            <?php if (!$isDeleted): ?>
+                                <!-- Reactions (chatReactionsHtml): chat.js adds and takes them back, and polling keeps them up to date -->
+                                <div class="chat-reactions" role="group" aria-label="Reactions" data-reactions><?= chatReactionsHtml($openChat, $userId, $message['reactions']) ?></div>
+                            <?php endif; ?>
                             <span class="chat-message-meta">
                                 <time datetime="<?= htmlspecialchars($message['messageSentTimestamp']) ?>"><?= chatMessageTime($message['messageSentTimestamp']) ?></time>
                                 <?= $message['messageIsEdited'] && !$isDeleted ? ' &middot; edited' : '' ?>
@@ -1404,12 +1576,19 @@ if ($isPoll) {
     }
     $pollRequestsHtml = ob_get_clean();
 
+    // messageId => its reactions as HTML, only for messages that have any (chat.js empties the rest)
+    $pollReactionsHtml = [];
+    foreach ($openChat !== null ? $pollReactions : [] as $messageId => $reactions) {
+        $pollReactionsHtml[$messageId] = chatReactionsHtml($openChat, $userId, $reactions);
+    }
+
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
     echo json_encode([
         'openChat' => $openChat !== null,
         'background' => $openChat['chatBackground'] ?? null,
         'messages' => $pollMessagesHtml,
+        'reactions' => (object) $pollReactionsHtml, // an object even when empty
         'chatList' => $pollChatListHtml,
         'requests' => $pollRequestsHtml,
         'requestCount' => count($chatRequests),
@@ -1528,11 +1707,13 @@ if ($isPoll) {
                 <!-- The arrow keys move between messages (tabindex is set by chat.js), and new ones are added as they come
                      in (chat.js polls for them). data-chat-messages is the open chat's id,
                      data-group-admin lets the message menu offer deleting other members' messages.
+                     data-muted is there while the user is muted in the chat, so the message menu doesn't offer reactions.
                      data-background is the chat's background gradient, which chat.js sets (the content security policy
                      doesn't allow style attributes).
                      Only the newest messages are on the page at first: while there are older ones, the line at the top
                      (data-messages-older) is there, and scrolling up to it makes chat.js load them above it. -->
                 <ol class="chat-messages" data-chat-messages="<?= $openChat['chatId'] ?>"<?= $openChat['chatIsGroupAdmin'] ? ' data-group-admin' : '' ?><?=
+                    chatIsMuted($openMembership) ? ' data-muted' : '' ?><?=
                     $openChat['chatBackground'] !== null ? ' data-background="' . htmlspecialchars($openChat['chatBackground']) . '"' : '' ?>>
                     <?php if ($messagesHaveOlder): ?>
                         <li class="chat-messages-older" data-messages-older>Loading older messages...</li>
@@ -1694,9 +1875,12 @@ if ($isPoll) {
 
         <?php if ($openChat !== null): ?>
             <!-- Message menu (chat.js): opened by right-clicking a message in the open chat.
-                 Edit is only for your own messages, Delete for your own (and everyone's for group admins),
-                 and a deleted message can only be marked unread. -->
+                 Along the top, the emoji the user reacted or typed with most recently to react with (chat.js fills them in),
+                 and + for all of them. Edit is only for your own messages, Delete for your own (and everyone's for group
+                 admins), and a deleted message can only be marked unread. -->
             <div class="chat-menu" role="menu" aria-label="Message options" hidden data-message-menu>
+                <div class="chat-menu-reactions" role="group" aria-label="React" data-menu-row data-menu-reactions></div>
+                <hr class="chat-menu-divider" data-menu-reactions>
                 <button type="button" role="menuitem" data-menu-action="reply">Reply</button>
                 <button type="button" role="menuitem" data-menu-action="edit">Edit message</button>
                 <button type="button" role="menuitem" data-menu-action="unread">Mark unread</button>
@@ -1728,6 +1912,13 @@ if ($isPoll) {
                 <button type="button" role="menuitem" data-format="cut">Cut</button>
                 <button type="button" role="menuitem" data-format="copy">Copy</button>
                 <button type="button" role="menuitem" data-format="paste">Paste</button>
+            </div>
+
+            <!-- Add reaction (chat.js): + in the message menu opens it where the menu was, with every emoji like the emoji
+                 picker. Picking one reacts with it. Not inside .chat-emoji, so it's there on phones too. -->
+            <div class="chat-emoji-picker chat-reaction-picker" role="dialog" aria-label="Add reaction" hidden data-reaction-picker>
+                <div class="chat-emoji-tabs" role="toolbar" aria-label="Emoji categories" data-emoji-tabs></div>
+                <div class="chat-emoji-list" data-emoji-list></div>
             </div>
 
             <form action="/chat/" method="post" hidden data-message-unread>

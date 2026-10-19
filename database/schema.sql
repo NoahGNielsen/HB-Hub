@@ -553,6 +553,20 @@ CREATE TABLE `HBHub-MatadorSeats` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-MessageReactions`
+--
+
+CREATE TABLE `HBHub-MessageReactions` (
+  `reactionId` bigint UNSIGNED NOT NULL,
+  `messageId` bigint UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who reacted',
+  `reactionEmoji` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'One emoji, like 👍. Compared exactly (_bin), so 👍 and 👍🏽 are two different reactions',
+  `reactionTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Emoji reactions under chat messages (chat/index.php). Taking one back deletes its row';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Messages`
 --
 
@@ -911,6 +925,14 @@ ALTER TABLE `HBHub-MatadorSeats`
   ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
 
 --
+-- Indexes for table `HBHub-MessageReactions`
+--
+ALTER TABLE `HBHub-MessageReactions`
+  ADD PRIMARY KEY (`reactionId`),
+  ADD UNIQUE KEY `messageUserEmoji` (`messageId`,`userId`,`reactionEmoji`) COMMENT 'Each emoji once per person on a message',
+  ADD KEY `fk_messagereactions_user` (`userId`);
+
+--
 -- Indexes for table `HBHub-Messages`
 --
 ALTER TABLE `HBHub-Messages`
@@ -1064,6 +1086,12 @@ ALTER TABLE `HBHub-MatadorResults`
 --
 ALTER TABLE `HBHub-MatadorRooms`
   MODIFY `roomId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-MessageReactions`
+--
+ALTER TABLE `HBHub-MessageReactions`
+  MODIFY `reactionId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `HBHub-Messages`
@@ -1293,6 +1321,13 @@ ALTER TABLE `HBHub-MatadorSaves`
 ALTER TABLE `HBHub-MatadorSeats`
   ADD CONSTRAINT `fk_matadorseats_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-MatadorRooms` (`roomId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_matadorseats_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-MessageReactions`
+--
+ALTER TABLE `HBHub-MessageReactions`
+  ADD CONSTRAINT `fk_messagereactions_message` FOREIGN KEY (`messageId`) REFERENCES `HBHub-Messages` (`messageId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_messagereactions_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Messages`
