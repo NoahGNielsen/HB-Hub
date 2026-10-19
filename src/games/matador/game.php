@@ -48,107 +48,111 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="mt" data-matador data-room="<?= $room['roomId'] ?>" data-turn-seconds="<?= HBHUB_MATADOR_TURN_SECONDS ?>">
-        <div class="mt-header">
-            <div class="mt-heading">
-                <h1 class="mt-title"><?= htmlspecialchars($room['roomName']) ?></h1>
-                <p class="mt-meta">
-                    <?= $gameTypeName ?> &middot; <span data-mt-player-count>1</span>/<?= HBHUB_MATADOR_MAX_PLAYERS ?> players
-                    <span data-mt-round></span>
-                    <span data-mt-saved></span>
-                </p>
-            </div>
-            <div class="mt-header-actions">
-                <button type="button" class="mt-code" data-mt-code="<?= htmlspecialchars($room['roomCode']) ?>"
-                        aria-label="Join code <?= htmlspecialchars(implode(' ', str_split($room['roomCode']))) ?>, copy it">
-                    <span class="mt-code-label">Code</span>
-                    <strong class="mt-code-value"><?= htmlspecialchars($room['roomCode']) ?></strong>
-                    <span class="mt-code-copied" data-mt-code-copied aria-live="polite"></span>
-                </button>
-                <!-- Icons drawn in currentColor, so they follow the theme. matadorGame.js sets the sound button's
-                     aria-pressed, which picks the icon shown, and its title. -->
-                <button type="button" class="casino-btn mt-icon-btn" aria-label="Invite people" title="Invite people"
-                        aria-haspopup="dialog" data-mt-invite hidden>
-                    <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>
-                    </svg>
-                </button>
-                <button type="button" class="casino-btn mt-icon-btn" aria-label="Room settings" title="Room settings"
-                        aria-haspopup="dialog" data-mt-settings>
-                    <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/>
-                        <path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/>
-                    </svg>
-                </button>
-                <button type="button" class="casino-btn mt-icon-btn" aria-label="Sound" title="Sound" aria-pressed="true" data-mt-sound>
-                    <svg class="mt-icon mt-icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>
-                    </svg>
-                    <svg class="mt-icon mt-icon-sound-off" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>
-                    </svg>
-                </button>
-                <button type="button" class="casino-btn mt-icon-btn" aria-label="Save &amp; stop" title="Save &amp; stop" data-mt-save-stop hidden>
-                    <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>
-                    </svg>
-                </button>
-                <button type="button" class="casino-btn mt-icon-btn" aria-label="Leave game" title="Leave game" data-mt-leave>
-                    <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-
+        <!-- The board on the left; the game's name and buttons, then the panels and the rules, on the right -->
         <div class="mt-layout">
-            <section class="mt-board" aria-label="The board" data-mt-board>
-                <?php foreach (HBHUB_MATADOR_FIELDS as $field => $info):
-                    [$row, $column, $side] = gameFieldPlace($field);
-                    $isCorner = in_array($field, [0, 10, 20, 30], true);
-                    $classes = 'mt-field mt-r-' . $row . ' mt-c-' . $column . ' mt-side-' . $side . ' mt-type-' . $info['type']
-                        . (isset($info['group']) ? ' mt-group-' . $info['group'] : '') . ($isCorner ? ' is-corner' : '');
-                    $isProperty = isset($info['price']); ?>
-                    <button type="button" class="<?= $classes ?>" data-field="<?= $field ?>"
-                            data-name="<?= htmlspecialchars($info['name']) ?>" data-type="<?= $info['type'] ?>"
-                            <?php if ($isProperty): ?>
-                                data-group="<?= $info['group'] ?>" data-price="<?= $info['price'] ?>"
-                                <?php if ($info['type'] === 'street'): ?>data-house="<?= $info['house'] ?>" data-rent="<?= implode(',', $info['rent']) ?>"<?php endif; ?>
-                            <?php endif; ?>
-                            aria-label="<?= htmlspecialchars($info['name']) ?>">
-                        <?php if (isset($info['group']) && is_int($info['group'])): ?>
-                            <span class="mt-field-colour" aria-hidden="true"></span>
-                        <?php endif; ?>
-                        <span class="mt-field-name"><?= htmlspecialchars($info['name']) ?></span>
-                        <?php if ($isProperty): ?>
-                            <span class="mt-field-price"><?= number_format($info['price']) ?> kr</span>
-                        <?php elseif ($info['type'] === 'incomeTax'): ?>
-                            <span class="mt-field-price">10 % or <?= number_format(HBHUB_MATADOR_TAX_FIXED) ?> kr</span>
-                        <?php elseif ($info['type'] === 'extraTax'): ?>
-                            <span class="mt-field-price"><?= number_format($info['amount']) ?> kr</span>
-                        <?php endif; ?>
-                        <span class="mt-field-houses" data-mt-houses></span>
-                        <span class="mt-field-tokens" data-mt-tokens></span>
-                    </button>
-                <?php endforeach; ?>
-
-                <div class="mt-center">
-                    <div class="mt-brand" aria-hidden="true">
-                        <p class="mt-logo">MATADOR</p>
-                        <p class="mt-edition">HTX Edition</p>
-                    </div>
-                    <div class="mt-die" role="img" aria-label="The dice" data-mt-die>⚀</div>
-                    <p class="mt-status" role="status" data-mt-status>Loading the game…</p>
-                    <div class="mt-timer" data-mt-timer hidden>
-                        <span class="mt-timer-bar" aria-hidden="true"><span class="mt-timer-fill" data-mt-timer-fill></span></span>
-                        <span class="mt-timer-text" data-mt-timer-text></span>
-                    </div>
-                    <div class="mt-card" data-mt-card hidden>
-                        <p class="mt-card-title">Prøv lykken</p>
-                        <p class="mt-card-text" data-mt-card-text></p>
-                        <p class="mt-card-who" data-mt-card-who></p>
-                    </div>
+            <div class="mt-header">
+                <div class="mt-heading">
+                    <h1 class="mt-title"><?= htmlspecialchars($room['roomName']) ?></h1>
+                    <p class="mt-meta">
+                        <?= $gameTypeName ?> &middot; <span data-mt-player-count>1</span>/<?= HBHUB_MATADOR_MAX_PLAYERS ?> players
+                        <span data-mt-round></span>
+                        <span data-mt-saved></span>
+                    </p>
                 </div>
-            </section>
+                <div class="mt-header-actions">
+                    <button type="button" class="mt-code" data-mt-code="<?= htmlspecialchars($room['roomCode']) ?>"
+                            aria-label="Join code <?= htmlspecialchars(implode(' ', str_split($room['roomCode']))) ?>, copy it">
+                        <span class="mt-code-label">Code</span>
+                        <strong class="mt-code-value"><?= htmlspecialchars($room['roomCode']) ?></strong>
+                        <span class="mt-code-copied" data-mt-code-copied aria-live="polite"></span>
+                    </button>
+                    <!-- Icons drawn in currentColor, so they follow the theme. matadorGame.js sets the sound button's
+                         aria-pressed, which picks the icon shown, and its title. -->
+                    <button type="button" class="casino-btn mt-icon-btn" aria-label="Invite people" title="Invite people"
+                            aria-haspopup="dialog" data-mt-invite hidden>
+                        <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="casino-btn mt-icon-btn" aria-label="Room settings" title="Room settings"
+                            aria-haspopup="dialog" data-mt-settings>
+                        <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/>
+                            <path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="casino-btn mt-icon-btn" aria-label="Sound" title="Sound" aria-pressed="true" data-mt-sound>
+                        <svg class="mt-icon mt-icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>
+                        </svg>
+                        <svg class="mt-icon mt-icon-sound-off" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="casino-btn mt-icon-btn" aria-label="Save &amp; stop" title="Save &amp; stop" data-mt-save-stop hidden>
+                        <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="casino-btn mt-icon-btn" aria-label="Leave game" title="Leave game" data-mt-leave>
+                        <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- The wrapper is the board's size container, so the board's text and pieces scale with it (cqi in matador.css) -->
+            <div class="mt-board-wrap">
+                <section class="mt-board" aria-label="The board" data-mt-board>
+                    <?php foreach (HBHUB_MATADOR_FIELDS as $field => $info):
+                        [$row, $column, $side] = gameFieldPlace($field);
+                        $isCorner = in_array($field, [0, 10, 20, 30], true);
+                        $classes = 'mt-field mt-r-' . $row . ' mt-c-' . $column . ' mt-side-' . $side . ' mt-type-' . $info['type']
+                            . (isset($info['group']) ? ' mt-group-' . $info['group'] : '') . ($isCorner ? ' is-corner' : '');
+                        $isProperty = isset($info['price']); ?>
+                        <button type="button" class="<?= $classes ?>" data-field="<?= $field ?>"
+                                data-name="<?= htmlspecialchars($info['name']) ?>" data-type="<?= $info['type'] ?>"
+                                <?php if ($isProperty): ?>
+                                    data-group="<?= $info['group'] ?>" data-price="<?= $info['price'] ?>"
+                                    <?php if ($info['type'] === 'street'): ?>data-house="<?= $info['house'] ?>" data-rent="<?= implode(',', $info['rent']) ?>"<?php endif; ?>
+                                <?php endif; ?>
+                                aria-label="<?= htmlspecialchars($info['name']) ?>">
+                            <?php if (isset($info['group']) && is_int($info['group'])): ?>
+                                <span class="mt-field-colour" aria-hidden="true"></span>
+                            <?php endif; ?>
+                            <span class="mt-field-name"><?= htmlspecialchars($info['name']) ?></span>
+                            <?php if ($isProperty): ?>
+                                <span class="mt-field-price"><?= number_format($info['price']) ?> kr</span>
+                            <?php elseif ($info['type'] === 'incomeTax'): ?>
+                                <span class="mt-field-price">10 % or <?= number_format(HBHUB_MATADOR_TAX_FIXED) ?> kr</span>
+                            <?php elseif ($info['type'] === 'extraTax'): ?>
+                                <span class="mt-field-price"><?= number_format($info['amount']) ?> kr</span>
+                            <?php endif; ?>
+                            <span class="mt-field-houses" data-mt-houses></span>
+                            <span class="mt-field-tokens" data-mt-tokens></span>
+                        </button>
+                    <?php endforeach; ?>
+
+                    <div class="mt-center">
+                        <div class="mt-brand" aria-hidden="true">
+                            <p class="mt-logo">MATADOR</p>
+                            <p class="mt-edition">HTX Edition</p>
+                        </div>
+                        <div class="mt-die" role="img" aria-label="The dice" data-mt-die>⚀</div>
+                        <p class="mt-status" role="status" data-mt-status>Loading the game…</p>
+                        <div class="mt-timer" data-mt-timer hidden>
+                            <span class="mt-timer-bar" aria-hidden="true"><span class="mt-timer-fill" data-mt-timer-fill></span></span>
+                            <span class="mt-timer-text" data-mt-timer-text></span>
+                        </div>
+                        <div class="mt-card" data-mt-card hidden>
+                            <p class="mt-card-title">Prøv lykken</p>
+                            <p class="mt-card-text" data-mt-card-text></p>
+                            <p class="mt-card-who" data-mt-card-who></p>
+                        </div>
+                    </div>
+                </section>
+            </div>
 
             <aside class="mt-side">
                 <section class="mt-panel" aria-label="Your moves">
@@ -188,13 +192,13 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                     <h2 class="mt-panel-title" id="mt-log-title">What happened</h2>
                     <ol class="mt-log" data-mt-log></ol>
                 </section>
+
+                <details class="mt-panel mt-rules">
+                    <summary class="mt-panel-title">Rules</summary>
+                    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/matador/rules.php'; ?>
+                </details>
             </aside>
         </div>
-
-        <details class="mt-rules casino-card">
-            <summary>Rules</summary>
-            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/matador/rules.php'; ?>
-        </details>
 
         <dialog class="games-dialog mt-deed" aria-labelledby="mt-deed-title" data-mt-deed>
             <div class="mt-deed-head" data-mt-deed-head>

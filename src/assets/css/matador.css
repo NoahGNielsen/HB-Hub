@@ -20,7 +20,7 @@
   --mt-line: color-mix(in srgb, var(--text) 22%, transparent);
   --mt-field: var(--secondary);
   --mt-board: color-mix(in srgb, #2fa36b 12%, var(--background));
-  max-width: 1240px;
+  max-width: 1600px;
   margin: 24px auto;
   padding: 0 16px;
   box-sizing: border-box;
@@ -30,12 +30,13 @@
   display: none !important;
 }
 
+/* The game's name with the code and buttons under it, above the panels on the right */
 .mt-header {
-  margin-bottom: 16px;
+  grid-area: header;
+  min-width: 0;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .mt-heading {
@@ -57,10 +58,8 @@
 }
 
 .mt-header-actions {
-  flex: none;
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
   align-items: center;
   gap: 8px;
 }
@@ -138,20 +137,31 @@
   display: none;
 }
 
-/* The board on the left, the players and moves on the right */
+/* The board on the left, with everything else in a column on the right. The board's column grows up to as tall as the
+   window below the nav bar (less the page's margins), so the whole board is in view without zooming out - but never
+   so small that it can't be read. The second row takes any height the board has over the header, so the panels sit
+   right under it. */
 .mt-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, min(1100px, max(360px, calc(100dvh - var(--nav-top-h, 60px) - 48px)))) 340px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "board header"
+    "board side";
+  justify-content: center;
   align-items: start;
-  gap: 20px;
+  gap: 16px 24px;
 }
 
-/* At most as tall as the window below the nav bar and the game's header (about 170px), so the whole board is in view
-   without zooming out - but never so small that it can't be read */
+/* Text, pieces and the middle of the board are sized in cqi: hundredths of the board's width */
+.mt-board-wrap {
+  grid-area: board;
+  min-width: 0;
+  container-type: inline-size;
+}
+
 .mt-board {
   width: 100%;
-  max-width: min(700px, max(360px, calc(100dvh - var(--nav-top-h, 60px) - 170px)));
-  justify-self: center;
   aspect-ratio: 1;
   padding: 3px;
   box-sizing: border-box;
@@ -161,8 +171,8 @@
   gap: 2px;
   border-radius: 12px;
   background: var(--mt-line);
-  /* Follows the board's size: by the window's width, or its height when that's what limits the board */
-  font-size: clamp(0.45rem, min(0.73vw, calc((100dvh - var(--nav-top-h, 60px) - 170px) / 73)), 0.6rem);
+  /* Follows the board's size, so the names fit their fields however big it is */
+  font-size: clamp(0.45rem, calc(100cqi / 73), 0.95rem);
 }
 
 .mt-r-1 { grid-row: 1; }
@@ -351,8 +361,8 @@
 
 .mt-token {
   flex: none;
-  width: clamp(9px, 1.4vw, 15px);
-  height: clamp(9px, 1.4vw, 15px);
+  width: clamp(9px, 2.15cqi, 22px);
+  height: clamp(9px, 2.15cqi, 22px);
   box-sizing: border-box;
   border: 2px solid #fff;
   border-radius: 50%;
@@ -410,7 +420,7 @@
   border-radius: 8px;
   background: #c8102e;
   color: #fff;
-  font-size: clamp(1.1rem, 3.2vw, 2.4rem);
+  font-size: clamp(1.1rem, 5.5cqi, 3.6rem);
   font-weight: 900;
   letter-spacing: 0.08em;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
@@ -420,7 +430,7 @@
 .mt-edition {
   margin: 0;
   color: #ffd60a;
-  font-size: clamp(0.7rem, 1.4vw, 1.05rem);
+  font-size: clamp(0.7rem, 2.4cqi, 1.6rem);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -428,7 +438,7 @@
 }
 
 .mt-die {
-  font-size: clamp(2.4rem, 6vw, 4.2rem);
+  font-size: clamp(2.4rem, 9.6cqi, 6.4rem);
   line-height: 1;
 }
 
@@ -442,7 +452,7 @@
 
 .mt-status {
   margin: 0;
-  font-size: clamp(0.85rem, 1.6vw, 1.15rem);
+  font-size: clamp(0.85rem, 2.6cqi, 1.7rem);
   font-weight: 700;
 }
 
@@ -454,7 +464,7 @@
 }
 
 .mt-timer-bar {
-  width: clamp(70px, 16vw, 160px);
+  width: clamp(70px, 23cqi, 250px);
   height: 6px;
   overflow: hidden;
   border-radius: 3px;
@@ -470,7 +480,7 @@
 }
 
 .mt-timer-text {
-  font-size: clamp(0.7rem, 1.2vw, 0.85rem);
+  font-size: clamp(0.7rem, 1.95cqi, 1.25rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -490,14 +500,14 @@
 
 /* A Prøv lykken card looks like a paper card on the dark page */
 .mt-card {
-  max-width: 340px;
+  max-width: max(260px, 50cqi);
   padding: 10px 14px;
   border: 2px solid #d9b44a;
   border-radius: 10px;
   background: #fff8dc;
   color: #2b2410;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-  font-size: clamp(0.7rem, 1.2vw, 0.9rem);
+  font-size: clamp(0.7rem, 2.05cqi, 1.3rem);
 }
 
 .mt-card.is-new {
@@ -532,6 +542,8 @@
 
 /* The panels on the right */
 .mt-side {
+  grid-area: side;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -793,17 +805,17 @@
   font-weight: 600;
 }
 
-.mt-rules {
-  margin-top: 20px;
-}
-
+/* The rules: a small box under the panels, opened with a click */
 .mt-rules summary {
-  font-weight: 700;
+  margin: 0;
   cursor: pointer;
 }
 
 .mt-rules .casino-rule-list {
-  margin-top: 12px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  gap: 6px;
+  line-height: 1.45;
 }
 
 /* A property's card */
@@ -970,28 +982,25 @@
   }
 }
 
+/* One column: the name and buttons, then the board, then the panels */
 @media (max-width: 1000px) {
   .mt-layout {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, min(1100px, max(360px, calc(100dvh - var(--nav-top-h, 60px) - 48px))));
+    grid-template-rows: auto;
+    grid-template-areas:
+      "header"
+      "board"
+      "side";
   }
 
   .mt-board {
-    margin: 0 auto;
-    font-size: clamp(0.4rem, 1.5vw, 0.68rem);
+    font-size: clamp(0.4rem, calc(100cqi / 64), 0.95rem);
   }
 }
 
 @media (max-width: 600px) {
   .mt {
     margin: 12px auto;
-  }
-
-  .mt-header {
-    flex-direction: column;
-  }
-
-  .mt-header-actions {
-    justify-content: flex-start;
   }
 
   .mt-title {
