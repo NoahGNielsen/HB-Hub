@@ -147,8 +147,9 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                 </ul>
                 <p>
                     Using a banned profile picture is against the rules too: an account that uploads one, or signs up with
-                    one, is banned straight away, without an admin having to do anything. Banned pictures are the
-                    pictures of banned accounts, and other pictures admins have added.
+                    one, is banned straight away, without an admin having to do anything. That includes edited copies that
+                    look almost the same, like a resized or cropped one. Banned pictures are the pictures of banned
+                    accounts, and other pictures admins have added.
                 </p>
                 <p>
                     Admins decide what breaks the rules, also for things these terms don't list. If you think a decision

@@ -88,7 +88,7 @@ Played with virtual chips only. No real money is involved anywhere.
 | | |
 |---|---|
 | **Admin panel** | Search every user or chat by name or id (or right-click one in the chat). Users: info, logins and messages, and ban, edit, reset or delete them. Chats: members and messages, and rename, remove the icon, change the background, kick members or delete it |
-| **Banned pictures** | Banning someone bans their profile picture too: any account that uploads the same picture, or signs up with it, is banned straight away. Add, view and remove pictures on the admin panel's Banned pictures tab |
+| **Banned pictures** | Banning someone bans their profile picture too: any account that uploads the same picture (or a resized or slightly cropped copy), or signs up with it, is banned straight away. Add, view and remove pictures on the admin panel's Banned pictures tab |
 | **Maintenance mode** | Turn off logins and show a message, straight from the site config |
 | **Section switches** | Open the Casino and the Games section to everyone, only to admins, or to nobody |
 

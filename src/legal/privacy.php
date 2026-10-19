@@ -89,9 +89,12 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 <p>
                     When an account is banned, a copy of its profile picture is usually put on a list of banned pictures,
                     together with which account it came from and which admin banned it. Admins can also add pictures to
-                    the list themselves. When you upload a profile picture, or sign up with one, a fingerprint of the file
-                    (its SHA-256 hash) is compared with the list. If it's the exact same file, the account is banned
-                    straight away and keeps the picture, so admins can see why. Fingerprints of other pictures aren't stored.
+                    the list themselves. When you upload a profile picture, or sign up with one, it's compared with the
+                    list in two ways: a fingerprint of the file (its SHA-256 hash), and a fingerprint of what the picture
+                    looks like, made from a tiny greyscale copy of it, so a resized or slightly cropped copy is found too.
+                    If it's the same file, or looks almost the same as a banned picture, the account is banned straight
+                    away and keeps the picture, so admins can see why. The fingerprints of banned pictures are stored with
+                    them; the fingerprints of other pictures are only used for the comparison and never stored.
                 </p>
                 <h3>IP addresses</h3>
                 <p>

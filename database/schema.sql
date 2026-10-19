@@ -140,6 +140,7 @@ CREATE TABLE `HBHub-BannedAvatars` (
   `bannedAvatarHash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'SHA-256 of the file, as lowercase hex',
   `bannedAvatarType` varchar(25) NOT NULL,
   `bannedAvatarFile` longblob NOT NULL COMMENT 'A copy, so it can still be seen after the account changes or loses its picture',
+  `bannedAvatarFingerprints` blob DEFAULT NULL COMMENT '32-byte difference hashes of the picture and crops of it, for similar copies. NULL until worked out, empty when it can''t be read or is too plain',
   `bannedAvatarFromUserId` int UNSIGNED DEFAULT NULL COMMENT 'The banned account it was the picture of, NULL when an admin uploaded it',
   `bannedAvatarAddedByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The site admin who banned the account or uploaded the picture',
   `bannedAvatarMatchCount` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'How many uploads it has caught (and banned)',
