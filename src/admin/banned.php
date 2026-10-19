@@ -5,7 +5,7 @@
 // The list of profile pictures that get an account banned straight away when it uploads one (assets/php/bannedAvatars.php).
 // It shows every picture on it, newest first, ADMIN_BANNED_SHOWN at a time (?page=): the banned account it came from,
 // or that an admin uploaded it, when and by whom it was added, and how many uploads it has caught.
-// The pictures themselves come from admin/bannedPicture.php.
+// The pictures themselves come from admin/bannedPicture.php, loaded by admin.js a few at a time.
 // Forms (action=): add uploads a picture to the list, remove takes one off (picture=id). Banning an account on its
 // admin panel (admin/user.php) also puts its picture here, and unbanning takes it off again.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -151,7 +151,9 @@ $adminPictures = $db->query('SELECT b.bannedAvatarId, b.bannedAvatarFromUserId, 
                         ?>
                         <li class="admin-banned-item">
                             <a class="admin-banned-image" href="<?= $pictureSrc ?>" target="_blank" rel="noopener">
-                                <img src="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>" loading="lazy">
+                                <!-- admin.js loads it, a few at a time (see there) -->
+                                <img data-banned-picture="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>">
+                                <noscript><img src="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>" loading="lazy"></noscript>
                             </a>
                             <dl class="admin-banned-details">
                                 <div>
