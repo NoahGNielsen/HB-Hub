@@ -15,7 +15,7 @@ $homeCasinoOpen = (int) ($siteConfig['casino_access'] ?? 2) === 1;
 $homeGamesOpen = (int) ($siteConfig['games_access'] ?? 2) === 1;
 
 // The same numbers as the README badges (assets/php/github/), left out when the database can't be reached. Members
-// leave out deleted (userStatus NULL) and banned accounts.
+// leave out deleted (userStatus NULL) and banned accounts; messages count deleted ones too, since they were still sent.
 $homeMembers = null;
 $homeMessages = null;
 try {
@@ -23,8 +23,7 @@ try {
     $homeStatement = $homeDb->prepare('SELECT COUNT(*) FROM `HBHub-Users` WHERE userStatus IS NOT NULL AND userStatus <> ?');
     $homeStatement->execute([HBHUB_SESSION_STATUS_BANNED]);
     $homeMembers = (int) $homeStatement->fetchColumn();
-    $homeMessages = (int) $homeDb->query('SELECT COUNT(*) FROM `HBHub-Messages`
-        WHERE messageEvent = 0 AND messageDeletedTimestamp IS NULL')->fetchColumn();
+    $homeMessages = (int) $homeDb->query('SELECT COUNT(*) FROM `HBHub-Messages` WHERE messageEvent = 0')->fetchColumn();
 } catch (PDOException $e) {
     error_log('Frontpage: could not count members and messages: ' . $e->getMessage());
 }
