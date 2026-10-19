@@ -126,7 +126,7 @@ const HBHUB_CONDUCT_UPDATED = '19 October 2026';
                     <li>Don't stall a game on purpose, or leave a table just because you're losing. Others are waiting on you.</li>
                     <li>No cheating, scripts or teaming up against one player. Found a bug? Report it, don't use it.</li>
                     <li>Don't pressure anyone into playing, betting, or giving you their chips.</li>
-                    <li>Chips are just for fun. Never trade them, or game results, for real money or real things.</li>
+                    <li>Chips are just for fun. Never trade them, or game results, with each other for real money or real things. The only way to buy chips is from the owner (see the <a href="/legal/terms#chips">terms</a>).</li>
                 </ul>
                 <p class="legal-note">
                     If the casino or games are taking up more of your time than you'd like, especially in class, you can

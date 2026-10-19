@@ -117,9 +117,23 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                     start, and <?= number_format(HBHUB_CASINO_DAILY_CHIPS) ?> more every day for free.
                 </p>
                 <ul>
-                    <li><strong>Chips are not money.</strong> They have no value, can't be bought, and can't be swapped for real money, gift cards or anything else.</li>
-                    <li>Don't sell, buy or bet chips, accounts or casino results for real money or real things, on HB Hub or anywhere else.</li>
-                    <li>Chip balances can be corrected or reset, for example after a bug, or if chips were got by cheating.</li>
+                    <li><strong>Chips are not money.</strong> They can't be swapped back into real money, gift cards or anything else, and nothing you win in the casino can be paid out.</li>
+                    <li>Don't sell, buy or bet chips, accounts or casino results for real money or real things between each other, on HB Hub or anywhere else.</li>
+                    <li>Site admins can add chips to an account or take them away. That's how bought chips are added, and how balances are corrected or reset, for example after a bug, or if chips were got by cheating.</li>
+                </ul>
+                <h3>Buying extra chips</h3>
+                <p>
+                    Chips are normally free. If you want more, you can buy them from the owner of HB Hub at
+                    <?= number_format(HBHUB_CASINO_CHIPS_PER_KRONE) ?> chips for 1 kr, as described on the
+                    <a href="/gambling/buy-chips">Buy chips</a> page. This is the only way to buy chips.
+                </p>
+                <ul>
+                    <li>Bought chips are the same as any other chips. They can be lost in the games, and everything above applies to them too.</li>
+                    <li>
+                        <strong>No refunds, for any reason.</strong> If you're banned, delete your account or block
+                        the casino in your settings, you will not get your money back. The same goes for bought chips
+                        that are lost, corrected or reset.
+                    </li>
                 </ul>
                 <p class="legal-note">
                     If you'd rather not see the casino or games, especially during school hours, you can block them for

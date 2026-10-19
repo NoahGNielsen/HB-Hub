@@ -7,7 +7,9 @@
 // Shows what there is about the user: their account, sessions (their logins), messages in every chat, chats and casino
 // chips, and ?export=1 downloads all of it as JSON. The actions are one form per card, like the settings page:
 // ban or unban, change the name or bio, remove the picture, set the gambling block (straight away, without the wait),
-// reset the password, remove two-factor login, log out every session, delete messages and delete the account.
+// reset the password, remove two-factor login, log out every session, add or remove chips, delete messages and delete
+// the account. Chips change through hbHubCasinoChange() like in the games, logged with the reason "admin" and the
+// admin's userId, so the chip history shows who did it.
 // Banning puts their picture on the banned pictures list (admin/banned.php) too, unless that's unticked, and
 // unbanning takes it off again.
 // Site admins can't be changed here (yourself included), and a deleted account only has its messages left to delete.
@@ -20,11 +22,13 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
 const ADMIN_STATUS_OFFLINE = 2; // userStatus in HBHub-Users (HBHUB_SESSION_STATUS_BANNED is 4)
 const ADMIN_STATUS_LOCKED = 3;
 const ADMIN_TRANSACTIONS_SHOWN = 25;
+const ADMIN_CHIPS_MAX = 1_000_000_000; // the most chips that can be added or removed at once, to catch a typo with too many zeros
 
 adminOnly($hbHubUser);
 
@@ -115,13 +119,16 @@ function adminWallet(PDO $db, int $userId): ?array
 
 /**
  * Every change to the user's chips, newest first, at most $limit of them when it's given.
+ * The ones a site admin made have the admin's name as adminName (null for every other change).
  */
 function adminTransactions(PDO $db, int $userId, ?int $limit = null): array
 {
-    $statement = $db->prepare('SELECT transactionAmount, transactionBalance, transactionReason, transactionGame, transactionReference,
-            transactionTimestamp
-        FROM `HBHub-CasinoTransactions` WHERE userId = ? ORDER BY transactionId DESC' . ($limit !== null ? ' LIMIT ' . $limit : ''));
-    $statement->execute([$userId]);
+    $statement = $db->prepare('SELECT t.transactionAmount, t.transactionBalance, t.transactionReason, t.transactionGame, t.transactionReference,
+            t.transactionTimestamp, a.userName AS adminName
+        FROM `HBHub-CasinoTransactions` t
+        LEFT JOIN `HBHub-Users` a ON t.transactionReason = ? AND t.transactionGame IS NULL AND a.userId = t.transactionReference
+        WHERE t.userId = ? ORDER BY t.transactionId DESC' . ($limit !== null ? ' LIMIT ' . $limit : ''));
+    $statement->execute([HBHUB_CASINO_REASON_ADMIN, $userId]);
     return $statement->fetchAll();
 }
 
@@ -178,6 +185,7 @@ $adminValues = [
     'name' => $target['userName'],
     'description' => $target['userDescription'] ?? '',
     'newPassword' => '',
+    'chips' => '',
 ];
 $adminErrors = []; // card => message
 
@@ -292,6 +300,31 @@ switch ($adminAction) {
     case 'logoutAll':
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$targetId]);
         adminRedirect($targetId, 'adminLoggedOut', 'security');
+
+    case 'chips':
+        // Add chips (like ones they've bought) or Remove chips (like ones got from a bug). Someone who's never opened
+        // the casino gets their wallet with the starting chips first, like when they open it themselves.
+        // Thousands can be split up like 10.000, 10,000 or 10 000, but 1.5 isn't read as 15
+        $chipsInput = is_string($_POST['chips'] ?? null) ? trim($_POST['chips']) : '';
+        $adminValues['chips'] = $chipsInput;
+        if (preg_match('~^\d{1,3}([., ]\d{3})+$~', $chipsInput) === 1) {
+            $chipsInput = str_replace(['.', ',', ' '], '', $chipsInput);
+        }
+        $chipsDirection = $_POST['direction'] ?? null;
+        if (!in_array($chipsDirection, ['add', 'remove'], true)) {
+            $adminErrors['chips'] = 'Please choose Add chips or Remove chips.';
+            break;
+        }
+        if (!ctype_digit($chipsInput) || strlen($chipsInput) > 10 || (int) $chipsInput < 1 || (int) $chipsInput > ADMIN_CHIPS_MAX) {
+            $adminErrors['chips'] = 'Please type a whole number of chips from 1 to ' . number_format(ADMIN_CHIPS_MAX) . '.';
+            break;
+        }
+        $chipsAmount = $chipsDirection === 'add' ? (int) $chipsInput : -(int) $chipsInput;
+        if (hbHubCasinoChange($db, $targetId, $chipsAmount, HBHUB_CASINO_REASON_ADMIN, null, (int) $hbHubUser['userId']) === null) {
+            $adminErrors['chips'] = 'They only have ' . number_format(hbHubCasinoWallet($db, $targetId)['chips']) . ' chips, so that many can\'t be removed.';
+            break;
+        }
+        adminRedirect($targetId, $chipsAmount > 0 ? 'adminChipsAdded' : 'adminChipsRemoved', 'casino');
 
     case 'deleteMessage':
         // Shows as deleted by a site admin in the chat. The page of messages it was on stays open.
@@ -757,6 +790,29 @@ function adminIps(?string $ipv4, ?string $ipv6): string
         <!-- Casino chips -->
         <section class="settings-card" id="casino" aria-labelledby="admin-casino-heading">
             <h2 id="admin-casino-heading">Casino</h2>
+            <?php if ($adminCanChange): ?>
+                <form action="/admin/user?user=<?= $targetId ?>#casino" method="post" data-confirm="Change <?= htmlspecialchars($target['userName']) ?>'s chips?">
+                    <input type="hidden" name="action" value="chips">
+                    <div class="settings-field">
+                        <label class="settings-label" for="admin-chips">Add or remove chips</label>
+                        <input type="text" id="admin-chips" name="chips" inputmode="numeric" maxlength="13" required autocomplete="off"
+                               value="<?= htmlspecialchars($adminValues['chips']) ?>" aria-describedby="admin-chips-hint">
+                        <p class="settings-hint" id="admin-chips-hint">
+                            For chips they've bought, or to take away chips got from a bug or cheating. Up to <?= number_format(ADMIN_CHIPS_MAX) ?> at once.
+                            It shows in their chip history as changed by you.<?= $adminWallet === null
+                                ? ' They\'ve never opened the casino, so they get the ' . number_format(HBHUB_CASINO_START_CHIPS) . ' starting chips first.' : '' ?>
+                        </p>
+                        <?php if (isset($adminErrors['chips'])): ?>
+                            <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['chips']) ?></p>
+                        <?php endif; ?>
+                    </div>
+                    <div class="settings-actions">
+                        <button type="submit" class="settings-btn settings-btn-danger" name="direction" value="remove">Remove chips</button>
+                        <button type="submit" class="settings-btn settings-btn-primary" name="direction" value="add">Add chips</button>
+                    </div>
+                </form>
+                <hr class="settings-divider">
+            <?php endif; ?>
             <?php if ($adminWallet === null): ?>
                 <p class="settings-hint">They've never opened the casino.</p>
             <?php else: ?>
@@ -774,7 +830,9 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                         <td class="admin-nowrap"><?= adminTime($transaction['transactionTimestamp']) ?></td>
                                         <td class="admin-nowrap"><?= (int) $transaction['transactionAmount'] > 0 ? '+' : '' ?><?= number_format((int) $transaction['transactionAmount']) ?></td>
                                         <td><?= number_format((int) $transaction['transactionBalance']) ?></td>
-                                        <td><?= htmlspecialchars(($transaction['transactionGame'] !== null ? $transaction['transactionGame'] . ': ' : '') . $transaction['transactionReason']) ?></td>
+                                        <td><?= htmlspecialchars($transaction['adminName'] !== null
+                                            ? 'By ' . $transaction['adminName'] . ' (admin)'
+                                            : ($transaction['transactionGame'] !== null ? $transaction['transactionGame'] . ': ' : '') . $transaction['transactionReason']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

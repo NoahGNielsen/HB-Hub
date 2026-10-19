@@ -30,7 +30,17 @@ function casinoCountdown(int $seconds): string
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="casino">
-        <h1>Casino</h1>
+        <div class="casino-title-row">
+            <h1>Casino</h1>
+            <!-- Kept faint on purpose: buying chips is there for whoever looks, not something to push -->
+            <a class="casino-pay-link" href="/gambling/buy-chips" aria-label="Buy chips" title="Buy chips">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <path d="M2 10h20M6 15h4"/>
+                </svg>
+            </a>
+        </div>
 
         <div class="casino-overview">
             <section class="casino-card" aria-labelledby="casino-chips-title">

@@ -255,9 +255,9 @@ CREATE TABLE `HBHub-CasinoTransactions` (
   `userId` int UNSIGNED NOT NULL,
   `transactionAmount` bigint NOT NULL COMMENT 'Chips added (positive) or taken (negative)',
   `transactionBalance` bigint NOT NULL COMMENT 'walletChips right after the change',
-  `transactionReason` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'start (starting chips), dailyBonus, or the game''s own, like bet and payout',
-  `transactionGame` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'NULL for the casino''s own changes (start, dailyBonus), otherwise the game, like blackjack',
-  `transactionReference` bigint UNSIGNED DEFAULT NULL COMMENT 'The game''s id for what it was about, like the blackjack round',
+  `transactionReason` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'start (starting chips), dailyBonus, admin (added or taken by a site admin), or the game''s own, like bet and payout',
+  `transactionGame` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'NULL for the casino''s own changes (start, dailyBonus, admin), otherwise the game, like blackjack',
+  `transactionReference` bigint UNSIGNED DEFAULT NULL COMMENT 'The game''s id for what it was about, like the blackjack round, or for admin the userId of the site admin who did it',
   `transactionTimestamp` datetime NOT NULL COMMENT 'UTC'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

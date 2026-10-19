@@ -120,11 +120,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                 </ul>
                 <h3>Casino and games</h3>
                 <ul>
-                    <li>Your chip balance and every change to it (bets, payouts, the daily chips).</li>
+                    <li>Your chip balance and every change to it (bets, payouts, the daily chips, and chips a site admin added or took away, with which admin it was).</li>
                     <li>The rounds you played in the casino games, for example but not limited to Blackjack, Baccarat and Roulette, used for the leaderboards.</li>
                     <li>Your Chess and Matador games: seats, moves, saves, results and the in-game chat.</li>
                 </ul>
-                <p>Chips are virtual. HB Hub never asks for, or stores, any payment details.</p>
+                <p>
+                    Chips are virtual. HB Hub never asks for, or stores, any payment details. If you buy extra chips
+                    from the owner, the payment and the talk about it happen outside the site's casino (in a chat
+                    message or somewhere else), and a site admin adds the chips you get, which shows up as a change to your balance like any other.
+                </p>
                 <h3>Feedback</h3>
                 <p>
                     When you send feedback with the Feedback button in the side bar, what you wrote is stored with your
