@@ -1851,7 +1851,7 @@ function chatJxlWorker() {
             item.append(text, remove);
             return item;
         }));
-        ticketsStatus.textContent = attachments.length === 0 ? "You haven't sent any attachments that still take tickets." : '';
+        ticketsStatus.textContent = attachments.length === 0 ? "None of your attachments are using tickets right now." : '';
     }
 
     // The list as it is now, or after deleting deleteId first

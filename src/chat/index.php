@@ -1890,11 +1890,12 @@ if ($isPoll) {
                     <p class="chat-dialog-text" hidden data-tickets-needed></p>
                     <p class="chat-tickets-count" data-tickets-count></p>
                     <p class="chat-dialog-hint">
-                        Everyone has <?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> tickets. Every started
-                        <?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES / 1024 / 1024 ?> MB of an attachment takes one for
-                        <?= HBHUB_CHAT_ATTACHMENT_DAYS ?> days, or for only <?= HBHUB_CHAT_ATTACHMENT_BIG_DAYS ?> days when it takes
-                        more than <?= HBHUB_CHAT_ATTACHMENT_BIG_TICKETS ?>. Then the file is deleted and the tickets are yours again.
-                        Deleting an attachment, or the message it's in, gives them back straight away.
+                        You have <?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> tickets for attachments. Each attachment uses one
+                        ticket per <?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES / 1024 / 1024 ?> MB, rounded up. Attachments are
+                        kept for <?= HBHUB_CHAT_ATTACHMENT_DAYS ?> days, or only <?= HBHUB_CHAT_ATTACHMENT_BIG_DAYS ?> days if
+                        they use more than <?= HBHUB_CHAT_ATTACHMENT_BIG_TICKETS ?> tickets. When an attachment expires, it's
+                        deleted and you get its tickets back. If you delete the attachment or its message, you get them back
+                        right away.
                     </p>
 
                     <ul class="chat-tickets-list" aria-label="Your attachments" data-tickets-list></ul>
