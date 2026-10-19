@@ -37,6 +37,7 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, what it
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/baccarat.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/baccarat.css') ?>">
     <title><?= htmlspecialchars($room['roomName']) ?> - Baccarat - HB Hub</title>
+    <meta name="robots" content="noindex">
     <meta name="description" content="A Baccarat table in the HB Hub casino">
 </head>
 <body>

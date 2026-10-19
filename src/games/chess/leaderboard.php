@@ -90,6 +90,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <title>Chess leaderboard - HB Hub</title>
+    <meta name="robots" content="noindex">
     <meta name="description" content="Who wins the most chess games on the HB Hub">
 </head>
 <body>

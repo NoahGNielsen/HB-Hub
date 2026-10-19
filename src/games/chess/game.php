@@ -31,6 +31,7 @@ $pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&di
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/chess.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/chess.css') ?>">
     <title><?= htmlspecialchars($room['roomName']) ?> - Chess - HB Hub</title>
+    <meta name="robots" content="noindex">
     <meta name="description" content="A game of chess on the HB Hub">
 </head>
 <body>

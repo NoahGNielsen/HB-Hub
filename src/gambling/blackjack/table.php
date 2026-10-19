@@ -31,6 +31,7 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/blackjack.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/blackjack.css') ?>">
     <title><?= htmlspecialchars($room['roomName']) ?> - Blackjack - HB Hub</title>
+    <meta name="robots" content="noindex">
     <meta name="description" content="A Blackjack table in the HB Hub casino">
 </head>
 <body>

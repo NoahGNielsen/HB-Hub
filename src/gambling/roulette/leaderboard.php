@@ -92,6 +92,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <title>Roulette leaderboard - HB Hub</title>
+    <meta name="robots" content="noindex">
     <meta name="description" content="Who wins the most at Roulette in the HB Hub casino">
 </head>
 <body>

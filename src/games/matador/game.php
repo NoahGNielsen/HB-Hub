@@ -43,6 +43,7 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/matador.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/matador.css') ?>">
     <title><?= htmlspecialchars($room['roomName']) ?> - Matador - HB Hub</title>
+    <meta name="robots" content="noindex">
     <meta name="description" content="A game of Matador on the HB Hub">
 </head>
 <body>

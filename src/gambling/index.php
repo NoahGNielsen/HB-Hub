@@ -24,6 +24,7 @@ function casinoCountdown(int $seconds): string
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <title>Casino - HB Hub</title>
+    <meta name="robots" content="noindex">
     <meta name="description" content="Casino page for the HB Hub">
 </head>
 <body>

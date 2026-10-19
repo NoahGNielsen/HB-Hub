@@ -138,6 +138,7 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <title>Matador - HB Hub</title>
+    <meta name="robots" content="noindex">
     <meta name="description" content="Matador, the Danish board game, on the HB Hub">
 </head>
 <body>

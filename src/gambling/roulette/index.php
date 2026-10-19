@@ -83,6 +83,7 @@ function rouletteWheelPockets(): string
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/roulette.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/roulette.css') ?>">
     <title>Roulette - HB Hub</title>
+    <meta name="robots" content="noindex">
     <meta name="description" content="Roulette in the HB Hub casino">
 </head>
 <body>
