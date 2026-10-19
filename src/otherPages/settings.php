@@ -17,6 +17,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/totp.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be in a bio
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
 const SETTINGS_ROLE_ADMIN = 2; // userRole in HBHub-Users
@@ -243,12 +244,15 @@ if ($settingsAction === 'profile') {
             exit;
         }
 
-        // Bio - one saved before the allow list (account.php) can be kept as it is
+        // Bio - one saved before the allow list (account.php) can be kept as it is, but a blacklisted link
+        // (urlBlacklist.php) has to come out, even from one saved before the blacklist
         if ($settingsDescriptionMode !== SETTINGS_DISABLED) {
             $descriptionLength = mb_strlen($settingsValues['description']);
             if ($settingsValues['description'] !== ($settingsUser['userDescription'] ?? '')
                 && !hbHubIsLatinText($settingsValues['description'], true)) {
                 $settingsErrors['description'] = 'Your bio can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.';
+            } elseif (hbHubUrlBlacklisted($settingsValues['description'])) {
+                $settingsErrors['description'] = 'Woah, hold up! Your bio has a dangerous link or a link that compromises people\'s privacy in it.';
             } elseif ($descriptionLength > $settingsDescriptionMax) {
                 $settingsErrors['description'] = "Please keep it to $settingsDescriptionMax characters or fewer.";
             } elseif ($settingsDescriptionMode === SETTINGS_REQUIRED && $descriptionLength < $settingsDescriptionMin) {

@@ -23,6 +23,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be in a bio
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
 const ADMIN_STATUS_OFFLINE = 2; // userStatus in HBHub-Users (HBHUB_SESSION_STATUS_BANNED is 4)
@@ -244,6 +245,8 @@ switch ($adminAction) {
         $adminValues['description'] = $description;
         if ($description !== ($target['userDescription'] ?? '') && !hbHubIsLatinText($description, true)) {
             $adminErrors['bio'] = 'The bio can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.';
+        } elseif (hbHubUrlBlacklisted($description)) {
+            $adminErrors['bio'] = 'Woah, hold up! The bio has a dangerous link or a link that compromises people\'s privacy in it.';
         } elseif (mb_strlen($description) > $adminDescriptionMax) {
             $adminErrors['bio'] = "Please keep it to $adminDescriptionMax characters or fewer.";
         } else {

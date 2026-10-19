@@ -62,6 +62,7 @@ $onboardingDescriptionMode = (int) $siteConfig['onboarding_description_requireme
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php'; // the name rules and the allow list of characters
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be in a bio
 $onboardingPasswordPolicy = hbHubPasswordPolicy($siteConfig);
 $onboardingPasswordMin = $onboardingPasswordPolicy['minLength'];
 $onboardingPasswordCharTypes = $onboardingPasswordPolicy['charTypes'];
@@ -130,6 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $descriptionLength = mb_strlen($onboardingValues['description']);
         if (!hbHubIsLatinText($onboardingValues['description'], true)) {
             $onboardingErrors['description'] = 'Your description can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.';
+        } elseif (hbHubUrlBlacklisted($onboardingValues['description'])) {
+            $onboardingErrors['description'] = 'Woah, hold up! Your description has a dangerous link or a link that compromises people\'s privacy in it.';
         } elseif ($descriptionLength > $onboardingDescriptionMax) {
             $onboardingErrors['description'] = "Please keep it to $onboardingDescriptionMax characters or fewer.";
         } elseif ($onboardingDescriptionMode === ONBOARDING_REQUIRED && $descriptionLength === 0) {
