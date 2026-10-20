@@ -1,5 +1,10 @@
 # 🚀 Setup
 
+> [!IMPORTANT]
+> HB Hub is made for one site, [hbhub.noahgajnielsen.dk](https://hbhub.noahgajnielsen.dk), and isn't a site builder
+> you can rebrand from a config file. The name, domain, school hours, legal pages, texts and design are written into
+> the code. To run your own version, fork this project and change the code yourself.
+
 1. **Upload the site.** Upload the contents of `src/` to the web root. The [deploy workflow](../.github/workflows/ftp-upload.yml) does this to `hbhub/` on every push to `main`.
 2. **Add the config.** Copy [`config-examples/hbHubSiteConfig.example.php`](../config-examples/hbHubSiteConfig.example.php) into the folder **one level above** the web root, rename it to `hbHubSiteConfig.php` and fill in the values ([what they do](config.md)). The site only looks for it there.
    > For local development with `src/` as the web root, that means the repo root (it's in `.gitignore`).
