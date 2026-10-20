@@ -22,6 +22,7 @@ const HBHUB_PRIVACY_COOKIES = [
 // What the site keeps in your browser's local storage. It never leaves your browser.
 const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
+    'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it stays there when you open another chat. Kept in session storage, so it\'s gone when you close the tab.',
     'hbHubNotifiedMessageId' => 'The last message you got a browser notification for, so you don\'t get it twice.',
     'hbHubChessSound, hbHubMatadorSound' => 'Whether you turned the game sounds on or off.',
     'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',
@@ -281,7 +282,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 </div>
                             <?php endforeach; ?>
                         </dl>
-                        <p>A few small things are also saved in your browser's local storage. They never leave your browser:</p>
+                        <p>A few small things are also saved in your browser's local storage (or session storage). They never leave your browser:</p>
                         <dl class="legal-cookies">
                             <?php foreach (HBHUB_PRIVACY_LOCAL_STORAGE as $privacyKey => $privacyKeyUse): ?>
                                 <div>

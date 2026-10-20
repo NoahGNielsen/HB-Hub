@@ -11,6 +11,19 @@
   gap: var(--chat-gap);
 }
 
+/* Opening another chat loads the page again (chat/index.php puts the open chat in it), so instead of a blank moment in
+   between the browser fades straight from the old page to the new one. Only between pages that have this file, so
+   only from chat to chat. Browsers without cross-page view transitions (Firefox for now) just load it like before. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+}
+
+::view-transition-group(root) {
+  animation-duration: 0.15s;
+}
+
 /* The chat fills the screen exactly, so the page itself never scrolls - only the list, messages and message box do */
 html:has(> body > .chat),
 body:has(> .chat) {

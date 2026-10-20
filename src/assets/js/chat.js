@@ -1,4 +1,5 @@
-// Chat: filters the chat list while typing, starts the open chat at the newest message
+// Chat: filters the chat list while typing, keeps the list where it was scrolled to when opening another chat,
+// starts the open chat at the newest message
 // and sends on Enter (Shift+Enter for a new line).
 // Without JS the search submits ?q= and the server filters the list instead.
 (() => {
@@ -34,6 +35,29 @@
         searchForm.addEventListener('submit', (event) => event.preventDefault());
         list.addEventListener('chat-list-update', filterChats);
         filterChats();
+    }
+
+    // Opening another chat loads the page again, which would start the chat list back at the top. So how far down it
+    // was is kept in sessionStorage (this tab only) when leaving and put back here, and the open chat is scrolled into
+    // view if it's still out of sight. Without sessionStorage (blocked, private mode) it's only the scrolling into view.
+    const LIST_SCROLL_KEY = 'hbHubChatListScroll';
+    if (list) {
+        try {
+            list.scrollTop = Number(sessionStorage.getItem(LIST_SCROLL_KEY)) || 0;
+        } catch {}
+        const active = list.querySelector('.chat-list-item.active');
+        if (active) {
+            // By hand, as scrollIntoView() could move the page around it too
+            const listBox = list.getBoundingClientRect();
+            const activeBox = active.getBoundingClientRect();
+            if (activeBox.top < listBox.top) list.scrollTop += activeBox.top - listBox.top;
+            else if (activeBox.bottom > listBox.bottom) list.scrollTop += activeBox.bottom - listBox.bottom;
+        }
+        addEventListener('pagehide', () => {
+            try {
+                sessionStorage.setItem(LIST_SCROLL_KEY, String(Math.round(list.scrollTop)));
+            } catch {}
+        });
     }
 
     // At the newest message, unless that would scroll the "New messages" line out of sight above
