@@ -37,7 +37,7 @@
 | **Chat notices** | Changes in a group (new name, new admin, someone joined) show up in the chat |
 | **Nicknames & profiles** | Give people nicknames, and open the profile of whoever you're DMing straight from the chat |
 | **GIFs & smileys** | GIF picker powered by Giphy, plus a smiley menu |
-| **Attachments** | Send files and pictures. Pictures are turned into JPEG XL in the browser (lossless, or visually lossless for JPEGs), other files are zipped on the server. Everyone has 10 tickets of 5 MB, which come back when an attachment expires (90 days, or 3 for big ones) or is deleted |
+| **Attachments** | Send files and pictures. Pictures are turned into JPEG XL in the browser (lossless, or visually lossless for JPEGs), other files are zipped on the server. Everyone has 10 tickets of 5 MB (admins can give or take away more), which come back when an attachment expires (90 days, or 3 for big ones) or is deleted |
 | **Formatting** | Discord-style `**bold**`, `*italic*`, `__underline__`, `~~strikethrough~~`, `` `code` `` and code blocks, `#` headings, lists and `[masked](https://links)`, from a right-click menu on the message box or Ctrl+B / I / U |
 | **@mentions** | Type `@` for a list of the people in the chat. Mentions light up, and the person mentioned gets a notification (not from muted chats or people they blocked). Works in Chess and Matador's game chats too |
 | **Chat menu** | Right-click a chat to mute its notifications for a while, hide it or leave it |
@@ -92,10 +92,10 @@ Played with virtual chips only. No real money is involved anywhere.
 
 | | |
 |---|---|
-| **Admin panel** | Search every user or chat by name or id (or right-click one in the chat). Users: info, logins and messages, and ban, edit, reset or delete them. Chats: members and messages, and rename, remove the icon, change the background, kick members or delete it |
+| **Admin panel** | Search every user or chat by name or id (or right-click one in the chat). Users: info, logins, messages and attachments, and ban, edit, reset or delete them, delete their attachments or give or take away attachment tickets. Chats: members and messages, and rename, remove the icon, change the background, kick members or delete it |
 | **Banned pictures** | Banning someone bans their profile picture too: any account that uploads the same picture (or a resized or slightly cropped copy), or signs up with it, is banned straight away. Add, view and remove pictures under Banned pictures in the admin panel's side menu |
 | **Feedback inbox** | Read what users send with the Feedback button, with who sent it and from which page, under Feedback in the admin panel's side menu. Mark it as done or delete it; the number of new ones shows on Admin in the side bar |
-| **Admin log** | Everything admins do in the admin panel is logged, opening a user or chat included (as that shows their messages and personal info): who did what to whom, and when. Automatic bans for a banned profile picture show up there too. Under Admin log in the admin panel's side menu, or the Admin log button on a user or chat. Can't be changed or deleted, kept for a year |
+| **Admin log** | Everything admins do in the admin panel is logged, opening a user or chat included (as that shows their messages and personal info): who did what to whom, when, and why (every action asks for a reason in a popup first). Automatic bans for a banned profile picture show up there too. Under Admin log in the admin panel's side menu, or the Admin log button on a user or chat. Can't be changed or deleted, kept for a year |
 | **Maintenance mode** | Turn off logins and show a message, straight from the site config |
 | **Section switches** | Open the Casino and the Games section to everyone, only to admins, or to nobody |
 

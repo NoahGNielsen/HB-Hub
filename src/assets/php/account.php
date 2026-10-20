@@ -86,7 +86,8 @@ function hbHubDeleteAccount(PDO $db, int $userId): void
                 userAvatarAttachmentId = NULL, userIpv4AdresseOnAccountCreate = NULL, userIpv6AdresseOnAccountCreate = NULL,
                 userIpv4AdresseLastAccessed = NULL, userIpv6AdresseLastAccessed = NULL, userPasswordHash = NULL,
                 userTotpSecret = NULL, userTotpLastStep = NULL, userFailedLoginCount = NULL, userStatus = NULL,
-                userRole = NULL, userAccountLockedTimestamp = NULL, userBannedTimestamp = NULL, userBannedReason = NULL
+                userRole = NULL, userAccountLockedTimestamp = NULL, userBannedTimestamp = NULL, userBannedReason = NULL,
+                userAttachmentTicketsExtra = 0
             WHERE userId = ?')
             ->execute([HBHUB_DELETED_USER_NAME, $userId]);
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$userId]);

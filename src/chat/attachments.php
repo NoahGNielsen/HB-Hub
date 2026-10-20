@@ -47,7 +47,7 @@ $statement = $db->prepare('SELECT a.attachmentId, a.attachmentName, a.attachment
 $statement->execute([$userId, $userId, HBHUB_CHAT_ATTACHMENT_KEPT]);
 
 echo json_encode([
-    'ticketsTotal' => HBHUB_CHAT_ATTACHMENT_TICKETS,
+    'ticketsTotal' => hbHubChatAttachmentTicketsTotal($db, $userId),
     'ticketsFree' => hbHubChatAttachmentTicketsFree($db, $userId),
     'attachments' => array_map(fn (array $attachment): array => [
         'id' => (int) $attachment['attachmentId'],

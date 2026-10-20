@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '19 October 2026';
+const HBHUB_TERMS_UPDATED = '20 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -110,7 +110,8 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                             <li>Only upload pictures and files you're allowed to share. Don't post photos of other people without asking them.</li>
                             <li>
                                 Attachments don't stay forever. Everyone has 10 tickets, and every started 5 MB of an attachment
-                                takes one. It's deleted after 90 days (3 days when it takes more than 5 tickets), and then the
+                                takes one. Site admins can give an account more tickets, or take some away (for example if
+                                attachments are misused). It's deleted after 90 days (3 days when it takes more than 5 tickets), and then the
                                 tickets can be used again. HB Hub isn't a backup, so keep your own copy of anything that matters.
                                 When the server's space for attachments is full, nobody can send new ones until some are deleted.
                             </li>
@@ -184,6 +185,7 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                         <ul>
                             <li>delete messages, attachments, pictures or groups,</li>
                             <li>reset or take away chips, or remove game results from the leaderboards,</li>
+                            <li>take away attachment tickets, so fewer (or no) new attachments can be sent,</li>
                             <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture.</li>
                         </ul>
                         <p>

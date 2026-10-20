@@ -34,6 +34,7 @@ CREATE TABLE `HBHub-AdminLog` (
   `adminLogUserId` int UNSIGNED DEFAULT NULL COMMENT 'The user it was about, NULL when it was not about one',
   `adminLogChatId` int UNSIGNED DEFAULT NULL COMMENT 'The chat it was about, NULL when it was not about one',
   `adminLogData` json DEFAULT NULL COMMENT 'Details, like {"amount": -500} for chips or {"messageId": 12}. Never a password, name or message text',
+  `adminLogReason` varchar(500) DEFAULT NULL COMMENT 'Why, as the admin typed it in the popup before doing it. NULL when none was given, and for opening a page or an automatic ban',
   `adminLogTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Everything site admins do in the admin panel, opening a user or chat included, and automatic bans for a banned profile picture. Kept for a year (src/assets/php/adminLog.php)';
 
@@ -707,7 +708,8 @@ CREATE TABLE `HBHub-Users` (
   `userLastSeenTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `userAccountLockedTimestamp` datetime DEFAULT NULL,
   `userBannedTimestamp` datetime DEFAULT NULL,
-  `userBannedReason` tinyint UNSIGNED DEFAULT NULL COMMENT '1 By a site admin\r\n2 Automatically, for uploading a banned profile picture\r\nNULL when not banned'
+  `userBannedReason` tinyint UNSIGNED DEFAULT NULL COMMENT '1 By a site admin\r\n2 Automatically, for uploading a banned profile picture\r\nNULL when not banned',
+  `userAttachmentTicketsExtra` smallint NOT NULL DEFAULT '0' COMMENT 'Chat attachment tickets a site admin added (positive) or took away (negative), on top of the 10 everyone has'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --

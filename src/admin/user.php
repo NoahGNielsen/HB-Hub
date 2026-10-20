@@ -7,15 +7,17 @@
 // Shows what there is about the user: their account, sessions (their logins), messages in every chat, chats and casino
 // chips, and ?export=1 downloads all of it as JSON. The actions are one form per card, like the settings page:
 // ban or unban, change the name or bio, remove the picture, set the gambling block (straight away, without the wait),
-// reset the password, remove two-factor login, log out every session, add or remove chips, delete messages and delete
-// the account. Chips change through hbHubCasinoChange() like in the games, logged with the reason "admin" and the
-// admin's userId, so the chip history shows who did it.
+// reset the password, remove two-factor login, log out every session, add or remove chips, delete messages, delete
+// attachments (one or all, which frees their tickets), add or take away attachment tickets and delete the account.
+// Chips change through hbHubCasinoChange() like in the games, logged with the reason "admin" and the admin's userId,
+// so the chip history shows who did it. Attachments are only listed (name, size, chat, tickets), never opened here.
+// Before any form is sent, admin.js asks for a reason, which goes in the admin log with the action (adminLog.php).
 // Banning puts their picture on the banned pictures list (admin/banned.php) too, unless that's unticked, and
 // unbanning takes it off again.
 // Opening the page, downloading the data and every change are logged in the admin log (assets/php/adminLog.php).
 // Site admins can't be changed here (yourself included), and a deleted account only has its messages left to delete.
 // The side menu (adminPageMenuHtml()) links to the cards in the order they're on the page: Information, then Manage
-// (profile, block, login), Activity (sessions, messages, chats, casino) and the Danger zone (ban, delete) last.
+// (profile, block, login), Activity (sessions, messages, attachments, chats, casino) and the Danger zone (ban, delete) last.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
@@ -34,6 +36,7 @@ const ADMIN_STATUS_OFFLINE = 2; // userStatus in HBHub-Users (HBHUB_SESSION_STAT
 const ADMIN_STATUS_LOCKED = 3;
 const ADMIN_TRANSACTIONS_SHOWN = 25;
 const ADMIN_CHIPS_MAX = 1_000_000_000; // the most chips that can be added or removed at once, to catch a typo with too many zeros
+const ADMIN_TICKETS_MAX = 1000; // the most attachment tickets one user can have in all (userAttachmentTicketsExtra is a smallint)
 
 adminOnly($hbHubUser);
 
@@ -54,7 +57,7 @@ $adminPasswordPolicy = hbHubPasswordPolicy($siteConfig);
 $statement = $db->prepare('SELECT userId, userName, userDescription, userSettings, userAvatarAttachmentId,
         userIpv4AdresseOnAccountCreate, userIpv6AdresseOnAccountCreate, userIpv4AdresseLastAccessed, userIpv6AdresseLastAccessed,
         userTotpSecret IS NOT NULL AS totpIsOn, userFailedLoginCount, userStatus, userRole, userCreatedTimestamp, userLastSeenTimestamp,
-        userAccountLockedTimestamp, userBannedTimestamp, userBannedReason,
+        userAccountLockedTimestamp, userBannedTimestamp, userBannedReason, userAttachmentTicketsExtra,
         COALESCE(userAccountLockedTimestamp + INTERVAL ? MINUTE > NOW(), 0) AS isLocked
     FROM `HBHub-Users` WHERE userId = ?');
 $statement->execute([$adminLockoutMinutes, $targetId]);
@@ -139,6 +142,22 @@ function adminTransactions(PDO $db, int $userId, ?int $limit = null): array
 }
 
 /**
+ * The user's attachments that still take tickets (their file is there and hasn't expired), newest first, with the
+ * chat they were sent in. Never the file itself or its key on disk.
+ */
+function adminAttachments(PDO $db, int $userId): array
+{
+    $statement = $db->prepare('SELECT a.attachmentId, a.chatId, c.chatType, c.chatStatus, ' . adminChatTitleSql('a.userId') . ' AS chatTitle,
+            a.attachmentName, a.attachmentKind, a.attachmentSize, a.attachmentStoredSize, a.attachmentTickets,
+            a.attachmentUploadedTimestamp, a.attachmentExpiresTimestamp
+        FROM `HBHub-ChatAttachments` a JOIN `HBHub-Chats` c ON c.chatId = a.chatId
+        WHERE a.userId = ? AND a.attachmentStatus = ? AND a.attachmentExpiresTimestamp > NOW()
+        ORDER BY a.attachmentId DESC');
+    $statement->execute([$userId, HBHUB_CHAT_ATTACHMENT_KEPT]);
+    return $statement->fetchAll();
+}
+
+/**
  * Back to the admin panel (at the card that was used) with a toast, so reloading doesn't send the form again.
  * $query is anything else to keep in the address, like the page of messages.
  */
@@ -179,6 +198,8 @@ if (($_GET['export'] ?? null) === '1') {
         'messages' => adminMessages($db, $targetId),
         'casinoWallet' => adminWallet($db, $targetId),
         'casinoTransactions' => adminTransactions($db, $targetId),
+        'attachmentTicketsTotal' => hbHubChatAttachmentTicketsTotal($db, $targetId),
+        'attachments' => adminAttachments($db, $targetId),
         'notifications' => $notifications,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
@@ -193,11 +214,13 @@ $adminValues = [
     'description' => $target['userDescription'] ?? '',
     'newPassword' => '',
     'chips' => '',
+    'tickets' => '',
 ];
 $adminErrors = []; // card => message
 
 $adminAction = $_SERVER['REQUEST_METHOD'] === 'POST' && is_string($_POST['action'] ?? null) ? $_POST['action'] : null;
-$adminIsMessageAction = in_array($adminAction, ['deleteMessage', 'deleteAllMessages'], true);
+// Deleting what they've sent works for a deleted account too, the rest only while it can be changed
+$adminIsMessageAction = in_array($adminAction, ['deleteMessage', 'deleteAllMessages', 'deleteAttachment', 'deleteAllAttachments'], true);
 if ($adminAction !== null && !($adminIsMessageAction ? $adminCanDeleteMessages : $adminCanChange)) {
     adminRedirect($targetId, null, 'overview'); // the forms aren't on the page, so nothing to say
 }
@@ -375,6 +398,56 @@ switch ($adminAction) {
             ->execute(['chat.mention', $targetId]);
         adminRedirect($targetId, 'adminMessagesDeleted', 'messages');
 
+    case 'deleteAttachment':
+        // Like Delete in their own attachments popup: the file goes for good and its tickets are free again, and the
+        // message it was in stays, showing "Attachment deleted"
+        $attachmentId = $_POST['attachment'] ?? null;
+        if (is_string($attachmentId) && ctype_digit($attachmentId) && strlen($attachmentId) <= 10) {
+            $statement = $db->prepare('SELECT attachmentTickets FROM `HBHub-ChatAttachments` WHERE attachmentId = ? AND userId = ?');
+            $statement->execute([(int) $attachmentId, $targetId]);
+            $attachmentTickets = (int) $statement->fetchColumn();
+            if (hbHubChatAttachmentsRemove($db, 'a.attachmentId = ? AND a.userId = ?', [(int) $attachmentId, $targetId]) > 0) {
+                adminLog($db, $adminId, 'user.attachment', $targetId, null, ['attachmentId' => (int) $attachmentId, 'tickets' => $attachmentTickets]);
+            }
+        }
+        adminRedirect($targetId, 'adminAttachmentDeleted', 'attachments');
+
+    case 'deleteAllAttachments':
+        $removed = hbHubChatAttachmentsRemove($db, 'a.userId = ?', [$targetId]);
+        if ($removed > 0) {
+            adminLog($db, $adminId, 'user.attachments', $targetId, null, ['count' => $removed]);
+        }
+        adminRedirect($targetId, 'adminAttachmentsDeleted', 'attachments');
+
+    case 'tickets':
+        // Add tickets (for someone who needs to send more) or Revoke tickets. Their total can go from 0 to ADMIN_TICKETS_MAX.
+        // Taking some away doesn't delete what they've sent: they just can't send more until they're under it.
+        $ticketsInput = is_string($_POST['tickets'] ?? null) ? trim($_POST['tickets']) : '';
+        $adminValues['tickets'] = $ticketsInput;
+        $ticketsDirection = $_POST['direction'] ?? null;
+        if (!in_array($ticketsDirection, ['add', 'remove'], true)) {
+            $adminErrors['tickets'] = 'Please choose Add tickets or Revoke tickets.';
+            break;
+        }
+        if (!ctype_digit($ticketsInput) || strlen($ticketsInput) > 4 || (int) $ticketsInput < 1 || (int) $ticketsInput > ADMIN_TICKETS_MAX) {
+            $adminErrors['tickets'] = 'Please type a whole number of tickets from 1 to ' . number_format(ADMIN_TICKETS_MAX) . '.';
+            break;
+        }
+        $ticketsAmount = $ticketsDirection === 'add' ? (int) $ticketsInput : -(int) $ticketsInput;
+        // Checked and changed in one go, so two admins at once can't push it past 0 or ADMIN_TICKETS_MAX
+        $statement = $db->prepare('UPDATE `HBHub-Users` SET userAttachmentTicketsExtra = userAttachmentTicketsExtra + ?
+            WHERE userId = ? AND ? + userAttachmentTicketsExtra + ? BETWEEN 0 AND ?');
+        $statement->execute([$ticketsAmount, $targetId, HBHUB_CHAT_ATTACHMENT_TICKETS, $ticketsAmount, ADMIN_TICKETS_MAX]);
+        $ticketsTotal = hbHubChatAttachmentTicketsTotal($db, $targetId);
+        if ($statement->rowCount() === 0) {
+            $adminErrors['tickets'] = $ticketsAmount < 0
+                ? 'They only have ' . $ticketsTotal . ' ' . ($ticketsTotal === 1 ? 'ticket' : 'tickets') . ', so that many can\'t be taken away.'
+                : 'They have ' . $ticketsTotal . ' tickets, and nobody can have more than ' . number_format(ADMIN_TICKETS_MAX) . '.';
+            break;
+        }
+        adminLog($db, $adminId, 'user.tickets', $targetId, null, ['amount' => $ticketsAmount, 'total' => $ticketsTotal]);
+        adminRedirect($targetId, $ticketsAmount > 0 ? 'adminTicketsAdded' : 'adminTicketsRevoked', 'attachments');
+
     case 'deleteAccount':
         // The name is typed in to make sure it's the right account
         $confirmName = is_string($_POST['confirmName'] ?? null) ? trim($_POST['confirmName']) : '';
@@ -400,6 +473,10 @@ $adminActiveSessions = count(array_filter($adminSessions, fn (array $session): b
 $adminChats = adminChats($db, $targetId);
 $adminWallet = adminWallet($db, $targetId);
 $adminTransactions = adminTransactions($db, $targetId, ADMIN_TRANSACTIONS_SHOWN);
+$adminAttachments = adminAttachments($db, $targetId);
+$adminTicketsUsed = array_sum(array_map(fn (array $attachment): int => (int) $attachment['attachmentTickets'], $adminAttachments));
+$adminTicketsExtra = (int) $target['userAttachmentTicketsExtra'];
+$adminTicketsTotal = max(0, HBHUB_CHAT_ATTACHMENT_TICKETS + $adminTicketsExtra); // like hbHubChatAttachmentTicketsTotal()
 
 // One more than is shown, to know whether there are older ones
 $adminMessages = adminMessages($db, $targetId, $adminMessagesBefore, ADMIN_MESSAGES_SHOWN + 1);
@@ -439,7 +516,7 @@ function adminIps(?string $ipv4, ?string $ipv6): string
             <?= adminPageMenuHtml('/admin/', 'All users', $adminAvatarSrc, $target['userName'], adminStatusHtml(adminUserStatus($target)), [
                 'Overview' => ['overview' => 'Information'],
                 'Manage' => $adminCanChange ? ['profile' => 'Profile', 'block' => 'Gambling block', 'security' => 'Login'] : [],
-                'Activity' => ['sessions' => 'Sessions', 'messages' => 'Messages', 'chats' => 'Chats', 'casino' => 'Casino'],
+                'Activity' => ['sessions' => 'Sessions', 'messages' => 'Messages', 'attachments' => 'Attachments', 'chats' => 'Chats', 'casino' => 'Casino'],
                 ADMIN_MENU_DANGER => $adminCanChange ? ['ban' => $targetIsBanned ? 'Unban' : 'Ban', 'delete' => 'Delete account'] : [],
             ]) ?>
 
@@ -492,6 +569,8 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                             <span class="admin-small">(changing to "<?= htmlspecialchars(HBHUB_BLOCK_MODES[$adminBlock['pendingMode']]) ?>" at <?= htmlspecialchars(hbHubBlockFormatTime($adminBlock['pendingFrom'])) ?>)</span><?php endif; ?></dd></div>
                         <div><dt>Chips</dt><dd><?= $adminWallet !== null ? number_format((int) $adminWallet['walletChips']) : 'Never opened the casino' ?></dd></div>
                         <div><dt>Messages sent</dt><dd><?= number_format((int) $adminMessageCounts['total']) ?> <span class="admin-small">(<?= number_format((int) $adminMessageCounts['deleted']) ?> deleted)</span></dd></div>
+                        <div><dt>Attachment tickets</dt><dd><?= $adminTicketsUsed ?> of <?= $adminTicketsTotal ?> used<?php if ($adminTicketsExtra !== 0): ?>
+                            <span class="admin-small">(<?= $adminTicketsExtra > 0 ? $adminTicketsExtra . ' added' : -$adminTicketsExtra . ' taken away' ?> by site admins)</span><?php endif; ?></dd></div>
                         <div><dt>Chats</dt><dd><?= count($adminChats) ?></dd></div>
                         <div><dt>Logged in sessions</dt><dd><?= $adminActiveSessions ?></dd></div>
                     </dl>
@@ -761,6 +840,101 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                             </form>
                         <?php endif; ?>
                     </div>
+                </section>
+
+                <!-- Attachments that still take tickets, and how many tickets they have -->
+                <section class="settings-card" id="attachments" aria-labelledby="admin-attachments-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-attachments-heading">Attachments</h2>
+                            <p class="settings-intro">
+                                The files and pictures they've sent that are still kept, newest first. Each takes one ticket per started
+                                <?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES / 1024 / 1024 ?> MB (after compressing) until it runs out.
+                                Deleting one deletes its file for good and gives them its tickets back straight away. The message it was in stays,
+                                showing "Attachment deleted".
+                            </p>
+                        </div>
+                        <span class="settings-status<?= $adminTicketsUsed < $adminTicketsTotal ? ' is-on' : '' ?>"><?= $adminTicketsTotal - min($adminTicketsUsed, $adminTicketsTotal) ?> of <?= $adminTicketsTotal ?> free</span>
+                    </div>
+                    <?php if ($adminAttachments === []): ?>
+                        <p class="settings-hint">No attachments that take tickets.</p>
+                    <?php else: ?>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead><tr><th scope="col">Sent</th><th scope="col">Chat</th><th scope="col">File</th><th scope="col">Size</th><th scope="col">Tickets</th><th scope="col">Runs out</th><th scope="col"><span class="settings-visually-hidden">Actions</span></th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($adminAttachments as $attachment): ?>
+                                        <tr>
+                                            <td class="admin-nowrap"><?= adminTime($attachment['attachmentUploadedTimestamp']) ?></td>
+                                            <td>
+                                                <a class="admin-link" href="/admin/chat?chat=<?= (int) $attachment['chatId'] ?>"><?= htmlspecialchars($attachment['chatTitle']) ?></a>
+                                                <span class="admin-small">
+                                                    <?= (int) $attachment['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?><?=
+                                                    (int) $attachment['chatStatus'] !== HBHUB_CHAT_STATUS_ACTIVE ? ', chat deleted' : '' ?>
+                                                </span>
+                                            </td>
+                                            <td class="admin-message-text">
+                                                <?= htmlspecialchars($attachment['attachmentName'] ?? 'file') ?>
+                                                <span class="admin-small"><?= in_array((int) $attachment['attachmentKind'], [HBHUB_CHAT_ATTACHMENT_KIND_IMAGE, HBHUB_CHAT_ATTACHMENT_KIND_JXL], true) ? 'Picture' : 'File' ?></span>
+                                            </td>
+                                            <td class="admin-nowrap">
+                                                <?= hbHubChatAttachmentSizeLabel((int) $attachment['attachmentSize']) ?>
+                                                <?php if ((int) $attachment['attachmentStoredSize'] !== (int) $attachment['attachmentSize']): ?>
+                                                    <span class="admin-small"><?= hbHubChatAttachmentSizeLabel((int) $attachment['attachmentStoredSize']) ?> stored</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= (int) $attachment['attachmentTickets'] ?></td>
+                                            <td class="admin-nowrap"><?= adminTime($attachment['attachmentExpiresTimestamp']) ?></td>
+                                            <td>
+                                                <?php if ($adminCanDeleteMessages): ?>
+                                                    <form action="/admin/user?user=<?= $targetId ?>#attachments" method="post"
+                                                          data-confirm="Delete this attachment? Its file is deleted for good, and <?= htmlspecialchars($target['userName']) ?> gets <?= (int) $attachment['attachmentTickets'] === 1 ? 'its ticket' : 'its ' . (int) $attachment['attachmentTickets'] . ' tickets' ?> back.">
+                                                        <input type="hidden" name="action" value="deleteAttachment">
+                                                        <input type="hidden" name="attachment" value="<?= (int) $attachment['attachmentId'] ?>">
+                                                        <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Delete</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <?php if ($adminCanDeleteMessages): ?>
+                            <div class="settings-actions admin-messages-actions">
+                                <form action="/admin/user?user=<?= $targetId ?>#attachments" method="post"
+                                      data-confirm="Delete all <?= count($adminAttachments) ?> of <?= htmlspecialchars($target['userName']) ?>'s attachments? Their files are deleted for good.">
+                                    <input type="hidden" name="action" value="deleteAllAttachments">
+                                    <button type="submit" class="settings-btn settings-btn-danger">Delete all their attachments</button>
+                                </form>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+
+                    <?php if ($adminCanChange): ?>
+                        <hr class="settings-divider">
+                        <form action="/admin/user?user=<?= $targetId ?>#attachments" method="post" data-confirm="Change <?= htmlspecialchars($target['userName']) ?>'s attachment tickets?">
+                            <input type="hidden" name="action" value="tickets">
+                            <div class="settings-field">
+                                <label class="settings-label" for="admin-tickets">Add or revoke tickets</label>
+                                <input type="text" id="admin-tickets" name="tickets" inputmode="numeric" maxlength="4" required autocomplete="off"
+                                       value="<?= htmlspecialchars($adminValues['tickets']) ?>" aria-describedby="admin-tickets-hint">
+                                <p class="settings-hint" id="admin-tickets-hint">
+                                    They have <?= $adminTicketsTotal ?> <?= $adminTicketsTotal === 1 ? 'ticket' : 'tickets' ?> in all: the <?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> everyone has<?=
+                                    $adminTicketsExtra > 0 ? ', plus ' . $adminTicketsExtra . ' added by site admins' : ($adminTicketsExtra < 0 ? ', minus ' . -$adminTicketsExtra . ' taken away by site admins' : '') ?>.
+                                    Revoking tickets doesn't delete anything they've sent, they just can't send more until they're under it.
+                                    One attachment can still take at most <?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> tickets. Nobody can have more than <?= number_format(ADMIN_TICKETS_MAX) ?>.
+                                </p>
+                                <?php if (isset($adminErrors['tickets'])): ?>
+                                    <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['tickets']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="settings-actions">
+                                <button type="submit" class="settings-btn settings-btn-danger" name="direction" value="remove">Revoke tickets</button>
+                                <button type="submit" class="settings-btn settings-btn-primary" name="direction" value="add">Add tickets</button>
+                            </div>
+                        </form>
+                    <?php endif; ?>
                 </section>
 
                 <!-- Chats they're in -->

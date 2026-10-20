@@ -130,7 +130,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 database. Pictures are turned into JPEG XL in your own browser before they're sent (unless you
                                 tick the box to keep the original), so they never go anywhere else to be converted. A converted
                                 picture doesn't keep the details a camera or phone saves in it, like where a photo was taken.
-                                Other files are zipped on the server to take less space.
+                                Other files are zipped on the server to take less space. If a site admin has given you more
+                                attachment tickets or taken some away, how many is stored with your account.
                             </li>
                             <li>
                                 Reactions you put on messages: which emoji, on which message, and when. Taking a reaction back
@@ -183,7 +184,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             what they did, and which account or chat it was about. That includes just opening your account or a
                             chat you're in, since that shows your messages and personal info, and downloading your data. It also
                             keeps a few details, like how many chips were added or which message was deleted, but never a
-                            password, a name or what a message said. When an account is banned automatically for uploading a
+                            password, a name or what a message said. Before every change, the admin can type why they're doing
+                            it, and that reason is kept with it in the log. When an account is banned automatically for uploading a
                             banned profile picture, that goes in the admin log too, with which picture it was and whether it
                             happened when signing up.
                         </p>
@@ -219,8 +221,10 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>
                                 <strong>Site admins</strong> can see everything about an account in the admin panel, including
                                 messages in every chat (also deleted ones), IP addresses and logins, the list of banned
-                                pictures, and all feedback. The admin panel only shows that a message has an attachment, but the
-                                site's owner can reach attachment files on the server. They use it to deal with abuse, bans and
+                                pictures, and all feedback. The admin panel lists the attachments you've sent that are still
+                                kept (their name, size, which chat and how many tickets they take) but doesn't open them,
+                                though the site's owner can reach attachment files on the server. Site admins can delete your
+                                attachments and give you more tickets or take some away. They use it to deal with abuse, bans and
                                 broken accounts, and to improve the site. Feedback is only ever seen by site admins, never by
                                 other users. They can never see your password or your two-factor secret. Everything they do
                                 there, also just looking at your account or a chat you're in, goes in the admin log, which only
