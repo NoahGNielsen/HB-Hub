@@ -43,16 +43,16 @@ if ($adminFilterUser !== null) {
     $filterName = $statement->fetchColumn();
     $adminWhere = ' WHERE l.adminLogUserId = ? OR l.adminLogByUserId = ?';
     $adminParameters = [$adminFilterUser, $adminFilterUser];
-    $adminFilterHtml = 'Only what was done by or to <a class="admin-link" href="/admin/user?user=' . $adminFilterUser . '">'
-        . htmlspecialchars($filterName !== false ? $filterName : 'user ' . $adminFilterUser) . '</a>.';
+    $adminFilterHtml = 'Only what was done by or to '
+        . adminLogNameLink('/admin/user?user=' . $adminFilterUser, $filterName !== false ? $filterName : 'user ' . $adminFilterUser) . '.';
 } elseif ($adminFilterChat !== null) {
     $statement = $db->prepare('SELECT ' . adminChatTitleSql() . ' FROM `HBHub-Chats` c WHERE c.chatId = ?');
     $statement->execute([$adminFilterChat]);
     $filterTitle = $statement->fetchColumn();
     $adminWhere = ' WHERE l.adminLogChatId = ?';
     $adminParameters = [$adminFilterChat];
-    $adminFilterHtml = 'Only what was done to <a class="admin-link" href="/admin/chat?chat=' . $adminFilterChat . '">'
-        . htmlspecialchars($filterTitle !== false ? $filterTitle : 'chat ' . $adminFilterChat) . '</a>.';
+    $adminFilterHtml = 'Only what was done to '
+        . adminLogNameLink('/admin/chat?chat=' . $adminFilterChat, $filterTitle !== false ? $filterTitle : 'chat ' . $adminFilterChat) . '.';
 }
 
 $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-AdminLog` l' . $adminWhere);
@@ -111,12 +111,22 @@ function adminLogText(array $entry): string
     } ?? ADMIN_LOG_ACTIONS[$entry['adminLogAction']] ?? $entry['adminLogAction'];
 
     $user = $entry['adminLogUserId'] !== null
-        ? '<a class="admin-link" href="/admin/user?user=' . (int) $entry['adminLogUserId'] . '">' . htmlspecialchars($entry['userName']) . '</a>'
+        ? adminLogNameLink('/admin/user?user=' . (int) $entry['adminLogUserId'], $entry['userName'])
         : '<span class="admin-muted">someone</span>';
     $chat = $entry['adminLogChatId'] !== null
-        ? '<a class="admin-link" href="/admin/chat?chat=' . (int) $entry['adminLogChatId'] . '">' . htmlspecialchars($entry['chatTitle']) . '</a>'
+        ? adminLogNameLink('/admin/chat?chat=' . (int) $entry['adminLogChatId'], $entry['chatTitle'])
         : '<span class="admin-muted">a chat</span>';
     return strtr(htmlspecialchars($text), ['{user}' => $user, '{chat}' => $chat]);
+}
+
+/**
+ * A user's name or chat's title linked to its admin panel, cut off with "..." when it's too long for one line (the
+ * whole name is in the tooltip). dir="auto" keeps right-to-left names from turning the sentence around them.
+ */
+function adminLogNameLink(string $href, string $name): string
+{
+    return '<a class="admin-link admin-log-name" href="' . $href . '" dir="auto" title="' . htmlspecialchars($name) . '">'
+        . htmlspecialchars($name) . '</a>';
 }
 
 /**
@@ -182,10 +192,10 @@ function adminLogUrl(?int $user, ?int $chat, int $page = 1): string
                                     <?php foreach ($adminEntries as $entry): ?>
                                         <tr>
                                             <td class="admin-nowrap"><?= adminTime($entry['adminLogTimestamp']) ?></td>
-                                            <td>
+                                            <td class="admin-log-by">
                                                 <?php if ($entry['adminLogByUserId'] !== null): ?>
                                                     <?php $byId = (int) $entry['adminLogByUserId']; ?>
-                                                    <a class="admin-list-link" href="/admin/user?user=<?= $byId ?>">
+                                                    <a class="admin-list-link" href="/admin/user?user=<?= $byId ?>" title="<?= htmlspecialchars($entry['byName']) ?>">
                                                         <?= adminAvatarHtml(hbHubAvatarUrl($byId, $entry['byAvatarId'] !== null ? (int) $entry['byAvatarId'] : null), $entry['byName']) ?>
                                                         <span class="admin-list-name"><?= htmlspecialchars($entry['byName']) ?></span>
                                                     </a>

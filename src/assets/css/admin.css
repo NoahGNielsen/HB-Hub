@@ -177,6 +177,30 @@
   overflow-wrap: anywhere;
 }
 
+/* The admin log (admin/log.php). The admin's picture and name stay on one line (a long name gets "..."), instead of
+   the name breaking after every letter when "What" takes the room. */
+.admin-log-by {
+  white-space: nowrap;
+}
+
+.admin-log-by .admin-list-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+}
+
+/* A user's name or chat's title in "What": one line, cut off with "..." when it's longer than the column. Also clips
+   names made of piled-up accents so they can't spill over the rows around them. */
+.admin-log-name {
+  display: inline-block;
+  max-width: 24em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
 /* The reason the admin gave, under what they did in the admin log (admin/log.php) */
 .admin-log-reason {
   display: block;
