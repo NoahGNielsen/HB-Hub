@@ -3,7 +3,8 @@
 // chat/attachment.php sends a file back, and chat/attachments.php lists the user's own and deletes them.
 //
 // The server's disk is small, so attachments are paid for with tickets. Everyone has HBHUB_CHAT_ATTACHMENT_TICKETS
-// (site admins can add or take away some for one user in the admin panel), and each started HBHUB_CHAT_ATTACHMENT_TICKET_BYTES of a file (as it's stored, so after compressing) takes one.
+// (site admins can add or take away some for one user in the admin panel), and each started HBHUB_CHAT_ATTACHMENT_TICKET_BYTES of a file takes one
+// (as it was sent, so zipping it here doesn't make it cheaper - it matches the size people see).
 // A file keeps its tickets for 90 days, or only 3 when it takes more than 5 of them, and then it expires: the file
 // is deleted and the tickets are free again. Deleting the message (or just the attachment) frees them straight away.
 // Expired files are swept up by hbHubChatAttachmentsSweep(), which the chat page and the upload call, and which the
@@ -101,11 +102,12 @@ function hbHubChatAttachmentsBlocked(PDO $db): ?string
 }
 
 /**
- * How many tickets a file of $storedBytes takes: one for every started HBHUB_CHAT_ATTACHMENT_TICKET_BYTES, at least one.
+ * How many tickets a file of $bytes (as it was sent, not zipped) takes: one for every started
+ * HBHUB_CHAT_ATTACHMENT_TICKET_BYTES, at least one. chat.js works out the same from the file it's about to send.
  */
-function hbHubChatAttachmentTickets(int $storedBytes): int
+function hbHubChatAttachmentTickets(int $bytes): int
 {
-    return max(1, (int) ceil($storedBytes / HBHUB_CHAT_ATTACHMENT_TICKET_BYTES));
+    return max(1, (int) ceil($bytes / HBHUB_CHAT_ATTACHMENT_TICKET_BYTES));
 }
 
 /**

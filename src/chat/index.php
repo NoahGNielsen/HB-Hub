@@ -1055,7 +1055,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
     if (is_string($prepared)) {
         chatUploadAnswer(match ($prepared) { 'tooBig' => 413, 'storageError' => 500, default => 400 }, ['error' => $prepared]);
     }
-    $tickets = hbHubChatAttachmentTickets($prepared['storedSize']);
+    $tickets = hbHubChatAttachmentTickets($prepared['size']);
 
     // Like a normal message, only one in this chat that isn't deleted can be replied to
     $replyTo = chatMessage($db, $userId, (int) $chat['chatId'], $_POST['reply'] ?? null);

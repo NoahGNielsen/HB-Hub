@@ -893,7 +893,7 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                             <h2 id="admin-attachments-heading">Attachments</h2>
                             <p class="settings-intro">
                                 The files and pictures they've sent that are still kept, newest first. Each takes one ticket per started
-                                <?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES / 1024 / 1024 ?> MB (after compressing) until it runs out.
+                                <?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES / 1024 / 1024 ?> MB (as sent, before zipping) until it runs out.
                                 Deleting one deletes its file for good and gives them its tickets back straight away. The message it was in stays,
                                 showing "Attachment deleted".
                             </p>
