@@ -16,4 +16,4 @@ the [example config](../config-examples/hbHubSiteConfig.example.php). The main o
 
 ---
 
-[← Back to the docs](README.md)
+[← Back to the docs](index.md)

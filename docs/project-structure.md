@@ -32,4 +32,4 @@ HB-Hub/
 
 ---
 
-[← Back to the docs](README.md)
+[← Back to the docs](index.md)

@@ -19,14 +19,14 @@
 ## What it is
 
 - 💬 **Chat**: direct messages and group chats with replies, reactions, GIFs, attachments and @mentions
-- 🎰 **Casino**: Blackjack, Baccarat and Roulette, with virtual chips only (no real money)
+- 🎰 **Casino**: Blackjack, Baccarat and Roulette, with virtual chips only
 - 🎲 **Games**: Matador, Chess and Wordle
 
 Built with plain PHP 8.4, MySQL 8.4 and HTML/CSS/JS. No framework, no build step.
 
 ## Docs
 
-Everything else is in [`docs/`](docs/README.md): the [full feature list](docs/features.md), [setup](docs/setup.md),
+Everything else is in [`docs/`](docs/index.md): the [full feature list](docs/features/index.md), [setup](docs/setup.md),
 [config options](docs/config.md) and the [project structure](docs/project-structure.md).
 
 ## License

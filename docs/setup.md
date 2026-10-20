@@ -15,4 +15,4 @@ Every change to `schema.sql` also gets its own file in [`database/updates/`](../
 
 ---
 
-[← Back to the docs](README.md)
+[← Back to the docs](index.md)
