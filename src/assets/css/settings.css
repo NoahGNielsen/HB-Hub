@@ -595,6 +595,12 @@
   padding-bottom: 0;
 }
 
+/* A row straight after a divider (the admin panel's Profile picture) already has a line above it */
+.settings-divider + .settings-item {
+  padding-top: 0;
+  border-top: none;
+}
+
 /* A row that is a form of its own */
 .settings form.settings-item {
   flex-direction: row;
