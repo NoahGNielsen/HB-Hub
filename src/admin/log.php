@@ -3,8 +3,9 @@
 // Everyone but site admins gets a 404, so it doesn't show that the page is here.
 //
 // Everything site admins have done in the admin panel, newest first, ADMIN_LOG_SHOWN at a time (?page=): opening a
-// user's or chat's admin panel (once per ADMIN_LOG_VIEW_MINUTES), downloading a user's data, and every change. The rows
-// are written by the admin pages with adminLog() (assets/php/adminLog.php). Nothing here changes them: the log can't be
+// user's or chat's admin panel (once per ADMIN_LOG_VIEW_MINUTES), downloading a user's data, and every change, plus
+// the automatic bans for a banned profile picture (no admin, shown as "Automatic"). The rows are written by the admin
+// pages with adminLog() (assets/php/adminLog.php), the automatic bans by bannedAvatars.php. Nothing here changes them: the log can't be
 // edited or deleted from the site, and rows older than ADMIN_LOG_KEEP_DAYS are removed (here and by cron/nightly.php).
 // ?user=id shows only what was done by or to that user, ?chat=id only what was done to that chat. The "Admin log"
 // buttons at the top of a user's and a chat's admin panel link here with those.
@@ -83,6 +84,9 @@ function adminLogText(array $entry): string
 
     $text = match ($entry['adminLogAction']) {
         'user.ban' => !empty($data['avatar']) ? 'Banned {user} and their profile picture' : null,
+        'user.autoban' => isset($data['pictureId'])
+            ? '{user} was banned automatically for ' . (!empty($data['signup']) ? 'signing up with' : 'uploading')
+                . ' banned picture #' . (int) $data['pictureId'] : null,
         'user.bio' => !empty($data['removed']) ? 'Removed {user}\'s bio' : null,
         'user.block' => is_string($data['mode'] ?? null) && isset(HBHUB_BLOCK_MODES[$data['mode']])
             ? 'Set {user}\'s gambling block to "' . HBHUB_BLOCK_MODES[$data['mode']] . '"' : null,
@@ -142,6 +146,7 @@ function adminLogUrl(?int $user, ?int $chat, int $page = 1): string
                             <p class="settings-intro">
                                 Everything site admins have done in the admin panel, newest first. Opening a user or a chat counts too,
                                 as it shows all their messages and personal info (once every <?= ADMIN_LOG_VIEW_MINUTES ?> minutes).
+                                Accounts banned automatically for uploading a banned profile picture are here too.
                                 The log can't be changed or deleted, and is kept for <?= ADMIN_LOG_KEEP_DAYS === 365 ? 'a year' : ADMIN_LOG_KEEP_DAYS . ' days' ?>.
                             </p>
                         </div>
@@ -175,6 +180,8 @@ function adminLogUrl(?int $user, ?int $chat, int $page = 1): string
                                                         <?= adminAvatarHtml(hbHubAvatarUrl($byId, $entry['byAvatarId'] !== null ? (int) $entry['byAvatarId'] : null), $entry['byName']) ?>
                                                         <span class="admin-list-name"><?= htmlspecialchars($entry['byName']) ?></span>
                                                     </a>
+                                                <?php elseif ($entry['adminLogAction'] === 'user.autoban'): ?>
+                                                    <span class="admin-muted">Automatic</span>
                                                 <?php else: ?>
                                                     <span class="admin-muted">Unknown</span>
                                                 <?php endif; ?>
