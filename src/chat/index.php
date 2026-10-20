@@ -20,6 +20,8 @@ const HBHUB_CHAT_MESSAGES_SHOWN = 20; // the newest ones when a chat opens, and 
 const HBHUB_CHAT_MESSAGES_UNREAD_MAX = 100; // with more unread than SHOWN, a chat opens with up to this many, so the "New messages" line is there
 const HBHUB_CHAT_MESSAGES_POLLED = 100; // new ones per poll, a later poll gets the rest
 const HBHUB_CHAT_MESSAGES_JUMP_MAX = 500; // per request when clicking a reply quote loads back to its message, chat.js asks again for the rest
+const HBHUB_CHAT_SEND_MAX = 10; // messages one user can send (in all chats together, attachments and GIFs too) per HBHUB_CHAT_SEND_SECONDS
+const HBHUB_CHAT_SEND_SECONDS = 5;
 const HBHUB_CHAT_REACTIONS_MAX = 20; // different emoji under one message
 const HBHUB_CHAT_LOOKING_SECONDS = 10; // a member whose open chat hasn't checked in for this long isn't looking at it (no @mention notification then)
 const HBHUB_CHAT_LOOKING_EVERY = 4; // seconds between updates of memberLastViewedTimestamp, as chat.js checks in every 2
@@ -352,6 +354,34 @@ function chatRedirect(?int $chatId, bool $keepUnread = false): never
 function chatRedirectLinkBlocked(int $chatId): never
 {
     header('Location: /chat/?chat=' . $chatId . '&linkBlocked=1', true, 303);
+    exit;
+}
+
+/**
+ * Whether sending $count more messages now would take the user over HBHUB_CHAT_SEND_MAX in the last
+ * HBHUB_CHAT_SEND_SECONDS, in all their chats together. Notices (messageEvent) don't count.
+ * It only looks at the user's newest few messages: when the one that would be the oldest of the allowed ones is
+ * still that recent, there's no room. Inside a transaction it locks the user's row first, so two tabs sending at
+ * once can't both squeeze in.
+ */
+function chatSendingTooFast(PDO $db, int $userId, int $count = 1): bool
+{
+    if ($db->inTransaction()) {
+        $db->prepare('SELECT userId FROM `HBHub-Users` WHERE userId = ? FOR UPDATE')->execute([$userId]);
+    }
+    $statement = $db->prepare('SELECT messageSentTimestamp > NOW() - INTERVAL ' . HBHUB_CHAT_SEND_SECONDS . ' SECOND
+        FROM `HBHub-Messages` WHERE userId = ? AND messageEvent = 0 ORDER BY messageId DESC LIMIT 1 OFFSET ' . max(0, HBHUB_CHAT_SEND_MAX - $count));
+    $statement->execute([$userId]);
+    return (bool) $statement->fetchColumn();
+}
+
+/**
+ * Back to the chat after a message wasn't sent because the user is sending too fast (chatSendingTooFast()).
+ * ?tooFast=1 opens the Slow down popup, and chat.js keeps what was typed in the box so it can be sent again.
+ */
+function chatRedirectTooFast(int $chatId): never
+{
+    header('Location: /chat/?chat=' . $chatId . '&tooFast=1', true, 303);
     exit;
 }
 
@@ -1011,6 +1041,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
     if (hbHubUrlBlacklisted($message)) {
         chatUploadAnswer(400, ['error' => 'linkBlocked']);
     }
+    if (chatSendingTooFast($db, $userId)) { // before the file is worked on, and checked again under the lock below
+        chatUploadAnswer(429, ['error' => 'tooFast']);
+    }
 
     hbHubChatAttachmentsSweep($db); // expired ones first, so their tickets and space count as free
     $blocked = hbHubChatAttachmentsBlocked($db);
@@ -1045,21 +1078,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
             $error = [507, ['error' => 'storageFull']];
         } else {
             $db->beginTransaction();
-            $db->prepare('INSERT INTO `HBHub-ChatAttachments` (userId, chatId, attachmentKey, attachmentName, attachmentType,
-                    attachmentKind, attachmentSize, attachmentStoredSize, attachmentTickets, attachmentExpiresTimestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW() + INTERVAL ? DAY)')
-                ->execute([$userId, $chat['chatId'], $prepared['key'], $prepared['name'], $prepared['type'], $prepared['kind'],
-                    $prepared['size'], $prepared['storedSize'], $tickets, hbHubChatAttachmentDays($tickets)]);
-            $attachmentId = (int) $db->lastInsertId();
-            $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, attachmentId, messageReplyToId, messageIsGhost)
-                VALUES (?, ?, ?, ?, ?, ?)')
-                ->execute([$userId, $chat['chatId'], $message !== '' ? $message : null, $attachmentId, $replyToId, (int) $chatIsGhost]);
-            $messageId = (int) $db->lastInsertId();
-            if (!$chatIsGhost) { // a ghost doesn't move the chat up anyone's list
-                $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
-                    ->execute([$chat['chatId']]);
+            if (chatSendingTooFast($db, $userId)) {
+                $db->rollBack();
+                $error = [429, ['error' => 'tooFast']];
+            } else {
+                $db->prepare('INSERT INTO `HBHub-ChatAttachments` (userId, chatId, attachmentKey, attachmentName, attachmentType,
+                        attachmentKind, attachmentSize, attachmentStoredSize, attachmentTickets, attachmentExpiresTimestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW() + INTERVAL ? DAY)')
+                    ->execute([$userId, $chat['chatId'], $prepared['key'], $prepared['name'], $prepared['type'], $prepared['kind'],
+                        $prepared['size'], $prepared['storedSize'], $tickets, hbHubChatAttachmentDays($tickets)]);
+                $attachmentId = (int) $db->lastInsertId();
+                $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, attachmentId, messageReplyToId, messageIsGhost)
+                    VALUES (?, ?, ?, ?, ?, ?)')
+                    ->execute([$userId, $chat['chatId'], $message !== '' ? $message : null, $attachmentId, $replyToId, (int) $chatIsGhost]);
+                $messageId = (int) $db->lastInsertId();
+                if (!$chatIsGhost) { // a ghost doesn't move the chat up anyone's list
+                    $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
+                        ->execute([$chat['chatId']]);
+                }
+                $db->commit();
             }
-            $db->commit();
         }
     } catch (Throwable $e) {
         if ($db->inTransaction()) {
@@ -1153,8 +1191,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $replyTo = chatMessage($db, $userId, (int) $chat['chatId'], $_POST['reply'] ?? null);
         $replyToId = $replyTo !== null && $replyTo['messageDeletedTimestamp'] === null ? (int) $replyTo['messageId'] : null;
 
-        // A ghost-banned user's messages are ghosts (assets/php/chat.php): only they see them
+        // A ghost-banned user's messages are ghosts (assets/php/chat.php): only they see them.
+        // Text and a GIF are two messages, so both have to fit under the limit.
         $db->beginTransaction();
+        if (chatSendingTooFast($db, $userId, count($contents))) {
+            $db->rollBack();
+            chatRedirectTooFast((int) $chat['chatId']);
+        }
         $statement = $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageReplyToId, messageIsGhost) VALUES (?, ?, ?, ?, ?)');
         $messageIds = [];
         foreach ($contents as $i => $content) {
@@ -2616,6 +2659,28 @@ if ($isPoll) {
                 </footer>
             </div>
         </dialog>
+
+        <!-- Slow down popup (chat.js), when a message wasn't sent because the user sent too many too fast
+             (chatSendingTooFast(), ?tooFast=1). What was typed is still in the box. -->
+        <?php if (($_GET['tooFast'] ?? null) === '1'): ?>
+            <dialog class="chat-dialog chat-too-fast" aria-labelledby="chat-too-fast-title">
+                <div class="chat-requests-body">
+                    <header class="chat-new-header">
+                        <h2 id="chat-too-fast-title">Slow down</h2>
+                        <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                    </header>
+
+                    <p class="chat-dialog-text">
+                        You can send up to <?= HBHUB_CHAT_SEND_MAX ?> messages every <?= HBHUB_CHAT_SEND_SECONDS ?> seconds.
+                        That one hasn't gone through. Wait a moment and send it again.
+                    </p>
+
+                    <footer class="chat-new-footer chat-dialog-footer">
+                        <button type="button" class="chat-new-btn" data-dialog-close>Okay</button>
+                    </footer>
+                </div>
+            </dialog>
+        <?php endif; ?>
 
         <!-- Message requests popup (chat.js): chats the user was added to, to accept, decline (leave) or block.
              Always on the page, so chat.js polling can fill it when a request comes in. -->

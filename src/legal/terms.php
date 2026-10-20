@@ -115,6 +115,10 @@ const HBHUB_TERMS_UPDATED = '20 October 2026';
                                 tickets can be used again. HB Hub isn't a backup, so keep your own copy of anything that matters.
                                 When the server's space for attachments is full, nobody can send new ones until some are deleted.
                             </li>
+                            <li>
+                                To stop spam, you can send up to 10 messages every 5 seconds, in all your chats together
+                                (files and GIFs count as messages). Anything more than that isn't sent.
+                            </li>
                             <li>You're responsible for what you post. Admins can remove anything that breaks these terms.</li>
                             <li>
                                 Messages aren't end-to-end encrypted, and admins can read them when they look into a report

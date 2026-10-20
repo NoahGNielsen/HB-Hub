@@ -12,6 +12,7 @@
 | **Formatting** | Discord-style `**bold**`, `*italic*`, `__underline__`, `~~strikethrough~~`, `` `code` `` and code blocks, `#` headings, lists and `[masked](https://links)`, from a right-click menu on the message box or Ctrl+B / I / U |
 | **@mentions** | Type `@` for a list of the people in the chat. Mentions light up, and the person mentioned gets a notification (not from muted chats or people they blocked). Works in Chess and Matador's game chats too |
 | **Chat menu** | Right-click a chat to mute its notifications for a while, hide it or leave it |
+| **Spam limit** | Everyone can send up to 10 messages every 5 seconds, in all their chats together (files and GIFs count too). One over that isn't sent, and stays in the message box with a popup saying to slow down |
 | **Link safety** | Links ask before they open, and links to IP loggers and other sites on the URL blacklist (`src/assets/urlBlacklist.txt`) can't be sent at all, in chats or game chats |
 
 ---

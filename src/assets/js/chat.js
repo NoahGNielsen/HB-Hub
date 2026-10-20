@@ -686,6 +686,26 @@ chatPart(() => {
     }
 });
 
+// Slow down popup: only on the page when the server didn't send a message because the user sent too many too fast
+// (?tooFast=1). It opens straight away, and ?tooFast=1 is taken out of the address so a refresh doesn't open it again.
+chatPart(() => {
+    const dialog = document.querySelector('.chat-too-fast');
+    if (!dialog) return;
+
+    dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+        button.addEventListener('click', () => dialog.close());
+    });
+
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+
+    const url = new URL(location.href);
+    url.searchParams.delete('tooFast');
+    history.replaceState(null, '', url);
+    dialog.showModal();
+});
+
 // Message requests popup: chats the user was added to but hasn't accepted yet.
 // Accept and Decline are plain form posts, the server does the rest.
 // A message request notification links to /chat/?requests=1, which opens it straight away (when there still are any).
@@ -1949,6 +1969,7 @@ chatPart((signal) => {
         storageFull: "HB Hub's storage is full. Attachments can be sent again once some expire or are deleted.",
         disabled: 'Attachments are turned off for now.',
         busy: 'Lots of attachments are being sent right now. Try again in a moment.',
+        tooFast: "You're sending messages too fast. Wait a moment and try again.",
     };
 
     // The attachment waiting to be sent: { file, ready, kind, result, converted, converting, note, error }
@@ -3184,12 +3205,14 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
     const textarea = main.querySelector('.chat-composer textarea');
     const chatId = main.querySelector('[data-chat-messages]')?.dataset.chatMessages;
     const focusedChatId = list?.contains(document.activeElement) ? document.activeElement.closest('[data-chat-id]')?.dataset.chatId : undefined;
-    const draft = textarea && textarea.value !== sent ? textarea.value : '';
+    // Not sent after all (a blocked link, or sending too fast): the message stays in the box to try again
+    const isRefused = address.searchParams.get('linkBlocked') === '1' || address.searchParams.get('tooFast') === '1';
+    const draft = textarea && (textarea.value !== sent || isRefused) ? textarea.value : '';
 
     // Copies of the pictures for browsers without JS. Parsed here they're real <img>s, which would all load at once.
     newMain.querySelectorAll('noscript').forEach((noscript) => noscript.remove());
 
-    // The address first, as the parts read it (?unread=1, ?linkBlocked=1, ?requests=1, #message-)
+    // The address first, as the parts read it (?unread=1, ?linkBlocked=1, ?tooFast=1, ?requests=1, #message-)
     const path = address.pathname + address.search;
     if (fromHistory) history.replaceState(null, '', path + location.hash);
     else if (replace || path === location.pathname + location.search) history.replaceState(null, '', path);
