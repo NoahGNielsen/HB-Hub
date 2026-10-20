@@ -1,7 +1,8 @@
 <?php
-// The list under the bell in the nav bar, for notificationBell.js. Answers as JSON:
-// - /otherPages/notifications?count=1 is just how many are unread (polled for the number on the bell)
-// - /otherPages/notifications is the newest notifications too, from every part of the site, and the newest one's id
+// The list under the bell in the nav bar, for notificationBell.js. Answers as JSON (the number on the bell is kept up
+// to date by otherPages/navUpdates.php):
+// - /otherPages/notifications is the newest notifications, from every part of the site, how many are unread and the
+//   newest one's id
 // - POST action=read&upTo=id marks them read up to that one, once the list has been opened. Only up to the newest one
 //   the user was shown, so one that came in meanwhile still counts as new.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -22,8 +23,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$response = ['unread' => hbHubUnreadNotificationCount($db, $userId)];
-if (($_GET['count'] ?? null) !== '1') {
-    $response += hbHubNotifications($db, $userId);
-}
-echo json_encode($response, JSON_INVALID_UTF8_SUBSTITUTE);
+echo json_encode(['unread' => hbHubUnreadNotificationCount($db, $userId)] + hbHubNotifications($db, $userId), JSON_INVALID_UTF8_SUBSTITUTE);

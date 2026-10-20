@@ -1186,8 +1186,8 @@ $openChatId = $_GET['chat'] ?? null;
 $openMembership = chatMembership($db, $userId, $openChatId);
 $lastReadMessageId = $openMembership['lastReadMessageId'] ?? null;
 
-// chat.js polls the page every 2 seconds (?poll=1, answered as JSON at the end of this file), which also keeps the
-// user's last seen time up to date like any other request. It asks for the open chat's messages after ?after= (the newest
+// chat.js polls the page every 2 seconds while it's in view (?poll=1, answered as JSON at the end of this file), which
+// also keeps the user's last seen time up to date like any other request. It asks for the open chat's messages after ?after= (the newest
 // one it shows), and marks up to the newest one read only while the page is being looked at (?read=1).
 // While it's being looked at (?looking=1, even after "Mark unread") the user counts as having the chat in front of them,
 // so @mentions in it don't send a notification (chatMarkLooking()).

@@ -2,7 +2,7 @@
 // Chat formatting: turns a message's text into HTML, Discord-style. The text is stored just as it was typed,
 // the formatting is only worked out here when it's shown, so editing a message gives back exactly what was typed.
 // Used by chat/index.php for the messages themselves, and (as plain text) for reply quotes, the chat list
-// and notifications (chat/notifications.php), so those don't show the ** and __ around words.
+// and notifications (assets/php/messageNotifications.php), so those don't show the ** and __ around words.
 //
 // What it understands:
 //   **bold**  *italic* or _italic_  __underline__  ~~strikethrough~~  `code`

@@ -19,8 +19,10 @@ const HBHUB_DELETED_USER_NAME = 'Deleted User'; // userName of a deleted account
 const HBHUB_BANNED_COOKIE = 'hbHubBanned';
 const HBHUB_BANNED_COOKIE_DAYS = 400; // the longest browsers keep a cookie
 
-const HBHUB_SESSION_LAST_SEEN_MINUTES = 1; // how often sessionLastSeen is written, so polling doesn't write on every request
-// Seen this recently counts as online (userLastSeenTimestamp is updated on every page load), on profiles and in the admin panel
+// How often sessionLastSeen and userLastSeenTimestamp are written, so polling doesn't write on every request: a write
+// keeps the request (and one of the hosting's few PHP processes) busy for longer than the read it saves
+const HBHUB_SESSION_LAST_SEEN_MINUTES = 1;
+// Seen this recently counts as online (userLastSeenTimestamp, updated at most once a minute), on profiles and in the admin panel
 const HBHUB_SESSION_ONLINE_SECONDS = 5 * 60;
 
 /**
@@ -145,7 +147,8 @@ function hbHubIsDeletedUserName(string $name): bool
 
 /**
  * The user behind the session cookie, or null when there's no valid session (missing, expired or banned).
- * Also updates the user's last seen time and IP, so it's only called once per request (at the bottom of this file).
+ * Also updates the user's last seen time and IP, so it's only called once per request (at the bottom of this file):
+ * the time at most once every HBHUB_SESSION_LAST_SEEN_MINUTES, the IP straight away when it changed.
  * Banning keeps the user's sessions, so the first visit after it can mark the browser (hbHubSetBannedCookie())
  * before the session is deleted.
  * userGhostBanned is whether a site admin ghost banned them (assets/php/chat.php): only the chat looks at it, and it's
@@ -170,7 +173,9 @@ function hbHubSessionUser(): ?array
         // A deleted account's userStatus is NULL.
         $statement = $db->prepare('SELECT u.userId, u.userName, u.userRole, u.userAvatarAttachmentId, u.userSettings, u.userStatus,
                 u.userGhostBannedTimestamp IS NOT NULL AS userGhostBanned,
-                COALESCE(s.sessionLastSeen < NOW() - INTERVAL ' . HBHUB_SESSION_LAST_SEEN_MINUTES . ' MINUTE, 1) AS sessionIsStale
+                COALESCE(s.sessionLastSeen < NOW() - INTERVAL ' . HBHUB_SESSION_LAST_SEEN_MINUTES . ' MINUTE, 1) AS sessionIsStale,
+                COALESCE(u.userLastSeenTimestamp < NOW() - INTERVAL ' . HBHUB_SESSION_LAST_SEEN_MINUTES . ' MINUTE, 1) AS userIsStale,
+                u.userIpv4AdresseLastAccessed, u.userIpv6AdresseLastAccessed
             FROM `HBHub-Sessions` s JOIN `HBHub-Users` u ON u.userId = s.userId
             WHERE s.sessionId = ? AND s.sessionValidUntil > NOW() AND s.sessionTotpPending = 0 AND u.userStatus IS NOT NULL');
         $statement->execute([$sessionId]);
@@ -190,11 +195,12 @@ function hbHubSessionUser(): ?array
             $db->prepare('UPDATE `HBHub-Sessions` SET sessionLastSeen = NOW(), sessionDevice = ? WHERE sessionId = ?')
                 ->execute([hbHubSessionDevice(), $sessionId]);
         }
-        unset($user['userStatus'], $user['sessionIsStale']);
-
-        $db->prepare('UPDATE `HBHub-Users` SET userLastSeenTimestamp = NOW(),
-                userIpv4AdresseLastAccessed = ?, userIpv6AdresseLastAccessed = ? WHERE userId = ?')
-            ->execute([$ipv4, $ipv6, $user['userId']]);
+        if ($user['userIsStale'] || $user['userIpv4AdresseLastAccessed'] !== $ipv4 || $user['userIpv6AdresseLastAccessed'] !== $ipv6) {
+            $db->prepare('UPDATE `HBHub-Users` SET userLastSeenTimestamp = NOW(),
+                    userIpv4AdresseLastAccessed = ?, userIpv6AdresseLastAccessed = ? WHERE userId = ?')
+                ->execute([$ipv4, $ipv6, $user['userId']]);
+        }
+        unset($user['userStatus'], $user['sessionIsStale'], $user['userIsStale'], $user['userIpv4AdresseLastAccessed'], $user['userIpv6AdresseLastAccessed']);
     } catch (PDOException $e) {
         error_log('Session: could not check the session: ' . $e->getMessage());
         return null;

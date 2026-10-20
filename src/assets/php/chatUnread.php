@@ -1,6 +1,6 @@
 <?php
 // The red number on Chat in the side bar (navPanel.php): how many of the user's chats have messages they haven't read.
-// Kept up to date by chatUnread.js, which asks /chat/unread, and on the chat page by chat.js's own polling.
+// Kept up to date by chatUnread.js, with the count from /otherPages/navUpdates, and on the chat page by chat.js's own polling.
 require_once __DIR__ . '/userSettings.php';
 
 const HBHUB_UNREAD_CHAT_ACTIVE = 1; // chatStatus in HBHub-Chats

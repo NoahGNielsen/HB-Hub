@@ -1,11 +1,10 @@
 // The bell in the nav bar: clicking it opens the list of notifications (from /otherPages/notifications), and opening
-// it marks them read. The red number on it is how many are unread, checked every 20 seconds while the page is in view.
+// it marks them read. The red number on it is how many are unread, kept up to date by navUpdates.js (nav:update).
 // The new ones stay highlighted in the list until it's opened again.
 (() => {
     const root = document.querySelector('[data-notifications]');
     if (!root) return;
 
-    const POLL_MS = 20000;
     const bell = root.querySelector('[data-notifications-bell]');
     const icon = root.querySelector('[data-notifications-icon]');
     const count = root.querySelector('[data-notifications-count]');
@@ -122,18 +121,14 @@
         }
     });
 
-    async function poll() {
-        if (document.visibilityState !== 'visible') return;
-        const data = await request('/otherPages/notifications?count=1');
-        if (data === null) return;
+    document.addEventListener('nav:update', (event) => {
+        const { unread } = event.detail;
+        if (typeof unread !== 'number') return;
         // While the list is open, new ones are shown in it straight away
-        if (!panel.hidden && data.unread > 0) {
+        if (!panel.hidden && unread > 0) {
             load();
         } else {
-            showUnread(data.unread);
+            showUnread(unread);
         }
-    }
-
-    setInterval(poll, POLL_MS);
-    document.addEventListener('visibilitychange', poll); // catch up when coming back to the tab
+    });
 })();

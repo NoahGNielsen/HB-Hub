@@ -1,10 +1,11 @@
-// Message notifications: while any HB Hub page is open, asks /chat/notifications for new messages every
-// 15 seconds and shows a browser notification for each. navPanel.php only adds this script when the user turned
-// notifications on in settings, and the settings page asks the browser for permission.
+// Message notifications: while any HB Hub page is open, asks for new messages along with navUpdates.js's request
+// (every 15 seconds, also while the page is hidden: messages=1 and after= on nav:poll, the answer's "messages" on
+// nav:update, see assets/php/messageNotifications.php) and shows a browser notification for each.
+// navPanel.php only adds this script when the user turned notifications on in settings, and the settings page asks the
+// browser for permission.
 (() => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-    const POLL_MS = 15000;
     // The newest message already checked, shared by every open tab so a message is only announced once
     const STORAGE_KEY = 'hbHubNotifiedMessageId';
     let lastSeen = null; // used when storage isn't available
@@ -31,23 +32,21 @@
             && new URLSearchParams(location.search).get('chat') === String(chatId);
     }
 
-    let timer = null;
+    let isEnabled = true;
 
-    async function check() {
+    document.addEventListener('nav:poll', (event) => {
+        if (!isEnabled) return;
         const after = readLastSeen();
-        let data;
-        try {
-            const response = await fetch('/chat/notifications' + (after !== null ? '?after=' + after : ''), {
-                headers: { Accept: 'application/json' },
-            });
-            if (!response.ok) return;
-            data = await response.json();
-        } catch {
-            return; // offline for a moment, try again next time
-        }
+        event.detail.params.set('messages', '1');
+        if (after !== null) event.detail.params.set('after', String(after));
+        event.detail.inBackground = true; // the other tabs and windows are just what the notifications are for
+    });
 
+    document.addEventListener('nav:update', (event) => {
+        const data = event.detail.messages;
+        if (!data) return;
         if (!data.enabled) {
-            clearInterval(timer); // turned off in another tab
+            isEnabled = false; // turned off in another tab
             return;
         }
 
@@ -71,8 +70,5 @@
         }
 
         if (announced === null || data.latest > announced) writeLastSeen(data.latest);
-    }
-
-    check();
-    timer = setInterval(check, POLL_MS);
+    });
 })();

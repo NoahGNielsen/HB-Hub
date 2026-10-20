@@ -91,7 +91,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Your password, but only as a one-way hash. Nobody, not even an admin, can read your password.</li>
                             <li>The secret behind your two-factor codes, if you turn two-factor login on.</li>
                             <li>Your settings, like which chats you've muted, hidden or blocked, and whether you've blocked the Casino and Games.</li>
-                            <li>When you made the account and when you were last on the site.</li>
+                            <li>When you made the account and when you were last on the site (updated at most once a minute).</li>
                             <li>Failed logins, whether the account is locked or banned, and whether a ban was by an admin or automatic.</li>
                             <li>Whether, and since when, the account is ghost banned (see Messages and chats below).</li>
                         </ul>

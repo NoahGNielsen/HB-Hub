@@ -6,6 +6,7 @@
 // Chat in the side bar has the number of chats with unread messages on it, kept up to date by chatUnread.js.
 // Casino pages set $navCasinoChips (the user's chips) before including this, to show them in the top bar too,
 // kept up to date by casino.js.
+// Those four share one request (navUpdates.js, otherPages/navUpdates.php), so a page only sends one every 15 seconds.
 // Site admins also get Admin in the side bar, the admin panel's lists of users and chats (admin/index.php), with the
 // number of new feedback on it.
 // Feedback, at the bottom of the side bar (at the end of the bottom bar on a phone), opens otherPages/feedback.php with
@@ -134,4 +135,7 @@ $navFeedbackHref = $navOnFeedback
 <?php endif; ?>
 <?php if ($navCasinoChips !== null): ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/casino.js?v=<?= filemtime(__DIR__ . '/../js/casino.js') ?>" defer></script>
+<?php endif; ?>
+<?php if ($navUser !== null): ?>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/navUpdates.js?v=<?= filemtime(__DIR__ . '/../js/navUpdates.js') ?>" defer></script>
 <?php endif; ?>

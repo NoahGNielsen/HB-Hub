@@ -2934,7 +2934,9 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
 // on the messages already shown (?from= the oldest one), which change on old messages as well.
 // Message requests are swapped in the same way, and the requests button shows up when there are any.
 // The number of unread chats is passed on to the red number on Chat in the side bar.
-// Every poll also keeps the user's last seen time up to date, as session.php does that on every request.
+// Polling keeps the user's last seen time up to date too, like any other request (session.php).
+// While the page is hidden (another tab, minimised) it doesn't poll at all: each poll is one of the few PHP requests the
+// hosting runs at once, for the whole site. Coming back to the page polls straight away.
 // New messages are only marked read while the page is being looked at, and not at all after "Mark unread" (?unread=1).
 (() => {
     const POLL_MS = 2000;
@@ -3008,7 +3010,14 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
         requestsCount.textContent = count > 9 ? '9+' : String(count);
     }
 
+    let pollTimer = null; // the next poll, null while the page is hidden or a poll is on its way
+    let isPolling = false;
+
     async function poll() {
+        pollTimer = null;
+        if (document.visibilityState !== 'visible') return; // goes on once the page is in view again
+        isPolling = true;
+
         const params = new URLSearchParams({ poll: '1' });
         const sentAt = performance.now();
         if (messages) {
@@ -3050,8 +3059,12 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
         }
 
         // The next poll waits for this one, so a slow answer never has two on their way at once
-        setTimeout(poll, POLL_MS);
+        isPolling = false;
+        pollTimer = setTimeout(poll, POLL_MS);
     }
 
-    setTimeout(poll, POLL_MS);
+    pollTimer = setTimeout(poll, POLL_MS);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && pollTimer === null && !isPolling) poll();
+    });
 })();

@@ -1,10 +1,10 @@
 // Casino chips (assets/php/casino/wallet.php), on every casino page: keeps the chip count in the top bar up to date,
 // and on the casino home the big chip count too, and the daily chips card with its countdown and Collect button.
-// Asks /gambling/chips every 15 seconds while the page is in view. A game that gets a new balance in its own answers
-// passes it on straight away with
+// The chips come along with navUpdates.js's request (every 15 seconds while the page is in view: wallet=1 on nav:poll,
+// the answer's "wallet" on nav:update). /gambling/chips is only asked when the daily chips' countdown runs out and to
+// collect them. A game that gets a new balance in its own answers passes it on straight away with
 //     document.dispatchEvent(new CustomEvent('casino:wallet', { detail: { chips: 1234 } }));
 (() => {
-    const POLL_MS = 15000;
     const counts = document.querySelectorAll('[data-casino-chips]');
     const daily = document.querySelector('[data-casino-daily]');
     const claimButton = daily?.querySelector('[data-casino-claim]');
@@ -112,12 +112,10 @@
     });
 
     document.addEventListener('casino:wallet', (event) => show(event.detail));
-
-    function poll() {
-        if (document.visibilityState === 'visible') refresh();
-    }
-    setInterval(poll, POLL_MS);
-    document.addEventListener('visibilitychange', poll); // catch up when coming back to the tab
+    document.addEventListener('nav:poll', (event) => event.detail.params.set('wallet', '1'));
+    document.addEventListener('nav:update', (event) => {
+        if (event.detail.wallet) show(event.detail.wallet);
+    });
 
     // The page was made with the daily chips' state, so only the countdown needs starting
     if (daily) {
