@@ -2666,13 +2666,13 @@ if ($isPoll) {
             <dialog class="chat-dialog chat-too-fast" aria-labelledby="chat-too-fast-title">
                 <div class="chat-requests-body">
                     <header class="chat-new-header">
-                        <h2 id="chat-too-fast-title">Slow down</h2>
+                        <h2 id="chat-too-fast-title">Woah! Slow down!</h2>
                         <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
                     </header>
 
                     <p class="chat-dialog-text">
-                        You can send up to <?= HBHUB_CHAT_SEND_MAX ?> messages every <?= HBHUB_CHAT_SEND_SECONDS ?> seconds.
-                        That one hasn't gone through. Wait a moment and send it again.
+                        Boddy, your sending messeges really quickly. And i think i didn't get the last one. 
+                        Take a moment and try again.
                     </p>
 
                     <footer class="chat-new-footer chat-dialog-footer">
