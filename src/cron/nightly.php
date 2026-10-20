@@ -1,5 +1,5 @@
 <?php
-// Nightly clean-up, run by the server's crontab at 2:30 every night (see the README's Setup), never by a browser.
+// Nightly clean-up, run by the server's crontab at 2:30 every night (see docs/setup.md), never by a browser.
 // The site does all of this lazily on the next request anyway (chat page, lobbies, GIF searches), but only a batch
 // at a time and only when someone comes by, so this catches up on whatever was left overnight:
 //   - every expired chat attachment: its file deleted from disk and its row marked as expired
