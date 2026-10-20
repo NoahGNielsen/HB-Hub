@@ -7,7 +7,8 @@ const HBHUB_UNREAD_CHAT_ACTIVE = 1; // chatStatus in HBHub-Chats
 
 /**
  * How many chats have unread messages: the ones with an unread count in the chat list (chat/index.php), so messages
- * from others, not deleted and not notices, that came after the last one the user read.
+ * from others, not deleted, not notices and not ghosts (only their ghost-banned sender sees those, assets/php/chat.php),
+ * that came after the last one the user read.
  * Chats the user muted don't count, and neither do message requests, which have their own button in the chat page.
  */
 function hbHubUnreadChatCount(PDO $db, int $userId, array $userSettings): int
@@ -20,7 +21,7 @@ function hbHubUnreadChatCount(PDO $db, int $userId, array $userSettings): int
             AND EXISTS (
                 SELECT 1 FROM `HBHub-Messages` m
                 WHERE m.chatId = cm.chatId AND m.messageId > COALESCE(cm.lastReadMessageId, 0)
-                    AND m.userId <> ? AND m.messageDeletedTimestamp IS NULL AND m.messageEvent = 0
+                    AND m.userId <> ? AND m.messageDeletedTimestamp IS NULL AND m.messageEvent = 0 AND m.messageIsGhost = 0
             )');
     $statement->execute([HBHUB_UNREAD_CHAT_ACTIVE, $userId, ...$mutedChatIds, $userId]);
     return (int) $statement->fetchColumn();

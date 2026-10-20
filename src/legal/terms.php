@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '19 October 2026';
+const HBHUB_TERMS_UPDATED = '20 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -184,6 +184,12 @@ const HBHUB_TERMS_UPDATED = '19 October 2026';
                         <ul>
                             <li>delete messages, attachments, pictures or groups,</li>
                             <li>reset or take away chips, or remove game results from the leaderboards,</li>
+                            <li>
+                                ghost ban the account, for a while or for good, without telling the person. The chat keeps
+                                working like normal for them, but what they do in it (messages, attachments, edits, reactions,
+                                and the chats they start or add people to) only shows to themselves and site admins. Nobody
+                                else sees it or gets a notification or message request from it,
+                            </li>
                             <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture.</li>
                         </ul>
                         <p>

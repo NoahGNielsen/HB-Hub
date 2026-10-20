@@ -42,11 +42,12 @@ $adminIsGroup = (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP;
 
 /**
  * Everyone in the chat, invited too: the owner and admins first, then the ones who accepted, then by name.
+ * Ghost invites (memberIsGhost, from a ghost-banned user, assets/php/chat.php) too, which the invited person can't see.
  */
 function adminChatMembers(PDO $db, int $chatId): array
 {
-    $statement = $db->prepare('SELECT cm.userId, u.userName, u.userRole, u.userStatus, u.userAvatarAttachmentId,
-            cm.memberNickname, cm.memberRole, cm.userAcknowledgedJoin, cm.memberJoinedTimestamp
+    $statement = $db->prepare('SELECT cm.userId, u.userName, u.userRole, u.userStatus, u.userAvatarAttachmentId, u.userGhostBannedTimestamp,
+            cm.memberNickname, cm.memberRole, cm.userAcknowledgedJoin, cm.memberIsGhost, cm.memberJoinedTimestamp
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
         WHERE cm.chatId = ?
         ORDER BY cm.memberRole DESC, cm.userAcknowledgedJoin DESC, u.userName');
@@ -57,12 +58,14 @@ function adminChatMembers(PDO $db, int $chatId): array
 /**
  * The chat's messages and notices, newest first. With $beforeId only the ones older than that message.
  * The names are called what chatNoticeHtml() looks for (senderName and eventUserName), the real names here.
+ * Ghosts (sent while ghost banned, assets/php/chat.php) are here too, marked by adminMessageHtml().
  */
 function adminChatMessages(PDO $db, int $chatId, ?int $beforeId, int $limit): array
 {
     $statement = $db->prepare('SELECT m.messageId, m.userId, u.userName AS senderName, u.userRole AS senderRole,
             m.messageContent, m.attachmentId, m.messageSentTimestamp, m.messageDeletedTimestamp, m.messageDeletedByAdmin,
-            m.messageIsEdited, m.messageEvent, m.messageEventType, m.messageEventUserId, eu.userName AS eventUserName
+            m.messageIsEdited, m.messageIsGhost, m.messageGhostContent,
+            m.messageEvent, m.messageEventType, m.messageEventUserId, eu.userName AS eventUserName
         FROM `HBHub-Messages` m
         JOIN `HBHub-Users` u ON u.userId = m.userId
         LEFT JOIN `HBHub-Users` eu ON eu.userId = m.messageEventUserId
@@ -135,7 +138,7 @@ switch ($adminAction) {
         $memberId = $_POST['member'] ?? null;
         $member = false;
         if ($adminIsGroup && is_string($memberId) && ctype_digit($memberId) && strlen($memberId) <= 10) {
-            $statement = $db->prepare('SELECT cm.userId, cm.userAcknowledgedJoin FROM `HBHub-ChatMembers` cm
+            $statement = $db->prepare('SELECT cm.userId, cm.userAcknowledgedJoin, cm.memberIsGhost FROM `HBHub-ChatMembers` cm
                 JOIN `HBHub-Users` u ON u.userId = cm.userId
                 WHERE cm.chatId = ? AND cm.userId = ? AND NOT (u.userRole <=> ?)');
             $statement->execute([$chatId, (int) $memberId, ADMIN_ROLE_ADMIN]);
@@ -145,6 +148,13 @@ switch ($adminAction) {
             adminChatRedirect($chatId, null, 'members');
         }
 
+        if ($member['memberIsGhost']) {
+            // A ghost invite (assets/php/chat.php) nobody but the ghost-banned user knew about just goes, without a notice
+            $db->prepare('DELETE FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ? AND memberIsGhost = 1')
+                ->execute([$chatId, $member['userId']]);
+            adminLog($db, $adminId, 'chat.kick', (int) $member['userId'], $chatId, ['invite' => true, 'ghost' => true]);
+            adminChatRedirect($chatId, 'adminMemberKicked', 'members');
+        }
         chatLeave($db, (int) $member['userId'], $chat, $adminId, true); // posts the notice itself
         if ($member['userAcknowledgedJoin']) {
             hbHubNotify($db, (int) $member['userId'], 'chat.kickedBySiteAdmin', null, chatNotificationData($db, $chatId));
@@ -425,7 +435,8 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
                                                     <span class="admin-small">Goes by "<?= htmlspecialchars($member['memberNickname']) ?>" here</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td><?= $member['userAcknowledgedJoin'] ? htmlspecialchars(ADMIN_CHAT_ROLES[(int) $member['memberRole']] ?? 'Member') : 'Not accepted yet' ?></td>
+                                            <td><?= $member['userAcknowledgedJoin'] ? htmlspecialchars(ADMIN_CHAT_ROLES[(int) $member['memberRole']] ?? 'Member')
+                                                : ($member['memberIsGhost'] ? '<span class="settings-status admin-status-ghost" title="Invited while ghost banned">Ghost invite</span> <span class="admin-small">They can\'t see the chat</span>' : 'Not accepted yet') ?></td>
                                             <td class="admin-nowrap"><?= adminTime($member['memberJoinedTimestamp']) ?></td>
                                             <td>
                                                 <?php if ($adminIsActive && $adminIsGroup && !$memberIsSiteAdmin): ?>
@@ -476,6 +487,7 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
                                             <td><a class="admin-link" href="/admin/user?user=<?= (int) $message['userId'] ?>"><?= htmlspecialchars($message['senderName']) ?></a></td>
                                             <td class="admin-message-text">
                                                 <?php if ($isNotice): ?>
+                                                    <?= $message['messageIsGhost'] ? '<span class="settings-status admin-status-ghost" title="Made while ghost banned">Only the sender sees this</span>' : '' ?>
                                                     <span class="admin-notice"><?= chatNoticeHtml($adminNoticeChat, 0, $message) ?></span>
                                                 <?php else: ?>
                                                     <?= adminMessageHtml($message) ?>

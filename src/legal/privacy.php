@@ -93,6 +93,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Your settings, like which chats you've muted, hidden or blocked, and whether you've blocked the Casino and Games.</li>
                             <li>When you made the account and when you were last on the site.</li>
                             <li>Failed logins, whether the account is locked or banned, and whether a ban was by an admin or automatic.</li>
+                            <li>Whether, and since when, the account is ghost banned (see Messages and chats below).</li>
                         </ul>
                         <h3>Banned pictures</h3>
                         <p>
@@ -151,6 +152,16 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 chat or game. To know that, the last time you had each chat open in front of you is kept with
                                 your membership of it, and goes when you leave the chat. Deleting the message (by you, a group admin or a site admin) deletes the notifications
                                 about it too.
+                            </li>
+                            <li>
+                                Ghost bans: a site admin can ghost ban an account that breaks the rules, without telling it.
+                                What it does in chats from then on (messages, attachments, edits, reactions, and the chats it
+                                starts or adds people to) is stored like anything else, but marked so that only that account
+                                and site admins can see it. People it starts a chat with or adds to a group are stored as
+                                invited, marked the same way, so they never see the chat or get a request or notification about
+                                it, until someone else invites them or they start a chat with that account themselves. The
+                                marks stay when the ghost ban is lifted, so what was hidden stays hidden. They go with the
+                                messages and invites they're on.
                             </li>
                         </ul>
                         <h3>Casino and games</h3>
@@ -214,7 +225,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-see">4. Who can see what</h2>
                         <ul>
                             <li><strong>Everyone with an account</strong> can see your name, profile picture, bio, year, class, when you were last online, and your spot on the leaderboards.</li>
-                            <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments. Group owners and admins can delete messages (and with them their attachments) and remove members in their group.</li>
+                            <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group.</li>
                             <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
                             <li>
                                 <strong>Site admins</strong> can see everything about an account in the admin panel, including

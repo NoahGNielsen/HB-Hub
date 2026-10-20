@@ -94,7 +94,7 @@ function adminLogText(array $entry): string
             : ($amount < 0 ? 'Took ' . number_format(-$amount) . ' chips from {user}' : null),
         'user.messages' => isset($data['count']) ? 'Deleted all of {user}\'s messages (' . number_format((int) $data['count']) . ')' : null,
         'chat.background' => !empty($data['reset']) ? 'Reset the background of {chat}' : null,
-        'chat.kick' => !empty($data['invite']) ? 'Took back {user}\'s invite to {chat}' : null,
+        'chat.kick' => !empty($data['invite']) ? 'Took back {user}\'s ' . (!empty($data['ghost']) ? 'ghost ' : '') . 'invite to {chat}' : null,
         'feedback.done', 'feedback.new', 'feedback.delete' => isset($data['feedbackId'])
             ? ADMIN_LOG_ACTIONS[$entry['adminLogAction']] . ' #' . (int) $data['feedbackId'] : null,
         'banned.add', 'banned.remove' => isset($data['pictureId'])

@@ -329,7 +329,8 @@ CREATE TABLE `HBHub-ChatMembers` (
   `memberNickname` varchar(64) DEFAULT NULL,
   `memberMutedUntil` timestamp NULL DEFAULT NULL,
   `memberLastViewedTimestamp` datetime DEFAULT NULL COMMENT 'UTC, last time the member had the chat open and in view',
-  `userAcknowledgedJoin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Message request, not accepted yet\r\n1 Accepted'
+  `userAcknowledgedJoin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Message request, not accepted yet\r\n1 Accepted',
+  `memberIsGhost` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 Invited by a ghost-banned user (a new chat or Add to chat), so they never see the chat until someone else invites them or they start a DM with that user'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -578,7 +579,8 @@ CREATE TABLE `HBHub-MessageReactions` (
   `messageId` bigint UNSIGNED NOT NULL,
   `userId` int UNSIGNED NOT NULL COMMENT 'Who reacted',
   `reactionEmoji` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'One emoji, like 👍. Compared exactly (_bin), so 👍 and 👍🏽 are two different reactions',
-  `reactionTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `reactionTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `reactionIsGhost` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 Made while the user was ghost banned, so only they see it'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Emoji reactions under chat messages (chat/index.php). Taking one back deletes its row';
 
 -- --------------------------------------------------------
@@ -600,7 +602,9 @@ CREATE TABLE `HBHub-Messages` (
   `messageReplyToId` bigint UNSIGNED DEFAULT NULL,
   `messageEvent` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 A normal message\r\n1 A notice about a change in the chat, made by userId (messageEventType says which)',
   `messageEventType` tinyint UNSIGNED DEFAULT NULL COMMENT 'NULL for a normal message\r\n1 Renamed the group (messageContent is the new name, NULL when taken away)\r\n2 Changed the group icon\r\n3 Removed the group icon\r\n4 Changed the background\r\n5 Reset the background\r\n6 Made messageEventUserId a group admin\r\n7 Removed messageEventUserId as group admin\r\n8 Kicked messageEventUserId\r\n9 Joined the group\r\n10 Left the chat\r\n11 Added messageEventUserId to the group\r\n12 Became the group owner when the owner left\r\n100 + one of these: the same change made by a site admin from the admin panel (101 renamed the group), the notice says "A site admin"',
-  `messageEventUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who the notice is about (messageEventType 6, 7, 8, 11 and 12)'
+  `messageEventUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who the notice is about (messageEventType 6, 7, 8, 11 and 12)',
+  `messageIsGhost` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 Sent while the user was ghost banned, so only they (and site admins) see it',
+  `messageGhostContent` varchar(2500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'An edit made while ghost banned to a message everyone sees: shown only to the sender, NULL otherwise'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -707,7 +711,8 @@ CREATE TABLE `HBHub-Users` (
   `userLastSeenTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `userAccountLockedTimestamp` datetime DEFAULT NULL,
   `userBannedTimestamp` datetime DEFAULT NULL,
-  `userBannedReason` tinyint UNSIGNED DEFAULT NULL COMMENT '1 By a site admin\r\n2 Automatically, for uploading a banned profile picture\r\nNULL when not banned'
+  `userBannedReason` tinyint UNSIGNED DEFAULT NULL COMMENT '1 By a site admin\r\n2 Automatically, for uploading a banned profile picture\r\nNULL when not banned',
+  `userGhostBannedTimestamp` datetime DEFAULT NULL COMMENT 'When a site admin ghost banned the account: what they do in chats only shows to themselves. NULL when not ghost banned'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --

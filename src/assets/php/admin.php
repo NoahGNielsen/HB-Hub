@@ -103,15 +103,16 @@ function adminTime(?string $timestamp): string
 }
 
 /**
- * A user's status: Deleted, Banned, Locked (too many wrong passwords) or Active.
+ * A user's status: Deleted, Banned, Ghost banned (assets/php/chat.php), Locked (too many wrong passwords) or Active.
  *
- * @param array{userStatus: mixed, isLocked: mixed} $user
+ * @param array{userStatus: mixed, isLocked: mixed, userGhostBannedTimestamp: ?string} $user
  */
 function adminUserStatus(array $user): string
 {
     return match (true) {
         $user['userStatus'] === null => 'Deleted',
         (int) $user['userStatus'] === HBHUB_SESSION_STATUS_BANNED => 'Banned',
+        $user['userGhostBannedTimestamp'] !== null => 'Ghost banned',
         (bool) $user['isLocked'] => 'Locked',
         default => 'Active',
     };
@@ -130,13 +131,15 @@ function adminChatStatus(int $chatStatus): string
 }
 
 /**
- * A user's or chat's status as a badge: green while active, yellow when locked, red when banned or deleted.
+ * A user's or chat's status as a badge: green while active, yellow when locked, purple when ghost banned, red when
+ * banned or deleted.
  */
 function adminStatusHtml(string $status): string
 {
     $class = match ($status) {
         'Active' => ' is-on',
         'Locked' => ' admin-status-locked',
+        'Ghost banned' => ' admin-status-ghost',
         default => ' admin-status-deleted',
     };
     return '<span class="settings-status' . $class . '">' . htmlspecialchars($status) . '</span>';
@@ -181,15 +184,25 @@ function adminChatTitleSql(?string $exceptColumn = null): string
 
 /**
  * A message's text for a list of messages, as HTML: GIFs and attachments are named, not shown.
+ * A ghost (sent while ghost banned, assets/php/chat.php) gets a badge, and an edit only its sender sees
+ * (messageGhostContent) is shown below the text everyone else sees.
+ *
+ * @param array{messageContent: ?string, attachmentId: mixed, messageIsGhost: mixed, messageGhostContent: ?string} $message
  */
 function adminMessageHtml(array $message): string
 {
+    $ghostBadge = $message['messageIsGhost'] ? '<span class="settings-status admin-status-ghost" title="Sent while ghost banned">Only the sender sees this</span> ' : '';
     $content = $message['messageContent'];
     if ($content === null) {
-        return '<span class="admin-muted">' . ($message['attachmentId'] !== null ? 'Attachment' : 'Empty') . '</span>';
+        return $ghostBadge . '<span class="admin-muted">' . ($message['attachmentId'] !== null ? 'Attachment' : 'Empty') . '</span>';
     }
     if (preg_match('~^https://media\.giphy\.com/media/[A-Za-z0-9]{1,64}/giphy\.gif$~', $content) === 1) {
-        return '<span class="admin-muted">GIF</span> <span class="admin-small">' . htmlspecialchars($content) . '</span>';
+        return $ghostBadge . '<span class="admin-muted">GIF</span> <span class="admin-small">' . htmlspecialchars($content) . '</span>';
     }
-    return nl2br(htmlspecialchars($content));
+    $html = $ghostBadge . nl2br(htmlspecialchars($content));
+    if ($message['messageGhostContent'] !== null) {
+        $html .= '<br><span class="settings-status admin-status-ghost" title="Edited while ghost banned">Edited, only the sender sees this</span> '
+            . nl2br(htmlspecialchars($message['messageGhostContent']));
+    }
+    return $html;
 }

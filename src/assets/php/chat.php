@@ -3,6 +3,18 @@
 // The kinds of chat, member roles and notices, a chat's settings and background, and the changes both make to a chat:
 // renaming a group, its icon, its background and taking someone out of it, each with a notice in the chat about it.
 // From the admin panel the notice says a site admin made the change, not who (HBHUB_CHAT_EVENT_BY_SITE_ADMIN).
+//
+// Ghost bans: a site admin can ghost ban a user (admin/user.php, userGhostBannedTimestamp in HBHub-Users). Nothing tells
+// them, and the chat works as always for them, but what they do in it only shows to themselves (and site admins):
+// - their messages, GIFs and attachments are saved with messageIsGhost, don't move the chat up anyone else's list
+//   (lastMessageTimestamp), don't bring it back for people who hid it and don't @mention anyone
+// - editing a message everyone can see saves the new text in messageGhostContent, which only they see
+// - their reactions are saved with reactionIsGhost
+// - people they start a chat with or add to a group get memberIsGhost: no message request and no notification, the chat
+//   just isn't there for them (chat/index.php's chatMembership() and chat list leave those rows out). Someone else adding
+//   them for real, or them starting a DM with the ghost-banned user, turns it into a normal membership.
+// The rest is real, like leaving a chat, deleting their own messages, and what group admins can do in their group.
+// Lifting the ghost ban doesn't show what they did while ghost banned, it only stops new things being ghosts.
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/chatAttachments.php'; // a deleted chat's attachments are deleted with it
 
@@ -54,13 +66,33 @@ const HBHUB_CHAT_EVENT_BY_SITE_ADMIN = 100;
  * @param ?int $aboutUserId who it's about: the member made or removed as admin, kicked or added, or the new owner
  * @param ?string $content the group's new name, for HBHUB_CHAT_EVENT_RENAME
  * @param bool $bySiteAdmin made from the admin panel, so the notice says a site admin did it
+ * @param bool $isGhost made by a ghost-banned user (see the top), so only they see it
  */
 function chatNotice(PDO $db, int $userId, int $chatId, int $event, ?int $aboutUserId = null, ?string $content = null,
-    bool $bySiteAdmin = false): void
+    bool $bySiteAdmin = false, bool $isGhost = false): void
 {
-    $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageEvent, messageEventType, messageEventUserId)
-        VALUES (?, ?, ?, 1, ?, ?)')
-        ->execute([$userId, $chatId, $content, $bySiteAdmin ? HBHUB_CHAT_EVENT_BY_SITE_ADMIN + $event : $event, $aboutUserId]);
+    $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageEvent, messageEventType, messageEventUserId, messageIsGhost)
+        VALUES (?, ?, ?, 1, ?, ?, ?)')
+        ->execute([$userId, $chatId, $content, $bySiteAdmin ? HBHUB_CHAT_EVENT_BY_SITE_ADMIN + $event : $event, $aboutUserId, (int) $isGhost]);
+}
+
+/**
+ * The SQL for whether $viewerId can see the row of $alias (a message or a reaction): it isn't a ghost (see the top), or
+ * it's their own. $ghostColumn is messageIsGhost or reactionIsGhost. The id is put in as a number, so it needs no parameter.
+ */
+function chatGhostVisibleSql(string $alias, string $ghostColumn, int $viewerId): string
+{
+    return '(' . $alias . '.' . $ghostColumn . ' = 0 OR ' . $alias . '.userId = ' . $viewerId . ')';
+}
+
+/**
+ * The SQL for a message's text as $viewerId sees it: their own edits made while ghost banned (messageGhostContent),
+ * everyone else's as they really are.
+ */
+function chatGhostContentSql(string $alias, int $viewerId): string
+{
+    return 'IF(' . $alias . '.userId = ' . $viewerId . ', COALESCE(' . $alias . '.messageGhostContent, ' . $alias . '.messageContent), '
+        . $alias . '.messageContent)';
 }
 
 /**
@@ -94,10 +126,12 @@ function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null, boo
     $db->prepare('DELETE FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ?')
         ->execute([$chatId, $userId]);
 
-    $statement = $db->prepare('SELECT userId, memberRole, userAcknowledgedJoin FROM `HBHub-ChatMembers` WHERE chatId = ?
+    $statement = $db->prepare('SELECT userId, memberRole, userAcknowledgedJoin, memberIsGhost FROM `HBHub-ChatMembers` WHERE chatId = ?
         ORDER BY userAcknowledgedJoin DESC, memberJoinedTimestamp, userId FOR UPDATE');
     $statement->execute([$chatId]);
-    $members = $statement->fetchAll();
+    // Ghost invites (see the top) don't count: they can't see the chat, so it's deleted when only they are left,
+    // and none of them becomes its owner
+    $members = array_values(array_filter($statement->fetchAll(), fn (array $member): bool => !$member['memberIsGhost']));
 
     if ($members === []) {
         $db->prepare('UPDATE `HBHub-Chats` SET chatStatus = ? WHERE chatId = ?')

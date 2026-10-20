@@ -3,6 +3,7 @@
 // with &download=1 (and always for anything that isn't a picture). Zipped files (assets/php/chatAttachments.php) are
 // unzipped on the way out, so what's downloaded is the file as it was sent.
 // Only for members of the chat it was sent in, while its message isn't deleted and its tickets haven't run out.
+// One sent by a ghost-banned user (messageIsGhost, assets/php/chat.php) is only for them.
 // An attachment never changes, so its id is its ETag, and the browser's copy is used again after a quick check.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatAttachments.php';
@@ -21,8 +22,9 @@ $statement = $db->prepare('SELECT a.attachmentId, a.attachmentKey, a.attachmentN
     JOIN `HBHub-Messages` m ON m.attachmentId = a.attachmentId AND m.messageDeletedTimestamp IS NULL
     JOIN `HBHub-Chats` c ON c.chatId = m.chatId AND c.chatStatus = ?
     JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = ? AND cm.userAcknowledgedJoin = 1
-    WHERE a.attachmentId = ? AND a.attachmentStatus = ? AND a.attachmentExpiresTimestamp > NOW()');
-$statement->execute([HBHUB_CHAT_ATTACHMENT_CHAT_ACTIVE, $hbHubUser['userId'], (int) $attachmentId, HBHUB_CHAT_ATTACHMENT_KEPT]);
+    WHERE a.attachmentId = ? AND a.attachmentStatus = ? AND a.attachmentExpiresTimestamp > NOW()
+        AND (m.messageIsGhost = 0 OR m.userId = ?)');
+$statement->execute([HBHUB_CHAT_ATTACHMENT_CHAT_ACTIVE, $hbHubUser['userId'], (int) $attachmentId, HBHUB_CHAT_ATTACHMENT_KEPT, $hbHubUser['userId']]);
 $attachment = $statement->fetch();
 
 $dir = hbHubChatAttachmentsDir();

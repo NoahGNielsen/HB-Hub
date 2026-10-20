@@ -6,6 +6,7 @@
 //
 // Shows what there is about the user: their account, sessions (their logins), messages in every chat, chats and casino
 // chips, and ?export=1 downloads all of it as JSON. The actions are one form per card, like the settings page:
+// ghost ban or lift it (what they do in chats only shows to themselves, see the top of assets/php/chat.php),
 // ban or unban, change the name or bio, remove the picture, set the gambling block (straight away, without the wait),
 // reset the password, remove two-factor login, log out every session, add or remove chips, delete messages and delete
 // the account. Chips change through hbHubCasinoChange() like in the games, logged with the reason "admin" and the
@@ -15,7 +16,7 @@
 // Opening the page, downloading the data and every change are logged in the admin log (assets/php/adminLog.php).
 // Site admins can't be changed here (yourself included), and a deleted account only has its messages left to delete.
 // The side menu (adminPageMenuHtml()) links to the cards in the order they're on the page: Information, then Manage
-// (profile, block, login), Activity (sessions, messages, chats, casino) and the Danger zone (ban, delete) last.
+// (profile, block, login), Activity (sessions, messages, chats, casino) and the Danger zone (ghost ban, ban, delete) last.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
@@ -54,7 +55,7 @@ $adminPasswordPolicy = hbHubPasswordPolicy($siteConfig);
 $statement = $db->prepare('SELECT userId, userName, userDescription, userSettings, userAvatarAttachmentId,
         userIpv4AdresseOnAccountCreate, userIpv6AdresseOnAccountCreate, userIpv4AdresseLastAccessed, userIpv6AdresseLastAccessed,
         userTotpSecret IS NOT NULL AS totpIsOn, userFailedLoginCount, userStatus, userRole, userCreatedTimestamp, userLastSeenTimestamp,
-        userAccountLockedTimestamp, userBannedTimestamp, userBannedReason,
+        userAccountLockedTimestamp, userBannedTimestamp, userBannedReason, userGhostBannedTimestamp,
         COALESCE(userAccountLockedTimestamp + INTERVAL ? MINUTE > NOW(), 0) AS isLocked
     FROM `HBHub-Users` WHERE userId = ?');
 $statement->execute([$adminLockoutMinutes, $targetId]);
@@ -65,19 +66,20 @@ if ($target === false) {
 
 $targetIsDeleted = $target['userStatus'] === null;
 $targetIsBanned = (int) $target['userStatus'] === HBHUB_SESSION_STATUS_BANNED;
+$targetIsGhost = $target['userGhostBannedTimestamp'] !== null;
 $targetIsAdmin = (int) $target['userRole'] === ADMIN_ROLE_ADMIN;
 $targetIsSelf = $targetId === (int) $hbHubUser['userId'];
 $adminCanChange = !$targetIsDeleted && !$targetIsAdmin;
 $adminCanDeleteMessages = !$targetIsAdmin;
 
 /**
- * Every chat the user is in (message requests too), newest first. Named after the other members when it has no name
- * (for a DM, just the other person).
+ * Every chat the user is in (message requests too, and ghost invites they can't see, assets/php/chat.php), newest first.
+ * Named after the other members when it has no name (for a DM, just the other person).
  */
 function adminChats(PDO $db, int $userId): array
 {
     $statement = $db->prepare('SELECT c.chatId, c.chatType, ' . adminChatTitleSql('cm.userId') . ' AS chatTitle,
-            cm.memberRole, cm.userAcknowledgedJoin, cm.memberJoinedTimestamp,
+            cm.memberRole, cm.userAcknowledgedJoin, cm.memberIsGhost, cm.memberJoinedTimestamp,
             (SELECT COUNT(*) FROM `HBHub-ChatMembers` x WHERE x.chatId = c.chatId) AS memberCount
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
         WHERE cm.userId = ? AND c.chatStatus = ?
@@ -89,12 +91,13 @@ function adminChats(PDO $db, int $userId): array
 /**
  * The user's messages in every chat (not the notices about changes to a chat), newest first.
  * With $beforeId only the ones older than that message, with $limit at most that many.
+ * Ghosts (sent while ghost banned, assets/php/chat.php) are here too, marked by adminMessageHtml().
  */
 function adminMessages(PDO $db, int $userId, ?int $beforeId = null, ?int $limit = null): array
 {
     $statement = $db->prepare('SELECT m.messageId, m.chatId, c.chatType, c.chatStatus, ' . adminChatTitleSql('m.userId') . ' AS chatTitle,
             m.messageContent, m.attachmentId, m.messageSentTimestamp, m.messageDeletedTimestamp, m.messageDeletedByAdmin,
-            m.messageIsEdited, m.messageReplyToId
+            m.messageIsEdited, m.messageReplyToId, m.messageIsGhost, m.messageGhostContent
         FROM `HBHub-Messages` m JOIN `HBHub-Chats` c ON c.chatId = m.chatId
         WHERE m.userId = ? AND m.messageEvent = 0' . ($beforeId !== null ? ' AND m.messageId < ?' : '') . '
         ORDER BY m.messageId DESC' . ($limit !== null ? ' LIMIT ' . $limit : ''));
@@ -228,6 +231,25 @@ switch ($adminAction) {
         adminLog($db, $adminId, 'user.unban', $targetId);
         $db->commit();
         adminRedirect($targetId, 'adminUnbanned', 'ban');
+
+    case 'ghostBan':
+        // Nothing tells them and they stay logged in. From their next request on, what they do in chats only shows to
+        // themselves (see the top of assets/php/chat.php). What they did before stays as it was.
+        $statement = $db->prepare('UPDATE `HBHub-Users` SET userGhostBannedTimestamp = NOW() WHERE userId = ? AND userGhostBannedTimestamp IS NULL');
+        $statement->execute([$targetId]);
+        if ($statement->rowCount() > 0) {
+            adminLog($db, $adminId, 'user.ghostBan', $targetId);
+        }
+        adminRedirect($targetId, 'adminGhostBanned', 'ghost');
+
+    case 'ghostUnban':
+        // What they did while ghost banned stays hidden, only what they do from now on shows again
+        $statement = $db->prepare('UPDATE `HBHub-Users` SET userGhostBannedTimestamp = NULL WHERE userId = ? AND userGhostBannedTimestamp IS NOT NULL');
+        $statement->execute([$targetId]);
+        if ($statement->rowCount() > 0) {
+            adminLog($db, $adminId, 'user.ghostUnban', $targetId);
+        }
+        adminRedirect($targetId, 'adminGhostUnbanned', 'ghost');
 
     case 'name':
         $adminValues['name'] = is_string($_POST['name'] ?? null) ? trim($_POST['name']) : '';
@@ -440,7 +462,9 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                 'Overview' => ['overview' => 'Information'],
                 'Manage' => $adminCanChange ? ['profile' => 'Profile', 'block' => 'Gambling block', 'security' => 'Login'] : [],
                 'Activity' => ['sessions' => 'Sessions', 'messages' => 'Messages', 'chats' => 'Chats', 'casino' => 'Casino'],
-                ADMIN_MENU_DANGER => $adminCanChange ? ['ban' => $targetIsBanned ? 'Unban' : 'Ban', 'delete' => 'Delete account'] : [],
+                ADMIN_MENU_DANGER => $adminCanChange
+                    ? ['ghost' => $targetIsGhost ? 'Lift ghost ban' : 'Ghost ban', 'ban' => $targetIsBanned ? 'Unban' : 'Ban', 'delete' => 'Delete account']
+                    : [],
             ]) ?>
 
             <div class="settings-content">
@@ -481,6 +505,9 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                         <?php if ($targetIsBanned): ?>
                             <div><dt>Banned</dt><dd><?= adminTime($target['userBannedTimestamp']) ?><?php if ((int) $target['userBannedReason'] === HBHUB_BAN_REASON_AVATAR): ?>
                                 <span class="admin-small">(automatically, for uploading a <a class="admin-link" href="/admin/banned">banned picture</a>)</span><?php endif; ?></dd></div>
+                        <?php endif; ?>
+                        <?php if ($targetIsGhost): ?>
+                            <div><dt>Ghost banned</dt><dd><?= adminTime($target['userGhostBannedTimestamp']) ?></dd></div>
                         <?php endif; ?>
                         <div><dt>Class</dt><dd><?= $adminYear !== '' && $adminClass !== '' ? htmlspecialchars($adminYear . '.' . $adminClass) : '–' ?></dd></div>
                         <div><dt>Two-factor login</dt><dd><?= $target['totpIsOn'] ? 'On' : 'Off' ?></dd></div>
@@ -784,7 +811,8 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                             <td><a class="admin-link" href="/admin/chat?chat=<?= (int) $chat['chatId'] ?>"><?= htmlspecialchars($chat['chatTitle']) ?></a></td>
                                             <td><?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?></td>
                                             <td><?= (int) $chat['memberCount'] ?></td>
-                                            <td><?= $chat['userAcknowledgedJoin'] ? htmlspecialchars(ADMIN_CHAT_ROLES[(int) $chat['memberRole']] ?? 'Member') : 'Not accepted yet' ?></td>
+                                            <td><?= $chat['userAcknowledgedJoin'] ? htmlspecialchars(ADMIN_CHAT_ROLES[(int) $chat['memberRole']] ?? 'Member')
+                                                : ($chat['memberIsGhost'] ? '<span class="settings-status admin-status-ghost" title="Invited by a ghost-banned user">Ghost invite</span> <span class="admin-small">They can\'t see the chat</span>' : 'Not accepted yet') ?></td>
                                             <td class="admin-nowrap"><?= adminTime($chat['memberJoinedTimestamp']) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -858,6 +886,42 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                 </section>
 
                 <?php if ($adminCanChange): ?>
+                    <!-- Ghost ban: what they do in chats only shows to themselves (see the top of assets/php/chat.php) -->
+                    <section class="settings-card<?= $targetIsGhost ? '' : ' is-danger' ?>" id="ghost" aria-labelledby="admin-ghost-heading">
+                        <div class="settings-card-head">
+                            <div>
+                                <h2 id="admin-ghost-heading"><?= $targetIsGhost ? 'Lift ghost ban' : 'Ghost ban' ?></h2>
+                                <p class="settings-intro">
+                                    <?php if ($targetIsGhost): ?>
+                                        Ghost banned <?= adminTime($target['userGhostBannedTimestamp']) ?>.
+                                        Lifting it makes what they do in chats from now on show to everyone again.
+                                        What they did while ghost banned stays hidden from everyone but them, and is marked here.
+                                    <?php else: ?>
+                                        They aren't told, and the chat works like always for them, but what they do in it only shows to themselves:
+                                        messages, GIFs, files, edits and reactions. Nobody gets notified or @mentioned by them, and people they
+                                        start a chat with or add to a group never get the request. You can still see all of it here, marked as only
+                                        seen by them. Leaving a chat, deleting their own messages and what they can do as a group admin still
+                                        happen for real, and so does everything outside the chat.
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                            <?php if ($targetIsGhost): ?>
+                                <span class="settings-status admin-status-ghost">Ghost banned</span>
+                            <?php endif; ?>
+                        </div>
+                        <form action="/admin/user?user=<?= $targetId ?>#ghost" method="post"
+                              data-confirm="<?= $targetIsGhost ? 'Lift ' . htmlspecialchars($target['userName']) . '\'s ghost ban?' : 'Ghost ban ' . htmlspecialchars($target['userName']) . '?' ?>">
+                            <input type="hidden" name="action" value="<?= $targetIsGhost ? 'ghostUnban' : 'ghostBan' ?>">
+                            <div class="settings-actions">
+                                <?php if ($targetIsGhost): ?>
+                                    <button type="submit" class="settings-btn settings-btn-primary">Lift ghost ban</button>
+                                <?php else: ?>
+                                    <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid">Ghost ban <?= htmlspecialchars($target['userName']) ?></button>
+                                <?php endif; ?>
+                            </div>
+                        </form>
+                    </section>
+
                     <!-- Ban -->
                     <section class="settings-card<?= $targetIsBanned ? '' : ' is-danger' ?>" id="ban" aria-labelledby="admin-ban-heading">
                         <div class="settings-card-head">
