@@ -22,7 +22,7 @@ const HBHUB_PRIVACY_COOKIES = [
 // What the site keeps in your browser's local storage. It never leaves your browser.
 const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
-    'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it stays there when you open another chat. Kept in session storage, so it\'s gone when you close the tab.',
+    'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it\'s still there when you refresh or come back to the chat. Kept in session storage, so it\'s gone when you close the tab.',
     'hbHubNotifiedMessageId' => 'The last message you got a browser notification for, so you don\'t get it twice.',
     'hbHubChessSound, hbHubMatadorSound' => 'Whether you turned the game sounds on or off.',
     'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',

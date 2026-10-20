@@ -2,7 +2,18 @@
 // starts the open chat at the newest message
 // and sends on Enter (Shift+Enter for a new line).
 // Without JS the search submits ?q= and the server filters the list instead.
-(() => {
+//
+// The page is never loaded again while it's open: opening another chat, sending a message and the chat's other forms
+// swap in a new <main> instead (Switching chats, at the bottom of this file). So everything that sets itself up on the
+// page is a chatPart(setUp), and setUp(signal, isSwap) runs on the first load and again after every swap (isSwap true).
+// signal is aborted just before a swap: whatever a part hangs on document or window, or keeps running (timers,
+// workers), has to stop with it. Listeners on elements inside <main> go away with the old <main> by themselves.
+const chatParts = [];
+function chatPart(setUp) {
+    chatParts.push(setUp);
+}
+
+chatPart((signal, isSwap) => {
     const searchForm = document.querySelector('.chat-search');
     const search = document.querySelector('#chat-search');
     const list = document.querySelector('.chat-list');
@@ -37,14 +48,17 @@
         filterChats();
     }
 
-    // Opening another chat loads the page again, which would start the chat list back at the top. So how far down it
-    // was is kept in sessionStorage (this tab only) when leaving and put back here, and the open chat is scrolled into
-    // view if it's still out of sight. Without sessionStorage (blocked, private mode) it's only the scrolling into view.
+    // A swap keeps the chat list where it was scrolled to (chatLoad), but leaving the page and coming back (a refresh,
+    // or the chat in the side bar) would start it back at the top. So how far down it was is kept in sessionStorage
+    // (this tab only) when leaving and put back here, and the open chat is scrolled into view if it's still out of sight.
+    // Without sessionStorage (blocked, private mode) it's only the scrolling into view.
     const LIST_SCROLL_KEY = 'hbHubChatListScroll';
     if (list) {
-        try {
-            list.scrollTop = Number(sessionStorage.getItem(LIST_SCROLL_KEY)) || 0;
-        } catch {}
+        if (!isSwap) {
+            try {
+                list.scrollTop = Number(sessionStorage.getItem(LIST_SCROLL_KEY)) || 0;
+            } catch {}
+        }
         const active = list.querySelector('.chat-list-item.active');
         if (active) {
             // By hand, as scrollIntoView() could move the page around it too
@@ -57,7 +71,7 @@
             try {
                 sessionStorage.setItem(LIST_SCROLL_KEY, String(Math.round(list.scrollTop)));
             } catch {}
-        });
+        }, { signal });
     }
 
     // At the newest message, unless that would scroll the "New messages" line out of sight above
@@ -101,7 +115,7 @@
         event.preventDefault();
         event.stopImmediatePropagation();
     });
-})();
+});
 
 // Formatting while typing a message (the composer and Edit), from the formatting menu below or Ctrl+B, Ctrl+I and Ctrl+U.
 // The formatting itself is worked out by the server when the message is shown (assets/php/chatFormat.php),
@@ -267,7 +281,7 @@ function chatLinkPopup() {
 // Edit is a modal popup, where nothing outside it can be clicked, so the menu moves into the popup it's opened in,
 // and back to where it started for the message box (inside .chat, whose [hidden] rule is what hides it again).
 // Clicking anywhere, an item (even a greyed-out one), or Enter, Delete or Backspace closes it again.
-(() => {
+chatPart((signal) => {
     const menu = document.querySelector('[data-format-menu]');
     if (!menu) return;
 
@@ -286,6 +300,7 @@ function chatLinkPopup() {
         items: '[data-format-target]',
         focusItem: (item) => item.focus(), // and the selection is still there, for the next formatting
         skip: (event) => (event.shiftKey && event.clientX !== 0) || isTouch.matches, // clientX is 0 from Shift+F10
+        signal,
         onOpen(item) {
             textarea = item;
             const host = item.closest('dialog') ?? home;
@@ -338,7 +353,7 @@ function chatLinkPopup() {
         event.preventDefault();
         formatMenu.close(true);
     });
-})();
+});
 
 // Whether the cursor is inside a ``` code block that hasn't been closed yet, where Enter starts a new line instead of sending
 function chatInCodeBlock(textarea) {
@@ -501,7 +516,7 @@ function userPicker(dialog, onChange) {
 
 // New chat popup: search all users and pick who to chat with.
 // One picked user makes a DM, more make a group DM (up to data-members-max, yourself included).
-(() => {
+chatPart(() => {
     const dialog = document.querySelector('[data-new-chat]');
     if (!dialog) return;
 
@@ -542,11 +557,11 @@ function userPicker(dialog, onChange) {
         if (picker.picked.size === 0) event.preventDefault();
         else submitBtn.disabled = true; // no double chats from a double click
     });
-})();
+});
 
 // Add to chat popup (groups): any member can add people, until the group has data-members-max members (invites counted).
 // The ones added get the group as a message request, like when it was made, and everyone sees a notice.
-(() => {
+chatPart(() => {
     const dialog = document.querySelector('.chat-add');
     if (!dialog) return;
 
@@ -580,11 +595,11 @@ function userPicker(dialog, onChange) {
         if (picker.picked.size === 0) event.preventDefault();
         else submitBtn.disabled = true; // no double adds from a double click
     });
-})();
+});
 
 // Link warning popup: links in messages ask before they're opened.
 // Without JS the links just open in a new tab.
-(() => {
+chatPart(() => {
     const dialog = document.querySelector('.chat-link-warning');
     const messages = document.querySelector('[data-chat-messages]');
     if (!dialog || !messages) return;
@@ -620,7 +635,7 @@ function userPicker(dialog, onChange) {
     dialog.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close();
     });
-})();
+});
 
 // The URL blacklist (assets/php/urlBlacklist.php): whether the text has a blacklisted domain (or a subdomain of one)
 // anywhere in it, in which case the blocked link popup opens to say it can't be sent. Checked before sending, saving an
@@ -651,7 +666,7 @@ function chatBlockedLink(text) {
 
 // Blocked link popup: Okay, × or the dimmed area closes it. It opens by itself when the server stopped a message
 // (?linkBlocked=1), which is then taken out of the address so a refresh doesn't open it again.
-(() => {
+chatPart(() => {
     const dialog = document.querySelector('.chat-link-blocked');
     if (!dialog) return;
 
@@ -669,12 +684,12 @@ function chatBlockedLink(text) {
         history.replaceState(null, '', url);
         dialog.showModal();
     }
-})();
+});
 
 // Message requests popup: chats the user was added to but hasn't accepted yet.
 // Accept and Decline are plain form posts, the server does the rest.
 // A message request notification links to /chat/?requests=1, which opens it straight away (when there still are any).
-(() => {
+chatPart(() => {
     const dialog = document.querySelector('.chat-requests');
     if (!dialog) return;
 
@@ -694,12 +709,12 @@ function chatBlockedLink(text) {
     dialog.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close();
     });
-})();
+});
 
 // Members popup: the person button in a group's header lists everyone in it.
 // Group admins can make a member an admin or kick them, and the group owner can remove an admin,
 // all asked about first in a popup on top of it.
-(() => {
+chatPart(() => {
     const dialog = document.querySelector('.chat-members');
     if (!dialog) return;
 
@@ -764,11 +779,11 @@ function chatBlockedLink(text) {
 
     // Back on the button it was opened from, in the Members popup still open below it
     confirmDialog?.addEventListener('close', () => memberButton?.focus());
-})();
+});
 
 // Member menu, for site admins: right-click someone in the Members popup (or use the menu key / Shift+F10 on them)
 // for Admin panel, which opens their admin panel (admin/user.php).
-(() => {
+chatPart((signal) => {
     const dialog = document.querySelector('.chat-members');
     const menu = document.querySelector('[data-member-menu]');
     if (!dialog || !menu) return;
@@ -779,13 +794,14 @@ function chatBlockedLink(text) {
         list: dialog.querySelector('.chat-members-list'),
         items: '[data-member-user-id]',
         focusItem: (item) => item.querySelector('a, button')?.focus(),
+        signal,
         onOpen(item) {
             adminLink.href = '/admin/user?user=' + item.dataset.memberUserId;
         },
     });
 
     dialog.addEventListener('close', () => memberMenu.close(false));
-})();
+});
 
 // Right-click menus, used by the chat menu and the message menu.
 // Right-clicking an item in `list` (or the menu key / Shift+F10 on it) opens `menu` where the pointer is.
@@ -794,7 +810,8 @@ function chatBlockedLink(text) {
 // A smaller menu inside it (like Mute chat's) handles its own keys.
 // Items side by side in a row (data-menu-row, like the message menu's reactions) are one stop for the up and down keys,
 // and the left and right keys move along the row.
-function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false }) {
+// signal is the part's (chatPart at the top), which takes the listeners on document and window away again.
+function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false, signal }) {
     let current = null; // the item the menu was opened on
 
     function menuItems() {
@@ -841,10 +858,10 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false 
 
     document.addEventListener('pointerdown', (event) => {
         if (!menu.contains(event.target)) close(false);
-    });
+    }, { signal });
     list.addEventListener('scroll', () => close(false));
-    window.addEventListener('resize', () => close(false));
-    window.addEventListener('blur', () => close(false));
+    window.addEventListener('resize', () => close(false), { signal });
+    window.addEventListener('blur', () => close(false), { signal });
 
     menu.addEventListener('keydown', (event) => {
         const menuItemList = menuItems();
@@ -907,7 +924,7 @@ function chatGroupMessages(messages) {
 // Site admins also get Admin panel, which opens the other person's admin panel on a DM (admin/user.php)
 // and the chat's own on a group, or on a DM the other person left (admin/chat.php).
 // Every action is a plain form post - the server checks who's allowed to do what.
-(() => {
+chatPart((signal) => {
     const menu = document.querySelector('[data-chat-menu]');
     const list = document.querySelector('.chat-list');
     if (!menu || !list) return;
@@ -931,6 +948,7 @@ function chatGroupMessages(messages) {
         list,
         items: '[data-chat-id]',
         focusItem: (item) => item.querySelector('a').focus(),
+        signal,
         onOpen(item) {
             chat = item;
             const isGroup = item.dataset.chatType === 'group';
@@ -1020,7 +1038,7 @@ function chatGroupMessages(messages) {
         muteForm.elements.action.value = 'mute';
         muteForm.elements.chat.value = chat.dataset.chatId;
         muteForm.elements.minutes.value = option.dataset.muteMinutes;
-        muteForm.submit();
+        chatSubmit(muteForm);
     });
 
     function confirmAction(action, title, text, submitLabel) {
@@ -1131,11 +1149,11 @@ function chatGroupMessages(messages) {
         unmute() {
             muteForm.elements.action.value = 'unmute';
             muteForm.elements.chat.value = chat.dataset.chatId;
-            muteForm.submit();
+            chatSubmit(muteForm);
         },
         hide() {
             hideForm.elements.chat.value = chat.dataset.chatId;
-            hideForm.submit();
+            chatSubmit(hideForm);
         },
         leave() {
             const title = chat.dataset.chatTitle;
@@ -1182,12 +1200,12 @@ function chatGroupMessages(messages) {
         // The menu that opened it is gone, so focus goes back to the chat
         dialog.addEventListener('close', () => chat?.querySelector('a').focus());
     });
-})();
+});
 
 // Group admins can change the group's name right in the open chat's header: clicking the name turns it into a text box.
 // Enter saves it (a plain form post, like Change name in the chat menu), Escape or clicking away puts the name back.
 // Left empty, the group is named after its members again.
-(() => {
+chatPart(() => {
     const openButton = document.querySelector('[data-rename-open]');
     const form = document.querySelector('[data-rename-form]');
     if (!openButton || !form) return;
@@ -1231,7 +1249,7 @@ function chatGroupMessages(messages) {
     input.addEventListener('blur', () => {
         if (!isSaving) close(false);
     });
-})();
+});
 
 // Message menu: right-click a message in the open chat (or use the menu key / Shift+F10 on it) to react to it, reply to
 // it, or mark the chat unread from it on. Your own messages can also be edited or deleted,
@@ -1241,7 +1259,7 @@ function chatGroupMessages(messages) {
 // Site admins also get Admin panel on other people's messages, which opens the sender's admin panel (admin/user.php).
 // Links and selected text keep the browser's own menu, so they can still be copied.
 // The arrow keys, Home and End move between the messages, so the menu can be reached without a mouse.
-(() => {
+chatPart((signal) => {
     const menu = document.querySelector('[data-message-menu]');
     const messages = document.querySelector('[data-chat-messages]');
     const composer = document.querySelector('.chat-composer');
@@ -1338,6 +1356,7 @@ function chatGroupMessages(messages) {
         list: messages,
         items: '[data-message-id]',
         focusItem: (item) => focusMessage(item),
+        signal,
         skip(event, item) {
             const selection = window.getSelection();
             return event.target.closest('[data-chat-link]') !== null
@@ -1431,7 +1450,7 @@ function chatGroupMessages(messages) {
         delete: openDelete,
         unread(item) {
             unreadForm.elements.message.value = item.dataset.messageId;
-            unreadForm.submit();
+            chatSubmit(unreadForm);
         },
     };
 
@@ -1510,12 +1529,12 @@ function chatGroupMessages(messages) {
     // After the rest of this file has run, as the part that loads older messages comes further down.
     const linked = /^#message-(\d+)$/.exec(location.hash);
     if (linked) setTimeout(() => jumpToId(linked[1]));
-})();
+});
 
 // Attach popup: the button left of the message box opens a small menu just above it.
 // File and Your attachments are handled by the attachments part below. Greyed-out items (aria-disabled, like Voice
 // message, which is coming soon) do nothing.
-(() => {
+chatPart((signal) => {
     const button = document.querySelector('[data-attach-open]');
     const menu = document.querySelector('[data-attach-menu]');
     if (!button || !menu) return;
@@ -1538,7 +1557,7 @@ function chatGroupMessages(messages) {
 
     document.addEventListener('pointerdown', (event) => {
         if (!menu.hidden && !menu.contains(event.target) && !button.contains(event.target)) setOpen(false, false);
-    });
+    }, { signal });
 
     // Arrow keys, Home and End move through the menu. Escape and Tab close it, back on the button.
     menu.addEventListener('keydown', (event) => {
@@ -1552,7 +1571,7 @@ function chatGroupMessages(messages) {
             setOpen(false, true);
         }
     });
-})();
+});
 
 // A JPEG XL worker (chatJxlWorker.js, its address is data-jxl-worker on the page), started the first time it's used.
 // run(type, data, transfer) sends it a job and gives back a promise of its answer. cancel() stops the worker
@@ -1601,10 +1620,11 @@ function chatJxlWorker() {
 // JPEG XL pictures in the chat: not every browser can show them yet. When one can't, the <img> fails to load
 // (data-attachment-jxl is on those), so the file is fetched and drawn into a <canvas> in its place by the JPEG XL
 // worker instead. Both are 200px tall in chat.css, so nothing moves when the canvas takes over.
-(() => {
+chatPart((signal) => {
     const messages = document.querySelector('[data-chat-messages]');
     if (!messages) return;
     const jxl = chatJxlWorker();
+    signal.addEventListener('abort', () => jxl.cancel()); // stops the worker, if it was started
 
     async function draw(image) {
         if (image.dataset.jxlDrawing) return; // only tried once
@@ -1637,7 +1657,7 @@ function chatJxlWorker() {
     messages.querySelectorAll('img[data-attachment-jxl]').forEach((image) => {
         if (image.complete && image.naturalWidth === 0) draw(image);
     });
-})();
+});
 
 // Picture viewer: clicking a picture in the open chat shows it big in a popup (.chat-viewer in chat/index.php), with zoom,
 // Info, Download and × along the top. Clicking anywhere that isn't the picture, a button or the Info panel closes it,
@@ -1648,7 +1668,7 @@ function chatJxlWorker() {
 // stays open or closed from one picture to the next.
 // The picture is the one in the message: an <img> comes from the browser's cache, and a JPEG XL one drawn into a <canvas>
 // (the JPEG XL part above) is copied. The faded message still being sent has no data-message-id, so it doesn't open.
-(() => {
+chatPart((signal) => {
     const messages = document.querySelector('[data-chat-messages]');
     const dialog = document.querySelector('.chat-viewer');
     if (!messages || !dialog) return;
@@ -1874,7 +1894,7 @@ function chatJxlWorker() {
 
     window.addEventListener('resize', () => {
         if (dialog.open) render();
-    });
+    }, { signal });
 
     dialog.addEventListener('close', () => {
         stage.replaceChildren();
@@ -1884,7 +1904,7 @@ function chatJxlWorker() {
         drag = null;
         dialog.classList.remove('is-zoomed', 'is-dragging');
     });
-})();
+});
 
 // Attachments: File in the Attach menu (or pasting or dropping a file on the message box) picks a file or picture to send.
 // It waits in a bar above the message box until Send, and goes with whatever is typed, as one message.
@@ -1894,13 +1914,13 @@ function chatJxlWorker() {
 // compressed with loss (AVIF, lossy WebP) are sent as they are, and so are animated ones, which would lose their
 // animation.
 // Anything else is zipped by the server.
-// The upload goes to the chat page (action=upload, answered as JSON), and the page reloads with the message in it.
-// From Send until then, the message is shown faded at the bottom of the chat with "Sending…", so it's clear Send worked
+// The upload goes to the chat page (action=upload, answered as JSON), and then the chat is loaded again with the message
+// in it (chatLoad, at the bottom). From Send until then, the message is shown faded at the bottom of the chat with "Sending…", so it's clear Send worked
 // while a picture is still being converted and uploaded.
 // Attachments are paid for with tickets. When a file needs more than the user has free, the server says so, and the
 // Your attachments popup opens with how many it needs, so attachments can be deleted to make room and the file sent.
 // The popup can also be opened from the Attach menu, and lists the attachments still taking tickets (/chat/attachments).
-(() => {
+chatPart((signal) => {
     const composer = document.querySelector('.chat-composer');
     const input = document.querySelector('[data-attach-input]');
     const ticketsDialog = document.querySelector('.chat-tickets');
@@ -1919,6 +1939,7 @@ function chatJxlWorker() {
     const maxBytes = Number(composer.dataset.attachMaxBytes);
     const ticketBytes = Number(composer.dataset.ticketBytes);
     const jxl = chatJxlWorker();
+    signal.addEventListener('abort', () => jxl.cancel()); // a conversion on its way stops when another chat opens
     const ERRORS = {
         tooBig: `That's too big. Attachments can be up to ${maxBytes / 1024 / 1024} MB.`,
         empty: 'That file is empty.',
@@ -2272,7 +2293,8 @@ function chatJxlWorker() {
             const { status: httpStatus, data } = await upload(body);
             if (httpStatus === 200 && data.chatId) {
                 isSent = true;
-                location.href = '/chat/?chat=' + data.chatId; // like a normal message, so a refresh doesn't send it again
+                // Sent, but another chat was opened in the meantime - that one stays
+                if (!signal.aborted) chatLoad('/chat/?chat=' + data.chatId, { sent: body.get('message') });
                 return;
             }
             if (data.error === 'notEnoughTickets') {
@@ -2418,7 +2440,7 @@ function chatJxlWorker() {
     });
 
     ticketsDialog.addEventListener('close', () => textarea.focus());
-})();
+});
 
 // The emoji the user typed or reacted with most recently, newest first, kept in browser storage.
 // Storage can be blocked (private windows), so there are just none then, and nothing is remembered.
@@ -2604,7 +2626,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
 // Emoji picker: the smiley left of GIF opens a popup above it with the emoji by category, and the recently used ones first.
 // Picking one puts it where the cursor is in the message box, and the popup stays open for more.
 // chat.css hides it on phones and tablets, which have emoji on their keyboard.
-(() => {
+chatPart((signal) => {
     const button = document.querySelector('[data-emoji-open]');
     const picker = document.querySelector('[data-emoji-picker]');
     const textarea = document.querySelector('.chat-composer textarea');
@@ -2633,8 +2655,8 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
 
     document.addEventListener('pointerdown', (event) => {
         if (!picker.hidden && !picker.contains(event.target) && !button.contains(event.target)) setOpen(false, false);
-    });
-})();
+    }, { signal });
+});
 
 // Reactions: under a message is a button for each emoji someone reacted with and how many did (chat/index.php), lit up
 // when the user is one of them. Clicking one adds the user's own, or takes it back when it's lit up.
@@ -2643,7 +2665,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
 // Each one is sent to the chat page (action=react), whose answer is the message's reactions as HTML, which go in in place
 // of the old ones. Polling brings everyone else's (chat:reactions, from the live updates part below).
 // A muted user can't react (data-muted), like they can't send messages - the server checks that too.
-(() => {
+chatPart((signal) => {
     const messages = document.querySelector('[data-chat-messages]');
     const picker = document.querySelector('[data-reaction-picker]');
     if (!messages || !picker) return;
@@ -2724,8 +2746,8 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
 
     document.addEventListener('pointerdown', (event) => {
         if (!picker.contains(event.target)) close(false);
-    });
-    window.addEventListener('resize', () => close(false));
+    }, { signal });
+    window.addEventListener('resize', () => close(false), { signal });
 
     // Polling: { reactions: messageId -> HTML for the ones that have any, from, to, sentAt }. Every message from `from` to
     // `to` (the ones shown when the poll was sent) gets its own, and the ones not in it have none any more. A message the
@@ -2738,12 +2760,12 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
             showReactions(item, reactions[id] ?? '');
         });
     });
-})();
+});
 
 // GIF picker: the GIF button next to Send searches Giphy through /chat/gifs (which holds the API key),
 // with the trending GIFs shown before anything is typed. Picking one sends it straight away, together with
 // whatever was typed in the message box (the server sends that first) and the reply, if there is one.
-(() => {
+chatPart((signal) => {
     const dialog = document.querySelector('.chat-gif');
     const composer = document.querySelector('.chat-composer');
     if (!dialog || !composer) return;
@@ -2767,7 +2789,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
         if (chatBlockedLink(textarea.value)) return; // the text in the box goes with it, so a blacklisted link stops the GIF too
         isSending = true;
         gifInput.value = gifId;
-        composer.submit(); // not requestSubmit: the message box may be empty, which is fine with a GIF
+        chatSubmit(composer); // not requestSubmit: the message box may be empty, which is fine with a GIF
     }
 
     /**
@@ -2824,7 +2846,9 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
     }
 
     // Opening the picker or resizing the window changes how many columns fit
-    new ResizeObserver(layoutGifs).observe(results);
+    const resizeObserver = new ResizeObserver(layoutGifs);
+    resizeObserver.observe(results);
+    signal.addEventListener('abort', () => resizeObserver.disconnect());
 
     async function loadGifs() {
         clearTimeout(searchTimer);
@@ -2881,7 +2905,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
     dialog.addEventListener('close', () => {
         if (!isSending) textarea.focus();
     });
-})();
+});
 
 // Older messages: a chat opens with only its newest messages, and while there are older ones the "Loading older messages..."
 // line is at the top (data-messages-older). Scrolling up close to it asks the chat page for the ones before the oldest shown
@@ -2889,7 +2913,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
 // and the line goes. What's on screen stays where it is while they go in.
 // Clicking a reply quote whose message isn't loaded yet sends chat:load-until (from the messages part above):
 // then it's everything back to that message (?until=), and onDone is called once it's there (or can't be loaded).
-(() => {
+chatPart(() => {
     const LOAD_WITHIN_PX = 300; // how close to the top scrolling has to get
     const messages = document.querySelector('[data-chat-messages]');
     if (!messages) return;
@@ -2950,7 +2974,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
         }
         onDone();
     });
-})();
+});
 
 // Live updates: every 2 seconds asks the chat page what's new (?poll=1), adds the open chat's new messages at the bottom
 // and swaps in the chat list when something in it changed (new messages, unread counts, new chats).
@@ -2962,7 +2986,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
 // While the page is hidden (another tab, minimised) it doesn't poll at all: each poll is one of the few PHP requests the
 // hosting runs at once, for the whole site. Coming back to the page polls straight away.
 // New messages are only marked read while the page is being looked at, and not at all after "Mark unread" (?unread=1).
-(() => {
+chatPart((signal) => {
     const POLL_MS = 2000;
     const list = document.querySelector('.chat-list');
     const messages = document.querySelector('[data-chat-messages]');
@@ -3060,9 +3084,10 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
             const response = await fetch('/chat/?' + params, { headers: { Accept: 'application/json' } });
             if (!response.ok) throw new Error(response.statusText);
             const data = await response.json();
+            if (signal.aborted) return; // another chat was opened while it was on its way, and polls for itself
 
             if (messages && !data.openChat) {
-                location.href = '/chat/'; // the open chat is gone: left, deleted, or removed from it
+                chatLoad('/chat/', { replace: true }); // the open chat is gone: left, deleted, or removed from it
                 return;
             }
             if (messages) {
@@ -3084,11 +3109,172 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
 
         // The next poll waits for this one, so a slow answer never has two on their way at once
         isPolling = false;
-        pollTimer = setTimeout(poll, POLL_MS);
+        if (!signal.aborted) pollTimer = setTimeout(poll, POLL_MS);
     }
 
     pollTimer = setTimeout(poll, POLL_MS);
+    signal.addEventListener('abort', () => clearTimeout(pollTimer));
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && pollTimer === null && !isPolling) poll();
+    }, { signal });
+});
+
+// Switching chats: the chat page is never loaded again while it's open. Opening a chat (the chat list, ← on phones,
+// Back and Forward) fetches the page that would have loaded, and every form on it (sending a message, the chat menu,
+// the popups) is posted with fetch, which follows the server's redirect back to the chat. Then that page's <main> takes
+// the old one's place and the parts above are set up again on it (chatPart at the top). Everything outside <main> stays,
+// and pictures that have loaded once show straight away (pictureQueue.js), so nothing flashes or loads again.
+// The address and the history follow along, so a refresh still opens the same chat. Anything that doesn't come back as
+// the chat page (logged out, the maintenance page, an error) is opened the normal way instead.
+// Without JS (or before this has run) the links and forms just load the page like they always did.
+let chatSwap = null; // aborts the parts set up on the <main> that's shown
+let chatRequest = null; // aborts the page on its way, as a newer one takes over
+let chatIsPosting = false; // a form is being sent: another isn't, so Enter twice doesn't send a message twice
+let chatShownAddress = ''; // the path and query of the chat shown, so Back to just another #message is left alone
+
+function chatStart(isSwap) {
+    chatSwap = new AbortController();
+    chatParts.forEach((setUp) => setUp(chatSwap.signal, isSwap));
+    chatShownAddress = location.pathname + location.search; // after the parts, which take ?linkBlocked=1 and such out
+}
+
+/**
+ * Opens the chat page at url in place of the one shown. With body it's posted there instead (a form), and the page is
+ * the one the server redirects to. fromHistory: Back or Forward, which already changed the address. replace: the history
+ * entry is replaced instead of adding one (it is anyway when it's the same address again, like after sending a message).
+ * sent: the message that was just sent, so the box starts empty again - unless more was typed meanwhile, which stays.
+ * Anything typed in the message box stays when the same chat comes back (after muting it, say), like a draft.
+ */
+async function chatLoad(url, { body = null, fromHistory = false, replace = false, sent = null } = {}) {
+    const main = document.querySelector('main.chat');
+    chatRequest?.abort();
+    const request = new AbortController();
+    chatRequest = request;
+    main.setAttribute('aria-busy', 'true');
+
+    let response;
+    let page;
+    try {
+        response = await fetch(url, { method: body ? 'POST' : 'GET', body, signal: request.signal, headers: { Accept: 'text/html' } });
+        page = new DOMParser().parseFromString(await response.text(), 'text/html');
+    } catch (error) {
+        if (error.name === 'AbortError') return; // a newer one took over
+        chatRequest = null;
+        main.removeAttribute('aria-busy');
+        // Offline for a moment. A chat is opened the normal way, which shows the browser's own page for that.
+        // A form isn't sent again, as it may have got there - what was typed is still in the box to try again.
+        if (!body) location.href = url;
+        return;
+    } finally {
+        if (body) chatIsPosting = false;
+    }
+    chatRequest = null;
+
+    const newMain = page.querySelector('main.chat');
+    const address = new URL(response.url);
+    if (!response.ok || !newMain || address.origin !== location.origin || !/^\/chat\/?$/.test(address.pathname)) {
+        location.href = response.url;
+        return;
+    }
+
+    // What carries over: where the chat list was scrolled to, the search, keyboard focus on a chat in the list,
+    // and what's typed in the message box when it's the same chat
+    const list = main.querySelector('.chat-list');
+    const search = main.querySelector('#chat-search');
+    const textarea = main.querySelector('.chat-composer textarea');
+    const chatId = main.querySelector('[data-chat-messages]')?.dataset.chatMessages;
+    const focusedChatId = list?.contains(document.activeElement) ? document.activeElement.closest('[data-chat-id]')?.dataset.chatId : undefined;
+    const draft = textarea && textarea.value !== sent ? textarea.value : '';
+
+    // Copies of the pictures for browsers without JS. Parsed here they're real <img>s, which would all load at once.
+    newMain.querySelectorAll('noscript').forEach((noscript) => noscript.remove());
+
+    // The address first, as the parts read it (?unread=1, ?linkBlocked=1, ?requests=1, #message-)
+    const path = address.pathname + address.search;
+    if (fromHistory) history.replaceState(null, '', path + location.hash);
+    else if (replace || path === location.pathname + location.search) history.replaceState(null, '', path);
+    else history.pushState(null, '', path);
+    document.title = page.title;
+
+    chatSwap.abort();
+    main.replaceWith(newMain);
+
+    const newList = newMain.querySelector('.chat-list');
+    const newSearch = newMain.querySelector('#chat-search');
+    const newTextarea = newMain.querySelector('.chat-composer textarea');
+    if (newList && list) newList.scrollTop = list.scrollTop;
+    if (newSearch && search) newSearch.value = search.value;
+    if (newTextarea && draft !== '' && newMain.querySelector('[data-chat-messages]')?.dataset.chatMessages === chatId) {
+        newTextarea.value = draft;
+    }
+
+    chatStart(true);
+
+    if (newTextarea && draft !== '') newTextarea.dispatchEvent(new Event('input', { bubbles: true })); // grows to fit it
+    // Like autofocus does on a page load: straight into the message box - but not on phones and tablets, where that
+    // would pull up the keyboard. Keyboard focus that was on a chat in the list stays there.
+    const focusedChat = focusedChatId !== undefined ? newList?.querySelector(`[data-chat-id="${focusedChatId}"] a`) : null;
+    if (focusedChat && !newTextarea) focusedChat.focus({ preventScroll: true });
+    else if (newTextarea && !window.matchMedia('(hover: none)').matches) newTextarea.focus({ preventScroll: true });
+    else focusedChat?.focus({ preventScroll: true });
+}
+
+/**
+ * Sends a form on the chat page with chatLoad. submitter: the button it was sent with, whose name and value go along.
+ * For forms sent from the code too (form.submit() would load the page).
+ */
+function chatSubmit(form, submitter = null) {
+    if (chatIsPosting) return;
+    chatIsPosting = true;
+    const body = new FormData(form);
+    if (submitter?.name) body.append(submitter.name, submitter.value);
+    const sent = form.matches('.chat-composer') ? form.querySelector('textarea').value : null;
+    chatLoad(chatFormAction(form), { body, sent });
+}
+
+// Where the form goes. Not form.action, as the chat's forms have an <input name="action">, which that gives instead.
+function chatFormAction(form) {
+    return new URL(form.getAttribute('action') ?? '', location.href);
+}
+
+(() => {
+    if (!document.querySelector('main.chat')) return;
+
+    // A link to the chat page (/chat/ or /chat/?chat=id) inside it, clicked without anything that opens a new tab
+    document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href]');
+        if (!link || event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        if (!link.closest('main.chat') || link.target !== '' || link.hasAttribute('download')) return;
+        const url = new URL(link.href);
+        if (url.origin !== location.origin || !/^\/chat\/?$/.test(url.pathname) || [...url.searchParams.keys()].some((key) => key !== 'chat')) return;
+        event.preventDefault();
+
+        // Lit up straight away, so it's clear it worked while the chat loads
+        if (link.matches('.chat-list-item')) {
+            link.closest('.chat-list')?.querySelectorAll('.chat-list-item.active').forEach((other) => {
+                other.classList.remove('active');
+                other.removeAttribute('aria-current');
+            });
+            link.classList.add('active');
+            link.setAttribute('aria-current', 'page');
+        }
+        chatLoad(url.pathname + url.search);
     });
+
+    // Every form on the chat page posts to /chat/. Last in line, so the parts above can still stop one (an empty
+    // message, a blocked link) or send it their own way (an attachment).
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (event.defaultPrevented || !form.closest('main.chat') || form.getAttribute('method')?.toLowerCase() !== 'post') return;
+        const action = chatFormAction(form);
+        if (action.origin !== location.origin || !/^\/chat\/?$/.test(action.pathname)) return;
+        event.preventDefault();
+        chatSubmit(form, event.submitter);
+    });
+
+    addEventListener('popstate', () => {
+        if (location.pathname + location.search !== chatShownAddress) chatLoad(location.href, { fromHistory: true });
+    });
+
+    chatStart(false);
 })();

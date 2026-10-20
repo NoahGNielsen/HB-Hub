@@ -6,11 +6,11 @@
 // It's read again every time, so the games can change it as people come and go (chessGame.js and matadorGame.js).
 // What counts as a mention, and who hears about it, is all worked out on the server (assets/php/mentions.php) - this
 // only helps type them.
+// The listeners are on the whole document rather than on each box, so boxes put in later work too: the chat swaps in a
+// new message box every time another chat opens (Switching chats in chat.js).
 (() => {
     const SHOWN = 8; // names in the list at most
     const NAME_MAX = 35; // userName: typed further than this after the @, it can't be a name anymore
-    const boxes = document.querySelectorAll('[data-mentions]');
-    if (boxes.length === 0) return;
 
     // One list for every box. A popover, so it's above everything else on the page, Edit's dialog included.
     const list = document.createElement('ul');
@@ -57,7 +57,7 @@
         box.setAttribute('aria-expanded', 'false');
         box.removeAttribute('aria-activedescendant');
         box = null;
-        list.hidePopover();
+        if (list.matches(':popover-open')) list.hidePopover(); // not when it went with a page the chat swapped out
     }
 
     function showActive() {
@@ -137,43 +137,63 @@
         target.focus();
     }
 
-    boxes.forEach((target) => {
+    // The box an event is for, or null when it isn't one
+    function boxOf(event) {
+        return event.target instanceof Element && event.target.matches('[data-mentions]') ? event.target : null;
+    }
+
+    // For screen readers: the box has a list of suggestions. Once per box, on the page or when it first gets focus.
+    function setUp(target) {
+        if (target.hasAttribute('aria-autocomplete')) return;
         target.setAttribute('aria-autocomplete', 'list');
         target.setAttribute('aria-controls', list.id);
         target.setAttribute('aria-expanded', 'false');
-
-        target.addEventListener('input', () => {
-            active = 0;
-            update(target);
-        });
-        target.addEventListener('click', () => update(target));
-        target.addEventListener('keyup', (event) => {
-            if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) update(target);
-        });
-        target.addEventListener('blur', () => {
-            if (box === target) close();
-        });
-
-        // Capturing, so it comes before the box's own Enter (sending the message) and Escape (cancelling a reply or Edit)
-        target.addEventListener('keydown', (event) => {
-            if (box !== target || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
-            if (event.key === 'ArrowDown') {
-                active = (active + 1) % choices.length;
-                showActive();
-            } else if (event.key === 'ArrowUp') {
-                active = (active - 1 + choices.length) % choices.length;
-                showActive();
-            } else if ((event.key === 'Enter' && !event.shiftKey) || (event.key === 'Tab' && !event.shiftKey)) {
-                pick(choices[active]);
-            } else if (event.key === 'Escape') {
-                close();
-            } else {
-                return;
-            }
-            event.preventDefault();
-            event.stopImmediatePropagation();
-        }, true);
+    }
+    document.querySelectorAll('[data-mentions]').forEach(setUp);
+    document.addEventListener('focusin', (event) => {
+        const target = boxOf(event);
+        if (target) setUp(target);
     });
+
+    document.addEventListener('input', (event) => {
+        const target = boxOf(event);
+        if (!target) return;
+        active = 0;
+        update(target);
+    });
+    document.addEventListener('click', (event) => {
+        const target = boxOf(event);
+        if (target) update(target);
+    });
+    document.addEventListener('keyup', (event) => {
+        const target = boxOf(event);
+        if (target && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) update(target);
+    });
+    document.addEventListener('focusout', (event) => {
+        const target = boxOf(event);
+        if (target && box === target) close();
+    });
+
+    // Capturing, so it comes before the box's own Enter (sending the message) and Escape (cancelling a reply or Edit)
+    document.addEventListener('keydown', (event) => {
+        const target = boxOf(event);
+        if (!target || box !== target || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+        if (event.key === 'ArrowDown') {
+            active = (active + 1) % choices.length;
+            showActive();
+        } else if (event.key === 'ArrowUp') {
+            active = (active - 1 + choices.length) % choices.length;
+            showActive();
+        } else if ((event.key === 'Enter' && !event.shiftKey) || (event.key === 'Tab' && !event.shiftKey)) {
+            pick(choices[active]);
+        } else if (event.key === 'Escape') {
+            close();
+        } else {
+            return;
+        }
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }, true);
 
     // Pressing on the list doesn't take the focus out of the box, so it stays open for the click
     list.addEventListener('pointerdown', (event) => event.preventDefault());
