@@ -64,8 +64,7 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
 
         if ($bannedAvatarId !== null) {
             // Kept with the picture, so admins can see what got it banned. No login and no known device for it.
-            hbHubBanUser($db, $userId, HBHUB_BAN_REASON_AVATAR);
-            hbHubBannedAvatarCountMatch($db, $bannedAvatarId);
+            hbHubBannedAvatarAutoban($db, $userId, $bannedAvatarId, true);
         } else {
             hbHubLoginTrustDevice($db, $userId); // made here, so it's one of the account's own devices
             $sessionId = hbHubCreateSession($db, $userId);

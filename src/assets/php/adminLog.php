@@ -3,6 +3,8 @@
 // what to whom. That includes just opening a user's or a chat's admin panel (admin/user.php, admin/chat.php), since
 // that shows all their messages and personal info, and downloading a user's data. Changes are logged by the admin
 // pages right after they've been made (adminLog()), opening one with adminLogView().
+// The one thing in it no admin did is the automatic ban for uploading a banned profile picture ('user.autoban', by
+// bannedAvatars.php), which has no admin (adminLogByUserId NULL), so admins can see every ban in one place.
 // The log is read under Admin log in the admin panel's side menu (admin/log.php). Nobody can change or delete it from
 // the site; rows older than ADMIN_LOG_KEEP_DAYS are removed by the nightly clean-up (cron/nightly.php, adminLogSweep()).
 //
@@ -20,6 +22,7 @@ const ADMIN_LOG_ACTIONS = [
     'user.export' => 'Downloaded all of {user}\'s data',
     'user.ban' => 'Banned {user}',
     'user.unban' => 'Unbanned {user}',
+    'user.autoban' => '{user} was banned automatically for uploading a banned profile picture', // no admin, see the top
     'user.name' => 'Changed {user}\'s name',
     'user.bio' => 'Changed {user}\'s bio',
     'user.avatar' => 'Removed {user}\'s profile picture',
@@ -46,8 +49,9 @@ const ADMIN_LOG_ACTIONS = [
 
 /**
  * Logs that the admin did $action (a key of ADMIN_LOG_ACTIONS), about $userId and/or $chatId, with $data as details.
+ * $adminId is null for what the site did by itself ('user.autoban').
  */
-function adminLog(PDO $db, int $adminId, string $action, ?int $userId = null, ?int $chatId = null, ?array $data = null): void
+function adminLog(PDO $db, ?int $adminId, string $action, ?int $userId = null, ?int $chatId = null, ?array $data = null): void
 {
     $db->prepare('INSERT INTO `HBHub-AdminLog` (adminLogByUserId, adminLogAction, adminLogUserId, adminLogChatId, adminLogData)
         VALUES (?, ?, ?, ?, ?)')

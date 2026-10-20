@@ -23,6 +23,7 @@
 // uploads one on the Banned pictures page (admin/banned.php). Unbanning an account takes its picture off again, and
 // admins can remove any of them from the Banned pictures page.
 require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/adminLog.php';
 
 const HBHUB_BAN_REASON_ADMIN = 1; // userBannedReason in HBHub-Users
 const HBHUB_BAN_REASON_AVATAR = 2;
@@ -329,6 +330,19 @@ function hbHubBanUser(PDO $db, int $userId, int $reason): void
 }
 
 /**
+ * Bans the user for uploading the banned picture $bannedAvatarId, counts the match for the Banned pictures page, and
+ * puts it in the admin log as 'user.autoban' with no admin, so it shows up next to the bans admins made. $signup says
+ * whether it was when making the account (onboardingSaveToDB.php) or on the settings page. Call it in the transaction
+ * that saves the picture.
+ */
+function hbHubBannedAvatarAutoban(PDO $db, int $userId, int $bannedAvatarId, bool $signup): void
+{
+    hbHubBanUser($db, $userId, HBHUB_BAN_REASON_AVATAR);
+    hbHubBannedAvatarCountMatch($db, $bannedAvatarId);
+    adminLog($db, null, 'user.autoban', $userId, null, ['pictureId' => $bannedAvatarId, 'signup' => $signup]);
+}
+
+/**
  * For the settings page: the user uploaded a picture that's on the list. The picture becomes their profile picture
  * anyway, so admins can see what got them banned (nobody else sees a banned account's picture, otherPages/avatar.php),
  * and they're banned. Their other changes on the form aren't saved.
@@ -353,8 +367,7 @@ function hbHubBannedAvatarBanUploader(PDO $db, int $userId, array $avatar, int $
             $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$oldAvatarId]);
         }
 
-        hbHubBanUser($db, $userId, HBHUB_BAN_REASON_AVATAR);
-        hbHubBannedAvatarCountMatch($db, $bannedAvatarId);
+        hbHubBannedAvatarAutoban($db, $userId, $bannedAvatarId, false);
         $db->commit();
     } catch (Throwable $e) {
         $db->rollBack();

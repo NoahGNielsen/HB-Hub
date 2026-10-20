@@ -303,11 +303,13 @@ function hbHubMatadorPlay(PDO $db, int $roomId, ?callable $action = null): ?arra
 
 /**
  * Whether just looking at the game has to go through hbHubMatadorPlay(), as there's something to move on: someone has
- * been gone for the grace period, the host isn't in the game, or the player whose turn it is has run out of time.
+ * been gone for the grace period, the host isn't in the game, the player whose turn it is has run out of time, or a
+ * minimized trade offer has.
  */
 function hbHubMatadorNeedsPlay(array $room, array $seats): bool
 {
-    if (!hbHubMatadorSeated($seats, (int) $room['roomHostUserId']) || hbHubMatadorTimeUp($room['state'])) {
+    if (!hbHubMatadorSeated($seats, (int) $room['roomHostUserId']) || hbHubMatadorTimeUp($room['state'])
+        || hbHubMatadorTradesRunOut($room['state'])) {
         return true;
     }
     foreach ($seats as $seat) {
@@ -626,8 +628,8 @@ function hbHubMatadorChangeSettings(array &$room, int $userId, mixed $dice, mixe
 
 /**
  * The host pauses the game ($pause) or lets it go on (game.php's hbHubMatadorIsPaused()). While it's paused nobody can
- * do anything in the game (play.php), and no turn runs out or is skipped. The player whose turn it is gets their full
- * time again when it goes on. Returns null when it's done, otherwise why not.
+ * do anything in the game (play.php), and no turn or trade offer runs out or is skipped. The player whose turn it is,
+ * and the minimized trade offers, get their full time again when it goes on. Returns null when it's done, otherwise why not.
  */
 function hbHubMatadorPause(array &$room, int $userId, bool $pause): ?string
 {
@@ -648,6 +650,7 @@ function hbHubMatadorPause(array &$room, int $userId, bool $pause): ?string
         hbHubMatadorLog($state, $name . ' paused the game.');
     } else {
         hbHubMatadorResetTimer($state);
+        hbHubMatadorResetTradeTimers($state);
         hbHubMatadorLog($state, $name . ' let the game go on.');
     }
     return null;

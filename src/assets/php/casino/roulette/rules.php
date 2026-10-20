@@ -9,5 +9,5 @@
         a dozen or column 2:1, and red, black, odd, even, 1-18 and 19-36 1:1.
     </li>
     <li>When the ball lands on 0, every bet outside the numbers (dozens, columns, red, black and so on) loses.</li>
-    <li>Bets go in steps of <?= HBHUB_ROULETTE_BET_STEP ?>. Your bets stay on the table after a spin, so you can spin again with the same bets.</li>
+    <li>Bets go in steps of <?= HBHUB_ROULETTE_BET_STEP ?>. Your bets stay on the table after a spin, so you can spin again with the same bets. Press Space to spin again (it puts your last bets back if you cleared the table).</li>
 </ul>

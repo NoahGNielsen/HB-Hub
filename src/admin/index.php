@@ -7,6 +7,7 @@
 // ?q= searches the list by name (a chat by its name or its members' names), or by id when it's a number,
 // and ?page= goes through it ADMIN_LIST_SHOWN at a time. The side menu (adminListsMenuHtml()) switches between the two,
 // and goes to the other lists, Banned pictures and Feedback, which are their own pages (admin/banned.php, admin/feedback.php).
+// The pictures in the lists are loaded by pictureQueue.js two at a time (data-queued-picture), as each one is a PHP request.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
@@ -130,6 +131,7 @@ $adminNoun = $adminList === 'users' ? 'users' : 'chats';
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/settings.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/settings.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/admin.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/admin.css') ?>">
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
     <title><?= $adminList === 'users' ? 'Users' : 'Chats' ?> - Admin panel - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
@@ -184,7 +186,7 @@ $adminNoun = $adminList === 'users' ? 'users' : 'chats';
                                             <tr>
                                                 <td>
                                                     <a class="admin-list-link" href="/admin/user?user=<?= $listUserId ?>">
-                                                        <?= adminAvatarHtml(hbHubAvatarUrl($listUserId, $user['userAvatarAttachmentId'] !== null ? (int) $user['userAvatarAttachmentId'] : null), $user['userName']) ?>
+                                                        <?= adminAvatarHtml(hbHubAvatarUrl($listUserId, $user['userAvatarAttachmentId'] !== null ? (int) $user['userAvatarAttachmentId'] : null), $user['userName'], true) ?>
                                                         <span class="admin-list-name"><?= htmlspecialchars($user['userName']) ?></span>
                                                     </a>
                                                     <?php if ((int) $user['userRole'] === ADMIN_ROLE_ADMIN): ?>
@@ -207,7 +209,7 @@ $adminNoun = $adminList === 'users' ? 'users' : 'chats';
                                             <tr>
                                                 <td>
                                                     <a class="admin-list-link" href="/admin/chat?chat=<?= $listChatId ?>">
-                                                        <?= adminAvatarHtml(adminChatIconUrl($listChatId, $chat['chatIconAttachmentId']), $chat['chatTitle']) ?>
+                                                        <?= adminAvatarHtml(adminChatIconUrl($listChatId, $chat['chatIconAttachmentId']), $chat['chatTitle'], true) ?>
                                                         <span class="admin-list-name"><?= htmlspecialchars($chat['chatTitle']) ?></span>
                                                     </a>
                                                 </td>

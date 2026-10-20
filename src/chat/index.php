@@ -1368,8 +1368,8 @@ function chatInitial(string $name): string
 function chatAvatarHtml(array $chat): string
 {
     if ($chat['chatIconAttachmentId'] !== null) {
-        return '<span class="chat-avatar" aria-hidden="true"><img src="/chat/icon?chat=' . (int) $chat['chatId']
-            . '&amp;v=' . (int) $chat['chatIconAttachmentId'] . '" alt=""></span>';
+        return '<span class="chat-avatar" aria-hidden="true">'
+            . chatQueuedImgHtml('/chat/icon?chat=' . (int) $chat['chatId'] . '&v=' . (int) $chat['chatIconAttachmentId']) . '</span>';
     }
     if ($chat['dmUserId'] !== null && !$chat['dmUserBanned']) {
         return chatUserAvatarHtml((int) $chat['dmUserId'], $chat['chatTitle'], $chat['dmUserAvatarId']);
@@ -1384,8 +1384,19 @@ function chatUserAvatarHtml(int $userId, string $name, mixed $avatarId, string $
 {
     $src = hbHubAvatarUrl($userId, $avatarId !== null ? (int) $avatarId : null);
     return '<span class="chat-avatar' . ($class !== '' ? ' ' . $class : '') . '" aria-hidden="true">'
-        . ($src !== null ? '<img src="' . htmlspecialchars($src) . '" alt="" loading="lazy">' : htmlspecialchars(chatInitial($name)))
+        . ($src !== null ? chatQueuedImgHtml($src) : htmlspecialchars(chatInitial($name)))
         . '</span>';
+}
+
+/**
+ * A profile picture or chat icon that pictureQueue.js loads, two at a time (data-queued-picture, see there): each one
+ * is its own PHP request, and a chat list or a page of messages would otherwise send them all at once.
+ * Without JS the <noscript> one loads instead.
+ */
+function chatQueuedImgHtml(string $src): string
+{
+    $src = htmlspecialchars($src);
+    return '<img data-queued-picture="' . $src . '" alt=""><noscript><img src="' . $src . '" alt="" loading="lazy"></noscript>';
 }
 
 /**
@@ -1729,6 +1740,7 @@ if ($isPoll) {
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mentions.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/mentions.css') ?>">
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/chat.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chat.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/mentions.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/mentions.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
     <title><?= $openChat !== null ? htmlspecialchars($openChat['chatTitle']) . ' - ' : '' ?>Chat - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Chat page for the HB Hub">

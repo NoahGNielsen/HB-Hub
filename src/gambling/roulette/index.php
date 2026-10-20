@@ -202,7 +202,7 @@ function rouletteWheelPockets(): string
                 <button type="button" class="casino-btn" data-rl-undo disabled>Undo</button>
                 <button type="button" class="casino-btn" data-rl-clear disabled>Clear</button>
                 <button type="button" class="casino-btn" data-rl-double disabled>&times;2</button>
-                <button type="button" class="casino-btn casino-btn-primary rl-spin" data-rl-spin disabled>Spin</button>
+                <button type="button" class="casino-btn casino-btn-primary rl-spin" data-rl-spin title="Spin (Space)" aria-keyshortcuts="Space" disabled>Spin</button>
             </div>
             <p class="rl-hint" data-rl-broke hidden>
                 You're out of chips. <a href="/gambling/">Collect your daily chips</a>

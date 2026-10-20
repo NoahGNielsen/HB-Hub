@@ -33,6 +33,51 @@ function gameFieldPlace(int $field): array
     };
 }
 
+/**
+ * The picture on a corner field, as an inline SVG drawn in its own colours (the same in light and dark mode):
+ * a prisoner behind bars on Fængsel, a policeman on De fængsles and a parking sign on Parkering. '' for other fields.
+ */
+function gameFieldArt(string $type): string
+{
+    $svg = match ($type) {
+        // A barred window in a stone wall, with a prisoner in stripes behind it
+        'jail' => '<rect x="4" y="4" width="40" height="40" rx="4" fill="#7a828e" stroke="#4b525c" stroke-width="1.2"/>'
+            . '<rect x="9" y="9" width="30" height="30" rx="2" fill="#1d2330"/>'
+            . '<clipPath id="mt-art-prisoner"><path d="M13 39c0-6 5-9 11-9s11 3 11 9z"/></clipPath>'
+            . '<g clip-path="url(#mt-art-prisoner)"><rect x="13" y="30" width="22" height="9" fill="#f2f2f2"/>'
+            . '<path d="M13 32.5h22M13 36h22" stroke="#222" stroke-width="1.8"/></g>'
+            . '<circle cx="24" cy="23" r="6" fill="#f5c99b"/>'
+            . '<circle cx="21.8" cy="22.3" r="0.9" fill="#222"/><circle cx="26.2" cy="22.3" r="0.9" fill="#222"/>'
+            . '<path d="M21.8 26.4q2.2-1.4 4.4 0" fill="none" stroke="#222" stroke-width="0.9" stroke-linecap="round"/>'
+            . '<rect x="9" y="15" width="30" height="2" fill="#c4cad3" stroke="#5b626d" stroke-width="0.5"/>'
+            . '<g fill="#c4cad3" stroke="#5b626d" stroke-width="0.5"><rect x="13.8" y="9" width="2.4" height="30"/>'
+            . '<rect x="19.8" y="9" width="2.4" height="30"/><rect x="25.8" y="9" width="2.4" height="30"/>'
+            . '<rect x="31.8" y="9" width="2.4" height="30"/></g>'
+            . '<g fill="#4b525c"><circle cx="6.5" cy="6.5" r="1"/><circle cx="41.5" cy="6.5" r="1"/>'
+            . '<circle cx="6.5" cy="41.5" r="1"/><circle cx="41.5" cy="41.5" r="1"/></g>',
+        // A Danish policeman: navy uniform and peaked cap with a gold badge, and a moustache
+        'goToJail' => '<path d="M6 48c0-10 8-15 18-15s18 5 18 15z" fill="#1f2a44"/>'
+            . '<path d="M18.5 33.6 24 41l5.5-7.4q-2.6-.6-5.5-.6t-5.5.6z" fill="#cfe0f5"/>'
+            . '<path d="M22.8 36h2.4l.5 7.5-1.7 1.6-1.7-1.6z" fill="#111a2e"/>'
+            . '<circle cx="34.5" cy="40.5" r="1.8" fill="#f2c14e" stroke="#b8892a" stroke-width="0.5"/>'
+            . '<rect x="20.5" y="27" width="7" height="7" fill="#e0a878"/>'
+            . '<circle cx="15.3" cy="22" r="2" fill="#e8b585"/><circle cx="32.7" cy="22" r="2" fill="#e8b585"/>'
+            . '<circle cx="24" cy="21" r="8.8" fill="#f5c99b"/>'
+            . '<circle cx="20.7" cy="21.2" r="1.1" fill="#222"/><circle cx="27.3" cy="21.2" r="1.1" fill="#222"/>'
+            . '<path d="M19.5 26.6c1.5-2 3.5-1.8 4.5-1 1-.8 3-1 4.5 1-2-.5-3.5.1-4.5.5-1-.4-2.5-1-4.5-.5z" fill="#5a3a22"/>'
+            . '<path d="M10.5 12.5C10.5 5 37.5 5 37.5 12.5L33.5 16h-19z" fill="#1f2a44"/>'
+            . '<rect x="14.5" y="15" width="19" height="3" fill="#111a2e"/>'
+            . '<path d="M14 17.6q10 4.4 20 0l-.6-.6H14.6z" fill="#0b0f1a"/>'
+            . '<circle cx="24" cy="11.5" r="2.2" fill="#f2c14e" stroke="#b8892a" stroke-width="0.6"/>',
+        // A blue parking sign with a white P
+        'parking' => '<rect x="5" y="5" width="38" height="38" rx="7" fill="#fff" stroke="#9aa3ad" stroke-width="0.8"/>'
+            . '<rect x="7.5" y="7.5" width="33" height="33" rx="5" fill="#1e5bc6"/>'
+            . '<path d="M15.5 13h9a8 8 0 0 1 0 16H21v7h-5.5zM21 18v6h3.3a3 3 0 0 0 0-6z" fill="#fff" fill-rule="evenodd"/>',
+        default => '',
+    };
+    return $svg === '' ? '' : '<svg class="mt-field-art" viewBox="0 0 48 48" aria-hidden="true" focusable="false">' . $svg . '</svg>';
+}
+
 $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
 ?>
 <!DOCTYPE html>
@@ -49,7 +94,8 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="mt" data-matador data-room="<?= $room['roomId'] ?>" data-turn-seconds="<?= HBHUB_MATADOR_TURN_SECONDS ?>">
+    <main class="mt" data-matador data-room="<?= $room['roomId'] ?>" data-turn-seconds="<?= HBHUB_MATADOR_TURN_SECONDS ?>"
+          data-trade-seconds="<?= HBHUB_MATADOR_TRADE_SECONDS ?>">
         <!-- The board on the left; the game's name and buttons, then the panels and the rules, on the right -->
         <div class="mt-layout">
             <div class="mt-header">
@@ -135,6 +181,7 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                                 <?php if (isset($info['group']) && is_int($info['group'])): ?>
                                     <span class="mt-field-colour" aria-hidden="true"></span>
                                 <?php endif; ?>
+                                <?= gameFieldArt($info['type']) ?>
                                 <span class="mt-field-name"><?= htmlspecialchars($info['name']) ?></span>
                                 <?php if ($isProperty): ?>
                                     <span class="mt-field-price"><?= number_format($info['price']) ?> kr</span>
@@ -176,21 +223,25 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                 <section class="mt-panel" aria-label="Your moves">
                     <p class="mt-message" role="alert" data-mt-message></p>
                     <div class="mt-actions" data-mt-actions></div>
+                    <!-- Trading, while the game is played (matadorGame.js): the button opens the dialog to offer one. While
+                         the player's own offer is out, it's shown here instead, with a button to take it back. Offers made
+                         to the player pop up (the dialog further down). -->
+                    <div class="mt-trade-bar" data-mt-trade-bar hidden>
+                        <button type="button" class="casino-btn" aria-haspopup="dialog" data-mt-trade-open>Offer a trade</button>
+                        <div class="mt-trade-out" data-mt-trade-out hidden>
+                            <p class="mt-trade-out-text">
+                                <span data-mt-trade-out-text></span>
+                                <span class="mt-trade-out-time" data-mt-trade-out-time></span>
+                            </p>
+                            <button type="button" class="casino-btn mt-small-btn" data-mt-trade-take-back>Take it back</button>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="mt-panel" aria-labelledby="mt-players-title">
                     <h2 class="mt-panel-title" id="mt-players-title">Players</h2>
                     <ol class="mt-players" data-mt-players></ol>
                     <p class="mt-hint" data-mt-bank></p>
-                </section>
-
-                <section class="mt-panel" aria-labelledby="mt-trades-title" data-mt-trades-panel hidden>
-                    <div class="mt-panel-row">
-                        <h2 class="mt-panel-title" id="mt-trades-title">Trades</h2>
-                        <button type="button" class="casino-btn mt-small-btn" data-mt-trade-open>Offer a trade</button>
-                    </div>
-                    <ul class="mt-trades" data-mt-trades></ul>
-                    <p class="mt-hint" data-mt-trades-empty>No offers right now.</p>
                 </section>
 
                 <section class="mt-panel" aria-labelledby="mt-chat-title">
@@ -257,6 +308,37 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                 <button type="button" class="casino-btn casino-btn-primary" data-mt-trade-send>Send offer</button>
             </div>
         </dialog>
+
+        <!-- An offer someone made the player pops up here, one at a time (matadorGame.js). Minimizing it (the button or
+             Esc) puts it in the tray below; from then on it runs out after <?= HBHUB_MATADOR_TRADE_SECONDS ?> seconds
+             unless it's answered, also when it's opened again. -->
+        <dialog class="games-dialog mt-offer" aria-labelledby="mt-offer-title" data-mt-offer-dialog>
+            <div class="mt-offer-head">
+                <h2 id="mt-offer-title" data-mt-offer-title>Trade offer</h2>
+                <button type="button" class="casino-btn mt-icon-btn mt-offer-minimize" aria-label="Minimize" title="Minimize" data-mt-offer-minimize>
+                    <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+                </button>
+            </div>
+            <div class="mt-offer-sides">
+                <div class="mt-offer-side">
+                    <p class="casino-label">You get</p>
+                    <p data-mt-offer-get></p>
+                </div>
+                <div class="mt-offer-side">
+                    <p class="casino-label">You give</p>
+                    <p data-mt-offer-give></p>
+                </div>
+            </div>
+            <p class="mt-hint" data-mt-offer-time></p>
+            <p class="mt-message" role="alert" data-mt-offer-message></p>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn" data-mt-offer-decline>Decline</button>
+                <button type="button" class="casino-btn casino-btn-primary" data-mt-offer-accept>Accept</button>
+            </div>
+        </dialog>
+
+        <!-- The minimized offers, in the corner of the screen, each with the time it has left. Clicking one opens it again. -->
+        <section class="mt-offer-tray" aria-label="Minimized trade offers" data-mt-offer-tray hidden></section>
 
         <dialog class="games-dialog mt-invite" aria-labelledby="mt-invite-title" data-mt-invite-dialog>
             <h2 id="mt-invite-title" data-mt-invite-title>Invite people</h2>

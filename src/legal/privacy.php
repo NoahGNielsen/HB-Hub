@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '19 October 2026';
+const HBHUB_PRIVACY_UPDATED = '20 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -183,7 +183,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             what they did, and which account or chat it was about. That includes just opening your account or a
                             chat you're in, since that shows your messages and personal info, and downloading your data. It also
                             keeps a few details, like how many chips were added or which message was deleted, but never a
-                            password, a name or what a message said.
+                            password, a name or what a message said. When an account is banned automatically for uploading a
+                            banned profile picture, that goes in the admin log too, with which picture it was and whether it
+                            happened when signing up.
                         </p>
                         <h3>What isn't stored</h3>
                         <p>

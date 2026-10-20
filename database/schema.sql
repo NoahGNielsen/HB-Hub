@@ -29,13 +29,13 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `HBHub-AdminLog` (
   `adminLogId` bigint UNSIGNED NOT NULL,
-  `adminLogByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The site admin who did it',
+  `adminLogByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The site admin who did it, NULL for an automatic ban (user.autoban) or when the admin''s account is gone',
   `adminLogAction` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'What was done, like user.view or chat.kick (ADMIN_LOG_ACTIONS in src/assets/php/adminLog.php)',
   `adminLogUserId` int UNSIGNED DEFAULT NULL COMMENT 'The user it was about, NULL when it was not about one',
   `adminLogChatId` int UNSIGNED DEFAULT NULL COMMENT 'The chat it was about, NULL when it was not about one',
   `adminLogData` json DEFAULT NULL COMMENT 'Details, like {"amount": -500} for chips or {"messageId": 12}. Never a password, name or message text',
   `adminLogTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Everything site admins do in the admin panel, opening a user or chat included. Kept for a year (src/assets/php/adminLog.php)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Everything site admins do in the admin panel, opening a user or chat included, and automatic bans for a banned profile picture. Kept for a year (src/assets/php/adminLog.php)';
 
 -- --------------------------------------------------------
 

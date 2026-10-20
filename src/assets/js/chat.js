@@ -344,9 +344,8 @@ function userPicker(dialog, onChange) {
         span.setAttribute('aria-hidden', 'true');
         if (user.avatar) {
             const img = document.createElement('img');
-            img.src = user.avatar;
+            img.dataset.queuedPicture = user.avatar; // pictureQueue.js loads it, two at a time
             img.alt = '';
-            img.loading = 'lazy';
             span.append(img);
         } else {
             span.textContent = user.userName.charAt(0).toUpperCase();
