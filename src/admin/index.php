@@ -7,7 +7,7 @@
 // ?q= searches the list by name (a chat by its name or its members' names), or by id when it's a number,
 // and ?page= goes through it ADMIN_LIST_SHOWN at a time. The side menu (adminListsMenuHtml()) switches between the two,
 // and goes to the other lists, Banned pictures and Feedback, which are their own pages (admin/banned.php, admin/feedback.php).
-// The pictures in the lists are loaded by admin.js two at a time (data-queued-picture), as each one is a PHP request.
+// The pictures in the lists are loaded by pictureQueue.js two at a time (data-queued-picture), as each one is a PHP request.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
@@ -131,7 +131,7 @@ $adminNoun = $adminList === 'users' ? 'users' : 'chats';
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/settings.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/settings.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/admin.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/admin.css') ?>">
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/admin.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/admin.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
     <title><?= $adminList === 'users' ? 'Users' : 'Chats' ?> - Admin panel - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
