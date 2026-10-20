@@ -17,7 +17,7 @@
   padding: 72px var(--home-gutter) 56px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background:
-    radial-gradient(55% 90% at 90% 0%, rgba(255, 138, 61, 0.18), transparent 70%),
+    radial-gradient(55% 90% at 90% 0%, rgba(240, 112, 31, 0.18), transparent 70%),
     radial-gradient(45% 80% at 0% 100%, rgba(170, 182, 200, 0.08), transparent 70%),
     var(--home-dark);
   color: var(--home-dark-text);

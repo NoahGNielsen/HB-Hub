@@ -209,7 +209,7 @@ html.home {
   overflow: hidden;
   padding: 72px max(var(--home-gutter), calc((100% - var(--home-max)) / 2)) 0;
   background:
-    radial-gradient(60% 70% at 85% 10%, rgba(255, 138, 61, 0.2), transparent 70%),
+    radial-gradient(60% 70% at 85% 10%, rgba(240, 112, 31, 0.2), transparent 70%),
     radial-gradient(50% 60% at 0% 100%, rgba(170, 182, 200, 0.1), transparent 70%),
     var(--home-dark);
   color: var(--home-dark-text);
@@ -235,7 +235,7 @@ html.home {
   height: 420px;
   border-radius: 50%;
   /* Soft all the way out by itself - a blur() filter on it cost a lot of rendering time on phones, for the same look */
-  background: radial-gradient(circle closest-side, rgba(255, 138, 61, 0.32), rgba(255, 138, 61, 0.14) 45%, rgba(255, 138, 61, 0.04) 75%, transparent);
+  background: radial-gradient(circle closest-side, rgba(240, 112, 31, 0.32), rgba(240, 112, 31, 0.14) 45%, rgba(240, 112, 31, 0.04) 75%, transparent);
   pointer-events: none;
   animation: home-drift 14s ease-in-out infinite alternate;
 }
@@ -280,7 +280,7 @@ html.home {
 }
 
 .home-hero-accent {
-  background: linear-gradient(90deg, #ff8a3d, #ffc37a);
+  background: linear-gradient(90deg, #f0701f, #ffc37a);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1342,7 +1342,7 @@ html.home {
   border: 1px solid rgba(255, 255, 255, 0.07); /* shows its edge when the page is dark too */
   border-radius: 28px;
   background:
-    radial-gradient(60% 120% at 50% 120%, rgba(255, 138, 61, 0.35), transparent 70%),
+    radial-gradient(60% 120% at 50% 120%, rgba(240, 112, 31, 0.35), transparent 70%),
     var(--home-dark);
   color: var(--home-dark-text);
   text-align: center;
