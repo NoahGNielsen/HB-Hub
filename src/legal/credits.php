@@ -1,5 +1,5 @@
 <?php
-// Credits: the third-party icons, code, link lists and dictionaries HB Hub uses, and who made them. Built like the frontpage (index.php) - its
+// Credits: the third-party icons, code, link lists, dictionaries and fonts HB Hub uses, and who made them. Built like the frontpage (index.php) - its
 // top bar (homeNav.php), a dark hero, a grid of cards and a dark last call - with homepage.css plus legal.css.
 // Open to everyone, like the frontpage.
 $hbHubSessionOptional = true;
@@ -33,11 +33,11 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
 <!DOCTYPE html>
 <html lang="en" class="home">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <title>Credits - HB Hub</title>
-    <meta name="description" content="Credits for the third-party icons, code and lists used on HB Hub.">
+    <meta name="description" content="Credits for the third-party icons, code, lists and fonts used on HB Hub.">
 </head>
 <body class="home-body">
     <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -81,6 +81,10 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div>
                     <dt>Dictionaries</dt>
+                    <dd>2</dd>
+                </div>
+                <div>
+                    <dt>Fonts</dt>
                     <dd>2</dd>
                 </div>
             </dl>
@@ -208,6 +212,40 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
             </div>
             <p class="credits-fineprint">HB Hub's Wordle is a copy of Wordle by Josh Wardle. "Wordle" is a trademark of The New York Times Company, which has nothing to do with HB Hub.</p>
+        </section>
+
+        <!-- Fonts: the copies in assets/fonts/ (from Google Fonts, each with its license next to it: OFL-*.txt) -->
+        <section class="credits-section" id="fonts" aria-labelledby="credits-fonts-title">
+            <p class="home-kicker credits-kicker">Fonts</p>
+            <h2 id="credits-fonts-title">The letters on every page.</h2>
+            <p class="credits-section-lead">Both are free fonts, kept on HB Hub's own server so your browser doesn't have to ask anyone else for them.</p>
+            <div class="credits-library">
+                <!-- A type specimen, going from thin to heavy on hover (Raleway is a variable font) -->
+                <div class="credits-font" aria-hidden="true">
+                    <span class="credits-font-letters">Aa</span>
+                    <span class="credits-font-weights">100 &ndash; 900</span>
+                </div>
+                <div class="credits-library-text">
+                    <h3><a href="https://github.com/impallari/Raleway" target="_blank" rel="noopener noreferrer">Raleway</a></h3>
+                    <p>
+                        By Matt McInerney, Pablo Impallari and Rodrigo Fuenzalida. The font almost everything on HB Hub is
+                        written in, from the thinnest weight to the heaviest.
+                    </p>
+                    <p class="credits-license">SIL Open Font License 1.1</p>
+                </div>
+            </div>
+            <div class="credits-library">
+                <!-- A knight from the chess letters, standing up straight on hover -->
+                <div class="credits-font is-chess" aria-hidden="true">
+                    <span class="credits-font-letters">♞</span>
+                    <span class="credits-font-weights">♔♕♖♗♘♙</span>
+                </div>
+                <div class="credits-library-text">
+                    <h3><a href="https://github.com/notofonts/symbols" target="_blank" rel="noopener noreferrer">Noto Sans Symbols 2</a></h3>
+                    <p>By the Noto Project Authors, for Google. Only its 12 chess letters, which are the pieces in chess and on the frontpage's board.</p>
+                    <p class="credits-license">SIL Open Font License 1.1</p>
+                </div>
+            </div>
         </section>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>

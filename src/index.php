@@ -36,6 +36,9 @@ function homeKroner(int $amount): string
     return number_format($amount, 0, ',', '.');
 }
 
+// The section icons next to Chat, Casino and Games are 48 x 48 copies (icons/small/) of the 512 x 512 ones the rest of
+// the site uses, as they're only shown at 18 px.
+
 // Title deeds shown in the Games section, straight from the board
 $homeDeeds = [];
 foreach ([1, 21, 39] as $homeField) {
@@ -48,7 +51,8 @@ $homeChessBoard = 'r.bqkb.r' . 'pppp.Qpp' . '..n..n..' . '....p...' . '..B.P...'
 $homeChessLast = ['h5', 'f7'];
 $homeChessCheck = 'e8';
 // Each piece is the filled chess letter (the pawn told not to turn into an emoji), with the outlined one on top as
-// White's edge, like chess.css draws them. The 12 letters come from the Noto Sans Symbols 2 font.
+// White's edge, like chess.css draws them. The 12 letters come from the Noto Sans Symbols 2 font (assets/fonts/,
+// only those 12 letters, @font-face in homepage.css).
 $homeChessFilled = ['k' => '♚', 'q' => '♛', 'r' => '♜', 'b' => '♝', 'n' => '♞', 'p' => "♟\u{FE0E}"];
 $homeChessOutlined = ['k' => '♔', 'q' => '♕', 'r' => '♖', 'b' => '♗', 'n' => '♘', 'p' => '♙'];
 $homeChessSquares = []; // [['class' => 'is-light is-last', 'piece' => '<span ...>'], ...] for the 64 squares, a8 first
@@ -74,13 +78,11 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
     }
     $homeChessSquares[] = ['class' => $homeClass, 'piece' => $homePieceHtml];
 }
-$homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&display=block&text=' . rawurlencode('♔♕♖♗♘♙♚♛♜♝♞♟');
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link href="<?= htmlspecialchars($homePieceFontUrl) ?>" rel="stylesheet">
+    <?php $headerHomeNav = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <title>HB Hub - Chat, casino and games for HB's students</title>
     <meta name="description" content="HB Hub is where school hangs out online: group chats and DMs, Blackjack, Baccarat and Roulette with play chips, and Matador and chess with your friends.">
@@ -183,7 +185,7 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
         <!-- Chat -->
         <section class="home-feature" id="chat" aria-labelledby="home-chat-title">
             <div class="home-feature-text">
-                <p class="home-kicker"><img src="/assets/images/icons/chat.png" alt="">Chat</p>
+                <p class="home-kicker"><img src="/assets/images/icons/small/chat.png" width="18" height="18" alt="">Chat</p>
                 <h2 id="home-chat-title">Every group chat you actually need.</h2>
                 <p>
                     DMs, group chats for the class, the project and the people you sit with at lunch.
@@ -224,7 +226,7 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
         <!-- Casino -->
         <section class="home-feature home-feature-flip" id="casino" aria-labelledby="home-casino-title">
             <div class="home-feature-text">
-                <p class="home-kicker"><img src="/assets/images/icons/dice.png" alt="">Casino<?php if (!$homeCasinoOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
+                <p class="home-kicker"><img src="/assets/images/icons/small/dice.png" width="18" height="18" alt="">Casino<?php if (!$homeCasinoOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
                 <h2 id="home-casino-title">Chips, not cash.</h2>
                 <p>
                     Everyone starts with <?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips and can collect
@@ -292,7 +294,7 @@ $homePieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+
         <!-- Games -->
         <section class="home-feature" id="games" aria-labelledby="home-games-title">
             <div class="home-feature-text">
-                <p class="home-kicker"><img src="/assets/images/icons/controler.png" alt="">Games<?php if (!$homeGamesOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
+                <p class="home-kicker"><img src="/assets/images/icons/small/controler.png" width="18" height="18" alt="">Games<?php if (!$homeGamesOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
                 <h2 id="home-games-title">Board games, without the box.</h2>
                 <p>
                     Matador, the Danish classic for 2 to 4 players, with houses, hotels and Prøv lykken, and a

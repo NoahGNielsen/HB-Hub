@@ -11,6 +11,13 @@
 // The canonical URL is the page's clean path without the query string, so /userMgmt/login?return=%2Fchat (where
 // session.php sends visitors who aren't logged in) counts as /userMgmt/login, and /index as /. Error pages (anything
 // that isn't a 200) are noindex, so they get none.
+//
+// Pages under the frontpage's top bar (homeNav.php) instead of the app's nav panel set $headerHomeNav = true before
+// including this, so they don't wait for navPanel.css, which they don't use.
+//
+// The font (Raleway, assets/fonts/, @font-face in mainStyle.css) is our own copy instead of Google Fonts', so the
+// first paint doesn't wait on two other servers. Its Latin file is preloaded, since the browser would otherwise only
+// find it after mainStyle.css has loaded.
 require_once __DIR__ . '/maintenance.php';
 
 $headerCanonical = null;
@@ -27,8 +34,11 @@ if (http_response_code() === 200) {
 <link rel="manifest" href="https://hbhub.noahgajnielsen.dk/manifest.json?v=<?= filemtime(__DIR__ . '/../../manifest.json') ?>">
 <meta name="apple-mobile-web-app-title" content="HB Hub">
 <meta name="theme-color" content="#161a21">
+<link rel="preload" href="https://hbhub.noahgajnielsen.dk/assets/fonts/raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mainStyle.css?v=<?= filemtime(__DIR__ . '/../css/mainStyle.css') ?>">
+<?php if (empty($headerHomeNav)): ?>
 <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
+<?php endif; ?>
 <link rel="terms-of-service" href="https://hbhub.noahgajnielsen.dk/legal/terms">
 <link rel="privacy-policy" href="https://hbhub.noahgajnielsen.dk/legal/privacy">
 
@@ -45,8 +55,3 @@ if (http_response_code() === 200) {
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="HB Hub: The whole school, one tab away. Chat, Casino, Games.">
 <meta name="twitter:card" content="summary_large_image">
-
-<!--Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">

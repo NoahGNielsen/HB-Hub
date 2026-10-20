@@ -1,3 +1,44 @@
+/* The site's font, Raleway (SIL Open Font License, see /legal/credits), our own copy of Google Fonts' files so
+   pages don't wait on Google's servers. Variable fonts, so one file holds every weight from 100 to 900. Split like
+   Google splits it: Latin (with Danish), and Latin Extended for the letters it lacks - the browser only downloads a
+   file once the page uses a letter in its unicode-range. header.php preloads the upright Latin one. The files have
+   no ?v= and are cached for 90 days, so give a new version a new name. */
+@font-face {
+  font-family: "Raleway";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/assets/fonts/raleway-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Raleway";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/assets/fonts/raleway-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Raleway";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/assets/fonts/raleway-italic-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Raleway";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/assets/fonts/raleway-italic-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 /* Colour scheme: "Warm Slate & Orange". The site is dark mode only, whatever the device is set to -
    color-scheme makes the browser draw its own bits (scrollbars, form controls) dark too */
 :root {
@@ -7,6 +48,8 @@
   --primary: #aab6c8;
   --secondary: #1b2029;
   --accent: #ff8a3d;
+  /* Text on the accent colour. White on #ff8a3d is only 2.3:1, this is 8:1 (WCAG asks for 4.5:1) */
+  --accent-text: #14100c;
 
   /* Nav bars */
   --nav-bg: #161a21;
@@ -91,7 +134,7 @@ body:has(> .site-footer) {
   padding: 10px 18px;
   border-radius: 10px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-weight: 600;
   text-decoration: none;
 }
@@ -241,7 +284,7 @@ body:has(> .site-footer) {
   border: none;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font: inherit;
   font-weight: 700;
   cursor: pointer;

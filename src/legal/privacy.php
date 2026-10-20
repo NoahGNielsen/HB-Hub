@@ -30,7 +30,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
 <!DOCTYPE html>
 <html lang="en" class="home">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <title>Privacy Policy - HB Hub</title>
@@ -261,7 +261,6 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 same thing in that time. GIFs in the chat load straight from Giphy, which means Giphy sees your
                                 IP address when your browser shows one.
                             </li>
-                            <li><strong>Google Fonts</strong> serves the site's font, so Google sees your IP address when your browser loads it.</li>
                             <li><strong>GitHub</strong> hosts the site's code. It only gets the total number of members and messages, for the counters in the README, never anything about one person.</li>
                         </ul>
                     </section>

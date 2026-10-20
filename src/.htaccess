@@ -21,6 +21,9 @@ FileETag MTime Size
 # WebAssembly (the chat's JPEG XL codec) has to be sent as application/wasm for browsers to compile it as it downloads
 AddType application/wasm .wasm
 
+# The fonts (assets/fonts/), in case the server's own list lacks them
+AddType font/woff2 .woff2
+
 # ==============================================================================
 # PHP LIMITS
 # Chat attachments can be up to 50 MB (all 10 tickets, assets/php/chatAttachments.php), plus the rest of the form.
@@ -69,12 +72,12 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     Header set Cross-Origin-Opener-Policy "same-origin-allow-popups"
     Header set Cross-Origin-Resource-Policy "same-origin"
 
-    # Content Security Policy (Google Fonts, and GIFs in the chat from Giphy's image servers).
+    # Content Security Policy (GIFs in the chat from Giphy's image servers). The fonts are our own (assets/fonts/).
     # 'wasm-unsafe-eval' lets the chat run the JPEG XL codec (WebAssembly, assets/js/vendor/jxl/) - it only allows
     # compiling WebAssembly, not eval() or inline scripts.
     # blob: lets the chat show a picture that's still being sent from the user's own device (a local object URL).
     Header always set X-XSS-Protection "0"
-    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https://*.giphy.com; script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https://*.giphy.com; script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self'; font-src 'self';"
 
     # --------------------------------------------------------------------------
     # SMART CACHING STRATEGY (Fixes Security Scanner & Handles 304 Validation)

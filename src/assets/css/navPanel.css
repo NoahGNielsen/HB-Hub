@@ -32,7 +32,7 @@ body {
   color: var(--nav-text);
 }
 
-/* The same logo as the frontpage's top bar (homepage.css): a tilted red "HB" tile, then "Hub" */
+/* The same logo as the frontpage's top bar (homepage.css): a tilted orange "HB" tile, then "Hub" */
 .nav-brand {
   display: flex;
   align-items: center;
@@ -51,7 +51,7 @@ body {
   place-items: center;
   border-radius: 11px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-size: 0.95rem;
   font-weight: 900;
   letter-spacing: 0;
@@ -223,7 +223,7 @@ a.nav-notification.is-unread:focus-visible {
   overflow: hidden;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-weight: 700;
 }
 
@@ -233,11 +233,10 @@ a.nav-notification.is-unread:focus-visible {
   object-fit: cover;
 }
 
-/* The icon of the part of the site it's from (a black PNG, made white on the accent colour) */
+/* The icon of the part of the site it's from (a black PNG, dark on the accent colour like the text on it) */
 .nav-notification-avatar img.nav-notification-icon {
   width: 20px;
   height: 20px;
-  filter: invert(1);
 }
 
 .nav-notification-text {
@@ -318,7 +317,7 @@ a.nav-notification.is-unread:focus-visible {
   align-items: center;
   justify-content: center;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-weight: 700;
 }
 
@@ -333,7 +332,7 @@ a.nav-notification.is-unread:focus-visible {
   padding: 8px 16px;
   border-radius: 999px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-weight: 700;
   text-decoration: none;
 }

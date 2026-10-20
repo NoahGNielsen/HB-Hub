@@ -2,7 +2,7 @@
 // A chess game (?room=id). The page is only the frame: chessGame.js draws the board, the players and their clocks, and
 // plays the game through /games/chess/play. Only for the game the user is in - anyone else is sent to the chess page,
 // where games are joined.
-// The pieces are letters from the Noto Sans Symbols 2 font (only those 12 are loaded), drawn by chess.css.
+// The pieces are letters from the Noto Sans Symbols 2 font (assets/fonts/, only those 12), drawn by chess.css.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/chess/room.php';
@@ -20,13 +20,11 @@ if ($room === null) {
 
 $gameTypeName = HBHUB_CHESS_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
 $gameClockName = HBHUB_CHESS_CLOCK_NAMES[$room['state']['clock']] ?? '';
-$pieceFontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&display=block&text=' . rawurlencode('♔♕♖♗♘♙♚♛♜♝♞♟');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link href="<?= htmlspecialchars($pieceFontUrl) ?>" rel="stylesheet">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/chess.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/chess.css') ?>">

@@ -1,6 +1,15 @@
 /* A chess game (games/chess/game.php, drawn by chessGame.js). Loaded after casino.css and games.css.
    The board is an 8 x 8 grid of buttons, a8 first (h1 first when Black is below). The pieces are the chess letters of
    the Noto Sans Symbols 2 font: the filled one in the piece's colour, with the outlined one on top for White's. */
+
+/* Only the 12 chess letters of Noto Sans Symbols 2 (SIL Open Font License), our own copy of Google Fonts' cut-down
+   file. "block": the board waits for it rather than showing the device's own chess letters first. */
+@font-face {
+  font-family: "Noto Sans Symbols 2";
+  font-display: block;
+  src: url("/assets/fonts/noto-sans-symbols-2-chess.woff2") format("woff2");
+}
+
 .ch {
   --ch-light: #f0d9b5;
   --ch-dark: #b58863;

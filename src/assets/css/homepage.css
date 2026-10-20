@@ -1,5 +1,6 @@
-/* Frontpage (index.php). It has its own top bar instead of the app's nav panel, so the padding navPanel.css gives
-   body for the nav bars is taken away again. The hero and the last call are always dark, like the app's bars. */
+/* Frontpage (index.php), and the legal pages on top of legal.css. It has its own top bar (homeNav.php) instead of the
+   app's nav panel, so header.php leaves navPanel.css out ($headerHomeNav). The hero and the last call are always
+   dark, like the app's bars. */
 .home-body {
   --home-max: 1120px;
   --home-gutter: 20px;
@@ -7,6 +8,8 @@
   --home-dark-raised: #1b2029;
   --home-dark-text: #eceef2;
   --home-red: #e5484d;
+  --nav-top-h: 64px; /* the top bar's height, so toasts (mainStyle.css) show up below it */
+  margin: 0;
   padding: 0;
 }
 
@@ -23,6 +26,15 @@ html.home {
   html.home {
     scroll-behavior: smooth;
   }
+}
+
+/* The chess pieces in the Games section: only the 12 chess letters of Noto Sans Symbols 2 (SIL Open Font License),
+   the same file as chess.css. "fallback" rather than chess.css' "block": the board is far down the page, so the text
+   above it shouldn't wait for the file. */
+@font-face {
+  font-family: "Noto Sans Symbols 2";
+  font-display: fallback;
+  src: url("/assets/fonts/noto-sans-symbols-2-chess.woff2") format("woff2");
 }
 
 .home-body h1,
@@ -71,7 +83,7 @@ html.home {
   place-items: center;
   border-radius: 11px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-size: 0.95rem;
   font-weight: 900;
   letter-spacing: 0;
@@ -119,7 +131,7 @@ html.home {
   overflow: hidden;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-weight: 700;
   text-decoration: none;
 }
@@ -160,7 +172,7 @@ html.home {
 
 .home-btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
@@ -222,8 +234,8 @@ html.home {
   width: 420px;
   height: 420px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 138, 61, 0.35), transparent 65%);
-  filter: blur(30px);
+  /* Soft all the way out by itself - a blur() filter on it cost a lot of rendering time on phones, for the same look */
+  background: radial-gradient(circle closest-side, rgba(255, 138, 61, 0.32), rgba(255, 138, 61, 0.14) 45%, rgba(255, 138, 61, 0.04) 75%, transparent);
   pointer-events: none;
   animation: home-drift 14s ease-in-out infinite alternate;
 }
@@ -330,7 +342,7 @@ html.home {
   place-items: center;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-weight: 800;
 }
 
@@ -391,7 +403,7 @@ html.home {
 .home-msg-me p {
   border-radius: 16px 16px 4px 16px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
 }
 
 .home-msg-notice {
@@ -605,7 +617,7 @@ html.home {
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-size: 0.7rem;
   letter-spacing: 0.02em;
 }
@@ -770,7 +782,7 @@ html.home {
 
 .home-inbox-actions span:first-child {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
 }
 
 /* Casino: a half-moon blackjack table, with a roulette wheel in front of one corner and a piece of a Baccarat
@@ -898,7 +910,7 @@ html.home {
   padding: 3px 10px;
   border-radius: 999px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-size: 0.8rem;
   font-weight: 800;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -1159,7 +1171,7 @@ html.home {
   padding: 4px 12px;
   border-radius: 999px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-size: 0.8rem;
   font-weight: 800;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -1469,7 +1481,7 @@ html.home {
 @media (max-width: 600px) {
   .home-body {
     --home-gutter: 16px;
-    padding: 0; /* navPanel.css leaves room for the app's bottom bar here */
+    --nav-top-h: 58px;
   }
 
   .home-nav {

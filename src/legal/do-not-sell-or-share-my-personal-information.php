@@ -11,7 +11,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_DO_NOT_SELL_UPDATED = '19 October 2026';
+const HBHUB_DO_NOT_SELL_UPDATED = '20 October 2026';
 
 // Global Privacy Control: browsers with it turned on send "Sec-GPC: 1" on every request
 $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
@@ -19,7 +19,7 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
 <!DOCTYPE html>
 <html lang="en" class="home">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <title>Do Not Sell or Share My Personal Information - HB Hub</title>
@@ -100,7 +100,6 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                         <ul>
                             <li><strong>Simply.com</strong> (Denmark) hosts the website and the database, in the EU.</li>
                             <li><strong>Giphy</strong> sees your IP address when your browser loads a GIF in the chat. Your GIF searches go through HB Hub's server, so Giphy doesn't learn who searched.</li>
-                            <li><strong>Google Fonts</strong> sees your IP address when your browser loads the site's font.</li>
                             <li><strong>GitHub</strong> only gets the total number of members and messages, for the counters in the README.</li>
                         </ul>
                         <p>
