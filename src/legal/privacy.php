@@ -98,8 +98,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h3>Banned pictures</h3>
                         <p>
                             When an account is banned, a copy of its profile picture is usually put on a list of banned pictures,
-                            together with which account it came from and which admin banned it. Admins can also add pictures to
-                            the list themselves. When you upload a profile picture, or sign up with one, it's compared with the
+                            together with which account it came from and which admin banned it. When an admin removes a profile
+                            picture that breaks the rules, they can put a copy of it on the list the same way without banning the
+                            account. Admins can also add pictures to the list themselves. When you upload a profile picture, or sign up with one, it's compared with the
                             list in two ways: a fingerprint of the file (its SHA-256 hash), and a fingerprint of what the picture
                             looks like, made from a tiny greyscale copy of it, so a resized or slightly cropped copy is found too.
                             If it's the same file, or looks almost the same as a banned picture, the account is banned straight

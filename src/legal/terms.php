@@ -183,7 +183,7 @@ const HBHUB_TERMS_UPDATED = '20 October 2026';
                         <h2 id="terms-moderation">7. When the rules are broken</h2>
                         <p>Depending on how serious it is, admins can:</p>
                         <ul>
-                            <li>delete messages, attachments, pictures or groups,</li>
+                            <li>delete messages, attachments, pictures or groups, and ban a profile picture they delete, so it can't be used again,</li>
                             <li>reset or take away chips, or remove game results from the leaderboards,</li>
                             <li>take away attachment tickets, so fewer (or no) new attachments can be sent,</li>
                             <li>
@@ -197,8 +197,9 @@ const HBHUB_TERMS_UPDATED = '20 October 2026';
                         <p>
                             Using a banned profile picture is against the rules too: an account that uploads one, or signs up with
                             one, is banned straight away, without an admin having to do anything. That includes edited copies that
-                            look almost the same, like a resized or cropped one. Banned pictures are the pictures of banned
-                            accounts, and other pictures admins have added.
+                            look almost the same, like a resized or cropped one, and the account the picture was removed from.
+                            Banned pictures are the pictures of banned accounts, profile pictures admins have removed and banned,
+                            and other pictures admins have added.
                         </p>
                         <p>
                             Admins decide what breaks the rules, also for things these terms don't list. If you think a decision

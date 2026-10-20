@@ -19,9 +19,10 @@
 // Each row holds a copy of the file, so admins can still see it after the account it came from changes or loses its
 // picture.
 //
-// Pictures get on the list in two ways: a site admin bans an account (admin/user.php copies its current picture), or
-// uploads one on the Banned pictures page (admin/banned.php). Unbanning an account takes its picture off again, and
-// admins can remove any of them from the Banned pictures page.
+// Pictures get on the list in three ways: a site admin bans an account (admin/user.php copies its current picture),
+// removes and bans an account's picture without banning the account (admin/user.php's "Remove and ban picture", so
+// only uploading it again bans them), or uploads one on the Banned pictures page (admin/banned.php). Unbanning an
+// account takes the pictures that came from it off again, and admins can remove any of them from the Banned pictures page.
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/adminLog.php';
 
@@ -285,22 +286,24 @@ function hbHubBannedAvatarAdd(PDO $db, string $type, string $file, int $adminId)
 }
 
 /**
- * Puts the user's current profile picture on the list, copied, as the picture of a banned account. Nothing happens
- * when they have no picture or it's already on the list. The hash is worked out by MySQL, so the file never has to
- * come out of the database. The fingerprints aren't, so call hbHubBannedAvatarFillFingerprints() once it's committed.
+ * Puts the user's current profile picture on the list, copied, as coming from them (bannedAvatarFromUserId), for a ban
+ * or for "Remove and ban picture" in admin/user.php. Returns the new row's id, or null when they have no picture or
+ * it's already on the list. The hash is worked out by MySQL, so the file never has to come out of the database.
+ * The fingerprints aren't, so call hbHubBannedAvatarFillFingerprints() once it's committed.
  */
-function hbHubBannedAvatarAddFromUser(PDO $db, int $userId, int $adminId): void
+function hbHubBannedAvatarAddFromUser(PDO $db, int $userId, int $adminId): ?int
 {
-    $db->prepare('INSERT INTO `HBHub-BannedAvatars` (bannedAvatarHash, bannedAvatarType, bannedAvatarFile, bannedAvatarFromUserId, bannedAvatarAddedByUserId)
+    $statement = $db->prepare('INSERT INTO `HBHub-BannedAvatars` (bannedAvatarHash, bannedAvatarType, bannedAvatarFile, bannedAvatarFromUserId, bannedAvatarAddedByUserId)
         SELECT SHA2(a.attachmentFile, 256), a.attachmentType, a.attachmentFile, u.userId, ?
         FROM `HBHub-Users` u JOIN `HBHub-Attachments` a ON a.attachmentId = u.userAvatarAttachmentId
         WHERE u.userId = ?
-        ON DUPLICATE KEY UPDATE bannedAvatarId = bannedAvatarId')
-        ->execute([$adminId, $userId]);
+        ON DUPLICATE KEY UPDATE bannedAvatarId = bannedAvatarId');
+    $statement->execute([$adminId, $userId]);
+    return $statement->rowCount() === 1 ? (int) $db->lastInsertId() : null; // 0 when it was already there
 }
 
 /**
- * Takes the pictures that came from the user's ban off the list, for when they're unbanned. Pictures an admin
+ * Takes the pictures that came from the user (their ban, or "Remove and ban picture") off the list, for when they're unbanned. Pictures an admin
  * uploaded stay, as do the ones from other banned accounts.
  */
 function hbHubBannedAvatarRemoveFromUser(PDO $db, int $userId): void

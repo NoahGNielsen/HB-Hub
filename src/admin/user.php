@@ -7,14 +7,15 @@
 // Shows what there is about the user: their account, sessions (their logins), messages in every chat, chats and casino
 // chips, and ?export=1 downloads all of it as JSON. The actions are one form per card, like the settings page:
 // ghost ban or lift it (what they do in chats only shows to themselves, see the top of assets/php/chat.php),
-// ban or unban, change the name or bio, remove the picture, set the gambling block (straight away, without the wait),
+// ban or unban, change the name or bio, remove the picture (or remove and ban it), set the gambling block (straight away, without the wait),
 // reset the password, remove two-factor login, log out every session, add or remove chips, delete messages, delete
 // attachments (one or all, which frees their tickets), add or take away attachment tickets and delete the account.
 // Chips change through hbHubCasinoChange() like in the games, logged with the reason "admin" and the admin's userId,
 // so the chip history shows who did it. Attachments are only listed (name, size, chat, tickets), never opened here.
 // Before any form is sent, admin.js asks for a reason, which goes in the admin log with the action (adminLog.php).
 // Banning puts their picture on the banned pictures list (admin/banned.php) too, unless that's unticked, and
-// unbanning takes it off again.
+// unbanning takes it off again. "Remove and ban picture" puts it on the list without banning them, so they're only
+// banned if they upload it (or a similar copy) again, like anyone else would be.
 // Opening the page, downloading the data and every change are logged in the admin log (assets/php/adminLog.php).
 // Site admins can't be changed here (yourself included), and a deleted account only has its messages left to delete.
 // The side menu (adminPageMenuHtml()) links to the cards in the order they're on the page: Information, then Manage
@@ -314,6 +315,15 @@ switch ($adminAction) {
         break;
 
     case 'removeAvatar':
+        // "Remove and ban picture" copies it to the banned pictures list first, as coming from them, so unbanning them
+        // later takes it off again. They aren't banned now: only uploading it again bans them (bannedAvatars.php).
+        if (($_POST['ban'] ?? null) === '1') {
+            $bannedAvatarId = hbHubBannedAvatarAddFromUser($db, $targetId, $adminId);
+            hbHubRemoveAvatar($db, $targetId);
+            adminLog($db, $adminId, 'user.avatarBan', $targetId, null, $bannedAvatarId !== null ? ['pictureId' => $bannedAvatarId] : null);
+            hbHubBannedAvatarFillFingerprints($db);
+            adminRedirect($targetId, 'adminSaved', 'profile');
+        }
         hbHubRemoveAvatar($db, $targetId);
         adminLog($db, $adminId, 'user.avatar', $targetId);
         adminRedirect($targetId, 'adminSaved', 'profile');
@@ -668,9 +678,15 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                 <input type="hidden" name="action" value="removeAvatar">
                                 <div class="settings-item-text">
                                     <span class="settings-label">Profile picture</span>
-                                    <p class="settings-hint">Their picture is deleted, and the first letter of their name is shown instead.</p>
+                                    <p class="settings-hint">
+                                        Their picture is deleted, and the first letter of their name is shown instead. Remove and ban also puts it on
+                                        the <a class="admin-link" href="/admin/banned">banned pictures</a> list without banning them: anyone who
+                                        uploads it, or a resized or cropped copy, from then on is banned straight away, them included.
+                                    </p>
                                 </div>
                                 <button type="submit" class="settings-btn settings-btn-danger">Remove picture</button>
+                                <button type="submit" class="settings-btn settings-btn-danger" name="ban" value="1"
+                                        data-confirm="Remove and ban <?= htmlspecialchars($target['userName']) ?>'s profile picture?">Remove and ban picture</button>
                             </form>
                         <?php endif; ?>
                     </section>

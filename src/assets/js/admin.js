@@ -1,5 +1,5 @@
 // Admin panel (admin/user.php, admin/chat.php, admin/banned.php and admin/feedback.php): before any of its forms is sent,
-// a popup asks "are you sure?" (the form's data-confirm, like "Ban Name?", or the button's own text) and lets the admin type
+// a popup asks "are you sure?" (the button's or the form's data-confirm, like "Ban Name?", or the button's own text) and lets the admin type
 // a reason, which is sent along as the form's `reason` field and kept in the admin log with the action (adminLog.php).
 // Generate fills in a random password for Reset password, shown so it can be passed on to the user,
 // and the chat's Background card shows the gradient as it's picked. (The pictures in the lists load two at a time, from pictureQueue.js.)
@@ -41,7 +41,7 @@
         const submitter = event.submitter instanceof HTMLButtonElement ? event.submitter : null;
         const label = submitter?.textContent.trim() || 'OK';
         pending = { form, submitter };
-        title.textContent = form.dataset.confirm || `${label}?`;
+        title.textContent = submitter?.dataset.confirm || form.dataset.confirm || `${label}?`;
         ok.textContent = label;
         const isDanger = submitter?.classList.contains('settings-btn-danger') ?? false;
         ok.className = `settings-btn ${isDanger ? 'settings-btn-danger settings-btn-solid' : 'settings-btn-primary'}`;

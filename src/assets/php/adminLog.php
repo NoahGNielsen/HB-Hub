@@ -33,6 +33,7 @@ const ADMIN_LOG_ACTIONS = [
     'user.name' => 'Changed {user}\'s name',
     'user.bio' => 'Changed {user}\'s bio',
     'user.avatar' => 'Removed {user}\'s profile picture',
+    'user.avatarBan' => 'Removed and banned {user}\'s profile picture',
     'user.block' => 'Changed {user}\'s gambling block',
     'user.password' => 'Reset {user}\'s password',
     'user.totp' => 'Removed two-factor login from {user}\'s account',

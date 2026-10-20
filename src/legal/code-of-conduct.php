@@ -125,9 +125,10 @@ const HBHUB_CONDUCT_UPDATED = '20 October 2026';
                             can't be put in a bio either.
                         </p>
                         <p>
-                            A banned account's profile picture can't be used again. Uploading it, or a resized or cropped copy of
-                            it, also when signing up, bans the account straight away, so don't use a picture from someone who has
-                            been banned.
+                            A banned account's profile picture can't be used again, and neither can a profile picture an admin
+                            removed and banned. Uploading it, or a resized or cropped copy of it, also when signing up, bans the
+                            account straight away (also the account it was removed from), so don't use a picture from someone who
+                            has been banned, and don't put back a picture an admin removed.
                         </p>
                     </section>
 

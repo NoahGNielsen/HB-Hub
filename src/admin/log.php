@@ -88,6 +88,8 @@ function adminLogText(array $entry): string
         'user.autoban' => isset($data['pictureId'])
             ? '{user} was banned automatically for ' . (!empty($data['signup']) ? 'signing up with' : 'uploading')
                 . ' banned picture #' . (int) $data['pictureId'] : null,
+        'user.avatarBan' => isset($data['pictureId'])
+            ? 'Removed {user}\'s profile picture and banned it as picture #' . (int) $data['pictureId'] : null,
         'user.bio' => !empty($data['removed']) ? 'Removed {user}\'s bio' : null,
         'user.block' => is_string($data['mode'] ?? null) && isset(HBHUB_BLOCK_MODES[$data['mode']])
             ? 'Set {user}\'s gambling block to "' . HBHUB_BLOCK_MODES[$data['mode']] . '"' : null,
