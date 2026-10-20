@@ -14,8 +14,13 @@
 // The game's settings (game.clock and game.colour: the clock, and the colour the host plays) are shown in their dialog,
 // where the host changes them while no game is being played. Everyone else only sees them.
 //
+// Once a second player has joined, the host starts the game (the "start" action), so the settings can still change.
+// The host gets a ping when someone joins.
+//
 // A pawn can only become a piece its player has lost (game.game.promotions, from the server), so the choice when one
-// reaches the last rank only has those. With none, the server doesn't send the last rank as a legal move at all.
+// reaches the last rank only has those. With none, it goes there as a pawn and waits. Once one of the player's pieces
+// is taken, the server sends becoming a piece as a move from the pawn's square to the same square, and the choice opens
+// by itself at the start of their move (or when they click the pawn, if they closed it).
 //
 // A ping is played when it becomes the player's move, unless they turned the sound off (remembered in this browser).
 //
@@ -88,6 +93,8 @@
     let hasAskedAtZero = false; // the server has been asked since a clock ran out
     let claimAt = null; // when the player can claim the win from an opponent who's gone, on performance.now()'s clock
     let pingedPly = null; // the move of the player's that's been pinged for, null when it isn't theirs
+    let promptedPly = null; // the move the choice for a waiting pawn opened by itself on
+    let seatedCount = null; // how many sat in the room when it was last drawn, to ping the host when someone joins
     let shownChat = null; // the newest chat message drawn (its id)
     let shownMoves = -1; // how many moves the move list has
 
@@ -102,6 +109,9 @@
     const boardNow = () => (game?.game ? game.game.board : START_BOARD);
     const pieceAt = (square) => boardNow()[indexOf(square)];
     const targetsOf = (square) => (isMyMove() && !isBusy ? game.game.legal[square] ?? [] : []);
+    // A pawn on the last rank that can become a piece now: its move goes to its own square
+    const isWaitingPawn = (square) => targetsOf(square).includes(square);
+    const waitingPawn = () => Object.keys(squares).find(isWaitingPawn) ?? null;
     const pieceClass = (colour, type) => 'ch-piece is-' + (colour === 'w' ? 'white' : 'black') + ' is-' + type; // chess.css draws it
 
     async function request(options, query = '') {
@@ -192,14 +202,24 @@
 
         const myPly = isMyMove() ? game.game.ply : null;
         if (myPly !== null && myPly !== pingedPly && !isFirstDraw) ping();
+        const hasJoined = game.isHost && game.phase === 'lobby' && seatedCount !== null && game.seated.length > seatedCount;
+        if (hasJoined && !isFirstDraw) ping();
         pingedPly = myPly;
+        seatedCount = game.seated.length;
         isFirstDraw = false;
+
+        // One of the player's pieces was just taken while a pawn waits on the last rank: the choice opens by itself
+        const pawn = myPly !== null && !isBusy ? waitingPawn() : null;
+        if (pawn !== null && promptedPly !== myPly && !promotionDialog.open) {
+            promptedPly = myPly;
+            move(pawn, pawn);
+        }
     }
 
     // aria-pressed also picks the pause button's icon (chess.css)
     function renderHeader() {
         clockName.textContent = game.clockName;
-        inviteButton.hidden = !(game.isHost && game.phase === 'lobby');
+        inviteButton.hidden = !(game.isHost && game.phase === 'lobby' && game.seated.length < 2);
         pauseButton.hidden = !(game.isHost && isPlaying());
         pauseButton.disabled = isBusy;
         pauseButton.setAttribute('aria-pressed', String(isPaused()));
@@ -400,11 +420,11 @@
 
     function renderBars() {
         const below = isBlackBelow() ? 'b' : 'w';
-        if (game.game !== null) {
+        if (game.game !== null && game.phase !== 'lobby') {
             drawBar(bars.top, other(below));
             drawBar(bars.bottom, below);
         } else {
-            // Waiting for the first game: the player below, and whoever else is here (nobody yet) above
+            // Waiting for a game to start: the player below, and whoever else is here (maybe nobody yet) above
             const you = game.seated.find((person) => person.isYou) ?? null;
             const others = game.seated.filter((person) => !person.isYou);
             drawPerson(bars.bottom, you, '');
@@ -551,6 +571,23 @@
             const lines = [];
             if (game.note) lines.push(game.note);
             if (state?.result) lines.push('Last game: ' + resultText(state.result));
+            const guest = game.seated.find((person) => !person.isYou) ?? null;
+            const host = game.seated.find((person) => person.isHost) ?? null;
+
+            // Both are here: the host starts it
+            if (game.seated.length >= 2) {
+                return [
+                    [...lines, isHost ? guest.name + ' has joined.' : 'Waiting for ' + (host?.name ?? 'the host') + ' to start the game.'].join(' '),
+                    [
+                        paragraph('Settings: ' + settingsText() + '.'),
+                        ...(isHost ? [
+                            paragraph('Change the settings if you want to, and start the game when you\'re ready.'),
+                            row(button('Start the game', () => act('start'), { primary: true }), button('Game settings', openSettings)),
+                        ] : []),
+                    ],
+                ];
+            }
+
             const hostButtons = isHost ? [button('Invite someone', () => openInvite(), { primary: true }), button('Game settings', openSettings)] : [];
             return [
                 [...lines, 'Waiting for someone to join.'].join(' '),
@@ -592,6 +629,11 @@
             } else {
                 list.push(paragraph(opponent.name + ' paused the game. The clocks are stopped, and nobody can move until they go on.'));
             }
+        }
+
+        const pawn = isMyMove() ? waitingPawn() : null;
+        if (pawn !== null) {
+            list.push(paragraph('Your pawn on ' + pawn + ' can become a piece you\'ve lost now. Click it to choose, or make another move.'));
         }
 
         if (state.drawOffer === other(you)) {
@@ -696,6 +738,10 @@
             move(selected, square);
             return;
         }
+        if (isWaitingPawn(square)) {
+            move(square, square); // straight to the choice of what it becomes
+            return;
+        }
         selected = targetsOf(square).length > 0 && selected !== square ? square : null;
         renderBoard();
     }
@@ -704,7 +750,8 @@
         selected = null;
         const piece = pieceAt(from);
         let promotion = null;
-        if (piece.toLowerCase() === 'p' && (to[1] === '8' || to[1] === '1')) {
+        // Without a piece to become (game.game.promotions is empty), it stays a pawn on the last rank
+        if (piece.toLowerCase() === 'p' && (to[1] === '8' || to[1] === '1') && game.game.promotions.length > 0) {
             renderBoard();
             promotion = await choosePromotion(colourOf(piece));
             if (promotion === null) return;
@@ -713,8 +760,8 @@
         // Shown straight away; the answer brings the board as it really is (castling's rook, en passant, check)
         const state = game.game;
         const board = [...state.board];
+        board[indexOf(from)] = '.'; // first, as a waiting pawn becomes its piece where it stands
         board[indexOf(to)] = promotion !== null ? (colourOf(piece) === 'w' ? promotion.toUpperCase() : promotion) : piece;
-        board[indexOf(from)] = '.';
         const ply = String(state.ply);
         game = { ...game, game: { ...state, board: board.join(''), lastMove: [from, to], check: null, turn: other(state.turn), legal: {} } };
         act('move', { from, to, ply, ...(promotion !== null ? { promotion } : {}) });
@@ -730,7 +777,7 @@
         clearDrawings(); // a left click takes the arrows away, like on chess.com
         const square = element.dataset.square;
         const wasSelected = selected === square;
-        if (selected !== null && targetsOf(selected).includes(square)) {
+        if ((selected !== null && targetsOf(selected).includes(square)) || isWaitingPawn(square)) {
             choose(square);
             return;
         }

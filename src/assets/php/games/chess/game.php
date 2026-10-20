@@ -6,7 +6,8 @@
 // saves the state around all of this.
 //
 // The state:
-//   phase: "lobby" (waiting for a second player), "playing" or "ended" (both still there, maybe for a rematch)
+//   phase: "lobby" (waiting for a second player, or for the host to start the game, hbHubChessStart()), "playing" or
+//     "ended" (both still there, maybe for a rematch)
 //   clock: the time control, a key of HBHUB_CHESS_CLOCKS
 //   colour: the colour the host plays: "random", "white" or "black"
 //   (clock and colour are the room's settings: the host changes them while no game is being played,
@@ -159,6 +160,25 @@ function hbHubChessBegin(array &$state, ?int $hostUserId): void
 }
 
 /**
+ * The host starts the game, once a second player has sat down (they can change the settings until then). Returns null
+ * when it's started, otherwise why not.
+ */
+function hbHubChessStart(array &$state, bool $isHost, ?int $hostUserId): ?string
+{
+    if (!$isHost) {
+        return 'Only the host can start the game.';
+    }
+    if ($state['phase'] !== 'lobby') {
+        return null; // started already (a double click, or another tab)
+    }
+    if (count($state['players']) < 2) {
+        return 'Wait for someone to join first.';
+    }
+    hbHubChessBegin($state, $hostUserId);
+    return null;
+}
+
+/**
  * Whether the host has paused the game (hbHubChessPause()).
  */
 function hbHubChessIsPaused(array $game): bool
@@ -222,7 +242,8 @@ function hbHubChessEnd(array &$state, ?string $winner, string $reason, int $now)
 
 /**
  * The colour plays a move (squares as sent, like "e2" and "e4", and the piece a pawn becomes on the last rank: "q",
- * "r", "b" or "n" - a queen when it's left out). Returns null when it's played, otherwise why not.
+ * "r", "b" or "n" - the first one it can become when it's left out). A pawn waiting on the last rank becomes a piece
+ * with a move from its square to the same square. Returns null when it's played, otherwise why not.
  */
 function hbHubChessMove(array &$state, string $colour, mixed $from, mixed $to, mixed $promotion, int $now): ?string
 {
@@ -416,9 +437,9 @@ function hbHubChessPause(array &$state, bool $isHost, bool $pause, int $now): ?s
 
 /**
  * The host changes the room's settings: $clock (as sent, a key of HBHUB_CHESS_CLOCKS) and $colour (the colour they
- * play: "random", "white" or "black"). Only while no game is being played: while the room waits for a player, or
- * between games. A rematch asked for already is taken back when they change, so nobody says yes to a game they didn't
- * see the settings of. Returns null when they're changed, otherwise why not.
+ * play: "random", "white" or "black"). Only while no game is being played: while the room waits for a player or for the
+ * host to start, or between games. A rematch asked for already is taken back when they change, so nobody says yes to a
+ * game they didn't see the settings of. Returns null when they're changed, otherwise why not.
  */
 function hbHubChessChangeSettings(array &$state, bool $isHost, mixed $clock, mixed $colour): ?string
 {

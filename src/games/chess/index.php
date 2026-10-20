@@ -177,7 +177,7 @@ $lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playi
                             <?php endforeach; ?>
                         </fieldset>
 
-                        <p class="casino-hint">You pick the clock and the colours in the game's settings, until someone joins.</p>
+                        <p class="casino-hint">You pick the clock and the colours in the game's settings, and start the game once someone has joined.</p>
                         <button type="submit" class="casino-btn casino-btn-primary">Open game</button>
                         <?php if (isset($lobbyErrors['create'])): ?>
                             <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['create']) ?></p>

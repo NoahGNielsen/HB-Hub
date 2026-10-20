@@ -15,7 +15,7 @@
 
 | | |
 |---|---|
-| **Chess** | Two-player chess with every rule: castling, en passant, promotion (only to a piece your opponent has taken from you), and draws by stalemate, repetition, the 50-move rule and too few pieces. Public, code or invite-only games, with or without a clock (3+2 up to 30 minutes), set in the game's settings |
+| **Chess** | Two-player chess with every rule: castling, en passant, promotion (only to a piece your opponent has taken from you; until then a pawn waits on the last rank, and the choice pops up the moment one is taken), and draws by stalemate, repetition, the 50-move rule and too few pieces. Public, code or invite-only games, with or without a clock (3+2 up to 30 minutes), set in the game's settings. The host starts the game once someone has joined |
 | **Chess extras** | Draw offers, resigning, aborting before both have moved, claiming the win when your opponent has gone, the host pausing the game (and the clocks), rematches with swapped colours, arrows and highlighted squares drawn with the right mouse button (like chess.com), an in-game chat and a leaderboard |
 
 ## Wordle

@@ -9,6 +9,7 @@
 //       a double click only counts once), resign, abort, offerDraw, answerDraw (answer: accept or decline), claim
 //       (the win, when the other player has gone), rematch and cancelRematch
 //     invite (user), for the host while the room waits for a player
+//     start, for the host once a second player has joined (game.php's hbHubChessStart())
 //     pause and resume, for the host while a game is being played (game.php's hbHubChessPause())
 //     settings (clock: a key of HBHUB_CHESS_CLOCKS, colour: random, white or black), for the host while no game is being
 //       played (game.php's hbHubChessChangeSettings())
@@ -81,6 +82,7 @@ $do = match ($action) {
         ? hbHubChessRematch($room['state'], hbHubChessColourOfUser($room['state'], $userId), $action === 'rematch', $room['roomHostUserId'])
         : 'You aren\'t in this game.',
     'invite' => static fn (array &$room): ?string => hbHubChessInvite($db, $room, $userId, $input['user'] ?? null),
+    'start' => static fn (array &$room): ?string => hbHubChessStart($room['state'], $room['roomHostUserId'] === $userId, $room['roomHostUserId']),
     'settings' => static fn (array &$room): ?string => hbHubChessChangeSettings($room['state'], $room['roomHostUserId'] === $userId,
         $input['clock'] ?? null, $input['colour'] ?? null),
     default => false,

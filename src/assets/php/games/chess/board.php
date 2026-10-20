@@ -14,8 +14,9 @@
 // A move is [from, to, promotion]: squares, and "q", "r", "b" or "n" for a pawn reaching the last rank (null otherwise).
 //
 // A pawn can only become a piece its player has lost (hbHubChessPromotions()): with their queen still on the board it
-// can't become a queen, and while the other player hasn't taken any of their pieces (pawns don't count) it can't go
-// to the last rank at all.
+// can't become a queen. While the other player hasn't taken any of their pieces (pawns don't count), a pawn still goes
+// to the last rank, but stays a pawn there, stuck (it can't move or take anything). Once one of their pieces is taken,
+// becoming it is a move of its own: [square, the same square, promotion].
 
 const HBHUB_CHESS_START_BOARD = 'RNBQKBNR' . 'PPPPPPPP' . '................................' . 'pppppppp' . 'rnbqkbnr';
 const HBHUB_CHESS_PROMOTIONS = ['q', 'r', 'b', 'n'];
@@ -137,7 +138,7 @@ function hbHubChessInCheck(array $position): bool
 /**
  * What a pawn of the colour can become: only the kinds of piece the other player has taken from them, as there are
  * fewer of them on the board than they started with. A piece a pawn became counts too, so a second queen needs the
- * first one taken as well. An empty list (nothing taken yet) means their pawns can't go to the last rank.
+ * first one taken as well. An empty list (nothing taken yet) means a pawn on the last rank stays a pawn for now.
  *
  * @return list<string>
  */
@@ -169,9 +170,16 @@ function hbHubChessPseudoMoves(array $position): array
         if ($type === 'p') {
             $forward = $turn === 'w' ? 1 : -1;
             $lastRank = $turn === 'w' ? 7 : 0;
-            // On the last rank once for each piece it can become, so not at all when there's none
+            // A pawn waiting on the last rank: becoming each piece it can is a move, where it stands
+            if (intdiv($from, 8) === $lastRank) {
+                foreach ($promotions as $promotion) {
+                    $moves[] = [$from, $from, $promotion];
+                }
+                continue;
+            }
+            // On the last rank once for each piece it can become, or as a pawn that waits there when there's none
             $addPawn = static function (int $to) use (&$moves, $from, $lastRank, $promotions): void {
-                if (intdiv($to, 8) === $lastRank) {
+                if (intdiv($to, 8) === $lastRank && $promotions !== []) {
                     foreach ($promotions as $promotion) {
                         $moves[] = [$from, $to, $promotion];
                     }
@@ -272,8 +280,8 @@ function hbHubChessApply(array $position, array $move): array
             }
         }
     }
+    $board[$from] = '.'; // first, as a pawn waiting on the last rank becomes a piece where it stands
     $board[$to] = $promotion !== null ? ($turn === 'w' ? strtoupper($promotion) : $promotion) : $piece;
-    $board[$from] = '.';
 
     $castling = $position['castling'];
     foreach ([$from, $to] as $square) {

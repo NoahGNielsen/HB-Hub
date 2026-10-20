@@ -5,7 +5,8 @@
 //
 // Who can join (hbHubChessJoin()): only while the room waits for a second player. Anyone a public game, anyone with
 // its code a code game, and only invited users an invite-only game (anyone invited can join any game). Every game has
-// a code, whatever its type. The game starts as soon as the second player sits down.
+// a code, whatever its type. Once the second player has sat down, the host starts the game (game.php's
+// hbHubChessStart()), so they can still change the settings first.
 //
 // Leaving a game that's being played loses it (or aborts it, before both players have moved). A player whose game
 // hasn't checked in for HBHUB_CHESS_CLAIM_SECONDS can be beaten by the other one (game.php's hbHubChessClaim()), and
@@ -329,8 +330,8 @@ function hbHubChessVersion(array $room, array $seats, int $lastChatId): string
 }
 
 /**
- * Sits the user down in the game, when they may (see the top of this file), and starts it when they're the second
- * player. $hasCode says they typed in its code. Returns null when they sat down, otherwise why not.
+ * Sits the user down in the game, when they may (see the top of this file). The host then starts it. $hasCode says they
+ * typed in its code. Returns null when they sat down, otherwise why not.
  */
 function hbHubChessJoin(PDO $db, int $userId, string $userName, int $roomId, bool $hasCode): ?string
 {
@@ -364,10 +365,6 @@ function hbHubChessJoin(PDO $db, int $userId, string $userName, int $roomId, boo
             hbHubChessInsertSeat($db, $room['roomId'], $userId, $free[0]);
             $seats[] = ['userId' => $userId, 'seat' => $free[0], 'away' => false, 'idleSeconds' => 0];
             usort($seats, static fn (array $a, array $b): int => $a['seat'] <=> $b['seat']);
-
-            if (count($state['players']) === HBHUB_CHESS_SEATS) {
-                hbHubChessBegin($state, $room['roomHostUserId']);
-            }
             return null;
         });
     } catch (PDOException $e) {
@@ -459,6 +456,9 @@ function hbHubChessInvite(PDO $db, array $room, int $hostId, mixed $userId): ?st
     if ($room['state']['phase'] !== 'lobby') {
         return 'The game has started already.';
     }
+    if (count($room['state']['players']) >= HBHUB_CHESS_SEATS) {
+        return 'The game is full.';
+    }
 
     $statement = $db->prepare('SELECT userName FROM `HBHub-Users` WHERE userId = ? AND userStatus IS NOT NULL AND userStatus <> ?');
     $statement->execute([is_string($userId) && ctype_digit($userId) && strlen($userId) <= 10 ? (int) $userId : 0, HBHUB_CHESS_STATUS_BANNED]);
@@ -546,9 +546,10 @@ function hbHubChessInvitesFor(PDO $db, int $userId): array
         LEFT JOIN `HBHub-Users` u ON u.userId = i.invitedByUserId
         WHERE i.userId = ? AND r.roomPhase = ?
             AND NOT EXISTS (SELECT 1 FROM `HBHub-ChessSeats` s WHERE s.roomId = r.roomId AND s.userId = ?)
+            AND (SELECT COUNT(*) FROM `HBHub-ChessSeats` s WHERE s.roomId = r.roomId) < ?
         ORDER BY i.inviteTimestamp DESC
         LIMIT ' . HBHUB_CHESS_LOBBY_INVITES);
-    $statement->execute([$userId, HBHUB_CHESS_PHASES['lobby'], $userId]);
+    $statement->execute([$userId, HBHUB_CHESS_PHASES['lobby'], $userId, HBHUB_CHESS_SEATS]);
 
     return array_map(static fn (array $room): array => [
         'id' => (int) $room['roomId'],
