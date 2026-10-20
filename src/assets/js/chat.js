@@ -2348,6 +2348,7 @@ chatPart((signal) => {
     const ticketsTitle = ticketsDialog.querySelector('[data-tickets-title]');
     const ticketsNeededText = ticketsDialog.querySelector('[data-tickets-needed]');
     const ticketsCount = ticketsDialog.querySelector('[data-tickets-count]');
+    const ticketsMeter = ticketsDialog.querySelector('[data-tickets-meter]');
     const ticketsList = ticketsDialog.querySelector('[data-tickets-list]');
     const ticketsStatus = ticketsDialog.querySelector('[data-tickets-status]');
     const retryButton = ticketsDialog.querySelector('[data-tickets-retry]');
@@ -2365,8 +2366,31 @@ chatPart((signal) => {
         });
     }
 
+    // The meter under the count: one little ticket each (used ones dimmed), or a single bar for people with lots of
+    // extra tickets, where that many would be too thin to see
+    function renderTicketsMeter(ticketsTotal, ticketsFree) {
+        const free = Math.min(Math.max(ticketsFree, 0), ticketsTotal);
+        ticketsMeter.classList.toggle('is-bar', ticketsTotal > 20);
+        if (ticketsTotal > 20) {
+            const fill = document.createElement('span');
+            fill.className = 'chat-tickets-meter-fill';
+            fill.style.transform = 'scaleX(' + free / ticketsTotal + ')';
+            ticketsMeter.replaceChildren(fill);
+            return;
+        }
+        ticketsMeter.replaceChildren(...Array.from({ length: ticketsTotal }, (_, index) => {
+            const pip = document.createElement('span');
+            pip.className = 'chat-tickets-pip' + (index < free ? '' : ' is-used');
+            return pip;
+        }));
+    }
+
     function renderTickets({ ticketsTotal, ticketsFree, attachments }) {
-        ticketsCount.textContent = `${ticketsFree} of ${ticketsTotal} tickets free`;
+        const freeCount = document.createElement('strong');
+        freeCount.textContent = ticketsFree;
+        ticketsCount.replaceChildren(freeCount, ` of ${ticketsTotal} tickets free`);
+        ticketsCount.classList.toggle('is-empty', ticketsFree <= 0);
+        renderTicketsMeter(ticketsTotal, ticketsFree);
         if (ticketsNeeded !== null) {
             const isEnough = ticketsFree >= ticketsNeeded;
             ticketsNeededText.textContent = isEnough
@@ -2382,11 +2406,21 @@ chatPart((signal) => {
 
             const info = document.createElement('span');
             info.className = 'chat-ticket-info';
-            info.textContent = `In ${attachment.chat} · ${attachment.size} · ${ticketsLabel(attachment.tickets)} until ${attachment.expires}`;
+            info.textContent = `In ${attachment.chat} · ${attachment.size} · until ${attachment.expires}`;
 
             const text = document.createElement('span');
             text.className = 'chat-ticket-text';
             text.append(name, info);
+
+            // The ticket stub on the left: how many tickets it takes
+            const stub = document.createElement('span');
+            stub.className = 'chat-ticket-stub';
+            stub.setAttribute('aria-label', ticketsLabel(attachment.tickets));
+            const stubCount = document.createElement('strong');
+            stubCount.textContent = attachment.tickets;
+            const stubLabel = document.createElement('span');
+            stubLabel.textContent = attachment.tickets === 1 ? 'ticket' : 'tickets';
+            stub.append(stubCount, stubLabel);
 
             // Asks once more on the button itself before it's gone for good
             const remove = document.createElement('button');
@@ -2406,7 +2440,7 @@ chatPart((signal) => {
 
             const item = document.createElement('li');
             item.className = 'chat-ticket';
-            item.append(text, remove);
+            item.append(stub, text, remove);
             return item;
         }));
         ticketsStatus.textContent = attachments.length === 0 ? "None of your attachments are using tickets right now." : '';
@@ -2439,7 +2473,8 @@ chatPart((signal) => {
         retryButton.hidden = needed === null;
         retryButton.disabled = true;
         ticketsList.replaceChildren();
-        ticketsCount.textContent = '';
+        ticketsCount.replaceChildren();
+        ticketsMeter.replaceChildren();
         ticketsDialog.showModal();
         loadTickets();
     }

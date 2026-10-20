@@ -1312,19 +1312,92 @@ a.chat-message-reply:hover {
   accent-color: var(--accent);
 }
 
-/* Your attachments popup: how many tickets are free, then each attachment with its Delete button */
-.chat-tickets-count {
-  margin: 0;
-  font-weight: 700;
+/* Your attachments popup: why it opened (when a file needs more tickets than are free), how many tickets are free with a
+   row of little tickets under it, each attachment as a ticket with its stub on the left, and the fine print at the end */
+.chat-tickets .chat-requests-body {
+  overflow-y: auto;
 }
 
-.chat-tickets-count:empty {
+.chat-tickets-needed {
+  padding: 12px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px 12px 12px 4px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.chat-tickets-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--background);
+}
+
+.chat-tickets-summary:has(.chat-tickets-count:empty) {
   display: none;
+}
+
+.chat-tickets-count {
+  margin: 0;
+  font-weight: 600;
+}
+
+.chat-tickets-count strong {
+  margin-right: 2px;
+  color: var(--accent);
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.chat-tickets-count.is-empty strong {
+  color: var(--chat-danger);
+}
+
+/* One pip per ticket, with a notch cut out of each side like a real one. Used ones are dimmed */
+.chat-tickets-meter {
+  display: flex;
+  gap: 4px;
+  height: 18px;
+}
+
+.chat-tickets-pip {
+  flex: 1 1 0;
+  max-width: 34px;
+  border-radius: 3px;
+  background: var(--accent);
+  -webkit-mask:
+    radial-gradient(circle at 0 50%, transparent 3.5px, #000 4px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 3.5px, #000 4px) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle at 0 50%, transparent 3.5px, #000 4px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 3.5px, #000 4px) right / 51% 100% no-repeat;
+  transition: background 0.2s ease;
+}
+
+.chat-tickets-pip.is-used {
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+/* Lots of extra tickets: one bar instead */
+.chat-tickets-meter.is-bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+.chat-tickets-meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  transition: transform 0.2s ease;
 }
 
 .chat-tickets-list {
   flex: 1;
-  min-height: 0;
+  min-height: min(140px, 30dvh);
   margin: 0 -4px;
   padding: 0 4px;
   overflow-y: auto;
@@ -1334,13 +1407,51 @@ a.chat-message-reply:hover {
   list-style: none;
 }
 
+.chat-tickets-list:empty {
+  display: none;
+}
+
+.chat-tickets-list:empty + .chat-new-status {
+  padding: 18px 0;
+  text-align: center;
+}
+
 .chat-ticket {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  min-height: 60px;
+  padding-right: 10px;
+  overflow: hidden;
   border-radius: 12px;
   background: var(--background);
+}
+
+/* The stub: how many tickets it takes, torn off along the dashed line */
+.chat-ticket-stub {
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  border-right: 2px dashed color-mix(in srgb, var(--text) 18%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+.chat-ticket-stub strong {
+  font-size: 1.25rem;
+  line-height: 1.1;
+}
+
+.chat-ticket-stub span {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .chat-ticket-text {
@@ -1349,6 +1460,7 @@ a.chat-message-reply:hover {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 10px 0;
 }
 
 .chat-ticket-name {
@@ -1366,6 +1478,61 @@ a.chat-message-reply:hover {
 
 .chat-ticket .chat-btn {
   flex: none;
+  padding: 8px 14px;
+  background: color-mix(in srgb, var(--chat-danger) 12%, transparent);
+  font-size: 0.9rem;
+}
+
+.chat-ticket .chat-btn:hover {
+  background: color-mix(in srgb, var(--chat-danger) 22%, transparent);
+  filter: none;
+}
+
+/* Delete for good? */
+.chat-ticket .chat-btn[data-confirm] {
+  background: var(--chat-danger);
+  color: #fff;
+}
+
+.chat-ticket .chat-btn:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.chat-tickets-rules {
+  flex: none;
+  padding: 12px 14px;
+  border: 1px dashed color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 12px;
+  line-height: 1.5;
+}
+
+.chat-tickets-rules strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Phones: a thinner stub, and Delete for good? wraps instead of squashing the name */
+@media (max-width: 420px) {
+  .chat-ticket-stub {
+    width: 50px;
+  }
+
+  .chat-ticket .chat-btn {
+    max-width: 92px;
+    padding: 8px 10px;
+    line-height: 1.2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-tickets-pip,
+  .chat-tickets-meter-fill {
+    transition: none;
+  }
 }
 
 /* New chat, message requests and the chat menu's popups */

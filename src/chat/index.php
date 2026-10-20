@@ -2392,9 +2392,17 @@ if ($isPoll) {
                         <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
                     </header>
 
-                    <p class="chat-dialog-text" hidden data-tickets-needed></p>
-                    <p class="chat-tickets-count" data-tickets-count></p>
-                    <p class="chat-dialog-hint">
+                    <p class="chat-dialog-text chat-tickets-needed" hidden data-tickets-needed></p>
+                    <div class="chat-tickets-summary">
+                        <p class="chat-tickets-count" data-tickets-count></p>
+                        <div class="chat-tickets-meter" aria-hidden="true" data-tickets-meter></div>
+                    </div>
+
+                    <ul class="chat-tickets-list" aria-label="Your attachments" data-tickets-list></ul>
+                    <p class="chat-new-status" role="status" data-tickets-status></p>
+
+                    <p class="chat-dialog-hint chat-tickets-rules">
+                        <strong>The fine print</strong>
                         <?php $chatTicketsTotal = hbHubChatAttachmentTicketsTotal($db, $userId); ?>
                         <?php $chatTicketMb = HBHUB_CHAT_ATTACHMENT_TICKET_BYTES / 1024 / 1024; ?>
                         You've got <?= $chatTicketsTotal ?> attachment <?= $chatTicketsTotal === 1 ? 'ticket' : 'tickets' ?> to
@@ -2406,9 +2414,6 @@ if ($isPoll) {
                         home to you. Can't wait that long? Delete the attachment or its message and you get them back on
                         the spot.
                     </p>
-
-                    <ul class="chat-tickets-list" aria-label="Your attachments" data-tickets-list></ul>
-                    <p class="chat-new-status" role="status" data-tickets-status></p>
 
                     <footer class="chat-new-footer chat-dialog-footer">
                         <button type="button" class="chat-btn" data-dialog-close>Close</button>
