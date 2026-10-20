@@ -2401,10 +2401,16 @@ if ($isPoll) {
                     <ul class="chat-tickets-list" aria-label="Your attachments" data-tickets-list></ul>
                     <p class="chat-new-status" role="status" data-tickets-status></p>
 
-                    <p class="chat-dialog-hint chat-tickets-rules">
-                        <strong>The fine print</strong>
+                    <!-- Folded away under Read more: hovering it with a mouse unfolds it, clicking keeps it open (chat.js) -->
+                    <details class="chat-dialog-hint chat-tickets-rules" data-tickets-rules>
+                        <summary>
+                            <strong>The fine print</strong>
+                            <span class="chat-tickets-rules-more">Read more</span>
+                            <span class="chat-tickets-rules-less">Show less</span>
+                        </summary>
                         <?php $chatTicketsTotal = hbHubChatAttachmentTicketsTotal($db, $userId); ?>
                         <?php $chatTicketMb = HBHUB_CHAT_ATTACHMENT_TICKET_BYTES / 1024 / 1024; ?>
+                        <p>
                         You've got <?= $chatTicketsTotal ?> attachment <?= $chatTicketsTotal === 1 ? 'ticket' : 'tickets' ?> to
                         spend. Every <?= $chatTicketMb ?> MB costs one ticket, and we round up, so a file that's a hair over
                         <?= $chatTicketMb ?> MB pays for two. No haggling. Attachments hang around for
@@ -2413,7 +2419,8 @@ if ($isPoll) {
                         before it's shown the door. When an attachment expires, it's gone for good and its tickets come
                         home to you. Can't wait that long? Delete the attachment or its message and you get them back on
                         the spot.
-                    </p>
+                        </p>
+                    </details>
 
                     <footer class="chat-new-footer chat-dialog-footer">
                         <button type="button" class="chat-btn" data-dialog-close>Close</button>

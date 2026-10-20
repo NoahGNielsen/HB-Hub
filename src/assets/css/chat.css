@@ -1507,12 +1507,82 @@ a.chat-message-reply:hover {
   line-height: 1.5;
 }
 
+/* Folded up it's just the heading and Read more; open (hovered or clicked) the text shows under it */
+.chat-tickets-rules summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.chat-tickets-rules summary::-webkit-details-marker {
+  display: none;
+}
+
 .chat-tickets-rules strong {
-  display: block;
-  margin-bottom: 2px;
   font-size: 0.7rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.chat-tickets-rules-more,
+.chat-tickets-rules-less {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* A little chevron that points down while folded and up while open */
+.chat-tickets-rules-more::after,
+.chat-tickets-rules-less::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.chat-tickets-rules[open] .chat-tickets-rules-more::after {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+.chat-tickets-rules-less::after {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+/* Read more until it's clicked open, then Show less */
+.chat-tickets-rules-less,
+.chat-tickets-rules.is-pinned .chat-tickets-rules-more {
+  display: none;
+}
+
+.chat-tickets-rules.is-pinned .chat-tickets-rules-less {
+  display: flex;
+}
+
+.chat-tickets-rules summary:hover .chat-tickets-rules-more,
+.chat-tickets-rules summary:hover .chat-tickets-rules-less,
+.chat-tickets-rules summary:focus-visible .chat-tickets-rules-more,
+.chat-tickets-rules summary:focus-visible .chat-tickets-rules-less {
+  color: var(--accent);
+}
+
+.chat-tickets-rules p {
+  margin: 8px 0 0;
+  animation: chat-tickets-rules-in 0.2s ease;
+}
+
+@keyframes chat-tickets-rules-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 
 /* Phones: a thinner stub, and Delete for good? wraps instead of squashing the name */
@@ -1530,8 +1600,13 @@ a.chat-message-reply:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .chat-tickets-pip,
-  .chat-tickets-meter-fill {
+  .chat-tickets-meter-fill,
+  .chat-tickets-rules-more::after {
     transition: none;
+  }
+
+  .chat-tickets-rules p {
+    animation: none;
   }
 }
 
