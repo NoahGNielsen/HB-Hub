@@ -213,26 +213,34 @@ function hbHubClientIp(): array
     ];
 }
 
+const HBHUB_RETURN_DEFAULT = '/chat/'; // where logging in / signing up from the homepage leads
+
 /**
- * Where to go after logging in: the ?return= path the login redirect added, or / when it's missing or points off the site.
+ * Where to go after logging in: the ?return= path the login redirect added, or the chat when it's missing, points off
+ * the site or is the homepage (whose Log in / Sign up buttons don't add one) - there's nothing to do there once
+ * logged in.
  */
 function hbHubReturnPath(): string
 {
     $path = $_GET['return'] ?? null;
     // One leading slash only - "//host" and "/\host" are treated by browsers as another site
     if (!is_string($path) || preg_match('#^/(?![/\\\\])[^\p{Cc}]*$#u', $path) !== 1) {
-        return '/';
+        return HBHUB_RETURN_DEFAULT;
+    }
+    // "/", "/index" or "/index.php", with or without a query or #fragment
+    if (preg_match('#^/(index(\.php)?)?([?\#].*)?$#', $path) === 1) {
+        return HBHUB_RETURN_DEFAULT;
     }
     return $path;
 }
 
 /**
- * "?return=..." for passing the return path on to the next login/onboarding URL, or '' when it's just /.
+ * "?return=..." for passing the return path on to the next login/onboarding URL, or '' when it's just the default.
  */
 function hbHubReturnQuery(): string
 {
     $path = hbHubReturnPath();
-    return $path === '/' ? '' : '?return=' . rawurlencode($path);
+    return $path === HBHUB_RETURN_DEFAULT ? '' : '?return=' . rawurlencode($path);
 }
 
 /**
