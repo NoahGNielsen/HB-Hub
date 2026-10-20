@@ -103,9 +103,18 @@ function adminTime(?string $timestamp): string
 }
 
 /**
- * A user's status: Deleted, Banned, Locked (too many wrong passwords) or Active.
+ * The SQL for whether a user is online, the same as their profile shows it (seen in the last HBHUB_SESSION_ONLINE_SECONDS).
+ * Worked out by the database, so PHP's time zone doesn't matter. Select it AS isOnline for adminUserStatus().
+ */
+function adminUserOnlineSql(): string
+{
+    return 'COALESCE(userLastSeenTimestamp >= NOW() - INTERVAL ' . HBHUB_SESSION_ONLINE_SECONDS . ' SECOND, 0)';
+}
+
+/**
+ * A user's status: Deleted, Banned, Locked (too many wrong passwords), or else Online or Offline like on their profile.
  *
- * @param array{userStatus: mixed, isLocked: mixed} $user
+ * @param array{userStatus: mixed, isLocked: mixed, isOnline: mixed} $user
  */
 function adminUserStatus(array $user): string
 {
@@ -113,7 +122,8 @@ function adminUserStatus(array $user): string
         $user['userStatus'] === null => 'Deleted',
         (int) $user['userStatus'] === HBHUB_SESSION_STATUS_BANNED => 'Banned',
         (bool) $user['isLocked'] => 'Locked',
-        default => 'Active',
+        (bool) $user['isOnline'] => 'Online',
+        default => 'Offline',
     };
 }
 
@@ -130,12 +140,14 @@ function adminChatStatus(int $chatStatus): string
 }
 
 /**
- * A user's or chat's status as a badge: green while active, yellow when locked, red when banned or deleted.
+ * A user's or chat's status as a badge: green while online or active, grey when offline, yellow when locked, red when
+ * banned or deleted.
  */
 function adminStatusHtml(string $status): string
 {
     $class = match ($status) {
-        'Active' => ' is-on',
+        'Online', 'Active' => ' is-on',
+        'Offline' => '',
         'Locked' => ' admin-status-locked',
         default => ' admin-status-deleted',
     };

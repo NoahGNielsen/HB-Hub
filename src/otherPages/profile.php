@@ -5,7 +5,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 
 const PROFILE_ROLE_ADMIN = 2; // userRole in HBHub-Users
-const PROFILE_ONLINE_SECONDS = 5 * 60; // seen this recently counts as online (last seen is updated on every page load)
 
 /**
  * A length of time as "5 minutes", "3 days", "1 year" etc., rounded down to the biggest whole unit.
@@ -50,7 +49,7 @@ if ($profile === false) {
 
 $profileIsOwn = (int) $profile['userId'] === (int) $hbHubUser['userId'];
 $profileIsAdmin = (int) $profile['userRole'] === PROFILE_ROLE_ADMIN;
-$profileIsOnline = (int) $profile['lastSeenSeconds'] <= PROFILE_ONLINE_SECONDS;
+$profileIsOnline = (int) $profile['lastSeenSeconds'] <= HBHUB_SESSION_ONLINE_SECONDS;
 
 // Same shape as database/defaultUserSettings.json
 $profileSettings = json_decode($profile['userSettings'] ?? '', true);

@@ -58,7 +58,7 @@ $statement = $db->prepare('SELECT userId, userName, userDescription, userSetting
         userIpv4AdresseOnAccountCreate, userIpv6AdresseOnAccountCreate, userIpv4AdresseLastAccessed, userIpv6AdresseLastAccessed,
         userTotpSecret IS NOT NULL AS totpIsOn, userFailedLoginCount, userStatus, userRole, userCreatedTimestamp, userLastSeenTimestamp,
         userAccountLockedTimestamp, userBannedTimestamp, userBannedReason, userAttachmentTicketsExtra,
-        COALESCE(userAccountLockedTimestamp + INTERVAL ? MINUTE > NOW(), 0) AS isLocked
+        COALESCE(userAccountLockedTimestamp + INTERVAL ? MINUTE > NOW(), 0) AS isLocked, ' . adminUserOnlineSql() . ' AS isOnline
     FROM `HBHub-Users` WHERE userId = ?');
 $statement->execute([$adminLockoutMinutes, $targetId]);
 $target = $statement->fetch();
@@ -174,7 +174,7 @@ function adminRedirect(int $userId, ?string $toast, string $card, string $query 
 // ?export=1: everything there is about the user as a JSON file
 if (($_GET['export'] ?? null) === '1') {
     $exportUser = $target;
-    unset($exportUser['isLocked']);
+    unset($exportUser['isLocked'], $exportUser['isOnline']);
     $exportUser['totpIsOn'] = (bool) $exportUser['totpIsOn'];
     $exportUser['userSettings'] = hbHubUserSettings($exportUser['userSettings']);
 

@@ -407,7 +407,7 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
                                         <?php
                                         $memberUserId = (int) $member['userId'];
                                         $memberIsSiteAdmin = (int) $member['userRole'] === ADMIN_ROLE_ADMIN;
-                                        $memberStatus = adminUserStatus($member + ['isLocked' => false]); // Active, Banned or Deleted
+                                        $memberStatus = adminUserStatus($member + ['isLocked' => false, 'isOnline' => false]); // Offline, Banned or Deleted
                                         ?>
                                         <tr>
                                             <td>
@@ -418,7 +418,7 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
                                                 <?php if ($memberIsSiteAdmin): ?>
                                                     <span class="admin-small">Site admin</span>
                                                 <?php endif; ?>
-                                                <?php if ($memberStatus !== 'Active'): ?>
+                                                <?php if ($memberStatus !== 'Offline'): ?>
                                                     <?= adminStatusHtml($memberStatus) ?>
                                                 <?php endif; ?>
                                                 <?php if ($member['memberNickname'] !== null): ?>

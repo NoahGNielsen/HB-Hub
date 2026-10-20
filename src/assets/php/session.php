@@ -20,6 +20,8 @@ const HBHUB_BANNED_COOKIE = 'hbHubBanned';
 const HBHUB_BANNED_COOKIE_DAYS = 400; // the longest browsers keep a cookie
 
 const HBHUB_SESSION_LAST_SEEN_MINUTES = 1; // how often sessionLastSeen is written, so polling doesn't write on every request
+// Seen this recently counts as online (userLastSeenTimestamp is updated on every page load), on profiles and in the admin panel
+const HBHUB_SESSION_ONLINE_SECONDS = 5 * 60;
 
 /**
  * Stores a new session for the user and returns its id. Pass it to hbHubSetSessionCookie() once

@@ -73,7 +73,8 @@ function adminUserList(PDO $db, string $search, int $page, int $lockoutMinutes):
     $page = adminPageOf($page, $total);
 
     $statement = $db->prepare('SELECT userId, userName, userAvatarAttachmentId, userStatus, userRole, userCreatedTimestamp,
-            userLastSeenTimestamp, COALESCE(userAccountLockedTimestamp + INTERVAL ? MINUTE > NOW(), 0) AS isLocked
+            userLastSeenTimestamp, COALESCE(userAccountLockedTimestamp + INTERVAL ? MINUTE > NOW(), 0) AS isLocked,
+            ' . adminUserOnlineSql() . ' AS isOnline
         FROM `HBHub-Users`' . $where . '
         ORDER BY userStatus IS NULL, userName, userId
         LIMIT ' . ADMIN_LIST_SHOWN . ' OFFSET ' . (($page - 1) * ADMIN_LIST_SHOWN));
