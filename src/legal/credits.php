@@ -24,7 +24,7 @@ const HBHUB_CREDITS_ICONS = [
         'href' => 'https://www.flaticon.com/free-icons/notification', 'title' => 'notification icons', 'text' => 'Notification icons created by JessHG - Flaticon', 'by' => 'JessHG'],
     ['file' => 'user.png', 'name' => 'User', 'use' => 'Chat members, and a missing profile picture',
         'href' => 'https://www.flaticon.com/free-icons/user', 'title' => 'user icons', 'text' => 'User icons created by Magnific - Flaticon', 'by' => 'Magnific'],
-    ['file' => 'settings.png', 'name' => 'Settings', 'use' => 'The cog next to your name in the chat',
+    ['file' => 'settings.png', 'name' => 'Settings', 'use' => 'The cog next to your name in the chat and on your own profile',
         'href' => 'https://www.flaticon.com/free-icons/settings', 'title' => 'settings icons', 'text' => 'Settings icons created by Pixel Perfect - Flaticon', 'by' => 'Pixel Perfect'],
 ];
 

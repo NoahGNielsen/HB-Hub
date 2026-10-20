@@ -69,6 +69,12 @@ $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvata
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="profile">
+        <?php if ($profileIsOwn): ?>
+            <!-- Own profile: a cog in the top right corner that goes to settings (the same icon as next to your name in the chat) -->
+            <a class="profile-settings" href="/otherPages/settings" aria-label="Settings" title="Settings">
+                <img src="/assets/images/icons/settings.png" alt="">
+            </a>
+        <?php endif; ?>
         <div class="profile-header">
             <div class="profile-avatar-wrap">
                 <?php if ($profileAvatarSrc !== null): ?>

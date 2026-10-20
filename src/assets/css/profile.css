@@ -2,12 +2,52 @@
 .profile {
   --profile-online: #2fa36b;
   --profile-offline: #8a93a3;
+  position: relative;
   max-width: 640px;
   margin: 48px auto;
   padding: 32px;
   box-sizing: border-box;
   border-radius: var(--radius);
   background: var(--secondary);
+}
+
+/* Own profile only: the settings cog in the card's top right corner */
+.profile-settings {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.profile-settings:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.profile-settings:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The icon is black - invert it for the dark background */
+.profile-settings img {
+  width: 22px;
+  height: 22px;
+  opacity: 0.8;
+  filter: invert(1);
+}
+
+.profile-settings:hover img {
+  opacity: 1;
+}
+
+/* Keep a long name from running under the cog */
+.profile-settings + .profile-header {
+  padding-right: 32px;
 }
 
 .profile-header {
@@ -188,6 +228,16 @@
   .profile {
     margin: 16px;
     padding: 24px 16px;
+  }
+
+  .profile-settings {
+    top: 8px;
+    right: 8px;
+  }
+
+  /* Stacked and centred here, so the cog sits beside the picture instead */
+  .profile-settings + .profile-header {
+    padding-right: 0;
   }
 
   .profile-header {
