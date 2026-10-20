@@ -1592,6 +1592,7 @@ function chatAttachmentHtml(array $message): string
  * A message in the open chat, for the page and for polling.
  * Right-clicking it opens the message menu (chat.js), the data-message-* attributes say what it offers.
  * data-message-attachment is the name of its attachment while the file is still there, for the reply bar and Delete.
+ * data-message-time is when it was sent (Unix seconds), for grouping messages sent close together (chat.js).
  */
 function chatMessageItem(array $openChat, int $userId, array $message): void
 {
@@ -1612,6 +1613,7 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
     ?>
                         <li class="chat-message<?= $isOwn ? ' is-own' : '' ?><?= $isMention ? ' is-mention' : '' ?>" id="message-<?= (int) $message['messageId'] ?>" tabindex="-1"
                             data-message-id="<?= (int) $message['messageId'] ?>" data-message-user-id="<?= (int) $message['userId'] ?>"
+                            data-message-time="<?= (int) strtotime($message['messageSentTimestamp']) ?>"
                             data-message-sender="<?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['userId'], $message['senderName'])) ?>"<?=
                             $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $gifId !== null ? ' data-message-gif' : '' ?><?=
                             $hasAttachment && $message['attachmentIsLive'] ? ' data-message-attachment="' . htmlspecialchars($message['attachmentName']) . '"' : '' ?>>

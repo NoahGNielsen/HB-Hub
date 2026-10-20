@@ -40,6 +40,7 @@
     const messages = document.querySelector('[data-chat-messages]');
     if (messages) {
         chatShowBackground(messages, messages.dataset.background);
+        chatGroupMessages(messages);
         messages.scrollTop = messages.scrollHeight;
         const unread = messages.querySelector('[data-unread-divider]');
         const offset = unread ? unread.getBoundingClientRect().top - messages.getBoundingClientRect().top : 0;
@@ -855,6 +856,25 @@ function chatShowBackground(element, background) {
     const hasBackground = angle !== undefined;
     element.style.backgroundImage = hasBackground ? `linear-gradient(${angle}deg, ${color1}, ${color2})` : '';
     element.classList.toggle('has-background', hasBackground);
+}
+
+// Messages in a row from the same person, each sent within 10 minutes of the one before it, go together as a group:
+// the ones after the first are is-grouped (closer together, without the sender's name again), and the ones before the
+// last are has-next (their time only shows when pointed at, chat.css). A notice, the "New messages" line or an attachment
+// still being sent in between ends a group. Run again whenever messages go in, before scrolling, as it changes heights.
+function chatGroupMessages(messages) {
+    const GROUP_SECONDS = 10 * 60;
+    let previous = null; // the message right above, or null when something else is
+    for (const item of messages.children) {
+        const isMessage = item.hasAttribute('data-message-id');
+        const isGrouped = isMessage && previous !== null
+            && item.dataset.messageUserId === previous.dataset.messageUserId
+            && item.dataset.messageTime - previous.dataset.messageTime <= GROUP_SECONDS;
+        if (isMessage) item.classList.toggle('is-grouped', isGrouped);
+        previous?.classList.toggle('has-next', isGrouped);
+        previous = isMessage ? item : null;
+    }
+    previous?.classList.remove('has-next');
 }
 
 // Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to mute, hide or leave it.
@@ -2625,6 +2645,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
             const fromBottom = messages.scrollHeight - messages.scrollTop;
             marker.insertAdjacentHTML('afterend', data.messages);
             if (!data.hasOlder) marker.remove();
+            chatGroupMessages(messages);
             messages.scrollTop = messages.scrollHeight - fromBottom;
             return true;
         } catch {
@@ -2706,6 +2727,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
         const sending = messages.querySelector('[data-message-sending]');
         if (sending) sending.insertAdjacentHTML('beforebegin', html);
         else messages.insertAdjacentHTML('beforeend', html);
+        chatGroupMessages(messages);
         if (isAtBottom) messages.scrollTop = messages.scrollHeight;
 
         // In a chat that was empty there was no message to tab to yet, now the newest one is (only a notice may have come)

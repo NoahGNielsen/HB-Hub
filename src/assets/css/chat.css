@@ -441,6 +441,8 @@ body:has(> .chat) {
   margin: 0;
   padding: 16px;
   overflow-y: auto;
+  /* A grouped message's time beside its bubble (below) never makes it scroll sideways on a narrow screen */
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -978,6 +980,60 @@ a.chat-message-reply:hover {
 
 .chat-messages.has-background a.chat-message-reply:hover {
   background: var(--secondary);
+}
+
+/* Messages in a row from the same person, close together in time (chatGroupMessages in chat.js), go together as a
+   group: 3px apart instead of 10, the sender's name only on the first, and the bubble's corner on the sender's side
+   squared off where it meets the one above. */
+.chat-message.is-grouped {
+  margin-top: -7px;
+}
+
+.chat-message.is-grouped > .chat-message-sender {
+  display: none;
+}
+
+.chat-message.is-grouped .chat-message-bubble {
+  border-top-left-radius: 4px;
+}
+
+.chat-message.is-own.is-grouped .chat-message-bubble {
+  border-top-left-radius: 14px;
+  border-top-right-radius: 4px;
+}
+
+/* Only the last in a group shows its time. The others' sits beside the bubble, towards the middle of the chat, and
+   only shows when the message is pointed at (or reached with the arrow keys). It's faded out rather than hidden, so
+   screen readers still read it, and taken out of the flow, so showing it doesn't move anything. */
+.chat-message {
+  position: relative;
+}
+
+.chat-message.has-next > .chat-message-meta {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  margin: 0 8px;
+  translate: 0 -50%;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.chat-message.is-own.has-next > .chat-message-meta {
+  left: auto;
+  right: 100%;
+}
+
+.chat-message.has-next:hover > .chat-message-meta,
+.chat-message.has-next:focus-visible > .chat-message-meta {
+  opacity: 0.6;
+}
+
+.chat-messages.has-background .chat-message.has-next:hover > .chat-message-meta,
+.chat-messages.has-background .chat-message.has-next:focus-visible > .chat-message-meta {
+  opacity: 1;
 }
 
 .chat-composer {
@@ -2103,7 +2159,8 @@ a.chat-member:focus-visible {
     animation: none;
   }
 
-  .chat-message-bubble {
+  .chat-message-bubble,
+  .chat-message.has-next > .chat-message-meta {
     transition: none;
   }
 }
