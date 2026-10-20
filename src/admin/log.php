@@ -4,7 +4,8 @@
 //
 // Everything site admins have done in the admin panel, newest first, ADMIN_LOG_SHOWN at a time (?page=): opening a
 // user's or chat's admin panel (once per ADMIN_LOG_VIEW_MINUTES), downloading a user's data, and every change, plus
-// the automatic bans for a banned profile picture (no admin, shown as "Automatic"). The rows are written by the admin
+// the automatic bans for a banned profile picture (no admin, shown as "Automatic"), each change with the reason the
+// admin gave in admin.js's popup under it (when they gave one). The rows are written by the admin
 // pages with adminLog() (assets/php/adminLog.php), the automatic bans by bannedAvatars.php. Nothing here changes them: the log can't be
 // edited or deleted from the site, and rows older than ADMIN_LOG_KEEP_DAYS are removed (here and by cron/nightly.php).
 // ?user=id shows only what was done by or to that user, ?chat=id only what was done to that chat. The "Admin log"
@@ -60,7 +61,7 @@ $adminTotal = (int) $statement->fetchColumn();
 $adminPages = max(1, intdiv($adminTotal + ADMIN_LOG_SHOWN - 1, ADMIN_LOG_SHOWN));
 $adminPage = min($adminPage, $adminPages);
 
-$statement = $db->prepare('SELECT l.adminLogAction, l.adminLogData, l.adminLogTimestamp,
+$statement = $db->prepare('SELECT l.adminLogAction, l.adminLogData, l.adminLogReason, l.adminLogTimestamp,
         l.adminLogByUserId, bu.userName AS byName, bu.userAvatarAttachmentId AS byAvatarId,
         l.adminLogUserId, u.userName, l.adminLogChatId, IF(c.chatId IS NULL, NULL, ' . adminChatTitleSql() . ') AS chatTitle
     FROM `HBHub-AdminLog` l
@@ -93,6 +94,13 @@ function adminLogText(array $entry): string
         'user.chips' => $amount > 0 ? 'Gave {user} ' . number_format($amount) . ' chips'
             : ($amount < 0 ? 'Took ' . number_format(-$amount) . ' chips from {user}' : null),
         'user.messages' => isset($data['count']) ? 'Deleted all of {user}\'s messages (' . number_format((int) $data['count']) . ')' : null,
+        'user.attachment' => isset($data['tickets']) && (int) $data['tickets'] > 0
+            ? 'Deleted an attachment from {user}, freeing ' . ((int) $data['tickets'] === 1 ? '1 ticket' : (int) $data['tickets'] . ' tickets') : null,
+        'user.attachments' => isset($data['count']) ? 'Deleted all of {user}\'s attachments (' . number_format((int) $data['count']) . ')' : null,
+        'user.tickets' => $amount === 0 ? null
+            : ($amount > 0 ? 'Gave {user} ' . $amount . ' more attachment ' . ($amount === 1 ? 'ticket' : 'tickets')
+                : 'Took ' . -$amount . ' attachment ' . ($amount === -1 ? 'ticket' : 'tickets') . ' from {user}')
+            . (isset($data['total']) ? ' (' . (int) $data['total'] . ' in all now)' : ''),
         'chat.background' => !empty($data['reset']) ? 'Reset the background of {chat}' : null,
         'chat.kick' => !empty($data['invite']) ? 'Took back {user}\'s ' . (!empty($data['ghost']) ? 'ghost ' : '') . 'invite to {chat}' : null,
         'feedback.done', 'feedback.new', 'feedback.delete' => isset($data['feedbackId'])
@@ -147,6 +155,7 @@ function adminLogUrl(?int $user, ?int $chat, int $page = 1): string
                                 Everything site admins have done in the admin panel, newest first. Opening a user or a chat counts too,
                                 as it shows all their messages and personal info (once every <?= ADMIN_LOG_VIEW_MINUTES ?> minutes).
                                 Accounts banned automatically for uploading a banned profile picture are here too.
+                                The reason an admin typed before a change is shown under it.
                                 The log can't be changed or deleted, and is kept for <?= ADMIN_LOG_KEEP_DAYS === 365 ? 'a year' : ADMIN_LOG_KEEP_DAYS . ' days' ?>.
                             </p>
                         </div>
@@ -186,7 +195,12 @@ function adminLogUrl(?int $user, ?int $chat, int $page = 1): string
                                                     <span class="admin-muted">Unknown</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td class="admin-message-text"><?= adminLogText($entry) ?></td>
+                                            <td class="admin-message-text">
+                                                <?= adminLogText($entry) ?>
+                                                <?php if ($entry['adminLogReason'] !== null): ?>
+                                                    <span class="admin-log-reason"><span class="settings-visually-hidden">Reason: </span><?= nl2br(htmlspecialchars($entry['adminLogReason'])) ?></span>
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>

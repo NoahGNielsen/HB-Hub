@@ -177,6 +177,47 @@
   overflow-wrap: anywhere;
 }
 
+/* The reason the admin gave, under what they did in the admin log (admin/log.php) */
+.admin-log-reason {
+  display: block;
+  margin-top: 4px;
+  padding-left: 10px;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  font-size: 0.85rem;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+/* The popup before every form is sent: are you sure, and why (admin.js) */
+.admin-reason {
+  width: min(460px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 24px;
+  border: 1px solid var(--settings-line);
+  border-radius: var(--radius);
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.35);
+}
+
+.admin-reason::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+.admin-reason-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-reason-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 /* A deleted message is still shown, faded */
 .admin-messages tr.is-deleted td {
   opacity: 0.55;

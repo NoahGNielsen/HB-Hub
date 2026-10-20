@@ -2,8 +2,8 @@
 // Chat attachments: files and pictures sent in a message. The chat page (chat/index.php) takes the upload,
 // chat/attachment.php sends a file back, and chat/attachments.php lists the user's own and deletes them.
 //
-// The server's disk is small, so attachments are paid for with tickets. Everyone has HBHUB_CHAT_ATTACHMENT_TICKETS,
-// and each started HBHUB_CHAT_ATTACHMENT_TICKET_BYTES of a file (as it's stored, so after compressing) takes one.
+// The server's disk is small, so attachments are paid for with tickets. Everyone has HBHUB_CHAT_ATTACHMENT_TICKETS
+// (site admins can add or take away some for one user in the admin panel), and each started HBHUB_CHAT_ATTACHMENT_TICKET_BYTES of a file (as it's stored, so after compressing) takes one.
 // A file keeps its tickets for 90 days, or only 3 when it takes more than 5 of them, and then it expires: the file
 // is deleted and the tickets are free again. Deleting the message (or just the attachment) frees them straight away.
 // Expired files are swept up by hbHubChatAttachmentsSweep(), which the chat page and the upload call, and which the
@@ -117,14 +117,35 @@ function hbHubChatAttachmentDays(int $tickets): int
 }
 
 /**
- * How many of the user's tickets are free. Expired ones that haven't been swept up yet count as free already.
+ * How many tickets the user has in all: HBHUB_CHAT_ATTACHMENT_TICKETS, plus the ones a site admin added or minus the
+ * ones they took away in the admin panel (userAttachmentTicketsExtra in HBHub-Users, admin/user.php). Never below 0.
+ * Taking tickets away doesn't touch the attachments already sent, the user just can't send more until they're under.
+ * One attachment can still be at most HBHUB_CHAT_ATTACHMENT_TICKETS big, however many tickets they have.
  */
-function hbHubChatAttachmentTicketsFree(PDO $db, int $userId): int
+function hbHubChatAttachmentTicketsTotal(PDO $db, int $userId): int
+{
+    $statement = $db->prepare('SELECT userAttachmentTicketsExtra FROM `HBHub-Users` WHERE userId = ?');
+    $statement->execute([$userId]);
+    return max(0, HBHUB_CHAT_ATTACHMENT_TICKETS + (int) $statement->fetchColumn());
+}
+
+/**
+ * How many tickets the user's attachments take right now. Expired ones that haven't been swept up yet don't count.
+ */
+function hbHubChatAttachmentTicketsUsed(PDO $db, int $userId): int
 {
     $statement = $db->prepare('SELECT COALESCE(SUM(attachmentTickets), 0) FROM `HBHub-ChatAttachments`
         WHERE userId = ? AND attachmentStatus = ? AND attachmentExpiresTimestamp > NOW()');
     $statement->execute([$userId, HBHUB_CHAT_ATTACHMENT_KEPT]);
-    return max(0, HBHUB_CHAT_ATTACHMENT_TICKETS - (int) $statement->fetchColumn());
+    return (int) $statement->fetchColumn();
+}
+
+/**
+ * How many of the user's tickets are free. Expired ones that haven't been swept up yet count as free already.
+ */
+function hbHubChatAttachmentTicketsFree(PDO $db, int $userId): int
+{
+    return max(0, hbHubChatAttachmentTicketsTotal($db, $userId) - hbHubChatAttachmentTicketsUsed($db, $userId));
 }
 
 /**
