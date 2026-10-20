@@ -2396,12 +2396,15 @@ if ($isPoll) {
                     <p class="chat-tickets-count" data-tickets-count></p>
                     <p class="chat-dialog-hint">
                         <?php $chatTicketsTotal = hbHubChatAttachmentTicketsTotal($db, $userId); ?>
-                        You have <?= $chatTicketsTotal ?> <?= $chatTicketsTotal === 1 ? 'ticket' : 'tickets' ?> for attachments. Each attachment uses one
-                        ticket per <?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES / 1024 / 1024 ?> MB, rounded up. Attachments are
-                        kept for <?= HBHUB_CHAT_ATTACHMENT_DAYS ?> days, or only <?= HBHUB_CHAT_ATTACHMENT_BIG_DAYS ?> days if
-                        they use more than <?= HBHUB_CHAT_ATTACHMENT_BIG_TICKETS ?> tickets. When an attachment expires, it's
-                        deleted and you get its tickets back. If you delete the attachment or its message, you get them back
-                        right away.
+                        <?php $chatTicketMb = HBHUB_CHAT_ATTACHMENT_TICKET_BYTES / 1024 / 1024; ?>
+                        You've got <?= $chatTicketsTotal ?> attachment <?= $chatTicketsTotal === 1 ? 'ticket' : 'tickets' ?> to
+                        spend. Every <?= $chatTicketMb ?> MB costs one ticket, and we round up, so a file that's a hair over
+                        <?= $chatTicketMb ?> MB pays for two. No haggling. Attachments hang around for
+                        <?= HBHUB_CHAT_ATTACHMENT_DAYS ?> days, but anything greedy enough to eat more than
+                        <?= HBHUB_CHAT_ATTACHMENT_BIG_TICKETS ?> tickets gets just <?= HBHUB_CHAT_ATTACHMENT_BIG_DAYS ?> days
+                        before it's shown the door. When an attachment expires, it's gone for good and its tickets come
+                        home to you. Can't wait that long? Delete the attachment or its message and you get them back on
+                        the spot.
                     </p>
 
                     <ul class="chat-tickets-list" aria-label="Your attachments" data-tickets-list></ul>
