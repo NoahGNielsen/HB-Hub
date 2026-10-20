@@ -62,12 +62,13 @@ function hbHubChessUserSeat(PDO $db, int $userId): ?array
 }
 
 /**
- * Opens a new game with the user as its host, sitting in seat 1, and returns its id. Throws a PDOException with the
- * duplicate key error (1062) when the user already sits in a game.
+ * Opens a new game with the user as its host, sitting in seat 1, and returns its id. It has the default settings,
+ * which the host changes in the game. Throws a PDOException with the duplicate key error (1062) when the user already
+ * sits in a game.
  */
-function hbHubChessCreateRoom(PDO $db, int $userId, string $userName, string $name, int $type, string $clock, string $colour): int
+function hbHubChessCreateRoom(PDO $db, int $userId, string $userName, string $name, int $type): int
 {
-    $state = hbHubChessNewState($clock, $colour);
+    $state = hbHubChessNewState();
     $state['players'][] = hbHubChessNewPlayer(1, $userId, $userName);
 
     $db->beginTransaction();

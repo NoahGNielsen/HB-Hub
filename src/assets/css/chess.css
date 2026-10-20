@@ -68,7 +68,7 @@
   gap: 8px;
 }
 
-/* Invite, Turn around, Sound and Leave game: icons, with their names in title and aria-label */
+/* Invite, Settings, Pause, Turn around, Sound and Leave game: icons, with their names in title and aria-label */
 .ch-icon-btn {
   width: 42px;
   height: 42px;
@@ -765,6 +765,16 @@
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+/* The game's settings */
+.ch-settings .casino-choices {
+  margin: 14px 0;
+}
+
+.ch-settings .casino-choices:disabled .casino-choice {
+  cursor: default;
+  opacity: 0.75;
 }
 
 /* One column: the name and buttons, then the board, then the panels */

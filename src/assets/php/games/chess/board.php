@@ -12,9 +12,14 @@
 //   halfmove: moves since the last capture or pawn move, for the 50-move rule
 //   fullmove: the move number, going up after Black's move
 // A move is [from, to, promotion]: squares, and "q", "r", "b" or "n" for a pawn reaching the last rank (null otherwise).
+//
+// A pawn can only become a piece its player has lost (hbHubChessPromotions()): with their queen still on the board it
+// can't become a queen, and while the other player hasn't taken any of their pieces (pawns don't count) it can't go
+// to the last rank at all.
 
 const HBHUB_CHESS_START_BOARD = 'RNBQKBNR' . 'PPPPPPPP' . '................................' . 'pppppppp' . 'rnbqkbnr';
 const HBHUB_CHESS_PROMOTIONS = ['q', 'r', 'b', 'n'];
+const HBHUB_CHESS_START_PIECES = ['q' => 1, 'r' => 2, 'b' => 2, 'n' => 2]; // how many of each a player starts with
 const HBHUB_CHESS_KNIGHT_STEPS = [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]]; // [file, rank]
 const HBHUB_CHESS_KING_STEPS = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
 const HBHUB_CHESS_ROOK_LINES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
@@ -130,6 +135,19 @@ function hbHubChessInCheck(array $position): bool
 }
 
 /**
+ * What a pawn of the colour can become: only the kinds of piece the other player has taken from them, as there are
+ * fewer of them on the board than they started with. A piece a pawn became counts too, so a second queen needs the
+ * first one taken as well. An empty list (nothing taken yet) means their pawns can't go to the last rank.
+ *
+ * @return list<string>
+ */
+function hbHubChessPromotions(string $board, string $colour): array
+{
+    return array_values(array_filter(HBHUB_CHESS_PROMOTIONS, static fn (string $type): bool =>
+        substr_count($board, $colour === 'w' ? strtoupper($type) : $type) < HBHUB_CHESS_START_PIECES[$type]));
+}
+
+/**
  * Every move the pieces of the player to move can make, before checking that it doesn't leave their own king attacked
  * (hbHubChessLegalMoves() does that). Castling is only added when it's allowed all the way.
  *
@@ -139,6 +157,7 @@ function hbHubChessPseudoMoves(array $position): array
 {
     $board = $position['board'];
     $turn = $position['turn'];
+    $promotions = hbHubChessPromotions($board, $turn);
     $moves = [];
 
     for ($from = 0; $from < 64; $from++) {
@@ -150,9 +169,10 @@ function hbHubChessPseudoMoves(array $position): array
         if ($type === 'p') {
             $forward = $turn === 'w' ? 1 : -1;
             $lastRank = $turn === 'w' ? 7 : 0;
-            $addPawn = static function (int $to) use (&$moves, $from, $lastRank): void {
+            // On the last rank once for each piece it can become, so not at all when there's none
+            $addPawn = static function (int $to) use (&$moves, $from, $lastRank, $promotions): void {
                 if (intdiv($to, 8) === $lastRank) {
-                    foreach (HBHUB_CHESS_PROMOTIONS as $promotion) {
+                    foreach ($promotions as $promotion) {
                         $moves[] = [$from, $to, $promotion];
                     }
                 } else {

@@ -10,6 +10,8 @@
 //       (the win, when the other player has gone), rematch and cancelRematch
 //     invite (user), for the host while the room waits for a player
 //     pause and resume, for the host while a game is being played (game.php's hbHubChessPause())
+//     settings (clock: a key of HBHUB_CHESS_CLOCKS, colour: random, white or black), for the host while no game is being
+//       played (game.php's hbHubChessChangeSettings())
 //     chat (text) writes in the game's chat (chat.php), and leave
 //   The game has the chat's newest messages in "chat", with isYou on the user's own and the text cut up into its
 //   @mentions in "parts" (hbHubMentionParts()), and who can be mentioned in "chatMentions" (for mentions.js).
@@ -79,6 +81,8 @@ $do = match ($action) {
         ? hbHubChessRematch($room['state'], hbHubChessColourOfUser($room['state'], $userId), $action === 'rematch', $room['roomHostUserId'])
         : 'You aren\'t in this game.',
     'invite' => static fn (array &$room): ?string => hbHubChessInvite($db, $room, $userId, $input['user'] ?? null),
+    'settings' => static fn (array &$room): ?string => hbHubChessChangeSettings($room['state'], $room['roomHostUserId'] === $userId,
+        $input['clock'] ?? null, $input['colour'] ?? null),
     default => false,
 };
 if ($do === false) {

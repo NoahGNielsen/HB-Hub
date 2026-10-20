@@ -4,8 +4,16 @@
 ?>
 <ul class="casino-rule-list">
     <li>
-        The normal rules of chess: castling, en passant, and a pawn on the last rank becomes a queen, rook, bishop or
-        knight of your choice. The game starts as soon as a second player joins.
+        The normal rules of chess, with castling and en passant. The game starts as soon as a second player joins.
+    </li>
+    <li>
+        A pawn on the last rank can only become a piece your opponent has taken from you: a queen once they've taken
+        your queen, a rook once they've taken a rook, and so on. Until they've taken one of your pieces (pawns don't
+        count), your pawns can't move onto the last rank at all.
+    </li>
+    <li>
+        The host picks the clock and who plays White in the game's settings, while waiting for someone to join or
+        between games.
     </li>
     <li>
         Checkmate wins. Stalemate, the same position three times, 50 moves each without a capture or a pawn move, and

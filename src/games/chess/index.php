@@ -1,8 +1,8 @@
 <?php
 // The chess lobby: the user's game, join a game by its code, open a game, the user's invites and the public games
 // (both kept up to date by chessLobby.js), and the rules. A user is in one chess game at a time.
-// The forms post here (action): joinCode (code), join (room - from the lists), create (name, type, clock, colour) and
-// leave. Joining or opening a game goes straight to it.
+// The forms post here (action): joinCode (code), join (room - from the lists), create (name, type) and leave. Joining
+// or opening a game goes straight to it, where the host picks the clock and colours in the game's settings.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/chess/room.php';
@@ -16,11 +16,6 @@ const LOBBY_CREATE_TYPES = [ // what the "Who can join" choices make
     'code' => HBHUB_CHESS_ROOM_CODE,
     'invite' => HBHUB_CHESS_ROOM_INVITE,
 ];
-const LOBBY_COLOURS = [
-    'random' => 'Random',
-    'white' => 'White',
-    'black' => 'Black',
-];
 
 function lobbyGoToGame(int $roomId): never
 {
@@ -29,7 +24,7 @@ function lobbyGoToGame(int $roomId): never
 }
 
 $lobbyErrors = [];
-$lobbyValues = ['name' => '', 'type' => 'public', 'clock' => HBHUB_CHESS_DEFAULT_CLOCK, 'colour' => 'random', 'code' => ''];
+$lobbyValues = ['name' => '', 'type' => 'public', 'code' => ''];
 $action = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? null) : null; // only from the site itself (session.php)
 
 if ($action === 'create') {
@@ -40,20 +35,13 @@ if ($action === 'create') {
 
     $lobbyValues['name'] = is_string($_POST['name'] ?? null) ? $_POST['name'] : '';
     $lobbyValues['type'] = $_POST['type'] ?? null;
-    $lobbyValues['clock'] = $_POST['clock'] ?? null;
-    $lobbyValues['colour'] = $_POST['colour'] ?? null;
 
     if (!is_string($lobbyValues['type']) || !isset(LOBBY_CREATE_TYPES[$lobbyValues['type']])) {
         $lobbyErrors['create'] = 'Choose who can join the game.';
-    } elseif (!is_string($lobbyValues['clock']) || !array_key_exists($lobbyValues['clock'], HBHUB_CHESS_CLOCKS)) {
-        $lobbyErrors['create'] = 'Choose a clock.';
-    } elseif (!is_string($lobbyValues['colour']) || !isset(LOBBY_COLOURS[$lobbyValues['colour']])) {
-        $lobbyErrors['create'] = 'Choose the colour you play.';
     } else {
         try {
             lobbyGoToGame(hbHubChessCreateRoom($db, $userId, $hbHubUser['userName'],
-                hbHubChessRoomName($lobbyValues['name'], $hbHubUser['userName']), LOBBY_CREATE_TYPES[$lobbyValues['type']],
-                $lobbyValues['clock'], $lobbyValues['colour']));
+                hbHubChessRoomName($lobbyValues['name'], $hbHubUser['userName']), LOBBY_CREATE_TYPES[$lobbyValues['type']]));
         } catch (PDOException $e) {
             $seat = hbHubChessUserSeat($db, $userId); // joined a game in another tab meanwhile
             if ($seat !== null) {
@@ -175,23 +163,6 @@ $lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playi
                                placeholder="<?= htmlspecialchars(hbHubChessRoomName(null, $hbHubUser['userName'])) ?>"
                                value="<?= htmlspecialchars($lobbyValues['name']) ?>">
 
-                        <label class="casino-label" for="lobby-clock">Clock</label>
-                        <select id="lobby-clock" name="clock" class="casino-input">
-                            <?php foreach (HBHUB_CHESS_CLOCK_NAMES as $value => $label): ?>
-                                <option value="<?= $value ?>"<?= $lobbyValues['clock'] === $value ? ' selected' : '' ?>><?= $label ?></option>
-                            <?php endforeach; ?>
-                        </select>
-
-                        <fieldset class="casino-choices">
-                            <legend class="casino-label">You play</legend>
-                            <?php foreach (LOBBY_COLOURS as $value => $label): ?>
-                                <label class="casino-choice">
-                                    <input type="radio" name="colour" value="<?= $value ?>"<?= $lobbyValues['colour'] === $value ? ' checked' : '' ?>>
-                                    <span><strong><?= $label ?></strong></span>
-                                </label>
-                            <?php endforeach; ?>
-                        </fieldset>
-
                         <fieldset class="casino-choices">
                             <legend class="casino-label">Who can join</legend>
                             <?php foreach ([
@@ -206,6 +177,7 @@ $lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playi
                             <?php endforeach; ?>
                         </fieldset>
 
+                        <p class="casino-hint">You pick the clock and the colours in the game's settings, until someone joins.</p>
                         <button type="submit" class="casino-btn casino-btn-primary">Open game</button>
                         <?php if (isset($lobbyErrors['create'])): ?>
                             <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['create']) ?></p>

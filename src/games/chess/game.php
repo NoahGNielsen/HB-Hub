@@ -40,7 +40,7 @@ $gameClockName = HBHUB_CHESS_CLOCK_NAMES[$room['state']['clock']] ?? '';
             <div class="ch-header">
                 <div class="ch-heading">
                     <h1 class="ch-title"><?= htmlspecialchars($room['roomName']) ?></h1>
-                    <p class="ch-meta"><?= $gameTypeName ?> &middot; <?= $gameClockName ?></p>
+                    <p class="ch-meta"><?= $gameTypeName ?> &middot; <span data-ch-clock-name><?= $gameClockName ?></span></p>
                 </div>
                 <div class="ch-header-actions">
                     <button type="button" class="ch-code" data-ch-code="<?= htmlspecialchars($room['roomCode']) ?>"
@@ -55,6 +55,13 @@ $gameClockName = HBHUB_CHESS_CLOCK_NAMES[$room['state']['clock']] ?? '';
                             aria-haspopup="dialog" data-ch-invite hidden>
                         <svg class="ch-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="casino-btn ch-icon-btn" aria-label="Game settings" title="Game settings"
+                            aria-haspopup="dialog" data-ch-settings>
+                        <svg class="ch-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/>
+                            <path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/>
                         </svg>
                     </button>
                     <button type="button" class="casino-btn ch-icon-btn" aria-label="Pause the game" title="Pause the game" aria-pressed="false"
@@ -147,6 +154,43 @@ $gameClockName = HBHUB_CHESS_CLOCK_NAMES[$room['state']['clock']] ?? '';
             <div class="games-dialog-actions">
                 <button type="button" class="casino-btn" data-ch-promotion-cancel>Cancel</button>
             </div>
+        </dialog>
+
+        <!-- The game's settings: the host changes them while no game is being played (waiting for a player, or between
+             games), everyone else (and the host during a game) only sees them. chessGame.js fills in the choices from
+             the game and sends them as "settings". -->
+        <dialog class="games-dialog ch-settings" aria-labelledby="ch-settings-title" data-ch-settings-dialog>
+            <form method="dialog" data-ch-settings-form>
+                <h2 id="ch-settings-title">Game settings</h2>
+                <p class="ch-hint" data-ch-settings-text></p>
+                <fieldset class="casino-choices" data-ch-settings-fields>
+                    <legend class="casino-label">Clock</legend>
+                    <?php foreach (HBHUB_CHESS_CLOCK_NAMES as $value => $label): ?>
+                        <label class="casino-choice">
+                            <input type="radio" name="clock" value="<?= $value ?>">
+                            <span><strong><?= $label ?><?= $value === HBHUB_CHESS_DEFAULT_CLOCK ? ' (default)' : '' ?></strong></span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
+                <fieldset class="casino-choices" data-ch-settings-fields>
+                    <legend class="casino-label">The host plays</legend>
+                    <?php foreach ([
+                        'random' => ['Random (default)', 'Who plays White is picked when the game starts.'],
+                        'white' => ['White', 'The host moves first.'],
+                        'black' => ['Black', 'The one who joins moves first.'],
+                    ] as $value => [$label, $hint]): ?>
+                        <label class="casino-choice">
+                            <input type="radio" name="colour" value="<?= $value ?>">
+                            <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
+                <p class="ch-message" role="alert" data-ch-settings-message></p>
+                <div class="games-dialog-actions">
+                    <button type="button" class="casino-btn" data-ch-settings-close>Close</button>
+                    <button type="submit" class="casino-btn casino-btn-primary" value="save" data-ch-settings-save>Save</button>
+                </div>
+            </form>
         </dialog>
 
         <dialog class="games-dialog ch-invite" aria-labelledby="ch-invite-title" data-ch-invite-dialog>

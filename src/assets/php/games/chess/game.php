@@ -9,6 +9,8 @@
 //   phase: "lobby" (waiting for a second player), "playing" or "ended" (both still there, maybe for a rematch)
 //   clock: the time control, a key of HBHUB_CHESS_CLOCKS
 //   colour: the colour the host plays: "random", "white" or "black"
+//   (clock and colour are the room's settings: the host changes them while no game is being played,
+//   hbHubChessChangeSettings())
 //   players: who sits in the room, [{seat: 1 or 2, userId, name}]
 //   games: how many games have been started in the room
 //   note: something to tell the player left waiting (like "Alice left."), or null
@@ -59,12 +61,15 @@ function hbHubChessNowMs(): int
     return (int) floor(microtime(true) * 1000);
 }
 
-function hbHubChessNewState(string $clock, string $colour): array
+/**
+ * A new room, with the default settings (the host changes them in the game, hbHubChessChangeSettings()).
+ */
+function hbHubChessNewState(): array
 {
     return [
         'phase' => 'lobby',
-        'clock' => array_key_exists($clock, HBHUB_CHESS_CLOCKS) ? $clock : HBHUB_CHESS_DEFAULT_CLOCK,
-        'colour' => in_array($colour, HBHUB_CHESS_COLOURS, true) ? $colour : 'random',
+        'clock' => HBHUB_CHESS_DEFAULT_CLOCK,
+        'colour' => 'random',
         'players' => [],
         'games' => 0,
         'note' => null,
@@ -235,7 +240,7 @@ function hbHubChessMove(array &$state, string $colour, mixed $from, mixed $to, m
 
     $from = hbHubChessSquare($from);
     $to = hbHubChessSquare($to);
-    $promotion = in_array($promotion, HBHUB_CHESS_PROMOTIONS, true) ? $promotion : 'q';
+    $promotion = in_array($promotion, HBHUB_CHESS_PROMOTIONS, true) ? $promotion : (hbHubChessPromotions($position['board'], $colour)[0] ?? 'q');
     $legal = hbHubChessLegalMoves($position);
     $move = null;
     foreach ($legal as $candidate) {
@@ -410,6 +415,34 @@ function hbHubChessPause(array &$state, bool $isHost, bool $pause, int $now): ?s
 }
 
 /**
+ * The host changes the room's settings: $clock (as sent, a key of HBHUB_CHESS_CLOCKS) and $colour (the colour they
+ * play: "random", "white" or "black"). Only while no game is being played: while the room waits for a player, or
+ * between games. A rematch asked for already is taken back when they change, so nobody says yes to a game they didn't
+ * see the settings of. Returns null when they're changed, otherwise why not.
+ */
+function hbHubChessChangeSettings(array &$state, bool $isHost, mixed $clock, mixed $colour): ?string
+{
+    if (!$isHost) {
+        return 'Only the host can change the settings.';
+    }
+    if ($state['phase'] === 'playing') {
+        return 'The settings can\'t be changed while a game is being played.';
+    }
+    if (!is_string($clock) || !array_key_exists($clock, HBHUB_CHESS_CLOCKS) || !in_array($colour, HBHUB_CHESS_COLOURS, true)) {
+        return 'Choose the settings.';
+    }
+    if ($clock === $state['clock'] && $colour === $state['colour']) {
+        return null;
+    }
+    $state['clock'] = $clock;
+    $state['colour'] = $colour;
+    if ($state['game'] !== null) {
+        $state['game']['rematch'] = [];
+    }
+    return null;
+}
+
+/**
  * The colour asks for another game ($wants), or takes that back. Once both want it, it starts, with the colours swapped.
  */
 function hbHubChessRematch(array &$state, string $colour, bool $wants, ?int $hostUserId): ?string
@@ -470,6 +503,8 @@ function hbHubChessView(array $state, array $people, array $seats, int $userId, 
 
     $view = [
         'phase' => $state['phase'],
+        'clock' => $state['clock'],
+        'clockName' => HBHUB_CHESS_CLOCK_NAMES[$state['clock']] ?? '',
         'colour' => $state['colour'],
         'isHost' => $hostUserId === $userId,
         'note' => $state['note'],
@@ -504,6 +539,8 @@ function hbHubChessView(array $state, array $people, array $seats, int $userId, 
         'lastMove' => $lastMove !== null ? [hbHubChessSquareName($lastMove['from']), hbHubChessSquareName($lastMove['to'])] : null,
         'check' => $inCheck ? hbHubChessSquareName((int) strpos($position['board'], $position['turn'] === 'w' ? 'K' : 'k')) : null,
         'legal' => (object) $legal,
+        // What the user's pawns can become (board.php's hbHubChessPromotions()), for the choice when one gets there
+        'promotions' => $view['you'] !== null ? hbHubChessPromotions($position['board'], $view['you']) : [],
         'clocks' => $game['clocks'] !== null
             ? ['w' => hbHubChessTimeLeft($game, 'w', $now), 'b' => hbHubChessTimeLeft($game, 'b', $now)]
             : null,

@@ -11,6 +11,12 @@
 // agree). The server ends the game once a clock runs out; this only shows it, and asks straight away when it does.
 // The host can pause the game (the button in the header): the server then sends no running clock and no legal moves.
 //
+// The game's settings (game.clock and game.colour: the clock, and the colour the host plays) are shown in their dialog,
+// where the host changes them while no game is being played. Everyone else only sees them.
+//
+// A pawn can only become a piece its player has lost (game.game.promotions, from the server), so the choice when one
+// reaches the last rank only has those. With none, the server doesn't send the last rank as a legal move at all.
+//
 // A ping is played when it becomes the player's move, unless they turned the sound off (remembered in this browser).
 //
 // Like on chess.com, the right mouse button draws on the board: dragged from one square to another it draws an arrow,
@@ -47,7 +53,9 @@
     const movesEmpty = find('[data-ch-moves-empty]');
     const codeButton = find('[data-ch-code]');
     const codeCopied = find('[data-ch-code-copied]');
+    const clockName = find('[data-ch-clock-name]');
     const inviteButton = find('[data-ch-invite]');
+    const settingsButton = find('[data-ch-settings]');
     const pauseButton = find('[data-ch-pause]');
     const flipButton = find('[data-ch-flip]');
     const soundButton = find('[data-ch-sound]');
@@ -150,20 +158,20 @@
         return request({ method: 'POST', body: new URLSearchParams({ room: roomId, action, ...fields }) });
     }
 
-    // Does something in the game. Its error (if any) is shown in the game panel.
-    async function act(action, fields = {}) {
+    // Does something in the game. Its error (if any) is shown in the game panel, or in shownIn (a dialog's message).
+    async function act(action, fields = {}, shownIn = message) {
         if (isBusy) return null;
         isBusy = true;
-        message.textContent = '';
+        shownIn.textContent = '';
         render();
 
         const data = await post(action, fields);
         isBusy = false;
         if (data === null) {
-            message.textContent = 'Something went wrong. Please try again.';
+            shownIn.textContent = 'Something went wrong. Please try again.';
             version = null; // so the next check gets the whole game, in case a move was shown that didn't happen
         } else {
-            if (data.error) message.textContent = data.error;
+            if (data.error) shownIn.textContent = data.error;
             apply(data);
         }
         render();
@@ -178,6 +186,7 @@
         renderStatus();
         renderMoves();
         renderChat();
+        if (settingsDialog.open) renderSettings();
         document.title = (isMyMove() ? '● Your move - ' : '') + baseTitle;
         boardView.classList.toggle('is-my-turn', isMyMove()); // the board glows (chess.css)
 
@@ -189,6 +198,7 @@
 
     // aria-pressed also picks the pause button's icon (chess.css)
     function renderHeader() {
+        clockName.textContent = game.clockName;
         inviteButton.hidden = !(game.isHost && game.phase === 'lobby');
         pauseButton.hidden = !(game.isHost && isPlaying());
         pauseButton.disabled = isBusy;
@@ -541,10 +551,14 @@
             const lines = [];
             if (game.note) lines.push(game.note);
             if (state?.result) lines.push('Last game: ' + resultText(state.result));
-            const invite = isHost ? [button('Invite someone', () => openInvite(), { primary: true })] : [];
+            const hostButtons = isHost ? [button('Invite someone', () => openInvite(), { primary: true }), button('Game settings', openSettings)] : [];
             return [
                 [...lines, 'Waiting for someone to join.'].join(' '),
-                [paragraph('Give them the code ' + code + (game.room.type === 'public' ? ', or they can find the game on the chess page.' : '.')), row(...invite)],
+                [
+                    paragraph('Give them the code ' + code + (game.room.type === 'public' ? ', or they can find the game on the chess page.' : '.')),
+                    paragraph('Settings: ' + settingsText() + '.'),
+                    row(...hostButtons),
+                ],
             ];
         }
 
@@ -776,13 +790,14 @@
         if (element && event.detail === 0) choose(element.dataset.square);
     });
 
-    // ----- Promoting a pawn: the four pieces to choose from
+    // ----- Promoting a pawn: the pieces the player has lost (the server only allows those), queen first
 
     const promotionDialog = find('[data-ch-promotion]');
     const promotionChoices = find('[data-ch-promotion-choices]');
 
     function choosePromotion(colour) {
-        promotionChoices.replaceChildren(...PROMOTIONS.map((type) => {
+        const allowed = PROMOTIONS.filter((type) => game.game.promotions.includes(type));
+        promotionChoices.replaceChildren(...allowed.map((type) => {
             const choice = document.createElement('button');
             choice.type = 'button';
             choice.className = 'ch-promotion-choice';
@@ -946,6 +961,57 @@
 
     pauseButton.addEventListener('click', () => {
         if (isPlaying()) act(isPaused() ? 'resume' : 'pause');
+    });
+
+    // ----- The game's settings: the host changes them while no game is being played, everyone else only sees them
+
+    const settingsDialog = find('[data-ch-settings-dialog]');
+    const settingsForm = find('[data-ch-settings-form]');
+    const settingsMessage = find('[data-ch-settings-message]');
+    const settingsSave = find('[data-ch-settings-save]');
+    const canChangeSettings = () => game.isHost && game.phase !== 'playing';
+    const settingsText = () => game.clockName + ', ' + {
+        random: 'random colours',
+        white: (game.isHost ? 'you play' : 'the host plays') + ' White',
+        black: (game.isHost ? 'you play' : 'the host plays') + ' Black',
+    }[game.colour];
+
+    // The choices are only filled in from the game when it opens, or while it can't be changed (so a poll doesn't
+    // undo what the host has just clicked)
+    function fillSettings() {
+        settingsForm.elements.clock.value = game.clock;
+        settingsForm.elements.colour.value = game.colour;
+    }
+
+    function renderSettings() {
+        const canChange = canChangeSettings();
+        if (!canChange) fillSettings();
+        settingsForm.querySelectorAll('[data-ch-settings-fields]').forEach((fields) => (fields.disabled = !canChange));
+        settingsSave.hidden = !canChange;
+        settingsSave.disabled = isBusy;
+        find('[data-ch-settings-text]').textContent = canChange
+            ? 'Choose how the next game is played. The colours only count against someone new: a rematch swaps them.'
+            : game.phase === 'playing' ? 'A game is being played, so these can\'t be changed until it\'s over.'
+            : 'Only the host can change these.';
+    }
+
+    function openSettings() {
+        if (game === null) return;
+        settingsMessage.textContent = '';
+        fillSettings();
+        renderSettings();
+        settingsDialog.showModal();
+    }
+
+    settingsButton.addEventListener('click', openSettings);
+    find('[data-ch-settings-close]').addEventListener('click', () => settingsDialog.close());
+    settingsForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); // it's closed once it's saved, not straight away
+        const data = await act('settings', {
+            clock: settingsForm.elements.clock.value,
+            colour: settingsForm.elements.colour.value,
+        }, settingsMessage);
+        if (data && !data.error) settingsDialog.close();
     });
 
     // ----- Turning the board around
