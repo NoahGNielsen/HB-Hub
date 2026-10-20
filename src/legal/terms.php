@@ -186,6 +186,12 @@ const HBHUB_TERMS_UPDATED = '20 October 2026';
                             <li>delete messages, attachments, pictures or groups,</li>
                             <li>reset or take away chips, or remove game results from the leaderboards,</li>
                             <li>take away attachment tickets, so fewer (or no) new attachments can be sent,</li>
+                            <li>
+                                ghost ban the account, for a while or for good, without telling the person. The chat keeps
+                                working like normal for them, but what they do in it (messages, attachments, edits, reactions,
+                                and the chats they start or add people to) only shows to themselves and site admins. Nobody
+                                else sees it or gets a notification or message request from it,
+                            </li>
                             <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture.</li>
                         </ul>
                         <p>

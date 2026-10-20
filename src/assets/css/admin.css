@@ -61,6 +61,12 @@
   color: #1a1d23;
 }
 
+/* Ghost banned, and the ghosts they left: messages and invites only they can see (assets/php/chat.php) */
+.settings-status.admin-status-ghost {
+  background: #6a4bd6;
+  color: #fff;
+}
+
 /* A deleted account or chat, or a site admin: nothing to change */
 .admin-overview-notice {
   margin-top: 16px;

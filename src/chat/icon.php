@@ -21,7 +21,7 @@ if ((int) $hbHubUser['userRole'] === HBHUB_CHAT_ICON_SITE_ROLE_ADMIN) {
 } else {
     $statement = $db->prepare('SELECT c.chatIconAttachmentId FROM `HBHub-ChatMembers` cm
         JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
-        WHERE cm.chatId = ? AND cm.userId = ? AND c.chatStatus = ? AND c.chatIconAttachmentId IS NOT NULL');
+        WHERE cm.chatId = ? AND cm.userId = ? AND c.chatStatus = ? AND c.chatIconAttachmentId IS NOT NULL AND cm.memberIsGhost = 0');
     $statement->execute([(int) $chatId, $hbHubUser['userId'], HBHUB_CHAT_STATUS_ACTIVE]);
 }
 $iconId = $statement->fetchColumn();

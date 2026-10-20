@@ -49,13 +49,16 @@ $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 // Site admins get "Admin panel" in the right-click menus on chats, messages and group members
 $chatIsSiteAdmin = (int) $hbHubUser['userRole'] === HBHUB_CHAT_SITE_ROLE_ADMIN;
+// Ghost banned by a site admin (see the top of assets/php/chat.php): what they do here only shows to themselves.
+// Nothing on the page is any different for them, so they can't tell.
+$chatIsGhost = (bool) $hbHubUser['userGhostBanned'];
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 $chatGifsEnabled = hbHubGiphyApiKey($siteConfig) !== null; // the GIF button and picker
 
 /**
  * The chat with the id, or null when it doesn't exist, isn't active or the user isn't a member of it.
  * A chat the user hasn't accepted yet (a message request) only counts when $isRequest is true,
- * and then it's the only kind that counts.
+ * and then it's the only kind that counts. An invite from a ghost-banned user (memberIsGhost) never counts.
  *
  * @return ?array{chatId: int, chatType: int, memberRole: int, memberMutedUntil: ?string, lastReadMessageId: ?int}
  */
@@ -67,7 +70,7 @@ function chatMembership(PDO $db, int $userId, mixed $chatId, bool $isRequest = f
 
     $statement = $db->prepare('SELECT c.chatId, c.chatType, cm.memberRole, cm.memberMutedUntil, cm.lastReadMessageId
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
-        WHERE cm.chatId = ? AND cm.userId = ? AND c.chatStatus = ? AND cm.userAcknowledgedJoin = ?');
+        WHERE cm.chatId = ? AND cm.userId = ? AND c.chatStatus = ? AND cm.userAcknowledgedJoin = ? AND cm.memberIsGhost = 0');
     $statement->execute([(int) $chatId, $userId, HBHUB_CHAT_STATUS_ACTIVE, $isRequest ? 0 : 1]);
     return $statement->fetch() ?: null;
 }
@@ -104,19 +107,22 @@ function chatIsMuted(array $chat): bool
 }
 
 /**
- * The message with the id, or null when the chat has no such message.
+ * The message with the id, or null when the chat has no such message, or it's someone else's ghost (a message only its
+ * ghost-banned sender sees, assets/php/chat.php). Its text is what the user sees, so their own edits while ghost banned.
  *
- * @return ?array{messageId: int, userId: int, messageContent: ?string, messageDeletedTimestamp: ?string}
+ * @return ?array{messageId: int, userId: int, messageContent: ?string, messageDeletedTimestamp: ?string, messageIsGhost: int}
  */
-function chatMessage(PDO $db, int $chatId, mixed $messageId): ?array
+function chatMessage(PDO $db, int $userId, int $chatId, mixed $messageId): ?array
 {
     if (!is_scalar($messageId) || !ctype_digit((string) $messageId)) {
         return null;
     }
 
     // Not a notice, so they can't be edited, deleted or replied to
-    $statement = $db->prepare('SELECT messageId, userId, messageContent, messageDeletedTimestamp
-        FROM `HBHub-Messages` WHERE messageId = ? AND chatId = ? AND messageEvent = 0');
+    $statement = $db->prepare('SELECT m.messageId, m.userId, ' . chatGhostContentSql('m', $userId) . ' AS messageContent,
+            m.messageDeletedTimestamp, m.messageIsGhost
+        FROM `HBHub-Messages` m WHERE m.messageId = ? AND m.chatId = ? AND m.messageEvent = 0
+            AND ' . chatGhostVisibleSql('m', 'messageIsGhost', $userId));
     $statement->execute([(int) $messageId, $chatId]);
     return $statement->fetch() ?: null;
 }
@@ -129,16 +135,19 @@ function chatMessage(PDO $db, int $chatId, mixed $messageId): ?array
  * with only $afterId the first ones after that message (the ones polling hasn't shown yet),
  * and with both the newest ones between them (loading back to the message a reply quote answers).
  * Each one has its reactions too (reactions, from chatReactions()).
+ * Only what the user can see: other people's ghosts (assets/php/chat.php) are left out, and their own edits made while
+ * ghost banned are shown as edited.
  */
-function chatMessages(PDO $db, int $chatId, int $limit, ?int $afterId = null, ?int $beforeId = null): array
+function chatMessages(PDO $db, int $userId, int $chatId, int $limit, ?int $afterId = null, ?int $beforeId = null): array
 {
     $statement = $db->prepare('SELECT * FROM (
-            SELECT m.messageId, m.userId, m.messageContent, m.attachmentId, m.messageSentTimestamp,
-                m.messageDeletedTimestamp, m.messageDeletedByAdmin, m.messageIsEdited, m.messageReplyToId,
+            SELECT m.messageId, m.userId, ' . chatGhostContentSql('m', $userId) . ' AS messageContent, m.attachmentId, m.messageSentTimestamp,
+                m.messageDeletedTimestamp, m.messageDeletedByAdmin, m.messageReplyToId,
+                m.messageIsEdited OR (m.userId = ' . $userId . ' AND m.messageGhostContent IS NOT NULL) AS messageIsEdited,
                 m.messageEvent, m.messageEventType, m.messageEventUserId, COALESCE(ecm.memberNickname, eu.userName) AS eventUserName,
                 COALESCE(cm.memberNickname, u.userName) AS senderName,
                 u.userAvatarAttachmentId AS senderAvatarId, u.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' AS senderBanned,
-                r.messageId AS replyId, r.userId AS replyUserId, r.messageContent AS replyContent,
+                r.messageId AS replyId, r.userId AS replyUserId, ' . chatGhostContentSql('r', $userId) . ' AS replyContent,
                 r.messageDeletedTimestamp AS replyDeletedTimestamp, r.messageDeletedByAdmin AS replyDeletedByAdmin, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName,
                 a.attachmentName, a.attachmentType, a.attachmentSize, a.attachmentStatus, a.attachmentExpiresTimestamp,
                 a.attachmentStatus = ' . HBHUB_CHAT_ATTACHMENT_KEPT . ' AND a.attachmentExpiresTimestamp > NOW() AS attachmentIsLive
@@ -151,7 +160,7 @@ function chatMessages(PDO $db, int $chatId, int $limit, ?int $afterId = null, ?i
             LEFT JOIN `HBHub-ChatMembers` rcm ON rcm.chatId = r.chatId AND rcm.userId = r.userId
             LEFT JOIN `HBHub-Users` eu ON eu.userId = m.messageEventUserId
             LEFT JOIN `HBHub-ChatMembers` ecm ON ecm.chatId = m.chatId AND ecm.userId = m.messageEventUserId
-            WHERE m.chatId = ? AND m.messageId > ? AND m.messageId < ?
+            WHERE m.chatId = ? AND m.messageId > ? AND m.messageId < ? AND ' . chatGhostVisibleSql('m', 'messageIsGhost', $userId) . '
             ORDER BY m.messageId ' . ($afterId !== null && $beforeId === null ? 'ASC' : 'DESC') . ' LIMIT ' . $limit . '
         ) shown ORDER BY messageId ASC');
     $statement->execute([$chatId, $afterId ?? 0, $beforeId ?? PHP_INT_MAX]);
@@ -160,7 +169,7 @@ function chatMessages(PDO $db, int $chatId, int $limit, ?int $afterId = null, ?i
         return [];
     }
 
-    $reactions = chatReactions($db, $chatId, (int) $messages[0]['messageId'], (int) end($messages)['messageId']);
+    $reactions = chatReactions($db, $userId, $chatId, (int) $messages[0]['messageId'], (int) end($messages)['messageId']);
     foreach ($messages as &$message) {
         $message['reactions'] = $reactions[(int) $message['messageId']] ?? [];
     }
@@ -172,10 +181,11 @@ function chatMessages(PDO $db, int $chatId, int $limit, ?int $afterId = null, ?i
  * The reactions under the chat's messages from $fromId to $toId (both included), leaving out deleted messages, as
  * [messageId => [emoji => [userId => name]]]. The emoji are in the order they were first used on the message, and
  * the people in the order they reacted. The names are the ones the chat shows, so a group's nicknames.
+ * Other people's ghost reactions (made while ghost banned, assets/php/chat.php) are left out.
  *
  * @return array<int, array<string, array<int, string>>>
  */
-function chatReactions(PDO $db, int $chatId, int $fromId, int $toId): array
+function chatReactions(PDO $db, int $userId, int $chatId, int $fromId, int $toId): array
 {
     $statement = $db->prepare('SELECT r.messageId, r.reactionEmoji, r.userId, COALESCE(cm.memberNickname, u.userName) AS reactorName
         FROM `HBHub-MessageReactions` r
@@ -183,6 +193,7 @@ function chatReactions(PDO $db, int $chatId, int $fromId, int $toId): array
         JOIN `HBHub-Users` u ON u.userId = r.userId
         LEFT JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = r.userId
         WHERE m.chatId = ? AND m.messageId BETWEEN ? AND ? AND m.messageDeletedTimestamp IS NULL
+            AND ' . chatGhostVisibleSql('r', 'reactionIsGhost', $userId) . '
         ORDER BY r.reactionId');
     $statement->execute([$chatId, $fromId, $toId]);
     $reactions = [];
@@ -310,14 +321,15 @@ function chatNotifyMentions(PDO $db, int $userId, int $chatId, int $messageId, s
  *
  * @return array{0: array, 1: bool}
  */
-function chatMessagesPage(PDO $db, int $chatId, int $limit, ?int $beforeId = null, ?int $fromId = null): array
+function chatMessagesPage(PDO $db, int $userId, int $chatId, int $limit, ?int $beforeId = null, ?int $fromId = null): array
 {
-    $messages = chatMessages($db, $chatId, $limit, $fromId !== null ? $fromId - 1 : null, $beforeId);
+    $messages = chatMessages($db, $userId, $chatId, $limit, $fromId !== null ? $fromId - 1 : null, $beforeId);
     if ($messages === []) {
         return [[], false];
     }
 
-    $statement = $db->prepare('SELECT EXISTS (SELECT 1 FROM `HBHub-Messages` WHERE chatId = ? AND messageId < ?)');
+    $statement = $db->prepare('SELECT EXISTS (SELECT 1 FROM `HBHub-Messages` m WHERE m.chatId = ? AND m.messageId < ?
+        AND ' . chatGhostVisibleSql('m', 'messageIsGhost', $userId) . ')');
     $statement->execute([$chatId, $messages[0]['messageId']]);
     return [$messages, (bool) $statement->fetchColumn()];
 }
@@ -364,10 +376,13 @@ function chatPickedUserIds(int $userId, mixed $pickedIds): array
  * a message request they have to accept first, and a notification about it. Anyone already in it (or invited) is left out, and so are unknown,
  * banned and deleted users, and anyone who blocked the user from sending them requests. Nobody is added when they'd make
  * the group bigger than HBHUB_CHAT_MEMBERS_MAX, or the user would send more requests this hour than HBHUB_CHAT_REQUESTS_PER_HOUR.
+ * A ghost-banned user's invites are ghosts (memberIsGhost, see assets/php/chat.php): no request, no notification, and
+ * a notice only they see. Anyone else adding someone with a ghost invite turns it into a real one.
  *
  * @param array $userSettings the user's settings, as picking someone they blocked unblocks them
+ * @param bool $isGhost the user is ghost banned
  */
-function chatAddMembers(PDO $db, int $userId, array $userSettings, int $chatId, mixed $pickedIds): void
+function chatAddMembers(PDO $db, int $userId, array $userSettings, int $chatId, mixed $pickedIds, bool $isGhost): void
 {
     $pickedIds = chatPickedUserIds($userId, $pickedIds);
     if ($pickedIds === [] || count($pickedIds) >= HBHUB_CHAT_MEMBERS_MAX) {
@@ -380,10 +395,12 @@ function chatAddMembers(PDO $db, int $userId, array $userSettings, int $chatId, 
     $db->beginTransaction();
     $db->prepare('SELECT chatId FROM `HBHub-Chats` WHERE chatId = ? FOR UPDATE')->execute([$chatId]);
 
-    // A deleted account's userStatus is NULL, so it's left out by <> too
+    // A deleted account's userStatus is NULL, so it's left out by <> too.
+    // Someone with a ghost invite isn't in the group yet, except to the ghost-banned user.
     $statement = $db->prepare('SELECT u.userId, u.userSettings FROM `HBHub-Users` u
         WHERE u.userStatus <> ? AND u.userId IN (' . implode(', ', array_fill(0, count($pickedIds), '?')) . ')
-            AND NOT EXISTS (SELECT 1 FROM `HBHub-ChatMembers` cm WHERE cm.chatId = ? AND cm.userId = u.userId)
+            AND NOT EXISTS (SELECT 1 FROM `HBHub-ChatMembers` cm WHERE cm.chatId = ? AND cm.userId = u.userId'
+                . ($isGhost ? '' : ' AND cm.memberIsGhost = 0') . ')
         ORDER BY u.userNameLower');
     $statement->execute([HBHUB_SESSION_STATUS_BANNED, ...$pickedIds, $chatId]);
     $newIds = [];
@@ -398,17 +415,25 @@ function chatAddMembers(PDO $db, int $userId, array $userSettings, int $chatId, 
     $memberCount = (int) $statement->fetchColumn();
 
     if ($newIds !== [] && count($newIds) <= $requestsLeft && $memberCount + count($newIds) <= HBHUB_CHAT_MEMBERS_MAX) {
+        if (!$isGhost) {
+            // Their ghost invites make way for the real ones
+            $db->prepare('DELETE FROM `HBHub-ChatMembers` WHERE chatId = ? AND memberIsGhost = 1
+                AND userId IN (' . implode(', ', array_fill(0, count($newIds), '?')) . ')')
+                ->execute([$chatId, ...$newIds]);
+        }
         $memberRows = [];
         foreach ($newIds as $newId) {
-            array_push($memberRows, $chatId, $newId, HBHUB_CHAT_ROLE_MEMBER, 0);
+            array_push($memberRows, $chatId, $newId, HBHUB_CHAT_ROLE_MEMBER, 0, (int) $isGhost);
         }
-        $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole, userAcknowledgedJoin)
-            VALUES ' . implode(', ', array_fill(0, count($newIds), '(?, ?, ?, ?)')))
+        $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole, userAcknowledgedJoin, memberIsGhost)
+            VALUES ' . implode(', ', array_fill(0, count($newIds), '(?, ?, ?, ?, ?)')))
             ->execute($memberRows);
         $notificationData = chatNotificationData($db, $chatId);
         foreach ($newIds as $newId) {
-            chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_ADD, $newId);
-            hbHubNotify($db, $newId, 'chat.messageRequest', $userId, $notificationData);
+            chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_ADD, $newId, null, false, $isGhost);
+            if (!$isGhost) {
+                hbHubNotify($db, $newId, 'chat.messageRequest', $userId, $notificationData);
+            }
         }
     }
     $db->commit();
@@ -628,10 +653,13 @@ function chatSetNickname(PDO $db, int $userId, int $chatId, mixed $nickname): vo
  * blocked unblocks them.
  * Returns the chat id, or null when the picked users aren't valid (none, too many, unknown or banned), when everyone
  * picked blocked the user, or when it would be more requests this hour than HBHUB_CHAT_REQUESTS_PER_HOUR.
+ * A ghost-banned user's new chat only exists for them: everyone they picked gets a ghost invite (memberIsGhost, see
+ * assets/php/chat.php) instead of a request.
  *
  * @param array $userSettings the user's settings
+ * @param bool $isGhost the user is ghost banned
  */
-function chatCreate(PDO $db, int $userId, array $userSettings, mixed $pickedIds, mixed $name): ?int
+function chatCreate(PDO $db, int $userId, array $userSettings, mixed $pickedIds, mixed $name, bool $isGhost): ?int
 {
     $memberIds = chatPickedUserIds($userId, $pickedIds);
     if ($memberIds === [] || count($memberIds) + 1 > HBHUB_CHAT_MEMBERS_MAX) {
@@ -658,9 +686,19 @@ function chatCreate(PDO $db, int $userId, array $userSettings, mixed $pickedIds,
         $statement->execute([$userId, $memberIds[0], HBHUB_CHAT_TYPE_DM, HBHUB_CHAT_STATUS_ACTIVE]);
         $existingChatId = $statement->fetchColumn();
         if ($existingChatId !== false) {
-            // Starting a DM with someone who already sent you a request accepts it, and a hidden one comes back
-            $db->prepare('UPDATE `HBHub-ChatMembers` SET userAcknowledgedJoin = 1 WHERE chatId = ? AND userId = ?')
+            // Starting a DM with someone who already sent you a request accepts it, and a hidden one comes back.
+            // So does one they started while ghost banned, which the user never saw: it's a normal DM from now on,
+            // and what they sent while ghost banned stays hidden.
+            $db->prepare('UPDATE `HBHub-ChatMembers` SET userAcknowledgedJoin = 1, memberIsGhost = 0 WHERE chatId = ? AND userId = ?')
                 ->execute([$existingChatId, $userId]);
+            // The other way around: the user started it while ghost banned and isn't any more, so it's a real request now
+            if (!$isGhost) {
+                $statement = $db->prepare('UPDATE `HBHub-ChatMembers` SET memberIsGhost = 0 WHERE chatId = ? AND userId = ? AND memberIsGhost = 1');
+                $statement->execute([$existingChatId, $memberIds[0]]);
+                if ($statement->rowCount() > 0) {
+                    hbHubNotify($db, $memberIds[0], 'chat.messageRequest', $userId, chatNotificationData($db, (int) $existingChatId));
+                }
+            }
             hbHubMarkNotificationsReadAbout($db, $userId, 'chat.messageRequest', ['chatId' => (int) $existingChatId]);
             chatSetHidden($db, $userId, (int) $existingChatId, false);
             return (int) $existingChatId;
@@ -684,16 +722,17 @@ function chatCreate(PDO $db, int $userId, array $userSettings, mixed $pickedIds,
     $chatId = (int) $db->lastInsertId();
 
     // The creator is the group's owner. In a DM both are normal members.
-    // Everyone but the creator gets the chat as a message request they have to accept first, and a notification about it.
-    $memberRows = [$chatId, $userId, $isGroup ? HBHUB_CHAT_ROLE_OWNER : HBHUB_CHAT_ROLE_MEMBER, 1];
+    // Everyone but the creator gets the chat as a message request they have to accept first, and a notification about it,
+    // unless the creator is ghost banned: then it's a ghost invite they never see.
+    $memberRows = [$chatId, $userId, $isGroup ? HBHUB_CHAT_ROLE_OWNER : HBHUB_CHAT_ROLE_MEMBER, 1, 0];
     foreach ($memberIds as $memberId) {
-        array_push($memberRows, $chatId, $memberId, HBHUB_CHAT_ROLE_MEMBER, 0);
+        array_push($memberRows, $chatId, $memberId, HBHUB_CHAT_ROLE_MEMBER, 0, (int) $isGhost);
     }
-    $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole, userAcknowledgedJoin)
-        VALUES ' . implode(', ', array_fill(0, count($memberIds) + 1, '(?, ?, ?, ?)')))
+    $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole, userAcknowledgedJoin, memberIsGhost)
+        VALUES ' . implode(', ', array_fill(0, count($memberIds) + 1, '(?, ?, ?, ?, ?)')))
         ->execute($memberRows);
     $notificationData = chatNotificationData($db, $chatId);
-    foreach ($memberIds as $memberId) {
+    foreach ($isGhost ? [] : $memberIds as $memberId) {
         hbHubNotify($db, $memberId, 'chat.messageRequest', $userId, $notificationData);
     }
     $db->commit();
@@ -703,7 +742,7 @@ function chatCreate(PDO $db, int $userId, array $userSettings, mixed $pickedIds,
 
 // Starting a new chat, then straight into it
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'create') {
-    chatRedirect(chatCreate($db, $userId, hbHubUserSettings($hbHubUser['userSettings']), $_POST['users'] ?? null, $_POST['name'] ?? null));
+    chatRedirect(chatCreate($db, $userId, hbHubUserSettings($hbHubUser['userSettings']), $_POST['users'] ?? null, $_POST['name'] ?? null, $chatIsGhost));
 }
 
 // The right-click menu in the chat list: mute, unmute, hide or leave a chat, give the other person in a DM a nickname,
@@ -785,7 +824,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
         // Who sent it: whoever added the user to the group with Add to chat, otherwise whoever made the chat
         $statement = $db->prepare('SELECT COALESCE((
                 SELECT m.userId FROM `HBHub-Messages` m
-                WHERE m.chatId = c.chatId AND m.messageEventType = ? AND m.messageEventUserId = ?
+                WHERE m.chatId = c.chatId AND m.messageEventType = ? AND m.messageEventUserId = ? AND m.messageIsGhost = 0
                 ORDER BY m.messageId DESC LIMIT 1
             ), c.chatCreatedBy) FROM `HBHub-Chats` c WHERE c.chatId = ?');
         $statement->execute([HBHUB_CHAT_EVENT_ADD, $userId, $chat['chatId']]);
@@ -821,9 +860,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
 
     $member = false;
     if ($isGroupAdmin && is_string($_POST['member'] ?? null) && ctype_digit($_POST['member']) && (int) $_POST['member'] !== $userId) {
-        $statement = $db->prepare('SELECT userId, memberRole, userAcknowledgedJoin FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ?');
+        $statement = $db->prepare('SELECT userId, memberRole, userAcknowledgedJoin, memberIsGhost FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ?');
         $statement->execute([$chat['chatId'], (int) $_POST['member']]);
         $member = $statement->fetch();
+        // A ghost invite (assets/php/chat.php) is only there for the ghost-banned user who made it
+        if ($member !== false && $member['memberIsGhost'] && !$chatIsGhost) {
+            $member = false;
+        }
     }
 
     $isNormalMember = $member !== false && (int) $member['memberRole'] === HBHUB_CHAT_ROLE_MEMBER;
@@ -842,6 +885,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
         if ($statement->rowCount() > 0) {
             [$event, $notification] = [HBHUB_CHAT_EVENT_REMOVE_ADMIN, 'chat.removedAdmin'];
         }
+    } elseif ($member !== false && $member['memberIsGhost'] && $_POST['action'] === 'kick') {
+        // Taking back a ghost invite: nobody else ever knew about it, so only the ghost-banned user gets a notice
+        $db->prepare('DELETE FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ? AND memberIsGhost = 1')
+            ->execute([$chat['chatId'], $member['userId']]);
+        chatNotice($db, $userId, (int) $chat['chatId'], HBHUB_CHAT_EVENT_KICK, (int) $member['userId'], null, false, true);
     } elseif ($member !== false && ($isNormalMember || $isGroupOwner) && $_POST['action'] === 'kick') {
         chatLeave($db, (int) $member['userId'], $chat, $userId); // posts the notice itself
         if ($member['userAcknowledgedJoin']) {
@@ -864,7 +912,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'add') {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     if ($chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
-        chatAddMembers($db, $userId, hbHubUserSettings($hbHubUser['userSettings']), (int) $chat['chatId'], $_POST['users'] ?? null);
+        chatAddMembers($db, $userId, hbHubUserSettings($hbHubUser['userSettings']), (int) $chat['chatId'], $_POST['users'] ?? null, $chatIsGhost);
     }
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
 }
@@ -875,7 +923,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'add
 // A deleted message's attachment doesn't stay: its file is deleted, and the sender gets its tickets back.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['edit', 'deleteMessage', 'unread'], true)) {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
-    $message = $chat !== null ? chatMessage($db, (int) $chat['chatId'], $_POST['message'] ?? null) : null;
+    $message = $chat !== null ? chatMessage($db, $userId, (int) $chat['chatId'], $_POST['message'] ?? null) : null;
     $isOwnMessage = $message !== null && (int) $message['userId'] === $userId && $message['messageDeletedTimestamp'] === null;
     $isGroupAdmin = $chat !== null && chatIsGroupAdmin($chat);
 
@@ -887,8 +935,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
             }
             if ($isOwnMessage && !chatIsMuted($chat) && $message['messageContent'] !== null && $content !== ''
                 && mb_strlen($content) <= HBHUB_CHAT_MESSAGE_MAX && $content !== $message['messageContent']) {
-                $db->prepare('UPDATE `HBHub-Messages` SET messageContent = ?, messageIsEdited = 1
-                    WHERE messageId = ? AND userId = ? AND messageDeletedTimestamp IS NULL')
+                // Ghost banned (assets/php/chat.php), an edit to a message everyone sees is only saved for the user.
+                // Otherwise it's a real edit, which also takes the place of one made while they were ghost banned.
+                $db->prepare($chatIsGhost && !$message['messageIsGhost']
+                    ? 'UPDATE `HBHub-Messages` SET messageGhostContent = ? WHERE messageId = ? AND userId = ? AND messageDeletedTimestamp IS NULL'
+                    : 'UPDATE `HBHub-Messages` SET messageContent = ?, messageIsEdited = 1, messageGhostContent = NULL
+                        WHERE messageId = ? AND userId = ? AND messageDeletedTimestamp IS NULL')
                     ->execute([$content, $message['messageId'], $userId]);
             }
             break;
@@ -973,7 +1025,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
     $tickets = hbHubChatAttachmentTickets($prepared['storedSize']);
 
     // Like a normal message, only one in this chat that isn't deleted can be replied to
-    $replyTo = chatMessage($db, (int) $chat['chatId'], $_POST['reply'] ?? null);
+    $replyTo = chatMessage($db, $userId, (int) $chat['chatId'], $_POST['reply'] ?? null);
     $replyToId = $replyTo !== null && $replyTo['messageDeletedTimestamp'] === null ? (int) $replyTo['messageId'] : null;
 
     // One upload at a time across the site, so two can't both squeeze into the user's last tickets or the last free space.
@@ -999,11 +1051,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
                 ->execute([$userId, $chat['chatId'], $prepared['key'], $prepared['name'], $prepared['type'], $prepared['kind'],
                     $prepared['size'], $prepared['storedSize'], $tickets, hbHubChatAttachmentDays($tickets)]);
             $attachmentId = (int) $db->lastInsertId();
-            $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, attachmentId, messageReplyToId) VALUES (?, ?, ?, ?, ?)')
-                ->execute([$userId, $chat['chatId'], $message !== '' ? $message : null, $attachmentId, $replyToId]);
+            $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, attachmentId, messageReplyToId, messageIsGhost)
+                VALUES (?, ?, ?, ?, ?, ?)')
+                ->execute([$userId, $chat['chatId'], $message !== '' ? $message : null, $attachmentId, $replyToId, (int) $chatIsGhost]);
             $messageId = (int) $db->lastInsertId();
-            $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
-                ->execute([$chat['chatId']]);
+            if (!$chatIsGhost) { // a ghost doesn't move the chat up anyone's list
+                $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
+                    ->execute([$chat['chatId']]);
+            }
             $db->commit();
         }
     } catch (Throwable $e) {
@@ -1020,9 +1075,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
         @unlink($prepared['path']);
         chatUploadAnswer(...$error);
     }
-    chatUnhideForEveryone($db, (int) $chat['chatId']); // a new message brings the chat back for everyone who hid it
-    if ($message !== '') {
-        chatNotifyMentions($db, $userId, (int) $chat['chatId'], $messageId, $message); // the text with the file can @mention too
+    // A new message brings the chat back for everyone who hid it, and the text with the file can @mention too.
+    // Not a ghost (assets/php/chat.php), nobody else can see it.
+    if (!$chatIsGhost) {
+        chatUnhideForEveryone($db, (int) $chat['chatId']);
+        if ($message !== '') {
+            chatNotifyMentions($db, $userId, (int) $chat['chatId'], $messageId, $message);
+        }
     }
     chatUploadAnswer(200, ['chatId' => (int) $chat['chatId']]);
 }
@@ -1033,7 +1092,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
 // The answer is the message's reactions as they are now, as HTML, which chat.js puts in place of the old ones.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'react') {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
-    $message = $chat !== null ? chatMessage($db, (int) $chat['chatId'], $_POST['message'] ?? null) : null;
+    $message = $chat !== null ? chatMessage($db, $userId, (int) $chat['chatId'], $_POST['message'] ?? null) : null;
     $emoji = $_POST['emoji'] ?? null;
     if ($message === null || $message['messageDeletedTimestamp'] !== null) {
         chatUploadAnswer(404, ['error' => 'messageNotFound']);
@@ -1054,8 +1113,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'rea
             ->execute([$messageId, $userId, $emoji]);
     } else {
         // A new emoji only while there's room for one more. One that's already there can always be added to.
-        $statement = $db->prepare('SELECT COUNT(DISTINCT reactionEmoji) AS emojiCount, COALESCE(SUM(reactionEmoji = ?), 0) AS emojiIsThere
-            FROM `HBHub-MessageReactions` WHERE messageId = ?');
+        // Counted from the ones the user can see, so a ghost-banned user's reactions (assets/php/chat.php) don't take up room.
+        $statement = $db->prepare('SELECT COUNT(DISTINCT r.reactionEmoji) AS emojiCount, COALESCE(SUM(r.reactionEmoji = ?), 0) AS emojiIsThere
+            FROM `HBHub-MessageReactions` r WHERE r.messageId = ? AND ' . chatGhostVisibleSql('r', 'reactionIsGhost', $userId));
         $statement->execute([$emoji, $messageId]);
         $counts = $statement->fetch();
         if ((int) $counts['emojiIsThere'] === 0 && (int) $counts['emojiCount'] >= HBHUB_CHAT_REACTIONS_MAX) {
@@ -1063,12 +1123,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'rea
             chatUploadAnswer(409, ['error' => 'tooManyReactions']);
         }
         // IGNORE, so a double click only adds it once (messageUserEmoji is unique)
-        $db->prepare('INSERT IGNORE INTO `HBHub-MessageReactions` (messageId, userId, reactionEmoji) VALUES (?, ?, ?)')
-            ->execute([$messageId, $userId, $emoji]);
+        $db->prepare('INSERT IGNORE INTO `HBHub-MessageReactions` (messageId, userId, reactionEmoji, reactionIsGhost) VALUES (?, ?, ?, ?)')
+            ->execute([$messageId, $userId, $emoji, (int) $chatIsGhost]);
     }
     $db->commit();
 
-    $reactions = chatReactions($db, (int) $chat['chatId'], $messageId, $messageId)[$messageId] ?? [];
+    $reactions = chatReactions($db, $userId, (int) $chat['chatId'], $messageId, $messageId)[$messageId] ?? [];
     chatUploadAnswer(200, ['reactions' => chatReactionsHtml(chatNamesContext($db, $userId, $chat), $userId, $reactions)]);
 }
 
@@ -1090,24 +1150,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($chat !== null && !chatIsMuted($chat) && $contents !== [] && mb_strlen($message) <= HBHUB_CHAT_MESSAGE_MAX) {
         // Only a message in this chat that isn't deleted can be replied to, otherwise it's sent as a normal message
-        $replyTo = chatMessage($db, (int) $chat['chatId'], $_POST['reply'] ?? null);
+        $replyTo = chatMessage($db, $userId, (int) $chat['chatId'], $_POST['reply'] ?? null);
         $replyToId = $replyTo !== null && $replyTo['messageDeletedTimestamp'] === null ? (int) $replyTo['messageId'] : null;
 
+        // A ghost-banned user's messages are ghosts (assets/php/chat.php): only they see them
         $db->beginTransaction();
-        $statement = $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageReplyToId) VALUES (?, ?, ?, ?)');
+        $statement = $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageReplyToId, messageIsGhost) VALUES (?, ?, ?, ?, ?)');
         $messageIds = [];
         foreach ($contents as $i => $content) {
-            $statement->execute([$userId, $chat['chatId'], $content, $i === 0 ? $replyToId : null]); // the reply goes on the first
+            $statement->execute([$userId, $chat['chatId'], $content, $i === 0 ? $replyToId : null, (int) $chatIsGhost]); // the reply goes on the first
             $messageIds[] = (int) $db->lastInsertId();
         }
-        $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
-            ->execute([$chat['chatId']]);
+        if (!$chatIsGhost) {
+            $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
+                ->execute([$chat['chatId']]);
+        }
         $db->commit();
 
-        // A new message brings the chat back for everyone who hid it, and the ones it @mentions hear about it
-        chatUnhideForEveryone($db, (int) $chat['chatId']);
-        if ($message !== '') {
-            chatNotifyMentions($db, $userId, (int) $chat['chatId'], $messageIds[0], $message);
+        // A new message brings the chat back for everyone who hid it, and the ones it @mentions hear about it.
+        // Not a ghost, nobody else can see it.
+        if (!$chatIsGhost) {
+            chatUnhideForEveryone($db, (int) $chat['chatId']);
+            if ($message !== '') {
+                chatNotifyMentions($db, $userId, (int) $chat['chatId'], $messageIds[0], $message);
+            }
         }
     }
 
@@ -1137,9 +1203,9 @@ if ($isPoll && $openMembership !== null && ($_GET['looking'] ?? null) === '1') {
 }
 if ($isPoll && $openMembership !== null && $pollAfter !== null) {
     if ($pollFrom !== null && $pollFrom <= $pollAfter) {
-        $pollReactions = chatReactions($db, (int) $openMembership['chatId'], $pollFrom, $pollAfter);
+        $pollReactions = chatReactions($db, $userId, (int) $openMembership['chatId'], $pollFrom, $pollAfter);
     }
-    $pollMessages = chatMessages($db, (int) $openMembership['chatId'], HBHUB_CHAT_MESSAGES_POLLED, $pollAfter);
+    $pollMessages = chatMessages($db, $userId, (int) $openMembership['chatId'], HBHUB_CHAT_MESSAGES_POLLED, $pollAfter);
     if (($_GET['read'] ?? null) === '1') {
         $readUpTo = $pollMessages !== [] ? (int) end($pollMessages)['messageId'] : $pollAfter;
         $db->prepare('UPDATE `HBHub-ChatMembers` SET lastReadMessageId = (
@@ -1189,13 +1255,21 @@ if ($isPage && $openMembership !== null && ($_GET['unread'] ?? null) !== '1') {
 // Unread messages are the ones from others, not deleted, that came after the last one the user read.
 // Notices (a new group name, someone kicked) aren't the last message and aren't unread.
 // A group request says who added the user: whoever did it with Add to chat, otherwise the one who made the group.
+// Ghosts (assets/php/chat.php) are left out: other people's messages and ghost invites, and chats the user only has a
+// ghost invite to. A ghost-banned user's own messages don't move a chat up anyone's list (lastMessageTimestamp),
+// so for them it's worked out from those too, and the list looks like it always does.
 $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAttachmentId, c.chatSettings,
         cm.userAcknowledgedJoin, cm.memberRole,
-        COALESCE(c.lastMessageTimestamp, c.chatCreatedTimestamp) AS chatActivity,
+        ' . ($chatIsGhost
+            ? 'GREATEST(COALESCE(c.lastMessageTimestamp, c.chatCreatedTimestamp), COALESCE((
+                SELECT MAX(gm.messageSentTimestamp) FROM `HBHub-Messages` gm
+                WHERE gm.chatId = c.chatId AND gm.userId = ' . $userId . ' AND gm.messageIsGhost = 1 AND gm.messageEvent = 0
+            ), c.chatCreatedTimestamp))'
+            : 'COALESCE(c.lastMessageTimestamp, c.chatCreatedTimestamp)') . ' AS chatActivity,
         COALESCE((
             SELECT au.userName FROM `HBHub-Messages` am JOIN `HBHub-Users` au ON au.userId = am.userId
             WHERE am.chatId = c.chatId AND cm.userAcknowledgedJoin = 0 AND am.messageEventType = ' . HBHUB_CHAT_EVENT_ADD . '
-                AND am.messageEventUserId = cm.userId
+                AND am.messageEventUserId = cm.userId AND am.messageIsGhost = 0
             ORDER BY am.messageId DESC LIMIT 1
         ), (SELECT cu.userName FROM `HBHub-Users` cu WHERE cu.userId = c.chatCreatedBy)) AS chatAddedByName,
         (
@@ -1217,20 +1291,21 @@ $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAt
         COALESCE(NULLIF(c.chatName, \'\'), (
             SELECT GROUP_CONCAT(COALESCE(om.memberNickname, ou.userName) ORDER BY ou.userName SEPARATOR \', \')
             FROM `HBHub-ChatMembers` om JOIN `HBHub-Users` ou ON ou.userId = om.userId
-            WHERE om.chatId = c.chatId AND om.userId <> ?
+            WHERE om.chatId = c.chatId AND om.userId <> ?' . ($chatIsGhost ? '' : ' AND om.memberIsGhost = 0') . '
         )) AS chatTitle,
         (
-            SELECT COALESCE(m.messageContent, IF(m.attachmentId IS NULL, NULL, \'Attachment\')) FROM `HBHub-Messages` m
+            SELECT COALESCE(' . chatGhostContentSql('m', $userId) . ', IF(m.attachmentId IS NULL, NULL, \'Attachment\')) FROM `HBHub-Messages` m
             WHERE m.chatId = c.chatId AND m.messageDeletedTimestamp IS NULL AND m.messageEvent = 0
+                AND ' . chatGhostVisibleSql('m', 'messageIsGhost', $userId) . '
             ORDER BY m.messageId DESC LIMIT 1
         ) AS chatLastMessage,
         (
             SELECT COUNT(*) FROM `HBHub-Messages` m
             WHERE m.chatId = c.chatId AND m.messageId > COALESCE(cm.lastReadMessageId, 0)
-                AND m.userId <> ? AND m.messageDeletedTimestamp IS NULL AND m.messageEvent = 0
+                AND m.userId <> ? AND m.messageDeletedTimestamp IS NULL AND m.messageEvent = 0 AND m.messageIsGhost = 0
         ) AS chatUnreadCount
     FROM `HBHub-ChatMembers` cm JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
-    WHERE cm.userId = ? AND c.chatStatus = ?
+    WHERE cm.userId = ? AND c.chatStatus = ? AND cm.memberIsGhost = 0
     ORDER BY chatActivity DESC');
 $statement->execute([$userId, $userId, $userId, $userId, $userId, $userId, $userId, HBHUB_CHAT_STATUS_ACTIVE]);
 $chats = [];
@@ -1308,13 +1383,14 @@ if ($openChat !== null && ($isPage || $isOlder || $pollMessages !== [])) {
 
 // Everyone in the open group, for the Members popup: site admins first, then the group owner and admins, then the ones who accepted,
 // then by name. Banned and deleted accounts get no profile link, like their messages.
+// Ghost invites (assets/php/chat.php) are only there for a ghost-banned user, to whom they look like any other invite.
 $openChatMembers = [];
 if ($openChat !== null && $isPage && (int) $openChat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
     $statement = $db->prepare('SELECT cm.userId, cm.memberRole, cm.userAcknowledgedJoin, u.userRole = ? AS memberIsSiteAdmin,
             COALESCE(cm.memberNickname, u.userName) AS memberName, u.userAvatarAttachmentId,
             u.userStatus IS NULL OR u.userStatus = ? AS memberNoProfile
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
-        WHERE cm.chatId = ?
+        WHERE cm.chatId = ?' . ($chatIsGhost ? '' : ' AND cm.memberIsGhost = 0') . '
         ORDER BY memberIsSiteAdmin DESC, cm.memberRole DESC, cm.userAcknowledgedJoin DESC, memberName');
     $statement->execute([HBHUB_CHAT_SITE_ROLE_ADMIN, HBHUB_SESSION_STATUS_BANNED, $openChat['chatId']]);
     $openChatMembers = $statement->fetchAll();
@@ -1327,7 +1403,7 @@ if ($openChat !== null && $isPage) {
     $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-Messages` WHERE chatId = ? AND messageId > ?');
     $statement->execute([$openChat['chatId'], (int) $lastReadMessageId]);
     $messagesShown = min(max(HBHUB_CHAT_MESSAGES_SHOWN, (int) $statement->fetchColumn() + 1), HBHUB_CHAT_MESSAGES_UNREAD_MAX);
-    [$messages, $messagesHaveOlder] = chatMessagesPage($db, (int) $openChat['chatId'], $messagesShown);
+    [$messages, $messagesHaveOlder] = chatMessagesPage($db, $userId, (int) $openChat['chatId'], $messagesShown);
 
     foreach ($messages as $message) {
         if ($firstUnreadMessageId === null && (int) $message['messageId'] > (int) $lastReadMessageId
@@ -1682,8 +1758,8 @@ if ($isOlder) {
     }
 
     [$olderMessages, $hasOlder] = $olderUntil !== null
-        ? chatMessagesPage($db, (int) $openChat['chatId'], HBHUB_CHAT_MESSAGES_JUMP_MAX, $olderThan, $olderUntil)
-        : chatMessagesPage($db, (int) $openChat['chatId'], HBHUB_CHAT_MESSAGES_SHOWN, $olderThan);
+        ? chatMessagesPage($db, $userId, (int) $openChat['chatId'], HBHUB_CHAT_MESSAGES_JUMP_MAX, $olderThan, $olderUntil)
+        : chatMessagesPage($db, $userId, (int) $openChat['chatId'], HBHUB_CHAT_MESSAGES_SHOWN, $olderThan);
     ob_start();
     foreach ($olderMessages as $message) {
         chatMessageItem($openChat, $userId, $message);

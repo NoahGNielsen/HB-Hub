@@ -9,7 +9,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_CONDUCT_UPDATED = '19 October 2026';
+const HBHUB_CONDUCT_UPDATED = '20 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -184,8 +184,9 @@ const HBHUB_CONDUCT_UPDATED = '19 October 2026';
                         <h2 id="conduct-admins">9. What admins do</h2>
                         <p>
                             Admins look at every report and decide what to do based on how serious it is. Often a warning is
-                            enough. Other times messages are deleted, chips are taken away, or an account is banned. The full list
-                            is in the <a href="/legal/terms#moderation">Terms of Service</a>.
+                            enough. Other times messages are deleted, chips are taken away, or an account is banned or ghost
+                            banned (what it does in chats only shows to itself, without being told). The full list is in the
+                            <a href="/legal/terms#moderation">Terms of Service</a>.
                         </p>
                         <p>
                             This page can't list everything, so admins also act on things that aren't mentioned here but clearly go

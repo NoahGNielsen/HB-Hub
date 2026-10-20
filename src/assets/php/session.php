@@ -148,8 +148,10 @@ function hbHubIsDeletedUserName(string $name): bool
  * Also updates the user's last seen time and IP, so it's only called once per request (at the bottom of this file).
  * Banning keeps the user's sessions, so the first visit after it can mark the browser (hbHubSetBannedCookie())
  * before the session is deleted.
+ * userGhostBanned is whether a site admin ghost banned them (assets/php/chat.php): only the chat looks at it, and it's
+ * never shown to the user.
  *
- * @return ?array{userId: int, userName: string, userRole: int, userAvatarAttachmentId: ?int, userSettings: ?string}
+ * @return ?array{userId: int, userName: string, userRole: int, userAvatarAttachmentId: ?int, userSettings: ?string, userGhostBanned: int}
  */
 function hbHubSessionUser(): ?array
 {
@@ -167,6 +169,7 @@ function hbHubSessionUser(): ?array
         // A login still waiting for its 2FA code (sessionTotpPending) doesn't count until the code is entered.
         // A deleted account's userStatus is NULL.
         $statement = $db->prepare('SELECT u.userId, u.userName, u.userRole, u.userAvatarAttachmentId, u.userSettings, u.userStatus,
+                u.userGhostBannedTimestamp IS NOT NULL AS userGhostBanned,
                 COALESCE(s.sessionLastSeen < NOW() - INTERVAL ' . HBHUB_SESSION_LAST_SEEN_MINUTES . ' MINUTE, 1) AS sessionIsStale
             FROM `HBHub-Sessions` s JOIN `HBHub-Users` u ON u.userId = s.userId
             WHERE s.sessionId = ? AND s.sessionValidUntil > NOW() AND s.sessionTotpPending = 0 AND u.userStatus IS NOT NULL');
