@@ -48,8 +48,6 @@
   --primary: #aab6c8;
   --secondary: #1b2029;
   --accent: #ff8a3d;
-  /* Text on the accent colour. White on #ff8a3d is only 2.3:1, this is 8:1 (WCAG asks for 4.5:1) */
-  --accent-text: #14100c;
 
   /* Nav bars */
   --nav-bg: #161a21;
@@ -134,7 +132,7 @@ body:has(> .site-footer) {
   padding: 10px 18px;
   border-radius: 10px;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
   font-weight: 600;
   text-decoration: none;
 }
@@ -284,7 +282,7 @@ body:has(> .site-footer) {
   border: none;
   border-radius: 8px;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
   font: inherit;
   font-weight: 700;
   cursor: pointer;

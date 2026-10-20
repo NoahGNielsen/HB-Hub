@@ -83,7 +83,7 @@ html.home {
   place-items: center;
   border-radius: 11px;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
   font-size: 0.95rem;
   font-weight: 900;
   letter-spacing: 0;
@@ -131,7 +131,7 @@ html.home {
   overflow: hidden;
   border-radius: 50%;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
   font-weight: 700;
   text-decoration: none;
 }
@@ -172,7 +172,7 @@ html.home {
 
 .home-btn-primary {
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
   box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
@@ -342,7 +342,7 @@ html.home {
   place-items: center;
   border-radius: 50%;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
   font-weight: 800;
 }
 
@@ -403,7 +403,7 @@ html.home {
 .home-msg-me p {
   border-radius: 16px 16px 4px 16px;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
 }
 
 .home-msg-notice {
@@ -617,7 +617,7 @@ html.home {
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
   font-size: 0.7rem;
   letter-spacing: 0.02em;
 }
@@ -782,7 +782,7 @@ html.home {
 
 .home-inbox-actions span:first-child {
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
 }
 
 /* Casino: a half-moon blackjack table, with a roulette wheel in front of one corner and a piece of a Baccarat
@@ -910,7 +910,7 @@ html.home {
   padding: 3px 10px;
   border-radius: 999px;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
   font-size: 0.8rem;
   font-weight: 800;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -1171,7 +1171,7 @@ html.home {
   padding: 4px 12px;
   border-radius: 999px;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
   font-size: 0.8rem;
   font-weight: 800;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);

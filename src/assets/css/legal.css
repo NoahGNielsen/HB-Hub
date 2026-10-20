@@ -291,12 +291,12 @@
 .legal-body .legal-links .legal-links-home {
   margin-left: auto;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
 }
 
 .legal-body .legal-links .legal-links-home:hover {
   background: color-mix(in srgb, var(--accent) 85%, #fff);
-  color: var(--accent-text);
+  color: #fff;
 }
 
 /* ---------- Legal pages: smaller screens ---------- */
@@ -677,7 +677,7 @@
   padding: 5px 12px;
   border-radius: 999px;
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
   font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: -0.01em;
