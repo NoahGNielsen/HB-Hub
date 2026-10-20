@@ -9,14 +9,15 @@
 //       roll, buy, decline, tax (choice: fixed or percent), payDebt, bankrupt, payBail, useCard and endTurn
 //     In your turn, but as often as you like: build, sell, mortgage and unmortgage (field)
 //     Any time: offer (to, giveFields, giveCash, giveCards, getFields, getCash, getCards), answer (trade: its id,
-//       answer: accept, decline or cancel) and leave
+//       answer: accept, decline or cancel), minimize (trade: its id - the player it was offered to minimized its
+//       pop-up, so it runs out after 30 seconds unless they answer, game.php's hbHubMatadorMinimizeTrade()) and leave
 //     For the host: start, invite (user), giveSeat (seat, user), saveStop, pause and resume (room.php's
 //       hbHubMatadorPause()), and settings (dice: 1 or 2, jailRent: yes, no or bank, parkingPot: on or off - before
 //       the game starts)
 //     chat (text) writes in the game's chat (chat.php), for anyone in the game
 //   Anything the player whose turn it is does (not the chat) starts their 30 seconds again (hbHubMatadorPlayerActed()).
-//   While the host has paused the game, the moves, building and trades are turned down. The chat, leaving and the
-//   host's actions still work.
+//   While the host has paused the game, the moves, building and trades are turned down. The chat, leaving, minimizing
+//   an offer and the host's actions still work.
 //   The game has the chat's newest messages in "chat", each with the seat of who wrote it (null when they have none) and
 //   the text cut up into its @mentions in "parts" (hbHubMentionParts()), and who can be mentioned in "chatMentions"
 //   (for mentions.js).
@@ -127,6 +128,11 @@ $do = match ($action) {
     'answer' => $player(static fn (array &$state, int $seat): ?string => in_array($input['answer'] ?? null, ['accept', 'decline', 'cancel'], true)
         ? hbHubMatadorAnswerTrade($state, $seat, $input['trade'] ?? null, $input['answer'])
         : 'Choose an answer.'),
+    // Not a move, so it doesn't start the turn's time again, and it works while the game is paused
+    'minimize' => static function (array &$room) use ($input, $userId): ?string {
+        $seat = hbHubMatadorSeatOfUser($room['state'], $userId);
+        return $seat !== null ? hbHubMatadorMinimizeTrade($room['state'], $seat, $input['trade'] ?? null) : 'You aren\'t playing in this game.';
+    },
     'start' => static fn (array &$room): ?string => hbHubMatadorStart($db, $room, $userId),
     'invite' => static fn (array &$room): ?string => hbHubMatadorInvite($db, $room, $userId, $input['user'] ?? null),
     'giveSeat' => static fn (array &$room): ?string => hbHubMatadorGiveSeat($db, $room, $userId, $input['seat'] ?? null, $input['user'] ?? null),

@@ -49,7 +49,8 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="mt" data-matador data-room="<?= $room['roomId'] ?>" data-turn-seconds="<?= HBHUB_MATADOR_TURN_SECONDS ?>">
+    <main class="mt" data-matador data-room="<?= $room['roomId'] ?>" data-turn-seconds="<?= HBHUB_MATADOR_TURN_SECONDS ?>"
+          data-trade-seconds="<?= HBHUB_MATADOR_TRADE_SECONDS ?>">
         <!-- The board on the left; the game's name and buttons, then the panels and the rules, on the right -->
         <div class="mt-layout">
             <div class="mt-header">
@@ -176,21 +177,25 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                 <section class="mt-panel" aria-label="Your moves">
                     <p class="mt-message" role="alert" data-mt-message></p>
                     <div class="mt-actions" data-mt-actions></div>
+                    <!-- Trading, while the game is played (matadorGame.js): the button opens the dialog to offer one. While
+                         the player's own offer is out, it's shown here instead, with a button to take it back. Offers made
+                         to the player pop up (the dialog further down). -->
+                    <div class="mt-trade-bar" data-mt-trade-bar hidden>
+                        <button type="button" class="casino-btn" aria-haspopup="dialog" data-mt-trade-open>Offer a trade</button>
+                        <div class="mt-trade-out" data-mt-trade-out hidden>
+                            <p class="mt-trade-out-text">
+                                <span data-mt-trade-out-text></span>
+                                <span class="mt-trade-out-time" data-mt-trade-out-time></span>
+                            </p>
+                            <button type="button" class="casino-btn mt-small-btn" data-mt-trade-take-back>Take it back</button>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="mt-panel" aria-labelledby="mt-players-title">
                     <h2 class="mt-panel-title" id="mt-players-title">Players</h2>
                     <ol class="mt-players" data-mt-players></ol>
                     <p class="mt-hint" data-mt-bank></p>
-                </section>
-
-                <section class="mt-panel" aria-labelledby="mt-trades-title" data-mt-trades-panel hidden>
-                    <div class="mt-panel-row">
-                        <h2 class="mt-panel-title" id="mt-trades-title">Trades</h2>
-                        <button type="button" class="casino-btn mt-small-btn" data-mt-trade-open>Offer a trade</button>
-                    </div>
-                    <ul class="mt-trades" data-mt-trades></ul>
-                    <p class="mt-hint" data-mt-trades-empty>No offers right now.</p>
                 </section>
 
                 <section class="mt-panel" aria-labelledby="mt-chat-title">
@@ -257,6 +262,37 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                 <button type="button" class="casino-btn casino-btn-primary" data-mt-trade-send>Send offer</button>
             </div>
         </dialog>
+
+        <!-- An offer someone made the player pops up here, one at a time (matadorGame.js). Minimizing it (the button or
+             Esc) puts it in the tray below; from then on it runs out after <?= HBHUB_MATADOR_TRADE_SECONDS ?> seconds
+             unless it's answered, also when it's opened again. -->
+        <dialog class="games-dialog mt-offer" aria-labelledby="mt-offer-title" data-mt-offer-dialog>
+            <div class="mt-offer-head">
+                <h2 id="mt-offer-title" data-mt-offer-title>Trade offer</h2>
+                <button type="button" class="casino-btn mt-icon-btn mt-offer-minimize" aria-label="Minimize" title="Minimize" data-mt-offer-minimize>
+                    <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+                </button>
+            </div>
+            <div class="mt-offer-sides">
+                <div class="mt-offer-side">
+                    <p class="casino-label">You get</p>
+                    <p data-mt-offer-get></p>
+                </div>
+                <div class="mt-offer-side">
+                    <p class="casino-label">You give</p>
+                    <p data-mt-offer-give></p>
+                </div>
+            </div>
+            <p class="mt-hint" data-mt-offer-time></p>
+            <p class="mt-message" role="alert" data-mt-offer-message></p>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn" data-mt-offer-decline>Decline</button>
+                <button type="button" class="casino-btn casino-btn-primary" data-mt-offer-accept>Accept</button>
+            </div>
+        </dialog>
+
+        <!-- The minimized offers, in the corner of the screen, each with the time it has left. Clicking one opens it again. -->
+        <section class="mt-offer-tray" aria-label="Minimized trade offers" data-mt-offer-tray hidden></section>
 
         <dialog class="games-dialog mt-invite" aria-labelledby="mt-invite-title" data-mt-invite-dialog>
             <h2 id="mt-invite-title" data-mt-invite-title>Invite people</h2>

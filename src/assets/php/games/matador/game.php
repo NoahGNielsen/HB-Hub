@@ -29,7 +29,9 @@
 //   pending     what the player whose turn it is has to answer: buy (field), tax, or debt (amount, to: a seat or null
 //               for the bank, reason, move: steps to move once it's paid - after the third try in jail, pot: true when
 //               it goes into Parkering's account once it's paid)
-//   trades      offers between players: id, from, to, give and get ({fields, cash, cards})
+//   trades      offers between players: id, from, to, give and get ({fields, cash, cards}), and expires (Unix
+//               milliseconds): null until the player it was offered to minimizes it, then it runs out at that time
+//               unless they've answered (hbHubMatadorExpireTrades()). Missing in offers from before it
 //   lastRoll, lastCard  for matadorGame.js to show (n counts them, so it knows a new one from the last one). lastRoll
 //               has the total (value) and each die (dice - not in rolls from before the settings). lastCard
 //               gets over: true once the turn it was drawn in has ended, and isn't shown anymore
@@ -41,6 +43,7 @@ const HBHUB_MATADOR_MAX_PLAYERS = 4;
 const HBHUB_MATADOR_MIN_PLAYERS = 2;
 const HBHUB_MATADOR_LOG_KEPT = 40;
 const HBHUB_MATADOR_TURN_SECONDS = 30; // the time a player has to do something in their turn, before it's passed on
+const HBHUB_MATADOR_TRADE_SECONDS = 30; // the time a minimized trade offer has left to be answered, before it runs out
 const HBHUB_MATADOR_DICE_CHOICES = [1, 2]; // the dice setting
 const HBHUB_MATADOR_JAIL_RENT_CHOICES = [ // the jailRent setting: what happens to rent for a player who's in jail
     'yes' => 'Yes',
@@ -752,7 +755,7 @@ function hbHubMatadorTimeUp(array $state): bool
  * answered for them - they don't buy, pay the cheaper tax, and raise what they owe (hbHubMatadorRaise()) - and their
  * turn is passed on. An empty seat waits when nobody still in the game is there. A player who's there is never made to
  * raise money or go bankrupt: when they owe money (also from the tax paid for them), the game waits for them.
- * Nothing moves on while the host has paused the game.
+ * Minimized trade offers that weren't answered in time run out here too. Nothing moves on while the host has paused the game.
  */
 function hbHubMatadorAdvance(array &$state): void
 {
@@ -762,6 +765,7 @@ function hbHubMatadorAdvance(array &$state): void
     if (hbHubMatadorIsPaused($state)) {
         return;
     }
+    hbHubMatadorExpireTrades($state);
     for ($guard = 0; $guard < 50 && $state['phase'] === 'playing'; $guard++) {
         $player = hbHubMatadorPlayerOf($state, $state['turn']['seat']);
         $isHere = $player !== null && $player['userId'] !== null && !$player['bankrupt'];
@@ -1279,7 +1283,7 @@ function hbHubMatadorOffer(array &$state, int $seat, mixed $to, ?array $give, ?a
         return $other['name'] . ' isn\'t here right now.';
     }
 
-    $trade = ['id' => $state['nextTradeId'], 'from' => $seat, 'to' => (int) $to, 'give' => $give, 'get' => $get];
+    $trade = ['id' => $state['nextTradeId'], 'from' => $seat, 'to' => (int) $to, 'give' => $give, 'get' => $get, 'expires' => null];
     $problem = hbHubMatadorTradeProblem($state, $trade);
     if ($problem !== null) {
         return $problem;
@@ -1295,12 +1299,7 @@ function hbHubMatadorOffer(array &$state, int $seat, mixed $to, ?array $give, ?a
  */
 function hbHubMatadorAnswerTrade(array &$state, int $seat, mixed $id, string $answer): ?string
 {
-    $found = null;
-    foreach ($state['trades'] as $i => $trade) {
-        if (is_string($id) && $id === (string) $trade['id']) {
-            $found = $i;
-        }
-    }
+    $found = hbHubMatadorTradeIndex($state, $id);
     if ($found === null) {
         return 'That offer isn\'t there anymore.';
     }
@@ -1323,6 +1322,87 @@ function hbHubMatadorAnswerTrade(array &$state, int $seat, mixed $id, string $an
     }
     array_splice($state['trades'], $found, 1);
     return null;
+}
+
+/**
+ * Where the offer with the id (as sent) is in $state['trades'], or null when it isn't there (anymore).
+ */
+function hbHubMatadorTradeIndex(array $state, mixed $id): ?int
+{
+    foreach ($state['trades'] as $i => $trade) {
+        if (is_string($id) && $id === (string) $trade['id']) {
+            return $i;
+        }
+    }
+    return null;
+}
+
+/**
+ * The player the offer was made to minimized its pop-up (matadorGame.js): from now on it runs out after
+ * HBHUB_MATADOR_TRADE_SECONDS unless they answer it. Only the first time - opening it again and minimizing it once more
+ * doesn't give it more time. Works while the game is paused too (it doesn't run out until the game goes on).
+ */
+function hbHubMatadorMinimizeTrade(array &$state, int $seat, mixed $id): ?string
+{
+    $found = hbHubMatadorTradeIndex($state, $id);
+    if ($found === null) {
+        return 'That offer isn\'t there anymore.';
+    }
+    if ($state['trades'][$found]['to'] !== $seat) {
+        return 'That offer isn\'t yours to answer.';
+    }
+    $state['trades'][$found]['expires'] ??= hbHubMatadorNowMs() + HBHUB_MATADOR_TRADE_SECONDS * 1000;
+    return null;
+}
+
+/**
+ * Whether a minimized offer has run out and is waiting to be taken away (by hbHubMatadorExpireTrades()). Never while
+ * the host has paused the game.
+ */
+function hbHubMatadorTradesRunOut(array $state): bool
+{
+    if ($state['phase'] !== 'playing' || hbHubMatadorIsPaused($state)) {
+        return false;
+    }
+    foreach ($state['trades'] as $trade) {
+        if (($trade['expires'] ?? null) !== null && $trade['expires'] <= hbHubMatadorNowMs()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Takes away the minimized offers that weren't answered in time (hbHubMatadorAdvance(), on the next request).
+ */
+function hbHubMatadorExpireTrades(array &$state): void
+{
+    if (!hbHubMatadorTradesRunOut($state)) {
+        return;
+    }
+    $now = hbHubMatadorNowMs();
+    foreach ($state['trades'] as $trade) {
+        if (($trade['expires'] ?? null) !== null && $trade['expires'] <= $now) {
+            hbHubMatadorLog($state, hbHubMatadorName($state, $trade['to']) . ' didn\'t answer ' . hbHubMatadorName($state, $trade['from'])
+                . '\'s offer in time, so it ran out.');
+        }
+    }
+    $state['trades'] = array_values(array_filter($state['trades'],
+        static fn (array $trade): bool => ($trade['expires'] ?? null) === null || $trade['expires'] > $now));
+}
+
+/**
+ * Gives the minimized offers their full HBHUB_MATADOR_TRADE_SECONDS again, from now: when the host lets a paused game
+ * go on (room.php's hbHubMatadorPause()), as nobody could answer them while it was paused.
+ */
+function hbHubMatadorResetTradeTimers(array &$state): void
+{
+    foreach ($state['trades'] as &$trade) {
+        if (($trade['expires'] ?? null) !== null) {
+            $trade['expires'] = hbHubMatadorNowMs() + HBHUB_MATADOR_TRADE_SECONDS * 1000;
+        }
+    }
+    unset($trade);
 }
 
 /**
@@ -1428,7 +1508,19 @@ function hbHubMatadorView(array $state, array $people, array $away, int $userId,
             ? max(0, ($state['turn']['deadline'] ?? 0) - hbHubMatadorNowMs())
             : null,
         'pending' => $pending,
-        'trades' => $state['trades'],
+        // Each offer says whether it's been minimized, and how long it has left then (in milliseconds, like timeLeft;
+        // null while the game is paused)
+        'trades' => array_map(static fn (array $trade): array => [
+            'id' => $trade['id'],
+            'from' => $trade['from'],
+            'to' => $trade['to'],
+            'give' => $trade['give'],
+            'get' => $trade['get'],
+            'minimized' => ($trade['expires'] ?? null) !== null,
+            'timeLeft' => ($trade['expires'] ?? null) !== null && !hbHubMatadorIsPaused($state)
+                ? max(0, $trade['expires'] - hbHubMatadorNowMs())
+                : null,
+        ], $state['trades']),
         'lastRoll' => $state['lastRoll'],
         'lastCard' => $card !== null && empty($card['over']) ? ['seat' => $card['seat'], 'text' => HBHUB_MATADOR_CARDS[$card['card']]['text'], 'n' => $card['n']] : null,
         'log' => $state['log'],

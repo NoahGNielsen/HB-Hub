@@ -43,6 +43,8 @@
     <li>
         Trade with the others at any time, also in their turns: properties (with nothing built in their colour), money and "benådet" cards.
         Whoever gets a mortgaged property pays the <?= HBHUB_MATADOR_INTEREST_PERCENT ?> % interest on it straight away.
+        An offer made to you pops up. You can minimize it to look at the board first, but then it runs out if you haven't
+        answered it within <?= HBHUB_MATADOR_TRADE_SECONDS ?> seconds.
     </li>
     <li>
         Can't pay? Sell houses, mortgage or trade to raise the money, or go bankrupt: everything goes to the one you owe

@@ -7,7 +7,12 @@
 // the player as away, which takes 10 seconds without hearing from them). The whole game only comes back when its
 // version changed: something happened, someone wrote in the chat, or someone joined, left, went away or came back.
 //
-// A ping is played when the player's turn starts, unless they turned the sound off (remembered in this browser).
+// A ping is played when the player's turn starts, and when a trade offer pops up for them, unless they turned the sound
+// off (remembered in this browser).
+//
+// Trades: the "Offer a trade" button under the moves opens the dialog to make one. An offer made to the player pops up,
+// and can be minimized to the tray in the corner. Once it's minimized it runs out after 30 seconds (data-trade-seconds)
+// unless it's answered, which the server decides (game.trades[].timeLeft); this counts it down.
 //
 // The turn's timer counts down here, from the time left the server sent (the server's and the player's clocks don't
 // have to agree). The server passes the turn on once it runs out; this only shows it.
@@ -29,6 +34,7 @@
     const MAX_STEPPED = 12; // further than this (a card, jail) the piece just jumps
     const FIELD_COUNT = 40;
     const TURN_MS = Number(root.dataset.turnSeconds) * 1000;
+    const TRADE_SECONDS = Number(root.dataset.tradeSeconds);
     const TIMER_LOW_SECONDS = 10; // the timer turns red from here
     const roomId = root.dataset.room;
     const baseTitle = document.title;
@@ -42,10 +48,12 @@
     const playerList = find('[data-mt-players]');
     const bankText = find('[data-mt-bank]');
     const potText = find('[data-mt-pot]');
-    const tradesPanel = find('[data-mt-trades-panel]');
-    const tradeList = find('[data-mt-trades]');
-    const tradesEmpty = find('[data-mt-trades-empty]');
+    const tradeBar = find('[data-mt-trade-bar]');
     const tradeOpenButton = find('[data-mt-trade-open]');
+    const tradeOut = find('[data-mt-trade-out]');
+    const tradeOutText = find('[data-mt-trade-out-text]');
+    const tradeOutTime = find('[data-mt-trade-out-time]');
+    const tradeTakeBackButton = find('[data-mt-trade-take-back]');
     const logList = find('[data-mt-log]');
     const die = find('[data-mt-die]');
     const statusText = find('[data-mt-status]');
@@ -109,6 +117,7 @@
     let shownChatCount = 0; // the newest chat message seen in an answer, so older answers don't take it away again
     let turnEndsAt = null; // when the turn's time runs out, on performance.now()'s clock
     let hasAskedAtTurnEnd = false; // the server has been asked about it since it ran out
+    let tradeEndsAt = {}; // when each minimized trade offer runs out, by its id, on performance.now()'s clock
 
     const kr = (amount) => amount.toLocaleString('en-US') + ' kr';
     const playerOf = (seat) => game.players.find((player) => player.seat === seat) ?? null;
@@ -154,6 +163,8 @@
         game = data.game;
         turnEndsAt = game.timeLeft !== null ? performance.now() + game.timeLeft : null;
         hasAskedAtTurnEnd = false;
+        tradeEndsAt = Object.fromEntries(game.trades.filter((trade) => trade.timeLeft !== null)
+            .map((trade) => [trade.id, performance.now() + trade.timeLeft]));
         render();
     }
 
@@ -205,6 +216,7 @@
         renderPlayers();
         renderActions();
         renderTrades();
+        renderOffers();
         renderLog();
         renderChat();
         if (deedField !== null) renderDeed();
@@ -412,7 +424,9 @@
         }
     }
     setInterval(() => {
-        if (game !== null) renderTimer();
+        if (game === null) return;
+        renderTimer();
+        renderTradeTimes();
     }, 250);
 
     // ----- The players
@@ -699,15 +713,61 @@
 
     // ----- Trades
 
+    // The button to offer one, or the player's own offer while it's out (one at a time)
     function renderTrades() {
-        tradesPanel.hidden = !isPlaying();
-        if (!isPlaying()) return;
         const you = me();
-        const hasOffer = game.trades.some((trade) => trade.from === game.you);
-        tradeOpenButton.disabled = isBusy || isPaused() || !you || you.bankrupt || hasOffer || tradePartners().length === 0;
-        tradeOpenButton.title = isPaused() ? 'The game is paused' : hasOffer ? 'Take back your offer first' : '';
-        tradeList.replaceChildren(...game.trades.map(tradeItem));
-        tradesEmpty.hidden = game.trades.length > 0;
+        tradeBar.hidden = !isPlaying() || !you || you.bankrupt;
+        if (tradeBar.hidden) return;
+        const mine = myOffer();
+        tradeOpenButton.hidden = mine !== null;
+        tradeOpenButton.disabled = isBusy || isPaused() || tradePartners().length === 0;
+        tradeOpenButton.title = isPaused() ? 'The game is paused' : tradePartners().length === 0 ? 'Nobody to trade with right now' : '';
+        tradeOut.hidden = mine === null;
+        tradeTakeBackButton.disabled = isBusy || isPaused();
+        if (mine !== null) {
+            tradeOutText.textContent = 'You offered ' + nameOf(mine.to) + ' ' + sideText(mine.give) + ', for ' + sideText(mine.get) + '.';
+        }
+        renderTradeTimes();
+    }
+
+    const myOffer = () => game.trades.find((trade) => trade.from === game.you) ?? null;
+
+    tradeTakeBackButton.addEventListener('click', () => {
+        const mine = myOffer();
+        if (mine !== null) act('answer', { trade: String(mine.id), answer: 'cancel' });
+    });
+
+    // The seconds a minimized offer has left, or null when it isn't counting down (not minimized, or the game is paused)
+    function tradeSecondsLeft(trade) {
+        const endsAt = tradeEndsAt[trade.id];
+        return endsAt === undefined ? null : Math.ceil(Math.max(0, endsAt - performance.now()) / 1000);
+    }
+
+    // The countdowns, 4 times a second: on the player's own offer, the open offer and the minimized ones. The server
+    // takes an offer away once it has run out, at the next check.
+    function renderTradeTimes() {
+        if (!isPlaying()) return;
+        const mine = myOffer();
+        if (mine !== null) {
+            const left = tradeSecondsLeft(mine);
+            tradeOutTime.textContent = isPaused() ? '' : left !== null
+                ? nameOf(mine.to) + ' has ' + left + ' s left to answer.'
+                : 'Waiting for ' + nameOf(mine.to) + ' to answer.';
+        }
+
+        const open = openOffer !== null ? game.trades.find((trade) => trade.id === openOffer) : null;
+        if (open) {
+            const left = tradeSecondsLeft(open);
+            offerTime.textContent = isPaused() ? 'The game is paused. You can answer once it goes on.'
+                : left !== null ? 'Runs out in ' + left + ' s unless you answer.'
+                : 'Minimize it to look at the board first. It then runs out after ' + TRADE_SECONDS + ' seconds unless you answer.';
+        }
+
+        offerTray.querySelectorAll('[data-trade]').forEach((chip) => {
+            const trade = game.trades.find((other) => String(other.id) === chip.dataset.trade);
+            const left = trade ? tradeSecondsLeft(trade) : null;
+            chip.querySelector('[data-mt-offer-left]').textContent = isPaused() ? 'paused' : left !== null ? left + ' s' : '';
+        });
     }
 
     function tradePartners() {
@@ -721,27 +781,118 @@
         return parts.length > 0 ? parts.join(', ') : 'nothing';
     }
 
-    function tradeItem(trade) {
-        const item = document.createElement('li');
-        item.className = 'mt-trade-item';
-        if (trade.to === game.you) {
-            item.append(
-                paragraph(nameOf(trade.from) + ' offers you ' + sideText(trade.give) + ', for ' + sideText(trade.get) + '.'),
-                buttons(
-                    button('Accept', () => act('answer', { trade: String(trade.id), answer: 'accept' }), { primary: true, disabled: isPaused() }),
-                    button('Decline', () => act('answer', { trade: String(trade.id), answer: 'decline' }), { disabled: isPaused() }),
-                ),
-            );
-        } else if (trade.from === game.you) {
-            item.append(
-                paragraph('You offered ' + nameOf(trade.to) + ' ' + sideText(trade.give) + ', for ' + sideText(trade.get) + '.'),
-                buttons(button('Take it back', () => act('answer', { trade: String(trade.id), answer: 'cancel' }), { disabled: isPaused() })),
-            );
-        } else {
-            item.append(paragraph(nameOf(trade.from) + ' offered ' + nameOf(trade.to) + ' ' + sideText(trade.give) + ', for ' + sideText(trade.get) + '.'));
+    // ----- Offers made to the player: each pops up, one at a time, until it's answered or minimized. Minimizing tells
+    // the server, which starts its 30 seconds (only the first time, so opening it again doesn't stop them).
+
+    const offerDialog = find('[data-mt-offer-dialog]');
+    const offerTitle = find('[data-mt-offer-title]');
+    const offerGet = find('[data-mt-offer-get]');
+    const offerGive = find('[data-mt-offer-give]');
+    const offerTime = find('[data-mt-offer-time]');
+    const offerMessage = find('[data-mt-offer-message]');
+    const offerAccept = find('[data-mt-offer-accept]');
+    const offerDecline = find('[data-mt-offer-decline]');
+    const offerTray = find('[data-mt-offer-tray]');
+    let openOffer = null; // the id of the offer that's open
+    const minimized = new Set(); // ids of the offers that have been minimized, so they don't pop up again by themselves
+    const minimizing = new Set(); // ids whose minimizing is on its way to the server
+
+    function renderOffers() {
+        const offers = isPlaying() ? game.trades.filter((trade) => trade.to === game.you) : [];
+        const ids = offers.map((trade) => trade.id);
+        if (openOffer !== null && !ids.includes(openOffer)) closeOffer(); // answered in another tab, taken back, or ran out
+        minimized.forEach((id) => {
+            if (!ids.includes(id)) minimized.delete(id);
+        });
+        for (const trade of offers) {
+            if (trade.minimized) {
+                minimized.add(trade.id); // also in another tab, or before the page was opened again
+            } else if (minimized.has(trade.id) && !minimizing.has(trade.id)) {
+                sendMinimize(trade.id); // it didn't get through last time
+            }
         }
-        return item;
+
+        if (openOffer === null) {
+            const next = offers.find((trade) => !minimized.has(trade.id));
+            if (next) {
+                showOffer(next.id);
+                if (!isFirstDraw) ping();
+            }
+        }
+        if (openOffer !== null) fillOffer();
+
+        offerTray.hidden = !offers.some((trade) => minimized.has(trade.id) && trade.id !== openOffer);
+        offerTray.replaceChildren(...offers.filter((trade) => minimized.has(trade.id) && trade.id !== openOffer).map(offerChip));
+        renderTradeTimes();
     }
+
+    // Built with textContent, as names are typed in by users
+    function offerChip(trade) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'mt-offer-chip';
+        chip.dataset.trade = String(trade.id);
+        const text = document.createElement('span');
+        text.textContent = 'Trade offer from ' + nameOf(trade.from);
+        const left = document.createElement('span');
+        left.className = 'mt-offer-left';
+        left.dataset.mtOfferLeft = '';
+        chip.append(text, left);
+        chip.addEventListener('click', () => {
+            showOffer(trade.id);
+            renderOffers();
+        });
+        return chip;
+    }
+
+    function showOffer(id) {
+        openOffer = id;
+        offerMessage.textContent = '';
+        fillOffer();
+        if (!offerDialog.open) offerDialog.showModal();
+    }
+
+    function fillOffer() {
+        const trade = game.trades.find((other) => other.id === openOffer);
+        offerTitle.textContent = nameOf(trade.from) + ' offers you a trade';
+        offerGet.textContent = sideText(trade.give);
+        offerGive.textContent = sideText(trade.get);
+        offerAccept.disabled = offerDecline.disabled = isBusy || isPaused();
+    }
+
+    function closeOffer() {
+        openOffer = null;
+        if (offerDialog.open) offerDialog.close();
+    }
+
+    function minimizeOffer() {
+        const id = openOffer;
+        if (id === null) return;
+        minimized.add(id);
+        closeOffer();
+        if (!game.trades.find((trade) => trade.id === id)?.minimized) sendMinimize(id);
+        renderOffers();
+    }
+
+    // Not through act(): it mustn't wait for (or hold up) something else the player clicked, and its error doesn't matter
+    async function sendMinimize(id) {
+        minimizing.add(id);
+        const data = await post('minimize', { trade: String(id) });
+        if (data !== null) apply(data);
+        minimizing.delete(id);
+    }
+
+    const answerOffer = async (answer) => {
+        if (openOffer !== null) await act('answer', { trade: String(openOffer), answer }, offerMessage);
+    };
+    offerAccept.addEventListener('click', () => answerOffer('accept'));
+    offerDecline.addEventListener('click', () => answerOffer('decline'));
+    find('[data-mt-offer-minimize]').addEventListener('click', minimizeOffer);
+    // Esc closes it, which minimizes it like the button. closeOffer() forgets the offer first, so this skips those - and
+    // the event comes a moment later, by when the next offer may have popped up in it already.
+    offerDialog.addEventListener('close', () => {
+        if (openOffer !== null && !offerDialog.open) minimizeOffer();
+    });
 
     const tradeDialog = find('[data-mt-trade-dialog]');
     const tradeWith = find('[data-mt-trade-with]');
@@ -958,7 +1109,7 @@
     // aria-pressed also picks the icon (matador.css)
     function renderSound() {
         soundButton.setAttribute('aria-pressed', String(isSoundOn));
-        soundButton.title = isSoundOn ? 'Sound on: a ping when it\'s your turn' : 'Sound off';
+        soundButton.title = isSoundOn ? 'Sound on: a ping when it\'s your turn or you get a trade offer' : 'Sound off';
     }
 
     soundButton.addEventListener('click', () => {
