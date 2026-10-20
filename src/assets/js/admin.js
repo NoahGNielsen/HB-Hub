@@ -1,6 +1,6 @@
-// Admin panel (admin/user.php, admin/chat.php, admin/banned.php and admin/feedback.php): asks "are you sure?" before the forms with
+// Admin panel (admin/index.php, admin/user.php, admin/chat.php, admin/banned.php and admin/feedback.php): asks "are you sure?" before the forms with
 // data-confirm (ban, delete, kick, removing a banned picture, deleting feedback and so on), Generate fills in a random password for Reset password, shown so it can be passed on to the user,
-// the chat's Background card shows the gradient as it's picked, and the Banned pictures page loads its pictures a few at a time.
+// the chat's Background card shows the gradient as it's picked, and the user/chat lists and Banned pictures load their pictures two at a time.
 // Without JS the forms are sent straight away, the password has to be typed in, there's no preview and the pictures all load at once.
 (() => {
     for (const form of document.querySelectorAll('form[data-confirm]')) {
@@ -67,15 +67,16 @@
     form.addEventListener('input', showPreview);
 })();
 
-// Banned pictures (admin/banned.php): each picture comes from a PHP script (admin/bannedPicture.php), and the hosting only
-// runs a few PHP requests at the same time - the rest get "508 Resource Limit Is Reached" instead, and so does anyone else
-// on the site at that moment. So the pictures (data-banned-picture holds the address) load PICTURES_AT_ONCE at a time,
+// Pictures in the long lists (the users and chats on admin/index.php, admin/banned.php): each picture comes from a PHP
+// script (otherPages/avatar.php, chat/icon.php, admin/bannedPicture.php), and the hosting only runs 10 PHP requests at
+// the same time for the whole site - the rest get "508 Resource Limit Is Reached" instead, and so does anyone else on
+// the site at that moment. So the pictures (data-queued-picture holds the address) load PICTURES_AT_ONCE at a time,
 // the ones on screen first, and one that fails anyway is tried again a bit later, up to PICTURE_TRIES times.
 (() => {
-    const pictures = [...document.querySelectorAll('img[data-banned-picture]')];
+    const pictures = [...document.querySelectorAll('img[data-queued-picture]')];
     if (pictures.length === 0) return;
 
-    const PICTURES_AT_ONCE = 3;
+    const PICTURES_AT_ONCE = 2;
     const PICTURE_TRIES = 5;
     const PICTURE_RETRY_MS = 1500; // doubled after each failed try
 
@@ -89,7 +90,7 @@
             const tryLoad = () => {
                 tries++;
                 img.removeAttribute('src'); // so setting the same address again really sends a new request
-                img.src = img.dataset.bannedPicture;
+                img.src = img.dataset.queuedPicture;
             };
             img.addEventListener('load', resolve);
             img.addEventListener('error', () => {

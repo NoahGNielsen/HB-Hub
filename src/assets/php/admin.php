@@ -144,12 +144,18 @@ function adminStatusHtml(string $status): string
 
 /**
  * A small round picture for the lists, a user's or a chat's, or the first letter of the name when there isn't one.
+ * With $queued, admin.js loads the picture instead, a couple at a time (data-queued-picture, see there), for the long
+ * lists where every picture would otherwise be its own PHP request all at once. Without JS the <noscript> one loads.
  */
-function adminAvatarHtml(?string $src, string $name): string
+function adminAvatarHtml(?string $src, string $name, bool $queued = false): string
 {
-    return '<span class="admin-avatar" aria-hidden="true">' . ($src !== null
-        ? '<img src="' . htmlspecialchars($src) . '" alt="" loading="lazy">'
-        : htmlspecialchars(mb_strtoupper(mb_substr($name, 0, 1)))) . '</span>';
+    if ($src === null) {
+        return '<span class="admin-avatar" aria-hidden="true">' . htmlspecialchars(mb_strtoupper(mb_substr($name, 0, 1))) . '</span>';
+    }
+    $img = '<img src="' . htmlspecialchars($src) . '" alt="" loading="lazy">';
+    return '<span class="admin-avatar" aria-hidden="true">' . ($queued
+        ? '<img data-queued-picture="' . htmlspecialchars($src) . '" alt=""><noscript>' . $img . '</noscript>'
+        : $img) . '</span>';
 }
 
 /**
