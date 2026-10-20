@@ -1,6 +1,7 @@
 // Roulette (gambling/roulette/): places chips on the table and spins them through /gambling/roulette/spin, which
 // decides where the ball lands and pays out. This only shows it: the wheel turns to the number the server sent.
-// The bets stay on the table after a spin, so spinning again with the same bets is one click.
+// The bets stay on the table after a spin, so spinning again with the same bets is one click, or Space (which also
+// puts the last spin's bets back if the table was cleared since).
 // Click a bet to put the chosen chip on it, right-click to take one off.
 (() => {
     const root = document.querySelector('[data-roulette]');
@@ -50,6 +51,7 @@
     let chip = Number(chipButtons[0].dataset.rlChip); // the chip a click puts on the table
     let bets = new Map(); // bet => chips on it
     let undoStack = []; // the bets before each change
+    let lastBets = new Map(); // the bets of the last spin, for Space on an empty table
     let isSpinning = false;
     let wheelTurn = 0; // degrees, only ever growing so the wheel always turns the same way
     let ballTurn = 0;
@@ -257,6 +259,7 @@
 
         await turnWheel(answer.number);
         isSpinning = false;
+        lastBets = sentBets;
         setChips(answer.chips); // only now, so the top bar doesn't give the result away while the wheel turns
         showResult(answer, sentBets);
         draw();
@@ -309,6 +312,29 @@
     });
 
     spinButton.addEventListener('click', spin);
+
+    // Space spins again with the same bets: the ones on the table, or the last spin's if the table is empty. It
+    // takes over Space on the page's buttons too (it would otherwise press the bet last clicked), but not in text boxes
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== ' ' || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.target.closest?.('input, textarea, select, [contenteditable]')) return;
+        event.preventDefault(); // no scrolling the page
+        if (event.repeat || isSpinning) return;
+        if (bets.size === 0 && lastBets.size > 0) {
+            const lastTotal = [...lastBets.values()].reduce((sum, amount) => sum + amount, 0);
+            if (lastTotal > walletChips()) {
+                showMessage(tooMany(lastTotal));
+                return;
+            }
+            setBets(new Map(lastBets));
+        }
+        spin();
+    });
+
+    // A focused button is pressed when Space is let go, so that's stopped too
+    document.addEventListener('keyup', (event) => {
+        if (event.key === ' ' && !event.target.closest?.('input, textarea, select, [contenteditable]')) event.preventDefault();
+    });
 
     // The wheel starts where the user's last spin ended
     const lastNumber = historyList.firstElementChild ? Number(historyList.firstElementChild.textContent) : null;
