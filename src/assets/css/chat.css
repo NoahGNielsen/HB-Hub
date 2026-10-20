@@ -704,6 +704,11 @@ body:has(> .chat) {
   background: color-mix(in srgb, var(--text) 6%, transparent);
 }
 
+/* Clicking a sent picture opens it in the picture viewer (chat.js) */
+.chat-message[data-message-id] .chat-attachment-image {
+  cursor: zoom-in;
+}
+
 .chat-attachment-caption {
   display: flex;
   align-items: baseline;
@@ -2149,7 +2154,206 @@ a.chat-member:focus-visible {
   from { opacity: 0; transform: scale(0.97); }
 }
 
+/* Picture viewer (chat.js): the picture big on a dark screen, with its buttons along the top and Info under them on the
+   right. The picture sits in the middle of the stage, which scrolls once it's zoomed in past the screen. */
+.chat-viewer {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+}
+
+.chat-viewer[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  animation: chat-viewer-in 0.15s ease;
+}
+
+.chat-viewer::backdrop {
+  background: rgba(0, 0, 0, 0.88);
+}
+
+.chat-viewer-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(rgba(0, 0, 0, 0.6), transparent);
+}
+
+.chat-viewer-name {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-viewer-zoom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-viewer-zoom-level {
+  min-width: 3.5em;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.chat-viewer-btn {
+  flex: none;
+  height: 36px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.chat-viewer-btn.is-icon {
+  width: 36px;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.chat-viewer-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.chat-viewer-btn[aria-expanded="true"] {
+  background: var(--accent);
+  color: #000;
+}
+
+.chat-viewer-btn:disabled {
+  background: rgba(255, 255, 255, 0.12);
+  cursor: default;
+  opacity: 0.35;
+}
+
+.chat-viewer-stage {
+  position: relative; /* the picture's offsetLeft/offsetTop are from here, for zooming (chat.js) */
+  display: flex;
+  padding: 0 16px 16px;
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.chat-viewer-picture {
+  flex: none;
+  display: block;
+  max-width: none;
+  margin: auto;
+  border-radius: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: zoom-in;
+}
+
+.chat-viewer-picture.is-loading {
+  visibility: hidden;
+}
+
+.chat-viewer.is-zoomed .chat-viewer-picture {
+  cursor: grab;
+}
+
+.chat-viewer.is-dragging .chat-viewer-picture {
+  cursor: grabbing;
+}
+
+.chat-viewer-gone {
+  margin: auto;
+  opacity: 0.75;
+}
+
+.chat-viewer-info {
+  position: absolute;
+  top: 60px;
+  right: 16px;
+  width: min(320px, calc(100vw - 32px));
+  margin: 0;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 14px;
+  border-radius: var(--radius);
+  background: rgba(24, 27, 34, 0.94);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  font-size: 0.85rem;
+}
+
+.chat-viewer-info[hidden] {
+  display: none;
+}
+
+.chat-viewer-info dt {
+  opacity: 0.65;
+}
+
+.chat-viewer-info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@keyframes chat-viewer-in {
+  from { opacity: 0; }
+}
+
+/* Phones: the name gives way to the buttons */
+@media (max-width: 600px) {
+  .chat-viewer-bar {
+    flex-wrap: wrap;
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .chat-viewer-name {
+    flex-basis: 100%;
+  }
+
+  .chat-viewer-zoom {
+    margin-right: auto;
+  }
+
+  .chat-viewer-btn {
+    padding: 0 12px;
+  }
+
+  .chat-viewer-stage {
+    padding: 0 8px 8px;
+  }
+
+  .chat-viewer-info {
+    top: 100px;
+    right: 8px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .chat-viewer[open],
   .chat-new[open],
   .chat-requests[open],
   .chat-link-warning[open],

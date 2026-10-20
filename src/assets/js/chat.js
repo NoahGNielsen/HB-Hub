@@ -1615,6 +1615,253 @@ function chatJxlWorker() {
     });
 })();
 
+// Picture viewer: clicking a picture in the open chat shows it big in a popup (.chat-viewer in chat/index.php), with zoom,
+// Info, Download and × along the top. Clicking anywhere that isn't the picture, a button or the Info panel closes it,
+// and so does Escape.
+// Zoom goes in steps of the size that fits the screen: − and +, the - + and 0 keys, Ctrl + the mouse wheel (or pinching
+// a trackpad), and double-clicking the picture to go in and back out. Zoomed in, the picture is dragged around with the
+// mouse, or scrolled. Info lists its name, type, size in pixels and MB, who sent it, when, and when it expires, and
+// stays open or closed from one picture to the next.
+// The picture is the one in the message: an <img> comes from the browser's cache, and a JPEG XL one drawn into a <canvas>
+// (the JPEG XL part above) is copied. The faded message still being sent has no data-message-id, so it doesn't open.
+(() => {
+    const messages = document.querySelector('[data-chat-messages]');
+    const dialog = document.querySelector('.chat-viewer');
+    if (!messages || !dialog) return;
+
+    const STEPS = [1, 1.5, 2, 3, 4, 6, 8]; // times the size that fits the screen
+    const DOUBLE_CLICK_STEP = 2; // where double-clicking zooms to
+    const WHEEL_EVERY_MS = 120; // a trackpad pinch sends lots of wheel events, so only one step this often
+    const TYPES = {
+        'image/png': 'PNG', 'image/jpeg': 'JPEG', 'image/gif': 'GIF', 'image/webp': 'WebP',
+        'image/avif': 'AVIF', 'image/bmp': 'BMP', 'image/jxl': 'JPEG XL',
+    };
+    const name = dialog.querySelector('[data-viewer-name]');
+    const stage = dialog.querySelector('[data-viewer-stage]');
+    const info = dialog.querySelector('[data-viewer-info]');
+    const infoButton = dialog.querySelector('[data-viewer-info-open]');
+    const download = dialog.querySelector('[data-viewer-download]');
+    const zoomOutButton = dialog.querySelector('[data-viewer-zoom-out]');
+    const zoomInButton = dialog.querySelector('[data-viewer-zoom-in]');
+    const zoomLevel = dialog.querySelector('[data-viewer-zoom-level]');
+
+    let shown = null; // what's open: { figure, item } from the message
+    let picture = null; // the <img> or <canvas> in the viewer
+    let size = null; // its real size in pixels, { width, height }, once it's loaded
+    let step = 0;
+    let drag = null; // dragging the picture around: { x, y, left, top } where it started, active, and whether it moved
+    let isInfoOpen = false;
+    let lastWheel = 0;
+
+    // dd/mm/yyyy • hh.mm, like the times on the messages
+    function dateTime(seconds) {
+        const date = new Date(seconds * 1000);
+        const pad = (number) => String(number).padStart(2, '0');
+        return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} • ${pad(date.getHours())}.${pad(date.getMinutes())}`;
+    }
+
+    function renderInfo() {
+        const type = shown.figure.dataset.attachmentType;
+        const rows = [
+            ['Name', name.textContent],
+            ['Type', TYPES[type] ? `${TYPES[type]} (${type})` : type],
+            ['Dimensions', size ? `${size.width} × ${size.height} px` : '…'],
+            ['File size', shown.figure.querySelector('.chat-attachment-size').textContent],
+            ['Sent by', shown.item.dataset.messageSender],
+            ['Sent', dateTime(Number(shown.item.dataset.messageTime))],
+            ['Expires', dateTime(Number(shown.figure.dataset.attachmentExpires))],
+        ];
+        info.replaceChildren(...rows.flatMap(([term, value]) => {
+            const dt = document.createElement('dt');
+            dt.textContent = term;
+            const dd = document.createElement('dd');
+            dd.textContent = value;
+            return [dt, dd];
+        }));
+        info.hidden = !isInfoOpen;
+        infoButton.setAttribute('aria-expanded', String(isInfoOpen));
+    }
+
+    // How much the picture is shrunk to fit the screen at the first step. It's never made bigger than it really is there.
+    function fitScale() {
+        const style = getComputedStyle(stage);
+        const width = stage.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        const height = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+        return Math.max(0.01, Math.min(1, width / size.width, height / size.height));
+    }
+
+    /**
+     * Sizes the picture for the zoom step. The spot on the picture at the pointer (at: an event with clientX/clientY),
+     * or in the middle of the screen without one, stays where it is on the screen.
+     */
+    function render(at = null) {
+        zoomOutButton.disabled = !size || step === 0;
+        zoomInButton.disabled = !size || step === STEPS.length - 1;
+        dialog.classList.toggle('is-zoomed', step > 0);
+        if (!size) {
+            zoomLevel.textContent = '';
+            return;
+        }
+
+        const box = stage.getBoundingClientRect();
+        const screenX = at ? at.clientX - box.left : stage.clientWidth / 2;
+        const screenY = at ? at.clientY - box.top : stage.clientHeight / 2;
+        // Where that is on the picture, as a fraction of its width and height (stage is position: relative in chat.css)
+        const spot = (scroll, screen, offset, length) => length > 0 ? Math.min(1, Math.max(0, (scroll + screen - offset) / length)) : 0.5;
+        const spotX = spot(stage.scrollLeft, screenX, picture.offsetLeft, picture.offsetWidth);
+        const spotY = spot(stage.scrollTop, screenY, picture.offsetTop, picture.offsetHeight);
+
+        const scale = fitScale() * STEPS[step];
+        picture.style.width = `${size.width * scale}px`;
+        picture.style.height = `${size.height * scale}px`;
+        zoomLevel.textContent = `${Math.round(scale * 100)}%`;
+        stage.scrollLeft = picture.offsetLeft + spotX * picture.offsetWidth - screenX;
+        stage.scrollTop = picture.offsetTop + spotY * picture.offsetHeight - screenY;
+    }
+
+    function zoomTo(newStep, at = null) {
+        newStep = Math.min(STEPS.length - 1, Math.max(0, newStep));
+        if (newStep === step || !size) return;
+        step = newStep;
+        render(at);
+    }
+
+    function loaded(element, width, height) {
+        if (element !== picture) return; // closed, or another picture opened, while it loaded
+        size = { width, height };
+        picture.classList.remove('is-loading');
+        render();
+        renderInfo();
+    }
+
+    function open(source) {
+        const figure = source.closest('.chat-attachment');
+        const link = figure.querySelector('.chat-attachment-download');
+        shown = { figure, item: source.closest('[data-message-id]') };
+        name.textContent = link.textContent;
+        download.href = link.href;
+        download.download = link.getAttribute('download') ?? '';
+        size = null;
+        step = 0;
+
+        if (source instanceof HTMLCanvasElement) {
+            picture = document.createElement('canvas');
+            picture.width = source.width;
+            picture.height = source.height;
+            picture.getContext('2d').drawImage(source, 0, 0);
+            picture.setAttribute('role', 'img');
+            picture.setAttribute('aria-label', name.textContent);
+        } else {
+            picture = document.createElement('img');
+            picture.alt = name.textContent;
+            picture.draggable = false;
+            const image = picture;
+            image.addEventListener('load', () => loaded(image, image.naturalWidth, image.naturalHeight), { once: true });
+            // Deleted or expired since the page loaded
+            image.addEventListener('error', () => {
+                if (image !== picture) return;
+                const gone = document.createElement('p');
+                gone.className = 'chat-viewer-gone';
+                gone.textContent = "This picture can't be shown anymore.";
+                image.replaceWith(gone);
+            }, { once: true });
+            image.src = source.currentSrc || source.src;
+        }
+        picture.className = 'chat-viewer-picture is-loading'; // hidden until it's sized to fit
+        stage.replaceChildren(picture);
+        renderInfo();
+        render();
+        dialog.showModal();
+        if (picture instanceof HTMLCanvasElement) loaded(picture, picture.width, picture.height);
+    }
+
+    messages.addEventListener('click', (event) => {
+        const source = event.target.closest('.chat-attachment-image');
+        if (!source || !source.closest('[data-message-id]')) return;
+        if (source instanceof HTMLImageElement && source.complete && source.naturalWidth === 0) return; // broken
+        open(source);
+    });
+
+    zoomOutButton.addEventListener('click', () => zoomTo(step - 1));
+    zoomInButton.addEventListener('click', () => zoomTo(step + 1));
+
+    infoButton.addEventListener('click', () => {
+        isInfoOpen = !isInfoOpen;
+        renderInfo();
+    });
+
+    dialog.querySelector('[data-viewer-close]').addEventListener('click', () => dialog.close());
+
+    // Clicking anywhere but the picture, a button or the Info panel closes it - but not letting go after dragging
+    dialog.addEventListener('click', (event) => {
+        if (drag?.moved) {
+            drag = null;
+            return;
+        }
+        if (!event.target.closest('button, a, .chat-viewer-picture, .chat-viewer-zoom, [data-viewer-info]')) dialog.close();
+    });
+
+    dialog.addEventListener('keydown', (event) => {
+        if (event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.key === '+' || event.key === '=') zoomTo(step + 1);
+        else if (event.key === '-') zoomTo(step - 1);
+        else if (event.key === '0') zoomTo(0);
+        else return;
+        event.preventDefault();
+    });
+
+    stage.addEventListener('wheel', (event) => {
+        if (!event.ctrlKey) return; // without Ctrl it scrolls the zoomed-in picture
+        event.preventDefault(); // instead of zooming the whole page
+        if (event.timeStamp - lastWheel < WHEEL_EVERY_MS) return;
+        lastWheel = event.timeStamp;
+        zoomTo(step + (event.deltaY < 0 ? 1 : -1), event);
+    }, { passive: false });
+
+    stage.addEventListener('dblclick', (event) => {
+        if (event.target === picture) zoomTo(step === 0 ? DOUBLE_CLICK_STEP : 0, event);
+    });
+
+    // Dragging the zoomed-in picture with the mouse moves it around (touch screens scroll it by themselves)
+    dialog.addEventListener('pointerdown', () => {
+        drag = null;
+    }, true);
+    stage.addEventListener('pointerdown', (event) => {
+        if (step === 0 || event.button !== 0 || event.pointerType !== 'mouse' || event.target !== picture) return;
+        event.preventDefault(); // no selecting, or picking the picture up to drop it somewhere
+        drag = { x: event.clientX, y: event.clientY, left: stage.scrollLeft, top: stage.scrollTop, active: true, moved: false };
+        stage.setPointerCapture(event.pointerId);
+        dialog.classList.add('is-dragging');
+    });
+    stage.addEventListener('pointermove', (event) => {
+        if (!drag?.active) return;
+        const x = event.clientX - drag.x;
+        const y = event.clientY - drag.y;
+        if (Math.abs(x) + Math.abs(y) > 3) drag.moved = true;
+        stage.scrollLeft = drag.left - x;
+        stage.scrollTop = drag.top - y;
+    });
+    const stopDrag = () => {
+        if (drag) drag.active = false;
+        dialog.classList.remove('is-dragging');
+    };
+    stage.addEventListener('pointerup', stopDrag);
+    stage.addEventListener('pointercancel', stopDrag);
+
+    window.addEventListener('resize', () => {
+        if (dialog.open) render();
+    });
+
+    dialog.addEventListener('close', () => {
+        stage.replaceChildren();
+        shown = null;
+        picture = null;
+        size = null;
+        drag = null;
+        dialog.classList.remove('is-zoomed', 'is-dragging');
+    });
+})();
+
 // Attachments: File in the Attach menu (or pasting or dropping a file on the message box) picks a file or picture to send.
 // It waits in a bar above the message box until Send, and goes with whatever is typed, as one message.
 // Pictures without loss to squeeze out (PNG, BMP, lossless WebP) are turned into lossless JPEG XL straight away by
@@ -2737,7 +2984,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
     function updateChatList(html) {
         if (html === shownChatList) return;
         // Not while the chat menu or a popup may be about a chat in the list - a later poll swaps it instead
-        if (!chatMenu.hidden || document.querySelector('dialog[open]')) return;
+        if (!chatMenu.hidden || document.querySelector('dialog[open]:not(.chat-viewer)')) return;
 
         // Keyboard focus stays on the same chat
         const focusedChatId = list.contains(document.activeElement)

@@ -140,7 +140,7 @@ function chatMessages(PDO $db, int $chatId, int $limit, ?int $afterId = null, ?i
                 u.userAvatarAttachmentId AS senderAvatarId, u.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' AS senderBanned,
                 r.messageId AS replyId, r.userId AS replyUserId, r.messageContent AS replyContent,
                 r.messageDeletedTimestamp AS replyDeletedTimestamp, r.messageDeletedByAdmin AS replyDeletedByAdmin, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName,
-                a.attachmentName, a.attachmentType, a.attachmentSize, a.attachmentStatus,
+                a.attachmentName, a.attachmentType, a.attachmentSize, a.attachmentStatus, a.attachmentExpiresTimestamp,
                 a.attachmentStatus = ' . HBHUB_CHAT_ATTACHMENT_KEPT . ' AND a.attachmentExpiresTimestamp > NOW() AS attachmentIsLive
             FROM `HBHub-Messages` m
             JOIN `HBHub-Users` u ON u.userId = m.userId
@@ -1571,6 +1571,8 @@ function chatNoticeItem(array $openChat, int $userId, array $message): void
  * A message's attachment, above its text: a picture shown at 200px tall with its name below (which downloads it),
  * or any other file as a card that downloads it. Once its file is gone, just that it was deleted or expired.
  * A JPEG XL picture has data-attachment-jxl, so chat.js can draw it itself in browsers that can't show JPEG XL.
+ * Clicking a picture opens it in the picture viewer (chat.js), whose Info shows its data-attachment-type and when it
+ * expires (data-attachment-expires, Unix seconds).
  */
 function chatAttachmentHtml(array $message): string
 {
@@ -1584,7 +1586,8 @@ function chatAttachmentHtml(array $message): string
     $name = htmlspecialchars($message['attachmentName']);
     $size = hbHubChatAttachmentSizeLabel((int) $message['attachmentSize']);
     if (in_array($message['attachmentType'], HBHUB_CHAT_ATTACHMENT_IMAGE_TYPES, true)) {
-        return '<figure class="chat-attachment is-image">'
+        return '<figure class="chat-attachment is-image" data-attachment-type="' . htmlspecialchars($message['attachmentType']) . '"'
+            . ' data-attachment-expires="' . (int) strtotime($message['attachmentExpiresTimestamp']) . '">'
             . '<img class="chat-attachment-image" src="' . $url . '" alt="' . $name . '" height="200" loading="lazy"'
             . ($message['attachmentType'] === 'image/jxl' ? ' data-attachment-jxl' : '') . '>'
             . '<figcaption class="chat-attachment-caption">'
@@ -2495,6 +2498,25 @@ if ($isPoll) {
                     <a class="chat-new-btn" href="#" target="_blank" rel="noopener noreferrer nofollow" data-link-warning-open>Open link</a>
                 </footer>
             </div>
+        </dialog>
+
+        <!-- Picture viewer (chat.js): clicking a picture in the open chat shows it big here. Along the top its name, zoom,
+             Info (its type, size and who sent it, in the panel below), Download and ×. Clicking anywhere that isn't
+             the picture, a button or the Info panel closes it too. chat.js puts the picture in data-viewer-stage. -->
+        <dialog class="chat-viewer" aria-labelledby="chat-viewer-name">
+            <header class="chat-viewer-bar">
+                <h2 class="chat-viewer-name" id="chat-viewer-name" data-viewer-name></h2>
+                <div class="chat-viewer-zoom" role="group" aria-label="Zoom">
+                    <button type="button" class="chat-viewer-btn is-icon" aria-label="Zoom out" title="Zoom out (-)" data-viewer-zoom-out>&minus;</button>
+                    <span class="chat-viewer-zoom-level" title="How big it's shown, next to its real size" data-viewer-zoom-level></span>
+                    <button type="button" class="chat-viewer-btn is-icon" aria-label="Zoom in" title="Zoom in (+)" data-viewer-zoom-in>+</button>
+                </div>
+                <button type="button" class="chat-viewer-btn" aria-expanded="false" aria-controls="chat-viewer-info" data-viewer-info-open>Info</button>
+                <a class="chat-viewer-btn" href="#" download data-viewer-download>Download</a>
+                <button type="button" class="chat-viewer-btn is-icon" aria-label="Close" title="Close (Esc)" autofocus data-viewer-close>&times;</button>
+            </header>
+            <div class="chat-viewer-stage" data-viewer-stage></div>
+            <dl class="chat-viewer-info" id="chat-viewer-info" hidden data-viewer-info></dl>
         </dialog>
 
         <!-- Blocked link popup (chat.js): shown instead of sending a message with a blacklisted link in it
