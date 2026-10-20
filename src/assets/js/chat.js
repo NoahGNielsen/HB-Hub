@@ -2353,7 +2353,6 @@ chatPart((signal) => {
     const ticketsStatus = ticketsDialog.querySelector('[data-tickets-status]');
     const retryButton = ticketsDialog.querySelector('[data-tickets-retry]');
     const ticketsRules = ticketsDialog.querySelector('[data-tickets-rules]');
-    let ticketsRulesPinned = false; // clicked open, so moving the mouse away doesn't fold it back up
     let ticketsNeeded = null; // how many the file waiting to be sent needs, when that's why the popup is open
 
     // An attachment deleted from the popup shows as deleted in the messages on the page too
@@ -2477,34 +2476,12 @@ chatPart((signal) => {
         ticketsList.replaceChildren();
         ticketsCount.replaceChildren();
         ticketsMeter.replaceChildren();
-        setTicketsRulesPinned(false);
-        ticketsRules.open = false;
+        ticketsRules.open = false; // the fine print starts folded away under Read more each time
         ticketsDialog.showModal();
         loadTickets();
     }
 
     document.querySelector('[data-attach-tickets]')?.addEventListener('click', () => openTickets());
-
-    function setTicketsRulesPinned(isPinned) {
-        ticketsRulesPinned = isPinned;
-        ticketsRules.classList.toggle('is-pinned', isPinned);
-    }
-
-    // The fine print is folded away under Read more. With a mouse, hovering it unfolds it and moving away folds it
-    // again; clicking it (or tapping, or Enter) keeps it open until it's clicked again
-    ticketsRules.addEventListener('pointerenter', (event) => {
-        if (event.pointerType === 'mouse') ticketsRules.open = true;
-    });
-
-    ticketsRules.addEventListener('pointerleave', (event) => {
-        if (event.pointerType === 'mouse' && !ticketsRulesPinned) ticketsRules.open = false;
-    });
-
-    ticketsRules.querySelector('summary').addEventListener('click', (event) => {
-        // Already open from hovering: the click keeps it open instead of folding it straight back up
-        if (ticketsRules.open && !ticketsRulesPinned) event.preventDefault();
-        setTicketsRulesPinned(!(ticketsRules.open && ticketsRulesPinned));
-    });
 
     retryButton.addEventListener('click', () => {
         ticketsDialog.close();

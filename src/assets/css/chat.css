@@ -1507,7 +1507,7 @@ a.chat-message-reply:hover {
   line-height: 1.5;
 }
 
-/* Folded up it's just the heading and Read more; open (hovered or clicked) the text shows under it */
+/* Folded up it's just the heading and Read more; clicked open, the text shows under it */
 .chat-tickets-rules summary {
   display: flex;
   align-items: center;
@@ -1536,7 +1536,7 @@ a.chat-message-reply:hover {
   white-space: nowrap;
 }
 
-/* A little chevron that points down while folded and up while open */
+/* A little chevron that points down on Read more and up on Show less */
 .chat-tickets-rules-more::after,
 .chat-tickets-rules-less::after {
   content: '';
@@ -1545,24 +1545,19 @@ a.chat-message-reply:hover {
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
   transform: translateY(-2px) rotate(45deg);
-  transition: transform 0.2s ease;
-}
-
-.chat-tickets-rules[open] .chat-tickets-rules-more::after {
-  transform: translateY(2px) rotate(-135deg);
 }
 
 .chat-tickets-rules-less::after {
   transform: translateY(2px) rotate(-135deg);
 }
 
-/* Read more until it's clicked open, then Show less */
+/* Read more while folded, Show less while open */
 .chat-tickets-rules-less,
-.chat-tickets-rules.is-pinned .chat-tickets-rules-more {
+.chat-tickets-rules[open] .chat-tickets-rules-more {
   display: none;
 }
 
-.chat-tickets-rules.is-pinned .chat-tickets-rules-less {
+.chat-tickets-rules[open] .chat-tickets-rules-less {
   display: flex;
 }
 
@@ -1600,8 +1595,7 @@ a.chat-message-reply:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .chat-tickets-pip,
-  .chat-tickets-meter-fill,
-  .chat-tickets-rules-more::after {
+  .chat-tickets-meter-fill {
     transition: none;
   }
 

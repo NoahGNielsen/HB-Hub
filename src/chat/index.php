@@ -2401,7 +2401,7 @@ if ($isPoll) {
                     <ul class="chat-tickets-list" aria-label="Your attachments" data-tickets-list></ul>
                     <p class="chat-new-status" role="status" data-tickets-status></p>
 
-                    <!-- Folded away under Read more: hovering it with a mouse unfolds it, clicking keeps it open (chat.js) -->
+                    <!-- Folded away under Read more until it's clicked (chat.js folds it up again each time the popup opens) -->
                     <details class="chat-dialog-hint chat-tickets-rules" data-tickets-rules>
                         <summary>
                             <strong>The fine print</strong>
