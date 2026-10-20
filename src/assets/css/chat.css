@@ -461,18 +461,19 @@ body:has(> .chat) {
   opacity: 0.7;
 }
 
+/* A grid of one column rather than a flex column, so a grouped message's time can sit in the bubble's row (below) */
 .chat-message {
   max-width: min(75%, 560px);
   align-self: flex-start;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  row-gap: 3px;
 }
 
 .chat-message.is-own {
   align-self: flex-end;
-  align-items: flex-end;
+  justify-items: end;
 }
 
 .chat-message-sender {
@@ -1024,6 +1025,23 @@ a.chat-message-reply:hover {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
+}
+
+/* Placed in the bubble's grid row, so it's centered on the bubble and not on the sender's name or reply quote above
+   it. The bubble is the 1st row, or the 2nd or 3rd after those. Only the first in a group shows the name - the rest
+   still have it, hidden (above). */
+.chat-message.has-next > .chat-message-meta {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+.chat-message.has-next:not(.is-grouped):has(> .chat-message-sender) > .chat-message-meta,
+.chat-message.has-next:has(> .chat-message-reply) > .chat-message-meta {
+  grid-row: 2;
+}
+
+.chat-message.has-next:not(.is-grouped):has(> .chat-message-sender):has(> .chat-message-reply) > .chat-message-meta {
+  grid-row: 3;
 }
 
 .chat-message.is-own.has-next > .chat-message-meta {
