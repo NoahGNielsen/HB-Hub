@@ -1,8 +1,8 @@
 <?php
-// Browser notifications for new messages (notifications.js), sent along with the nav bar's numbers by
+// Browser notifications and the sound for new messages (notifications.js), sent along with the nav bar's numbers by
 // otherPages/navUpdates.php: the newest message id in the user's chats (to ask after next time) and the unread
 // messages from others that came after the id the browser last asked about, leaving out the chats the user muted.
-// Only for users who turned notifications on in settings. Needs session.php (included first by every page anyway).
+// Only for users who turned notifications or the sound on in settings. Needs session.php (included first by every page anyway).
 require_once __DIR__ . '/chatFormat.php';
 require_once __DIR__ . '/userAvatar.php';
 require_once __DIR__ . '/userSettings.php';
@@ -13,15 +13,18 @@ const HBHUB_NOTIFY_CHAT_ACTIVE = 1; // chatStatus in HBHub-Chats
 const HBHUB_NOTIFY_CHAT_GROUP = 2; // chatType in HBHub-Chats
 
 /**
- * The new messages to show a browser notification for. Without $after only the newest id is returned, so turning
- * notifications on doesn't announce old messages. Just {"enabled": false} when the user has notifications turned off
- * in settings (maybe in another tab), so notifications.js stops asking.
+ * The new messages to show a browser notification or play the sound for. Without $after only the newest id is
+ * returned, so turning them on doesn't announce old messages. notify and sound say which of the two the user has
+ * turned on in settings (notifications, notificationSound). Just {"enabled": false} when both are off (maybe in
+ * another tab), so notifications.js stops asking.
  *
- * @return array{enabled: bool, latest?: int, messages?: list<array{id: int, chatId: int, title: string, body: string, icon: string}>}
+ * @return array{enabled: bool, notify?: bool, sound?: bool, latest?: int, messages?: list<array{id: int, chatId: int, title: string, body: string, icon: string}>}
  */
 function hbHubMessageNotifications(PDO $db, int $userId, array $userSettings, mixed $after): array
 {
-    if (($userSettings['notifications'] ?? false) !== true) {
+    $notify = ($userSettings['notifications'] ?? false) === true;
+    $sound = ($userSettings['notificationSound'] ?? false) === true;
+    if (!$notify && !$sound) {
         return ['enabled' => false];
     }
 
@@ -83,5 +86,5 @@ function hbHubMessageNotifications(PDO $db, int $userId, array $userSettings, mi
         }
     }
 
-    return ['enabled' => true, 'latest' => $latest, 'messages' => $messages];
+    return ['enabled' => true, 'notify' => $notify, 'sound' => $sound, 'latest' => $latest, 'messages' => $messages];
 }

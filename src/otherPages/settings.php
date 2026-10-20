@@ -4,7 +4,8 @@
 // Personal
 // - Profile (#profile): picture, name, class and bio, with the same rules as onboarding (userMgmt/onboarding.php).
 //   A picture on the banned list bans the account (assets/php/bannedAvatars.php).
-// - Notifications (#notifications): a browser notification for new messages while the site is open (assets/js/notifications.js)
+// - Notifications (#notifications): a browser notification and/or a sound for new messages while the site is open
+//   (assets/js/notifications.js, assets/js/messageSound.js)
 // - Gambling and Games (#block): blocking them, during school hours or all the time (assets/php/block.php)
 // Security
 // - Password (#password): a new one, after entering the current one. Logs out every other session.
@@ -346,8 +347,10 @@ if ($settingsAction === 'totpDisable' && $settingsTotpIsOn) {
 
 if ($settingsAction === 'notifications') {
     $notificationsOn = ($_POST['notifications'] ?? null) === '1';
-    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($notificationsOn): array {
+    $notificationSoundOn = ($_POST['notificationSound'] ?? null) === '1';
+    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($notificationsOn, $notificationSoundOn): array {
         $settings['notifications'] = $notificationsOn;
+        $settings['notificationSound'] = $notificationSoundOn;
         return $settings;
     });
     settingsRedirect('settings', 'notifications');
@@ -405,6 +408,8 @@ if ($settingsAction === 'deleteAccount') {
 
 $settingsAvatarSrc = hbHubAvatarUrl($userId, $settingsAvatarId);
 $settingsNotificationsOn = ($savedSettings['notifications'] ?? false) === true;
+$settingsNotificationSoundOn = ($savedSettings['notificationSound'] ?? false) === true;
+$navMessageSound = true; // messageSound.js, so ticking the sound box plays it (navPanel.php)
 $settingsBlock = hbHubBlockSettings($savedSettings);
 $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
 $settingsDevices = settingsDevices($db, $userId);
@@ -584,9 +589,10 @@ function settingsTime(?string $timestamp): string
                     <div class="settings-card-head">
                         <div>
                             <h2 id="settings-notifications-heading">Notifications</h2>
-                            <p class="settings-intro">A notification from your browser when a new message comes in.</p>
+                            <p class="settings-intro">A notification from your browser, a sound, or both when a new message comes in.</p>
                         </div>
-                        <span class="settings-status<?= $settingsNotificationsOn ? ' is-on' : '' ?>"><?= $settingsNotificationsOn ? 'On' : 'Off' ?></span>
+                        <?php $settingsAnyNotificationOn = $settingsNotificationsOn || $settingsNotificationSoundOn; ?>
+                        <span class="settings-status<?= $settingsAnyNotificationOn ? ' is-on' : '' ?>"><?= $settingsAnyNotificationOn ? 'On' : 'Off' ?></span>
                     </div>
                     <form action="/otherPages/settings#notifications" method="post">
                         <input type="hidden" name="action" value="notifications">
@@ -602,6 +608,17 @@ function settingsTime(?string $timestamp): string
                             <!-- Filled in by settings.js when the browser blocks or doesn't support notifications -->
                             <p class="settings-error" data-notifications-status hidden></p>
                             <button type="button" class="settings-btn settings-btn-small" data-notifications-allow hidden>Allow notifications in this browser</button>
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-checkbox">
+                                <input type="checkbox" class="settings-switch" name="notificationSound" value="1"<?= $settingsNotificationSoundOn ? ' checked' : '' ?>
+                                       aria-describedby="settings-notification-sound-hint" data-notification-sound-toggle>
+                                <span>Play a sound when I get a new message</span>
+                            </label>
+                            <p class="settings-hint" id="settings-notification-sound-hint">
+                                Plays while HB Hub is open in a tab, also in the background, but not for the chat you're looking at
+                                or chats you've muted. Your browser only lets a page play sound after you've clicked or typed on it.
+                            </p>
                         </div>
                         <div class="settings-actions">
                             <button type="submit" class="settings-btn settings-btn-primary">Save</button>

@@ -1,5 +1,6 @@
 // Settings page: draws the QR code for setting up two-factor login, shows how strong a new password is, asks the browser for permission
-// to show notifications once they're turned on, and asks "are you sure?" before deleting the account.
+// to show notifications once they're turned on, plays the message sound when it's turned on, and asks "are you sure?"
+// before deleting the account.
 // Without JS the 2FA key can still be typed in by hand, and deleting still needs the password.
 (() => {
     for (const form of document.querySelectorAll('form[data-confirm]')) {
@@ -94,6 +95,12 @@
         newPasswordConfirm.addEventListener('input', checkPasswordsMatch);
         updatePassword();
     }
+
+    // The message sound plays when its box is ticked, so the user hears what it sounds like (assets/js/messageSound.js)
+    const soundToggle = document.querySelector('[data-notification-sound-toggle]');
+    soundToggle?.addEventListener('change', () => {
+        if (soundToggle.checked) document.dispatchEvent(new CustomEvent('message:sound'));
+    });
 
     const toggle = document.querySelector('[data-notifications-toggle]');
     if (!toggle) return;

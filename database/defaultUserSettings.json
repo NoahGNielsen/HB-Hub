@@ -2,6 +2,7 @@
     "year": null,
     "class": null,
     "notifications": false,
+    "notificationSound": false,
     "block": {
         "mode": "none",
         "pendingMode": null,

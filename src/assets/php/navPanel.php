@@ -1,7 +1,9 @@
 <?php
 // The logged in user's profile picture links to their profile. Without a picture it's the first letter of their name,
 // and pages open to visitors (session.php's $hbHubUser is null) get a "Log in" link instead.
-// With notifications turned on in settings, every page also checks for new messages (notifications.js).
+// With browser notifications or the message sound turned on in settings, every page also checks for new messages
+// (notifications.js, with messageSound.js for the sound). Pages that set $navMessageSound to true before including this
+// (the settings page, to play it when the box is ticked) get messageSound.js either way.
 // The bell lists the logged in user's notifications (notificationBell.js), with the number of unread ones on it.
 // Chat in the side bar has the number of chats with unread messages on it, kept up to date by chatUnread.js.
 // Casino pages set $navCasinoChips (the user's chips) before including this, to show them in the top bar too,
@@ -18,7 +20,10 @@ require_once __DIR__ . '/userAvatar.php';
 require_once __DIR__ . '/userSettings.php';
 $navUser = $hbHubUser ?? null;
 $navSettings = hbHubUserSettings($navUser['userSettings'] ?? null);
-$navNotifications = $navUser !== null && ($navSettings['notifications'] ?? false) === true;
+$navNotify = ($navSettings['notifications'] ?? false) === true;
+$navSound = ($navSettings['notificationSound'] ?? false) === true;
+$navNotifications = $navUser !== null && ($navNotify || $navSound);
+$navMessageSound = $navNotifications || ($navUser !== null && ($navMessageSound ?? false) === true);
 $navAvatarSrc = $navUser !== null
     ? hbHubAvatarUrl((int) $navUser['userId'], $navUser['userAvatarAttachmentId'] !== null ? (int) $navUser['userAvatarAttachmentId'] : null)
     : null;
@@ -130,8 +135,12 @@ $navFeedbackHref = $navOnFeedback
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/notificationBell.js?v=<?= filemtime(__DIR__ . '/../js/notificationBell.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/chatUnread.js?v=<?= filemtime(__DIR__ . '/../js/chatUnread.js') ?>" defer></script>
 <?php endif; ?>
+<?php if ($navMessageSound): ?>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/messageSound.js?v=<?= filemtime(__DIR__ . '/../js/messageSound.js') ?>" defer></script>
+<?php endif; ?>
 <?php if ($navNotifications): ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>" defer
+            data-notify="<?= $navNotify ? '1' : '0' ?>" data-sound="<?= $navSound ? '1' : '0' ?>"></script>
 <?php endif; ?>
 <?php if ($navCasinoChips !== null): ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/casino.js?v=<?= filemtime(__DIR__ . '/../js/casino.js') ?>" defer></script>

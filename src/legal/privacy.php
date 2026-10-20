@@ -23,7 +23,7 @@ const HBHUB_PRIVACY_COOKIES = [
 const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
     'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it\'s still there when you refresh or come back to the chat. Kept in session storage, so it\'s gone when you close the tab.',
-    'hbHubNotifiedMessageId' => 'The last message you got a browser notification for, so you don\'t get it twice.',
+    'hbHubNotifiedMessageId' => 'The last message you got a browser notification or sound for, so you don\'t get it twice.',
     'hbHubChessSound, hbHubMatadorSound' => 'Whether you turned the game sounds on or off.',
     'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',
 ];
@@ -91,7 +91,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Your name, and if you add them: your profile picture, bio, year and class.</li>
                             <li>Your password, but only as a one-way hash. Nobody, not even an admin, can read your password.</li>
                             <li>The secret behind your two-factor codes, if you turn two-factor login on.</li>
-                            <li>Your settings, like which chats you've muted, hidden or blocked, and whether you've blocked the Casino and Games.</li>
+                            <li>Your settings, like which chats you've muted, hidden or blocked, whether new messages give you a browser notification or a sound, and whether you've blocked the Casino and Games.</li>
                             <li>When you made the account and when you were last on the site (updated at most once a minute).</li>
                             <li>Failed logins, whether the account is locked or banned, and whether a ban was by an admin or automatic.</li>
                             <li>Whether, and since when, the account is ghost banned (see Messages and chats below).</li>

@@ -6,8 +6,8 @@
 // - unreadChats: chats with unread messages, the number on Chat in the side bar (chatUnread.js)
 // - with &wallet=1 (casino pages, casino.js): wallet, the chips and daily chips like /gambling/chips sends them.
 //   Left out while the user can't use the casino (blocked in settings, or not open to them).
-// - with &messages=1 (when browser notifications are on, notifications.js): messages, the new messages to notify
-//   about, after the message id in &after= (see assets/php/messageNotifications.php)
+// - with &messages=1 (when browser notifications or the message sound are on, notifications.js): messages, the new
+//   messages to notify about, after the message id in &after= (see assets/php/messageNotifications.php)
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
