@@ -6,7 +6,7 @@
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server.
-// It has three views, picked in the menu under the title: Ore (the asteroid and the store, the default), Dark Matter
+// It has three views, picked in the menu under the title and the news ticker: Ore (the asteroid and the store, the default), Dark Matter
 // (?view=darkMatter, the Warp Jump) and Antimatter (?view=antimatter, the Big Crunch). They're all on the page, and the
 // script switches between them without loading it again (changing the address, so Back works), so the game keeps
 // running; ?view= only picks the one shown first. Stats, achievements and how to play are popups.
@@ -58,6 +58,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             </div>
         </div>
 
+        <p class="miner-ticker" data-miner-ticker><span class="miner-ticker-text" data-miner-ticker-text>Loading the news from space…</span></p>
+
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
         <nav class="miner-menu" aria-label="Views" data-miner-menu>
             <?php foreach (MINER_VIEWS as $view => [$text, $url]): ?>
@@ -70,8 +72,6 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 </a>
             <?php endforeach; ?>
         </nav>
-
-        <p class="miner-ticker" data-miner-ticker><span class="miner-ticker-text" data-miner-ticker-text>Loading the news from space…</span></p>
 
         <!-- Ore: the asteroid stays put, the store next to it scrolls -->
         <div class="miner-view miner-layout" data-miner-view="ore"<?= $minerView !== 'ore' ? ' hidden' : '' ?>>
@@ -106,10 +106,17 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <div class="miner-store-part">
                     <div class="miner-store-head">
                         <h3 class="miner-store-title">Buildings</h3>
-                        <div class="miner-amounts" role="group" aria-label="How many to buy" data-miner-amounts hidden>
-                            <button type="button" class="miner-amount is-active" data-amount="1" aria-pressed="true">×1</button>
-                            <button type="button" class="miner-amount" data-amount="10" aria-pressed="false">×10</button>
-                            <button type="button" class="miner-amount" data-amount="100" aria-pressed="false">×100</button>
+                        <div class="miner-store-tools">
+                            <!-- With Long-Range Hot Keys: the 1-9 keys buy the last nine buildings instead of the first nine -->
+                            <button type="button" class="miner-amount miner-key-switch" aria-pressed="false" aria-keyshortcuts="K"
+                                    title="Make the 1-9 keys buy your last nine buildings instead of your first nine (K)" data-miner-key-switch hidden>
+                                Late-game keys
+                            </button>
+                            <div class="miner-amounts" role="group" aria-label="How many to buy" data-miner-amounts hidden>
+                                <button type="button" class="miner-amount is-active" data-amount="1" aria-pressed="true">×1</button>
+                                <button type="button" class="miner-amount" data-amount="10" aria-pressed="false">×10</button>
+                                <button type="button" class="miner-amount" data-amount="100" aria-pressed="false">×100</button>
+                            </div>
                         </div>
                     </div>
                     <ul class="miner-buildings" data-miner-buildings></ul>
@@ -223,7 +230,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     </li>
                     <li class="miner-hot-keys">
                         Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade), <kbd>1</kbd>-<kbd>9</kbd>
-                        buy the buildings in the order they're listed, <kbd>U</kbd> buys the cheapest upgrade you can afford,
+                        buy the buildings in the order they're listed (the last nine instead, with Long-Range Hot Keys switched
+                        on, which <kbd>K</kbd> does too), <kbd>U</kbd> buys the cheapest upgrade you can afford,
                         <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the Warp Jump, <kbd>B</kbd> the
                         Big Crunch and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once.
                     </li>

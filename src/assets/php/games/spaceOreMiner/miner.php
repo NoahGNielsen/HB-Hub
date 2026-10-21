@@ -182,13 +182,15 @@ const HBHUB_MINER_OTHER_UPGRADES = [
 const HBHUB_MINER_CLICK_TYPES = ['click', 'clickPct', 'crit', 'auto']; // kept by Persistent Memory
 const HBHUB_MINER_ETERNAL_TYPES = ['bulk', 'comet']; // kept by Eternal Blueprints
 
-// Bought with Dark Matter, kept until a Big Crunch (or after it too, with Dark Echo)
+// Bought with Dark Matter, kept until a Big Crunch (or after it too, with Dark Echo). Long-Range Hot Keys doesn't change
+// the game, only which buildings the 1-9 keys buy, so it's only in spaceOreMiner.js.
 const HBHUB_MINER_DARK_UPGRADES = [
     'headStart' => ['name' => 'Head Start', 'icon' => '🛸', 'cost' => 5, 'text' => 'Start every run with ' . HBHUB_MINER_HEAD_START . ' Mining Drones.'],
     'memory' => ['name' => 'Persistent Memory', 'icon' => '🧠', 'cost' => 25, 'text' => 'Keep your click upgrades when you Warp Jump.'],
     'darkEngines' => ['name' => 'Dark Engines', 'icon' => '⚫', 'cost' => 50, 'text' => 'All buildings mine 50% more.'],
     'timeDilation' => ['name' => 'Time Dilation', 'icon' => '⏳', 'cost' => 100, 'text' => 'Earn twice as much while you\'re away.'],
     'darkPickaxe' => ['name' => 'Dark Pickaxe', 'icon' => '⛏️', 'cost' => 10, 'text' => 'Clicks mine ' . HBHUB_MINER_DARK_PICKAXE . ' times as much.'],
+    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => '🎛️', 'cost' => 15, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 keys buy your last nine buildings instead of your first nine.'],
     'physics' => ['name' => 'Cheaper Physics', 'icon' => '📉', 'cost' => 250, 'text' => 'Buildings get 14% more expensive with every one you buy, instead of 15%.'],
     'reactor' => ['name' => 'Dark Matter Reactor', 'icon' => '☢️', 'cost' => 750, 'text' => 'Every Dark Matter you\'ve earned makes everything mine '
         . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%.'],

@@ -410,6 +410,7 @@
     const upgradesEmpty = root.querySelector('[data-miner-upgrades-empty]');
     const buildingList = root.querySelector('[data-miner-buildings]');
     const amounts = root.querySelector('[data-miner-amounts]');
+    const keySwitch = root.querySelector('[data-miner-key-switch]');
     const darkText = root.querySelector('[data-miner-dark]');
     const warpNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-warp]')].map((node) => [node.dataset.minerWarp, node]));
     const warpButton = root.querySelector('[data-miner-warp-button]');
@@ -471,6 +472,15 @@
     let antiKey = '';
     let shownComet = -1; // the comet number on screen
     let saveSoonTimer = 0;
+
+    // The Long-Range Hot Keys switch, kept in this browser like the sound. It only does anything with the upgrade.
+    const LATE_KEYS_KEY = 'hbHubMinerLateKeys';
+    let lateKeys = false;
+    try {
+        lateKeys = localStorage.getItem(LATE_KEYS_KEY) === 'on';
+    } catch {
+        // no storage (a private window): it starts off
+    }
 
     const serverNow = () => Date.now() + clockOffset;
 
@@ -686,6 +696,10 @@
         return { shown, mystery };
     }
 
+    // Which of the shown buildings the 1 key buys (the rest follow on): the first, or with Long-Range Hot Keys switched
+    // on, the one that leaves the last nine for 1-9
+    const keyOffset = (count) => (lateKeys && hasDark(state, 'lateKeys') ? Math.max(0, count - 9) : 0);
+
     function availableUpgrades() {
         return Object.keys(UPGRADES).filter((id) => !has(state, id) && upgradeUnlocked(state, UPGRADES[id]));
     }
@@ -694,11 +708,15 @@
         const { shown, mystery } = visibleBuildings();
         const upgrades = availableUpgrades();
         if (!has(state, 'bulk')) buyAmount = 1;
-        const key = [shown.join(), mystery, upgrades.join(), buyAmount, has(state, 'bulk')].join('|');
+        const offset = keyOffset(shown.length);
+        const key = [shown.join(), mystery, upgrades.join(), buyAmount, has(state, 'bulk'), hasDark(state, 'lateKeys'), lateKeys, offset].join('|');
 
         if (key !== storeKey) { // something new to show: build the lists again
             storeKey = key;
             amounts.hidden = !has(state, 'bulk');
+            keySwitch.hidden = !hasDark(state, 'lateKeys');
+            keySwitch.classList.toggle('is-active', lateKeys);
+            keySwitch.setAttribute('aria-pressed', String(lateKeys));
             for (const button of amounts.querySelectorAll('[data-amount]')) {
                 const isActive = Number(button.dataset.amount) === buyAmount;
                 button.classList.toggle('is-active', isActive);
@@ -735,8 +753,8 @@
                     element('span', 'miner-building-info'),
                 );
                 button.append(element('span', 'miner-building-icon', building.icon), main, element('span', 'miner-building-owned'));
-                const index = shown.indexOf(id);
-                if (index < 9) { // the hot key that buys it (see "Hot keys" below)
+                const index = shown.indexOf(id) - offset;
+                if (index >= 0 && index < 9) { // the hot key that buys it (see "Hot keys" below)
                     button.prepend(element('kbd', 'miner-key', String(index + 1)));
                     button.setAttribute('aria-keyshortcuts', String(index + 1));
                 }
@@ -1145,6 +1163,21 @@
         renderStore();
     });
 
+    keySwitch.addEventListener('click', () => {
+        setLateKeys(!lateKeys);
+        sound('buy');
+    });
+
+    function setLateKeys(isOn) {
+        lateKeys = isOn;
+        try {
+            localStorage.setItem(LATE_KEYS_KEY, isOn ? 'on' : 'off');
+        } catch {
+            // only kept until the page is closed
+        }
+        renderStore();
+    }
+
     buildingList.addEventListener('click', (event) => {
         const button = event.target.closest('[data-building]');
         if (!button) return;
@@ -1169,6 +1202,7 @@
         if (!button) return;
         if (act({ type: 'dark', id: button.dataset.dark })) {
             sound('buy');
+            if (button.dataset.dark === 'lateKeys') setLateKeys(true); // bought to be used, so it starts on
             toast(DARK_UPGRADES[button.dataset.dark].icon + ' ' + DARK_UPGRADES[button.dataset.dark].name + ': ' + DARK_UPGRADES[button.dataset.dark].text);
             renderWarp();
             renderStore();
@@ -1255,7 +1289,8 @@
     // ----- Hot keys: each one presses the button it stands for, so they do exactly what a click would.
     // Space mines (a held-down key only counts once), C catches the comet (once the Comet Hot Key upgrade is bought, it's
     // lost on a Warp Jump like the other upgrades), 1-9 buy the buildings in the order they're
-    // listed, U buys the cheapest upgrade you can afford, A switches between ×1, ×10 and ×100, W opens the Warp Jump
+    // listed (the last nine, with Long-Range Hot Keys switched on: see keyOffset()), K flips that switch, U buys the
+    // cheapest upgrade you can afford, A switches between ×1, ×10 and ×100, W opens the Warp Jump
     // box, B the Big Crunch box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
     // shortcuts) and while a box is open.
 
@@ -1280,6 +1315,9 @@
             const now = options.findIndex((button) => Number(button.dataset.amount) === buyAmount);
             options[(now + 1) % options.length].click();
         },
+        k: () => {
+            if (!keySwitch.hidden) keySwitch.click();
+        },
         w: () => warpButton.click(), // does nothing while it's disabled
         b: () => crunchButton.click(), // same
         m: () => soundButton.click(),
@@ -1300,7 +1338,8 @@
         }
         if (event.repeat) return;
         if (/^[1-9]$/.test(event.key)) {
-            buildingList.querySelectorAll('[data-building]')[Number(event.key) - 1]?.click();
+            const buttons = buildingList.querySelectorAll('[data-building]');
+            buttons[keyOffset(buttons.length) + Number(event.key) - 1]?.click();
             return;
         }
         const hotKey = HOT_KEYS[event.key.toLowerCase()];

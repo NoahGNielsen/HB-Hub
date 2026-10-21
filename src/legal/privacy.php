@@ -25,6 +25,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it\'s still there when you refresh or come back to the chat. Kept in session storage, so it\'s gone when you close the tab.',
     'hbHubNotifiedMessageId' => 'The last message you got a browser notification or sound for, so you don\'t get it twice.',
     'hbHubChessSound, hbHubMatadorSound, hbHubMinerSound' => 'Whether you turned the game sounds on or off.',
+    'hbHubMinerLateKeys' => 'Whether you switched Space Ore Miner\'s 1-9 hot keys to your last nine buildings (with the Long-Range Hot Keys upgrade).',
     'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',
 ];
 ?>

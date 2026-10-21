@@ -165,9 +165,9 @@
   display: none;
 }
 
-/* The news ticker */
+/* The news ticker, between the title and the menu */
 .miner-ticker {
-  margin: 0 0 12px;
+  margin: 8px 0 0;
   flex: none;
   padding: 10px 16px;
   overflow: hidden;
@@ -563,6 +563,12 @@
   margin: 0;
 }
 
+.miner-store-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .miner-amounts {
   display: flex;
   gap: 4px;
@@ -681,6 +687,90 @@
   color: var(--casino-up);
 }
 
+/* Where there's a mouse, the cards are small, with only the icon, name and price, and open up over the ones under
+   them to show what they do when pointed at (or tabbed to). The rows have a fixed height, so a card opening up doesn't
+   move the others. On touch screens there's nothing to point with, so they always show everything (above). */
+@media (hover: hover) {
+  .miner-upgrades {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-auto-rows: calc(2.25rem + 18px); /* the name's and the price's lines, the gap between, the padding and the border */
+    gap: 6px;
+  }
+
+  .miner-upgrades > li {
+    position: relative;
+  }
+
+  .miner-upgrade {
+    padding: 6px 10px;
+    column-gap: 8px;
+    align-content: center;
+  }
+
+  .miner-upgrade-icon {
+    grid-row: span 2;
+    align-self: center;
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+
+  .miner-upgrade-name {
+    overflow: hidden;
+    line-height: 1.25rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .miner-upgrade-cost {
+    font-size: 0.8rem;
+    line-height: 1rem;
+  }
+
+  /* Out of sight, but still part of the button's name for screen readers */
+  .miner-upgrade-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .miner-upgrade:hover,
+  .miner-upgrade:focus-visible {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 2;
+    height: auto;
+    min-height: 100%;
+    align-content: start;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    opacity: 1; /* see-through would show the card underneath */
+  }
+
+  .miner-upgrade:hover .miner-upgrade-name,
+  .miner-upgrade:focus-visible .miner-upgrade-name {
+    white-space: normal;
+  }
+
+  .miner-upgrade:hover .miner-upgrade-text,
+  .miner-upgrade:focus-visible .miner-upgrade-text {
+    position: static;
+    grid-column: 1 / -1;
+    width: auto;
+    height: auto;
+    margin-top: 4px;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    animation: miner-upgrade-open 0.15s ease-out;
+  }
+}
+
+@keyframes miner-upgrade-open {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+
 /* Building rows */
 .miner-buildings {
   margin: 0;
@@ -747,9 +837,15 @@
 }
 
 @media (hover: none) {
-  .miner-key {
+  .miner-key,
+  .miner-key-switch {
     display: none;
   }
+}
+
+/* The Long-Range Hot Keys switch, lit up like the amount picked when it's on */
+.miner-key-switch {
+  padding-inline: 10px;
 }
 
 .miner-hot-keys kbd {
@@ -1266,6 +1362,8 @@
   .miner-orbit,
   .miner-buff,
   .miner-menu-news,
+  .miner-upgrade:hover .miner-upgrade-text,
+  .miner-upgrade:focus-visible .miner-upgrade-text,
   .miner.is-warping .miner-view,
   .miner.is-crunching .miner-view {
     animation: none;
