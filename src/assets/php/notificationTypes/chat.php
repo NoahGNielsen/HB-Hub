@@ -24,6 +24,16 @@ return [
         'kicked' => [
             'text' => static fn (array $data): string => 'kicked you from ' . $group($data),
         ],
+        // A site admin kicked by a group admin (chat/index.php). Its data also has how they were in the group (member)
+        // and the kick notice (noticeId), so Undo kick can put them back as if it never happened (chat.php's chatUndoKick()).
+        'kickedUndoable' => [
+            'text' => static fn (array $data): string => 'kicked you from ' . $group($data),
+            'action' => 'Undo kick',
+            'act' => static function (PDO $db, int $userId, int $notificationId, array $data): array {
+                require_once __DIR__ . '/../chat.php';
+                return chatUndoKick($db, $userId, $notificationId, $data);
+            },
+        ],
         // Kicked from the admin panel, which doesn't say who did it, so this is the whole sentence
         'kickedBySiteAdmin' => [
             'text' => static fn (array $data): string => 'A site admin kicked you from ' . $group($data),

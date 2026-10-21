@@ -68,10 +68,35 @@
         time.className = 'nav-notification-time';
         time.textContent = notification.time;
         text.append(notification.text, time);
+        if (notification.action !== null) text.append(actionButton(notification));
 
         row.append(avatar, text);
         item.append(row);
         return item;
+    }
+
+    // The button some notifications have, like Undo kick. The server does it and says where to go next,
+    // or the button says it couldn't be done anymore (the group was deleted meanwhile, say).
+    function actionButton(notification) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'nav-notification-action';
+        button.textContent = notification.action;
+        button.addEventListener('click', async (event) => {
+            event.preventDefault(); // inside a link, the notification itself isn't opened
+            event.stopPropagation();
+            button.disabled = true;
+            const result = await request('/otherPages/notifications', {
+                method: 'POST',
+                body: new URLSearchParams({ action: 'act', notification: String(notification.id) }),
+            });
+            if (result?.link) {
+                window.location.href = result.link;
+            } else {
+                button.textContent = "Can't be done anymore";
+            }
+        });
+        return button;
     }
 
     async function load() {

@@ -252,6 +252,31 @@ a.nav-notification.is-unread:focus-visible {
   opacity: 0.65;
 }
 
+/* The button some notifications have, like Undo kick (notificationBell.js) */
+.nav-notification-action {
+  margin-top: 6px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nav-notification-action:hover,
+.nav-notification-action:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 85%, #000);
+}
+
+.nav-notification-action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 @keyframes nav-notifications-in {
   from { opacity: 0; transform: translateY(-6px); }
 }

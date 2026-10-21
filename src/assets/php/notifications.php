@@ -5,6 +5,8 @@
 //
 // A type is "section.kind", like "chat.kicked". Every section has a file in notificationTypes/ named after it
 // (notificationTypes/chat.php), which gives the section's icon and its kinds: what each one says and where it links to.
+// A kind can also have a button (its label is 'action'), which runs its 'act' function when clicked (hbHubNotificationAct()),
+// like Undo kick on chat.kickedUndoable.
 // To add notifications to a new part of the site, like gambling:
 //   1. Make notificationTypes/gambling.php, the same shape as chat.php
 //   2. Call hbHubNotify($db, $userId, 'gambling.bigWin', null, ['amount' => 500]) where it happens
@@ -18,7 +20,8 @@ const HBHUB_NOTIFICATION_STATUS_BANNED = 4; // userStatus in HBHub-Users
 /**
  * Every section's icon and kinds, from notificationTypes/, by section name.
  *
- * @return array<string, array{icon: string, kinds: array<string, array{text: callable(array): string, link?: callable(array): ?string}>}>
+ * @return array<string, array{icon: string, kinds: array<string, array{text: callable(array): string, link?: callable(array): ?string,
+ *     action?: string, act?: callable(PDO, int, int, array): array}>}>
  */
 function hbHubNotificationSections(): array
 {
@@ -38,7 +41,8 @@ function hbHubNotificationSections(): array
 /**
  * The type's kind (its text and link) with its section's icon, or null when there's no such type.
  *
- * @return ?array{icon: string, text: callable(array): string, link?: callable(array): ?string}
+ * @return ?array{icon: string, text: callable(array): string, link?: callable(array): ?string, action?: string,
+ *     act?: callable(PDO, int, int, array): array}
  */
 function hbHubNotificationType(string $type): ?array
 {
@@ -115,6 +119,25 @@ function hbHubMarkNotificationsReadAbout(PDO $db, int $userId, string $type, arr
 }
 
 /**
+ * Runs the button on one of the user's notifications (its kind's 'act', given the user, the notification's id and data).
+ *
+ * @return array{link: string}|array{error: string} where to go next, or why it couldn't be done
+ */
+function hbHubNotificationAct(PDO $db, int $userId, int $notificationId): array
+{
+    $statement = $db->prepare('SELECT notificationType, notificationData FROM `HBHub-Notifications` WHERE notificationId = ? AND userId = ?');
+    $statement->execute([$notificationId, $userId]);
+    $row = $statement->fetch();
+    $type = $row !== false ? hbHubNotificationType($row['notificationType']) : null;
+    if ($type === null || !isset($type['act'])) {
+        return ['error' => 'notFound'];
+    }
+
+    $data = $row['notificationData'] !== null ? (json_decode($row['notificationData'], true) ?? []) : [];
+    return ($type['act'])($db, $userId, $notificationId, $data);
+}
+
+/**
  * Marks the user's notifications read, up to and with $upToId (the newest one they were shown).
  */
 function hbHubMarkNotificationsRead(PDO $db, int $userId, int $upToId): void
@@ -139,7 +162,7 @@ function hbHubUnreadNotificationCount(PDO $db, int $userId): int
  * (to mark them read up to). A type that isn't in notificationTypes/ anymore is left out.
  *
  * @return array{newestId: ?int, notifications: list<array{id: int, by: ?string, byInitial: ?string, byAvatar: ?string,
- *     icon: string, text: string, link: ?string, time: string, isUnread: bool}>}
+ *     icon: string, text: string, link: ?string, action: ?string, time: string, isUnread: bool}>}
  */
 function hbHubNotifications(PDO $db, int $userId): array
 {
@@ -175,6 +198,7 @@ function hbHubNotifications(PDO $db, int $userId): array
             'icon' => $type['icon'],
             'text' => ($type['text'])($data),
             'link' => isset($type['link']) ? ($type['link'])($data) : null,
+            'action' => $type['action'] ?? null, // the button's label
             // Like the notices in a chat: just the time for today, otherwise the date and the time
             'time' => date('Y-m-d', $time) === date('Y-m-d') ? date('H:i', $time) : date('d/m/Y • H.i', $time),
             'isUnread' => (bool) $row['isUnread'],

@@ -146,7 +146,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 admins can still look into reports of abuse. Its reactions are hidden with it, and kept the same
                                 way. An attachment in it isn't kept: its file and name are deleted for good.
                             </li>
-                            <li>Notifications under the bell: what happened, who did it and whether you've seen it.</li>
+                            <li>Notifications under the bell: what happened, who did it and whether you've seen it. If you're a site admin and a group admin removes you from a group, that notification also keeps how you were in the group (your role, nickname, mute and how far you had read), so you can undo it. Undoing it deletes the notification.</li>
                             <li>
                                 When someone @mentions you, in a chat or a Chess or Matador game's chat, you get one of those
                                 notifications, saying who it was and which chat, message or game it was in. Nothing else is
@@ -233,7 +233,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-see">4. Who can see what</h2>
                         <ul>
                             <li><strong>Everyone with an account</strong> can see your name, profile picture, bio, year, class, when you were last online, and your spot on the leaderboards.</li>
-                            <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group.</li>
+                            <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group. When they remove a site admin, the site admin can undo it from their notification: they're put back in the group as they were, and the notice about it in the chat is deleted.</li>
                             <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
                             <li>
                                 <strong>Site admins</strong> can see everything about an account in the admin panel, including

@@ -11,7 +11,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP l
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 
-const HBHUB_CHAT_SITE_ROLE_ADMIN = 2; // userRole in HBHub-Users, an admin of the whole site
 const HBHUB_CHAT_MEMBERS_MAX = 200; // per group DM, the creator included
 const HBHUB_CHAT_REQUESTS_PER_HOUR = 100; // message requests one user can send in an hour, new chats and Add to chat together
 const HBHUB_CHAT_NICKNAME_MAX = 35; // same as userName
@@ -883,6 +882,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
 // Only members who accepted the group can be made admin. Admins can kick normal members, an invite is taken back that way.
 // The group owner can also kick admins, or remove them as admin so they're a normal member again.
 // The member gets a notification about it, except for an invite taken back: then its message request notification goes.
+// A site admin who gets kicked gets one with an Undo kick button instead.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['makeAdmin', 'removeAdmin', 'kick'], true)) {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     $isGroupAdmin = $chat !== null && chatIsGroupAdmin($chat);
@@ -921,8 +921,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
             ->execute([$chat['chatId'], $member['userId']]);
         chatNotice($db, $userId, (int) $chat['chatId'], HBHUB_CHAT_EVENT_KICK, (int) $member['userId'], null, false, true);
     } elseif ($member !== false && ($isNormalMember || $isGroupOwner) && $_POST['action'] === 'kick') {
-        chatLeave($db, (int) $member['userId'], $chat, $userId); // posts the notice itself
-        if ($member['userAcknowledgedJoin']) {
+        // A site admin kicked by a group admin can undo it from the notification, as if it never happened
+        // (assets/php/chat.php's chatUndoKick()), so how they were in the group is kept with it
+        $statement = $db->prepare('SELECT userRole FROM `HBHub-Users` WHERE userId = ?');
+        $statement->execute([$member['userId']]);
+        $snapshot = (int) $statement->fetchColumn() === HBHUB_CHAT_SITE_ROLE_ADMIN
+            ? chatKickSnapshot($db, (int) $chat['chatId'], (int) $member['userId'])
+            : null;
+
+        $noticeId = chatLeave($db, (int) $member['userId'], $chat, $userId); // posts the notice itself
+        if ($snapshot !== null) {
+            hbHubNotify($db, (int) $member['userId'], 'chat.kickedUndoable', $userId,
+                chatNotificationData($db, (int) $chat['chatId']) + ['noticeId' => $noticeId, 'member' => $snapshot]);
+        } elseif ($member['userAcknowledgedJoin']) {
             $notification = 'chat.kicked';
         } else {
             hbHubRemoveNotifications($db, (int) $member['userId'], 'chat.messageRequest', ['chatId' => (int) $chat['chatId']]);

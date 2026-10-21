@@ -28,6 +28,8 @@ const HBHUB_CHAT_STATUS_DELETED_BY_SITE_ADMIN = 3; // from the admin panel, at c
 const HBHUB_CHAT_ROLE_MEMBER = 1; // memberRole in HBHub-ChatMembers
 const HBHUB_CHAT_ROLE_ADMIN = 2;
 const HBHUB_CHAT_ROLE_OWNER = 3; // a group admin who can also remove admins, one per group
+// userRole in HBHub-Users, an admin of the whole site. A group admin kicking one lets them undo it (chatUndoKick()).
+const HBHUB_CHAT_SITE_ROLE_ADMIN = 2;
 const HBHUB_CHAT_NAME_MAX = 64; // chatName column
 // Change background: which way the gradient goes, as the angle linear-gradient() takes => [arrow, label]
 const HBHUB_CHAT_BACKGROUND_DIRECTIONS = [
@@ -69,13 +71,15 @@ const HBHUB_CHAT_EVENT_BY_SITE_ADMIN = 100;
  * @param ?string $content the group's new name, for HBHUB_CHAT_EVENT_RENAME
  * @param bool $bySiteAdmin made from the admin panel, so the notice says a site admin did it
  * @param bool $isGhost made by a ghost-banned user (see the top), so only they see it
+ * @return int the notice's messageId
  */
 function chatNotice(PDO $db, int $userId, int $chatId, int $event, ?int $aboutUserId = null, ?string $content = null,
-    bool $bySiteAdmin = false, bool $isGhost = false): void
+    bool $bySiteAdmin = false, bool $isGhost = false): int
 {
     $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageEvent, messageEventType, messageEventUserId, messageIsGhost)
         VALUES (?, ?, ?, 1, ?, ?, ?)')
         ->execute([$userId, $chatId, $content, $bySiteAdmin ? HBHUB_CHAT_EVENT_BY_SITE_ADMIN + $event : $event, $aboutUserId, (int) $isGhost]);
+    return (int) $db->lastInsertId();
 }
 
 /**
@@ -120,10 +124,12 @@ function chatNotificationData(PDO $db, int $chatId): array
  *
  * @param array{chatId: int, chatType: int} $chat
  * @param bool $kickedBySiteAdmin kicked from the admin panel, so the notice says a site admin did it
+ * @return ?int the kick notice's messageId, when they were kicked and anyone was left to see it
  */
-function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null, bool $kickedBySiteAdmin = false): void
+function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null, bool $kickedBySiteAdmin = false): ?int
 {
     $chatId = (int) $chat['chatId'];
+    $kickNoticeId = null;
     $db->beginTransaction();
     $db->prepare('DELETE FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ?')
         ->execute([$chatId, $userId]);
@@ -149,7 +155,7 @@ function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null, boo
                 }
             }
         } else {
-            chatNotice($db, $kickedBy, $chatId, HBHUB_CHAT_EVENT_KICK, $userId, null, $kickedBySiteAdmin);
+            $kickNoticeId = chatNotice($db, $kickedBy, $chatId, HBHUB_CHAT_EVENT_KICK, $userId, null, $kickedBySiteAdmin);
         }
 
         $roles = array_map('intval', array_column($members, 'memberRole'));
@@ -166,6 +172,82 @@ function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null, boo
     if ($members === []) {
         hbHubChatAttachmentsRemove($db, 'a.chatId = ?', [$chatId]);
     }
+    return $kickNoticeId;
+}
+
+/**
+ * What chatUndoKick() needs to put a kicked site admin back in the group like before: their membership row as it was
+ * (role, nickname, mute, how far they had read...). Read just before they're kicked, and kept in the data of their
+ * chat.kickedUndoable notification.
+ *
+ * @return ?array the row's columns, or null when they aren't a member who accepted the group
+ */
+function chatKickSnapshot(PDO $db, int $chatId, int $userId): ?array
+{
+    $statement = $db->prepare('SELECT memberRole, lastReadMessageId, memberJoinedTimestamp, memberNickname, memberMutedUntil,
+            memberLastViewedTimestamp
+        FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId = ? AND userAcknowledgedJoin = 1 AND memberIsGhost = 0');
+    $statement->execute([$chatId, $userId]);
+    return $statement->fetch() ?: null;
+}
+
+/**
+ * Undo kick, the button on the chat.kickedUndoable notification a site admin gets when a group admin kicks them
+ * (chat/index.php): puts them back in the group exactly as they were, and deletes the kick notice and the notification,
+ * so there's no trace of the kick left. If they were invited again meanwhile, that invite becomes the old membership,
+ * and its message request goes. It can't be done once the group is deleted, or by someone who isn't a site admin anymore.
+ *
+ * @param array{chatId?: int, noticeId?: ?int, member?: array} $data the notification's data
+ * @return array{link: string}|array{error: string} where to go next, or why it couldn't be undone
+ */
+function chatUndoKick(PDO $db, int $userId, int $notificationId, array $data): array
+{
+    $chatId = (int) ($data['chatId'] ?? 0);
+    $member = $data['member'] ?? null;
+    if (!is_array($member)) {
+        return ['error' => 'notUndoable'];
+    }
+
+    $db->beginTransaction();
+    // Locked, so two clicks at once can't both undo it
+    $statement = $db->prepare('SELECT 1 FROM `HBHub-Notifications` WHERE notificationId = ? AND userId = ? FOR UPDATE');
+    $statement->execute([$notificationId, $userId]);
+    $isThere = $statement->fetchColumn() !== false;
+
+    $statement = $db->prepare('SELECT userRole FROM `HBHub-Users` WHERE userId = ?');
+    $statement->execute([$userId]);
+    $isSiteAdmin = (int) $statement->fetchColumn() === HBHUB_CHAT_SITE_ROLE_ADMIN;
+
+    $statement = $db->prepare('SELECT chatStatus FROM `HBHub-Chats` WHERE chatId = ? FOR UPDATE');
+    $statement->execute([$chatId]);
+    $isActive = (int) $statement->fetchColumn() === HBHUB_CHAT_STATUS_ACTIVE;
+
+    if (!$isThere || !$isSiteAdmin || !$isActive) {
+        $db->rollBack();
+        return ['error' => !$isThere ? 'notFound' : (!$isSiteAdmin ? 'notSiteAdmin' : 'chatGone')];
+    }
+
+    // Never the owner: the group has one already (whoever kicked them, or who took over since)
+    $role = min((int) $member['memberRole'], HBHUB_CHAT_ROLE_ADMIN);
+    $db->prepare('INSERT INTO `HBHub-ChatMembers` (chatId, userId, memberRole, lastReadMessageId, memberJoinedTimestamp,
+            memberNickname, memberMutedUntil, memberLastViewedTimestamp, userAcknowledgedJoin, memberIsGhost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0)
+        ON DUPLICATE KEY UPDATE memberRole = VALUES(memberRole), lastReadMessageId = VALUES(lastReadMessageId),
+            memberJoinedTimestamp = VALUES(memberJoinedTimestamp), memberNickname = VALUES(memberNickname),
+            memberMutedUntil = VALUES(memberMutedUntil), memberLastViewedTimestamp = VALUES(memberLastViewedTimestamp),
+            userAcknowledgedJoin = 1, memberIsGhost = 0')
+        ->execute([$chatId, $userId, $role, $member['lastReadMessageId'] ?? null, $member['memberJoinedTimestamp'] ?? date('Y-m-d H:i:s'),
+            $member['memberNickname'] ?? null, $member['memberMutedUntil'] ?? null, $member['memberLastViewedTimestamp'] ?? null]);
+
+    if (isset($data['noticeId'])) {
+        $db->prepare('DELETE FROM `HBHub-Messages` WHERE messageId = ? AND chatId = ? AND messageEvent = 1 AND messageEventType = ?')
+            ->execute([(int) $data['noticeId'], $chatId, HBHUB_CHAT_EVENT_KICK]);
+    }
+    hbHubRemoveNotifications($db, $userId, 'chat.messageRequest', ['chatId' => $chatId]);
+    $db->prepare('DELETE FROM `HBHub-Notifications` WHERE notificationId = ?')->execute([$notificationId]);
+    $db->commit();
+
+    return ['link' => '/chat/?chat=' . $chatId];
 }
 
 /**
