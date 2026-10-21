@@ -29,11 +29,11 @@
 | | |
 |---|---|
 | **Space Ore Miner** | A clicker game, like Cookie Clicker: click the asteroid for ore, and spend it on 10 buildings (from a Space Pickaxe Guy to a Black Hole Siphon) that mine for you. Each one costs 15% more than the last |
-| **Upgrades** | Click upgrades (critical clicks, clicks worth a share of your production, an Auto-Clicker Bot), three upgrades per building at 10, 25 and 50 owned, upgrades for every building, synergies between buildings, and comet upgrades |
+| **Upgrades** | Click upgrades (critical clicks, clicks worth a share of your production, an Auto-Clicker Bot), three upgrades per building at 10, 25 and 50 owned, upgrades for every building, synergies between buildings, and comet upgrades (one of them lets you catch comets with the C key) |
 | **Golden Comets** | A comet flies across the screen now and then. Catch it for a pile of ore, 7× production or 77× clicks for a while, or (rarely) a Diamond Comet with 777× production |
 | **Warp Jump** | Prestige: after a billion ore in a run, start over in a new galaxy for Dark Matter. Every Dark Matter earned is +2.5% production for good, and it buys permanent upgrades |
 | **Extras** | 33 achievements, an asteroid that changes as you mine more, rock bits and floating numbers on every click, a news ticker, sounds and a leaderboard |
-| **Hot keys** | Space mines, C catches a comet, 1-9 buy the buildings in the order they're listed, U buys the cheapest affordable upgrade, A switches between buying 1/10/100, W opens the Warp Jump and M turns the sound on/off. Holding Space only mines once |
+| **Hot keys** | Space mines, C catches a comet (after buying the Comet Hot Key upgrade), 1-9 buy the buildings in the order they're listed, U buys the cheapest affordable upgrade, A switches between buying 1/10/100, W opens the Warp Jump and M turns the sound on/off. Holding Space only mines once |
 | **Saving** | Saved on the server every 30 seconds and when you leave, and you keep mining at 5% while you're away. The server plays every click and purchase again to check it, so the leaderboard can't be cheated from the browser, and clicks only count up to 20 a second. Clicks at exactly the same pace for 20 seconds (an auto-clicker or a held-down key), or 40 clicks in a row whose gaps vary less than 10% (standard deviation of the gaps, as a share of the average gap), only mine 20%, until the pace changes. The game runs in one tab at a time |
 
 The Games section can be opened to everyone, only to admins, or to nobody with `games_access` in the

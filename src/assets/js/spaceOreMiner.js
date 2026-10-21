@@ -1092,14 +1092,15 @@
     });
 
     // ----- Hot keys: each one presses the button it stands for, so they do exactly what a click would.
-    // Space mines (a held-down key only counts once), C catches the comet, 1-9 buy the buildings in the order they're
+    // Space mines (a held-down key only counts once), C catches the comet (once the Comet Hot Key upgrade is bought, it's
+    // lost on a Warp Jump like the other upgrades), 1-9 buy the buildings in the order they're
     // listed, U buys the cheapest upgrade you can afford, A switches between ×1, ×10 and ×100, W opens the Warp Jump
     // box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
     // shortcuts) and while a box is open.
 
     const HOT_KEYS = {
         c: () => {
-            if (!cometButton.hidden) cometButton.click();
+            if (has(state, 'cometKey') && !cometButton.hidden) cometButton.click();
         },
         u: () => {
             const id = availableUpgrades().find((upgradeId) => canAfford(state, UPGRADES[upgradeId].cost));

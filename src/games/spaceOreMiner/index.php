@@ -137,7 +137,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
                 </li>
                 <li class="miner-hot-keys">
-                    Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet, <kbd>1</kbd>-<kbd>9</kbd>
+                    Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade), <kbd>1</kbd>-<kbd>9</kbd>
                     buy the buildings in the order they're listed, <kbd>U</kbd> buys the cheapest upgrade you can afford,
                     <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the Warp Jump and <kbd>M</kbd>
                     turns the sound on or off. Holding Space down only mines once.

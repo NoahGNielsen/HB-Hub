@@ -107,7 +107,7 @@ const HBHUB_MINER_BUILDING_UPGRADE_COST = [10, 50, 500]; // times the building's
 // - crit: a click can be critical (HBHUB_MINER_CRIT_CHANCE, HBHUB_MINER_CRIT_MULTIPLIER). auto: 'value' clicks a second.
 // - global: every building mines 'value' more (0.1 = +10%), all of them multiplied together. bulk: the x10 and x100 buttons.
 // - synergy: 'building' mines 'per' more for every 'every' of 'source' owned.
-// - comet: 'effect' often, longer, tail or diamond.
+// - comet: 'effect' often, longer, tail, diamond or key (the C key catches comets, only in spaceOreMiner.js).
 // 'need' is when it shows up in the store: ore (mined this run), owned (building => how many) and comets (caught ever).
 // Without one, it's ore mined this run of half its cost.
 const HBHUB_MINER_OTHER_UPGRADES = [
@@ -118,6 +118,7 @@ const HBHUB_MINER_OTHER_UPGRADES = [
     'autoAim' => ['name' => 'Auto-Aim Laser', 'icon' => '🎯', 'cost' => 50000, 'type' => 'clickPct', 'value' => 0.01, 'text' => 'Each click also mines 1% of your ore per second.'],
     'bulk' => ['name' => 'Bulk Buying', 'icon' => '🛒', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time.'],
     'quantum' => ['name' => 'Quantum Hammer', 'icon' => '🔨', 'cost' => 500000, 'type' => 'clickPct', 'value' => 0.02, 'text' => 'Each click mines another 2% of your ore per second.'],
+    'cometKey' => ['name' => 'Comet Hot Key', 'icon' => '⌨️', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1], 'text' => 'Press C to catch a comet, without having to hit it.'],
     'radar' => ['name' => 'Comet Radar', 'icon' => '📡', 'cost' => 777777, 'type' => 'comet', 'effect' => 'often', 'need' => ['comets' => 3], 'text' => 'Comets show up twice as often.'],
     'zeroG' => ['name' => 'Zero-G Logistics', 'icon' => '🧭', 'cost' => 1e6, 'type' => 'global', 'value' => 0.25, 'text' => 'All buildings mine 25% more.'],
     'dockingBays' => ['name' => 'Drone Docking Bays', 'icon' => '🔗', 'cost' => 1.3e6, 'type' => 'synergy', 'building' => 'drone', 'source' => 'base', 'per' => 0.01, 'every' => 1,
