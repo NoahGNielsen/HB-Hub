@@ -15,7 +15,7 @@ HB-Hub/
 ├── src/                 The website itself (everything here gets uploaded)
 │   ├── chat/            Messages and group chats
 │   ├── gambling/        The casino: chips, Blackjack, Baccarat and Roulette
-│   ├── games/           The Games section: Matador, Chess and Wordle
+│   ├── games/           The Games section: Matador, Chess, Wordle and Space Ore Miner
 │   ├── admin/           The admin panel
 │   ├── userMgmt/        Login and sign-up
 │   ├── otherPages/      Profile, settings and notifications

@@ -655,6 +655,26 @@ CREATE TABLE `HBHub-WordleWords` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-MinerSaves`
+--
+
+CREATE TABLE `HBHub-MinerSaves` (
+  `userId` int UNSIGNED NOT NULL,
+  `saveState` json NOT NULL COMMENT 'The whole Space Ore Miner game: ore, buildings, upgrades, Dark Matter, comets, achievements (hbHubMinerNewState() in src/assets/php/games/spaceOreMiner/miner.php)',
+  `saveTab` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The random id of the browser tab playing it; saves from any other tab are turned away',
+  `saveOreAllTime` double NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: ore mined ever, in every galaxy',
+  `saveOrePerSecond` double NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: ore per second at the last save, without comets',
+  `saveDarkMatter` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: Dark Matter ever earned',
+  `saveWarps` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: Warp Jumps made',
+  `saveClicks` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: clicks on the asteroid ever',
+  `saveAchievements` smallint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: achievements done',
+  `saveStartTimestamp` datetime NOT NULL COMMENT 'UTC, the first save',
+  `saveUpdatedTimestamp` datetime NOT NULL COMMENT 'UTC, the last save'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-RouletteSpins`
 --
 
@@ -1028,6 +1048,13 @@ ALTER TABLE `HBHub-WordleGames`
 ALTER TABLE `HBHub-WordleWords`
   ADD PRIMARY KEY (`wordLanguage`,`wordDate`),
   ADD KEY `languageWord` (`wordLanguage`,`wordText`);
+
+--
+-- Indexes for table `HBHub-MinerSaves`
+--
+ALTER TABLE `HBHub-MinerSaves`
+  ADD PRIMARY KEY (`userId`) COMMENT 'One save per user',
+  ADD KEY `oreAllTime` (`saveOreAllTime`);
 
 --
 -- Indexes for table `HBHub-RouletteSpins`
@@ -1441,6 +1468,12 @@ ALTER TABLE `HBHub-Notifications`
 --
 ALTER TABLE `HBHub-WordleGames`
   ADD CONSTRAINT `fk_wordlegames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-MinerSaves`
+--
+ALTER TABLE `HBHub-MinerSaves`
+  ADD CONSTRAINT `fk_minersaves_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-RouletteSpins`

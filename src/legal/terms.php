@@ -181,6 +181,12 @@ const HBHUB_TERMS_UPDATED = '21 October 2026';
                                 but don't guess by midnight (Danish time) counts as missed, and ends your streak. Don't spoil
                                 the day's word for others, for example in a group chat, before the day is over.
                             </li>
+                            <li>
+                                Space Ore Miner saves on HB Hub's server and checks what you do there, so only things that
+                                could really have happened count. Clicks count up to 20 a second, and a game only runs in one
+                                tab at a time. No auto-clickers, macros or scripts. Admins can reset a save that was cheated
+                                or take it off the leaderboard.
+                            </li>
                         </ul>
                     </section>
 

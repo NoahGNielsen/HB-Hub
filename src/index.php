@@ -305,6 +305,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <li>Matador saves after every move, so you can finish tomorrow</li>
                     <li>Draw offers and rematches in chess</li>
                     <li>Wordle: a new word to guess every day, in English and Danish</li>
+                    <li>Space Ore Miner: click an asteroid and build a galaxy-wide mining company</li>
                     <li>Chats and a leaderboards</li>
                     <li>Public, private with a code or invite only mode</li>
                 </ul>

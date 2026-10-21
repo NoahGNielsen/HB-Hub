@@ -42,6 +42,12 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                         <span class="casino-game-text">Guess the daily five-letter word in six tries, in English and in Danish. Keep your streak going and climb the leaderboards.</span>
                     </a>
                 </li>
+                <li>
+                    <a class="casino-game" href="/games/spaceOreMiner/">
+                        <span class="casino-game-name">Space Ore Miner</span>
+                        <span class="casino-game-text">Click an asteroid for ore, buy machines that mine for you, catch Golden Comets and Warp Jump to new galaxies. A clicker game with a leaderboard.</span>
+                    </a>
+                </li>
             </ul>
         </section>
     </main>

@@ -1,0 +1,865 @@
+/* Space Ore Miner (games/spaceOreMiner/): the asteroid, the store, the Warp Jump, achievements, the comet flying across
+   the screen and the messages in the corner. Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. */
+.casino.miner {
+  --miner-gold: #f5c542;
+  --miner-diamond: #8be9ff;
+  --miner-dark: #9d7bff;
+  max-width: 1180px;
+}
+
+.miner [hidden] {
+  display: none !important;
+}
+
+.miner-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The sound button: the speaker with waves when on, crossed out when off */
+.miner-sound {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.miner-sound-icon {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.miner-sound[aria-pressed="true"] .is-off,
+.miner-sound[aria-pressed="false"] .is-on {
+  display: none;
+}
+
+/* The news ticker */
+.miner-ticker {
+  margin: 0 0 20px;
+  padding: 10px 16px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--secondary));
+  font-style: italic;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.miner-ticker::before {
+  content: "SPACE NEWS";
+  margin-right: 12px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.miner-ticker-text {
+  display: inline-block;
+}
+
+.miner-ticker-text.is-new {
+  animation: miner-news 0.5s ease;
+}
+
+@keyframes miner-news {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+/* The asteroid on the left, the store on the right; under each other on small screens */
+.miner-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 20px;
+  align-items: start;
+  transition: opacity 0.3s;
+}
+
+.miner.is-loading .miner-layout {
+  opacity: 0.55;
+}
+
+.miner.is-warping .miner-layout {
+  animation: miner-warp 1.2s ease;
+}
+
+@keyframes miner-warp {
+  30% { filter: brightness(2.5) blur(4px); transform: scale(0.97); }
+}
+
+/* The asteroid's side, on a starry sky */
+.miner-mine {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background:
+    radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 78% 12%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 30% 72%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 88% 64%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 55% 35%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 8% 88%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 66% 90%, #fff 50%, transparent 51%),
+    radial-gradient(ellipse at 50% 55%, #1d2340 0%, var(--secondary) 70%);
+}
+
+.miner-ore {
+  margin: 0;
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.miner-ore-unit {
+  color: var(--accent);
+}
+
+.miner-rate,
+.miner-click-value {
+  margin: 4px 0 0;
+  font-weight: 600;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-stage,
+.miner-save {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.65;
+}
+
+.miner-save.is-error {
+  color: var(--casino-down);
+  opacity: 1;
+}
+
+/* Comet effects running */
+.miner-buffs {
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  list-style: none;
+}
+
+.miner-buff {
+  padding: 4px 10px;
+  display: flex;
+  gap: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--miner-gold) 25%, var(--background));
+  font-size: 0.85rem;
+  font-weight: 700;
+  animation: miner-glow 1.2s ease-in-out infinite alternate;
+}
+
+.miner-buff.is-diamond {
+  background: color-mix(in srgb, var(--miner-diamond) 30%, var(--background));
+}
+
+.miner-buff-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+@keyframes miner-glow {
+  to { box-shadow: 0 0 14px color-mix(in srgb, var(--miner-gold) 60%, transparent); }
+}
+
+/* The asteroid. Its colours change with data-stage (0 grey rock, 1 iron, 2 gold, 3 crystal, 4 alien core) */
+.miner-field {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  display: grid;
+  place-items: center;
+  user-select: none;
+  -webkit-user-select: none;
+  animation: miner-drift 8s ease-in-out infinite;
+}
+
+.miner-asteroid {
+  --rock-light: #9a9a9a;
+  --rock: #6c6c6c;
+  --rock-dark: #3a3a3a;
+  --rock-glow: transparent;
+  position: relative;
+  width: 220px;
+  height: 210px;
+  padding: 0;
+  border: none;
+  border-radius: 46% 54% 50% 50% / 52% 45% 55% 48%;
+  background: radial-gradient(circle at 34% 30%, var(--rock-light) 0%, var(--rock) 45%, var(--rock-dark) 100%);
+  box-shadow: inset -18px -22px 40px rgba(0, 0, 0, 0.45), 0 0 50px var(--rock-glow);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, background 1s ease;
+}
+
+.miner-asteroid:hover {
+  transform: scale(1.03);
+}
+
+.miner-asteroid:active {
+  transform: scale(0.95);
+}
+
+.miner-asteroid:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 8px;
+}
+
+.miner-asteroid:disabled {
+  cursor: progress;
+}
+
+.miner-asteroid.is-hit {
+  animation: miner-hit 0.15s ease;
+}
+
+.miner-asteroid[data-stage="1"] {
+  --rock-light: #c9b3a1;
+  --rock: #8a6a55;
+  --rock-dark: #463226;
+}
+
+.miner-asteroid[data-stage="2"] {
+  --rock-light: #fff2b0;
+  --rock: #e0b13a;
+  --rock-dark: #7a5410;
+  --rock-glow: rgba(245, 197, 66, 0.25);
+}
+
+.miner-asteroid[data-stage="3"] {
+  --rock-light: #e6fbff;
+  --rock: #6fd3f2;
+  --rock-dark: #2a5b8f;
+  --rock-glow: rgba(139, 233, 255, 0.35);
+}
+
+.miner-asteroid[data-stage="4"] {
+  --rock-light: #f0ffd0;
+  --rock: #7cf04a;
+  --rock-dark: #3d1a6e;
+  --rock-glow: rgba(124, 240, 74, 0.5);
+  animation: miner-pulse 2s ease-in-out infinite alternate;
+}
+
+.miner-asteroid[data-stage="4"].is-hit {
+  animation: miner-hit 0.15s ease, miner-pulse 2s ease-in-out infinite alternate;
+}
+
+.miner-crater {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 60% 60%, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0.35) 60%);
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.miner-crater.is-1 { width: 46px; height: 40px; top: 24%; left: 20%; }
+.miner-crater.is-2 { width: 28px; height: 26px; top: 58%; left: 58%; }
+.miner-crater.is-3 { width: 20px; height: 18px; top: 30%; left: 64%; }
+.miner-crater.is-4 { width: 34px; height: 30px; top: 66%; left: 26%; }
+
+@keyframes miner-drift {
+  50% { translate: 0 -6px; }
+}
+
+@keyframes miner-hit {
+  50% { scale: 0.94; }
+}
+
+@keyframes miner-pulse {
+  to { box-shadow: inset -18px -22px 40px rgba(0, 0, 0, 0.45), 0 0 80px var(--rock-glow); }
+}
+
+/* The Auto-Clicker Bot, going round the asteroid */
+.miner-orbit {
+  position: absolute;
+  width: 290px;
+  height: 290px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: miner-orbit 7s linear infinite;
+}
+
+.miner-bot {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  translate: -50% 0;
+  font-size: 1.8rem;
+}
+
+@keyframes miner-orbit {
+  to { rotate: 360deg; }
+}
+
+/* What a click mined, floating up, and bits of rock flying off */
+.miner-float {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  translate: -50% -50%;
+  color: #fff;
+  font-weight: 800;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: miner-float 1s ease-out forwards;
+}
+
+.miner-float.is-crit {
+  color: var(--miner-gold);
+  font-size: 1.4rem;
+}
+
+@keyframes miner-float {
+  to { opacity: 0; transform: translateY(-70px); }
+}
+
+.miner-bit {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 30%;
+  background: #8d8d8d;
+  pointer-events: none;
+  animation: miner-bit 0.7s ease-out forwards;
+}
+
+@keyframes miner-bit {
+  to { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(200deg); }
+}
+
+/* The store */
+.miner-store-part + .miner-store-part {
+  margin-top: 24px;
+}
+
+.miner-store-head {
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.miner-store-title {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.miner-store-head .miner-store-title {
+  margin: 0;
+}
+
+.miner-empty {
+  margin: 0;
+}
+
+.miner-amounts {
+  display: flex;
+  gap: 4px;
+}
+
+.miner-amount {
+  padding: 6px 12px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.miner-amount.is-active {
+  border-color: var(--accent);
+}
+
+.miner-amount:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Upgrade cards (and the Dark Matter ones) */
+.miner-upgrades {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  list-style: none;
+}
+
+.miner-upgrade {
+  width: 100%;
+  height: 100%;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 2px;
+  align-content: start;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.2s, border-color 0.2s, transform 0.08s;
+}
+
+.miner-upgrade.is-affordable {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  opacity: 1;
+}
+
+.miner-upgrade.is-affordable:hover {
+  transform: translateY(-2px);
+}
+
+.miner-upgrade:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.miner-upgrade-icon {
+  grid-row: span 3;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.miner-upgrade-name {
+  font-weight: 700;
+}
+
+.miner-upgrade-cost {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.miner-upgrade-text {
+  font-size: 0.85rem;
+  line-height: 1.35;
+  opacity: 0.8;
+}
+
+.miner-upgrade.is-dark.is-affordable {
+  border-color: var(--miner-dark);
+}
+
+.miner-upgrade.is-dark .miner-upgrade-cost {
+  color: var(--miner-dark);
+}
+
+.miner-upgrade.is-owned {
+  border-color: color-mix(in srgb, var(--casino-up) 60%, transparent);
+  opacity: 1;
+  cursor: default;
+}
+
+.miner-upgrade.is-owned .miner-upgrade-cost {
+  color: var(--casino-up);
+}
+
+/* Building rows */
+.miner-buildings {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+
+.miner-building {
+  width: 100%;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+
+.miner-building.is-affordable {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  opacity: 1;
+}
+
+.miner-building.is-affordable:hover {
+  background: color-mix(in srgb, var(--text) 6%, var(--background));
+}
+
+.miner-building:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.miner-building.is-mystery {
+  border: 2px dashed color-mix(in srgb, var(--text) 25%, transparent);
+  cursor: default;
+  opacity: 0.4;
+}
+
+.miner-building-icon {
+  font-size: 2rem;
+  text-align: center;
+}
+
+.miner-building-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.miner-building-name {
+  font-weight: 700;
+}
+
+.miner-building-cost {
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-building-info {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.miner-building-owned {
+  font-size: 1.8rem;
+  font-weight: 800;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The cards under the game */
+.miner-warp,
+.miner-achievements,
+.miner-stats,
+.miner .casino-rules {
+  margin-top: 20px;
+}
+
+.miner-section-head {
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.miner-section-head h2 {
+  margin: 0;
+}
+
+.miner-dark,
+.miner-achievement-count {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.miner-dark {
+  color: var(--miner-dark);
+}
+
+.miner-numbers {
+  margin: 16px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.miner-numbers div {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--background);
+}
+
+.miner-numbers dt {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.miner-numbers dd {
+  margin: 4px 0 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.miner-warp .casino-actions {
+  margin-bottom: 8px;
+}
+
+.miner-warp-hint {
+  margin-bottom: 20px;
+}
+
+.miner-warp-hint:empty {
+  display: none;
+}
+
+/* Achievements: done ones in colour, the rest greyed out */
+.miner-achievement-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  list-style: none;
+}
+
+.miner-achievement {
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 10px;
+  border-radius: 12px;
+  background: var(--background);
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.miner-achievement.is-done {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--miner-gold) 50%, transparent);
+  opacity: 1;
+  filter: none;
+}
+
+.miner-achievement-icon {
+  grid-row: span 2;
+  font-size: 1.5rem;
+}
+
+.miner-achievement-name {
+  font-weight: 700;
+}
+
+.miner-achievement-text {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* The comet, flying across the whole screen from left to right in the time it stays */
+.miner-comet {
+  position: fixed;
+  top: var(--comet-from);
+  left: 0;
+  z-index: 50;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.miner-comet.is-flying {
+  animation: miner-comet var(--comet-ms) linear var(--comet-delay) forwards;
+}
+
+.miner-comet:focus-visible {
+  outline: 3px solid var(--accent);
+}
+
+.miner-comet-head {
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fffbe6, var(--miner-gold) 55%, #b9780a);
+  box-shadow: 0 0 24px var(--miner-gold), 0 0 48px color-mix(in srgb, var(--miner-gold) 50%, transparent);
+  animation: miner-twinkle 0.6s ease-in-out infinite alternate;
+}
+
+.miner-comet-head::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 60%;
+  width: 140px;
+  height: 18px;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: linear-gradient(to left, color-mix(in srgb, var(--miner-gold) 80%, transparent), transparent);
+  filter: blur(2px);
+}
+
+.miner-comet.is-diamond .miner-comet-head {
+  background: radial-gradient(circle at 40% 35%, #fff, var(--miner-diamond) 55%, #2a7fb0);
+  box-shadow: 0 0 24px var(--miner-diamond), 0 0 60px var(--miner-diamond);
+}
+
+.miner-comet.is-diamond .miner-comet-head::before {
+  background: linear-gradient(to left, color-mix(in srgb, var(--miner-diamond) 80%, transparent), transparent);
+}
+
+@keyframes miner-comet {
+  from { transform: translate(-15vw, 0); }
+  to { transform: translate(110vw, calc(var(--comet-to) - var(--comet-from))); }
+}
+
+@keyframes miner-twinkle {
+  to { scale: 1.12; }
+}
+
+/* Messages in the corner */
+.miner-toasts {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  width: min(360px, calc(100vw - 32px));
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  pointer-events: none;
+}
+
+.miner-toast {
+  padding: 12px 16px;
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  background: var(--nav-side-bg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  line-height: 1.4;
+  animation: miner-toast 0.3s ease;
+  transition: opacity 0.4s, transform 0.4s;
+}
+
+.miner-toast.is-achievement,
+.miner-toast.is-comet {
+  border-left-color: var(--miner-gold);
+}
+
+.miner-toast.is-diamond {
+  border-left-color: var(--miner-diamond);
+}
+
+.miner-toast.is-welcome {
+  border-left-color: var(--casino-up);
+}
+
+.miner-toast.is-leaving {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+@keyframes miner-toast {
+  from { opacity: 0; transform: translateY(16px); }
+}
+
+@media (max-width: 860px) {
+  .miner-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .miner-mine {
+    position: static;
+  }
+
+  .miner-field {
+    height: 270px;
+  }
+}
+
+@media (max-width: 560px) {
+  .miner .casino-card {
+    padding: 20px 16px;
+  }
+
+  .miner-ore {
+    font-size: 1.6rem;
+  }
+
+  .miner-asteroid {
+    width: 190px;
+    height: 180px;
+  }
+
+  .miner-orbit {
+    width: 250px;
+    height: 250px;
+  }
+}
+
+/* Less motion: the asteroid holds still and the comet waits in one place, pulsing, instead of flying */
+@media (prefers-reduced-motion: reduce) {
+  .miner-field,
+  .miner-asteroid.is-hit,
+  .miner-asteroid[data-stage="4"],
+  .miner-asteroid[data-stage="4"].is-hit,
+  .miner-orbit,
+  .miner-buff,
+  .miner.is-warping .miner-layout {
+    animation: none;
+  }
+
+  .miner-comet {
+    left: var(--comet-left);
+  }
+
+  .miner-comet.is-flying {
+    animation: none;
+  }
+
+  .miner-float {
+    animation-name: miner-fade;
+  }
+}
+
+@keyframes miner-fade {
+  to { opacity: 0; }
+}

@@ -24,7 +24,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
     'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it\'s still there when you refresh or come back to the chat. Kept in session storage, so it\'s gone when you close the tab.',
     'hbHubNotifiedMessageId' => 'The last message you got a browser notification or sound for, so you don\'t get it twice.',
-    'hbHubChessSound, hbHubMatadorSound' => 'Whether you turned the game sounds on or off.',
+    'hbHubChessSound, hbHubMatadorSound, hbHubMinerSound' => 'Whether you turned the game sounds on or off.',
     'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',
 ];
 ?>
@@ -182,6 +182,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 the Wordle leaderboards. Other people only see the totals there (games, wins, win %, average
                                 guesses and streaks), never your guesses.
                             </li>
+                            <li>
+                                Your Space Ore Miner save: your ore, buildings, upgrades, Dark Matter, achievements, how many
+                                times you've clicked and caught comets, when you started and last saved, and a random id for
+                                the browser tab you're playing in (so the game only runs in one tab at a time). Your game sends
+                                what you did since the last save every 30 seconds, with the time of each click and purchase, so
+                                the server can check it. Only the result is kept, not the list of clicks. Other people only see
+                                the totals on the Space Ore Miner leaderboard (ore mined, ore per second, Dark Matter, Warp
+                                Jumps, clicks and achievements).
+                            </li>
                         </ul>
                         <p>
                             Chips are virtual. HB Hub never asks for, or stores, any payment details. If you buy extra chips
@@ -314,7 +323,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/otherPages/settings">settings page</a>.
                             That right away removes your name, profile picture, bio, year, class, settings, password, two-factor
-                            secret, IP addresses, logins, known devices and the files you attached in chats. Your name is replaced
+                            secret, IP addresses, logins, known devices, your Space Ore Miner save and the files you attached in chats. Your name is replaced
                             with "Deleted User".
                         </p>
                         <p>

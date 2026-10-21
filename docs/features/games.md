@@ -24,6 +24,17 @@
 |---|---|
 | **Wordle** | The daily word game: guess the five-letter word in six tries. There's an English and a Danish word every day (the Danish keyboard has æ, ø and å), the same for everyone, with stats, sharing and a leaderboard for each language with win %, average guesses and the current and longest streak |
 
+## Space Ore Miner
+
+| | |
+|---|---|
+| **Space Ore Miner** | A clicker game, like Cookie Clicker: click the asteroid for ore, and spend it on 10 buildings (from a Space Pickaxe Guy to a Black Hole Siphon) that mine for you. Each one costs 15% more than the last |
+| **Upgrades** | Click upgrades (critical clicks, clicks worth a share of your production, an Auto-Clicker Bot), three upgrades per building at 10, 25 and 50 owned, upgrades for every building, synergies between buildings, and comet upgrades |
+| **Golden Comets** | A comet flies across the screen now and then. Catch it for a pile of ore, 7× production or 77× clicks for a while, or (rarely) a Diamond Comet with 777× production |
+| **Warp Jump** | Prestige: after a billion ore in a run, start over in a new galaxy for Dark Matter. Every Dark Matter earned is +2.5% production for good, and it buys permanent upgrades |
+| **Extras** | 33 achievements, an asteroid that changes as you mine more, rock bits and floating numbers on every click, a news ticker, sounds and a leaderboard |
+| **Saving** | Saved on the server every 30 seconds and when you leave, and you keep mining at 5% while you're away. The server plays every click and purchase again to check it, so the leaderboard can't be cheated from the browser, and clicks only count up to 20 a second. The game runs in one tab at a time |
+
 The Games section can be opened to everyone, only to admins, or to nobody with `games_access` in the
 [config](../config.md), and players can block it for themselves (see [Account & security](account.md)).
 
