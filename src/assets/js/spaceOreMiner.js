@@ -159,7 +159,17 @@
     }
     const warpGain = (s) => (s.runOre >= CONFIG.warpOre ? Math.max(0, darkTotal(s.allOre) - s.darkEarned) : 0);
 
-    // Whether a click at time comes in like clockwork, an auto-clicker (hbHubMinerSteadyClick())
+    // Whether the last gaps between clicks vary too little to be a person's (hbHubMinerEvenClicks())
+    function evenClicks(gaps) {
+        if (gaps.length < CONFIG.evenClicks) return false;
+        const mean = gaps.reduce((total, gap) => total + gap, 0) / gaps.length;
+        if (mean <= 0) return false;
+        let squares = 0;
+        for (const gap of gaps) squares += (gap - mean) * (gap - mean);
+        return Math.sqrt(squares / gaps.length) < CONFIG.evenDeviation * mean;
+    }
+
+    // Whether a click at time comes from an auto-clicker: like clockwork, or too evenly (hbHubMinerSteadyClick())
     function steadyClick(s, time) {
         const steady = s.steady;
         time = Math.max(time, steady.last);
@@ -167,7 +177,9 @@
         if (Math.abs(gap - steady.gap) > CONFIG.steadyToleranceMs) steady.since = time;
         steady.gap = gap;
         steady.last = time;
-        return time - steady.since >= CONFIG.steadyMs;
+        steady.gaps.push(gap);
+        if (steady.gaps.length > CONFIG.evenClicks) steady.gaps.shift();
+        return time - steady.since >= CONFIG.steadyMs || evenClicks(steady.gaps);
     }
 
     // offsets: when each click was, in ms after s.tick. Returns the ore mined, how many of the clicks were critical and
@@ -987,7 +999,7 @@
         burst(x, y, result.mined, result.crits > 0);
         sound(result.crits > 0 ? 'crit' : 'click');
         if (result.steady && !wasSteady) {
-            toast('🤖 Your clicks have come in like clockwork for ' + CONFIG.steadyMs / 1000 + ' seconds, like an auto-clicker, so each one only mines '
+            toast('🤖 Your clicks are coming in too evenly, like an auto-clicker\'s, so each one only mines '
                 + CONFIG.steadyValue * 100 + '% until you click at your own pace again.', '', 9000);
         }
         wasSteady = result.steady;
