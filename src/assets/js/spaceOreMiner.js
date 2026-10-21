@@ -577,6 +577,8 @@
         antiKey = '';
     }
 
+    const KEEPALIVE_BYTES = 60000; // a bit under the 64 KB browsers allow a keepalive request
+
     async function save({ claim = false, keepalive = false } = {}) {
         if (isSending || (!isPlaying && !claim)) return;
         isSending = true;
@@ -587,6 +589,9 @@
         lastSentAt = sentAt;
         const body = new URLSearchParams({ action: 'sync', tab: TAB, actions: JSON.stringify(batch) });
         if (claim) body.set('claim', '1');
+        // A keepalive request can't be bigger than 64 KB (the browser fails it at once), so a big batch goes as a normal
+        // one, which still gets there as long as the page isn't closed
+        if (body.toString().length > KEEPALIVE_BYTES) keepalive = false;
 
         try {
             const response = await fetch('/games/spaceOreMiner/save', {
@@ -624,7 +629,11 @@
             isSending = false;
             renderSave();
         }
-        if (document.hidden && pending.length > 0) save({ keepalive: true }); // more was done while it was on its way
+        // More was done while it was on its way. Not after a save that failed: it would be sent again straight away and
+        // fail again, over and over, and a request the browser turns down at once (see KEEPALIVE_BYTES) never even lets
+        // the page breathe in between, which froze the whole tab. It goes with the next save instead (when the page is
+        // shown again, or closed).
+        if (document.hidden && pending.length > 0 && !saveFailed) save({ keepalive: true });
     }
 
     // Soon, for things worth keeping straight away (Warp Jumps, Dark Matter), without a save for every click
