@@ -2,7 +2,7 @@
 // The page gives the game's data and numbers in data-config (hbHubMinerConfig() in
 // assets/php/games/spaceOreMiner/miner.php: buildings, upgrades, darkUpgrades, antiUpgrades, achievements, comets and
 // the numbers)
-// and a random id for this tab in data-tab. The save itself comes from the first save, which also claims the game
+// a random id for this tab in data-tab, and where the drawn icons are in data-icons (see iconBox()).The save itself comes from the first save, which also claims the game
 // for this tab (a game open in another tab then gets 409 "otherTab" and stops).
 // The rules in "The game" below are a copy of miner.php's, function for function, because the server plays every
 // action again to check it: each click, purchase, comet, Warp Jump and Big Crunch is done here right away (so it's
@@ -19,6 +19,7 @@
 
     const CONFIG = JSON.parse(root.dataset.config);
     const TAB = root.dataset.tab;
+    const ICONS = root.dataset.icons; // the drawn icons, see iconBox()
     const BUILDINGS = CONFIG.buildings;
     const BUILDING_IDS = Object.keys(BUILDINGS);
     const UPGRADES = CONFIG.upgrades; // cheapest first
@@ -403,6 +404,20 @@
         return node;
     }
 
+    // One of the game's drawn icons by its name (the 'icon' in the game's data, or a <symbol> id in icons.svg, which
+    // data-icons points to), in a span with className. Only decoration: the text next to it says what it is.
+    function iconBox(className, name) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'miner-icon');
+        svg.setAttribute('aria-hidden', 'true');
+        const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+        use.setAttribute('href', ICONS + '#' + name);
+        svg.append(use);
+        const box = element('span', className);
+        box.append(svg);
+        return box;
+    }
+
     // ----- The page
 
     const asteroid = root.querySelector('[data-miner-asteroid]');
@@ -608,7 +623,7 @@
             saveFailed = false;
             if (claim) start();
             if (data.offline && data.offline.ms > CONFIG.onlineMs) {
-                toast('Welcome back! While you were away for ' + formatDuration(data.offline.ms) + ', your machines mined '
+                toast('orePile', 'Welcome back! While you were away for ' + formatDuration(data.offline.ms) + ', your machines mined '
                     + format(data.offline.ore) + ' ore.', 'is-welcome', 9000);
             }
         } catch {
@@ -784,7 +799,8 @@
                 button.type = 'button';
                 button.dataset.upgrade = id;
                 button.append(
-                    element('span', 'miner-upgrade-icon', upgrade.icon),
+                    // a building's own upgrades show the building, with a ×2 on it (spaceOreMiner.css)
+                    iconBox('miner-upgrade-icon' + (upgrade.type === 'building' ? ' is-boost' : ''), upgrade.icon),
                     element('span', 'miner-upgrade-name', upgrade.name),
                     element('span', 'miner-upgrade-cost', format(upgrade.cost) + ' ore'),
                     element('span', 'miner-upgrade-text', upgrade.text),
@@ -808,7 +824,7 @@
                     element('span', 'miner-building-cost'),
                     element('span', 'miner-building-info'),
                 );
-                button.append(element('span', 'miner-building-icon', building.icon), main, element('span', 'miner-building-owned'));
+                button.append(iconBox('miner-building-icon', building.icon), main, element('span', 'miner-building-owned'));
                 const index = shown.indexOf(id) - offset;
                 if (index >= 0 && index < 9) { // the hot key that buys it (see "Hot keys" below)
                     button.prepend(element('kbd', 'miner-key', String(index + 1)));
@@ -824,7 +840,7 @@
                 main.append(element('span', 'miner-building-name', '???'),
                     element('span', 'miner-building-cost', format(BUILDINGS[mystery].cost) + ' ore'),
                     element('span', 'miner-building-info', 'Mine more to find out what this is.'));
-                box.append(element('span', 'miner-building-icon', '❔'), main);
+                box.append(iconBox('miner-building-icon', 'question'), main);
                 item.append(box);
                 return item;
             })()] : []));
@@ -939,7 +955,7 @@
             button.classList.toggle('is-affordable', !isOwned && toSpend >= upgrade.cost);
             button.disabled = isOwned;
             button.append(
-                element('span', 'miner-upgrade-icon', upgrade.icon),
+                iconBox('miner-upgrade-icon', upgrade.icon),
                 element('span', 'miner-upgrade-name', upgrade.name),
                 element('span', 'miner-upgrade-cost', isOwned ? 'Bought' : format(upgrade.cost) + ' ' + currency),
                 element('span', 'miner-upgrade-text', upgrade.text),
@@ -974,7 +990,7 @@
             const isDone = state.achievements.includes(id);
             const item = element('li', 'miner-achievement' + (isDone ? ' is-done' : ''));
             item.dataset.achievement = id;
-            item.append(element('span', 'miner-achievement-icon', isDone ? '🏆' : '🔒'),
+            item.append(iconBox('miner-achievement-icon', isDone ? 'trophy' : 'lock'),
                 element('span', 'miner-achievement-name', achievement.name),
                 element('span', 'miner-achievement-text', achievement.text));
             item.setAttribute('aria-label', achievement.name + ': ' + achievement.text + (isDone ? ' Done.' : ' Not done yet.'));
@@ -988,7 +1004,7 @@
         if (fresh.length === 0) return;
         for (const id of fresh) {
             announced.add(id);
-            toast('🏆 Achievement: ' + ACHIEVEMENTS[id].name + ' - ' + ACHIEVEMENTS[id].text, 'is-achievement');
+            toast('trophy', 'Achievement: ' + ACHIEVEMENTS[id].name + ' - ' + ACHIEVEMENTS[id].text, 'is-achievement');
         }
         sound('achievement');
         renderAchievements();
@@ -1023,8 +1039,11 @@
 
     // ----- Messages in the corner
 
-    function toast(text, className = '', keepFor = 5000) {
-        const item = element('li', 'miner-toast ' + className, text);
+    // iconName is one of the icons (see iconBox()) to show in front of the text, or '' for none
+    function toast(iconName, text, className = '', keepFor = 5000) {
+        const item = element('li', 'miner-toast ' + className);
+        if (iconName) item.append(iconBox('miner-toast-icon', iconName));
+        item.append(element('span', 'miner-toast-text', text));
         toasts.append(item);
         while (toasts.children.length > 4) toasts.firstElementChild.remove();
         setTimeout(() => {
@@ -1414,7 +1433,7 @@
         burst(x, y, result.mined, result.crits > 0);
         sound(result.crits > 0 ? 'crit' : 'click');
         if (result.auto && !wasAuto) {
-            toast('🤖 Hey! Looks like you\'re using an auto-clicker, so your clicks are only worth '
+            toast('robot', 'Hey! Looks like you\'re using an auto-clicker, so your clicks are only worth '
                 + CONFIG.fastValue * 100 + '% now.', '', 9000);
         }
         wasAuto = result.auto;
@@ -1462,7 +1481,7 @@
         if (!button) return;
         if (act({ type: 'upgrade', id: button.dataset.upgrade })) {
             sound('buy');
-            toast(UPGRADES[button.dataset.upgrade].icon + ' ' + UPGRADES[button.dataset.upgrade].name + ': ' + UPGRADES[button.dataset.upgrade].text);
+            toast(UPGRADES[button.dataset.upgrade].icon, UPGRADES[button.dataset.upgrade].name + ': ' + UPGRADES[button.dataset.upgrade].text);
             renderStore();
         }
     });
@@ -1486,7 +1505,7 @@
         if (act({ type: 'dark', id: button.dataset.dark })) {
             sound('buy');
             if (button.dataset.dark === 'lateKeys') setLateKeys(true); // bought to be used, so it starts on
-            toast(DARK_UPGRADES[button.dataset.dark].icon + ' ' + DARK_UPGRADES[button.dataset.dark].name + ': ' + DARK_UPGRADES[button.dataset.dark].text);
+            toast(DARK_UPGRADES[button.dataset.dark].icon, DARK_UPGRADES[button.dataset.dark].name + ': ' + DARK_UPGRADES[button.dataset.dark].text);
             renderWarp();
             renderStore();
             saveSoon();
@@ -1501,7 +1520,7 @@
         if (!result) return;
         const comet = COMETS[result.kind];
         sound('catch');
-        toast('☄️ ' + COMET_TEXT[result.kind](comet.ms * (has(state, 'tail') ? 2 : 1), result.ore, comet.multiplier * cometPower(state)),
+        toast(result.kind === 'diamond' ? 'diamond' : 'comet', COMET_TEXT[result.kind](comet.ms * (has(state, 'tail') ? 2 : 1), result.ore, comet.multiplier * cometPower(state)),
             'is-comet is-' + result.kind, 6000);
         renderBuffs();
         renderStore();
@@ -1527,7 +1546,7 @@
         root.classList.remove('is-warping');
         void root.offsetWidth;
         root.classList.add('is-warping');
-        toast('🌀 Welcome to a new galaxy! You got ' + format(gain) + ' Dark Matter.', 'is-comet', 7000);
+        toast('warp', 'Welcome to a new galaxy! You got ' + format(gain) + ' Dark Matter.', 'is-comet', 7000);
         renderAll();
         saveSoon();
     });
@@ -1539,7 +1558,7 @@
         if (!button) return;
         if (act({ type: 'anti', id: button.dataset.anti })) {
             sound('buy');
-            toast(ANTI_UPGRADES[button.dataset.anti].icon + ' ' + ANTI_UPGRADES[button.dataset.anti].name + ': ' + ANTI_UPGRADES[button.dataset.anti].text);
+            toast(ANTI_UPGRADES[button.dataset.anti].icon, ANTI_UPGRADES[button.dataset.anti].name + ': ' + ANTI_UPGRADES[button.dataset.anti].text);
             renderCrunch();
             renderStore();
             saveSoon();
@@ -1564,7 +1583,7 @@
         root.classList.remove('is-crunching');
         void root.offsetWidth;
         root.classList.add('is-crunching');
-        toast('💥 The universe collapsed and started over. You got ' + format(gain) + ' Antimatter.', 'is-comet', 7000);
+        toast('bigCrunch', 'The universe collapsed and started over. You got ' + format(gain) + ' Antimatter.', 'is-comet', 7000);
         renderAll();
         saveSoon();
     });

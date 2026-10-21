@@ -5,7 +5,7 @@
 // The page only has the empty spaces: spaceOreMiner.js loads the save from /games/spaceOreMiner/save on its first save
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
-// rules as the server.
+// rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
 // It has three views, picked in the menu under the title and the news ticker: Ore (the asteroid and the store, the default), Dark Matter
 // (?view=darkMatter, the Warp Jump) and Antimatter (?view=antimatter, the Big Crunch). They're all on the page, and the
 // script switches between them without loading it again (changing the address, so Back works), so the game keeps
@@ -36,7 +36,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="casino games miner is-loading" data-miner data-view="<?= $minerView ?>"
-          data-tab="<?= bin2hex(random_bytes(16)) ?>"
+          data-tab="<?= bin2hex(random_bytes(16)) ?>" data-icons="<?= htmlspecialchars(hbHubMinerIconsUrl()) ?>"
           data-config="<?= htmlspecialchars(json_encode(hbHubMinerConfig())) ?>">
         <a class="casino-back" href="/games/">&larr; Games</a>
         <div class="casino-title-row">
@@ -48,13 +48,13 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <span class="games-visually-hidden">Sound</span>
                 </button>
                 <!-- On phones only the icons show; the words stay for screen readers -->
-                <a class="casino-btn miner-title-btn" href="/games/spaceOreMiner/leaderboard"><span aria-hidden="true">🥇</span> <span class="miner-title-label">Leaderboard</span></a>
-                <button type="button" class="casino-btn miner-title-btn" data-miner-open="stats" aria-haspopup="dialog"><span aria-hidden="true">📊</span> <span class="miner-title-label">Stats</span></button>
+                <a class="casino-btn miner-title-btn" href="/games/spaceOreMiner/leaderboard"><?= hbHubMinerIcon('podium', 'miner-title-icon') ?> <span class="miner-title-label">Leaderboard</span></a>
+                <button type="button" class="casino-btn miner-title-btn" data-miner-open="stats" aria-haspopup="dialog"><?= hbHubMinerIcon('stats', 'miner-title-icon') ?> <span class="miner-title-label">Stats</span></button>
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="achievements" aria-haspopup="dialog">
-                    <span aria-hidden="true">🏆</span> <span class="miner-title-label">Achievements</span>
+                    <?= hbHubMinerIcon('trophy', 'miner-title-icon') ?> <span class="miner-title-label">Achievements</span>
                     <span class="miner-title-count" data-miner-achievement-count>0 / <?= count(HBHUB_MINER_ACHIEVEMENTS) ?></span>
                 </button>
-                <button type="button" class="casino-btn miner-title-btn" data-miner-open="help" aria-haspopup="dialog"><span aria-hidden="true">❓</span> <span class="miner-title-label">How to play</span></button>
+                <button type="button" class="casino-btn miner-title-btn" data-miner-open="help" aria-haspopup="dialog"><?= hbHubMinerIcon('question', 'miner-title-icon') ?> <span class="miner-title-label">How to play</span></button>
             </div>
         </div>
 
@@ -164,7 +164,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <p class="miner-anti"><span data-miner-anti>0</span> Antimatter</p>
             </div>
             <p class="miner-locked" data-miner-crunch-locked>
-                <span class="miner-locked-icon" aria-hidden="true">🔒</span>
+                <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
                 Something even bigger than a Warp Jump is out there. Do your first Warp Jump to find out what.
             </p>
             <div data-miner-crunch-section hidden>

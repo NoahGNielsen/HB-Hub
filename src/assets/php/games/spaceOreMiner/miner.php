@@ -70,53 +70,54 @@ const HBHUB_MINER_SALT_COMET_WAIT = 2;
 const HBHUB_MINER_SALT_COMET_KIND = 3;
 const HBHUB_MINER_SALT_DIAMOND = 4;
 
+// Every 'icon' below (and in the upgrades after it) is the name of a drawn icon in assets/images/spaceOreMiner/icons.svg.
 // The buildings, cheapest first. 'rate' is ore per second for each one before upgrades, 'upgrades' their six
 // upgrades (see HBHUB_MINER_BUILDING_UPGRADE_AT), and 'growth', when it's there, how much more each one costs than the
 // one before instead of HBHUB_MINER_COST_GROWTH (Space Pickaxe Guys go up slower, so having lots of them stays cheap)
 const HBHUB_MINER_BUILDINGS = [
-    'pickaxe' => ['name' => 'Space Pickaxe Guy', 'plural' => 'Space Pickaxe Guys', 'icon' => '👷', 'cost' => 15, 'rate' => 0.1, 'growth' => 1.12,
+    'pickaxe' => ['name' => 'Space Pickaxe Guy', 'plural' => 'Space Pickaxe Guys', 'icon' => 'pickaxeGuy', 'cost' => 15, 'rate' => 0.1, 'growth' => 1.12,
         'text' => 'Swings a pickaxe at the rock. In zero gravity, that\'s harder than it sounds.',
         'upgrades' => ['Energy Drinks', 'Hard Hats', 'Union Contract', 'Jetpack Commute', 'Diamond Pickaxes', 'Employee of the Month']],
-    'drone' => ['name' => 'Mining Drone', 'plural' => 'Mining Drones', 'icon' => '🛸', 'cost' => 100, 'rate' => 1,
+    'drone' => ['name' => 'Mining Drone', 'plural' => 'Mining Drones', 'icon' => 'drone', 'cost' => 100, 'rate' => 1,
         'text' => 'A little robot that nibbles ore off the asteroid all day long.',
         'upgrades' => ['Longer Batteries', 'Drone Swarm AI', 'Self-Repair Nanites', 'Magnetic Grabbers', 'Hive Mind', 'Drone Factories']],
-    'laser' => ['name' => 'Laser Drill', 'plural' => 'Laser Drills', 'icon' => '🔦', 'cost' => 1100, 'rate' => 8,
+    'laser' => ['name' => 'Laser Drill', 'plural' => 'Laser Drills', 'icon' => 'laserDrill', 'cost' => 1100, 'rate' => 8,
         'text' => 'Melts through rock like butter. Don\'t look straight into it.',
         'upgrades' => ['Focused Lens', 'Overclocked Lasers', 'Diamond Tips', 'Mirror Arrays', 'Gamma Beams', 'Planet-Sized Lens']],
-    'rig' => ['name' => 'Mining Rig', 'plural' => 'Mining Rigs', 'icon' => '🏗️', 'cost' => 12000, 'rate' => 47,
+    'rig' => ['name' => 'Mining Rig', 'plural' => 'Mining Rigs', 'icon' => 'rig', 'cost' => 12000, 'rate' => 47,
         'text' => 'A walking factory bolted onto the rock.',
         'upgrades' => ['Heavy Treads', 'Double Shifts', 'Autonomous Rigs', 'Bigger Buckets', 'Rig Convoys', 'Mega Rigs']],
-    'base' => ['name' => 'Asteroid Base', 'plural' => 'Asteroid Bases', 'icon' => '🏠', 'cost' => 130000, 'rate' => 260,
+    'base' => ['name' => 'Asteroid Base', 'plural' => 'Asteroid Bases', 'icon' => 'base', 'cost' => 130000, 'rate' => 260,
         'text' => 'A whole crew living on site. Shifts never end in space.',
         'upgrades' => ['Hydroponics', 'Ore Refinery', 'Artificial Gravity', 'Space Cafeteria', 'Crew Quarters', 'Base Network']],
-    'freighter' => ['name' => 'Ore Freighter', 'plural' => 'Ore Freighters', 'icon' => '🚀', 'cost' => 1.4e6, 'rate' => 1400,
+    'freighter' => ['name' => 'Ore Freighter', 'plural' => 'Ore Freighters', 'icon' => 'freighter', 'cost' => 1.4e6, 'rate' => 1400,
         'text' => 'Hauls in ore from asteroids you haven\'t even seen yet.',
         'upgrades' => ['Bigger Cargo Holds', 'Hyperspace Lanes', 'Fleet Command', 'Tractor Beams', 'Cargo Drones', 'Armada']],
-    'station' => ['name' => 'Space Station', 'plural' => 'Space Stations', 'icon' => '🛰️', 'cost' => 2e7, 'rate' => 7800,
+    'station' => ['name' => 'Space Station', 'plural' => 'Space Stations', 'icon' => 'station', 'cost' => 2e7, 'rate' => 7800,
         'text' => 'Runs mining all over the solar system from orbit.',
         'upgrades' => ['Solar Arrays', 'Fusion Core', 'Ring Habitat', 'Docking Ring', 'Orbital Elevator', 'Station Cities']],
-    'excavator' => ['name' => 'Moon Excavator', 'plural' => 'Moon Excavators', 'icon' => '🌙', 'cost' => 3.3e8, 'rate' => 44000,
+    'excavator' => ['name' => 'Moon Excavator', 'plural' => 'Moon Excavators', 'icon' => 'moonExcavator', 'cost' => 3.3e8, 'rate' => 44000,
         'text' => 'Digs up whole moons. The moons have stopped complaining.',
         'upgrades' => ['Moon Treads', 'Crater Scoops', 'Core Tap', 'Lunar Conveyors', 'Moon Magnets', 'Moon Factory']],
-    'cracker' => ['name' => 'Planet Cracker', 'plural' => 'Planet Crackers', 'icon' => '🪐', 'cost' => 5.1e9, 'rate' => 260000,
+    'cracker' => ['name' => 'Planet Cracker', 'plural' => 'Planet Crackers', 'icon' => 'planetCracker', 'cost' => 5.1e9, 'rate' => 260000,
         'text' => 'Cracks planets open like eggs to get at the ore inside.',
         'upgrades' => ['Seismic Charges', 'Tectonic Splitter', 'Planet Shredder', 'Core Drills', 'Magma Pumps', 'Planet Juicer']],
-    'siphon' => ['name' => 'Black Hole Siphon', 'plural' => 'Black Hole Siphons', 'icon' => '🕳️', 'cost' => 7.5e10, 'rate' => 1.6e6,
+    'siphon' => ['name' => 'Black Hole Siphon', 'plural' => 'Black Hole Siphons', 'icon' => 'blackHole', 'cost' => 7.5e10, 'rate' => 1.6e6,
         'text' => 'Pulls ore out of a black hole. Nobody knows how. Nobody asks.',
         'upgrades' => ['Event Horizon Net', 'Hawking Pump', 'Singularity Engine', 'Spaghetti Filters', 'Gravity Lens', 'Pocket Black Holes']],
-    'forge' => ['name' => 'Star Forge', 'plural' => 'Star Forges', 'icon' => '⭐', 'cost' => 1e12, 'rate' => 1e7,
+    'forge' => ['name' => 'Star Forge', 'plural' => 'Star Forges', 'icon' => 'starForge', 'cost' => 1e12, 'rate' => 1e7,
         'text' => 'Squeezes stars until ore comes out. The stars are fine, mostly.',
         'upgrades' => ['Stellar Bellows', 'Fusion Hammers', 'Neutron Anvil', 'Star Tongs', 'Supernova Furnace', 'Galactic Smithy']],
-    'nebula' => ['name' => 'Nebula Harvester', 'plural' => 'Nebula Harvesters', 'icon' => '🌌', 'cost' => 1.4e13, 'rate' => 6.5e7,
+    'nebula' => ['name' => 'Nebula Harvester', 'plural' => 'Nebula Harvesters', 'icon' => 'nebula', 'cost' => 1.4e13, 'rate' => 6.5e7,
         'text' => 'Sweeps up whole nebulas with a really, really big net.',
         'upgrades' => ['Finer Nets', 'Gas Compressors', 'Cosmic Vacuum', 'Nebula Maps', 'Stardust Filters', 'Cloud Factory']],
-    'dyson' => ['name' => 'Dyson Swarm', 'plural' => 'Dyson Swarms', 'icon' => '☀️', 'cost' => 1.7e14, 'rate' => 4.3e8,
+    'dyson' => ['name' => 'Dyson Swarm', 'plural' => 'Dyson Swarms', 'icon' => 'dysonSwarm', 'cost' => 1.7e14, 'rate' => 4.3e8,
         'text' => 'A billion mirrors around a star, all of them pointed at the ore.',
         'upgrades' => ['Mirror Polish', 'Swarm Logic', 'Full Sphere', 'Shell Layers', 'Photon Collectors', 'Star Lifting']],
-    'wormhole' => ['name' => 'Wormhole Gate', 'plural' => 'Wormhole Gates', 'icon' => '⭕', 'cost' => 2.1e15, 'rate' => 2.9e9,
+    'wormhole' => ['name' => 'Wormhole Gate', 'plural' => 'Wormhole Gates', 'icon' => 'wormhole', 'cost' => 2.1e15, 'rate' => 2.9e9,
         'text' => 'Opens a door to a part of space that\'s nothing but ore. Mind the gap.',
         'upgrades' => ['Stable Throats', 'Exotic Matter Struts', 'Wormhole Network', 'Toll Booths', 'Time Shortcuts', 'Pocket Dimensions']],
-    'multiverse' => ['name' => 'Multiverse Drill', 'plural' => 'Multiverse Drills', 'icon' => '🌐', 'cost' => 2.6e16, 'rate' => 2.1e10,
+    'multiverse' => ['name' => 'Multiverse Drill', 'plural' => 'Multiverse Drills', 'icon' => 'multiverse', 'cost' => 2.6e16, 'rate' => 2.1e10,
         'text' => 'Drills into the universe next door and takes their ore too. They have a drill as well.',
         'upgrades' => ['Dimensional Bits', 'Parallel Shifts', 'Infinite Drill', 'Mirror Universe Miners', 'Quantum Foam Bits', 'The Everything Drill']],
 ];
@@ -137,68 +138,68 @@ const HBHUB_MINER_BUILDING_UPGRADE_COST = [2.5, 3, 5, 8, 8, 8];
 // 'need' is when it shows up in the store: ore (mined this run), owned (building => how many) and comets (caught ever).
 // Without one, it's ore mined this run of half its cost.
 const HBHUB_MINER_OTHER_UPGRADES = [
-    'titanium' => ['name' => 'Titanium Pickaxe', 'icon' => '⛏️', 'cost' => 100, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'gloves' => ['name' => 'Reinforced Gloves', 'icon' => '🧤', 'cost' => 500, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'plasma' => ['name' => 'Plasma Gloves', 'icon' => '🔥', 'cost' => 5000, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'fuel' => ['name' => 'Better Fuel', 'icon' => '⛽', 'cost' => 10000, 'type' => 'global', 'value' => 0.1, 'text' => 'All buildings mine 10% more.'],
-    'buddySystem' => ['name' => 'Buddy System', 'icon' => '🤝', 'cost' => 2000, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.005,
+    'titanium' => ['name' => 'Titanium Pickaxe', 'icon' => 'pickaxe', 'cost' => 100, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
+    'gloves' => ['name' => 'Reinforced Gloves', 'icon' => 'glove', 'cost' => 500, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
+    'plasma' => ['name' => 'Plasma Gloves', 'icon' => 'plasmaGlove', 'cost' => 5000, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
+    'fuel' => ['name' => 'Better Fuel', 'icon' => 'fuelCan', 'cost' => 10000, 'type' => 'global', 'value' => 0.1, 'text' => 'All buildings mine 10% more.'],
+    'buddySystem' => ['name' => 'Buddy System', 'icon' => 'buddies', 'cost' => 2000, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.005,
         'need' => ['owned' => ['pickaxe' => 10]], 'text' => 'Each Space Pickaxe Guy mines 0.005 more ore per second for every other building you own.'],
-    'shiftBosses' => ['name' => 'Shift Bosses', 'icon' => '📋', 'cost' => 2e5, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.02,
+    'shiftBosses' => ['name' => 'Shift Bosses', 'icon' => 'clipboard', 'cost' => 2e5, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.02,
         'need' => ['owned' => ['pickaxe' => 25]], 'text' => 'Each Space Pickaxe Guy mines another 0.02 ore per second for every other building you own.'],
-    'pickaxeAcademy' => ['name' => 'Pickaxe Academy', 'icon' => '🎓', 'cost' => 2e7, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.05,
+    'pickaxeAcademy' => ['name' => 'Pickaxe Academy', 'icon' => 'gradCap', 'cost' => 2e7, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.05,
         'need' => ['owned' => ['pickaxe' => 50]], 'text' => 'Each Space Pickaxe Guy mines another 0.05 ore per second for every other building you own.'],
-    'pickaxeGuild' => ['name' => 'Pickaxe Guild', 'icon' => '⚒️', 'cost' => 2e9, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.5,
+    'pickaxeGuild' => ['name' => 'Pickaxe Guild', 'icon' => 'crossedPickaxes', 'cost' => 2e9, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.5,
         'need' => ['owned' => ['pickaxe' => 75]], 'text' => 'Each Space Pickaxe Guy mines another 0.5 ore per second for every other building you own.'],
-    'pickaxeClones' => ['name' => 'Pickaxe Guy Clones', 'icon' => '🧬', 'cost' => 2e11, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 5,
+    'pickaxeClones' => ['name' => 'Pickaxe Guy Clones', 'icon' => 'dna', 'cost' => 2e11, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 5,
         'need' => ['owned' => ['pickaxe' => 100]], 'text' => 'Each Space Pickaxe Guy mines another 5 ore per second for every other building you own.'],
-    'pickaxeLegends' => ['name' => 'Living Legends', 'icon' => '🏆', 'cost' => 2e13, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 50,
+    'pickaxeLegends' => ['name' => 'Living Legends', 'icon' => 'medal', 'cost' => 2e13, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 50,
         'need' => ['owned' => ['pickaxe' => 150]], 'text' => 'Each Space Pickaxe Guy mines another 50 ore per second for every other building you own.'],
-    'pickaxeGalaxy' => ['name' => 'Galaxy of Pickaxes', 'icon' => '🌠', 'cost' => 2e15, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 500,
+    'pickaxeGalaxy' => ['name' => 'Galaxy of Pickaxes', 'icon' => 'galaxy', 'cost' => 2e15, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 500,
         'need' => ['owned' => ['pickaxe' => 200]], 'text' => 'Each Space Pickaxe Guy mines another 500 ore per second for every other building you own.'],
-    'autoAim' => ['name' => 'Auto-Aim Laser', 'icon' => '🎯', 'cost' => 50000, 'type' => 'clickPct', 'value' => 0.01, 'text' => 'Each click also mines 1% of your ore per second.'],
-    'bulk' => ['name' => 'Bulk Buying', 'icon' => '🛒', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time.'],
-    'quantum' => ['name' => 'Quantum Hammer', 'icon' => '🔨', 'cost' => 500000, 'type' => 'clickPct', 'value' => 0.02, 'text' => 'Each click mines another 2% of your ore per second.'],
-    'cometKey' => ['name' => 'Comet Hot Key', 'icon' => '⌨️', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1], 'text' => 'Press C to catch a comet, without having to hit it.'],
-    'radar' => ['name' => 'Comet Radar', 'icon' => '📡', 'cost' => 777777, 'type' => 'comet', 'effect' => 'often', 'need' => ['comets' => 3], 'text' => 'Comets show up twice as often.'],
-    'zeroG' => ['name' => 'Zero-G Logistics', 'icon' => '🧭', 'cost' => 1e6, 'type' => 'global', 'value' => 0.25, 'text' => 'All buildings mine 25% more.'],
-    'dockingBays' => ['name' => 'Drone Docking Bays', 'icon' => '🔗', 'cost' => 1.3e6, 'type' => 'synergy', 'building' => 'drone', 'source' => 'base', 'per' => 0.01, 'every' => 1,
+    'autoAim' => ['name' => 'Auto-Aim Laser', 'icon' => 'target', 'cost' => 50000, 'type' => 'clickPct', 'value' => 0.01, 'text' => 'Each click also mines 1% of your ore per second.'],
+    'bulk' => ['name' => 'Bulk Buying', 'icon' => 'crates', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time.'],
+    'quantum' => ['name' => 'Quantum Hammer', 'icon' => 'quantumHammer', 'cost' => 500000, 'type' => 'clickPct', 'value' => 0.02, 'text' => 'Each click mines another 2% of your ore per second.'],
+    'cometKey' => ['name' => 'Comet Hot Key', 'icon' => 'keyC', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1], 'text' => 'Press C to catch a comet, without having to hit it.'],
+    'radar' => ['name' => 'Comet Radar', 'icon' => 'radar', 'cost' => 777777, 'type' => 'comet', 'effect' => 'often', 'need' => ['comets' => 3], 'text' => 'Comets show up twice as often.'],
+    'zeroG' => ['name' => 'Zero-G Logistics', 'icon' => 'zeroG', 'cost' => 1e6, 'type' => 'global', 'value' => 0.25, 'text' => 'All buildings mine 25% more.'],
+    'dockingBays' => ['name' => 'Drone Docking Bays', 'icon' => 'link', 'cost' => 1.3e6, 'type' => 'synergy', 'building' => 'drone', 'source' => 'base', 'per' => 0.01, 'every' => 1,
         'need' => ['owned' => ['drone' => 1, 'base' => 1]], 'text' => 'Mining Drones mine 1% more for every Asteroid Base you own.'],
-    'crit' => ['name' => 'Critical Strike Module', 'icon' => '💥', 'cost' => 2e6, 'type' => 'crit', 'text' => 'Clicks have a 5% chance to mine 10 times as much.'],
-    'magnet' => ['name' => 'Comet Magnet', 'icon' => '🧲', 'cost' => 7.77e6, 'type' => 'comet', 'effect' => 'longer', 'need' => ['comets' => 7], 'text' => 'Comets stay on screen twice as long.'],
-    'mapping' => ['name' => 'Asteroid Mapping', 'icon' => '🗺️', 'cost' => 1e7, 'type' => 'global', 'value' => 0.5, 'text' => 'All buildings mine 50% more.'],
-    'guidedFreighters' => ['name' => 'Laser-Guided Freighters', 'icon' => '🔗', 'cost' => 1.4e7, 'type' => 'synergy', 'building' => 'freighter', 'source' => 'laser', 'per' => 0.02, 'every' => 1,
+    'crit' => ['name' => 'Critical Strike Module', 'icon' => 'crit', 'cost' => 2e6, 'type' => 'crit', 'text' => 'Clicks have a 5% chance to mine 10 times as much.'],
+    'magnet' => ['name' => 'Comet Magnet', 'icon' => 'magnet', 'cost' => 7.77e6, 'type' => 'comet', 'effect' => 'longer', 'need' => ['comets' => 7], 'text' => 'Comets stay on screen twice as long.'],
+    'mapping' => ['name' => 'Asteroid Mapping', 'icon' => 'map', 'cost' => 1e7, 'type' => 'global', 'value' => 0.5, 'text' => 'All buildings mine 50% more.'],
+    'guidedFreighters' => ['name' => 'Laser-Guided Freighters', 'icon' => 'link', 'cost' => 1.4e7, 'type' => 'synergy', 'building' => 'freighter', 'source' => 'laser', 'per' => 0.02, 'every' => 1,
         'need' => ['owned' => ['freighter' => 1, 'laser' => 1]], 'text' => 'Ore Freighters mine 2% more for every Laser Drill you own.'],
-    'gauntlet' => ['name' => 'Gravity Gauntlet', 'icon' => '🦾', 'cost' => 2.5e7, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'tail' => ['name' => 'Tail Collector', 'icon' => '☄️', 'cost' => 7.77e7, 'type' => 'comet', 'effect' => 'tail', 'need' => ['comets' => 15], 'text' => 'Comet effects last twice as long.'],
-    'hangars' => ['name' => 'Station Hangars', 'icon' => '🔗', 'cost' => 2e8, 'type' => 'synergy', 'building' => 'station', 'source' => 'drone', 'per' => 0.05, 'every' => 10,
+    'gauntlet' => ['name' => 'Gravity Gauntlet', 'icon' => 'gauntlet', 'cost' => 2.5e7, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
+    'tail' => ['name' => 'Tail Collector', 'icon' => 'cometTail', 'cost' => 7.77e7, 'type' => 'comet', 'effect' => 'tail', 'need' => ['comets' => 15], 'text' => 'Comet effects last twice as long.'],
+    'hangars' => ['name' => 'Station Hangars', 'icon' => 'link', 'cost' => 2e8, 'type' => 'synergy', 'building' => 'station', 'source' => 'drone', 'per' => 0.05, 'every' => 10,
         'need' => ['owned' => ['station' => 1, 'drone' => 10]], 'text' => 'Space Stations mine 5% more for every 10 Mining Drones you own.'],
-    'supernova' => ['name' => 'Supernova Punch', 'icon' => '👊', 'cost' => 5e8, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second.'],
-    'autoClicker' => ['name' => 'Auto-Clicker Bot', 'icon' => '🤖', 'cost' => 1e9, 'type' => 'auto', 'value' => 2, 'text' => 'Clicks the asteroid 2 times a second for you.'],
-    'warpTech' => ['name' => 'Warp Drive Tech', 'icon' => '🌀', 'cost' => 1e9, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
-    'outposts' => ['name' => 'Moon Outposts', 'icon' => '🔗', 'cost' => 3.3e9, 'type' => 'synergy', 'building' => 'base', 'source' => 'excavator', 'per' => 0.01, 'every' => 1,
+    'supernova' => ['name' => 'Supernova Punch', 'icon' => 'supernovaFist', 'cost' => 5e8, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second.'],
+    'autoClicker' => ['name' => 'Auto-Clicker Bot', 'icon' => 'robot', 'cost' => 1e9, 'type' => 'auto', 'value' => 2, 'text' => 'Clicks the asteroid 2 times a second for you.'],
+    'warpTech' => ['name' => 'Warp Drive Tech', 'icon' => 'warp', 'cost' => 1e9, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+    'outposts' => ['name' => 'Moon Outposts', 'icon' => 'link', 'cost' => 3.3e9, 'type' => 'synergy', 'building' => 'base', 'source' => 'excavator', 'per' => 0.01, 'every' => 1,
         'need' => ['owned' => ['base' => 1, 'excavator' => 1]], 'text' => 'Asteroid Bases mine 1% more for every Moon Excavator you own.'],
-    'luckyStars' => ['name' => 'Lucky Stars', 'icon' => '💎', 'cost' => 7.77e9, 'type' => 'comet', 'effect' => 'diamond', 'need' => ['comets' => 27], 'text' => 'Now and then a Diamond Comet shows up instead: 777 times the production for 7 seconds.'],
-    'slingshot' => ['name' => 'Gravity Slingshot', 'icon' => '🔗', 'cost' => 7.5e11, 'type' => 'synergy', 'building' => 'cracker', 'source' => 'siphon', 'per' => 0.01, 'every' => 1,
+    'luckyStars' => ['name' => 'Lucky Stars', 'icon' => 'diamond', 'cost' => 7.77e9, 'type' => 'comet', 'effect' => 'diamond', 'need' => ['comets' => 27], 'text' => 'Now and then a Diamond Comet shows up instead: 777 times the production for 7 seconds.'],
+    'slingshot' => ['name' => 'Gravity Slingshot', 'icon' => 'link', 'cost' => 7.5e11, 'type' => 'synergy', 'building' => 'cracker', 'source' => 'siphon', 'per' => 0.01, 'every' => 1,
         'need' => ['owned' => ['cracker' => 1, 'siphon' => 1]], 'text' => 'Planet Crackers mine 1% more for every Black Hole Siphon you own.'],
-    'monopoly' => ['name' => 'Galactic Monopoly', 'icon' => '👑', 'cost' => 1e12, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
-    'neutronGloves' => ['name' => 'Neutron Star Gloves', 'icon' => '✊', 'cost' => 1e10, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'botSwarm' => ['name' => 'Auto-Clicker Swarm', 'icon' => '🤖', 'cost' => 5e12, 'type' => 'auto', 'value' => 3, 'text' => 'Clicks the asteroid another 3 times a second for you.'],
-    'orbitalForges' => ['name' => 'Orbital Forges', 'icon' => '🔗', 'cost' => 5e12, 'type' => 'synergy', 'building' => 'forge', 'source' => 'station', 'per' => 0.01, 'every' => 1,
+    'monopoly' => ['name' => 'Galactic Monopoly', 'icon' => 'crown', 'cost' => 1e12, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+    'neutronGloves' => ['name' => 'Neutron Star Gloves', 'icon' => 'neutronFist', 'cost' => 1e10, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
+    'botSwarm' => ['name' => 'Auto-Clicker Swarm', 'icon' => 'robots', 'cost' => 5e12, 'type' => 'auto', 'value' => 3, 'text' => 'Clicks the asteroid another 3 times a second for you.'],
+    'orbitalForges' => ['name' => 'Orbital Forges', 'icon' => 'link', 'cost' => 5e12, 'type' => 'synergy', 'building' => 'forge', 'source' => 'station', 'per' => 0.01, 'every' => 1,
         'need' => ['owned' => ['forge' => 1, 'station' => 1]], 'text' => 'Star Forges mine 1% more for every Space Station you own.'],
-    'stardust' => ['name' => 'Stardust Trail', 'icon' => '✨', 'cost' => 7.77e12, 'type' => 'comet', 'effect' => 'lucky', 'need' => ['comets' => 50], 'text' => 'Lucky comets give twice as much ore.'],
-    'bigBangPunch' => ['name' => 'Big Bang Punch', 'icon' => '💫', 'cost' => 1e13, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second.'],
-    'nebulaScoops' => ['name' => 'Nebula Scoops', 'icon' => '🔗', 'cost' => 7e13, 'type' => 'synergy', 'building' => 'nebula', 'source' => 'freighter', 'per' => 0.01, 'every' => 1,
+    'stardust' => ['name' => 'Stardust Trail', 'icon' => 'sparkles', 'cost' => 7.77e12, 'type' => 'comet', 'effect' => 'lucky', 'need' => ['comets' => 50], 'text' => 'Lucky comets give twice as much ore.'],
+    'bigBangPunch' => ['name' => 'Big Bang Punch', 'icon' => 'bigBang', 'cost' => 1e13, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second.'],
+    'nebulaScoops' => ['name' => 'Nebula Scoops', 'icon' => 'link', 'cost' => 7e13, 'type' => 'synergy', 'building' => 'nebula', 'source' => 'freighter', 'per' => 0.01, 'every' => 1,
         'need' => ['owned' => ['nebula' => 1, 'freighter' => 1]], 'text' => 'Nebula Harvesters mine 1% more for every Ore Freighter you own.'],
-    'starCharts' => ['name' => 'Star Charts', 'icon' => '🌟', 'cost' => 1e14, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
-    'shatteredPlanets' => ['name' => 'Shattered Planets', 'icon' => '🔗', 'cost' => 8.5e14, 'type' => 'synergy', 'building' => 'dyson', 'source' => 'cracker', 'per' => 0.01, 'every' => 1,
+    'starCharts' => ['name' => 'Star Charts', 'icon' => 'starChart', 'cost' => 1e14, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+    'shatteredPlanets' => ['name' => 'Shattered Planets', 'icon' => 'link', 'cost' => 8.5e14, 'type' => 'synergy', 'building' => 'dyson', 'source' => 'cracker', 'per' => 0.01, 'every' => 1,
         'need' => ['owned' => ['dyson' => 1, 'cracker' => 1]], 'text' => 'Dyson Swarms mine 1% more for every Planet Cracker you own.'],
-    'blackHoleBridges' => ['name' => 'Black Hole Bridges', 'icon' => '🔗', 'cost' => 1e16, 'type' => 'synergy', 'building' => 'wormhole', 'source' => 'siphon', 'per' => 0.01, 'every' => 1,
+    'blackHoleBridges' => ['name' => 'Black Hole Bridges', 'icon' => 'link', 'cost' => 1e16, 'type' => 'synergy', 'building' => 'wormhole', 'source' => 'siphon', 'per' => 0.01, 'every' => 1,
         'need' => ['owned' => ['wormhole' => 1, 'siphon' => 1]], 'text' => 'Wormhole Gates mine 1% more for every Black Hole Siphon you own.'],
-    'oreLaw' => ['name' => 'Universal Ore Law', 'icon' => '⚖️', 'cost' => 1e17, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
-    'pickaxesEverywhere' => ['name' => 'Pickaxe Guys Everywhere', 'icon' => '🔗', 'cost' => 1.3e17, 'type' => 'synergy', 'building' => 'multiverse', 'source' => 'pickaxe', 'per' => 0.01, 'every' => 10,
+    'oreLaw' => ['name' => 'Universal Ore Law', 'icon' => 'scales', 'cost' => 1e17, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+    'pickaxesEverywhere' => ['name' => 'Pickaxe Guys Everywhere', 'icon' => 'link', 'cost' => 1.3e17, 'type' => 'synergy', 'building' => 'multiverse', 'source' => 'pickaxe', 'per' => 0.01, 'every' => 10,
         'need' => ['owned' => ['multiverse' => 1, 'pickaxe' => 10]], 'text' => 'Multiverse Drills mine 1% more for every 10 Space Pickaxe Guys you own.'],
-    'cosmicAccounting' => ['name' => 'Cosmic Accounting', 'icon' => '🧮', 'cost' => 1e20, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
-    'bigOreTheory' => ['name' => 'Big Ore Theory', 'icon' => '📚', 'cost' => 1e23, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+    'cosmicAccounting' => ['name' => 'Cosmic Accounting', 'icon' => 'abacus', 'cost' => 1e20, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+    'bigOreTheory' => ['name' => 'Big Ore Theory', 'icon' => 'books', 'cost' => 1e23, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
 ];
 const HBHUB_MINER_CLICK_TYPES = ['click', 'clickPct', 'crit', 'auto']; // kept by Persistent Memory
 const HBHUB_MINER_ETERNAL_TYPES = ['bulk', 'comet']; // kept by Eternal Blueprints
@@ -206,25 +207,25 @@ const HBHUB_MINER_ETERNAL_TYPES = ['bulk', 'comet']; // kept by Eternal Blueprin
 // Bought with Dark Matter, kept until a Big Crunch (or after it too, with Dark Echo). Long-Range Hot Keys doesn't change
 // the game, only which buildings the 1-9 keys buy, so it's only in spaceOreMiner.js.
 const HBHUB_MINER_DARK_UPGRADES = [
-    'headStart' => ['name' => 'Head Start', 'icon' => '🛸', 'cost' => 5, 'text' => 'Start every run with ' . HBHUB_MINER_HEAD_START . ' Mining Drones.'],
-    'memory' => ['name' => 'Persistent Memory', 'icon' => '🧠', 'cost' => 40, 'text' => 'Keep your click upgrades when you Warp Jump.'],
-    'darkEngines' => ['name' => 'Dark Engines', 'icon' => '⚫', 'cost' => 100, 'text' => 'All buildings mine 50% more.'],
-    'timeDilation' => ['name' => 'Time Dilation', 'icon' => '⏳', 'cost' => 250, 'text' => 'Earn twice as much while you\'re away.'],
-    'darkPickaxe' => ['name' => 'Dark Pickaxe', 'icon' => '⛏️', 'cost' => 15, 'text' => 'Clicks mine ' . HBHUB_MINER_DARK_PICKAXE . ' times as much.'],
-    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => '🎛️', 'cost' => 2, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 keys buy your last nine buildings instead of your first nine.'],
-    'physics' => ['name' => 'Cheaper Physics', 'icon' => '📉', 'cost' => 750, 'text' => 'Each building costs 14% more than the one before instead of 15% (11% instead of 12% for Space Pickaxe Guys).'],
-    'reactor' => ['name' => 'Dark Matter Reactor', 'icon' => '☢️', 'cost' => 2500, 'text' => 'Every Dark Matter you\'ve earned makes everything mine '
+    'headStart' => ['name' => 'Head Start', 'icon' => 'headStart', 'cost' => 5, 'text' => 'Start every run with ' . HBHUB_MINER_HEAD_START . ' Mining Drones.'],
+    'memory' => ['name' => 'Persistent Memory', 'icon' => 'chip', 'cost' => 40, 'text' => 'Keep your click upgrades when you Warp Jump.'],
+    'darkEngines' => ['name' => 'Dark Engines', 'icon' => 'darkEngine', 'cost' => 100, 'text' => 'All buildings mine 50% more.'],
+    'timeDilation' => ['name' => 'Time Dilation', 'icon' => 'hourglass', 'cost' => 250, 'text' => 'Earn twice as much while you\'re away.'],
+    'darkPickaxe' => ['name' => 'Dark Pickaxe', 'icon' => 'darkPickaxe', 'cost' => 15, 'text' => 'Clicks mine ' . HBHUB_MINER_DARK_PICKAXE . ' times as much.'],
+    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => 'hotKeys', 'cost' => 2, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 keys buy your last nine buildings instead of your first nine.'],
+    'physics' => ['name' => 'Cheaper Physics', 'icon' => 'chartDown', 'cost' => 750, 'text' => 'Each building costs 14% more than the one before instead of 15% (11% instead of 12% for Space Pickaxe Guys).'],
+    'reactor' => ['name' => 'Dark Matter Reactor', 'icon' => 'radiation', 'cost' => 2500, 'text' => 'Every Dark Matter you\'ve earned makes everything mine '
         . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%.'],
 ];
 
 // Bought with Antimatter, kept forever
 const HBHUB_MINER_ANTI_UPGRADES = [
-    'echo' => ['name' => 'Dark Echo', 'icon' => '🔁', 'cost' => 1, 'text' => 'Keep your Dark Matter upgrades when you Big Crunch.'],
-    'converter' => ['name' => 'Matter Converter', 'icon' => '⚗️', 'cost' => 3, 'text' => 'Warp Jumps give twice as much Dark Matter.'],
-    'leftovers' => ['name' => 'Big Bang Leftovers', 'icon' => '💫', 'cost' => 5, 'text' => 'Start every run with 10 million ore.'],
-    'eternal' => ['name' => 'Eternal Blueprints', 'icon' => '📜', 'cost' => 10, 'text' => 'Keep Bulk Buying and your comet upgrades when you Warp Jump.'],
-    'annihilation' => ['name' => 'Annihilation Engines', 'icon' => '💥', 'cost' => 25, 'text' => 'All buildings mine twice as much.'],
-    'antiComets' => ['name' => 'Antimatter Comets', 'icon' => '☄️', 'cost' => 50, 'text' => 'Comet effects are twice as strong.'],
+    'echo' => ['name' => 'Dark Echo', 'icon' => 'cycle', 'cost' => 1, 'text' => 'Keep your Dark Matter upgrades when you Big Crunch.'],
+    'converter' => ['name' => 'Matter Converter', 'icon' => 'flask', 'cost' => 3, 'text' => 'Warp Jumps give twice as much Dark Matter.'],
+    'leftovers' => ['name' => 'Big Bang Leftovers', 'icon' => 'orePile', 'cost' => 5, 'text' => 'Start every run with 10 million ore.'],
+    'eternal' => ['name' => 'Eternal Blueprints', 'icon' => 'blueprint', 'cost' => 10, 'text' => 'Keep Bulk Buying and your comet upgrades when you Warp Jump.'],
+    'annihilation' => ['name' => 'Annihilation Engines', 'icon' => 'annihilation', 'cost' => 25, 'text' => 'All buildings mine twice as much.'],
+    'antiComets' => ['name' => 'Antimatter Comets', 'icon' => 'antiComet', 'cost' => 50, 'text' => 'Comet effects are twice as strong.'],
 ];
 
 // Achievements: done once 'stat' reaches 'at'. The stats are in hbHubMinerStat().
@@ -353,6 +354,26 @@ function hbHubMinerConfig(): array
         'headStart' => HBHUB_MINER_HEAD_START,
         'buildingUpgradeAt' => HBHUB_MINER_BUILDING_UPGRADE_AT,
     ];
+}
+
+/**
+ * Where the game's icons are (one <symbol> per icon, see the file), with its last change on the end so a new icon isn't
+ * hidden by the 90-day cache. Same-site and without the domain, as <use> only takes icons from the page's own site.
+ */
+function hbHubMinerIconsUrl(): string
+{
+    $path = '/assets/images/spaceOreMiner/icons.svg';
+    return $path . '?v=' . filemtime($_SERVER['DOCUMENT_ROOT'] . $path);
+}
+
+/**
+ * One of the game's icons as HTML, for the page (spaceOreMiner.js has its own icon() for the ones it draws). $name is
+ * the icon's id in icons.svg, $class is added to miner-icon.
+ */
+function hbHubMinerIcon(string $name, string $class = ''): string
+{
+    return '<svg class="miner-icon' . ($class !== '' ? ' ' . htmlspecialchars($class) : '') . '" aria-hidden="true"><use href="'
+        . htmlspecialchars(hbHubMinerIconsUrl() . '#' . $name) . '"></use></svg>';
 }
 
 /**
