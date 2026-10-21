@@ -1126,7 +1126,7 @@
         ['Scientists study your critical clicks. Conclusion: "very clicky".', (s) => s.crits >= 100],
         ['Comet makes a wish on a shooting star. Wishes not to be clicked.', (s) => s.comets > 0],
         ['Comet asks for directions. Gets clicked.', (s) => s.comets > 0],
-        ['Comets complain about being caught so much. Hire a lawyer.', (s) => s.comets >= 10],
+        ['Comets complain about being caught so much. They\'re advised to hire a lawyer.', (s) => s.comets >= 10],
         ['Comets now take the long way round your asteroid.', (s) => s.comets >= 100],
         ['Diamond prices crash as someone keeps catching Diamond Comets.', (s) => s.diamonds >= 5],
         ['Everything is suddenly going faster. Experts blame a comet.', (s) => Object.values(s.buffs).some((buff) => buff.until > s.tick)],
