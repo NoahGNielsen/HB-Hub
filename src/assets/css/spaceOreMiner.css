@@ -1245,7 +1245,7 @@
   outline-offset: 2px;
 }
 
-/* Upgrade cards (and the Dark Matter ones) */
+/* Upgrade cards (the Dark Matter and Antimatter ones are .miner-perk, further down) */
 .miner-upgrades {
   margin: 0;
   padding: 0;
@@ -1330,22 +1330,6 @@
   font-size: 0.85rem;
   line-height: 1.35;
   opacity: 0.8;
-}
-
-.miner-upgrade.is-dark.is-affordable {
-  border-color: var(--miner-dark);
-}
-
-.miner-upgrade.is-dark .miner-upgrade-cost {
-  color: var(--miner-dark);
-}
-
-.miner-upgrade.is-anti.is-affordable {
-  border-color: var(--miner-anti);
-}
-
-.miner-upgrade.is-anti .miner-upgrade-cost {
-  color: var(--miner-anti);
 }
 
 .miner-upgrade.is-owned {
@@ -1607,34 +1591,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The Dark Matter and Antimatter views */
-.miner-section-head {
-  margin-bottom: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.miner-section-head h2 {
-  margin: 0;
-}
-
-.miner-dark,
-.miner-anti,
 .miner-achievement-count {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 800;
-}
-
-.miner-dark {
-  color: var(--miner-dark);
-}
-
-.miner-anti {
-  color: var(--miner-anti);
 }
 
 .miner-numbers {
@@ -1663,33 +1623,462 @@
   overflow-wrap: anywhere;
 }
 
-.miner-warp .casino-actions {
-  margin-bottom: 8px;
+/* The Dark Matter and Antimatter views (.miner-prestige.is-dark and .is-anti), built the same way, each in its own
+   colours (--view, and --view-2 to go with it): on top a starry panel with the picture on the left and the jump on the
+   right, then what the jump does, then the upgrade cards. is-ready (a Warp Jump or Big Crunch can be done now) speeds
+   the picture up and lights the button; is-locked (the Antimatter view before the first Warp Jump) dims the picture. */
+.miner-prestige {
+  --view: var(--miner-dark);
+  --view-2: #4de3ff;
+  --spin: 1; /* how fast the picture goes */
+  --on-view: #14091f; /* text on the view's colour */
 }
 
-.miner-warp-hint {
-  margin-bottom: 20px;
+.miner-prestige.is-anti {
+  --view: var(--miner-anti);
+  --view-2: #ffd36b;
 }
 
-.miner-warp-hint:empty {
-  display: none;
+.miner-prestige.is-ready {
+  --spin: 2.5;
 }
 
-/* The Antimatter view before the first Warp Jump */
-.miner-locked {
-  margin: 16px 0 0;
-  padding: 36px 20px;
-  border: 2px dashed color-mix(in srgb, var(--text) 25%, transparent);
-  border-radius: 12px;
-  background: var(--background);
-  text-align: center;
-  line-height: 1.5;
+.miner-prestige-hero {
+  padding: 28px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: center;
+  gap: 32px;
+  border: 1px solid color-mix(in srgb, var(--view) 35%, transparent);
+  border-radius: 16px;
+  background:
+    radial-gradient(1px 1px at 8% 14%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 46% 10%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 72% 22%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 93% 48%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 58% 86%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 30% 92%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 84% 80%, #fff 50%, transparent 51%),
+    radial-gradient(circle at 16% 50%, color-mix(in srgb, var(--view) 30%, transparent), transparent 45%),
+    radial-gradient(ellipse at 95% 0%, color-mix(in srgb, var(--view-2) 12%, transparent), transparent 55%),
+    var(--background);
+}
+
+/* The picture: rings and a core, all on top of each other in the middle */
+.miner-prestige-art {
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  transition: filter 0.6s, opacity 0.6s;
+}
+
+.miner-prestige-art > * {
+  grid-area: 1 / 1;
+  border-radius: 50%;
+}
+
+/* Dark Matter: rings turning round a black core, its edge glowing with the light it bends */
+.miner-prestige.is-dark .miner-art-ring.is-1 {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px dashed color-mix(in srgb, var(--view) 45%, transparent);
+  animation: miner-spin calc(40s / var(--spin)) linear infinite;
+}
+
+.miner-prestige.is-dark .miner-art-ring.is-2 {
+  width: 78%;
+  height: 78%;
+  background: conic-gradient(transparent, var(--view) 20%, transparent 45%, var(--view-2) 70%, transparent 90%);
+  mask: radial-gradient(closest-side, transparent 78%, #000 81%, #000 97%, transparent);
+  animation: miner-spin calc(12s / var(--spin)) linear infinite reverse;
+}
+
+.miner-prestige.is-dark .miner-art-ring.is-3 {
+  width: 60%;
+  height: 60%;
+  background: conic-gradient(from 90deg, var(--view), transparent 30%, var(--view-2) 55%, transparent 80%, var(--view));
+  filter: blur(8px);
+  opacity: 0.85;
+  animation: miner-spin calc(5s / var(--spin)) linear infinite;
+}
+
+.miner-prestige.is-dark .miner-art-core {
+  width: 36%;
+  height: 36%;
+  background: radial-gradient(circle, #000 60%, #150b2b);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--view) 70%, #fff),
+    0 0 26px 4px var(--view),
+    inset 0 0 18px color-mix(in srgb, var(--view) 45%, transparent);
+}
+
+/* Antimatter: rings of the universe falling into a white-hot point, which throbs */
+.miner-prestige.is-anti .miner-art-ring {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px solid var(--view);
+  box-shadow: 0 0 14px var(--view), inset 0 0 14px var(--view);
+  opacity: 0;
+  animation: miner-collapse calc(3.6s / var(--spin)) ease-in infinite calc(-0.6s / var(--spin));
+}
+
+.miner-prestige.is-anti .miner-art-ring.is-2 {
+  border-color: var(--view-2);
+  box-shadow: 0 0 14px var(--view-2), inset 0 0 14px var(--view-2);
+  animation-delay: calc(-1.8s / var(--spin));
+}
+
+.miner-prestige.is-anti .miner-art-ring.is-3 {
+  animation-delay: calc(-3s / var(--spin));
+}
+
+.miner-prestige.is-anti .miner-art-core {
+  width: 22%;
+  height: 22%;
+  background: radial-gradient(circle, #fff 30%, color-mix(in srgb, var(--view) 60%, #fff) 60%, var(--view));
+  box-shadow: 0 0 30px 8px var(--view), 0 0 70px 20px color-mix(in srgb, var(--view) 40%, transparent);
+  animation: miner-throb calc(1.2s / var(--spin)) ease-in-out infinite alternate;
+}
+
+@keyframes miner-collapse {
+  0% { opacity: 0; scale: 1; }
+  25% { opacity: 0.9; }
+  100% { opacity: 0; scale: 0.15; }
+}
+
+@keyframes miner-throb {
+  to { scale: 1.15; filter: brightness(1.2); }
+}
+
+/* Locked: grey and holding still */
+.miner-prestige.is-locked .miner-prestige-art {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+
+.miner-prestige.is-locked .miner-prestige-art > * {
+  animation-play-state: paused;
+}
+
+/* The jump's side: its name, what you have and what it does for you, the bar towards the next jump and its button */
+.miner-prestige-main {
+  width: 100%;
+  min-width: 0;
+}
+
+.miner-prestige-title {
+  margin: 0;
+  color: var(--view);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.miner-prestige-balance {
+  margin: 2px 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.miner-prestige-amount {
+  margin-right: 4px;
+  color: var(--view);
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 24px color-mix(in srgb, var(--view) 60%, transparent);
+}
+
+.miner-prestige-bonus {
+  margin: 2px 0 0;
+  opacity: 0.85;
+}
+
+.miner-prestige-bonus strong {
+  color: var(--view);
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-progress {
+  margin: 18px 0;
+}
+
+.miner-progress-bar {
+  --progress: 0%; /* set by spaceOreMiner.js */
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.miner-progress-fill {
+  display: block;
+  width: var(--progress);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--view), var(--view-2));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--view) 70%, transparent);
+  transition: width 0.4s ease;
+}
+
+/* Full: a shine runs along it */
+.miner-progress-bar.is-full .miner-progress-fill {
+  background: linear-gradient(90deg, var(--view), var(--view-2), var(--view)) 0 0 / 200% 100%;
+  animation: miner-shine 2s linear infinite;
+}
+
+@keyframes miner-shine {
+  to { background-position: -200% 0; }
+}
+
+.miner-progress-label {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The Warp Jump or Big Crunch button, with what it would give under its name (left out while it can't be done) */
+.miner-prestige-btn {
+  min-width: min(100%, 260px);
+  padding: 12px 24px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--view) 80%, #fff), var(--view) 55%, color-mix(in srgb, var(--view) 75%, #000));
+  color: var(--on-view);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--view) 40%, transparent);
+  transition: transform 0.1s, filter 0.2s;
+}
+
+.miner-prestige-btn-text {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.miner-prestige-btn-gain {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   opacity: 0.8;
 }
 
+.miner-prestige-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.miner-prestige-btn:active:not(:disabled) {
+  transform: none;
+}
+
+.miner-prestige-btn:focus-visible {
+  outline: 2px solid var(--view);
+  outline-offset: 3px;
+}
+
+.miner-prestige-btn:disabled {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: color-mix(in srgb, var(--text) 50%, transparent);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.miner-prestige-btn:disabled .miner-prestige-btn-gain {
+  display: none;
+}
+
+.miner-prestige.is-ready .miner-prestige-btn {
+  animation: miner-charged 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes miner-charged {
+  to { box-shadow: 0 6px 34px var(--view), 0 0 0 4px color-mix(in srgb, var(--view) 25%, transparent); }
+}
+
+.miner-prestige-hint {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.miner-prestige-hint:empty {
+  display: none;
+}
+
+/* The Antimatter view before the first Warp Jump, in place of the jump's side */
+.miner-locked {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px dashed color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 12px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
 .miner-locked-icon {
-  margin: 0 auto 8px;
-  font-size: 2.6rem;
+  font-size: 2rem;
+}
+
+.miner-prestige-about {
+  margin: 20px 4px 24px;
+}
+
+.miner-prestige-owned {
+  margin: 0;
+  color: var(--view);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The upgrade cards: always showing what they do, as there's room here. Too dear ones are dimmed, ones you can buy
+   lit up in the view's colour, bought ones tinted with a tick. */
+.miner-perks {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  list-style: none;
+}
+
+.miner-perk {
+  width: 100%;
+  height: 100%;
+  padding: 14px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  column-gap: 12px;
+  row-gap: 4px;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 14px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  opacity: 0.6;
+  transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.1s;
+}
+
+.miner-perk-icon {
+  grid-row: 1 / -1;
+  align-self: start;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  font-size: 1.7rem;
+}
+
+.miner-perk-name {
+  font-weight: 700;
+}
+
+.miner-perk-text {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  opacity: 0.75;
+}
+
+.miner-perk-cost {
+  justify-self: start;
+  margin-top: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-perk.is-affordable {
+  border-color: color-mix(in srgb, var(--view) 70%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--view) 18%, transparent);
+  cursor: pointer;
+  opacity: 1;
+}
+
+.miner-perk.is-affordable .miner-perk-cost {
+  background: var(--view);
+  color: var(--on-view);
+}
+
+.miner-perk.is-affordable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--view) 30%, transparent);
+}
+
+.miner-perk:focus-visible {
+  outline: 2px solid var(--view);
+  outline-offset: 2px;
+}
+
+.miner-perk.is-owned {
+  border-color: color-mix(in srgb, var(--view) 35%, transparent);
+  background: color-mix(in srgb, var(--view) 9%, var(--background));
+  opacity: 1;
+}
+
+.miner-perk.is-owned .miner-perk-icon {
+  background: color-mix(in srgb, var(--view) 30%, transparent);
+}
+
+.miner-perk.is-owned .miner-perk-cost {
+  padding-left: 0;
+  background: none;
+  color: var(--view);
+}
+
+.miner-perk.is-owned .miner-perk-cost::before {
+  content: "";
+  display: inline-block;
+  width: 0.35em;
+  height: 0.65em;
+  margin: 0 0.5em 0 0.15em;
+  border: solid currentColor;
+  border-width: 0 0.15em 0.15em 0;
+  rotate: 45deg;
+  translate: 0 -0.1em;
+}
+
+/* The Warp Jump and Big Crunch popups, in their view's colour */
+.miner-prestige-dialog.is-dark {
+  --view: var(--miner-dark);
+}
+
+.miner-prestige-dialog.is-anti {
+  --view: var(--miner-anti);
+}
+
+.miner-prestige-dialog h2 {
+  color: var(--view);
+}
+
+.miner-prestige-dialog .casino-btn-primary {
+  background: var(--view);
+  color: #14091f;
 }
 
 /* The popups: stats, achievements and how to play. The padding is on the inside, so a click on the dialog itself is
@@ -1944,6 +2333,12 @@
     width: 220px;
     height: 220px;
   }
+
+  .miner-prestige-hero {
+    padding: 22px;
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: 22px;
+  }
 }
 
 /* Phones: the buttons by the title are just icons, the news ticker is left out of the Ore view, and the asteroid sits
@@ -2076,6 +2471,35 @@
   .miner-popup-body {
     padding: 18px 16px;
   }
+
+  /* The Dark Matter and Antimatter views: the picture on top, everything centred under it */
+  .miner-prestige-hero {
+    padding: 18px 14px;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .miner-prestige-art {
+    width: 130px;
+  }
+
+  .miner-prestige-amount {
+    font-size: 2.2rem;
+  }
+
+  .miner-prestige-btn {
+    width: 100%;
+  }
+
+  .miner-locked {
+    text-align: left;
+  }
+
+  .miner-perks {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Less motion: the asteroid holds still and the comet waits in one place, pulsing, instead of flying. The buildings in
@@ -2087,6 +2511,11 @@
   .miner-sprite *::before,
   .miner-sprite *::after {
     animation-play-state: paused !important; /* over the animation shorthands, which are more specific */
+  }
+
+  /* The Dark Matter and Antimatter pictures stop the same way, spread out by their delays */
+  .miner-prestige-art > * {
+    animation-play-state: paused !important;
   }
 
   .miner-sprite.is-freighter {
@@ -2104,7 +2533,9 @@
   .miner-upgrade:hover .miner-upgrade-text,
   .miner-upgrade:focus-visible .miner-upgrade-text,
   .miner.is-warping .miner-view,
-  .miner.is-crunching .miner-view {
+  .miner.is-crunching .miner-view,
+  .miner-prestige.is-ready .miner-prestige-btn,
+  .miner-progress-bar.is-full .miner-progress-fill {
     animation: none;
   }
 

@@ -421,18 +421,24 @@
     const buildingList = root.querySelector('[data-miner-buildings]');
     const amounts = root.querySelector('[data-miner-amounts]');
     const keySwitch = root.querySelector('[data-miner-key-switch]');
+    const warpView = root.querySelector('[data-miner-warp-view]');
     const darkText = root.querySelector('[data-miner-dark]');
     const warpNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-warp]')].map((node) => [node.dataset.minerWarp, node]));
+    const warpProgress = root.querySelector('[data-miner-warp-progress]');
     const warpButton = root.querySelector('[data-miner-warp-button]');
     const warpHint = root.querySelector('[data-miner-warp-hint]');
     const darkList = root.querySelector('[data-miner-dark-upgrades]');
-    const crunchSection = root.querySelector('[data-miner-crunch-section]');
+    const darkOwned = root.querySelector('[data-miner-dark-owned]');
+    const crunchView = root.querySelector('[data-miner-crunch-view]');
+    const crunchSections = root.querySelectorAll('[data-miner-crunch-section]'); // the jump's half of the top, and the upgrades
     const crunchLocked = root.querySelector('[data-miner-crunch-locked]');
     const antiText = root.querySelector('[data-miner-anti]');
     const crunchNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-crunch]')].map((node) => [node.dataset.minerCrunch, node]));
+    const crunchProgress = root.querySelector('[data-miner-crunch-progress]');
     const crunchButton = root.querySelector('[data-miner-crunch-button]');
     const crunchHint = root.querySelector('[data-miner-crunch-hint]');
     const antiList = root.querySelector('[data-miner-anti-upgrades]');
+    const antiOwned = root.querySelector('[data-miner-anti-owned]');
     const crunchDialog = root.querySelector('[data-miner-crunch-dialog]');
     const crunchDialogText = root.querySelector('[data-miner-crunch-dialog-text]');
     const achievementList = root.querySelector('[data-miner-achievements]');
@@ -932,8 +938,11 @@
         const gain = warpGain(state);
         darkText.textContent = format(state.dark);
         warpNumbers.runOre.textContent = format(state.runOre);
+        warpNumbers.target.textContent = format(CONFIG.warpOre);
         warpNumbers.gain.textContent = format(gain);
         warpNumbers.bonus.textContent = '+' + format(darkBonus(state) * 100 * state.darkEarned, { decimals: true }) + '%';
+        setProgress(warpProgress, state.runOre / CONFIG.warpOre);
+        warpView.classList.toggle('is-ready', gain >= 1);
         warpButton.disabled = gain < 1;
         warpHint.textContent = state.runOre < CONFIG.warpOre
             ? 'Mine ' + format(CONFIG.warpOre - state.runOre) + ' more ore this run to unlock the Warp Jump.'
@@ -942,14 +951,25 @@
         const key = state.dark + '|' + state.darkUpgrades.join();
         if (key === darkKey) return;
         darkKey = key;
+        darkOwned.textContent = state.darkUpgrades.length + ' of ' + Object.keys(DARK_UPGRADES).length + ' bought';
         darkList.replaceChildren(...prestigeUpgrades(DARK_UPGRADES, state.darkUpgrades, state.dark, 'dark', 'Dark Matter'));
     }
 
-    // The Dark Matter or Antimatter upgrades' buttons: kind is the data-* attribute and the class (is-dark, is-anti)
+    // The bar towards a Warp Jump or Big Crunch: part is how far along it is (1 or more is there)
+    function setProgress(bar, part) {
+        const percent = Math.min(100, Math.floor(part * 100));
+        if (bar.getAttribute('aria-valuenow') === String(percent)) return;
+        bar.setAttribute('aria-valuenow', percent);
+        bar.style.setProperty('--progress', percent + '%');
+        bar.classList.toggle('is-full', percent >= 100);
+    }
+
+    // The Dark Matter or Antimatter upgrades' cards, cheapest first: kind is the data-* attribute and the class (is-dark,
+    // is-anti). Each one has its icon, name, what it does and its price, or a tick once it's bought.
     function prestigeUpgrades(upgrades, owned, toSpend, kind, currency) {
-        return Object.entries(upgrades).map(([id, upgrade]) => {
+        return Object.entries(upgrades).sort(([, a], [, b]) => a.cost - b.cost).map(([id, upgrade]) => {
             const item = element('li');
-            const button = element('button', 'miner-upgrade is-' + kind);
+            const button = element('button', 'miner-perk is-' + kind);
             button.type = 'button';
             button.dataset[kind] = id;
             const isOwned = owned.includes(id);
@@ -957,10 +977,10 @@
             button.classList.toggle('is-affordable', !isOwned && toSpend >= upgrade.cost);
             button.disabled = isOwned;
             button.append(
-                iconBox('miner-upgrade-icon', upgrade.icon),
-                element('span', 'miner-upgrade-name', upgrade.name),
-                element('span', 'miner-upgrade-cost', isOwned ? 'Bought' : format(upgrade.cost) + ' ' + currency),
-                element('span', 'miner-upgrade-text', upgrade.text),
+                iconBox('miner-perk-icon', upgrade.icon),
+                element('span', 'miner-perk-name', upgrade.name),
+                element('span', 'miner-perk-text', upgrade.text),
+                element('span', 'miner-perk-cost', isOwned ? 'Bought' : format(upgrade.cost) + ' ' + currency),
             );
             item.append(button);
             return item;
@@ -969,14 +989,22 @@
 
     // The Antimatter view is locked until there's Dark Matter (or Antimatter) to talk about
     function renderCrunch() {
-        crunchSection.hidden = state.darkEarned === 0 && state.antimatterEarned === 0;
-        crunchLocked.hidden = !crunchSection.hidden;
+        const isLocked = state.darkEarned === 0 && state.antimatterEarned === 0;
+        crunchView.classList.toggle('is-locked', isLocked);
+        crunchSections.forEach((section) => { section.hidden = isLocked; });
+        crunchLocked.hidden = !isLocked;
         antiText.textContent = format(state.antimatter);
-        if (crunchSection.hidden) return;
+        if (isLocked) {
+            crunchView.classList.remove('is-ready');
+            return;
+        }
         const gain = crunchGain(state);
         crunchNumbers.dark.textContent = format(state.darkEarned);
+        crunchNumbers.target.textContent = format(CONFIG.crunchDark);
         crunchNumbers.gain.textContent = format(gain);
         crunchNumbers.bonus.textContent = '+' + format(CONFIG.antiBonus * 100 * state.antimatterEarned) + '%';
+        setProgress(crunchProgress, state.darkEarned / CONFIG.crunchDark);
+        crunchView.classList.toggle('is-ready', gain >= 1);
         crunchButton.disabled = gain < 1;
         crunchHint.textContent = gain < 1
             ? 'Earn ' + format(CONFIG.crunchDark - state.darkEarned) + ' more Dark Matter in this universe to unlock the Big Crunch.' : '';
@@ -984,6 +1012,7 @@
         const key = state.antimatter + '|' + state.antiUpgrades.join();
         if (key === antiKey) return;
         antiKey = key;
+        antiOwned.textContent = state.antiUpgrades.length + ' of ' + Object.keys(ANTI_UPGRADES).length + ' bought';
         antiList.replaceChildren(...prestigeUpgrades(ANTI_UPGRADES, state.antiUpgrades, state.antimatter, 'anti', 'Antimatter'));
     }
 

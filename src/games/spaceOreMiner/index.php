@@ -132,59 +132,95 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             </section>
         </div>
 
-        <!-- Dark Matter: the Warp Jump and what Dark Matter buys -->
-        <section class="miner-view casino-card miner-warp" aria-labelledby="miner-warp-title" data-miner-view="darkMatter"<?= $minerView !== 'darkMatter' ? ' hidden' : '' ?>>
-            <div class="miner-section-head">
-                <h2 id="miner-warp-title">Warp Jump</h2>
-                <p class="miner-dark"><span data-miner-dark>0</span> Dark Matter</p>
+        <!-- Dark Matter: the Warp Jump and what Dark Matter buys. On top (miner-prestige-hero) the portal on one side and
+             the jump on the other: the Dark Matter you have, how far along the next jump is and its button. The upgrades
+             are under it, cheapest first. spaceOreMiner.js puts is-ready on the section when a jump can be done. -->
+        <section class="miner-view casino-card miner-prestige is-dark" aria-labelledby="miner-warp-title" data-miner-view="darkMatter" data-miner-warp-view<?= $minerView !== 'darkMatter' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- A dark core bending the light around it, with the rings of what it's pulling in -->
+                <div class="miner-prestige-art" aria-hidden="true">
+                    <span class="miner-art-ring is-1"></span>
+                    <span class="miner-art-ring is-2"></span>
+                    <span class="miner-art-ring is-3"></span>
+                    <span class="miner-art-core"></span>
+                </div>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-warp-title" class="miner-prestige-title">Warp Jump</h2>
+                    <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-dark>0</span> Dark Matter</p>
+                    <p class="miner-prestige-bonus"><strong data-miner-warp="bonus">+0%</strong> production from the Dark Matter you've earned</p>
+                    <div class="miner-progress">
+                        <div class="miner-progress-bar" role="progressbar" aria-labelledby="miner-warp-progress-label"
+                             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-miner-warp-progress><span class="miner-progress-fill"></span></div>
+                        <p class="miner-progress-label" id="miner-warp-progress-label">
+                            <span data-miner-warp="runOre">0</span> of <span data-miner-warp="target"><?= number_format(HBHUB_MINER_WARP_ORE) ?></span> ore mined this run
+                        </p>
+                    </div>
+                    <button type="button" class="miner-prestige-btn" data-miner-warp-button disabled>
+                        <span class="miner-prestige-btn-text">Warp Jump</span>
+                        <span class="miner-prestige-btn-gain">+<span data-miner-warp="gain">0</span> Dark Matter</span>
+                    </button>
+                    <p class="miner-prestige-hint" data-miner-warp-hint></p>
+                </div>
             </div>
-            <p class="casino-hint">
-                Once you've mined <?= number_format(HBHUB_MINER_WARP_ORE) ?> ore in a run, you can jump to a new galaxy. You
-                start over with no ore, buildings or upgrades, but you get Dark Matter for all the ore you've ever mined.
-                Every Dark Matter you've earned makes everything mine <?= HBHUB_MINER_DARK_BONUS * 100 ?>% faster until the next
-                Big Crunch, even after you spend it on the upgrades below.
+            <p class="casino-hint miner-prestige-about">
+                A Warp Jump starts you over in a new galaxy with no ore, buildings or upgrades, but you get Dark Matter for all
+                the ore you've ever mined. Every Dark Matter you've earned makes everything mine <?= HBHUB_MINER_DARK_BONUS * 100 ?>%
+                faster until the next Big Crunch, even after you spend it on the upgrades below.
             </p>
-            <dl class="miner-numbers miner-warp-numbers">
-                <div><dt>Mined this run</dt><dd data-miner-warp="runOre">0</dd></div>
-                <div><dt>Dark Matter from a jump now</dt><dd data-miner-warp="gain">0</dd></div>
-                <div><dt>Bonus from Dark Matter</dt><dd data-miner-warp="bonus">+0%</dd></div>
-            </dl>
-            <div class="casino-actions">
-                <button type="button" class="casino-btn casino-btn-primary" data-miner-warp-button disabled>Warp Jump</button>
+            <div class="miner-store-head miner-prestige-store-head">
+                <h3 class="miner-store-title">Dark Matter upgrades</h3>
+                <p class="miner-prestige-owned" data-miner-dark-owned></p>
             </div>
-            <p class="casino-hint miner-warp-hint" data-miner-warp-hint></p>
-            <h3 class="miner-store-title">Dark Matter upgrades</h3>
-            <ul class="miner-upgrades miner-dark-upgrades" data-miner-dark-upgrades></ul>
+            <ul class="miner-perks" data-miner-dark-upgrades></ul>
         </section>
 
-        <!-- Antimatter: the Big Crunch and what Antimatter buys, locked until there's Dark Matter to talk about -->
-        <section class="miner-view casino-card miner-crunch" aria-labelledby="miner-crunch-title" data-miner-view="antimatter"<?= $minerView !== 'antimatter' ? ' hidden' : '' ?>>
-            <div class="miner-section-head">
-                <h2 id="miner-crunch-title">Big Crunch</h2>
-                <p class="miner-anti"><span data-miner-anti>0</span> Antimatter</p>
-            </div>
-            <p class="miner-locked" data-miner-crunch-locked>
-                <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
-                Something even bigger than a Warp Jump is out there. Do your first Warp Jump to find out what.
-            </p>
-            <div data-miner-crunch-section hidden>
-                <p class="casino-hint">
-                    Once you've earned <?= number_format(HBHUB_MINER_CRUNCH_DARK) ?> Dark Matter in this universe, you can collapse
-                    the whole thing and start over. Your Dark Matter and its upgrades go too, but you get Antimatter for the Dark
-                    Matter you earned. Every Antimatter you've earned makes everything mine <?= HBHUB_MINER_ANTI_BONUS * 100 ?>%
-                    faster and Warp Jumps give <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% more Dark Matter, for good.
-                </p>
-                <dl class="miner-numbers miner-warp-numbers">
-                    <div><dt>Dark Matter this universe</dt><dd data-miner-crunch="dark">0</dd></div>
-                    <div><dt>Antimatter from a crunch now</dt><dd data-miner-crunch="gain">0</dd></div>
-                    <div><dt>Bonus from Antimatter</dt><dd data-miner-crunch="bonus">+0%</dd></div>
-                </dl>
-                <div class="casino-actions">
-                    <button type="button" class="casino-btn casino-btn-primary" data-miner-crunch-button disabled>Big Crunch</button>
+        <!-- Antimatter: the Big Crunch and what Antimatter buys, built like the Dark Matter view. Locked until there's Dark
+             Matter to talk about: then only the picture, dimmed, and the lock show (is-locked on the section). -->
+        <section class="miner-view casino-card miner-prestige is-anti is-locked" aria-labelledby="miner-crunch-title" data-miner-view="antimatter" data-miner-crunch-view<?= $minerView !== 'antimatter' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- A white-hot point with the universe's rings falling into it -->
+                <div class="miner-prestige-art" aria-hidden="true">
+                    <span class="miner-art-ring is-1"></span>
+                    <span class="miner-art-ring is-2"></span>
+                    <span class="miner-art-ring is-3"></span>
+                    <span class="miner-art-core"></span>
                 </div>
-                <p class="casino-hint miner-warp-hint" data-miner-crunch-hint></p>
-                <h3 class="miner-store-title">Antimatter upgrades</h3>
-                <ul class="miner-upgrades miner-dark-upgrades" data-miner-anti-upgrades></ul>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-crunch-title" class="miner-prestige-title">Big Crunch</h2>
+                    <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-anti>0</span> Antimatter</p>
+                    <p class="miner-locked" data-miner-crunch-locked>
+                        <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
+                        Something even bigger than a Warp Jump is out there. Do your first Warp Jump to find out what.
+                    </p>
+                    <div data-miner-crunch-section hidden>
+                        <p class="miner-prestige-bonus"><strong data-miner-crunch="bonus">+0%</strong> production and Dark Matter from your Antimatter</p>
+                        <div class="miner-progress">
+                            <div class="miner-progress-bar" role="progressbar" aria-labelledby="miner-crunch-progress-label"
+                                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-miner-crunch-progress><span class="miner-progress-fill"></span></div>
+                            <p class="miner-progress-label" id="miner-crunch-progress-label">
+                                <span data-miner-crunch="dark">0</span> of <span data-miner-crunch="target"><?= number_format(HBHUB_MINER_CRUNCH_DARK) ?></span> Dark Matter earned this universe
+                            </p>
+                        </div>
+                        <button type="button" class="miner-prestige-btn" data-miner-crunch-button disabled>
+                            <span class="miner-prestige-btn-text">Big Crunch</span>
+                            <span class="miner-prestige-btn-gain">+<span data-miner-crunch="gain">0</span> Antimatter</span>
+                        </button>
+                        <p class="miner-prestige-hint" data-miner-crunch-hint></p>
+                    </div>
+                </div>
+            </div>
+            <div data-miner-crunch-section hidden>
+                <p class="casino-hint miner-prestige-about">
+                    A Big Crunch collapses the whole universe and starts it over. Your Dark Matter and its upgrades go too, but
+                    you get Antimatter for the Dark Matter you earned. Every Antimatter you've earned makes everything mine
+                    <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% faster and Warp Jumps give <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% more Dark
+                    Matter, for good.
+                </p>
+                <div class="miner-store-head miner-prestige-store-head">
+                    <h3 class="miner-store-title">Antimatter upgrades</h3>
+                    <p class="miner-prestige-owned" data-miner-anti-owned></p>
+                </div>
+                <ul class="miner-perks" data-miner-anti-upgrades></ul>
             </div>
         </section>
 
@@ -261,7 +297,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             </div>
         </dialog>
 
-        <dialog class="games-dialog" data-miner-warp-dialog aria-labelledby="miner-warp-dialog-title">
+        <dialog class="games-dialog miner-prestige-dialog is-dark" data-miner-warp-dialog aria-labelledby="miner-warp-dialog-title">
             <h2 id="miner-warp-dialog-title">Warp to a new galaxy?</h2>
             <p data-miner-warp-dialog-text></p>
             <div class="games-dialog-actions">
@@ -270,7 +306,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             </div>
         </dialog>
 
-        <dialog class="games-dialog" data-miner-crunch-dialog aria-labelledby="miner-crunch-dialog-title">
+        <dialog class="games-dialog miner-prestige-dialog is-anti" data-miner-crunch-dialog aria-labelledby="miner-crunch-dialog-title">
             <h2 id="miner-crunch-dialog-title">Collapse the universe?</h2>
             <p data-miner-crunch-dialog-text></p>
             <div class="games-dialog-actions">
