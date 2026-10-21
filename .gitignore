@@ -1,7 +1,7 @@
 smartftp.json
 CLAUDE.md
 config.php
-database/updates/*
+database/migrations/*
 CLAUDE.md
 # Real site config (has the database password) - copied from config-examples/, never commit it
 /hbHubSiteConfig.php
