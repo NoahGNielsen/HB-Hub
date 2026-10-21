@@ -205,8 +205,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             account, the time, and the address of the page you were on when you pressed the button (only the
                             page, like <code>/chat/</code>, not which chat or what you searched for). Site admins can also mark it
                             as done, which stores which admin did it and when. When they mark it as done with a reply, you get
-                            the reply as a notification under the bell (it says "An admin", not which one). The reply is only
-                            kept in that notification, like your other notifications.
+                            the reply as a notification under the bell (it says "An admin", not which one). The reply is kept in
+                            that notification, like your other notifications, and in the admin log below.
                         </p>
                         <h3>Admin log</h3>
                         <p>
@@ -215,7 +215,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             chat you're in, since that shows your messages and personal info, and downloading your data. It also
                             keeps a few details, like how many chips were added or which message was deleted, but never a
                             password, a name or what a message said. Before every change, the admin can type why they're doing
-                            it, and that reason is kept with it in the log. When an account is banned automatically for uploading a
+                            it, and that reason is kept with it in the log. When an admin replies to feedback, the reply is kept
+                            there as the reason. When an account is banned automatically for uploading a
                             banned profile picture, that goes in the admin log too, with which picture it was and whether it
                             happened when signing up.
                         </p>

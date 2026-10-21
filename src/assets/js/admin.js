@@ -53,7 +53,7 @@
         if (isReply) {
             title.textContent = `Reply to ${replyTo}`;
             fieldLabel.textContent = 'Message';
-            hint.textContent = `${replyTo} gets it as a notification: "An admin has marked your feedback as completed with the message: …", and the feedback is marked as done.`;
+            hint.textContent = `${replyTo} gets it as a notification: "An admin has marked your feedback as completed with the message: …", and the feedback is marked as done. It's saved in the admin log as the reason.`;
             ok.textContent = 'Send, and mark completed';
         } else {
             title.textContent = submitter?.dataset.confirm || form.dataset.confirm || `${label}?`;

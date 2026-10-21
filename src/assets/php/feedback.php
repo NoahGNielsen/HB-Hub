@@ -3,7 +3,7 @@
 // otherPages/feedback.php, which saves it here with hbHubFeedbackSend(). Site admins read it on the admin panel's
 // Feedback tab (admin/feedback.php), mark it as done (or new again) and delete it. They can also mark it as done with a
 // reply (hbHubFeedbackReply()), which the user gets as a notification under the bell (notificationTypes/feedback.php).
-// The reply is only kept in that notification, not with the feedback.
+// The reply is kept in that notification and as the reason in the admin log (admin/feedback.php), not with the feedback.
 //
 // Each one is a row in HBHub-Feedback: who sent it, what they wrote, the path of the page they were on when they
 // pressed the button (only the path, never the query, so no chat ids or search words), when, and who marked it done.

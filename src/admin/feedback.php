@@ -34,8 +34,11 @@ if ($adminAction !== null && isset(ADMIN_FEEDBACK_TOASTS[$adminAction])) {
             'reply' => hbHubFeedbackReply($db, (int) $feedbackId, (int) $hbHubUser['userId'], $reply),
             default => hbHubFeedbackSetDone($db, (int) $feedbackId, $adminAction === 'done', (int) $hbHubUser['userId']),
         };
-        if ($isChanged) {
-            // Not the reply itself: like a message, it isn't kept in the log (it's in the user's notification)
+        if ($isChanged && $adminAction === 'reply') {
+            // The reply goes in the log as its reason (the popup asks for the reply instead of a reason, and both are
+            // at most 500 characters), so the other admins can see what was said
+            adminLogWrite($db, (int) $hbHubUser['userId'], 'feedback.reply', null, null, ['feedbackId' => (int) $feedbackId], $reply);
+        } elseif ($isChanged) {
             adminLog($db, (int) $hbHubUser['userId'], 'feedback.' . $adminAction, null, null, ['feedbackId' => (int) $feedbackId]);
         }
     }
