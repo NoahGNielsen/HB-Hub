@@ -2,6 +2,7 @@
 // Creates the account once the onboarding form is valid, then logs the new user in.
 // When the picture is on the banned list (bannedAvatars.php), the account is made banned instead, and it's on to the
 // login page with the browser marked, like a banned account's (session.php).
+// When a ghost-banned account is known in the browser (loginLimit.php), the new account is quietly ghost banned too.
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/loginLimit.php';
@@ -67,6 +68,7 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
             hbHubBannedAvatarAutoban($db, $userId, $bannedAvatarId, true);
         } else {
             hbHubLoginTrustDevice($db, $userId); // made here, so it's one of the account's own devices
+            hbHubGhostBanFromDevice($db); // made where a ghost-banned account is known, so it's ghost banned too (loginLimit.php)
             $sessionId = hbHubCreateSession($db, $userId);
         }
 

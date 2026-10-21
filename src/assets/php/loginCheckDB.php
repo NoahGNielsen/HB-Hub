@@ -214,6 +214,8 @@ function loginCancelPending(): void
  * Logs the user in, once the password (and 2FA code) were right: makes the browser a known device for the account
  * (loginLimit.php) and stores a new session. Run inside a transaction, then pass the id to hbHubSetSessionCookie()
  * once committed. A browser marked for this account being banned isn't anymore, as it's been unbanned since.
+ * When a ghost-banned account is known in the browser, an account made in the last HBHUB_GHOST_NEW_ACCOUNT_DAYS that
+ * logs in there is ghost banned too, and so is one known there when the ghost-banned one logs in (hbHubGhostBanFromDevice()).
  */
 function loginFinish(PDO $db, int $userId): string
 {
@@ -231,6 +233,7 @@ function loginFinish(PDO $db, int $userId): string
         WHERE userId = ?')
         ->execute([LOGIN_STATUS_ONLINE, $ipv4, $ipv6, $userId]);
     hbHubLoginTrustDevice($db, $userId);
+    hbHubGhostBanFromDevice($db); // a new account used where a ghost-banned one is gets ghost banned too (loginLimit.php)
 
     return hbHubCreateSession($db, $userId);
 }

@@ -152,7 +152,8 @@ function hbHubIsDeletedUserName(string $name): bool
  * Banning keeps the user's sessions, so the first visit after it can mark the browser (hbHubSetBannedCookie())
  * before the session is deleted.
  * userGhostBanned is whether a site admin ghost banned them (assets/php/chat.php): only the chat looks at it, and it's
- * never shown to the user.
+ * never shown to the user. Their browser is made one of their known devices, so it passes the ghost ban on to a new
+ * account made in it (loginLimit.php).
  *
  * @return ?array{userId: int, userName: string, userRole: int, userAvatarAttachmentId: ?int, userSettings: ?string, userGhostBanned: int}
  */
@@ -199,6 +200,14 @@ function hbHubSessionUser(): ?array
             $db->prepare('UPDATE `HBHub-Users` SET userLastSeenTimestamp = NOW(),
                     userIpv4AdresseLastAccessed = ?, userIpv6AdresseLastAccessed = ? WHERE userId = ?')
                 ->execute([$ipv4, $ipv6, $user['userId']]);
+        }
+        // A ghost-banned account's browser has to be one of its known devices, so a new account made in it is ghost
+        // banned too (loginLimit.php). Logging in makes it one, but a login from before the known devices came in didn't.
+        if ($user['userGhostBanned']) {
+            require_once __DIR__ . '/loginLimit.php';
+            if (hbHubKnownDevice($db, (int) $user['userId']) === null) {
+                hbHubLoginTrustDevice($db, (int) $user['userId']);
+            }
         }
         unset($user['userStatus'], $user['sessionIsStale'], $user['userIsStale'], $user['userIpv4AdresseLastAccessed'], $user['userIpv6AdresseLastAccessed']);
     } catch (PDOException $e) {

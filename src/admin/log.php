@@ -4,9 +4,10 @@
 //
 // Everything site admins have done in the admin panel, newest first, ADMIN_LOG_SHOWN at a time (?page=): opening a
 // user's or chat's admin panel (once per ADMIN_LOG_VIEW_MINUTES), downloading a user's data, and every change, plus
-// the automatic bans for a banned profile picture (no admin, shown as "Automatic"), each change with the reason the
-// admin gave in admin.js's popup under it (when they gave one). The rows are written by the admin
-// pages with adminLog() (assets/php/adminLog.php), the automatic bans by bannedAvatars.php. Nothing here changes them: the log can't be
+// the automatic bans for a banned profile picture and ghost bans passed on to new accounts in the same browser (no
+// admin, shown as "Automatic"), each change with the reason the admin gave in admin.js's popup under it (when they gave
+// one). The rows are written by the admin pages with adminLog() (assets/php/adminLog.php), the automatic bans by
+// bannedAvatars.php and loginLimit.php. Nothing here changes them: the log can't be
 // edited or deleted from the site, and rows older than ADMIN_LOG_KEEP_DAYS are removed (here and by cron/nightly.php).
 // ?user=id shows only what was done by or to that user, ?chat=id only what was done to that chat. The "Admin log"
 // buttons at the top of a user's and a chat's admin panel link here with those.
@@ -85,6 +86,8 @@ function adminLogText(array $entry): string
 
     $text = match ($entry['adminLogAction']) {
         'user.ban' => !empty($data['avatar']) ? 'Banned {user} and their profile picture' : null,
+        'user.autoGhostBan' => isset($data['fromUserId'])
+            ? '{user} was ghost banned automatically for using a browser ghost-banned account #' . (int) $data['fromUserId'] . ' uses' : null,
         'user.autoban' => isset($data['pictureId'])
             ? '{user} was banned automatically for ' . (!empty($data['signup']) ? 'signing up with' : 'uploading')
                 . ' banned picture #' . (int) $data['pictureId'] : null,
@@ -201,7 +204,7 @@ function adminLogUrl(?int $user, ?int $chat, int $page = 1): string
                                                         <?= adminAvatarHtml(hbHubAvatarUrl($byId, $entry['byAvatarId'] !== null ? (int) $entry['byAvatarId'] : null), $entry['byName']) ?>
                                                         <span class="admin-list-name"><?= htmlspecialchars($entry['byName']) ?></span>
                                                     </a>
-                                                <?php elseif ($entry['adminLogAction'] === 'user.autoban'): ?>
+                                                <?php elseif (in_array($entry['adminLogAction'], ['user.autoban', 'user.autoGhostBan'], true)): ?>
                                                     <span class="admin-muted">Automatic</span>
                                                 <?php else: ?>
                                                     <span class="admin-muted">Unknown</span>

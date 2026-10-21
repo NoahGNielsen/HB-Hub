@@ -3,8 +3,10 @@
 // what to whom. That includes just opening a user's or a chat's admin panel (admin/user.php, admin/chat.php), since
 // that shows all their messages and personal info, and downloading a user's data. Changes are logged by the admin
 // pages right after they've been made (adminLog()), opening one with adminLogView().
-// The one thing in it no admin did is the automatic ban for uploading a banned profile picture ('user.autoban', by
-// bannedAvatars.php), which has no admin (adminLogByUserId NULL), so admins can see every ban in one place.
+// The two things in it no admin did are the automatic ban for uploading a banned profile picture ('user.autoban', by
+// bannedAvatars.php) and the automatic ghost ban of a new account made or used in the same browser as a ghost-banned
+// one ('user.autoGhostBan', by loginLimit.php). They have no admin (adminLogByUserId NULL), and are in the log so admins
+// can see every ban in one place.
 // The log is read under Admin log in the admin panel's side menu (admin/log.php). Nobody can change or delete it from
 // the site; rows older than ADMIN_LOG_KEEP_DAYS are removed by the nightly clean-up (cron/nightly.php, adminLogSweep()).
 //
@@ -30,6 +32,7 @@ const ADMIN_LOG_ACTIONS = [
     'user.autoban' => '{user} was banned automatically for uploading a banned profile picture', // no admin, see the top
     'user.ghostBan' => 'Ghost banned {user}',
     'user.ghostUnban' => 'Lifted {user}\'s ghost ban',
+    'user.autoGhostBan' => '{user} was ghost banned automatically for using a browser a ghost-banned account uses', // no admin, see the top
     'user.name' => 'Changed {user}\'s name',
     'user.bio' => 'Changed {user}\'s bio',
     'user.avatar' => 'Removed {user}\'s profile picture',
@@ -83,7 +86,7 @@ function adminLogWrite(PDO $db, ?int $adminId, string $action, ?int $userId, ?in
 /**
  * Logs that the admin did $action (a key of ADMIN_LOG_ACTIONS), about $userId and/or $chatId, with $data as details
  * and the reason they gave in the popup (adminLogReason()).
- * $adminId is null for what the site did by itself ('user.autoban'), which never has a reason: that request is the
+ * $adminId is null for what the site did by itself ('user.autoban', 'user.autoGhostBan'), which never has a reason: that request is the
  * user's own, so a `reason` in it would be theirs.
  */
 function adminLog(PDO $db, ?int $adminId, string $action, ?int $userId = null, ?int $chatId = null, ?array $data = null): void

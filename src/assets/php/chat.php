@@ -15,6 +15,8 @@
 //   them for real, or them starting a DM with the ghost-banned user, turns it into a normal membership.
 // The rest is real, like leaving a chat, deleting their own messages, and what group admins can do in their group.
 // Lifting the ghost ban doesn't show what they did while ghost banned, it only stops new things being ghosts.
+// A new account (at most HBHUB_GHOST_NEW_ACCOUNT_DAYS old) made or logged in to in a browser the ghost-banned account
+// uses is ghost banned too, by itself (loginLimit.php's hbHubGhostBanFromDevice()), so they can't just make another one.
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/chatAttachments.php'; // a deleted chat's attachments are deleted with it
 

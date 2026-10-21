@@ -9,12 +9,21 @@
 // - Every other browser shares the account's count and lock (userFailedLoginCount and userAccountLockedTimestamp).
 // So guessing someone's password from another browser only locks out other new browsers, and the owner can still log
 // in on their own phone or computer. Otherwise anyone who knows a name could keep its owner locked out.
+//
+// The known devices also pass a ghost ban (assets/php/chat.php) on to new accounts: when an account is made or logged
+// in to in a browser that a ghost-banned account is known in, every account known in that browser that's at most
+// HBHUB_GHOST_NEW_ACCOUNT_DAYS old is ghost banned too (hbHubGhostBanFromDevice()), so making a new account doesn't get
+// around it. Older accounts aren't touched, so logging in to an existing account on the same computer is fine.
+// It's all on the server, so nothing in the browser gives it away. session.php makes sure a ghost-banned account's
+// browser is one of its known devices, even when it hasn't logged in there since the known devices came in.
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/adminLog.php'; // automatic ghost bans go in the admin log
 
 const HBHUB_DEVICE_COOKIE = 'hbHubDevice';
 const HBHUB_DEVICE_DAYS = 180; // not logged in to the account from the browser for this long, it's a new device again
 const HBHUB_LOGIN_STATUS_LOCKED = 3; // userStatus in HBHub-Users
+const HBHUB_GHOST_NEW_ACCOUNT_DAYS = 3; // accounts this new get a ghost ban from their browser, see the top
 
 /**
  * The login_attempts_* settings, with the defaults used when an older config file doesn't have them yet.
@@ -79,6 +88,46 @@ function hbHubLoginTrustDevice(PDO $db, int $userId): void
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
+}
+
+/**
+ * Passes a ghost ban on to the new accounts known in the browser (see the top): when any account known in it is ghost
+ * banned, the ones made in the last HBHUB_GHOST_NEW_ACCOUNT_DAYS that aren't yet are ghost banned too, each with a
+ * 'user.autoGhostBan' row in the admin log saying which account it came from. Run after hbHubLoginTrustDevice(), in
+ * the same transaction, so the account just made or logged in to is known in the browser. A browser that had no
+ * device cookie before isn't known for anything else, so there's nothing to pass on.
+ */
+function hbHubGhostBanFromDevice(PDO $db): void
+{
+    $token = hbHubDeviceToken();
+    if ($token === null) {
+        return;
+    }
+
+    // Ghost-banned ones first, the one ghost banned the longest at the top, so the log points at where it started.
+    // Deleted accounts (userStatus NULL) have no known devices left, but just in case.
+    $statement = $db->prepare('SELECT u.userId, u.userGhostBannedTimestamp IS NOT NULL AS isGhost,
+            u.userCreatedTimestamp > NOW() - INTERVAL ' . HBHUB_GHOST_NEW_ACCOUNT_DAYS . ' DAY AS isNew
+        FROM `HBHub-LoginDevices` d JOIN `HBHub-Users` u ON u.userId = d.userId
+        WHERE d.deviceTokenHash = ? AND d.deviceLastUsedTimestamp > NOW() - INTERVAL ' . HBHUB_DEVICE_DAYS . ' DAY
+            AND u.userStatus IS NOT NULL
+        ORDER BY u.userGhostBannedTimestamp IS NULL, u.userGhostBannedTimestamp, u.userId');
+    $statement->execute([hash('sha256', $token)]);
+    $accounts = $statement->fetchAll();
+    if ($accounts === [] || !$accounts[0]['isGhost']) {
+        return;
+    }
+    $fromUserId = (int) $accounts[0]['userId'];
+
+    $ghostBan = $db->prepare('UPDATE `HBHub-Users` SET userGhostBannedTimestamp = NOW() WHERE userId = ? AND userGhostBannedTimestamp IS NULL');
+    foreach ($accounts as $account) {
+        if (!$account['isGhost'] && $account['isNew']) {
+            $ghostBan->execute([$account['userId']]);
+            if ($ghostBan->rowCount() > 0) {
+                adminLog($db, null, 'user.autoGhostBan', (int) $account['userId'], null, ['fromUserId' => $fromUserId]);
+            }
+        }
+    }
 }
 
 /**

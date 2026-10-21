@@ -7,14 +7,14 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '20 October 2026';
+const HBHUB_PRIVACY_UPDATED = '21 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
 const HBHUB_PRIVACY_COOKIES = [
     'hbHubSession' => ['Keeps you logged in. Holds a random id that points at your login.', '30 days, or until you log out'],
     'hbHubPendingLogin' => ['Remembers that you typed the right password while you enter your two-factor code.', '5 minutes'],
-    'hbHubDevice' => ['Recognises a browser you have logged in from before, so someone guessing your password can\'t lock you out of it.', '180 days'],
+    'hbHubDevice' => ['Recognises a browser you have logged in from before, so someone guessing your password can\'t lock you out of it. It\'s also how a ghost ban is passed on to a new account used in the same browser.', '180 days'],
     'hbHubBanned' => ['Set when a banned account is used in the browser, so it can\'t just make a new account.', '400 days, or until the account is unbanned and logs in again'],
     'hbHubToast' => ['A short message for the next page, like "Your password was changed".', '60 seconds'],
 ];
@@ -164,7 +164,11 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 invited, marked the same way, so they never see the chat or get a request or notification about
                                 it, until someone else invites them or they start a chat with that account themselves. The
                                 marks stay when the ghost ban is lifted, so what was hidden stays hidden. They go with the
-                                messages and invites they're on.
+                                messages and invites they're on. To stop a ghost ban being dodged with a new account, the
+                                known devices (the hbHubDevice cookie, see <a href="#privacy-cookies">Cookies and local storage</a>) are checked when an account is made
+                                or logged in to: an account at most 3 days old that's used in the same browser as a
+                                ghost-banned account is ghost banned too, by itself, and site admins can see which account
+                                it came from in the admin log. Older accounts aren't affected.
                             </li>
                         </ul>
                         <h3>Casino and games</h3>
