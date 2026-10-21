@@ -115,9 +115,9 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <div class="miner-store-head">
                         <h3 class="miner-store-title">Buildings</h3>
                         <div class="miner-store-tools">
-                            <!-- With Long-Range Hot Keys: the 1-9 keys buy the last nine buildings instead of the first nine -->
+                            <!-- With Long-Range Hot Keys: the 1-9 and 0 keys buy the last ten buildings instead of the first ten -->
                             <button type="button" class="miner-amount miner-key-switch" aria-pressed="false" aria-keyshortcuts="K"
-                                    title="Make the 1-9 keys buy your last nine buildings instead of your first nine (K)" data-miner-key-switch hidden>
+                                    title="Make the 1-9 and 0 keys buy your last ten buildings instead of your first ten (K)" data-miner-key-switch hidden>
                                 Late-game keys
                             </button>
                             <div class="miner-amounts" role="group" aria-label="How many to buy" data-miner-amounts hidden>
@@ -244,8 +244,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
                     </li>
                     <li class="miner-hot-keys">
-                        Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade), <kbd>1</kbd>-<kbd>9</kbd>
-                        buy the buildings in the order they're listed (the last nine instead, with Long-Range Hot Keys switched
+                        Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade), <kbd>1</kbd>-<kbd>9</kbd> and <kbd>0</kbd>
+                        buy the buildings in the order they're listed (the last ten instead, with Long-Range Hot Keys switched
                         on, which <kbd>K</kbd> does too), <kbd>U</kbd> buys the cheapest upgrade you can afford, <kbd>B</kbd>
                         the cheapest building, <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the
                         Warp Jump, <kbd>X</kbd> the Big Crunch and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once.

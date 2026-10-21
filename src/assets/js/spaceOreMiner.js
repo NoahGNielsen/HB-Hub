@@ -745,9 +745,12 @@
         return { shown, mystery };
     }
 
+    // The hot keys that buy buildings, in the order they're on the keyboard: 1-9, then 0 for the tenth
+    const BUILDING_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+
     // Which of the shown buildings the 1 key buys (the rest follow on): the first, or with Long-Range Hot Keys switched
-    // on, the one that leaves the last nine for 1-9
-    const keyOffset = (count) => (lateKeys && hasDark(state, 'lateKeys') ? Math.max(0, count - 9) : 0);
+    // on, the one that leaves the last ten for 1-9 and 0
+    const keyOffset = (count) => (lateKeys && hasDark(state, 'lateKeys') ? Math.max(0, count - BUILDING_KEYS.length) : 0);
 
     // The upgrades show one row of this many (the cheapest) until they're opened up with the arrow under them
     const UPGRADES_ROW = 3;
@@ -822,9 +825,9 @@
                 );
                 button.append(iconBox('miner-building-icon', building.icon), main, element('span', 'miner-building-owned'));
                 const index = shown.indexOf(id) - offset;
-                if (index >= 0 && index < 9) { // the hot key that buys it (see "Hot keys" below)
-                    button.prepend(element('kbd', 'miner-key', String(index + 1)));
-                    button.setAttribute('aria-keyshortcuts', String(index + 1));
+                if (index >= 0 && index < BUILDING_KEYS.length) { // the hot key that buys it (see "Hot keys" below)
+                    button.prepend(element('kbd', 'miner-key', BUILDING_KEYS[index]));
+                    button.setAttribute('aria-keyshortcuts', BUILDING_KEYS[index]);
                 }
                 button.title = building.text;
                 item.append(button);
@@ -1636,8 +1639,8 @@
 
     // ----- Hot keys: each one presses the button it stands for, so they do exactly what a click would.
     // Space mines (a held-down key only counts once), C catches the comet (once the Comet Hot Key upgrade is bought, it's
-    // lost on a Warp Jump like the other upgrades), 1-9 buy the buildings in the order they're
-    // listed (the last nine, with Long-Range Hot Keys switched on: see keyOffset()), K flips that switch, U buys the
+    // lost on a Warp Jump like the other upgrades), 1-9 and 0 buy the buildings in the order they're
+    // listed (the last ten, with Long-Range Hot Keys switched on: see keyOffset()), K flips that switch, U buys the
     // cheapest upgrade you can afford, B the cheapest building (at the ×1/×10/×100 picked), A switches between ×1, ×10
     // and ×100, W opens the Warp Jump box, X the Big Crunch box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
     // shortcuts) and while a box is open.
@@ -1699,9 +1702,10 @@
             return;
         }
         if (event.repeat) return;
-        if (/^[1-9]$/.test(event.key)) {
+        const keyIndex = BUILDING_KEYS.indexOf(event.key);
+        if (keyIndex >= 0) {
             const buttons = buildingList.querySelectorAll('[data-building]');
-            buttons[keyOffset(buttons.length) + Number(event.key) - 1]?.click();
+            buttons[keyOffset(buttons.length) + keyIndex]?.click();
             return;
         }
         const hotKey = HOT_KEYS[event.key.toLowerCase()];

@@ -203,14 +203,14 @@ const HBHUB_MINER_CLICK_TYPES = ['click', 'clickPct', 'crit', 'auto']; // kept b
 const HBHUB_MINER_ETERNAL_TYPES = ['bulk', 'comet']; // kept by Eternal Blueprints
 
 // Bought with Dark Matter, kept until a Big Crunch (or after it too, with Dark Echo). Long-Range Hot Keys doesn't change
-// the game, only which buildings the 1-9 keys buy, so it's only in spaceOreMiner.js.
+// the game, only which buildings the 1-9 and 0 keys buy, so it's only in spaceOreMiner.js.
 const HBHUB_MINER_DARK_UPGRADES = [
     'headStart' => ['name' => 'Head Start', 'icon' => 'headStart', 'cost' => 5, 'text' => 'Start every run with ' . HBHUB_MINER_HEAD_START . ' Mining Drones.'],
     'memory' => ['name' => 'Persistent Memory', 'icon' => 'chip', 'cost' => 40, 'text' => 'Keep your click upgrades when you Warp Jump.'],
     'darkEngines' => ['name' => 'Dark Engines', 'icon' => 'darkEngine', 'cost' => 100, 'text' => 'All buildings mine 50% more.'],
     'timeDilation' => ['name' => 'Time Dilation', 'icon' => 'hourglass', 'cost' => 250, 'text' => 'Earn twice as much while you\'re away.'],
     'darkPickaxe' => ['name' => 'Dark Pickaxe', 'icon' => 'darkPickaxe', 'cost' => 15, 'text' => 'Clicks mine ' . HBHUB_MINER_DARK_PICKAXE . ' times as much.'],
-    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => 'hotKeys', 'cost' => 2, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 keys buy your last nine buildings instead of your first nine.'],
+    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => 'hotKeys', 'cost' => 2, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 and 0 keys buy your last ten buildings instead of your first ten.'],
     'physics' => ['name' => 'Cheaper Physics', 'icon' => 'chartDown', 'cost' => 750, 'text' => 'Each building costs 14% more than the one before instead of 15% (11% instead of 12% for Space Pickaxe Guys).'],
     'reactor' => ['name' => 'Dark Matter Reactor', 'icon' => 'radiation', 'cost' => 2500, 'text' => 'Every Dark Matter you\'ve earned makes everything mine '
         . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%.'],
