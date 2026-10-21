@@ -11,7 +11,8 @@
 // upgrades bought, comets caught, Warp Jumps - each with the time it happened, and hbHubMinerSync() plays them again on
 // the saved game with the same rules as the script. Something that couldn't have happened (buying without the ore,
 // catching a comet that wasn't there, more than HBHUB_MINER_CLICKS_PER_SECOND clicks a second) just doesn't count, and
-// the page carries on from the game the server sends back. So the script and this file must work the same: the rules
+// the page carries on from the game the server sends back. Clicks that come in like clockwork (an auto-clicker, see
+// hbHubMinerSteadyClick()) only mine HBHUB_MINER_STEADY_VALUE of what they would. So the script and this file must work the same: the rules
 // below are copied in spaceOreMiner.js, and the data (buildings, upgrades, achievements and the numbers) goes to the
 // page as JSON from hbHubMinerConfig(), so it's only written here.
 // Luck (critical clicks, when comets come and what they do) comes from hbHubMinerRandom(): the same numbers here and in
@@ -26,6 +27,9 @@ const HBHUB_MINER_SAVE_SECONDS = 30; // how often the page saves while it's open
 const HBHUB_MINER_ONLINE_MS = 90000; // a gap between saves up to this long counts as playing, the rest as away
 const HBHUB_MINER_OFFLINE_RATE = 0.05; // of the normal ore per second, while away
 const HBHUB_MINER_CLICKS_PER_SECOND = 20; // the most clicks that count, so auto-clickers don't pay
+const HBHUB_MINER_STEADY_MS = 20000; // clicks at the same pace for this long are an auto-clicker...
+const HBHUB_MINER_STEADY_TOLERANCE_MS = 15; // (each gap between two clicks within this of the gap before it)
+const HBHUB_MINER_STEADY_VALUE = 0.2; // ...and only mine this share of what a click is worth
 const HBHUB_MINER_MAX_ACTIONS = 2000; // in one save
 const HBHUB_MINER_COST_GROWTH = 1.15; // each building costs this much more than the one before
 const HBHUB_MINER_COST_GROWTH_CHEAP = 1.14; // with Cheaper Physics
@@ -231,6 +235,9 @@ function hbHubMinerConfig(): array
         'onlineMs' => HBHUB_MINER_ONLINE_MS,
         'offlineRate' => HBHUB_MINER_OFFLINE_RATE,
         'clicksPerSecond' => HBHUB_MINER_CLICKS_PER_SECOND,
+        'steadyMs' => HBHUB_MINER_STEADY_MS,
+        'steadyToleranceMs' => HBHUB_MINER_STEADY_TOLERANCE_MS,
+        'steadyValue' => HBHUB_MINER_STEADY_VALUE,
         'maxActions' => HBHUB_MINER_MAX_ACTIONS,
         'costGrowth' => HBHUB_MINER_COST_GROWTH,
         'costGrowthCheap' => HBHUB_MINER_COST_GROWTH_CHEAP,
@@ -292,6 +299,8 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  * - buildings: id => how many. upgrades: the ids bought this run. dark: Dark Matter to spend. darkEarned: ever earned
  *   (the production bonus). darkUpgrades: bought with it. warps: Warp Jumps made.
  * - clicks, crits, comets (caught), diamonds (Diamond Comets caught): counted ever.
+ * - steady: the pace of the clicks, to spot auto-clickers (hbHubMinerSteadyClick()): last (the last click's time),
+ *   gap (ms between the last two clicks) and since (when clicking at that pace began).
  * - comet: the next or current comet: n (its number, for its luck) and at (when it shows up).
  * - buffs: the comet effects running: 'production' or 'click' => {kind, multiplier, until}.
  * - achievements: the ids done. tick: how far the game has run. started, runStarted: when the save and this run began.
@@ -317,6 +326,7 @@ function hbHubMinerNewState(int $now): array
         'crits' => 0,
         'comets' => 0,
         'diamonds' => 0,
+        'steady' => ['last' => 0, 'gap' => 0, 'since' => 0],
         'comet' => ['n' => 0, 'at' => $now],
         'buffs' => [],
         'achievements' => [],
@@ -588,18 +598,43 @@ function hbHubMinerWarpGain(array $state): int
 }
 
 /**
- * Clicks the asteroid $count times at the game's time. Returns the ore mined.
+ * Whether a click at $time (Unix ms) comes in like clockwork: each gap since the click before is the same as the gap
+ * before that (give or take HBHUB_MINER_STEADY_TOLERANCE_MS), and has been for HBHUB_MINER_STEADY_MS. Nobody's finger
+ * keeps a beat that well, so that's an auto-clicker (or a held-down key), and the click only mines
+ * HBHUB_MINER_STEADY_VALUE. The pace is kept in the save's 'steady', so it carries on from one save to the next, and a
+ * single click off the beat starts it over.
  */
-function hbHubMinerClick(array &$state, int $count): float
+function hbHubMinerSteadyClick(array &$state, int $time): bool
+{
+    $steady = &$state['steady'];
+    $time = max($time, (int) $steady['last']);
+    $gap = $time - (int) $steady['last'];
+    if (abs($gap - (int) $steady['gap']) > HBHUB_MINER_STEADY_TOLERANCE_MS) {
+        $steady['since'] = $time; // a new pace, starting with this click
+    }
+    $steady['gap'] = $gap;
+    $steady['last'] = $time;
+    return $time - $steady['since'] >= HBHUB_MINER_STEADY_MS;
+}
+
+/**
+ * Clicks the asteroid $count times at the game's time. $offsets: when each click was, in ms after that (the page groups
+ * the clicks of a second into one action); a missing one is 0. Returns the ore mined.
+ */
+function hbHubMinerClick(array &$state, int $count, array $offsets = []): float
 {
     $value = hbHubMinerClickValue($state, $state['tick']);
     $canCrit = hbHubMinerHas($state, 'crit');
     $mined = 0.0;
     for ($i = 0; $i < $count; $i++) {
+        $offset = is_numeric($offsets[$i] ?? null) ? min(max((int) $offsets[$i], 0), 999) : 0;
         $ore = $value;
         if ($canCrit && hbHubMinerRandom($state['seed'], $state['clicks'], HBHUB_MINER_SALT_CRIT) < HBHUB_MINER_CRIT_CHANCE) {
             $ore *= HBHUB_MINER_CRIT_MULTIPLIER;
             $state['crits']++;
+        }
+        if (hbHubMinerSteadyClick($state, $state['tick'] + $offset)) {
+            $ore *= HBHUB_MINER_STEADY_VALUE;
         }
         $state['clicks']++;
         $mined += $ore;
@@ -671,7 +706,7 @@ function hbHubMinerWarp(array &$state): bool
 
 /**
  * One thing the player did, at the game's time. Returns whether it counted.
- * - ['type' => 'click', 'count' => n]: see hbHubMinerSync() for the limit.
+ * - ['type' => 'click', 'count' => n, 'offsets' => [ms after 'at' of each click]]: see hbHubMinerSync() for the limit.
  * - ['type' => 'buy', 'building' => id, 'amount' => 1, 10 or 100] (10 and 100 need Bulk Buying).
  * - ['type' => 'upgrade', 'id' => id], ['type' => 'dark', 'id' => id] (a Dark Matter upgrade).
  * - ['type' => 'comet'], ['type' => 'warp'].
@@ -685,7 +720,7 @@ function hbHubMinerApply(array &$state, array $action): bool
         if ($count < 1) {
             return false;
         }
-        hbHubMinerClick($state, $count);
+        hbHubMinerClick($state, $count, is_array($action['offsets'] ?? null) ? array_values($action['offsets']) : []);
         return true;
     }
 

@@ -33,7 +33,7 @@
 | **Golden Comets** | A comet flies across the screen now and then. Catch it for a pile of ore, 7× production or 77× clicks for a while, or (rarely) a Diamond Comet with 777× production |
 | **Warp Jump** | Prestige: after a billion ore in a run, start over in a new galaxy for Dark Matter. Every Dark Matter earned is +2.5% production for good, and it buys permanent upgrades |
 | **Extras** | 33 achievements, an asteroid that changes as you mine more, rock bits and floating numbers on every click, a news ticker, sounds and a leaderboard |
-| **Saving** | Saved on the server every 30 seconds and when you leave, and you keep mining at 5% while you're away. The server plays every click and purchase again to check it, so the leaderboard can't be cheated from the browser, and clicks only count up to 20 a second. The game runs in one tab at a time |
+| **Saving** | Saved on the server every 30 seconds and when you leave, and you keep mining at 5% while you're away. The server plays every click and purchase again to check it, so the leaderboard can't be cheated from the browser, and clicks only count up to 20 a second. Clicks at exactly the same pace for 20 seconds (an auto-clicker or a held-down key) only mine 20%, until the pace changes. The game runs in one tab at a time |
 
 The Games section can be opened to everyone, only to admins, or to nobody with `games_access` in the
 [config](../config.md), and players can block it for themselves (see [Account & security](account.md)).

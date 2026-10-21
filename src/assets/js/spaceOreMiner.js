@@ -159,25 +159,43 @@
     }
     const warpGain = (s) => (s.runOre >= CONFIG.warpOre ? Math.max(0, darkTotal(s.allOre) - s.darkEarned) : 0);
 
-    // Returns the ore mined and how many of the clicks were critical
-    function click(s, count) {
+    // Whether a click at time comes in like clockwork, an auto-clicker (hbHubMinerSteadyClick())
+    function steadyClick(s, time) {
+        const steady = s.steady;
+        time = Math.max(time, steady.last);
+        const gap = time - steady.last;
+        if (Math.abs(gap - steady.gap) > CONFIG.steadyToleranceMs) steady.since = time;
+        steady.gap = gap;
+        steady.last = time;
+        return time - steady.since >= CONFIG.steadyMs;
+    }
+
+    // offsets: when each click was, in ms after s.tick. Returns the ore mined, how many of the clicks were critical and
+    // whether any came in like clockwork.
+    function click(s, count, offsets = []) {
         const value = clickValue(s, s.tick);
         const canCrit = has(s, 'crit');
         let mined = 0;
         let crits = 0;
+        let steady = false;
         for (let i = 0; i < count; i++) {
+            const offset = Number.isFinite(offsets[i]) ? Math.min(Math.max(Math.trunc(offsets[i]), 0), 999) : 0;
             let ore = value;
             if (canCrit && random(s.seed, s.clicks, SALT_CRIT) < CONFIG.critChance) {
                 ore *= CONFIG.critMultiplier;
                 s.crits++;
                 crits++;
             }
+            if (steadyClick(s, s.tick + offset)) {
+                ore *= CONFIG.steadyValue;
+                steady = true;
+            }
             s.clicks++;
             mined += ore;
         }
         s.clickOre += mined;
         earn(s, mined);
-        return { mined, crits };
+        return { mined, crits, steady };
     }
 
     // Returns {kind, ore (what a lucky comet gave)}, or null when there wasn't one on screen
@@ -225,7 +243,7 @@
     function apply(s, action) {
         switch (action.type) {
             case 'click':
-                return action.count >= 1 ? click(s, action.count) : false;
+                return action.count >= 1 ? click(s, action.count, action.offsets) : false;
             case 'buy': {
                 const { building, amount } = action;
                 if (!BUILDINGS[building] || ![1, 10, 100].includes(amount) || (amount > 1 && !has(s, 'bulk'))) return false;
@@ -368,6 +386,7 @@
     let buyAmount = 1;
     let clickTokens = CONFIG.clicksPerSecond; // clicks that would still count right now (the server's limit)
     let clickTokensAt = performance.now();
+    let wasSteady = false; // the last click came in like clockwork (told once, until the clicks are back to normal)
     let announced = new Set(); // achievements already shown
     let storeKey = '';
     let darkKey = '';
@@ -392,11 +411,14 @@
         const result = apply(state, action);
         if (!result) return false;
 
+        // Clicks in the same second go as one, with when each was (offsets, ms after at) for the auto-clicker check
         const last = pending[pending.length - 1];
-        if (action.type === 'click' && last?.type === 'click' && state.tick - last.at < 1000) {
-            last.count += action.count; // clicks in the same second go as one
+        const at = Math.round(state.tick);
+        if (action.type === 'click' && last?.type === 'click' && at - last.at < 1000) {
+            last.count += action.count;
+            last.offsets.push(...Array(action.count).fill(at - last.at));
         } else {
-            pending.push({ ...action, at: Math.round(state.tick) });
+            pending.push({ ...action, at, ...(action.type === 'click' ? { offsets: Array(action.count).fill(0) } : {}) });
         }
         if (pending.length >= CONFIG.maxActions / 2) save();
         return result;
@@ -964,6 +986,11 @@
         const y = fromKeyboard ? box.height / 2 : event.clientY - box.top;
         burst(x, y, result.mined, result.crits > 0);
         sound(result.crits > 0 ? 'crit' : 'click');
+        if (result.steady && !wasSteady) {
+            toast('🤖 Your clicks have come in like clockwork for ' + CONFIG.steadyMs / 1000 + ' seconds, like an auto-clicker, so each one only mines '
+                + CONFIG.steadyValue * 100 + '% until you click at your own pace again.', '', 9000);
+        }
+        wasSteady = result.steady;
         asteroid.classList.remove('is-hit');
         void asteroid.offsetWidth;
         asteroid.classList.add('is-hit');

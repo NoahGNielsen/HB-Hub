@@ -137,7 +137,11 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
                 </li>
                 <li>Play in one tab at a time: opening the game somewhere else stops it here.</li>
-                <li>Clicks are counted up to <?= HBHUB_MINER_CLICKS_PER_SECOND ?> a second. Auto-clickers and scripts aren't allowed, and buy you nothing anyway.</li>
+                <li>
+                    Clicks are counted up to <?= HBHUB_MINER_CLICKS_PER_SECOND ?> a second. Auto-clickers and scripts aren't allowed, and buy
+                    you nothing anyway: clicks that come in at exactly the same pace for <?= HBHUB_MINER_STEADY_MS / 1000 ?> seconds only
+                    mine <?= HBHUB_MINER_STEADY_VALUE * 100 ?>% of what they would.
+                </li>
             </ul>
         </section>
 
