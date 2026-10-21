@@ -1643,8 +1643,10 @@
     // listed (the last ten, with Long-Range Hot Keys switched on: see keyOffset()), K flips that switch, U buys the
     // cheapest upgrade you can afford, B the cheapest building (at the ×1/×10/×100 picked), A switches between ×1, ×10
     // and ×100, W opens the Warp Jump box, X the Big Crunch box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
-    // shortcuts) and while a box is open.
+    // shortcuts) and while a box is open. The buying keys (1-9, 0, B and U) can be held down to keep buying; the others
+    // only count once per press, so holding M doesn't flick the sound on and off.
 
+    const REPEAT_KEYS = ['b', 'u'];
     const HOT_KEYS = {
         c: () => {
             if (has(state, 'cometKey') && !cometButton.hidden) cometButton.click();
@@ -1701,14 +1703,16 @@
             if (!event.repeat && !asteroid.disabled) mine(event, true); // not asteroid.click(), which a script would do too
             return;
         }
-        if (event.repeat) return;
         const keyIndex = BUILDING_KEYS.indexOf(event.key);
         if (keyIndex >= 0) {
+            // Held down, these keep buying (as fast as the keyboard repeats), like B and U below
             const buttons = buildingList.querySelectorAll('[data-building]');
             buttons[keyOffset(buttons.length) + keyIndex]?.click();
             return;
         }
-        const hotKey = HOT_KEYS[event.key.toLowerCase()];
+        const key = event.key.toLowerCase();
+        if (event.repeat && !REPEAT_KEYS.includes(key)) return;
+        const hotKey = HOT_KEYS[key];
         if (hotKey && !event.shiftKey) hotKey();
     });
 
