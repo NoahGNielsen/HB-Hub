@@ -5,7 +5,9 @@
 // The feedback users have sent from the Feedback button in the side bar (otherPages/feedback.php,
 // assets/php/feedback.php): new ones first, then the ones marked as done, each newest first, ADMIN_FEEDBACK_SHOWN at a
 // time (?page=). Each shows who sent it, when, the page they were on and what they wrote.
-// Forms (action=, feedback=id): done marks it as done, new marks it as new again, delete removes it for good.
+// Forms (action=, feedback=id): done marks it as done, new marks it as new again, delete removes it for good, and
+// reply (with reply=the message) marks it as done and sends the user a notification with the message
+// (hbHubFeedbackReply()). Only reply sends one. Its button needs admin.js, which asks for the message in its popup.
 // Each one is logged in the admin log (assets/php/adminLog.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
@@ -13,7 +15,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/feedback.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 
 const ADMIN_FEEDBACK_SHOWN = 30; // per page
-const ADMIN_FEEDBACK_TOASTS = ['done' => 'adminFeedbackDone', 'new' => 'adminFeedbackNew', 'delete' => 'adminFeedbackDeleted'];
+const ADMIN_FEEDBACK_TOASTS = ['done' => 'adminFeedbackDone', 'new' => 'adminFeedbackNew', 'delete' => 'adminFeedbackDeleted',
+    'reply' => 'adminFeedbackReplied'];
 
 adminOnly($hbHubUser);
 
@@ -23,18 +26,23 @@ $adminPage = is_string($_GET['page'] ?? null) && ctype_digit($_GET['page']) && s
 $adminAction = $_SERVER['REQUEST_METHOD'] === 'POST' && is_string($_POST['action'] ?? null) ? $_POST['action'] : null;
 if ($adminAction !== null && isset(ADMIN_FEEDBACK_TOASTS[$adminAction])) {
     $feedbackId = $_POST['feedback'] ?? null;
-    if (is_string($feedbackId) && ctype_digit($feedbackId) && strlen($feedbackId) <= 10) {
-        $isChanged = $adminAction === 'delete'
-            ? hbHubFeedbackDelete($db, (int) $feedbackId)
-            : hbHubFeedbackSetDone($db, (int) $feedbackId, $adminAction === 'done', (int) $hbHubUser['userId']);
+    $reply = $adminAction === 'reply' ? hbHubFeedbackReplyText($_POST['reply'] ?? null) : null;
+    $toast = $adminAction === 'reply' && $reply === null ? 'adminFeedbackReplyMissing' : ADMIN_FEEDBACK_TOASTS[$adminAction];
+    if (is_string($feedbackId) && ctype_digit($feedbackId) && strlen($feedbackId) <= 10 && $toast === ADMIN_FEEDBACK_TOASTS[$adminAction]) {
+        $isChanged = match ($adminAction) {
+            'delete' => hbHubFeedbackDelete($db, (int) $feedbackId),
+            'reply' => hbHubFeedbackReply($db, (int) $feedbackId, (int) $hbHubUser['userId'], $reply),
+            default => hbHubFeedbackSetDone($db, (int) $feedbackId, $adminAction === 'done', (int) $hbHubUser['userId']),
+        };
         if ($isChanged) {
+            // Not the reply itself: like a message, it isn't kept in the log (it's in the user's notification)
             adminLog($db, (int) $hbHubUser['userId'], 'feedback.' . $adminAction, null, null, ['feedbackId' => (int) $feedbackId]);
         }
     }
 
     // Back to the same page with a toast, so reloading doesn't send the form again
     require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
-    hbHubSetToast(ADMIN_FEEDBACK_TOASTS[$adminAction]);
+    hbHubSetToast($toast);
     header('Location: /admin/feedback' . ($adminPage > 1 ? '?page=' . $adminPage : '') . '#list', true, 303);
     exit;
 }
@@ -115,6 +123,14 @@ $adminFormAction = '/admin/feedback' . ($adminPage > 1 ? '?page=' . $adminPage :
                                         <?php if ($feedbackDone): ?>
                                             <span class="admin-small">Done <?= adminTime($feedback['feedbackDoneTimestamp']) ?><?php if ($feedback['feedbackDoneByUserId'] !== null): ?>
                                                 by <a class="admin-link" href="/admin/user?user=<?= (int) $feedback['feedbackDoneByUserId'] ?>"><?= htmlspecialchars($feedback['doneByName']) ?></a><?php endif; ?></span>
+                                        <?php endif; ?>
+                                        <?php if (!$feedbackDone && $feedback['feedbackUserId'] !== null): ?>
+                                            <!-- admin.js shows it and asks for the message in its popup, sent as `reply` -->
+                                            <form action="<?= $adminFormAction ?>" method="post" data-reply-to="<?= htmlspecialchars($feedbackName) ?>" hidden>
+                                                <input type="hidden" name="action" value="reply">
+                                                <input type="hidden" name="feedback" value="<?= $feedbackId ?>">
+                                                <button type="submit" class="settings-btn settings-btn-small">Reply, and mark completed</button>
+                                            </form>
                                         <?php endif; ?>
                                         <form action="<?= $adminFormAction ?>" method="post">
                                             <input type="hidden" name="action" value="<?= $feedbackDone ? 'new' : 'done' ?>">

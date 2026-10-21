@@ -462,6 +462,11 @@
   display: block;
 }
 
+/* Reply, and mark completed, until admin.js shows it */
+.admin-feedback-foot form[hidden] {
+  display: none;
+}
+
 /* A chat's background: the preview, set by admin.js, with two messages on it like Change background in the chat */
 .admin-background-preview {
   height: 132px;

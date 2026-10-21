@@ -59,6 +59,7 @@ const ADMIN_LOG_ACTIONS = [
     'feedback.done' => 'Marked feedback as done',
     'feedback.new' => 'Marked feedback as new',
     'feedback.delete' => 'Deleted feedback',
+    'feedback.reply' => 'Replied to feedback and marked it as done',
     'banned.add' => 'Added a banned picture',
     'banned.remove' => 'Removed a banned picture',
 ];

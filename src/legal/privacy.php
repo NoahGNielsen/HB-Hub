@@ -204,7 +204,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             When you send feedback with the Feedback button in the side bar, what you wrote is stored with your
                             account, the time, and the address of the page you were on when you pressed the button (only the
                             page, like <code>/chat/</code>, not which chat or what you searched for). Site admins can also mark it
-                            as done, which stores which admin did it and when.
+                            as done, which stores which admin did it and when. When they mark it as done with a reply, you get
+                            the reply as a notification under the bell (it says "An admin", not which one). The reply is only
+                            kept in that notification, like your other notifications.
                         </p>
                         <h3>Admin log</h3>
                         <p>

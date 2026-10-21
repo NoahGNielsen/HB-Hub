@@ -44,6 +44,8 @@ const HBHUB_TOASTS = [
     'adminFeedbackDone' => 'The feedback has been marked as done.',
     'adminFeedbackNew' => 'The feedback has been marked as new.',
     'adminFeedbackDeleted' => 'The feedback has been deleted.',
+    'adminFeedbackReplied' => 'The feedback has been marked as done, and your reply has been sent to them.',
+    'adminFeedbackReplyMissing' => 'Nothing was sent: write a reply of at most 500 characters.',
 ];
 
 /**
