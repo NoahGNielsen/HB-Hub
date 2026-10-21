@@ -2404,7 +2404,7 @@ if ($isPoll) {
                     <!-- Folded away under Read more until it's clicked (chat.js folds it up again each time the popup opens) -->
                     <details class="chat-dialog-hint chat-tickets-rules" data-tickets-rules>
                         <summary>
-                            <strong>The fine print</strong>
+                            <strong>How tickets works?</strong>
                             <span class="chat-tickets-rules-more">Read more</span>
                             <span class="chat-tickets-rules-less">Show less</span>
                         </summary>
