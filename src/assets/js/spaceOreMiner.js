@@ -1103,8 +1103,15 @@
             if (has(state, 'cometKey') && !cometButton.hidden) cometButton.click();
         },
         u: () => {
-            const id = availableUpgrades().find((upgradeId) => canAfford(state, UPGRADES[upgradeId].cost));
-            if (id) upgradeList.querySelector('[data-upgrade="' + id + '"]')?.click();
+            // Picked by cost from the buttons in the store, so it doesn't depend on the order they're listed in or on
+            // an upgrade that's only just shown up and isn't drawn yet
+            catchUp();
+            let cheapest = null;
+            for (const button of upgradeList.querySelectorAll('[data-upgrade]')) {
+                const cost = UPGRADES[button.dataset.upgrade].cost;
+                if (canAfford(state, cost) && (!cheapest || cost < UPGRADES[cheapest.dataset.upgrade].cost)) cheapest = button;
+            }
+            cheapest?.click();
         },
         a: () => {
             if (amounts.hidden) return;
