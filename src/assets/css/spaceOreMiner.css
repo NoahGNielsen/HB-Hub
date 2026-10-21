@@ -716,8 +716,10 @@
   50.1%, 100% { z-index: 0; }
 }
 
-/* Laser Drills: out from the asteroid at --angle, firing a flickering beam at its edge. The sprite is a point in the
-   middle turned to --angle, so "up" in it is straight out. */
+/* Laser Drills: out from the asteroid at --angle, firing a flickering beam at its edge. Now and then the beam goes off,
+   the drill moves round the asteroid a bit (to --angle + 12deg, then - 10deg, then back) and fires again. The sprite
+   is a point in the middle turned to the angle, so "up" in it is straight out. --t is the way round all three spots;
+   the delays have each one firing, for when they're stopped (less motion). */
 .miner-sprite.is-laser {
   --gun: calc(var(--rock-r) + var(--gap) * 2.2);
   left: 50%;
@@ -726,11 +728,12 @@
   height: 0;
   z-index: 2;
   rotate: var(--angle);
+  animation: miner-laser-aim var(--t) ease-in-out var(--delay) infinite;
 }
 
-.miner-sprite.is-laser.is-1 { --angle: -136deg; }
-.miner-sprite.is-laser.is-2 { --angle: 136deg; }
-.miner-sprite.is-laser.is-3 { --angle: -60deg; }
+.miner-sprite.is-laser.is-1 { --angle: -136deg; --t: 9s; --delay: -1s; }
+.miner-sprite.is-laser.is-2 { --angle: 136deg; --t: 11s; --delay: -5s; }
+.miner-sprite.is-laser.is-3 { --angle: -60deg; --t: 10s; --delay: -8s; }
 
 .miner-sprite.is-laser .miner-sprite-body {
   position: absolute;
@@ -748,7 +751,10 @@
   border-radius: 999px;
   background: linear-gradient(#ff9a9a, #fff 55%, #ff4d4d);
   box-shadow: 0 0 6px 2px rgba(255, 70, 70, 0.6);
-  animation: miner-laser calc(0.24s / var(--work)) steps(2) infinite alternate;
+  transform-origin: 50% 0; /* goes back into the drill when it's off */
+  animation:
+    miner-laser calc(0.24s / var(--work)) steps(2) infinite alternate,
+    miner-laser-fire var(--t) ease-in-out var(--delay) infinite;
 }
 
 /* Where it hits */
@@ -766,6 +772,19 @@
 
 @keyframes miner-laser {
   to { opacity: 0.65; }
+}
+
+/* The drill moves while the beam is off (miner-laser-fire) */
+@keyframes miner-laser-aim {
+  0%, 25% { rotate: var(--angle); }
+  33%, 58% { rotate: calc(var(--angle) + 12deg); }
+  66%, 91% { rotate: calc(var(--angle) - 10deg); }
+  100% { rotate: var(--angle); }
+}
+
+@keyframes miner-laser-fire {
+  0%, 25%, 33%, 58%, 66%, 91%, 100% { scale: 1 0; }
+  3%, 23%, 36%, 56%, 69%, 89% { scale: 1 1; }
 }
 
 /* Ore Freighters fly across now and then: along the top, along the bottom, and through the middle behind the asteroid.
@@ -815,16 +834,69 @@
   to { rotate: 10deg; translate: 0 0.08em; }
 }
 
-/* Moon Excavator: a moon with a digger on top, rocking as it digs */
+/* The Moon Excavator, Planet Cracker and Black Hole Siphon are drawn in pieces, all the same size and on top of each
+   other in the order they're in SCENE: the body sizes the sprite, the rest lie over it. In % of the sprite (or of a
+   piece) is in the 32 by 32 of the icons, so 50% 25% is (16, 8) there. */
+.miner-sprite:is(.is-excavator, .is-cracker, .is-siphon) > * {
+  position: absolute;
+  inset: 0;
+}
+
+.miner-sprite:is(.is-excavator, .is-cracker, .is-siphon) > .miner-sprite-body {
+  position: relative;
+}
+
+/* Moon Excavator: a moon with a digger on top, rocking as it goes. Its arm digs into the moon, comes up with a load of
+   rocks and tips them out off the side of the moon, where they fall away. The rocks turn with the arm (the same
+   miner-dig) until they're dropped. */
 .miner-sprite.is-excavator {
   left: 12%;
   top: 20%;
-}
-
-.miner-sprite.is-excavator .miner-sprite-body {
-  font-size: 2.2em;
+  font-size: calc(var(--sprite) * 2.2);
   transform-origin: 44% 69%; /* the middle of the moon */
   animation: miner-rock 2.6s ease-in-out infinite alternate;
+}
+
+.miner-sprite.is-excavator :is(.miner-sprite-arm, .miner-sprite-rocks) {
+  transform-origin: 51.5% 23.5%; /* where the arm is fixed on the digger */
+  animation: miner-dig calc(4s / var(--work)) ease-in-out infinite;
+}
+
+.miner-sprite.is-excavator .miner-sprite-rocks {
+  animation:
+    miner-dig calc(4s / var(--work)) ease-in-out infinite,
+    miner-dump calc(4s / var(--work)) ease-in infinite;
+}
+
+/* The load in the bucket */
+.miner-sprite-rocks::before {
+  content: "";
+  position: absolute;
+  left: 80%;
+  top: 23%;
+  width: 0.075em;
+  height: 0.075em;
+  border-radius: 50%;
+  background: #b8b0a0;
+  box-shadow: 0.05em -0.015em 0 #d9d3c5, 0.095em 0.005em 0 #b8b0a0, 0.035em -0.055em 0 #9a9284;
+}
+
+@keyframes miner-dig {
+  0%, 8% { rotate: 0deg; }
+  24% { rotate: 42deg; } /* in the moon */
+  30% { rotate: 37deg; }
+  36% { rotate: 43deg; }
+  52% { rotate: -16deg; } /* up with the load */
+  64% { rotate: -3deg; }
+  71% { rotate: 10deg; } /* tipped out */
+  80%, 100% { rotate: 0deg; }
+}
+
+@keyframes miner-dump {
+  0%, 35% { opacity: 0; translate: 0 0; }
+  37%, 69% { opacity: 1; translate: 0 0; }
+  90% { opacity: 0; translate: 0.06em 0.5em; }
+  100% { opacity: 0; translate: 0 0; }
 }
 
 /* Star Forge: a star on an anvil, flaring up every time the hammer hits it */
@@ -856,20 +928,61 @@
   70% { rotate: -25deg; }
 }
 
-/* Planet Cracker: a planet glowing from the cracks */
+/* Planet Cracker: the wedge pulls back and slams into the crack, the planet's halves swing open from the bottom (where
+   the crack ends), the lava inside glows and sparks fly off. Then the halves close up and the wedge comes back out. */
 .miner-sprite.is-cracker {
   left: 12%;
   top: 80%;
+  font-size: calc(var(--sprite) * 1.9);
+  --cycle: calc(3s / var(--work));
 }
 
 .miner-sprite.is-cracker .miner-sprite-body {
-  font-size: 1.9em;
-  animation: miner-crack 2.6s ease-in-out infinite;
+  animation: miner-crack var(--cycle) ease-in-out infinite;
+}
+
+/* --side: 1 swings out to the left, -1 to the right */
+.miner-sprite.is-cracker :is(.miner-sprite-left, .miner-sprite-right) {
+  --side: 1;
+  transform-origin: 50% 90.5%; /* the bottom of the crack */
+  animation: miner-crack-open var(--cycle) ease-out infinite;
+}
+
+.miner-sprite.is-cracker .miner-sprite-right {
+  --side: -1;
+}
+
+.miner-sprite.is-cracker .miner-sprite-wedge {
+  animation: miner-wedge var(--cycle) ease-in infinite;
+}
+
+.miner-sprite.is-cracker .miner-sprite-sparks {
+  transform-origin: 50% 25%; /* where the wedge goes in */
+  opacity: 0;
+  animation: miner-crack-sparks var(--cycle) ease-out infinite;
 }
 
 @keyframes miner-crack {
-  0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 120, 40, 0.3)); }
-  50% { filter: drop-shadow(0 0 10px rgba(255, 120, 40, 0.95)); scale: 1.05; }
+  0%, 42%, 100% { filter: drop-shadow(0 0 2px rgba(255, 120, 40, 0.3)); }
+  52%, 78% { filter: drop-shadow(0 0 10px rgba(255, 120, 40, 0.95)); }
+}
+
+@keyframes miner-crack-open {
+  0%, 45%, 100% { translate: 0 0; rotate: 0deg; }
+  52%, 78% { translate: calc(-0.035em * var(--side)) 0; rotate: calc(-6deg * var(--side)); }
+  94% { translate: 0 0; rotate: 0deg; }
+}
+
+@keyframes miner-wedge {
+  0%, 100% { translate: 0 -0.05em; }
+  36% { translate: 0 -0.09em; } /* pulled back */
+  46%, 80% { translate: 0 0.1em; } /* in the crack */
+}
+
+@keyframes miner-crack-sparks {
+  0%, 45% { opacity: 0; scale: 0.5; }
+  50% { opacity: 1; scale: 1; }
+  66%, 100% { opacity: 0; scale: 1.35; }
 }
 
 /* Wormhole Gate: a spinning gate, seen from the side a bit */
@@ -885,15 +998,68 @@
   animation: miner-spin 6s linear infinite reverse;
 }
 
-/* Black Hole Siphon: a black hole, its glow swelling as it pulls */
+/* Black Hole Siphon: a black hole, its glow swelling as it pulls, and the siphon over it humming as it sucks bits of ore
+   (::before and ::after of .miner-sprite-ore, half a trip apart) out of the black hole and up its beam, swirling a bit
+   on the way */
 .miner-sprite.is-siphon {
   left: 88%;
   top: 80%;
+  font-size: calc(var(--sprite) * 2.3);
+  --cycle: calc(1.8s / var(--work));
 }
 
 .miner-sprite.is-siphon .miner-sprite-body {
-  font-size: 2.3em;
   animation: miner-siphon 3s ease-in-out infinite alternate;
+}
+
+/* The beam, from the black hole (its point) up to the siphon */
+.miner-sprite-pull {
+  background: rgba(139, 233, 255, 0.3);
+  clip-path: polygon(61% 17%, 83% 39%, 45% 55%);
+  animation: miner-pull 1s ease-in-out infinite alternate;
+}
+
+.miner-sprite.is-siphon .miner-sprite-nozzle {
+  animation: miner-hum calc(0.16s / var(--work)) linear infinite alternate;
+}
+
+.miner-sprite-ore::before,
+.miner-sprite-ore::after {
+  content: "";
+  position: absolute;
+  left: 42%;
+  top: 58%;
+  width: 0.09em;
+  height: 0.09em;
+  margin: -0.045em 0 0 -0.045em;
+  background: var(--miner-gold);
+  rotate: 45deg;
+  opacity: 0;
+  --swirl: 0.03em;
+  animation: miner-suck var(--cycle) ease-in infinite;
+}
+
+.miner-sprite-ore::after {
+  background: #3cc8f0;
+  --swirl: -0.03em;
+  animation-delay: calc(var(--cycle) / -2);
+}
+
+@keyframes miner-pull {
+  to { background: rgba(139, 233, 255, 0.5); }
+}
+
+@keyframes miner-hum {
+  to { translate: 0.012em -0.012em; }
+}
+
+/* From the black hole to the siphon's mouth, 9 to the right and 9 up in the icon */
+@keyframes miner-suck {
+  0% { opacity: 0; translate: 0 0; scale: 0.4; }
+  15% { opacity: 1; scale: 1; }
+  45% { translate: calc(0.11em + var(--swirl)) calc(-0.11em + var(--swirl)); }
+  80% { opacity: 1; translate: 0.23em -0.23em; scale: 0.8; }
+  100% { opacity: 0; translate: 0.28em -0.28em; scale: 0.2; }
 }
 
 @keyframes miner-spin {

@@ -458,7 +458,8 @@
     // each number in 'at' that's owned. The ones in SURFACE stand on the asteroid (data-miner-surface, inside it), the rest
     // are around it (data-miner-scene). parts are its pieces, each a span with the class miner-sprite-<part> and one of
     // the drawn icons (see iconBox(); the same as in the store, or a scene* piece of one) or nothing (drawn in CSS: the
-    // laser beam, and the nebula, Dyson Swarm and multiverse rift, which fill the space around the asteroid). Where the nth
+    // laser beam, the rocks the Moon Excavator dumps, the Black Hole Siphon's pull and the ore going up it, and the nebula,
+    // Dyson Swarm and multiverse rift, which fill the space around the asteroid). Where the nth
     // one goes and how it moves is in spaceOreMiner.css (.miner-sprite.is-<building>.is-<n>). The Dyson Swarm's ring is
     // two from the start: the half behind the asteroid and the half in front of it.
     const SCENE = {
@@ -469,9 +470,9 @@
         base: { at: [1], parts: { body: 'sceneBase' } },
         freighter: { at: [1, 10, 50], parts: { body: 'freighter' } },
         station: { at: [1], parts: { body: 'station' } },
-        excavator: { at: [1], parts: { body: 'moonExcavator' } },
-        cracker: { at: [1], parts: { body: 'planetCracker' } },
-        siphon: { at: [1], parts: { body: 'blackHole' } },
+        excavator: { at: [1], parts: { body: 'sceneMoon', arm: 'sceneExcavatorArm', rocks: '' } },
+        cracker: { at: [1], parts: { body: 'sceneCrackerCore', left: 'sceneCrackerLeft', right: 'sceneCrackerRight', wedge: 'sceneCrackerWedge', sparks: 'sceneCrackerSparks' } },
+        siphon: { at: [1], parts: { pull: '', body: 'sceneBlackHole', nozzle: 'sceneSiphon', ore: '' } },
         forge: { at: [1], parts: { body: 'starForge', tool: 'sceneHammer' } },
         nebula: { at: [1], parts: { body: '' } },
         dyson: { at: [1, 1], parts: { body: '' } },
