@@ -473,25 +473,26 @@
     const STAGES = [0, 1e5, 1e8, 1e11, 1e14];
     // The buildings in the picture of the asteroid, so it fills up as the company grows: one more of a building shows for
     // each number in 'at' that's owned. The ones in SURFACE stand on the asteroid (data-miner-surface, inside it), the rest
-    // are around it (data-miner-scene). parts are its pieces, each a span with the class miner-sprite-<part> and an
-    // emoji or nothing (drawn in CSS). Where the nth one goes and how it moves is in spaceOreMiner.css
-    // (.miner-sprite.is-<building>.is-<n>). The Dyson Swarm's ring is two from the start: the half behind the asteroid and
-    // the half in front of it.
+    // are around it (data-miner-scene). parts are its pieces, each a span with the class miner-sprite-<part> and one of
+    // the drawn icons (see iconBox(); the same as in the store, or a scene* piece of one) or nothing (drawn in CSS: the
+    // laser beam, and the nebula, Dyson Swarm and multiverse rift, which fill the space around the asteroid). Where the nth
+    // one goes and how it moves is in spaceOreMiner.css (.miner-sprite.is-<building>.is-<n>). The Dyson Swarm's ring is
+    // two from the start: the half behind the asteroid and the half in front of it.
     const SCENE = {
-        pickaxe: { at: [1, 5, 10, 25, 50, 100, 200], parts: { body: '👷', tool: '⛏️' } },
-        drone: { at: [1, 5, 15, 40, 100], parts: { body: '🛸' } },
-        laser: { at: [1, 25, 100], parts: { beam: '', body: '🔦' } },
-        rig: { at: [1, 50], parts: { body: '🏗️' } },
-        base: { at: [1], parts: { body: '🏠' } },
-        freighter: { at: [1, 10, 50], parts: { body: '🚀' } },
-        station: { at: [1], parts: { body: '🛰️' } },
-        excavator: { at: [1], parts: { moon: '', body: '🚜' } },
-        cracker: { at: [1], parts: { body: '🪐' } },
-        siphon: { at: [1], parts: { disk: '', hole: '' } },
-        forge: { at: [1], parts: { star: '', tool: '🔨' } },
+        pickaxe: { at: [1, 5, 10, 25, 50, 100, 200], parts: { tool: 'pickaxe', body: 'sceneMiner' } },
+        drone: { at: [1, 5, 15, 40, 100], parts: { body: 'drone' } },
+        laser: { at: [1, 25, 100], parts: { beam: '', body: 'laserDrill' } },
+        rig: { at: [1, 50], parts: { body: 'sceneRig' } },
+        base: { at: [1], parts: { body: 'sceneBase' } },
+        freighter: { at: [1, 10, 50], parts: { body: 'freighter' } },
+        station: { at: [1], parts: { body: 'station' } },
+        excavator: { at: [1], parts: { body: 'moonExcavator' } },
+        cracker: { at: [1], parts: { body: 'planetCracker' } },
+        siphon: { at: [1], parts: { body: 'blackHole' } },
+        forge: { at: [1], parts: { body: 'starForge', tool: 'sceneHammer' } },
         nebula: { at: [1], parts: { body: '' } },
         dyson: { at: [1, 1], parts: { body: '' } },
-        wormhole: { at: [1], parts: { body: '' } },
+        wormhole: { at: [1], parts: { body: 'wormhole' } },
         multiverse: { at: [1], parts: { body: '' } },
     };
     const SURFACE = ['pickaxe', 'rig', 'base'];
@@ -880,7 +881,8 @@
             const drawn = sprites[id];
             while (drawn.length < count) {
                 const sprite = element('span', 'miner-sprite is-' + id + ' is-' + (drawn.length + 1));
-                sprite.append(...Object.entries(parts).map(([part, text]) => element('span', 'miner-sprite-' + part, text)));
+                sprite.append(...Object.entries(parts).map(([part, icon]) => (icon
+                    ? iconBox('miner-sprite-' + part, icon) : element('span', 'miner-sprite-' + part))));
                 (SURFACE.includes(id) ? surface : scene).append(sprite);
                 drawn.push(sprite);
             }

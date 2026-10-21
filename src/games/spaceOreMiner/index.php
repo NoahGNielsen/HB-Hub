@@ -85,7 +85,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                      it in data-miner-surface (inside it, so they move with it) -->
                 <div class="miner-field" data-miner-field>
                     <div class="miner-scene" data-miner-scene aria-hidden="true"></div>
-                    <div class="miner-orbit" data-miner-bot hidden aria-hidden="true"><span class="miner-bot">🤖</span></div>
+                    <div class="miner-orbit" data-miner-bot hidden aria-hidden="true"><?= hbHubMinerIcon('robot', 'miner-bot') ?></div>
                     <button type="button" class="miner-asteroid" data-miner-asteroid aria-label="Mine the asteroid" disabled>
                         <span class="miner-crater is-1"></span>
                         <span class="miner-crater is-2"></span>
