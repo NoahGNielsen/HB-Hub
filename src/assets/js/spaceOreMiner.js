@@ -52,8 +52,11 @@
     const antiMultiplier = (s) => 1 + CONFIG.antiBonus * s.antimatterEarned;
     const cometPower = (s) => (hasAnti(s, 'antiComets') ? 2 : 1);
 
+    // How much more each of a building costs than the one before (hbHubMinerCostGrowth())
+    const costGrowth = (s, id) => (BUILDINGS[id].growth ?? CONFIG.costGrowth) - (hasDark(s, 'physics') ? CONFIG.costGrowthPhysics : 0);
+
     function buildingCost(s, id, amount) {
-        const growth = hasDark(s, 'physics') ? CONFIG.costGrowthCheap : CONFIG.costGrowth;
+        const growth = costGrowth(s, id);
         return Math.ceil(BUILDINGS[id].cost * growth ** s.buildings[id] * (growth ** amount - 1) / (growth - 1));
     }
 
@@ -61,6 +64,7 @@
 
     function buildingRates(s) {
         const multipliers = Object.fromEntries(BUILDING_IDS.map((id) => [id, 1]));
+        const crew = Object.fromEntries(BUILDING_IDS.map((id) => [id, 0]));
         let global = (1 + darkBonus(s) * s.darkEarned) * antiMultiplier(s);
         if (hasDark(s, 'darkEngines')) global *= 1.5;
         if (hasAnti(s, 'annihilation')) global *= 2;
@@ -70,11 +74,15 @@
                 multipliers[upgrade.building] *= 2;
             } else if (upgrade.type === 'synergy') {
                 multipliers[upgrade.building] *= 1 + upgrade.per * Math.floor(s.buildings[upgrade.source] / upgrade.every);
+            } else if (upgrade.type === 'crew') {
+                crew[upgrade.building] += upgrade.value;
             } else if (upgrade.type === 'global') {
                 global *= 1 + upgrade.value;
             }
         }
-        return Object.fromEntries(BUILDING_IDS.map((id) => [id, BUILDINGS[id].rate * s.buildings[id] * multipliers[id] * global]));
+        const owned = sum(Object.values(s.buildings));
+        return Object.fromEntries(BUILDING_IDS.map((id) => [id,
+            (BUILDINGS[id].rate + crew[id] * (owned - s.buildings[id])) * s.buildings[id] * multipliers[id] * global]));
     }
 
     function buff(s, kind, time) {

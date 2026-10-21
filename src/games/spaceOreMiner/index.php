@@ -222,7 +222,14 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 </p>
                 <ul class="casino-rule-list">
                     <li>Click the asteroid to mine ore. Spend it in the store on buildings, which mine for you every second, and on upgrades that make clicks and buildings better.</li>
-                    <li>Every building costs 15% more than the one before. Each one gets three upgrades, at 10, 25 and 50 owned, that double what it mines.</li>
+                    <li>
+                        Every building costs <?= round((HBHUB_MINER_COST_GROWTH - 1) * 100) ?>% more than the one before
+                        (Space Pickaxe Guys only <?= round((HBHUB_MINER_BUILDINGS['pickaxe']['growth'] - 1) * 100) ?>%). Each one
+                        gets <?= count(HBHUB_MINER_BUILDING_UPGRADE_AT) ?> upgrades, at
+                        <?= implode(', ', array_slice(HBHUB_MINER_BUILDING_UPGRADE_AT, 0, -1)) ?> and
+                        <?= HBHUB_MINER_BUILDING_UPGRADE_AT[count(HBHUB_MINER_BUILDING_UPGRADE_AT) - 1] ?> owned, that double what it
+                        mines, and Space Pickaxe Guys get crew upgrades that make them mine more for every other building you own.
+                    </li>
                     <li>Now and then a Golden Comet flies across the screen. Click it before it's gone for a big pile of ore, or seven times the production for a while.</li>
                     <li>
                         Later on, the Dark Matter view has the Warp Jump, which starts you over in a new galaxy for Dark Matter, and
