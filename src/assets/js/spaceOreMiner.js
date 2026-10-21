@@ -652,6 +652,11 @@
                     element('span', 'miner-building-info'),
                 );
                 button.append(element('span', 'miner-building-icon', building.icon), main, element('span', 'miner-building-owned'));
+                const index = shown.indexOf(id);
+                if (index < 9) { // the hot key that buys it (see "Hot keys" below)
+                    button.prepend(element('kbd', 'miner-key', String(index + 1)));
+                    button.setAttribute('aria-keyshortcuts', String(index + 1));
+                }
                 button.title = building.text;
                 item.append(button);
                 return item;
@@ -1084,6 +1089,50 @@
         toast('🌀 Welcome to a new galaxy! You got ' + format(gain) + ' Dark Matter.', 'is-comet', 7000);
         renderAll();
         saveSoon();
+    });
+
+    // ----- Hot keys: each one presses the button it stands for, so they do exactly what a click would.
+    // Space mines (a held-down key only counts once), C catches the comet, 1-9 buy the buildings in the order they're
+    // listed, U buys the cheapest upgrade you can afford, A switches between ×1, ×10 and ×100, W opens the Warp Jump
+    // box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
+    // shortcuts) and while a box is open.
+
+    const HOT_KEYS = {
+        c: () => {
+            if (!cometButton.hidden) cometButton.click();
+        },
+        u: () => {
+            const id = availableUpgrades().find((upgradeId) => canAfford(state, UPGRADES[upgradeId].cost));
+            if (id) upgradeList.querySelector('[data-upgrade="' + id + '"]')?.click();
+        },
+        a: () => {
+            if (amounts.hidden) return;
+            const options = [...amounts.querySelectorAll('[data-amount]')];
+            const now = options.findIndex((button) => Number(button.dataset.amount) === buyAmount);
+            options[(now + 1) % options.length].click();
+        },
+        w: () => warpButton.click(), // does nothing while it's disabled
+        m: () => soundButton.click(),
+    };
+
+    document.addEventListener('keydown', (event) => {
+        if (!isPlaying || event.ctrlKey || event.altKey || event.metaKey || document.querySelector('dialog[open]')) return;
+        const target = event.target;
+        if (target.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+
+        if (event.key === ' ') {
+            if (target.closest?.('button, a, summary')) return; // Space presses whatever has focus, as usual
+            event.preventDefault(); // instead of scrolling the page
+            if (!event.repeat) asteroid.click();
+            return;
+        }
+        if (event.repeat) return;
+        if (/^[1-9]$/.test(event.key)) {
+            buildingList.querySelectorAll('[data-building]')[Number(event.key) - 1]?.click();
+            return;
+        }
+        const hotKey = HOT_KEYS[event.key.toLowerCase()];
+        if (hotKey && !event.shiftKey) hotKey();
     });
 
     // ----- Playing somewhere else

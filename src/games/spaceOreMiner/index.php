@@ -136,6 +136,12 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
                     your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
                 </li>
+                <li class="miner-hot-keys">
+                    Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet, <kbd>1</kbd>-<kbd>9</kbd>
+                    buy the buildings in the order they're listed, <kbd>U</kbd> buys the cheapest upgrade you can afford,
+                    <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the Warp Jump and <kbd>M</kbd>
+                    turns the sound on or off. Holding Space down only mines once.
+                </li>
                 <li>Play in one tab at a time: opening the game somewhere else stops it here.</li>
                 <li>
                     Clicks are counted up to <?= HBHUB_MINER_CLICKS_PER_SECOND ?> a second. Auto-clickers and scripts aren't allowed, and buy
