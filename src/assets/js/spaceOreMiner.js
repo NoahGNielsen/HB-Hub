@@ -1,11 +1,12 @@
 // Space Ore Miner (games/spaceOreMiner/): runs the clicker game in the browser and saves it to the server.
 // The page gives the game's data and numbers in data-config (hbHubMinerConfig() in
-// assets/php/games/spaceOreMiner/miner.php: buildings, upgrades, darkUpgrades, achievements, comets and the numbers)
+// assets/php/games/spaceOreMiner/miner.php: buildings, upgrades, darkUpgrades, antiUpgrades, achievements, comets and
+// the numbers)
 // and a random id for this tab in data-tab. The save itself comes from the first save, which also claims the game
 // for this tab (a game open in another tab then gets 409 "otherTab" and stops).
 // The rules in "The game" below are a copy of miner.php's, function for function, because the server plays every
-// action again to check it: each click, purchase, comet and Warp Jump is done here right away (so it's smooth) and also
-// kept in a list with its time, which goes to /games/spaceOreMiner/save every 30 seconds, when the tab is hidden and
+// action again to check it: each click, purchase, comet, Warp Jump and Big Crunch is done here right away (so it's
+// smooth) and also kept in a list with its time, which goes to /games/spaceOreMiner/save every 30 seconds, when the tab is hidden and
 // when it's closed. The server answers with the save as it worked it out, and the game carries on from that, with
 // whatever was done while the save was on its way done again on top.
 // Times are the server's Unix ms (the difference to this computer's clock is measured on every save).
@@ -19,6 +20,7 @@
     const BUILDING_IDS = Object.keys(BUILDINGS);
     const UPGRADES = CONFIG.upgrades; // cheapest first
     const DARK_UPGRADES = CONFIG.darkUpgrades;
+    const ANTI_UPGRADES = CONFIG.antiUpgrades;
     const ACHIEVEMENTS = CONFIG.achievements;
     const COMETS = CONFIG.comets;
     const SALT_CRIT = 1; // HBHUB_MINER_SALT_* in miner.php
@@ -41,7 +43,11 @@
 
     const has = (s, id) => s.upgrades.includes(id);
     const hasDark = (s, id) => s.darkUpgrades.includes(id);
+    const hasAnti = (s, id) => s.antiUpgrades.includes(id);
     const sum = (values) => values.reduce((total, value) => total + value, 0);
+    const darkBonus = (s) => (hasDark(s, 'reactor') ? CONFIG.darkBonusReactor : CONFIG.darkBonus);
+    const antiMultiplier = (s) => 1 + CONFIG.antiBonus * s.antimatterEarned;
+    const cometPower = (s) => (hasAnti(s, 'antiComets') ? 2 : 1);
 
     function buildingCost(s, id, amount) {
         const growth = hasDark(s, 'physics') ? CONFIG.costGrowthCheap : CONFIG.costGrowth;
@@ -52,8 +58,9 @@
 
     function buildingRates(s) {
         const multipliers = Object.fromEntries(BUILDING_IDS.map((id) => [id, 1]));
-        let global = 1 + CONFIG.darkBonus * s.darkEarned;
+        let global = (1 + darkBonus(s) * s.darkEarned) * antiMultiplier(s);
         if (hasDark(s, 'darkEngines')) global *= 1.5;
+        if (hasAnti(s, 'annihilation')) global *= 2;
         for (const upgradeId of s.upgrades) {
             const upgrade = UPGRADES[upgradeId];
             if (upgrade.type === 'building') {
@@ -73,7 +80,7 @@
     }
 
     function clickValue(s, time) {
-        let value = 1;
+        let value = hasDark(s, 'darkPickaxe') ? CONFIG.darkPickaxe : 1;
         let share = 0;
         for (const upgradeId of s.upgrades) {
             if (UPGRADES[upgradeId].type === 'click') value *= UPGRADES[upgradeId].value;
@@ -83,16 +90,27 @@
         return (value + share * production) * buff(s, 'click', time);
     }
 
+    // How many times a second the auto upgrades click, together (hbHubMinerAutoClicks())
+    function autoClicks(s) {
+        let clicks = 0;
+        for (const upgradeId of s.upgrades) {
+            if (UPGRADES[upgradeId].type === 'auto') clicks += UPGRADES[upgradeId].value;
+        }
+        return clicks;
+    }
+
     // time Infinity: the steady rate, without comets
     function rate(s, time) {
         let total = sum(Object.values(buildingRates(s))) * buff(s, 'production', time);
-        if (has(s, 'autoClicker')) total += UPGRADES.autoClicker.value * clickValue(s, time);
+        const clicks = autoClicks(s);
+        if (clicks > 0) total += clicks * clickValue(s, time);
         return total;
     }
 
     function earn(s, ore) {
         s.ore += ore;
         s.runOre += ore;
+        s.universeOre += ore;
         s.allOre += ore;
     }
 
@@ -150,14 +168,26 @@
         return Object.entries(need.owned ?? {}).every(([id, count]) => s.buildings[id] >= count);
     }
 
-    function darkTotal(allOre) {
-        const units = allOre / CONFIG.darkUnit;
+    function darkTotal(universeOre) {
+        const units = universeOre / CONFIG.darkUnit;
         let total = Math.floor(units ** (1 / 3));
         while ((total + 1) ** 3 <= units) total++;
         while (total > 0 && total ** 3 > units) total--;
         return total;
     }
-    const warpGain = (s) => (s.runOre >= CONFIG.warpOre ? Math.max(0, darkTotal(s.allOre) - s.darkEarned) : 0);
+
+    function warpGain(s) {
+        if (s.runOre < CONFIG.warpOre) return 0;
+        const total = Math.floor(darkTotal(s.universeOre) * antiMultiplier(s) * (hasAnti(s, 'converter') ? 2 : 1));
+        return Math.max(0, total - s.darkEarned);
+    }
+
+    function antiTotal(darkEarned) {
+        let total = 0;
+        while ((total + 1) ** 2 * CONFIG.antiUnit <= darkEarned) total++;
+        return total;
+    }
+    const crunchGain = (s) => (s.darkEarned >= CONFIG.crunchDark ? antiTotal(s.darkEarned) : 0);
 
     // Whether the last gaps between clicks vary too little to be a person's (hbHubMinerEvenClicks())
     function evenClicks(gaps) {
@@ -219,10 +249,11 @@
         const comet = COMETS[kind];
         let ore = 0;
         if (comet.buff !== null) {
-            s.buffs[comet.buff] = { kind, multiplier: comet.multiplier, until: time + comet.ms * (has(s, 'tail') ? 2 : 1) };
+            s.buffs[comet.buff] = { kind, multiplier: comet.multiplier * cometPower(s), until: time + comet.ms * (has(s, 'tail') ? 2 : 1) };
         } else {
             const production = sum(Object.values(buildingRates(s))) * buff(s, 'production', time);
-            ore = Math.min(s.ore * CONFIG.luckyShare, production * CONFIG.luckySeconds) + 13;
+            ore = (Math.min(s.ore * CONFIG.luckyShare, production * CONFIG.luckySeconds) + 13)
+                * (has(s, 'stardust') ? 2 : 1) * cometPower(s);
             earn(s, ore);
         }
         s.comets++;
@@ -232,26 +263,46 @@
         return { kind, ore };
     }
 
+    // A new run, for a Warp Jump or a Big Crunch (hbHubMinerNewRun())
+    function newRun(s) {
+        const kept = [...(hasDark(s, 'memory') ? CONFIG.clickTypes : []), ...(hasAnti(s, 'eternal') ? CONFIG.eternalTypes : [])];
+        s.upgrades = s.upgrades.filter((id) => kept.includes(UPGRADES[id].type));
+        s.buildings = Object.fromEntries(BUILDING_IDS.map((id) => [id, 0]));
+        if (hasDark(s, 'headStart')) s.buildings.drone = CONFIG.headStart;
+        s.ore = hasAnti(s, 'leftovers') ? CONFIG.leftoverOre : 0;
+        s.runOre = 0;
+        s.buffs = {};
+        s.runStarted = s.tick;
+    }
+
     function warp(s) {
         const gain = warpGain(s);
         if (gain < 1) return false;
 
-        const keepClicks = hasDark(s, 'memory');
-        s.upgrades = s.upgrades.filter((id) => keepClicks && CONFIG.clickTypes.includes(UPGRADES[id].type));
-        s.buildings = Object.fromEntries(BUILDING_IDS.map((id) => [id, 0]));
-        if (hasDark(s, 'headStart')) s.buildings.drone = CONFIG.headStart;
-        s.ore = 0;
-        s.runOre = 0;
-        s.buffs = {};
+        newRun(s);
         s.dark += gain;
         s.darkEarned += gain;
         s.warps++;
-        s.runStarted = s.tick;
+        return gain;
+    }
+
+    function crunch(s) {
+        const gain = crunchGain(s);
+        if (gain < 1) return false;
+
+        s.dark = 0;
+        s.darkEarned = 0;
+        if (!hasAnti(s, 'echo')) s.darkUpgrades = [];
+        s.universeOre = 0;
+        s.antimatter += gain;
+        s.antimatterEarned += gain;
+        s.crunches++;
+        newRun(s);
         return gain;
     }
 
     // Returns false when it didn't count, otherwise something truthy (what click() and catchComet() return, the
-    // Dark Matter from a warp)
+    // Dark Matter from a warp, the Antimatter from a crunch)
     function apply(s, action) {
         switch (action.type) {
             case 'click':
@@ -280,10 +331,19 @@
                 if (action.id === 'headStart') s.buildings.drone = Math.max(s.buildings.drone, CONFIG.headStart);
                 return true;
             }
+            case 'anti': {
+                const upgrade = ANTI_UPGRADES[action.id];
+                if (!upgrade || hasAnti(s, action.id) || s.antimatter < upgrade.cost) return false;
+                s.antimatter -= upgrade.cost;
+                s.antiUpgrades.push(action.id);
+                return true;
+            }
             case 'comet':
                 return catchComet(s);
             case 'warp':
                 return warp(s);
+            case 'crunch':
+                return crunch(s);
             default:
                 return false;
         }
@@ -295,7 +355,7 @@
             case 'upgrades': return s.upgrades.length;
             case 'buildings': return sum(Object.values(s.buildings));
             case 'ownedAll': return Math.min(...Object.values(s.buildings));
-            case 'allOre': case 'clicks': case 'crits': case 'comets': case 'diamonds': case 'warps': return s[name];
+            case 'allOre': case 'clicks': case 'crits': case 'comets': case 'diamonds': case 'warps': case 'crunches': return s[name];
             default: return s.buildings[name.slice(6)] ?? 0; // owned:<building>
         }
     }
@@ -364,6 +424,14 @@
     const warpButton = root.querySelector('[data-miner-warp-button]');
     const warpHint = root.querySelector('[data-miner-warp-hint]');
     const darkList = root.querySelector('[data-miner-dark-upgrades]');
+    const crunchSection = root.querySelector('[data-miner-crunch-section]');
+    const antiText = root.querySelector('[data-miner-anti]');
+    const crunchNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-crunch]')].map((node) => [node.dataset.minerCrunch, node]));
+    const crunchButton = root.querySelector('[data-miner-crunch-button]');
+    const crunchHint = root.querySelector('[data-miner-crunch-hint]');
+    const antiList = root.querySelector('[data-miner-anti-upgrades]');
+    const crunchDialog = root.querySelector('[data-miner-crunch-dialog]');
+    const crunchDialogText = root.querySelector('[data-miner-crunch-dialog-text]');
     const achievementList = root.querySelector('[data-miner-achievements]');
     const achievementCount = root.querySelector('[data-miner-achievement-count]');
     const statList = root.querySelector('[data-miner-stats]');
@@ -378,13 +446,14 @@
 
     // The asteroid changes as more is mined in a run: [ore mined this run, what it is]
     const STAGES = [[0, 'Plain grey rock'], [1e5, 'Iron asteroid'], [1e8, 'Gold asteroid'], [1e11, 'Crystal asteroid'], [1e14, 'Glowing alien core']];
+    // (how long it lasts, the ore a lucky one gave, its multiplier with Antimatter Comets)
     const COMET_TEXT = {
-        frenzy: (ms) => 'Frenzy! Everything mines 7 times as fast for ' + Math.round(ms / 1000) + ' seconds.',
+        frenzy: (ms, ore, times) => 'Frenzy! Everything mines ' + format(times) + ' times as fast for ' + Math.round(ms / 1000) + ' seconds.',
         lucky: (ms, ore) => 'Lucky! The comet was full of ore: +' + format(ore) + '.',
-        storm: (ms) => 'Click Storm! Clicks mine 77 times as much for ' + Math.round(ms / 1000) + ' seconds.',
-        diamond: (ms) => 'DIAMOND RUSH! 777 times the production for ' + Math.round(ms / 1000) + ' seconds!',
+        storm: (ms, ore, times) => 'Click Storm! Clicks mine ' + format(times) + ' times as much for ' + Math.round(ms / 1000) + ' seconds.',
+        diamond: (ms, ore, times) => 'DIAMOND RUSH! ' + format(times) + ' times the production for ' + Math.round(ms / 1000) + ' seconds!',
     };
-    const BUFF_TEXT = { frenzy: 'Frenzy: production ×7', storm: 'Click Storm: clicks ×77', diamond: 'Diamond Rush: production ×777' };
+    const BUFF_TEXT = { frenzy: 'Frenzy: production', storm: 'Click Storm: clicks', diamond: 'Diamond Rush: production' };
 
     let state = null;
     let isPlaying = false;
@@ -402,6 +471,7 @@
     let announced = new Set(); // achievements already shown
     let storeKey = '';
     let darkKey = '';
+    let antiKey = '';
     let shownComet = -1; // the comet number on screen
     let saveSoonTimer = 0;
 
@@ -456,6 +526,7 @@
         if (isFirst) announced = new Set(state.achievements);
         storeKey = '';
         darkKey = '';
+        antiKey = '';
     }
 
     async function save({ claim = false, keepalive = false } = {}) {
@@ -574,6 +645,7 @@
         renderBuffs();
         renderComet();
         renderWarp();
+        renderCrunch();
     }, 200);
     setInterval(() => {
         if (isPlaying && !document.hidden) renderStats();
@@ -585,6 +657,7 @@
         renderBuffs();
         renderComet();
         renderWarp();
+        renderCrunch();
         renderAchievements();
         renderStats();
         renderTicker();
@@ -693,7 +766,7 @@
         }
 
         clickText.textContent = format(clickValue(state, state.tick), { decimals: true });
-        bot.hidden = !has(state, 'autoClicker');
+        bot.hidden = autoClicks(state) === 0;
 
         const stage = STAGES.findLastIndex(([at]) => state.runOre >= at);
         asteroid.dataset.stage = String(stage);
@@ -706,7 +779,7 @@
         const running = Object.values(state.buffs).filter((item) => item.until > state.tick);
         buffList.replaceChildren(...running.map((item) => {
             const row = element('li', 'miner-buff is-' + item.kind);
-            row.append(element('span', 'miner-buff-name', BUFF_TEXT[item.kind]),
+            row.append(element('span', 'miner-buff-name', BUFF_TEXT[item.kind] + ' ×' + format(item.multiplier)),
                 element('span', 'miner-buff-time', Math.ceil((item.until - state.tick) / 1000) + 's'));
             return row;
         }));
@@ -744,7 +817,7 @@
         darkText.textContent = format(state.dark);
         warpNumbers.runOre.textContent = format(state.runOre);
         warpNumbers.gain.textContent = format(gain);
-        warpNumbers.bonus.textContent = '+' + format(CONFIG.darkBonus * 100 * state.darkEarned, { decimals: true }) + '%';
+        warpNumbers.bonus.textContent = '+' + format(darkBonus(state) * 100 * state.darkEarned, { decimals: true }) + '%';
         warpButton.disabled = gain < 1;
         warpHint.textContent = state.runOre < CONFIG.warpOre
             ? 'Mine ' + format(CONFIG.warpOre - state.runOre) + ' more ore this run to unlock the Warp Jump.'
@@ -753,24 +826,48 @@
         const key = state.dark + '|' + state.darkUpgrades.join();
         if (key === darkKey) return;
         darkKey = key;
-        darkList.replaceChildren(...Object.entries(DARK_UPGRADES).map(([id, upgrade]) => {
+        darkList.replaceChildren(...prestigeUpgrades(DARK_UPGRADES, state.darkUpgrades, state.dark, 'dark', 'Dark Matter'));
+    }
+
+    // The Dark Matter or Antimatter upgrades' buttons: kind is the data-* attribute and the class (is-dark, is-anti)
+    function prestigeUpgrades(upgrades, owned, toSpend, kind, currency) {
+        return Object.entries(upgrades).map(([id, upgrade]) => {
             const item = element('li');
-            const button = element('button', 'miner-upgrade is-dark');
+            const button = element('button', 'miner-upgrade is-' + kind);
             button.type = 'button';
-            button.dataset.dark = id;
-            const isOwned = hasDark(state, id);
+            button.dataset[kind] = id;
+            const isOwned = owned.includes(id);
             button.classList.toggle('is-owned', isOwned);
-            button.classList.toggle('is-affordable', !isOwned && state.dark >= upgrade.cost);
+            button.classList.toggle('is-affordable', !isOwned && toSpend >= upgrade.cost);
             button.disabled = isOwned;
             button.append(
                 element('span', 'miner-upgrade-icon', upgrade.icon),
                 element('span', 'miner-upgrade-name', upgrade.name),
-                element('span', 'miner-upgrade-cost', isOwned ? 'Bought' : upgrade.cost + ' Dark Matter'),
+                element('span', 'miner-upgrade-cost', isOwned ? 'Bought' : format(upgrade.cost) + ' ' + currency),
                 element('span', 'miner-upgrade-text', upgrade.text),
             );
             item.append(button);
             return item;
-        }));
+        });
+    }
+
+    // The Big Crunch card only shows up once there's Dark Matter (or Antimatter) to talk about
+    function renderCrunch() {
+        crunchSection.hidden = state.darkEarned === 0 && state.antimatterEarned === 0;
+        if (crunchSection.hidden) return;
+        const gain = crunchGain(state);
+        antiText.textContent = format(state.antimatter);
+        crunchNumbers.dark.textContent = format(state.darkEarned);
+        crunchNumbers.gain.textContent = format(gain);
+        crunchNumbers.bonus.textContent = '+' + format(CONFIG.antiBonus * 100 * state.antimatterEarned) + '%';
+        crunchButton.disabled = gain < 1;
+        crunchHint.textContent = gain < 1
+            ? 'Earn ' + format(CONFIG.crunchDark - state.darkEarned) + ' more Dark Matter in this universe to unlock the Big Crunch.' : '';
+
+        const key = state.antimatter + '|' + state.antiUpgrades.join();
+        if (key === antiKey) return;
+        antiKey = key;
+        antiList.replaceChildren(...prestigeUpgrades(ANTI_UPGRADES, state.antiUpgrades, state.antimatter, 'anti', 'Antimatter'));
     }
 
     function renderAchievements() {
@@ -808,6 +905,11 @@
             ['Comets caught', format(state.comets)],
             ['Diamond Comets caught', format(state.diamonds)],
             ['Warp Jumps', format(state.warps)],
+            ...(state.antimatterEarned > 0 ? [
+                ['Ore mined this universe', format(state.universeOre)],
+                ['Big Crunches', format(state.crunches)],
+                ['Antimatter earned', format(state.antimatterEarned)],
+            ] : []),
             ['Buildings', format(sum(Object.values(state.buildings)))],
             ['Upgrades', state.upgrades.length + ' / ' + Object.keys(UPGRADES).length],
             ['Playing since', formatDate(state.started)],
@@ -847,6 +949,13 @@
         ['The Moon is now 3% smaller. Werewolves confused.', (s) => s.buildings.excavator > 0],
         ['Planet Cracker cracks a planet. Planet says "ow".', (s) => s.buildings.cracker > 0],
         ['Black Hole Siphon pulls out a sock that went missing in 1987.', (s) => s.buildings.siphon > 0],
+        ['Star Forge workers asked to stop calling the Sun "the big oven".', (s) => s.buildings.forge > 0],
+        ['Nebula Harvester finds a nebula shaped like a duck. Keeps it.', (s) => s.buildings.nebula > 0],
+        ['Dyson Swarm blocks out a star. Nearby planet asks who turned off the lights.', (s) => s.buildings.dyson > 0],
+        ['Wormhole Gate opens onto a galaxy that\'s only cats. Gate quickly closed.', (s) => s.buildings.wormhole > 0],
+        ['Multiverse Drill meets another you, drilling the other way. Awkward.', (s) => s.buildings.multiverse > 0],
+        ['Antimatter and matter meet at a party. Nobody leaves.', (s) => s.crunches > 0],
+        ['Universe collapses, starts over. Pluto finally a planet in this one.', (s) => s.crunches > 0],
         ['Breaking: person clicks rock, gets rich. Economists furious.'],
         ['Golden Comet sighted nearby. Experts recommend clicking it.'],
         ['Survey: 9 out of 10 asteroids would rather not be mined.'],
@@ -1062,7 +1171,8 @@
         if (!result) return;
         const comet = COMETS[result.kind];
         sound('catch');
-        toast('☄️ ' + COMET_TEXT[result.kind](comet.ms * (has(state, 'tail') ? 2 : 1), result.ore), 'is-comet is-' + result.kind, 6000);
+        toast('☄️ ' + COMET_TEXT[result.kind](comet.ms * (has(state, 'tail') ? 2 : 1), result.ore, comet.multiplier * cometPower(state)),
+            'is-comet is-' + result.kind, 6000);
         renderBuffs();
         renderStore();
     });
@@ -1072,9 +1182,10 @@
     warpButton.addEventListener('click', () => {
         const gain = warpGain(state);
         if (gain < 1) return;
+        const kept = [...(hasDark(state, 'memory') ? ['your click upgrades'] : []), ...(hasAnti(state, 'eternal') ? ['Bulk Buying and your comet upgrades'] : [])];
         warpDialogText.textContent = 'You\'ll get ' + format(gain) + ' Dark Matter, which makes everything mine '
-            + format(CONFIG.darkBonus * 100 * gain, { decimals: true }) + '% faster for good. Your ore, buildings and upgrades start over'
-            + (hasDark(state, 'memory') ? ', but you keep your click upgrades.' : '.');
+            + format(darkBonus(state) * 100 * gain, { decimals: true }) + '% faster until the next Big Crunch. Your ore, buildings and upgrades start over'
+            + (kept.length > 0 ? ', but you keep ' + kept.join(' and ') + '.' : '.');
         warpDialog.showModal();
     });
     root.querySelector('[data-miner-warp-cancel]').addEventListener('click', () => warpDialog.close());
@@ -1091,11 +1202,48 @@
         saveSoon();
     });
 
+    // ----- Big Crunch
+
+    antiList.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-anti]');
+        if (!button) return;
+        if (act({ type: 'anti', id: button.dataset.anti })) {
+            sound('buy');
+            toast(ANTI_UPGRADES[button.dataset.anti].icon + ' ' + ANTI_UPGRADES[button.dataset.anti].name + ': ' + ANTI_UPGRADES[button.dataset.anti].text);
+            renderCrunch();
+            renderStore();
+            saveSoon();
+        }
+    });
+
+    crunchButton.addEventListener('click', () => {
+        const gain = crunchGain(state);
+        if (gain < 1) return;
+        crunchDialogText.textContent = 'You\'ll get ' + format(gain) + ' Antimatter, which makes everything mine '
+            + format(CONFIG.antiBonus * 100 * gain) + '% faster and Warp Jumps give ' + format(CONFIG.antiBonus * 100 * gain)
+            + '% more Dark Matter, for good. Your ore, buildings, upgrades and Dark Matter start over'
+            + (hasAnti(state, 'echo') ? ', but you keep your Dark Matter upgrades.' : ', and so do your Dark Matter upgrades.');
+        crunchDialog.showModal();
+    });
+    root.querySelector('[data-miner-crunch-cancel]').addEventListener('click', () => crunchDialog.close());
+    root.querySelector('[data-miner-crunch-confirm]').addEventListener('click', () => {
+        crunchDialog.close();
+        const gain = act({ type: 'crunch' });
+        if (!gain) return;
+        sound('warp');
+        root.classList.remove('is-crunching');
+        void root.offsetWidth;
+        root.classList.add('is-crunching');
+        toast('💥 The universe collapsed and started over. You got ' + format(gain) + ' Antimatter.', 'is-comet', 7000);
+        renderAll();
+        saveSoon();
+    });
+
     // ----- Hot keys: each one presses the button it stands for, so they do exactly what a click would.
     // Space mines (a held-down key only counts once), C catches the comet (once the Comet Hot Key upgrade is bought, it's
     // lost on a Warp Jump like the other upgrades), 1-9 buy the buildings in the order they're
     // listed, U buys the cheapest upgrade you can afford, A switches between ×1, ×10 and ×100, W opens the Warp Jump
-    // box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
+    // box, B the Big Crunch box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
     // shortcuts) and while a box is open.
 
     const HOT_KEYS = {
@@ -1120,6 +1268,7 @@
             options[(now + 1) % options.length].click();
         },
         w: () => warpButton.click(), // does nothing while it's disabled
+        b: () => crunchButton.click(), // same
         m: () => soundButton.click(),
     };
 

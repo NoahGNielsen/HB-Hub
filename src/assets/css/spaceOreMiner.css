@@ -4,6 +4,7 @@
   --miner-gold: #f5c542;
   --miner-diamond: #8be9ff;
   --miner-dark: #9d7bff;
+  --miner-anti: #ff6bb5;
   max-width: 1180px;
 }
 
@@ -98,6 +99,16 @@
 
 @keyframes miner-warp {
   30% { filter: brightness(2.5) blur(4px); transform: scale(0.97); }
+}
+
+/* A Big Crunch: everything squeezes into a point and bounces back out */
+.miner.is-crunching .miner-layout {
+  animation: miner-crunch 1.4s ease;
+}
+
+@keyframes miner-crunch {
+  35% { filter: brightness(3) hue-rotate(-60deg) blur(6px); transform: scale(0.85); }
+  50% { transform: scale(1.03); }
 }
 
 /* The asteroid's side, on a starry sky */
@@ -484,6 +495,14 @@
   color: var(--miner-dark);
 }
 
+.miner-upgrade.is-anti.is-affordable {
+  border-color: var(--miner-anti);
+}
+
+.miner-upgrade.is-anti .miner-upgrade-cost {
+  color: var(--miner-anti);
+}
+
 .miner-upgrade.is-owned {
   border-color: color-mix(in srgb, var(--casino-up) 60%, transparent);
   opacity: 1;
@@ -617,6 +636,7 @@
 
 /* The cards under the game */
 .miner-warp,
+.miner-crunch,
 .miner-achievements,
 .miner-stats,
 .miner .casino-rules {
@@ -637,6 +657,7 @@
 }
 
 .miner-dark,
+.miner-anti,
 .miner-achievement-count {
   margin: 0;
   font-size: 1.2rem;
@@ -645,6 +666,10 @@
 
 .miner-dark {
   color: var(--miner-dark);
+}
+
+.miner-anti {
+  color: var(--miner-anti);
 }
 
 .miner-numbers {
@@ -880,7 +905,8 @@
   .miner-asteroid[data-stage="4"].is-hit,
   .miner-orbit,
   .miner-buff,
-  .miner.is-warping .miner-layout {
+  .miner.is-warping .miner-layout,
+  .miner.is-crunching .miner-layout {
     animation: none;
   }
 

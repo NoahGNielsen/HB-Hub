@@ -660,11 +660,12 @@ CREATE TABLE `HBHub-WordleWords` (
 
 CREATE TABLE `HBHub-MinerSaves` (
   `userId` int UNSIGNED NOT NULL,
-  `saveState` json NOT NULL COMMENT 'The whole Space Ore Miner game: ore, buildings, upgrades, Dark Matter, comets, achievements (hbHubMinerNewState() in src/assets/php/games/spaceOreMiner/miner.php)',
+  `saveState` json NOT NULL COMMENT 'The whole Space Ore Miner game: ore, buildings, upgrades, Dark Matter, Antimatter, comets, achievements (hbHubMinerNewState() in src/assets/php/games/spaceOreMiner/miner.php)',
   `saveTab` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The random id of the browser tab playing it; saves from any other tab are turned away',
   `saveOreAllTime` double NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: ore mined ever, in every galaxy',
   `saveOrePerSecond` double NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: ore per second at the last save, without comets',
-  `saveDarkMatter` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: Dark Matter ever earned',
+  `saveDarkMatter` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: Dark Matter earned in this universe (since the last Big Crunch)',
+  `saveAntimatter` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: Antimatter ever earned',
   `saveWarps` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: Warp Jumps made',
   `saveClicks` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: clicks on the asteroid ever',
   `saveAchievements` smallint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: achievements done',

@@ -1,6 +1,6 @@
 <?php
 // Space Ore Miner: the clicker game. Click the asteroid for ore, spend it on buildings and upgrades that mine for you,
-// catch Golden Comets, and Warp Jump to a new galaxy for Dark Matter. The rules are in
+// catch Golden Comets, Warp Jump to a new galaxy for Dark Matter, and Big Crunch the universe for Antimatter. The rules are in
 // assets/php/games/spaceOreMiner/miner.php.
 // The page only has the empty spaces: spaceOreMiner.js loads the save from /games/spaceOreMiner/save on its first save
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
@@ -97,8 +97,8 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
             <p class="casino-hint">
                 Once you've mined <?= number_format(HBHUB_MINER_WARP_ORE) ?> ore in a run, you can jump to a new galaxy. You
                 start over with no ore, buildings or upgrades, but you get Dark Matter for all the ore you've ever mined.
-                Every Dark Matter you've earned makes everything mine <?= HBHUB_MINER_DARK_BONUS * 100 ?>% faster for good, even
-                after you spend it on the upgrades below.
+                Every Dark Matter you've earned makes everything mine <?= HBHUB_MINER_DARK_BONUS * 100 ?>% faster until the next
+                Big Crunch, even after you spend it on the upgrades below.
             </p>
             <dl class="miner-numbers miner-warp-numbers">
                 <div><dt>Mined this run</dt><dd data-miner-warp="runOre">0</dd></div>
@@ -111,6 +111,30 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
             <p class="casino-hint miner-warp-hint" data-miner-warp-hint></p>
             <h3 class="miner-store-title">Dark Matter upgrades</h3>
             <ul class="miner-upgrades miner-dark-upgrades" data-miner-dark-upgrades></ul>
+        </section>
+
+        <section class="casino-card miner-crunch" aria-labelledby="miner-crunch-title" data-miner-crunch-section hidden>
+            <div class="miner-section-head">
+                <h2 id="miner-crunch-title">Big Crunch</h2>
+                <p class="miner-anti"><span data-miner-anti>0</span> Antimatter</p>
+            </div>
+            <p class="casino-hint">
+                Once you've earned <?= number_format(HBHUB_MINER_CRUNCH_DARK) ?> Dark Matter in this universe, you can collapse
+                the whole thing and start over. Your Dark Matter and its upgrades go too, but you get Antimatter for the Dark
+                Matter you earned. Every Antimatter you've earned makes everything mine <?= HBHUB_MINER_ANTI_BONUS * 100 ?>%
+                faster and Warp Jumps give <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% more Dark Matter, for good.
+            </p>
+            <dl class="miner-numbers miner-warp-numbers">
+                <div><dt>Dark Matter this universe</dt><dd data-miner-crunch="dark">0</dd></div>
+                <div><dt>Antimatter from a crunch now</dt><dd data-miner-crunch="gain">0</dd></div>
+                <div><dt>Bonus from Antimatter</dt><dd data-miner-crunch="bonus">+0%</dd></div>
+            </dl>
+            <div class="casino-actions">
+                <button type="button" class="casino-btn casino-btn-primary" data-miner-crunch-button disabled>Big Crunch</button>
+            </div>
+            <p class="casino-hint miner-warp-hint" data-miner-crunch-hint></p>
+            <h3 class="miner-store-title">Antimatter upgrades</h3>
+            <ul class="miner-upgrades miner-dark-upgrades" data-miner-anti-upgrades></ul>
         </section>
 
         <section class="casino-card miner-achievements" aria-labelledby="miner-achievements-title">
@@ -139,8 +163,8 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                 <li class="miner-hot-keys">
                     Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade), <kbd>1</kbd>-<kbd>9</kbd>
                     buy the buildings in the order they're listed, <kbd>U</kbd> buys the cheapest upgrade you can afford,
-                    <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the Warp Jump and <kbd>M</kbd>
-                    turns the sound on or off. Holding Space down only mines once.
+                    <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the Warp Jump, <kbd>B</kbd> the
+                    Big Crunch and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once.
                 </li>
                 <li>Play in one tab at a time: opening the game somewhere else stops it here.</li>
                 <li>
@@ -161,6 +185,15 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
             <div class="games-dialog-actions">
                 <button type="button" class="casino-btn" data-miner-warp-cancel>Not yet</button>
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-warp-confirm>Warp Jump</button>
+            </div>
+        </dialog>
+
+        <dialog class="games-dialog" data-miner-crunch-dialog aria-labelledby="miner-crunch-dialog-title">
+            <h2 id="miner-crunch-dialog-title">Collapse the universe?</h2>
+            <p data-miner-crunch-dialog-text></p>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn" data-miner-crunch-cancel>Not yet</button>
+                <button type="button" class="casino-btn casino-btn-primary" data-miner-crunch-confirm>Big Crunch</button>
             </div>
         </dialog>
 

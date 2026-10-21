@@ -1,7 +1,8 @@
 <?php
 // Space Ore Miner, the clicker game: click the asteroid for ore, buy machines that mine for you, and grow from one
 // miner on a rock into a galaxy-wide mining company. Warp Jump (prestige) starts over in a new galaxy for Dark Matter,
-// which makes everything mine faster for good.
+// which makes everything mine faster for good. Big Crunch (the prestige after that) collapses the whole universe, Dark
+// Matter and all, for Antimatter, which makes everything mine faster and Warp Jumps give more Dark Matter, for good.
 //
 // Each user has one save: a row in HBHub-MinerSaves with the whole game as JSON in saveState (the shape is in
 // hbHubMinerNewState()), plus a few of its numbers in their own columns for the leaderboard.
@@ -38,17 +39,24 @@ const HBHUB_MINER_COST_GROWTH = 1.15; // each building costs this much more than
 const HBHUB_MINER_COST_GROWTH_CHEAP = 1.14; // with Cheaper Physics
 const HBHUB_MINER_WARP_ORE = 1e9; // ore to mine in a run before a Warp Jump
 const HBHUB_MINER_DARK_UNIT = 1e9; // all-time ore for the first Dark Matter, see hbHubMinerDarkTotal()
-const HBHUB_MINER_DARK_BONUS = 0.025; // production per Dark Matter ever earned
+const HBHUB_MINER_DARK_BONUS = 0.025; // production per Dark Matter earned in this universe
+const HBHUB_MINER_DARK_BONUS_REACTOR = 0.035; // with Dark Matter Reactor
+const HBHUB_MINER_CRUNCH_DARK = 200; // Dark Matter to earn in a universe before a Big Crunch
+const HBHUB_MINER_ANTI_UNIT = 10; // Dark Matter for the first Antimatter, see hbHubMinerAntiTotal()
+const HBHUB_MINER_ANTI_BONUS = 0.1; // production, and Dark Matter from a Warp Jump, per Antimatter ever earned
+const HBHUB_MINER_LEFTOVER_ORE = 1e7; // ore every run starts with, with Big Bang Leftovers
 const HBHUB_MINER_COMET_WAIT_MS = [60000, 180000]; // between two comets, halved with Comet Radar
 const HBHUB_MINER_COMET_STAY_MS = 12000; // on screen, doubled with Comet Magnet
 const HBHUB_MINER_DIAMOND_CHANCE = 0.05; // with Lucky Stars
 const HBHUB_MINER_CRIT_CHANCE = 0.05;
 const HBHUB_MINER_CRIT_MULTIPLIER = 10;
 const HBHUB_MINER_HEAD_START = 10; // Mining Drones with Head Start
+const HBHUB_MINER_DARK_PICKAXE = 3; // clicks mine this many times as much with Dark Pickaxe
 const HBHUB_MINER_TAB_PATTERN = '/^[0-9a-f]{32}$/';
 
 // What a comet does when it's caught: production or clicks times 'multiplier' for 'ms' (doubled with Tail Collector),
-// or ore right away (lucky: 15% of the ore you have, at most 15 minutes of production, plus 13)
+// or ore right away (lucky: 15% of the ore you have, at most 15 minutes of production, plus 13, doubled with Stardust
+// Trail). Antimatter Comets doubles all of them (the multiplier, or the lucky ore).
 const HBHUB_MINER_COMETS = [
     'frenzy' => ['name' => 'Frenzy', 'buff' => 'production', 'multiplier' => 7, 'ms' => 30000],
     'lucky' => ['name' => 'Lucky', 'buff' => null, 'multiplier' => 1, 'ms' => 0],
@@ -97,6 +105,21 @@ const HBHUB_MINER_BUILDINGS = [
     'siphon' => ['name' => 'Black Hole Siphon', 'plural' => 'Black Hole Siphons', 'icon' => '🕳️', 'cost' => 7.5e10, 'rate' => 1.6e6,
         'text' => 'Pulls ore out of a black hole. Nobody knows how. Nobody asks.',
         'upgrades' => ['Event Horizon Net', 'Hawking Pump', 'Singularity Engine']],
+    'forge' => ['name' => 'Star Forge', 'plural' => 'Star Forges', 'icon' => '⭐', 'cost' => 1e12, 'rate' => 1e7,
+        'text' => 'Squeezes stars until ore comes out. The stars are fine, mostly.',
+        'upgrades' => ['Stellar Bellows', 'Fusion Hammers', 'Neutron Anvil']],
+    'nebula' => ['name' => 'Nebula Harvester', 'plural' => 'Nebula Harvesters', 'icon' => '🌌', 'cost' => 1.4e13, 'rate' => 6.5e7,
+        'text' => 'Sweeps up whole nebulas with a really, really big net.',
+        'upgrades' => ['Finer Nets', 'Gas Compressors', 'Cosmic Vacuum']],
+    'dyson' => ['name' => 'Dyson Swarm', 'plural' => 'Dyson Swarms', 'icon' => '☀️', 'cost' => 1.7e14, 'rate' => 4.3e8,
+        'text' => 'A billion mirrors around a star, all of them pointed at the ore.',
+        'upgrades' => ['Mirror Polish', 'Swarm Logic', 'Full Sphere']],
+    'wormhole' => ['name' => 'Wormhole Gate', 'plural' => 'Wormhole Gates', 'icon' => '⭕', 'cost' => 2.1e15, 'rate' => 2.9e9,
+        'text' => 'Opens a door to a part of space that\'s nothing but ore. Mind the gap.',
+        'upgrades' => ['Stable Throats', 'Exotic Matter Struts', 'Wormhole Network']],
+    'multiverse' => ['name' => 'Multiverse Drill', 'plural' => 'Multiverse Drills', 'icon' => '🌐', 'cost' => 2.6e16, 'rate' => 2.1e10,
+        'text' => 'Drills into the universe next door and takes their ore too. They have a drill as well.',
+        'upgrades' => ['Dimensional Bits', 'Parallel Shifts', 'Infinite Drill']],
 ];
 const HBHUB_MINER_BUILDING_UPGRADE_AT = [10, 25, 50]; // owned, for each building's three upgrades
 const HBHUB_MINER_BUILDING_UPGRADE_COST = [10, 50, 500]; // times the building's base cost
@@ -104,10 +127,10 @@ const HBHUB_MINER_BUILDING_UPGRADE_COST = [10, 50, 500]; // times the building's
 // The upgrades that aren't a building's own (those are made from HBHUB_MINER_BUILDINGS in hbHubMinerUpgrades()).
 // 'type' says what it does:
 // - click: clicks mine 'value' times as much. clickPct: each click also mines 'value' of the ore per second.
-// - crit: a click can be critical (HBHUB_MINER_CRIT_CHANCE, HBHUB_MINER_CRIT_MULTIPLIER). auto: 'value' clicks a second.
+// - crit: a click can be critical (HBHUB_MINER_CRIT_CHANCE, HBHUB_MINER_CRIT_MULTIPLIER). auto: 'value' more clicks a second.
 // - global: every building mines 'value' more (0.1 = +10%), all of them multiplied together. bulk: the x10 and x100 buttons.
 // - synergy: 'building' mines 'per' more for every 'every' of 'source' owned.
-// - comet: 'effect' often, longer, tail, diamond or key (the C key catches comets, only in spaceOreMiner.js).
+// - comet: 'effect' often, longer, tail, diamond, lucky or key (the C key catches comets, only in spaceOreMiner.js).
 // 'need' is when it shows up in the store: ore (mined this run), owned (building => how many) and comets (caught ever).
 // Without one, it's ore mined this run of half its cost.
 const HBHUB_MINER_OTHER_UPGRADES = [
@@ -141,16 +164,46 @@ const HBHUB_MINER_OTHER_UPGRADES = [
     'slingshot' => ['name' => 'Gravity Slingshot', 'icon' => '🔗', 'cost' => 7.5e11, 'type' => 'synergy', 'building' => 'cracker', 'source' => 'siphon', 'per' => 0.01, 'every' => 1,
         'need' => ['owned' => ['cracker' => 1, 'siphon' => 1]], 'text' => 'Planet Crackers mine 1% more for every Black Hole Siphon you own.'],
     'monopoly' => ['name' => 'Galactic Monopoly', 'icon' => '👑', 'cost' => 1e12, 'type' => 'global', 'value' => 2, 'text' => 'All buildings mine three times as much.'],
+    'neutronGloves' => ['name' => 'Neutron Star Gloves', 'icon' => '✊', 'cost' => 1e10, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
+    'botSwarm' => ['name' => 'Auto-Clicker Swarm', 'icon' => '🤖', 'cost' => 5e12, 'type' => 'auto', 'value' => 10, 'text' => 'Clicks the asteroid another 10 times a second for you.'],
+    'orbitalForges' => ['name' => 'Orbital Forges', 'icon' => '🔗', 'cost' => 5e12, 'type' => 'synergy', 'building' => 'forge', 'source' => 'station', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['forge' => 1, 'station' => 1]], 'text' => 'Star Forges mine 1% more for every Space Station you own.'],
+    'stardust' => ['name' => 'Stardust Trail', 'icon' => '✨', 'cost' => 7.77e12, 'type' => 'comet', 'effect' => 'lucky', 'need' => ['comets' => 50], 'text' => 'Lucky comets give twice as much ore.'],
+    'bigBangPunch' => ['name' => 'Big Bang Punch', 'icon' => '💫', 'cost' => 1e13, 'type' => 'clickPct', 'value' => 0.05, 'text' => 'Each click mines another 5% of your ore per second.'],
+    'nebulaScoops' => ['name' => 'Nebula Scoops', 'icon' => '🔗', 'cost' => 7e13, 'type' => 'synergy', 'building' => 'nebula', 'source' => 'freighter', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['nebula' => 1, 'freighter' => 1]], 'text' => 'Nebula Harvesters mine 1% more for every Ore Freighter you own.'],
+    'starCharts' => ['name' => 'Star Charts', 'icon' => '🌟', 'cost' => 1e14, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+    'shatteredPlanets' => ['name' => 'Shattered Planets', 'icon' => '🔗', 'cost' => 8.5e14, 'type' => 'synergy', 'building' => 'dyson', 'source' => 'cracker', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['dyson' => 1, 'cracker' => 1]], 'text' => 'Dyson Swarms mine 1% more for every Planet Cracker you own.'],
+    'blackHoleBridges' => ['name' => 'Black Hole Bridges', 'icon' => '🔗', 'cost' => 1e16, 'type' => 'synergy', 'building' => 'wormhole', 'source' => 'siphon', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['wormhole' => 1, 'siphon' => 1]], 'text' => 'Wormhole Gates mine 1% more for every Black Hole Siphon you own.'],
+    'oreLaw' => ['name' => 'Universal Ore Law', 'icon' => '⚖️', 'cost' => 1e17, 'type' => 'global', 'value' => 2, 'text' => 'All buildings mine three times as much.'],
+    'pickaxesEverywhere' => ['name' => 'Pickaxe Guys Everywhere', 'icon' => '🔗', 'cost' => 1.3e17, 'type' => 'synergy', 'building' => 'multiverse', 'source' => 'pickaxe', 'per' => 0.01, 'every' => 10,
+        'need' => ['owned' => ['multiverse' => 1, 'pickaxe' => 10]], 'text' => 'Multiverse Drills mine 1% more for every 10 Space Pickaxe Guys you own.'],
 ];
 const HBHUB_MINER_CLICK_TYPES = ['click', 'clickPct', 'crit', 'auto']; // kept by Persistent Memory
+const HBHUB_MINER_ETERNAL_TYPES = ['bulk', 'comet']; // kept by Eternal Blueprints
 
-// Bought with Dark Matter, kept forever
+// Bought with Dark Matter, kept until a Big Crunch (or after it too, with Dark Echo)
 const HBHUB_MINER_DARK_UPGRADES = [
     'headStart' => ['name' => 'Head Start', 'icon' => '🛸', 'cost' => 5, 'text' => 'Start every run with ' . HBHUB_MINER_HEAD_START . ' Mining Drones.'],
     'memory' => ['name' => 'Persistent Memory', 'icon' => '🧠', 'cost' => 25, 'text' => 'Keep your click upgrades when you Warp Jump.'],
     'darkEngines' => ['name' => 'Dark Engines', 'icon' => '⚫', 'cost' => 50, 'text' => 'All buildings mine 50% more.'],
     'timeDilation' => ['name' => 'Time Dilation', 'icon' => '⏳', 'cost' => 100, 'text' => 'Earn twice as much while you\'re away.'],
+    'darkPickaxe' => ['name' => 'Dark Pickaxe', 'icon' => '⛏️', 'cost' => 10, 'text' => 'Clicks mine ' . HBHUB_MINER_DARK_PICKAXE . ' times as much.'],
     'physics' => ['name' => 'Cheaper Physics', 'icon' => '📉', 'cost' => 250, 'text' => 'Buildings get 14% more expensive with every one you buy, instead of 15%.'],
+    'reactor' => ['name' => 'Dark Matter Reactor', 'icon' => '☢️', 'cost' => 750, 'text' => 'Every Dark Matter you\'ve earned makes everything mine '
+        . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%.'],
+];
+
+// Bought with Antimatter, kept forever
+const HBHUB_MINER_ANTI_UPGRADES = [
+    'echo' => ['name' => 'Dark Echo', 'icon' => '🔁', 'cost' => 1, 'text' => 'Keep your Dark Matter upgrades when you Big Crunch.'],
+    'converter' => ['name' => 'Matter Converter', 'icon' => '⚗️', 'cost' => 3, 'text' => 'Warp Jumps give twice as much Dark Matter.'],
+    'leftovers' => ['name' => 'Big Bang Leftovers', 'icon' => '💫', 'cost' => 5, 'text' => 'Start every run with 10 million ore.'],
+    'eternal' => ['name' => 'Eternal Blueprints', 'icon' => '📜', 'cost' => 10, 'text' => 'Keep Bulk Buying and your comet upgrades when you Warp Jump.'],
+    'annihilation' => ['name' => 'Annihilation Engines', 'icon' => '💥', 'cost' => 25, 'text' => 'All buildings mine twice as much.'],
+    'antiComets' => ['name' => 'Antimatter Comets', 'icon' => '☄️', 'cost' => 50, 'text' => 'Comet effects are twice as strong.'],
 ];
 
 // Achievements: done once 'stat' reaches 'at'. The stats are in hbHubMinerStat().
@@ -159,6 +212,7 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'click100' => ['name' => 'Tapping Away', 'text' => 'Click the asteroid 100 times.', 'stat' => 'clicks', 'at' => 100],
     'click1000' => ['name' => 'Click 1,000 Times', 'text' => 'Click the asteroid 1,000 times.', 'stat' => 'clicks', 'at' => 1000],
     'click10000' => ['name' => 'Finger of Steel', 'text' => 'Click the asteroid 10,000 times.', 'stat' => 'clicks', 'at' => 10000],
+    'click50000' => ['name' => 'Unstoppable Finger', 'text' => 'Click the asteroid 50,000 times.', 'stat' => 'clicks', 'at' => 50000],
     'crit1' => ['name' => 'Critical Hit', 'text' => 'Land a critical click.', 'stat' => 'crits', 'at' => 1],
     'ore1k' => ['name' => 'Pocket Change', 'text' => 'Mine 1,000 ore in total.', 'stat' => 'allOre', 'at' => 1e3],
     'ore1m' => ['name' => '1 Million Ore', 'text' => 'Mine 1 million ore in total.', 'stat' => 'allOre', 'at' => 1e6],
@@ -166,28 +220,38 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'ore1t' => ['name' => 'Trillion Tonnes', 'text' => 'Mine 1 trillion ore in total.', 'stat' => 'allOre', 'at' => 1e12],
     'ore1qa' => ['name' => 'Galactic Hoarder', 'text' => 'Mine 1 quadrillion ore in total.', 'stat' => 'allOre', 'at' => 1e15],
     'ore1qi' => ['name' => 'Out of This World', 'text' => 'Mine 1 quintillion ore in total.', 'stat' => 'allOre', 'at' => 1e18],
+    'ore1sx' => ['name' => 'Ore-some', 'text' => 'Mine 1 sextillion ore in total.', 'stat' => 'allOre', 'at' => 1e21],
     'rate10' => ['name' => 'Side Hustle', 'text' => 'Mine 10 ore per second.', 'stat' => 'rate', 'at' => 10],
     'rate1k' => ['name' => 'Small Business', 'text' => 'Mine 1,000 ore per second.', 'stat' => 'rate', 'at' => 1e3],
     'rate1m' => ['name' => 'Mega Corp', 'text' => 'Mine 1 million ore per second.', 'stat' => 'rate', 'at' => 1e6],
     'rate1b' => ['name' => 'Ore Tsunami', 'text' => 'Mine 1 billion ore per second.', 'stat' => 'rate', 'at' => 1e9],
+    'rate1t' => ['name' => 'Ore Supernova', 'text' => 'Mine 1 trillion ore per second.', 'stat' => 'rate', 'at' => 1e12],
     'pickaxe1' => ['name' => 'Hired Help', 'text' => 'Hire a Space Pickaxe Guy.', 'stat' => 'owned:pickaxe', 'at' => 1],
     'drone1' => ['name' => 'First Drone', 'text' => 'Buy a Mining Drone.', 'stat' => 'owned:drone', 'at' => 1],
     'pickaxe100' => ['name' => 'Pickaxe Army', 'text' => 'Have 100 Space Pickaxe Guys.', 'stat' => 'owned:pickaxe', 'at' => 100],
     'drone100' => ['name' => 'The Swarm', 'text' => 'Have 100 Mining Drones.', 'stat' => 'owned:drone', 'at' => 100],
     'siphon1' => ['name' => 'Own a Black Hole', 'text' => 'Buy a Black Hole Siphon.', 'stat' => 'owned:siphon', 'at' => 1],
+    'forge1' => ['name' => 'Star Power', 'text' => 'Buy a Star Forge.', 'stat' => 'owned:forge', 'at' => 1],
+    'multiverse1' => ['name' => 'Next Door Neighbours', 'text' => 'Buy a Multiverse Drill.', 'stat' => 'owned:multiverse', 'at' => 1],
     'all1' => ['name' => 'Full House', 'text' => 'Have one of every building.', 'stat' => 'ownedAll', 'at' => 1],
     'all25' => ['name' => 'Collector', 'text' => 'Have 25 of every building.', 'stat' => 'ownedAll', 'at' => 25],
     'buildings100' => ['name' => 'Industrial Revolution', 'text' => 'Have 100 buildings.', 'stat' => 'buildings', 'at' => 100],
     'buildings500' => ['name' => 'Megastructure', 'text' => 'Have 500 buildings.', 'stat' => 'buildings', 'at' => 500],
+    'buildings1000' => ['name' => 'Planet-Sized Factory', 'text' => 'Have 1,000 buildings.', 'stat' => 'buildings', 'at' => 1000],
     'upgrades10' => ['name' => 'Tinkerer', 'text' => 'Have 10 upgrades.', 'stat' => 'upgrades', 'at' => 10],
     'upgrades40' => ['name' => 'Mad Scientist', 'text' => 'Have 40 upgrades.', 'stat' => 'upgrades', 'at' => 40],
+    'upgrades75' => ['name' => 'Gadget Galaxy', 'text' => 'Have 75 upgrades.', 'stat' => 'upgrades', 'at' => 75],
     'comet1' => ['name' => 'Shooting Star', 'text' => 'Catch a Golden Comet.', 'stat' => 'comets', 'at' => 1],
     'comet10' => ['name' => 'Comet Chaser', 'text' => 'Catch 10 comets.', 'stat' => 'comets', 'at' => 10],
     'comet50' => ['name' => 'Halley\'s Hero', 'text' => 'Catch 50 comets.', 'stat' => 'comets', 'at' => 50],
+    'comet100' => ['name' => 'Comet Collector', 'text' => 'Catch 100 comets.', 'stat' => 'comets', 'at' => 100],
     'diamond1' => ['name' => 'Shine Bright', 'text' => 'Catch a Diamond Comet.', 'stat' => 'diamonds', 'at' => 1],
     'warp1' => ['name' => 'Warp Speed', 'text' => 'Warp Jump to a new galaxy.', 'stat' => 'warps', 'at' => 1],
     'warp5' => ['name' => 'Frequent Flyer', 'text' => 'Warp Jump 5 times.', 'stat' => 'warps', 'at' => 5],
     'warp25' => ['name' => 'Galaxy Hopper', 'text' => 'Warp Jump 25 times.', 'stat' => 'warps', 'at' => 25],
+    'warp100' => ['name' => 'Lost Count', 'text' => 'Warp Jump 100 times.', 'stat' => 'warps', 'at' => 100],
+    'crunch1' => ['name' => 'Big Crunch', 'text' => 'Collapse the universe with a Big Crunch.', 'stat' => 'crunches', 'at' => 1],
+    'crunch5' => ['name' => 'Universe Recycler', 'text' => 'Big Crunch 5 times.', 'stat' => 'crunches', 'at' => 5],
 ];
 
 /**
@@ -232,9 +296,11 @@ function hbHubMinerConfig(): array
         'buildings' => HBHUB_MINER_BUILDINGS,
         'upgrades' => hbHubMinerUpgrades(),
         'darkUpgrades' => HBHUB_MINER_DARK_UPGRADES,
+        'antiUpgrades' => HBHUB_MINER_ANTI_UPGRADES,
         'achievements' => HBHUB_MINER_ACHIEVEMENTS,
         'comets' => HBHUB_MINER_COMETS,
         'clickTypes' => HBHUB_MINER_CLICK_TYPES,
+        'eternalTypes' => HBHUB_MINER_ETERNAL_TYPES,
         'saveSeconds' => HBHUB_MINER_SAVE_SECONDS,
         'onlineMs' => HBHUB_MINER_ONLINE_MS,
         'offlineRate' => HBHUB_MINER_OFFLINE_RATE,
@@ -250,6 +316,12 @@ function hbHubMinerConfig(): array
         'warpOre' => HBHUB_MINER_WARP_ORE,
         'darkUnit' => HBHUB_MINER_DARK_UNIT,
         'darkBonus' => HBHUB_MINER_DARK_BONUS,
+        'darkBonusReactor' => HBHUB_MINER_DARK_BONUS_REACTOR,
+        'crunchDark' => HBHUB_MINER_CRUNCH_DARK,
+        'antiUnit' => HBHUB_MINER_ANTI_UNIT,
+        'antiBonus' => HBHUB_MINER_ANTI_BONUS,
+        'leftoverOre' => HBHUB_MINER_LEFTOVER_ORE,
+        'darkPickaxe' => HBHUB_MINER_DARK_PICKAXE,
         'cometWaitMs' => HBHUB_MINER_COMET_WAIT_MS,
         'cometStayMs' => HBHUB_MINER_COMET_STAY_MS,
         'diamondChance' => HBHUB_MINER_DIAMOND_CHANCE,
@@ -301,9 +373,12 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
 
 /**
  * A new save, starting now. Times are Unix ms; ore numbers are floats (they get far too big for whole numbers).
- * - ore: to spend. runOre: mined this run (since the last Warp Jump). allOre: mined ever. clickOre: mined by clicking.
- * - buildings: id => how many. upgrades: the ids bought this run. dark: Dark Matter to spend. darkEarned: ever earned
- *   (the production bonus). darkUpgrades: bought with it. warps: Warp Jumps made.
+ * - ore: to spend. runOre: mined this run (since the last Warp Jump). universeOre: mined in this universe (since the
+ *   last Big Crunch, what Dark Matter is worked out from). allOre: mined ever. clickOre: mined by clicking.
+ * - buildings: id => how many. upgrades: the ids bought this run. dark: Dark Matter to spend. darkEarned: earned in
+ *   this universe (the production bonus). darkUpgrades: bought with it. warps: Warp Jumps made ever.
+ * - antimatter: to spend. antimatterEarned: ever earned (the bonus). antiUpgrades: bought with it. crunches: Big
+ *   Crunches made.
  * - clicks, crits, comets (caught), diamonds (Diamond Comets caught): counted ever.
  * - steady: the pace of the clicks, to spot auto-clickers (hbHubMinerSteadyClick()): last (the last click's time),
  *   gap (ms between the last two clicks), since (when clicking at that pace began) and gaps (the ms between each of the
@@ -321,6 +396,7 @@ function hbHubMinerNewState(int $now): array
         'runStarted' => $now,
         'ore' => 0.0,
         'runOre' => 0.0,
+        'universeOre' => 0.0,
         'allOre' => 0.0,
         'clickOre' => 0.0,
         'buildings' => array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 0),
@@ -329,6 +405,10 @@ function hbHubMinerNewState(int $now): array
         'darkEarned' => 0,
         'darkUpgrades' => [],
         'warps' => 0,
+        'antimatter' => 0,
+        'antimatterEarned' => 0,
+        'antiUpgrades' => [],
+        'crunches' => 0,
         'clicks' => 0,
         'crits' => 0,
         'comets' => 0,
@@ -344,17 +424,20 @@ function hbHubMinerNewState(int $now): array
 
 /**
  * A save from the database, with anything an older version didn't have filled in, and anything unknown taken out.
+ * A save from before the Big Crunch has only ever been in one universe, so all its ore was mined in this one.
  */
 function hbHubMinerNormalize(array $saved, int $now): array
 {
+    $saved['universeOre'] ??= $saved['allOre'] ?? 0.0;
     $state = array_replace(hbHubMinerNewState($now), $saved);
     $state['buildings'] = array_replace(array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 0),
         array_intersect_key($state['buildings'], HBHUB_MINER_BUILDINGS));
     $state['upgrades'] = array_values(array_intersect($state['upgrades'], array_keys(hbHubMinerUpgrades())));
     $state['darkUpgrades'] = array_values(array_intersect($state['darkUpgrades'], array_keys(HBHUB_MINER_DARK_UPGRADES)));
+    $state['antiUpgrades'] = array_values(array_intersect($state['antiUpgrades'], array_keys(HBHUB_MINER_ANTI_UPGRADES)));
     $state['steady'] = array_replace(['last' => 0, 'gap' => 0, 'since' => 0, 'gaps' => []], $state['steady']);
     $state['steady']['gaps'] = array_map('intval', array_slice(array_values($state['steady']['gaps']), -HBHUB_MINER_EVEN_CLICKS));
-    foreach (['ore', 'runOre', 'allOre', 'clickOre'] as $key) {
+    foreach (['ore', 'runOre', 'universeOre', 'allOre', 'clickOre'] as $key) {
         $state[$key] = (float) $state[$key];
     }
     return $state;
@@ -387,6 +470,36 @@ function hbHubMinerHasDark(array $state, string $upgradeId): bool
     return in_array($upgradeId, $state['darkUpgrades'], true);
 }
 
+function hbHubMinerHasAnti(array $state, string $upgradeId): bool
+{
+    return in_array($upgradeId, $state['antiUpgrades'], true);
+}
+
+/**
+ * The production each Dark Matter earned adds (0.025 = +2.5%).
+ */
+function hbHubMinerDarkBonus(array $state): float
+{
+    return hbHubMinerHasDark($state, 'reactor') ? HBHUB_MINER_DARK_BONUS_REACTOR : HBHUB_MINER_DARK_BONUS;
+}
+
+/**
+ * What Antimatter does to production, and to the Dark Matter from a Warp Jump: 1 + HBHUB_MINER_ANTI_BONUS for each one
+ * ever earned.
+ */
+function hbHubMinerAntiMultiplier(array $state): float
+{
+    return 1 + HBHUB_MINER_ANTI_BONUS * $state['antimatterEarned'];
+}
+
+/**
+ * How much stronger comets are: 2 with Antimatter Comets.
+ */
+function hbHubMinerCometPower(array $state): int
+{
+    return hbHubMinerHasAnti($state, 'antiComets') ? 2 : 1;
+}
+
 /**
  * What the next $amount of a building cost together, rounded up: each costs HBHUB_MINER_COST_GROWTH times the one before.
  */
@@ -407,15 +520,19 @@ function hbHubMinerCanAfford(array $state, float $cost): bool
 }
 
 /**
- * The ore per second from each building (id => all of them together), with upgrades and Dark Matter but without comets.
+ * The ore per second from each building (id => all of them together), with upgrades, Dark Matter and Antimatter but
+ * without comets.
  */
 function hbHubMinerBuildingRates(array $state): array
 {
     $upgrades = hbHubMinerUpgrades();
     $multipliers = array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 1.0);
-    $global = 1 + HBHUB_MINER_DARK_BONUS * $state['darkEarned'];
+    $global = (1 + hbHubMinerDarkBonus($state) * $state['darkEarned']) * hbHubMinerAntiMultiplier($state);
     if (hbHubMinerHasDark($state, 'darkEngines')) {
         $global *= 1.5;
+    }
+    if (hbHubMinerHasAnti($state, 'annihilation')) {
+        $global *= 2;
     }
     foreach ($state['upgrades'] as $upgradeId) {
         $upgrade = $upgrades[$upgradeId];
@@ -445,13 +562,13 @@ function hbHubMinerBuff(array $state, string $buff, int $time): float
 }
 
 /**
- * What one click mines at $time, before a critical click: 1, doubled by each click upgrade, plus the clickPct
- * upgrades' share of the buildings' production, all times a Click Storm.
+ * What one click mines at $time, before a critical click: 1 (3 with Dark Pickaxe), doubled by each click upgrade, plus
+ * the clickPct upgrades' share of the buildings' production, all times a Click Storm.
  */
 function hbHubMinerClickValue(array $state, int $time): float
 {
     $upgrades = hbHubMinerUpgrades();
-    $value = 1.0;
+    $value = hbHubMinerHasDark($state, 'darkPickaxe') ? (float) HBHUB_MINER_DARK_PICKAXE : 1.0;
     $share = 0.0;
     foreach ($state['upgrades'] as $upgradeId) {
         if ($upgrades[$upgradeId]['type'] === 'click') {
@@ -465,14 +582,30 @@ function hbHubMinerClickValue(array $state, int $time): float
 }
 
 /**
- * All the ore per second at $time: the buildings (times a production comet) and the Auto-Clicker Bot.
+ * How many times a second the auto upgrades (Auto-Clicker Bot and Swarm) click, together.
+ */
+function hbHubMinerAutoClicks(array $state): float
+{
+    $upgrades = hbHubMinerUpgrades();
+    $clicks = 0.0;
+    foreach ($state['upgrades'] as $upgradeId) {
+        if ($upgrades[$upgradeId]['type'] === 'auto') {
+            $clicks += $upgrades[$upgradeId]['value'];
+        }
+    }
+    return $clicks;
+}
+
+/**
+ * All the ore per second at $time: the buildings (times a production comet) and the auto-clickers.
  * $time PHP_INT_MAX gives the steady rate, without comets, as the leaderboard shows it.
  */
 function hbHubMinerRate(array $state, int $time): float
 {
     $rate = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
-    if (hbHubMinerHas($state, 'autoClicker')) {
-        $rate += HBHUB_MINER_OTHER_UPGRADES['autoClicker']['value'] * hbHubMinerClickValue($state, $time);
+    $autoClicks = hbHubMinerAutoClicks($state);
+    if ($autoClicks > 0) {
+        $rate += $autoClicks * hbHubMinerClickValue($state, $time);
     }
     return $rate;
 }
@@ -481,6 +614,7 @@ function hbHubMinerEarn(array &$state, float $ore): void
 {
     $state['ore'] += $ore;
     $state['runOre'] += $ore;
+    $state['universeOre'] += $ore;
     $state['allOre'] += $ore;
 }
 
@@ -580,14 +714,15 @@ function hbHubMinerUpgradeUnlocked(array $state, array $upgrade): bool
 }
 
 /**
- * The Dark Matter all the ore ever mined is worth together: the cube root of how many HBHUB_MINER_DARK_UNITs it is
- * (so 1 for a billion, 10 for a trillion, 100 for a quadrillion). A Warp Jump gives what that's gone up by since the
- * last one. A square root made every jump double the one before, until the numbers ran away.
+ * The Dark Matter all the ore mined in this universe is worth together, before Antimatter and Matter Converter (see
+ * hbHubMinerWarpGain()): the cube root of how many HBHUB_MINER_DARK_UNITs it is (so 1 for a billion, 10 for a
+ * trillion, 100 for a quadrillion). A Warp Jump gives what that's gone up by since the last one. A square root made
+ * every jump double the one before, until the numbers ran away.
  */
-function hbHubMinerDarkTotal(float $allOre): int
+function hbHubMinerDarkTotal(float $universeOre): int
 {
     // ** (1 / 3) is a hair off (1000 gives 9.999...), so it's put right with whole numbers, which are exact
-    $units = $allOre / HBHUB_MINER_DARK_UNIT;
+    $units = $universeOre / HBHUB_MINER_DARK_UNIT;
     $total = (int) floor($units ** (1 / 3));
     while (($total + 1) ** 3 <= $units) {
         $total++;
@@ -600,10 +735,38 @@ function hbHubMinerDarkTotal(float $allOre): int
 
 /**
  * The Dark Matter a Warp Jump would give now, or 0 when it can't be done yet (HBHUB_MINER_WARP_ORE not mined this run).
+ * Antimatter (and Matter Converter) make the whole total bigger, which only ever goes up within a universe.
  */
 function hbHubMinerWarpGain(array $state): int
 {
-    return $state['runOre'] >= HBHUB_MINER_WARP_ORE ? max(0, hbHubMinerDarkTotal($state['allOre']) - $state['darkEarned']) : 0;
+    if ($state['runOre'] < HBHUB_MINER_WARP_ORE) {
+        return 0;
+    }
+    $total = (int) floor(hbHubMinerDarkTotal($state['universeOre']) * hbHubMinerAntiMultiplier($state)
+        * (hbHubMinerHasAnti($state, 'converter') ? 2 : 1));
+    return max(0, $total - $state['darkEarned']);
+}
+
+/**
+ * The Antimatter the Dark Matter earned in a universe is worth: the square root of how many HBHUB_MINER_ANTI_UNITs it
+ * is (so 4 for 200, 10 for 1,000, 20 for 4,000), worked out with whole numbers only so it's exact.
+ */
+function hbHubMinerAntiTotal(int $darkEarned): int
+{
+    $total = 0;
+    while (($total + 1) ** 2 * HBHUB_MINER_ANTI_UNIT <= $darkEarned) {
+        $total++;
+    }
+    return $total;
+}
+
+/**
+ * The Antimatter a Big Crunch would give now, or 0 when it can't be done yet (HBHUB_MINER_CRUNCH_DARK not earned in
+ * this universe). Dark Matter starts over with every crunch, so each one gives what all of it is worth.
+ */
+function hbHubMinerCrunchGain(array $state): int
+{
+    return $state['darkEarned'] >= HBHUB_MINER_CRUNCH_DARK ? hbHubMinerAntiTotal((int) $state['darkEarned']) : 0;
 }
 
 /**
@@ -695,12 +858,13 @@ function hbHubMinerCatchComet(array &$state): ?string
     if ($comet['buff'] !== null) {
         $state['buffs'][$comet['buff']] = [
             'kind' => $kind,
-            'multiplier' => $comet['multiplier'],
+            'multiplier' => $comet['multiplier'] * hbHubMinerCometPower($state),
             'until' => $time + $comet['ms'] * (hbHubMinerHas($state, 'tail') ? 2 : 1),
         ];
     } else {
         $production = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
-        hbHubMinerEarn($state, min($state['ore'] * HBHUB_MINER_LUCKY_SHARE, $production * HBHUB_MINER_LUCKY_SECONDS) + 13);
+        hbHubMinerEarn($state, (min($state['ore'] * HBHUB_MINER_LUCKY_SHARE, $production * HBHUB_MINER_LUCKY_SECONDS) + 13)
+            * (hbHubMinerHas($state, 'stardust') ? 2 : 1) * hbHubMinerCometPower($state));
     }
     $state['comets']++;
     if ($kind === 'diamond') {
@@ -712,8 +876,30 @@ function hbHubMinerCatchComet(array &$state): ?string
 }
 
 /**
- * Warp Jump: everything of this run starts over (ore, buildings, upgrades but the click ones with Persistent Memory),
- * for the Dark Matter it's worth. Returns false when it can't be done yet.
+ * Starts a new run, for a Warp Jump or a Big Crunch: ore, buildings and upgrades start over, apart from the click
+ * upgrades with Persistent Memory, Bulk Buying and the comet upgrades with Eternal Blueprints, the drones from Head
+ * Start and the ore from Big Bang Leftovers.
+ */
+function hbHubMinerNewRun(array &$state): void
+{
+    $upgrades = hbHubMinerUpgrades();
+    $kept = array_merge(hbHubMinerHasDark($state, 'memory') ? HBHUB_MINER_CLICK_TYPES : [],
+        hbHubMinerHasAnti($state, 'eternal') ? HBHUB_MINER_ETERNAL_TYPES : []);
+    $state['upgrades'] = array_values(array_filter($state['upgrades'], static fn (string $id): bool =>
+        in_array($upgrades[$id]['type'], $kept, true)));
+    $state['buildings'] = array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 0);
+    if (hbHubMinerHasDark($state, 'headStart')) {
+        $state['buildings']['drone'] = HBHUB_MINER_HEAD_START;
+    }
+    $state['ore'] = hbHubMinerHasAnti($state, 'leftovers') ? HBHUB_MINER_LEFTOVER_ORE : 0.0;
+    $state['runOre'] = 0.0;
+    $state['buffs'] = [];
+    $state['runStarted'] = $state['tick'];
+}
+
+/**
+ * Warp Jump: everything of this run starts over (hbHubMinerNewRun()), for the Dark Matter it's worth. Returns false
+ * when it can't be done yet.
  */
 function hbHubMinerWarp(array &$state): bool
 {
@@ -722,21 +908,34 @@ function hbHubMinerWarp(array &$state): bool
         return false;
     }
 
-    $upgrades = hbHubMinerUpgrades();
-    $keepClicks = hbHubMinerHasDark($state, 'memory');
-    $state['upgrades'] = array_values(array_filter($state['upgrades'], static fn (string $id): bool =>
-        $keepClicks && in_array($upgrades[$id]['type'], HBHUB_MINER_CLICK_TYPES, true)));
-    $state['buildings'] = array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 0);
-    if (hbHubMinerHasDark($state, 'headStart')) {
-        $state['buildings']['drone'] = HBHUB_MINER_HEAD_START;
-    }
-    $state['ore'] = 0.0;
-    $state['runOre'] = 0.0;
-    $state['buffs'] = [];
+    hbHubMinerNewRun($state);
     $state['dark'] += $gain;
     $state['darkEarned'] += $gain;
     $state['warps']++;
-    $state['runStarted'] = $state['tick'];
+    return true;
+}
+
+/**
+ * Big Crunch: the whole universe starts over, the run (hbHubMinerNewRun()) and the Dark Matter with it, and its
+ * upgrades too unless you have Dark Echo, for the Antimatter it's worth. Returns false when it can't be done yet.
+ */
+function hbHubMinerCrunch(array &$state): bool
+{
+    $gain = hbHubMinerCrunchGain($state);
+    if ($gain < 1) {
+        return false;
+    }
+
+    $state['dark'] = 0;
+    $state['darkEarned'] = 0;
+    if (!hbHubMinerHasAnti($state, 'echo')) {
+        $state['darkUpgrades'] = [];
+    }
+    $state['universeOre'] = 0.0;
+    $state['antimatter'] += $gain;
+    $state['antimatterEarned'] += $gain;
+    $state['crunches']++;
+    hbHubMinerNewRun($state); // after the Dark Matter upgrades are gone, so Head Start etc. only count when kept
     return true;
 }
 
@@ -744,8 +943,9 @@ function hbHubMinerWarp(array &$state): bool
  * One thing the player did, at the game's time. Returns whether it counted.
  * - ['type' => 'click', 'count' => n, 'offsets' => [ms after 'at' of each click]]: see hbHubMinerSync() for the limit.
  * - ['type' => 'buy', 'building' => id, 'amount' => 1, 10 or 100] (10 and 100 need Bulk Buying).
- * - ['type' => 'upgrade', 'id' => id], ['type' => 'dark', 'id' => id] (a Dark Matter upgrade).
- * - ['type' => 'comet'], ['type' => 'warp'].
+ * - ['type' => 'upgrade', 'id' => id], ['type' => 'dark', 'id' => id] (a Dark Matter upgrade), ['type' => 'anti',
+ *   'id' => id] (an Antimatter upgrade).
+ * - ['type' => 'comet'], ['type' => 'warp'], ['type' => 'crunch'].
  */
 function hbHubMinerApply(array &$state, array $action): bool
 {
@@ -802,12 +1002,27 @@ function hbHubMinerApply(array &$state, array $action): bool
         return true;
     }
 
+    if ($type === 'anti') {
+        $upgradeId = $action['id'] ?? null;
+        if (!is_string($upgradeId) || !isset(HBHUB_MINER_ANTI_UPGRADES[$upgradeId]) || hbHubMinerHasAnti($state, $upgradeId)
+            || $state['antimatter'] < HBHUB_MINER_ANTI_UPGRADES[$upgradeId]['cost']) {
+            return false;
+        }
+        $state['antimatter'] -= HBHUB_MINER_ANTI_UPGRADES[$upgradeId]['cost'];
+        $state['antiUpgrades'][] = $upgradeId;
+        return true;
+    }
+
     if ($type === 'comet') {
         return hbHubMinerCatchComet($state) !== null;
     }
 
     if ($type === 'warp') {
         return hbHubMinerWarp($state);
+    }
+
+    if ($type === 'crunch') {
+        return hbHubMinerCrunch($state);
     }
 
     return false;
@@ -823,7 +1038,7 @@ function hbHubMinerStat(array $state, string $stat): float
         'upgrades' => count($state['upgrades']),
         'buildings' => array_sum($state['buildings']),
         'ownedAll' => min($state['buildings']),
-        'allOre', 'clicks', 'crits', 'comets', 'diamonds', 'warps' => (float) $state[$stat],
+        'allOre', 'clicks', 'crits', 'comets', 'diamonds', 'warps', 'crunches' => (float) $state[$stat],
         default => (float) ($state['buildings'][substr($stat, 6)] ?? 0),
     };
 }
@@ -891,10 +1106,11 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         hbHubMinerCheckAchievements($state);
 
         $db->prepare('UPDATE `HBHub-MinerSaves` SET saveState = ?, saveTab = ?, saveOreAllTime = ?, saveOrePerSecond = ?,
-                saveDarkMatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?, saveUpdatedTimestamp = UTC_TIMESTAMP()
+                saveDarkMatter = ?, saveAntimatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?,
+                saveUpdatedTimestamp = UTC_TIMESTAMP()
             WHERE userId = ?')
             ->execute([hbHubMinerEncode($state), $tab, $state['allOre'], hbHubMinerRate($state, PHP_INT_MAX), $state['darkEarned'],
-                $state['warps'], $state['clicks'], count($state['achievements']), $userId]);
+                $state['antimatterEarned'], $state['warps'], $state['clicks'], count($state['achievements']), $userId]);
         $db->commit();
     } catch (Throwable $e) {
         if ($db->inTransaction()) {
