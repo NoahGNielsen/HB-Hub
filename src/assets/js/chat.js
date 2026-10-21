@@ -1452,13 +1452,14 @@ chatPart((signal) => {
         if (chatBlockedLink(editText.value)) event.preventDefault();
     });
 
-    // A group admin deleting someone else's message is told it'll say so. An attachment in it is deleted for good too.
+    // A group admin deleting someone else's message is told it'll say so. Attachments in it are deleted for good too.
     function openDelete(item) {
-        const hasAttachment = item.hasAttribute('data-message-attachment');
+        const attachments = Number(item.dataset.messageAttachments ?? 0);
+        const its = attachments > 1 ? 'its attachments are' : 'its attachment is';
         deleteDialog.querySelector('form').elements.message.value = item.dataset.messageId;
         deleteDialog.querySelector('[data-delete-text]').textContent = item.hasAttribute('data-message-own')
-            ? `Everyone in the chat will see it as deleted${hasAttachment ? ', and its attachment is deleted, which gives you its tickets back' : ''}. This can't be undone.`
-            : `Everyone in the chat will see ${item.dataset.messageSender}'s message as deleted by a group admin${hasAttachment ? ', and its attachment is deleted' : ''}. This can't be undone.`;
+            ? `Everyone in the chat will see it as deleted${attachments > 0 ? `, and ${its} deleted, which gives you ${attachments > 1 ? 'their' : 'its'} tickets back` : ''}. This can't be undone.`
+            : `Everyone in the chat will see ${item.dataset.messageSender}'s message as deleted by a group admin${attachments > 0 ? `, and ${its} deleted` : ''}. This can't be undone.`;
         deleteDialog.querySelector('[data-delete-preview]').textContent = messagePreview(item);
         deleteDialog.showModal();
         deleteDialog.querySelector('.chat-btn[data-dialog-close]').focus(); // the safe choice is the one Enter picks
@@ -1681,7 +1682,8 @@ chatPart((signal) => {
 
 // Picture viewer: clicking a picture in the open chat shows it big in a popup (.chat-viewer in chat/index.php), with zoom,
 // Info, Download and × along the top. Clicking anywhere that isn't the picture, a button or the Info panel closes it,
-// and so does Escape.
+// and so does Escape. A message with several pictures (a gallery) gets arrows on each side to go through them, and the
+// arrow keys do the same while it isn't zoomed in.
 // Zoom goes in steps of the size that fits the screen: − and +, the - + and 0 keys, Ctrl + the mouse wheel (or pinching
 // a trackpad), and double-clicking the picture to go in and back out. Zoomed in, the picture is dragged around with the
 // mouse, or scrolled. Info lists its name, type, size in pixels and MB, who sent it, when, and when it expires, and
@@ -1708,6 +1710,9 @@ chatPart((signal) => {
     const zoomOutButton = dialog.querySelector('[data-viewer-zoom-out]');
     const zoomInButton = dialog.querySelector('[data-viewer-zoom-in]');
     const zoomLevel = dialog.querySelector('[data-viewer-zoom-level]');
+    const count = dialog.querySelector('[data-viewer-count]');
+    const prevButton = dialog.querySelector('[data-viewer-prev]');
+    const nextButton = dialog.querySelector('[data-viewer-next]');
 
     let shown = null; // what's open: { figure, item } from the message
     let picture = null; // the <img> or <canvas> in the viewer
@@ -1730,7 +1735,7 @@ chatPart((signal) => {
             ['Name', name.textContent],
             ['Type', TYPES[type] ? `${TYPES[type]} (${type})` : type],
             ['Dimensions', size ? `${size.width} × ${size.height} px` : '…'],
-            ['File size', shown.figure.querySelector('.chat-attachment-size').textContent],
+            ['File size', shown.figure.dataset.attachmentSize],
             ['Sent by', shown.item.dataset.messageSender],
             ['Sent', dateTime(Number(shown.item.dataset.messageTime))],
             ['Expires', dateTime(Number(shown.figure.dataset.attachmentExpires))],
@@ -1798,15 +1803,27 @@ chatPart((signal) => {
         renderInfo();
     }
 
+    // The message's pictures, looked up again each time, as a JPEG XL one may have been swapped for a <canvas> since
+    function pictures() {
+        return [...shown.item.querySelectorAll('.chat-attachment-image')];
+    }
+
+    // Shows the picture (an <img> or <canvas> in a message), opening the viewer if it isn't already
     function open(source) {
         const figure = source.closest('.chat-attachment');
-        const link = figure.querySelector('.chat-attachment-download');
         shown = { figure, item: source.closest('[data-message-id]') };
-        name.textContent = link.textContent;
-        download.href = link.href;
-        download.download = link.getAttribute('download') ?? '';
+        name.textContent = figure.dataset.attachmentName ?? '';
+        download.href = figure.dataset.attachmentDownload;
+        download.download = figure.dataset.attachmentName ?? '';
         size = null;
         step = 0;
+
+        const all = pictures();
+        const hasMore = all.length > 1;
+        count.hidden = !hasMore;
+        prevButton.hidden = !hasMore;
+        nextButton.hidden = !hasMore;
+        count.textContent = `${all.indexOf(source) + 1} of ${all.length}`;
 
         if (source instanceof HTMLCanvasElement) {
             picture = document.createElement('canvas');
@@ -1835,9 +1852,21 @@ chatPart((signal) => {
         stage.replaceChildren(picture);
         renderInfo();
         render();
-        dialog.showModal();
+        if (!dialog.open) dialog.showModal();
         if (picture instanceof HTMLCanvasElement) loaded(picture, picture.width, picture.height);
     }
+
+    // The picture before (-1) or after (1) the one shown in its message, round to the other end
+    function go(direction) {
+        if (!shown) return;
+        const all = pictures();
+        const index = all.findIndex((other) => other.closest('.chat-attachment') === shown.figure);
+        if (all.length < 2 || index === -1) return;
+        open(all[(index + direction + all.length) % all.length]);
+    }
+
+    prevButton.addEventListener('click', () => go(-1));
+    nextButton.addEventListener('click', () => go(1));
 
     messages.addEventListener('click', (event) => {
         const source = event.target.closest('.chat-attachment-image');
@@ -1870,6 +1899,8 @@ chatPart((signal) => {
         if (event.key === '+' || event.key === '=') zoomTo(step + 1);
         else if (event.key === '-') zoomTo(step - 1);
         else if (event.key === '0') zoomTo(0);
+        else if (event.key === 'ArrowLeft' && step === 0 && !prevButton.hidden) go(-1); // zoomed in they scroll it
+        else if (event.key === 'ArrowRight' && step === 0 && !nextButton.hidden) go(1);
         else return;
         event.preventDefault();
     });
@@ -1926,19 +1957,22 @@ chatPart((signal) => {
     });
 });
 
-// Attachments: File in the Attach menu (or pasting or dropping a file on the message box) picks a file or picture to send.
-// It waits in a bar above the message box until Send, and goes with whatever is typed, as one message.
-// Pictures without loss to squeeze out (PNG, BMP, lossless WebP) are turned into lossless JPEG XL straight away by
-// the JPEG XL worker, unless "Keep the original picture" is ticked, and JPEGs into a JPEG XL that looks the same
-// (chatJxlWorker.js). The original is sent instead when the JPEG XL isn't smaller. Other pictures that are already
+// Attachments: Files in the Attach menu (or pasting files into the message box, or dropping them anywhere on the open
+// chat) picks files and pictures to send, up to data-attach-max-files in one message. They wait as tiles in a tray above
+// the message box until Send, and go with whatever is typed, as one message. Each tile shows the picture (or the file's
+// extension on a little document), its name, its size and a ticket with how many tickets it takes; × takes it out
+// again and + adds more. The line under the tiles says what they come to together, or what's stopping them.
+// Pictures without loss to squeeze out (PNG, BMP, lossless WebP) are turned into lossless JPEG XL by the JPEG XL worker
+// straight away, one after another, unless "Keep original pictures" is ticked, and JPEGs into a JPEG XL that looks the
+// same (chatJxlWorker.js). The original is sent instead when the JPEG XL isn't smaller. Other pictures that are already
 // compressed with loss (AVIF, lossy WebP) are sent as they are, and so are animated ones, which would lose their
-// animation.
-// Anything else is zipped by the server.
-// The upload goes to the chat page (action=upload, answered as JSON), and then the chat is loaded again with the message
-// in it (chatLoad, at the bottom). From Send until then, the message is shown faded at the bottom of the chat with "Sending…", so it's clear Send worked
-// while a picture is still being converted and uploaded.
-// Attachments are paid for with tickets. When a file needs more than the user has free, the server says so, and the
-// Your attachments popup opens with how many it needs, so attachments can be deleted to make room and the file sent.
+// animation. Anything else is zipped by the server.
+// All of them go to the chat page in one upload (action=upload with files[] and converted[], answered as JSON), and then
+// the chat is loaded again with the message in it (chatLoad, at the bottom). From Send until then, the message is shown
+// faded at the bottom of the chat with "Sending…", so it's clear Send worked while pictures are still being converted and
+// uploaded, and the bar along the top of the tray fills up as they go.
+// Attachments are paid for with tickets. When the files need more than the user has free, the server says so, and the
+// Your attachments popup opens with how many they need, so attachments can be deleted to make room and the files sent.
 // The popup can also be opened from the Attach menu, and lists the attachments still taking tickets (/chat/attachments).
 chatPart((signal) => {
     const composer = document.querySelector('.chat-composer');
@@ -1950,19 +1984,34 @@ chatPart((signal) => {
     const textarea = composer.querySelector('textarea');
     const replyInput = composer.querySelector('[data-reply-input]');
     const sendButton = composer.querySelector('.chat-send-btn');
-    const bar = composer.querySelector('[data-attach-bar]');
-    const nameText = bar.querySelector('[data-attach-name]');
-    const status = bar.querySelector('[data-attach-status]');
-    const keepLabel = bar.querySelector('[data-attach-keep-label]');
-    const keep = bar.querySelector('[data-attach-keep]');
+    const tray = composer.querySelector('[data-attach-tray]');
+    const list = tray.querySelector('[data-attach-list]');
+    const status = tray.querySelector('[data-attach-status]');
+    const keepLabel = tray.querySelector('[data-attach-keep-label]');
+    const keep = tray.querySelector('[data-attach-keep]');
+    const clearButton = tray.querySelector('[data-attach-clear]');
+    const progress = tray.querySelector('[data-attach-progress]');
+    const progressFill = tray.querySelector('[data-attach-progress-fill]');
     const fileItem = document.querySelector('[data-attach-file]'); // not there while attachments can't be sent
-    const maxBytes = Number(composer.dataset.attachMaxBytes);
+    const dropZone = document.querySelector('[data-attach-drop]'); // nor is this
+    const maxBytes = Number(composer.dataset.attachMaxBytes); // all of a message's files together
+    const maxFiles = Number(composer.dataset.attachMaxFiles);
     const ticketBytes = Number(composer.dataset.ticketBytes);
+    const maxMb = maxBytes / 1024 / 1024;
     const jxl = chatJxlWorker();
-    signal.addEventListener('abort', () => jxl.cancel()); // a conversion on its way stops when another chat opens
+    // What went wrong with one file: short on its tile, and the rest of a sentence about it under the tiles.
+    // The keys are the server's error codes too, which say which file with file (its place in files[]).
+    const FILE_ERRORS = {
+        empty: { short: 'Empty', text: 'is empty' },
+        tooBig: { short: 'Too big', text: `is over ${maxMb} MB` },
+        uploadFailed: { short: 'Failed', text: "didn't get there" },
+        storageError: { short: 'Failed', text: "couldn't be saved" },
+    };
+    // What went wrong with all of them (tooBig without a file is the whole upload being more than the server takes)
     const ERRORS = {
-        tooBig: `That's too big. Attachments can be up to ${maxBytes / 1024 / 1024} MB.`,
-        empty: 'That file is empty.',
+        tooBig: `Together they're too big. One message can have up to ${maxMb} MB of attachments.`,
+        tooBigTogether: `Together they're too big. One message can have up to ${maxMb} MB of attachments.`,
+        tooManyFiles: `One message can have up to ${maxFiles} attachments.`,
         muted: "You're muted in this chat, so you can't send anything.",
         messageTooLong: 'The message is too long.',
         linkBlocked: "The message has a blocked link in it. Take it out and try again.", // chatBlockedLink() normally catches it first
@@ -1972,15 +2021,32 @@ chatPart((signal) => {
         tooFast: "You're sending messages too fast. Wait a moment and try again.",
     };
 
-    // The attachment waiting to be sent: { file, ready, kind, result, converted, converting, note, error }
-    // ready is the promise of working out its kind: 'convert' (a picture to turn into JPEG XL), 'image' (a picture sent
-    // as it is) or 'file'. result is the JPEG XL once made, kept so unticking "Keep the original" again doesn't make it
-    // twice, and converted is that result while it's the one to send (smaller, and the box isn't ticked).
-    // converting is the promise while it's being made.
-    let pending = null;
-    let isSending = false; // from Send until the answer, waiting for a conversion included
-    let isUploading = false; // only while the file is on its way, when it can't be taken back any more
-    let sending = null; // the faded message shown while it's being sent: { item, meta, size, url }
+    // The files waiting to be sent, in the order they're shown and sent: { file, name, kind, ready, result, failed,
+    // serverError, url, previewFailed, tile }
+    // kind is null until ready (the promise of working it out) says: 'convert' (a picture to turn into JPEG XL),
+    // 'image' (a picture sent as it is) or 'file'. result is the JPEG XL once made, kept so unticking "Keep original
+    // pictures" again doesn't make it twice, and failed says why there isn't one when it couldn't be made.
+    // serverError is what the server said was wrong with it (a FILE_ERRORS key). url is the picture for its preview.
+    let jobs = [];
+    let converting = null; // the picture being turned into JPEG XL: { job, promise }, the rest wait their turn
+    let notice = null; // a note under the tiles until something changes: { text, isError }
+    let isSending = false; // from Send until the answer, waiting for conversions included
+    let isUploading = false; // only while the files are on their way, when they can't be taken back any more
+    let uploadText = ''; // "Sending… 40%"
+    let sendToken = 0; // which Send is going on, so one called off by taking a file out stops where it is
+    let sending = null; // the faded message shown while it's being sent: { item, meta, sizes: [{ job, size }] }
+
+    // The + tile at the end of the row, for adding more
+    const addTile = document.createElement('li');
+    addTile.className = 'chat-tray-add-item';
+    const addButton = document.createElement('button');
+    addButton.type = 'button';
+    addButton.className = 'chat-tray-add';
+    addButton.setAttribute('aria-label', 'Add more files');
+    addButton.title = 'Add more files';
+    addButton.textContent = '+';
+    addTile.append(addButton);
+    list.append(addTile);
 
     function sizeLabel(bytes) {
         return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1).replace(/\.0$/, '')} MB`;
@@ -1992,6 +2058,12 @@ chatPart((signal) => {
 
     function ticketsLabel(count) {
         return `${count} ${count === 1 ? 'ticket' : 'tickets'}`;
+    }
+
+    // Like chatAttachmentExtension() in chat/index.php
+    function extensionOf(name) {
+        const extension = /\.([^.]+)$/.exec(name)?.[1].toUpperCase() ?? '';
+        return /^[A-Z0-9]{1,5}$/.test(extension) ? extension : 'FILE';
     }
 
     // What kind of attachment the file is, by its first bytes rather than its name. Pictures worth converting are the
@@ -2017,248 +2089,403 @@ chatPart((signal) => {
         return isImage ? 'image' : 'file';
     }
 
-    function setStatus(text, isError = false) {
+    // Still to be turned into JPEG XL before it can go (being converted now, or waiting its turn)
+    function isWaiting(job) {
+        return job.kind === 'convert' && !keep.checked && !job.result && !job.failed;
+    }
+
+    // What's sent: the JPEG XL when there is one, it's smaller and the originals aren't kept, otherwise the file itself
+    function toSend(job) {
+        return job.kind === 'convert' && !keep.checked && job.result && job.result.size < job.file.size ? job.result : job.file;
+    }
+
+    function uploadName(job) {
+        return toSend(job) === job.result ? (job.file.name || 'picture').replace(/\.[^.]*$/, '') + '.jxl' : job.file.name || 'picture.png';
+    }
+
+    // Why it can't be sent (a FILE_ERRORS key), or null. One that's too big may still fit once it's converted.
+    function problem(job) {
+        if (job.serverError) return job.serverError;
+        if (job.file.size === 0) return 'empty';
+        return job.kind !== null && !isWaiting(job) && toSend(job).size > maxBytes ? 'tooBig' : null;
+    }
+
+    // The next picture waiting to be turned into JPEG XL, one at a time so they don't fight over the computer
+    function convertNext() {
+        if (converting || keep.checked) return;
+        const job = jobs.find(isWaiting);
+        if (!job) return;
+        const promise = jxl.run('encode', { file: job.file })
+            .then(({ buffer }) => {
+                job.result = new Blob([buffer], { type: 'image/jxl' });
+            })
+            .catch((error) => {
+                if (error.name !== 'AbortError') job.failed = "Sent as it is, as it couldn't be converted";
+            })
+            .finally(() => {
+                if (converting?.job !== job) return; // stopped (taken out, or Keep ticked) and moved on from already
+                converting = null;
+                convertNext();
+                render();
+            });
+        converting = { job, promise };
+    }
+
+    function stopConverting() {
+        if (!converting) return;
+        converting = null;
+        jxl.cancel(); // the promise above settles with an AbortError, which is left quiet
+    }
+
+    // A conversion on its way stops when another chat opens, and the previews' pictures are let go of
+    signal.addEventListener('abort', () => {
+        jxl.cancel();
+        jobs.forEach((job) => job.url && URL.revokeObjectURL(job.url));
+    });
+
+    function element(tag, className, text = null) {
+        const node = document.createElement(tag);
+        node.className = className;
+        if (text !== null) node.textContent = text;
+        return node;
+    }
+
+    // The little document with the extension on it, like a file card's in a message
+    function extensionBadge(job) {
+        const badge = element('span', 'chat-attachment-ext', extensionOf(job.name));
+        badge.setAttribute('aria-hidden', 'true');
+        return badge;
+    }
+
+    function makeTile(job) {
+        const item = element('li', 'chat-tray-item');
+        const preview = element('div', 'chat-tray-preview');
+        preview.append(extensionBadge(job));
+        const ticket = element('span', 'chat-tray-ticket');
+        preview.append(ticket);
+        const name = element('span', 'chat-tray-name', job.name);
+        const info = element('span', 'chat-tray-info');
+        const remove = element('button', 'chat-tray-remove', '×');
+        remove.type = 'button';
+        remove.setAttribute('aria-label', `Remove ${job.name}`);
+        remove.title = 'Remove';
+        remove.addEventListener('click', () => {
+            // Focus goes on to the next tile's ×, or back to the message box after the last one
+            const next = item.nextElementSibling?.querySelector('.chat-tray-remove') ?? item.previousElementSibling?.querySelector('.chat-tray-remove');
+            removeJob(job);
+            (next ?? textarea).focus();
+        });
+        item.append(preview, name, info, remove);
+        job.tile = { item, preview, ticket, info, remove };
+    }
+
+    // A picture's tile shows the picture itself, straight from the user's device. One this browser can't show
+    // (JPEG XL in most, say) keeps its document.
+    function showPreview(job) {
+        job.url = URL.createObjectURL(job.file);
+        const image = document.createElement('img');
+        image.alt = '';
+        image.addEventListener('load', () => {
+            job.tile.preview.querySelector('.chat-attachment-ext')?.remove();
+            job.tile.preview.prepend(image);
+        }, { once: true });
+        image.addEventListener('error', () => {
+            job.previewFailed = true; // so the faded message while it's sent shows it as a file card too
+        }, { once: true });
+        image.src = job.url;
+    }
+
+    function renderTile(job) {
+        const { item, ticket, info, remove } = job.tile;
+        const error = problem(job);
+        const isBusy = job.kind === null || converting?.job === job;
+        item.classList.toggle('is-error', error !== null);
+        item.classList.toggle('is-busy', isBusy);
+        remove.disabled = isUploading;
+
+        const file = toSend(job);
+        const tickets = ticketsFor(file.size);
+        ticket.hidden = error !== null || job.kind === null || isWaiting(job);
+        ticket.textContent = tickets;
+        ticket.classList.toggle('is-short', tickets > 5);
+
+        // The whole story when pointed at
+        const details = [job.name];
+        if (error) {
+            info.textContent = FILE_ERRORS[error].short;
+            details.push(`It ${FILE_ERRORS[error].text}, so it can't be sent.`);
+        } else if (job.kind === null) {
+            info.textContent = 'Checking…';
+        } else if (isWaiting(job)) {
+            info.textContent = isBusy ? 'Converting…' : 'Waiting to convert';
+            details.push('Being turned into JPEG XL, which makes it smaller without losing anything.');
+        } else {
+            info.textContent = sizeLabel(file.size) + (file === job.result ? ' · JXL' : '');
+            if (file === job.result) details.push(`JPEG XL, ${sizeLabel(file.size)} (was ${sizeLabel(job.file.size)})`);
+            else details.push(sizeLabel(file.size));
+            // The server zips other files first, so they may take fewer
+            details.push(job.kind === 'file' ? `Up to ${ticketsLabel(tickets)}` : ticketsLabel(tickets));
+            if (tickets > 5) details.push('Kept for 3 days, as it takes more than 5 tickets');
+            if (job.kind === 'convert' && !keep.checked) {
+                if (job.failed) details.push(job.failed);
+                else if (file !== job.result) details.push("Sent as it is, as JPEG XL wasn't smaller");
+            }
+        }
+        item.title = details.join('\n');
+    }
+
+    // The line under the tiles: what they come to together, or what's stopping them
+    function renderStatus() {
+        const bad = jobs.find((job) => problem(job) !== null);
+        const waiting = jobs.filter(isWaiting).length;
+        const totalBytes = jobs.reduce((sum, job) => sum + toSend(job).size, 0);
+        let text;
+        let isError = true;
+        if (isUploading) {
+            text = uploadText;
+            isError = false;
+        } else if (bad) {
+            text = `${bad.name} ${FILE_ERRORS[problem(bad)].text}, so it can't be sent.${jobs.length > 1 ? ' Take it out to send the rest.' : ''}`;
+        } else if (notice?.isError) {
+            text = notice.text;
+        } else if (waiting === 0 && totalBytes > maxBytes) {
+            text = ERRORS.tooBigTogether;
+        } else {
+            isError = false;
+            const parts = [`${jobs.length} ${jobs.length === 1 ? 'attachment' : 'attachments'}`];
+            if (waiting > 0) {
+                parts.push(`converting ${waiting === 1 ? 'a picture' : `${waiting} pictures`} to JPEG XL… You can send already, they go once it's done`);
+            } else {
+                const tickets = jobs.reduce((sum, job) => sum + ticketsFor(toSend(job).size), 0);
+                parts.push(sizeLabel(totalBytes));
+                parts.push((jobs.some((job) => job.kind === 'file') ? 'up to ' : '') + ticketsLabel(tickets));
+            }
+            if (notice) parts.push(notice.text);
+            text = parts.join(' · ');
+        }
         status.textContent = text;
         status.classList.toggle('is-error', isError);
     }
 
-    // The bar's second line: how big the attachment is, in MB and tickets, and what happened to it
-    function describe() {
-        if (!pending) return;
-        if (pending.error) {
-            setStatus(pending.error, true);
-            return;
-        }
-        if (pending.converting) {
-            setStatus('Converting to JPEG XL… Big pictures can take a while. It can be sent already, and goes once it\'s done.');
-            return;
-        }
-        const file = pending.converted ?? pending.file;
-        const tickets = ticketsFor(file.size);
-        const parts = [];
-        if (pending.converted) parts.push(`JPEG XL, ${sizeLabel(file.size)} (was ${sizeLabel(pending.file.size)})`);
-        else parts.push(sizeLabel(file.size));
-        // The server zips other files first, so they may take fewer
-        parts.push(pending.kind === 'file' ? `up to ${ticketsLabel(tickets)}` : ticketsLabel(tickets));
-        if (tickets > 5) parts.push('kept for 3 days');
-        if (pending.note) parts.push(pending.note);
-        setStatus(parts.join(' · '));
+    function render() {
+        const hasJobs = jobs.length > 0;
+        tray.hidden = !hasJobs;
+        // Without text they can still be sent, so the message box stops insisting on some
+        textarea.required = !hasJobs;
+        composer.toggleAttribute('data-has-attachment', hasJobs);
+        keepLabel.hidden = !jobs.some((job) => job.kind === 'convert');
+        keep.disabled = isUploading;
+        clearButton.disabled = isUploading;
+        addTile.hidden = jobs.length >= maxFiles || isSending;
+        progress.hidden = !isUploading;
+        if (!isUploading) progressFill.style.transform = 'scaleX(0)';
+        jobs.forEach(renderTile);
+        renderStatus();
     }
 
-    function startConversion() {
-        const job = pending;
-        job.note = null;
-        // isCurrent: still the attachment waiting, and not a conversion that was stopped (and maybe started again since)
-        const isCurrent = () => pending === job && job.converting === converting;
-        const converting = jxl.run('encode', { file: job.file })
-            .then(({ buffer }) => {
-                if (!isCurrent()) return;
-                job.result = new Blob([buffer], { type: 'image/jxl' });
-                useResult(job);
-            })
-            .catch((error) => {
-                if (isCurrent() && error.name !== 'AbortError') job.note = "sent as it is, as it couldn't be converted";
-            })
-            .finally(() => {
-                if (!isCurrent()) return;
-                job.converting = null;
-                if (!job.converted && job.file.size > maxBytes) job.error = ERRORS.tooBig;
-                describe();
+    function pick(files) {
+        if (isSending || files.length === 0) return;
+        const room = Math.max(0, maxFiles - jobs.length);
+        const left = files.length - room;
+        notice = left > 0
+            ? { text: `Only ${maxFiles} fit in one message, so ${left === 1 ? 'one was' : `${left} were`} left out`, isError: false }
+            : null;
+        files.slice(0, room).forEach((file) => {
+            const job = {
+                file, name: file.name || 'Pasted picture', kind: null, ready: null, result: null, failed: null,
+                serverError: null, url: null, previewFailed: false, tile: null,
+            };
+            jobs.push(job);
+            makeTile(job);
+            list.insertBefore(job.tile.item, addTile);
+            job.ready = kindOf(file).catch(() => 'file').then((kind) => {
+                job.kind = kind;
+                if (!jobs.includes(job)) return; // taken out in the meantime
+                if (kind !== 'file') showPreview(job);
+                convertNext();
+                render();
             });
-        job.converting = converting;
-        describe();
+        });
+        render();
+        list.scrollLeft = list.scrollWidth; // the new ones are in view
     }
 
-    // Sends the JPEG XL that was made, unless the original is smaller
-    function useResult(job) {
-        job.converted = job.result.size < job.file.size ? job.result : null;
-        job.note = job.converted ? null : "sent as it is, as JPEG XL wasn't smaller";
-    }
-
-    function stopConversion() {
-        if (!pending?.converting) return;
-        jxl.cancel(); // the promise above settles with an AbortError, which is left quiet
-        pending.converting = null;
+    function removeJob(job) {
+        if (isUploading || !jobs.includes(job)) return;
+        if (isSending) cancelSend(); // the faded message was made with it in
+        if (converting?.job === job) stopConverting();
+        jobs = jobs.filter((other) => other !== job);
+        if (job.url) URL.revokeObjectURL(job.url);
+        job.tile.item.remove();
+        notice = null;
+        convertNext();
+        render();
     }
 
     function clear() {
-        stopConversion();
-        pending = null;
+        [...jobs].forEach(removeJob);
         input.value = '';
-        bar.hidden = true;
-        textarea.required = true;
-        composer.removeAttribute('data-has-attachment');
-    }
-
-    async function pick(file) {
-        if (isSending) return;
-        clear();
-        const job = { file, ready: kindOf(file).catch(() => 'file'), kind: 'file', result: null, converted: null, converting: null, note: null, error: null };
-        pending = job;
-        bar.hidden = false;
-        nameText.textContent = file.name || 'Pasted picture';
-        setStatus('');
-        keepLabel.hidden = true;
-        keep.checked = false;
-        // Without text it can still be sent, so the message box stops insisting on some
-        textarea.required = false;
-        composer.setAttribute('data-has-attachment', '');
-
-        job.kind = await job.ready;
-        if (pending !== job) return; // another file was picked in the meantime
-        keepLabel.hidden = job.kind !== 'convert';
-        // A picture over the limit may still fit once it's converted, anything else can't be sent
-        if (job.kind === 'convert') startConversion();
-        else if (file.size > maxBytes) job.error = ERRORS.tooBig;
-        describe();
     }
 
     fileItem?.addEventListener('click', () => input.click());
+    addButton.addEventListener('click', () => input.click());
 
     input.addEventListener('change', () => {
-        if (input.files[0]) pick(input.files[0]);
+        pick([...input.files]);
+        input.value = ''; // so the same file can be picked again after taking it out
         textarea.focus();
     });
 
-    // A file pasted into the message box (a screenshot, say) or dropped on the composer is picked like one from File
-    if (fileItem) {
-        textarea.addEventListener('paste', (event) => {
-            const file = event.clipboardData?.files[0];
-            if (!file) return;
-            event.preventDefault();
-            pick(file);
-        });
-        composer.addEventListener('dragover', (event) => {
-            if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
-        });
-        composer.addEventListener('drop', (event) => {
-            const file = event.dataTransfer?.files[0];
-            if (!file) return;
-            event.preventDefault();
-            pick(file);
-        });
-    }
-
-    // × takes the attachment away, also while Send waits for its conversion - but not once it's on its way
-    bar.querySelector('[data-attach-cancel]').addEventListener('click', () => {
-        if (isUploading) return;
+    clearButton.addEventListener('click', () => {
         clear();
         textarea.focus();
     });
 
-    // Keeping the original stops a conversion on its way. Unticking it again uses the JPEG XL if it was already made,
-    // or starts making it again.
-    keep.addEventListener('change', () => {
-        if (!pending || pending.kind !== 'convert') return;
-        pending.error = null;
-        if (keep.checked) {
-            stopConversion();
-            pending.converted = null;
-            pending.note = null;
-            if (pending.file.size > maxBytes) pending.error = ERRORS.tooBig;
-            describe();
-        } else if (pending.result) {
-            useResult(pending);
-            if (!pending.converted && pending.file.size > maxBytes) pending.error = ERRORS.tooBig;
-            describe();
-        } else {
-            startConversion();
-        }
-    });
+    // Files pasted into the message box (a screenshot, say) or dropped anywhere on the open chat are picked like ones from Files
+    if (fileItem) {
+        textarea.addEventListener('paste', (event) => {
+            const files = [...(event.clipboardData?.files ?? [])];
+            if (files.length === 0) return;
+            event.preventDefault();
+            pick(files);
+        });
 
-    // A file card like the server's (chatAttachmentHtml in chat/index.php), without the download
-    function fileCard(name) {
-        const card = document.createElement('div');
-        card.className = 'chat-attachment is-file';
-        const icon = document.createElement('img');
-        icon.className = 'chat-attachment-icon';
-        icon.src = '/assets/images/icons/addFile.svg';
-        icon.alt = '';
-        const text = document.createElement('span');
-        text.className = 'chat-attachment-text';
-        const nameText = document.createElement('span');
-        nameText.className = 'chat-attachment-name';
-        nameText.textContent = name;
-        const size = document.createElement('span');
-        size.className = 'chat-attachment-size';
-        text.append(nameText, size);
-        card.append(icon, text);
-        return card;
+        // "Drop to attach" covers the chat while files are dragged over it. Entering and leaving the things inside it
+        // fire too, so it counts how deep in it the pointer is.
+        const chatWindow = composer.closest('.chat-window');
+        const hasFiles = (event) => event.dataTransfer?.types.includes('Files');
+        let depth = 0;
+        chatWindow.addEventListener('dragenter', (event) => {
+            if (!hasFiles(event)) return;
+            event.preventDefault();
+            depth++;
+            if (dropZone && !isSending) dropZone.hidden = false;
+        });
+        chatWindow.addEventListener('dragover', (event) => {
+            if (!hasFiles(event)) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = isSending ? 'none' : 'copy';
+        });
+        chatWindow.addEventListener('dragleave', (event) => {
+            if (!hasFiles(event)) return;
+            depth = Math.max(0, depth - 1);
+            if (depth === 0 && dropZone) dropZone.hidden = true;
+        });
+        chatWindow.addEventListener('drop', (event) => {
+            if (!hasFiles(event)) return;
+            event.preventDefault();
+            depth = 0;
+            if (dropZone) dropZone.hidden = true;
+            pick([...event.dataTransfer.files]);
+            textarea.focus();
+        });
     }
 
-    // The message as it'll look, faded at the bottom of the chat until the page reloads with the real one: the picture
-    // straight from the user's device (or a file card, also when the browser can't show the picture), and the text as
-    // typed. It has no data-message-id, so polling and the message menu leave it alone, and polling adds new messages
-    // above it (addMessages below).
-    function showSending(job) {
-        const name = job.file.name || 'Pasted picture';
-        const item = document.createElement('li');
-        item.className = 'chat-message is-own is-sending';
+    // Keeping the originals stops a conversion on its way. Unticking it again uses the JPEG XLs already made,
+    // and goes on making the rest.
+    keep.addEventListener('change', () => {
+        notice = null;
+        if (keep.checked) stopConverting();
+        else convertNext();
+        render();
+    });
+
+    // A file card like the server's (chatAttachmentsHtml in chat/index.php), without the download
+    function fileCard(job) {
+        const card = element('div', 'chat-attachment is-file');
+        const text = element('span', 'chat-attachment-text');
+        const size = element('span', 'chat-attachment-size');
+        text.append(element('span', 'chat-attachment-name', job.name), size);
+        card.append(extensionBadge(job), text);
+        return { card, size };
+    }
+
+    // A picture like the server's, the one from the user's device
+    function pictureFigure(job) {
+        const figure = element('figure', 'chat-attachment is-image');
+        const image = element('img', 'chat-attachment-image');
+        image.alt = job.name;
+        image.height = 200;
+        image.src = job.url;
+        const caption = element('figcaption', 'chat-attachment-caption');
+        const size = element('span', 'chat-attachment-size');
+        caption.append(element('span', 'chat-attachment-download', job.name), size);
+        figure.append(image, caption);
+        return { figure, size };
+    }
+
+    // The message as it'll look, faded at the bottom of the chat until the page reloads with the real one: the pictures
+    // (or file cards, also for pictures the browser can't show), and the text as typed. It has no data-message-id, so
+    // polling and the message menu leave it alone, and polling adds new messages above it (addMessages below).
+    function showSending() {
+        const item = element('li', 'chat-message is-own is-sending');
         item.setAttribute('data-message-sending', '');
-        const bubble = document.createElement('div');
-        bubble.className = 'chat-message-bubble has-attachment';
-        let url = null;
-        if (job.kind === 'file') {
-            bubble.append(fileCard(name));
-        } else {
-            url = URL.createObjectURL(job.file);
-            const figure = document.createElement('figure');
-            figure.className = 'chat-attachment is-image';
-            const image = document.createElement('img');
-            image.className = 'chat-attachment-image';
-            image.alt = name;
-            image.height = 200;
-            const caption = document.createElement('figcaption');
-            caption.className = 'chat-attachment-caption';
-            const nameText = document.createElement('span');
-            nameText.className = 'chat-attachment-download';
-            nameText.textContent = name;
-            const size = document.createElement('span');
-            size.className = 'chat-attachment-size';
-            caption.append(nameText, size);
-            figure.append(image, caption);
-            bubble.append(figure);
-            // A picture this browser can't show (JPEG XL in most, say) becomes a file card, taking its size line along
-            image.addEventListener('error', () => {
-                const card = fileCard(name);
-                card.querySelector('.chat-attachment-size').replaceWith(size);
-                figure.replaceWith(card);
+        const bubble = element('div', 'chat-message-bubble has-attachment');
+        const box = element('div', 'chat-attachments');
+        const sizes = [];
+        const pictures = jobs.filter((job) => job.kind !== 'file' && job.url && !job.previewFailed);
+        const files = jobs.filter((job) => !pictures.includes(job));
+
+        if (pictures.length === 1) {
+            const { figure, size } = pictureFigure(pictures[0]);
+            box.append(figure);
+            sizes.push({ job: pictures[0], size });
+        } else if (pictures.length > 1) {
+            const gallery = element('div', `chat-attachment-gallery is-cols-${[2, 4].includes(pictures.length) ? 2 : 3}`);
+            pictures.forEach((job) => gallery.append(pictureFigure(job).figure));
+            box.append(gallery);
+        }
+        if (files.length > 0) {
+            const cards = element('div', 'chat-attachment-files');
+            files.forEach((job) => {
+                const { card, size } = fileCard(job);
+                cards.append(card);
+                sizes.push({ job, size });
             });
-            image.src = url;
+            box.append(cards);
         }
-        if (textarea.value.trim() !== '') {
-            const text = document.createElement('div');
-            text.className = 'chat-message-text';
-            text.textContent = textarea.value;
-            bubble.append(text);
-        }
-        const meta = document.createElement('span');
-        meta.className = 'chat-message-meta';
+        bubble.append(box);
+        if (textarea.value.trim() !== '') bubble.append(element('div', 'chat-message-text', textarea.value));
+        const meta = element('span', 'chat-message-meta', 'Sending…');
         meta.setAttribute('role', 'status');
-        meta.textContent = 'Sending…';
         item.append(bubble, meta);
 
         const empty = messages.querySelector('[data-messages-empty]');
         if (empty) empty.hidden = true;
         messages.append(item);
         messages.scrollTop = messages.scrollHeight;
-        sending = { item, meta, size: item.querySelector('.chat-attachment-size'), url };
-        sendingSize(job);
+        sending = { item, meta, sizes };
+        sendingSizes();
     }
 
-    // How big it is: the picture's size changes once it's converted
-    function sendingSize(job) {
-        if (sending) sending.size.textContent = sizeLabel((job.converted ?? job.file).size);
+    // How big they are: a picture's size changes once it's converted
+    function sendingSizes() {
+        sending?.sizes.forEach(({ job, size }) => {
+            size.textContent = sizeLabel(toSend(job).size);
+        });
     }
 
-    // Taken away again when it wasn't sent after all (an error, not enough tickets, or × while waiting)
+    // Taken away again when they weren't sent after all (an error, not enough tickets, or a file taken out while waiting)
     function hideSending() {
         if (!sending) return;
         sending.item.remove();
-        if (sending.url) URL.revokeObjectURL(sending.url);
         sending = null;
         const empty = messages.querySelector('[data-messages-empty]');
         if (empty) empty.hidden = false;
+    }
+
+    function finishSending() {
+        hideSending();
+        isSending = false;
+        isUploading = false;
+        sendButton.disabled = false;
+        render();
+    }
+
+    // Taking a file out while Send waits for conversions calls that Send off - Send again sends the rest
+    function cancelSend() {
+        sendToken++;
+        finishSending();
     }
 
     // XMLHttpRequest rather than fetch, as only it says how far an upload has got
@@ -2270,9 +2497,11 @@ chatPart((signal) => {
             request.responseType = 'json';
             request.upload.addEventListener('progress', (event) => {
                 if (!event.lengthComputable) return;
-                const text = `Sending… ${Math.round((event.loaded / event.total) * 100)}%`;
-                setStatus(text);
-                if (sending) sending.meta.textContent = text;
+                const done = event.loaded / event.total;
+                uploadText = `Sending… ${Math.round(done * 100)}%`;
+                status.textContent = uploadText;
+                progressFill.style.transform = `scaleX(${done})`;
+                if (sending) sending.meta.textContent = uploadText;
             });
             request.addEventListener('load', () => resolve({ status: request.status, data: request.response ?? {} }));
             request.addEventListener('error', reject);
@@ -2281,36 +2510,42 @@ chatPart((signal) => {
     }
 
     async function send() {
-        if (isSending || !pending || pending.error) return;
-        const job = pending;
+        if (isSending || jobs.length === 0) return;
+        if (jobs.some((job) => problem(job) !== null)) return; // the tray says what's wrong
+        const token = ++sendToken;
+        const isCurrent = () => token === sendToken && !signal.aborted;
         isSending = true;
         sendButton.disabled = true;
+        notice = null;
+        render();
         let isSent = false;
         try {
-            // A picture is only sent once it's known whether to convert it, and the conversion is done.
-            // Ticking "Keep the original" meanwhile stops waiting and sends the original.
-            await job.ready;
-            if (pending !== job) return; // taken away with × while waiting
-            showSending(job);
-            while (job.converting) await job.converting;
-            if (pending !== job) return;
-            if (job.error) {
-                describe();
-                return;
-            }
-            sendingSize(job);
-            const file = job.converted ?? job.file;
-            const name = job.converted ? (job.file.name || 'picture').replace(/\.[^.]*$/, '') + '.jxl' : job.file.name || 'picture.png';
+            // They only go once it's known which pictures to convert, and the conversions are done.
+            // Ticking "Keep original pictures" meanwhile stops waiting and sends the originals.
+            await Promise.all(jobs.map((job) => job.ready));
+            if (!isCurrent()) return;
+            showSending();
+            convertNext();
+            while (converting) await converting.promise;
+            if (!isCurrent()) return;
+            sendingSizes();
+            const totalBytes = jobs.reduce((sum, job) => sum + toSend(job).size, 0);
+            if (jobs.some((job) => problem(job) !== null) || totalBytes > maxBytes) return; // the tray says what's wrong
+
+            const sent = [...jobs];
             const body = new FormData();
             body.set('action', 'upload');
             body.set('chat', composer.elements.chat.value);
             body.set('message', textarea.value);
             body.set('reply', replyInput.value);
-            body.set('converted', job.converted ? '1' : '0');
-            body.set('file', file, name);
+            sent.forEach((job) => {
+                body.append('files[]', toSend(job), uploadName(job));
+                body.append('converted[]', toSend(job) === job.result ? '1' : '0');
+            });
 
             isUploading = true;
-            keep.disabled = true;
+            uploadText = 'Sending…';
+            render(); // × and the box can't be used any more
             const { status: httpStatus, data } = await upload(body);
             if (httpStatus === 200 && data.chatId) {
                 isSent = true;
@@ -2319,27 +2554,22 @@ chatPart((signal) => {
                 return;
             }
             if (data.error === 'notEnoughTickets') {
-                describe();
                 openTickets(data.ticketsNeeded);
                 return;
             }
-            setStatus(ERRORS[data.error] ?? "Couldn't send it. Try again.", true);
+            const job = Number.isInteger(data.file) ? sent[data.file] : null;
+            if (job) job.serverError = data.error in FILE_ERRORS ? data.error : 'uploadFailed';
+            else notice = { text: ERRORS[data.error] ?? "Couldn't send them. Try again.", isError: true };
         } catch {
-            setStatus("Couldn't send it. Check your connection and try again.", true);
+            notice = { text: "Couldn't send them. Check your connection and try again.", isError: true };
         } finally {
-            if (!isSent) {
-                hideSending();
-                isSending = false;
-                isUploading = false;
-                sendButton.disabled = false;
-                keep.disabled = false;
-            }
+            if (!isSent && token === sendToken) finishSending();
         }
     }
 
-    // With an attachment waiting, Send (or Enter) sends it this way instead of the normal form post
+    // With attachments waiting, Send (or Enter) sends them this way instead of the normal form post
     composer.addEventListener('submit', (event) => {
-        if (!pending) return;
+        if (jobs.length === 0) return;
         event.preventDefault();
         send();
     });
@@ -2353,17 +2583,49 @@ chatPart((signal) => {
     const ticketsStatus = ticketsDialog.querySelector('[data-tickets-status]');
     const retryButton = ticketsDialog.querySelector('[data-tickets-retry]');
     const ticketsRules = ticketsDialog.querySelector('[data-tickets-rules]');
-    let ticketsNeeded = null; // how many the file waiting to be sent needs, when that's why the popup is open
+    let ticketsNeeded = null; // how many the files waiting to be sent need, when that's why the popup is open
 
-    // An attachment deleted from the popup shows as deleted in the messages on the page too
+    // Like chatAttachmentsGoneHtml() in chat/index.php
+    function goneText(deleted, expired) {
+        const parts = [];
+        if (deleted > 0) parts.push(`${deleted === 1 ? 'Attachment' : `${deleted} attachments`} deleted`);
+        if (expired > 0) parts.push(`${expired === 1 ? 'Attachment' : `${expired} attachments`} expired`);
+        return parts.join(' · ');
+    }
+
+    // An attachment deleted from the popup shows as deleted in the messages on the page too: it's taken out of its
+    // message, which counts it on its line of gone ones, and is named after what's left of its attachments
     function markDeleted(attachmentId) {
         document.querySelectorAll(`[data-chat-messages] [href^="/chat/attachment?id=${attachmentId}&"]`).forEach((link) => {
             const message = link.closest('[data-message-id]');
-            const gone = document.createElement('p');
-            gone.className = 'chat-message-deleted chat-attachment-gone';
-            gone.textContent = 'Attachment deleted';
-            link.closest('.chat-attachment')?.replaceWith(gone);
-            message?.removeAttribute('data-message-attachment');
+            const box = link.closest('[data-attachments]');
+            const attachment = link.closest('.chat-attachment');
+            if (!message || !box || !attachment) return;
+            const group = attachment.parentElement; // the gallery or the file cards, or the box itself for one picture
+            attachment.remove();
+            if (group !== box && group.children.length === 0) group.remove();
+
+            let gone = box.querySelector('.chat-attachment-gone');
+            if (!gone) {
+                gone = element('p', 'chat-message-deleted chat-attachment-gone');
+                box.append(gone);
+            }
+            const deleted = Number(gone.dataset.attachmentsDeleted ?? 0) + 1;
+            const expired = Number(gone.dataset.attachmentsExpired ?? 0);
+            gone.dataset.attachmentsDeleted = deleted;
+            gone.dataset.attachmentsExpired = expired;
+            gone.textContent = goneText(deleted, expired);
+
+            const left = box.querySelectorAll('.chat-attachment');
+            if (left.length === 0) {
+                message.removeAttribute('data-message-attachment');
+                message.removeAttribute('data-message-attachments');
+            } else {
+                message.dataset.messageAttachments = left.length;
+                message.dataset.messageAttachment = left.length === 1
+                    ? left[0].dataset.attachmentName ?? left[0].querySelector('.chat-attachment-name')?.textContent ?? 'Attachment'
+                    : `${left.length} attachments`;
+            }
         });
     }
 
@@ -2373,61 +2635,44 @@ chatPart((signal) => {
         const free = Math.min(Math.max(ticketsFree, 0), ticketsTotal);
         ticketsMeter.classList.toggle('is-bar', ticketsTotal > 20);
         if (ticketsTotal > 20) {
-            const fill = document.createElement('span');
-            fill.className = 'chat-tickets-meter-fill';
+            const fill = element('span', 'chat-tickets-meter-fill');
             fill.style.transform = 'scaleX(' + free / ticketsTotal + ')';
             ticketsMeter.replaceChildren(fill);
             return;
         }
-        ticketsMeter.replaceChildren(...Array.from({ length: ticketsTotal }, (_, index) => {
-            const pip = document.createElement('span');
-            pip.className = 'chat-tickets-pip' + (index < free ? '' : ' is-used');
-            return pip;
-        }));
+        ticketsMeter.replaceChildren(...Array.from({ length: ticketsTotal }, (_, index) => (
+            element('span', 'chat-tickets-pip' + (index < free ? '' : ' is-used'))
+        )));
     }
 
     function renderTickets({ ticketsTotal, ticketsFree, attachments }) {
-        const freeCount = document.createElement('strong');
-        freeCount.textContent = ticketsFree;
+        const freeCount = element('strong', '', String(ticketsFree));
         ticketsCount.replaceChildren(freeCount, ` of ${ticketsTotal} tickets free`);
         ticketsCount.classList.toggle('is-empty', ticketsFree <= 0);
         renderTicketsMeter(ticketsTotal, ticketsFree);
         if (ticketsNeeded !== null) {
             const isEnough = ticketsFree >= ticketsNeeded;
             ticketsNeededText.textContent = isEnough
-                ? `You have enough free tickets now. Send it now sends your ${ticketsLabel(ticketsNeeded)} attachment.`
-                : `This attachment needs ${ticketsLabel(ticketsNeeded)}, but you only have ${ticketsFree} free. Delete some of your attachments below to make room.`;
+                ? `You have enough free tickets now. Send now sends your attachments (${ticketsLabel(ticketsNeeded)}).`
+                : `Your attachments need ${ticketsLabel(ticketsNeeded)} together, but you only have ${ticketsFree} free. Delete some of the ones you've sent below to make room, or take some out of this message.`;
             retryButton.disabled = !isEnough;
         }
 
         ticketsList.replaceChildren(...attachments.map((attachment) => {
-            const name = document.createElement('span');
-            name.className = 'chat-ticket-name';
-            name.textContent = attachment.name;
-
-            const info = document.createElement('span');
-            info.className = 'chat-ticket-info';
-            info.textContent = `In ${attachment.chat} · ${attachment.size} · until ${attachment.expires}`;
-
-            const text = document.createElement('span');
-            text.className = 'chat-ticket-text';
-            text.append(name, info);
+            const text = element('span', 'chat-ticket-text');
+            text.append(
+                element('span', 'chat-ticket-name', attachment.name),
+                element('span', 'chat-ticket-info', `In ${attachment.chat} · ${attachment.size} · until ${attachment.expires}`),
+            );
 
             // The ticket stub on the left: how many tickets it takes
-            const stub = document.createElement('span');
-            stub.className = 'chat-ticket-stub';
+            const stub = element('span', 'chat-ticket-stub');
             stub.setAttribute('aria-label', ticketsLabel(attachment.tickets));
-            const stubCount = document.createElement('strong');
-            stubCount.textContent = attachment.tickets;
-            const stubLabel = document.createElement('span');
-            stubLabel.textContent = attachment.tickets === 1 ? 'ticket' : 'tickets';
-            stub.append(stubCount, stubLabel);
+            stub.append(element('strong', '', String(attachment.tickets)), element('span', '', attachment.tickets === 1 ? 'ticket' : 'tickets'));
 
             // Asks once more on the button itself before it's gone for good
-            const remove = document.createElement('button');
+            const remove = element('button', 'chat-btn is-danger', 'Delete');
             remove.type = 'button';
-            remove.className = 'chat-btn is-danger';
-            remove.textContent = 'Delete';
             remove.setAttribute('aria-label', `Delete ${attachment.name}`);
             remove.addEventListener('click', () => {
                 if (!remove.dataset.confirm) {
@@ -2439,8 +2684,7 @@ chatPart((signal) => {
                 loadTickets(attachment.id);
             });
 
-            const item = document.createElement('li');
-            item.className = 'chat-ticket';
+            const item = element('li', 'chat-ticket');
             item.append(stub, text, remove);
             return item;
         }));
@@ -2466,7 +2710,7 @@ chatPart((signal) => {
         }
     }
 
-    // needed: how many tickets the waiting attachment needs, when it didn't have enough
+    // needed: how many tickets the waiting attachments need together, when there weren't enough
     function openTickets(needed = null) {
         ticketsNeeded = needed;
         ticketsTitle.textContent = needed === null ? 'Your attachments' : 'Not enough tickets';

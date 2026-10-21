@@ -3,6 +3,7 @@
 // otherPages/navUpdates.php: the newest message id in the user's chats (to ask after next time) and the unread
 // messages from others that came after the id the browser last asked about, leaving out the chats the user muted.
 // Only for users who turned notifications or the sound on in settings. Needs session.php (included first by every page anyway).
+require_once __DIR__ . '/chatAttachments.php'; // "Sent 3 attachments"
 require_once __DIR__ . '/chatFormat.php';
 require_once __DIR__ . '/userAvatar.php';
 require_once __DIR__ . '/userSettings.php';
@@ -41,7 +42,8 @@ function hbHubMessageNotifications(PDO $db, int $userId, array $userSettings, mi
         // Newest first for the LIMIT, turned around below. Message requests (not accepted yet) are included too,
         // notices about a change in the chat (messageEvent, like a new group name) aren't. Neither are ghosts: messages
         // from a ghost-banned user, and chats the user only has a ghost invite to (assets/php/chat.php), which they can't see.
-        $statement = $db->prepare('SELECT m.messageId, m.chatId, m.userId, m.messageContent, c.chatType, c.chatName,
+        $statement = $db->prepare('SELECT m.messageId, m.chatId, m.userId, m.messageContent, ' . hbHubChatAttachmentsCountSql('m') . ' AS attachmentCount,
+                c.chatType, c.chatName,
                 cm.userAcknowledgedJoin, u.userName, u.userAvatarAttachmentId
             FROM `HBHub-Messages` m
             JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = ? AND cm.memberIsGhost = 0
@@ -66,7 +68,8 @@ function hbHubMessageNotifications(PDO $db, int $userId, array $userSettings, mi
 
             $content = $message['messageContent'];
             if ($content === null) {
-                $body = 'Sent an attachment';
+                $attachments = (int) $message['attachmentCount'];
+                $body = $attachments > 1 ? 'Sent ' . $attachments . ' attachments' : 'Sent an attachment';
             } elseif (preg_match('~^https://media\.giphy\.com/media/[A-Za-z0-9]{1,64}/giphy\.gif$~', $content) === 1) {
                 $body = 'Sent a GIF'; // a GIF message is just its address, see chatGifUrl() in chat/index.php
             } else {

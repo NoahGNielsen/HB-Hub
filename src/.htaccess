@@ -26,7 +26,8 @@ AddType font/woff2 .woff2
 
 # ==============================================================================
 # PHP LIMITS
-# Chat attachments can be up to 50 MB (all 10 tickets, assets/php/chatAttachments.php), plus the rest of the form.
+# Chat attachments can be up to 50 MB in one message, all files together (all 10 tickets,
+# assets/php/chatAttachments.php), plus the rest of the form. Up to 10 files go in one, under PHP's max_file_uploads (20).
 # Simply.com reads these from .htaccess.
 # ==============================================================================
 php_value upload_max_filesize 51M

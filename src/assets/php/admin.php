@@ -200,14 +200,15 @@ function adminChatTitleSql(?string $exceptColumn = null): string
  * A ghost (sent while ghost banned, assets/php/chat.php) gets a badge, and an edit only its sender sees
  * (messageGhostContent) is shown below the text everyone else sees.
  *
- * @param array{messageContent: ?string, attachmentId: mixed, messageIsGhost: mixed, messageGhostContent: ?string} $message
+ * @param array{messageContent: ?string, attachmentCount: mixed, messageIsGhost: mixed, messageGhostContent: ?string} $message
  */
 function adminMessageHtml(array $message): string
 {
     $ghostBadge = $message['messageIsGhost'] ? '<span class="settings-status admin-status-ghost" title="Sent while ghost banned">Only the sender sees this</span> ' : '';
     $content = $message['messageContent'];
     if ($content === null) {
-        return $ghostBadge . '<span class="admin-muted">' . ($message['attachmentId'] !== null ? 'Attachment' : 'Empty') . '</span>';
+        $attachments = (int) $message['attachmentCount'];
+        return $ghostBadge . '<span class="admin-muted">' . ($attachments > 0 ? hbHubChatAttachmentsLabel($attachments) : 'Empty') . '</span>';
     }
     if (preg_match('~^https://media\.giphy\.com/media/[A-Za-z0-9]{1,64}/giphy\.gif$~', $content) === 1) {
         return $ghostBadge . '<span class="admin-muted">GIF</span> <span class="admin-small">' . htmlspecialchars($content) . '</span>';

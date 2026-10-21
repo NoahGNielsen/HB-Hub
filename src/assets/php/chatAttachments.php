@@ -1,10 +1,12 @@
 <?php
-// Chat attachments: files and pictures sent in a message. The chat page (chat/index.php) takes the upload,
-// chat/attachment.php sends a file back, and chat/attachments.php lists the user's own and deletes them.
+// Chat attachments: files and pictures sent in a message, up to HBHUB_CHAT_ATTACHMENT_FILES_MAX in one. The chat page
+// (chat/index.php) takes the upload, chat/attachment.php sends a file back, and chat/attachments.php lists the user's
+// own and deletes them.
 //
 // The server's disk is small, so attachments are paid for with tickets. Everyone has HBHUB_CHAT_ATTACHMENT_TICKETS
 // (site admins can add or take away some for one user in the admin panel), and each started HBHUB_CHAT_ATTACHMENT_TICKET_BYTES of a file takes one
-// (as it was sent, so zipping it here doesn't make it cheaper - it matches the size people see).
+// (as it was sent, so zipping it here doesn't make it cheaper - it matches the size people see). Every file in a
+// message pays for itself, so three small files take three tickets.
 // A file keeps its tickets for 90 days, or only 3 when it takes more than 5 of them, and then it expires: the file
 // is deleted and the tickets are free again. Deleting the message (or just the attachment) frees them straight away.
 // Expired files are swept up by hbHubChatAttachmentsSweep(), which the chat page and the upload call, and which the
@@ -17,12 +19,14 @@
 //
 // Files live on disk, not in the database: attachments_path in the config, by default a folder next to the config
 // file, above the web root. Each one is named after its random attachmentKey, so the name never says what's in it.
-// The rows are in HBHub-ChatAttachments, and a message points at its attachment with attachmentId.
+// The rows are in HBHub-ChatAttachments, and each one points at the message it was sent in with messageId.
 require_once __DIR__ . '/session.php';
 
 const HBHUB_CHAT_ATTACHMENT_TICKETS = 10; // per user
 const HBHUB_CHAT_ATTACHMENT_TICKET_BYTES = 5 * 1024 * 1024;
-const HBHUB_CHAT_ATTACHMENT_MAX_BYTES = HBHUB_CHAT_ATTACHMENT_TICKETS * HBHUB_CHAT_ATTACHMENT_TICKET_BYTES; // as uploaded, all tickets
+// All the files in one message together, as uploaded: all tickets (post_max_size in src/.htaccess fits it)
+const HBHUB_CHAT_ATTACHMENT_MAX_BYTES = HBHUB_CHAT_ATTACHMENT_TICKETS * HBHUB_CHAT_ATTACHMENT_TICKET_BYTES;
+const HBHUB_CHAT_ATTACHMENT_FILES_MAX = 10; // files in one message (PHP's max_file_uploads is 20)
 const HBHUB_CHAT_ATTACHMENT_DAYS = 90;
 const HBHUB_CHAT_ATTACHMENT_BIG_TICKETS = 5; // a file taking more tickets than this...
 const HBHUB_CHAT_ATTACHMENT_BIG_DAYS = 3; // ...only keeps them for this many days
@@ -159,7 +163,7 @@ function hbHubChatAttachmentTicketsFree(PDO $db, int $userId): int
 function hbHubChatAttachmentsRemove(PDO $db, string $condition, array $params, int $status = HBHUB_CHAT_ATTACHMENT_DELETED): int
 {
     $statement = $db->prepare('SELECT a.attachmentId, a.attachmentKey FROM `HBHub-ChatAttachments` a
-        LEFT JOIN `HBHub-Messages` m ON m.attachmentId = a.attachmentId
+        LEFT JOIN `HBHub-Messages` m ON m.messageId = a.messageId
         WHERE a.attachmentStatus = ? AND (' . $condition . ')');
     $statement->execute([HBHUB_CHAT_ATTACHMENT_KEPT, ...$params]);
     $attachments = $statement->fetchAll();
@@ -216,6 +220,60 @@ function hbHubChatAttachmentImageType(string $path): ?string
     }
     $type = $image['mime'] === 'image/x-ms-bmp' ? 'image/bmp' : $image['mime'];
     return in_array($type, HBHUB_CHAT_ATTACHMENT_IMAGE_TYPES, true) ? $type : null;
+}
+
+/**
+ * SQL for how many attachments the message $alias (an `HBHub-Messages` alias, written in the code) was sent with,
+ * gone ones included, for lists that only name them ("3 attachments") rather than show them.
+ */
+function hbHubChatAttachmentsCountSql(string $alias): string
+{
+    return '(SELECT COUNT(*) FROM `HBHub-ChatAttachments` ca WHERE ca.messageId = ' . $alias . '.messageId)';
+}
+
+/**
+ * What a message's attachments are called where they're only named: "Attachment", or "3 attachments".
+ */
+function hbHubChatAttachmentsLabel(int $count): string
+{
+    return $count === 1 ? 'Attachment' : $count . ' attachments';
+}
+
+/**
+ * The files of one upload ($_FILES['files'], sent as files[]) as a list, one $_FILES-style array each, in the order
+ * they were sent. Null when it isn't a list of files at all. A single file sent without the [] counts as one too.
+ *
+ * @return ?list<array{name: mixed, tmp_name: mixed, error: mixed}>
+ */
+function hbHubChatAttachmentUploads(mixed $files): ?array
+{
+    if (!is_array($files) || !isset($files['error'])) {
+        return null;
+    }
+    if (!is_array($files['error'])) {
+        return [$files];
+    }
+    $uploads = [];
+    foreach (array_keys($files['error']) as $index) {
+        $uploads[] = [
+            'name' => $files['name'][$index] ?? null,
+            'tmp_name' => $files['tmp_name'][$index] ?? null,
+            'error' => $files['error'][$index],
+        ];
+    }
+    return $uploads;
+}
+
+/**
+ * Deletes the files of uploads that were got ready (hbHubChatAttachmentPrepare()) but are never saved after all.
+ *
+ * @param list<array{path: string}> $prepared
+ */
+function hbHubChatAttachmentsDiscard(array $prepared): void
+{
+    foreach ($prepared as $attachment) {
+        @unlink($attachment['path']);
+    }
 }
 
 /**

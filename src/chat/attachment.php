@@ -19,7 +19,7 @@ if (!is_string($attachmentId) || !ctype_digit($attachmentId) || strlen($attachme
 $db = hbHubDatabase();
 $statement = $db->prepare('SELECT a.attachmentId, a.attachmentKey, a.attachmentName, a.attachmentType, a.attachmentKind, a.attachmentSize
     FROM `HBHub-ChatAttachments` a
-    JOIN `HBHub-Messages` m ON m.attachmentId = a.attachmentId AND m.messageDeletedTimestamp IS NULL
+    JOIN `HBHub-Messages` m ON m.messageId = a.messageId AND m.messageDeletedTimestamp IS NULL
     JOIN `HBHub-Chats` c ON c.chatId = m.chatId AND c.chatStatus = ?
     JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = ? AND cm.userAcknowledgedJoin = 1
     WHERE a.attachmentId = ? AND a.attachmentStatus = ? AND a.attachmentExpiresTimestamp > NOW()

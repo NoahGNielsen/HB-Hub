@@ -131,7 +131,7 @@ function chatMessage(PDO $db, int $userId, int $chatId, mixed $messageId): ?arra
 /**
  * Messages in the chat, oldest at the top, each with the message it replies to (r) if any.
  * Notices are in there too, with the name of who they're about (eventUserName).
- * A message with an attachment has its attachment* columns, and attachmentIsLive while the file can still be fetched.
+ * Each one has its attachments (attachments, from chatAttachments()).
  * Without $afterId it's the newest $limit ones (before $beforeId, if given, for scrolling up),
  * with only $afterId the first ones after that message (the ones polling hasn't shown yet),
  * and with both the newest ones between them (loading back to the message a reply quote answers).
@@ -142,19 +142,16 @@ function chatMessage(PDO $db, int $userId, int $chatId, mixed $messageId): ?arra
 function chatMessages(PDO $db, int $userId, int $chatId, int $limit, ?int $afterId = null, ?int $beforeId = null): array
 {
     $statement = $db->prepare('SELECT * FROM (
-            SELECT m.messageId, m.userId, ' . chatGhostContentSql('m', $userId) . ' AS messageContent, m.attachmentId, m.messageSentTimestamp,
+            SELECT m.messageId, m.userId, ' . chatGhostContentSql('m', $userId) . ' AS messageContent, m.messageSentTimestamp,
                 m.messageDeletedTimestamp, m.messageDeletedByAdmin, m.messageReplyToId,
                 m.messageIsEdited OR (m.userId = ' . $userId . ' AND m.messageGhostContent IS NOT NULL) AS messageIsEdited,
                 m.messageEvent, m.messageEventType, m.messageEventUserId, COALESCE(ecm.memberNickname, eu.userName) AS eventUserName,
                 COALESCE(cm.memberNickname, u.userName) AS senderName,
                 u.userAvatarAttachmentId AS senderAvatarId, u.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' AS senderBanned,
                 r.messageId AS replyId, r.userId AS replyUserId, ' . chatGhostContentSql('r', $userId) . ' AS replyContent,
-                r.messageDeletedTimestamp AS replyDeletedTimestamp, r.messageDeletedByAdmin AS replyDeletedByAdmin, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName,
-                a.attachmentName, a.attachmentType, a.attachmentSize, a.attachmentStatus, a.attachmentExpiresTimestamp,
-                a.attachmentStatus = ' . HBHUB_CHAT_ATTACHMENT_KEPT . ' AND a.attachmentExpiresTimestamp > NOW() AS attachmentIsLive
+                r.messageDeletedTimestamp AS replyDeletedTimestamp, r.messageDeletedByAdmin AS replyDeletedByAdmin, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName
             FROM `HBHub-Messages` m
             JOIN `HBHub-Users` u ON u.userId = m.userId
-            LEFT JOIN `HBHub-ChatAttachments` a ON a.attachmentId = m.attachmentId
             LEFT JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = m.userId
             LEFT JOIN `HBHub-Messages` r ON r.messageId = m.messageReplyToId AND r.chatId = m.chatId
             LEFT JOIN `HBHub-Users` ru ON ru.userId = r.userId
@@ -170,12 +167,40 @@ function chatMessages(PDO $db, int $userId, int $chatId, int $limit, ?int $after
         return [];
     }
 
-    $reactions = chatReactions($db, $userId, $chatId, (int) $messages[0]['messageId'], (int) end($messages)['messageId']);
+    $fromId = (int) $messages[0]['messageId'];
+    $toId = (int) end($messages)['messageId'];
+    $reactions = chatReactions($db, $userId, $chatId, $fromId, $toId);
+    $attachments = chatAttachments($db, $chatId, $fromId, $toId);
     foreach ($messages as &$message) {
         $message['reactions'] = $reactions[(int) $message['messageId']] ?? [];
+        $message['attachments'] = $attachments[(int) $message['messageId']] ?? [];
     }
     unset($message);
     return $messages;
+}
+
+/**
+ * The attachments of the chat's messages from $fromId to $toId (both included), as [messageId => [attachment, ...]],
+ * each message's in the order they were sent. Gone ones are there too (to say they were deleted or expired), and
+ * attachmentIsLive says whether the file can still be fetched. Whose message it is was already checked by chatMessages().
+ *
+ * @return array<int, list<array{attachmentId: int, attachmentName: ?string, attachmentType: string, attachmentSize: int,
+ *     attachmentStatus: int, attachmentExpiresTimestamp: string, attachmentIsLive: int}>>
+ */
+function chatAttachments(PDO $db, int $chatId, int $fromId, int $toId): array
+{
+    $statement = $db->prepare('SELECT a.messageId, a.attachmentId, a.attachmentName, a.attachmentType, a.attachmentSize,
+            a.attachmentStatus, a.attachmentExpiresTimestamp,
+            a.attachmentStatus = ? AND a.attachmentExpiresTimestamp > NOW() AS attachmentIsLive
+        FROM `HBHub-ChatAttachments` a
+        WHERE a.chatId = ? AND a.messageId BETWEEN ? AND ?
+        ORDER BY a.attachmentId');
+    $statement->execute([HBHUB_CHAT_ATTACHMENT_KEPT, $chatId, $fromId, $toId]);
+    $attachments = [];
+    foreach ($statement->fetchAll() as $attachment) {
+        $attachments[(int) $attachment['messageId']][] = $attachment;
+    }
+    return $attachments;
 }
 
 /**
@@ -1031,12 +1056,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST === [] && $_FILES === [] && 
     chatUploadAnswer(413, ['error' => 'tooBig']);
 }
 
-// Sending a file or picture (chat.js, with fetch - answered as JSON): one message with the attachment and whatever was
-// typed in the box, as a reply if there is one. Pictures come already turned into JPEG XL by the browser, unless the user
-// kept the original, and anything else is zipped here (assets/php/chatAttachments.php).
-// The user's tickets pay for it. Without enough of them free, the answer says how many it needs, and chat.js opens the
-// attachments popup so some can be deleted first. While all attachments together take the most they may, or uploads are
-// turned off in the config, nobody can send one.
+// Sending files and pictures (chat.js, with XMLHttpRequest - answered as JSON): one message with up to
+// HBHUB_CHAT_ATTACHMENT_FILES_MAX attachments (files[], in the order they're shown) and whatever was typed in the box,
+// as a reply if there is one. converted[] says for each one whether the browser turned it into JPEG XL (unless the user
+// kept the original), and anything that isn't a picture is zipped here (assets/php/chatAttachments.php).
+// Together they can be HBHUB_CHAT_ATTACHMENT_MAX_BYTES as sent. The user's tickets pay for each file. Without enough of
+// them free, the answer says how many they need together, and chat.js opens the attachments popup so some can be
+// deleted first. All of them go, or none do: an error about one file says which (file, its place in files[]).
+// While all attachments together take the most they may, or uploads are turned off in the config, nobody can send any.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upload') {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
     $message = is_string($_POST['message'] ?? null) ? trim($_POST['message']) : '';
@@ -1062,11 +1089,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
         chatUploadAnswer($blocked === 'storageFull' ? 507 : 403, ['error' => $blocked]);
     }
 
-    $prepared = hbHubChatAttachmentPrepare($_FILES['file'] ?? null, ($_POST['converted'] ?? null) === '1');
-    if (is_string($prepared)) {
-        chatUploadAnswer(match ($prepared) { 'tooBig' => 413, 'storageError' => 500, default => 400 }, ['error' => $prepared]);
+    $uploads = hbHubChatAttachmentUploads($_FILES['files'] ?? null);
+    if ($uploads === null || $uploads === []) {
+        chatUploadAnswer(400, ['error' => 'uploadFailed']);
     }
-    $tickets = hbHubChatAttachmentTickets($prepared['size']);
+    if (count($uploads) > HBHUB_CHAT_ATTACHMENT_FILES_MAX) {
+        chatUploadAnswer(400, ['error' => 'tooManyFiles']);
+    }
+
+    // Each file is got ready in turn. When one can't be, the ones before it are thrown away again.
+    $converted = is_array($_POST['converted'] ?? null) ? $_POST['converted'] : [];
+    $prepared = [];
+    $tickets = 0;
+    $sentBytes = 0;
+    $storedBytes = 0;
+    foreach ($uploads as $index => $upload) {
+        $attachment = hbHubChatAttachmentPrepare($upload, ($converted[$index] ?? null) === '1');
+        if (is_string($attachment)) {
+            hbHubChatAttachmentsDiscard($prepared);
+            chatUploadAnswer(match ($attachment) { 'tooBig' => 413, 'storageError' => 500, default => 400 }, ['error' => $attachment, 'file' => $index]);
+        }
+        $attachment['tickets'] = hbHubChatAttachmentTickets($attachment['size']);
+        $prepared[] = $attachment;
+        $tickets += $attachment['tickets'];
+        $sentBytes += $attachment['size'];
+        $storedBytes += $attachment['storedSize'];
+    }
+    if ($sentBytes > HBHUB_CHAT_ATTACHMENT_MAX_BYTES) {
+        hbHubChatAttachmentsDiscard($prepared);
+        chatUploadAnswer(413, ['error' => 'tooBigTogether']);
+    }
 
     // Like a normal message, only one in this chat that isn't deleted can be replied to
     $replyTo = chatMessage($db, $userId, (int) $chat['chatId'], $_POST['reply'] ?? null);
@@ -1075,17 +1127,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
     // One upload at a time across the site, so two can't both squeeze into the user's last tickets or the last free space.
     // Lock names are shared by everyone on the MySQL server, so it's named after the database too.
     if ((int) $db->query('SELECT GET_LOCK(CONCAT(DATABASE(), \'.hbHubChatAttachments\'), 30)')->fetchColumn() !== 1) {
-        @unlink($prepared['path']);
+        hbHubChatAttachmentsDiscard($prepared);
         chatUploadAnswer(503, ['error' => 'busy']);
     }
     try {
         $ticketsFree = hbHubChatAttachmentTicketsFree($db, $userId);
         $error = null;
-        if ($tickets > HBHUB_CHAT_ATTACHMENT_TICKETS) {
-            $error = [413, ['error' => 'tooBig']];
-        } elseif ($tickets > $ticketsFree) {
+        if ($tickets > $ticketsFree) {
             $error = [409, ['error' => 'notEnoughTickets', 'ticketsNeeded' => $tickets, 'ticketsFree' => $ticketsFree]];
-        } elseif (hbHubChatAttachmentsTotalBytes($db) + $prepared['storedSize'] > hbHubChatAttachmentsMaxTotal()) {
+        } elseif (hbHubChatAttachmentsTotalBytes($db) + $storedBytes > hbHubChatAttachmentsMaxTotal()) {
             $error = [507, ['error' => 'storageFull']];
         } else {
             $db->beginTransaction();
@@ -1093,16 +1143,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
                 $db->rollBack();
                 $error = [429, ['error' => 'tooFast']];
             } else {
-                $db->prepare('INSERT INTO `HBHub-ChatAttachments` (userId, chatId, attachmentKey, attachmentName, attachmentType,
-                        attachmentKind, attachmentSize, attachmentStoredSize, attachmentTickets, attachmentExpiresTimestamp)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW() + INTERVAL ? DAY)')
-                    ->execute([$userId, $chat['chatId'], $prepared['key'], $prepared['name'], $prepared['type'], $prepared['kind'],
-                        $prepared['size'], $prepared['storedSize'], $tickets, hbHubChatAttachmentDays($tickets)]);
-                $attachmentId = (int) $db->lastInsertId();
-                $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, attachmentId, messageReplyToId, messageIsGhost)
-                    VALUES (?, ?, ?, ?, ?, ?)')
-                    ->execute([$userId, $chat['chatId'], $message !== '' ? $message : null, $attachmentId, $replyToId, (int) $chatIsGhost]);
+                $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageReplyToId, messageIsGhost)
+                    VALUES (?, ?, ?, ?, ?)')
+                    ->execute([$userId, $chat['chatId'], $message !== '' ? $message : null, $replyToId, (int) $chatIsGhost]);
                 $messageId = (int) $db->lastInsertId();
+                // In the order they were sent, which is the order they're shown in (by attachmentId)
+                $insert = $db->prepare('INSERT INTO `HBHub-ChatAttachments` (userId, chatId, messageId, attachmentKey, attachmentName,
+                        attachmentType, attachmentKind, attachmentSize, attachmentStoredSize, attachmentTickets, attachmentExpiresTimestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW() + INTERVAL ? DAY)');
+                foreach ($prepared as $attachment) {
+                    $insert->execute([$userId, $chat['chatId'], $messageId, $attachment['key'], $attachment['name'], $attachment['type'],
+                        $attachment['kind'], $attachment['size'], $attachment['storedSize'], $attachment['tickets'],
+                        hbHubChatAttachmentDays($attachment['tickets'])]);
+                }
                 if (!$chatIsGhost) { // a ghost doesn't move the chat up anyone's list
                     $db->prepare('UPDATE `HBHub-Chats` SET lastMessageTimestamp = NOW() WHERE chatId = ?')
                         ->execute([$chat['chatId']]);
@@ -1114,14 +1167,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
         if ($db->inTransaction()) {
             $db->rollBack();
         }
-        @unlink($prepared['path']);
+        hbHubChatAttachmentsDiscard($prepared);
         throw $e;
     } finally {
         $db->query('SELECT RELEASE_LOCK(CONCAT(DATABASE(), \'.hbHubChatAttachments\'))')->fetchColumn();
     }
 
     if ($error !== null) {
-        @unlink($prepared['path']);
+        hbHubChatAttachmentsDiscard($prepared);
         chatUploadAnswer(...$error);
     }
     // A new message brings the chat back for everyone who hid it, and the text with the file can @mention too.
@@ -1348,7 +1401,9 @@ $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAt
             WHERE om.chatId = c.chatId AND om.userId <> ?' . ($chatIsGhost ? '' : ' AND om.memberIsGhost = 0') . '
         )) AS chatTitle,
         (
-            SELECT COALESCE(' . chatGhostContentSql('m', $userId) . ', IF(m.attachmentId IS NULL, NULL, \'Attachment\')) FROM `HBHub-Messages` m
+            SELECT COALESCE(' . chatGhostContentSql('m', $userId) . ', CASE ' . hbHubChatAttachmentsCountSql('m') . '
+                    WHEN 0 THEN NULL WHEN 1 THEN \'Attachment\' ELSE CONCAT(' . hbHubChatAttachmentsCountSql('m') . ', \' attachments\') END)
+                FROM `HBHub-Messages` m
             WHERE m.chatId = c.chatId AND m.messageDeletedTimestamp IS NULL AND m.messageEvent = 0
                 AND ' . chatGhostVisibleSql('m', 'messageIsGhost', $userId) . '
             ORDER BY m.messageId DESC LIMIT 1
@@ -1698,44 +1753,104 @@ function chatNoticeItem(array $openChat, int $userId, array $message): void
 }
 
 /**
- * A message's attachment, above its text: a picture shown at 200px tall with its name below (which downloads it),
- * or any other file as a card that downloads it. Once its file is gone, just that it was deleted or expired.
- * A JPEG XL picture has data-attachment-jxl, so chat.js can draw it itself in browsers that can't show JPEG XL.
- * Clicking a picture opens it in the picture viewer (chat.js), whose Info shows its data-attachment-type and when it
- * expires (data-attachment-expires, Unix seconds).
+ * What the little document on a file card says: the file's extension in capitals ("PDF", "DOCX"), or FILE without one.
+ * chat.js works it out the same way for files waiting to be sent.
  */
-function chatAttachmentHtml(array $message): string
+function chatAttachmentExtension(string $name): string
 {
-    if (!$message['attachmentIsLive']) {
-        $label = (int) $message['attachmentStatus'] === HBHUB_CHAT_ATTACHMENT_DELETED ? 'Attachment deleted' : 'Attachment expired';
-        return '<p class="chat-message-deleted chat-attachment-gone">' . $label . '</p>';
+    $extension = strtoupper((string) pathinfo($name, PATHINFO_EXTENSION));
+    return preg_match('~^[A-Z0-9]{1,5}$~', $extension) === 1 ? $extension : 'FILE';
+}
+
+/**
+ * The gone ones' line ("Attachment deleted", "2 attachments expired"), or '' when none are gone.
+ * chat.js writes the same when one is deleted from the Your attachments popup (data-attachments-deleted/-expired).
+ */
+function chatAttachmentsGoneHtml(int $deleted, int $expired): string
+{
+    $parts = [];
+    if ($deleted > 0) {
+        $parts[] = ($deleted === 1 ? 'Attachment' : $deleted . ' attachments') . ' deleted';
+    }
+    if ($expired > 0) {
+        $parts[] = ($expired === 1 ? 'Attachment' : $expired . ' attachments') . ' expired';
+    }
+    return $parts === [] ? '' : '<p class="chat-message-deleted chat-attachment-gone" data-attachments-deleted="' . $deleted . '"'
+        . ' data-attachments-expired="' . $expired . '">' . implode(' &middot; ', $parts) . '</p>';
+}
+
+/**
+ * A message's attachments, above its text (data-attachments): first its pictures, then its other files, then one line
+ * for the ones whose file is gone (deleted or expired).
+ * One picture is shown 200px tall with its name below (which downloads it). Several go in a gallery
+ * (chat-attachment-gallery) of square tiles, two or three to a row, without names - the picture viewer shows each one's.
+ * Any other file is a card with its extension on a little document, which downloads it.
+ * A JPEG XL picture has data-attachment-jxl, so chat.js can draw it itself in browsers that can't show JPEG XL.
+ * Clicking a picture opens it in the picture viewer (chat.js), which goes through the message's pictures, and whose
+ * Info shows each one's data-attachment-name, -size, -type and when it expires (data-attachment-expires, Unix seconds).
+ * chat.js builds the same for the message shown while it's being sent (showSending()).
+ *
+ * @param list<array> $attachments from chatAttachments()
+ */
+function chatAttachmentsHtml(array $attachments): string
+{
+    $pictures = [];
+    $files = [];
+    $deleted = 0;
+    $expired = 0;
+    foreach ($attachments as $attachment) {
+        if (!$attachment['attachmentIsLive']) {
+            if ((int) $attachment['attachmentStatus'] === HBHUB_CHAT_ATTACHMENT_DELETED) {
+                $deleted++;
+            } else {
+                $expired++;
+            }
+            continue;
+        }
+
+        $url = '/chat/attachment?id=' . (int) $attachment['attachmentId'];
+        $downloadUrl = $url . '&amp;download=1';
+        $name = htmlspecialchars($attachment['attachmentName']);
+        $size = hbHubChatAttachmentSizeLabel((int) $attachment['attachmentSize']);
+        if (in_array($attachment['attachmentType'], HBHUB_CHAT_ATTACHMENT_IMAGE_TYPES, true)) {
+            $pictures[] = '<figure class="chat-attachment is-image" data-attachment-name="' . $name . '" data-attachment-size="' . $size . '"'
+                . ' data-attachment-download="' . $downloadUrl . '" data-attachment-type="' . htmlspecialchars($attachment['attachmentType']) . '"'
+                . ' data-attachment-expires="' . (int) strtotime($attachment['attachmentExpiresTimestamp']) . '">'
+                . '<img class="chat-attachment-image" src="' . $url . '" alt="' . $name . '" title="' . $name . '" height="200" loading="lazy"'
+                . ($attachment['attachmentType'] === 'image/jxl' ? ' data-attachment-jxl' : '') . '>'
+                . '<figcaption class="chat-attachment-caption">'
+                . '<a class="chat-attachment-download" href="' . $downloadUrl . '" download="' . $name . '" title="Download">' . $name . '</a>'
+                . '<span class="chat-attachment-size">' . $size . '</span></figcaption>'
+                . '</figure>';
+            continue;
+        }
+        $files[] = '<a class="chat-attachment is-file" href="' . $downloadUrl . '" download="' . $name . '" title="Download ' . $name . '">'
+            . '<span class="chat-attachment-ext" aria-hidden="true">' . chatAttachmentExtension($attachment['attachmentName']) . '</span>'
+            . '<span class="chat-attachment-text"><span class="chat-attachment-name">' . $name . '</span>'
+            . '<span class="chat-attachment-size">' . $size . '</span></span>'
+            . '<span class="chat-attachment-save" aria-hidden="true"></span>'
+            . '</a>';
     }
 
-    $url = '/chat/attachment?id=' . (int) $message['attachmentId'];
-    $downloadUrl = $url . '&amp;download=1';
-    $name = htmlspecialchars($message['attachmentName']);
-    $size = hbHubChatAttachmentSizeLabel((int) $message['attachmentSize']);
-    if (in_array($message['attachmentType'], HBHUB_CHAT_ATTACHMENT_IMAGE_TYPES, true)) {
-        return '<figure class="chat-attachment is-image" data-attachment-type="' . htmlspecialchars($message['attachmentType']) . '"'
-            . ' data-attachment-expires="' . (int) strtotime($message['attachmentExpiresTimestamp']) . '">'
-            . '<img class="chat-attachment-image" src="' . $url . '" alt="' . $name . '" height="200" loading="lazy"'
-            . ($message['attachmentType'] === 'image/jxl' ? ' data-attachment-jxl' : '') . '>'
-            . '<figcaption class="chat-attachment-caption">'
-            . '<a class="chat-attachment-download" href="' . $downloadUrl . '" download="' . $name . '" title="Download">' . $name . '</a>'
-            . '<span class="chat-attachment-size">' . $size . '</span></figcaption>'
-            . '</figure>';
+    $html = '';
+    if (count($pictures) === 1) {
+        $html .= $pictures[0];
+    } elseif ($pictures !== []) {
+        // Two to a row for 2 and 4, three for the rest, so no row is left with just one when it can be helped
+        $columns = in_array(count($pictures), [2, 4], true) ? 2 : 3;
+        $html .= '<div class="chat-attachment-gallery is-cols-' . $columns . '">' . implode('', $pictures) . '</div>';
     }
-    return '<a class="chat-attachment is-file" href="' . $downloadUrl . '" download="' . $name . '" title="Download">'
-        . '<img class="chat-attachment-icon" src="/assets/images/icons/addFile.svg" alt="">'
-        . '<span class="chat-attachment-text"><span class="chat-attachment-name">' . $name . '</span>'
-        . '<span class="chat-attachment-size">' . $size . ' &middot; Download</span></span>'
-        . '</a>';
+    if ($files !== []) {
+        $html .= '<div class="chat-attachment-files">' . implode('', $files) . '</div>';
+    }
+    return '<div class="chat-attachments" data-attachments>' . $html . chatAttachmentsGoneHtml($deleted, $expired) . '</div>';
 }
 
 /**
  * A message in the open chat, for the page and for polling.
  * Right-clicking it opens the message menu (chat.js), the data-message-* attributes say what it offers.
- * data-message-attachment is the name of its attachment while the file is still there, for the reply bar and Delete.
+ * data-message-attachment names its attachments whose file is still there (the name of one, or "3 attachments"), for the
+ * reply bar and Delete, and data-message-attachments is how many of them there are.
  * data-message-time is when it was sent (Unix seconds), for grouping messages sent close together (chat.js).
  */
 function chatMessageItem(array $openChat, int $userId, array $message): void
@@ -1748,7 +1863,9 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
     $isOwn = (int) $message['userId'] === $userId;
     $isDeleted = $message['messageDeletedTimestamp'] !== null;
     $gifId = $isDeleted ? null : chatGifId($message['messageContent']);
-    $hasAttachment = !$isDeleted && $message['attachmentId'] !== null;
+    $hasAttachment = !$isDeleted && $message['attachments'] !== [];
+    $liveAttachments = $hasAttachment ? array_values(array_filter($message['attachments'], fn (array $attachment): bool => (bool) $attachment['attachmentIsLive'])) : [];
+    $attachmentLabel = count($liveAttachments) === 1 ? $liveAttachments[0]['attachmentName'] : hbHubChatAttachmentsLabel(count($liveAttachments));
     // The text with its formatting and @mentions. One that mentions the user lights up (is-mention).
     $textHtml = !$isDeleted && $gifId === null && $message['messageContent'] !== null
         ? chatFormatHtml($message['messageContent'], $openChat['chatMentions'] ?? [])
@@ -1760,7 +1877,7 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
                             data-message-time="<?= (int) strtotime($message['messageSentTimestamp']) ?>"
                             data-message-sender="<?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['userId'], $message['senderName'])) ?>"<?=
                             $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $gifId !== null ? ' data-message-gif' : '' ?><?=
-                            $hasAttachment && $message['attachmentIsLive'] ? ' data-message-attachment="' . htmlspecialchars($message['attachmentName']) . '"' : '' ?>>
+                            $liveAttachments !== [] ? ' data-message-attachment="' . htmlspecialchars($attachmentLabel) . '" data-message-attachments="' . count($liveAttachments) . '"' : '' ?>>
                             <?php if (!$isOwn && (int) $openChat['chatType'] !== HBHUB_CHAT_TYPE_DM): ?>
                                 <?php if ($message['senderBanned']): ?>
                                     <span class="chat-message-sender"><?= chatUserAvatarHtml((int) $message['userId'], $message['senderName'], null, 'is-small') ?><?= htmlspecialchars($message['senderName']) ?></span>
@@ -1780,7 +1897,7 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
                                     <img class="chat-message-gif" src="https://media.giphy.com/media/<?= $gifId ?>/200.webp" alt="GIF"
                                          height="200" loading="lazy" referrerpolicy="no-referrer">
                                 <?php else: ?>
-                                    <?= $hasAttachment ? chatAttachmentHtml($message) : '' ?>
+                                    <?= $hasAttachment ? chatAttachmentsHtml($message['attachments']) : '' ?>
                                     <?php if ($textHtml !== null): ?>
                                         <!-- data-message-source is the text as it was typed, for Edit (chat.js) - only on the user's own -->
                                         <div class="chat-message-text" data-message-text<?= $isOwn ? ' data-message-source="' . htmlspecialchars($message['messageContent']) . '"' : ''
@@ -2000,9 +2117,18 @@ if ($isPoll) {
                     <?php endforeach; ?>
                 </ol>
 
-                <!-- data-attach-max-bytes and data-ticket-bytes are for chat.js to say how big a picked file is in tickets -->
+                <!-- Dropping files anywhere on the open chat attaches them (chat.js shows this over it while they're dragged in) -->
+                <?php if ($chatAttachBlocked === null): ?>
+                    <div class="chat-drop" hidden data-attach-drop>
+                        <span class="chat-drop-text"><strong>Drop to attach</strong>Up to <?= HBHUB_CHAT_ATTACHMENT_FILES_MAX ?> files in one message</span>
+                    </div>
+                <?php endif; ?>
+
+                <!-- data-attach-max-bytes (all files in a message together), data-attach-max-files and data-ticket-bytes are
+                     for chat.js to say how big the picked files are in tickets, and what fits in one message -->
                 <form class="chat-composer" action="/chat/" method="post"
-                      data-attach-max-bytes="<?= HBHUB_CHAT_ATTACHMENT_MAX_BYTES ?>" data-ticket-bytes="<?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES ?>">
+                      data-attach-max-bytes="<?= HBHUB_CHAT_ATTACHMENT_MAX_BYTES ?>" data-attach-max-files="<?= HBHUB_CHAT_ATTACHMENT_FILES_MAX ?>"
+                      data-ticket-bytes="<?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES ?>">
                     <input type="hidden" name="action" value="send">
                     <input type="hidden" name="chat" value="<?= $openChat['chatId'] ?>">
                     <!-- Set by Reply in the message menu (chat.js). autocomplete="off" so the browser doesn't bring it back after a refresh. -->
@@ -2014,23 +2140,27 @@ if ($isPoll) {
                         </span>
                         <button type="button" class="chat-new-close" aria-label="Cancel reply" data-reply-cancel>&times;</button>
                     </div>
-                    <!-- An attachment picked with File, waiting to be sent (chat.js): its name, how big it is in tickets, and for
-                         pictures the box to keep the original instead of turning it into JPEG XL (not ticked to begin with) -->
-                    <div class="chat-composer-attachment" hidden data-attach-bar>
-                        <img class="chat-attachment-icon" src="/assets/images/icons/addFile.svg" alt="">
-                        <span class="chat-composer-attachment-text">
-                            <strong class="chat-composer-attachment-name" data-attach-name></strong>
-                            <span class="chat-composer-attachment-status" role="status" data-attach-status></span>
-                            <label class="chat-composer-attachment-keep" hidden data-attach-keep-label>
-                                <input type="checkbox" data-attach-keep> Keep the original picture (don't convert it to JPEG XL)
+                    <!-- The attachments picked with Files (or pasted or dropped), waiting to be sent (chat.js): a row of tiles,
+                         each with a preview, its name, how big it is in tickets and a × to take it out, and a + tile to add
+                         more. Under them how much they come to, the box to keep pictures as they are instead of turning them
+                         into JPEG XL (not ticked to begin with, only there when a picture would be), and Remove all.
+                         The bar along the top fills up while they're on their way. -->
+                    <div class="chat-tray" hidden data-attach-tray>
+                        <div class="chat-tray-progress" hidden data-attach-progress><span class="chat-tray-progress-fill" data-attach-progress-fill></span></div>
+                        <ul class="chat-tray-list" aria-label="Attachments to send" data-attach-list></ul>
+                        <div class="chat-tray-footer">
+                            <span class="chat-tray-status" role="status" data-attach-status></span>
+                            <label class="chat-tray-keep" hidden data-attach-keep-label>
+                                <input type="checkbox" data-attach-keep> Keep original pictures
+                                <span class="chat-tray-keep-hint">(don't convert to JPEG XL)</span>
                             </label>
-                        </span>
-                        <button type="button" class="chat-new-close" aria-label="Remove attachment" data-attach-cancel>&times;</button>
+                            <button type="button" class="chat-tray-clear" data-attach-clear>Remove all</button>
+                        </div>
                     </div>
-                    <!-- No name, so it's never sent with the form itself: chat.js sends the file on its own -->
-                    <input type="file" class="chat-visually-hidden" tabindex="-1" aria-hidden="true" data-attach-input>
+                    <!-- No name, so it's never sent with the form itself: chat.js sends the files on their own -->
+                    <input type="file" class="chat-visually-hidden" tabindex="-1" aria-hidden="true" multiple data-attach-input>
                     <!-- Attach: a small popup above the button (chat.js). Your attachments (on top, with a line under it) opens
-                         the tickets popup, File picks something to send. File is greyed out while new attachments can't be sent.
+                         the tickets popup, Files picks some to send. Files is greyed out while new attachments can't be sent.
                          Voice message is coming soon. -->
                     <div class="chat-attach">
                         <button type="button" class="chat-icon-btn" aria-label="Attach" title="Attach"
@@ -2042,14 +2172,14 @@ if ($isPoll) {
                             <hr class="chat-menu-divider">
                             <?php if ($chatAttachBlocked === 'storageFull'): ?>
                                 <button type="button" role="menuitem" aria-disabled="true" title="HB Hub's storage is full. Attachments can be sent again once some expire or are deleted.">
-                                    File <span class="chat-menu-soon">Full</span>
+                                    Files <span class="chat-menu-soon">Full</span>
                                 </button>
                             <?php elseif ($chatAttachBlocked !== null): ?>
                                 <button type="button" role="menuitem" aria-disabled="true" title="Attachments are turned off for now">
-                                    File <span class="chat-menu-soon">Off</span>
+                                    Files <span class="chat-menu-soon">Off</span>
                                 </button>
                             <?php else: ?>
-                                <button type="button" role="menuitem" data-attach-file>File</button>
+                                <button type="button" role="menuitem" data-attach-file>Files</button>
                             <?php endif; ?>
                             <button type="button" role="menuitem" aria-disabled="true" title="Coming soon">
                                 Voice message <span class="chat-menu-soon">Soon</span>
@@ -2394,8 +2524,8 @@ if ($isPoll) {
             <?php endif; ?>
 
             <!-- Your attachments (chat.js): the attachments the user sent that still take tickets, from /chat/attachments,
-                 each with a Delete button. Opened from the Attach menu, and by itself when a file needs more tickets than
-                 are free - then it says how many, and Send it now sends the file once enough are free. -->
+                 each with a Delete button. Opened from the Attach menu, and by itself when the files waiting to be sent need
+                 more tickets than are free - then it says how many, and Send now sends them once enough are free. -->
             <dialog class="chat-dialog chat-tickets" aria-labelledby="chat-tickets-title">
                 <div class="chat-requests-body">
                     <header class="chat-new-header">
@@ -2435,7 +2565,7 @@ if ($isPoll) {
 
                     <footer class="chat-new-footer chat-dialog-footer">
                         <button type="button" class="chat-btn" data-dialog-close>Close</button>
-                        <button type="button" class="chat-new-btn" hidden disabled data-tickets-retry>Send it now</button>
+                        <button type="button" class="chat-new-btn" hidden disabled data-tickets-retry>Send now</button>
                     </footer>
                 </div>
             </dialog>
@@ -2648,10 +2778,13 @@ if ($isPoll) {
 
         <!-- Picture viewer (chat.js): clicking a picture in the open chat shows it big here. Along the top its name, zoom,
              Info (its type, size and who sent it, in the panel below), Download and ×. Clicking anywhere that isn't
-             the picture, a button or the Info panel closes it too. chat.js puts the picture in data-viewer-stage. -->
+             the picture, a button or the Info panel closes it too. chat.js puts the picture in data-viewer-stage.
+             A message with several pictures gets the arrows on each side (and the arrow keys) to go through them,
+             and which one of how many it is next to the name. -->
         <dialog class="chat-viewer" aria-labelledby="chat-viewer-name">
             <header class="chat-viewer-bar">
-                <h2 class="chat-viewer-name" id="chat-viewer-name" data-viewer-name></h2>
+                <h2 class="chat-viewer-name" id="chat-viewer-name"><span data-viewer-name></span>
+                    <span class="chat-viewer-count" hidden data-viewer-count></span></h2>
                 <div class="chat-viewer-zoom" role="group" aria-label="Zoom">
                     <button type="button" class="chat-viewer-btn is-icon" aria-label="Zoom out" title="Zoom out (-)" data-viewer-zoom-out>&minus;</button>
                     <span class="chat-viewer-zoom-level" title="How big it's shown, next to its real size" data-viewer-zoom-level></span>
@@ -2662,6 +2795,8 @@ if ($isPoll) {
                 <button type="button" class="chat-viewer-btn is-icon" aria-label="Close" title="Close (Esc)" autofocus data-viewer-close>&times;</button>
             </header>
             <div class="chat-viewer-stage" data-viewer-stage></div>
+            <button type="button" class="chat-viewer-nav is-prev" aria-label="Previous picture" title="Previous (←)" hidden data-viewer-prev>&lsaquo;</button>
+            <button type="button" class="chat-viewer-nav is-next" aria-label="Next picture" title="Next (→)" hidden data-viewer-next>&rsaquo;</button>
             <dl class="chat-viewer-info" id="chat-viewer-info" hidden data-viewer-info></dl>
         </dialog>
 

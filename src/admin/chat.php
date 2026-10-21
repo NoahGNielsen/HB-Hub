@@ -63,7 +63,7 @@ function adminChatMembers(PDO $db, int $chatId): array
 function adminChatMessages(PDO $db, int $chatId, ?int $beforeId, int $limit): array
 {
     $statement = $db->prepare('SELECT m.messageId, m.userId, u.userName AS senderName, u.userRole AS senderRole,
-            m.messageContent, m.attachmentId, m.messageSentTimestamp, m.messageDeletedTimestamp, m.messageDeletedByAdmin,
+            m.messageContent, ' . hbHubChatAttachmentsCountSql('m') . ' AS attachmentCount, m.messageSentTimestamp, m.messageDeletedTimestamp, m.messageDeletedByAdmin,
             m.messageIsEdited, m.messageIsGhost, m.messageGhostContent,
             m.messageEvent, m.messageEventType, m.messageEventUserId, eu.userName AS eventUserName
         FROM `HBHub-Messages` m

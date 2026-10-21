@@ -102,7 +102,7 @@ function adminChats(PDO $db, int $userId): array
 function adminMessages(PDO $db, int $userId, ?int $beforeId = null, ?int $limit = null): array
 {
     $statement = $db->prepare('SELECT m.messageId, m.chatId, c.chatType, c.chatStatus, ' . adminChatTitleSql('m.userId') . ' AS chatTitle,
-            m.messageContent, m.attachmentId, m.messageSentTimestamp, m.messageDeletedTimestamp, m.messageDeletedByAdmin,
+            m.messageContent, ' . hbHubChatAttachmentsCountSql('m') . ' AS attachmentCount, m.messageSentTimestamp, m.messageDeletedTimestamp, m.messageDeletedByAdmin,
             m.messageIsEdited, m.messageReplyToId, m.messageIsGhost, m.messageGhostContent
         FROM `HBHub-Messages` m JOIN `HBHub-Chats` c ON c.chatId = m.chatId
         WHERE m.userId = ? AND m.messageEvent = 0' . ($beforeId !== null ? ' AND m.messageId < ?' : '') . '

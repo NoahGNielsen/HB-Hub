@@ -74,6 +74,7 @@ body:has(> .chat) {
 
 .chat-sidebar,
 .chat-window {
+  position: relative; /* for "Drop to attach" over it */
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -693,6 +694,13 @@ body:has(> .chat) {
   padding: 4px 8px;
 }
 
+/* A message's attachments (chatAttachmentsHtml in chat/index.php): its pictures, its file cards, then the gone ones' line */
+.chat-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .chat-attachment {
   margin: 0;
 }
@@ -736,13 +744,56 @@ body:has(> .chat) {
   opacity: 0.75;
 }
 
-/* Any other file: a card that downloads it */
+/* Several pictures: square tiles, two or three to a row, the whole gallery rounded like one picture. Their names are
+   in the picture viewer (and when pointed at), not under each one. A JPEG XL <canvas> fills its tile the same way. */
+.chat-attachment-gallery {
+  display: grid;
+  gap: 3px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.chat-attachment-gallery.is-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 150px));
+}
+
+.chat-attachment-gallery.is-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 120px));
+}
+
+.chat-attachment-gallery .chat-attachment-image {
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  aspect-ratio: 1;
+  border-radius: 0;
+  object-fit: cover;
+  transition: filter 0.15s ease;
+}
+
+.chat-message[data-message-id] .chat-attachment-gallery .chat-attachment-image:hover {
+  filter: brightness(1.08);
+}
+
+.chat-attachment-gallery .chat-attachment-caption {
+  display: none;
+}
+
+/* Other files: a card each, one under the other, that downloads it */
+.chat-attachment-files {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .chat-attachment.is-file {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 200px;
+  min-width: 220px;
+  max-width: 340px;
   padding: 8px 10px;
+  box-sizing: border-box;
   border-radius: 10px;
   background: color-mix(in srgb, var(--text) 6%, transparent);
   color: inherit;
@@ -757,16 +808,83 @@ body:has(> .chat) {
   background: color-mix(in srgb, var(--text) 11%, transparent);
 }
 
-.chat-attachment-icon {
+/* The little document with the file's extension on it, its top right corner folded over. The tray's tiles use it too. */
+.chat-attachment-ext {
   flex: none;
-  width: 32px;
-  height: 32px;
+  position: relative;
+  width: 34px;
+  height: 42px;
+  padding-bottom: 6px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 0 100%);
+}
+
+.chat-attachment-ext::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 11px;
+  height: 11px;
+  border-bottom-left-radius: 3px;
+  background: color-mix(in srgb, #fff 50%, transparent);
+}
+
+/* In the user's own (accent) bubbles it's white with accent writing instead */
+.chat-message.is-own .chat-attachment-ext {
+  background: #fff;
+  color: var(--accent);
+}
+
+.chat-message.is-own .chat-attachment-ext::before {
+  background: color-mix(in srgb, var(--accent) 35%, #fff);
 }
 
 .chat-attachment-text {
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* The download arrow at the end of a file card */
+.chat-attachment-save {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  font-weight: 700;
+}
+
+.chat-attachment-save::before {
+  content: "\2193";
+}
+
+.chat-message.is-own .chat-attachment-save {
+  background: color-mix(in srgb, #000 16%, transparent);
+}
+
+.chat-attachment.is-file:hover .chat-attachment-save {
+  background: var(--accent);
+  color: #fff;
+}
+
+.chat-message.is-own .chat-attachment.is-file:hover .chat-attachment-save {
+  background: #fff;
+  color: var(--accent);
 }
 
 .chat-attachment-name {
@@ -1256,60 +1374,321 @@ a.chat-message-reply:hover {
   flex-direction: column;
 }
 
-.chat-composer-reply .chat-new-close,
-.chat-composer-attachment .chat-new-close {
+.chat-composer-reply .chat-new-close {
   flex: none;
   width: 30px;
   height: 30px;
   font-size: 1.3rem;
 }
 
-/* An attachment waiting to be sent: a line of its own above the text box, like Replying to */
-.chat-composer-attachment {
+/* Attachments waiting to be sent (chat.js): a tray of its own above the text box, like Replying to. A row of tiles that
+   scrolls sideways when there are more than fit, then a line with what they come to, Keep original pictures and Remove
+   all. The bar along its top edge fills up while they're on their way. */
+.chat-tray {
   flex: 1 0 100%;
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 6px 6px 10px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 10px 8px;
   box-sizing: border-box;
-  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 12px;
   background: var(--background);
   font-size: 0.85rem;
 }
 
-.chat-composer-attachment-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.chat-tray[hidden],
+.chat-tray-progress[hidden],
+.chat-tray-add-item[hidden],
+.chat-tray-ticket[hidden],
+.chat-tray-keep[hidden] {
+  display: none;
 }
 
-.chat-composer-attachment-name {
+.chat-tray-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.chat-tray-progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s ease;
+}
+
+.chat-tray-list {
+  margin: 0;
+  padding: 0 0 4px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  list-style: none;
+}
+
+/* A tile: the preview with its ticket in the corner and × in the other, and the name and size under it */
+.chat-tray-item {
+  position: relative;
+  flex: none;
+  width: 112px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: chat-tray-in 0.15s ease;
+}
+
+.chat-tray-preview {
+  position: relative;
+  height: 84px;
+  margin-bottom: 4px;
+  display: grid;
+  place-items: center;
   overflow: hidden;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+
+.chat-tray-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Converting to JPEG XL (or still finding out what it is): a shine runs across it */
+.chat-tray-item.is-busy .chat-tray-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, #fff 30%, transparent) 50%, transparent 70%);
+  background-size: 250% 100%;
+  animation: chat-tray-shine 1.3s linear infinite;
+}
+
+.chat-tray-item.is-error .chat-tray-preview {
+  outline: 2px solid var(--chat-danger);
+  outline-offset: -2px;
+}
+
+.chat-tray-item.is-error .chat-tray-preview img {
+  opacity: 0.45;
+}
+
+/* How many tickets it takes, on a little ticket like the ones in the Your attachments popup */
+.chat-tray-ticket {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  min-width: 22px;
+  padding: 2px 7px;
+  box-sizing: border-box;
+  border-radius: 3px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+  -webkit-mask:
+    radial-gradient(circle at 0 50%, transparent 3px, #000 3.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 3px, #000 3.5px) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle at 0 50%, transparent 3px, #000 3.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 3px, #000 3.5px) right / 51% 100% no-repeat;
+}
+
+/* Over 5 tickets, so it's only kept for 3 days */
+.chat-tray-ticket.is-short {
+  background: #d9822b;
+}
+
+.chat-tray-name {
+  overflow: hidden;
+  font-size: 0.8rem;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.chat-composer-attachment-status {
-  opacity: 0.8;
+.chat-tray-info {
+  overflow: hidden;
+  font-size: 0.72rem;
+  opacity: 0.7;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.chat-composer-attachment-status.is-error {
+.chat-tray-item.is-error .chat-tray-info {
   color: var(--chat-danger);
+  font-weight: 700;
   opacity: 1;
 }
 
-.chat-composer-attachment-keep {
+.chat-tray-remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  padding: 0 0 2px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font: inherit;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-tray-remove:hover {
+  background: var(--chat-danger);
+}
+
+.chat-tray-remove:focus-visible,
+.chat-tray-add:focus-visible,
+.chat-tray-clear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Gone while they're on their way, as nothing can be taken back then */
+.chat-tray-remove:disabled {
+  display: none;
+}
+
+/* + after the last tile, the size of a preview */
+.chat-tray-add-item {
+  flex: none;
+}
+
+.chat-tray-add {
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  border: 2px dashed color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1.8rem;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.chat-tray-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  opacity: 1;
+}
+
+.chat-tray-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+
+.chat-tray-status {
+  flex: 1 1 220px;
+  min-width: 0;
+  opacity: 0.8;
+}
+
+.chat-tray-status.is-error {
+  color: var(--chat-danger);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.chat-tray-keep {
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
 }
 
-.chat-composer-attachment-keep input {
+.chat-tray-keep input {
   margin: 0;
   accent-color: var(--accent);
+}
+
+.chat-tray-keep-hint {
+  opacity: 0.6;
+}
+
+.chat-tray-clear {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.chat-tray-clear:hover {
+  color: var(--chat-danger);
+  opacity: 1;
+}
+
+.chat-tray-clear:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+@keyframes chat-tray-in {
+  from { opacity: 0; transform: scale(0.92); }
+}
+
+@keyframes chat-tray-shine {
+  from { background-position: 100% 0; }
+  to { background-position: -150% 0; }
+}
+
+/* Files dragged over the open chat (chat.js): "Drop to attach" covers it, letting the drop through to the chat below */
+.chat-drop {
+  position: absolute;
+  inset: 8px;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--secondary) 88%, transparent);
+  pointer-events: none;
+  animation: chat-menu-in 0.12s ease;
+}
+
+.chat-drop[hidden] {
+  display: none;
+}
+
+.chat-drop-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  opacity: 0.85;
+}
+
+.chat-drop-text strong {
+  color: var(--accent);
+  font-size: 1.4rem;
 }
 
 /* Your attachments popup: why it opened (when a file needs more tickets than are free), how many tickets are free with a
@@ -2547,6 +2926,56 @@ a.chat-member:focus-visible {
   opacity: 0.75;
 }
 
+/* Which of the message's pictures it is ("2 of 4"), after its name */
+.chat-viewer-count {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.chat-viewer-count[hidden],
+.chat-viewer-nav[hidden] {
+  display: none;
+}
+
+/* The arrows on each side, for a message with several pictures */
+.chat-viewer-nav {
+  position: absolute;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin-top: -24px;
+  padding: 0 0 4px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font: inherit;
+  font-size: 2.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-viewer-nav.is-prev {
+  left: 16px;
+}
+
+.chat-viewer-nav.is-next {
+  right: 16px;
+}
+
+.chat-viewer-nav:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.chat-viewer-nav:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .chat-viewer-info {
   position: absolute;
   top: 60px;
@@ -2609,6 +3038,21 @@ a.chat-member:focus-visible {
     top: 100px;
     right: 8px;
   }
+
+  .chat-viewer-nav {
+    width: 40px;
+    height: 40px;
+    margin-top: -20px;
+    font-size: 1.8rem;
+  }
+
+  .chat-viewer-nav.is-prev {
+    left: 8px;
+  }
+
+  .chat-viewer-nav.is-next {
+    right: 8px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2618,8 +3062,16 @@ a.chat-member:focus-visible {
   .chat-link-warning[open],
   .chat-dialog[open],
   .chat-menu,
-  .chat-emoji-picker {
+  .chat-emoji-picker,
+  .chat-drop,
+  .chat-tray-item,
+  .chat-tray-item.is-busy .chat-tray-preview::after {
     animation: none;
+  }
+
+  .chat-tray-progress-fill,
+  .chat-attachment-gallery .chat-attachment-image {
+    transition: none;
   }
 
   .chat-message-bubble,

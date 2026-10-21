@@ -128,8 +128,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <ul>
                             <li>Every message you send, with the time, which chat it's in, what it replies to and any GIF.</li>
                             <li>
-                                Files and pictures you attach to a message, with their name, size and type, which chat they were
-                                sent in, and when they were sent and run out. They're kept as files on HB Hub's server, not in the
+                                Files and pictures you attach to a message (up to 10 in one), with their name, size and type,
+                                which message and chat they were sent in, and when they were sent and run out. They're kept as files on HB Hub's server, not in the
                                 database. Pictures are turned into JPEG XL in your own browser before they're sent (unless you
                                 tick the box to keep the original), so they never go anywhere else to be converted. A converted
                                 picture doesn't keep the details a camera or phone saves in it, like where a photo was taken.
@@ -144,7 +144,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>
                                 Deleting a message hides it for everyone in the chat, but the message itself is kept, so site
                                 admins can still look into reports of abuse. Its reactions are hidden with it, and kept the same
-                                way. An attachment in it isn't kept: its file and name are deleted for good.
+                                way. Attachments in it aren't kept: their files and names are deleted for good.
                             </li>
                             <li>Notifications under the bell: what happened, who did it and whether you've seen it. If you're a site admin and a group admin removes you from a group, that notification also keeps how you were in the group (your role, nickname, mute and how far you had read), so you can undo it. Undoing it deletes the notification.</li>
                             <li>
@@ -308,8 +308,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <strong>Attachments</strong> are kept for 90 days, or for 3 days when one is bigger than 25 MB, and
                             then deleted by themselves, at the latest the night after. They're deleted sooner when you delete them (in Your attachments in the
                             chat, or by deleting their message), when an admin deletes their message, when their chat is deleted,
-                            or when your account is deleted. After that only a note that the message had an attachment stays
-                            with it (how big it was, its type and the dates), never the file or its name.
+                            or when your account is deleted. After that only a note that the message had attachments stays
+                            with it (how many, how big each was, its type and the dates), never the files or their names.
                         </p>
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/otherPages/settings">settings page</a>.
