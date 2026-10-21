@@ -1323,8 +1323,8 @@
     // Space mines (a held-down key only counts once), C catches the comet (once the Comet Hot Key upgrade is bought, it's
     // lost on a Warp Jump like the other upgrades), 1-9 buy the buildings in the order they're
     // listed (the last nine, with Long-Range Hot Keys switched on: see keyOffset()), K flips that switch, U buys the
-    // cheapest upgrade you can afford, A switches between ×1, ×10 and ×100, W opens the Warp Jump
-    // box, B the Big Crunch box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
+    // cheapest upgrade you can afford, B the cheapest building (at the ×1/×10/×100 picked), A switches between ×1, ×10
+    // and ×100, W opens the Warp Jump box, X the Big Crunch box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
     // shortcuts) and while a box is open.
 
     const HOT_KEYS = {
@@ -1342,6 +1342,20 @@
             }
             cheapest?.click();
         },
+        b: () => {
+            // Same as U, for the buildings, at the amount picked
+            catchUp();
+            let cheapest = null;
+            let cheapestCost = 0;
+            for (const button of buildingList.querySelectorAll('[data-building]')) {
+                const cost = buildingCost(state, button.dataset.building, buyAmount);
+                if (canAfford(state, cost) && (!cheapest || cost < cheapestCost)) {
+                    cheapest = button;
+                    cheapestCost = cost;
+                }
+            }
+            cheapest?.click();
+        },
         a: () => {
             if (amounts.hidden) return;
             const options = [...amounts.querySelectorAll('[data-amount]')];
@@ -1352,7 +1366,7 @@
             if (!keySwitch.hidden) keySwitch.click();
         },
         w: () => warpButton.click(), // does nothing while it's disabled
-        b: () => crunchButton.click(), // same
+        x: () => crunchButton.click(), // same
         m: () => soundButton.click(),
     };
 

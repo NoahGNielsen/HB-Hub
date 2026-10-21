@@ -236,9 +236,9 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <li class="miner-hot-keys">
                         Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade), <kbd>1</kbd>-<kbd>9</kbd>
                         buy the buildings in the order they're listed (the last nine instead, with Long-Range Hot Keys switched
-                        on, which <kbd>K</kbd> does too), <kbd>U</kbd> buys the cheapest upgrade you can afford,
-                        <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the Warp Jump, <kbd>B</kbd> the
-                        Big Crunch and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once.
+                        on, which <kbd>K</kbd> does too), <kbd>U</kbd> buys the cheapest upgrade you can afford, <kbd>B</kbd>
+                        the cheapest building, <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the
+                        Warp Jump, <kbd>X</kbd> the Big Crunch and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once.
                     </li>
                     <li>Play in one tab at a time: opening the game somewhere else stops it here.</li>
                     <li>
