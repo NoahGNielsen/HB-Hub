@@ -12,8 +12,8 @@
 // upgrades bought, comets caught, Warp Jumps - each with the time it happened, and hbHubMinerSync() plays them again on
 // the saved game with the same rules as the script. Something that couldn't have happened (buying without the ore,
 // catching a comet that wasn't there, more than HBHUB_MINER_CLICKS_PER_SECOND clicks a second) just doesn't count, and
-// the page carries on from the game the server sends back. Clicks that come in like clockwork (an auto-clicker, see
-// hbHubMinerSteadyClick()) or too evenly (hbHubMinerEvenClicks()) only mine HBHUB_MINER_STEADY_VALUE of what they would. So the
+// the page carries on from the game the server sends back. Clicks that come in faster than a person can keep up (an
+// auto-clicker, see hbHubMinerFastClick()) only mine HBHUB_MINER_FAST_VALUE of what they would. So the
 // script and this file must work the same: the rules
 // below are copied in spaceOreMiner.js, and the data (buildings, upgrades, achievements and the numbers) goes to the
 // page as JSON from hbHubMinerConfig(), so it's only written here.
@@ -29,11 +29,9 @@ const HBHUB_MINER_SAVE_SECONDS = 30; // how often the page saves while it's open
 const HBHUB_MINER_ONLINE_MS = 90000; // a gap between saves up to this long counts as playing, the rest as away
 const HBHUB_MINER_OFFLINE_RATE = 0.05; // of the normal ore per second, while away
 const HBHUB_MINER_CLICKS_PER_SECOND = 20; // the most clicks that count, so auto-clickers don't pay
-const HBHUB_MINER_STEADY_MS = 20000; // clicks at the same pace for this long are an auto-clicker...
-const HBHUB_MINER_STEADY_TOLERANCE_MS = 15; // (each gap between two clicks within this of the gap before it)
-const HBHUB_MINER_EVEN_CLICKS = 40; // ...and so are this many gaps between clicks in a row...
-const HBHUB_MINER_EVEN_DEVIATION = 0.1; // ...that vary less than this (standard deviation, as a share of the average gap)
-const HBHUB_MINER_STEADY_VALUE = 0.2; // ...and only mine this share of what a click is worth
+const HBHUB_MINER_FAST_CLICKS = 15; // more clicks than this in a second...
+const HBHUB_MINER_FAST_MS = 180000; // ...kept up for this long is an auto-clicker...
+const HBHUB_MINER_FAST_VALUE = 0.2; // ...and only mines this share of what a click is worth
 const HBHUB_MINER_MAX_ACTIONS = 2000; // in one save
 const HBHUB_MINER_COST_GROWTH = 1.15; // each building costs this much more than the one before
 const HBHUB_MINER_COST_GROWTH_CHEAP = 1.14; // with Cheaper Physics
@@ -305,11 +303,9 @@ function hbHubMinerConfig(): array
         'onlineMs' => HBHUB_MINER_ONLINE_MS,
         'offlineRate' => HBHUB_MINER_OFFLINE_RATE,
         'clicksPerSecond' => HBHUB_MINER_CLICKS_PER_SECOND,
-        'steadyMs' => HBHUB_MINER_STEADY_MS,
-        'steadyToleranceMs' => HBHUB_MINER_STEADY_TOLERANCE_MS,
-        'evenClicks' => HBHUB_MINER_EVEN_CLICKS,
-        'evenDeviation' => HBHUB_MINER_EVEN_DEVIATION,
-        'steadyValue' => HBHUB_MINER_STEADY_VALUE,
+        'fastClicks' => HBHUB_MINER_FAST_CLICKS,
+        'fastMs' => HBHUB_MINER_FAST_MS,
+        'fastValue' => HBHUB_MINER_FAST_VALUE,
         'maxActions' => HBHUB_MINER_MAX_ACTIONS,
         'costGrowth' => HBHUB_MINER_COST_GROWTH,
         'costGrowthCheap' => HBHUB_MINER_COST_GROWTH_CHEAP,
@@ -380,9 +376,8 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  * - antimatter: to spend. antimatterEarned: ever earned (the bonus). antiUpgrades: bought with it. crunches: Big
  *   Crunches made.
  * - clicks, crits, comets (caught), diamonds (Diamond Comets caught): counted ever.
- * - steady: the pace of the clicks, to spot auto-clickers (hbHubMinerSteadyClick()): last (the last click's time),
- *   gap (ms between the last two clicks), since (when clicking at that pace began) and gaps (the ms between each of the
- *   last HBHUB_MINER_EVEN_CLICKS clicks, oldest first, for hbHubMinerEvenClicks()).
+ * - fast: how fast the clicks come, to spot auto-clickers (hbHubMinerFastClick()): times (of the last
+ *   HBHUB_MINER_FAST_CLICKS + 1 clicks, oldest first) and since (when clicking faster than that began).
  * - comet: the next or current comet: n (its number, for its luck) and at (when it shows up).
  * - buffs: the comet effects running: 'production' or 'click' => {kind, multiplier, until}.
  * - achievements: the ids done. tick: how far the game has run. started, runStarted: when the save and this run began.
@@ -413,7 +408,7 @@ function hbHubMinerNewState(int $now): array
         'crits' => 0,
         'comets' => 0,
         'diamonds' => 0,
-        'steady' => ['last' => 0, 'gap' => 0, 'since' => 0, 'gaps' => []],
+        'fast' => ['since' => 0, 'times' => []],
         'comet' => ['n' => 0, 'at' => $now],
         'buffs' => [],
         'achievements' => [],
@@ -435,8 +430,12 @@ function hbHubMinerNormalize(array $saved, int $now): array
     $state['upgrades'] = array_values(array_intersect($state['upgrades'], array_keys(hbHubMinerUpgrades())));
     $state['darkUpgrades'] = array_values(array_intersect($state['darkUpgrades'], array_keys(HBHUB_MINER_DARK_UPGRADES)));
     $state['antiUpgrades'] = array_values(array_intersect($state['antiUpgrades'], array_keys(HBHUB_MINER_ANTI_UPGRADES)));
-    $state['steady'] = array_replace(['last' => 0, 'gap' => 0, 'since' => 0, 'gaps' => []], $state['steady']);
-    $state['steady']['gaps'] = array_map('intval', array_slice(array_values($state['steady']['gaps']), -HBHUB_MINER_EVEN_CLICKS));
+    $state['fast'] = [
+        'since' => (int) ($state['fast']['since'] ?? 0),
+        'times' => array_map('intval', array_slice(array_values($state['fast']['times'] ?? []), -(HBHUB_MINER_FAST_CLICKS + 1))),
+    ];
+    unset($state['steady']); // the old auto-clicker check's
+
     foreach (['ore', 'runOre', 'universeOre', 'allOre', 'clickOre'] as $key) {
         $state[$key] = (float) $state[$key];
     }
@@ -770,50 +769,25 @@ function hbHubMinerCrunchGain(array $state): int
 }
 
 /**
- * Whether the gaps between clicks are too even to be a person's, even when they aren't exactly alike (an auto-clicker
- * that adds a bit of randomness): the last HBHUB_MINER_EVEN_CLICKS of them have a standard deviation under
- * HBHUB_MINER_EVEN_DEVIATION of their average. Works on whole ms in the same order as the script, so both always get
- * the same answer.
+ * Whether a click at $time (Unix ms) comes from an auto-clicker, so it only mines HBHUB_MINER_FAST_VALUE. That's when
+ * there have been more than HBHUB_MINER_FAST_CLICKS clicks in every second for HBHUB_MINER_FAST_MS: this click and the
+ * HBHUB_MINER_FAST_CLICKS before it all came within a second, and have done since 'since'. Nobody's finger keeps that
+ * up for so long. It's kept in the save's 'fast', so it carries on from one save to the next, and one slower second
+ * starts it over. The script does the same in fastClick().
  */
-function hbHubMinerEvenClicks(array $gaps): bool
+function hbHubMinerFastClick(array &$state, int $time): bool
 {
-    $count = count($gaps);
-    if ($count < HBHUB_MINER_EVEN_CLICKS) {
-        return false;
+    $fast = &$state['fast'];
+    $count = count($fast['times']);
+    $time = max($time, $count > 0 ? (int) $fast['times'][$count - 1] : 0);
+    $fast['times'][] = $time;
+    if ($count + 1 > HBHUB_MINER_FAST_CLICKS + 1) {
+        array_shift($fast['times']);
     }
-    $mean = array_sum($gaps) / $count;
-    if ($mean <= 0) {
-        return false;
+    if (count($fast['times']) <= HBHUB_MINER_FAST_CLICKS || $time - $fast['times'][0] >= 1000) {
+        $fast['since'] = $time; // not that fast, so it starts over from this click
     }
-    $squares = 0.0;
-    foreach ($gaps as $gap) {
-        $squares += ($gap - $mean) * ($gap - $mean);
-    }
-    return sqrt($squares / $count) < HBHUB_MINER_EVEN_DEVIATION * $mean;
-}
-
-/**
- * Whether a click at $time (Unix ms) comes from an auto-clicker (or a held-down key), so it only mines
- * HBHUB_MINER_STEADY_VALUE. That's when it comes in like clockwork: each gap since the click before is the same as the
- * gap before that (give or take HBHUB_MINER_STEADY_TOLERANCE_MS), and has been for HBHUB_MINER_STEADY_MS. Or when the
- * last gaps are too even (hbHubMinerEvenClicks()). Nobody's finger keeps a beat that well. The pace is kept in the
- * save's 'steady', so it carries on from one save to the next, and clicking at your own pace again starts it over.
- */
-function hbHubMinerSteadyClick(array &$state, int $time): bool
-{
-    $steady = &$state['steady'];
-    $time = max($time, (int) $steady['last']);
-    $gap = $time - (int) $steady['last'];
-    if (abs($gap - (int) $steady['gap']) > HBHUB_MINER_STEADY_TOLERANCE_MS) {
-        $steady['since'] = $time; // a new pace, starting with this click
-    }
-    $steady['gap'] = $gap;
-    $steady['last'] = $time;
-    $steady['gaps'][] = $gap;
-    if (count($steady['gaps']) > HBHUB_MINER_EVEN_CLICKS) {
-        array_shift($steady['gaps']);
-    }
-    return $time - $steady['since'] >= HBHUB_MINER_STEADY_MS || hbHubMinerEvenClicks($steady['gaps']);
+    return $time - $fast['since'] >= HBHUB_MINER_FAST_MS;
 }
 
 /**
@@ -832,8 +806,8 @@ function hbHubMinerClick(array &$state, int $count, array $offsets = []): float
             $ore *= HBHUB_MINER_CRIT_MULTIPLIER;
             $state['crits']++;
         }
-        if (hbHubMinerSteadyClick($state, $state['tick'] + $offset)) {
-            $ore *= HBHUB_MINER_STEADY_VALUE;
+        if (hbHubMinerFastClick($state, $state['tick'] + $offset)) {
+            $ore *= HBHUB_MINER_FAST_VALUE;
         }
         $state['clicks']++;
         $mined += $ore;

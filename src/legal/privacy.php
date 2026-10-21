@@ -187,9 +187,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 times you've clicked and caught comets, when you started and last saved, and a random id for
                                 the browser tab you're playing in (so the game only runs in one tab at a time). Your game sends
                                 what you did since the last save every 30 seconds, with the time of each click and purchase, so
-                                the server can check it. Only the result is kept, not the list of clicks, apart from the time
-                                of your last click and how long each of your last 40 clicks came after the one before (to spot
-                                auto-clickers, which click at the same pace). Other people only see
+                                the server can check it. Only the result is kept, not the list of clicks, apart from the times
+                                of your last 16 clicks (to spot auto-clickers). Other people only see
                                 the totals on the Space Ore Miner leaderboard (ore mined, ore per second, Dark Matter, Antimatter, Warp
                                 Jumps, clicks and achievements).
                             </li>

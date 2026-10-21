@@ -192,37 +192,25 @@
     }
     const crunchGain = (s) => (s.darkEarned >= CONFIG.crunchDark ? antiTotal(s.darkEarned) : 0);
 
-    // Whether the last gaps between clicks vary too little to be a person's (hbHubMinerEvenClicks())
-    function evenClicks(gaps) {
-        if (gaps.length < CONFIG.evenClicks) return false;
-        const mean = gaps.reduce((total, gap) => total + gap, 0) / gaps.length;
-        if (mean <= 0) return false;
-        let squares = 0;
-        for (const gap of gaps) squares += (gap - mean) * (gap - mean);
-        return Math.sqrt(squares / gaps.length) < CONFIG.evenDeviation * mean;
-    }
-
-    // Whether a click at time comes from an auto-clicker: like clockwork, or too evenly (hbHubMinerSteadyClick())
-    function steadyClick(s, time) {
-        const steady = s.steady;
-        time = Math.max(time, steady.last);
-        const gap = time - steady.last;
-        if (Math.abs(gap - steady.gap) > CONFIG.steadyToleranceMs) steady.since = time;
-        steady.gap = gap;
-        steady.last = time;
-        steady.gaps.push(gap);
-        if (steady.gaps.length > CONFIG.evenClicks) steady.gaps.shift();
-        return time - steady.since >= CONFIG.steadyMs || evenClicks(steady.gaps);
+    // Whether a click at time comes from an auto-clicker: too fast for too long (hbHubMinerFastClick())
+    function fastClick(s, time) {
+        const fast = s.fast;
+        const count = fast.times.length;
+        time = Math.max(time, count > 0 ? fast.times[count - 1] : 0);
+        fast.times.push(time);
+        if (fast.times.length > CONFIG.fastClicks + 1) fast.times.shift();
+        if (fast.times.length <= CONFIG.fastClicks || time - fast.times[0] >= 1000) fast.since = time;
+        return time - fast.since >= CONFIG.fastMs;
     }
 
     // offsets: when each click was, in ms after s.tick. Returns the ore mined, how many of the clicks were critical and
-    // whether any came in like clockwork.
+    // whether any looked like an auto-clicker's.
     function click(s, count, offsets = []) {
         const value = clickValue(s, s.tick);
         const canCrit = has(s, 'crit');
         let mined = 0;
         let crits = 0;
-        let steady = false;
+        let auto = false;
         for (let i = 0; i < count; i++) {
             const offset = Number.isFinite(offsets[i]) ? Math.min(Math.max(Math.trunc(offsets[i]), 0), 999) : 0;
             let ore = value;
@@ -231,16 +219,16 @@
                 s.crits++;
                 crits++;
             }
-            if (steadyClick(s, s.tick + offset)) {
-                ore *= CONFIG.steadyValue;
-                steady = true;
+            if (fastClick(s, s.tick + offset)) {
+                ore *= CONFIG.fastValue;
+                auto = true;
             }
             s.clicks++;
             mined += ore;
         }
         s.clickOre += mined;
         earn(s, mined);
-        return { mined, crits, steady };
+        return { mined, crits, auto };
     }
 
     // Returns {kind, ore (what a lucky comet gave)}, or null when there wasn't one on screen
@@ -476,7 +464,7 @@
     let buyAmount = 1;
     let clickTokens = CONFIG.clicksPerSecond; // clicks that would still count right now (the server's limit)
     let clickTokensAt = performance.now();
-    let wasSteady = false; // the last click came in like clockwork (told once, until the clicks are back to normal)
+    let wasAuto = false; // the last click looked like an auto-clicker's (told once, until the clicks are back to normal)
     let announced = new Set(); // achievements already shown
     let storeKey = '';
     let darkKey = '';
@@ -1137,11 +1125,11 @@
         const y = fromKeyboard ? box.height / 2 : event.clientY - box.top;
         burst(x, y, result.mined, result.crits > 0);
         sound(result.crits > 0 ? 'crit' : 'click');
-        if (result.steady && !wasSteady) {
-            toast('🤖 Your clicks are coming in too evenly, like an auto-clicker\'s, so each one only mines '
-                + CONFIG.steadyValue * 100 + '% until you click at your own pace again.', '', 9000);
+        if (result.auto && !wasAuto) {
+            toast('🤖 Hey! Looks like you\'re using an auto-clicker, so your clicks are only worth '
+                + CONFIG.fastValue * 100 + '% now.', '', 9000);
         }
-        wasSteady = result.steady;
+        wasAuto = result.auto;
         asteroid.classList.remove('is-hit');
         void asteroid.offsetWidth;
         asteroid.classList.add('is-hit');

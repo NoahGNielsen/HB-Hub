@@ -184,9 +184,8 @@ const HBHUB_TERMS_UPDATED = '21 October 2026';
                             <li>
                                 Space Ore Miner saves on HB Hub's server and checks what you do there, so only things that
                                 could really have happened count. Clicks count up to 20 a second, and a game only runs in one
-                                tab at a time. No auto-clickers, macros or scripts: clicks that come in at exactly the same
-                                pace for 20 seconds (or from a held-down key), or 40 clicks in a row whose gaps vary by less
-                                than 10%, only mine 20% of what they would, until the pace changes. Admins can reset a save that was cheated
+                                tab at a time. No auto-clickers, macros or scripts: clicks that look like they come from one
+                                only mine 20% of what they would. Admins can reset a save that was cheated
                                 or take it off the leaderboard.
                             </li>
                         </ul>
