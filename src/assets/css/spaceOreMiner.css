@@ -1535,8 +1535,9 @@
   }
 }
 
-/* The Long-Range Hot Keys switch, lit up like the amount picked when it's on */
-.miner-key-switch {
+/* The Long-Range Hot Keys and Auto Buy switches, lit up like the amount picked when they're on */
+.miner-key-switch,
+.miner-auto-switch {
   padding-inline: 10px;
 }
 

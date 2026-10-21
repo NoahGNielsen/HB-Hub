@@ -421,6 +421,7 @@
     const buildingList = root.querySelector('[data-miner-buildings]');
     const amounts = root.querySelector('[data-miner-amounts]');
     const keySwitch = root.querySelector('[data-miner-key-switch]');
+    const autoSwitch = root.querySelector('[data-miner-auto-switch]');
     const warpView = root.querySelector('[data-miner-warp-view]');
     const darkText = root.querySelector('[data-miner-dark]');
     const warpNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-warp]')].map((node) => [node.dataset.minerWarp, node]));
@@ -527,6 +528,15 @@
         lateKeys = localStorage.getItem(LATE_KEYS_KEY) === 'on';
     } catch {
         // no storage (a private window): it starts off
+    }
+
+    // The Auto Buy switch, kept the same way. It only does anything with the upgrade (see autoBuy()).
+    const AUTO_BUY_KEY = 'hbHubMinerAutoBuy';
+    let isAutoBuying = false;
+    try {
+        isAutoBuying = localStorage.getItem(AUTO_BUY_KEY) === 'on';
+    } catch {
+        // no storage: it starts off
     }
 
     const serverNow = () => Date.now() + clockOffset;
@@ -704,6 +714,7 @@
         if (!isPlaying || document.hidden) return;
         checkAchievements(state);
         renderAchievementsUnlocked();
+        autoBuy();
         renderStore();
         renderBuffs();
         renderComet();
@@ -785,11 +796,15 @@
         if (!has(state, 'bulk')) buyAmount = 1;
         const offset = keyOffset(shown.length);
         const hasKeys = has(state, 'quickKeys');
-        const key = [shown.join(), mystery, upgrades.join(), buyAmount, has(state, 'bulk'), hasKeys, hasDark(state, 'lateKeys'), lateKeys, offset].join('|');
+        const key = [shown.join(), mystery, upgrades.join(), buyAmount, has(state, 'bulk'), hasKeys, hasDark(state, 'lateKeys'), lateKeys, offset,
+            hasDark(state, 'autoBuy'), isAutoBuying].join('|');
 
         if (key !== storeKey) { // something new to show: build the lists again
             storeKey = key;
             amounts.hidden = !has(state, 'bulk');
+            autoSwitch.hidden = !hasDark(state, 'autoBuy');
+            autoSwitch.classList.toggle('is-active', isAutoBuying);
+            autoSwitch.setAttribute('aria-pressed', String(isAutoBuying));
             keySwitch.hidden = !hasDark(state, 'lateKeys') || !hasKeys; // it only moves the 1-9 and 0 keys
             keySwitch.classList.toggle('is-active', lateKeys);
             keySwitch.setAttribute('aria-pressed', String(lateKeys));
@@ -1547,6 +1562,76 @@
         renderStore();
     }
 
+    autoSwitch.addEventListener('click', () => {
+        setAutoBuying(!isAutoBuying);
+        sound('buy');
+    });
+
+    function setAutoBuying(isOn) {
+        isAutoBuying = isOn;
+        try {
+            localStorage.setItem(AUTO_BUY_KEY, isOn ? 'on' : 'off');
+        } catch {
+            // only kept until the page is closed
+        }
+        renderStore();
+    }
+
+    // The shown building that adds the most ore per second for each ore it costs, of those that can be afforded amount at
+    // a time, as {id, cost, gain (how much the ore per second goes up)}, or null. The gain is how much the whole steady
+    // rate goes up, so crew, synergy and click-share upgrades count too. The B key and Auto Buy both pick with this.
+    function bestBuilding(amount) {
+        const before = rate(state, Infinity);
+        let best = null;
+        for (const id of visibleBuildings().shown) {
+            const cost = buildingCost(state, id, amount);
+            if (!canAfford(state, cost)) continue;
+            const gain = rate({ ...state, buildings: { ...state.buildings, [id]: state.buildings[id] + amount } }, Infinity) - before;
+            if (!best || gain / cost > best.gain / best.cost) best = { id, cost, gain };
+        }
+        return best;
+    }
+
+    // ----- Auto Buy (the Dark Matter upgrade): while it's switched on, a few times a second it buys whatever pays for
+    // itself soonest. The choices are the building the B key would buy (one at a time) and every upgrade in the store,
+    // affordable or not. Each one's payback time is how long until it can be afforded (at the ore per second now) plus
+    // how long the ore per second it adds takes to earn its price back. When the best is an upgrade that can't be
+    // afforded yet, it waits and saves up for it instead of spending the ore on buildings that would only slow it down.
+    // Upgrades that don't add to the steady ore per second (clicks without auto-clickers, comets, hot keys, Bulk
+    // Buying) are bought once they cost no more than AUTO_BUY_EXTRA_SECONDS of production. It buys through act(), like a
+    // click on the store would, so the server checks every purchase as usual.
+    const AUTO_BUY_EXTRA_SECONDS = 60;
+    const AUTO_BUY_PER_TICK = 5; // at most, so a full wallet after a Warp Jump doesn't send hundreds of actions at once
+
+    // What Auto Buy should do now: {type: 'buy', ...} or {type: 'upgrade', ...} (the action to take), or null to wait
+    function autoBuyChoice() {
+        const before = rate(state, Infinity);
+        const building = bestBuilding(1);
+        let best = building && building.gain > 0 ? { action: { type: 'buy', building: building.id, amount: 1 }, payback: building.cost / building.gain } : null;
+        for (const id of availableUpgrades()) {
+            const cost = UPGRADES[id].cost;
+            const gain = rate({ ...state, upgrades: [...state.upgrades, id] }, Infinity) - before;
+            if (gain <= 0) {
+                if (canAfford(state, cost) && cost <= before * AUTO_BUY_EXTRA_SECONDS) return { type: 'upgrade', id };
+                continue;
+            }
+            const payback = (canAfford(state, cost) ? 0 : (cost - state.ore) / before) + cost / gain; // Infinity with no production yet
+            if (!best || payback < best.payback) best = { action: { type: 'upgrade', id }, payback };
+        }
+        if (!best || (best.action.type === 'upgrade' && !canAfford(state, UPGRADES[best.action.id].cost))) return null;
+        return best.action;
+    }
+
+    function autoBuy() {
+        if (!isAutoBuying || !hasDark(state, 'autoBuy')) return;
+        catchUp();
+        for (let i = 0; i < AUTO_BUY_PER_TICK; i++) {
+            const action = autoBuyChoice();
+            if (!action || !act(action)) return;
+            if (action.type === 'upgrade') toast(UPGRADES[action.id].icon, 'Auto Buy: ' + UPGRADES[action.id].name + ': ' + UPGRADES[action.id].text);
+        }
+    }
+
     buildingList.addEventListener('click', (event) => {
         const button = event.target.closest('[data-building]');
         if (!button) return;
@@ -1585,6 +1670,7 @@
         if (act({ type: 'dark', id: button.dataset.dark })) {
             sound('buy');
             if (button.dataset.dark === 'lateKeys') setLateKeys(true); // bought to be used, so it starts on
+            if (button.dataset.dark === 'autoBuy') setAutoBuying(true); // same
             toast(DARK_UPGRADES[button.dataset.dark].icon, DARK_UPGRADES[button.dataset.dark].name + ': ' + DARK_UPGRADES[button.dataset.dark].text);
             renderWarp();
             renderStore();
@@ -1697,25 +1783,11 @@
             cheapest?.click();
         },
         b: () => {
-            // The affordable building (at the amount picked) that adds the most ore per second for each ore it costs.
-            // The gain is how much the whole steady rate goes up, so crew, synergy and click-share upgrades count too
+            // The affordable building (at the amount picked) that adds the most ore per second for each ore it costs
             if (!has(state, 'quickKeys')) return;
             catchUp();
-            const before = rate(state, Infinity);
-            let best = null;
-            let bestValue = -1;
-            for (const button of buildingList.querySelectorAll('[data-building]')) {
-                const id = button.dataset.building;
-                const cost = buildingCost(state, id, buyAmount);
-                if (!canAfford(state, cost)) continue;
-                const after = rate({ ...state, buildings: { ...state.buildings, [id]: state.buildings[id] + buyAmount } }, Infinity);
-                const value = (after - before) / cost;
-                if (value > bestValue) {
-                    best = button;
-                    bestValue = value;
-                }
-            }
-            best?.click();
+            const best = bestBuilding(buyAmount);
+            if (best) buildingList.querySelector('[data-building="' + best.id + '"]')?.click();
         },
         a: () => {
             if (amounts.hidden) return;

@@ -115,6 +115,11 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <div class="miner-store-head">
                         <h3 class="miner-store-title">Buildings</h3>
                         <div class="miner-store-tools">
+                            <!-- With Auto Buy: buys buildings and upgrades by itself while it's on (autoBuy() in spaceOreMiner.js) -->
+                            <button type="button" class="miner-amount miner-auto-switch" aria-pressed="false"
+                                    title="Buy buildings and upgrades by itself" data-miner-auto-switch hidden>
+                                Auto buy
+                            </button>
                             <!-- With Long-Range Hot Keys: the 1-9 and 0 keys buy the last ten buildings instead of the first ten -->
                             <button type="button" class="miner-amount miner-key-switch" aria-pressed="false" aria-keyshortcuts="K"
                                     title="Make the 1-9 and 0 keys buy your last ten buildings instead of your first ten (K)" data-miner-key-switch hidden>
@@ -274,6 +279,11 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         Later on, the Dark Matter view has the Warp Jump, which starts you over in a new galaxy for Dark Matter, and
                         the Antimatter view has the Big Crunch, which starts the whole universe over for Antimatter. The game keeps
                         running whichever view you're on.
+                    </li>
+                    <li>
+                        With the Auto Buy Dark Matter upgrade, a switch in the store buys for you while the game is open: the
+                        building <kbd>B</kbd> would pick or an upgrade, whichever pays back its price soonest. When an upgrade
+                        is worth waiting for, it saves up for it instead of spending the ore on buildings.
                     </li>
                     <li>
                         The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
