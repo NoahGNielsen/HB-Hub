@@ -81,13 +81,17 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <p class="miner-rate"><span data-miner-rate>0</span> ore per second</p>
                 <ul class="miner-buffs" data-miner-buffs aria-label="Comet effects"></ul>
 
+                <!-- The buildings you own show up in the picture: around the asteroid in data-miner-scene, and standing on
+                     it in data-miner-surface (inside it, so they move with it) -->
                 <div class="miner-field" data-miner-field>
+                    <div class="miner-scene" data-miner-scene aria-hidden="true"></div>
                     <div class="miner-orbit" data-miner-bot hidden aria-hidden="true"><span class="miner-bot">🤖</span></div>
                     <button type="button" class="miner-asteroid" data-miner-asteroid aria-label="Mine the asteroid" disabled>
                         <span class="miner-crater is-1"></span>
                         <span class="miner-crater is-2"></span>
                         <span class="miner-crater is-3"></span>
                         <span class="miner-crater is-4"></span>
+                        <span class="miner-surface" data-miner-surface aria-hidden="true"></span>
                     </button>
                 </div>
 

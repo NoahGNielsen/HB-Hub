@@ -413,6 +413,8 @@
     const saveText = root.querySelector('[data-miner-save]');
     const buffList = root.querySelector('[data-miner-buffs]');
     const bot = root.querySelector('[data-miner-bot]');
+    const scene = root.querySelector('[data-miner-scene]');
+    const surface = root.querySelector('[data-miner-surface]');
     const upgradeList = root.querySelector('[data-miner-upgrades]');
     const upgradesEmpty = root.querySelector('[data-miner-upgrades-empty]');
     const upgradesBox = root.querySelector('[data-miner-upgrades-box]');
@@ -454,6 +456,30 @@
     // The asteroid changes as more is mined in a run, at this much ore mined this run: plain grey rock, iron, gold,
     // crystal, glowing alien core
     const STAGES = [0, 1e5, 1e8, 1e11, 1e14];
+    // The buildings in the picture of the asteroid, so it fills up as the company grows: one more of a building shows for
+    // each number in 'at' that's owned. The ones in SURFACE stand on the asteroid (data-miner-surface, inside it), the rest
+    // are around it (data-miner-scene). parts are its pieces, each a span with the class miner-sprite-<part> and an
+    // emoji or nothing (drawn in CSS). Where the nth one goes and how it moves is in spaceOreMiner.css
+    // (.miner-sprite.is-<building>.is-<n>). The Dyson Swarm's ring is two from the start: the half behind the asteroid and
+    // the half in front of it.
+    const SCENE = {
+        pickaxe: { at: [1, 5, 10, 25, 50, 100, 200], parts: { body: '👷', tool: '⛏️' } },
+        drone: { at: [1, 5, 15, 40, 100], parts: { body: '🛸' } },
+        laser: { at: [1, 25, 100], parts: { beam: '', body: '🔦' } },
+        rig: { at: [1, 50], parts: { body: '🏗️' } },
+        base: { at: [1], parts: { body: '🏠' } },
+        freighter: { at: [1, 10, 50], parts: { body: '🚀' } },
+        station: { at: [1], parts: { body: '🛰️' } },
+        excavator: { at: [1], parts: { moon: '', body: '🚜' } },
+        cracker: { at: [1], parts: { body: '🪐' } },
+        siphon: { at: [1], parts: { disk: '', hole: '' } },
+        forge: { at: [1], parts: { star: '', tool: '🔨' } },
+        nebula: { at: [1], parts: { body: '' } },
+        dyson: { at: [1, 1], parts: { body: '' } },
+        wormhole: { at: [1], parts: { body: '' } },
+        multiverse: { at: [1], parts: { body: '' } },
+    };
+    const SURFACE = ['pickaxe', 'rig', 'base'];
     // (how long it lasts, the ore a lucky one gave, its multiplier with Antimatter Comets)
     const COMET_TEXT = {
         frenzy: (ms, ore, times) => 'Frenzy! Everything mines ' + format(times) + ' times as fast for ' + Math.round(ms / 1000) + ' seconds.',
@@ -482,6 +508,7 @@
     let antiKey = '';
     let shownComet = -1; // the comet number on screen
     let saveSoonTimer = 0;
+    const sprites = Object.fromEntries(Object.keys(SCENE).map((id) => [id, []])); // the ones in the picture, per building
 
     // The Long-Range Hot Keys switch, kept in this browser like the sound. It only does anything with the upgrade.
     const LATE_KEYS_KEY = 'hbHubMinerLateKeys';
@@ -824,11 +851,29 @@
 
         clickText.textContent = format(clickValue(state, state.tick), { decimals: true });
         bot.hidden = autoClicks(state) === 0;
+        renderScene();
 
         asteroid.dataset.stage = String(STAGES.findLastIndex((at) => state.runOre >= at));
     }
 
+    // The buildings in the picture (SCENE). Only what changed is added or taken away, so the rest keep moving instead of
+    // all starting over with every purchase.
+    function renderScene() {
+        for (const [id, { at, parts }] of Object.entries(SCENE)) {
+            const count = at.filter((owned) => state.buildings[id] >= owned).length;
+            const drawn = sprites[id];
+            while (drawn.length < count) {
+                const sprite = element('span', 'miner-sprite is-' + id + ' is-' + (drawn.length + 1));
+                sprite.append(...Object.entries(parts).map(([part, text]) => element('span', 'miner-sprite-' + part, text)));
+                (SURFACE.includes(id) ? surface : scene).append(sprite);
+                drawn.push(sprite);
+            }
+            while (drawn.length > count) drawn.pop().remove();
+        }
+    }
+
     function renderBuffs() {
+        field.classList.toggle('is-frenzy', buff(state, 'production', state.tick) > 1); // the picture's miners work faster
         const running = Object.values(state.buffs).filter((item) => item.until > state.tick);
         buffList.replaceChildren(...running.map((item) => {
             const row = element('li', 'miner-buff is-' + item.kind);

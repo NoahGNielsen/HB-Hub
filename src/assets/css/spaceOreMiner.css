@@ -326,9 +326,15 @@
 }
 
 /* The asteroid. Its colours change with data-stage (0 grey rock, 1 iron, 2 gold, 3 crystal, 4 alien core). The space
-   around it takes what's left of the card's height. */
+   around it takes what's left of the card's height. The variables size the buildings in the picture (see "The
+   buildings in the picture" below), and get smaller with the asteroid on small screens. */
 .miner-field {
+  --rock-r: 110px; /* half the asteroid's width */
+  --sprite: 1.5rem; /* the size of a building's emoji */
+  --gap: 18px; /* how far out the drones and lasers are, in steps */
+  --work: 1; /* how fast the miners in the picture work: 3 during a Frenzy or a Diamond Rush */
   position: relative;
+  isolation: isolate;
   flex: 1 1 260px;
   width: 100%;
   min-height: 200px;
@@ -346,6 +352,7 @@
   --rock-dark: #3a3a3a;
   --rock-glow: transparent;
   position: relative;
+  z-index: 1; /* between what's behind it and what's in front of it in the picture */
   width: 220px;
   height: 210px;
   padding: 0;
@@ -441,6 +448,7 @@
 /* The Auto-Clicker Bot, going round the asteroid */
 .miner-orbit {
   position: absolute;
+  z-index: 2;
   width: 290px;
   height: 290px;
   border-radius: 50%;
@@ -463,6 +471,7 @@
 /* What a click mined, floating up, and bits of rock flying off */
 .miner-float {
   position: absolute;
+  z-index: 3; /* over everything in the picture */
   left: var(--x);
   top: var(--y);
   translate: -50% -50%;
@@ -485,6 +494,7 @@
 
 .miner-bit {
   position: absolute;
+  z-index: 3;
   left: var(--x);
   top: var(--y);
   width: var(--size);
@@ -497,6 +507,495 @@
 
 @keyframes miner-bit {
   to { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(200deg); }
+}
+
+/* The buildings in the picture (SCENE in spaceOreMiner.js), each a .miner-sprite.is-<building>.is-<n> with its parts
+   (.miner-sprite-<part>) inside. Space Pickaxe Guys, Mining Rigs and the Asteroid Base stand on the asteroid
+   (.miner-surface is inside it, so they shake with it when it's clicked); the rest are around it in .miner-scene. The
+   asteroid is in the middle (z-index 1): in front of it is 2, behind it 0, and far behind (the nebula, the multiverse
+   rift, the back of the Dyson Swarm) -1. Nothing in it can be clicked, clicks go through to the asteroid. */
+.miner-scene,
+.miner-surface {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.miner-sprite {
+  position: absolute;
+  font-size: var(--sprite);
+  line-height: 1;
+  white-space: nowrap;
+  transition: opacity 0.8s;
+}
+
+/* A new one fades in */
+@starting-style {
+  .miner-sprite {
+    opacity: 0;
+  }
+}
+
+.miner-sprite > * {
+  display: block;
+}
+
+/* On the asteroid: feet on its edge at --angle (0 is the top, going clockwise), standing straight out from it. In space,
+   the ones underneath are upside down. */
+.miner-sprite:is(.is-pickaxe, .is-rig, .is-base) {
+  left: calc(50% + 46% * sin(var(--angle)));
+  top: calc(50% - 46% * cos(var(--angle)));
+  translate: -50% -100%;
+  rotate: var(--angle);
+  transform-origin: 50% 100%;
+}
+
+/* Space Pickaxe Guys, swinging away (the ones on the left face the other way), with a spark when the pickaxe hits */
+.miner-sprite.is-pickaxe.is-1 { --angle: -40deg; --delay: 0s; }
+.miner-sprite.is-pickaxe.is-2 { --angle: 40deg; --delay: -0.5s; }
+.miner-sprite.is-pickaxe.is-3 { --angle: -80deg; --delay: -0.2s; }
+.miner-sprite.is-pickaxe.is-4 { --angle: 80deg; --delay: -0.8s; }
+.miner-sprite.is-pickaxe.is-5 { --angle: -118deg; --delay: -0.35s; }
+.miner-sprite.is-pickaxe.is-6 { --angle: 118deg; --delay: -0.65s; }
+.miner-sprite.is-pickaxe.is-7 { --angle: 180deg; --delay: -0.1s; }
+
+.miner-sprite.is-pickaxe:is(.is-1, .is-3, .is-5) {
+  scale: -1 1;
+}
+
+.miner-sprite-tool {
+  position: absolute;
+  left: 62%;
+  bottom: 20%;
+  font-size: 0.75em;
+  transform-origin: 15% 85%; /* the end of the handle */
+}
+
+.miner-sprite.is-pickaxe .miner-sprite-tool {
+  animation: miner-swing calc(1.1s / var(--work)) ease-in infinite var(--delay);
+}
+
+.miner-sprite.is-pickaxe::after {
+  content: "";
+  position: absolute;
+  left: 105%;
+  bottom: 0;
+  width: 0.25em;
+  height: 0.25em;
+  border-radius: 50%;
+  background: var(--miner-gold);
+  box-shadow: 0 0 6px var(--miner-gold);
+  opacity: 0;
+  animation: miner-spark calc(1.1s / var(--work)) linear infinite var(--delay);
+}
+
+@keyframes miner-swing {
+  0%, 55%, 100% { rotate: -40deg; }
+  70% { rotate: 30deg; }
+}
+
+@keyframes miner-spark {
+  0%, 66%, 85%, 100% { opacity: 0; scale: 0.4; }
+  72% { opacity: 1; scale: 1.4; }
+}
+
+/* Mining Rigs, rocking along on either side of the bottom, and the Asteroid Base on top with a light on the roof */
+.miner-sprite.is-rig.is-1 { --angle: 155deg; }
+.miner-sprite.is-rig.is-2 { --angle: -155deg; }
+
+.miner-sprite.is-rig .miner-sprite-body {
+  transform-origin: 50% 100%;
+  animation: miner-rock 1.8s ease-in-out infinite alternate;
+}
+
+.miner-sprite.is-rig.is-2 .miner-sprite-body {
+  animation-delay: -0.9s;
+}
+
+.miner-sprite.is-base {
+  --angle: 0deg;
+}
+
+.miner-sprite:is(.is-base, .is-station)::after {
+  content: "";
+  position: absolute;
+  top: -0.1em;
+  right: 0.1em;
+  width: 0.2em;
+  height: 0.2em;
+  border-radius: 50%;
+  background: #ff5a5a;
+  box-shadow: 0 0 5px #ff5a5a;
+  animation: miner-blink 1.6s step-end infinite;
+}
+
+@keyframes miner-rock {
+  from { rotate: -6deg; }
+  to { rotate: 6deg; }
+}
+
+@keyframes miner-blink {
+  50% { opacity: 0.15; }
+}
+
+/* Mining Drones go round the asteroid on a tilted ring: from side to side (the sprite) and up and down (the 🛸) a quarter
+   of the way round apart, so they go in front of it along the bottom and behind it along the top. --t is once round,
+   --k how far out it is, --ry how tall its ring is. The even ones go the other way. */
+.miner-sprite.is-drone {
+  --rx: calc(var(--rock-r) + var(--gap) * var(--k));
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  animation:
+    miner-orbit-x calc(var(--t) / 2) ease-in-out var(--delay) infinite alternate,
+    miner-orbit-z var(--t) linear var(--delay) infinite;
+}
+
+.miner-sprite.is-drone:is(.is-2, .is-4) {
+  animation-direction: alternate-reverse, normal;
+}
+
+.miner-sprite.is-drone .miner-sprite-body {
+  transform: translate(-50%, -50%);
+  animation: miner-orbit-y calc(var(--t) / 2) ease-in-out calc(var(--delay) - var(--t) / 4) infinite alternate;
+}
+
+.miner-sprite.is-drone.is-1 { --k: 1.4; --ry: calc(var(--gap) * 1.3); --t: 9s; --delay: 0s; }
+.miner-sprite.is-drone.is-2 { --k: 2.3; --ry: calc(var(--gap) * 2.4); --t: 13s; --delay: -5s; }
+.miner-sprite.is-drone.is-3 { --k: 3; --ry: calc(var(--gap) * 0.8); --t: 11s; --delay: -3s; }
+.miner-sprite.is-drone.is-4 { --k: 3.6; --ry: calc(var(--gap) * 3.3); --t: 16s; --delay: -9s; }
+.miner-sprite.is-drone.is-5 { --k: 4.2; --ry: calc(var(--gap) * 1.9); --t: 19s; --delay: -14s; }
+
+@keyframes miner-orbit-x {
+  from { translate: calc(-1 * var(--rx)) 0; }
+  to { translate: var(--rx) 0; }
+}
+
+@keyframes miner-orbit-y {
+  from { translate: 0 calc(-1 * var(--ry)); }
+  to { translate: 0 var(--ry); }
+}
+
+@keyframes miner-orbit-z {
+  0%, 50% { z-index: 2; }
+  50.1%, 100% { z-index: 0; }
+}
+
+/* Laser Drills: out from the asteroid at --angle, firing a flickering beam at its edge. The sprite is a point in the
+   middle turned to --angle, so "up" in it is straight out. */
+.miner-sprite.is-laser {
+  --gun: calc(var(--rock-r) + var(--gap) * 2.2);
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  z-index: 2;
+  rotate: var(--angle);
+}
+
+.miner-sprite.is-laser.is-1 { --angle: -136deg; }
+.miner-sprite.is-laser.is-2 { --angle: 136deg; }
+.miner-sprite.is-laser.is-3 { --angle: -60deg; }
+
+.miner-sprite.is-laser .miner-sprite-body {
+  position: absolute;
+  top: calc(-1 * var(--gun));
+  left: 0;
+  transform: translate(-50%, -50%) rotate(225deg); /* the torch's light end at the asteroid */
+}
+
+.miner-sprite-beam {
+  position: absolute;
+  top: calc(-1 * var(--gun));
+  left: -0.08em;
+  width: 0.16em;
+  height: calc(var(--gun) - var(--rock-r) * 0.95);
+  border-radius: 999px;
+  background: linear-gradient(#ff9a9a, #fff 55%, #ff4d4d);
+  box-shadow: 0 0 6px 2px rgba(255, 70, 70, 0.6);
+  animation: miner-laser calc(0.24s / var(--work)) steps(2) infinite alternate;
+}
+
+/* Where it hits */
+.miner-sprite-beam::after {
+  content: "";
+  position: absolute;
+  bottom: -0.15em;
+  left: 50%;
+  width: 0.45em;
+  height: 0.45em;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff, rgba(255, 90, 60, 0.8) 45%, transparent 70%);
+}
+
+@keyframes miner-laser {
+  to { opacity: 0.65; }
+}
+
+/* Ore Freighters fly across now and then: along the top, along the bottom, and through the middle behind the asteroid.
+   They're off to the side more than half the time. --still is where they wait with less motion. */
+.miner-sprite.is-freighter {
+  left: -12%;
+  z-index: 2;
+  translate: -50% -50%;
+  animation: miner-fly var(--t) linear var(--delay) infinite;
+}
+
+.miner-sprite.is-freighter.is-1 { top: 14%; --t: 14s; --delay: -3s; --still: 30%; }
+.miner-sprite.is-freighter.is-2 { top: 86%; --t: 19s; --delay: -12s; --still: 72%; }
+.miner-sprite.is-freighter.is-3 { top: 48%; --t: 23s; --delay: -6s; --still: 20%; z-index: 0; }
+
+.miner-sprite.is-freighter .miner-sprite-body {
+  rotate: 45deg; /* the 🚀 points up and to the right: this points it right */
+  animation: miner-bob 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes miner-fly {
+  0% { left: -12%; }
+  45%, 100% { left: 112%; }
+}
+
+@keyframes miner-bob {
+  to { translate: 0 -0.2em; }
+}
+
+/* The big ones, three on each side: a moon being dug up, a Star Forge and a planet being cracked open on the left, the
+   Space Station, a wormhole and a black hole on the right */
+.miner-sprite:is(.is-excavator, .is-forge, .is-cracker, .is-station, .is-wormhole, .is-siphon) {
+  translate: -50% -50%;
+}
+
+.miner-sprite.is-station {
+  left: 88%;
+  top: 17%;
+}
+
+.miner-sprite.is-station .miner-sprite-body {
+  font-size: 1.3em;
+  animation: miner-tilt 6s ease-in-out infinite alternate;
+}
+
+@keyframes miner-tilt {
+  from { rotate: -10deg; translate: 0 -0.08em; }
+  to { rotate: 10deg; translate: 0 0.08em; }
+}
+
+/* Moon Excavator: a 🚜 rocking about on top of a moon */
+.miner-sprite.is-excavator {
+  left: 12%;
+  top: 20%;
+  width: 2.2em;
+  height: 2.2em;
+}
+
+.miner-sprite-moon {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 38%, rgba(0, 0, 0, 0.2) 0 11%, transparent 12%),
+    radial-gradient(circle at 66% 62%, rgba(0, 0, 0, 0.16) 0 9%, transparent 10%),
+    radial-gradient(circle at 58% 28%, rgba(0, 0, 0, 0.14) 0 6%, transparent 7%),
+    radial-gradient(circle at 35% 30%, #f1f1e6, #b9b8a8 55%, #6f6e63);
+  box-shadow: inset -0.25em -0.3em 0.5em rgba(0, 0, 0, 0.4), 0 0 0.6em rgba(255, 255, 230, 0.15);
+}
+
+.miner-sprite.is-excavator .miner-sprite-body {
+  position: absolute;
+  left: 50%;
+  bottom: 88%;
+  font-size: 0.7em;
+  translate: -50% 0;
+  transform-origin: 50% 100%;
+  animation: miner-rock 1.3s ease-in-out infinite alternate;
+}
+
+/* Star Forge: a star being squeezed, a hammer hitting it every time */
+.miner-sprite.is-forge {
+  left: 7%;
+  top: 50%;
+  width: 1.5em;
+  height: 1.5em;
+}
+
+.miner-sprite-star {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 18%, #ffe27a 45%, #ff9b3d);
+  box-shadow: 0 0 0.8em 0.3em rgba(255, 190, 80, 0.55);
+  animation: miner-squeeze calc(1.2s / var(--work)) ease-in-out infinite;
+}
+
+.miner-sprite.is-forge .miner-sprite-tool {
+  left: 70%;
+  bottom: 55%;
+  scale: -1 1; /* its head on the left, over the star */
+  animation: miner-hammer calc(1.2s / var(--work)) ease-in infinite;
+}
+
+@keyframes miner-squeeze {
+  0%, 62%, 100% { scale: 1; }
+  72% { scale: 1.2 0.8; }
+}
+
+@keyframes miner-hammer {
+  0%, 55%, 100% { rotate: 40deg; }
+  70% { rotate: -25deg; }
+}
+
+/* Planet Cracker: a planet glowing from the cracks */
+.miner-sprite.is-cracker {
+  left: 12%;
+  top: 80%;
+}
+
+.miner-sprite.is-cracker .miner-sprite-body {
+  font-size: 1.9em;
+  animation: miner-crack 2.6s ease-in-out infinite;
+}
+
+@keyframes miner-crack {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 120, 40, 0.3)); }
+  50% { filter: drop-shadow(0 0 10px rgba(255, 120, 40, 0.95)); scale: 1.05; }
+}
+
+/* Wormhole Gate: a spinning portal, seen from the side a bit */
+.miner-sprite.is-wormhole {
+  left: 93%;
+  top: 50%;
+  width: 2em;
+  height: 2em;
+  scale: 0.6 1;
+}
+
+.miner-sprite.is-wormhole .miner-sprite-body {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #05030f 0 34%, transparent 36%),
+    conic-gradient(var(--miner-dark), #4de3ff, var(--miner-anti), var(--miner-dark));
+  box-shadow: 0 0 0.7em rgba(157, 123, 255, 0.7);
+  animation: miner-spin 2.5s linear infinite reverse;
+}
+
+/* Black Hole Siphon: a black hole with a glowing disk spinning round it (the disk is flattened, then spun inside that) */
+.miner-sprite.is-siphon {
+  left: 88%;
+  top: 80%;
+  width: 2.4em;
+  height: 2.4em;
+}
+
+.miner-sprite-disk {
+  position: absolute;
+  inset: 0;
+  scale: 1 0.42;
+  rotate: -12deg;
+}
+
+.miner-sprite-disk::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(#ffb86b, var(--miner-dark), transparent 35%, var(--miner-anti), #ffe08a, transparent 80%, #ffb86b);
+  filter: blur(1px);
+  animation: miner-spin 3s linear infinite;
+}
+
+.miner-sprite-hole {
+  position: absolute;
+  inset: 32%;
+  border-radius: 50%;
+  background: #000;
+  box-shadow: 0 0 0 0.06em rgba(255, 210, 140, 0.85), 0 0 0.6em 0.15em rgba(157, 123, 255, 0.7);
+}
+
+@keyframes miner-spin {
+  to { rotate: 360deg; }
+}
+
+/* Nebula Harvester: coloured clouds drifting in the background */
+.miner-sprite.is-nebula {
+  inset: -10% -5%;
+  z-index: -1;
+}
+
+.miner-sprite.is-nebula .miner-sprite-body {
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 35% 30% at 25% 35%, rgba(255, 107, 181, 0.22), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 72% 65%, rgba(157, 123, 255, 0.26), transparent 70%),
+    radial-gradient(ellipse 30% 25% at 60% 20%, rgba(77, 227, 255, 0.15), transparent 70%);
+  filter: blur(6px);
+  animation: miner-nebula 20s ease-in-out infinite alternate;
+}
+
+@keyframes miner-nebula {
+  to { translate: 4% -3%; filter: blur(6px) hue-rotate(50deg); }
+}
+
+/* Dyson Swarm: a ring of glinting mirrors round the whole thing, tilted. Two of them: the first is the half behind the
+   asteroid, the second only the half in front. */
+.miner-sprite.is-dyson {
+  left: 50%;
+  top: 50%;
+  width: calc(var(--rock-r) * 4);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  rotate: -14deg;
+  scale: 1 0.28;
+  z-index: -1;
+}
+
+.miner-sprite.is-dyson.is-2 {
+  z-index: 2;
+  clip-path: inset(50% 0 0 0);
+}
+
+.miner-sprite.is-dyson .miner-sprite-body {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 0.16em dotted var(--miner-gold);
+  border-radius: 50%;
+  opacity: 0.7;
+  filter: drop-shadow(0 0 3px var(--miner-gold));
+  animation: miner-spin 60s linear infinite;
+}
+
+/* Multiverse Drill: a rift into the universe next door, shimmering behind the asteroid */
+.miner-sprite.is-multiverse {
+  left: 50%;
+  top: 50%;
+  width: calc(var(--rock-r) * 0.5);
+  height: 100%;
+  translate: -50% -50%;
+  rotate: 24deg;
+  z-index: -1;
+}
+
+.miner-sprite.is-multiverse .miner-sprite-body {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(var(--miner-anti), var(--miner-dark), #4de3ff, #7cf04a, var(--miner-gold));
+  opacity: 0.45;
+  filter: blur(10px);
+  animation: miner-rift 4s ease-in-out infinite alternate;
+}
+
+@keyframes miner-rift {
+  to { opacity: 0.75; scale: 1.25 1.05; filter: blur(10px) hue-rotate(120deg); }
+}
+
+/* A Frenzy or a Diamond Rush: everyone works three times as fast */
+.miner-field.is-frenzy {
+  --work: 3;
 }
 
 /* The store: the one part of the Ore view that scrolls, with a thin scroll bar like the chat's */
@@ -1247,6 +1746,9 @@
   }
 
   .miner-field {
+    --rock-r: 85px;
+    --sprite: 1.25rem;
+    --gap: 13px;
     flex: none;
     height: 220px;
     min-height: 0;
@@ -1330,10 +1832,19 @@
     text-align: left;
   }
 
+  /* The picture only has room for what's on the asteroid and the first two drones */
   .miner-field {
+    --rock-r: 52px;
+    --sprite: 0.8rem;
+    --gap: 7px;
     grid-area: field;
     width: 130px;
     height: 130px;
+  }
+
+  .miner-scene > :not(.is-drone),
+  .miner-sprite.is-drone:is(.is-3, .is-4, .is-5) {
+    display: none;
   }
 
   .miner-ore { grid-area: ore; font-size: 1.35rem; }
@@ -1386,8 +1897,22 @@
   }
 }
 
-/* Less motion: the asteroid holds still and the comet waits in one place, pulsing, instead of flying */
+/* Less motion: the asteroid holds still and the comet waits in one place, pulsing, instead of flying. The buildings in
+   the picture stop where they are (spread out by their delays), the freighters somewhere along their way. */
 @media (prefers-reduced-motion: reduce) {
+  .miner-sprite,
+  .miner-sprite *,
+  .miner-sprite::after,
+  .miner-sprite *::before,
+  .miner-sprite *::after {
+    animation-play-state: paused !important; /* over the animation shorthands, which are more specific */
+  }
+
+  .miner-sprite.is-freighter {
+    left: var(--still);
+    animation: none;
+  }
+
   .miner-field,
   .miner-asteroid.is-hit,
   .miner-asteroid[data-stage="4"],
