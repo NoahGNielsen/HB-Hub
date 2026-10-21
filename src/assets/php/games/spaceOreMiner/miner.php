@@ -12,9 +12,9 @@
 // upgrades bought, comets caught, Warp Jumps - each with the time it happened, and hbHubMinerSync() plays them again on
 // the saved game with the same rules as the script. Something that couldn't have happened (buying without the ore,
 // catching a comet that wasn't there, more than HBHUB_MINER_CLICKS_PER_SECOND clicks a second) just doesn't count, and
-// the page carries on from the game the server sends back. Clicks that come in faster than a person can keep up (an
-// auto-clicker, see hbHubMinerFastClick()) only mine HBHUB_MINER_FAST_VALUE of what they would. So the
-// script and this file must work the same: the rules
+// the page carries on from the game the server sends back. Clicks the page found to look like an auto-clicker's (it
+// sees the mouse, which the server can't, see looksAuto() in the script) come with 'auto' and only mine
+// HBHUB_MINER_AUTO_VALUE of what they would. So the script and this file must work the same: the rules
 // below are copied in spaceOreMiner.js, and the data (buildings, upgrades, achievements and the numbers) goes to the
 // page as JSON from hbHubMinerConfig(), so it's only written here.
 // Luck (critical clicks, when comets come and what they do) comes from hbHubMinerRandom(): the same numbers here and in
@@ -29,9 +29,7 @@ const HBHUB_MINER_SAVE_SECONDS = 30; // how often the page saves while it's open
 const HBHUB_MINER_ONLINE_MS = 90000; // a gap between saves up to this long counts as playing, the rest as away
 const HBHUB_MINER_OFFLINE_RATE = 0.05; // of the normal ore per second, while away
 const HBHUB_MINER_CLICKS_PER_SECOND = 20; // the most clicks that count, so auto-clickers don't pay
-const HBHUB_MINER_FAST_CLICKS = 15; // more clicks than this in a second...
-const HBHUB_MINER_FAST_MS = 180000; // ...kept up for this long is an auto-clicker...
-const HBHUB_MINER_FAST_VALUE = 0.2; // ...and only mines this share of what a click is worth
+const HBHUB_MINER_AUTO_VALUE = 0.2; // the share of what a click is worth that an auto-clicker's click mines
 const HBHUB_MINER_MAX_ACTIONS = 2000; // in one save
 const HBHUB_MINER_COST_GROWTH = 1.15; // each building costs this much more than the one before (unless it has its own 'growth')
 const HBHUB_MINER_COST_GROWTH_PHYSICS = 0.01; // taken off that with Cheaper Physics
@@ -329,9 +327,7 @@ function hbHubMinerConfig(): array
         'onlineMs' => HBHUB_MINER_ONLINE_MS,
         'offlineRate' => HBHUB_MINER_OFFLINE_RATE,
         'clicksPerSecond' => HBHUB_MINER_CLICKS_PER_SECOND,
-        'fastClicks' => HBHUB_MINER_FAST_CLICKS,
-        'fastMs' => HBHUB_MINER_FAST_MS,
-        'fastValue' => HBHUB_MINER_FAST_VALUE,
+        'autoValue' => HBHUB_MINER_AUTO_VALUE,
         'maxActions' => HBHUB_MINER_MAX_ACTIONS,
         'costGrowth' => HBHUB_MINER_COST_GROWTH,
         'costGrowthPhysics' => HBHUB_MINER_COST_GROWTH_PHYSICS,
@@ -422,8 +418,6 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  * - antimatter: to spend. antimatterEarned: ever earned (the bonus). antiUpgrades: bought with it. crunches: Big
  *   Crunches made.
  * - clicks, crits, comets (caught), diamonds (Diamond Comets caught): counted ever.
- * - fast: how fast the clicks come, to spot auto-clickers (hbHubMinerFastClick()): times (of the last
- *   HBHUB_MINER_FAST_CLICKS + 1 clicks, oldest first) and since (when clicking faster than that began).
  * - comet: the next or current comet: n (its number, for its luck) and at (when it shows up).
  * - buffs: the comet effects running: 'production' or 'click' => {kind, multiplier, until}.
  * - achievements: the ids done. tick: how far the game has run. started, runStarted: when the save and this run began.
@@ -454,7 +448,6 @@ function hbHubMinerNewState(int $now): array
         'crits' => 0,
         'comets' => 0,
         'diamonds' => 0,
-        'fast' => ['since' => 0, 'times' => []],
         'comet' => ['n' => 0, 'at' => $now],
         'buffs' => [],
         'achievements' => [],
@@ -476,11 +469,7 @@ function hbHubMinerNormalize(array $saved, int $now): array
     $state['upgrades'] = array_values(array_intersect($state['upgrades'], array_keys(hbHubMinerUpgrades())));
     $state['darkUpgrades'] = array_values(array_intersect($state['darkUpgrades'], array_keys(HBHUB_MINER_DARK_UPGRADES)));
     $state['antiUpgrades'] = array_values(array_intersect($state['antiUpgrades'], array_keys(HBHUB_MINER_ANTI_UPGRADES)));
-    $state['fast'] = [
-        'since' => (int) ($state['fast']['since'] ?? 0),
-        'times' => array_map('intval', array_slice(array_values($state['fast']['times'] ?? []), -(HBHUB_MINER_FAST_CLICKS + 1))),
-    ];
-    unset($state['steady']); // the old auto-clicker check's
+    unset($state['steady'], $state['fast']); // the old auto-clicker checks'
 
     foreach (['ore', 'runOre', 'universeOre', 'allOre', 'clickOre'] as $key) {
         $state[$key] = (float) $state[$key];
@@ -830,45 +819,19 @@ function hbHubMinerCrunchGain(array $state): int
 }
 
 /**
- * Whether a click at $time (Unix ms) comes from an auto-clicker, so it only mines HBHUB_MINER_FAST_VALUE. That's when
- * there have been more than HBHUB_MINER_FAST_CLICKS clicks in every second for HBHUB_MINER_FAST_MS: this click and the
- * HBHUB_MINER_FAST_CLICKS before it all came within a second, and have done since 'since'. Nobody's finger keeps that
- * up for so long. It's kept in the save's 'fast', so it carries on from one save to the next, and one slower second
- * starts it over. The script does the same in fastClick().
+ * Clicks the asteroid $count times at the game's time. $auto: the page found they look like an auto-clicker's, so each
+ * only mines HBHUB_MINER_AUTO_VALUE. Returns the ore mined.
  */
-function hbHubMinerFastClick(array &$state, int $time): bool
+function hbHubMinerClick(array &$state, int $count, bool $auto = false): float
 {
-    $fast = &$state['fast'];
-    $count = count($fast['times']);
-    $time = max($time, $count > 0 ? (int) $fast['times'][$count - 1] : 0);
-    $fast['times'][] = $time;
-    if ($count + 1 > HBHUB_MINER_FAST_CLICKS + 1) {
-        array_shift($fast['times']);
-    }
-    if (count($fast['times']) <= HBHUB_MINER_FAST_CLICKS || $time - $fast['times'][0] >= 1000) {
-        $fast['since'] = $time; // not that fast, so it starts over from this click
-    }
-    return $time - $fast['since'] >= HBHUB_MINER_FAST_MS;
-}
-
-/**
- * Clicks the asteroid $count times at the game's time. $offsets: when each click was, in ms after that (the page groups
- * the clicks of a second into one action); a missing one is 0. Returns the ore mined.
- */
-function hbHubMinerClick(array &$state, int $count, array $offsets = []): float
-{
-    $value = hbHubMinerClickValue($state, $state['tick']);
+    $value = hbHubMinerClickValue($state, $state['tick']) * ($auto ? HBHUB_MINER_AUTO_VALUE : 1);
     $canCrit = hbHubMinerHas($state, 'crit');
     $mined = 0.0;
     for ($i = 0; $i < $count; $i++) {
-        $offset = is_numeric($offsets[$i] ?? null) ? min(max((int) $offsets[$i], 0), 999) : 0;
         $ore = $value;
         if ($canCrit && hbHubMinerRandom($state['seed'], $state['clicks'], HBHUB_MINER_SALT_CRIT) < HBHUB_MINER_CRIT_CHANCE) {
             $ore *= HBHUB_MINER_CRIT_MULTIPLIER;
             $state['crits']++;
-        }
-        if (hbHubMinerFastClick($state, $state['tick'] + $offset)) {
-            $ore *= HBHUB_MINER_FAST_VALUE;
         }
         $state['clicks']++;
         $mined += $ore;
@@ -976,7 +939,8 @@ function hbHubMinerCrunch(array &$state): bool
 
 /**
  * One thing the player did, at the game's time. Returns whether it counted.
- * - ['type' => 'click', 'count' => n, 'offsets' => [ms after 'at' of each click]]: see hbHubMinerSync() for the limit.
+ * - ['type' => 'click', 'count' => n, 'auto' => true when they look like an auto-clicker's (left out otherwise)]: see
+ *   hbHubMinerSync() for the limit.
  * - ['type' => 'buy', 'building' => id, 'amount' => 1, 10 or 100] (10 and 100 need Bulk Buying).
  * - ['type' => 'upgrade', 'id' => id], ['type' => 'dark', 'id' => id] (a Dark Matter upgrade), ['type' => 'anti',
  *   'id' => id] (an Antimatter upgrade).
@@ -991,7 +955,7 @@ function hbHubMinerApply(array &$state, array $action): bool
         if ($count < 1) {
             return false;
         }
-        hbHubMinerClick($state, $count, is_array($action['offsets'] ?? null) ? array_values($action['offsets']) : []);
+        hbHubMinerClick($state, $count, ($action['auto'] ?? false) === true);
         return true;
     }
 

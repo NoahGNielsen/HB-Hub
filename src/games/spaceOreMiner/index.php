@@ -253,7 +253,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <li>Play in one tab at a time: opening the game somewhere else stops it here.</li>
                     <li>
                         Clicks are counted up to <?= HBHUB_MINER_CLICKS_PER_SECOND ?> a second. Auto-clickers and scripts aren't allowed, and buy
-                        you little anyway: clicks that look like they come from one only mine <?= HBHUB_MINER_FAST_VALUE * 100 ?>% of what they would.
+                        you little anyway: clicks that look like they come from one only mine <?= HBHUB_MINER_AUTO_VALUE * 100 ?>% of what they would.
                     </li>
                 </ul>
             </div>

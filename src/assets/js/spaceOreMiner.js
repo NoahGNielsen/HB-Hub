@@ -201,43 +201,26 @@
     }
     const crunchGain = (s) => (s.darkEarned >= CONFIG.crunchDark ? antiTotal(s.darkEarned) : 0);
 
-    // Whether a click at time comes from an auto-clicker: too fast for too long (hbHubMinerFastClick())
-    function fastClick(s, time) {
-        const fast = s.fast;
-        const count = fast.times.length;
-        time = Math.max(time, count > 0 ? fast.times[count - 1] : 0);
-        fast.times.push(time);
-        if (fast.times.length > CONFIG.fastClicks + 1) fast.times.shift();
-        if (fast.times.length <= CONFIG.fastClicks || time - fast.times[0] >= 1000) fast.since = time;
-        return time - fast.since >= CONFIG.fastMs;
-    }
-
-    // offsets: when each click was, in ms after s.tick. Returns the ore mined, how many of the clicks were critical and
-    // whether any looked like an auto-clicker's.
-    function click(s, count, offsets = []) {
-        const value = clickValue(s, s.tick);
+    // auto: they look like an auto-clicker's (looksAuto()), so each only mines autoValue. Returns the ore mined and how
+    // many of the clicks were critical.
+    function click(s, count, auto = false) {
+        const value = clickValue(s, s.tick) * (auto ? CONFIG.autoValue : 1);
         const canCrit = has(s, 'crit');
         let mined = 0;
         let crits = 0;
-        let auto = false;
         for (let i = 0; i < count; i++) {
-            const offset = Number.isFinite(offsets[i]) ? Math.min(Math.max(Math.trunc(offsets[i]), 0), 999) : 0;
             let ore = value;
             if (canCrit && random(s.seed, s.clicks, SALT_CRIT) < CONFIG.critChance) {
                 ore *= CONFIG.critMultiplier;
                 s.crits++;
                 crits++;
             }
-            if (fastClick(s, s.tick + offset)) {
-                ore *= CONFIG.fastValue;
-                auto = true;
-            }
             s.clicks++;
             mined += ore;
         }
         s.clickOre += mined;
         earn(s, mined);
-        return { mined, crits, auto };
+        return { mined, crits };
     }
 
     // Returns {kind, ore (what a lucky comet gave)}, or null when there wasn't one on screen
@@ -306,7 +289,7 @@
     function apply(s, action) {
         switch (action.type) {
             case 'click':
-                return action.count >= 1 ? click(s, action.count, action.offsets) : false;
+                return action.count >= 1 ? click(s, action.count, action.auto === true) : false;
             case 'buy': {
                 const { building, amount } = action;
                 if (!BUILDINGS[building] || ![1, 10, 100].includes(amount) || (amount > 1 && !has(s, 'bulk'))) return false;
@@ -518,6 +501,9 @@
     let clickTokens = CONFIG.clicksPerSecond; // clicks that would still count right now (the server's limit)
     let clickTokensAt = performance.now();
     let wasAuto = false; // the last click looked like an auto-clicker's (told once, until the clicks are back to normal)
+    let press = null; // the pointer pressing the asteroid right now: {id, at (its event's timeStamp)}
+    let lastHold = null; // how long the last press on the asteroid lasted, in ms (null when it wasn't let go on it)
+    let recentClicks = []; // the last AUTO_CLICKS clicks in a row, for looksAuto(): {at, hold, x, y}
     let announced = new Set(); // achievements already shown
     let storeKey = '';
     let darkKey = '';
@@ -553,14 +539,13 @@
         const result = apply(state, action);
         if (!result) return false;
 
-        // Clicks in the same second go as one, with when each was (offsets, ms after at) for the auto-clicker check
+        // Clicks in the same second go as one (unless one looks like an auto-clicker's and the other doesn't)
         const last = pending[pending.length - 1];
         const at = Math.round(state.tick);
-        if (action.type === 'click' && last?.type === 'click' && at - last.at < 1000) {
+        if (action.type === 'click' && last?.type === 'click' && at - last.at < 1000 && last.auto === action.auto) {
             last.count += action.count;
-            last.offsets.push(...Array(action.count).fill(at - last.at));
         } else {
-            pending.push({ ...action, at, ...(action.type === 'click' ? { offsets: Array(action.count).fill(0) } : {}) });
+            pending.push({ ...action, at });
         }
         if (pending.length >= CONFIG.maxActions / 2) save();
         return result;
@@ -1418,7 +1403,50 @@
         }
     }
 
-    asteroid.addEventListener('click', (event) => {
+    // ----- Spotting auto-clickers. The server can't (all it gets is how many clicks there were each second), so the page
+    // looks at each click as it happens and marks the ones that look like an auto-clicker's, which then only mine
+    // autoValue (the click action's 'auto'). A click does when:
+    // - it isn't from a person at all (isTrusted is false: a script or an extension clicked the asteroid), or
+    // - it ends AUTO_CLICKS clicks in a row (each less than AUTO_GAP_MS after the one before) that were all pressed for
+    //   less than AUTO_HOLD_MS (an auto-clicker presses and lets go at once, a finger can't), or that all came at the
+    //   same pace (the gaps between them within AUTO_STEADY_MS of each other) without the pointer moving a pixel.
+    // So one human-looking click, or a second's break, starts it over. None of it is saved or sent anywhere.
+    const AUTO_CLICKS = 40;
+    const AUTO_GAP_MS = 1000;
+    const AUTO_HOLD_MS = 10;
+    const AUTO_STEADY_MS = 20;
+
+    asteroid.addEventListener('pointerdown', (event) => {
+        press = { id: event.pointerId, at: event.timeStamp };
+    });
+    asteroid.addEventListener('pointerup', (event) => {
+        if (press?.id === event.pointerId) lastHold = event.timeStamp - press.at;
+        press = null;
+    });
+
+    // Whether a click (or the Space press that mined) looks like an auto-clicker's. fromKeyboard: it had no pointer.
+    function looksAuto(event, fromKeyboard) {
+        const hold = fromKeyboard ? null : lastHold;
+        lastHold = null;
+        if (!event.isTrusted) return true;
+
+        const at = event.timeStamp;
+        if (recentClicks.length > 0 && at - recentClicks[recentClicks.length - 1].at >= AUTO_GAP_MS) recentClicks = [];
+        recentClicks.push({ at, hold, x: fromKeyboard ? null : event.clientX, y: fromKeyboard ? null : event.clientY });
+        if (recentClicks.length > AUTO_CLICKS) recentClicks.shift();
+        if (recentClicks.length < AUTO_CLICKS) return false;
+
+        if (recentClicks.every((recent) => recent.hold !== null && recent.hold < AUTO_HOLD_MS)) return true;
+        const first = recentClicks[0];
+        if (!recentClicks.every((recent) => recent.x === first.x && recent.y === first.y)) return false;
+        const gaps = recentClicks.slice(1).map((recent, i) => recent.at - recentClicks[i].at);
+        return Math.max(...gaps) - Math.min(...gaps) <= AUTO_STEADY_MS;
+    }
+
+    // Mines once, for a click on the asteroid or Space (event is the click or the keydown)
+    function mine(event, fromKeyboard) {
+        const auto = looksAuto(event, fromKeyboard);
+
         // Only as many clicks as the server counts (clicksPerSecond, with a second's worth to start with)
         const now = performance.now();
         clickTokens = Math.min(CONFIG.clicksPerSecond, clickTokens + (now - clickTokensAt) / 1000 * CONFIG.clicksPerSecond);
@@ -1426,23 +1454,29 @@
         if (clickTokens < 1) return;
         clickTokens--;
 
-        const result = act({ type: 'click', count: 1 });
+        const result = act(auto ? { type: 'click', count: 1, auto: true } : { type: 'click', count: 1 });
         if (!result) return;
         const box = field.getBoundingClientRect();
-        const fromKeyboard = event.detail === 0;
         const x = fromKeyboard ? box.width / 2 : event.clientX - box.left;
         const y = fromKeyboard ? box.height / 2 : event.clientY - box.top;
         burst(x, y, result.mined, result.crits > 0);
         sound(result.crits > 0 ? 'crit' : 'click');
-        if (result.auto && !wasAuto) {
+        if (auto && !wasAuto) {
             toast('robot', 'Hey! Looks like you\'re using an auto-clicker, so your clicks are only worth '
-                + CONFIG.fastValue * 100 + '% now.', '', 9000);
+                + CONFIG.autoValue * 100 + '% now.', '', 9000);
         }
-        wasAuto = result.auto;
+        wasAuto = auto;
         asteroid.classList.remove('is-hit');
         void asteroid.offsetWidth;
         asteroid.classList.add('is-hit');
         oreText.textContent = format(state.ore, { long: true });
+    }
+
+    asteroid.addEventListener('click', (event) => mine(event, event.detail === 0));
+
+    // Holding Enter on the asteroid would click it over and over, so like Space, only the first press counts
+    asteroid.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && event.repeat) event.preventDefault();
     });
 
     // ----- The store
@@ -1651,7 +1685,7 @@
             // which keep the focus after being clicked)
             if (target.closest?.('button, a:not([data-miner-view-link]), summary')) return;
             event.preventDefault(); // instead of scrolling the page
-            if (!event.repeat) asteroid.click();
+            if (!event.repeat && !asteroid.disabled) mine(event, true); // not asteroid.click(), which a script would do too
             return;
         }
         if (event.repeat) return;
