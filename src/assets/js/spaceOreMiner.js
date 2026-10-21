@@ -177,6 +177,7 @@
         const need = upgrade.need;
         if (need.ore !== undefined && s.runOre < need.ore) return false;
         if (need.comets !== undefined && s.comets < need.comets) return false;
+        if (!(need.upgrades ?? []).every((id) => has(s, id))) return false;
         return Object.entries(need.owned ?? {}).every(([id, count]) => s.buildings[id] >= count);
     }
 
@@ -777,12 +778,13 @@
         const upgrades = availableUpgrades();
         if (!has(state, 'bulk')) buyAmount = 1;
         const offset = keyOffset(shown.length);
-        const key = [shown.join(), mystery, upgrades.join(), buyAmount, has(state, 'bulk'), hasDark(state, 'lateKeys'), lateKeys, offset].join('|');
+        const hasKeys = has(state, 'quickKeys');
+        const key = [shown.join(), mystery, upgrades.join(), buyAmount, has(state, 'bulk'), hasKeys, hasDark(state, 'lateKeys'), lateKeys, offset].join('|');
 
         if (key !== storeKey) { // something new to show: build the lists again
             storeKey = key;
             amounts.hidden = !has(state, 'bulk');
-            keySwitch.hidden = !hasDark(state, 'lateKeys');
+            keySwitch.hidden = !hasDark(state, 'lateKeys') || !hasKeys; // it only moves the 1-9 and 0 keys
             keySwitch.classList.toggle('is-active', lateKeys);
             keySwitch.setAttribute('aria-pressed', String(lateKeys));
             for (const button of amounts.querySelectorAll('[data-amount]')) {
@@ -825,7 +827,7 @@
                 );
                 button.append(iconBox('miner-building-icon', building.icon), main, element('span', 'miner-building-owned'));
                 const index = shown.indexOf(id) - offset;
-                if (index >= 0 && index < BUILDING_KEYS.length) { // the hot key that buys it (see "Hot keys" below)
+                if (hasKeys && index >= 0 && index < BUILDING_KEYS.length) { // the hot key that buys it (see "Hot keys" below)
                     button.prepend(element('kbd', 'miner-key', BUILDING_KEYS[index]));
                     button.setAttribute('aria-keyshortcuts', BUILDING_KEYS[index]);
                 }
@@ -1639,10 +1641,11 @@
 
     // ----- Hot keys: each one presses the button it stands for, so they do exactly what a click would.
     // Space mines (a held-down key only counts once), C catches the comet (once the Comet Hot Key upgrade is bought, it's
-    // lost on a Warp Jump like the other upgrades), 1-9 and 0 buy the buildings in the order they're
-    // listed (the last ten, with Long-Range Hot Keys switched on: see keyOffset()), K flips that switch, U buys the
-    // cheapest upgrade you can afford, B the affordable building with the most ore/s for its price (at the ×1/×10/×100
-    // picked), A switches between ×1, ×10
+    // lost on a Warp Jump like the other upgrades). With the Hot Key Panel upgrade (lost the same way, and needed before
+    // the Comet Hot Key shows up), 1-9 and 0 buy the buildings in the order they're
+    // listed (the last ten, with Long-Range Hot Keys switched on: see keyOffset()), U buys the
+    // cheapest upgrade you can afford and B the affordable building with the most ore/s for its price (at the ×1/×10/×100
+    // picked). K flips the Long-Range switch, A switches between ×1, ×10
     // and ×100, W opens the Warp Jump box, X the Big Crunch box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
     // shortcuts) and while a box is open. The buying keys (1-9, 0, B and U) can be held down to keep buying; the others
     // only count once per press, so holding M doesn't flick the sound on and off.
@@ -1655,6 +1658,7 @@
         u: () => {
             // Picked by cost from the buttons in the store, so it doesn't depend on the order they're listed in or on
             // an upgrade that's only just shown up and isn't drawn yet
+            if (!has(state, 'quickKeys')) return;
             catchUp();
             let cheapest = null;
             for (const button of upgradeList.querySelectorAll('[data-upgrade]')) {
@@ -1666,6 +1670,7 @@
         b: () => {
             // The affordable building (at the amount picked) that adds the most ore per second for each ore it costs.
             // The gain is how much the whole steady rate goes up, so crew, synergy and click-share upgrades count too
+            if (!has(state, 'quickKeys')) return;
             catchUp();
             const before = rate(state, Infinity);
             let best = null;
@@ -1713,6 +1718,7 @@
         const keyIndex = BUILDING_KEYS.indexOf(event.key);
         if (keyIndex >= 0) {
             // Held down, these keep buying (as fast as the keyboard repeats), like B and U below
+            if (!has(state, 'quickKeys')) return;
             const buttons = buildingList.querySelectorAll('[data-building]');
             buttons[keyOffset(buttons.length) + keyIndex]?.click();
             return;

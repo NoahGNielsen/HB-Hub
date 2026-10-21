@@ -133,12 +133,15 @@ const HBHUB_MINER_BUILDING_UPGRADE_COST = [2.5, 3, 5, 8, 8, 8];
 // - crew: each of 'building' mines another 'value' ore per second (before its other upgrades) for every other building
 //   owned, so Space Pickaxe Guys keep up with the rest.
 // - comet: 'effect' often, longer, tail, diamond, lucky or key (the C key catches comets, only in spaceOreMiner.js).
-// 'need' is when it shows up in the store: ore (mined this run), owned (building => how many) and comets (caught ever).
-// Without one, it's ore mined this run of half its cost.
+// - keys: the U, B, 1-9 and 0 hot keys work (only in spaceOreMiner.js).
+// 'need' is when it shows up in the store: ore (mined this run), owned (building => how many), comets (caught ever) and
+// upgrades (the ids of upgrades that must be bought first). Without one, it's ore mined this run of half its cost.
 const HBHUB_MINER_OTHER_UPGRADES = [
     'titanium' => ['name' => 'Titanium Pickaxe', 'icon' => 'pickaxe', 'cost' => 100, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
     'gloves' => ['name' => 'Reinforced Gloves', 'icon' => 'glove', 'cost' => 500, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
     'plasma' => ['name' => 'Plasma Gloves', 'icon' => 'plasmaGlove', 'cost' => 5000, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
+    'quickKeys' => ['name' => 'Hot Key Panel', 'icon' => 'keyboard', 'cost' => 5000, 'type' => 'keys',
+        'text' => 'Unlocks the hot keys that buy: U for the cheapest upgrade, B for the best building and 1-9 and 0 for the buildings in the store.'],
     'fuel' => ['name' => 'Better Fuel', 'icon' => 'fuelCan', 'cost' => 10000, 'type' => 'global', 'value' => 0.1, 'text' => 'All buildings mine 10% more.'],
     'buddySystem' => ['name' => 'Buddy System', 'icon' => 'buddies', 'cost' => 2000, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.005,
         'need' => ['owned' => ['pickaxe' => 10]], 'text' => 'Each Space Pickaxe Guy mines 0.005 more ore per second for every other building you own.'],
@@ -157,7 +160,7 @@ const HBHUB_MINER_OTHER_UPGRADES = [
     'autoAim' => ['name' => 'Auto-Aim Laser', 'icon' => 'target', 'cost' => 50000, 'type' => 'clickPct', 'value' => 0.01, 'text' => 'Each click also mines 1% of your ore per second.'],
     'bulk' => ['name' => 'Bulk Buying', 'icon' => 'crates', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time.'],
     'quantum' => ['name' => 'Quantum Hammer', 'icon' => 'quantumHammer', 'cost' => 500000, 'type' => 'clickPct', 'value' => 0.02, 'text' => 'Each click mines another 2% of your ore per second.'],
-    'cometKey' => ['name' => 'Comet Hot Key', 'icon' => 'keyC', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1], 'text' => 'Press C to catch a comet, without having to hit it.'],
+    'cometKey' => ['name' => 'Comet Hot Key', 'icon' => 'keyC', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1, 'upgrades' => ['quickKeys']], 'text' => 'Press C to catch a comet, without having to hit it.'],
     'radar' => ['name' => 'Comet Radar', 'icon' => 'radar', 'cost' => 777777, 'type' => 'comet', 'effect' => 'often', 'need' => ['comets' => 3], 'text' => 'Comets show up twice as often.'],
     'zeroG' => ['name' => 'Zero-G Logistics', 'icon' => 'zeroG', 'cost' => 1e6, 'type' => 'global', 'value' => 0.25, 'text' => 'All buildings mine 25% more.'],
     'dockingBays' => ['name' => 'Drone Docking Bays', 'icon' => 'link', 'cost' => 1.3e6, 'type' => 'synergy', 'building' => 'drone', 'source' => 'base', 'per' => 0.01, 'every' => 1,
@@ -743,7 +746,8 @@ function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX)
 }
 
 /**
- * Whether an upgrade shows up in the store (bought or not): its need (ore this run, buildings owned, comets caught).
+ * Whether an upgrade shows up in the store (bought or not): its need (ore this run, buildings owned, comets caught,
+ * upgrades bought).
  */
 function hbHubMinerUpgradeUnlocked(array $state, array $upgrade): bool
 {
@@ -753,6 +757,11 @@ function hbHubMinerUpgradeUnlocked(array $state, array $upgrade): bool
     }
     if (isset($need['comets']) && $state['comets'] < $need['comets']) {
         return false;
+    }
+    foreach ($need['upgrades'] ?? [] as $upgradeId) {
+        if (!hbHubMinerHas($state, $upgradeId)) {
+            return false;
+        }
     }
     foreach ($need['owned'] ?? [] as $buildingId => $count) {
         if ($state['buildings'][$buildingId] < $count) {
