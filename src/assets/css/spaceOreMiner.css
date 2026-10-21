@@ -787,26 +787,37 @@
   3%, 23%, 36%, 56%, 69%, 89% { scale: 1 1; }
 }
 
-/* Ore Freighters fly across now and then: along the top, along the bottom, and through the middle behind the asteroid.
-   They're off to the side more than half the time. --still is where they wait with less motion. */
+/* Ore Freighters fly across now and then, from one side to the other and back again. Each time round, the JS
+   (flyFreighter()) picks a new way: --from-x/--from-y to --to-x/--to-y, --turn and --flip so the ship faces where it's
+   going, and .is-behind when the way goes through the asteroid. They're off to the side more than half the time.
+   --still is where they wait with less motion. */
 .miner-sprite.is-freighter {
-  left: -12%;
+  --from-x: -12%;
+  --to-x: 112%;
+  left: var(--from-x);
+  top: var(--from-y);
   z-index: 2;
   translate: -50% -50%;
+  rotate: var(--turn, 0deg);
+  scale: var(--flip, 1) 1;
   animation: miner-fly var(--t) linear var(--delay) infinite;
 }
 
-.miner-sprite.is-freighter.is-1 { top: 14%; --t: 14s; --delay: -3s; --still: 30%; }
-.miner-sprite.is-freighter.is-2 { top: 86%; --t: 19s; --delay: -12s; --still: 72%; }
-.miner-sprite.is-freighter.is-3 { top: 48%; --t: 23s; --delay: -6s; --still: 20%; z-index: 0; }
+.miner-sprite.is-freighter.is-1 { --from-y: 14%; --to-y: 14%; --t: 14s; --delay: -3s; --still: 30%; }
+.miner-sprite.is-freighter.is-2 { --from-y: 86%; --to-y: 86%; --t: 19s; --delay: -12s; --still: 72%; }
+.miner-sprite.is-freighter.is-3 { --from-y: 48%; --to-y: 48%; --t: 23s; --delay: -6s; --still: 20%; }
+
+.miner-sprite.is-freighter.is-behind {
+  z-index: 0;
+}
 
 .miner-sprite.is-freighter .miner-sprite-body {
   animation: miner-bob 1.4s ease-in-out infinite alternate;
 }
 
 @keyframes miner-fly {
-  0% { left: -12%; }
-  45%, 100% { left: 112%; }
+  0% { left: var(--from-x); top: var(--from-y); }
+  45%, 100% { left: var(--to-x); top: var(--to-y); }
 }
 
 @keyframes miner-bob {

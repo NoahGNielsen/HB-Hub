@@ -468,7 +468,8 @@
     // the drawn icons (see iconBox(); the same as in the store, or a scene* piece of one) or nothing (drawn in CSS: the
     // laser beam, the rocks the Moon Excavator dumps, the Black Hole Siphon's pull and the ore going up it, and the nebula,
     // Dyson Swarm and multiverse rift, which fill the space around the asteroid). Where the nth
-    // one goes and how it moves is in spaceOreMiner.css (.miner-sprite.is-<building>.is-<n>). The Dyson Swarm's ring is
+    // one goes and how it moves is in spaceOreMiner.css (.miner-sprite.is-<building>.is-<n>; the Ore Freighters' ways are
+    // picked by flyFreighter()). The Dyson Swarm's ring is
     // two from the start: the half behind the asteroid and the half in front of it.
     const SCENE = {
         pickaxe: { at: [1, 5, 10, 25, 50, 100, 200], parts: { tool: 'pickaxe', body: 'sceneMiner' } },
@@ -906,9 +907,49 @@
                     ? iconBox('miner-sprite-' + part, icon) : element('span', 'miner-sprite-' + part))));
                 (SURFACE.includes(id) ? surface : scene).append(sprite);
                 drawn.push(sprite);
+                if (id === 'freighter') {
+                    flyFreighter(sprite);
+                    // A new way each time it's across (the bob of its body counts its turns too, so only its own flight)
+                    sprite.addEventListener('animationiteration', (event) => {
+                        if (event.target === sprite && event.animationName === 'miner-fly') flyFreighter(sprite);
+                    });
+                }
             }
             while (drawn.length > count) drawn.pop().remove();
         }
+    }
+
+    // Picks the way an Ore Freighter flies next (see .miner-sprite.is-freighter in the CSS): from the left or the right
+    // to the other side, at any height on each, so it can go either way, straight or climbing or diving. It's turned to
+    // face where it's going (flipped when that's to the left), and goes behind the asteroid when the way crosses it.
+    // It's off to the side when this is called, so the jump to the new start can't be seen.
+    function flyFreighter(sprite) {
+        const fromX = Math.random() < 0.5 ? -12 : 112;
+        const toX = 100 - fromX;
+        const fromY = 8 + Math.random() * 84;
+        const toY = 8 + Math.random() * 84;
+        // The angles are in pixels, so they need the picture's size (a guess while the view is hidden)
+        const width = scene.clientWidth || 600;
+        const height = scene.clientHeight || 300;
+        const dx = (toX - fromX) / 100 * width;
+        const dy = (toY - fromY) / 100 * height;
+        const isLeft = dx < 0;
+        const turn = isLeft ? Math.atan2(-dy, -dx) : Math.atan2(dy, dx);
+
+        // How close the way comes to the middle of the picture, where the asteroid is
+        const ax = fromX / 100 * width - width / 2;
+        const ay = fromY / 100 * height - height / 2;
+        const along = Math.min(1, Math.max(0, -(ax * dx + ay * dy) / (dx * dx + dy * dy)));
+        const closest = Math.hypot(ax + dx * along, ay + dy * along);
+        const rockR = parseFloat(getComputedStyle(field).getPropertyValue('--rock-r')) || 110;
+
+        sprite.style.setProperty('--from-x', fromX + '%');
+        sprite.style.setProperty('--to-x', toX + '%');
+        sprite.style.setProperty('--from-y', fromY.toFixed(1) + '%');
+        sprite.style.setProperty('--to-y', toY.toFixed(1) + '%');
+        sprite.style.setProperty('--turn', turn.toFixed(3) + 'rad');
+        sprite.style.setProperty('--flip', isLeft ? '-1' : '1');
+        sprite.classList.toggle('is-behind', closest < rockR * 1.2);
     }
 
     function renderBuffs() {
