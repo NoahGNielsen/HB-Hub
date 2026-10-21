@@ -247,7 +247,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade), <kbd>1</kbd>-<kbd>9</kbd> and <kbd>0</kbd>
                         buy the buildings in the order they're listed (the last ten instead, with Long-Range Hot Keys switched
                         on, which <kbd>K</kbd> does too), <kbd>U</kbd> buys the cheapest upgrade you can afford, <kbd>B</kbd>
-                        the cheapest building, <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the
+                        the building you can afford that gives the most ore per second for its price, <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the
                         Warp Jump, <kbd>X</kbd> the Big Crunch and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once, but
                         holding <kbd>1</kbd>-<kbd>9</kbd>, <kbd>0</kbd>, <kbd>U</kbd> or <kbd>B</kbd> keeps buying.
                     </li>

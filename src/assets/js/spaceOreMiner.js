@@ -1641,7 +1641,8 @@
     // Space mines (a held-down key only counts once), C catches the comet (once the Comet Hot Key upgrade is bought, it's
     // lost on a Warp Jump like the other upgrades), 1-9 and 0 buy the buildings in the order they're
     // listed (the last ten, with Long-Range Hot Keys switched on: see keyOffset()), K flips that switch, U buys the
-    // cheapest upgrade you can afford, B the cheapest building (at the ×1/×10/×100 picked), A switches between ×1, ×10
+    // cheapest upgrade you can afford, B the affordable building with the most ore/s for its price (at the ×1/×10/×100
+    // picked), A switches between ×1, ×10
     // and ×100, W opens the Warp Jump box, X the Big Crunch box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
     // shortcuts) and while a box is open. The buying keys (1-9, 0, B and U) can be held down to keep buying; the others
     // only count once per press, so holding M doesn't flick the sound on and off.
@@ -1663,18 +1664,24 @@
             cheapest?.click();
         },
         b: () => {
-            // Same as U, for the buildings, at the amount picked
+            // The affordable building (at the amount picked) that adds the most ore per second for each ore it costs.
+            // The gain is how much the whole steady rate goes up, so crew, synergy and click-share upgrades count too
             catchUp();
-            let cheapest = null;
-            let cheapestCost = 0;
+            const before = rate(state, Infinity);
+            let best = null;
+            let bestValue = -1;
             for (const button of buildingList.querySelectorAll('[data-building]')) {
-                const cost = buildingCost(state, button.dataset.building, buyAmount);
-                if (canAfford(state, cost) && (!cheapest || cost < cheapestCost)) {
-                    cheapest = button;
-                    cheapestCost = cost;
+                const id = button.dataset.building;
+                const cost = buildingCost(state, id, buyAmount);
+                if (!canAfford(state, cost)) continue;
+                const after = rate({ ...state, buildings: { ...state.buildings, [id]: state.buildings[id] + buyAmount } }, Infinity);
+                const value = (after - before) / cost;
+                if (value > bestValue) {
+                    best = button;
+                    bestValue = value;
                 }
             }
-            cheapest?.click();
+            best?.click();
         },
         a: () => {
             if (amounts.hidden) return;
