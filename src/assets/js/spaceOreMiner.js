@@ -985,6 +985,12 @@
 
     // ----- The news ticker: a new line every few seconds, some only once you have what they're about
 
+    /** True Monday to Friday from 8:00 to 15:00 (the player's own clock), for the news that only makes sense in school. */
+    const schoolHours = () => {
+        const now = new Date();
+        return now.getDay() >= 1 && now.getDay() <= 5 && now.getHours() >= 8 && now.getHours() < 15;
+    };
+
     const NEWS = [
         ['Local alien files complaint about missing moon.', (s) => s.buildings.excavator > 0],
         ['Scientists confirm: asteroid is "still mostly rock".'],
@@ -1016,7 +1022,7 @@
         ['Pluto still not a planet. Pluto would like everyone to stop bringing it up.'],
         ['Space tourism review: "One star. Nothing to do but rocks."'],
         ['Gravity reported to be working as intended.'],
-        ['Teacher confiscates ore from student in the middle of maths.'],
+        ['Teacher confiscates ore from student in the middle of maths.', schoolHours],
         ['Ore found in the school canteen lasagne. Canteen denies everything.'],
         ['Rock-paper-scissors tournament on asteroid ends badly for scissors.'],
         ['Historians agree: this is the Ore Age.'],
