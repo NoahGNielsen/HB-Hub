@@ -1172,7 +1172,7 @@
         ['Scientists find a new mineral. They call it "more ore".'],
         ['Rock reported missing. It was in your pocket.'],
         ['Space lawyer argues the asteroid has the right to remain silent. Asteroid agrees.'],
-        ['Astronaut drops a spoon. Spoon is now a satellite.'],
+        ['Astronaut drops a spoon. Spoon is now a satellite :)'],
         ['Survey: rocks rank "being mined" just above "being skipped across a lake".'],
         ['Galaxy\'s first ore museum opens. It\'s just rocks.'],
         ['Ore prices up 2%, down 2%, up 2% again. Economists take a nap.'],
@@ -1231,7 +1231,7 @@
         ['Space spider builds a web between two asteroids. Catches a comet.'],
         ['Alien influencer posts selfie with the asteroid. 3 likes.'],
         ['Asteroid voted "Most Likely to Be Mined" in the galaxy yearbook.'],
-        ['Galactic lottery won by a rock. Rock spends it all on more rock.'],
+        ['Galactic lottery won by a rock. Rock spends it all on some ore.'],
     ];
     let lastNews = -1;
 
