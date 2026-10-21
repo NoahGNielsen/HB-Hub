@@ -6,10 +6,21 @@
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server.
+// It has three views, picked in the menu under the title: Ore (the asteroid and the store, the default), Dark Matter
+// (?view=darkMatter, the Warp Jump) and Antimatter (?view=antimatter, the Big Crunch). They're all on the page, and the
+// script switches between them without loading it again (changing the address, so Back works), so the game keeps
+// running; ?view= only picks the one shown first. Stats, achievements and how to play are popups.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php';
 hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
+
+const MINER_VIEWS = [ // ?view= => [the menu's text, its address]
+    'ore' => ['Ore', '/games/spaceOreMiner/'],
+    'darkMatter' => ['Dark Matter', '/games/spaceOreMiner/?view=darkMatter'],
+    'antimatter' => ['Antimatter', '/games/spaceOreMiner/?view=antimatter'],
+];
+$minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,7 +35,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino games miner is-loading" data-miner
+    <main class="casino games miner is-loading" data-miner data-view="<?= $minerView ?>"
           data-tab="<?= bin2hex(random_bytes(16)) ?>"
           data-config="<?= htmlspecialchars(json_encode(hbHubMinerConfig())) ?>">
         <a class="casino-back" href="/games/">&larr; Games</a>
@@ -36,17 +47,34 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     <svg class="miner-sound-icon is-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z M16 9l6 6 M22 9l-6 6"/></svg>
                     <span class="games-visually-hidden">Sound</span>
                 </button>
-                <a class="casino-btn" href="/games/spaceOreMiner/leaderboard">Leaderboard</a>
+                <!-- On phones only the icons show; the words stay for screen readers -->
+                <a class="casino-btn miner-title-btn" href="/games/spaceOreMiner/leaderboard"><span aria-hidden="true">🥇</span> <span class="miner-title-label">Leaderboard</span></a>
+                <button type="button" class="casino-btn miner-title-btn" data-miner-open="stats" aria-haspopup="dialog"><span aria-hidden="true">📊</span> <span class="miner-title-label">Stats</span></button>
+                <button type="button" class="casino-btn miner-title-btn" data-miner-open="achievements" aria-haspopup="dialog">
+                    <span aria-hidden="true">🏆</span> <span class="miner-title-label">Achievements</span>
+                    <span class="miner-title-count" data-miner-achievement-count>0 / <?= count(HBHUB_MINER_ACHIEVEMENTS) ?></span>
+                </button>
+                <button type="button" class="casino-btn miner-title-btn" data-miner-open="help" aria-haspopup="dialog"><span aria-hidden="true">❓</span> <span class="miner-title-label">How to play</span></button>
             </div>
         </div>
-        <p class="casino-intro">
-            You're a lone miner on a tiny asteroid. Click it to chip off ore, spend the ore on machines that mine for you,
-            and grow into a galaxy-wide mining company.
-        </p>
+
+        <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
+        <nav class="miner-menu" aria-label="Views" data-miner-menu>
+            <?php foreach (MINER_VIEWS as $view => [$text, $url]): ?>
+                <a class="miner-menu-link is-<?= $view ?>" href="<?= htmlspecialchars($url) ?>" data-miner-view-link="<?= $view ?>"<?= $view === $minerView ? ' aria-current="page"' : '' ?>>
+                    <span class="miner-menu-text"><?= $text ?></span>
+                    <?php if ($view !== 'ore'): ?>
+                        <span class="miner-menu-count" data-miner-menu-count="<?= $view ?>"></span>
+                        <span class="miner-menu-news" data-miner-menu-news="<?= $view ?>" hidden><span class="games-visually-hidden">(something to do here)</span></span>
+                    <?php endif; ?>
+                </a>
+            <?php endforeach; ?>
+        </nav>
 
         <p class="miner-ticker" data-miner-ticker><span class="miner-ticker-text" data-miner-ticker-text>Loading the news from space…</span></p>
 
-        <div class="miner-layout">
+        <!-- Ore: the asteroid stays put, the store next to it scrolls -->
+        <div class="miner-view miner-layout" data-miner-view="ore"<?= $minerView !== 'ore' ? ' hidden' : '' ?>>
             <section class="casino-card miner-mine" aria-labelledby="miner-ore-title">
                 <h2 id="miner-ore-title" class="games-visually-hidden">Your asteroid</h2>
                 <p class="miner-ore"><span class="miner-ore-number" data-miner-ore>0</span> <span class="miner-ore-unit">ore</span></p>
@@ -89,7 +117,8 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
             </section>
         </div>
 
-        <section class="casino-card miner-warp" aria-labelledby="miner-warp-title">
+        <!-- Dark Matter: the Warp Jump and what Dark Matter buys -->
+        <section class="miner-view casino-card miner-warp" aria-labelledby="miner-warp-title" data-miner-view="darkMatter"<?= $minerView !== 'darkMatter' ? ' hidden' : '' ?>>
             <div class="miner-section-head">
                 <h2 id="miner-warp-title">Warp Jump</h2>
                 <p class="miner-dark"><span data-miner-dark>0</span> Dark Matter</p>
@@ -113,71 +142,101 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
             <ul class="miner-upgrades miner-dark-upgrades" data-miner-dark-upgrades></ul>
         </section>
 
-        <section class="casino-card miner-crunch" aria-labelledby="miner-crunch-title" data-miner-crunch-section hidden>
+        <!-- Antimatter: the Big Crunch and what Antimatter buys, locked until there's Dark Matter to talk about -->
+        <section class="miner-view casino-card miner-crunch" aria-labelledby="miner-crunch-title" data-miner-view="antimatter"<?= $minerView !== 'antimatter' ? ' hidden' : '' ?>>
             <div class="miner-section-head">
                 <h2 id="miner-crunch-title">Big Crunch</h2>
                 <p class="miner-anti"><span data-miner-anti>0</span> Antimatter</p>
             </div>
-            <p class="casino-hint">
-                Once you've earned <?= number_format(HBHUB_MINER_CRUNCH_DARK) ?> Dark Matter in this universe, you can collapse
-                the whole thing and start over. Your Dark Matter and its upgrades go too, but you get Antimatter for the Dark
-                Matter you earned. Every Antimatter you've earned makes everything mine <?= HBHUB_MINER_ANTI_BONUS * 100 ?>%
-                faster and Warp Jumps give <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% more Dark Matter, for good.
+            <p class="miner-locked" data-miner-crunch-locked>
+                <span class="miner-locked-icon" aria-hidden="true">🔒</span>
+                Something even bigger than a Warp Jump is out there. Do your first Warp Jump to find out what.
             </p>
-            <dl class="miner-numbers miner-warp-numbers">
-                <div><dt>Dark Matter this universe</dt><dd data-miner-crunch="dark">0</dd></div>
-                <div><dt>Antimatter from a crunch now</dt><dd data-miner-crunch="gain">0</dd></div>
-                <div><dt>Bonus from Antimatter</dt><dd data-miner-crunch="bonus">+0%</dd></div>
-            </dl>
-            <div class="casino-actions">
-                <button type="button" class="casino-btn casino-btn-primary" data-miner-crunch-button disabled>Big Crunch</button>
+            <div data-miner-crunch-section hidden>
+                <p class="casino-hint">
+                    Once you've earned <?= number_format(HBHUB_MINER_CRUNCH_DARK) ?> Dark Matter in this universe, you can collapse
+                    the whole thing and start over. Your Dark Matter and its upgrades go too, but you get Antimatter for the Dark
+                    Matter you earned. Every Antimatter you've earned makes everything mine <?= HBHUB_MINER_ANTI_BONUS * 100 ?>%
+                    faster and Warp Jumps give <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% more Dark Matter, for good.
+                </p>
+                <dl class="miner-numbers miner-warp-numbers">
+                    <div><dt>Dark Matter this universe</dt><dd data-miner-crunch="dark">0</dd></div>
+                    <div><dt>Antimatter from a crunch now</dt><dd data-miner-crunch="gain">0</dd></div>
+                    <div><dt>Bonus from Antimatter</dt><dd data-miner-crunch="bonus">+0%</dd></div>
+                </dl>
+                <div class="casino-actions">
+                    <button type="button" class="casino-btn casino-btn-primary" data-miner-crunch-button disabled>Big Crunch</button>
+                </div>
+                <p class="casino-hint miner-warp-hint" data-miner-crunch-hint></p>
+                <h3 class="miner-store-title">Antimatter upgrades</h3>
+                <ul class="miner-upgrades miner-dark-upgrades" data-miner-anti-upgrades></ul>
             </div>
-            <p class="casino-hint miner-warp-hint" data-miner-crunch-hint></p>
-            <h3 class="miner-store-title">Antimatter upgrades</h3>
-            <ul class="miner-upgrades miner-dark-upgrades" data-miner-anti-upgrades></ul>
-        </section>
-
-        <section class="casino-card miner-achievements" aria-labelledby="miner-achievements-title">
-            <div class="miner-section-head">
-                <h2 id="miner-achievements-title">Achievements</h2>
-                <p class="miner-achievement-count" data-miner-achievement-count>0 / <?= count(HBHUB_MINER_ACHIEVEMENTS) ?></p>
-            </div>
-            <ul class="miner-achievement-list" data-miner-achievements></ul>
-        </section>
-
-        <section class="casino-card miner-stats" aria-labelledby="miner-stats-title">
-            <h2 id="miner-stats-title">Your stats</h2>
-            <dl class="miner-numbers" data-miner-stats></dl>
-        </section>
-
-        <section class="casino-card casino-rules" aria-labelledby="miner-rules-title">
-            <h2 id="miner-rules-title">How to play</h2>
-            <ul class="casino-rule-list">
-                <li>Click the asteroid to mine ore. Spend it in the store on buildings, which mine for you every second, and on upgrades that make clicks and buildings better.</li>
-                <li>Every building costs 15% more than the one before. Each one gets three upgrades, at 10, 25 and 50 owned, that double what it mines.</li>
-                <li>Now and then a Golden Comet flies across the screen. Click it before it's gone for a big pile of ore, or seven times the production for a while.</li>
-                <li>
-                    The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
-                    your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
-                </li>
-                <li class="miner-hot-keys">
-                    Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade), <kbd>1</kbd>-<kbd>9</kbd>
-                    buy the buildings in the order they're listed, <kbd>U</kbd> buys the cheapest upgrade you can afford,
-                    <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the Warp Jump, <kbd>B</kbd> the
-                    Big Crunch and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once.
-                </li>
-                <li>Play in one tab at a time: opening the game somewhere else stops it here.</li>
-                <li>
-                    Clicks are counted up to <?= HBHUB_MINER_CLICKS_PER_SECOND ?> a second. Auto-clickers and scripts aren't allowed, and buy
-                    you nothing anyway: clicks that come in at exactly the same pace for <?= HBHUB_MINER_STEADY_MS / 1000 ?> seconds, or
-                    <?= HBHUB_MINER_EVEN_CLICKS ?> clicks in a row whose gaps vary less than <?= HBHUB_MINER_EVEN_DEVIATION * 100 ?>%, only
-                    mine <?= HBHUB_MINER_STEADY_VALUE * 100 ?>% of what they would.
-                </li>
-            </ul>
         </section>
 
         <button type="button" class="miner-comet" data-miner-comet hidden aria-label="Catch the Golden Comet"><span class="miner-comet-head"></span></button>
         <ol class="miner-toasts" data-miner-toasts aria-live="polite"></ol>
+
+        <!-- The popups from the buttons by the title. Clicking outside one closes it. -->
+        <dialog class="games-dialog miner-popup" data-miner-popup="stats" aria-labelledby="miner-stats-title">
+            <div class="miner-popup-body">
+                <div class="miner-popup-head">
+                    <h2 id="miner-stats-title">Your stats</h2>
+                    <button type="button" class="miner-popup-close" data-miner-close aria-label="Close">&times;</button>
+                </div>
+                <dl class="miner-numbers" data-miner-stats></dl>
+            </div>
+        </dialog>
+
+        <dialog class="games-dialog miner-popup" data-miner-popup="achievements" aria-labelledby="miner-achievements-title">
+            <div class="miner-popup-body">
+                <div class="miner-popup-head">
+                    <h2 id="miner-achievements-title">Achievements</h2>
+                    <p class="miner-achievement-count" data-miner-achievement-count>0 / <?= count(HBHUB_MINER_ACHIEVEMENTS) ?></p>
+                    <button type="button" class="miner-popup-close" data-miner-close aria-label="Close">&times;</button>
+                </div>
+                <ul class="miner-achievement-list" data-miner-achievements></ul>
+            </div>
+        </dialog>
+
+        <dialog class="games-dialog miner-popup" data-miner-popup="help" aria-labelledby="miner-rules-title">
+            <div class="miner-popup-body">
+                <div class="miner-popup-head">
+                    <h2 id="miner-rules-title">How to play</h2>
+                    <button type="button" class="miner-popup-close" data-miner-close aria-label="Close">&times;</button>
+                </div>
+                <p>
+                    You're a lone miner on a tiny asteroid. Click it to chip off ore, spend the ore on machines that mine for you,
+                    and grow into a galaxy-wide mining company.
+                </p>
+                <ul class="casino-rule-list">
+                    <li>Click the asteroid to mine ore. Spend it in the store on buildings, which mine for you every second, and on upgrades that make clicks and buildings better.</li>
+                    <li>Every building costs 15% more than the one before. Each one gets three upgrades, at 10, 25 and 50 owned, that double what it mines.</li>
+                    <li>Now and then a Golden Comet flies across the screen. Click it before it's gone for a big pile of ore, or seven times the production for a while.</li>
+                    <li>
+                        Later on, the Dark Matter view has the Warp Jump, which starts you over in a new galaxy for Dark Matter, and
+                        the Antimatter view has the Big Crunch, which starts the whole universe over for Antimatter. The game keeps
+                        running whichever view you're on.
+                    </li>
+                    <li>
+                        The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
+                        your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
+                    </li>
+                    <li class="miner-hot-keys">
+                        Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade), <kbd>1</kbd>-<kbd>9</kbd>
+                        buy the buildings in the order they're listed, <kbd>U</kbd> buys the cheapest upgrade you can afford,
+                        <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the Warp Jump, <kbd>B</kbd> the
+                        Big Crunch and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once.
+                    </li>
+                    <li>Play in one tab at a time: opening the game somewhere else stops it here.</li>
+                    <li>
+                        Clicks are counted up to <?= HBHUB_MINER_CLICKS_PER_SECOND ?> a second. Auto-clickers and scripts aren't allowed, and buy
+                        you nothing anyway: clicks that come in at exactly the same pace for <?= HBHUB_MINER_STEADY_MS / 1000 ?> seconds, or
+                        <?= HBHUB_MINER_EVEN_CLICKS ?> clicks in a row whose gaps vary less than <?= HBHUB_MINER_EVEN_DEVIATION * 100 ?>%, only
+                        mine <?= HBHUB_MINER_STEADY_VALUE * 100 ?>% of what they would.
+                    </li>
+                </ul>
+            </div>
+        </dialog>
 
         <dialog class="games-dialog" data-miner-warp-dialog aria-labelledby="miner-warp-dialog-title">
             <h2 id="miner-warp-dialog-title">Warp to a new galaxy?</h2>

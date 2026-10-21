@@ -10,6 +10,9 @@
 // when it's closed. The server answers with the save as it worked it out, and the game carries on from that, with
 // whatever was done while the save was on its way done again on top.
 // Times are the server's Unix ms (the difference to this computer's clock is measured on every save).
+// The page has three views (Ore, Dark Matter, Antimatter, in data-miner-view): the menu's links switch between them here,
+// with history.pushState, so the game keeps running instead of the page loading again. Stats, achievements and how to
+// play are popups (data-miner-popup), opened by the buttons by the title (data-miner-open).
 (() => {
     const root = document.querySelector('[data-miner]');
     if (!root) return;
@@ -425,6 +428,7 @@
     const warpHint = root.querySelector('[data-miner-warp-hint]');
     const darkList = root.querySelector('[data-miner-dark-upgrades]');
     const crunchSection = root.querySelector('[data-miner-crunch-section]');
+    const crunchLocked = root.querySelector('[data-miner-crunch-locked]');
     const antiText = root.querySelector('[data-miner-anti]');
     const crunchNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-crunch]')].map((node) => [node.dataset.minerCrunch, node]));
     const crunchButton = root.querySelector('[data-miner-crunch-button]');
@@ -433,8 +437,13 @@
     const crunchDialog = root.querySelector('[data-miner-crunch-dialog]');
     const crunchDialogText = root.querySelector('[data-miner-crunch-dialog-text]');
     const achievementList = root.querySelector('[data-miner-achievements]');
-    const achievementCount = root.querySelector('[data-miner-achievement-count]');
+    const achievementCounts = root.querySelectorAll('[data-miner-achievement-count]'); // on the button and in the popup
     const statList = root.querySelector('[data-miner-stats]');
+    const statsPopup = root.querySelector('[data-miner-popup="stats"]');
+    const views = Object.fromEntries([...root.querySelectorAll('[data-miner-view]')].map((node) => [node.dataset.minerView, node]));
+    const menu = root.querySelector('[data-miner-menu]');
+    const menuCounts = Object.fromEntries([...root.querySelectorAll('[data-miner-menu-count]')].map((node) => [node.dataset.minerMenuCount, node]));
+    const menuNews = Object.fromEntries([...root.querySelectorAll('[data-miner-menu-news]')].map((node) => [node.dataset.minerMenuNews, node]));
     const cometButton = root.querySelector('[data-miner-comet]');
     const toasts = root.querySelector('[data-miner-toasts]');
     const ticker = root.querySelector('[data-miner-ticker-text]');
@@ -646,9 +655,10 @@
         renderComet();
         renderWarp();
         renderCrunch();
+        renderMenu();
     }, 200);
     setInterval(() => {
-        if (isPlaying && !document.hidden) renderStats();
+        if (isPlaying && !document.hidden && statsPopup.open) renderStats();
     }, 1000);
 
     function renderAll() {
@@ -658,9 +668,21 @@
         renderComet();
         renderWarp();
         renderCrunch();
+        renderMenu();
         renderAchievements();
         renderStats();
         renderTicker();
+    }
+
+    // The Dark Matter and Antimatter in the menu, and a dot on a view with something to do there: a jump or crunch
+    // that would give something, or an upgrade that can be bought
+    function renderMenu() {
+        menuCounts.darkMatter.textContent = state.darkEarned > 0 || state.dark > 0 ? format(state.dark) : '';
+        menuCounts.antimatter.textContent = state.antimatterEarned > 0 ? format(state.antimatter) : '';
+        menuNews.darkMatter.hidden = warpGain(state) < 1
+            && !Object.entries(DARK_UPGRADES).some(([id, upgrade]) => !hasDark(state, id) && state.dark >= upgrade.cost);
+        menuNews.antimatter.hidden = crunchGain(state) < 1
+            && !Object.entries(ANTI_UPGRADES).some(([id, upgrade]) => !hasAnti(state, id) && state.antimatter >= upgrade.cost);
     }
 
     // The buildings shown: every one owned or nearly affordable, and the next one as a mystery
@@ -851,12 +873,13 @@
         });
     }
 
-    // The Big Crunch card only shows up once there's Dark Matter (or Antimatter) to talk about
+    // The Antimatter view is locked until there's Dark Matter (or Antimatter) to talk about
     function renderCrunch() {
         crunchSection.hidden = state.darkEarned === 0 && state.antimatterEarned === 0;
+        crunchLocked.hidden = !crunchSection.hidden;
+        antiText.textContent = format(state.antimatter);
         if (crunchSection.hidden) return;
         const gain = crunchGain(state);
-        antiText.textContent = format(state.antimatter);
         crunchNumbers.dark.textContent = format(state.darkEarned);
         crunchNumbers.gain.textContent = format(gain);
         crunchNumbers.bonus.textContent = '+' + format(CONFIG.antiBonus * 100 * state.antimatterEarned) + '%';
@@ -881,7 +904,7 @@
             item.setAttribute('aria-label', achievement.name + ': ' + achievement.text + (isDone ? ' Done.' : ' Not done yet.'));
             return item;
         }));
-        achievementCount.textContent = state.achievements.length + ' / ' + Object.keys(ACHIEVEMENTS).length;
+        for (const count of achievementCounts) count.textContent = state.achievements.length + ' / ' + Object.keys(ACHIEVEMENTS).length;
     }
 
     function renderAchievementsUnlocked() {
@@ -1074,7 +1097,9 @@
     // ----- Clicking the asteroid: a floating number where it was clicked and bits of rock flying off
 
     function burst(x, y, ore, isCrit) {
-        if (field.childElementCount > 120) return; // plenty on screen already
+        // Plenty on screen already, or none to see (mined with Space from another view, where they'd never finish
+        // animating and so never go away)
+        if (field.childElementCount > 120 || views.ore.hidden) return;
         const number = element('span', 'miner-float' + (isCrit ? ' is-crit' : ''), '+' + format(ore, { decimals: true }) + (isCrit ? ' CRIT!' : ''));
         number.style.setProperty('--x', x + 'px');
         number.style.setProperty('--y', y + 'px');
@@ -1278,7 +1303,9 @@
         if (target.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
 
         if (event.key === ' ') {
-            if (target.closest?.('button, a, summary')) return; // Space presses whatever has focus, as usual
+            // Space presses whatever has focus, as usual - except the menu's links, which Space does nothing to (and
+            // which keep the focus after being clicked)
+            if (target.closest?.('button, a:not([data-miner-view-link]), summary')) return;
             event.preventDefault(); // instead of scrolling the page
             if (!event.repeat) asteroid.click();
             return;
@@ -1291,6 +1318,50 @@
         const hotKey = HOT_KEYS[event.key.toLowerCase()];
         if (hotKey && !event.shiftKey) hotKey();
     });
+
+    // ----- The views: the menu's links show their view here instead of loading the page again (Ctrl/middle click still
+    // open it in a new tab, which takes the game over from this one). The address changes with it, so Back and
+    // Forward go between the views and a refresh stays on the same one.
+
+    function viewFromAddress() {
+        const view = new URLSearchParams(location.search).get('view');
+        return view && views[view] ? view : 'ore';
+    }
+
+    function showView(view) {
+        root.dataset.view = view;
+        for (const [name, node] of Object.entries(views)) node.hidden = name !== view;
+        for (const link of menu.querySelectorAll('[data-miner-view-link]')) {
+            if (link.dataset.minerViewLink === view) link.setAttribute('aria-current', 'page');
+            else link.removeAttribute('aria-current');
+        }
+        if (scrollY > 0) scrollTo({ top: 0 }); // the Ore view fits the screen from the top
+    }
+
+    menu.addEventListener('click', (event) => {
+        const link = event.target.closest('[data-miner-view-link]');
+        if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        if (link.dataset.minerViewLink === root.dataset.view) return;
+        history.pushState(null, '', link.href);
+        showView(link.dataset.minerViewLink);
+    });
+    addEventListener('popstate', () => showView(viewFromAddress()));
+
+    // ----- The popups: stats, achievements and how to play. Closed with ×, Escape or a click outside them.
+
+    for (const button of root.querySelectorAll('[data-miner-open]')) {
+        button.addEventListener('click', () => {
+            const popup = root.querySelector('[data-miner-popup="' + button.dataset.minerOpen + '"]');
+            if (popup === statsPopup && state) renderStats();
+            popup.showModal();
+        });
+    }
+    for (const popup of root.querySelectorAll('[data-miner-popup]')) {
+        popup.addEventListener('click', (event) => {
+            if (event.target === popup || event.target.closest('[data-miner-close]')) popup.close();
+        });
+    }
 
     // ----- Playing somewhere else
 

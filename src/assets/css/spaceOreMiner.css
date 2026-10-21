@@ -1,11 +1,25 @@
-/* Space Ore Miner (games/spaceOreMiner/): the asteroid, the store, the Warp Jump, achievements, the comet flying across
-   the screen and the messages in the corner. Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. */
+/* Space Ore Miner (games/spaceOreMiner/): the buttons and the menu at the top, the three views (Ore: the asteroid and
+   the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch), the popups (stats, achievements, how to play), the
+   comet flying across the screen and the messages in the corner. Loaded after casino.css and games.css;
+   spaceOreMiner.js fills it all in. */
 .casino.miner {
   --miner-gold: #f5c542;
   --miner-diamond: #8be9ff;
   --miner-dark: #9d7bff;
   --miner-anti: #ff6bb5;
+  --miner-gap: 16px;
   max-width: 1180px;
+  margin: 0 auto;
+  padding-block: var(--miner-gap);
+}
+
+/* The Ore view fills the screen exactly, like the chat: the asteroid stays where it is and only the store scrolls.
+   On a very short screen it stops shrinking and the page scrolls instead. */
+.casino.miner[data-view="ore"] {
+  height: calc(100dvh - var(--nav-top-h));
+  min-height: 660px;
+  display: flex;
+  flex-direction: column;
 }
 
 .miner [hidden] {
@@ -14,8 +28,116 @@
 
 .miner-title-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+}
+
+.miner-title-btn {
+  height: 46px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.miner-title-count {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--miner-gold) 22%, transparent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The menu between the views: one bar, the open view lit up in its own colour */
+.miner-menu {
+  margin: 8px 0 12px;
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+  border-radius: 14px;
+  background: var(--secondary);
+}
+
+.miner-menu-link {
+  --miner-view-colour: var(--accent);
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  opacity: 0.7;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.miner-menu-link.is-darkMatter {
+  --miner-view-colour: var(--miner-dark);
+}
+
+.miner-menu-link.is-antimatter {
+  --miner-view-colour: var(--miner-anti);
+}
+
+.miner-menu-link:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  opacity: 1;
+}
+
+.miner-menu-link[aria-current="page"] {
+  background: var(--background);
+  box-shadow: inset 0 0 0 2px var(--miner-view-colour);
+  opacity: 1;
+}
+
+.miner-menu-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.miner-menu-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.miner-menu-count {
+  color: var(--miner-view-colour);
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-menu-count:empty {
+  display: none;
+}
+
+/* Something to do in a view that isn't open: a Warp Jump or Big Crunch is ready, or an upgrade can be bought */
+.miner-menu-news {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--miner-view-colour);
+  animation: miner-glow-dot 1.2s ease-in-out infinite alternate;
+}
+
+.miner-menu-link[aria-current="page"] .miner-menu-news {
+  display: none;
+}
+
+@keyframes miner-glow-dot {
+  to { box-shadow: 0 0 10px var(--miner-view-colour); }
 }
 
 /* The sound button: the speaker with waves when on, crossed out when off */
@@ -45,7 +167,8 @@
 
 /* The news ticker */
 .miner-ticker {
-  margin: 0 0 20px;
+  margin: 0 0 12px;
+  flex: none;
   padding: 10px 16px;
   overflow: hidden;
   border-radius: 12px;
@@ -80,20 +203,15 @@
   from { opacity: 0; transform: translateY(8px); }
 }
 
-/* The asteroid on the left, the store on the right; under each other on small screens */
-.miner-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: 20px;
-  align-items: start;
+.miner-view {
   transition: opacity 0.3s;
 }
 
-.miner.is-loading .miner-layout {
+.miner.is-loading .miner-view {
   opacity: 0.55;
 }
 
-.miner.is-warping .miner-layout {
+.miner.is-warping .miner-view {
   animation: miner-warp 1.2s ease;
 }
 
@@ -102,7 +220,7 @@
 }
 
 /* A Big Crunch: everything squeezes into a point and bounces back out */
-.miner.is-crunching .miner-layout {
+.miner.is-crunching .miner-view {
   animation: miner-crunch 1.4s ease;
 }
 
@@ -111,10 +229,20 @@
   50% { transform: scale(1.03); }
 }
 
+/* The Ore view: the asteroid on the left, the store on the right, both as tall as what's left of the screen; under each
+   other on small screens */
+.miner-layout {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: var(--miner-gap);
+}
+
 /* The asteroid's side, on a starry sky */
 .miner-mine {
-  position: sticky;
-  top: 16px;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -198,11 +326,14 @@
   to { box-shadow: 0 0 14px color-mix(in srgb, var(--miner-gold) 60%, transparent); }
 }
 
-/* The asteroid. Its colours change with data-stage (0 grey rock, 1 iron, 2 gold, 3 crystal, 4 alien core) */
+/* The asteroid. Its colours change with data-stage (0 grey rock, 1 iron, 2 gold, 3 crystal, 4 alien core). The space
+   around it takes what's left of the card's height. */
 .miner-field {
   position: relative;
+  flex: 1 1 260px;
   width: 100%;
-  height: 320px;
+  min-height: 200px;
+  max-height: 360px;
   display: grid;
   place-items: center;
   user-select: none;
@@ -290,10 +421,11 @@
   pointer-events: none;
 }
 
-.miner-crater.is-1 { width: 46px; height: 40px; top: 24%; left: 20%; }
-.miner-crater.is-2 { width: 28px; height: 26px; top: 58%; left: 58%; }
-.miner-crater.is-3 { width: 20px; height: 18px; top: 30%; left: 64%; }
-.miner-crater.is-4 { width: 34px; height: 30px; top: 66%; left: 26%; }
+/* In % of the asteroid, so they shrink with it on small screens */
+.miner-crater.is-1 { width: 21%; height: 19%; top: 24%; left: 20%; }
+.miner-crater.is-2 { width: 13%; height: 12%; top: 58%; left: 58%; }
+.miner-crater.is-3 { width: 9%; height: 9%; top: 30%; left: 64%; }
+.miner-crater.is-4 { width: 15%; height: 14%; top: 66%; left: 26%; }
 
 @keyframes miner-drift {
   50% { translate: 0 -6px; }
@@ -368,7 +500,43 @@
   to { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(200deg); }
 }
 
-/* The store */
+/* The store: the one part of the Ore view that scrolls, with a thin scroll bar like the chat's */
+.miner-store {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.miner-store::-webkit-scrollbar {
+  width: 10px;
+}
+
+.miner-store::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.miner-store::-webkit-scrollbar-button {
+  display: none;
+}
+
+.miner-store::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 22%, transparent) padding-box;
+}
+
+.miner-store::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--text) 38%, transparent);
+}
+
+/* Firefox has no ::-webkit-scrollbar, only these (Chrome would drop the custom one above if it saw them) */
+@supports not selector(::-webkit-scrollbar) {
+  .miner-store {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--text) 22%, transparent) transparent;
+  }
+}
+
 .miner-store-part + .miner-store-part {
   margin-top: 24px;
 }
@@ -634,15 +802,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The cards under the game */
-.miner-warp,
-.miner-crunch,
-.miner-achievements,
-.miner-stats,
-.miner .casino-rules {
-  margin-top: 20px;
-}
-
+/* The Dark Matter and Antimatter views */
 .miner-section-head {
   margin-bottom: 8px;
   display: flex;
@@ -708,6 +868,81 @@
 
 .miner-warp-hint:empty {
   display: none;
+}
+
+/* The Antimatter view before the first Warp Jump */
+.miner-locked {
+  margin: 16px 0 0;
+  padding: 36px 20px;
+  border: 2px dashed color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 12px;
+  background: var(--background);
+  text-align: center;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+.miner-locked-icon {
+  margin-bottom: 8px;
+  display: block;
+  font-size: 2.4rem;
+}
+
+/* The popups: stats, achievements and how to play. The padding is on the inside, so a click on the dialog itself is
+   always outside it (on the backdrop), which closes it. */
+.games-dialog.miner-popup {
+  width: min(760px, calc(100vw - 32px));
+  padding: 0;
+}
+
+.miner-popup-body {
+  padding: 24px;
+}
+
+.miner-popup-head {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.miner-popup-head h2 {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.miner-popup .miner-achievement-count {
+  margin: 0;
+}
+
+.miner-popup-close {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.miner-popup-close:hover {
+  background: color-mix(in srgb, var(--text) 10%, var(--background));
+}
+
+.miner-popup-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.miner-popup .miner-numbers {
+  margin: 0;
 }
 
 /* Achievements: done ones in colour, the rest greyed out */
@@ -863,37 +1098,162 @@
   from { opacity: 0; transform: translateY(16px); }
 }
 
+/* Everything above the Ore view keeps its size; the view gets the rest */
+.miner[data-view="ore"] > :not(.miner-layout) {
+  flex: none;
+}
+
+.miner[data-view="ore"] > .casino-back {
+  align-self: flex-start;
+}
+
+/* Under each other: the asteroid's card as small as it can be on top, the store under it taking the rest */
 @media (max-width: 860px) {
   .miner-layout {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .miner-mine {
-    position: static;
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .miner-field {
-    height: 270px;
-  }
-}
-
-@media (max-width: 560px) {
-  .miner .casino-card {
-    padding: 20px 16px;
-  }
-
-  .miner-ore {
-    font-size: 1.6rem;
+    flex: none;
+    height: 220px;
+    min-height: 0;
   }
 
   .miner-asteroid {
-    width: 190px;
-    height: 180px;
+    width: 170px;
+    height: 162px;
   }
 
   .miner-orbit {
-    width: 250px;
-    height: 250px;
+    width: 220px;
+    height: 220px;
+  }
+}
+
+/* Phones: the buttons by the title are just icons, the news ticker is left out of the Ore view, and the asteroid sits
+   next to the numbers instead of under them */
+@media (max-width: 600px) {
+  .casino.miner {
+    --miner-gap: 10px;
+  }
+
+  .casino.miner[data-view="ore"] {
+    height: calc(100dvh - var(--nav-top-h) - 68px); /* above the bottom bar */
+    min-height: 560px;
+  }
+
+  .miner h1 {
+    font-size: 1.5rem;
+  }
+
+  .miner-title-btn {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .miner-sound {
+    width: 42px;
+    height: 42px;
+  }
+
+  .miner-title-label,
+  .miner-title-count {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .miner-menu-link {
+    padding: 8px 6px;
+    gap: 4px;
+    font-size: 0.9rem;
+  }
+
+  .miner[data-view="ore"] .miner-ticker {
+    display: none;
+  }
+
+  .miner .casino-card {
+    padding: 18px 14px;
+  }
+
+  .miner-mine {
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: 130px minmax(0, 1fr);
+    grid-template-areas:
+      "field ore"
+      "field rate"
+      "field click"
+      "field buffs"
+      "field stage"
+      "field save";
+    align-content: center;
+    column-gap: 10px;
+    text-align: left;
+  }
+
+  .miner-field {
+    grid-area: field;
+    width: 130px;
+    height: 130px;
+  }
+
+  .miner-ore { grid-area: ore; font-size: 1.35rem; }
+  .miner-rate { grid-area: rate; }
+  .miner-click-value { grid-area: click; }
+  .miner-buffs { grid-area: buffs; justify-content: flex-start; }
+  .miner-stage { grid-area: stage; }
+  .miner-save { grid-area: save; }
+
+  .miner-rate,
+  .miner-click-value {
+    margin-top: 2px;
+    font-size: 0.9rem;
+  }
+
+  .miner-stage,
+  .miner-save {
+    margin-top: 2px;
+    font-size: 0.75rem;
+  }
+
+  .miner-asteroid {
+    width: 104px;
+    height: 99px;
+  }
+
+  .miner-orbit {
+    width: 128px;
+    height: 128px;
+  }
+
+  .miner-bot {
+    font-size: 1.2rem;
+  }
+
+  .miner-building {
+    padding: 8px 10px;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .miner-building-icon {
+    font-size: 1.6rem;
+  }
+
+  .miner-building-owned {
+    font-size: 1.4rem;
+  }
+
+  .miner-popup-body {
+    padding: 18px 16px;
   }
 }
 
@@ -905,8 +1265,9 @@
   .miner-asteroid[data-stage="4"].is-hit,
   .miner-orbit,
   .miner-buff,
-  .miner.is-warping .miner-layout,
-  .miner.is-crunching .miner-layout {
+  .miner-menu-news,
+  .miner.is-warping .miner-view,
+  .miner.is-crunching .miner-view {
     animation: none;
   }
 
