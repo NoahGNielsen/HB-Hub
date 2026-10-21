@@ -410,7 +410,6 @@
     const oreText = root.querySelector('[data-miner-ore]');
     const rateText = root.querySelector('[data-miner-rate]');
     const clickText = root.querySelector('[data-miner-click]');
-    const stageText = root.querySelector('[data-miner-stage]');
     const saveText = root.querySelector('[data-miner-save]');
     const buffList = root.querySelector('[data-miner-buffs]');
     const bot = root.querySelector('[data-miner-bot]');
@@ -452,8 +451,9 @@
     const soundButton = root.querySelector('[data-miner-sound]');
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
-    // The asteroid changes as more is mined in a run: [ore mined this run, what it is]
-    const STAGES = [[0, 'Plain grey rock'], [1e5, 'Iron asteroid'], [1e8, 'Gold asteroid'], [1e11, 'Crystal asteroid'], [1e14, 'Glowing alien core']];
+    // The asteroid changes as more is mined in a run, at this much ore mined this run: plain grey rock, iron, gold,
+    // crystal, glowing alien core
+    const STAGES = [0, 1e5, 1e8, 1e11, 1e14];
     // (how long it lasts, the ore a lucky one gave, its multiplier with Antimatter Comets)
     const COMET_TEXT = {
         frenzy: (ms, ore, times) => 'Frenzy! Everything mines ' + format(times) + ' times as fast for ' + Math.round(ms / 1000) + ' seconds.',
@@ -525,8 +525,10 @@
 
     // ----- Saving
 
+    // Only shows while loading or when something's wrong; a save that worked says nothing
     function setSaveText(text, isError = false) {
         saveText.textContent = text;
+        saveText.hidden = text === '';
         saveText.classList.toggle('is-error', isError);
     }
 
@@ -607,8 +609,7 @@
         if (saveFailed) {
             setSaveText('Couldn\'t save, trying again soon. Don\'t close the tab yet.', true);
         } else if (lastSavedAt > 0) {
-            const seconds = Math.round((Date.now() - lastSavedAt) / 1000);
-            setSaveText(seconds < 5 ? 'Saved just now' : 'Saved ' + (seconds < 60 ? seconds + ' seconds' : formatDuration(seconds * 1000)) + ' ago');
+            setSaveText('');
         }
     }
 
@@ -824,11 +825,7 @@
         clickText.textContent = format(clickValue(state, state.tick), { decimals: true });
         bot.hidden = autoClicks(state) === 0;
 
-        const stage = STAGES.findLastIndex(([at]) => state.runOre >= at);
-        asteroid.dataset.stage = String(stage);
-        const next = STAGES[stage + 1];
-        stageText.textContent = STAGES[stage][1] + (next ? ' · becomes a' + (/^[AEIOU]/i.test(next[1]) ? 'n ' : ' ') + next[1].toLowerCase()
-            + ' at ' + format(next[0]) + ' ore this run' : '');
+        asteroid.dataset.stage = String(STAGES.findLastIndex((at) => state.runOre >= at));
     }
 
     function renderBuffs() {

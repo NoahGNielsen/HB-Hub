@@ -92,7 +92,6 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 </div>
 
                 <p class="miner-click-value"><span data-miner-click>1</span> ore per click</p>
-                <p class="miner-stage" data-miner-stage></p>
                 <p class="miner-save" role="status" data-miner-save>Loading your save…</p>
             </section>
 

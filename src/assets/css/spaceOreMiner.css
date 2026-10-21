@@ -279,7 +279,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.miner-stage,
 .miner-save {
   margin: 6px 0 0;
   font-size: 0.85rem;
@@ -1325,7 +1324,6 @@
       "field rate"
       "field click"
       "field buffs"
-      "field stage"
       "field save";
     align-content: center;
     column-gap: 10px;
@@ -1342,7 +1340,6 @@
   .miner-rate { grid-area: rate; }
   .miner-click-value { grid-area: click; }
   .miner-buffs { grid-area: buffs; justify-content: flex-start; }
-  .miner-stage { grid-area: stage; }
   .miner-save { grid-area: save; }
 
   .miner-rate,
@@ -1351,7 +1348,6 @@
     font-size: 0.9rem;
   }
 
-  .miner-stage,
   .miner-save {
     margin-top: 2px;
     font-size: 0.75rem;
