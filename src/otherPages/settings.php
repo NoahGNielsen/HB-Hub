@@ -412,6 +412,7 @@ $settingsNotificationSoundOn = ($savedSettings['notificationSound'] ?? false) ==
 $navMessageSound = true; // messageSound.js, so ticking the sound box plays it (navPanel.php)
 $settingsBlock = hbHubBlockSettings($savedSettings);
 $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
+$settingsBlockIsAdmin = hbHubBlockIsAdmin($savedSettings); // set in the admin panel, which is the only place to lift it
 $settingsDevices = settingsDevices($db, $userId);
 
 /**
@@ -633,7 +634,9 @@ function settingsTime(?string $timestamp): string
                             <h2 id="settings-block-heading">Block Gambling and Games</h2>
                             <p class="settings-intro">Keep yourself away from the casino and the games, during school hours or all the time.</p>
                         </div>
-                        <?php if ($settingsBlock['mode'] !== HBHUB_BLOCK_NONE): ?>
+                        <?php if ($settingsBlockIsAdmin): ?>
+                            <span class="settings-status is-on">Blocked by an admin</span>
+                        <?php elseif ($settingsBlock['mode'] !== HBHUB_BLOCK_NONE): ?>
                             <span class="settings-status<?= $settingsBlockIsActive ? ' is-on' : '' ?>"><?= $settingsBlockIsActive ? 'Blocked now' : 'Not blocked now' ?></span>
                         <?php endif; ?>
                     </div>
@@ -650,6 +653,12 @@ function settingsTime(?string $timestamp): string
                                 School hours are 8 AM to 3 PM, Monday to Friday. A stricter block starts straight away.
                                 Turning it down waits: during school hours until 3 PM, and from "All the time" for 6 hours.
                             </p>
+                            <?php if ($settingsBlockIsAdmin): ?>
+                                <p class="settings-notice">
+                                    A site admin has blocked Gambling and Games for your account, all the time. Only a site admin can lift it,
+                                    so it stays blocked whatever you choose here.
+                                </p>
+                            <?php endif; ?>
                             <?php if ($settingsBlock['pendingMode'] !== null): ?>
                                 <p class="settings-notice">
                                     Changes to "<?= htmlspecialchars(HBHUB_BLOCK_MODES[$settingsBlock['pendingMode']]) ?>"

@@ -8,6 +8,7 @@
         "pendingMode": null,
         "pendingFrom": null
     },
+    "blockAdmin": false,
     "chatHidden": {
         "chatId": true,
         "chatId2": true

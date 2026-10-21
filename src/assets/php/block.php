@@ -5,6 +5,10 @@
 // A stricter block starts straight away. A less strict one waits, so it can't just be switched off in the moment:
 // switched off during school hours it waits until school is over, and switched off from "All the time" it waits 6 hours.
 // Until then the old block stays, with the new one in pendingMode from the time in pendingFrom (a Unix time).
+//
+// A site admin can also block both for the user from the admin panel (admin/user.php), kept in userSettings.blockAdmin
+// (true, or missing when not). It works like "All the time" on top of the user's own block, and only a site admin can
+// lift it: the settings page has no way to change it.
 require_once __DIR__ . '/userSettings.php';
 
 const HBHUB_BLOCK_NONE = 'none';
@@ -19,6 +23,22 @@ const HBHUB_BLOCK_TIME_ZONE = 'Europe/Copenhagen'; // school hours are in the sc
 const HBHUB_BLOCK_SCHOOL_START = 8; // 8 AM
 const HBHUB_BLOCK_SCHOOL_END = 15; // 3 PM
 const HBHUB_BLOCK_ALWAYS_DELAY = 6 * 3600; // seconds before switching off "All the time" takes effect
+
+/**
+ * Whether a site admin has blocked Gambling and Games for the user (userSettings.blockAdmin).
+ */
+function hbHubBlockIsAdmin(array $userSettings): bool
+{
+    return ($userSettings['blockAdmin'] ?? false) === true;
+}
+
+/**
+ * Whether Gambling and Games are blocked for the user right now: by a site admin, or by their own block.
+ */
+function hbHubBlockIsBlocked(array $userSettings, ?int $now = null): bool
+{
+    return hbHubBlockIsAdmin($userSettings) || hbHubBlockIsActive(hbHubBlockSettings($userSettings, $now), $now);
+}
 
 /**
  * The user's block, with a waiting change applied once its time has come.
@@ -125,18 +145,19 @@ function hbHubBlockFormatTime(int $time, ?int $now = null): string
 }
 
 /**
- * For the Gambling and Games pages, right after session.php: when the user has them blocked right now,
- * shows the "blocked" page instead and stops.
+ * For the Gambling and Games pages, right after session.php: when they're blocked for the user right now (by the
+ * user or by a site admin), shows the "blocked" page instead and stops.
  */
 function hbHubBlockPage(array $user, string $section): void
 {
-    $block = hbHubBlockSettings(hbHubUserSettings($user['userSettings'] ?? null));
-    if (!hbHubBlockIsActive($block)) {
+    $settings = hbHubUserSettings($user['userSettings'] ?? null);
+    if (!hbHubBlockIsBlocked($settings)) {
         return;
     }
 
     $blockSection = $section;
-    $blockIsSchool = $block['mode'] === HBHUB_BLOCK_SCHOOL;
+    $blockIsAdmin = hbHubBlockIsAdmin($settings);
+    $blockIsSchool = !$blockIsAdmin && hbHubBlockSettings($settings)['mode'] === HBHUB_BLOCK_SCHOOL;
     require __DIR__ . '/blockedPage.php';
     exit;
 }

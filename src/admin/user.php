@@ -8,6 +8,7 @@
 // chips, and ?export=1 downloads all of it as JSON. The actions are one form per card, like the settings page:
 // ghost ban or lift it (what they do in chats only shows to themselves, see the top of assets/php/chat.php),
 // ban or unban, change the name or bio, remove the picture (or remove and ban it), set the gambling block (straight away, without the wait),
+// block Gambling and Games with an admin block they can't lift themselves (or lift it, see block.php),
 // reset the password, remove two-factor login, log out every session, add or remove chips, delete messages, delete
 // attachments (one or all, which frees their tickets), add or take away attachment tickets and delete the account.
 // Chips change through hbHubCasinoChange() like in the games, logged with the reason "admin" and the admin's userId,
@@ -342,6 +343,26 @@ switch ($adminAction) {
         adminLog($db, $adminId, 'user.block', $targetId, null, ['mode' => $blockMode]);
         adminRedirect($targetId, 'adminSaved', 'block');
 
+    case 'blockAdmin':
+    case 'blockAdminLift':
+        // Blocks Gambling and Games for good, on top of their own block. They can't lift it in settings, only an admin
+        // can, here (block.php). Their own block stays as it was, so lifting this leaves theirs.
+        $blockAdminOn = $adminAction === 'blockAdmin';
+        $blockAdminWasOn = null;
+        hbHubChangeUserSettings($db, $targetId, function (array $settings) use ($blockAdminOn, &$blockAdminWasOn): array {
+            $blockAdminWasOn = hbHubBlockIsAdmin($settings);
+            if ($blockAdminOn) {
+                $settings['blockAdmin'] = true;
+            } else {
+                unset($settings['blockAdmin']);
+            }
+            return $settings;
+        });
+        if ($blockAdminWasOn !== $blockAdminOn) {
+            adminLog($db, $adminId, $blockAdminOn ? 'user.blockAdmin' : 'user.blockAdminLift', $targetId);
+        }
+        adminRedirect($targetId, $blockAdminOn ? 'adminBlocked' : 'adminBlockLifted', 'block');
+
     case 'password':
         // Shown to the admin as it's typed (or generated), to pass on to the user. Their locks are lifted too, their devices' as well.
         $newPassword = is_string($_POST['newPassword'] ?? null) ? $_POST['newPassword'] : '';
@@ -499,6 +520,7 @@ $adminSettings = hbHubUserSettings($target['userSettings']);
 $adminYear = is_scalar($adminSettings['year'] ?? null) ? (string) $adminSettings['year'] : '';
 $adminClass = is_scalar($adminSettings['class'] ?? null) ? (string) $adminSettings['class'] : '';
 $adminBlock = hbHubBlockSettings($adminSettings);
+$adminBlockIsAdmin = hbHubBlockIsAdmin($adminSettings);
 $adminAvatarSrc = hbHubAvatarUrl($targetId, $target['userAvatarAttachmentId'] !== null ? (int) $target['userAvatarAttachmentId'] : null);
 
 $adminSessions = adminSessions($db, $targetId);
@@ -604,7 +626,8 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                         <div><dt>IP when signing up</dt><dd class="admin-mono"><?= htmlspecialchars(adminIps($target['userIpv4AdresseOnAccountCreate'], $target['userIpv6AdresseOnAccountCreate'])) ?></dd></div>
                         <div><dt>Last IP</dt><dd class="admin-mono"><?= htmlspecialchars(adminIps($target['userIpv4AdresseLastAccessed'], $target['userIpv6AdresseLastAccessed'])) ?></dd></div>
                         <div><dt>Gambling block</dt><dd><?= htmlspecialchars(HBHUB_BLOCK_MODES[$adminBlock['mode']]) ?><?php if ($adminBlock['pendingMode'] !== null): ?>
-                            <span class="admin-small">(changing to "<?= htmlspecialchars(HBHUB_BLOCK_MODES[$adminBlock['pendingMode']]) ?>" at <?= htmlspecialchars(hbHubBlockFormatTime($adminBlock['pendingFrom'])) ?>)</span><?php endif; ?></dd></div>
+                            <span class="admin-small">(changing to "<?= htmlspecialchars(HBHUB_BLOCK_MODES[$adminBlock['pendingMode']]) ?>" at <?= htmlspecialchars(hbHubBlockFormatTime($adminBlock['pendingFrom'])) ?>)</span><?php endif; ?><?php if ($adminBlockIsAdmin): ?>
+                            <span class="admin-small">(and blocked by a site admin)</span><?php endif; ?></dd></div>
                         <div><dt>Chips</dt><dd><?= $adminWallet !== null ? number_format((int) $adminWallet['walletChips']) : 'Never opened the casino' ?></dd></div>
                         <div><dt>Messages sent</dt><dd><?= number_format((int) $adminMessageCounts['total']) ?> <span class="admin-small">(<?= number_format((int) $adminMessageCounts['deleted']) ?> deleted)</span></dd></div>
                         <div><dt>Attachment tickets</dt><dd><?= $adminTicketsUsed ?> of <?= $adminTicketsTotal ?> used<?php if ($adminTicketsExtra !== 0): ?>
@@ -701,6 +724,9 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                     A change they were waiting for is cancelled.
                                 </p>
                             </div>
+                            <?php if ($adminBlockIsAdmin): ?>
+                                <span class="settings-status is-on">Blocked by an admin</span>
+                            <?php endif; ?>
                         </div>
                         <form action="/admin/user?user=<?= $targetId ?>#block" method="post">
                             <input type="hidden" name="action" value="block">
@@ -718,6 +744,30 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                             <div class="settings-actions">
                                 <button type="submit" class="settings-btn settings-btn-primary">Save</button>
                             </div>
+                        </form>
+
+                        <hr class="settings-divider">
+                        <!-- Admin block: on top of the one above, and they can't lift it themselves -->
+                        <form class="settings-item" action="/admin/user?user=<?= $targetId ?>#block" method="post"
+                              data-confirm="<?= $adminBlockIsAdmin ? 'Lift the admin block on Gambling and Games for ' . htmlspecialchars($target['userName']) . '?' : 'Block Gambling and Games for ' . htmlspecialchars($target['userName']) . '?' ?>">
+                            <input type="hidden" name="action" value="<?= $adminBlockIsAdmin ? 'blockAdminLift' : 'blockAdmin' ?>">
+                            <div class="settings-item-text">
+                                <span class="settings-label">Admin block</span>
+                                <p class="settings-hint">
+                                    <?php if ($adminBlockIsAdmin): ?>
+                                        Gambling and Games are blocked for them all the time, and they can't lift it in their settings.
+                                        Lifting it leaves only their own block above.
+                                    <?php else: ?>
+                                        Blocks Gambling and Games for them all the time, straight away, also games and tables they have open.
+                                        Unlike the block above, they can't turn it off in their settings: only a site admin can lift it here.
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                            <?php if ($adminBlockIsAdmin): ?>
+                                <button type="submit" class="settings-btn settings-btn-primary">Lift admin block</button>
+                            <?php else: ?>
+                                <button type="submit" class="settings-btn settings-btn-danger">Block Gambling and Games</button>
+                            <?php endif; ?>
                         </form>
                     </section>
 

@@ -30,13 +30,13 @@ function hbHubCasinoIsOpenTo(array $user): bool
 }
 
 /**
- * Why the user can't use the casino right now: 'blocked' (blocked in settings) or 'closed' (not open to them), or null
- * when they can.
+ * Why the user can't use the casino right now: 'blocked' (blocked in settings or by a site admin) or 'closed' (not open
+ * to them), or null when they can.
  */
 function hbHubCasinoDenied(array $user): ?string
 {
     return match (true) {
-        hbHubBlockIsActive(hbHubBlockSettings(hbHubUserSettings($user['userSettings'] ?? null))) => 'blocked',
+        hbHubBlockIsBlocked(hbHubUserSettings($user['userSettings'] ?? null)) => 'blocked',
         !hbHubCasinoIsOpenTo($user) => 'closed',
         default => null,
     };

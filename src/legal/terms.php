@@ -152,8 +152,8 @@ const HBHUB_TERMS_UPDATED = '21 October 2026';
                         <ul>
                             <li>Bought chips are the same as any other chips. They can be lost in the games, and everything above applies to them too.</li>
                             <li>
-                                <strong>No refunds, for any reason.</strong> If you're banned, delete your account or block
-                                the casino in your settings, you will not get your money back. The same goes for bought chips
+                                <strong>No refunds, for any reason.</strong> If you're banned, delete your account, block
+                                the casino in your settings or an admin blocks it for you, you will not get your money back. The same goes for bought chips
                                 that are lost, corrected or reset.
                             </li>
                         </ul>
@@ -190,6 +190,7 @@ const HBHUB_TERMS_UPDATED = '21 October 2026';
                             <li>delete messages, attachments, pictures or groups, and ban a profile picture they delete, so it can't be used again,</li>
                             <li>reset or take away chips, or remove game results from the leaderboards,</li>
                             <li>take away attachment tickets, so fewer (or no) new attachments can be sent,</li>
+                            <li>block the Casino and Games for the account, all the time. Unlike a block you set yourself, it can't be turned off in your settings, only an admin can lift it,</li>
                             <li>
                                 ghost ban the account, for a while or for good, without telling the person. The chat keeps
                                 working like normal for them, but what they do in it (messages, attachments, edits, reactions,

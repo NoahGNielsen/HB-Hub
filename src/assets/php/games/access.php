@@ -44,7 +44,7 @@ function hbHubGamesPage(array $user): void
 
 /**
  * For the games' JSON endpoints: sends the JSON headers, and answers 403 with {"error": "blocked"} (blocked in
- * settings) or "closed" (not open to the user) and stops when it can't go on.
+ * settings or by a site admin) or "closed" (not open to the user) and stops when it can't go on.
  * A POST from another site never gets this far, session.php turns those away for the whole site.
  */
 function hbHubGamesJson(array $user): void
@@ -53,7 +53,7 @@ function hbHubGamesJson(array $user): void
     header('Cache-Control: no-store');
 
     $error = match (true) {
-        hbHubBlockIsActive(hbHubBlockSettings(hbHubUserSettings($user['userSettings'] ?? null))) => 'blocked',
+        hbHubBlockIsBlocked(hbHubUserSettings($user['userSettings'] ?? null)) => 'blocked',
         !hbHubGamesIsOpenTo($user) => 'closed',
         default => null,
     };
