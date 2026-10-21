@@ -190,7 +190,7 @@ const HBHUB_MINER_DARK_UPGRADES = [
     'darkEngines' => ['name' => 'Dark Engines', 'icon' => '⚫', 'cost' => 50, 'text' => 'All buildings mine 50% more.'],
     'timeDilation' => ['name' => 'Time Dilation', 'icon' => '⏳', 'cost' => 100, 'text' => 'Earn twice as much while you\'re away.'],
     'darkPickaxe' => ['name' => 'Dark Pickaxe', 'icon' => '⛏️', 'cost' => 10, 'text' => 'Clicks mine ' . HBHUB_MINER_DARK_PICKAXE . ' times as much.'],
-    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => '🎛️', 'cost' => 15, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 keys buy your last nine buildings instead of your first nine.'],
+    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => '🎛️', 'cost' => 2, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 keys buy your last nine buildings instead of your first nine.'],
     'physics' => ['name' => 'Cheaper Physics', 'icon' => '📉', 'cost' => 250, 'text' => 'Buildings get 14% more expensive with every one you buy, instead of 15%.'],
     'reactor' => ['name' => 'Dark Matter Reactor', 'icon' => '☢️', 'cost' => 750, 'text' => 'Every Dark Matter you\'ve earned makes everything mine '
         . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%.'],
