@@ -408,6 +408,8 @@
     const bot = root.querySelector('[data-miner-bot]');
     const upgradeList = root.querySelector('[data-miner-upgrades]');
     const upgradesEmpty = root.querySelector('[data-miner-upgrades-empty]');
+    const upgradesBox = root.querySelector('[data-miner-upgrades-box]');
+    const upgradesMore = root.querySelector('[data-miner-upgrades-more]');
     const buildingList = root.querySelector('[data-miner-buildings]');
     const amounts = root.querySelector('[data-miner-amounts]');
     const keySwitch = root.querySelector('[data-miner-key-switch]');
@@ -700,6 +702,22 @@
     // on, the one that leaves the last nine for 1-9
     const keyOffset = (count) => (lateKeys && hasDark(state, 'lateKeys') ? Math.max(0, count - 9) : 0);
 
+    // The upgrades show one row of this many (the cheapest) until they're opened up with the arrow under them
+    const UPGRADES_ROW = 3;
+
+    // The arrow under the upgrades: how many more there are, or that it closes them again
+    function renderUpgradesMore() {
+        const isOpen = upgradesBox.classList.contains('is-open');
+        const more = upgradeList.children.length - UPGRADES_ROW;
+        upgradesMore.textContent = isOpen ? '▴ Show less' : '▾ ' + more + ' more upgrade' + (more === 1 ? '' : 's');
+        upgradesMore.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    function setUpgradesOpen(isOpen) {
+        upgradesBox.classList.toggle('is-open', isOpen);
+        renderUpgradesMore();
+    }
+
     function availableUpgrades() {
         return Object.keys(UPGRADES).filter((id) => !has(state, id) && upgradeUnlocked(state, UPGRADES[id]));
     }
@@ -739,6 +757,8 @@
                 return item;
             }));
             upgradesEmpty.hidden = upgrades.length > 0;
+            upgradesMore.hidden = upgrades.length <= UPGRADES_ROW;
+            renderUpgradesMore();
 
             buildingList.replaceChildren(...shown.map((id) => {
                 const building = BUILDINGS[id];
@@ -1196,6 +1216,19 @@
             renderStore();
         }
     });
+
+    // Pointing the mouse at the arrow opens all the upgrades, and they stay open until the mouse leaves them. Only for a
+    // mouse: a tap also sends pointer events, and the click right after would close them again. Clicking (or a tap, or
+    // Enter) opens and closes them too.
+    upgradesMore.addEventListener('pointerenter', (event) => {
+        if (event.pointerType === 'mouse') setUpgradesOpen(true);
+    });
+
+    upgradesBox.addEventListener('pointerleave', (event) => {
+        if (event.pointerType === 'mouse') setUpgradesOpen(false);
+    });
+
+    upgradesMore.addEventListener('click', () => setUpgradesOpen(!upgradesBox.classList.contains('is-open')));
 
     darkList.addEventListener('click', (event) => {
         const button = event.target.closest('[data-dark]');

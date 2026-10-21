@@ -100,7 +100,12 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <h2 id="miner-store-title" class="games-visually-hidden">Store</h2>
                 <div class="miner-store-part">
                     <h3 class="miner-store-title">Upgrades</h3>
-                    <ul class="miner-upgrades" data-miner-upgrades></ul>
+                    <!-- Only the first row (the three cheapest) until the arrow under it is pointed at or clicked -->
+                    <div class="miner-upgrades-box" data-miner-upgrades-box>
+                        <ul class="miner-upgrades miner-ore-upgrades" id="miner-ore-upgrades" data-miner-upgrades></ul>
+                        <button type="button" class="miner-upgrades-more" aria-expanded="false" aria-controls="miner-ore-upgrades"
+                                data-miner-upgrades-more hidden></button>
+                    </div>
                     <p class="casino-hint miner-empty" data-miner-upgrades-empty>Mine some more ore and upgrades will show up here.</p>
                 </div>
                 <div class="miner-store-part">
