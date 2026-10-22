@@ -111,6 +111,7 @@ $lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playi
             <a class="casino-btn" href="/games/uno/leaderboard">Leaderboard</a>
         </div>
         <p class="casino-intro">The card game for 2 to 6 players: match the colour or the number, and be the first to get rid of all your cards.</p>
+        <p class="casino-alert games-notice games-beta">UNO is in beta, so things might break or change. If something goes wrong, tell us with the Feedback button in the side bar.</p>
         <?php if (isset($lobbyErrors['list'])): ?>
             <p class="casino-alert" role="alert"><?= htmlspecialchars($lobbyErrors['list']) ?></p>
         <?php endif; ?>

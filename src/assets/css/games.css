@@ -12,6 +12,18 @@
   background: color-mix(in srgb, var(--accent) 16%, var(--secondary));
 }
 
+/* "This game is in beta" under a game's title (games/uno/, games/spaceOreMiner/) */
+.games-beta {
+  flex: none; /* the miner's page is a column that fits the screen */
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.miner .games-beta {
+  margin: 8px 0 0; /* spaced like the news ticker under it */
+  padding: 8px 14px;
+}
+
 /* The saved game (games/matador/) */
 .games-save {
   margin-bottom: 20px;

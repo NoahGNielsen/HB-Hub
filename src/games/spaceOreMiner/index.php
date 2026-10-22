@@ -58,6 +58,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             </div>
         </div>
 
+        <p class="casino-alert games-notice games-beta">Space Ore Miner is in beta, so things might break or change. If something goes wrong, tell us with the Feedback button in the side bar.</p>
+
         <p class="miner-ticker" data-miner-ticker><span class="miner-ticker-text" data-miner-ticker-text>Loading the news from space…</span></p>
 
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->

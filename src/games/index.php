@@ -40,6 +40,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     <a class="casino-game" href="/games/uno/">
                         <span class="casino-game-name">UNO</span>
                         <span class="casino-game-text">The card game: match the colour or the number, hit your friends with Draw Fours, and don't forget to call UNO! 2 to 6 players.</span>
+                        <span class="casino-game-badge">Beta</span>
                     </a>
                 </li>
                 <li>
@@ -52,6 +53,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     <a class="casino-game" href="/games/spaceOreMiner/">
                         <span class="casino-game-name">Space Ore Miner</span>
                         <span class="casino-game-text">Click an asteroid for ore, buy machines that mine for you, catch Golden Comets and Warp Jump to new galaxies. A clicker game with a leaderboard.</span>
+                        <span class="casino-game-badge">Beta</span>
                     </a>
                 </li>
             </ul>
