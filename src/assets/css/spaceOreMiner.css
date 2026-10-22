@@ -1,12 +1,13 @@
-/* Space Ore Miner (games/spaceOreMiner/): the buttons and the menu at the top, the three views (Ore: the asteroid and
-   the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch), the popups (stats, achievements, how to play), the
-   comet flying across the screen and the messages in the corner. Loaded after casino.css and games.css;
-   spaceOreMiner.js fills it all in. */
+/* Space Ore Miner (games/spaceOreMiner/): the buttons and the menu at the top, the four views (Ore: the asteroid and
+   the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree),
+   the popups (stats, achievements, how to play), the comet flying across the screen and the messages in the corner.
+   Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. */
 .casino.miner {
   --miner-gold: #f5c542;
   --miner-diamond: #8be9ff;
   --miner-dark: #9d7bff;
   --miner-anti: #ff6bb5;
+  --miner-strange: #5ef2a6;
   --miner-gap: 16px;
   max-width: 1180px;
   margin: 0 auto;
@@ -100,6 +101,10 @@
 
 .miner-menu-link.is-antimatter {
   --miner-view-colour: var(--miner-anti);
+}
+
+.miner-menu-link.is-strangeMatter {
+  --miner-view-colour: var(--miner-strange);
 }
 
 .miner-menu-link:hover {
@@ -240,6 +245,17 @@
 @keyframes miner-crunch {
   35% { filter: brightness(3) hue-rotate(-60deg) blur(6px); transform: scale(0.85); }
   50% { transform: scale(1.03); }
+}
+
+/* A Big Rip: everything is pulled one way and the other until it tears, then snaps back */
+.miner.is-ripping .miner-view {
+  animation: miner-rip 1.4s ease;
+}
+
+@keyframes miner-rip {
+  20% { filter: brightness(1.8) hue-rotate(90deg); transform: skewX(7deg) scale(1.02); }
+  40% { filter: brightness(2.6) hue-rotate(160deg) blur(3px); transform: skewX(-9deg) scaleX(1.08); }
+  60% { transform: skewX(3deg) scaleX(0.98); }
 }
 
 /* The Ore view: the asteroid on the left, the store on the right, both as tall as what's left of the screen; under each
@@ -1741,10 +1757,11 @@
   overflow-wrap: anywhere;
 }
 
-/* The Dark Matter and Antimatter views (.miner-prestige.is-dark and .is-anti), built the same way, each in its own
-   colours (--view, and --view-2 to go with it): on top a starry panel with the picture on the left and the jump on the
-   right, then what the jump does, then the upgrade cards. is-ready (a Warp Jump or Big Crunch can be done now) speeds
-   the picture up and lights the button; is-locked (the Antimatter view before the first Warp Jump) dims the picture. */
+/* The Dark Matter, Antimatter and Strange Matter views (.miner-prestige.is-dark, .is-anti and .is-strange), built the
+   same way, each in its own colours (--view, and --view-2 to go with it): on top a starry panel with the picture on the
+   left and the jump on the right, then what the jump does, then the upgrade cards (the skill tree in Strange Matter).
+   is-ready (a Warp Jump, Big Crunch or Big Rip can be done now) speeds the picture up and lights the button; is-locked
+   (the Antimatter view before the first Warp Jump, Strange Matter before the first Big Crunch) dims the picture. */
 .miner-prestige {
   --view: var(--miner-dark);
   --view-2: #4de3ff;
@@ -1755,6 +1772,11 @@
 .miner-prestige.is-anti {
   --view: var(--miner-anti);
   --view-2: #ffd36b;
+}
+
+.miner-prestige.is-strange {
+  --view: var(--miner-strange);
+  --view-2: #d6ff5c;
 }
 
 .miner-prestige.is-ready {
@@ -1870,6 +1892,69 @@
 
 @keyframes miner-throb {
   to { scale: 1.15; filter: brightness(1.2); }
+}
+
+/* Strange Matter: a wobbling strangelet with its three quarks flying round it, each on its own tilted orbit. The ring
+   is the orbit (squashed into an ellipse and tilted), the quark span inside it turns, with the quark on its edge. */
+.miner-prestige.is-strange .miner-art-ring {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 3px solid color-mix(in srgb, var(--view) 35%, transparent);
+  rotate: var(--tilt);
+  scale: 1 0.36;
+}
+
+.miner-prestige.is-strange .miner-art-ring.is-1 {
+  --tilt: 0deg;
+  --quark: var(--view-2);
+  --orbit: 3.2s;
+}
+
+.miner-prestige.is-strange .miner-art-ring.is-2 {
+  --tilt: 60deg;
+  --quark: var(--miner-anti);
+  --orbit: 4.4s;
+}
+
+.miner-prestige.is-strange .miner-art-ring.is-3 {
+  --tilt: -60deg;
+  --quark: var(--miner-diamond);
+  --orbit: 5.6s;
+}
+
+.miner-prestige.is-strange .miner-art-quark {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  animation: miner-spin calc(var(--orbit) / var(--spin)) linear infinite;
+}
+
+.miner-prestige.is-strange .miner-art-quark::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: calc(50% - 8px);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--quark);
+  box-shadow: 0 0 12px var(--quark);
+}
+
+.miner-prestige.is-strange .miner-art-core {
+  width: 34%;
+  height: 34%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 8%, var(--view-2) 24%, var(--view) 55%, color-mix(in srgb, var(--view) 45%, #002a18));
+  box-shadow: 0 0 30px 6px color-mix(in srgb, var(--view) 65%, transparent);
+  animation: miner-wobble calc(4s / var(--spin)) ease-in-out infinite;
+}
+
+@keyframes miner-wobble {
+  0%, 100% { border-radius: 45% 55% 52% 48% / 52% 44% 56% 48%; }
+  33% { border-radius: 58% 42% 46% 54% / 44% 58% 42% 56%; scale: 1.06; }
+  66% { border-radius: 48% 52% 60% 40% / 56% 46% 54% 44%; scale: 0.96; }
 }
 
 /* Locked: grey and holding still */
@@ -2027,6 +2112,23 @@
   to { box-shadow: 0 6px 34px var(--view), 0 0 0 4px color-mix(in srgb, var(--view) 25%, transparent); }
 }
 
+/* The jump's button with the Autopilot or Auto Crunch switch next to it */
+.miner-prestige-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.miner-auto-prestige {
+  padding: 10px 14px;
+}
+
+.miner-auto-prestige.is-active {
+  border-color: var(--view);
+  color: var(--view);
+}
+
 .miner-prestige-hint {
   margin: 10px 0 0;
   font-size: 0.9rem;
@@ -2181,13 +2283,225 @@
   translate: 0 -0.1em;
 }
 
-/* The Warp Jump and Big Crunch popups, in their view's colour */
+/* The skill tree in the Strange Matter view (renderTree() in spaceOreMiner.js): the tree, and the skill picked in it next
+   to it (under it on small screens). The tree is a grid of --columns by --rows square cells, a skill's button in some of
+   them, over an SVG in the same units with the lines between them. Each skill is in its branch's colour (--branch):
+   dim until it can be learned, outlined once it can, glowing when there's enough Strange Matter for it and filled in
+   once it's learned. A line lights up once both its skills are learned. */
+.miner-tree .is-core,
+.miner-skill-info.is-core {
+  --branch: var(--miner-strange);
+}
+
+.miner-tree .is-industry,
+.miner-skill-info.is-industry {
+  --branch: var(--miner-gold);
+}
+
+.miner-tree .is-hands,
+.miner-skill-info.is-hands {
+  --branch: #ff8a3d;
+}
+
+.miner-tree .is-sky,
+.miner-skill-info.is-sky {
+  --branch: var(--miner-diamond);
+}
+
+.miner-tree .is-cosmos,
+.miner-skill-info.is-cosmos {
+  --branch: var(--miner-dark);
+}
+
+.miner-tree-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+
+.miner-tree {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 7), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows, 10), minmax(0, 1fr));
+  aspect-ratio: var(--columns, 7) / var(--rows, 10);
+  container-type: inline-size;
+  border: 1px solid color-mix(in srgb, var(--view) 25%, transparent);
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--view) 14%, transparent), transparent 60%),
+    var(--background);
+}
+
+.miner-tree-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.miner-tree-line {
+  stroke: color-mix(in srgb, var(--text) 15%, transparent);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.3s;
+}
+
+.miner-tree-line.is-open {
+  stroke: color-mix(in srgb, var(--branch) 45%, transparent);
+}
+
+.miner-tree-line.is-lit {
+  stroke: var(--branch);
+  stroke-width: 3px;
+}
+
+.miner-skill {
+  position: relative;
+  place-self: center;
+  width: 74%;
+  aspect-ratio: 1;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid color-mix(in srgb, var(--text) 18%, transparent);
+  border-radius: 30%;
+  background: var(--secondary);
+  color: var(--text);
+  font-size: calc(100cqi / var(--columns, 7) * 0.4);
+  cursor: pointer;
+  opacity: 0.45;
+  filter: grayscale(0.8);
+  transition: opacity 0.2s, filter 0.2s, border-color 0.2s, background 0.2s, transform 0.1s;
+}
+
+.miner-skill:hover {
+  opacity: 0.85;
+  transform: scale(1.06);
+}
+
+.miner-skill.is-open {
+  border-color: color-mix(in srgb, var(--branch) 60%, transparent);
+  opacity: 1;
+  filter: none;
+}
+
+.miner-skill.is-affordable {
+  border-color: var(--branch);
+  animation: miner-skill-ready 1.3s ease-in-out infinite alternate;
+}
+
+@keyframes miner-skill-ready {
+  to { box-shadow: 0 0 16px var(--branch); }
+}
+
+.miner-skill.is-learned {
+  border-color: var(--branch);
+  background: color-mix(in srgb, var(--branch) 28%, var(--background));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--branch) 40%, transparent);
+  opacity: 1;
+  filter: none;
+}
+
+.miner-skill.is-picked {
+  outline: 3px solid var(--text);
+  outline-offset: 3px;
+}
+
+.miner-skill:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* The picked skill: stays in view next to the tree while the page scrolls */
+.miner-skill-info {
+  --branch: var(--view);
+  position: sticky;
+  top: calc(var(--nav-top-h, 0px) + 12px);
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--branch) 45%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--branch) 6%, var(--background));
+}
+
+.miner-skill-info-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.miner-skill-info-box {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--branch) 20%, transparent);
+  font-size: 2rem;
+}
+
+.miner-skill-info-name {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.miner-skill-info-branch {
+  margin: 2px 0 0;
+  color: var(--branch);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.miner-skill-info-text {
+  margin: 14px 0 0;
+  line-height: 1.5;
+}
+
+.miner-skill-info-needs {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.miner-skill-info-needs:empty {
+  display: none;
+}
+
+.miner-skill-info.is-learned .miner-skill-info-needs {
+  color: var(--branch);
+  font-weight: 700;
+  opacity: 1;
+}
+
+.miner-skill-learn {
+  --view: var(--branch);
+  width: 100%;
+  margin-top: 16px;
+}
+
+/* Still says what it costs while there isn't enough */
+.miner-skill-learn:disabled .miner-prestige-btn-gain {
+  display: block;
+}
+
+/* The Warp Jump, Big Crunch and Big Rip popups, in their view's colour */
 .miner-prestige-dialog.is-dark {
   --view: var(--miner-dark);
 }
 
 .miner-prestige-dialog.is-anti {
   --view: var(--miner-anti);
+}
+
+.miner-prestige-dialog.is-strange {
+  --view: var(--miner-strange);
 }
 
 .miner-prestige-dialog h2 {
@@ -2457,6 +2771,21 @@
     grid-template-columns: 160px minmax(0, 1fr);
     gap: 22px;
   }
+
+  /* The picked skill goes under the tree */
+  .miner-tree-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .miner-tree {
+    width: 100%;
+    max-width: 560px;
+    justify-self: center;
+  }
+
+  .miner-skill-info {
+    position: static;
+  }
 }
 
 /* Phones: the buttons by the title are just icons, the news ticker is left out of the Ore view, and the asteroid sits
@@ -2501,6 +2830,11 @@
     padding: 8px 6px;
     gap: 4px;
     font-size: 0.9rem;
+  }
+
+  /* Four views don't fit with their numbers too, and each view shows its own anyway */
+  .miner-menu-count {
+    display: none;
   }
 
   .miner[data-view="ore"] .miner-ticker {
@@ -2611,8 +2945,32 @@
     width: 100%;
   }
 
+  .miner-prestige-actions {
+    justify-content: center;
+  }
+
   .miner-locked {
     text-align: left;
+  }
+
+  .miner-skill {
+    border-width: 1.5px;
+  }
+
+  .miner-skill.is-picked,
+  .miner-skill:focus-visible {
+    outline-width: 2px;
+    outline-offset: 2px;
+  }
+
+  .miner-skill-info {
+    padding: 14px;
+  }
+
+  .miner-skill-info-box {
+    width: 46px;
+    height: 46px;
+    font-size: 1.6rem;
   }
 
   .miner-perks {
@@ -2631,8 +2989,9 @@
     animation-play-state: paused !important; /* over the animation shorthands, which are more specific */
   }
 
-  /* The Dark Matter and Antimatter pictures stop the same way, spread out by their delays */
-  .miner-prestige-art > * {
+  /* The Dark Matter, Antimatter and Strange Matter pictures stop the same way, spread out by their delays */
+  .miner-prestige-art > *,
+  .miner-art-quark {
     animation-play-state: paused !important;
   }
 
@@ -2652,6 +3011,8 @@
   .miner-upgrade:focus-visible .miner-upgrade-text,
   .miner.is-warping .miner-view,
   .miner.is-crunching .miner-view,
+  .miner.is-ripping .miner-view,
+  .miner-skill.is-affordable,
   .miner-prestige.is-ready .miner-prestige-btn,
   .miner-progress-bar.is-full .miner-progress-fill {
     animation: none;

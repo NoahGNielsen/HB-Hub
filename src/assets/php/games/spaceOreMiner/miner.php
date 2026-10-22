@@ -2,7 +2,9 @@
 // Space Ore Miner, the clicker game: click the asteroid for ore, buy machines that mine for you, and grow from one
 // miner on a rock into a galaxy-wide mining company. Warp Jump (prestige) starts over in a new galaxy for Dark Matter,
 // which makes everything mine faster for good. Big Crunch (the prestige after that) collapses the whole universe, Dark
-// Matter and all, for Antimatter, which makes everything mine faster and Warp Jumps give more Dark Matter, for good.
+// Matter and all, for Antimatter, which makes everything mine faster and Warp Jumps give more Dark Matter. Big Rip (the
+// last one) tears the whole multiverse apart, Antimatter and all, for Strange Matter, which makes everything mine
+// faster for good and is spent in the skill tree (HBHUB_MINER_SKILLS).
 //
 // Each user has one save: a row in HBHub-MinerSaves with the whole game as JSON in saveState (the shape is in
 // hbHubMinerNewState()), plus a few of its numbers in their own columns for the leaderboard.
@@ -39,7 +41,11 @@ const HBHUB_MINER_DARK_BONUS = 0.05; // production per Dark Matter earned in thi
 const HBHUB_MINER_DARK_BONUS_REACTOR = 0.075; // with Dark Matter Reactor
 const HBHUB_MINER_CRUNCH_DARK = 2000; // Dark Matter to earn in a universe before a Big Crunch
 const HBHUB_MINER_ANTI_UNIT = 100; // Dark Matter for the first Antimatter, see hbHubMinerAntiTotal()
-const HBHUB_MINER_ANTI_BONUS = 0.1; // production, and Dark Matter from a Warp Jump, per Antimatter ever earned
+const HBHUB_MINER_ANTI_BONUS = 0.1; // production per Antimatter earned in this multiverse (and the square root of it to Dark Matter)
+const HBHUB_MINER_RIP_ANTI = 10000; // Antimatter to earn in a multiverse before a Big Rip
+const HBHUB_MINER_STRANGE_UNIT = 1000; // Antimatter for the first Strange Matter, see hbHubMinerStrangeTotal()
+const HBHUB_MINER_STRANGE_STEPS = [1, 1.6, 2.5, 4, 6.3]; // a Strange Matter at each of these times a power of ten (times the unit)
+const HBHUB_MINER_STRANGE_BONUS = 1; // production per Strange Matter ever earned
 const HBHUB_MINER_LEFTOVER_ORE = 1e7; // ore every run starts with, with Big Bang Leftovers
 const HBHUB_MINER_COMET_WAIT_MS = [60000, 180000]; // between two comets, halved with Comet Radar
 const HBHUB_MINER_COMET_STAY_MS = 12000; // on screen, doubled with Comet Magnet
@@ -231,6 +237,166 @@ const HBHUB_MINER_ANTI_UPGRADES = [
     'antiComets' => ['name' => 'Antimatter Comets', 'icon' => 'antiComet', 'cost' => 50, 'text' => 'Comet effects are twice as strong.'],
 ];
 
+// The skill tree, bought with Strange Matter and kept forever. A skill can be learned once every skill in its 'after' is
+// learned (the lines going up from it in the tree), so it grows down from the Strangelet at the top. 'at' is where it
+// is in the tree: [column 0-6, row], and 'branch' its colour there: industry (buildings), hands (clicks), core (the
+// trunk down the middle), sky (comets) and cosmos (the prestiges and the automatic switches).
+// 'type' says what it does, with 'times' (multiplied by it), 'value' (added) or nothing (switched on); see
+// HBHUB_MINER_SKILL_NEUTRAL for the full list and hbHubMinerSkillEffects() for how they add up. The text is made from
+// the numbers (hbHubMinerSkillText()), unless the skill has its own 'text'.
+// - production: everything mines 'times' as much. buildings: the 'buildings' listed do. perSkill, perWarp, perCrunch,
+//   owned: everything mines 'value' more for every skill learned, Warp Jump ever made, Big Crunch ever made, building
+//   owned.
+// - buildingUpgrade: a building's own upgrades are 'times' as strong (2 becomes 2 × times). crew: the crew upgrades are.
+// - cost, upgradeCost: buildings, upgrades cost 'times' as much. start: every run starts with 'count' of each of the
+//   'buildings'. startOre: with this much ore. keep: the ore upgrades of these 'types' are kept on a Warp Jump.
+// - click: a click's own ore is 'times' as much (not the share of production). clickShare: like the clickPct upgrades.
+//   crit: clicks can be critical without the Critical Strike Module, and 'value' more often. critPower: a critical
+//   click's multiplier is 'times' as big. auto: 'value' more clicks a second.
+// - cometWait, cometStay, cometPower, cometLength, luckyOre: comets' wait, time on screen, effect, how long the effect
+//   lasts, a lucky comet's ore, times 'times'. diamond: Diamond Comets can come without Lucky Stars, 'value' more often.
+// - darkGain, antiGain, strangeGain: what a Warp Jump, Big Crunch, Big Rip gives, times 'times'. darkBonus, antiBonus:
+//   added to what each Dark Matter or Antimatter earned does. crunchDark: what a Big Crunch needs,
+//   times 'times'. offline: the ore while away. keepAnti: the Antimatter upgrades are kept on a Big Rip.
+// - autoWarp, autoCrunch: a switch that Warp Jumps or Big Crunches by itself (only in spaceOreMiner.js, which sends
+//   them as normal warp and crunch actions, like Auto Buy).
+const HBHUB_MINER_SKILLS = [
+    // The trunk, down the middle
+    'strangelet' => ['name' => 'Strangelet', 'icon' => 'strangelet', 'branch' => 'core', 'cost' => 1, 'at' => [3, 0], 'after' => [],
+        'type' => 'production', 'times' => 3],
+    'strangeCore' => ['name' => 'Strange Core', 'icon' => 'strangeCore', 'branch' => 'core', 'cost' => 3, 'at' => [3, 2], 'after' => ['strangelet'],
+        'type' => 'production', 'times' => 3],
+    'skillSynergy' => ['name' => 'Skill Synergy', 'icon' => 'books', 'branch' => 'core', 'cost' => 5, 'at' => [3, 3], 'after' => ['strangeCore'],
+        'type' => 'perSkill', 'value' => 0.1],
+    'strangeHeart' => ['name' => 'Heart of Strangeness', 'icon' => 'strangeHeart', 'branch' => 'core', 'cost' => 10, 'at' => [3, 4], 'after' => ['skillSynergy'],
+        'type' => 'production', 'times' => 5],
+    'frequentFlyer' => ['name' => 'Frequent Flyer Miles', 'icon' => 'medal', 'branch' => 'core', 'cost' => 15, 'at' => [3, 5], 'after' => ['strangeHeart'],
+        'type' => 'perWarp', 'value' => 0.01],
+    'strangeStar' => ['name' => 'Strange Star', 'icon' => 'strangeStar', 'branch' => 'core', 'cost' => 30, 'at' => [3, 6], 'after' => ['frequentFlyer'],
+        'type' => 'production', 'times' => 10],
+    'thinFabric' => ['name' => 'Thin Fabric', 'icon' => 'bigRip', 'branch' => 'core', 'cost' => 40, 'at' => [3, 7], 'after' => ['strangeStar'],
+        'type' => 'strangeGain', 'times' => 1.5],
+    'theory' => ['name' => 'Theory of Everything', 'icon' => 'theory', 'branch' => 'core', 'cost' => 400, 'at' => [3, 9],
+        'after' => ['cosmicFactory', 'multiverseHand', 'thinFabric', 'cometKingdom', 'strangeUniverse'], 'type' => 'production', 'times' => 100],
+
+    // Industry: the buildings
+    'oddMachines' => ['name' => 'Odd Machines', 'icon' => 'rig', 'branch' => 'industry', 'cost' => 1, 'at' => [1, 1], 'after' => ['strangelet'],
+        'type' => 'buildings', 'buildings' => ['pickaxe', 'drone', 'laser', 'rig', 'base'], 'times' => 10],
+    'discount' => ['name' => 'Strange Discounts', 'icon' => 'chartDown', 'branch' => 'industry', 'cost' => 2, 'at' => [0, 2], 'after' => ['oddMachines'],
+        'type' => 'cost', 'times' => 0.9],
+    'middleMachines' => ['name' => 'Stranger Machines', 'icon' => 'station', 'branch' => 'industry', 'cost' => 2, 'at' => [1, 2], 'after' => ['oddMachines'],
+        'type' => 'buildings', 'buildings' => ['freighter', 'station', 'excavator', 'cracker', 'siphon'], 'times' => 5],
+    'prefab' => ['name' => 'Prefab Colonies', 'icon' => 'base', 'branch' => 'industry', 'cost' => 3, 'at' => [0, 3], 'after' => ['discount'],
+        'type' => 'start', 'buildings' => ['pickaxe', 'drone', 'laser', 'rig', 'base'], 'count' => 25],
+    'farMachines' => ['name' => 'Strangest Machines', 'icon' => 'dysonSwarm', 'branch' => 'industry', 'cost' => 4, 'at' => [1, 3], 'after' => ['middleMachines'],
+        'type' => 'buildings', 'buildings' => ['forge', 'nebula', 'dyson', 'wormhole', 'multiverse'], 'times' => 3],
+    'bargain' => ['name' => 'Bargain Hunter', 'icon' => 'scales', 'branch' => 'industry', 'cost' => 6, 'at' => [0, 4], 'after' => ['prefab'],
+        'type' => 'upgradeCost', 'times' => 0.5],
+    'bonds' => ['name' => 'Strange Bonds', 'icon' => 'link', 'branch' => 'industry', 'cost' => 6, 'at' => [1, 4], 'after' => ['farMachines'],
+        'type' => 'owned', 'value' => 0.001],
+    'strangeMemory' => ['name' => 'Strange Memory', 'icon' => 'chip', 'branch' => 'industry', 'cost' => 10, 'at' => [0, 5], 'after' => ['bargain'],
+        'type' => 'keep', 'types' => ['global', 'synergy'],
+        'text' => 'Keep the upgrades that make all buildings mine more, and the ones that link two buildings, when you Warp Jump.'],
+    'overclock' => ['name' => 'Overclocked Upgrades', 'icon' => 'starChart', 'branch' => 'industry', 'cost' => 10, 'at' => [1, 5], 'after' => ['bonds'],
+        'type' => 'buildingUpgrade', 'times' => 1.25],
+    'selfReplicating' => ['name' => 'Self-Replicating Machines', 'icon' => 'dna', 'branch' => 'industry', 'cost' => 15, 'at' => [0, 6], 'after' => ['strangeMemory'],
+        'type' => 'start', 'buildings' => ['pickaxe', 'drone', 'laser', 'rig', 'base', 'freighter', 'station', 'excavator', 'cracker', 'siphon',
+            'forge', 'nebula', 'dyson', 'wormhole', 'multiverse'], 'count' => 10],
+    'crewSpirit' => ['name' => 'Crew Spirit', 'icon' => 'buddies', 'branch' => 'industry', 'cost' => 15, 'at' => [1, 6], 'after' => ['overclock'],
+        'type' => 'crew', 'times' => 10],
+    'perfectMemory' => ['name' => 'Perfect Memory', 'icon' => 'blueprint', 'branch' => 'industry', 'cost' => 25, 'at' => [0, 7], 'after' => ['selfReplicating'],
+        'type' => 'keep', 'types' => ['building', 'crew'],
+        'text' => 'Keep every building\'s own upgrades, and the Space Pickaxe Guys\' crew upgrades, when you Warp Jump.'],
+    'massProduction' => ['name' => 'Mass Production', 'icon' => 'crates', 'branch' => 'industry', 'cost' => 25, 'at' => [1, 7], 'after' => ['crewSpirit'],
+        'type' => 'cost', 'times' => 0.8],
+    'cosmicFactory' => ['name' => 'Cosmic Factory', 'icon' => 'starForge', 'branch' => 'industry', 'cost' => 60, 'at' => [1, 8],
+        'after' => ['perfectMemory', 'massProduction'], 'type' => 'production', 'times' => 10],
+
+    // Hands: clicking
+    'strangeTouch' => ['name' => 'Strange Touch', 'icon' => 'neutronFist', 'branch' => 'hands', 'cost' => 1, 'at' => [2, 1], 'after' => ['strangelet'],
+        'type' => 'click', 'times' => 10],
+    'quarkKnuckles' => ['name' => 'Quark Knuckles', 'icon' => 'crit', 'branch' => 'hands', 'cost' => 2, 'at' => [2, 2], 'after' => ['strangeTouch'],
+        'type' => 'crit', 'value' => 0.05,
+        'text' => 'Clicks can be critical from the start of a run, even without the Critical Strike Module, and are 5% more likely to be.'],
+    'ghostHands' => ['name' => 'Ghost Hands', 'icon' => 'robot', 'branch' => 'hands', 'cost' => 4, 'at' => [2, 3], 'after' => ['quarkKnuckles'],
+        'type' => 'auto', 'value' => 5],
+    'strangePull' => ['name' => 'Strange Pull', 'icon' => 'quantumHammer', 'branch' => 'hands', 'cost' => 6, 'at' => [2, 4], 'after' => ['ghostHands'],
+        'type' => 'clickShare', 'value' => 0.05],
+    'strangeCrits' => ['name' => 'Strange Crits', 'icon' => 'supernovaFist', 'branch' => 'hands', 'cost' => 10, 'at' => [2, 5], 'after' => ['strangePull'],
+        'type' => 'critPower', 'times' => 2.5],
+    'poltergeist' => ['name' => 'Poltergeist', 'icon' => 'robots', 'branch' => 'hands', 'cost' => 15, 'at' => [2, 6], 'after' => ['strangeCrits'],
+        'type' => 'auto', 'value' => 10],
+    'strangeGravity' => ['name' => 'Strange Gravity', 'icon' => 'gauntlet', 'branch' => 'hands', 'cost' => 25, 'at' => [2, 7], 'after' => ['poltergeist'],
+        'type' => 'clickShare', 'value' => 0.1],
+    'multiverseHand' => ['name' => 'Hand of the Multiverse', 'icon' => 'bigBang', 'branch' => 'hands', 'cost' => 50, 'at' => [2, 8], 'after' => ['strangeGravity'],
+        'type' => 'clickShare', 'value' => 0.25],
+
+    // Sky: comets
+    'strangeSkies' => ['name' => 'Strange Skies', 'icon' => 'radar', 'branch' => 'sky', 'cost' => 1, 'at' => [4, 1], 'after' => ['strangelet'],
+        'type' => 'cometWait', 'times' => 0.75],
+    'slowComets' => ['name' => 'Slow Comets', 'icon' => 'magnet', 'branch' => 'sky', 'cost' => 2, 'at' => [4, 2], 'after' => ['strangeSkies'],
+        'type' => 'cometStay', 'times' => 2],
+    'cometFuel' => ['name' => 'Comet Fuel', 'icon' => 'antiComet', 'branch' => 'sky', 'cost' => 3, 'at' => [4, 3], 'after' => ['slowComets'],
+        'type' => 'cometPower', 'times' => 2],
+    'strangeDiamonds' => ['name' => 'Strange Diamonds', 'icon' => 'diamond', 'branch' => 'sky', 'cost' => 6, 'at' => [4, 4], 'after' => ['cometFuel'],
+        'type' => 'diamond', 'value' => 0.05,
+        'text' => 'Diamond Comets can show up even without Lucky Stars, and 5% more often.'],
+    'lingering' => ['name' => 'Lingering Comets', 'icon' => 'cometTail', 'branch' => 'sky', 'cost' => 10, 'at' => [4, 5], 'after' => ['strangeDiamonds'],
+        'type' => 'cometLength', 'times' => 2],
+    'strangeFortune' => ['name' => 'Strange Fortune', 'icon' => 'sparkles', 'branch' => 'sky', 'cost' => 15, 'at' => [4, 6], 'after' => ['lingering'],
+        'type' => 'luckyOre', 'times' => 5],
+    'cometStorm' => ['name' => 'Comet Storm', 'icon' => 'comet', 'branch' => 'sky', 'cost' => 25, 'at' => [4, 7], 'after' => ['strangeFortune'],
+        'type' => 'cometWait', 'times' => 0.5],
+    'cometKingdom' => ['name' => 'Comet Kingdom', 'icon' => 'crown', 'branch' => 'sky', 'cost' => 50, 'at' => [4, 8], 'after' => ['cometStorm'],
+        'type' => 'cometPower', 'times' => 3],
+
+    // Cosmos: Warp Jumps, Big Crunches and Big Rips
+    'darkCatalyst' => ['name' => 'Dark Catalyst', 'icon' => 'darkEngine', 'branch' => 'cosmos', 'cost' => 1, 'at' => [5, 1], 'after' => ['strangelet'],
+        'type' => 'darkGain', 'times' => 2],
+    'antiEcho' => ['name' => 'Antimatter Echo', 'icon' => 'cycle', 'branch' => 'cosmos', 'cost' => 2, 'at' => [5, 2], 'after' => ['darkCatalyst'],
+        'type' => 'keepAnti', 'text' => 'Keep your Antimatter upgrades when you Big Rip.'],
+    'timeLoop' => ['name' => 'Time Loop', 'icon' => 'hourglass', 'branch' => 'cosmos', 'cost' => 2, 'at' => [6, 2], 'after' => ['darkCatalyst'],
+        'type' => 'offline', 'times' => 4],
+    'antiCatalyst' => ['name' => 'Antimatter Catalyst', 'icon' => 'flask', 'branch' => 'cosmos', 'cost' => 4, 'at' => [5, 3], 'after' => ['antiEcho'],
+        'type' => 'antiGain', 'times' => 2],
+    'denseDark' => ['name' => 'Dense Dark Matter', 'icon' => 'radiation', 'branch' => 'cosmos', 'cost' => 3, 'at' => [6, 3], 'after' => ['timeLoop'],
+        'type' => 'darkBonus', 'value' => 0.025],
+    'shallowUniverse' => ['name' => 'Shallow Universe', 'icon' => 'bigCrunch', 'branch' => 'cosmos', 'cost' => 6, 'at' => [5, 4], 'after' => ['antiCatalyst'],
+        'type' => 'crunchDark', 'times' => 0.5],
+    'universeCollector' => ['name' => 'Universe Collector', 'icon' => 'abacus', 'branch' => 'cosmos', 'cost' => 5, 'at' => [6, 4], 'after' => ['denseDark'],
+        'type' => 'perCrunch', 'value' => 0.05],
+    'denseAnti' => ['name' => 'Dense Antimatter', 'icon' => 'annihilation', 'branch' => 'cosmos', 'cost' => 10, 'at' => [5, 5], 'after' => ['shallowUniverse'],
+        'type' => 'antiBonus', 'value' => 0.05],
+    'strangeLeftovers' => ['name' => 'Strange Leftovers', 'icon' => 'orePile', 'branch' => 'cosmos', 'cost' => 8, 'at' => [6, 5], 'after' => ['universeCollector'],
+        'type' => 'startOre', 'value' => 1e12],
+    'strangeCatalyst' => ['name' => 'Strange Catalyst', 'icon' => 'strangeFlask', 'branch' => 'cosmos', 'cost' => 15, 'at' => [5, 6], 'after' => ['denseAnti'],
+        'type' => 'strangeGain', 'times' => 2],
+    'autoWarp' => ['name' => 'Autopilot', 'icon' => 'autoWarp', 'branch' => 'cosmos', 'cost' => 10, 'at' => [6, 6], 'after' => ['strangeLeftovers'],
+        'type' => 'autoWarp',
+        'text' => 'Adds a switch to the Dark Matter view that Warp Jumps by itself whenever a jump would at least double the Dark Matter you\'ve earned.'],
+    'antimatterFlood' => ['name' => 'Antimatter Flood', 'icon' => 'antiFlood', 'branch' => 'cosmos', 'cost' => 25, 'at' => [5, 7], 'after' => ['strangeCatalyst'],
+        'type' => 'antiGain', 'times' => 3],
+    'autoCrunch' => ['name' => 'Auto Crunch', 'icon' => 'autoCrunch', 'branch' => 'cosmos', 'cost' => 20, 'at' => [6, 7], 'after' => ['autoWarp'],
+        'type' => 'autoCrunch',
+        'text' => 'Adds a switch to the Antimatter view that Big Crunches by itself whenever a crunch would give at least a quarter of the Antimatter you\'ve earned.'],
+    'strangeUniverse' => ['name' => 'Strange Universe', 'icon' => 'galaxy', 'branch' => 'cosmos', 'cost' => 60, 'at' => [5, 8],
+        'after' => ['antimatterFlood', 'autoCrunch'], 'type' => 'strangeGain', 'times' => 3],
+];
+
+// What each kind of skill does with none of it learned, which hbHubMinerSkillEffects() starts from: 1 for 'times'
+// (multiplied together), 0 for 'value' (added together), false for the switches, and buildings (id => times), start
+// (id => how many) and keep (upgrade types) for the three with more to them. The keys are every 'type' there is.
+const HBHUB_MINER_SKILL_NEUTRAL = [
+    'production' => 1, 'perSkill' => 0, 'perWarp' => 0, 'perCrunch' => 0, 'owned' => 0, 'buildingUpgrade' => 1, 'crew' => 1,
+    'cost' => 1, 'upgradeCost' => 1, 'startOre' => 0,
+    'click' => 1, 'clickShare' => 0, 'crit' => 0, 'critPower' => 1, 'auto' => 0,
+    'cometWait' => 1, 'cometStay' => 1, 'cometPower' => 1, 'cometLength' => 1, 'luckyOre' => 1, 'diamond' => 0,
+    'darkGain' => 1, 'antiGain' => 1, 'strangeGain' => 1, 'darkBonus' => 0, 'antiBonus' => 0,
+    'crunchDark' => 1, 'offline' => 1,
+    'keepAnti' => false, 'autoWarp' => false, 'autoCrunch' => false,
+    'buildings' => [], 'start' => [], 'keep' => [],
+];
+
 // Achievements: done once 'stat' reaches 'at'. The stats are in hbHubMinerStat().
 const HBHUB_MINER_ACHIEVEMENTS = [
     'click1' => ['name' => 'Rock Bottom', 'text' => 'Click the asteroid for the first time.', 'stat' => 'clicks', 'at' => 1],
@@ -277,6 +443,13 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'warp100' => ['name' => 'Lost Count', 'text' => 'Warp Jump 100 times.', 'stat' => 'warps', 'at' => 100],
     'crunch1' => ['name' => 'Big Crunch', 'text' => 'Collapse the universe with a Big Crunch.', 'stat' => 'crunches', 'at' => 1],
     'crunch5' => ['name' => 'Universe Recycler', 'text' => 'Big Crunch 5 times.', 'stat' => 'crunches', 'at' => 5],
+    'crunch25' => ['name' => 'Universe Factory', 'text' => 'Big Crunch 25 times.', 'stat' => 'crunches', 'at' => 25],
+    'rip1' => ['name' => 'Torn Apart', 'text' => 'Tear the multiverse apart with a Big Rip.', 'stat' => 'rips', 'at' => 1],
+    'rip5' => ['name' => 'Fabric Softener', 'text' => 'Big Rip 5 times.', 'stat' => 'rips', 'at' => 5],
+    'rip25' => ['name' => 'Reality Shredder', 'text' => 'Big Rip 25 times.', 'stat' => 'rips', 'at' => 25],
+    'skill1' => ['name' => 'Strange Student', 'text' => 'Learn a skill in the skill tree.', 'stat' => 'skills', 'at' => 1],
+    'skill25' => ['name' => 'Halfway Strange', 'text' => 'Learn 25 skills.', 'stat' => 'skills', 'at' => 25],
+    'skillAll' => ['name' => 'Know-It-All', 'text' => 'Learn every skill in the skill tree.', 'stat' => 'allSkills', 'at' => 1],
 ];
 
 /**
@@ -315,6 +488,87 @@ function hbHubMinerUpgrades(): array
 }
 
 /**
+ * A number for a skill's text: "twice" for 2 (with $twice), words past a million ("1 trillion"), otherwise with as few
+ * decimals as it needs ("2.5", "1,000").
+ */
+function hbHubMinerSkillNumber(float $number, bool $twice = false): string
+{
+    if ($twice && $number == 2) {
+        return 'twice';
+    }
+    foreach ([[1e12, 'trillion'], [1e9, 'billion'], [1e6, 'million']] as [$size, $word]) {
+        if ($number >= $size) {
+            return hbHubMinerSkillNumber($number / $size) . ' ' . $word;
+        }
+    }
+    return rtrim(rtrim(number_format($number, 2), '0'), '.');
+}
+
+/**
+ * What a skill does, in words, made from its numbers so the text can't say something else than the rules do (a skill
+ * with its own 'text' has that instead).
+ */
+function hbHubMinerSkillText(array $skill): string
+{
+    if (isset($skill['text'])) {
+        return $skill['text'];
+    }
+    $times = (float) ($skill['times'] ?? 1);
+    $value = (float) ($skill['value'] ?? 0);
+    $timesText = hbHubMinerSkillNumber($times, true) . ($times == 2 ? '' : ' times');
+    $percent = hbHubMinerSkillNumber($value * 100) . '%';
+    $less = hbHubMinerSkillNumber((1 - $times) * 100) . '%';
+    $range = isset($skill['buildings']) ? HBHUB_MINER_BUILDINGS[$skill['buildings'][0]]['plural']
+        . (count($skill['buildings']) > 1 ? ' to ' . HBHUB_MINER_BUILDINGS[$skill['buildings'][count($skill['buildings']) - 1]]['plural'] : '') : '';
+
+    return match ($skill['type']) {
+        'production' => 'Everything mines ' . $timesText . ' as much.',
+        'buildings' => 'Everything from ' . $range . ' mines ' . $timesText . ' as much.',
+        'perSkill' => 'Everything mines ' . $percent . ' more for every skill you\'ve learned.',
+        'perWarp' => 'Everything mines ' . $percent . ' more for every Warp Jump you\'ve ever made.',
+        'perCrunch' => 'Everything mines ' . $percent . ' more for every Big Crunch you\'ve ever made.',
+        'owned' => 'Everything mines ' . $percent . ' more for every building you own.',
+        'buildingUpgrade' => 'A building\'s own upgrades make it mine ' . hbHubMinerSkillNumber(2 * $times) . ' times as much instead of twice.',
+        'crew' => 'The Space Pickaxe Guys\' crew upgrades are ' . $timesText . ' as strong.',
+        'cost' => 'Buildings cost ' . $less . ' less.',
+        'upgradeCost' => 'Upgrades cost ' . $less . ' less ore.',
+        'start' => 'Start every run with ' . $skill['count'] . ' of everything from ' . $range . '.',
+        'startOre' => 'Start every run with ' . hbHubMinerSkillNumber($value) . ' ore.',
+        'click' => 'Clicks mine ' . $timesText . ' as much (before the share of your ore per second).',
+        'clickShare' => 'Each click also mines ' . $percent . ' of your ore per second.',
+        'critPower' => 'Critical clicks mine ' . hbHubMinerSkillNumber(HBHUB_MINER_CRIT_MULTIPLIER * $times) . ' times as much instead of '
+            . HBHUB_MINER_CRIT_MULTIPLIER . '.',
+        'auto' => 'Clicks the asteroid ' . hbHubMinerSkillNumber($value) . ' more times a second for you.',
+        'cometWait' => 'The wait between comets is ' . $less . ' shorter.',
+        'cometStay' => 'Comets stay on screen ' . $timesText . ' as long.',
+        'cometPower' => 'Comet effects are ' . $timesText . ' as strong.',
+        'cometLength' => 'Comet effects last ' . $timesText . ' as long.',
+        'luckyOre' => 'Lucky comets give ' . $timesText . ' as much ore.',
+        'darkGain' => 'Warp Jumps give ' . $timesText . ' as much Dark Matter.',
+        'antiGain' => 'Big Crunches give ' . $timesText . ' as much Antimatter.',
+        'strangeGain' => 'Big Rips give ' . $timesText . ' as much Strange Matter.',
+        'darkBonus' => 'Every Dark Matter you\'ve earned makes everything mine another ' . $percent . ' faster.',
+        'antiBonus' => 'Every Antimatter you\'ve earned adds another ' . $percent . ' to production (and so more Dark Matter from Warp Jumps).',
+        'crunchDark' => 'Big Crunches can be done after ' . hbHubMinerSkillNumber(HBHUB_MINER_CRUNCH_DARK * $times) . ' Dark Matter instead of '
+            . hbHubMinerSkillNumber(HBHUB_MINER_CRUNCH_DARK) . '.',
+        'offline' => 'Earn ' . $timesText . ' as much while you\'re away.',
+        default => '',
+    };
+}
+
+/**
+ * The skill tree (HBHUB_MINER_SKILLS), each with its 'text'.
+ */
+function hbHubMinerSkills(): array
+{
+    static $skills = null;
+    if ($skills === null) {
+        $skills = array_map(static fn (array $skill): array => ['text' => hbHubMinerSkillText($skill)] + $skill, HBHUB_MINER_SKILLS);
+    }
+    return $skills;
+}
+
+/**
  * Everything the script needs to play by the same rules: the data above and the numbers, as JSON for data-config.
  */
 function hbHubMinerConfig(): array
@@ -324,6 +578,8 @@ function hbHubMinerConfig(): array
         'upgrades' => hbHubMinerUpgrades(),
         'darkUpgrades' => HBHUB_MINER_DARK_UPGRADES,
         'antiUpgrades' => HBHUB_MINER_ANTI_UPGRADES,
+        'skills' => hbHubMinerSkills(),
+        'skillNeutral' => HBHUB_MINER_SKILL_NEUTRAL,
         'achievements' => HBHUB_MINER_ACHIEVEMENTS,
         'comets' => HBHUB_MINER_COMETS,
         'clickTypes' => HBHUB_MINER_CLICK_TYPES,
@@ -343,6 +599,10 @@ function hbHubMinerConfig(): array
         'crunchDark' => HBHUB_MINER_CRUNCH_DARK,
         'antiUnit' => HBHUB_MINER_ANTI_UNIT,
         'antiBonus' => HBHUB_MINER_ANTI_BONUS,
+        'ripAnti' => HBHUB_MINER_RIP_ANTI,
+        'strangeUnit' => HBHUB_MINER_STRANGE_UNIT,
+        'strangeSteps' => HBHUB_MINER_STRANGE_STEPS,
+        'strangeBonus' => HBHUB_MINER_STRANGE_BONUS,
         'leftoverOre' => HBHUB_MINER_LEFTOVER_ORE,
         'darkPickaxe' => HBHUB_MINER_DARK_PICKAXE,
         'cometWaitMs' => HBHUB_MINER_COMET_WAIT_MS,
@@ -420,8 +680,10 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  *   last Big Crunch, what Dark Matter is worked out from). allOre: mined ever. clickOre: mined by clicking.
  * - buildings: id => how many. upgrades: the ids bought this run. dark: Dark Matter to spend. darkEarned: earned in
  *   this universe (the production bonus). darkUpgrades: bought with it. warps: Warp Jumps made ever.
- * - antimatter: to spend. antimatterEarned: ever earned (the bonus). antiUpgrades: bought with it. crunches: Big
- *   Crunches made.
+ * - antimatter: to spend. antimatterEarned: earned in this multiverse (since the last Big Rip: the bonus, and what
+ *   Strange Matter is worked out from). antiUpgrades: bought with it. crunches: Big Crunches made ever.
+ * - strange: Strange Matter to spend. strangeEarned: ever earned (the bonus). skills: the skills learned with it, in
+ *   the order they were learned. rips: Big Rips made.
  * - clicks, crits, comets (caught), diamonds (Diamond Comets caught): counted ever.
  * - comet: the next or current comet: n (its number, for its luck) and at (when it shows up).
  * - buffs: the comet effects running: 'production' or 'click' => {kind, multiplier, until}.
@@ -449,6 +711,10 @@ function hbHubMinerNewState(int $now): array
         'antimatterEarned' => 0,
         'antiUpgrades' => [],
         'crunches' => 0,
+        'strange' => 0,
+        'strangeEarned' => 0,
+        'skills' => [],
+        'rips' => 0,
         'clicks' => 0,
         'crits' => 0,
         'comets' => 0,
@@ -474,6 +740,7 @@ function hbHubMinerNormalize(array $saved, int $now): array
     $state['upgrades'] = array_values(array_intersect($state['upgrades'], array_keys(hbHubMinerUpgrades())));
     $state['darkUpgrades'] = array_values(array_intersect($state['darkUpgrades'], array_keys(HBHUB_MINER_DARK_UPGRADES)));
     $state['antiUpgrades'] = array_values(array_intersect($state['antiUpgrades'], array_keys(HBHUB_MINER_ANTI_UPGRADES)));
+    $state['skills'] = array_values(array_intersect($state['skills'], array_keys(HBHUB_MINER_SKILLS)));
     unset($state['steady'], $state['fast']); // the old auto-clicker checks'
 
     foreach (['ore', 'runOre', 'universeOre', 'allOre', 'clickOre'] as $key) {
@@ -514,29 +781,106 @@ function hbHubMinerHasAnti(array $state, string $upgradeId): bool
     return in_array($upgradeId, $state['antiUpgrades'], true);
 }
 
+function hbHubMinerHasSkill(array $state, string $skillId): bool
+{
+    return in_array($skillId, $state['skills'], true);
+}
+
 /**
- * The production each Dark Matter earned adds (0.025 = +2.5%).
+ * Whether a skill can be learned now (Strange Matter aside): it isn't learned yet, and every skill in its 'after' is.
+ */
+function hbHubMinerSkillOpen(array $state, string $skillId): bool
+{
+    if (hbHubMinerHasSkill($state, $skillId)) {
+        return false;
+    }
+    foreach (HBHUB_MINER_SKILLS[$skillId]['after'] as $afterId) {
+        if (!hbHubMinerHasSkill($state, $afterId)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * What all the skills learned do together, with the keys of HBHUB_MINER_SKILL_NEUTRAL: each 'times' multiplied in,
+ * each 'value' added, the switches true, buildings (id => times) and start (id => how many) per building and keep (the
+ * upgrade types kept). In the order they were learned, like the script, so both get the same numbers to the last digit.
+ * Worked out once per set of skills, as the rules ask for it all the time.
+ */
+function hbHubMinerSkillEffects(array $state): array
+{
+    static $cache = [];
+    $key = implode(',', $state['skills']);
+    if (isset($cache[$key])) {
+        return $cache[$key];
+    }
+
+    $effects = HBHUB_MINER_SKILL_NEUTRAL;
+    foreach ($state['skills'] as $skillId) {
+        $skill = HBHUB_MINER_SKILLS[$skillId];
+        $type = $skill['type'];
+        if ($type === 'buildings') {
+            foreach ($skill['buildings'] as $buildingId) {
+                $effects['buildings'][$buildingId] = ($effects['buildings'][$buildingId] ?? 1) * $skill['times'];
+            }
+        } elseif ($type === 'start') {
+            foreach ($skill['buildings'] as $buildingId) {
+                $effects['start'][$buildingId] = max($effects['start'][$buildingId] ?? 0, $skill['count']);
+            }
+        } elseif ($type === 'keep') {
+            $effects['keep'] = array_merge($effects['keep'], $skill['types']);
+        } elseif (isset($skill['times'])) {
+            $effects[$type] *= $skill['times'];
+        } elseif (isset($skill['value'])) {
+            $effects[$type] += $skill['value'];
+        } else {
+            $effects[$type] = true;
+        }
+    }
+    return $cache[$key] = $effects;
+}
+
+/**
+ * The production each Dark Matter earned adds (0.05 = +5%).
  */
 function hbHubMinerDarkBonus(array $state): float
 {
-    return hbHubMinerHasDark($state, 'reactor') ? HBHUB_MINER_DARK_BONUS_REACTOR : HBHUB_MINER_DARK_BONUS;
+    return (hbHubMinerHasDark($state, 'reactor') ? HBHUB_MINER_DARK_BONUS_REACTOR : HBHUB_MINER_DARK_BONUS)
+        + hbHubMinerSkillEffects($state)['darkBonus'];
 }
 
 /**
- * What Antimatter does to production, and to the Dark Matter from a Warp Jump: 1 + HBHUB_MINER_ANTI_BONUS for each one
- * ever earned.
+ * What Antimatter does to production: 1 + HBHUB_MINER_ANTI_BONUS (and Dense Antimatter) for each one earned in this
+ * multiverse. A Warp Jump gets the square root of it (hbHubMinerWarpGain()).
  */
 function hbHubMinerAntiMultiplier(array $state): float
 {
-    return 1 + HBHUB_MINER_ANTI_BONUS * $state['antimatterEarned'];
+    return 1 + (HBHUB_MINER_ANTI_BONUS + hbHubMinerSkillEffects($state)['antiBonus']) * $state['antimatterEarned'];
 }
 
 /**
- * How much stronger comets are: 2 with Antimatter Comets.
+ * What Strange Matter does to production: 1 + HBHUB_MINER_STRANGE_BONUS for each one ever earned.
  */
-function hbHubMinerCometPower(array $state): int
+function hbHubMinerStrangeMultiplier(array $state): float
 {
-    return hbHubMinerHasAnti($state, 'antiComets') ? 2 : 1;
+    return 1 + HBHUB_MINER_STRANGE_BONUS * $state['strangeEarned'];
+}
+
+/**
+ * How much stronger comets are: 2 with Antimatter Comets, times the comet skills.
+ */
+function hbHubMinerCometPower(array $state): float
+{
+    return (hbHubMinerHasAnti($state, 'antiComets') ? 2 : 1) * hbHubMinerSkillEffects($state)['cometPower'];
+}
+
+/**
+ * What an ore upgrade costs: its price, less with Bargain Hunter.
+ */
+function hbHubMinerUpgradeCost(array $state, string $upgradeId): float
+{
+    return hbHubMinerUpgrades()[$upgradeId]['cost'] * hbHubMinerSkillEffects($state)['upgradeCost'];
 }
 
 /**
@@ -550,12 +894,13 @@ function hbHubMinerCostGrowth(array $state, string $buildingId): float
 }
 
 /**
- * What the next $amount of a building cost together, rounded up: each costs hbHubMinerCostGrowth() times the one before.
+ * What the next $amount of a building cost together, rounded up: each costs hbHubMinerCostGrowth() times the one before,
+ * and all of them less with the discount skills.
  */
 function hbHubMinerBuildingCost(array $state, string $buildingId, int $amount): float
 {
     $growth = hbHubMinerCostGrowth($state, $buildingId);
-    return ceil(HBHUB_MINER_BUILDINGS[$buildingId]['cost'] * $growth ** $state['buildings'][$buildingId]
+    return ceil(HBHUB_MINER_BUILDINGS[$buildingId]['cost'] * hbHubMinerSkillEffects($state)['cost'] * $growth ** $state['buildings'][$buildingId]
         * ($growth ** $amount - 1) / ($growth - 1));
 }
 
@@ -569,29 +914,32 @@ function hbHubMinerCanAfford(array $state, float $cost): bool
 }
 
 /**
- * The ore per second from each building (id => all of them together), with upgrades, Dark Matter and Antimatter but
- * without comets.
+ * The ore per second from each building (id => all of them together), with upgrades, Dark Matter, Antimatter, Strange
+ * Matter and skills but without comets.
  */
 function hbHubMinerBuildingRates(array $state): array
 {
     $upgrades = hbHubMinerUpgrades();
+    $effects = hbHubMinerSkillEffects($state);
     $multipliers = array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 1.0);
     $crew = array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 0.0);
-    $global = (1 + hbHubMinerDarkBonus($state) * $state['darkEarned']) * hbHubMinerAntiMultiplier($state);
+    $global = (1 + hbHubMinerDarkBonus($state) * $state['darkEarned']) * hbHubMinerAntiMultiplier($state) * hbHubMinerStrangeMultiplier($state);
     if (hbHubMinerHasDark($state, 'darkEngines')) {
         $global *= 1.5;
     }
     if (hbHubMinerHasAnti($state, 'annihilation')) {
         $global *= 2;
     }
+    $global *= $effects['production'] * (1 + $effects['perSkill'] * count($state['skills'])) * (1 + $effects['perWarp'] * $state['warps'])
+        * (1 + $effects['perCrunch'] * $state['crunches']);
     foreach ($state['upgrades'] as $upgradeId) {
         $upgrade = $upgrades[$upgradeId];
         if ($upgrade['type'] === 'building') {
-            $multipliers[$upgrade['building']] *= 2;
+            $multipliers[$upgrade['building']] *= 2 * $effects['buildingUpgrade'];
         } elseif ($upgrade['type'] === 'synergy') {
             $multipliers[$upgrade['building']] *= 1 + $upgrade['per'] * floor($state['buildings'][$upgrade['source']] / $upgrade['every']);
         } elseif ($upgrade['type'] === 'crew') {
-            $crew[$upgrade['building']] += $upgrade['value'];
+            $crew[$upgrade['building']] += $upgrade['value'] * $effects['crew'];
         } elseif ($upgrade['type'] === 'global') {
             $global *= 1 + $upgrade['value'];
         }
@@ -599,9 +947,10 @@ function hbHubMinerBuildingRates(array $state): array
 
     $rates = [];
     $owned = array_sum($state['buildings']);
+    $global *= 1 + $effects['owned'] * $owned;
     foreach (HBHUB_MINER_BUILDINGS as $buildingId => $building) {
         $rate = $building['rate'] + $crew[$buildingId] * ($owned - $state['buildings'][$buildingId]);
-        $rates[$buildingId] = $rate * $state['buildings'][$buildingId] * $multipliers[$buildingId] * $global;
+        $rates[$buildingId] = $rate * $state['buildings'][$buildingId] * $multipliers[$buildingId] * $global * ($effects['buildings'][$buildingId] ?? 1);
     }
     return $rates;
 }
@@ -616,12 +965,14 @@ function hbHubMinerBuff(array $state, string $buff, int $time): float
 }
 
 /**
- * What one click mines at $time, before a critical click: 1 (3 with Dark Pickaxe), doubled by each click upgrade, plus
- * the clickPct upgrades' share of the buildings' production, all times a Click Storm.
+ * What one click mines at $time, before a critical click: 1 (3 with Dark Pickaxe), doubled by each click upgrade (and
+ * times the click skills), plus the clickPct upgrades' (and skills') share of the buildings' production, all times a
+ * Click Storm.
  */
 function hbHubMinerClickValue(array $state, int $time): float
 {
     $upgrades = hbHubMinerUpgrades();
+    $effects = hbHubMinerSkillEffects($state);
     $value = hbHubMinerHasDark($state, 'darkPickaxe') ? (float) HBHUB_MINER_DARK_PICKAXE : 1.0;
     $share = 0.0;
     foreach ($state['upgrades'] as $upgradeId) {
@@ -631,12 +982,14 @@ function hbHubMinerClickValue(array $state, int $time): float
             $share += $upgrades[$upgradeId]['value'];
         }
     }
+    $value *= $effects['click'];
+    $share += $effects['clickShare'];
     $production = $share > 0 ? array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time) : 0;
     return ($value + $share * $production) * hbHubMinerBuff($state, 'click', $time);
 }
 
 /**
- * How many times a second the auto upgrades (Auto-Clicker Bot and Swarm) click, together.
+ * How many times a second the auto upgrades (Auto-Clicker Bot and Swarm) and skills click, together.
  */
 function hbHubMinerAutoClicks(array $state): float
 {
@@ -647,7 +1000,7 @@ function hbHubMinerAutoClicks(array $state): float
             $clicks += $upgrades[$upgradeId]['value'];
         }
     }
-    return $clicks;
+    return $clicks + hbHubMinerSkillEffects($state)['auto'];
 }
 
 /**
@@ -666,10 +1019,10 @@ function hbHubMinerRate(array $state, int $time): float
 
 function hbHubMinerEarn(array &$state, float $ore): void
 {
-    $state['ore'] += $ore;
-    $state['runOre'] += $ore;
-    $state['universeOre'] += $ore;
-    $state['allOre'] += $ore;
+    // Never past the biggest float: INF can't be saved as JSON, so the save would fail from then on
+    foreach (['ore', 'runOre', 'universeOre', 'allOre'] as $key) {
+        $state[$key] = min($state[$key] + $ore, PHP_FLOAT_MAX);
+    }
 }
 
 /**
@@ -679,21 +1032,32 @@ function hbHubMinerCometWait(array $state, int $n): int
 {
     [$min, $max] = HBHUB_MINER_COMET_WAIT_MS;
     $wait = $min + hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_COMET_WAIT) * ($max - $min);
-    return (int) floor(hbHubMinerHas($state, 'radar') ? $wait / 2 : $wait);
+    return (int) floor((hbHubMinerHas($state, 'radar') ? $wait / 2 : $wait) * hbHubMinerSkillEffects($state)['cometWait']);
 }
 
 function hbHubMinerCometStay(array $state): int
 {
-    return hbHubMinerHas($state, 'magnet') ? HBHUB_MINER_COMET_STAY_MS * 2 : HBHUB_MINER_COMET_STAY_MS;
+    return (int) floor((hbHubMinerHas($state, 'magnet') ? HBHUB_MINER_COMET_STAY_MS * 2 : HBHUB_MINER_COMET_STAY_MS)
+        * hbHubMinerSkillEffects($state)['cometStay']);
 }
 
 /**
- * What the current comet does when caught (a key of HBHUB_MINER_COMETS).
+ * How long a comet's effect lasts, in ms: its own 'ms', doubled with Tail Collector, times the comet skills.
+ */
+function hbHubMinerCometLength(array $state, string $kind): int
+{
+    return (int) floor(HBHUB_MINER_COMETS[$kind]['ms'] * (hbHubMinerHas($state, 'tail') ? 2 : 1) * hbHubMinerSkillEffects($state)['cometLength']);
+}
+
+/**
+ * What the current comet does when caught (a key of HBHUB_MINER_COMETS). It can be a Diamond Comet with Lucky Stars or
+ * Strange Diamonds.
  */
 function hbHubMinerCometKind(array $state): string
 {
     $n = $state['comet']['n'];
-    if (hbHubMinerHas($state, 'luckyStars') && hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_DIAMOND) < HBHUB_MINER_DIAMOND_CHANCE) {
+    $diamondChance = (hbHubMinerHas($state, 'luckyStars') ? HBHUB_MINER_DIAMOND_CHANCE : 0) + hbHubMinerSkillEffects($state)['diamond'];
+    if ($diamondChance > 0 && hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_DIAMOND) < $diamondChance) {
         return 'diamond';
     }
     $roll = hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_COMET_KIND);
@@ -716,7 +1080,7 @@ function hbHubMinerCometsPassed(array &$state): void
 
 /**
  * Moves the game on to $to (Unix ms): ore mined meanwhile, comet effects running out on time, and comets flying past.
- * Time after $fullUntil is time away, mined at HBHUB_MINER_OFFLINE_RATE (doubled with Time Dilation).
+ * Time after $fullUntil is time away, mined at HBHUB_MINER_OFFLINE_RATE (doubled with Time Dilation, times Time Loop).
  * Returns the ore mined while away.
  */
 function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX): float
@@ -736,7 +1100,7 @@ function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX)
 
         $ore = hbHubMinerRate($state, $state['tick']) * ($next - $state['tick']) / 1000;
         if ($state['tick'] >= $fullUntil) {
-            $ore *= HBHUB_MINER_OFFLINE_RATE * (hbHubMinerHasDark($state, 'timeDilation') ? 2 : 1);
+            $ore *= HBHUB_MINER_OFFLINE_RATE * (hbHubMinerHasDark($state, 'timeDilation') ? 2 : 1) * hbHubMinerSkillEffects($state)['offline'];
             $offlineOre += $ore;
         }
         hbHubMinerEarn($state, $ore);
@@ -777,17 +1141,19 @@ function hbHubMinerUpgradeUnlocked(array $state, array $upgrade): bool
  * The Dark Matter all the ore mined in this universe is worth together, before Antimatter and Matter Converter (see
  * hbHubMinerWarpGain()): the cube root of how many HBHUB_MINER_DARK_UNITs it is (so 1 for a billion, 10 for a
  * trillion, 100 for a quadrillion). A Warp Jump gives what that's gone up by since the last one. A square root made
- * every jump double the one before, until the numbers ran away.
+ * every jump double the one before, until the numbers ran away. A float like the script's, as it can go past what an
+ * int holds.
  */
-function hbHubMinerDarkTotal(float $universeOre): int
+function hbHubMinerDarkTotal(float $universeOre): float
 {
-    // ** (1 / 3) is a hair off (1000 gives 9.999...), so it's put right with whole numbers, which are exact
+    // ** (1 / 3) is a hair off (1000 gives 9.999...), so it's put right with whole numbers, which are exact. It's
+    // never more than one off, so once each way (a loop never stopped on huge numbers, where + 1 changes nothing).
     $units = $universeOre / HBHUB_MINER_DARK_UNIT;
-    $total = (int) floor($units ** (1 / 3));
-    while (($total + 1) ** 3 <= $units) {
+    $total = floor($units ** (1 / 3));
+    if (($total + 1) ** 3 <= $units) {
         $total++;
     }
-    while ($total > 0 && $total ** 3 > $units) {
+    if ($total > 0 && $total ** 3 > $units) {
         $total--;
     }
     return $total;
@@ -795,38 +1161,90 @@ function hbHubMinerDarkTotal(float $universeOre): int
 
 /**
  * The Dark Matter a Warp Jump would give now, or 0 when it can't be done yet (HBHUB_MINER_WARP_ORE not mined this run).
- * Antimatter (and Matter Converter) make the whole total bigger, which only ever goes up within a universe.
+ * Antimatter (and Matter Converter and the skills) make the whole total bigger, which only ever goes up within a
+ * universe. Antimatter only by the square root of what it does to production: with all of it, each Big Crunch gave
+ * Antimatter in proportion to what you had (it speeds up the ore, the Dark Matter that ore is worth, and the Dark
+ * Matter bonus to the ore), so it doubled again and again, faster each time, until it ran into Infinity and the
+ * save couldn't be written any more.
  */
-function hbHubMinerWarpGain(array $state): int
+function hbHubMinerWarpGain(array $state): float
 {
     if ($state['runOre'] < HBHUB_MINER_WARP_ORE) {
         return 0;
     }
-    $total = (int) floor(hbHubMinerDarkTotal($state['universeOre']) * hbHubMinerAntiMultiplier($state)
-        * (hbHubMinerHasAnti($state, 'converter') ? 2 : 1));
+    $total = floor(hbHubMinerDarkTotal($state['universeOre']) * sqrt(hbHubMinerAntiMultiplier($state))
+        * (hbHubMinerHasAnti($state, 'converter') ? 2 : 1) * hbHubMinerSkillEffects($state)['darkGain']);
     return max(0, $total - $state['darkEarned']);
 }
 
 /**
  * The Antimatter the Dark Matter earned in a universe is worth: the square root of how many HBHUB_MINER_ANTI_UNITs it
- * is (so 4 for 2,000, 10 for 10,000, 20 for 40,000), worked out with whole numbers only so it's exact.
+ * is (so 4 for 2,000, 10 for 10,000, 20 for 40,000), put right with whole numbers so it's exact. (Counting up one by
+ * one got slow once Dark Matter ran into the trillions.) The square root is never more than one off, so it's put right
+ * once each way: a loop never stopped on huge numbers, where adding 1 no longer changes a float.
  */
-function hbHubMinerAntiTotal(int $darkEarned): int
+function hbHubMinerAntiTotal(float $darkEarned): float
 {
-    $total = 0;
-    while (($total + 1) ** 2 * HBHUB_MINER_ANTI_UNIT <= $darkEarned) {
+    $total = floor(sqrt($darkEarned / HBHUB_MINER_ANTI_UNIT));
+    if (($total + 1) ** 2 * HBHUB_MINER_ANTI_UNIT <= $darkEarned) {
         $total++;
+    }
+    if ($total > 0 && $total ** 2 * HBHUB_MINER_ANTI_UNIT > $darkEarned) {
+        $total--;
     }
     return $total;
 }
 
 /**
  * The Antimatter a Big Crunch would give now, or 0 when it can't be done yet (HBHUB_MINER_CRUNCH_DARK not earned in
- * this universe). Dark Matter starts over with every crunch, so each one gives what all of it is worth.
+ * this universe, less with Shallow Universe). Dark Matter starts over with every crunch, so each one gives what all of
+ * it is worth, times the Antimatter skills.
  */
-function hbHubMinerCrunchGain(array $state): int
+function hbHubMinerCrunchGain(array $state): float
 {
-    return $state['darkEarned'] >= HBHUB_MINER_CRUNCH_DARK ? hbHubMinerAntiTotal((int) $state['darkEarned']) : 0;
+    $effects = hbHubMinerSkillEffects($state);
+    return $state['darkEarned'] >= HBHUB_MINER_CRUNCH_DARK * $effects['crunchDark']
+        ? floor(hbHubMinerAntiTotal((float) $state['darkEarned']) * $effects['antiGain']) : 0;
+}
+
+/**
+ * The Strange Matter the Antimatter earned in a multiverse is worth: one for every step it's passed, the steps being
+ * HBHUB_MINER_STRANGE_UNIT times each of HBHUB_MINER_STRANGE_STEPS times a power of ten (so with 1,000: 1 at 1,000, 2 at
+ * 1,600, 3 at 2,500 ... 6 at 10,000, 11 at 100,000). Five more for every ten times as much, as Antimatter runs away
+ * once the crunches get going: with a root of it, as Dark Matter and Antimatter have, waiting longer would always
+ * pay more than ripping. Only multiplications and comparisons, so the script gets exactly the same.
+ */
+function hbHubMinerStrangeTotal(float $antimatterEarned): int
+{
+    $total = 0;
+    $decade = (float) HBHUB_MINER_STRANGE_UNIT;
+    while ($decade * 10 <= $antimatterEarned && $decade * 10 < INF) {
+        $decade *= 10;
+        $total += count(HBHUB_MINER_STRANGE_STEPS);
+    }
+    foreach (HBHUB_MINER_STRANGE_STEPS as $step) {
+        if ($decade * $step <= $antimatterEarned) {
+            $total++;
+        }
+    }
+    return $total;
+}
+
+/**
+ * The Strange Matter a Big Rip would give now, or 0 when it can't be done yet (HBHUB_MINER_RIP_ANTI not earned in this
+ * multiverse). Like a Warp Jump, it's only what this multiverse is worth (times the Strange Matter skills) on top of
+ * all the Strange Matter ever earned, so each rip has to beat the best one before it. When every rip gave all it was
+ * worth, the Strange Matter bonus made the next 10,000 Antimatter quicker each time, until rips took seconds and the
+ * whole tree was learned three hours after the first one.
+ */
+function hbHubMinerRipGain(array $state): int
+{
+    if ($state['antimatterEarned'] < HBHUB_MINER_RIP_ANTI) {
+        return 0;
+    }
+    $total = (int) floor(hbHubMinerStrangeTotal((float) $state['antimatterEarned'])
+        * hbHubMinerSkillEffects($state)['strangeGain']);
+    return max(0, $total - $state['strangeEarned']);
 }
 
 /**
@@ -835,13 +1253,16 @@ function hbHubMinerCrunchGain(array $state): int
  */
 function hbHubMinerClick(array &$state, int $count, bool $auto = false): float
 {
+    $effects = hbHubMinerSkillEffects($state);
     $value = hbHubMinerClickValue($state, $state['tick']) * ($auto ? HBHUB_MINER_AUTO_VALUE : 1);
-    $canCrit = hbHubMinerHas($state, 'crit');
+    $canCrit = hbHubMinerHas($state, 'crit') || $effects['crit'] > 0;
+    $critChance = HBHUB_MINER_CRIT_CHANCE + $effects['crit'];
+    $critMultiplier = HBHUB_MINER_CRIT_MULTIPLIER * $effects['critPower'];
     $mined = 0.0;
     for ($i = 0; $i < $count; $i++) {
         $ore = $value;
-        if ($canCrit && hbHubMinerRandom($state['seed'], $state['clicks'], HBHUB_MINER_SALT_CRIT) < HBHUB_MINER_CRIT_CHANCE) {
-            $ore *= HBHUB_MINER_CRIT_MULTIPLIER;
+        if ($canCrit && hbHubMinerRandom($state['seed'], $state['clicks'], HBHUB_MINER_SALT_CRIT) < $critChance) {
+            $ore *= $critMultiplier;
             $state['crits']++;
         }
         $state['clicks']++;
@@ -868,12 +1289,12 @@ function hbHubMinerCatchComet(array &$state): ?string
         $state['buffs'][$comet['buff']] = [
             'kind' => $kind,
             'multiplier' => $comet['multiplier'] * hbHubMinerCometPower($state),
-            'until' => $time + $comet['ms'] * (hbHubMinerHas($state, 'tail') ? 2 : 1),
+            'until' => $time + hbHubMinerCometLength($state, $kind),
         ];
     } else {
         $production = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
         hbHubMinerEarn($state, (min($state['ore'] * HBHUB_MINER_LUCKY_SHARE, $production * HBHUB_MINER_LUCKY_SECONDS) + 13)
-            * (hbHubMinerHas($state, 'stardust') ? 2 : 1) * hbHubMinerCometPower($state));
+            * (hbHubMinerHas($state, 'stardust') ? 2 : 1) * hbHubMinerCometPower($state) * hbHubMinerSkillEffects($state)['luckyOre']);
     }
     $state['comets']++;
     if ($kind === 'diamond') {
@@ -885,22 +1306,24 @@ function hbHubMinerCatchComet(array &$state): ?string
 }
 
 /**
- * Starts a new run, for a Warp Jump or a Big Crunch: ore, buildings and upgrades start over, apart from the click
- * upgrades with Persistent Memory, Bulk Buying and the comet upgrades with Eternal Blueprints, the drones from Head
- * Start and the ore from Big Bang Leftovers.
+ * Starts a new run, for a Warp Jump, Big Crunch or Big Rip: ore, buildings and upgrades start over, apart from the click
+ * upgrades with Persistent Memory, Bulk Buying and the comet upgrades with Eternal Blueprints, the upgrades the keep
+ * skills keep, the drones from Head Start, the buildings from the start skills and the ore from Big Bang Leftovers or
+ * Strange Leftovers.
  */
 function hbHubMinerNewRun(array &$state): void
 {
     $upgrades = hbHubMinerUpgrades();
+    $effects = hbHubMinerSkillEffects($state);
     $kept = array_merge(hbHubMinerHasDark($state, 'memory') ? HBHUB_MINER_CLICK_TYPES : [],
-        hbHubMinerHasAnti($state, 'eternal') ? HBHUB_MINER_ETERNAL_TYPES : []);
+        hbHubMinerHasAnti($state, 'eternal') ? HBHUB_MINER_ETERNAL_TYPES : [], $effects['keep']);
     $state['upgrades'] = array_values(array_filter($state['upgrades'], static fn (string $id): bool =>
         in_array($upgrades[$id]['type'], $kept, true)));
-    $state['buildings'] = array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 0);
+    $state['buildings'] = array_replace(array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 0), $effects['start']);
     if (hbHubMinerHasDark($state, 'headStart')) {
-        $state['buildings']['drone'] = HBHUB_MINER_HEAD_START;
+        $state['buildings']['drone'] = max($state['buildings']['drone'], HBHUB_MINER_HEAD_START);
     }
-    $state['ore'] = hbHubMinerHasAnti($state, 'leftovers') ? HBHUB_MINER_LEFTOVER_ORE : 0.0;
+    $state['ore'] = (float) max(hbHubMinerHasAnti($state, 'leftovers') ? HBHUB_MINER_LEFTOVER_ORE : 0, $effects['startOre']);
     $state['runOre'] = 0.0;
     $state['buffs'] = [];
     $state['runStarted'] = $state['tick'];
@@ -949,13 +1372,43 @@ function hbHubMinerCrunch(array &$state): bool
 }
 
 /**
+ * Big Rip: the whole multiverse starts over, everything a Big Crunch starts over and the Antimatter with it, and its
+ * upgrades too unless you have Antimatter Echo (and with them Dark Echo, which keeps the Dark Matter upgrades), for the
+ * Strange Matter it's worth. Returns false when it can't be done yet.
+ */
+function hbHubMinerRip(array &$state): bool
+{
+    $gain = hbHubMinerRipGain($state);
+    if ($gain < 1) {
+        return false;
+    }
+
+    if (!hbHubMinerSkillEffects($state)['keepAnti']) {
+        $state['antiUpgrades'] = [];
+    }
+    $state['antimatter'] = 0;
+    $state['antimatterEarned'] = 0;
+    if (!hbHubMinerHasAnti($state, 'echo')) {
+        $state['darkUpgrades'] = [];
+    }
+    $state['dark'] = 0;
+    $state['darkEarned'] = 0;
+    $state['universeOre'] = 0.0;
+    $state['strange'] += $gain;
+    $state['strangeEarned'] += $gain;
+    $state['rips']++;
+    hbHubMinerNewRun($state);
+    return true;
+}
+
+/**
  * One thing the player did, at the game's time. Returns whether it counted.
  * - ['type' => 'click', 'count' => n, 'auto' => true when they look like an auto-clicker's (left out otherwise)]: see
  *   hbHubMinerSync() for the limit.
  * - ['type' => 'buy', 'building' => id, 'amount' => 1, 10 or 100] (10 and 100 need Bulk Buying).
  * - ['type' => 'upgrade', 'id' => id], ['type' => 'dark', 'id' => id] (a Dark Matter upgrade), ['type' => 'anti',
- *   'id' => id] (an Antimatter upgrade).
- * - ['type' => 'comet'], ['type' => 'warp'], ['type' => 'crunch'].
+ *   'id' => id] (an Antimatter upgrade), ['type' => 'skill', 'id' => id] (learning a skill).
+ * - ['type' => 'comet'], ['type' => 'warp'], ['type' => 'crunch'], ['type' => 'rip'].
  */
 function hbHubMinerApply(array &$state, array $action): bool
 {
@@ -990,10 +1443,10 @@ function hbHubMinerApply(array &$state, array $action): bool
         $upgradeId = $action['id'] ?? null;
         $upgrades = hbHubMinerUpgrades();
         if (!is_string($upgradeId) || !isset($upgrades[$upgradeId]) || hbHubMinerHas($state, $upgradeId)
-            || !hbHubMinerUpgradeUnlocked($state, $upgrades[$upgradeId]) || !hbHubMinerCanAfford($state, $upgrades[$upgradeId]['cost'])) {
+            || !hbHubMinerUpgradeUnlocked($state, $upgrades[$upgradeId]) || !hbHubMinerCanAfford($state, hbHubMinerUpgradeCost($state, $upgradeId))) {
             return false;
         }
-        $state['ore'] = max(0.0, $state['ore'] - $upgrades[$upgradeId]['cost']);
+        $state['ore'] = max(0.0, $state['ore'] - hbHubMinerUpgradeCost($state, $upgradeId));
         $state['upgrades'][] = $upgradeId;
         return true;
     }
@@ -1023,6 +1476,21 @@ function hbHubMinerApply(array &$state, array $action): bool
         return true;
     }
 
+    if ($type === 'skill') {
+        $skillId = $action['id'] ?? null;
+        if (!is_string($skillId) || !isset(HBHUB_MINER_SKILLS[$skillId]) || !hbHubMinerSkillOpen($state, $skillId)
+            || $state['strange'] < HBHUB_MINER_SKILLS[$skillId]['cost']) {
+            return false;
+        }
+        $state['strange'] -= HBHUB_MINER_SKILLS[$skillId]['cost'];
+        $state['skills'][] = $skillId;
+        // The buildings a run starts with come right away, like Head Start's, so they're not wasted on this run
+        foreach (hbHubMinerSkillEffects($state)['start'] as $buildingId => $count) {
+            $state['buildings'][$buildingId] = max($state['buildings'][$buildingId], $count);
+        }
+        return true;
+    }
+
     if ($type === 'comet') {
         return hbHubMinerCatchComet($state) !== null;
     }
@@ -1033,6 +1501,10 @@ function hbHubMinerApply(array &$state, array $action): bool
 
     if ($type === 'crunch') {
         return hbHubMinerCrunch($state);
+    }
+
+    if ($type === 'rip') {
+        return hbHubMinerRip($state);
     }
 
     return false;
@@ -1048,7 +1520,9 @@ function hbHubMinerStat(array $state, string $stat): float
         'upgrades' => count($state['upgrades']),
         'buildings' => array_sum($state['buildings']),
         'ownedAll' => min($state['buildings']),
-        'allOre', 'clicks', 'crits', 'comets', 'diamonds', 'warps', 'crunches' => (float) $state[$stat],
+        'skills' => count($state['skills']),
+        'allSkills' => count($state['skills']) >= count(HBHUB_MINER_SKILLS) ? 1 : 0,
+        'allOre', 'clicks', 'crits', 'comets', 'diamonds', 'warps', 'crunches', 'rips' => (float) $state[$stat],
         default => (float) ($state['buildings'][substr($stat, 6)] ?? 0),
     };
 }
@@ -1116,11 +1590,11 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         hbHubMinerCheckAchievements($state);
 
         $db->prepare('UPDATE `HBHub-MinerSaves` SET saveState = ?, saveTab = ?, saveOreAllTime = ?, saveOrePerSecond = ?,
-                saveDarkMatter = ?, saveAntimatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?,
+                saveDarkMatter = ?, saveAntimatter = ?, saveStrangeMatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?,
                 saveUpdatedTimestamp = UTC_TIMESTAMP()
             WHERE userId = ?')
             ->execute([hbHubMinerEncode($state), $tab, $state['allOre'], hbHubMinerRate($state, PHP_INT_MAX), $state['darkEarned'],
-                $state['antimatterEarned'], $state['warps'], $state['clicks'], count($state['achievements']), $userId]);
+                $state['antimatterEarned'], $state['strangeEarned'], $state['warps'], $state['clicks'], count($state['achievements']), $userId]);
         $db->commit();
     } catch (Throwable $e) {
         if ($db->inTransaction()) {

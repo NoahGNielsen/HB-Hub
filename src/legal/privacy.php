@@ -27,6 +27,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubChessSound, hbHubMatadorSound, hbHubUnoSound, hbHubMinerSound' => 'Whether you turned the game sounds on or off.',
     'hbHubMinerLateKeys' => 'Whether you switched Space Ore Miner\'s 1-9 and 0 hot keys to your last ten buildings (with the Long-Range Hot Keys upgrade).',
     'hbHubMinerAutoBuy' => 'Whether you switched Space Ore Miner\'s Auto Buy on or off (with the Auto Buy upgrade).',
+    'hbHubMinerAutoWarp, hbHubMinerAutoCrunch' => 'Whether you switched Space Ore Miner\'s Autopilot and Auto Crunch on or off (with the skills of the same name).',
     'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',
 ];
 ?>
@@ -193,7 +194,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 guesses and streaks), never your guesses.
                             </li>
                             <li>
-                                Your Space Ore Miner save: your ore, buildings, upgrades, Dark Matter, Antimatter, achievements, how many
+                                Your Space Ore Miner save: your ore, buildings, upgrades, Dark Matter, Antimatter, Strange Matter, the skills you've learned, achievements, how many
                                 times you've clicked and caught comets, when you started and last saved, and a random id for
                                 the browser tab you're playing in (so the game only runs in one tab at a time). Your game sends
                                 what you did since the last save every 30 seconds, with the time of each purchase and how many
@@ -201,8 +202,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 of clicks. To spot auto-clickers, the game page looks at how long you hold each click, the gaps
                                 between clicks and where the pointer is, but that stays in your browser: all it sends is whether
                                 a click looked like an auto-clicker's, and it isn't kept. Other people only see
-                                the totals on the Space Ore Miner leaderboard (ore mined, ore per second, Dark Matter, Antimatter, Warp
-                                Jumps, clicks and achievements).
+                                the totals on the Space Ore Miner leaderboard (ore mined, ore per second, Dark Matter, Antimatter,
+                                Strange Matter, Warp Jumps, clicks and achievements).
                             </li>
                         </ul>
                         <p>

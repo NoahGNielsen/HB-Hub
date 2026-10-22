@@ -1,8 +1,8 @@
 <?php
 // Space Ore Miner leaderboard, from the numbers each save keeps in its own columns in HBHub-MinerSaves (written by
 // hbHubMinerSync() in assets/php/games/spaceOreMiner/miner.php on every save): ore mined ever, ore per second (without
-// comets), Dark Matter earned in this universe, Antimatter ever earned, Warp Jumps, clicks and achievements. Sorted by
-// any column with ?sort=column&dir=asc|desc, which the headings link to.
+// comets), Dark Matter earned in this universe, Antimatter earned in this multiverse, Strange Matter ever earned, Warp
+// Jumps, clicks and achievements. Sorted by any column with ?sort=column&dir=asc|desc, which the headings link to.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php';
@@ -17,6 +17,7 @@ const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first, the
     'rate' => ['Ore per second', 'desc', 's.saveOrePerSecond'],
     'dark' => ['Dark Matter', 'desc', 's.saveDarkMatter'],
     'anti' => ['Antimatter', 'desc', 's.saveAntimatter'],
+    'strange' => ['Strange Matter', 'desc', 's.saveStrangeMatter'],
     'warps' => ['Warp Jumps', 'desc', 's.saveWarps'],
     'clicks' => ['Clicks', 'desc', 's.saveClicks'],
     'achievements' => ['Achievements', 'desc', 's.saveAchievements'],
@@ -46,7 +47,7 @@ $dir = in_array($_GET['dir'] ?? null, ['asc', 'desc'], true) ? $_GET['dir'] : LE
 // Everyone who has mined anything. Banned and deleted accounts (userStatus NULL) are left out. A tie goes to the most
 // ore, then by name. The column and direction come from the lists above, never straight from the address.
 $statement = $db->prepare('SELECT s.userId, u.userName, u.userAvatarAttachmentId, s.saveOreAllTime, s.saveOrePerSecond,
-        s.saveDarkMatter, s.saveAntimatter, s.saveWarps, s.saveClicks, s.saveAchievements
+        s.saveDarkMatter, s.saveAntimatter, s.saveStrangeMatter, s.saveWarps, s.saveClicks, s.saveAchievements
     FROM `HBHub-MinerSaves` s
     JOIN `HBHub-Users` u ON u.userId = s.userId
     WHERE s.saveOreAllTime > 0 AND u.userStatus IS NOT NULL AND u.userStatus <> ?
@@ -123,8 +124,9 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                                     </td>
                                     <td><?= leaderboardNumber((float) $row['saveOreAllTime']) ?></td>
                                     <td><?= leaderboardNumber((float) $row['saveOrePerSecond']) ?></td>
-                                    <td><?= number_format((int) $row['saveDarkMatter']) ?></td>
-                                    <td><?= number_format((int) $row['saveAntimatter']) ?></td>
+                                    <td><?= leaderboardNumber((float) $row['saveDarkMatter']) ?></td>
+                                    <td><?= leaderboardNumber((float) $row['saveAntimatter']) ?></td>
+                                    <td><?= number_format((int) $row['saveStrangeMatter']) ?></td>
                                     <td><?= number_format((int) $row['saveWarps']) ?></td>
                                     <td><?= number_format((int) $row['saveClicks']) ?></td>
                                     <td><?= (int) $row['saveAchievements'] ?> / <?= count(HBHUB_MINER_ACHIEVEMENTS) ?></td>

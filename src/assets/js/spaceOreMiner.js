@@ -10,8 +10,9 @@
 // when it's closed. The server answers with the save as it worked it out, and the game carries on from that, with
 // whatever was done while the save was on its way done again on top.
 // Times are the server's Unix ms (the difference to this computer's clock is measured on every save).
-// The page has three views (Ore, Dark Matter, Antimatter, in data-miner-view): the menu's links switch between them here,
-// with history.pushState, so the game keeps running instead of the page loading again. Stats, achievements and how to
+// The page has four views (Ore, Dark Matter, Antimatter, Strange Matter, in data-miner-view): the menu's links switch
+// between them here, with history.pushState, so the game keeps running instead of the page loading again. The Strange
+// Matter view has the skill tree, drawn here from the skills (see renderTree()). Stats, achievements and how to
 // play are popups (data-miner-popup), opened by the buttons by the title (data-miner-open).
 (() => {
     const root = document.querySelector('[data-miner]');
@@ -25,6 +26,7 @@
     const UPGRADES = CONFIG.upgrades; // cheapest first
     const DARK_UPGRADES = CONFIG.darkUpgrades;
     const ANTI_UPGRADES = CONFIG.antiUpgrades;
+    const SKILLS = CONFIG.skills;
     const ACHIEVEMENTS = CONFIG.achievements;
     const COMETS = CONFIG.comets;
     const SALT_CRIT = 1; // HBHUB_MINER_SALT_* in miner.php
@@ -48,42 +50,81 @@
     const has = (s, id) => s.upgrades.includes(id);
     const hasDark = (s, id) => s.darkUpgrades.includes(id);
     const hasAnti = (s, id) => s.antiUpgrades.includes(id);
+    const hasSkill = (s, id) => s.skills.includes(id);
     const sum = (values) => values.reduce((total, value) => total + value, 0);
-    const darkBonus = (s) => (hasDark(s, 'reactor') ? CONFIG.darkBonusReactor : CONFIG.darkBonus);
-    const antiMultiplier = (s) => 1 + CONFIG.antiBonus * s.antimatterEarned;
-    const cometPower = (s) => (hasAnti(s, 'antiComets') ? 2 : 1);
+
+    // Whether a skill can be learned now, Strange Matter aside (hbHubMinerSkillOpen())
+    const skillOpen = (s, id) => !hasSkill(s, id) && SKILLS[id].after.every((afterId) => hasSkill(s, afterId));
+
+    // What all the skills learned do together (hbHubMinerSkillEffects()), worked out once per set of skills: kept with
+    // the skills list it's for, which the copies of a save made below ({...s}) share
+    const skillCache = new WeakMap();
+    function skillEffects(s) {
+        const cached = skillCache.get(s.skills);
+        if (cached && cached.count === s.skills.length) return cached.effects;
+        const effects = { ...CONFIG.skillNeutral, buildings: {}, start: {}, keep: [] };
+        for (const id of s.skills) {
+            const skill = SKILLS[id];
+            const type = skill.type;
+            if (type === 'buildings') {
+                for (const buildingId of skill.buildings) effects.buildings[buildingId] = (effects.buildings[buildingId] ?? 1) * skill.times;
+            } else if (type === 'start') {
+                for (const buildingId of skill.buildings) effects.start[buildingId] = Math.max(effects.start[buildingId] ?? 0, skill.count);
+            } else if (type === 'keep') {
+                effects.keep = effects.keep.concat(skill.types);
+            } else if (skill.times !== undefined) {
+                effects[type] *= skill.times;
+            } else if (skill.value !== undefined) {
+                effects[type] += skill.value;
+            } else {
+                effects[type] = true;
+            }
+        }
+        skillCache.set(s.skills, { count: s.skills.length, effects });
+        return effects;
+    }
+
+    const darkBonus = (s) => (hasDark(s, 'reactor') ? CONFIG.darkBonusReactor : CONFIG.darkBonus) + skillEffects(s).darkBonus;
+    const antiMultiplier = (s) => 1 + (CONFIG.antiBonus + skillEffects(s).antiBonus) * s.antimatterEarned;
+    const strangeMultiplier = (s) => 1 + CONFIG.strangeBonus * s.strangeEarned;
+    const cometPower = (s) => (hasAnti(s, 'antiComets') ? 2 : 1) * skillEffects(s).cometPower;
+    const upgradeCost = (s, id) => UPGRADES[id].cost * skillEffects(s).upgradeCost;
 
     // How much more each of a building costs than the one before (hbHubMinerCostGrowth())
     const costGrowth = (s, id) => (BUILDINGS[id].growth ?? CONFIG.costGrowth) - (hasDark(s, 'physics') ? CONFIG.costGrowthPhysics : 0);
 
     function buildingCost(s, id, amount) {
         const growth = costGrowth(s, id);
-        return Math.ceil(BUILDINGS[id].cost * growth ** s.buildings[id] * (growth ** amount - 1) / (growth - 1));
+        return Math.ceil(BUILDINGS[id].cost * skillEffects(s).cost * growth ** s.buildings[id] * (growth ** amount - 1) / (growth - 1));
     }
 
     const canAfford = (s, cost) => cost <= s.ore * (1 + 1e-9) + 1e-9;
 
     function buildingRates(s) {
+        const effects = skillEffects(s);
         const multipliers = Object.fromEntries(BUILDING_IDS.map((id) => [id, 1]));
         const crew = Object.fromEntries(BUILDING_IDS.map((id) => [id, 0]));
-        let global = (1 + darkBonus(s) * s.darkEarned) * antiMultiplier(s);
+        let global = (1 + darkBonus(s) * s.darkEarned) * antiMultiplier(s) * strangeMultiplier(s);
         if (hasDark(s, 'darkEngines')) global *= 1.5;
         if (hasAnti(s, 'annihilation')) global *= 2;
+        global *= effects.production * (1 + effects.perSkill * s.skills.length) * (1 + effects.perWarp * s.warps)
+            * (1 + effects.perCrunch * s.crunches);
         for (const upgradeId of s.upgrades) {
             const upgrade = UPGRADES[upgradeId];
             if (upgrade.type === 'building') {
-                multipliers[upgrade.building] *= 2;
+                multipliers[upgrade.building] *= 2 * effects.buildingUpgrade;
             } else if (upgrade.type === 'synergy') {
                 multipliers[upgrade.building] *= 1 + upgrade.per * Math.floor(s.buildings[upgrade.source] / upgrade.every);
             } else if (upgrade.type === 'crew') {
-                crew[upgrade.building] += upgrade.value;
+                crew[upgrade.building] += upgrade.value * effects.crew;
             } else if (upgrade.type === 'global') {
                 global *= 1 + upgrade.value;
             }
         }
         const owned = sum(Object.values(s.buildings));
+        global *= 1 + effects.owned * owned;
         return Object.fromEntries(BUILDING_IDS.map((id) => [id,
-            (BUILDINGS[id].rate + crew[id] * (owned - s.buildings[id])) * s.buildings[id] * multipliers[id] * global]));
+            (BUILDINGS[id].rate + crew[id] * (owned - s.buildings[id])) * s.buildings[id] * multipliers[id] * global * (effects.buildings[id] ?? 1)]));
     }
 
     function buff(s, kind, time) {
@@ -92,23 +133,26 @@
     }
 
     function clickValue(s, time) {
+        const effects = skillEffects(s);
         let value = hasDark(s, 'darkPickaxe') ? CONFIG.darkPickaxe : 1;
         let share = 0;
         for (const upgradeId of s.upgrades) {
             if (UPGRADES[upgradeId].type === 'click') value *= UPGRADES[upgradeId].value;
             else if (UPGRADES[upgradeId].type === 'clickPct') share += UPGRADES[upgradeId].value;
         }
+        value *= effects.click;
+        share += effects.clickShare;
         const production = share > 0 ? sum(Object.values(buildingRates(s))) * buff(s, 'production', time) : 0;
         return (value + share * production) * buff(s, 'click', time);
     }
 
-    // How many times a second the auto upgrades click, together (hbHubMinerAutoClicks())
+    // How many times a second the auto upgrades and skills click, together (hbHubMinerAutoClicks())
     function autoClicks(s) {
         let clicks = 0;
         for (const upgradeId of s.upgrades) {
             if (UPGRADES[upgradeId].type === 'auto') clicks += UPGRADES[upgradeId].value;
         }
-        return clicks;
+        return clicks + skillEffects(s).auto;
     }
 
     // time Infinity: the steady rate, without comets
@@ -120,23 +164,27 @@
     }
 
     function earn(s, ore) {
-        s.ore += ore;
-        s.runOre += ore;
-        s.universeOre += ore;
-        s.allOre += ore;
+        s.ore = Math.min(s.ore + ore, Number.MAX_VALUE);
+        s.runOre = Math.min(s.runOre + ore, Number.MAX_VALUE);
+        s.universeOre = Math.min(s.universeOre + ore, Number.MAX_VALUE);
+        s.allOre = Math.min(s.allOre + ore, Number.MAX_VALUE);
     }
 
     function cometWait(s, n) {
         const [min, max] = CONFIG.cometWaitMs;
         const wait = min + random(s.seed, n, SALT_COMET_WAIT) * (max - min);
-        return Math.floor(has(s, 'radar') ? wait / 2 : wait);
+        return Math.floor((has(s, 'radar') ? wait / 2 : wait) * skillEffects(s).cometWait);
     }
 
-    const cometStay = (s) => (has(s, 'magnet') ? CONFIG.cometStayMs * 2 : CONFIG.cometStayMs);
+    const cometStay = (s) => Math.floor((has(s, 'magnet') ? CONFIG.cometStayMs * 2 : CONFIG.cometStayMs) * skillEffects(s).cometStay);
+
+    // How long a comet's effect lasts, in ms (hbHubMinerCometLength())
+    const cometLength = (s, kind) => Math.floor(COMETS[kind].ms * (has(s, 'tail') ? 2 : 1) * skillEffects(s).cometLength);
 
     function cometKind(s) {
         const n = s.comet.n;
-        if (has(s, 'luckyStars') && random(s.seed, n, SALT_DIAMOND) < CONFIG.diamondChance) return 'diamond';
+        const diamondChance = (has(s, 'luckyStars') ? CONFIG.diamondChance : 0) + skillEffects(s).diamond;
+        if (diamondChance > 0 && random(s.seed, n, SALT_DIAMOND) < diamondChance) return 'diamond';
         const roll = random(s.seed, n, SALT_COMET_KIND);
         return roll < 0.45 ? 'frenzy' : (roll < 0.9 ? 'lucky' : 'storm');
     }
@@ -160,7 +208,7 @@
 
             let ore = rate(s, s.tick) * (next - s.tick) / 1000;
             if (s.tick >= fullUntil) {
-                ore *= CONFIG.offlineRate * (hasDark(s, 'timeDilation') ? 2 : 1);
+                ore *= CONFIG.offlineRate * (hasDark(s, 'timeDilation') ? 2 : 1) * skillEffects(s).offline;
                 offlineOre += ore;
             }
             earn(s, ore);
@@ -184,35 +232,84 @@
     function darkTotal(universeOre) {
         const units = universeOre / CONFIG.darkUnit;
         let total = Math.floor(units ** (1 / 3));
-        while ((total + 1) ** 3 <= units) total++;
-        while (total > 0 && total ** 3 > units) total--;
+        if ((total + 1) ** 3 <= units) total++;
+        if (total > 0 && total ** 3 > units) total--;
         return total;
     }
 
     function warpGain(s) {
         if (s.runOre < CONFIG.warpOre) return 0;
-        const total = Math.floor(darkTotal(s.universeOre) * antiMultiplier(s) * (hasAnti(s, 'converter') ? 2 : 1));
+        const total = Math.floor(darkTotal(s.universeOre) * Math.sqrt(antiMultiplier(s)) * (hasAnti(s, 'converter') ? 2 : 1) * skillEffects(s).darkGain);
         return Math.max(0, total - s.darkEarned);
     }
 
     function antiTotal(darkEarned) {
-        let total = 0;
-        while ((total + 1) ** 2 * CONFIG.antiUnit <= darkEarned) total++;
+        let total = Math.floor(Math.sqrt(darkEarned / CONFIG.antiUnit));
+        if ((total + 1) ** 2 * CONFIG.antiUnit <= darkEarned) total++;
+        if (total > 0 && total ** 2 * CONFIG.antiUnit > darkEarned) total--;
         return total;
     }
-    const crunchGain = (s) => (s.darkEarned >= CONFIG.crunchDark ? antiTotal(s.darkEarned) : 0);
+
+    function crunchGain(s) {
+        const effects = skillEffects(s);
+        return s.darkEarned >= CONFIG.crunchDark * effects.crunchDark ? Math.floor(antiTotal(s.darkEarned) * effects.antiGain) : 0;
+    }
+
+    // One for every step the Antimatter earned in this multiverse has passed: strangeUnit times each of strangeSteps
+    // times a power of ten (hbHubMinerStrangeTotal()). nextStrange() is how much it takes for the next one.
+    function strangeTotal(antimatterEarned) {
+        let total = 0;
+        let decade = CONFIG.strangeUnit;
+        while (decade * 10 <= antimatterEarned && decade * 10 < Infinity) {
+            decade *= 10;
+            total += CONFIG.strangeSteps.length;
+        }
+        for (const step of CONFIG.strangeSteps) {
+            if (decade * step <= antimatterEarned) total++;
+        }
+        return total;
+    }
+
+    function nextStrange(antimatterEarned) {
+        let decade = CONFIG.strangeUnit;
+        while (decade * 10 <= antimatterEarned && decade * 10 < Infinity) decade *= 10;
+        const step = CONFIG.strangeSteps.find((at) => decade * at > antimatterEarned);
+        return step === undefined ? decade * 10 : decade * step;
+    }
+
+    function ripGain(s) {
+        if (s.antimatterEarned < CONFIG.ripAnti) return 0;
+        return Math.max(0, Math.floor(strangeTotal(s.antimatterEarned) * skillEffects(s).strangeGain) - s.strangeEarned);
+    }
+
+    // For the hint: the first Antimatter earned in this multiverse at which a Big Rip would give more than it does now,
+    // and what it would give then ({at, gain}), or null past all numbers. Only for showing, so it's not in the PHP.
+    function nextRip(s) {
+        const effects = skillEffects(s);
+        const now = ripGain(s);
+        let at = Math.max(s.antimatterEarned, CONFIG.ripAnti);
+        for (let step = 0; step < 10000 && at < Infinity; step++) {
+            const gain = Math.max(0, Math.floor(strangeTotal(at) * effects.strangeGain) - s.strangeEarned);
+            if (gain > now) return { at, gain };
+            at = nextStrange(at);
+        }
+        return null;
+    }
 
     // auto: they look like an auto-clicker's (looksAuto()), so each only mines autoValue. Returns the ore mined and how
     // many of the clicks were critical.
     function click(s, count, auto = false) {
+        const effects = skillEffects(s);
         const value = clickValue(s, s.tick) * (auto ? CONFIG.autoValue : 1);
-        const canCrit = has(s, 'crit');
+        const canCrit = has(s, 'crit') || effects.crit > 0;
+        const critChance = CONFIG.critChance + effects.crit;
+        const critMultiplier = CONFIG.critMultiplier * effects.critPower;
         let mined = 0;
         let crits = 0;
         for (let i = 0; i < count; i++) {
             let ore = value;
-            if (canCrit && random(s.seed, s.clicks, SALT_CRIT) < CONFIG.critChance) {
-                ore *= CONFIG.critMultiplier;
+            if (canCrit && random(s.seed, s.clicks, SALT_CRIT) < critChance) {
+                ore *= critMultiplier;
                 s.crits++;
                 crits++;
             }
@@ -233,11 +330,11 @@
         const comet = COMETS[kind];
         let ore = 0;
         if (comet.buff !== null) {
-            s.buffs[comet.buff] = { kind, multiplier: comet.multiplier * cometPower(s), until: time + comet.ms * (has(s, 'tail') ? 2 : 1) };
+            s.buffs[comet.buff] = { kind, multiplier: comet.multiplier * cometPower(s), until: time + cometLength(s, kind) };
         } else {
             const production = sum(Object.values(buildingRates(s))) * buff(s, 'production', time);
             ore = (Math.min(s.ore * CONFIG.luckyShare, production * CONFIG.luckySeconds) + 13)
-                * (has(s, 'stardust') ? 2 : 1) * cometPower(s);
+                * (has(s, 'stardust') ? 2 : 1) * cometPower(s) * skillEffects(s).luckyOre;
             earn(s, ore);
         }
         s.comets++;
@@ -247,13 +344,14 @@
         return { kind, ore };
     }
 
-    // A new run, for a Warp Jump or a Big Crunch (hbHubMinerNewRun())
+    // A new run, for a Warp Jump, Big Crunch or Big Rip (hbHubMinerNewRun())
     function newRun(s) {
-        const kept = [...(hasDark(s, 'memory') ? CONFIG.clickTypes : []), ...(hasAnti(s, 'eternal') ? CONFIG.eternalTypes : [])];
+        const effects = skillEffects(s);
+        const kept = [...(hasDark(s, 'memory') ? CONFIG.clickTypes : []), ...(hasAnti(s, 'eternal') ? CONFIG.eternalTypes : []), ...effects.keep];
         s.upgrades = s.upgrades.filter((id) => kept.includes(UPGRADES[id].type));
-        s.buildings = Object.fromEntries(BUILDING_IDS.map((id) => [id, 0]));
-        if (hasDark(s, 'headStart')) s.buildings.drone = CONFIG.headStart;
-        s.ore = hasAnti(s, 'leftovers') ? CONFIG.leftoverOre : 0;
+        s.buildings = Object.fromEntries(BUILDING_IDS.map((id) => [id, effects.start[id] ?? 0]));
+        if (hasDark(s, 'headStart')) s.buildings.drone = Math.max(s.buildings.drone, CONFIG.headStart);
+        s.ore = Math.max(hasAnti(s, 'leftovers') ? CONFIG.leftoverOre : 0, effects.startOre);
         s.runOre = 0;
         s.buffs = {};
         s.runStarted = s.tick;
@@ -285,8 +383,26 @@
         return gain;
     }
 
+    function rip(s) {
+        const gain = ripGain(s);
+        if (gain < 1) return false;
+
+        if (!skillEffects(s).keepAnti) s.antiUpgrades = [];
+        s.antimatter = 0;
+        s.antimatterEarned = 0;
+        if (!hasAnti(s, 'echo')) s.darkUpgrades = [];
+        s.dark = 0;
+        s.darkEarned = 0;
+        s.universeOre = 0;
+        s.strange += gain;
+        s.strangeEarned += gain;
+        s.rips++;
+        newRun(s);
+        return gain;
+    }
+
     // Returns false when it didn't count, otherwise something truthy (what click() and catchComet() return, the
-    // Dark Matter from a warp, the Antimatter from a crunch)
+    // Dark Matter from a warp, the Antimatter from a crunch, the Strange Matter from a rip)
     function apply(s, action) {
         switch (action.type) {
             case 'click':
@@ -302,8 +418,8 @@
             }
             case 'upgrade': {
                 const upgrade = UPGRADES[action.id];
-                if (!upgrade || has(s, action.id) || !upgradeUnlocked(s, upgrade) || !canAfford(s, upgrade.cost)) return false;
-                s.ore = Math.max(0, s.ore - upgrade.cost);
+                if (!upgrade || has(s, action.id) || !upgradeUnlocked(s, upgrade) || !canAfford(s, upgradeCost(s, action.id))) return false;
+                s.ore = Math.max(0, s.ore - upgradeCost(s, action.id));
                 s.upgrades.push(action.id);
                 return true;
             }
@@ -322,12 +438,22 @@
                 s.antiUpgrades.push(action.id);
                 return true;
             }
+            case 'skill': {
+                const skill = SKILLS[action.id];
+                if (!skill || !skillOpen(s, action.id) || s.strange < skill.cost) return false;
+                s.strange -= skill.cost;
+                s.skills.push(action.id);
+                for (const [buildingId, count] of Object.entries(skillEffects(s).start)) s.buildings[buildingId] = Math.max(s.buildings[buildingId], count);
+                return true;
+            }
             case 'comet':
                 return catchComet(s);
             case 'warp':
                 return warp(s);
             case 'crunch':
                 return crunch(s);
+            case 'rip':
+                return rip(s);
             default:
                 return false;
         }
@@ -339,7 +465,9 @@
             case 'upgrades': return s.upgrades.length;
             case 'buildings': return sum(Object.values(s.buildings));
             case 'ownedAll': return Math.min(...Object.values(s.buildings));
-            case 'allOre': case 'clicks': case 'crits': case 'comets': case 'diamonds': case 'warps': case 'crunches': return s[name];
+            case 'skills': return s.skills.length;
+            case 'allSkills': return s.skills.length >= Object.keys(SKILLS).length ? 1 : 0;
+            case 'allOre': case 'clicks': case 'crits': case 'comets': case 'diamonds': case 'warps': case 'crunches': case 'rips': return s[name];
             default: return s.buildings[name.slice(6)] ?? 0; // owned:<building>
         }
     }
@@ -442,6 +570,22 @@
     const antiOwned = root.querySelector('[data-miner-anti-owned]');
     const crunchDialog = root.querySelector('[data-miner-crunch-dialog]');
     const crunchDialogText = root.querySelector('[data-miner-crunch-dialog-text]');
+    const autoWarpSwitch = root.querySelector('[data-miner-auto-warp]');
+    const autoCrunchSwitch = root.querySelector('[data-miner-auto-crunch]');
+    const ripView = root.querySelector('[data-miner-rip-view]');
+    const ripSections = root.querySelectorAll('[data-miner-rip-section]');
+    const ripLocked = root.querySelector('[data-miner-rip-locked]');
+    const strangeText = root.querySelector('[data-miner-strange]');
+    const ripNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-rip]')].map((node) => [node.dataset.minerRip, node]));
+    const ripProgress = root.querySelector('[data-miner-rip-progress]');
+    const ripButton = root.querySelector('[data-miner-rip-button]');
+    const ripHint = root.querySelector('[data-miner-rip-hint]');
+    const ripDialog = root.querySelector('[data-miner-rip-dialog]');
+    const ripDialogText = root.querySelector('[data-miner-rip-dialog-text]');
+    const skillsOwned = root.querySelector('[data-miner-skills-owned]');
+    const tree = root.querySelector('[data-miner-tree]');
+    const skillInfo = Object.fromEntries(['icon', 'name', 'branch', 'text', 'needs', 'cost', 'learn']
+        .map((part) => [part, root.querySelector('[data-miner-skill-' + part + ']')]));
     const achievementList = root.querySelector('[data-miner-achievements]');
     const achievementCounts = root.querySelectorAll('[data-miner-achievement-count]'); // on the button and in the popup
     const statList = root.querySelector('[data-miner-stats]');
@@ -519,6 +663,8 @@
     let storeKey = '';
     let darkKey = '';
     let antiKey = '';
+    let treeKey = '';
+    let pickedSkill = 'strangelet'; // the skill shown next to the tree
     let shownComet = -1; // the comet number on screen
     let saveSoonTimer = 0;
     const sprites = Object.fromEntries(Object.keys(SCENE).map((id) => [id, []])); // the ones in the picture, per building
@@ -539,6 +685,19 @@
         isAutoBuying = localStorage.getItem(AUTO_BUY_KEY) === 'on';
     } catch {
         // no storage: it starts off
+    }
+
+    // The Autopilot and Auto Crunch switches, kept the same way. They only do anything with their skills (see
+    // autoPrestige()).
+    const AUTO_WARP_KEY = 'hbHubMinerAutoWarp';
+    const AUTO_CRUNCH_KEY = 'hbHubMinerAutoCrunch';
+    let isAutoWarping = false;
+    let isAutoCrunching = false;
+    try {
+        isAutoWarping = localStorage.getItem(AUTO_WARP_KEY) === 'on';
+        isAutoCrunching = localStorage.getItem(AUTO_CRUNCH_KEY) === 'on';
+    } catch {
+        // no storage: they start off
     }
 
     const serverNow = () => Date.now() + clockOffset;
@@ -594,6 +753,7 @@
         storeKey = '';
         darkKey = '';
         antiKey = '';
+        treeKey = '';
     }
 
     const KEEPALIVE_BYTES = 60000; // a bit under the 64 KB browsers allow a keepalive request
@@ -717,39 +877,46 @@
         checkAchievements(state);
         renderAchievementsUnlocked();
         autoBuy();
+        autoPrestige();
         renderStore();
         renderBuffs();
         renderComet();
         renderWarp();
         renderCrunch();
+        renderRip();
         renderMenu();
     }, 200);
     setInterval(() => {
         if (isPlaying && !document.hidden && statsPopup.open) renderStats();
     }, 1000);
 
-    function renderAll() {
+    // withNews: a new line in the news ticker too (not for what Autopilot and Auto Crunch do every few seconds)
+    function renderAll(withNews = true) {
         catchUp();
         renderStore();
         renderBuffs();
         renderComet();
         renderWarp();
         renderCrunch();
+        renderRip();
         renderMenu();
         renderAchievements();
         renderStats();
-        renderTicker();
+        if (withNews) renderTicker();
     }
 
-    // The Dark Matter and Antimatter in the menu, and a dot on a view with something to do there: a jump or crunch
-    // that would give something, or an upgrade that can be bought
+    // The Dark Matter, Antimatter and Strange Matter in the menu, and a dot on a view with something to do there: a
+    // jump, crunch or rip that would give something, or an upgrade or skill that can be bought
     function renderMenu() {
-        menuCounts.darkMatter.textContent = state.darkEarned > 0 || state.dark > 0 ? format(state.dark) : '';
-        menuCounts.antimatter.textContent = state.antimatterEarned > 0 ? format(state.antimatter) : '';
+        menuCounts.darkMatter.textContent = state.warps > 0 ? format(state.dark) : '';
+        menuCounts.antimatter.textContent = state.crunches > 0 ? format(state.antimatter) : '';
+        menuCounts.strangeMatter.textContent = state.rips > 0 ? format(state.strange) : '';
         menuNews.darkMatter.hidden = warpGain(state) < 1
             && !Object.entries(DARK_UPGRADES).some(([id, upgrade]) => !hasDark(state, id) && state.dark >= upgrade.cost);
         menuNews.antimatter.hidden = crunchGain(state) < 1
             && !Object.entries(ANTI_UPGRADES).some(([id, upgrade]) => !hasAnti(state, id) && state.antimatter >= upgrade.cost);
+        menuNews.strangeMatter.hidden = ripGain(state) < 1
+            && !Object.entries(SKILLS).some(([id, skill]) => skillOpen(state, id) && state.strange >= skill.cost);
     }
 
     // The buildings shown: every one owned or nearly affordable, and the next one as a mystery
@@ -799,7 +966,7 @@
         const offset = keyOffset(shown.length);
         const hasKeys = has(state, 'quickKeys');
         const key = [shown.join(), mystery, upgrades.join(), buyAmount, has(state, 'bulk'), hasKeys, hasDark(state, 'lateKeys'), lateKeys, offset,
-            hasDark(state, 'autoBuy'), isAutoBuying].join('|');
+            hasDark(state, 'autoBuy'), isAutoBuying, skillEffects(state).upgradeCost].join('|');
 
         if (key !== storeKey) { // something new to show: build the lists again
             storeKey = key;
@@ -826,7 +993,7 @@
                     // a building's own upgrades show the building, with a ×2 on it (spaceOreMiner.css)
                     iconBox('miner-upgrade-icon' + (upgrade.type === 'building' ? ' is-boost' : ''), upgrade.icon),
                     element('span', 'miner-upgrade-name', upgrade.name),
-                    element('span', 'miner-upgrade-cost', format(upgrade.cost) + ' ore'),
+                    element('span', 'miner-upgrade-cost', format(upgradeCost(state, id)) + ' ore'),
                     element('span', 'miner-upgrade-text', upgrade.text),
                 );
                 item.append(button);
@@ -872,7 +1039,7 @@
 
         // What changes all the time: what's affordable, prices and counts
         for (const button of upgradeList.querySelectorAll('[data-upgrade]')) {
-            button.classList.toggle('is-affordable', canAfford(state, UPGRADES[button.dataset.upgrade].cost));
+            button.classList.toggle('is-affordable', canAfford(state, upgradeCost(state, button.dataset.upgrade)));
         }
         const rates = buildingRates(state);
         const total = sum(Object.values(rates));
@@ -1004,6 +1171,7 @@
         warpHint.textContent = state.runOre < CONFIG.warpOre
             ? 'Mine ' + format(CONFIG.warpOre - state.runOre) + ' more ore this run to unlock the Warp Jump.'
             : gain < 1 ? 'Mine a bit more first: a jump now wouldn\'t give you any Dark Matter.' : '';
+        renderAutoSwitch(autoWarpSwitch, skillEffects(state).autoWarp, isAutoWarping);
 
         const key = state.dark + '|' + state.darkUpgrades.join();
         if (key === darkKey) return;
@@ -1044,9 +1212,9 @@
         });
     }
 
-    // The Antimatter view is locked until there's Dark Matter (or Antimatter) to talk about
+    // The Antimatter view is locked until there's Dark Matter to talk about: the first Warp Jump
     function renderCrunch() {
-        const isLocked = state.darkEarned === 0 && state.antimatterEarned === 0;
+        const isLocked = state.warps === 0;
         crunchView.classList.toggle('is-locked', isLocked);
         crunchSections.forEach((section) => { section.hidden = isLocked; });
         crunchLocked.hidden = !isLocked;
@@ -1057,20 +1225,159 @@
         }
         const gain = crunchGain(state);
         crunchNumbers.dark.textContent = format(state.darkEarned);
-        crunchNumbers.target.textContent = format(CONFIG.crunchDark);
+        const target = CONFIG.crunchDark * skillEffects(state).crunchDark;
         crunchNumbers.gain.textContent = format(gain);
-        crunchNumbers.bonus.textContent = '+' + format(CONFIG.antiBonus * 100 * state.antimatterEarned) + '%';
-        setProgress(crunchProgress, state.darkEarned / CONFIG.crunchDark);
+        crunchNumbers.target.textContent = format(target);
+        crunchNumbers.bonus.textContent = '+' + format((antiMultiplier(state) - 1) * 100) + '%';
+        setProgress(crunchProgress, state.darkEarned / target);
         crunchView.classList.toggle('is-ready', gain >= 1);
         crunchButton.disabled = gain < 1;
         crunchHint.textContent = gain < 1
-            ? 'Earn ' + format(CONFIG.crunchDark - state.darkEarned) + ' more Dark Matter in this universe to unlock the Big Crunch.' : '';
+            ? 'Earn ' + format(target - state.darkEarned) + ' more Dark Matter in this universe to unlock the Big Crunch.' : '';
+        renderAutoSwitch(autoCrunchSwitch, skillEffects(state).autoCrunch, isAutoCrunching);
 
         const key = state.antimatter + '|' + state.antiUpgrades.join();
         if (key === antiKey) return;
         antiKey = key;
         antiOwned.textContent = state.antiUpgrades.length + ' of ' + Object.keys(ANTI_UPGRADES).length + ' bought';
         antiList.replaceChildren(...prestigeUpgrades(ANTI_UPGRADES, state.antiUpgrades, state.antimatter, 'anti', 'Antimatter'));
+    }
+
+    // The Autopilot or Auto Crunch switch: only there with its skill, lit while it's on
+    function renderAutoSwitch(button, isThere, isOn) {
+        button.hidden = !isThere;
+        button.classList.toggle('is-active', isOn);
+        button.setAttribute('aria-pressed', String(isOn));
+    }
+
+    // The Strange Matter view is locked until there's Antimatter to talk about: the first Big Crunch
+    function renderRip() {
+        const isLocked = state.crunches === 0;
+        ripView.classList.toggle('is-locked', isLocked);
+        ripSections.forEach((section) => { section.hidden = isLocked; });
+        ripLocked.hidden = !isLocked;
+        strangeText.textContent = format(state.strange);
+        if (isLocked) {
+            ripView.classList.remove('is-ready');
+            return;
+        }
+        // Until a rip gives something, the bar and the target are for the first Antimatter that does: 10,000 for the
+        // first rip, after that whatever beats the best multiverse so far
+        const gain = ripGain(state);
+        const next = nextRip(state);
+        const target = gain < 1 && next ? next.at : CONFIG.ripAnti;
+        ripNumbers.anti.textContent = format(state.antimatterEarned);
+        ripNumbers.target.textContent = format(target);
+        ripNumbers.gain.textContent = format(gain);
+        ripNumbers.bonus.textContent = '+' + format((strangeMultiplier(state) - 1) * 100) + '%';
+        setProgress(ripProgress, state.antimatterEarned / target);
+        ripView.classList.toggle('is-ready', gain >= 1);
+        ripButton.disabled = gain < 1;
+        if (!next) {
+            ripHint.textContent = '';
+        } else if (gain >= 1) {
+            ripHint.textContent = '+' + format(next.gain - gain) + ' more Strange Matter at ' + format(next.at) + ' Antimatter.';
+        } else if (state.strangeEarned === 0) {
+            ripHint.textContent = 'Earn ' + format(target - state.antimatterEarned) + ' more Antimatter in this multiverse to unlock the Big Rip.';
+        } else {
+            ripHint.textContent = 'A Big Rip has to beat your best multiverse: it gives ' + format(next.gain) + ' Strange Matter at '
+                + format(next.at) + ' Antimatter.';
+        }
+        renderTree();
+    }
+
+    // ----- The skill tree. Built once from where the skills are ('at': [column, row]): a grid of buttons, one per
+    // skill, over an SVG in the same units (one per cell) with a line from each skill up to each skill it needs. After
+    // that only classes change: on the buttons is-learned, is-open (can be learned now), is-affordable and is-picked
+    // (the one shown next to the tree), and on the lines is-lit (both ends learned) and is-open (only the top one).
+
+    const TREE_COLUMNS = 7;
+    const BRANCH_NAMES = { core: 'Core', industry: 'Industry', hands: 'Hands', sky: 'Sky', cosmos: 'Cosmos' };
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const treeNodes = {}; // skill id => its button
+    const treeLines = []; // {line, from (the skill needed), to}
+    const skillPanel = root.querySelector('[data-miner-skill-info]');
+
+    function buildTree() {
+        const rows = Math.max(...Object.values(SKILLS).map((skill) => skill.at[1])) + 1;
+        tree.style.setProperty('--columns', TREE_COLUMNS);
+        tree.style.setProperty('--rows', rows);
+        const lines = document.createElementNS(SVG_NS, 'svg');
+        lines.setAttribute('class', 'miner-tree-lines');
+        lines.setAttribute('viewBox', '0 0 ' + TREE_COLUMNS + ' ' + rows);
+        lines.setAttribute('preserveAspectRatio', 'none');
+        lines.setAttribute('aria-hidden', 'true');
+        for (const [id, skill] of Object.entries(SKILLS)) {
+            for (const afterId of skill.after) {
+                const line = document.createElementNS(SVG_NS, 'line');
+                line.setAttribute('class', 'miner-tree-line is-' + skill.branch);
+                line.setAttribute('x1', SKILLS[afterId].at[0] + 0.5);
+                line.setAttribute('y1', SKILLS[afterId].at[1] + 0.5);
+                line.setAttribute('x2', skill.at[0] + 0.5);
+                line.setAttribute('y2', skill.at[1] + 0.5);
+                lines.append(line);
+                treeLines.push({ line, from: afterId, to: id });
+            }
+        }
+        tree.append(lines);
+        for (const [id, skill] of Object.entries(SKILLS)) {
+            const button = element('button', 'miner-skill is-' + skill.branch);
+            button.type = 'button';
+            button.dataset.skill = id;
+            button.title = skill.name;
+            button.style.gridColumn = String(skill.at[0] + 1);
+            button.style.gridRow = String(skill.at[1] + 1);
+            button.append(iconBox('miner-skill-icon', skill.icon));
+            tree.append(button);
+            treeNodes[id] = button;
+        }
+    }
+
+    function renderTree() {
+        if (tree.childElementCount === 0) buildTree();
+        const key = state.skills.join() + '|' + state.strange + '|' + pickedSkill;
+        if (key === treeKey) return;
+        treeKey = key;
+        for (const [id, button] of Object.entries(treeNodes)) {
+            const skill = SKILLS[id];
+            const isLearned = hasSkill(state, id);
+            const isOpen = skillOpen(state, id);
+            button.classList.toggle('is-learned', isLearned);
+            button.classList.toggle('is-open', isOpen);
+            button.classList.toggle('is-affordable', isOpen && state.strange >= skill.cost);
+            button.classList.toggle('is-picked', id === pickedSkill);
+            button.setAttribute('aria-pressed', String(id === pickedSkill));
+            button.setAttribute('aria-label', skill.name + ', ' + (isLearned ? 'learned'
+                : isOpen ? 'can be learned for ' + format(skill.cost) + ' Strange Matter' : 'needs the skills above it first'));
+        }
+        for (const { line, from, to } of treeLines) {
+            line.classList.toggle('is-lit', hasSkill(state, from) && hasSkill(state, to));
+            line.classList.toggle('is-open', hasSkill(state, from) && !hasSkill(state, to));
+        }
+        skillsOwned.textContent = state.skills.length + ' of ' + Object.keys(SKILLS).length + ' learned';
+        renderSkillInfo();
+    }
+
+    // "A", "A and B", "A, B and C"
+    const listText = (items) => (items.length > 1 ? items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1] : items.join(''));
+
+    // The picked skill, next to the tree: what it does, what it needs and the button that learns it
+    function renderSkillInfo() {
+        const skill = SKILLS[pickedSkill];
+        const isLearned = hasSkill(state, pickedSkill);
+        const isOpen = skillOpen(state, pickedSkill);
+        const missing = skill.after.filter((id) => !hasSkill(state, id)).map((id) => SKILLS[id].name);
+        skillPanel.className = 'miner-skill-info is-' + skill.branch + (isLearned ? ' is-learned' : '');
+        skillInfo.icon.replaceChildren(iconBox('miner-skill-info-box', skill.icon));
+        skillInfo.name.textContent = skill.name;
+        skillInfo.branch.textContent = BRANCH_NAMES[skill.branch];
+        skillInfo.text.textContent = skill.text;
+        skillInfo.needs.textContent = isLearned ? 'Learned.'
+            : missing.length > 0 ? 'Needs ' + listText(missing) + ' first.'
+            : state.strange < skill.cost ? 'You need ' + format(skill.cost - state.strange) + ' more Strange Matter.' : '';
+        skillInfo.cost.textContent = format(skill.cost) + ' Strange Matter';
+        skillInfo.learn.hidden = isLearned;
+        skillInfo.learn.disabled = !isOpen || state.strange < skill.cost;
     }
 
     function renderAchievements() {
@@ -1108,10 +1415,15 @@
             ['Comets caught', format(state.comets)],
             ['Diamond Comets caught', format(state.diamonds)],
             ['Warp Jumps', format(state.warps)],
-            ...(state.antimatterEarned > 0 ? [
+            ...(state.crunches > 0 ? [
                 ['Ore mined this universe', format(state.universeOre)],
                 ['Big Crunches', format(state.crunches)],
-                ['Antimatter earned', format(state.antimatterEarned)],
+                [state.rips > 0 ? 'Antimatter earned this multiverse' : 'Antimatter earned', format(state.antimatterEarned)],
+            ] : []),
+            ...(state.rips > 0 ? [
+                ['Big Rips', format(state.rips)],
+                ['Strange Matter earned', format(state.strangeEarned)],
+                ['Skills', state.skills.length + ' / ' + Object.keys(SKILLS).length],
             ] : []),
             ['Buildings', format(sum(Object.values(state.buildings)))],
             ['Upgrades', state.upgrades.length + ' / ' + Object.keys(UPGRADES).length],
@@ -1297,6 +1609,14 @@
         ['Universe 2: now with 20% fewer mistakes.', (s) => s.crunches > 0],
         ['Antimatter shop opens. Everything is sold backwards.', (s) => s.antiUpgrades.length > 0],
         ['Time keeps starting over. Calendars sold out everywhere.', (s) => s.crunches >= 3],
+        ['Big Rip survivors say the multiverse felt "a bit drafty" for a second.', (s) => s.rips > 0],
+        ['Strange Matter turns out to be normal matter that went to art school.', (s) => s.rips > 0],
+        ['Physicist finds a strangelet in their soup. Soup now stranger than before.', (s) => s.rips > 0],
+        ['Multiverse sewn back together. A few universes are on inside out.', (s) => s.rips >= 3],
+        ['Space Pickaxe Guys try to climb the skill tree. It\'s not that kind of tree.', (s) => s.skills.length > 0],
+        ['Skill tree grows a new branch. Gardeners from three galaxies come to look.', (s) => s.skills.length >= 10],
+        ['Autopilot warps the company to a new galaxy. Nobody was told.', (s) => hasSkill(s, 'autoWarp')],
+        ['Scientists finally write down the Theory of Everything. It just says "mine more ore".', (s) => hasSkill(s, 'theory')],
 
         // How much ore you've mined
         ['Start-up miner dreams of owning a whole pickaxe one day.', (s) => s.allOre < 1000],
@@ -1444,6 +1764,7 @@
         catch: [[523, 0, 0.15, 'triangle', 0.2], [659, 0.08, 0.15, 'triangle', 0.2], [784, 0.16, 0.15, 'triangle', 0.2], [1047, 0.24, 0.35, 'triangle', 0.2]],
         achievement: [[784, 0, 0.18, 'square', 0.07], [988, 0.12, 0.18, 'square', 0.07], [1175, 0.24, 0.4, 'square', 0.07]],
         warp: [[80, 0, 1.2, 'sawtooth', 0.1, 2400], [120, 0.1, 1.1, 'sine', 0.15, 3000]],
+        rip: [[1600, 0, 0.9, 'sawtooth', 0.08, 50], [220, 0.05, 0.5, 'square', 0.05, 1800], [60, 0.4, 1.1, 'sine', 0.18, 30]],
     };
 
     function sound(name) {
@@ -1651,7 +1972,7 @@
         const building = bestBuilding(1);
         let best = building && building.gain > 0 ? { action: { type: 'buy', building: building.id, amount: 1 }, payback: building.cost / building.gain } : null;
         for (const id of availableUpgrades()) {
-            const cost = UPGRADES[id].cost;
+            const cost = upgradeCost(state, id);
             const gain = rate({ ...state, upgrades: [...state.upgrades, id] }, Infinity) - before;
             if (gain <= 0) {
                 if (canAfford(state, cost) && cost <= before * AUTO_BUY_EXTRA_SECONDS) return { type: 'upgrade', id };
@@ -1660,7 +1981,7 @@
             const payback = (canAfford(state, cost) ? 0 : (cost - state.ore) / before) + cost / gain; // Infinity with no production yet
             if (!best || payback < best.payback) best = { action: { type: 'upgrade', id }, payback };
         }
-        if (!best || (best.action.type === 'upgrade' && !canAfford(state, UPGRADES[best.action.id].cost))) return null;
+        if (!best || (best.action.type === 'upgrade' && !canAfford(state, upgradeCost(state, best.action.id)))) return null;
         return best.action;
     }
 
@@ -1728,7 +2049,7 @@
         if (!result) return;
         const comet = COMETS[result.kind];
         sound('catch');
-        toast(result.kind === 'diamond' ? 'diamond' : 'comet', COMET_TEXT[result.kind](comet.ms * (has(state, 'tail') ? 2 : 1), result.ore, comet.multiplier * cometPower(state)),
+        toast(result.kind === 'diamond' ? 'diamond' : 'comet', COMET_TEXT[result.kind](comet.ms > 0 ? cometLength(state, result.kind) : 0, result.ore, comet.multiplier * cometPower(state)),
             'is-comet is-' + result.kind, 6000);
         renderBuffs();
         renderStore();
@@ -1739,25 +2060,40 @@
     warpButton.addEventListener('click', () => {
         const gain = warpGain(state);
         if (gain < 1) return;
-        const kept = [...(hasDark(state, 'memory') ? ['your click upgrades'] : []), ...(hasAnti(state, 'eternal') ? ['Bulk Buying and your comet upgrades'] : [])];
+        const keepSkills = state.skills.filter((id) => SKILLS[id].type === 'keep').map((id) => 'what ' + SKILLS[id].name + ' keeps');
+        const kept = [...(hasDark(state, 'memory') ? ['your click upgrades'] : []), ...(hasAnti(state, 'eternal') ? ['Bulk Buying and your comet upgrades'] : []),
+            ...keepSkills];
         warpDialogText.textContent = 'You\'ll get ' + format(gain) + ' Dark Matter, which makes everything mine '
             + format(darkBonus(state) * 100 * gain, { decimals: true }) + '% faster until the next Big Crunch. Your ore, buildings and upgrades start over'
-            + (kept.length > 0 ? ', but you keep ' + kept.join(' and ') + '.' : '.');
+            + (kept.length > 0 ? ', but you keep ' + listText(kept) + '.' : '.');
         warpDialog.showModal();
     });
     root.querySelector('[data-miner-warp-cancel]').addEventListener('click', () => warpDialog.close());
     root.querySelector('[data-miner-warp-confirm]').addEventListener('click', () => {
         warpDialog.close();
+        doWarp(false);
+    });
+
+    // Plays the "everything jumps" animation on the views: is-warping, is-crunching or is-ripping on the page
+    function shake(className) {
+        root.classList.remove('is-warping', 'is-crunching', 'is-ripping');
+        void root.offsetWidth;
+        root.classList.add(className);
+    }
+
+    // A Warp Jump, from the box (isAuto false) or Autopilot (quieter: no sound or animation, as it can be every few
+    // seconds)
+    function doWarp(isAuto) {
         const gain = act({ type: 'warp' });
         if (!gain) return;
-        sound('warp');
-        root.classList.remove('is-warping');
-        void root.offsetWidth;
-        root.classList.add('is-warping');
-        toast('warp', 'Welcome to a new galaxy! You got ' + format(gain) + ' Dark Matter.', 'is-comet', 7000);
-        renderAll();
+        if (!isAuto) {
+            sound('warp');
+            shake('is-warping');
+        }
+        toast('warp', (isAuto ? 'Autopilot: a' : 'Welcome to a') + ' new galaxy! You got ' + format(gain) + ' Dark Matter.', 'is-comet', isAuto ? 4000 : 7000);
+        renderAll(!isAuto);
         saveSoon();
-    });
+    }
 
     // ----- Big Crunch
 
@@ -1776,23 +2112,123 @@
     crunchButton.addEventListener('click', () => {
         const gain = crunchGain(state);
         if (gain < 1) return;
+        const percent = format((CONFIG.antiBonus + skillEffects(state).antiBonus) * 100 * gain);
         crunchDialogText.textContent = 'You\'ll get ' + format(gain) + ' Antimatter, which makes everything mine '
-            + format(CONFIG.antiBonus * 100 * gain) + '% faster and Warp Jumps give ' + format(CONFIG.antiBonus * 100 * gain)
-            + '% more Dark Matter, for good. Your ore, buildings, upgrades and Dark Matter start over'
+            + percent + '% faster and Warp Jumps give ' + percent
+            + '% more Dark Matter, until the next Big Rip. Your ore, buildings, upgrades and Dark Matter start over'
             + (hasAnti(state, 'echo') ? ', but you keep your Dark Matter upgrades.' : ', and so do your Dark Matter upgrades.');
         crunchDialog.showModal();
     });
     root.querySelector('[data-miner-crunch-cancel]').addEventListener('click', () => crunchDialog.close());
     root.querySelector('[data-miner-crunch-confirm]').addEventListener('click', () => {
         crunchDialog.close();
+        doCrunch(false);
+    });
+
+    // A Big Crunch, from the box or Auto Crunch (quieter, like doWarp())
+    function doCrunch(isAuto) {
         const gain = act({ type: 'crunch' });
         if (!gain) return;
-        sound('warp');
-        root.classList.remove('is-crunching');
-        void root.offsetWidth;
-        root.classList.add('is-crunching');
-        toast('bigCrunch', 'The universe collapsed and started over. You got ' + format(gain) + ' Antimatter.', 'is-comet', 7000);
+        if (!isAuto) {
+            sound('warp');
+            shake('is-crunching');
+        }
+        toast('bigCrunch', (isAuto ? 'Auto Crunch: the' : 'The') + ' universe collapsed and started over. You got ' + format(gain) + ' Antimatter.',
+            'is-comet', isAuto ? 4000 : 7000);
+        renderAll(!isAuto);
+        saveSoon();
+    }
+
+    // ----- Autopilot and Auto Crunch (the skills): while one is switched on, a few times a second it Warp Jumps once a
+    // jump would at least double the Dark Matter earned in this universe, or Big Crunches once a crunch would give at
+    // least AUTO_CRUNCH_SHARE of the Antimatter earned in this multiverse. Through act(), like the buttons, so the
+    // server checks them as usual. Only while the page is open, like Auto Buy.
+    const AUTO_CRUNCH_SHARE = 0.25;
+
+    function autoPrestige() {
+        const effects = skillEffects(state);
+        if (isAutoCrunching && effects.autoCrunch) {
+            catchUp();
+            const gain = crunchGain(state);
+            if (gain >= 1 && gain >= state.antimatterEarned * AUTO_CRUNCH_SHARE) {
+                doCrunch(true);
+                return;
+            }
+        }
+        if (isAutoWarping && effects.autoWarp) {
+            catchUp();
+            const gain = warpGain(state);
+            if (gain >= 1 && gain >= state.darkEarned) doWarp(true);
+        }
+    }
+
+    function setAutoWarping(isOn) {
+        isAutoWarping = isOn;
+        try {
+            localStorage.setItem(AUTO_WARP_KEY, isOn ? 'on' : 'off');
+        } catch {
+            // only kept until the page is closed
+        }
+        renderWarp();
+    }
+
+    function setAutoCrunching(isOn) {
+        isAutoCrunching = isOn;
+        try {
+            localStorage.setItem(AUTO_CRUNCH_KEY, isOn ? 'on' : 'off');
+        } catch {
+            // only kept until the page is closed
+        }
+        renderCrunch();
+    }
+
+    autoWarpSwitch.addEventListener('click', () => {
+        setAutoWarping(!isAutoWarping);
+        sound('buy');
+    });
+    autoCrunchSwitch.addEventListener('click', () => {
+        setAutoCrunching(!isAutoCrunching);
+        sound('buy');
+    });
+
+    // ----- Big Rip and the skill tree
+
+    ripButton.addEventListener('click', () => {
+        const gain = ripGain(state);
+        if (gain < 1) return;
+        ripDialogText.textContent = 'You\'ll get ' + format(gain) + ' Strange Matter to spend on skills, and it makes everything mine '
+            + format(CONFIG.strangeBonus * 100 * gain) + '% faster for good. Your ore, buildings, upgrades, Dark Matter and Antimatter start over'
+            + (skillEffects(state).keepAnti ? ', but you keep your Antimatter upgrades.' : ', and so do your Antimatter upgrades.');
+        ripDialog.showModal();
+    });
+    root.querySelector('[data-miner-rip-cancel]').addEventListener('click', () => ripDialog.close());
+    root.querySelector('[data-miner-rip-confirm]').addEventListener('click', () => {
+        ripDialog.close();
+        const gain = act({ type: 'rip' });
+        if (!gain) return;
+        sound('rip');
+        shake('is-ripping');
+        toast('bigRip', 'The multiverse tore apart and started over. You got ' + format(gain) + ' Strange Matter.', 'is-comet', 7000);
         renderAll();
+        saveSoon();
+    });
+
+    tree.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-skill]');
+        if (!button) return;
+        pickedSkill = button.dataset.skill;
+        renderTree();
+    });
+
+    skillInfo.learn.addEventListener('click', () => {
+        const id = pickedSkill;
+        if (!act({ type: 'skill', id })) return;
+        const skill = SKILLS[id];
+        sound('buy');
+        if (skill.type === 'autoWarp') setAutoWarping(true); // learned to be used, so it starts on, like Auto Buy
+        if (skill.type === 'autoCrunch') setAutoCrunching(true);
+        toast(skill.icon, skill.name + ': ' + skill.text);
+        renderAll(false);
         saveSoon();
     });
 
@@ -1803,7 +2239,7 @@
     // listed (the last ten, with Long-Range Hot Keys switched on: see keyOffset()), U buys the
     // cheapest upgrade you can afford and B the affordable building with the most ore/s for its price (at the ×1/×10/×100
     // picked). K flips the Long-Range switch, A switches between ×1, ×10
-    // and ×100, W opens the Warp Jump box, X the Big Crunch box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
+    // and ×100, W opens the Warp Jump box, X the Big Crunch box, R the Big Rip box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
     // shortcuts) and while a box is open. The buying keys (1-9, 0, B and U) can be held down to keep buying; the others
     // only count once per press, so holding M doesn't flick the sound on and off.
 
@@ -1819,8 +2255,8 @@
             catchUp();
             let cheapest = null;
             for (const button of upgradeList.querySelectorAll('[data-upgrade]')) {
-                const cost = UPGRADES[button.dataset.upgrade].cost;
-                if (canAfford(state, cost) && (!cheapest || cost < UPGRADES[cheapest.dataset.upgrade].cost)) cheapest = button;
+                const cost = upgradeCost(state, button.dataset.upgrade);
+                if (canAfford(state, cost) && (!cheapest || cost < upgradeCost(state, cheapest.dataset.upgrade))) cheapest = button;
             }
             cheapest?.click();
         },
@@ -1842,6 +2278,7 @@
         },
         w: () => warpButton.click(), // does nothing while it's disabled
         x: () => crunchButton.click(), // same
+        r: () => ripButton.click(), // same
         m: () => soundButton.click(),
     };
 

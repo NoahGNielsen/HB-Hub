@@ -1,13 +1,15 @@
 <?php
 // Space Ore Miner: the clicker game. Click the asteroid for ore, spend it on buildings and upgrades that mine for you,
-// catch Golden Comets, Warp Jump to a new galaxy for Dark Matter, and Big Crunch the universe for Antimatter. The rules are in
+// catch Golden Comets, Warp Jump to a new galaxy for Dark Matter, Big Crunch the universe for Antimatter and Big Rip
+// the multiverse for Strange Matter, which buys skills in the skill tree. The rules are in
 // assets/php/games/spaceOreMiner/miner.php.
 // The page only has the empty spaces: spaceOreMiner.js loads the save from /games/spaceOreMiner/save on its first save
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
-// It has three views, picked in the menu under the title and the news ticker: Ore (the asteroid and the store, the default), Dark Matter
-// (?view=darkMatter, the Warp Jump) and Antimatter (?view=antimatter, the Big Crunch). They're all on the page, and the
+// It has four views, picked in the menu under the title and the news ticker: Ore (the asteroid and the store, the default), Dark Matter
+// (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch) and Strange Matter
+// (?view=strangeMatter, the Big Rip and the skill tree). They're all on the page, and the
 // script switches between them without loading it again (changing the address, so Back works), so the game keeps
 // running; ?view= only picks the one shown first. Stats, achievements and how to play are popups.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -19,6 +21,7 @@ const MINER_VIEWS = [ // ?view= => [the menu's text, its address]
     'ore' => ['Ore', '/games/spaceOreMiner/'],
     'darkMatter' => ['Dark Matter', '/games/spaceOreMiner/?view=darkMatter'],
     'antimatter' => ['Antimatter', '/games/spaceOreMiner/?view=antimatter'],
+    'strangeMatter' => ['Strange Matter', '/games/spaceOreMiner/?view=strangeMatter'],
 ];
 $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 ?>
@@ -162,10 +165,17 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                             <span data-miner-warp="runOre">0</span> of <span data-miner-warp="target"><?= number_format(HBHUB_MINER_WARP_ORE) ?></span> ore mined this run
                         </p>
                     </div>
-                    <button type="button" class="miner-prestige-btn" data-miner-warp-button disabled>
-                        <span class="miner-prestige-btn-text">Warp Jump</span>
-                        <span class="miner-prestige-btn-gain">+<span data-miner-warp="gain">0</span> Dark Matter</span>
-                    </button>
+                    <div class="miner-prestige-actions">
+                        <button type="button" class="miner-prestige-btn" data-miner-warp-button disabled>
+                            <span class="miner-prestige-btn-text">Warp Jump</span>
+                            <span class="miner-prestige-btn-gain">+<span data-miner-warp="gain">0</span> Dark Matter</span>
+                        </button>
+                        <!-- With the Autopilot skill: Warp Jumps by itself while it's on (autoPrestige() in spaceOreMiner.js) -->
+                        <button type="button" class="miner-amount miner-auto-prestige" aria-pressed="false"
+                                title="Warp Jump by itself whenever a jump would at least double your Dark Matter" data-miner-auto-warp hidden>
+                            Autopilot
+                        </button>
+                    </div>
                     <p class="miner-prestige-hint" data-miner-warp-hint></p>
                 </div>
             </div>
@@ -208,10 +218,17 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                                 <span data-miner-crunch="dark">0</span> of <span data-miner-crunch="target"><?= number_format(HBHUB_MINER_CRUNCH_DARK) ?></span> Dark Matter earned this universe
                             </p>
                         </div>
-                        <button type="button" class="miner-prestige-btn" data-miner-crunch-button disabled>
-                            <span class="miner-prestige-btn-text">Big Crunch</span>
-                            <span class="miner-prestige-btn-gain">+<span data-miner-crunch="gain">0</span> Antimatter</span>
-                        </button>
+                        <div class="miner-prestige-actions">
+                            <button type="button" class="miner-prestige-btn" data-miner-crunch-button disabled>
+                                <span class="miner-prestige-btn-text">Big Crunch</span>
+                                <span class="miner-prestige-btn-gain">+<span data-miner-crunch="gain">0</span> Antimatter</span>
+                            </button>
+                            <!-- With the Auto Crunch skill: Big Crunches by itself while it's on (autoPrestige() in spaceOreMiner.js) -->
+                            <button type="button" class="miner-amount miner-auto-prestige" aria-pressed="false"
+                                    title="Big Crunch by itself whenever a crunch would give at least a quarter of the Antimatter you've earned" data-miner-auto-crunch hidden>
+                                Auto Crunch
+                            </button>
+                        </div>
                         <p class="miner-prestige-hint" data-miner-crunch-hint></p>
                     </div>
                 </div>
@@ -220,14 +237,88 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <p class="casino-hint miner-prestige-about">
                     A Big Crunch collapses the whole universe and starts it over. Your Dark Matter and its upgrades go too, but
                     you get Antimatter for the Dark Matter you earned. Every Antimatter you've earned makes everything mine
-                    <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% faster and Warp Jumps give <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% more Dark
-                    Matter, for good.
+                    <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% faster, and Warp Jumps give more Dark Matter too: the square root of how
+                    much faster it mines (twice the Dark Matter when it's four times as fast), until a Big Rip tears the
+                    multiverse apart.
                 </p>
                 <div class="miner-store-head miner-prestige-store-head">
                     <h3 class="miner-store-title">Antimatter upgrades</h3>
                     <p class="miner-prestige-owned" data-miner-anti-owned></p>
                 </div>
                 <ul class="miner-perks" data-miner-anti-upgrades></ul>
+            </div>
+        </section>
+
+        <!-- Strange Matter: the Big Rip on top, built like the other two, and the skill tree Strange Matter buys under
+             it. Locked until the first Big Crunch. The tree (data-miner-tree) is drawn by spaceOreMiner.js from the
+             skills' places in HBHUB_MINER_SKILLS: a button per skill, with the lines to the skills it needs behind them.
+             Picking one shows it in data-miner-skill-info, with the button that learns it. -->
+        <section class="miner-view casino-card miner-prestige is-strange is-locked" aria-labelledby="miner-rip-title" data-miner-view="strangeMatter" data-miner-rip-view<?= $minerView !== 'strangeMatter' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- A wobbling strangelet with its three quarks flying round it, one on each orbit -->
+                <div class="miner-prestige-art" aria-hidden="true">
+                    <span class="miner-art-ring is-1"><span class="miner-art-quark"></span></span>
+                    <span class="miner-art-ring is-2"><span class="miner-art-quark"></span></span>
+                    <span class="miner-art-ring is-3"><span class="miner-art-quark"></span></span>
+                    <span class="miner-art-core"></span>
+                </div>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-rip-title" class="miner-prestige-title">Big Rip</h2>
+                    <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-strange>0</span> Strange Matter</p>
+                    <p class="miner-locked" data-miner-rip-locked>
+                        <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
+                        Something even stranger than a Big Crunch is out there. Do your first Big Crunch to find out what.
+                    </p>
+                    <div data-miner-rip-section hidden>
+                        <p class="miner-prestige-bonus"><strong data-miner-rip="bonus">+0%</strong> production from the Strange Matter you've earned</p>
+                        <div class="miner-progress">
+                            <div class="miner-progress-bar" role="progressbar" aria-labelledby="miner-rip-progress-label"
+                                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-miner-rip-progress><span class="miner-progress-fill"></span></div>
+                            <p class="miner-progress-label" id="miner-rip-progress-label">
+                                <span data-miner-rip="anti">0</span> of <span data-miner-rip="target"><?= number_format(HBHUB_MINER_RIP_ANTI) ?></span> Antimatter earned this multiverse
+                            </p>
+                        </div>
+                        <button type="button" class="miner-prestige-btn" data-miner-rip-button disabled>
+                            <span class="miner-prestige-btn-text">Big Rip</span>
+                            <span class="miner-prestige-btn-gain">+<span data-miner-rip="gain">0</span> Strange Matter</span>
+                        </button>
+                        <p class="miner-prestige-hint" data-miner-rip-hint></p>
+                    </div>
+                </div>
+            </div>
+            <div data-miner-rip-section hidden>
+                <p class="casino-hint miner-prestige-about">
+                    A Big Rip tears the whole multiverse apart and starts it over. Your Antimatter and its upgrades go too, and
+                    everything a Big Crunch takes, but you get Strange Matter for the Antimatter you earned:
+                    <?= hbHubMinerStrangeTotal(HBHUB_MINER_RIP_ANTI) ?> for <?= number_format(HBHUB_MINER_RIP_ANTI) ?>, and
+                    <?= count(HBHUB_MINER_STRANGE_STEPS) ?> more for every ten times as much. Like a Warp Jump, it only gives
+                    what that's more than all the Strange Matter you've earned before, so each rip has to beat your best
+                    multiverse. Every Strange Matter you've earned
+                    makes everything mine <?= HBHUB_MINER_STRANGE_BONUS * 100 ?>% faster for good, and you spend it on skills in
+                    the tree below, which you keep for good too. A skill can be learned once every skill linked above it is.
+                </p>
+                <div class="miner-store-head miner-prestige-store-head">
+                    <h3 class="miner-store-title">Skill tree</h3>
+                    <p class="miner-prestige-owned" data-miner-skills-owned></p>
+                </div>
+                <div class="miner-tree-layout">
+                    <div class="miner-tree" role="group" aria-label="Skill tree" data-miner-tree></div>
+                    <div class="miner-skill-info" data-miner-skill-info>
+                        <div class="miner-skill-info-head">
+                            <span class="miner-skill-info-icon" data-miner-skill-icon></span>
+                            <div>
+                                <h4 class="miner-skill-info-name" data-miner-skill-name></h4>
+                                <p class="miner-skill-info-branch" data-miner-skill-branch></p>
+                            </div>
+                        </div>
+                        <p class="miner-skill-info-text" data-miner-skill-text></p>
+                        <p class="miner-skill-info-needs" data-miner-skill-needs></p>
+                        <button type="button" class="miner-prestige-btn miner-skill-learn" data-miner-skill-learn>
+                            <span class="miner-prestige-btn-text">Learn</span>
+                            <span class="miner-prestige-btn-gain" data-miner-skill-cost></span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -278,9 +369,15 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     </li>
                     <li>Now and then a Golden Comet flies across the screen. Click it before it's gone for a big pile of ore, or seven times the production for a while.</li>
                     <li>
-                        Later on, the Dark Matter view has the Warp Jump, which starts you over in a new galaxy for Dark Matter, and
-                        the Antimatter view has the Big Crunch, which starts the whole universe over for Antimatter. The game keeps
-                        running whichever view you're on.
+                        Later on, the Dark Matter view has the Warp Jump, which starts you over in a new galaxy for Dark Matter,
+                        the Antimatter view has the Big Crunch, which starts the whole universe over for Antimatter, and the
+                        Strange Matter view has the Big Rip, which starts the whole multiverse over for Strange Matter. The game
+                        keeps running whichever view you're on.
+                    </li>
+                    <li>
+                        Strange Matter is spent in the skill tree, on <?= count(HBHUB_MINER_SKILLS) ?> skills you keep for good. It
+                        grows down from the Strangelet at the top, and a skill can be learned once every skill linked above it is.
+                        Pick one to see what it does and what it costs.
                     </li>
                     <li>
                         With the Auto Buy Dark Matter upgrade, a switch in the store buys for you while the game is open: the
@@ -297,7 +394,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         buy the buildings in the order they're listed (the last ten instead, with Long-Range Hot Keys switched
                         on, which <kbd>K</kbd> does too), <kbd>U</kbd> buys the cheapest upgrade you can afford and <kbd>B</kbd>
                         the building you can afford that gives the most ore per second for its price. <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the
-                        Warp Jump, <kbd>X</kbd> the Big Crunch and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once, but
+                        Warp Jump, <kbd>X</kbd> the Big Crunch, <kbd>R</kbd> the Big Rip and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once, but
                         holding <kbd>1</kbd>-<kbd>9</kbd>, <kbd>0</kbd>, <kbd>U</kbd> or <kbd>B</kbd> keeps buying.
                     </li>
                     <li>Play in one tab at a time: opening the game somewhere else stops it here.</li>
@@ -324,6 +421,15 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             <div class="games-dialog-actions">
                 <button type="button" class="casino-btn" data-miner-crunch-cancel>Not yet</button>
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-crunch-confirm>Big Crunch</button>
+            </div>
+        </dialog>
+
+        <dialog class="games-dialog miner-prestige-dialog is-strange" data-miner-rip-dialog aria-labelledby="miner-rip-dialog-title">
+            <h2 id="miner-rip-dialog-title">Tear the multiverse apart?</h2>
+            <p data-miner-rip-dialog-text></p>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn" data-miner-rip-cancel>Not yet</button>
+                <button type="button" class="casino-btn casino-btn-primary" data-miner-rip-confirm>Big Rip</button>
             </div>
         </dialog>
 
