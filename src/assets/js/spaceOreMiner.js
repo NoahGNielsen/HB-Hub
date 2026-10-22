@@ -1276,11 +1276,12 @@
     }
 
     // ----- The skill tree. Built once from where the skills are ('at': [column, row]): a grid of buttons, one per
-    // skill, over an SVG in the same units (one per cell) with a line from each skill up to each skill it needs. After
-    // that only classes change: on the buttons is-learned, is-open (can be learned now), is-affordable and is-picked
-    // (the one shown next to the tree), and on the lines is-lit (both ends learned) and is-open (only the top one).
+    // skill, over an SVG in the same units (one per cell) with a line from each skill back to each skill it needs. It
+    // grows from left to right. After that only classes change: on the buttons is-learned, is-open (can be learned
+    // now), is-affordable and is-picked (the one shown next to the tree), and on the lines is-lit (both ends learned)
+    // and is-open (only the left one).
 
-    const TREE_COLUMNS = 7;
+    const TREE_ROWS = 7;
     const BRANCH_NAMES = { core: 'Core', industry: 'Industry', hands: 'Hands', sky: 'Sky', cosmos: 'Cosmos' };
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const treeNodes = {}; // skill id => its button
@@ -1288,12 +1289,12 @@
     const skillPanel = root.querySelector('[data-miner-skill-info]');
 
     function buildTree() {
-        const rows = Math.max(...Object.values(SKILLS).map((skill) => skill.at[1])) + 1;
-        tree.style.setProperty('--columns', TREE_COLUMNS);
-        tree.style.setProperty('--rows', rows);
+        const columns = Math.max(...Object.values(SKILLS).map((skill) => skill.at[0])) + 1;
+        tree.style.setProperty('--columns', columns);
+        tree.style.setProperty('--rows', TREE_ROWS);
         const lines = document.createElementNS(SVG_NS, 'svg');
         lines.setAttribute('class', 'miner-tree-lines');
-        lines.setAttribute('viewBox', '0 0 ' + TREE_COLUMNS + ' ' + rows);
+        lines.setAttribute('viewBox', '0 0 ' + columns + ' ' + TREE_ROWS);
         lines.setAttribute('preserveAspectRatio', 'none');
         lines.setAttribute('aria-hidden', 'true');
         for (const [id, skill] of Object.entries(SKILLS)) {
@@ -1337,7 +1338,7 @@
             button.classList.toggle('is-picked', id === pickedSkill);
             button.setAttribute('aria-pressed', String(id === pickedSkill));
             button.setAttribute('aria-label', skill.name + ', ' + (isLearned ? 'learned'
-                : isOpen ? 'can be learned for ' + format(skill.cost) + ' Strange Matter' : 'needs the skills above it first'));
+                : isOpen ? 'can be learned for ' + format(skill.cost) + ' Strange Matter' : 'needs the skills before it first'));
         }
         for (const { line, from, to } of treeLines) {
             line.classList.toggle('is-lit', hasSkill(state, from) && hasSkill(state, to));

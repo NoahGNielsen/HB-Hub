@@ -295,14 +295,17 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     what that's more than all the Strange Matter you've earned before, so each rip has to beat your best
                     multiverse. Every Strange Matter you've earned
                     makes everything mine <?= HBHUB_MINER_STRANGE_BONUS * 100 ?>% faster for good, and you spend it on skills in
-                    the tree below, which you keep for good too. A skill can be learned once every skill linked above it is.
+                    the tree below, which you keep for good too. A skill can be learned once every skill linked to the left of it is.
                 </p>
                 <div class="miner-store-head miner-prestige-store-head">
                     <h3 class="miner-store-title">Skill tree</h3>
                     <p class="miner-prestige-owned" data-miner-skills-owned></p>
                 </div>
                 <div class="miner-tree-layout">
-                    <div class="miner-tree" role="group" aria-label="Skill tree" data-miner-tree></div>
+                    <!-- Scrolls sideways on phones, where the tree would be too small to tap -->
+                    <div class="miner-tree-scroll">
+                        <div class="miner-tree" role="group" aria-label="Skill tree" data-miner-tree></div>
+                    </div>
                     <div class="miner-skill-info" data-miner-skill-info>
                         <div class="miner-skill-info-head">
                             <span class="miner-skill-info-icon" data-miner-skill-icon></span>
@@ -376,7 +379,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     </li>
                     <li>
                         Strange Matter is spent in the skill tree, on <?= count(HBHUB_MINER_SKILLS) ?> skills you keep for good. It
-                        grows down from the Strangelet at the top, and a skill can be learned once every skill linked above it is.
+                        grows to the right from the Strangelet on the left, and a skill can be learned once every skill linked
+                        to the left of it is.
                         Pick one to see what it does and what it costs.
                     </li>
                     <li>

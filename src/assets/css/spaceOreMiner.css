@@ -2285,7 +2285,8 @@
 
 /* The skill tree in the Strange Matter view (renderTree() in spaceOreMiner.js): the tree, and the skill picked in it next
    to it (under it on small screens). The tree is a grid of --columns by --rows square cells, a skill's button in some of
-   them, over an SVG in the same units with the lines between them. Each skill is in its branch's colour (--branch):
+   them, over an SVG in the same units with the lines between them. It grows from left to right, so it's wider than it
+   is tall, and on phones it scrolls sideways (.miner-tree-scroll) instead of shrinking. Each skill is in its branch's colour (--branch):
    dim until it can be learned, outlined once it can, glowing when there's enough Strange Matter for it and filled in
    once it's learned. A line lights up once both its skills are learned. */
 .miner-tree .is-core,
@@ -2315,7 +2316,7 @@
 
 .miner-tree-layout {
   display: grid;
-  grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 760px) minmax(0, 1fr);
   align-items: start;
   gap: 24px;
 }
@@ -2323,14 +2324,14 @@
 .miner-tree {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(var(--columns, 7), minmax(0, 1fr));
-  grid-template-rows: repeat(var(--rows, 10), minmax(0, 1fr));
-  aspect-ratio: var(--columns, 7) / var(--rows, 10);
+  grid-template-columns: repeat(var(--columns, 10), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows, 7), minmax(0, 1fr));
+  aspect-ratio: var(--columns, 10) / var(--rows, 7);
   container-type: inline-size;
   border: 1px solid color-mix(in srgb, var(--view) 25%, transparent);
   border-radius: 16px;
   background:
-    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--view) 14%, transparent), transparent 60%),
+    radial-gradient(ellipse at 0% 50%, color-mix(in srgb, var(--view) 14%, transparent), transparent 60%),
     var(--background);
 }
 
@@ -2372,7 +2373,7 @@
   border-radius: 30%;
   background: var(--secondary);
   color: var(--text);
-  font-size: calc(100cqi / var(--columns, 7) * 0.4);
+  font-size: calc(100cqi / var(--columns, 10) * 0.4);
   cursor: pointer;
   opacity: 0.45;
   filter: grayscale(0.8);
@@ -2777,9 +2778,9 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .miner-tree {
+  .miner-tree-scroll {
     width: 100%;
-    max-width: 560px;
+    max-width: 760px;
     justify-self: center;
   }
 
@@ -2793,6 +2794,15 @@
 @media (max-width: 600px) {
   .casino.miner {
     --miner-gap: 10px;
+  }
+
+  /* The skill tree keeps its skills big enough to tap and scrolls sideways instead */
+  .miner-tree-scroll {
+    overflow-x: auto;
+  }
+
+  .miner-tree {
+    min-width: 480px;
   }
 
   .casino.miner[data-view="ore"] {
