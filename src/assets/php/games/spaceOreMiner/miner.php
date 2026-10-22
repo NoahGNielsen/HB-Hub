@@ -57,15 +57,14 @@ const HBHUB_MINER_DARK_PICKAXE = 3; // clicks mine this many times as much with 
 const HBHUB_MINER_TAB_PATTERN = '/^[0-9a-f]{32}$/';
 
 // What a comet does when it's caught: production or clicks times 'multiplier' for 'ms' (doubled with Tail Collector),
-// or ore right away (lucky: 15% of the ore you have, at most 15 minutes of production, plus 13, doubled with Stardust
-// Trail). Antimatter Comets doubles all of them (the multiplier, or the lucky ore).
+// or ore right away (lucky: 15 minutes of production, plus 13, doubled with Stardust Trail). Antimatter Comets doubles
+// all of them (the multiplier, or the lucky ore). 'frenzy' is shown as Supernova, the key stays so old saves still work.
 const HBHUB_MINER_COMETS = [
-    'frenzy' => ['name' => 'Frenzy', 'buff' => 'production', 'multiplier' => 7, 'ms' => 30000],
+    'frenzy' => ['name' => 'Supernova', 'buff' => 'production', 'multiplier' => 7, 'ms' => 30000],
     'lucky' => ['name' => 'Lucky', 'buff' => null, 'multiplier' => 1, 'ms' => 0],
     'storm' => ['name' => 'Click Storm', 'buff' => 'click', 'multiplier' => 77, 'ms' => 13000],
     'diamond' => ['name' => 'Diamond Rush', 'buff' => 'production', 'multiplier' => 777, 'ms' => 7000],
 ];
-const HBHUB_MINER_LUCKY_SHARE = 0.15;
 const HBHUB_MINER_LUCKY_SECONDS = 900;
 
 // The salts for hbHubMinerRandom(), one per kind of luck
@@ -613,7 +612,6 @@ function hbHubMinerConfig(): array
         'diamondChance' => HBHUB_MINER_DIAMOND_CHANCE,
         'critChance' => HBHUB_MINER_CRIT_CHANCE,
         'critMultiplier' => HBHUB_MINER_CRIT_MULTIPLIER,
-        'luckyShare' => HBHUB_MINER_LUCKY_SHARE,
         'luckySeconds' => HBHUB_MINER_LUCKY_SECONDS,
         'headStart' => HBHUB_MINER_HEAD_START,
         'buildingUpgradeAt' => HBHUB_MINER_BUILDING_UPGRADE_AT,
@@ -1295,7 +1293,7 @@ function hbHubMinerCatchComet(array &$state): ?string
         ];
     } else {
         $production = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
-        hbHubMinerEarn($state, (min($state['ore'] * HBHUB_MINER_LUCKY_SHARE, $production * HBHUB_MINER_LUCKY_SECONDS) + 13)
+        hbHubMinerEarn($state, ($production * HBHUB_MINER_LUCKY_SECONDS + 13)
             * (hbHubMinerHas($state, 'stardust') ? 2 : 1) * hbHubMinerCometPower($state) * hbHubMinerSkillEffects($state)['luckyOre']);
     }
     $state['comets']++;

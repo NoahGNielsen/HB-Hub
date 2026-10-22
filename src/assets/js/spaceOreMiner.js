@@ -322,7 +322,7 @@
             s.buffs[comet.buff] = { kind, multiplier: comet.multiplier * cometPower(s), until: time + cometLength(s, kind) };
         } else {
             const production = sum(Object.values(buildingRates(s))) * buff(s, 'production', time);
-            ore = (Math.min(s.ore * CONFIG.luckyShare, production * CONFIG.luckySeconds) + 13)
+            ore = (production * CONFIG.luckySeconds + 13)
                 * (has(s, 'stardust') ? 2 : 1) * cometPower(s) * skillEffects(s).luckyOre;
             earn(s, ore);
         }
@@ -625,12 +625,12 @@
     const SURFACE = ['pickaxe', 'rig', 'base'];
     // (how long it lasts, the ore a lucky one gave, its multiplier with Antimatter Comets)
     const COMET_TEXT = {
-        frenzy: (ms, ore, times) => 'Frenzy! Everything mines ' + format(times) + ' times as fast for ' + Math.round(ms / 1000) + ' seconds.',
+        frenzy: (ms, ore, times) => 'Supernova! Everything mines ' + format(times) + ' times as fast for ' + Math.round(ms / 1000) + ' seconds.',
         lucky: (ms, ore) => 'Lucky! The comet was full of ore: +' + format(ore) + '.',
         storm: (ms, ore, times) => 'Click Storm! Clicks mine ' + format(times) + ' times as much for ' + Math.round(ms / 1000) + ' seconds.',
         diamond: (ms, ore, times) => 'DIAMOND RUSH! ' + format(times) + ' times the production for ' + Math.round(ms / 1000) + ' seconds!',
     };
-    const BUFF_TEXT = { frenzy: 'Frenzy: production', storm: 'Click Storm: clicks', diamond: 'Diamond Rush: production' };
+    const BUFF_TEXT = { frenzy: 'Supernova: production', storm: 'Click Storm: clicks', diamond: 'Diamond Rush: production' };
 
     let state = null;
     let isPlaying = false;

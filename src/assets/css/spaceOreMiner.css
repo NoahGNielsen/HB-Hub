@@ -361,7 +361,7 @@
   --rock-r: 110px; /* half the asteroid's width */
   --sprite: 1.5rem; /* the size of a building's icon */
   --gap: 18px; /* how far out the drones and lasers are, in steps */
-  --work: 1; /* how fast the miners in the picture work: 3 during a Frenzy or a Diamond Rush */
+  --work: 1; /* how fast the miners in the picture work: 3 during a Supernova or a Diamond Rush */
   position: relative;
   isolation: isolate;
   flex: 1 1 260px;
@@ -1279,7 +1279,7 @@
   to { background-position: 0 46px, 0 38px, 0 0; }
 }
 
-/* A Frenzy or a Diamond Rush: everyone works three times as fast */
+/* A Supernova or a Diamond Rush: everyone works three times as fast */
 .miner-field.is-frenzy {
   --work: 3;
 }
