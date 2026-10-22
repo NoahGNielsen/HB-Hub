@@ -166,7 +166,8 @@
   display: block;
   overflow: hidden;
   container-type: inline-size;
-  border: max(2px, 5cqi) solid #fff;
+  /* Not cqi: on the card itself that would be measured on the nearest container above it (or the screen), not the card */
+  border: max(2px, calc(var(--uno-card-width, 72px) * 0.05)) solid #fff;
   border-radius: 11% / 7.5%;
   background: var(--uno-card);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
