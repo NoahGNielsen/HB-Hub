@@ -2,7 +2,6 @@ smartftp.json
 CLAUDE.md
 config.php
 database/migrations/*
-CLAUDE.md
 # Real site config (has the database password) - copied from config-examples/, never commit it
 /hbHubSiteConfig.php
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,windows,macos,linux
