@@ -43,8 +43,8 @@ const HBHUB_MINER_CRUNCH_DARK = 2000; // Dark Matter to earn in a universe befor
 const HBHUB_MINER_ANTI_UNIT = 100; // Dark Matter for the first Antimatter, see hbHubMinerAntiTotal()
 const HBHUB_MINER_ANTI_BONUS = 0.1; // production per Antimatter earned in this multiverse (and the square root of it to Dark Matter)
 const HBHUB_MINER_RIP_ANTI = 10000; // Antimatter to earn in a multiverse before a Big Rip
-const HBHUB_MINER_STRANGE_UNIT = 1000; // Antimatter for the first Strange Matter, see hbHubMinerStrangeTotal()
-const HBHUB_MINER_STRANGE_STEPS = [1, 1.6, 2.5, 4, 6.3]; // a Strange Matter at each of these times a power of ten (times the unit)
+const HBHUB_MINER_STRANGE_UNIT = 10; // Antimatter for the first Strange Matter, see hbHubMinerStrangeTotal()
+const HBHUB_MINER_STRANGE_ROOT = 3; // Strange Matter is this root of the Antimatter earned in a multiverse (in units)
 const HBHUB_MINER_STRANGE_BONUS = 1; // production per Strange Matter ever earned
 const HBHUB_MINER_LEFTOVER_ORE = 1e7; // ore every run starts with, with Big Bang Leftovers
 const HBHUB_MINER_COMET_WAIT_MS = [60000, 180000]; // between two comets, halved with Comet Radar
@@ -601,7 +601,7 @@ function hbHubMinerConfig(): array
         'antiBonus' => HBHUB_MINER_ANTI_BONUS,
         'ripAnti' => HBHUB_MINER_RIP_ANTI,
         'strangeUnit' => HBHUB_MINER_STRANGE_UNIT,
-        'strangeSteps' => HBHUB_MINER_STRANGE_STEPS,
+        'strangeRoot' => HBHUB_MINER_STRANGE_ROOT,
         'strangeBonus' => HBHUB_MINER_STRANGE_BONUS,
         'leftoverOre' => HBHUB_MINER_LEFTOVER_ORE,
         'darkPickaxe' => HBHUB_MINER_DARK_PICKAXE,
@@ -1208,24 +1208,23 @@ function hbHubMinerCrunchGain(array $state): float
 }
 
 /**
- * The Strange Matter the Antimatter earned in a multiverse is worth: one for every step it's passed, the steps being
- * HBHUB_MINER_STRANGE_UNIT times each of HBHUB_MINER_STRANGE_STEPS times a power of ten (so with 1,000: 1 at 1,000, 2 at
- * 1,600, 3 at 2,500 ... 6 at 10,000, 11 at 100,000). Five more for every ten times as much, as Antimatter runs away
- * once the crunches get going: with a root of it, as Dark Matter and Antimatter have, waiting longer would always
- * pay more than ripping. Only multiplications and comparisons, so the script gets exactly the same.
+ * The Strange Matter the Antimatter earned in a multiverse is worth: the HBHUB_MINER_STRANGE_ROOT root of it in
+ * HBHUB_MINER_STRANGE_UNIT (with the cube root of tens: 10 for 10,000, 100 for 10 million). It used to be five for
+ * every ten times as much, but Antimatter levels off in a multiverse (a Big Crunch gives the square root of the Dark
+ * Matter, which only gets the square root of the Antimatter bonus), so the best multiverse hardly grew and almost
+ * every rip gave 1. A root makes each new best worth a lot more, and can't run away either, as a rip only gives what
+ * beats the best one (hbHubMinerRipGain()). Put right with whole numbers like hbHubMinerDarkTotal(), and held under a
+ * billion so it fits the int it's saved in.
  */
 function hbHubMinerStrangeTotal(float $antimatterEarned): int
 {
-    $total = 0;
-    $decade = (float) HBHUB_MINER_STRANGE_UNIT;
-    while ($decade * 10 <= $antimatterEarned && $decade * 10 < INF) {
-        $decade *= 10;
-        $total += count(HBHUB_MINER_STRANGE_STEPS);
+    $units = min($antimatterEarned / HBHUB_MINER_STRANGE_UNIT, 1e9 ** HBHUB_MINER_STRANGE_ROOT);
+    $total = (int) floor($units ** (1 / HBHUB_MINER_STRANGE_ROOT));
+    if (($total + 1) ** HBHUB_MINER_STRANGE_ROOT <= $units) {
+        $total++;
     }
-    foreach (HBHUB_MINER_STRANGE_STEPS as $step) {
-        if ($decade * $step <= $antimatterEarned) {
-            $total++;
-        }
+    if ($total > 0 && $total ** HBHUB_MINER_STRANGE_ROOT > $units) {
+        $total--;
     }
     return $total;
 }
