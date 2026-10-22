@@ -486,7 +486,7 @@
         nebula: { at: [1], parts: { body: '' } },
         dyson: { at: [1, 1], parts: { body: '' } },
         wormhole: { at: [1], parts: { body: 'wormhole' } },
-        multiverse: { at: [1], parts: { body: '' } },
+        multiverse: { at: [1], parts: { glow: '', edge: '', body: '' } },
     };
     const SURFACE = ['pickaxe', 'rig', 'base'];
     // (how long it lasts, the ore a lucky one gave, its multiplier with Antimatter Comets)

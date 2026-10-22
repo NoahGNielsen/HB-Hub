@@ -1132,29 +1132,67 @@
   animation: miner-spin 60s linear infinite;
 }
 
-/* Multiverse Drill: a rift into the universe next door, shimmering behind the asteroid */
+/* Multiverse Drill: a rift into the universe next door, torn behind the asteroid so its two ends stick out above and
+   below it. Three layers, all the same size: a soft coloured glow around it, the crack's white-hot edge (a jagged
+   --rift shape), and inside it the same shape made narrower, showing the other universe's stars drifting past. The
+   crack slowly opens and closes. */
 .miner-sprite.is-multiverse {
+  --rift: polygon(50% 0%, 60% 12%, 54% 22%, 72% 35%, 62% 50%, 78% 63%, 60% 76%, 66% 88%, 50% 100%,
+    40% 86%, 30% 74%, 42% 62%, 24% 48%, 38% 36%, 28% 24%, 44% 13%);
   left: 50%;
   top: 50%;
-  width: calc(var(--rock-r) * 0.5);
+  width: calc(var(--rock-r) * 0.6);
   height: 100%;
   translate: -50% -50%;
   rotate: 24deg;
   z-index: -1;
 }
 
-.miner-sprite.is-multiverse .miner-sprite-body {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: linear-gradient(var(--miner-anti), var(--miner-dark), #4de3ff, #7cf04a, var(--miner-gold));
-  opacity: 0.45;
-  filter: blur(10px);
-  animation: miner-rift 4s ease-in-out infinite alternate;
+.miner-sprite.is-multiverse > * {
+  position: absolute;
+  inset: 0;
 }
 
-@keyframes miner-rift {
-  to { opacity: 0.75; scale: 1.25 1.05; filter: blur(10px) hue-rotate(120deg); }
+.miner-sprite.is-multiverse .miner-sprite-glow {
+  inset: 2% -30%;
+  border-radius: 50%;
+  background: linear-gradient(var(--miner-anti), var(--miner-dark), #4de3ff, #7cf04a, var(--miner-gold));
+  opacity: 0.35;
+  filter: blur(12px);
+  animation: miner-rift-glow 4s ease-in-out infinite alternate;
+}
+
+.miner-sprite.is-multiverse .miner-sprite-edge {
+  clip-path: var(--rift);
+  background: linear-gradient(var(--miner-anti), #fff 25%, #4de3ff 50%, #fff 75%, var(--miner-dark));
+  animation: miner-rift-edge 4s ease-in-out infinite alternate;
+}
+
+.miner-sprite.is-multiverse .miner-sprite-body {
+  clip-path: var(--rift);
+  scale: 0.5 0.92;
+  background:
+    radial-gradient(circle at 30% 20%, #fff 0 1px, transparent 1.5px) 0 0 / 17px 23px,
+    radial-gradient(circle at 70% 60%, #bfe9ff 0 1px, transparent 1.5px) 0 0 / 29px 19px,
+    radial-gradient(ellipse at 50% 45%, #4a2a8a, #12082a 55%, #05020e);
+  animation: miner-rift-stars 6s linear infinite, miner-rift-open 4s ease-in-out infinite alternate;
+}
+
+@keyframes miner-rift-glow {
+  to { opacity: 0.6; scale: 1.15 1.03; filter: blur(12px) hue-rotate(120deg); }
+}
+
+@keyframes miner-rift-edge {
+  to { scale: 1.12 1.02; filter: brightness(1.3) hue-rotate(60deg); }
+}
+
+@keyframes miner-rift-open {
+  to { scale: 0.62 0.94; }
+}
+
+/* Two tiles' heights down each, so it loops without a jump */
+@keyframes miner-rift-stars {
+  to { background-position: 0 46px, 0 38px, 0 0; }
 }
 
 /* A Frenzy or a Diamond Rush: everyone works three times as fast */
