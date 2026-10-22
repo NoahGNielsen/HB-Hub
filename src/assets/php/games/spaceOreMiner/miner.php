@@ -57,7 +57,7 @@ const HBHUB_MINER_DARK_PICKAXE = 3; // clicks mine this many times as much with 
 const HBHUB_MINER_TAB_PATTERN = '/^[0-9a-f]{32}$/';
 
 // What a comet does when it's caught: production or clicks times 'multiplier' for 'ms' (doubled with Tail Collector),
-// or ore right away (lucky: 15 minutes of production, plus 13, doubled with Stardust Trail). Antimatter Comets doubles
+// or ore right away (lucky: 30 to 90 seconds of production, plus 13, doubled with Stardust Trail). Antimatter Comets doubles
 // all of them (the multiplier, or the lucky ore). 'frenzy' is shown as Supernova, the key stays so old saves still work.
 const HBHUB_MINER_COMETS = [
     'frenzy' => ['name' => 'Supernova', 'buff' => 'production', 'multiplier' => 7, 'ms' => 30000],
@@ -65,13 +65,14 @@ const HBHUB_MINER_COMETS = [
     'storm' => ['name' => 'Click Storm', 'buff' => 'click', 'multiplier' => 77, 'ms' => 13000],
     'diamond' => ['name' => 'Diamond Rush', 'buff' => 'production', 'multiplier' => 777, 'ms' => 7000],
 ];
-const HBHUB_MINER_LUCKY_SECONDS = 900;
+const HBHUB_MINER_LUCKY_SECONDS = [30, 90]; // a lucky comet's ore, in seconds of production (random in between)
 
 // The salts for hbHubMinerRandom(), one per kind of luck
 const HBHUB_MINER_SALT_CRIT = 1;
 const HBHUB_MINER_SALT_COMET_WAIT = 2;
 const HBHUB_MINER_SALT_COMET_KIND = 3;
 const HBHUB_MINER_SALT_DIAMOND = 4;
+const HBHUB_MINER_SALT_LUCKY = 5;
 
 // Every 'icon' below (and in the upgrades after it) is the name of a drawn icon in assets/images/spaceOreMiner/icons.svg.
 // The buildings, cheapest first. 'rate' is ore per second for each one before upgrades, 'upgrades' their six
@@ -1293,7 +1294,9 @@ function hbHubMinerCatchComet(array &$state): ?string
         ];
     } else {
         $production = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
-        hbHubMinerEarn($state, ($production * HBHUB_MINER_LUCKY_SECONDS + 13)
+        [$min, $max] = HBHUB_MINER_LUCKY_SECONDS;
+        $seconds = $min + hbHubMinerRandom($state['seed'], $state['comet']['n'], HBHUB_MINER_SALT_LUCKY) * ($max - $min);
+        hbHubMinerEarn($state, ($production * $seconds + 13)
             * (hbHubMinerHas($state, 'stardust') ? 2 : 1) * hbHubMinerCometPower($state) * hbHubMinerSkillEffects($state)['luckyOre']);
     }
     $state['comets']++;

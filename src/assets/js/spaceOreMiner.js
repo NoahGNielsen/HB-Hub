@@ -33,6 +33,7 @@
     const SALT_COMET_WAIT = 2;
     const SALT_COMET_KIND = 3;
     const SALT_DIAMOND = 4;
+    const SALT_LUCKY = 5;
 
     // ----- The game: the same as miner.php. s is the save (hbHubMinerNewState() there has its shape).
 
@@ -322,7 +323,9 @@
             s.buffs[comet.buff] = { kind, multiplier: comet.multiplier * cometPower(s), until: time + cometLength(s, kind) };
         } else {
             const production = sum(Object.values(buildingRates(s))) * buff(s, 'production', time);
-            ore = (production * CONFIG.luckySeconds + 13)
+            const [min, max] = CONFIG.luckySeconds;
+            const seconds = min + random(s.seed, s.comet.n, SALT_LUCKY) * (max - min);
+            ore = (production * seconds + 13)
                 * (has(s, 'stardust') ? 2 : 1) * cometPower(s) * skillEffects(s).luckyOre;
             earn(s, ore);
         }
