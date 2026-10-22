@@ -256,14 +256,26 @@
         return s.darkEarned >= CONFIG.crunchDark * effects.crunchDark ? Math.floor(antiTotal(s.darkEarned) * effects.antiGain) : 0;
     }
 
-    // The strangeRoot root of the Antimatter earned in this multiverse, in strangeUnits, held under a billion
-    // (hbHubMinerStrangeTotal())
+    // One for every step the Antimatter earned in this multiverse has passed: strangeUnit times each of strangeSteps
+    // times a power of ten (hbHubMinerStrangeTotal()). nextStrange() is how much it takes for the next one.
     function strangeTotal(antimatterEarned) {
-        const units = Math.min(antimatterEarned / CONFIG.strangeUnit, 1e9 ** CONFIG.strangeRoot);
-        let total = Math.floor(units ** (1 / CONFIG.strangeRoot));
-        if ((total + 1) ** CONFIG.strangeRoot <= units) total++;
-        if (total > 0 && total ** CONFIG.strangeRoot > units) total--;
+        let total = 0;
+        let decade = CONFIG.strangeUnit;
+        while (decade * 10 <= antimatterEarned && decade * 10 < Infinity) {
+            decade *= 10;
+            total += CONFIG.strangeSteps.length;
+        }
+        for (const step of CONFIG.strangeSteps) {
+            if (decade * step <= antimatterEarned) total++;
+        }
         return total;
+    }
+
+    function nextStrange(antimatterEarned) {
+        let decade = CONFIG.strangeUnit;
+        while (decade * 10 <= antimatterEarned && decade * 10 < Infinity) decade *= 10;
+        const step = CONFIG.strangeSteps.find((at) => decade * at > antimatterEarned);
+        return step === undefined ? decade * 10 : decade * step;
     }
 
     function ripGain(s) {
@@ -276,14 +288,13 @@
     function nextRip(s) {
         const effects = skillEffects(s);
         const now = ripGain(s);
-        // The smallest total that gives more, then the Antimatter where strangeTotal() reaches it (nudged up when
-        // the multiplication lands a hair under)
-        let total = Math.ceil((s.strangeEarned + now + 1) / effects.strangeGain);
-        while (Math.floor(total * effects.strangeGain) - s.strangeEarned <= now) total++;
-        if (total >= 1e9) return null;
-        let at = Math.max(total ** CONFIG.strangeRoot * CONFIG.strangeUnit, CONFIG.ripAnti);
-        while (strangeTotal(at) < total) at *= 1 + 2 ** -52;
-        return { at, gain: Math.floor(strangeTotal(at) * effects.strangeGain) - s.strangeEarned };
+        let at = Math.max(s.antimatterEarned, CONFIG.ripAnti);
+        for (let step = 0; step < 10000 && at < Infinity; step++) {
+            const gain = Math.max(0, Math.floor(strangeTotal(at) * effects.strangeGain) - s.strangeEarned);
+            if (gain > now) return { at, gain };
+            at = nextStrange(at);
+        }
+        return null;
     }
 
     // auto: they look like an auto-clicker's (looksAuto()), so each only mines autoValue. Returns the ore mined and how

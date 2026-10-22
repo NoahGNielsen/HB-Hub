@@ -43,8 +43,8 @@ const HBHUB_MINER_CRUNCH_DARK = 2000; // Dark Matter to earn in a universe befor
 const HBHUB_MINER_ANTI_UNIT = 100; // Dark Matter for the first Antimatter, see hbHubMinerAntiTotal()
 const HBHUB_MINER_ANTI_BONUS = 0.1; // production per Antimatter earned in this multiverse (and the square root of it to Dark Matter)
 const HBHUB_MINER_RIP_ANTI = 10000; // Antimatter to earn in a multiverse before a Big Rip
-const HBHUB_MINER_STRANGE_UNIT = 10; // Antimatter for the first Strange Matter, see hbHubMinerStrangeTotal()
-const HBHUB_MINER_STRANGE_ROOT = 3; // Strange Matter is this root of the Antimatter earned in a multiverse (in units)
+const HBHUB_MINER_STRANGE_UNIT = 1000; // Antimatter for the first Strange Matter, see hbHubMinerStrangeTotal()
+const HBHUB_MINER_STRANGE_STEPS = [1, 1.12, 1.25, 1.4, 1.6, 1.8, 2, 2.24, 2.5, 2.8, 3.15, 3.55, 4, 4.5, 5, 5.6, 6.3, 7.1, 8, 9]; // a Strange Matter at each of these times a power of ten (times the unit), 20 for every ten times as much
 const HBHUB_MINER_STRANGE_BONUS = 1; // production per Strange Matter ever earned
 const HBHUB_MINER_LEFTOVER_ORE = 1e7; // ore every run starts with, with Big Bang Leftovers
 const HBHUB_MINER_COMET_WAIT_MS = [60000, 180000]; // between two comets, halved with Comet Radar
@@ -604,7 +604,7 @@ function hbHubMinerConfig(): array
         'antiBonus' => HBHUB_MINER_ANTI_BONUS,
         'ripAnti' => HBHUB_MINER_RIP_ANTI,
         'strangeUnit' => HBHUB_MINER_STRANGE_UNIT,
-        'strangeRoot' => HBHUB_MINER_STRANGE_ROOT,
+        'strangeSteps' => HBHUB_MINER_STRANGE_STEPS,
         'strangeBonus' => HBHUB_MINER_STRANGE_BONUS,
         'leftoverOre' => HBHUB_MINER_LEFTOVER_ORE,
         'darkPickaxe' => HBHUB_MINER_DARK_PICKAXE,
@@ -1210,23 +1210,26 @@ function hbHubMinerCrunchGain(array $state): float
 }
 
 /**
- * The Strange Matter the Antimatter earned in a multiverse is worth: the HBHUB_MINER_STRANGE_ROOT root of it in
- * HBHUB_MINER_STRANGE_UNIT (with the cube root of tens: 10 for 10,000, 100 for 10 million). It used to be five for
- * every ten times as much, but Antimatter levels off in a multiverse (a Big Crunch gives the square root of the Dark
- * Matter, which only gets the square root of the Antimatter bonus), so the best multiverse hardly grew and almost
- * every rip gave 1. A root makes each new best worth a lot more, and can't run away either, as a rip only gives what
- * beats the best one (hbHubMinerRipGain()). Put right with whole numbers like hbHubMinerDarkTotal(), and held under a
- * billion so it fits the int it's saved in.
+ * The Strange Matter the Antimatter earned in a multiverse is worth: one for every step it's passed, the steps being
+ * HBHUB_MINER_STRANGE_UNIT times each of HBHUB_MINER_STRANGE_STEPS times a power of ten (so with 1,000 and 20 steps: 1
+ * at 1,000, 21 at 10,000, 41 at 100,000). It has to grow this slowly: for a while it was a cube root, but once the
+ * cheap skills were learned, the Strange Matter bonus and the skills lifted the Antimatter a multiverse reaches from
+ * about 10^9 to 10^29, and the whole tree was learned within an hour of the first rip, with billions of Strange Matter
+ * after it (which can't be taken back). With steps it's at most 20 for every ten times as much. Only multiplications
+ * and comparisons, so the script gets exactly the same.
  */
 function hbHubMinerStrangeTotal(float $antimatterEarned): int
 {
-    $units = min($antimatterEarned / HBHUB_MINER_STRANGE_UNIT, 1e9 ** HBHUB_MINER_STRANGE_ROOT);
-    $total = (int) floor($units ** (1 / HBHUB_MINER_STRANGE_ROOT));
-    if (($total + 1) ** HBHUB_MINER_STRANGE_ROOT <= $units) {
-        $total++;
+    $total = 0;
+    $decade = (float) HBHUB_MINER_STRANGE_UNIT;
+    while ($decade * 10 <= $antimatterEarned && $decade * 10 < INF) {
+        $decade *= 10;
+        $total += count(HBHUB_MINER_STRANGE_STEPS);
     }
-    if ($total > 0 && $total ** HBHUB_MINER_STRANGE_ROOT > $units) {
-        $total--;
+    foreach (HBHUB_MINER_STRANGE_STEPS as $step) {
+        if ($decade * $step <= $antimatterEarned) {
+            $total++;
+        }
     }
     return $total;
 }

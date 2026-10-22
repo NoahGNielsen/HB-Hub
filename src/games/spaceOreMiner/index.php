@@ -290,8 +290,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <p class="casino-hint miner-prestige-about">
                     A Big Rip tears the whole multiverse apart and starts it over. Your Antimatter and its upgrades go too, and
                     everything a Big Crunch takes, but you get Strange Matter for the Antimatter you earned:
-                    <?= hbHubMinerStrangeTotal(HBHUB_MINER_RIP_ANTI) ?> for <?= number_format(HBHUB_MINER_RIP_ANTI) ?>,
-                    <?= number_format(hbHubMinerStrangeTotal(HBHUB_MINER_RIP_ANTI * 1000)) ?> for <?= number_format(HBHUB_MINER_RIP_ANTI * 1000) ?>. Like a Warp Jump, it only gives
+                    <?= hbHubMinerStrangeTotal(HBHUB_MINER_RIP_ANTI) ?> for <?= number_format(HBHUB_MINER_RIP_ANTI) ?>, and
+                    <?= count(HBHUB_MINER_STRANGE_STEPS) ?> more for every ten times as much. Like a Warp Jump, it only gives
                     what that's more than all the Strange Matter you've earned before, so each rip has to beat your best
                     multiverse. Every Strange Matter you've earned
                     makes everything mine <?= HBHUB_MINER_STRANGE_BONUS * 100 ?>% faster for good, and you spend it on skills in
