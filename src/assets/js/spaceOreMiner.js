@@ -466,7 +466,8 @@
     // each number in 'at' that's owned. The ones in SURFACE stand on the asteroid (data-miner-surface, inside it), the rest
     // are around it (data-miner-scene). parts are its pieces, each a span with the class miner-sprite-<part> and one of
     // the drawn icons (see iconBox(); the same as in the store, or a scene* piece of one) or nothing (drawn in CSS: the
-    // laser beam, the rocks the Moon Excavator dumps, the Black Hole Siphon's pull and the ore going up it, and the nebula,
+    // laser beam, the rocks the Moon Excavator dumps, the Black Hole Siphon's pull and the ore going up it, the Star
+    // Forge's shockwave and the little stars it makes, and the nebula,
     // Dyson Swarm and multiverse rift, which fill the space around the asteroid). Where the nth
     // one goes and how it moves is in spaceOreMiner.css (.miner-sprite.is-<building>.is-<n>; the Ore Freighters' ways are
     // picked by flyFreighter()). The Dyson Swarm's ring is
@@ -482,7 +483,7 @@
         excavator: { at: [1], parts: { body: 'sceneMoon', arm: 'sceneExcavatorArm', rocks: '' } },
         cracker: { at: [1], parts: { body: 'sceneCrackerCore', left: 'sceneCrackerLeft', right: 'sceneCrackerRight', wedge: 'sceneCrackerWedge', sparks: 'sceneCrackerSparks' } },
         siphon: { at: [1], parts: { pull: '', body: 'sceneBlackHole', nozzle: 'sceneSiphon', ore: '' } },
-        forge: { at: [1], parts: { body: 'starForge', tool: 'sceneHammer' } },
+        forge: { at: [1], parts: { star: 'sceneForgeStar', body: 'sceneForgeAnvil', ring: '', made: '', hammer: 'sceneForgeHammer', sparks: 'sceneForgeSparks' } },
         nebula: { at: [1], parts: { body: '' } },
         dyson: { at: [1, 1], parts: { body: '' } },
         wormhole: { at: [1], parts: { body: 'wormhole' } },

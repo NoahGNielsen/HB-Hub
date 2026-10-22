@@ -576,8 +576,7 @@
   scale: -1 1;
 }
 
-/* The pickaxe, with the end of its handle in his hand (the orange dot in sceneMiner, drawn over it). The Star Forge's
-   hammer is drawn the same way, so it turns on the same spot. */
+/* The pickaxe, with the end of its handle in his hand (the orange dot in sceneMiner, drawn over it) */
 .miner-sprite-tool {
   position: absolute;
   left: 45%;
@@ -845,15 +844,15 @@
   to { rotate: 10deg; translate: 0 0.08em; }
 }
 
-/* The Moon Excavator, Planet Cracker and Black Hole Siphon are drawn in pieces, all the same size and on top of each
-   other in the order they're in SCENE: the body sizes the sprite, the rest lie over it. In % of the sprite (or of a
-   piece) is in the 32 by 32 of the icons, so 50% 25% is (16, 8) there. */
-.miner-sprite:is(.is-excavator, .is-cracker, .is-siphon) > * {
+/* The Moon Excavator, Planet Cracker, Black Hole Siphon and Star Forge are drawn in pieces, all the same size and on top
+   of each other in the order they're in SCENE: the body sizes the sprite, the rest lie over it. In % of the sprite (or
+   of a piece) is in the 32 by 32 of the icons, so 50% 25% is (16, 8) there. */
+.miner-sprite:is(.is-excavator, .is-cracker, .is-siphon, .is-forge) > * {
   position: absolute;
   inset: 0;
 }
 
-.miner-sprite:is(.is-excavator, .is-cracker, .is-siphon) > .miner-sprite-body {
+.miner-sprite:is(.is-excavator, .is-cracker, .is-siphon, .is-forge) > .miner-sprite-body {
   position: relative;
 }
 
@@ -910,33 +909,102 @@
   100% { opacity: 0; translate: 0 0; }
 }
 
-/* Star Forge: a star on an anvil, flaring up every time the hammer hits it */
+/* Star Forge: a little sun on an anvil. The hammer is lifted slowly, held up for a moment and slammed down on it (at
+   70% of --cycle): the star squashes flat and springs back, flares up, a shockwave ring goes out from it and sparks fly
+   off. Every fourth hit a freshly made star (.miner-sprite-made) pops off the top and twinkles away into space. */
 .miner-sprite.is-forge {
-  left: 7%;
+  left: 8%;
   top: 50%;
+  font-size: calc(var(--sprite) * 2);
+  --cycle: calc(1.4s / var(--work));
 }
 
-.miner-sprite.is-forge .miner-sprite-body {
-  font-size: 1.7em;
-  animation: miner-flare calc(1.2s / var(--work)) ease-out infinite;
+.miner-sprite.is-forge .miner-sprite-star {
+  transform-origin: 46.88% 60.94%; /* the bottom of the star, where it sits on the anvil */
+  animation: miner-forge-squash var(--cycle) ease-out infinite;
 }
 
-.miner-sprite.is-forge .miner-sprite-tool {
-  left: 86%;
-  bottom: 52%;
-  font-size: 0.9em;
-  scale: -1 1; /* its head on the left, over the star */
-  animation: miner-hammer calc(1.2s / var(--work)) ease-in infinite;
+.miner-sprite.is-forge .miner-sprite-hammer {
+  transform-origin: 95.31% 18.75%; /* the end of the handle */
+  animation: miner-forge-hammer var(--cycle) ease-in-out infinite;
 }
 
-@keyframes miner-flare {
-  0%, 66%, 100% { filter: drop-shadow(0 0 2px rgba(255, 190, 80, 0.4)); }
-  72% { filter: drop-shadow(0 0 10px rgba(255, 190, 80, 0.95)); }
+.miner-sprite.is-forge .miner-sprite-sparks {
+  transform-origin: 46.88% 29.69%; /* where the hammer hits */
+  opacity: 0;
+  animation: miner-forge-sparks var(--cycle) ease-out infinite;
 }
 
-@keyframes miner-hammer {
-  0%, 55%, 100% { rotate: 40deg; }
-  70% { rotate: -25deg; }
+/* Around the middle of the star, as big as it */
+.miner-sprite.is-forge .miner-sprite-ring {
+  inset: auto;
+  left: 46.88%;
+  top: 45.31%;
+  width: 0.32em;
+  height: 0.32em;
+  margin: -0.16em 0 0 -0.16em;
+  border: 0.02em solid #ffd95e;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #ff8a3d;
+  opacity: 0;
+  animation: miner-forge-ring var(--cycle) ease-out infinite;
+}
+
+/* The glow is on the piece and the star's shape on ::before, as a clip-path would cut the glow off */
+.miner-sprite.is-forge .miner-sprite-made {
+  inset: auto;
+  left: 46.88%;
+  top: 30%;
+  width: 0.14em;
+  height: 0.14em;
+  margin: -0.07em 0 0 -0.07em;
+  filter: drop-shadow(0 0 3px #ffd95e);
+  opacity: 0;
+  animation: miner-forge-made calc(var(--cycle) * 4) ease-out infinite;
+}
+
+.miner-sprite-made::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #fff6cf;
+  clip-path: polygon(50% 0%, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0% 50%, 38% 38%);
+}
+
+@keyframes miner-forge-hammer {
+  0% { rotate: 4deg; }
+  45% { rotate: 34deg; } /* up */
+  58% { rotate: 36deg; animation-timing-function: ease-in; }
+  70% { rotate: -6deg; } /* on the star, pressing it flat */
+  76% { rotate: 7deg; } /* bouncing off it */
+  84%, 100% { rotate: 4deg; }
+}
+
+@keyframes miner-forge-squash {
+  0%, 69%, 100% { scale: 1; filter: drop-shadow(0 0 2px rgba(255, 190, 80, 0.5)); }
+  70% { scale: 1.2 0.78; filter: drop-shadow(0 0 10px rgba(255, 190, 80, 1)); }
+  78% { scale: 0.94 1.07; }
+  88% { scale: 1; }
+}
+
+@keyframes miner-forge-sparks {
+  0%, 69% { opacity: 0; scale: 0.5; }
+  71% { opacity: 1; scale: 1; }
+  88%, 100% { opacity: 0; scale: 1.5; }
+}
+
+@keyframes miner-forge-ring {
+  0%, 69% { opacity: 0; scale: 0.9; }
+  71% { opacity: 0.9; scale: 1; }
+  92%, 100% { opacity: 0; scale: 2.4; }
+}
+
+/* Over four hits: off with the first one (at 70% of the first, so 17.5%), up and away to the top left */
+@keyframes miner-forge-made {
+  0%, 17% { opacity: 0; translate: 0 0; scale: 0.3; rotate: 0deg; }
+  20% { opacity: 1; scale: 1.2; }
+  50% { opacity: 1; translate: -0.32em -0.55em; scale: 0.8; rotate: 180deg; }
+  62%, 100% { opacity: 0; translate: -0.4em -0.68em; scale: 0.4; rotate: 240deg; }
 }
 
 /* Planet Cracker: the wedge pulls back and slams into the crack, the planet's halves swing open from the bottom (where
