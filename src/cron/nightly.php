@@ -34,6 +34,7 @@ require_once __DIR__ . '/../assets/php/casino/blackjack/room.php';
 require_once __DIR__ . '/../assets/php/casino/baccarat/room.php';
 require_once __DIR__ . '/../assets/php/games/chess/room.php';
 require_once __DIR__ . '/../assets/php/games/matador/room.php';
+require_once __DIR__ . '/../assets/php/games/uno/room.php';
 require_once __DIR__ . '/../assets/php/adminLog.php';
 
 const HBHUB_CRON_ATTACHMENT_ROUNDS = 1000; // the most sweeps of 50 attachments in one night, in case something keeps finding more
@@ -77,6 +78,7 @@ hbHubCronRun('Game rooms', static function () use ($db): string {
     hbHubBaccaratSweep($db);
     hbHubChessSweep($db);
     hbHubMatadorSweep($db);
+    hbHubUnoSweep($db);
     return 'tidied';
 });
 

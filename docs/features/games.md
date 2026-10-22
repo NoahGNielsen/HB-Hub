@@ -18,6 +18,17 @@
 | **Chess** | Two-player chess with every rule: castling, en passant, promotion (only to a piece your opponent has taken from you; until then a pawn waits on the last rank, and the choice pops up the moment one is taken), and draws by stalemate, repetition, the 50-move rule and too few pieces. Public, code or invite-only games, with or without a clock (3+2 up to 30 minutes), set in the game's settings. The host starts the game once someone has joined |
 | **Chess extras** | Draw offers, resigning, aborting before both have moved, claiming the win when your opponent has gone, the host pausing the game (and the clocks), rematches with swapped colours, arrows and highlighted squares drawn with the right mouse button (like chess.com), an in-game chat and a leaderboard |
 
+## UNO
+
+| | |
+|---|---|
+| **UNO** | The card game for 2-6 players, with the full 108-card deck: numbers, Skip, Reverse, Draw Two, Wild and Wild Draw Four (which can be played at any time). Public, code or invite-only games. The host starts the game once someone has joined, and a new one when it's over; new players can join between games |
+| **Calling UNO** | Press UNO! when you play your second-to-last card. Forget, and anyone can catch you before the next player moves: you draw 2 |
+| **Settings** | The host picks the time for a turn (15, 30 or 60 seconds), stacking (answer a Draw Two with a Draw Two, or a Wild Draw Four with a Wild Draw Four, to pass them all on) and drawing until you can play, in the game's settings |
+| **Turn timer** | Run out of time and you draw a card (or the cards waiting for you), and your turn is over. The host can pause the game |
+| **Leaving** | Leaving a game being played (or having it closed for 60 seconds) takes you out of it and counts as a loss. Your cards go back into the deck, and the last player left in wins |
+| **Extras** | Official scoring (the winner scores the cards left in everyone else's hands), a log of what happened, an in-game chat with @mentions, a sound when it's your turn, and a leaderboard with wins, win %, points and best win |
+
 ## Wordle
 
 | | |

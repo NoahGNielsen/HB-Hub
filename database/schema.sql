@@ -709,6 +709,84 @@ CREATE TABLE `HBHub-Sessions` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-UnoChat`
+--
+
+CREATE TABLE `HBHub-UnoChat` (
+  `chatMessageId` int UNSIGNED NOT NULL,
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who wrote it',
+  `chatText` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `chatTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-UnoInvites`
+--
+
+CREATE TABLE `HBHub-UnoInvites` (
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who is invited',
+  `invitedByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The host who invited them, NULL once that account is gone',
+  `inviteTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-UnoResults`
+--
+
+CREATE TABLE `HBHub-UnoResults` (
+  `resultId` bigint UNSIGNED NOT NULL,
+  `roomId` int UNSIGNED DEFAULT NULL COMMENT 'The room it was played in, NULL once the room is gone',
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT 'The room''s type then: 1 Public, 2 Invite-only, 3 Code',
+  `userId` int UNSIGNED NOT NULL,
+  `playerResult` tinyint UNSIGNED NOT NULL COMMENT '0 Lost\r\n1 Won\r\n2 Left the game before it was over (counts as a loss)',
+  `playerPoints` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'What the winner scored: the value of the cards left in everyone else''s hands. 0 for everyone else',
+  `playerCardsLeft` tinyint UNSIGNED NOT NULL COMMENT 'The cards left in their hand when the game ended (0 for the winner and for players who left)',
+  `gamePlayers` tinyint UNSIGNED NOT NULL COMMENT 'How many were dealt in (2-6)',
+  `gameTurns` int UNSIGNED NOT NULL COMMENT 'Cards played in the game',
+  `resultTimestamp` datetime NOT NULL COMMENT 'UTC, when the game ended'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-UnoRooms`
+--
+
+CREATE TABLE `HBHub-UnoRooms` (
+  `roomId` int UNSIGNED NOT NULL,
+  `roomName` varchar(48) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT '1 Public (listed in the lobby)\r\n2 Invite-only (only invited users can join, also with the code)\r\n3 Code (anyone with the code can join)',
+  `roomCode` char(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Join code: capital letters and digits, without 0 O 1 I L',
+  `roomHostUserId` int UNSIGNED DEFAULT NULL,
+  `roomPhase` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Waiting for players\r\n2 Being played\r\n3 Over, the players still there (the same as in roomState)',
+  `roomRevision` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Goes up on every change, so the game can tell when nothing changed since it last asked',
+  `roomState` json NOT NULL COMMENT 'The game (src/assets/php/games/uno/game.php). Never sent to players as it is, as it has everyone''s cards and the order of the deck',
+  `roomCreatedTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-UnoSeats`
+--
+
+CREATE TABLE `HBHub-UnoSeats` (
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `seatNumber` tinyint UNSIGNED NOT NULL COMMENT '1-6, the player''s seat in roomState (the order of play)',
+  `seatJoinedTimestamp` datetime NOT NULL COMMENT 'UTC',
+  `seatLastSeenTimestamp` datetime NOT NULL COMMENT 'UTC, kept up to date while the game is open, to tell who is away'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Users`
 --
 
@@ -1072,6 +1150,48 @@ ALTER TABLE `HBHub-Sessions`
   ADD KEY `userId` (`userId`);
 
 --
+-- Indexes for table `HBHub-UnoChat`
+--
+ALTER TABLE `HBHub-UnoChat`
+  ADD PRIMARY KEY (`chatMessageId`),
+  ADD KEY `roomMessage` (`roomId`,`chatMessageId`),
+  ADD KEY `userTime` (`userId`,`chatTimestamp`);
+
+--
+-- Indexes for table `HBHub-UnoInvites`
+--
+ALTER TABLE `HBHub-UnoInvites`
+  ADD PRIMARY KEY (`roomId`,`userId`),
+  ADD KEY `userId` (`userId`),
+  ADD KEY `fk_unoinvites_by` (`invitedByUserId`);
+
+--
+-- Indexes for table `HBHub-UnoResults`
+--
+ALTER TABLE `HBHub-UnoResults`
+  ADD PRIMARY KEY (`resultId`),
+  ADD KEY `userResult` (`userId`,`playerResult`),
+  ADD KEY `resultTimestamp` (`resultTimestamp`),
+  ADD KEY `fk_unoresults_room` (`roomId`);
+
+--
+-- Indexes for table `HBHub-UnoRooms`
+--
+ALTER TABLE `HBHub-UnoRooms`
+  ADD PRIMARY KEY (`roomId`),
+  ADD UNIQUE KEY `roomCode` (`roomCode`),
+  ADD KEY `typePhase` (`roomType`,`roomPhase`),
+  ADD KEY `fk_unorooms_host` (`roomHostUserId`);
+
+--
+-- Indexes for table `HBHub-UnoSeats`
+--
+ALTER TABLE `HBHub-UnoSeats`
+  ADD PRIMARY KEY (`roomId`,`seatNumber`),
+  ADD UNIQUE KEY `userId` (`userId`) COMMENT 'One UNO game at a time',
+  ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
+
+--
 -- Indexes for table `HBHub-Users`
 --
 ALTER TABLE `HBHub-Users`
@@ -1220,6 +1340,24 @@ ALTER TABLE `HBHub-Notifications`
 --
 ALTER TABLE `HBHub-RouletteSpins`
   MODIFY `spinId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-UnoChat`
+--
+ALTER TABLE `HBHub-UnoChat`
+  MODIFY `chatMessageId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-UnoResults`
+--
+ALTER TABLE `HBHub-UnoResults`
+  MODIFY `resultId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-UnoRooms`
+--
+ALTER TABLE `HBHub-UnoRooms`
+  MODIFY `roomId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `HBHub-Users`
@@ -1487,6 +1625,41 @@ ALTER TABLE `HBHub-RouletteSpins`
 --
 ALTER TABLE `HBHub-Sessions`
   ADD CONSTRAINT `fk_sessions_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-UnoChat`
+--
+ALTER TABLE `HBHub-UnoChat`
+  ADD CONSTRAINT `fk_unochat_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-UnoRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_unochat_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-UnoInvites`
+--
+ALTER TABLE `HBHub-UnoInvites`
+  ADD CONSTRAINT `fk_unoinvites_by` FOREIGN KEY (`invitedByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_unoinvites_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-UnoRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_unoinvites_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-UnoResults`
+--
+ALTER TABLE `HBHub-UnoResults`
+  ADD CONSTRAINT `fk_unoresults_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-UnoRooms` (`roomId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_unoresults_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-UnoRooms`
+--
+ALTER TABLE `HBHub-UnoRooms`
+  ADD CONSTRAINT `fk_unorooms_host` FOREIGN KEY (`roomHostUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-UnoSeats`
+--
+ALTER TABLE `HBHub-UnoSeats`
+  ADD CONSTRAINT `fk_unoseats_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-UnoRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_unoseats_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Users`

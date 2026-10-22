@@ -1,0 +1,1080 @@
+/* An UNO game (games/uno/game.php, drawn by unoGame.js). Loaded after casino.css and games.css.
+   The cards are drawn here, without pictures: a .uno-card has data-colour (r, y, g, b, or w for the wild cards) and
+   three spans with what's on it, a big one in a white oval in the middle and two small ones in the corners. The card's
+   own width sizes everything on it (cqi: a hundredth of it). The backs (.is-back) are just the card with UNO on it. */
+
+.uno {
+  --uno-red: #e5322d;
+  --uno-yellow: #f2b705;
+  --uno-green: #2f9e44;
+  --uno-blue: #1c6dd0;
+  --uno-black: #1b1b1b;
+  --uno-gold: #f2b705;
+  --uno-warning: #e5484d;
+  --uno-ok: #30a46c;
+  max-width: 1400px;
+  margin: 24px auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.uno [hidden] {
+  display: none !important;
+}
+
+/* The game's name with the code and buttons under it, above the panels on the right */
+.uno-header {
+  grid-area: header;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.uno-heading {
+  min-width: 0;
+}
+
+.uno-title {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.uno-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.uno-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Invite, Settings, Pause, Sound and Leave game: icons, with their names in title and aria-label */
+.uno-icon-btn {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uno-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The sound and pause buttons show the icon for how it is now (aria-pressed, set by unoGame.js) */
+.uno-icon-btn[aria-pressed="true"] .uno-icon-sound-off,
+.uno-icon-btn[aria-pressed="false"] .uno-icon-sound-on,
+.uno-icon-btn[aria-pressed="true"] .uno-icon-pause,
+.uno-icon-btn[aria-pressed="false"] .uno-icon-resume {
+  display: none;
+}
+
+/* The join code: a click copies it */
+.uno-code {
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 2px dashed color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.uno-code:hover {
+  border-color: var(--accent);
+}
+
+.uno-code:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.uno-code-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.uno-code-value {
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+}
+
+.uno-code-copied {
+  color: var(--uno-ok);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.uno-code-copied:empty {
+  display: none;
+}
+
+/* The table on the left (the players, the piles and the player's cards), with everything else in a column on the
+   right. The second row takes any height the table has over the header, so the panels sit right under it. */
+.uno-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 900px) 340px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "play header"
+    "play side";
+  justify-content: center;
+  align-items: start;
+  gap: 16px 24px;
+}
+
+.uno-play {
+  grid-area: play;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ----- A card */
+
+.uno-card {
+  --uno-card: var(--uno-black);
+  position: relative;
+  width: var(--uno-card-width, 72px);
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  box-sizing: border-box;
+  flex: none;
+  display: block;
+  overflow: hidden;
+  container-type: inline-size;
+  border: max(2px, 5cqi) solid #fff;
+  border-radius: 11% / 7.5%;
+  background: var(--uno-card);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-family: "Arial Black", "Segoe UI", system-ui, sans-serif;
+  font-weight: 900;
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.uno-card[data-colour="r"] { --uno-card: var(--uno-red); }
+.uno-card[data-colour="y"] { --uno-card: var(--uno-yellow); }
+.uno-card[data-colour="g"] { --uno-card: var(--uno-green); }
+.uno-card[data-colour="b"] { --uno-card: var(--uno-blue); }
+
+/* The white oval, tilted. On a wild card it's in the four colours. */
+.uno-card::before {
+  content: "";
+  position: absolute;
+  inset: 16% 4%;
+  border-radius: 50%;
+  background: #fff;
+  transform: rotate(-32deg) scaleY(0.9);
+}
+
+.uno-card.is-wild::before {
+  background: conic-gradient(var(--uno-red) 0 25%, var(--uno-blue) 0 50%, var(--uno-yellow) 0 75%, var(--uno-green) 0);
+}
+
+.uno-card-centre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--uno-card);
+  font-size: 52cqi;
+  letter-spacing: -0.04em;
+  -webkit-text-stroke: 1.5cqi #000;
+  text-shadow: 2cqi 2cqi 0 #000;
+}
+
+/* Symbols are a bit bigger than numbers, and "+2" and "+4" a bit smaller, so they fit the oval */
+.uno-card[data-value="S"] .uno-card-centre,
+.uno-card[data-value="R"] .uno-card-centre {
+  font-size: 60cqi;
+  font-family: "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", system-ui, sans-serif;
+}
+
+.uno-card[data-value="D"] .uno-card-centre,
+.uno-card[data-value="F"] .uno-card-centre {
+  font-size: 40cqi;
+}
+
+.uno-card.is-wild .uno-card-centre {
+  color: #fff;
+}
+
+/* A 6 and a 9 are underlined, so they can be told apart */
+.uno-card.is-underlined .uno-card-centre,
+.uno-card.is-underlined .uno-card-corner {
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.08em;
+}
+
+.uno-card-corner {
+  position: absolute;
+  font-size: 20cqi;
+  -webkit-text-stroke: 0.8cqi #000;
+}
+
+.uno-card-corner.is-top {
+  top: 5%;
+  left: 7%;
+}
+
+.uno-card-corner.is-bottom {
+  right: 7%;
+  bottom: 5%;
+  transform: rotate(180deg);
+}
+
+/* The back: black, with UNO in yellow on a red oval */
+.uno-card.is-back {
+  --uno-card: var(--uno-black);
+}
+
+.uno-card.is-back::before {
+  background: var(--uno-red);
+}
+
+.uno-card.is-back::after {
+  content: "UNO";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--uno-yellow);
+  font-size: 30cqi;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  transform: rotate(-32deg);
+  -webkit-text-stroke: 1cqi #000;
+  text-shadow: 1.5cqi 1.5cqi 0 #000;
+}
+
+/* Small cards: in the players' card counts and the scores at the end */
+.uno-card.is-mini {
+  --uno-card-width: 28px;
+  border-width: 2px;
+  border-radius: 4px;
+}
+
+.uno-card.is-mini .uno-card-corner {
+  display: none;
+}
+
+.uno-player-cards .uno-card.is-mini {
+  --uno-card-width: 16px;
+  border-width: 1.5px;
+  border-radius: 3px;
+}
+
+.uno-player-cards .uno-card.is-mini::after {
+  display: none;
+}
+
+/* ----- The players, in the order of play */
+
+.uno-players {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+}
+
+.uno-player {
+  min-height: 52px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex: 1 1 180px;
+  align-items: center;
+  gap: 10px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--secondary);
+}
+
+.uno-player.is-you {
+  background: color-mix(in srgb, var(--accent) 10%, var(--secondary));
+}
+
+.uno-player.is-turn {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.uno-player.is-winner {
+  border-color: var(--uno-gold);
+}
+
+.uno-player.is-gone {
+  opacity: 0.55;
+}
+
+.uno-player.is-catchable {
+  border-color: var(--uno-warning);
+}
+
+.uno-avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 12%, var(--secondary));
+  font-weight: 700;
+}
+
+.uno-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uno-player-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.uno-player-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.uno-player-status {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.uno-player-status:empty {
+  display: none;
+}
+
+.uno-player-cards {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.uno-badge {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--uno-red);
+  color: var(--uno-yellow);
+  font-size: 0.8rem;
+  font-weight: 900;
+  font-style: italic;
+}
+
+.uno-small-btn {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+/* ----- The table: the draw pile and the top card, on a cloth lit up in the colour to play on */
+
+.uno-table {
+  --uno-current: var(--accent);
+  position: relative;
+  min-height: 250px;
+  padding: 28px 16px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 18px 40px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--uno-current) 38%, var(--secondary)) 0%, var(--secondary) 72%);
+  transition: background 0.4s;
+}
+
+.uno-table[data-colour="r"] { --uno-current: var(--uno-red); }
+.uno-table[data-colour="y"] { --uno-current: var(--uno-yellow); }
+.uno-table[data-colour="g"] { --uno-current: var(--uno-green); }
+.uno-table[data-colour="b"] { --uno-current: var(--uno-blue); }
+
+/* Which way play goes: a big faint arrow going round behind the piles (the other way after a Reverse) */
+.uno-direction {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  margin: -110px 0 0 -110px;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.uno-direction svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.uno-direction.is-reversed svg {
+  transform: scaleX(-1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .uno-direction {
+    animation: uno-spin 12s linear infinite;
+  }
+
+  .uno-direction.is-reversed {
+    animation-direction: reverse;
+  }
+}
+
+@keyframes uno-spin {
+  to { transform: rotate(360deg); }
+}
+
+.uno-deck,
+.uno-discard {
+  --uno-card-width: 110px;
+  position: relative;
+}
+
+.uno-deck {
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  cursor: default;
+}
+
+/* The pile looks like a pile: two cards' edges under the top one */
+.uno-deck .uno-card {
+  box-shadow: 3px 3px 0 #fff, 4px 4px 0 var(--uno-black), 6px 6px 0 #fff, 7px 7px 6px rgba(0, 0, 0, 0.35);
+}
+
+.uno-deck:not(:disabled) {
+  cursor: pointer;
+}
+
+.uno-deck:not(:disabled) .uno-card {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .uno-deck:not(:disabled):hover .uno-card {
+    transform: translateY(-4px);
+  }
+}
+
+/* Nothing in the hand can be played: the pile is what to click */
+@media (prefers-reduced-motion: no-preference) {
+  .uno-deck.is-ready .uno-card {
+    animation: uno-nudge 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes uno-nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.uno-deck:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 6px;
+}
+
+.uno-deck-count {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  min-width: 28px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* The top card. A wild card gets a ring in the colour its player chose. */
+.uno-discard {
+  min-width: var(--uno-card-width);
+}
+
+.uno-discard .uno-card {
+  transform: rotate(4deg);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.uno-discard .uno-card[data-chosen] {
+  --uno-chosen: var(--uno-black);
+  box-shadow: 0 0 0 5px var(--uno-chosen), 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.uno-discard .uno-card[data-chosen="r"] { --uno-chosen: var(--uno-red); }
+.uno-discard .uno-card[data-chosen="y"] { --uno-chosen: var(--uno-yellow); }
+.uno-discard .uno-card[data-chosen="g"] { --uno-chosen: var(--uno-green); }
+.uno-discard .uno-card[data-chosen="b"] { --uno-chosen: var(--uno-blue); }
+
+/* A card that's just been played lands on the pile */
+@media (prefers-reduced-motion: no-preference) {
+  .uno-discard .uno-card.is-new {
+    animation: uno-land 0.35s cubic-bezier(0.2, 0.8, 0.3, 1.2);
+  }
+}
+
+@keyframes uno-land {
+  from { transform: translateY(-40px) rotate(-20deg) scale(1.15); opacity: 0; }
+  to { transform: rotate(4deg); opacity: 1; }
+}
+
+.uno-table-text {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  position: relative;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* "UNO!" or "Caught! +2" over the table for a moment */
+.uno-shout {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  padding: 10px 24px;
+  border-radius: 999px;
+  background: var(--uno-red);
+  color: var(--uno-yellow);
+  font-size: 2.6rem;
+  font-weight: 900;
+  font-style: italic;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  animation: uno-shout 1.6s ease-out forwards;
+}
+
+.uno-shout.is-catch {
+  background: var(--uno-black);
+  color: #fff;
+}
+
+@keyframes uno-shout {
+  0% { transform: translate(-50%, -50%) rotate(-8deg) scale(0.4); opacity: 0; }
+  15% { transform: translate(-50%, -50%) rotate(-8deg) scale(1.1); opacity: 1; }
+  25% { transform: translate(-50%, -50%) rotate(-8deg) scale(1); }
+  80% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(-8deg) scale(1); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uno-shout {
+    animation: none;
+  }
+}
+
+/* ----- The turn timer: a bar that runs down */
+
+.uno-timer {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.uno-timer-bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--text) 45%, transparent);
+  transition: width 0.1s linear;
+}
+
+.uno-timer.is-mine .uno-timer-bar {
+  background: var(--accent);
+}
+
+.uno-timer.is-low .uno-timer-bar {
+  background: var(--uno-warning);
+}
+
+/* ----- The player's cards */
+
+.uno-hand-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.uno-hand-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.uno-hand-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* UNO!: pressed in before playing the second-to-last card, and pulsing once there's one card left without it */
+.uno-call {
+  padding: 8px 18px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: var(--uno-red);
+  color: var(--uno-yellow);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 900;
+  font-style: italic;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.uno-call[aria-pressed="true"] {
+  border-color: var(--uno-yellow);
+  box-shadow: 0 0 0 3px var(--uno-red), 0 0 18px var(--uno-yellow);
+}
+
+.uno-call:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.uno-call:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .uno-call.is-urgent {
+    animation: uno-pulse 0.8s ease-in-out infinite;
+  }
+}
+
+@keyframes uno-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+.uno-hand {
+  --uno-card-width: clamp(56px, 9vw, 84px);
+  min-height: calc(var(--uno-card-width) * 1.5 + 12px);
+  padding: 12px 8px 4px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.uno-hand .uno-card {
+  font: inherit;
+  font-family: "Arial Black", "Segoe UI", system-ui, sans-serif;
+  font-weight: 900;
+  cursor: default;
+  transition: transform 0.12s, filter 0.12s;
+}
+
+/* On the player's turn, the cards that can't be played now are darker, and the ones that can come up on hover */
+.uno-hand.is-my-turn .uno-card:not(.is-playable) {
+  filter: brightness(0.55) saturate(0.6);
+}
+
+.uno-hand .uno-card.is-playable {
+  cursor: pointer;
+}
+
+.uno-hand .uno-card.is-playable:hover,
+.uno-hand .uno-card.is-playable:focus-visible {
+  transform: translateY(-10px);
+}
+
+.uno-hand .uno-card:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The card just drawn */
+.uno-hand .uno-card.is-drawn {
+  outline: 3px dashed var(--accent);
+  outline-offset: 3px;
+}
+
+/* ----- The panels on the right */
+
+.uno-side {
+  grid-area: side;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.uno-panel {
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.uno-panel-title {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.uno-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.75;
+}
+
+.uno-hint:empty {
+  display: none;
+}
+
+.uno-status {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.uno-message {
+  margin: 0 0 10px;
+  color: var(--uno-warning);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.uno-message:empty {
+  display: none;
+}
+
+.uno-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.uno-actions:empty {
+  display: none;
+}
+
+.uno-action-text {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.uno-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.uno-action-buttons:empty {
+  display: none;
+}
+
+/* The cards everyone was left with, once the game is over */
+.uno-scores {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.uno-scores:empty {
+  display: none;
+}
+
+.uno-scores li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.uno-scores-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.uno-scores-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* What happened, the newest last */
+.uno-log {
+  max-height: 220px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.uno-log:empty {
+  display: none;
+}
+
+.uno-log li {
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.uno-log li:last-child {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-weight: 600;
+}
+
+/* The chat, the newest last */
+.uno-chat {
+  max-height: 240px;
+  margin: 0 0 10px;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.uno-chat:empty {
+  display: none;
+}
+
+.uno-chat-item {
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--background);
+  overflow-wrap: anywhere;
+}
+
+.uno-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.uno-chat-name {
+  font-weight: 700;
+}
+
+.uno-chat-time {
+  margin-left: auto;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.uno-chat-text {
+  margin: 2px 0 0;
+}
+
+/* Someone else's message that @mentions the user (mentions.css has the @Name itself) */
+.uno-chat-item.is-mention {
+  background: color-mix(in srgb, var(--accent) 12%, var(--background));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.uno-chat-form {
+  margin-top: 10px;
+}
+
+/* The rules: a small box under the panels, opened with a click */
+.uno-rules summary {
+  margin: 0;
+  cursor: pointer;
+}
+
+.uno-rules .casino-rule-list {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  gap: 6px;
+  line-height: 1.45;
+}
+
+/* Picking the colour for a wild card */
+.uno-colour-choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.uno-colour-choice {
+  min-height: 72px;
+  border: 3px solid #fff;
+  border-radius: 14px;
+  color: #fff;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.uno-colour-choice.is-r { background: var(--uno-red); }
+.uno-colour-choice.is-y { background: var(--uno-yellow); }
+.uno-colour-choice.is-g { background: var(--uno-green); }
+.uno-colour-choice.is-b { background: var(--uno-blue); }
+
+.uno-colour-choice:hover,
+.uno-colour-choice:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Inviting someone */
+.uno-invite[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.uno-invite p {
+  margin: 0;
+}
+
+.uno-invite-list {
+  max-height: min(320px, 45dvh);
+  margin: 4px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.uno-invite-user {
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+/* The game's settings */
+.uno-settings .casino-choices {
+  margin: 14px 0;
+}
+
+.uno-settings .casino-choices:disabled .casino-choice {
+  cursor: default;
+  opacity: 0.75;
+}
+
+/* One column: the name and buttons, then the table, then the panels */
+@media (max-width: 1000px) {
+  .uno-layout {
+    grid-template-columns: minmax(0, 900px);
+    grid-template-rows: auto;
+    grid-template-areas:
+      "header"
+      "play"
+      "side";
+  }
+}
+
+@media (max-width: 600px) {
+  .uno {
+    margin: 12px auto;
+  }
+
+  .uno-title {
+    font-size: 1.3rem;
+  }
+
+  .uno-player {
+    flex-basis: 140px;
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
+  .uno-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .uno-table {
+    min-height: 200px;
+    gap: 14px 28px;
+  }
+
+  .uno-deck,
+  .uno-discard {
+    --uno-card-width: 84px;
+  }
+
+  .uno-hand {
+    gap: 6px;
+  }
+
+  .uno-shout {
+    font-size: 1.8rem;
+  }
+}

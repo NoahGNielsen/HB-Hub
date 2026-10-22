@@ -37,6 +37,12 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     </a>
                 </li>
                 <li>
+                    <a class="casino-game" href="/games/uno/">
+                        <span class="casino-game-name">UNO</span>
+                        <span class="casino-game-text">The card game: match the colour or the number, hit your friends with Draw Fours, and don't forget to call UNO! 2 to 6 players.</span>
+                    </a>
+                </li>
+                <li>
                     <a class="casino-game" href="/games/wordle/">
                         <span class="casino-game-name">Wordle</span>
                         <span class="casino-game-text">Guess the daily five-letter word in six tries, in English and in Danish. Keep your streak going and climb the leaderboards.</span>

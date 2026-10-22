@@ -1,8 +1,8 @@
 <?php
 // The URL blacklist: sites whose addresses can't be sent in a message - IP loggers and other links that are dangerous or
 // give away where someone is. The list itself is assets/urlBlacklist.txt, one domain per line (subdomains count too).
-// Checked when a chat message is sent, edited or sent with an attachment (chat/index.php), and in the Matador and chess
-// game chats (games/*/chat.php), and when a bio is saved (otherPages/settings.php, userMgmt/onboarding.php and
+// Checked when a chat message is sent, edited or sent with an attachment (chat/index.php), and in the Matador, chess and
+// UNO game chats (games/*/chat.php), and when a bio is saved (otherPages/settings.php, userMgmt/onboarding.php and
 // admin/user.php). chat.js gets the list too (data-url-blacklist on the blocked link popup), so it can
 // stop the message before it's sent and the text stays in the box, but the server's check is the one that counts.
 // A domain counts anywhere in the text, with or without https://, so it can't be sent as plain text to copy either.

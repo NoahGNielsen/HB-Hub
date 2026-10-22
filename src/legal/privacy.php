@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '21 October 2026';
+const HBHUB_PRIVACY_UPDATED = '22 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -24,7 +24,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
     'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it\'s still there when you refresh or come back to the chat. Kept in session storage, so it\'s gone when you close the tab.',
     'hbHubNotifiedMessageId' => 'The last message you got a browser notification or sound for, so you don\'t get it twice.',
-    'hbHubChessSound, hbHubMatadorSound, hbHubMinerSound' => 'Whether you turned the game sounds on or off.',
+    'hbHubChessSound, hbHubMatadorSound, hbHubUnoSound, hbHubMinerSound' => 'Whether you turned the game sounds on or off.',
     'hbHubMinerLateKeys' => 'Whether you switched Space Ore Miner\'s 1-9 and 0 hot keys to your last ten buildings (with the Long-Range Hot Keys upgrade).',
     'hbHubMinerAutoBuy' => 'Whether you switched Space Ore Miner\'s Auto Buy on or off (with the Auto Buy upgrade).',
     'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',
@@ -150,7 +150,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             </li>
                             <li>Notifications under the bell: what happened, who did it and whether you've seen it. If you're a site admin and a group admin removes you from a group, that notification also keeps how you were in the group (your role, nickname, mute and how far you had read), so you can undo it. Undoing it deletes the notification.</li>
                             <li>
-                                When someone @mentions you, in a chat or a Chess or Matador game's chat, you get one of those
+                                When someone @mentions you, in a chat or a Chess, Matador or UNO game's chat, you get one of those
                                 notifications, saying who it was and which chat, message or game it was in. Nothing else is
                                 stored for a mention: it's worked out from the message each time it's shown. You don't get one
                                 from a chat you muted or from someone you blocked, and only while you aren't looking at that
@@ -178,6 +178,14 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Your chip balance and every change to it (bets, payouts, the daily chips, and chips a site admin added or took away, with which admin it was).</li>
                             <li>The rounds you played in the casino games, for example but not limited to Blackjack, Baccarat and Roulette, used for the leaderboards.</li>
                             <li>Your Chess and Matador games: seats, moves, saves, results and the in-game chat.</li>
+                            <li>
+                                Your UNO games: your seat, the cards in your hand and what you played, invites, and the
+                                in-game chat. Only you see your cards while the game is played; when it's over, everyone in it
+                                sees the cards that were left. All of it goes when everyone has left the game. What's kept is
+                                one line per game for the UNO leaderboard: whether you won, lost or left, the points you
+                                scored, how many cards you had left, how many played and when. Other people only see the
+                                totals there (games, wins, losses, win %, points and best win).
+                            </li>
                             <li>
                                 Your Wordle games: for each day and language you play, the words you guessed, whether you got
                                 it, and when you started and finished. They make up your stats and streaks, and your spot on

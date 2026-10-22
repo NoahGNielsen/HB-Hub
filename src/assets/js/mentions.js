@@ -1,9 +1,10 @@
-// @mentions while typing: in the chat's message box and Edit (chat/index.php), and in the games' chats (chess and
-// Matador). Typing @ at the start of a word opens a list of the people who can be mentioned there, narrowed down by
+// @mentions while typing: in the chat's message box and Edit (chat/index.php), and in the games' chats (chess, Matador
+// and UNO). Typing @ at the start of a word opens a list of the people who can be mentioned there, narrowed down by
 // what's typed after it (the start of their name, or of any word in it). Up and Down move through it, Enter or Tab puts
 // "@name " in, Escape closes it, and clicking a name works too.
 // Who can be mentioned is the box's data-mentions, as JSON: [{"name": "the name shown", "userName": "what goes in"}].
-// It's read again every time, so the games can change it as people come and go (chessGame.js and matadorGame.js).
+// It's read again every time, so the games can change it as people come and go (chessGame.js, matadorGame.js and
+// unoGame.js).
 // What counts as a mention, and who hears about it, is all worked out on the server (assets/php/mentions.php) - this
 // only helps type them.
 // The listeners are on the whole document rather than on each box, so boxes put in later work too: the chat swaps in a

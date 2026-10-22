@@ -45,5 +45,16 @@ return [
             'text' => static fn (array $data): string => 'mentioned you in the chat of your chess game at ' . ($data['roomName'] ?? 'their game'),
             'link' => static fn (array $data): string => '/games/chess/game?room=' . (int) ($data['roomId'] ?? 0),
         ],
+        // The host of an UNO game invited the user (assets/php/games/uno/room.php). Data: roomId, roomName.
+        'unoInvite' => [
+            'text' => static fn (array $data): string => 'invited you to a game of UNO at ' . ($data['roomName'] ?? 'their game'),
+            'link' => static fn (array $data): string => '/games/uno/#invites',
+        ],
+        // Another player @mentioned the user in the game's chat while their game wasn't open
+        // (assets/php/games/uno/chat.php). Data: roomId, roomName.
+        'unoMention' => [
+            'text' => static fn (array $data): string => 'mentioned you in the chat of your UNO game at ' . ($data['roomName'] ?? 'their game'),
+            'link' => static fn (array $data): string => '/games/uno/game?room=' . (int) ($data['roomId'] ?? 0),
+        ],
     ],
 ];

@@ -1,7 +1,7 @@
 <?php
 // @mentions: "@Alice" in a message points at Alice, lights up, and tells her about it. Used by the chat
-// (chatFormat.php shows them, chat/index.php sends the notifications) and the games' chats (games/chess/chat.php and
-// games/matador/chat.php).
+// (chatFormat.php shows them, chat/index.php sends the notifications) and the games' chats (games/chess/chat.php,
+// games/matador/chat.php and games/uno/chat.php).
 //
 // A mention is an @ at the start of a word (so an email address isn't one) followed by the name of someone who's in
 // that chat. Names can have spaces, punctuation and emoji in them, so there's no telling where a name ends by looking

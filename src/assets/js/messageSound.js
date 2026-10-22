@@ -1,5 +1,5 @@
 // The sound for a new message, made here rather than loaded: two soft notes going up, rounder and quieter than the
-// chess and Matador pings so they can be told apart. Plays on
+// chess, Matador and UNO pings so they can be told apart. Plays on
 //     document.dispatchEvent(new CustomEvent('message:sound'));
 // from notifications.js (new messages came in and the sound is turned on in settings) and settings.js (ticking the
 // box, so the user hears what it sounds like). navPanel.php adds it next to notifications.js, and on pages that set
