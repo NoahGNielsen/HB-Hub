@@ -925,102 +925,91 @@
   100% { opacity: 0; translate: 0 0; }
 }
 
-/* Star Forge: a little sun on an anvil. The hammer is lifted slowly, held up for a moment and slammed down on it (at
-   70% of --cycle): the star squashes flat and springs back, flares up, a shockwave ring goes out from it and sparks fly
-   off. Every fourth hit a freshly made star (.miner-sprite-made) pops off the top and twinkles away into space. */
+/* Star Forge: a furnace with a little sun burning behind the grate of its door. The sun turns slowly, draws in a breath
+   and roars (at 40% of --cycle): it swells up and glows out of the door, and a hot gold bar comes out of the slot,
+   slides down the chute while it cools off and tips off the end into space. Embers drift up out of the chimney. */
 .miner-sprite.is-forge {
   left: 8%;
   top: 50%;
   font-size: calc(var(--sprite) * 2);
-  --cycle: calc(1.4s / var(--work));
+  --cycle: calc(2s / var(--work));
 }
 
 .miner-sprite.is-forge .miner-sprite-star {
-  transform-origin: 46.88% 60.94%; /* the bottom of the star, where it sits on the anvil */
-  animation: miner-forge-squash var(--cycle) ease-out infinite;
+  transform-origin: 43.75% 54.69%; /* the middle of the sun */
+  animation:
+    miner-forge-spin calc(var(--cycle) * 8) linear infinite,
+    miner-forge-roar var(--cycle) ease-in-out infinite;
 }
 
-.miner-sprite.is-forge .miner-sprite-hammer {
-  transform-origin: 95.31% 18.75%; /* the end of the handle */
-  animation: miner-forge-hammer var(--cycle) ease-in-out infinite;
-}
-
-.miner-sprite.is-forge .miner-sprite-sparks {
-  transform-origin: 46.88% 29.69%; /* where the hammer hits */
+/* It comes out of the slot (its right edge, at 25.2 in the icon) bit by bit: clip-path moves with the bar, so its
+   left edge is taken back as far as the bar has moved, and stops cutting anything once the whole bar is out (at 73%,
+   the bar's own left edge). The chute goes 3.2 down for every 7.1 along. */
+.miner-sprite.is-forge .miner-sprite-bar {
+  transform-origin: 80.63% 71.56%; /* the middle of the bar */
   opacity: 0;
-  animation: miner-forge-sparks var(--cycle) ease-out infinite;
+  animation: miner-forge-bar var(--cycle) ease-in-out infinite;
 }
 
-/* Around the middle of the star, as big as it */
-.miner-sprite.is-forge .miner-sprite-ring {
+/* At the top of the chimney */
+.miner-sprite.is-forge .miner-sprite-embers {
   inset: auto;
-  left: 46.88%;
-  top: 45.31%;
-  width: 0.32em;
-  height: 0.32em;
-  margin: -0.16em 0 0 -0.16em;
-  border: 0.02em solid #ffd95e;
-  border-radius: 50%;
-  box-shadow: 0 0 4px #ff8a3d;
-  opacity: 0;
-  animation: miner-forge-ring var(--cycle) ease-out infinite;
+  left: 66.56%;
+  top: 7.81%;
 }
 
-/* The glow is on the piece and the star's shape on ::before, as a clip-path would cut the glow off */
-.miner-sprite.is-forge .miner-sprite-made {
-  inset: auto;
-  left: 46.88%;
-  top: 30%;
-  width: 0.14em;
-  height: 0.14em;
-  margin: -0.07em 0 0 -0.07em;
-  filter: drop-shadow(0 0 3px #ffd95e);
-  opacity: 0;
-  animation: miner-forge-made calc(var(--cycle) * 4) ease-out infinite;
-}
-
-.miner-sprite-made::before {
+.miner-sprite-embers::before,
+.miner-sprite-embers::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background: #fff6cf;
-  clip-path: polygon(50% 0%, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0% 50%, 38% 38%);
+  width: 0.04em;
+  height: 0.04em;
+  margin: -0.02em 0 0 -0.02em;
+  border-radius: 50%;
+  background: #ff8a3d;
+  box-shadow: 0 0 3px #ff8a3d;
+  opacity: 0;
+  animation: miner-forge-ember var(--cycle) ease-out infinite;
 }
 
-@keyframes miner-forge-hammer {
-  0% { rotate: 4deg; }
-  45% { rotate: 34deg; } /* up */
-  58% { rotate: 36deg; animation-timing-function: ease-in; }
-  70% { rotate: -6deg; } /* on the star, pressing it flat */
-  76% { rotate: 7deg; } /* bouncing off it */
-  84%, 100% { rotate: 4deg; }
+.miner-sprite-embers::after {
+  background: #ffd95e;
+  box-shadow: 0 0 3px #ffd95e;
+  --drift: 0.07em;
+  animation-delay: calc(var(--cycle) * -0.45);
 }
 
-@keyframes miner-forge-squash {
-  0%, 69%, 100% { scale: 1; filter: drop-shadow(0 0 2px rgba(255, 190, 80, 0.5)); }
-  70% { scale: 1.2 0.78; filter: drop-shadow(0 0 10px rgba(255, 190, 80, 1)); }
-  78% { scale: 0.94 1.07; }
-  88% { scale: 1; }
+@keyframes miner-forge-spin {
+  to { rotate: 360deg; }
 }
 
-@keyframes miner-forge-sparks {
-  0%, 69% { opacity: 0; scale: 0.5; }
-  71% { opacity: 1; scale: 1; }
-  88%, 100% { opacity: 0; scale: 1.5; }
+@keyframes miner-forge-roar {
+  0%, 100% { scale: 1; filter: drop-shadow(0 0 2px rgba(255, 190, 80, 0.6)); }
+  36% { scale: 0.88; filter: drop-shadow(0 0 1px rgba(255, 190, 80, 0.4)); } /* breathing in */
+  42% { scale: 1.2; filter: drop-shadow(0 0 9px rgba(255, 190, 80, 1)); } /* roar */
+  60% { scale: 1.02; filter: drop-shadow(0 0 3px rgba(255, 190, 80, 0.7)); }
 }
 
-@keyframes miner-forge-ring {
-  0%, 69% { opacity: 0; scale: 0.9; }
-  71% { opacity: 0.9; scale: 1; }
-  92%, 100% { opacity: 0; scale: 2.4; }
+@keyframes miner-forge-bar {
+  0%, 38% {
+    opacity: 0;
+    translate: -0.094em -0.042em;
+    rotate: 0deg;
+    clip-path: inset(0 0 0 88.1%);
+    filter: drop-shadow(0 0 3px #ff8a3d) brightness(1.2);
+  }
+  40% { opacity: 1; }
+  58% { translate: 0.056em 0.025em; clip-path: inset(0 0 0 73.1%); } /* all the way out */
+  78% { opacity: 1; translate: 0.116em 0.052em; rotate: 0deg; clip-path: inset(0 0 0 73.1%); } /* at the end of the chute */
+  86% { translate: 0.17em 0.1em; rotate: 30deg; filter: drop-shadow(0 0 1px rgba(255, 217, 94, 0.5)) brightness(1); }
+  96%, 100% { opacity: 0; translate: 0.24em 0.32em; rotate: 75deg; clip-path: inset(0 0 0 73.1%); filter: drop-shadow(0 0 1px rgba(255, 217, 94, 0.5)) brightness(1); }
 }
 
-/* Over four hits: off with the first one (at 70% of the first, so 17.5%), up and away to the top left */
-@keyframes miner-forge-made {
-  0%, 17% { opacity: 0; translate: 0 0; scale: 0.3; rotate: 0deg; }
-  20% { opacity: 1; scale: 1.2; }
-  50% { opacity: 1; translate: -0.32em -0.55em; scale: 0.8; rotate: 180deg; }
-  62%, 100% { opacity: 0; translate: -0.4em -0.68em; scale: 0.4; rotate: 240deg; }
+/* Up and away, drifting to one side (--drift) */
+@keyframes miner-forge-ember {
+  0%, 38% { opacity: 0; translate: 0 0; scale: 1; }
+  44% { opacity: 1; }
+  100% { opacity: 0; translate: var(--drift, -0.06em) -0.32em; scale: 0.4; }
 }
 
 /* Planet Cracker: the wedge pulls back and slams into the crack, the planet's halves swing open from the bottom (where
