@@ -653,7 +653,7 @@
     let darkKey = '';
     let antiKey = '';
     let treeKey = '';
-    let pickedSkill = 'strangelet'; // the skill shown next to the tree
+    let pickedSkill = null; // the skill shown over the tree next to it, null while none is
     let shownComet = -1; // the comet number on screen
     let saveSoonTimer = 0;
     const sprites = Object.fromEntries(Object.keys(SCENE).map((id) => [id, []])); // the ones in the picture, per building
@@ -1277,16 +1277,19 @@
 
     // ----- The skill tree. Built once from where the skills are ('at': [column, row]): a grid of buttons, one per
     // skill, over an SVG in the same units (one per cell) with a line from each skill back to each skill it needs. It
-    // grows from left to right. After that only classes change: on the buttons is-learned, is-open (can be learned
-    // now), is-affordable and is-picked (the one shown next to the tree), and on the lines is-lit (both ends learned)
-    // and is-open (only the left one).
+    // grows from left to right, a row per branch, with lines between the rows where a skill needs one from the branch
+    // next to it. After that only classes change: on the buttons is-learned, is-open (can be learned now),
+    // is-affordable and is-picked (the one shown over the tree), and on the lines is-lit (both ends learned) and is-open
+    // (only the left one).
 
-    const TREE_ROWS = 7;
+    const TREE_ROWS = 5;
     const BRANCH_NAMES = { core: 'Core', industry: 'Industry', hands: 'Hands', sky: 'Sky', cosmos: 'Cosmos' };
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const treeNodes = {}; // skill id => its button
     const treeLines = []; // {line, from (the skill needed), to}
     const skillPanel = root.querySelector('[data-miner-skill-info]');
+    const treeWrap = root.querySelector('[data-miner-tree-wrap]'); // what the panel is placed in
+    const treeScroll = root.querySelector('[data-miner-tree-scroll]');
 
     function buildTree() {
         const columns = Math.max(...Object.values(SKILLS).map((skill) => skill.at[0])) + 1;
@@ -1351,8 +1354,10 @@
     // "A", "A and B", "A, B and C"
     const listText = (items) => (items.length > 1 ? items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1] : items.join(''));
 
-    // The picked skill, next to the tree: what it does, what it needs and the button that learns it
+    // The picked skill, over the tree next to it: what it does, what it needs and the button that learns it
     function renderSkillInfo() {
+        skillPanel.hidden = pickedSkill === null;
+        if (pickedSkill === null) return;
         const skill = SKILLS[pickedSkill];
         const isLearned = hasSkill(state, pickedSkill);
         const isOpen = skillOpen(state, pickedSkill);
@@ -1368,6 +1373,40 @@
         skillInfo.cost.textContent = format(skill.cost) + ' Strange Matter';
         skillInfo.learn.hidden = isLearned;
         skillInfo.learn.disabled = !isOpen || state.strange < skill.cost;
+        placeSkillInfo(); // its height can change with the text
+    }
+
+    // Puts the picked skill's panel over the tree beside its button: to the right of it if there's room in the tree's
+    // box, else to the left, else under it (on narrow screens), and never past the box's sides. Positions are in px from
+    // the box's corner (.miner-tree-wrap), which the panel is absolutely placed in. Again on resizing, scrolling the tree
+    // sideways and coming back to the view (showView()).
+    function placeSkillInfo() {
+        if (pickedSkill === null || treeWrap.offsetParent === null) return; // nothing picked, or on another view
+        const box = treeWrap.getBoundingClientRect();
+        const node = treeNodes[pickedSkill].getBoundingClientRect();
+        const width = skillPanel.offsetWidth;
+        const height = skillPanel.offsetHeight;
+        const gap = 12;
+        const clamp = (value, max) => Math.max(0, Math.min(value, max));
+        let left;
+        let top;
+        if (node.right + gap + width <= box.right) left = node.right - box.left + gap;
+        else if (node.left - gap - width >= box.left) left = node.left - box.left - gap - width;
+        if (left === undefined) {
+            left = clamp(node.left - box.left + node.width / 2 - width / 2, box.width - width);
+            top = node.bottom - box.top + gap;
+        } else {
+            left = clamp(left, box.width - width); // for a button scrolled out of sight
+            top = clamp(node.top - box.top + node.height / 2 - height / 2, box.height - height);
+        }
+        skillPanel.style.left = left + 'px';
+        skillPanel.style.top = top + 'px';
+    }
+
+    // Shows a skill over the tree, or closes it (null)
+    function pickSkill(id) {
+        pickedSkill = id;
+        renderTree();
     }
 
     function renderAchievements() {
@@ -2203,12 +2242,32 @@
         saveSoon();
     });
 
+    // A skill opens its panel (or closes it, if it's the one already open). The panel closes again with its ×, Escape
+    // or a click anywhere outside it and the skills.
     tree.addEventListener('click', (event) => {
         const button = event.target.closest('[data-skill]');
         if (!button) return;
-        pickedSkill = button.dataset.skill;
-        renderTree();
+        pickSkill(button.dataset.skill === pickedSkill ? null : button.dataset.skill);
     });
+    root.querySelector('[data-miner-skill-close]').addEventListener('click', () => {
+        const button = treeNodes[pickedSkill];
+        pickSkill(null);
+        button?.focus();
+    });
+    document.addEventListener('click', (event) => {
+        // A target that's no longer on the page was replaced by the click itself (the panel's icon), so it was inside
+        if (pickedSkill === null || !event.target.isConnected || event.target.closest('[data-miner-skill-info], [data-skill]')) return;
+        pickSkill(null);
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || pickedSkill === null || document.querySelector('dialog[open]')) return;
+        const button = treeNodes[pickedSkill];
+        const wasInside = skillPanel.contains(document.activeElement);
+        pickSkill(null);
+        if (wasInside) button.focus();
+    });
+    addEventListener('resize', placeSkillInfo);
+    treeScroll.addEventListener('scroll', placeSkillInfo, { passive: true });
 
     skillInfo.learn.addEventListener('click', () => {
         const id = pickedSkill;
@@ -2316,6 +2375,7 @@
             else link.removeAttribute('aria-current');
         }
         if (scrollY > 0) scrollTo({ top: 0 }); // the Ore view fits the screen from the top
+        placeSkillInfo(); // the screen may have changed size while the tree was out of sight
     }
 
     menu.addEventListener('click', (event) => {

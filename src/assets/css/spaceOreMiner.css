@@ -2283,10 +2283,11 @@
   translate: 0 -0.1em;
 }
 
-/* The skill tree in the Strange Matter view (renderTree() in spaceOreMiner.js): the tree, and the skill picked in it next
-   to it (under it on small screens). The tree is a grid of --columns by --rows square cells, a skill's button in some of
-   them, over an SVG in the same units with the lines between them. It grows from left to right, so it's wider than it
-   is tall, and on phones it scrolls sideways (.miner-tree-scroll) instead of shrinking. Each skill is in its branch's colour (--branch):
+/* The skill tree in the Strange Matter view (renderTree() in spaceOreMiner.js): the tree, and the skill picked in it laid
+   over it beside the skill (placeSkillInfo()). The tree is a grid of --columns by --rows square cells, a skill's button
+   in some of them, over an SVG in the same units with the lines between them. It grows from left to right with a row per
+   branch, so it's much wider than it is tall, and on phones it scrolls sideways (.miner-tree-scroll) instead of
+   shrinking. Each skill is in its branch's colour (--branch):
    dim until it can be learned, outlined once it can, glowing when there's enough Strange Matter for it and filled in
    once it's learned. A line lights up once both its skills are learned. */
 .miner-tree .is-core,
@@ -2314,11 +2315,10 @@
   --branch: var(--miner-dark);
 }
 
-.miner-tree-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 760px) minmax(0, 1fr);
-  align-items: start;
-  gap: 24px;
+/* What the picked skill's panel is placed in, so it can hang past the tree's bottom instead of being cut off by the
+   sideways scrolling */
+.miner-tree-wrap {
+  position: relative;
 }
 
 .miner-tree {
@@ -2418,21 +2418,41 @@
   outline-offset: 3px;
 }
 
-/* The picked skill: stays in view next to the tree while the page scrolls */
+/* The picked skill: a card over the tree beside it, where placeSkillInfo() puts it (left/top) */
 .miner-skill-info {
   --branch: var(--view);
-  position: sticky;
-  top: calc(var(--nav-top-h, 0px) + 12px);
-  padding: 18px;
-  border: 1px solid color-mix(in srgb, var(--branch) 45%, transparent);
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 0;
+  width: min(320px, 100%);
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--branch) 55%, transparent);
   border-radius: 16px;
-  background: color-mix(in srgb, var(--branch) 6%, var(--background));
+  background: color-mix(in srgb, var(--branch) 8%, var(--background));
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45), 0 0 18px color-mix(in srgb, var(--branch) 25%, transparent);
+}
+
+.miner-skill-info[hidden] {
+  display: none;
 }
 
 .miner-skill-info-head {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.miner-skill-info-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.miner-skill-info-head .miner-popup-close {
+  align-self: flex-start;
+  width: 30px;
+  height: 30px;
+  font-size: 1.3rem;
 }
 
 .miner-skill-info-box {
@@ -2773,19 +2793,16 @@
     gap: 22px;
   }
 
-  /* The picked skill goes under the tree */
-  .miner-tree-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
+  /* The skill tree keeps its skills big enough to tap and scrolls sideways instead. Its width is the box's
+     (min-width), not the tree's, so the wide tree doesn't stretch the page. */
   .miner-tree-scroll {
-    width: 100%;
-    max-width: 760px;
-    justify-self: center;
+    width: 0;
+    min-width: 100%;
+    overflow-x: auto;
   }
 
-  .miner-skill-info {
-    position: static;
+  .miner-tree {
+    min-width: calc(var(--columns, 16) * 44px);
   }
 }
 
@@ -2794,15 +2811,6 @@
 @media (max-width: 600px) {
   .casino.miner {
     --miner-gap: 10px;
-  }
-
-  /* The skill tree keeps its skills big enough to tap and scrolls sideways instead */
-  .miner-tree-scroll {
-    overflow-x: auto;
-  }
-
-  .miner-tree {
-    min-width: 480px;
   }
 
   .casino.miner[data-view="ore"] {

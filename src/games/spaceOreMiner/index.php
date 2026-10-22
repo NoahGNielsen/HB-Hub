@@ -252,7 +252,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
         <!-- Strange Matter: the Big Rip on top, built like the other two, and the skill tree Strange Matter buys under
              it. Locked until the first Big Crunch. The tree (data-miner-tree) is drawn by spaceOreMiner.js from the
              skills' places in HBHUB_MINER_SKILLS: a button per skill, with the lines to the skills it needs behind them.
-             Picking one shows it in data-miner-skill-info, with the button that learns it. -->
+             Picking one shows it in data-miner-skill-info, over the tree next to it, with the button that learns it. -->
         <section class="miner-view casino-card miner-prestige is-strange is-locked" aria-labelledby="miner-rip-title" data-miner-view="strangeMatter" data-miner-rip-view<?= $minerView !== 'strangeMatter' ? ' hidden' : '' ?>>
             <div class="miner-prestige-hero">
                 <!-- A wobbling strangelet with its three quarks flying round it, one on each orbit -->
@@ -301,18 +301,21 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <h3 class="miner-store-title">Skill tree</h3>
                     <p class="miner-prestige-owned" data-miner-skills-owned></p>
                 </div>
-                <div class="miner-tree-layout">
-                    <!-- Scrolls sideways on phones, where the tree would be too small to tap -->
-                    <div class="miner-tree-scroll">
+                <div class="miner-tree-wrap" data-miner-tree-wrap>
+                    <!-- Scrolls sideways on smaller screens, where the tree would be too small to tap -->
+                    <div class="miner-tree-scroll" data-miner-tree-scroll>
                         <div class="miner-tree" role="group" aria-label="Skill tree" data-miner-tree></div>
                     </div>
-                    <div class="miner-skill-info" data-miner-skill-info>
+                    <!-- The picked skill, laid over the tree next to it (placeSkillInfo() in spaceOreMiner.js). Hidden
+                         until a skill is picked; closed with ×, Escape, a click outside it or a click on the skill again. -->
+                    <div class="miner-skill-info" role="region" aria-labelledby="miner-skill-name" data-miner-skill-info hidden>
                         <div class="miner-skill-info-head">
                             <span class="miner-skill-info-icon" data-miner-skill-icon></span>
-                            <div>
-                                <h4 class="miner-skill-info-name" data-miner-skill-name></h4>
+                            <div class="miner-skill-info-title">
+                                <h4 class="miner-skill-info-name" id="miner-skill-name" data-miner-skill-name></h4>
                                 <p class="miner-skill-info-branch" data-miner-skill-branch></p>
                             </div>
+                            <button type="button" class="miner-popup-close" data-miner-skill-close aria-label="Close">&times;</button>
                         </div>
                         <p class="miner-skill-info-text" data-miner-skill-text></p>
                         <p class="miner-skill-info-needs" data-miner-skill-needs></p>
@@ -379,8 +382,9 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     </li>
                     <li>
                         Strange Matter is spent in the skill tree, on <?= count(HBHUB_MINER_SKILLS) ?> skills you keep for good. It
-                        grows to the right from the Strangelet on the left, and a skill can be learned once every skill linked
-                        to the left of it is.
+                        grows to the right from the Strangelet on the left, with a row for each of its five branches, and a
+                        skill can be learned once every skill linked to the left of it is, including the ones in the
+                        branches next to it.
                         Pick one to see what it does and what it costs.
                     </li>
                     <li>
