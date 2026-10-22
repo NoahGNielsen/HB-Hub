@@ -927,12 +927,21 @@
 
 /* Star Forge: a furnace with a little sun burning behind the grate of its door. The sun turns slowly, draws in a breath
    and roars (at 40% of --cycle): it swells up and glows out of the door, and a hot gold bar comes out of the slot,
-   slides down the chute while it cools off and tips off the end into space. Embers drift up out of the chimney. */
+   slides down the chute while it cools off and tips off the end into space. Embers drift up out of the chimney. It all
+   stands on a lump of rock floating in space. */
 .miner-sprite.is-forge {
   left: 8%;
   top: 50%;
   font-size: calc(var(--sprite) * 2);
   --cycle: calc(2s / var(--work));
+}
+
+/* Its top is at the top of its icon, so this puts it just under the feet (at 31 in the furnace's icon), with them sunk
+   into it a little */
+.miner-sprite.is-forge .miner-sprite-rock {
+  inset: auto;
+  left: 0;
+  top: 90.63%;
 }
 
 .miner-sprite.is-forge .miner-sprite-star {

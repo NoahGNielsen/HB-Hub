@@ -630,7 +630,7 @@
         excavator: { at: [1], parts: { body: 'sceneMoon', arm: 'sceneExcavatorArm', rocks: '' } },
         cracker: { at: [1], parts: { body: 'sceneCrackerCore', left: 'sceneCrackerLeft', right: 'sceneCrackerRight', wedge: 'sceneCrackerWedge', sparks: 'sceneCrackerSparks' } },
         siphon: { at: [1], parts: { pull: '', body: 'sceneBlackHole', nozzle: 'sceneSiphon', ore: '' } },
-        forge: { at: [1], parts: { body: 'sceneForgeFurnace', star: 'sceneForgeSun', grate: 'sceneForgeGrate', bar: 'sceneForgeBar', embers: '' } },
+        forge: { at: [1], parts: { rock: 'sceneForgeRock', body: 'sceneForgeFurnace', star: 'sceneForgeSun', grate: 'sceneForgeGrate', bar: 'sceneForgeBar', embers: '' } },
         nebula: { at: [1], parts: { body: '' } },
         dyson: { at: [1, 1], parts: { body: '' } },
         wormhole: { at: [1], parts: { body: 'wormhole' } },
