@@ -3292,10 +3292,19 @@ chatPart(() => {
 // While the page is hidden (another tab, minimised) it doesn't poll at all: each poll is one of the few PHP requests the
 // hosting runs at once, for the whole site. Coming back to the page polls straight away.
 // New messages are only marked read while the page is being looked at, and not at all after "Mark unread" (?unread=1).
-chatPart((signal) => {
+// Typing: while something is typed in the message box and a key was pressed in the last few seconds, polls say so
+// (?typing=1), and the first one after they stop says that (?typing=0). Starting to type, or emptying the box, polls
+// straight away so it shows up quickly. Everyone else typing in the open chat comes back as "typing" (a list of names),
+// shown as "Alice is typing..." just above the message box.
+chatPart((signal, isSwap) => {
     const POLL_MS = 2000;
+    const TYPING_IDLE_MS = 4000; // no key pressed for this long, and they've stopped typing
+    const TYPING_SHOWN_MAX = 3; // names in "Alice, Bob and Carl are typing...", more is "Several people are typing..."
     const list = document.querySelector('.chat-list');
     const messages = document.querySelector('[data-chat-messages]');
+    const textarea = document.querySelector('.chat-composer textarea');
+    const typingLine = document.querySelector('[data-chat-typing]');
+    const typingNames = document.querySelector('[data-chat-typing-names]');
     const chatMenu = document.querySelector('[data-chat-menu]');
     const requestsButton = document.querySelector('[data-requests-open]');
     const requestsCount = document.querySelector('[data-requests-count]');
@@ -3365,8 +3374,29 @@ chatPart((signal) => {
         requestsCount.textContent = count > 9 ? '9+' : String(count);
     }
 
+    let typedAt = null; // when a key was last pressed in the message box, null while it's empty
+    // The server was told they're typing, and not yet that they stopped. After a swap it may have been: sending a message
+    // stops it, but a poll that went just before can land after that, so the first poll after a swap says they stopped.
+    let isTypingSaved = isSwap;
+
+    function isTyping() {
+        return typedAt !== null && performance.now() - typedAt < TYPING_IDLE_MS;
+    }
+
+    // "Alice is typing...", "Alice and Bob are typing..." or "Alice, Bob and Carl are typing..."
+    function showTyping(names) {
+        typingLine.hidden = names.length === 0;
+        if (names.length === 0) return;
+        let text;
+        if (names.length === 1) text = `${names[0]} is typing...`;
+        else if (names.length <= TYPING_SHOWN_MAX) text = `${names.slice(0, -1).join(', ')} and ${names.at(-1)} are typing...`;
+        else text = 'Several people are typing...';
+        if (typingNames.textContent !== text) typingNames.textContent = text; // the same text isn't read out again
+    }
+
     let pollTimer = null; // the next poll, null while the page is hidden or a poll is on its way
     let isPolling = false;
+    let polledAt = 0;
 
     async function poll() {
         pollTimer = null;
@@ -3375,6 +3405,7 @@ chatPart((signal) => {
 
         const params = new URLSearchParams({ poll: '1' });
         const sentAt = performance.now();
+        polledAt = sentAt;
         if (messages) {
             const items = shownItems();
             params.set('chat', messages.dataset.chatMessages);
@@ -3385,6 +3416,8 @@ chatPart((signal) => {
             // Looking at the chat, so being @mentioned in it doesn't send a notification. The window has to have focus
             // too: one that's only showing behind or beside another window still counts as visible.
             if (document.visibilityState === 'visible' && document.hasFocus()) params.set('looking', '1');
+            if (isTyping() && !chatIsPosting) params.set('typing', '1'); // not while the message is being sent
+            else if (isTypingSaved) params.set('typing', '0');
         }
         if (shownChatListV !== null) params.set('listV', shownChatListV);
         if (shownRequestsV !== null) params.set('requestsV', shownRequestsV);
@@ -3396,6 +3429,7 @@ chatPart((signal) => {
             const response = await fetch('/chat/?' + params, { headers: { Accept: 'application/json' } });
             if (!response.ok) throw new Error(response.statusText);
             const data = await response.json();
+            if (params.has('typing')) isTypingSaved = params.get('typing') === '1';
             if (data.nav) document.dispatchEvent(new CustomEvent('nav:update', { detail: data.nav }));
             if (signal.aborted) return; // another chat was opened while it was on its way, and polls for itself
 
@@ -3412,6 +3446,7 @@ chatPart((signal) => {
                 }
                 addMessages(data.messages);
                 chatShowBackground(messages, data.background);
+                showTyping(data.typing ?? []);
             }
             updateChatList(data.chatList, data.chatListV);
             updateRequests(data.requests, data.requestsV, data.requestCount);
@@ -3429,6 +3464,17 @@ chatPart((signal) => {
     signal.addEventListener('abort', () => clearTimeout(pollTimer));
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && pollTimer === null && !isPolling) poll();
+    }, { signal });
+
+    // Formatting, emoji and @mentions put text in the box with an input event too, so they count as typing
+    textarea?.addEventListener('input', () => {
+        const wasTyping = isTyping();
+        typedAt = textarea.value.trim() !== '' ? performance.now() : null;
+        // Started or stopped: the next poll goes now instead of in up to 2 seconds - but not more than once a second
+        if (isTyping() !== wasTyping && pollTimer !== null && performance.now() - polledAt > 1000) {
+            clearTimeout(pollTimer);
+            poll();
+        }
     }, { signal });
 });
 

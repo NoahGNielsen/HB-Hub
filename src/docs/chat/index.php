@@ -44,6 +44,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li>A message can be up to 2,500 characters long, and <a href="/docs/chat/formatting">styled</a> with bold, italic, code, lists and more.</li>
                             <li>The buttons next to the message box send <a href="/docs/chat/attachments">files and pictures</a>, <a href="/docs/chat/gifs">GIFs and smileys</a>.</li>
                             <li>Type <code>@</code> to <a href="/docs/chat/mentions">mention</a> someone in the chat.</li>
+                            <li>While you type, the others in the chat see <strong>... is typing</strong> above their message box. It goes away when you send, empty the box or stop typing for a few seconds.</li>
                             <li>Messages sent in a row by the same person (less than 10 minutes apart) are shown together. Point at one to see when it was sent.</li>
                         </ul>
                     </section>

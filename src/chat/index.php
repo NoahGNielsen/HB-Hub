@@ -25,6 +25,8 @@ const HBHUB_CHAT_SEND_SECONDS = 5;
 const HBHUB_CHAT_REACTIONS_MAX = 20; // different emoji under one message
 const HBHUB_CHAT_LOOKING_SECONDS = 10; // a member whose open chat hasn't checked in for this long isn't looking at it (no @mention notification then)
 const HBHUB_CHAT_LOOKING_EVERY = 4; // seconds between updates of memberLastViewedTimestamp, as chat.js checks in every 2
+const HBHUB_CHAT_TYPING_SECONDS = 8; // "is typing..." goes away when a member's typing hasn't checked in for this long (closed the tab, went offline)
+const HBHUB_CHAT_TYPING_EVERY = 3; // seconds between updates of memberTypingTimestamp while typing, as chat.js says so every 2
 const HBHUB_CHAT_REACTION_LENGTH_MAX = 32; // reactionEmoji column, in characters (👨‍👩‍👧‍👦 is 7 joined together)
 const HBHUB_CHAT_REACTION_NAMES_SHOWN = 10; // who reacted, when pointing at a reaction, before it says "and 4 others"
 // What a reaction can be made of besides the emoji names may use (HBHUB_LATIN_TEXT_EMOJI): the few emoji outside those
@@ -312,6 +314,43 @@ function chatMarkLooking(PDO $db, int $chatId, int $userId): void
         WHERE chatId = ? AND userId = ? AND (memberLastViewedTimestamp IS NULL
             OR memberLastViewedTimestamp <= UTC_TIMESTAMP() - INTERVAL ' . HBHUB_CHAT_LOOKING_EVERY . ' SECOND)')
         ->execute([$chatId, $userId]);
+}
+
+/**
+ * Saves whether the user is typing a message in the chat right now. chat.js says so with each poll while they are, and
+ * once more when they stop (emptied the box, or didn't press a key for a few seconds); sending a message stops it too.
+ * Everyone else in the chat sees "... is typing" from it (chatTyping()). While typing it's only written every
+ * HBHUB_CHAT_TYPING_EVERY seconds, like chatMarkLooking().
+ */
+function chatMarkTyping(PDO $db, int $chatId, int $userId, bool $isTyping): void
+{
+    if ($isTyping) {
+        $db->prepare('UPDATE `HBHub-ChatMembers` SET memberTypingTimestamp = UTC_TIMESTAMP()
+            WHERE chatId = ? AND userId = ? AND (memberTypingTimestamp IS NULL
+                OR memberTypingTimestamp <= UTC_TIMESTAMP() - INTERVAL ' . HBHUB_CHAT_TYPING_EVERY . ' SECOND)')
+            ->execute([$chatId, $userId]);
+    } else {
+        $db->prepare('UPDATE `HBHub-ChatMembers` SET memberTypingTimestamp = NULL
+            WHERE chatId = ? AND userId = ? AND memberTypingTimestamp IS NOT NULL')
+            ->execute([$chatId, $userId]);
+    }
+}
+
+/**
+ * The names of everyone else typing in the chat right now (chatMarkTyping()), as the chat shows them (a group's
+ * nicknames), A to Z. A ghost-banned user's typing is never saved (assets/php/chat.php), so nobody sees them typing.
+ *
+ * @return string[]
+ */
+function chatTyping(PDO $db, int $chatId, int $userId): array
+{
+    $statement = $db->prepare('SELECT COALESCE(cm.memberNickname, u.userName) AS typerName
+        FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
+        WHERE cm.chatId = ? AND cm.userId <> ? AND cm.userAcknowledgedJoin = 1 AND cm.memberIsGhost = 0
+            AND cm.memberTypingTimestamp > UTC_TIMESTAMP() - INTERVAL ' . HBHUB_CHAT_TYPING_SECONDS . ' SECOND
+        ORDER BY typerName');
+    $statement->execute([$chatId, $userId]);
+    return $statement->fetchAll(PDO::FETCH_COLUMN);
 }
 
 /**
@@ -1178,6 +1217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'upl
         hbHubChatAttachmentsDiscard($prepared);
         chatUploadAnswer(...$error);
     }
+    chatMarkTyping($db, (int) $chat['chatId'], $userId, false); // like sending a message
     // A new message brings the chat back for everyone who hid it, and the text with the file can @mention too.
     // Not a ghost (assets/php/chat.php), nobody else can see it.
     if (!$chatIsGhost) {
@@ -1274,6 +1314,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([$chat['chatId']]);
         }
         $db->commit();
+        // Their "is typing" goes away as the message comes in, not a few seconds later
+        chatMarkTyping($db, (int) $chat['chatId'], $userId, false);
 
         // A new message brings the chat back for everyone who hid it, and the ones it @mentions hear about it.
         // Not a ghost, nobody else can see it.
@@ -1301,13 +1343,24 @@ $lastReadMessageId = $openMembership['lastReadMessageId'] ?? null;
 // so @mentions in it don't send a notification (chatMarkLooking()).
 // The reactions on the messages it already shows, from ?from= (the oldest one) to ?after=, come along too, as they change
 // on old messages as well.
+// ?typing=1 while the user is typing a message in it, and ?typing=0 once when they stop (chatMarkTyping()). Not for a
+// ghost-banned user (nobody else can see what they send anyway) or one a group admin muted (they can't send).
+// Who else is typing comes back in the answer (chatTyping()).
 $isPoll = ($_GET['poll'] ?? null) === '1';
 $pollMessages = [];
 $pollReactions = [];
+$pollTyping = [];
 $pollAfter = is_string($_GET['after'] ?? null) && ctype_digit($_GET['after']) && strlen($_GET['after']) <= 19 ? (int) $_GET['after'] : null;
 $pollFrom = is_string($_GET['from'] ?? null) && ctype_digit($_GET['from']) && strlen($_GET['from']) <= 19 ? (int) $_GET['from'] : null;
 if ($isPoll && $openMembership !== null && ($_GET['looking'] ?? null) === '1') {
     chatMarkLooking($db, (int) $openMembership['chatId'], $userId);
+}
+if ($isPoll && $openMembership !== null && in_array($_GET['typing'] ?? null, ['0', '1'], true)) {
+    chatMarkTyping($db, (int) $openMembership['chatId'], $userId,
+        $_GET['typing'] === '1' && !$chatIsGhost && !chatIsMuted($openMembership));
+}
+if ($isPoll && $openMembership !== null) {
+    $pollTyping = chatTyping($db, (int) $openMembership['chatId'], $userId);
 }
 if ($isPoll && $openMembership !== null && $pollAfter !== null) {
     if ($pollFrom !== null && $pollFrom <= $pollAfter) {
@@ -1943,6 +1996,7 @@ if ($isOlder) {
 // The answer to chat.js polling: the open chat's new messages, the whole chat list and the message requests, all as HTML.
 // openChat is false when the open chat is gone (left, deleted or removed from it), so chat.js can leave it.
 // background is the open chat's background, so a new one shows up for everyone in it.
+// typing is the names of everyone else typing in the open chat right now, for the "... is typing" line.
 // The chat list and the requests come with a version (chatListV, requestsV: a hash of the HTML), and chat.js sends back
 // the ones it shows (?listV=, ?requestsV=). Most polls nothing in them changed, so then the HTML is left out, and the
 // same few KB aren't sent every 2 seconds to every open chat.
@@ -1978,6 +2032,7 @@ if ($isPoll) {
         'background' => $openChat['chatBackground'] ?? null,
         'messages' => $pollMessagesHtml,
         'reactions' => (object) $pollReactionsHtml, // an object even when empty
+        'typing' => $pollTyping,
         'chatListV' => hash('xxh64', $pollChatListHtml),
         'requestsV' => hash('xxh64', $pollRequestsHtml),
         'requestCount' => count($chatRequests),
@@ -2134,6 +2189,14 @@ if ($isPoll) {
                         <?php chatMessageItem($openChat, $userId, $message); ?>
                     <?php endforeach; ?>
                 </ol>
+
+                <!-- "Alice is typing..." over the bottom of the messages, just above the message box (chat.js fills it from polling) -->
+                <div class="chat-typing" aria-live="polite">
+                    <p class="chat-typing-text" hidden data-chat-typing>
+                        <span class="chat-typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                        <span data-chat-typing-names></span>
+                    </p>
+                </div>
 
                 <!-- Dropping files anywhere on the open chat attaches them (chat.js shows this over it while they're dragged in) -->
                 <?php if ($chatAttachBlocked === null): ?>

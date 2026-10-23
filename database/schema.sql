@@ -332,6 +332,7 @@ CREATE TABLE `HBHub-ChatMembers` (
   `memberNickname` varchar(64) DEFAULT NULL,
   `memberMutedUntil` timestamp NULL DEFAULT NULL,
   `memberLastViewedTimestamp` datetime DEFAULT NULL COMMENT 'UTC, last time the member had the chat open and in view',
+  `memberTypingTimestamp` datetime DEFAULT NULL COMMENT 'UTC, last time the member said they were typing a message in the chat, NULL once they stopped or sent it',
   `userAcknowledgedJoin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Message request, not accepted yet\r\n1 Accepted',
   `memberIsGhost` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 Invited by a ghost-banned user (a new chat or Add to chat), so they never see the chat until someone else invites them or they start a DM with that user'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

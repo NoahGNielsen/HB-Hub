@@ -5,6 +5,7 @@
 | **Direct messages & group chats** | Message requests (with Block, to stop someone sending more), replies, emoji reactions, edits, deletions and unread counts |
 | **Group roles** | Group owners and admins can rename the group, change its icon and background, and add, kick, mute and promote members |
 | **Message groups** | Messages sent in a row by the same person (less than 10 minutes apart) are shown together, and pointing at one shows when it was sent |
+| **Typing indicator** | "Alice is typing..." shows just above the message box for everyone else in the chat while someone is typing (up to 3 names, then "Several people are typing..."). It goes away when they send, empty the box or stop for a few seconds. Comes along with the chat's normal poll, so it costs no extra requests |
 | **Chat notices** | Changes in a group (new name, new admin, someone joined) show up in the chat |
 | **Nicknames & profiles** | Give people nicknames, and open the profile of whoever you're DMing straight from the chat |
 | **GIFs & smileys** | GIF picker powered by Giphy, plus a smiley menu |

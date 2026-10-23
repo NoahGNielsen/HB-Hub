@@ -150,6 +150,13 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             </li>
                             <li>The chats you're in, group names, icons and backgrounds, and nicknames you give people.</li>
                             <li>
+                                While you're typing a message in a chat, the time you last typed is kept with your membership
+                                of it, so the others in the chat see "... is typing". Only the time is stored, never what
+                                you've typed, and it's cleared when you send the message, empty the message box or stop
+                                typing for a few seconds. If you close the page instead, nobody sees it any more after
+                                8 seconds. It isn't saved at all while you're ghost banned or muted in that chat.
+                            </li>
+                            <li>
                                 Deleting a message hides it for everyone in the chat, but the message itself is kept, so site
                                 admins can still look into reports of abuse. Its reactions are hidden with it, and kept the same
                                 way. Attachments in it aren't kept: their files and names are deleted for good.

@@ -467,6 +467,83 @@ body:has(> .chat) {
   opacity: 0.7;
 }
 
+/* "Alice is typing..." (chat.js): a small pill over the bottom of the messages, just above the message box. The box
+   itself takes no room, so the messages don't jump when it comes and goes. No z-index, so the @mention list and the
+   emoji picker (later on the page) still go over it. */
+.chat-typing {
+  position: relative;
+  height: 0;
+}
+
+.chat-typing-text {
+  position: absolute;
+  bottom: 4px;
+  left: 16px;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 3px 10px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background) 85%, transparent);
+  color: var(--primary);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.chat-typing-text[hidden] {
+  display: none;
+}
+
+.chat-typing-text > :last-child {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat-typing-dots {
+  flex: none;
+  display: inline-flex;
+  gap: 3px;
+}
+
+.chat-typing-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: chat-typing-dot 1.2s ease-in-out infinite;
+}
+
+.chat-typing-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.chat-typing-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes chat-typing-dot {
+  0%, 60%, 100% {
+    opacity: 0.35;
+    transform: none;
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-typing-dots span {
+    animation: none;
+  }
+}
+
 /* A grid of one column rather than a flex column, so a grouped message's time can sit in the bubble's row (below) */
 .chat-message {
   max-width: min(75%, 560px);
