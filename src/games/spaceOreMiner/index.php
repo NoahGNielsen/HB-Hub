@@ -134,10 +134,14 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                                     title="Make the 1-9 and 0 keys buy your last ten buildings instead of your first ten (K)" data-miner-key-switch hidden>
                                 Late-game keys
                             </button>
+                            <!-- With Bulk Buying: A goes through these in turn (the hot keys at the bottom of spaceOreMiner.js) -->
                             <div class="miner-amounts" role="group" aria-label="How many to buy" data-miner-amounts hidden>
-                                <button type="button" class="miner-amount is-active" data-amount="1" aria-pressed="true">×1</button>
-                                <button type="button" class="miner-amount" data-amount="10" aria-pressed="false">×10</button>
-                                <button type="button" class="miner-amount" data-amount="100" aria-pressed="false">×100</button>
+                                <button type="button" class="miner-amount is-active" data-amount="1" aria-pressed="true" aria-keyshortcuts="A"
+                                        title="Buy 1 at a time (A switches between 1, 10 and 100)">×1</button>
+                                <button type="button" class="miner-amount" data-amount="10" aria-pressed="false" aria-keyshortcuts="A"
+                                        title="Buy 10 at a time (A switches between 1, 10 and 100)">×10</button>
+                                <button type="button" class="miner-amount" data-amount="100" aria-pressed="false" aria-keyshortcuts="A"
+                                        title="Buy 100 at a time (A switches between 1, 10 and 100)">×100</button>
                             </div>
                         </div>
                     </div>
@@ -395,6 +399,19 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             <div class="games-dialog-actions">
                 <button type="button" class="casino-btn" data-miner-rip-cancel>Not yet</button>
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-rip-confirm>Big Rip</button>
+            </div>
+        </dialog>
+
+        <!-- Shown the first time the Hot Key Panel upgrade is bought in this browser (showKeysHelp() in spaceOreMiner.js) -->
+        <dialog class="games-dialog" data-miner-keys-dialog aria-labelledby="miner-keys-dialog-title">
+            <h2 id="miner-keys-dialog-title">Hot keys unlocked</h2>
+            <p>
+                <kbd>1</kbd>-<kbd>9</kbd> and <kbd>0</kbd> now buy the buildings in the store, <kbd>B</kbd> the best one you
+                can afford and <kbd>U</kbd> the cheapest upgrade. Hold a key down to keep buying.
+            </p>
+            <p><a href="/docs/games/space-ore-miner#hot-keys" target="_blank" rel="noopener">See all the hot keys</a> (opens in a new tab)</p>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn casino-btn-primary" data-miner-keys-close>Got it</button>
             </div>
         </dialog>
 

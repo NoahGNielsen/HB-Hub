@@ -169,7 +169,7 @@ const HBHUB_MINER_OTHER_UPGRADES = [
     'pickaxeGalaxy' => ['name' => 'Galaxy of Pickaxes', 'icon' => 'galaxy', 'cost' => 2e15, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 500,
         'need' => ['owned' => ['pickaxe' => 200]], 'text' => 'Each Space Pickaxe Guy mines another 500 ore per second for every other building you own.'],
     'autoAim' => ['name' => 'Auto-Aim Laser', 'icon' => 'target', 'cost' => 50000, 'type' => 'clickPct', 'value' => 0.01, 'text' => 'Each click also mines 1% of your ore per second.'],
-    'bulk' => ['name' => 'Bulk Buying', 'icon' => 'crates', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time.'],
+    'bulk' => ['name' => 'Bulk Buying', 'icon' => 'crates', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time. Press A to switch between them.'],
     'quantum' => ['name' => 'Quantum Hammer', 'icon' => 'quantumHammer', 'cost' => 500000, 'type' => 'clickPct', 'value' => 0.02, 'text' => 'Each click mines another 2% of your ore per second.'],
     'cometKey' => ['name' => 'Comet Hot Key', 'icon' => 'keyC', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1, 'upgrades' => ['quickKeys']], 'text' => 'Press C to catch a comet, without having to hit it.'],
     'radar' => ['name' => 'Comet Radar', 'icon' => 'radar', 'cost' => 777777, 'type' => 'comet', 'effect' => 'often', 'need' => ['comets' => 3], 'text' => 'Comets show up twice as often.'],

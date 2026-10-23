@@ -28,6 +28,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubChessSound, hbHubMatadorSound, hbHubUnoSound, hbHubMinerSound' => 'Whether you turned the game sounds on or off.',
     'hbHubMinerLateKeys' => 'Whether you switched Space Ore Miner\'s 1-9 and 0 hot keys to your last ten buildings (with the Long-Range Hot Keys upgrade).',
     'hbHubMinerAutoBuy' => 'Whether you switched Space Ore Miner\'s Auto Buy on or off (with the Auto Buy upgrade).',
+    'hbHubMinerKeysHelp' => 'Whether Space Ore Miner has already shown you the popup about the hot keys (after buying the Hot Key Panel upgrade).',
     'hbHubMinerAutoWarp, hbHubMinerAutoCrunch' => 'Whether you switched Space Ore Miner\'s Autopilot and Auto Crunch on or off (with the skills of the same name).',
     'hbHubMinerRun:<tab id>' => 'While Space Ore Miner is open: what you did in the game that isn\'t saved yet, and what a crash report would say (see Casino and games above), updated every second. If the game crashes or is closed before it\'s saved, the next time you open it, what you did is sent with its first save, like a normal save, and then deleted. It\'s deleted when the game is closed with nothing left to save. After a crash, the crash report part stays until you\'ve answered whether it may be sent; it\'s only sent if you say yes.',
     'hbHubMiner (IndexedDB)' => 'A crash report the game writes if it freezes while you\'re playing (written by a part of the game that keeps running when the rest of it is frozen). It\'s only sent if you say yes the next time you open the game, and deleted either way.',

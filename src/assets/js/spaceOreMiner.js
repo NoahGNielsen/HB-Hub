@@ -693,6 +693,7 @@
     const warpDialog = root.querySelector('[data-miner-warp-dialog]');
     const warpDialogText = root.querySelector('[data-miner-warp-dialog-text]');
     const otherTabDialog = root.querySelector('[data-miner-other-tab]');
+    const keysDialog = root.querySelector('[data-miner-keys-dialog]');
     const soundButton = root.querySelector('[data-miner-sound]');
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -793,6 +794,9 @@
     } catch {
         // no storage: they start off
     }
+
+    // Whether the popup about the hot keys has been shown in this browser (see showKeysHelp())
+    const KEYS_HELP_KEY = 'hbHubMinerKeysHelp';
 
     const serverNow = () => Date.now() + clockOffset;
 
@@ -1899,6 +1903,7 @@
         ['Alien influencer posts selfie with the asteroid. 3 likes.'],
         ['Asteroid voted "Most Likely to Be Mined" in the galaxy yearbook.'],
         ['Galactic lottery won by a rock. Rock spends it all on some ore.'],
+        ['Miner discovers the keyboard. Space mines the asteroid, and the Hot Key Panel upgrade adds more. See How to play.'],
     ];
     let lastNews = -1;
 
@@ -2215,7 +2220,28 @@
             sound('buy');
             toast(UPGRADES[button.dataset.upgrade].icon, UPGRADES[button.dataset.upgrade].name + ': ' + UPGRADES[button.dataset.upgrade].text);
             renderStore();
+            if (button.dataset.upgrade === 'quickKeys') showKeysHelp();
         }
+    });
+
+    /**
+     * The first time the Hot Key Panel is bought in this browser, a popup says what the keys do, with a link to the
+     * whole list in the docs. Not on touch screens (no keyboard to use them with, like the number keys in the store), and
+     * not while another popup is open. Only from a click in the store: Auto Buy doesn't stop the game for it.
+     */
+    function showKeysHelp() {
+        if (!matchMedia('(hover: hover)').matches || document.querySelector('dialog[open]')) return;
+        try {
+            if (localStorage.getItem(KEYS_HELP_KEY) === 'seen') return;
+            localStorage.setItem(KEYS_HELP_KEY, 'seen');
+        } catch {
+            return; // no storage: it would pop up every time, so it's left out
+        }
+        keysDialog.showModal();
+    }
+
+    keysDialog.addEventListener('click', (event) => {
+        if (event.target === keysDialog || event.target.closest('[data-miner-keys-close]')) keysDialog.close();
     });
 
     // Pointing the mouse at the arrow opens all the upgrades, and they stay open until the mouse leaves them. Only for a

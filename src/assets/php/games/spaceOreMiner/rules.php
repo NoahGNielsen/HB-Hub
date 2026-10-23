@@ -40,7 +40,7 @@
         The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
         your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
     </li>
-    <li class="miner-hot-keys">
+    <li class="miner-hot-keys" id="hot-keys"><!-- the Hot Key Panel's popup in the game links here -->
         Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade). Once you have
         the Hot Key Panel upgrade, <kbd>1</kbd>-<kbd>9</kbd> and <kbd>0</kbd>
         buy the buildings in the order they're listed (the last ten instead, with Long-Range Hot Keys switched
