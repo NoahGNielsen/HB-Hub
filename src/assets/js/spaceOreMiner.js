@@ -2101,7 +2101,7 @@
     // Buying) are bought once they cost no more than AUTO_BUY_EXTRA_SECONDS of production. It buys through act(), like a
     // click on the store would, so the server checks every purchase as usual.
     const AUTO_BUY_EXTRA_SECONDS = 60;
-    const AUTO_BUY_PER_TICK = 5; // at most, so a full wallet after a Warp Jump doesn't send hundreds of actions at once
+    const AUTO_BUY_PER_TICK = 15; // at most, so a full wallet after a Warp Jump doesn't send hundreds of actions at once
 
     // What Auto Buy should do now: {type: 'buy', ...} or {type: 'upgrade', ...} (the action to take), or null to wait
     function autoBuyChoice() {
