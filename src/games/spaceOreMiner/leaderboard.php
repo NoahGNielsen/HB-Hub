@@ -24,13 +24,38 @@ const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first, the
 ];
 
 /**
+ * The names of big numbers as [size, word] pairs, biggest first: from a million (10^6) up to a centillion (10^303),
+ * which is as far as a float goes. Past nonillion they're put together from Latin bits, like un + vigint + illion for
+ * an unvigintillion (10^66). Pairs rather than size => word, as an array key can't hold a number past 9.2 quintillion.
+ * BIG_NUMBERS in assets/js/spaceOreMiner.js is the same list for the game itself.
+ */
+function leaderboardNumberNames(): array
+{
+    static $names = null;
+    if ($names === null) {
+        $words = ['million', 'billion', 'trillion', 'quadrillion', 'quintillion', 'sextillion', 'septillion', 'octillion',
+            'nonillion'];
+        foreach (['dec', 'vigint', 'trigint', 'quadragint', 'quinquagint', 'sexagint', 'septuagint', 'octogint', 'nonagint'] as $ten) {
+            foreach (['', 'un', 'duo', 'tre', 'quattuor', 'quin', 'sex', 'septen', 'octo', 'novem'] as $unit) {
+                $words[] = $unit . $ten . 'illion';
+            }
+        }
+        $words[] = 'centillion';
+        $names = [];
+        foreach ($words as $index => $word) {
+            $names[] = [(float) ('1e' . (3 * $index + 6)), $word]; // parsed rather than 10 ** n, so it's exact
+        }
+        $names = array_reverse($names);
+    }
+    return $names;
+}
+
+/**
  * A big number, short: 1,234 under a million, then like 1.23 million.
  */
 function leaderboardNumber(float $number): string
 {
-    // Pairs rather than size => word, as an array key can't hold a number past 9.2 quintillion
-    foreach ([[1e24, 'septillion'], [1e21, 'sextillion'], [1e18, 'quintillion'], [1e15, 'quadrillion'], [1e12, 'trillion'],
-        [1e9, 'billion'], [1e6, 'million']] as [$size, $word]) {
+    foreach (leaderboardNumberNames() as [$size, $word]) {
         if ($number >= $size) {
             return number_format($number / $size, 2) . ' ' . $word;
         }

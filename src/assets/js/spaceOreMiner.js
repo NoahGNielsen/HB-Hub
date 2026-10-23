@@ -483,16 +483,27 @@
 
     // ----- Numbers and words
 
-    const BIG_NUMBERS = [
-        [1e33, 'decillion', 'Dc'], [1e30, 'nonillion', 'No'], [1e27, 'octillion', 'Oc'], [1e24, 'septillion', 'Sp'],
-        [1e21, 'sextillion', 'Sx'], [1e18, 'quintillion', 'Qi'], [1e15, 'quadrillion', 'Qa'], [1e12, 'trillion', 'T'],
-        [1e9, 'billion', 'B'], [1e6, 'million', 'M'],
-    ];
+    // [size, word, short], biggest first: from a million (10^6) up to a centillion (10^303), which is as far as a
+    // number goes. Past nonillion they're put together from Latin bits, like un + vigint + illion for an
+    // unvigintillion (10^66), UVg for short. leaderboardNumberNames() in games/spaceOreMiner/leaderboard.php is the same.
+    const BIG_NUMBERS = (() => {
+        const names = [['million', 'M'], ['billion', 'B'], ['trillion', 'T'], ['quadrillion', 'Qa'], ['quintillion', 'Qi'],
+            ['sextillion', 'Sx'], ['septillion', 'Sp'], ['octillion', 'Oc'], ['nonillion', 'No']];
+        const units = [['', ''], ['un', 'U'], ['duo', 'D'], ['tre', 'T'], ['quattuor', 'Qa'], ['quin', 'Qi'], ['sex', 'Sx'],
+            ['septen', 'Sp'], ['octo', 'Oc'], ['novem', 'No']];
+        const tens = [['dec', 'Dc'], ['vigint', 'Vg'], ['trigint', 'Tg'], ['quadragint', 'Qag'], ['quinquagint', 'Qig'],
+            ['sexagint', 'Sxg'], ['septuagint', 'Spg'], ['octogint', 'Ocg'], ['nonagint', 'Nog']];
+        for (const [ten, tenShort] of tens) {
+            for (const [unit, unitShort] of units) names.push([unit + ten + 'illion', unitShort + tenShort]);
+        }
+        names.push(['centillion', 'Ce']);
+        // Parsed rather than 10 ** n, which can be a hair off this big
+        return names.map(([word, short], index) => [Number('1e' + (3 * index + 6)), word, short]).reverse();
+    })();
 
     // 1,234 / 1.23M, or 1.234 million with long. decimals: one decimal under 100, for rates like 0.1
     function format(number, { long = false, decimals = false } = {}) {
         if (!Number.isFinite(number)) return '∞';
-        if (number >= 1e36) return number.toExponential(2).replace('e+', 'e');
         for (const [size, word, short] of BIG_NUMBERS) {
             if (number >= size) {
                 return long ? (number / size).toFixed(3) + ' ' + word : String(Number((number / size).toFixed(2))) + short;
