@@ -1,4 +1,4 @@
-<?xml version="1.2" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!-- The pages visitors can open without logging in (robots.txt points here): the frontpage, login, sign-up, the legal pages and the help docs (src/docs/, in the order of HBHUB_DOCS_SECTIONS in assets/php/docs/pages.php). The rest of the site needs an account. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
