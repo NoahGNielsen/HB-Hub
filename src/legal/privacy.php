@@ -214,14 +214,16 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 Space Ore Miner crash reports, only if you agree to send one. While the game is open, it notes
                                 down in your browser what it's doing: its saves and how they went, errors, moments it was slow
                                 or froze, which view you're on and which of the game's auto switches are on, how much memory
-                                the page uses and how many elements are on it. That stays in your browser (see
+                                the page uses, how many elements and animations are on it, its frame rate, how long each part
+                                of the game takes to run, and the last parts it ran. That stays in your browser (see
                                 <a href="#privacy-cookies">Cookies and local storage</a>). If the game freezes or closes
                                 without saving properly while you're playing, the next time you open it, it asks whether it may
                                 send a crash report about it. You can see everything in it before you answer. If you say yes, it's
                                 stored with your account, the time and your browser's user agent (which says which browser
                                 and system you use): what the game noted down, what it was doing when it froze and for how long,
-                                your Space Ore Miner save as it was then, your screen size, and how many processor cores and how
-                                much memory your device has (as your browser tells, rounded). If you say no, nothing is sent
+                                your Space Ore Miner save as it was then, your screen size, how many processor cores and how
+                                much memory your device has (as your browser tells, rounded), and the name of its graphics card
+                                (as your browser tells it, some browsers give a general or made-up one). If you say no, nothing is sent
                                 and it's deleted from your browser.
                             </li>
                         </ul>

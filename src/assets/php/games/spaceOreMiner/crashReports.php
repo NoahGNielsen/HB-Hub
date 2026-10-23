@@ -6,10 +6,12 @@
 //
 // Each one is a row in HBHub-MinerCrashReports: who sent it, the kind (HBHUB_MINER_CRASH_KINDS), the report as JSON,
 // the browser's user agent and when. The report is what the page wrote down while it ran, as made by crashReport() in
-// spaceOreMiner.js: {kind, hang (for a freeze: what the page was doing, for how long, and whether it came back), page
-// (when it was opened and last heard from, the view, the screen, the auto switches), trail (the last things that
-// happened: saves, errors, slow frames, freezes, as [Unix ms, text]), samples ([Unix ms, MB of memory used, elements on
-// the page] every 30 seconds), state (the save as the page had it), pending (how many actions weren't saved)}.
+// spaceOreMiner.js: {kind, hang (for a freeze: what the page was doing, for how long, whether it came back, and the
+// steps it did just before, see spaceOreMinerWatchdog.js), page (when it was opened and last heard from, the view, the
+// screen, cores, memory and graphics card, the auto switches), trail (the last things that happened: saves, errors, slow
+// frames, freezes, frame rate drops, as [Unix ms, text]), samples (every 30 seconds: memory used, elements and
+// animations on the page, frame rate and the slowest steps), state (the save as the page had it), pending (how many
+// actions weren't saved)}.
 // Nothing in it is checked here beyond being a JSON object of at most HBHUB_MINER_CRASH_MAX_BYTES: it's only ever read
 // by admins, and escaped when shown. They're kept HBHUB_MINER_CRASH_KEEP_DAYS, and deleted with the account.
 require_once __DIR__ . '/../../database.php';

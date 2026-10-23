@@ -4,8 +4,9 @@
 //
 // The reports players agreed to send after the game froze or closed badly (games/spaceOreMiner/crash.php,
 // assets/php/games/spaceOreMiner/crashReports.php has what's in one), newest first, ADMIN_CRASHES_SHOWN at a time
-// (?page=). Each shows who sent it, when, its browser, what happened in a line (what the page was doing when it froze,
-// for how long, whether it came back), the last things it wrote down (the trail) and the memory it used, and the whole
+// (?page=). Each shows who sent it, when, its browser and graphics card, what happened in a line (what the page was
+// doing when it froze, for how long, whether it came back), the steps it did just before it froze, every 30 seconds'
+// memory, elements, animations, frame rate and slowest steps, the last things it wrote down (the trail), and the whole
 // report as JSON under "Everything" (the save as the page had it is in there, to play it again).
 // Form (action=delete, crash=id) removes one for good, and goes in the admin log (assets/php/adminLog.php). They also
 // go by themselves after HBHUB_MINER_CRASH_KEEP_DAYS.
@@ -80,12 +81,47 @@ function adminCrashSummary(string $kind, array $report): string
 {
     $hang = is_array($report['hang'] ?? null) ? $report['hang'] : null;
     if ($kind === 'hang' && $hang !== null) {
-        $step = is_string($hang['step'] ?? null) ? $hang['step'] : 'nothing it knew of (between its own tasks)';
-        return 'Froze while doing ' . $step . ' (at it for ' . adminCrashLength($hang['stepMs'] ?? null) . ' when the freeze was noticed), '
+        $doing = is_string($hang['step'] ?? null)
+            ? 'while doing ' . $hang['step'] . ' (at it for ' . adminCrashLength($hang['stepMs'] ?? null) . ' when the freeze was noticed)'
+            : 'between its own tasks (in something it doesn\'t name, like the browser itself or code typed in the console)';
+        return 'Froze ' . $doing . ', '
             . (!empty($hang['recovered']) ? 'and came back after ' . adminCrashLength($hang['lasted'] ?? null)
                 : 'and was still frozen ' . adminCrashLength($hang['lasted'] ?? null) . ' later, when it was last heard from');
     }
     return 'The page went away while it was being looked at, without closing properly (killed, crashed, ran out of memory, or the computer turned off)';
+}
+
+/**
+ * One of a report's samples (every 30 seconds) in a line: memory, elements, animations, frame rate and the slowest
+ * steps. Reports from before the frame rate was added have [Unix ms, MB, elements] instead.
+ */
+function adminCrashSample(mixed $sample, string $sentOn): ?string
+{
+    if (is_array($sample) && array_is_list($sample) && count($sample) === 3) {
+        $sample = ['at' => $sample[0], 'memory' => $sample[1], 'elements' => $sample[2]];
+    }
+    if (!is_array($sample) || !isset($sample['at'])) {
+        return null;
+    }
+    $parts = [adminCrashTime($sample['at'], $sentOn)];
+    $parts[] = is_numeric($sample['memory'] ?? null) ? round((float) $sample['memory']) . ' MB' : '? MB';
+    $parts[] = (int) ($sample['elements'] ?? 0) . ' elements';
+    if (is_numeric($sample['animations'] ?? null)) {
+        $parts[] = (int) $sample['animations'] . ' animations';
+    }
+    if (is_numeric($sample['fps'] ?? null)) {
+        $parts[] = (int) $sample['fps'] . ' fps' . (is_numeric($sample['lowestFps'] ?? null) ? ' (lowest ' . (int) $sample['lowestFps'] . ')' : '');
+    }
+    $slowest = [];
+    foreach (is_array($sample['slowest'] ?? null) ? $sample['slowest'] : [] as $step) {
+        if (is_array($step) && count($step) === 4 && is_string($step[0])) {
+            $slowest[] = $step[0] . ' ' . adminCrashLength($step[1]) . ' (' . (int) $step[3] . '×, ' . adminCrashLength($step[2]) . ' in all)';
+        }
+    }
+    if ($slowest !== []) {
+        $parts[] = 'slowest: ' . implode(', ', $slowest);
+    }
+    return implode(' · ', $parts);
 }
 ?>
 <!DOCTYPE html>
@@ -136,6 +172,7 @@ function adminCrashSummary(string $kind, array $report): string
                                 $crashPage = is_array($crashReport['page'] ?? null) ? $crashReport['page'] : [];
                                 $crashTrail = is_array($crashReport['trail'] ?? null) ? $crashReport['trail'] : [];
                                 $crashSamples = is_array($crashReport['samples'] ?? null) ? $crashReport['samples'] : [];
+                                $crashBefore = is_array($crashReport['hang']['before'] ?? null) ? $crashReport['hang']['before'] : [];
                                 ?>
                                 <li class="admin-feedback-item">
                                     <div class="admin-feedback-head">
@@ -153,21 +190,42 @@ function adminCrashSummary(string $kind, array $report): string
                                         on the <?= htmlspecialchars(is_string($crashPage['view'] ?? null) ? $crashPage['view'] : '?') ?> view,
                                         <?= (int) ($crashReport['pending'] ?? 0) ?> actions not saved yet.
                                         Screen <?= htmlspecialchars(is_string($crashPage['screen'] ?? null) ? $crashPage['screen'] : '?') ?>,
-                                        <?= (int) ($crashPage['cores'] ?? 0) ?> cores<?= isset($crashPage['deviceMemory']) ? ', ' . htmlspecialchars((string) (float) $crashPage['deviceMemory']) . ' GB memory' : '' ?>.
+                                        <?= (int) ($crashPage['cores'] ?? 0) ?> cores<?= isset($crashPage['deviceMemory']) ? ', ' . htmlspecialchars((string) (float) $crashPage['deviceMemory']) . ' GB memory' : '' ?>,
+                                        graphics card <?= htmlspecialchars(is_string($crashPage['gpu'] ?? null) ? $crashPage['gpu'] : 'not known') ?>.
                                         Switches on: <?= htmlspecialchars(is_array($crashPage['switches'] ?? null) && $crashPage['switches'] !== [] ? implode(', ', array_filter($crashPage['switches'], 'is_string')) : 'none') ?>.
                                     </p>
                                     <?php if ($crash['crashReportUserAgent'] !== null): ?>
                                         <p class="admin-feedback-text admin-small admin-mono"><?= htmlspecialchars($crash['crashReportUserAgent']) ?></p>
                                     <?php endif; ?>
-                                    <?php if ($crashSamples !== []): ?>
-                                        <p class="admin-feedback-text admin-small">
-                                            Memory used (MB) and elements on the page, every 30 seconds:
-                                            <?php foreach ($crashSamples as $sample): ?>
-                                                <?php if (is_array($sample) && count($sample) === 3): ?>
-                                                    <span class="admin-mono"><?= htmlspecialchars(adminCrashTime($sample[0], $crashSentOn)) ?> <?= is_numeric($sample[1]) ? round((float) $sample[1]) . ' MB' : '?' ?> / <?= (int) $sample[2] ?></span>&ensp;
+                                    <?php if ($crashBefore !== []): ?>
+                                        <details open>
+                                            <summary>The last steps before it froze (the same step several times in a row is one line)</summary>
+                                            <ol class="admin-crash-trail">
+                                                <?php foreach ($crashBefore as $entry): ?>
+                                                    <?php if (is_array($entry) && count($entry) === 4 && is_string($entry[1])): ?>
+                                                        <li><span class="admin-mono"><?= htmlspecialchars(adminCrashTime($entry[0], $crashSentOn)) ?></span>
+                                                            <?= htmlspecialchars($entry[1]) ?><?= (int) $entry[2] > 1 ? ' ×' . (int) $entry[2] : '' ?>,
+                                                            <?= (int) $entry[2] > 1 ? 'the longest ' : '' ?><?= htmlspecialchars(adminCrashLength($entry[3])) ?></li>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                                <?php if (is_string($crashReport['hang']['step'] ?? null)): ?>
+                                                    <li><strong><?= htmlspecialchars($crashReport['hang']['step']) ?>, where it froze</strong></li>
                                                 <?php endif; ?>
-                                            <?php endforeach; ?>
-                                        </p>
+                                            </ol>
+                                        </details>
+                                    <?php endif; ?>
+                                    <?php if ($crashSamples !== []): ?>
+                                        <details>
+                                            <summary>Every 30 seconds: memory, elements and animations on the page, frame rate and the slowest steps</summary>
+                                            <ol class="admin-crash-trail">
+                                                <?php foreach ($crashSamples as $sample): ?>
+                                                    <?php $sampleLine = adminCrashSample($sample, $crashSentOn); ?>
+                                                    <?php if ($sampleLine !== null): ?>
+                                                        <li><?= htmlspecialchars($sampleLine) ?></li>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            </ol>
+                                        </details>
                                     <?php endif; ?>
                                     <?php if ($crashTrail !== []): ?>
                                         <details>

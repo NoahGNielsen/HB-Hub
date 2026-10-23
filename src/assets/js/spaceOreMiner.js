@@ -875,7 +875,7 @@
         if (body.toString().length > KEEPALIVE_BYTES) keepalive = false;
         writeRun(); // so a crash while it's on its way still has the batch
         note((claim ? 'Loading the save' : 'Saving') + ': ' + batch.length + ' actions' + (claim && recovered.length > 0 ? ', ' + recovered.length + ' recovered' : '')
-            + (keepalive ? ' (closing)' : ''));
+            + (keepalive ? ' (hidden or closing)' : ''));
         step(was);
 
         try {
@@ -1001,6 +1001,7 @@
     function frame() {
         if (!isPlaying) return;
         step('frame');
+        framesSinceBeat++; // for the frame rate in crash reports (see beat())
         if (!document.hidden) {
             catchUp();
             oreText.textContent = format(state.ore, { long: true });
@@ -2727,12 +2728,26 @@
         // no workers: freezes aren't noticed while they happen, but a page that's closed by one still is (isCrash())
     }
 
+    // How long each step takes, since the last sample (see beat()): name => {count, total, max} in ms. The watchdog
+    // also keeps the last few steps itself, with their times (at is this page's performance.now(), for that).
+    let stepStartedAt = performance.now();
+    let stepTimes = new Map();
+
     // Returns the step it was doing before, for the ones that go on with it afterwards
     function step(name) {
         const was = stepName;
         if (name !== stepName) {
+            const now = performance.now();
+            if (stepName !== null) {
+                const time = stepTimes.get(stepName) ?? { count: 0, total: 0, max: 0 };
+                time.count++;
+                time.total += now - stepStartedAt;
+                time.max = Math.max(time.max, now - stepStartedAt);
+                stepTimes.set(stepName, time);
+            }
             stepName = name;
-            watchdog?.postMessage({ type: 'step', name });
+            stepStartedAt = now;
+            watchdog?.postMessage({ type: 'step', name, at: now });
         }
         return was;
     }
@@ -2755,26 +2770,79 @@
 
     const BEAT_MS = 1000;
     const STALL_MS = 3000; // a beat this late while the page is shown: it froze for a moment
+    const LOW_FPS = 20; // frames a second, under which the trail says the frame rate dropped (and back over 1.5 times it)
     const SAMPLE_MS = 30000;
     const SAMPLES_MAX = 20; // the last 10 minutes
-    const samples = []; // [Unix ms, MB of memory used by scripts (null where the browser doesn't say), elements on the page]
+    const SAMPLE_STEPS = 5; // the slowest steps in each sample
+    // Every SAMPLE_MS: {at (Unix ms), memory (MB used by scripts, null where the browser doesn't say), elements (on the
+    // page), animations (running on it), fps and lowestFps (frames a second: on average, and in its slowest second, while
+    // the page was shown and playing; null when it wasn't), slowest (the SAMPLE_STEPS steps that took longest at once:
+    // [name, longest ms, ms in all, times])}
+    const samples = [];
     let lastBeatAt = Date.now();
     let wasVisible = !document.hidden;
     let lastSampleAt = 0;
+    let framesSinceBeat = 0; // counted by frame()
+    let sampleFrames = 0;
+    let sampleSeconds = 0;
+    let lowestFps = null;
+    let isFpsLow = false;
+    let gpu; // the graphics card's name (graphicsCard()), looked up on the first beat so it doesn't slow the start
+
+    // The graphics card, as WebGL tells it, or null. Some browsers (like Brave) can give a general or made-up one.
+    function graphicsCard() {
+        try {
+            const gl = document.createElement('canvas').getContext('webgl');
+            if (!gl) return null;
+            const info = gl.getExtension('WEBGL_debug_renderer_info');
+            const name = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER)).slice(0, 200);
+            gl.getExtension('WEBGL_lose_context')?.loseContext();
+            return name;
+        } catch {
+            return null;
+        }
+    }
 
     function beat() {
         step('beat');
         const now = Date.now();
         const isVisible = !document.hidden;
         if (isVisible && wasVisible && now - lastBeatAt > STALL_MS) note('The page froze for about ' + ((now - lastBeatAt - BEAT_MS) / 1000).toFixed(1) + ' s');
+        if (isVisible && wasVisible && isPlaying && now > lastBeatAt) {
+            const fps = framesSinceBeat / ((now - lastBeatAt) / 1000);
+            sampleFrames += framesSinceBeat;
+            sampleSeconds += (now - lastBeatAt) / 1000;
+            lowestFps = Math.min(lowestFps ?? Infinity, Math.round(fps));
+            if (!isFpsLow && fps < LOW_FPS) {
+                isFpsLow = true;
+                note('The frame rate dropped to ' + Math.round(fps) + ' fps');
+            } else if (isFpsLow && fps >= LOW_FPS * 1.5) {
+                isFpsLow = false;
+                note('The frame rate is back up to ' + Math.round(fps) + ' fps');
+            }
+        }
+        framesSinceBeat = 0;
         lastBeatAt = now;
         wasVisible = isVisible;
+        if (gpu === undefined) gpu = graphicsCard();
         noteSlowFrames();
         if (now - lastSampleAt >= SAMPLE_MS) {
             lastSampleAt = now;
-            const memory = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576 * 10) / 10 : null;
-            samples.push([now, memory, document.getElementsByTagName('*').length]);
+            samples.push({
+                at: now,
+                memory: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576 * 10) / 10 : null,
+                elements: document.getElementsByTagName('*').length,
+                animations: document.getAnimations?.().length ?? null,
+                fps: sampleSeconds > 0 ? Math.round(sampleFrames / sampleSeconds) : null,
+                lowestFps,
+                slowest: [...stepTimes].sort(([, a], [, b]) => b.max - a.max).slice(0, SAMPLE_STEPS)
+                    .map(([name, time]) => [name, Math.round(time.max * 10) / 10, Math.round(time.total), time.count]),
+            });
             if (samples.length > SAMPLES_MAX) samples.shift();
+            stepTimes = new Map();
+            sampleFrames = 0;
+            sampleSeconds = 0;
+            lowestFps = null;
         }
         const report = crashReport();
         writeRun(report);
@@ -2783,8 +2851,9 @@
     }
 
     // What a crash report about this page would say right now: {kind, page (tab, opened and lastSeen in Unix ms,
-    // visible, closed, view, screen, cores, deviceMemory (GB, rounded by the browser), switches (what's switched on)},
-    // pending (actions not saved yet), trail, samples, state (the save as the page has it)}. The watchdog adds hang.
+    // visible, closed, view, screen, cores, deviceMemory (GB, rounded by the browser), gpu (graphicsCard()), switches
+    // (what's switched on)}, pending (actions not saved yet), trail, samples, state (the save as the page has it)}. The
+    // watchdog adds hang.
     function crashReport() {
         const switches = [
             [isAutoBuying && state && hasDark(state, 'autoBuy'), 'Auto Buy'],
@@ -2807,6 +2876,7 @@
                 screen: innerWidth + '×' + innerHeight + ' at ' + devicePixelRatio + 'x',
                 cores: navigator.hardwareConcurrency ?? null,
                 deviceMemory: navigator.deviceMemory ?? null,
+                gpu: gpu ?? null,
                 switches: switches.filter(([isOn]) => isOn).map(([, name]) => name),
             },
             pending: inflight.length + pending.length,

@@ -432,7 +432,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             <p>
                 Can we save a crash report about it? It would help a lot in finding out what went wrong. It has what the
                 game was doing when it happened, the last things that happened in it (saves, errors, slow moments), how
-                much memory it used, your save, your screen size and which browser you use. Only site admins can see it,
+                much memory it used, its frame rate, your save, your screen size, your graphics card and which browser you
+                use. Only site admins can see it,
                 and it's deleted after <?= HBHUB_MINER_CRASH_KEEP_DAYS ?> days.
             </p>
             <details class="miner-crash-details">
