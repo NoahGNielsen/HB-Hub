@@ -680,6 +680,7 @@
     let treeKey = '';
     let pickedSkill = null; // the skill shown over the tree next to it, null while none is
     let shownComet = -1; // the comet number on screen
+    let shownCometAt = 0; // when it was drawn, in performance.now() time (Comet Catcher waits a moment after)
     let saveSoonTimer = 0;
     const sprites = Object.fromEntries(Object.keys(SCENE).map((id) => [id, []])); // the ones in the picture, per building
 
@@ -895,6 +896,7 @@
         renderStore();
         renderBuffs();
         renderComet();
+        autoCatchComet();
         renderWarp();
         renderCrunch();
         renderRip();
@@ -1157,6 +1159,7 @@
 
         // A new comet: a random path across the screen, starting as far along it as the comet already is
         shownComet = comet.n;
+        shownCometAt = performance.now();
         const kind = cometKind(state);
         cometButton.classList.toggle('is-diamond', kind === 'diamond');
         cometButton.setAttribute('aria-label', kind === 'diamond' ? 'Catch the Diamond Comet' : 'Catch the Golden Comet');
@@ -2097,17 +2100,32 @@
 
     // ----- Comets
 
-    cometButton.addEventListener('click', () => {
+    cometButton.addEventListener('click', () => takeComet(false));
+
+    // Catches the comet on screen, from a click (or the C key) or from Comet Catcher (isAuto)
+    function takeComet(isAuto) {
         const result = act({ type: 'comet' });
         cometButton.hidden = true;
         if (!result) return;
         const comet = COMETS[result.kind];
         sound('catch');
-        toast(result.kind === 'diamond' ? 'diamond' : 'comet', COMET_TEXT[result.kind](comet.ms > 0 ? cometLength(state, result.kind) : 0, result.ore, comet.multiplier * cometPower(state)),
+        toast(isAuto ? 'cometCatcher' : result.kind === 'diamond' ? 'diamond' : 'comet',
+            (isAuto ? 'Comet Catcher: ' : '') + COMET_TEXT[result.kind](comet.ms > 0 ? cometLength(state, result.kind) : 0, result.ore, comet.multiplier * cometPower(state)),
             'is-comet is-' + result.kind, 6000);
         renderBuffs();
         renderStore();
-    });
+    }
+
+    // ----- Comet Catcher (the Antimatter upgrade): a few times a second, once a Golden Comet has been on screen for
+    // AUTO_COMET_DELAY_MS (so it's seen flying in first), it catches it through act(), like a click would, so the server
+    // checks it as usual. Diamond Comets are left for the player. Only while the page is open and shown, like Auto Buy.
+    const AUTO_COMET_DELAY_MS = 1500;
+
+    function autoCatchComet() {
+        if (!hasAnti(state, 'cometCatcher') || cometButton.hidden || shownComet !== state.comet.n) return;
+        if (performance.now() - shownCometAt < AUTO_COMET_DELAY_MS || cometKind(state) === 'diamond') return;
+        takeComet(true);
+    }
 
     // ----- Warp Jump
 

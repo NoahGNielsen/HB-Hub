@@ -227,12 +227,14 @@ const HBHUB_MINER_DARK_UPGRADES = [
         . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%.'],
 ];
 
-// Bought with Antimatter, kept forever
+// Bought with Antimatter, kept forever. Comet Catcher, like Auto Buy, only catches in the page like a player would (its
+// catches come here as normal comet actions), so it's only in spaceOreMiner.js.
 const HBHUB_MINER_ANTI_UPGRADES = [
     'echo' => ['name' => 'Dark Echo', 'icon' => 'cycle', 'cost' => 1, 'text' => 'Keep your Dark Matter upgrades when you Big Crunch.'],
     'converter' => ['name' => 'Matter Converter', 'icon' => 'flask', 'cost' => 3, 'text' => 'Warp Jumps give twice as much Dark Matter.'],
     'leftovers' => ['name' => 'Big Bang Leftovers', 'icon' => 'orePile', 'cost' => 5, 'text' => 'Start every run with 10 million ore.'],
     'eternal' => ['name' => 'Eternal Blueprints', 'icon' => 'blueprint', 'cost' => 10, 'text' => 'Keep Bulk Buying and your comet upgrades when you Warp Jump.'],
+    'cometCatcher' => ['name' => 'Comet Catcher', 'icon' => 'cometCatcher', 'cost' => 15, 'text' => 'Catches every Golden Comet for you while the game is open. Diamond Comets are still yours to catch.'],
     'annihilation' => ['name' => 'Annihilation Engines', 'icon' => 'annihilation', 'cost' => 25, 'text' => 'All buildings mine twice as much.'],
     'antiComets' => ['name' => 'Antimatter Comets', 'icon' => 'antiComet', 'cost' => 50, 'text' => 'Comet effects are twice as strong.'],
 ];

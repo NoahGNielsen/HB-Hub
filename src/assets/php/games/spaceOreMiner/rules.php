@@ -33,6 +33,10 @@
         is worth waiting for, it saves up for it instead of spending the ore on buildings.
     </li>
     <li>
+        With the Comet Catcher Antimatter upgrade, every Golden Comet is caught for you a moment after it shows up,
+        while the game is open. Diamond Comets are left for you to catch yourself.
+    </li>
+    <li>
         The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
         your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
     </li>
