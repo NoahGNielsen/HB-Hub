@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '22 October 2026';
+const HBHUB_PRIVACY_UPDATED = '23 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -195,7 +195,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             </li>
                             <li>
                                 Your Space Ore Miner save: your ore, buildings, upgrades, Dark Matter, Antimatter, Strange Matter, the skills you've learned, achievements, how many
-                                times you've clicked and caught comets, when you started and last saved, and a random id for
+                                times you've clicked and caught comets, when you started and last saved, how many saves came
+                                in the last few seconds (so nobody can flood the server with them), and a random id for
                                 the browser tab you're playing in (so the game only runs in one tab at a time). Your game sends
                                 what you did since the last save every 30 seconds, with the time of each purchase and how many
                                 times you clicked each second, so the server can check it. Only the result is kept, not the list

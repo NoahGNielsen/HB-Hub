@@ -33,6 +33,11 @@ const HBHUB_MINER_OFFLINE_RATE = 0.05; // of the normal ore per second, while aw
 const HBHUB_MINER_CLICKS_PER_SECOND = 20; // the most clicks that count, so auto-clickers don't pay
 const HBHUB_MINER_AUTO_VALUE = 0.2; // the share of what a click is worth that an auto-clicker's click mines
 const HBHUB_MINER_MAX_ACTIONS = 2000; // in one save
+// The most saves in HBHUB_MINER_SAVES_SECONDS (saveRateCount in HBHub-MinerSaves). The page saves every 30 seconds,
+// plus half a second after a Warp Jump or Big Crunch and when it's hidden or closed, so even at its busiest it's
+// nowhere near; only a script sending saves by hand gets there. Each save replays up to HBHUB_MINER_MAX_ACTIONS.
+const HBHUB_MINER_SAVES_MAX = 50;
+const HBHUB_MINER_SAVES_SECONDS = 10;
 const HBHUB_MINER_COST_GROWTH = 1.15; // each building costs this much more than the one before (unless it has its own 'growth')
 const HBHUB_MINER_COST_GROWTH_PHYSICS = 0.01; // taken off that with Cheaper Physics
 const HBHUB_MINER_WARP_ORE = 1e9; // ore to mine in a run before a Warp Jump
@@ -1553,7 +1558,8 @@ function hbHubMinerCheckAchievements(array &$state): void
  * Plays what the player did since the last save on their saved game, saves it, and returns
  * ['state' => the save (hbHubMinerView()), 'now' => ms, 'offline' => null or ['ms' => away for, 'ore' => mined meanwhile]],
  * or 'otherTab' when the game was opened in another tab since (the newest tab plays; $claim is how a page that just
- * opened takes over). A save is made on the first call.
+ * opened takes over), or 'tooFast' after HBHUB_MINER_SAVES_MAX saves in HBHUB_MINER_SAVES_SECONDS (nothing is saved,
+ * and the turned-away ones don't count towards it). A save is made on the first call.
  * $actions: what hbHubMinerApply() takes, each with 'at' (when, Unix ms), oldest first. Times are kept between the
  * last save and now and in order, and clicks beyond HBHUB_MINER_CLICKS_PER_SECOND since the last save don't count.
  */
@@ -1565,13 +1571,23 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         $db->prepare('INSERT IGNORE INTO `HBHub-MinerSaves` (userId, saveState, saveTab, saveStartTimestamp, saveUpdatedTimestamp)
             VALUES (?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())')
             ->execute([$userId, hbHubMinerEncode(hbHubMinerNewState($now)), $tab]);
-        $statement = $db->prepare('SELECT saveState, saveTab FROM `HBHub-MinerSaves` WHERE userId = ? FOR UPDATE');
+        $statement = $db->prepare('SELECT saveState, saveTab, saveRateCount,
+                saveRateTimestamp > UTC_TIMESTAMP() - INTERVAL ' . HBHUB_MINER_SAVES_SECONDS . ' SECOND AS inRateWindow
+            FROM `HBHub-MinerSaves` WHERE userId = ? FOR UPDATE');
         $statement->execute([$userId]);
         $row = $statement->fetch();
 
         if (!$claim && $row['saveTab'] !== $tab) {
             $db->rollBack();
             return 'otherTab';
+        }
+
+        // Saves are counted from the first one in a window of HBHUB_MINER_SAVES_SECONDS, and the next one after it starts
+        // a new window. Checked before the actions are replayed, as that's the part that costs.
+        $inRateWindow = (bool) $row['inRateWindow']; // NULL before the first counted save
+        if ($inRateWindow && (int) $row['saveRateCount'] >= HBHUB_MINER_SAVES_MAX) {
+            $db->rollBack();
+            return 'tooFast';
         }
 
         $state = hbHubMinerNormalize(json_decode($row['saveState'], true, 64, JSON_THROW_ON_ERROR), $now);
@@ -1599,10 +1615,11 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
 
         $db->prepare('UPDATE `HBHub-MinerSaves` SET saveState = ?, saveTab = ?, saveOreAllTime = ?, saveOrePerSecond = ?,
                 saveDarkMatter = ?, saveAntimatter = ?, saveStrangeMatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?,
-                saveUpdatedTimestamp = UTC_TIMESTAMP()
+                saveUpdatedTimestamp = UTC_TIMESTAMP(), saveRateCount = ?, saveRateTimestamp = IF(?, saveRateTimestamp, UTC_TIMESTAMP())
             WHERE userId = ?')
             ->execute([hbHubMinerEncode($state), $tab, $state['allOre'], hbHubMinerRate($state, PHP_INT_MAX), $state['darkEarned'],
-                $state['antimatterEarned'], $state['strangeEarned'], $state['warps'], $state['clicks'], count($state['achievements']), $userId]);
+                $state['antimatterEarned'], $state['strangeEarned'], $state['warps'], $state['clicks'], count($state['achievements']),
+                $inRateWindow ? (int) $row['saveRateCount'] + 1 : 1, (int) $inRateWindow, $userId]);
         $db->commit();
     } catch (Throwable $e) {
         if ($db->inTransaction()) {

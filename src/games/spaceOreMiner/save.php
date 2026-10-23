@@ -7,6 +7,8 @@
 // "offline": null or {"ms": time away, "ore": mined meanwhile}}. Anything that couldn't have happened just doesn't
 // count, the page carries on from the save it gets back. Errors:
 // - 409 {"error": "otherTab"}: the game has been opened in another tab since. Nothing is saved.
+// - 429 {"error": "tooFast"}: more saves than HBHUB_MINER_SAVES_MAX in HBHUB_MINER_SAVES_SECONDS, far more than the page
+//   ever sends. Nothing is saved; the page keeps the actions and sends them again with its next save.
 // - 400 {"error": "badRequest"}: no such action, a bad tab id, or actions that aren't a JSON list.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
@@ -33,6 +35,12 @@ $result = hbHubMinerSync(hbHubDatabase(), (int) $hbHubUser['userId'], $tab, ($_P
 if ($result === 'otherTab') {
     http_response_code(409);
     echo json_encode(['error' => 'otherTab']);
+    exit;
+}
+if ($result === 'tooFast') {
+    http_response_code(429);
+    header('Retry-After: ' . HBHUB_MINER_SAVES_SECONDS);
+    echo json_encode(['error' => 'tooFast']);
     exit;
 }
 

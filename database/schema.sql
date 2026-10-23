@@ -671,7 +671,9 @@ CREATE TABLE `HBHub-MinerSaves` (
   `saveClicks` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: clicks on the asteroid ever',
   `saveAchievements` smallint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: achievements done',
   `saveStartTimestamp` datetime NOT NULL COMMENT 'UTC, the first save',
-  `saveUpdatedTimestamp` datetime NOT NULL COMMENT 'UTC, the last save'
+  `saveUpdatedTimestamp` datetime NOT NULL COMMENT 'UTC, the last save',
+  `saveRateCount` smallint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Saves since saveRateTimestamp, so no more than HBHUB_MINER_SAVES_MAX are made in HBHUB_MINER_SAVES_SECONDS',
+  `saveRateTimestamp` datetime DEFAULT NULL COMMENT 'UTC, the first save counted in saveRateCount'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
