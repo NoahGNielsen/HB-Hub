@@ -70,8 +70,18 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                             <span class="casino-game-kicker">2 to 6 players</span>
                             <span class="casino-game-name">UNO <span class="casino-game-badge">Beta</span></span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
-                                <rect x="14" y="8" width="36" height="50" rx="5" transform="rotate(14 32 33)"/>
-                                <ellipse class="casino-game-art-mark" cx="32" cy="33" rx="12" ry="19" transform="rotate(44 32 33)"/>
+                                <!-- A fanned-out hand of three cards, green, yellow and red, with the UNO oval on the front one -->
+                                <g transform="rotate(-20 32 60)">
+                                    <rect x="19" y="6" width="26" height="40" rx="4"/>
+                                    <rect class="casino-game-art-green" x="21.5" y="8.5" width="21" height="35" rx="2.5"/>
+                                </g>
+                                <rect x="19" y="6" width="26" height="40" rx="4"/>
+                                <rect class="casino-game-art-mark" x="21.5" y="8.5" width="21" height="35" rx="2.5"/>
+                                <g transform="rotate(20 32 60)">
+                                    <rect x="19" y="6" width="26" height="40" rx="4"/>
+                                    <rect class="casino-game-art-red" x="21.5" y="8.5" width="21" height="35" rx="2.5"/>
+                                    <ellipse cx="32" cy="26" rx="7" ry="12.5" transform="rotate(35 32 26)"/>
+                                </g>
                             </svg>
                         </span>
                         <span class="casino-game-text">Match the colour or the number, hit your friends with Draw Fours, and don't forget to call UNO!</span>
@@ -100,10 +110,19 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                             <span class="casino-game-kicker">Clicker game</span>
                             <span class="casino-game-name">Ore Mining Inc. <span class="casino-game-badge">Beta</span></span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
-                                <path d="M30 8l16 6 10 16-4 18-16 10-18-4L8 38l4-18z"/>
-                                <circle class="casino-game-art-mark" cx="24" cy="24" r="5"/>
-                                <circle class="casino-game-art-mark" cx="40" cy="40" r="7"/>
-                                <circle class="casino-game-art-mark" cx="42" cy="22" r="3"/>
+                                <!-- A cratered asteroid with gold ore in it, a pickaxe biting into it and a Golden Comet flying past -->
+                                <path class="casino-game-art-tail" d="M10.5 15.5L2 2L15.5 10.5Z"/>
+                                <circle class="casino-game-art-mark" cx="13" cy="13" r="3.5"/>
+                                <path d="M18 30C20 20 32 16 40 19C48 21 56 26 55 37C55 47 47 56 36 56C26 57 15 51 14 41C13 36 16 33 18 30Z"/>
+                                <circle class="casino-game-art-crater" cx="25" cy="46" r="4.5"/>
+                                <circle class="casino-game-art-crater" cx="48" cy="40" r="3"/>
+                                <circle class="casino-game-art-crater" cx="23" cy="33" r="2.6"/>
+                                <path class="casino-game-art-mark" d="M33 30L38 27L42 31L40 36L34 37Z"/>
+                                <path class="casino-game-art-mark" d="M36 44L40 42L42 46L38 49L35 47Z"/>
+                                <g transform="translate(32 16) rotate(-110)">
+                                    <rect class="casino-game-art-handle" x="-1.6" y="0" width="3.2" height="26" rx="1.6"/>
+                                    <path class="casino-game-art-metal" d="M-13 6Q0 -8 13 6L11 7Q0 -2 -11 7Z"/>
+                                </g>
                             </svg>
                         </span>
                         <span class="casino-game-text">Click an asteroid for ore, buy machines that mine for you, catch Golden Comets and Warp Jump to new galaxies.</span>
