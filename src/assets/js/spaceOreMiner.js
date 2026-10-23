@@ -698,8 +698,8 @@
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
     // The asteroid changes as more is mined in a run, at this much ore mined this run: plain grey rock, iron, gold,
-    // crystal, glowing alien core
-    const STAGES = [0, 1e5, 1e8, 1e11, 1e14];
+    // crystal, glowing alien core, molten, amethyst, neutron star, black hole core
+    const STAGES = [0, 1e5, 1e8, 1e11, 1e14, 1e17, 1e20, 1e23, 1e26];
     // The buildings in the picture of the asteroid, so it fills up as the company grows: one more of a building shows for
     // each number in 'at' that's owned. The ones in SURFACE stand on the asteroid (data-miner-surface, inside it), the rest
     // are around it (data-miner-scene). parts are its pieces, each a span with the class miner-sprite-<part> and one of
