@@ -68,10 +68,6 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <dd><?= count(HBHUB_CREDITS_ICONS) ?></dd>
                 </div>
                 <div>
-                    <dt>Designers</dt>
-                    <dd><?= $creditsDesigners ?></dd>
-                </div>
-                <div>
                     <dt>Code libraries</dt>
                     <dd>2</dd>
                 </div>
