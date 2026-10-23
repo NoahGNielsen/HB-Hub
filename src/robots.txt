@@ -1,3 +1,7 @@
+# Created in the distant future (the year 2030) after
+# the AI uprising of the late 2020's which wiped out all humans.
+# (Inspired by YouTube's robots.txt)
+
 # Opt out of AI model training
 User-agent: GPTBot
 User-agent: ClaudeBot
