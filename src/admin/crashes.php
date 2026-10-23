@@ -7,7 +7,8 @@
 // (?page=). Each shows who sent it, when, its browser and graphics card, what happened in a line (what the page was
 // doing when it froze, for how long, whether it came back), the steps it did just before it froze, every 30 seconds'
 // memory, elements, animations, frame rate and slowest steps, the last things it wrote down (the trail), and the whole
-// report as JSON under "Everything" (the save as the page had it is in there, to play it again).
+// report as JSON under "Everything" (the save as the page had it is in there, to play it again). Copy everything
+// (admin.js) copies all of that as text (adminCrashCopyText()), to paste somewhere else.
 // Form (action=delete, crash=id) removes one for good, and goes in the admin log (assets/php/adminLog.php). They also
 // go by themselves after HBHUB_MINER_CRASH_KEEP_DAYS.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -92,6 +93,69 @@ function adminCrashSummary(string $kind, array $report): string
 }
 
 /**
+ * When and where it was open, and the device, in a line.
+ */
+function adminCrashPageLine(array $report, string $sentOn): string
+{
+    $page = is_array($report['page'] ?? null) ? $report['page'] : [];
+    $switches = is_array($page['switches'] ?? null) ? array_filter($page['switches'], 'is_string') : [];
+    return 'Opened ' . adminCrashTime($page['opened'] ?? null, $sentOn) . ', last heard from ' . adminCrashTime($page['lastSeen'] ?? null, $sentOn)
+        . ' on the ' . (is_string($page['view'] ?? null) ? $page['view'] : '?') . ' view, '
+        . (int) ($report['pending'] ?? 0) . ' actions not saved yet. Screen ' . (is_string($page['screen'] ?? null) ? $page['screen'] : '?')
+        . ', ' . (int) ($page['cores'] ?? 0) . ' cores' . (isset($page['deviceMemory']) ? ', ' . (float) $page['deviceMemory'] . ' GB memory' : '')
+        . ', graphics card ' . (is_string($page['gpu'] ?? null) ? $page['gpu'] : 'not known')
+        . '. Switches on: ' . ($switches !== [] ? implode(', ', $switches) : 'none') . '.';
+}
+
+/**
+ * One of the steps before a freeze ([Unix ms, name, times in a row, longest ms]) in a line, or null when it isn't one.
+ */
+function adminCrashStepLine(mixed $entry, string $sentOn): ?string
+{
+    if (!is_array($entry) || count($entry) !== 4 || !is_string($entry[1])) {
+        return null;
+    }
+    $times = (int) $entry[2];
+    return adminCrashTime($entry[0], $sentOn) . ' ' . $entry[1] . ($times > 1 ? ' ×' . $times . ', the longest ' : ', ') . adminCrashLength($entry[3]);
+}
+
+/**
+ * The whole report as text, for the Copy button: what the page shows, then all of it as JSON.
+ */
+function adminCrashCopyText(array $crash, array $report, string $sentOn): string
+{
+    $lines = ['Space Ore Miner crash report #' . (int) $crash['crashReportId'] . ' (' . ($crash['crashReportKind']) . '), sent '
+        . adminTime($crash['crashReportCreatedTimestamp']) . ' by ' . ($crash['userName'] ?? 'Deleted User'),
+        adminCrashSummary($crash['crashReportKind'], $report) . '.', adminCrashPageLine($report, $sentOn)];
+    if ($crash['crashReportUserAgent'] !== null) {
+        $lines[] = $crash['crashReportUserAgent'];
+    }
+    $list = static fn (mixed $value): array => is_array($value) ? $value : [];
+    $before = array_map(static fn (mixed $entry): ?string => adminCrashStepLine($entry, $sentOn), $list($report['hang']['before'] ?? null));
+    if ($before !== [] && is_string($report['hang']['step'] ?? null)) {
+        $before[] = $report['hang']['step'] . ', where it froze';
+    }
+    $sections = [
+        'The last steps before it froze' => $before,
+        'Every 30 seconds' => array_map(static fn (mixed $sample): ?string => adminCrashSample($sample, $sentOn), $list($report['samples'] ?? null)),
+        'The last things it wrote down' => array_map(static fn (mixed $entry): ?string => is_array($entry) && count($entry) === 2 && is_string($entry[1])
+            ? adminCrashTime($entry[0], $sentOn) . ' ' . $entry[1] : null, $list($report['trail'] ?? null)),
+    ];
+    foreach ($sections as $heading => $sectionLines) {
+        $sectionLines = array_filter($sectionLines, 'is_string');
+        if ($sectionLines !== []) {
+            $lines[] = '';
+            $lines[] = $heading . ':';
+            array_push($lines, ...$sectionLines);
+        }
+    }
+    $lines[] = '';
+    $lines[] = 'Everything:';
+    $lines[] = json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
+    return implode("\n", $lines);
+}
+
+/**
  * One of a report's samples (every 30 seconds) in a line: memory, elements, animations, frame rate and the slowest
  * steps. Reports from before the frame rate was added have [Unix ms, MB, elements] instead.
  */
@@ -169,7 +233,6 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
                                 $crashKind = $crash['crashReportKind'];
                                 $crashReport = json_decode($crash['crashReportData'], true) ?: [];
                                 $crashSentOn = date('Y-m-d', strtotime($crash['crashReportCreatedTimestamp']));
-                                $crashPage = is_array($crashReport['page'] ?? null) ? $crashReport['page'] : [];
                                 $crashTrail = is_array($crashReport['trail'] ?? null) ? $crashReport['trail'] : [];
                                 $crashSamples = is_array($crashReport['samples'] ?? null) ? $crashReport['samples'] : [];
                                 $crashBefore = is_array($crashReport['hang']['before'] ?? null) ? $crashReport['hang']['before'] : [];
@@ -184,16 +247,7 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
                                         <span class="settings-status is-on"><?= htmlspecialchars(HBHUB_MINER_CRASH_KINDS[$crashKind] ?? $crashKind) ?></span>
                                     </div>
                                     <p class="admin-feedback-text"><strong><?= htmlspecialchars(adminCrashSummary($crashKind, $crashReport)) ?>.</strong></p>
-                                    <p class="admin-feedback-text admin-small">
-                                        Opened <?= htmlspecialchars(adminCrashTime($crashPage['opened'] ?? null, $crashSentOn)) ?>,
-                                        last heard from <?= htmlspecialchars(adminCrashTime($crashPage['lastSeen'] ?? null, $crashSentOn)) ?>
-                                        on the <?= htmlspecialchars(is_string($crashPage['view'] ?? null) ? $crashPage['view'] : '?') ?> view,
-                                        <?= (int) ($crashReport['pending'] ?? 0) ?> actions not saved yet.
-                                        Screen <?= htmlspecialchars(is_string($crashPage['screen'] ?? null) ? $crashPage['screen'] : '?') ?>,
-                                        <?= (int) ($crashPage['cores'] ?? 0) ?> cores<?= isset($crashPage['deviceMemory']) ? ', ' . htmlspecialchars((string) (float) $crashPage['deviceMemory']) . ' GB memory' : '' ?>,
-                                        graphics card <?= htmlspecialchars(is_string($crashPage['gpu'] ?? null) ? $crashPage['gpu'] : 'not known') ?>.
-                                        Switches on: <?= htmlspecialchars(is_array($crashPage['switches'] ?? null) && $crashPage['switches'] !== [] ? implode(', ', array_filter($crashPage['switches'], 'is_string')) : 'none') ?>.
-                                    </p>
+                                    <p class="admin-feedback-text admin-small"><?= htmlspecialchars(adminCrashPageLine($crashReport, $crashSentOn)) ?></p>
                                     <?php if ($crash['crashReportUserAgent'] !== null): ?>
                                         <p class="admin-feedback-text admin-small admin-mono"><?= htmlspecialchars($crash['crashReportUserAgent']) ?></p>
                                     <?php endif; ?>
@@ -202,10 +256,9 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
                                             <summary>The last steps before it froze (the same step several times in a row is one line)</summary>
                                             <ol class="admin-crash-trail">
                                                 <?php foreach ($crashBefore as $entry): ?>
-                                                    <?php if (is_array($entry) && count($entry) === 4 && is_string($entry[1])): ?>
-                                                        <li><span class="admin-mono"><?= htmlspecialchars(adminCrashTime($entry[0], $crashSentOn)) ?></span>
-                                                            <?= htmlspecialchars($entry[1]) ?><?= (int) $entry[2] > 1 ? ' ×' . (int) $entry[2] : '' ?>,
-                                                            <?= (int) $entry[2] > 1 ? 'the longest ' : '' ?><?= htmlspecialchars(adminCrashLength($entry[3])) ?></li>
+                                                    <?php $stepLine = adminCrashStepLine($entry, $crashSentOn); ?>
+                                                    <?php if ($stepLine !== null): ?>
+                                                        <li><?= htmlspecialchars($stepLine) ?></li>
                                                     <?php endif; ?>
                                                 <?php endforeach; ?>
                                                 <?php if (is_string($crashReport['hang']['step'] ?? null)): ?>
@@ -244,6 +297,9 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
                                         <pre class="admin-crash-json"><?= htmlspecialchars(json_encode($crashReport, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION)) ?></pre>
                                     </details>
                                     <div class="admin-feedback-foot">
+                                        <!-- admin.js shows it: it copies everything above, as text, from the hidden copy next to it -->
+                                        <button type="button" class="settings-btn settings-btn-small" data-crash-copy hidden>Copy everything</button>
+                                        <pre hidden data-crash-copy-text><?= htmlspecialchars(adminCrashCopyText($crash, $crashReport, $crashSentOn)) ?></pre>
                                         <form action="<?= $adminFormAction ?>" method="post" data-confirm="Delete this crash report? It can't be brought back.">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="crash" value="<?= $crashId ?>">
