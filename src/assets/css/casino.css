@@ -669,11 +669,17 @@ a.casino-game:hover .casino-game-art {
   box-shadow: inset 3px 0 var(--accent);
 }
 
-/* Gold, silver and bronze behind the top three's rank (data-podium, only while sorted best first) */
+/* Gold, silver and bronze behind the top three's rank (data-podium, only while sorted best first). The circle is a
+   28px tile centred on the content box, not the whole cell, since the cell's left padding is bigger than its right
+   and the number would sit off-centre in it otherwise */
 .casino-table td[data-podium] {
   color: #1d1f24;
   font-weight: 800;
   background-image: radial-gradient(circle 14px at center, var(--casino-podium) 13px, transparent 14px);
+  background-origin: content-box;
+  background-position: center;
+  background-size: 28px 28px;
+  background-repeat: no-repeat;
 }
 
 .casino-table td[data-podium="1"] {
