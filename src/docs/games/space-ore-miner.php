@@ -175,6 +175,12 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
                         </p>
                         <p>
+                            If the game crashes or freezes before it's saved, what you did just before is kept in your browser
+                            and saved the next time you open the game there. After a crash, the game asks whether it may send a
+                            crash report, so the problem can be found and fixed. It's only sent if you say yes, and you can see
+                            what's in it first (more in the <a href="/legal/privacy#what">privacy policy</a>).
+                        </p>
+                        <p>
                             The server plays every click and purchase again to check it, so the
                             <a href="/games/spaceOreMiner/leaderboard">leaderboard</a> can't be cheated from the browser. Clicks only
                             count up to <?= HBHUB_MINER_CLICKS_PER_SECOND ?> a second, and clicks at a perfectly even pace (like an

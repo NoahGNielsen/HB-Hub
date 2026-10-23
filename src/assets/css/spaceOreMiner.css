@@ -2647,6 +2647,26 @@
   color: #14091f;
 }
 
+/* After a crash: may the report be sent? What's in it is the report itself, in a box of its own that scrolls */
+.miner-crash-details {
+  margin-bottom: 8px;
+}
+
+.miner-crash-details summary {
+  cursor: pointer;
+}
+
+.miner-crash-json {
+  max-height: 240px;
+  margin: 8px 0 0;
+  padding: 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.75rem;
+  white-space: pre;
+}
+
 /* The popups: stats, achievements and how to play. The padding is on the inside, so a click on the dialog itself is
    always outside it (on the backdrop), which closes it. */
 .games-dialog.miner-popup {

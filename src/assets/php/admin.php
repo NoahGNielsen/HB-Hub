@@ -1,6 +1,7 @@
 <?php
 // The admin panel's pages: the lists of users and chats (admin/index.php), the banned pictures (admin/banned.php), the
-// feedback (admin/feedback.php), the admin log (admin/log.php), and one user (admin/user.php) or chat (admin/chat.php).
+// feedback (admin/feedback.php), Space Ore Miner's crash reports (admin/crashes.php), the admin log (admin/log.php),
+// and one user (admin/user.php) or chat (admin/chat.php).
 // Only site admins (userRole 2) get in, everyone else gets a 404 so it doesn't show they're there. What the pages share
 // is here: who gets in, the side menus (the settings page's, settings.css), and how dates, statuses, pictures, messages
 // and chat names are shown. Everything they do is logged with adminLog.php.
@@ -37,20 +38,23 @@ function adminOnly(array $user): void
 
 /**
  * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), Banned pictures (admin/banned.php),
- * Feedback (admin/feedback.php) and Admin log (admin/log.php), each with how many there are in all, or for Feedback
- * how many are new. $active is 'users', 'chats', 'banned', 'feedback' or 'log'.
+ * Feedback (admin/feedback.php), Crash reports (admin/crashes.php) and Admin log (admin/log.php), each with how many
+ * there are in all, or for Feedback how many are new. $active is 'users', 'chats', 'banned', 'feedback', 'crashes' or
+ * 'log'.
  */
 function adminListsMenuHtml(PDO $db, string $active): string
 {
     $totals = $db->query('SELECT (SELECT COUNT(*) FROM `HBHub-Users`) AS users, (SELECT COUNT(*) FROM `HBHub-Chats`) AS chats,
         (SELECT COUNT(*) FROM `HBHub-BannedAvatars`) AS banned,
         (SELECT COUNT(*) FROM `HBHub-Feedback` WHERE feedbackDoneTimestamp IS NULL) AS feedback,
+        (SELECT COUNT(*) FROM `HBHub-MinerCrashReports`) AS crashes,
         (SELECT COUNT(*) FROM `HBHub-AdminLog`) AS log')->fetch();
     $lists = [
         'users' => ['Users', '/admin/?list=users'],
         'chats' => ['Chats', '/admin/?list=chats'],
         'banned' => ['Banned pictures', '/admin/banned'],
         'feedback' => ['Feedback', '/admin/feedback'],
+        'crashes' => ['Crash reports', '/admin/crashes'],
         'log' => ['Admin log', '/admin/log'],
     ];
 

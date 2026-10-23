@@ -14,6 +14,10 @@
 // between them here, with history.pushState, so the game keeps running instead of the page loading again. The Strange
 // Matter view has the skill tree, drawn here from the skills (see renderTree()). Stats, achievements and how to
 // play are popups (data-miner-popup), opened by the buttons by the title (data-miner-open).
+// What hasn't been saved yet is also kept in the browser, so a page that crashes or freezes doesn't lose it: the next
+// one sends it with its first save. A watchdog worker (data-watchdog, spaceOreMinerWatchdog.js) notices when the page
+// freezes, and the next time the game is opened after one, it asks whether it may send a crash report. See "Crash
+// recovery" and "Crash reports" near the end.
 (() => {
     const root = document.querySelector('[data-miner]');
     if (!root) return;
@@ -807,6 +811,7 @@
         catchUp();
         const result = apply(state, action);
         if (!result) return false;
+        if (!['click', 'buy', 'upgrade'].includes(action.type)) note('Did ' + action.type + (action.id ? ' ' + action.id : '')); // not the ones Auto Buy does all the time
 
         // Clicks in the same second go as one (unless one looks like an auto-clicker's and the other doesn't)
         const last = pending[pending.length - 1];
@@ -850,24 +855,34 @@
 
     async function save({ claim = false, keepalive = false } = {}) {
         if (isSending || (!isPlaying && !claim)) return;
+        const was = step('save');
         isSending = true;
         clearTimeout(saveSoonTimer);
         const batch = pending;
         pending = [];
+        inflight = batch;
         const sentAt = Date.now();
         lastSentAt = sentAt;
         const body = new URLSearchParams({ action: 'sync', tab: TAB, actions: JSON.stringify(batch) });
         if (claim) body.set('claim', '1');
+        if (claim && recovered.length > 0) body.set('recovered', JSON.stringify(recovered));
         // A keepalive request can't be bigger than 64 KB (the browser fails it at once), so a big batch goes as a normal
         // one, which still gets there as long as the page isn't closed
         if (body.toString().length > KEEPALIVE_BYTES) keepalive = false;
+        writeRun(); // so a crash while it's on its way still has the batch
+        note((claim ? 'Loading the save' : 'Saving') + ': ' + batch.length + ' actions' + (claim && recovered.length > 0 ? ', ' + recovered.length + ' recovered' : '')
+            + (keepalive ? ' (closing)' : ''));
+        step(was);
 
         try {
             const response = await fetch('/games/spaceOreMiner/save', {
                 method: 'POST', headers: { Accept: 'application/json' }, body, keepalive,
             });
+            step('save: answer');
             const data = await response.json().catch(() => ({}));
+            step('save: answer');
             if (response.status === 409 && data.error === 'otherTab') {
+                note('Another tab took the game over');
                 stop();
                 otherTabDialog.showModal();
                 return;
@@ -879,24 +894,34 @@
             if (!response.ok || !data.state) throw new Error(data.error || 'HTTP ' + response.status);
 
             clockOffset = Math.round(data.now - (sentAt + Date.now()) / 2);
+            step('save: adopt');
             adopt(data.state, claim);
             lastSavedAt = Date.now();
             saveFailed = false;
-            if (claim) start();
+            note('Saved in ' + (lastSavedAt - sentAt) + ' ms');
+            if (claim) {
+                step('save: start');
+                finishRecovery(data.recovered ?? 0);
+                start();
+            }
             if (data.offline && data.offline.ms > CONFIG.onlineMs) {
                 toast('orePile', 'Welcome back! While you were away for ' + formatDuration(data.offline.ms) + ', your machines mined '
                     + format(data.offline.ore) + ' ore.', 'is-welcome', 9000);
             }
-        } catch {
+        } catch (error) {
             pending = batch.concat(pending); // they go with the next save
             saveFailed = true;
+            note('Save failed: ' + (error?.message ?? error));
             if (claim) {
                 setSaveText('Couldn\'t load your save. Trying again…', true);
                 setTimeout(() => save({ claim: true }), 5000);
             }
         } finally {
             isSending = false;
+            inflight = [];
+            writeRun();
             renderSave();
+            step(null);
         }
         // More was done while it was on its way. Not after a save that failed: it would be sent again straight away and
         // fail again, over and over, and a request the browser turns down at once (see KEEPALIVE_BYTES) never even lets
@@ -929,8 +954,13 @@
         requestAnimationFrame(frame);
     }
 
+    // The game was opened somewhere else: what wasn't saved here never will be (that page has the game now)
     function stop() {
         isPlaying = false;
+        pending = [];
+        inflight = []; // turned away too
+        isClosed = true;
+        writeRun();
         asteroid.disabled = true;
         cometButton.hidden = true;
         setSaveText('Stopped: playing somewhere else.', true);
@@ -938,47 +968,76 @@
 
     // Saves every so often while the page is visible, and when it's hidden or closed
     setInterval(() => {
+        step('save timer');
         if (isPlaying && !document.hidden && Date.now() - lastSentAt >= (saveFailed ? 10 : CONFIG.saveSeconds) * 1000) save();
         renderSave();
+        step(null);
     }, 1000);
     document.addEventListener('visibilitychange', () => {
+        note(document.hidden ? 'Hidden' : 'Shown');
+        beat(); // straight away, so the watchdog stops (or starts) watching now, not a second later
         if (!isPlaying) return;
         save({ keepalive: document.hidden });
     });
     window.addEventListener('pagehide', () => {
         if (isPlaying && pending.length > 0) save({ keepalive: true });
+        isClosed = true;
+        note('Closed');
+        writeRun();
+    });
+    window.addEventListener('pageshow', (event) => {
+        if (!event.persisted) return; // back from the browser's back/forward cache: open again
+        isClosed = false;
+        note('Opened again (back/forward)');
+        writeRun();
     });
 
     // ----- Drawing
 
     function frame() {
         if (!isPlaying) return;
+        step('frame');
         if (!document.hidden) {
             catchUp();
             oreText.textContent = format(state.ore, { long: true });
             rateText.textContent = format(rate(state, state.tick), { decimals: true });
         }
         requestAnimationFrame(frame);
+        step(null);
     }
 
-    // The slower parts, a few times a second
+    // The slower parts, a few times a second. Each part tells the watchdog what it's doing, so a freeze in one of them
+    // says which.
     setInterval(() => {
         if (!isPlaying || document.hidden) return;
+        step('tick: achievements');
         checkAchievements(state);
         renderAchievementsUnlocked();
+        step('tick: Auto Buy');
         autoBuy();
+        step('tick: Autopilot and Auto Crunch');
         autoPrestige();
+        step('tick: store');
         renderStore();
+        step('tick: comets');
         renderBuffs();
         renderComet();
         autoCatchComet();
+        step('tick: Warp Jump');
         renderWarp();
+        step('tick: Big Crunch');
         renderCrunch();
+        step('tick: Big Rip and skill tree');
         renderRip();
+        step('tick: menu');
         renderMenu();
+        step(null);
     }, 200);
     setInterval(() => {
-        if (isPlaying && !document.hidden && statsPopup.open) renderStats();
+        if (!isPlaying || document.hidden || !statsPopup.open) return;
+        step('stats');
+        renderStats();
+        step(null);
     }, 1000);
 
     // withNews: a new line in the news ticker too (not for what Autopilot and Auto Crunch do every few seconds)
@@ -1171,7 +1230,10 @@
                     flyFreighter(sprite);
                     // A new way each time it's across (the bob of its body counts its turns too, so only its own flight)
                     sprite.addEventListener('animationiteration', (event) => {
-                        if (event.target === sprite && event.animationName === 'miner-fly') flyFreighter(sprite);
+                        if (event.target !== sprite || event.animationName !== 'miner-fly') return;
+                        step('Ore Freighter turning');
+                        flyFreighter(sprite);
+                        step(null);
                     });
                 }
             }
@@ -1849,7 +1911,10 @@
         ticker.classList.add('is-new');
     }
     setInterval(() => {
-        if (isPlaying && !document.hidden) renderTicker();
+        if (!isPlaying || document.hidden) return;
+        step('news ticker');
+        renderTicker();
+        step(null);
     }, 9000);
 
     // ----- Sounds, made here rather than loaded. Browsers only let a page play sound once it's been clicked.
@@ -2065,6 +2130,7 @@
 
     function setAutoBuying(isOn) {
         isAutoBuying = isOn;
+        note('Auto Buy ' + (isOn ? 'on' : 'off'));
         try {
             localStorage.setItem(AUTO_BUY_KEY, isOn ? 'on' : 'off');
         } catch {
@@ -2317,6 +2383,7 @@
 
     function setAutoWarping(isOn) {
         isAutoWarping = isOn;
+        note('Autopilot ' + (isOn ? 'on' : 'off'));
         try {
             localStorage.setItem(AUTO_WARP_KEY, isOn ? 'on' : 'off');
         } catch {
@@ -2327,6 +2394,7 @@
 
     function setAutoCrunching(isOn) {
         isAutoCrunching = isOn;
+        note('Auto Crunch ' + (isOn ? 'on' : 'off'));
         try {
             localStorage.setItem(AUTO_CRUNCH_KEY, isOn ? 'on' : 'off');
         } catch {
@@ -2493,6 +2561,7 @@
 
     function showView(view) {
         root.dataset.view = view;
+        note('View: ' + view);
         for (const [name, node] of Object.entries(views)) node.hidden = name !== view;
         for (const link of menu.querySelectorAll('[data-miner-view-link]')) {
             if (link.dataset.minerViewLink === view) link.setAttribute('aria-current', 'page');
@@ -2532,5 +2601,389 @@
     otherTabDialog.addEventListener('cancel', (event) => event.preventDefault());
     root.querySelector('[data-miner-reload]').addEventListener('click', () => location.reload());
 
+    // ----- The trail: the last TRAIL_MAX things that happened, as [Unix ms, text], for a crash report: saves and how
+    // they went, errors, slow frames, freezes, the page being hidden or shown, views, the auto switches and the bigger
+    // actions (Warp Jumps, upgrades bought with Dark Matter...). The same text twice in a row is one line that counts.
+    // Never what's typed, and nothing goes anywhere unless the player agrees to send a crash report.
+
+    const TRAIL_MAX = 100;
+    const NOTE_MAX = 500; // characters in one line
+    const trail = [];
+    let lastNote = '';
+    let lastNoteCount = 0;
+
+    function note(text) {
+        text = String(text).slice(0, NOTE_MAX);
+        const last = trail[trail.length - 1];
+        if (last && text === lastNote) {
+            lastNoteCount++;
+            last[0] = Date.now();
+            last[1] = text + ' (' + lastNoteCount + ' times)';
+            return;
+        }
+        lastNote = text;
+        lastNoteCount = 1;
+        trail.push([Date.now(), text]);
+        if (trail.length > TRAIL_MAX) trail.shift();
+    }
+
+    // "spaceOreMiner.js" from "https://.../assets/js/spaceOreMiner.js?v=123"
+    const fileName = (url) => String(url ?? '').split('?')[0].split('/').pop() || '?';
+
+    // Where an error came from: the first few lines of its stack, with the addresses cut down to the file
+    function stackText(error) {
+        const lines = String(error?.stack ?? '').split('\n').slice(1, 5)
+            .map((line) => line.trim().replace(/https?:\/\/[^\s)]+\//g, '').replace(/\?v=\d+/g, ''));
+        return lines.length > 0 ? ' < ' + lines.join(' < ') : '';
+    }
+
+    addEventListener('error', (event) => {
+        note('Error: ' + event.message + ' (' + fileName(event.filename) + ':' + event.lineno + ':' + event.colno + ')' + stackText(event.error));
+    });
+    addEventListener('unhandledrejection', (event) => {
+        note('Error in a promise: ' + (event.reason?.message ?? String(event.reason)) + stackText(event.reason));
+    });
+
+    // Slow frames: the browser tells (long-animation-frame, or in older ones only longtask) when a frame took long,
+    // and with long-animation-frame which scripts it ran and for how long (invoker is what started them, like
+    // "TimerHandler:setInterval" or "FrameRequestCallback", and sourceCharPosition where in the file the function is).
+    // The ones over SLOW_FRAME_MS are put together and go in the trail once a second, with the worst one's details.
+    const SLOW_FRAME_MS = 200;
+    let slowFrames = null; // since the last beat: {count, worst (ms), text}
+
+    function watchSlowFrames() {
+        const types = window.PerformanceObserver?.supportedEntryTypes ?? [];
+        const type = types.includes('long-animation-frame') ? 'long-animation-frame' : types.includes('longtask') ? 'longtask' : null;
+        if (type === null) return; // a browser that doesn't say: no slow frames in the trail
+        new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+                if (entry.duration < SLOW_FRAME_MS) continue;
+                slowFrames ??= { count: 0, worst: 0, text: '' };
+                slowFrames.count++;
+                if (entry.duration > slowFrames.worst) {
+                    slowFrames.worst = entry.duration;
+                    slowFrames.text = slowFrameText(entry);
+                }
+            }
+        }).observe({ type, buffered: true });
+    }
+
+    function slowFrameText(entry) {
+        if (!entry.scripts) return ''; // a longtask, which doesn't say
+        const parts = [...entry.scripts].sort((a, b) => b.duration - a.duration).slice(0, 3).map((script) => (script.invoker || script.invokerType)
+            + (script.sourceFunctionName ? ' in ' + script.sourceFunctionName : '')
+            + (script.sourceURL ? ' (' + fileName(script.sourceURL) + ' at ' + script.sourceCharPosition + ')' : '')
+            + ' ' + Math.round(script.duration) + ' ms');
+        if (entry.styleAndLayoutStart > 0) parts.push('drawing ' + Math.round(entry.startTime + entry.duration - entry.styleAndLayoutStart) + ' ms');
+        return parts.join('; ');
+    }
+
+    function noteSlowFrames() {
+        if (!slowFrames) return;
+        note((slowFrames.count === 1 ? 'A slow frame' : slowFrames.count + ' slow frames') + ', the worst ' + Math.round(slowFrames.worst) + ' ms'
+            + (slowFrames.text ? ': ' + slowFrames.text : ''));
+        slowFrames = null;
+    }
+
+    // ----- The watchdog (spaceOreMinerWatchdog.js, a worker, so it keeps running when this page freezes): step()
+    // tells it what the page is doing right now (null: nothing, it's waiting), and beat() that the page is fine, every
+    // second, with the crash report it would save if the page froze before the next beat. The game's timers and its
+    // save each name their steps; clicks and key presses are named by the listeners below, which come first and last.
+
+    let watchdog = null;
+    let stepName = null;
+    try {
+        watchdog = new Worker(root.dataset.watchdog);
+        watchdog.addEventListener('message', (event) => {
+            if (event.data.type === 'recovered') note('The page answered again after freezing for ' + (event.data.ms / 1000).toFixed(1) + ' s');
+        });
+    } catch {
+        // no workers: freezes aren't noticed while they happen, but a page that's closed by one still is (isCrash())
+    }
+
+    // Returns the step it was doing before, for the ones that go on with it afterwards
+    function step(name) {
+        const was = stepName;
+        if (name !== stepName) {
+            stepName = name;
+            watchdog?.postMessage({ type: 'step', name });
+        }
+        return was;
+    }
+
+    // What a click or key press was on, like "button[data-building=drone]". Not which key while typing in a box.
+    function describeEvent(event) {
+        const target = event.target instanceof Element ? event.target : null;
+        if (event.type === 'keydown') return target?.closest('input, textarea, [contenteditable]') ? 'typing' : event.key;
+        const node = target?.closest('button, a, summary, dialog') ?? target;
+        if (!node) return '?';
+        const [data] = Object.entries(node.dataset);
+        return node.tagName.toLowerCase() + (data ? '[data-' + data[0].replace(/[A-Z]/g, (letter) => '-' + letter.toLowerCase())
+            + (data[1] ? '=' + data[1] : '') + ']' : '');
+    }
+
+    for (const type of ['click', 'keydown', 'pointerdown', 'pointerup']) {
+        addEventListener(type, (event) => step(type + ': ' + describeEvent(event)), { capture: true });
+        addEventListener(type, () => step(null));
+    }
+
+    const BEAT_MS = 1000;
+    const STALL_MS = 3000; // a beat this late while the page is shown: it froze for a moment
+    const SAMPLE_MS = 30000;
+    const SAMPLES_MAX = 20; // the last 10 minutes
+    const samples = []; // [Unix ms, MB of memory used by scripts (null where the browser doesn't say), elements on the page]
+    let lastBeatAt = Date.now();
+    let wasVisible = !document.hidden;
+    let lastSampleAt = 0;
+
+    function beat() {
+        step('beat');
+        const now = Date.now();
+        const isVisible = !document.hidden;
+        if (isVisible && wasVisible && now - lastBeatAt > STALL_MS) note('The page froze for about ' + ((now - lastBeatAt - BEAT_MS) / 1000).toFixed(1) + ' s');
+        lastBeatAt = now;
+        wasVisible = isVisible;
+        noteSlowFrames();
+        if (now - lastSampleAt >= SAMPLE_MS) {
+            lastSampleAt = now;
+            const memory = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576 * 10) / 10 : null;
+            samples.push([now, memory, document.getElementsByTagName('*').length]);
+            if (samples.length > SAMPLES_MAX) samples.shift();
+        }
+        const report = crashReport();
+        writeRun(report);
+        watchdog?.postMessage({ type: 'beat', visible: isVisible, report });
+        step(null);
+    }
+
+    // What a crash report about this page would say right now: {kind, page (tab, opened and lastSeen in Unix ms,
+    // visible, closed, view, screen, cores, deviceMemory (GB, rounded by the browser), switches (what's switched on)},
+    // pending (actions not saved yet), trail, samples, state (the save as the page has it)}. The watchdog adds hang.
+    function crashReport() {
+        const switches = [
+            [isAutoBuying && state && hasDark(state, 'autoBuy'), 'Auto Buy'],
+            [isAutoWarping && state && skillEffects(state).autoWarp, 'Autopilot'],
+            [isAutoCrunching && state && skillEffects(state).autoCrunch, 'Auto Crunch'],
+            [state && hasAnti(state, 'cometCatcher'), 'Comet Catcher'],
+            [lateKeys && state && hasDark(state, 'lateKeys'), 'Late-game keys'],
+            [isSoundOn, 'Sound'],
+            [reduceMotion.matches, 'Reduced motion'],
+        ];
+        return {
+            kind: 'closed',
+            page: {
+                tab: TAB,
+                opened: openedAt,
+                lastSeen: Date.now(),
+                visible: !document.hidden,
+                closed: isClosed,
+                view: root.dataset.view,
+                screen: innerWidth + '×' + innerHeight + ' at ' + devicePixelRatio + 'x',
+                cores: navigator.hardwareConcurrency ?? null,
+                deviceMemory: navigator.deviceMemory ?? null,
+                switches: switches.filter(([isOn]) => isOn).map(([, name]) => name),
+            },
+            pending: inflight.length + pending.length,
+            trail: trail.slice(),
+            samples: samples.slice(),
+            state,
+        };
+    }
+
+    // ----- Crash recovery. What hasn't been saved yet is kept in this browser's local storage, under RUN_KEY + this
+    // page's tab id, as {report (crashReport()), actions (the last save's while it's on its way, then what's been done
+    // since)}: written every second (beat()), when a save is sent or answered, and when the page is hidden or closed,
+    // and taken away once the page is closed with nothing left to save. A page that crashes, freezes until the browser
+    // closes it, or is closed before its last save got there leaves it behind, and the next page of the game sends those
+    // actions with its first save (recovered, see hbHubMinerSync()). Only the ones newer than the save count there, so
+    // the ones that did get there aren't counted twice. Then they're taken away, except from a page that crashed
+    // (isCrash()), which stays (without its actions) until the player has answered about its crash report.
+
+    const RUN_KEY = 'hbHubMinerRun:';
+    const CRASH_STALE_MS = 10000; // a page on screen says something every second: after this long without, it's gone
+    const openedAt = Date.now();
+    let inflight = []; // the last save's actions while it's on its way
+    let isClosed = false; // the page was closed (or the game opened somewhere else): it ended properly
+    const leftovers = readRuns(); // what other pages of the game left behind: [{key, report, actions}]
+    let recovered = leftovers.flatMap((run) => run.actions).sort((a, b) => a.at - b.at);
+
+    function readRuns() {
+        const runs = [];
+        try {
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+            for (const key of keys) {
+                if (!key?.startsWith(RUN_KEY) || key === RUN_KEY + TAB) continue;
+                let run = null;
+                try {
+                    run = JSON.parse(localStorage.getItem(key));
+                } catch {
+                    // broken: taken away like the others
+                }
+                runs.push({
+                    key,
+                    report: run?.report?.page ? run.report : null,
+                    actions: Array.isArray(run?.actions) ? run.actions.filter((action) => action && Number.isFinite(action.at)) : [],
+                });
+            }
+        } catch {
+            // no storage: nothing to recover
+        }
+        return runs;
+    }
+
+    // A page that went away while it was on screen, without closing properly
+    function isCrash(run) {
+        const page = run.report?.page;
+        return Boolean(page) && !page.closed && page.visible && Date.now() - page.lastSeen > CRASH_STALE_MS;
+    }
+
+    // report: crashReport(), when it's already been made
+    function writeRun(report = crashReport()) {
+        try {
+            const actions = inflight.concat(pending);
+            if (isClosed && actions.length === 0) localStorage.removeItem(RUN_KEY + TAB);
+            else localStorage.setItem(RUN_KEY + TAB, JSON.stringify({ report, actions }));
+        } catch {
+            // no storage, or it's full: nothing to recover from
+        }
+    }
+
+    // After the first save, with how many of the recovered actions counted
+    function finishRecovery(count) {
+        if (recovered.length > 0) note('Recovered ' + count + ' of ' + recovered.length + ' actions from before');
+        if (count > 0) {
+            toast('orePile', 'The game didn\'t close properly last time, but what you did just before has been saved now.', 'is-welcome', 9000);
+        }
+        recovered = [];
+        for (const run of leftovers) {
+            try {
+                if (!crashesAnswered && crashRuns.includes(run)) localStorage.setItem(run.key, JSON.stringify({ report: run.report, actions: [] }));
+                else localStorage.removeItem(run.key);
+            } catch {
+                // no storage
+            }
+        }
+    }
+
+    // ----- Crash reports. When the page opens, it looks for crashes: the freezes the watchdog saved in IndexedDB, and
+    // the pages that crashed (isCrash()). If there are any, it asks whether it may send a crash report, with the
+    // newest one in the words and all that would be sent under "What's in it". If the player says yes, the newest
+    // CRASH_SEND_MAX go to /games/spaceOreMiner/crash; either way they're deleted. Closing the popup without answering
+    // keeps them, to ask again next time.
+
+    const CRASH_SEND_MAX = 5;
+    const crashDialog = root.querySelector('[data-miner-crash-dialog]');
+    const crashDialogText = root.querySelector('[data-miner-crash-text]');
+    const crashDialogJson = root.querySelector('[data-miner-crash-json]');
+    const crashRuns = leftovers.filter(isCrash);
+    let crashes = []; // what's asked about, newest first
+    let hangIds = []; // their records in IndexedDB
+    let crashesAnswered = false;
+
+    function crashDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('hbHubMiner', 1);
+            request.onupgradeneeded = () => request.result.createObjectStore('crashes', { keyPath: 'id' });
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // The freezes the watchdog saved (its records, see spaceOreMinerWatchdog.js), or none without IndexedDB
+    async function readHangs() {
+        try {
+            const db = await crashDatabase();
+            return await new Promise((resolve, reject) => {
+                const request = db.transaction('crashes').objectStore('crashes').getAll();
+                request.onsuccess = () => resolve(request.result.filter((record) => record?.page && record.hang));
+                request.onerror = () => reject(request.error);
+            });
+        } catch {
+            return [];
+        }
+    }
+
+    async function deleteHangs(ids) {
+        if (ids.length === 0) return;
+        try {
+            const store = (await crashDatabase()).transaction('crashes', 'readwrite').objectStore('crashes');
+            for (const id of ids) store.delete(id);
+        } catch {
+            // they're asked about again next time
+        }
+    }
+
+    // "1.2 seconds", "40 seconds", "3 minutes"
+    const secondsText = (ms) => (ms < 10000 ? (ms / 1000).toFixed(1) + ' seconds' : ms < 60000 ? Math.round(ms / 1000) + ' seconds' : formatDuration(ms));
+
+    function crashText(report) {
+        const when = new Date(report.hang?.at ?? report.page.lastSeen)
+            .toLocaleString('en-GB', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+        if (report.kind === 'hang') {
+            return 'On ' + when + ', Space Ore Miner froze and stopped answering' + (report.hang.recovered
+                ? ' for ' + secondsText(report.hang.lasted) + ' before it came back.'
+                : '. It was still frozen ' + secondsText(report.hang.lasted) + ' later, so the browser most likely closed it.');
+        }
+        return 'On ' + when + ', Space Ore Miner stopped while you were playing, without closing properly. That happens when the '
+            + 'browser closes a page that froze or ran out of memory, or when the computer turns off.';
+    }
+
+    // The report as it's sent: without the watchdog's id for it
+    function sentReport(report) {
+        const { id, ...rest } = report;
+        return rest;
+    }
+
+    async function askAboutCrashes() {
+        const hangs = await readHangs();
+        const hungTabs = new Set(hangs.map((hang) => hang.page.tab));
+        crashes = [...hangs, ...crashRuns.map((run) => run.report).filter((report) => !hungTabs.has(report.page.tab))]
+            .sort((a, b) => b.page.lastSeen - a.page.lastSeen);
+        hangIds = hangs.map((hang) => hang.id);
+        if (crashes.length === 0) return;
+        note('Found ' + crashes.length + ' crash' + (crashes.length === 1 ? '' : 'es') + ' from before');
+        const more = crashes.length - 1;
+        crashDialogText.textContent = crashText(crashes[0]) + (more > 0 ? ' It happened ' + more + ' more ' + (more === 1 ? 'time' : 'times') + ' before that too.' : '');
+        crashDialogJson.textContent = JSON.stringify(crashes.slice(0, CRASH_SEND_MAX).map(sentReport), null, 2);
+        crashDialog.showModal();
+    }
+
+    async function answerCrashes(isSending) {
+        crashDialog.close();
+        crashesAnswered = true;
+        for (const run of crashRuns) {
+            try {
+                localStorage.removeItem(run.key);
+            } catch {
+                // no storage
+            }
+        }
+        deleteHangs(hangIds);
+        if (!isSending) return;
+
+        let sent = 0;
+        for (const report of crashes.slice(0, CRASH_SEND_MAX)) {
+            try {
+                const response = await fetch('/games/spaceOreMiner/crash', {
+                    method: 'POST',
+                    headers: { Accept: 'application/json' },
+                    body: new URLSearchParams({ action: 'report', kind: report.kind, report: JSON.stringify(sentReport(report)) }),
+                });
+                if (response.ok) sent++;
+            } catch {
+                // counted as not sent
+            }
+        }
+        toast('', sent > 0 ? 'Thanks! The crash report was sent, so it can be looked into.' : 'Couldn\'t send the crash report, sorry.', '', 6000);
+    }
+
+    root.querySelector('[data-miner-crash-send]').addEventListener('click', () => answerCrashes(true));
+    root.querySelector('[data-miner-crash-skip]').addEventListener('click', () => answerCrashes(false));
+
+    note('Opened on the ' + root.dataset.view + ' view');
+    watchSlowFrames();
+    setInterval(beat, BEAT_MS);
+    askAboutCrashes();
     save({ claim: true });
 })();

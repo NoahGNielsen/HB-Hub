@@ -12,9 +12,12 @@
 // (?view=strangeMatter, the Big Rip and the skill tree). They're all on the page, and the
 // script switches between them without loading it again (changing the address, so Back works), so the game keeps
 // running; ?view= only picks the one shown first. Stats, achievements and how to play are popups.
+// data-watchdog is the worker that notices when the page freezes (spaceOreMinerWatchdog.js). After a crash, the next
+// time the game is opened, the script asks in data-miner-crash-dialog whether it may send a crash report.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/crashReports.php';
 hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 
 const MINER_VIEWS = [ // ?view= => [the menu's text, its address]
@@ -40,6 +43,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="casino games miner is-loading" data-miner data-view="<?= $minerView ?>"
           data-tab="<?= bin2hex(random_bytes(16)) ?>" data-icons="<?= htmlspecialchars(hbHubMinerIconsUrl()) ?>"
+          data-watchdog="/assets/js/spaceOreMinerWatchdog.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/spaceOreMinerWatchdog.js') ?>"
           data-config="<?= htmlspecialchars(json_encode(hbHubMinerConfig())) ?>">
         <a class="casino-back" href="/games/">&larr; Games</a>
         <div class="casino-title-row">
@@ -400,6 +404,27 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             <div class="games-dialog-actions">
                 <a class="casino-btn" href="/games/">Back to Games</a>
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-reload>Play here instead</button>
+            </div>
+        </dialog>
+
+        <!-- Only shown after a crash: whether the reports the page found may be sent (see "Crash reports" in
+             spaceOreMiner.js). What would be sent is under "What's in it", word for word. -->
+        <dialog class="games-dialog miner-crash-dialog" data-miner-crash-dialog aria-labelledby="miner-crash-title">
+            <h2 id="miner-crash-title">The game crashed last time</h2>
+            <p data-miner-crash-text></p>
+            <p>
+                Can we save a crash report about it? It would help a lot in finding out what went wrong. It has what the
+                game was doing when it happened, the last things that happened in it (saves, errors, slow moments), how
+                much memory it used, your save, your screen size and which browser you use. Only site admins can see it,
+                and it's deleted after <?= HBHUB_MINER_CRASH_KEEP_DAYS ?> days.
+            </p>
+            <details class="miner-crash-details">
+                <summary>What's in it</summary>
+                <pre class="miner-crash-json" data-miner-crash-json></pre>
+            </details>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn" data-miner-crash-skip>Don't send</button>
+                <button type="button" class="casino-btn casino-btn-primary" data-miner-crash-send>Send crash report</button>
             </div>
         </dialog>
     </main>

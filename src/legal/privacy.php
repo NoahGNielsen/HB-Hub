@@ -19,7 +19,8 @@ const HBHUB_PRIVACY_COOKIES = [
     'hbHubToast' => ['A short message for the next page, like "Your password was changed".', '60 seconds'],
 ];
 
-// What the site keeps in your browser's local storage. It never leaves your browser.
+// What the site keeps in your browser's local storage (and IndexedDB). It never leaves your browser, except where the
+// text says so.
 const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
     'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it\'s still there when you refresh or come back to the chat. Kept in session storage, so it\'s gone when you close the tab.',
@@ -28,6 +29,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubMinerLateKeys' => 'Whether you switched Space Ore Miner\'s 1-9 and 0 hot keys to your last ten buildings (with the Long-Range Hot Keys upgrade).',
     'hbHubMinerAutoBuy' => 'Whether you switched Space Ore Miner\'s Auto Buy on or off (with the Auto Buy upgrade).',
     'hbHubMinerAutoWarp, hbHubMinerAutoCrunch' => 'Whether you switched Space Ore Miner\'s Autopilot and Auto Crunch on or off (with the skills of the same name).',
+    'hbHubMinerRun:<tab id>' => 'While Space Ore Miner is open: what you did in the game that isn\'t saved yet, and what a crash report would say (see Casino and games above), updated every second. If the game crashes or is closed before it\'s saved, the next time you open it, what you did is sent with its first save, like a normal save, and then deleted. It\'s deleted when the game is closed with nothing left to save. After a crash, the crash report part stays until you\'ve answered whether it may be sent; it\'s only sent if you say yes.',
+    'hbHubMiner (IndexedDB)' => 'A crash report the game writes if it freezes while you\'re playing (written by a part of the game that keeps running when the rest of it is frozen). It\'s only sent if you say yes the next time you open the game, and deleted either way.',
     'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',
 ];
 ?>
@@ -206,6 +209,20 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 the totals on the Space Ore Miner leaderboard (ore mined, ore per second, Dark Matter, Antimatter,
                                 Strange Matter, Warp Jumps, clicks and achievements).
                             </li>
+                            <li>
+                                Space Ore Miner crash reports, only if you agree to send one. While the game is open, it notes
+                                down in your browser what it's doing: its saves and how they went, errors, moments it was slow
+                                or froze, which view you're on and which of the game's auto switches are on, how much memory
+                                the page uses and how many elements are on it. That stays in your browser (see
+                                <a href="#privacy-cookies">Cookies and local storage</a>). If the game freezes or closes
+                                without saving properly while you're playing, the next time you open it, it asks whether it may
+                                send a crash report about it. You can see everything in it before you answer. If you say yes, it's
+                                stored with your account, the time and your browser's user agent (which says which browser
+                                and system you use): what the game noted down, what it was doing when it froze and for how long,
+                                your Space Ore Miner save as it was then, your screen size, and how many processor cores and how
+                                much memory your device has (as your browser tells, rounded). If you say no, nothing is sent
+                                and it's deleted from your browser.
+                            </li>
                         </ul>
                         <p>
                             Chips are virtual. HB Hub never asks for, or stores, any payment details. If you buy extra chips
@@ -236,8 +253,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h3>What isn't stored</h3>
                         <p>
                             No email address, phone number, real address or date of birth. No analytics profile, no advertising
-                            ids, and no record of which pages you open, apart from the one page you send feedback from (and, for
-                            site admins, the admin log above).
+                            ids, and no record of which pages you open, apart from the one page you send feedback from, the
+                            views of Space Ore Miner in a crash report you agree to send (and, for site admins, the admin log above).
                         </p>
                     </section>
 
@@ -247,7 +264,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li><strong>To run the site</strong>: your account, messages and games are the site. Without them there's nothing to show you.</li>
                             <li><strong>To keep it safe</strong>: IP addresses, failed logins and the device cookie stop people from breaking into accounts, spamming sign-ups and dodging bans. The banned pictures list stops a banned person from coming back with a copy of their old profile.</li>
                             <li><strong>To keep it friendly</strong>: messages are kept so admins can act on bullying or abuse.</li>
-                            <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want.</li>
+                            <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want. Space Ore Miner crash reports, which are only sent if you agree, help find out why the game crashed.</li>
                         </ul>
                         <p>
                             Under the GDPR, this is "necessary to provide the service you signed up for" and HB Hub's
@@ -269,8 +286,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 kept (their name, size, which chat and how many tickets they take) but doesn't open them,
                                 though the site's owner can reach attachment files on the server. Site admins can delete your
                                 attachments and give you more tickets or take some away. They use it to deal with abuse, bans and
-                                broken accounts, and to improve the site. Feedback is only ever seen by site admins, never by
-                                other users. They can never see your password or your two-factor secret. Everything they do
+                                broken accounts, and to improve the site. Feedback and Space Ore Miner crash reports are only
+                                ever seen by site admins, never by other users. They can never see your password or your two-factor secret. Everything they do
                                 there, also just looking at your account or a chat you're in, goes in the admin log, which only
                                 site admins can read and nobody can change or delete.
                             </li>
@@ -313,7 +330,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 </div>
                             <?php endforeach; ?>
                         </dl>
-                        <p>A few small things are also saved in your browser's local storage (or session storage). They never leave your browser:</p>
+                        <p>A few small things are also saved in your browser's local storage (or session storage or IndexedDB). They never leave your browser, except the Space Ore Miner ones where it says so:</p>
                         <dl class="legal-cookies">
                             <?php foreach (HBHUB_PRIVACY_LOCAL_STORAGE as $privacyKey => $privacyKeyUse): ?>
                                 <div>
@@ -341,8 +358,12 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/otherPages/settings">settings page</a>.
                             That right away removes your name, profile picture, bio, year, class, settings, password, two-factor
-                            secret, IP addresses, logins, known devices, your Space Ore Miner save and the files you attached in chats. Your name is replaced
+                            secret, IP addresses, logins, known devices, your Space Ore Miner save and crash reports, and the files you attached in chats. Your name is replaced
                             with "Deleted User".
+                        </p>
+                        <p>
+                            Space Ore Miner crash reports are kept for 90 days, and then deleted by themselves (at the latest
+                            the night after). Site admins can delete them sooner.
                         </p>
                         <p>
                             What stays is what other people need for their chats and games to make sense: the messages you sent

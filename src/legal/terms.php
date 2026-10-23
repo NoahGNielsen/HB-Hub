@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '21 October 2026';
+const HBHUB_TERMS_UPDATED = '23 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -186,7 +186,9 @@ const HBHUB_TERMS_UPDATED = '21 October 2026';
                                 could really have happened count. Clicks count up to 20 a second, and a game only runs in one
                                 tab at a time. No auto-clickers, macros or scripts: clicks that look like they come from one
                                 only mine 20% of what they would. Admins can reset a save that was cheated
-                                or take it off the leaderboard.
+                                or take it off the leaderboard. If the game crashes or is closed before it's saved, what you
+                                did just before is kept in your browser and saved (and checked the same way) the next time you
+                                open the game in that browser, but that isn't a promise: progress that's never saved can be lost.
                             </li>
                         </ul>
                     </section>
