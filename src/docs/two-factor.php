@@ -21,7 +21,7 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                             password still can't get in.
                         </p>
                         <ol class="docs-steps">
-                            <li>Install an authenticator app on your phone, like Google Authenticator, Microsoft Authenticator, 2FAS or the passwords app built into your phone.</li>
+                            <li>Install an authenticator app on your phone, like <a href="https://proton.me/authenticator" target="_blank" rel="noopener">Proton Authenticator</a>, <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener">Google Authenticator</a>, <a href="https://2fas.com/" target="_blank" rel="noopener">2FAS</a> or the passwords app built into your phone.</li>
                             <li>Open the <strong>Two-factor login</strong> card in your <a href="/otherPages/settings#totp">settings</a>.</li>
                             <li>Scan the QR code with the app. On the phone itself, use <strong>Open it in your app</strong> instead, or type in the key under the code.</li>
                             <li>Type the 6-digit code the app shows to turn it on. From now on, the login asks for a code after your password.</li>
@@ -50,13 +50,8 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                         <h2 id="docs-lockout">Wrong passwords and the login lock</h2>
                         <p>
                             After <?= $docsLoginAttempts ?> wrong passwords (or two-factor codes) in a row, logging in is locked
-                            for <?= $docsLockoutMinutes ?> minutes. The same goes for the password and codes the settings page
+                            for for some time. The same goes for the password and codes the settings page
                             asks for before a big change.
-                        </p>
-                        <p>
-                            A browser you've logged in on before has a lock of its own. So if someone else is guessing your password
-                            somewhere else, they only lock out other new browsers, and you can still log in on your own phone or
-                            computer.
                         </p>
                     </section>
 
@@ -66,7 +61,7 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                             <li>Log in and <a href="/docs/account#password">change your password</a>. That logs out every other device.</li>
                             <li>Check <a href="/docs/account#devices">Logged in devices</a> for anything you don't recognise.</li>
                             <li>Turn on two-factor login, if it isn't already.</li>
-                            <li>Tell an admin, through <a href="/docs/feedback">Feedback</a> or by email to <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>, especially if you can't log in any more.</li>
+                            <li>Tell an admin, send a message to <a href="https://hbhub.noahgajnielsen.dk/otherPages/profile?user=1">Noha Gayy</a> or by email to <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>, especially if you can't log in any more.</li>
                         </ol>
                         <p>
                             Found a security problem in HB Hub itself? Please report it privately with
