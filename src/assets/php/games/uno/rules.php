@@ -18,8 +18,8 @@
         works like a Skip). Draw Two: the next player draws 2 cards and misses their turn.
     </li>
     <li>
-        Can't or don't want to play? Draw a card. If it can be played, you can play it straight away or keep it. With
-        the "draw until you can play" setting, you keep drawing until you get one that can.
+        Can't or don't want to play? Draw: you keep drawing until you get a card that can be played (unless the host
+        has set it to one card), then you can play it straight away or keep it.
     </li>
     <li>
         With stacking on, a Draw Two can be answered with another Draw Two, and a Wild Draw Four with another Wild Draw

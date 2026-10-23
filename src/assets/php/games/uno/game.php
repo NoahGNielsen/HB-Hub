@@ -52,7 +52,7 @@ const HBHUB_UNO_LOG_KEPT = 30;
 const HBHUB_UNO_COLOURS = ['r', 'y', 'g', 'b'];
 const HBHUB_UNO_COLOUR_NAMES = ['r' => 'red', 'y' => 'yellow', 'g' => 'green', 'b' => 'blue'];
 const HBHUB_UNO_TURN_CHOICES = [15, 30, 60]; // the turnSeconds setting
-const HBHUB_UNO_DEFAULT_SETTINGS = ['turnSeconds' => 30, 'stacking' => false, 'drawUntil' => false];
+const HBHUB_UNO_DEFAULT_SETTINGS = ['turnSeconds' => 30, 'stacking' => false, 'drawUntil' => true];
 
 function hbHubUnoNowMs(): int
 {

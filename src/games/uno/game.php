@@ -195,8 +195,8 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
                 <fieldset class="casino-choices" data-uno-settings-fields>
                     <legend class="casino-label">Drawing</legend>
                     <?php foreach ([
-                        'off' => ['Draw one card (default)', 'Then play it if you can, or keep it.'],
-                        'on' => ['Draw until you can play', 'Keep drawing until you get a card that can be played.'],
+                        'off' => ['Draw one card', 'Then play it if you can, or keep it.'],
+                        'on' => ['Draw until you can play (default)', 'Keep drawing until you get a card that can be played.'],
                     ] as $value => [$label, $hint]): ?>
                         <label class="casino-choice">
                             <input type="radio" name="drawUntil" value="<?= $value ?>">
