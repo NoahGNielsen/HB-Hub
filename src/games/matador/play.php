@@ -2,7 +2,8 @@
 // The Matador game's JSON, for matadorGame.js (the page around it is game.php). Only for the user's own game:
 // - GET ?room=id&v=version is the game as the players may see it (hbHubMatadorView() in game.php), with the game's
 //   version (hbHubMatadorVersion() in room.php). When the version hasn't changed it's just {"v": version, "same": true}.
-//   The game asks every second.
+//   The game asks every second. About every 15 seconds navUpdates.js sends the nav bar's request along (?nav=), and
+//   then either answer has "nav" too (hbHubNavRide() in assets/php/navUpdates.php).
 // - POST room=id&action=... does something in the game, and answers with the whole game the same way, plus "error"
 //   (a message to show) when it couldn't be done. The actions:
 //     In your turn (with turn: the turn id the game showed when it was clicked, so a double click only counts once):
@@ -23,6 +24,7 @@
 //   (for mentions.js).
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore), or "stopped" when it's gone.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navUpdates.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/matador/room.php';
 hbHubGamesJson($hbHubUser); // blocked in settings, or not open yet
@@ -172,8 +174,9 @@ if (!hbHubMatadorSeated($played[1], $userId)) {
 $error ??= $chatError;
 
 $version = hbHubMatadorVersion($room, $seats, hbHubMatadorLastChatId($db, $roomId));
+$nav = hbHubNavRide($db, $hbHubUser); // the nav bar's numbers, when navUpdates.js sent its request along (?nav=)
 if (!$isPost && ($input['v'] ?? null) === $version) {
-    echo json_encode(['v' => $version, 'same' => true]);
+    echo json_encode(['v' => $version, 'same' => true] + ($nav !== null ? ['nav' => $nav] : []), JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 
@@ -232,5 +235,8 @@ $response = [
 ];
 if (is_string($error)) {
     $response['error'] = $error;
+}
+if ($nav !== null) {
+    $response['nav'] = $nav;
 }
 echo json_encode($response, JSON_INVALID_UTF8_SUBSTITUTE);

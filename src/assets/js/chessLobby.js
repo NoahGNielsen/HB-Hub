@@ -22,13 +22,19 @@
     const YOU_PLAY = { random: 'Random colours', white: 'You play Black', black: 'You play White' };
 
     async function load() {
+        const ride = { params: null };
+        document.dispatchEvent(new CustomEvent('nav:ride', { detail: ride })); // the nav bar's request comes along (navUpdates.js)
+        const query = ride.params !== null ? '?' + new URLSearchParams({ nav: ride.params }) : '';
         try {
-            const response = await fetch('/games/chess/lobby', { headers: { Accept: 'application/json' } });
+            const response = await fetch('/games/chess/lobby' + query, { headers: { Accept: 'application/json' } });
             if (response.status === 403) {
                 location.reload(); // blocked in settings since: the page says so
                 return null;
             }
-            return response.ok ? await response.json() : null;
+            if (!response.ok) return null;
+            const data = await response.json();
+            if (data.nav) document.dispatchEvent(new CustomEvent('nav:update', { detail: data.nav }));
+            return data;
         } catch {
             return null; // offline for a moment
         }
@@ -97,9 +103,13 @@
         isFirstShow = false;
     }
 
+    let isLoading = false; // one at a time, so a slow answer doesn't pile up more requests behind it
+
     async function poll() {
-        if (document.visibilityState !== 'visible') return;
+        if (document.visibilityState !== 'visible' || isLoading) return;
+        isLoading = true;
         const data = await load();
+        isLoading = false;
         if (data !== null) show(data);
     }
 

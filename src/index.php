@@ -36,8 +36,9 @@ function homeKroner(int $amount): string
     return number_format($amount, 0, ',', '.');
 }
 
-// The section icons next to Chat, Casino and Games are 48 x 48 copies (icons/small/) of the 512 x 512 ones the rest of
-// the site uses, as they're only shown at 18 px.
+// The section icons next to Chat, Casino and Games are 48 x 48 copies (icons/small/) of the 192 x 192 ones the rest of
+// the site uses, as they're only shown at 18 px. (The rest are 192 x 192, down from Flaticon's 512 x 512, as nothing
+// shows them bigger than 56 px: still sharp on a 3x phone screen, at a third of the bytes.)
 
 // Title deeds shown in the Games section, straight from the board
 $homeDeeds = [];

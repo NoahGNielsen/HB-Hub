@@ -145,7 +145,11 @@
 
         const query = new URLSearchParams({ room: roomId });
         if (version !== null) query.set('v', version);
+        const ride = { params: null };
+        document.dispatchEvent(new CustomEvent('nav:ride', { detail: ride })); // the nav bar's request comes along (navUpdates.js)
+        if (ride.params !== null) query.set('nav', ride.params);
         const data = await request({}, '?' + query);
+        if (data?.nav) document.dispatchEvent(new CustomEvent('nav:update', { detail: data.nav }));
         if (data !== null && !isBusy) apply(data); // a move on its way comes back with its own answer
 
         isPolling = false;
