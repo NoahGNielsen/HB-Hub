@@ -60,6 +60,7 @@ const ADMIN_LOG_ACTIONS = [
     'feedback.new' => 'Marked feedback as new',
     'feedback.delete' => 'Deleted feedback',
     'feedback.reply' => 'Replied to feedback and marked it as done',
+    'crash.delete' => 'Deleted a Ore Mining Inc. crash report',
     'banned.add' => 'Added a banned picture',
     'banned.remove' => 'Removed a banned picture',
 ];

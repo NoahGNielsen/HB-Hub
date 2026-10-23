@@ -94,9 +94,9 @@ $navFeedbackHref = $navOnFeedback
             </div>
         <?php endif; ?>
         <?php if ($navUser === null): ?>
-            <a class="nav-login" href="/userMgmt/login?return=<?= htmlspecialchars(rawurlencode($_SERVER['REQUEST_URI'] ?? '/')) ?>">Log in</a>
+            <a class="nav-login" href="/login?return=<?= htmlspecialchars(rawurlencode($_SERVER['REQUEST_URI'] ?? '/')) ?>">Log in</a>
         <?php else: ?>
-            <a class="nav-icon-btn nav-avatar-btn" href="/otherPages/profile" aria-label="Your profile" title="Your profile">
+            <a class="nav-icon-btn nav-avatar-btn" href="/profile" aria-label="Your profile" title="Your profile">
                 <?php if ($navAvatarSrc !== null): ?>
                     <img class="nav-avatar" src="<?= htmlspecialchars($navAvatarSrc) ?>" alt="">
                 <?php else: ?>

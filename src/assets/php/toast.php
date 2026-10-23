@@ -46,6 +46,7 @@ const HBHUB_TOASTS = [
     'adminFeedbackDeleted' => 'The feedback has been deleted.',
     'adminFeedbackReplied' => 'The feedback has been marked as done, and your reply has been sent to them.',
     'adminFeedbackReplyMissing' => 'Nothing was sent: write a reply of at most 500 characters.',
+    'adminCrashDeleted' => 'The crash report has been deleted.',
 ];
 
 /**

@@ -23,7 +23,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-how">Turning on a block</h2>
                         <p>
                             Open the <strong>Block Gambling and Games</strong> card in your
-                            <a href="/otherPages/settings#block">settings</a> and pick a block. It covers both the
+                            <a href="/settings#block">settings</a> and pick a block. It covers both the
                             <a href="/docs/casino/">Casino</a> and the <a href="/docs/games/">Games</a>.
                         </p>
                         <div class="docs-table-wrap">

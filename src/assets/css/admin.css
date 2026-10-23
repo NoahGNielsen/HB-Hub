@@ -467,6 +467,30 @@
   display: none;
 }
 
+/* Crash reports (admin/crashes.php), in the same boxes as feedback: the trail and the whole report scroll in their
+   own box, so a long one doesn't make the page endless */
+.admin-crash-trail,
+.admin-crash-json {
+  max-height: 360px;
+  margin: 8px 0 0;
+  overflow: auto;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.admin-crash-trail {
+  padding-left: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+.admin-crash-json {
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--secondary);
+  white-space: pre;
+}
+
 /* A chat's background: the preview, set by admin.js, with two messages on it like Change background in the chat */
 .admin-background-preview {
   height: 132px;

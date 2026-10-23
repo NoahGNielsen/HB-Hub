@@ -28,7 +28,7 @@ if (hbHubBannedCookieUserId() !== null):
         <div class="login">
             <h1>You can't sign up here</h1>
             <p class="onboarding-hint">An account that was used on this device has been banned, so a new account can't be made from it.</p>
-            <p class="userMgmt-switch">Already have an account? <a href="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to login</a></p>
+            <p class="userMgmt-switch">Already have an account? <a href="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to login</a></p>
         </div>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
@@ -182,7 +182,7 @@ foreach ($onboardingSteps as $index => $step) {
 </head>
 <body>
     <main>
-        <form class="onboarding" action="/userMgmt/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" enctype="multipart/form-data" data-start-step="<?= $onboardingStartStep ?>"
+        <form class="onboarding" action="/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" enctype="multipart/form-data" data-start-step="<?= $onboardingStartStep ?>"
               data-common-passwords="/assets/commonPasswords.txt?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/commonPasswords.txt') ?>">
             <h1>Welcome to HB Hub!</h1>
 
@@ -307,7 +307,7 @@ foreach ($onboardingSteps as $index => $step) {
                 <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Create account</button>
             </div>
 
-            <p class="userMgmt-switch">Already have an account? <a href="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to login</a></p>
+            <p class="userMgmt-switch">Already have an account? <a href="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to login</a></p>
         </form>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>

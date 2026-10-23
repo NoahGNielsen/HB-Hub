@@ -86,7 +86,7 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
 
     if ($bannedAvatarId !== null) {
         hbHubSetBannedCookie($userId);
-        header('Location: /userMgmt/login', true, 303);
+        header('Location: /login', true, 303);
         exit;
     }
 

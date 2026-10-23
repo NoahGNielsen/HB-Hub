@@ -984,7 +984,7 @@ chatPart((signal) => {
             // Nobody's profile to open in a group, or a DM the other person left. Their admin panel is the chat's own then.
             const dmUserId = isGroup ? undefined : item.dataset.chatUserId;
             profileItem.hidden = dmUserId === undefined;
-            if (dmUserId !== undefined) profileItem.href = '/otherPages/profile?user=' + dmUserId;
+            if (dmUserId !== undefined) profileItem.href = '/profile?user=' + dmUserId;
             siteAdminItems.forEach((menuItem) => {
                 if (menuItem instanceof HTMLAnchorElement) {
                     menuItem.href = dmUserId !== undefined ? '/admin/user?user=' + dmUserId : '/admin/chat?chat=' + item.dataset.chatId;

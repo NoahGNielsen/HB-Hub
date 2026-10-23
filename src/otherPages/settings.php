@@ -143,7 +143,7 @@ function settingsRedirect(string $toast, string $card): never
 {
     require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
     hbHubSetToast($toast);
-    header('Location: /otherPages/settings#' . $card, true, 303);
+    header('Location: /settings#' . $card, true, 303);
     exit;
 }
 
@@ -155,7 +155,7 @@ function settingsRedirectToLogin(string $toast): never
     require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
     hbHubClearSessionCookie();
     hbHubSetToast($toast);
-    header('Location: /userMgmt/login', true, 303);
+    header('Location: /login', true, 303);
     exit;
 }
 
@@ -263,7 +263,7 @@ if ($settingsAction === 'profile') {
             hbHubSetBannedCookie($userId);
             $db->prepare('DELETE FROM `HBHub-Sessions` WHERE sessionId = ?')->execute([$_COOKIE[HBHUB_SESSION_COOKIE]]);
             hbHubClearSessionCookie();
-            header('Location: /userMgmt/login', true, 303);
+            header('Location: /login', true, 303);
             exit;
         }
 
@@ -446,7 +446,7 @@ function settingsTime(?string $timestamp): string
                     <span class="settings-menu-avatar" aria-hidden="true"><?php if ($settingsAvatarSrc !== null): ?><img src="<?= htmlspecialchars($settingsAvatarSrc) ?>" alt=""><?php else: ?><?= htmlspecialchars(mb_strtoupper(mb_substr($settingsUser['userName'], 0, 1))) ?><?php endif; ?></span>
                     <div class="settings-menu-who-text">
                         <span class="settings-menu-who-name"><?= htmlspecialchars($settingsUser['userName']) ?></span>
-                        <a href="/otherPages/profile">View your profile</a>
+                        <a href="/profile">View your profile</a>
                     </div>
                 </div>
                 <div class="settings-menu-links">
@@ -491,7 +491,7 @@ function settingsTime(?string $timestamp): string
                         <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['profile']) ?></p>
                     <?php endif; ?>
 
-                    <form action="/otherPages/settings#profile" method="post" enctype="multipart/form-data">
+                    <form action="/settings#profile" method="post" enctype="multipart/form-data">
                         <input type="hidden" name="action" value="profile">
 
                         <?php if ($settingsCanUploadAvatar || $settingsCanRemoveAvatar): ?>
@@ -573,13 +573,13 @@ function settingsTime(?string $timestamp): string
                         <?php endif; ?>
 
                         <div class="settings-actions">
-                            <a class="settings-btn" href="/otherPages/profile">View your profile</a>
+                            <a class="settings-btn" href="/profile">View your profile</a>
                             <button type="submit" class="settings-btn settings-btn-primary">Save profile</button>
                         </div>
                     </form>
 
                     <?php if ($settingsCanRemoveAvatar): ?>
-                        <form id="settings-remove-avatar" action="/otherPages/settings" method="post" hidden>
+                        <form id="settings-remove-avatar" action="/settings" method="post" hidden>
                             <input type="hidden" name="action" value="removeAvatar">
                         </form>
                     <?php endif; ?>
@@ -595,7 +595,7 @@ function settingsTime(?string $timestamp): string
                         <?php $settingsAnyNotificationOn = $settingsNotificationsOn || $settingsNotificationSoundOn; ?>
                         <span class="settings-status<?= $settingsAnyNotificationOn ? ' is-on' : '' ?>"><?= $settingsAnyNotificationOn ? 'On' : 'Off' ?></span>
                     </div>
-                    <form action="/otherPages/settings#notifications" method="post">
+                    <form action="/settings#notifications" method="post">
                         <input type="hidden" name="action" value="notifications">
                         <div class="settings-field">
                             <label class="settings-checkbox">
@@ -640,7 +640,7 @@ function settingsTime(?string $timestamp): string
                             <span class="settings-status<?= $settingsBlockIsActive ? ' is-on' : '' ?>"><?= $settingsBlockIsActive ? 'Blocked now' : 'Not blocked now' ?></span>
                         <?php endif; ?>
                     </div>
-                    <form action="/otherPages/settings#block" method="post">
+                    <form action="/settings#block" method="post">
                         <input type="hidden" name="action" value="block">
                         <div class="settings-field">
                             <label class="settings-label" for="settings-block">Block</label>
@@ -686,7 +686,7 @@ function settingsTime(?string $timestamp): string
                         </div>
                     </div>
 
-                    <form action="/otherPages/settings#password" method="post">
+                    <form action="/settings#password" method="post">
                         <input type="hidden" name="action" value="password">
                         <!-- For password managers, so they know which account the new password is for -->
                         <input type="text" name="username" value="<?= htmlspecialchars($settingsUser['userName']) ?>" autocomplete="username" hidden>
@@ -753,7 +753,7 @@ function settingsTime(?string $timestamp): string
                     </div>
 
                     <?php if ($settingsTotpIsOn): ?>
-                        <form action="/otherPages/settings#totp" method="post">
+                        <form action="/settings#totp" method="post">
                             <input type="hidden" name="action" value="totpDisable">
                             <div class="settings-field">
                                 <label class="settings-label" for="settings-totp-code">To turn it off, enter a code from your app</label>
@@ -781,7 +781,7 @@ function settingsTime(?string $timestamp): string
                             </li>
                             <li>Enter the 6 digit code the app shows for HB Hub.</li>
                         </ol>
-                        <form action="/otherPages/settings#totp" method="post">
+                        <form action="/settings#totp" method="post">
                             <input type="hidden" name="action" value="totpEnable">
                             <input type="hidden" name="secret" value="<?= $settingsTotpSetupSecret ?>">
                             <div class="settings-field">
@@ -793,14 +793,14 @@ function settingsTime(?string $timestamp): string
                                 <?php endif; ?>
                             </div>
                             <div class="settings-actions">
-                                <a class="settings-btn" href="/otherPages/settings#totp">Cancel</a>
+                                <a class="settings-btn" href="/settings#totp">Cancel</a>
                                 <button type="submit" class="settings-btn settings-btn-primary">Turn on two-factor login</button>
                             </div>
                         </form>
 
                     <?php else: ?>
                         <div class="settings-actions">
-                            <a class="settings-btn settings-btn-primary" href="/otherPages/settings?totp=setup#totp">Set up two-factor login</a>
+                            <a class="settings-btn settings-btn-primary" href="/settings?totp=setup#totp">Set up two-factor login</a>
                         </div>
                     <?php endif; ?>
                 </section>
@@ -832,7 +832,7 @@ function settingsTime(?string $timestamp): string
                                     </span>
                                 </div>
                                 <?php if (!$device['isCurrent']): ?>
-                                    <form action="/otherPages/settings#devices" method="post">
+                                    <form action="/settings#devices" method="post">
                                         <input type="hidden" name="action" value="logoutDevice">
                                         <input type="hidden" name="device" value="<?= htmlspecialchars($device['deviceKey']) ?>">
                                         <button type="submit" class="settings-btn settings-btn-small">Log out</button>
@@ -842,7 +842,7 @@ function settingsTime(?string $timestamp): string
                         <?php endforeach; ?>
                     </ul>
 
-                    <form class="settings-item" action="/otherPages/settings" method="post" data-confirm="Log out on every device, this one too?">
+                    <form class="settings-item" action="/settings" method="post" data-confirm="Log out on every device, this one too?">
                         <input type="hidden" name="action" value="logoutEverywhere">
                         <div class="settings-item-text">
                             <span class="settings-label">Log out everywhere</span>
@@ -854,7 +854,7 @@ function settingsTime(?string $timestamp): string
 
                 <!-- Log out -->
                 <section class="settings-card" id="account" aria-labelledby="settings-account-heading">
-                    <form class="settings-item" action="/otherPages/settings" method="post">
+                    <form class="settings-item" action="/settings" method="post">
                         <input type="hidden" name="action" value="logout">
                         <div class="settings-item-text">
                             <h2 class="settings-item-title" id="settings-account-heading">Log out</h2>
@@ -875,7 +875,7 @@ function settingsTime(?string $timestamp): string
                             </p>
                         </div>
                     </div>
-                    <form action="/otherPages/settings#delete" method="post" data-confirm="Delete your account? This can't be undone.">
+                    <form action="/settings#delete" method="post" data-confirm="Delete your account? This can't be undone.">
                         <input type="hidden" name="action" value="deleteAccount">
                         <!-- For password managers, so they know which account the password is for -->
                         <input type="text" name="username" value="<?= htmlspecialchars($settingsUser['userName']) ?>" autocomplete="username" hidden>

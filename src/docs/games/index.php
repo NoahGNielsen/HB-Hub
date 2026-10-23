@@ -22,7 +22,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td><a href="/docs/games/chess">Chess</a></td><td>Chess, with or without a clock.</td><td>2</td></tr>
                                     <tr><td><a href="/docs/games/uno">UNO</a></td><td>The card game. Get rid of your cards first, and don't forget to say UNO!</td><td>2-6</td></tr>
                                     <tr><td><a href="/docs/games/wordle">Wordle</a></td><td>Guess the day's five-letter word, in English and in Danish.</td><td>Just you</td></tr>
-                                    <tr><td><a href="/docs/games/space-ore-miner">Space Ore Miner</a></td><td>A clicker game about mining asteroids, and then the whole multiverse.</td><td>Just you</td></tr>
+                                    <tr><td><a href="/docs/games/ore-mining-inc">Ore Mining Inc.</a></td><td>A clicker game about mining asteroids, and then the whole multiverse.</td><td>Just you</td></tr>
                                 </tbody>
                             </table>
                         </div>

@@ -290,6 +290,6 @@ $hbHubUser = hbHubSessionUser();
 
 if ($hbHubUser === null && empty($hbHubSessionOptional)) {
     // Remember the page, so login can send them back to it
-    header('Location: /userMgmt/login?return=' . rawurlencode($_SERVER['REQUEST_URI'] ?? '/'), true, 302);
+    header('Location: /login?return=' . rawurlencode($_SERVER['REQUEST_URI'] ?? '/'), true, 302);
     exit;
 }

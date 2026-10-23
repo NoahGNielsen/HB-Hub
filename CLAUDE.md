@@ -33,7 +33,7 @@ Last updated 22/10-26
 ## What this is
 
 HB Hub (https://hbhub.noahgajnielsen.dk) is a messaging site for the owner's school, with a virtual-chip casino
-(Blackjack, Baccarat, Roulette) and games (Matador, chess, UNO, Wordle, Space Ore Miner). The feature list is in
+(Blackjack, Baccarat, Roulette) and games (Matador, chess, UNO, Wordle, Ore Mining Inc.). The feature list is in
 [docs/features/](docs/features/index.md); keep it up to date when a feature changes.
 
 - **PHP 8.4 + PDO + MySQL 8.4.** No framework, no Composer packages, no build step.
@@ -76,7 +76,7 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
 - **Game state** for Matador/Blackjack/Baccarat/UNO is JSON in `roomState` and holds hidden info (card order, the hole
   card, everyone's hand), so **never send it to players as-is** - build a per-player view. Rules files are pure (no
   DB); `room.php` loads state, applies a move under a row lock, saves.
-- **Space Ore Miner**: the rules are in both `assets/php/games/spaceOreMiner/miner.php` and `assets/js/spaceOreMiner.js`,
+- **Ore Mining Inc.**: the rules are in both `assets/php/games/spaceOreMiner/miner.php` and `assets/js/spaceOreMiner.js`,
   and the server replays every action to check it, so a rule change goes in both and must give exactly the same numbers
   (whole-number checks instead of trusting `**` for roots, etc.).
 - **`userSettings` JSON**: always read with a default - older accounts lack newer keys. `defaultUserSettings.json` /
@@ -100,7 +100,10 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
 - **JSON endpoints**: the JS calls them with `fetch(url, { headers: { Accept: 'application/json' } })` and form-encoded
   POSTs with an `action=` field. They set `Content-Type: application/json` + `Cache-Control: no-store`, answer errors as
   `http_response_code(4xx); echo json_encode(['error' => 'camelCaseCode'])`, and reject wrong methods with 405 + `Allow`.
-- **Clean URLs**: `.htaccess` strips `.php`/`.html`, so link to `/chat/users`, not `/chat/users.php`.
+- **Clean URLs**: `.htaccess` strips `.php`/`.html`, so link to `/chat/users`, not `/chat/users.php`. `otherPages/`,
+  `userMgmt/` and `games/spaceOreMiner/` have short addresses (`/profile`, `/settings`, `/login`, `/nav-updates`,
+  `/games/ore-mining-inc/`, ...; "SHORT ADDRESSES" in `.htaccess`): always link to those. A new page in `otherPages/`
+  or `userMgmt/` needs adding to both lists of names there.
 - **Security**: all SQL via prepared statements; escape output with `htmlspecialchars`. The CSP in `src/.htaccess`
   allows no inline scripts/styles and only Giphy/Google Fonts as externals. Uploaded images exclude SVG.
 - **Concurrency**: anything that changes shared game/wallet state runs in a transaction and locks the row first
@@ -131,6 +134,6 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
 - Run them in the background, tell the owner when they started and roughly when they'll finish, and read the log file
   when asked for progress. They die if the session or PC shuts down, so say so.
 - Give every parallel run its own name, output file and browser profile folder.
-- The Space Ore Miner balance sim builds a page from the real `miner.php` constants and the rules part of
+- The Ore Mining Inc. balance sim builds a page from the real `miner.php` constants and the rules part of
   `spaceOreMiner.js`. When the game gets a new `SALT_*` constant or `CONFIG` key, add it to the harness's mapping, or
   the sim dies with a ReferenceError. Where the harness lives is in Claude's memory.

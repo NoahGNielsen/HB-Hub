@@ -31,7 +31,7 @@ function loginDone(): never
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'cancelTotp') {
     // "Use another account" on the 2FA step
     loginCancelPending();
-    header('Location: /userMgmt/login' . hbHubReturnQuery(), true, 303);
+    header('Location: /login' . hbHubReturnQuery(), true, 303);
     exit;
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && array_key_exists('code', $_POST)) {
     // The 2FA code, after the right password
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'can
         $loginError = loginCheckDB($loginName, $password, $loginAttemptsMax, $loginLockoutMinutes, $loginNeedsTotp);
         if ($loginError === null && $loginNeedsTotp) {
             // On to the 2FA step, as a GET so reloading doesn't send the password again
-            header('Location: /userMgmt/login' . hbHubReturnQuery(), true, 303);
+            header('Location: /login' . hbHubReturnQuery(), true, 303);
             exit;
         }
         if ($loginError === null) {
@@ -76,7 +76,7 @@ $loginIsTotpStep = loginPendingUserId() !== null;
 <body>
     <main>
         <?php if ($loginIsTotpStep): ?>
-        <form class="login login-totp" action="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post">
+        <form class="login login-totp" action="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post">
             <h1>Two-factor login</h1>
 
             <section class="onboarding-step" aria-labelledby="login-q3">
@@ -98,11 +98,11 @@ $loginIsTotpStep = loginPendingUserId() !== null;
                 <button type="submit" class="onboarding-btn onboarding-btn-primary">Log in</button>
             </div>
         </form>
-        <form id="login-cancel-totp" action="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" hidden>
+        <form id="login-cancel-totp" action="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" hidden>
             <input type="hidden" name="action" value="cancelTotp">
         </form>
         <?php else: ?>
-        <form class="login" action="/userMgmt/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post">
+        <form class="login" action="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post">
             <h1>Welcome back!</h1>
 
             <section class="onboarding-step" aria-labelledby="login-q1">
@@ -129,7 +129,7 @@ $loginIsTotpStep = loginPendingUserId() !== null;
                 <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Log in</button>
             </div>
 
-            <p class="userMgmt-switch">New here? <a href="/userMgmt/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>">Sign Up!</a></p>
+            <p class="userMgmt-switch">New here? <a href="/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>">Sign Up!</a></p>
         </form>
         <?php endif; ?>
     </main>

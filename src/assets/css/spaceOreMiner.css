@@ -1,4 +1,4 @@
-/* Space Ore Miner (games/spaceOreMiner/): the buttons and the menu at the top, the four views (Ore: the asteroid and
+/* Ore Mining Inc. (games/spaceOreMiner/): the buttons and the menu at the top, the four views (Ore: the asteroid and
    the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree),
    the popups (stats, achievements, how to play), the comet flying across the screen and the messages in the corner.
    Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. */
@@ -354,7 +354,8 @@
   to { box-shadow: 0 0 14px color-mix(in srgb, var(--miner-gold) 60%, transparent); }
 }
 
-/* The asteroid. Its colours change with data-stage (0 grey rock, 1 iron, 2 gold, 3 crystal, 4 alien core). The space
+/* The asteroid. Its colours change with data-stage (0 grey rock, 1 iron, 2 gold, 3 crystal, 4 alien core, 5 molten,
+   6 amethyst, 7 neutron star, 8 black hole core). The space
    around it takes what's left of the card's height. The variables size the buildings in the picture (see "The
    buildings in the picture" below), and get smaller with the asteroid on small screens. */
 .miner-field {
@@ -441,10 +442,43 @@
   --rock: #7cf04a;
   --rock-dark: #3d1a6e;
   --rock-glow: rgba(124, 240, 74, 0.5);
+}
+
+.miner-asteroid[data-stage="5"] {
+  --rock-light: #ffd2a0;
+  --rock: #e0502a;
+  --rock-dark: #5a1208;
+  --rock-glow: rgba(255, 90, 40, 0.35);
+}
+
+.miner-asteroid[data-stage="6"] {
+  --rock-light: #f3dcff;
+  --rock: #a45be8;
+  --rock-dark: #34125e;
+  --rock-glow: rgba(180, 110, 255, 0.4);
+}
+
+.miner-asteroid[data-stage="7"] {
+  --rock-light: #ffffff;
+  --rock: #bcd6ff;
+  --rock-dark: #3b4f9a;
+  --rock-glow: rgba(200, 225, 255, 0.6);
+}
+
+/* Dark, with a fiery glow round it like a black hole's */
+.miner-asteroid[data-stage="8"] {
+  --rock-light: #6b5cff;
+  --rock: #1a1033;
+  --rock-dark: #000000;
+  --rock-glow: rgba(255, 120, 60, 0.55);
+}
+
+/* The glowing ones pulse */
+.miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"]) {
   animation: miner-pulse 2s ease-in-out infinite alternate;
 }
 
-.miner-asteroid[data-stage="4"].is-hit {
+.miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"]).is-hit {
   animation: miner-hit 0.15s ease, miner-pulse 2s ease-in-out infinite alternate;
 }
 
@@ -2647,6 +2681,26 @@
   color: #14091f;
 }
 
+/* After a crash: may the report be sent? What's in it is the report itself, in a box of its own that scrolls */
+.miner-crash-details {
+  margin-bottom: 8px;
+}
+
+.miner-crash-details summary {
+  cursor: pointer;
+}
+
+.miner-crash-json {
+  max-height: 240px;
+  margin: 8px 0 0;
+  padding: 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.75rem;
+  white-space: pre;
+}
+
 /* The popups: stats, achievements and how to play. The padding is on the inside, so a click on the dialog itself is
    always outside it (on the backdrop), which closes it. */
 .games-dialog.miner-popup {
@@ -3133,8 +3187,8 @@
 
   .miner-field,
   .miner-asteroid.is-hit,
-  .miner-asteroid[data-stage="4"],
-  .miner-asteroid[data-stage="4"].is-hit,
+  .miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"]),
+  .miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"]).is-hit,
   .miner-orbit,
   .miner-buff,
   .miner-menu-news,

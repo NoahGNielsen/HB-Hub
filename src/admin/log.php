@@ -111,6 +111,7 @@ function adminLogText(array $entry): string
         'feedback.done', 'feedback.new', 'feedback.delete' => isset($data['feedbackId'])
             ? ADMIN_LOG_ACTIONS[$entry['adminLogAction']] . ' #' . (int) $data['feedbackId'] : null,
         'feedback.reply' => isset($data['feedbackId']) ? 'Replied to feedback #' . (int) $data['feedbackId'] . ' and marked it as done' : null,
+        'crash.delete' => isset($data['crashReportId']) ? ADMIN_LOG_ACTIONS['crash.delete'] . ' #' . (int) $data['crashReportId'] : null,
         'banned.add', 'banned.remove' => isset($data['pictureId'])
             ? ADMIN_LOG_ACTIONS[$entry['adminLogAction']] . ' #' . (int) $data['pictureId'] : null,
         default => null,

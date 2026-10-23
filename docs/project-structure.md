@@ -15,7 +15,7 @@ HB-Hub/
 ├── src/                 The website itself (everything here gets uploaded)
 │   ├── chat/            Messages and group chats
 │   ├── gambling/        The casino: chips, Blackjack, Baccarat and Roulette
-│   ├── games/           The Games section: Matador, Chess, UNO, Wordle and Space Ore Miner
+│   ├── games/           The Games section: Matador, Chess, UNO, Wordle and Ore Mining Inc.
 │   ├── admin/           The admin panel
 │   ├── userMgmt/        Login and sign-up
 │   ├── otherPages/      Profile, settings and notifications
@@ -30,6 +30,18 @@ HB-Hub/
 │                        defaults for the settings columns on users and chats)
 └── .github/workflows/   Deploying, and updating the README badges every hour
 ```
+
+## 🔗 Addresses
+
+`src/.htaccess` drops `.php` from every address, and gives a few pages a shorter one than their folder:
+
+| Address                   | File                          |
+|---------------------------|-------------------------------|
+| `/login`, `/onboarding`   | `userMgmt/login.php`, `userMgmt/onboarding.php` |
+| `/profile`, `/settings`, `/notifications`, `/feedback`, `/avatar`, `/nav-updates` | `otherPages/*.php` |
+| `/games/ore-mining-inc/` | `games/spaceOreMiner/`        |
+
+Links in the code use the short address. The old long ones still work: a GET is redirected to the short one.
 
 ---
 

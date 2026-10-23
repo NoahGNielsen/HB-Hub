@@ -19,16 +19,19 @@ const HBHUB_PRIVACY_COOKIES = [
     'hbHubToast' => ['A short message for the next page, like "Your password was changed".', '60 seconds'],
 ];
 
-// What the site keeps in your browser's local storage. It never leaves your browser.
+// What the site keeps in your browser's local storage (and IndexedDB). It never leaves your browser, except where the
+// text says so.
 const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
     'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it\'s still there when you refresh or come back to the chat. Kept in session storage, so it\'s gone when you close the tab.',
     'hbHubNotifiedMessageId' => 'The last message you got a browser notification or sound for, so you don\'t get it twice.',
     'hbHubChessSound, hbHubMatadorSound, hbHubUnoSound, hbHubMinerSound' => 'Whether you turned the game sounds on or off.',
-    'hbHubMinerLateKeys' => 'Whether you switched Space Ore Miner\'s 1-9 and 0 hot keys to your last ten buildings (with the Long-Range Hot Keys upgrade).',
-    'hbHubMinerAutoBuy' => 'Whether you switched Space Ore Miner\'s Auto Buy on or off (with the Auto Buy upgrade).',
-    'hbHubMinerKeysHelp' => 'Whether Space Ore Miner has already shown you the popup about the hot keys (after buying the Hot Key Panel upgrade).',
-    'hbHubMinerAutoWarp, hbHubMinerAutoCrunch' => 'Whether you switched Space Ore Miner\'s Autopilot and Auto Crunch on or off (with the skills of the same name).',
+    'hbHubMinerLateKeys' => 'Whether you switched Ore Mining Inc.\'s 1-9 and 0 hot keys to your last ten buildings (with the Long-Range Hot Keys upgrade).',
+    'hbHubMinerAutoBuy' => 'Whether you switched Ore Mining Inc.\'s Auto Buy on or off (with the Auto Buy upgrade).',
+    'hbHubMinerKeysHelp' => 'Whether Ore Mining Inc. has already shown you the popup about the hot keys (after buying the Hot Key Panel upgrade).',
+    'hbHubMinerAutoWarp, hbHubMinerAutoCrunch' => 'Whether you switched Ore Mining Inc.\'s Autopilot and Auto Crunch on or off (with the skills of the same name).',
+    'hbHubMinerRun:<tab id>' => 'While Ore Mining Inc. is open: what you did in the game that isn\'t saved yet, and what a crash report would say (see Casino and games above), updated every second. If the game crashes or is closed before it\'s saved, the next time you open it, what you did is sent with its first save, like a normal save, and then deleted. It\'s deleted when the game is closed with nothing left to save. After a crash, the crash report part stays until you\'ve answered whether it may be sent; it\'s only sent if you say yes.',
+    'hbHubMiner (IndexedDB)' => 'A crash report the game writes if it freezes while you\'re playing (written by a part of the game that keeps running when the rest of it is frozen). It\'s only sent if you say yes the next time you open the game, and deleted either way.',
     'hbHubCookieNotice' => 'That you clicked away the cookie notice, so it isn\'t shown again.',
 ];
 ?>
@@ -124,7 +127,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             and when it runs out, plus a short name for the browser and system it's on, like "Chrome on
                             Windows". That name is worked out from what your browser sends (its user agent), and only the
                             short name is stored, never the rest. It's there so you can see where you're logged in under
-                            Logged in devices on the <a href="/otherPages/settings#devices">settings page</a>, and log out
+                            Logged in devices on the <a href="/settings#devices">settings page</a>, and log out
                             any of them, or all of them at once. Browsers you've logged in from are also remembered by a
                             random token (only a hash of it is stored) and how many wrong passwords they've tried.
                         </p>
@@ -195,7 +198,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 guesses and streaks), never your guesses.
                             </li>
                             <li>
-                                Your Space Ore Miner save: your ore, buildings, upgrades, Dark Matter, Antimatter, Strange Matter, the skills you've learned, achievements, how many
+                                Your Ore Mining Inc. save: your ore, buildings, upgrades, Dark Matter, Antimatter, Strange Matter, the skills you've learned, achievements, how many
                                 times you've clicked and caught comets, when you started and last saved, how many saves came
                                 in the last few seconds (so nobody can flood the server with them), and a random id for
                                 the browser tab you're playing in (so the game only runs in one tab at a time). Your game sends
@@ -204,8 +207,24 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 of clicks. To spot auto-clickers, the game page looks at how long you hold each click, the gaps
                                 between clicks and where the pointer is, but that stays in your browser: all it sends is whether
                                 a click looked like an auto-clicker's, and it isn't kept. Other people only see
-                                the totals on the Space Ore Miner leaderboard (ore mined, ore per second, Dark Matter, Antimatter,
+                                the totals on the Ore Mining Inc. leaderboard (ore mined, ore per second, Dark Matter, Antimatter,
                                 Strange Matter, Warp Jumps, clicks and achievements).
+                            </li>
+                            <li>
+                                Ore Mining Inc. crash reports, only if you agree to send one. While the game is open, it notes
+                                down in your browser what it's doing: its saves and how they went, errors, moments it was slow
+                                or froze, which view you're on and which of the game's auto switches are on, how much memory
+                                the page uses, how many elements and animations are on it, its frame rate, how long each part
+                                of the game takes to run, and the last parts it ran. That stays in your browser (see
+                                <a href="#privacy-cookies">Cookies and local storage</a>). If the game freezes or closes
+                                without saving properly while you're playing, the next time you open it, it asks whether it may
+                                send a crash report about it. You can see everything in it before you answer. If you say yes, it's
+                                stored with your account, the time and your browser's user agent (which says which browser
+                                and system you use): what the game noted down, what it was doing when it froze and for how long,
+                                your Ore Mining Inc. save as it was then, your screen size, how many processor cores and how
+                                much memory your device has (as your browser tells, rounded), and the name of its graphics card
+                                (as your browser tells it, some browsers give a general or made-up one). If you say no, nothing is sent
+                                and it's deleted from your browser.
                             </li>
                         </ul>
                         <p>
@@ -237,8 +256,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h3>What isn't stored</h3>
                         <p>
                             No email address, phone number, real address or date of birth. No analytics profile, no advertising
-                            ids, and no record of which pages you open, apart from the one page you send feedback from (and, for
-                            site admins, the admin log above).
+                            ids, and no record of which pages you open, apart from the one page you send feedback from, the
+                            views of Ore Mining Inc. in a crash report you agree to send (and, for site admins, the admin log above).
                         </p>
                     </section>
 
@@ -248,7 +267,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li><strong>To run the site</strong>: your account, messages and games are the site. Without them there's nothing to show you.</li>
                             <li><strong>To keep it safe</strong>: IP addresses, failed logins and the device cookie stop people from breaking into accounts, spamming sign-ups and dodging bans. The banned pictures list stops a banned person from coming back with a copy of their old profile.</li>
                             <li><strong>To keep it friendly</strong>: messages are kept so admins can act on bullying or abuse.</li>
-                            <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want.</li>
+                            <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want. Ore Mining Inc. crash reports, which are only sent if you agree, help find out why the game crashed.</li>
                         </ul>
                         <p>
                             Under the GDPR, this is "necessary to provide the service you signed up for" and HB Hub's
@@ -270,8 +289,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 kept (their name, size, which chat and how many tickets they take) but doesn't open them,
                                 though the site's owner can reach attachment files on the server. Site admins can delete your
                                 attachments and give you more tickets or take some away. They use it to deal with abuse, bans and
-                                broken accounts, and to improve the site. Feedback is only ever seen by site admins, never by
-                                other users. They can never see your password or your two-factor secret. Everything they do
+                                broken accounts, and to improve the site. Feedback and Ore Mining Inc. crash reports are only
+                                ever seen by site admins, never by other users. They can never see your password or your two-factor secret. Everything they do
                                 there, also just looking at your account or a chat you're in, goes in the admin log, which only
                                 site admins can read and nobody can change or delete.
                             </li>
@@ -314,7 +333,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 </div>
                             <?php endforeach; ?>
                         </dl>
-                        <p>A few small things are also saved in your browser's local storage (or session storage). They never leave your browser:</p>
+                        <p>A few small things are also saved in your browser's local storage (or session storage or IndexedDB). They never leave your browser, except the Ore Mining Inc. ones where it says so:</p>
                         <dl class="legal-cookies">
                             <?php foreach (HBHUB_PRIVACY_LOCAL_STORAGE as $privacyKey => $privacyKeyUse): ?>
                                 <div>
@@ -340,10 +359,14 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             with it (how many, how big each was, its type and the dates), never the files or their names.
                         </p>
                         <p>
-                            You can <strong>delete your account</strong> yourself on the <a href="/otherPages/settings">settings page</a>.
+                            You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
                             That right away removes your name, profile picture, bio, year, class, settings, password, two-factor
-                            secret, IP addresses, logins, known devices, your Space Ore Miner save and the files you attached in chats. Your name is replaced
+                            secret, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, and the files you attached in chats. Your name is replaced
                             with "Deleted User".
+                        </p>
+                        <p>
+                            Ore Mining Inc. crash reports are kept for 90 days, and then deleted by themselves (at the latest
+                            the night after). Site admins can delete them sooner.
                         </p>
                         <p>
                             What stays is what other people need for their chats and games to make sense: the messages you sent

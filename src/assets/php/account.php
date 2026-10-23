@@ -69,7 +69,7 @@ function hbHubRemoveAvatar(PDO $db, int $userId): void
 /**
  * Deletes the account. Everything in the user's row is cleared except userId, userCreatedTimestamp and
  * userLastSeenTimestamp, and the name becomes "Deleted User", so their messages stay but nothing about them does.
- * Their profile picture, every one of their sessions, their known devices (loginLimit.php) and their Space Ore Miner
+ * Their profile picture, every one of their sessions, their known devices (loginLimit.php) and their Ore Mining Inc.
  * save (nobody else plays in it) are deleted too, and so are the files of their chat attachments (the messages they
  * were in stay, showing them as deleted).
  * userNameLower and userPasswordHash end up NULL, so nobody can log in to it or find it in the user search.
@@ -94,6 +94,7 @@ function hbHubDeleteAccount(PDO $db, int $userId): void
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-LoginDevices` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-MinerSaves` WHERE userId = ?')->execute([$userId]);
+        $db->prepare('DELETE FROM `HBHub-MinerCrashReports` WHERE crashReportUserId = ?')->execute([$userId]);
         if ($avatarId !== null) {
             $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$avatarId]);
         }

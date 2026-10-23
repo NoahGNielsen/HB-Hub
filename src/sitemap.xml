@@ -5,10 +5,10 @@
         <loc>https://hbhub.noahgajnielsen.dk/</loc>
     </url>
     <url>
-        <loc>https://hbhub.noahgajnielsen.dk/userMgmt/onboarding</loc>
+        <loc>https://hbhub.noahgajnielsen.dk/onboarding</loc>
     </url>
     <url>
-        <loc>https://hbhub.noahgajnielsen.dk/userMgmt/login</loc>
+        <loc>https://hbhub.noahgajnielsen.dk/login</loc>
     </url>
     <url>
         <loc>https://hbhub.noahgajnielsen.dk/legal/terms</loc>
@@ -95,6 +95,6 @@
         <loc>https://hbhub.noahgajnielsen.dk/docs/games/wordle</loc>
     </url>
     <url>
-        <loc>https://hbhub.noahgajnielsen.dk/docs/games/space-ore-miner</loc>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/games/ore-mining-inc</loc>
     </url>
 </urlset>

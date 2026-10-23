@@ -2033,11 +2033,11 @@ if ($isPoll) {
 
             <!-- The logged in user: picture and name go to their profile, the cog to their settings -->
             <div class="chat-me">
-                <a class="chat-profile-link chat-me-profile" href="/otherPages/profile" title="Your profile">
+                <a class="chat-profile-link chat-me-profile" href="/profile" title="Your profile">
                     <?= chatUserAvatarHtml($userId, $hbHubUser['userName'], $hbHubUser['userAvatarAttachmentId']) ?>
                     <span class="chat-me-name"><?= htmlspecialchars($hbHubUser['userName']) ?></span>
                 </a>
-                <a class="chat-me-settings" href="/otherPages/settings" aria-label="Settings" title="Settings">
+                <a class="chat-me-settings" href="/settings" aria-label="Settings" title="Settings">
                     <img src="/assets/images/icons/settings.png" alt="">
                 </a>
             </div>
@@ -2253,7 +2253,7 @@ if ($isPoll) {
                 <hr class="chat-menu-divider" data-menu-site-admin>
             <?php endif; ?>
             <!-- On a DM: the other person's profile (chat.js sets the address) -->
-            <a role="menuitem" href="/otherPages/profile" data-menu-profile data-menu-dm>Show profile</a>
+            <a role="menuitem" href="/profile" data-menu-profile data-menu-dm>Show profile</a>
             <button type="button" role="menuitem" data-menu-action="nickname" data-menu-dm>Give nickname</button>
             <!-- Mute chat opens its own small menu with how long for, a muted chat gets Unmute chat instead -->
             <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-controls="chat-mute-menu" data-menu-mute>

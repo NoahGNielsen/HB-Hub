@@ -35,11 +35,11 @@
 |---|---|
 | **Wordle** | The daily word game: guess the five-letter word in six tries. There's an English and a Danish word every day (the Danish keyboard has æ, ø and å), the same for everyone, with stats, sharing and a leaderboard for each language with win %, average guesses and the current and longest streak |
 
-## Space Ore Miner
+## Ore Mining Inc.
 
 | | |
 |---|---|
-| **Space Ore Miner** | A clicker game, like Cookie Clicker: click the asteroid for ore, and spend it on 15 buildings (from a Space Pickaxe Guy to a Multiverse Drill) that mine for you. Each one costs 15% more than the last |
+| **Ore Mining Inc.** | A clicker game, like Cookie Clicker: click the asteroid for ore, and spend it on 15 buildings (from a Space Pickaxe Guy to a Multiverse Drill) that mine for you. Each one costs 15% more than the last |
 | **Upgrades** | Click upgrades (critical clicks, clicks worth a share of your production, an Auto-Clicker Bot and Swarm), six upgrades per building at 10, 25, 50, 100, 150 and 200 owned, synergies between buildings, and comet upgrades (one of them lets you catch comets with the C key) |
 | **Golden Comets** | A comet flies across the screen now and then. Catch it for a pile of ore, 7× production or 77× clicks for a while, or (rarely) a Diamond Comet with 777× production |
 | **Warp Jump** | Prestige: after a billion ore in a run, start over in a new galaxy for Dark Matter, ∛(ore mined in this universe ÷ 1 billion). Every Dark Matter earned is +5% production (7.5% with Dark Matter Reactor) until the next Big Crunch, and it buys upgrades that last until then too |
@@ -50,6 +50,7 @@
 | **Extras** | 51 achievements, an asteroid that changes as you mine more, rock bits and floating numbers on every click, a news ticker, sounds and a leaderboard |
 | **Hot keys** | Space mines, C catches a comet (after buying the Comet Hot Key upgrade), 1-9 and 0 buy the buildings in the order they're listed, U buys the cheapest affordable upgrade, B the affordable building with the most ore/s for its price, A switches between buying 1/10/100, W opens the Warp Jump, X the Big Crunch, R the Big Rip and M turns the sound on/off. Holding Space only mines once, holding 1-9, 0, U or B keeps buying. The first time the Hot Key Panel is bought in a browser (with a mouse), a popup explains the keys and links to the full list in the docs |
 | **Saving** | Saved on the server every 30 seconds and when you leave, and you keep mining at 5% while you're away. The server plays every click and purchase again to check it, so the leaderboard can't be cheated from the browser, and clicks only count up to 20 a second. Clicks at exactly the same pace for 20 seconds (an auto-clicker or a held-down key), or 40 clicks in a row whose gaps vary less than 10% (standard deviation of the gaps, as a share of the average gap), only mine 20%, until the pace changes. The game runs in one tab at a time |
+| **Crash recovery and reports** | What isn't saved yet is also kept in the browser, so after a crash or freeze it's saved the next time the game is opened (the server only counts what's newer than the save, so nothing counts twice). A watchdog worker notices when the page freezes, and the game notes down what it was doing (saves, errors, slow frames, memory, frame rate, animations, how long each part of the game takes, the last steps before a freeze, and the graphics card). The next time it's opened after a crash, it asks whether it may send a crash report, which site admins read under Crash reports in the admin panel. Kept 90 days |
 
 The Games section can be opened to everyone, only to admins, or to nobody with `games_access` in the
 [config](../config.md), and players can block it for themselves (see [Account & security](account.md)).

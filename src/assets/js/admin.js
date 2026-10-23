@@ -4,7 +4,7 @@
 // A form with data-reply-to (Reply, and mark completed on admin/feedback.php) asks for a message to that user instead,
 // which has to be filled in and is sent as `reply`. Those forms are hidden until this shows them, as they need the popup.
 // Generate fills in a random password for Reset password, shown so it can be passed on to the user,
-// and the chat's Background card shows the gradient as it's picked. (The pictures in the lists load two at a time, from pictureQueue.js.)
+// and the chat's Background card shows the gradient as it's picked. On admin/crashes.php, Copy everything copies a crash report. (The pictures in the lists load two at a time, from pictureQueue.js.)
 // Without JS the forms are sent straight away with no reason, the password has to be typed in and there's no preview.
 (() => {
     const main = document.querySelector('main.admin');
@@ -154,4 +154,23 @@
 
     showPreview();
     form.addEventListener('input', showPreview);
+})();
+
+// Crash reports (admin/crashes.php): Copy everything copies a report as text (its hidden data-crash-copy-text, made by
+// adminCrashCopyText()), to paste somewhere else. The button only shows with this script, as it needs it.
+(() => {
+    const buttons = document.querySelectorAll('[data-crash-copy]');
+    for (const button of buttons) {
+        button.hidden = false;
+        button.addEventListener('click', async () => {
+            const text = button.parentElement.querySelector('[data-crash-copy-text]').textContent;
+            try {
+                await navigator.clipboard.writeText(text);
+                button.textContent = 'Copied!';
+            } catch {
+                button.textContent = 'Couldn\'t copy'; // no clipboard access: it's all under Everything to copy by hand
+            }
+            setTimeout(() => (button.textContent = 'Copy everything'), 2000);
+        });
+    }
 })();

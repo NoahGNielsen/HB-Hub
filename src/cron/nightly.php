@@ -6,6 +6,7 @@
 //   - casino tables and game rooms nobody has open anymore (a batch of each, like a lobby visit)
 //   - GIF searches cached longer than 15 minutes
 //   - admin log rows older than a year (assets/php/adminLog.php)
+//   - Ore Mining Inc. crash reports older than 90 days (assets/php/games/spaceOreMiner/crashReports.php)
 // Each job runs on its own, so one failing doesn't stop the rest. It prints one line per job, and errors go to
 // stderr with exit code 1, so the crontab's mail (if MAILTO is set) only has something to say when it matters.
 //
@@ -36,6 +37,7 @@ require_once __DIR__ . '/../assets/php/games/chess/room.php';
 require_once __DIR__ . '/../assets/php/games/matador/room.php';
 require_once __DIR__ . '/../assets/php/games/uno/room.php';
 require_once __DIR__ . '/../assets/php/adminLog.php';
+require_once __DIR__ . '/../assets/php/games/spaceOreMiner/crashReports.php';
 
 const HBHUB_CRON_ATTACHMENT_ROUNDS = 1000; // the most sweeps of 50 attachments in one night, in case something keeps finding more
 
@@ -88,6 +90,10 @@ hbHubCronRun('GIF cache', static function () use ($db): string {
 
 hbHubCronRun('Admin log', static function () use ($db): string {
     return adminLogSweep($db) . ' old rows removed';
+});
+
+hbHubCronRun('Miner crash reports', static function () use ($db): string {
+    return hbHubMinerCrashSweep($db) . ' old reports removed';
 });
 
 exit($failed ? 1 : 0);

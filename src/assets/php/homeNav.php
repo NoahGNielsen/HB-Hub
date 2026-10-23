@@ -26,11 +26,11 @@ $homeNavSectionBase ??= '';
     </nav>
     <div class="home-nav-actions">
         <?php if ($homeNavUser === null): ?>
-            <a class="home-btn home-btn-ghost" href="/userMgmt/login">Log in</a>
-            <a class="home-btn home-btn-primary" href="/userMgmt/onboarding">Sign up</a>
+            <a class="home-btn home-btn-ghost" href="/login">Log in</a>
+            <a class="home-btn home-btn-primary" href="/onboarding">Sign up</a>
         <?php else: ?>
             <a class="home-btn home-btn-primary" href="/chat/">Open HB Hub</a>
-            <a class="home-avatar" href="/otherPages/profile" aria-label="Your profile" title="Your profile">
+            <a class="home-avatar" href="/profile" aria-label="Your profile" title="Your profile">
                 <?php if ($homeNavAvatarSrc !== null): ?>
                     <img src="<?= htmlspecialchars($homeNavAvatarSrc) ?>" alt="">
                 <?php else: ?>

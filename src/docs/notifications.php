@@ -34,7 +34,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 
                     <section id="browser" aria-labelledby="docs-browser">
                         <h2 id="docs-browser">Browser notifications and the message sound</h2>
-                        <p>Both are in the <strong>Notifications</strong> card in your <a href="/otherPages/settings#notifications">settings</a>:</p>
+                        <p>Both are in the <strong>Notifications</strong> card in your <a href="/settings#notifications">settings</a>:</p>
                         <ul>
                             <li>
                                 <strong>Notify me when I get a new message</strong> shows a pop-up from your browser. The first time,

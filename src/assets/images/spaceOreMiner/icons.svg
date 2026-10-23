@@ -1,4 +1,4 @@
-<!-- Space Ore Miner's icons, drawn for the game (no emoji): one <symbol> per icon, by name. The game's data in
+<!-- Ore Mining Inc.'s icons, drawn for the game (no emoji): one <symbol> per icon, by name. The game's data in
      assets/php/games/spaceOreMiner/miner.php names them in 'icon', and spaceOreMiner.js and the page show them with
      <svg><use href="/assets/images/spaceOreMiner/icons.svg#name"></use></svg> (hbHubMinerIcon() in miner.php). Every icon
      is 32 by 32 and flat colours only, no gradients or filters, so they look the same in every browser. -->
