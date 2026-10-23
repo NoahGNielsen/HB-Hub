@@ -137,31 +137,60 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
+    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/lobby.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/lobby.css') ?>">
     <title>Matador - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Matador, the Danish board game, on the HB Hub">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino games" data-mt-lobby data-seated="<?= $lobbyRoom !== null ? '1' : '0' ?>">
-        <a class="casino-back" href="/games/">&larr; Games</a>
-        <div class="casino-title-row">
-            <h1>Matador</h1>
-            <a class="casino-btn" href="/games/matador/leaderboard">Leaderboard</a>
+    <main class="lobby lobby-matador" data-mt-lobby data-seated="<?= $lobbyRoom !== null ? '1' : '0' ?>">
+        <a class="lobby-back" href="/games/">&larr; Games</a>
+        <header class="lobby-hero">
+            <div class="lobby-hero-icon">
+                <!-- A house and a hotel -->
+                <svg viewBox="0 0 64 64" aria-hidden="true">
+                    <path d="M6 33 20 21l14 12v20H6z" fill="#fff"/>
+                    <rect x="16" y="41" width="8" height="12" rx="1" fill="#c8102e"/>
+                    <path d="M32 27h26v26H32z" fill="#fff" opacity="0.6"/>
+                    <path d="M30 27 45 13l15 14z" fill="#fff" opacity="0.6"/>
+                    <path d="M37 33h5v5h-5zM48 33h5v5h-5zM37 43h5v5h-5zM48 43h5v5h-5z" fill="#c8102e"/>
+                </svg>
+            </div>
+            <div class="lobby-hero-text">
+                <h1>Matador</h1>
+                <p class="lobby-tagline">Buy streets in Copenhagen, build houses and hotels, and make the others go bankrupt.</p>
+                <ul class="lobby-facts">
+                    <li><?= HBHUB_MATADOR_MIN_PLAYERS ?>-<?= HBHUB_MATADOR_MAX_PLAYERS ?> players</li>
+                    <li><?= HBHUB_MATADOR_TURN_SECONDS ?> seconds a turn</li>
+                    <li>Saved when you stop</li>
+                </ul>
+            </div>
+            <div class="lobby-hero-actions">
+                <a class="lobby-hero-btn" href="/games/matador/leaderboard">Leaderboard</a>
+                <a class="lobby-hero-btn" href="#rules">Rules</a>
+            </div>
+        </header>
+
+        <div class="lobby-notes">
+            <?php if ($lobbyStopped): ?>
+                <p class="casino-alert games-notice" role="status">The game was saved and stopped. Whoever opened it can continue it from their saved game.</p>
+            <?php endif; ?>
+            <?php if (isset($lobbyErrors['list'])): ?>
+                <p class="casino-alert" role="alert"><?= htmlspecialchars($lobbyErrors['list']) ?></p>
+            <?php endif; ?>
         </div>
-        <p class="casino-intro">Buy streets in Copenhagen, build houses and hotels, and make the others go bankrupt. 2 to 4 players.</p>
-        <?php if ($lobbyStopped): ?>
-            <p class="casino-alert games-notice" role="status">The game was saved and stopped. Whoever opened it can continue it from their saved game.</p>
-        <?php endif; ?>
-        <?php if (isset($lobbyErrors['list'])): ?>
-            <p class="casino-alert" role="alert"><?= htmlspecialchars($lobbyErrors['list']) ?></p>
-        <?php endif; ?>
 
         <?php if ($lobbyRoom !== null): ?>
-            <section class="casino-card casino-your-table" aria-labelledby="lobby-yours-title">
-                <h2 id="lobby-yours-title">Your game</h2>
-                <p class="casino-hint">You're in <strong><?= htmlspecialchars($lobbyRoom['roomName']) ?></strong>. You can be in one game at a time.</p>
-                <div class="casino-actions">
+            <section class="lobby-panel lobby-current" aria-labelledby="lobby-yours-title">
+                <div class="lobby-current-text">
+                    <span class="lobby-pulse" aria-hidden="true"></span>
+                    <div>
+                        <h2 id="lobby-yours-title">Your game</h2>
+                        <p class="lobby-hint">You're in <strong class="lobby-current-name"><?= htmlspecialchars($lobbyRoom['roomName']) ?></strong>. You can be in one game at a time.</p>
+                    </div>
+                </div>
+                <div class="lobby-actions">
                     <a class="casino-btn casino-btn-primary" href="/games/matador/game?room=<?= $lobbyRoom['roomId'] ?>">Back to your game</a>
                     <form method="post">
                         <input type="hidden" name="action" value="leave">
@@ -172,18 +201,24 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
         <?php endif; ?>
 
         <?php if ($lobbySave !== null || isset($lobbyErrors['save'])): ?>
-            <section class="casino-card games-save" aria-labelledby="lobby-save-title">
-                <h2 id="lobby-save-title">Your saved game</h2>
+            <section class="lobby-panel lobby-current lobby-current-saved" aria-labelledby="lobby-save-title">
+                <div class="lobby-current-text">
+                    <span class="lobby-pulse" aria-hidden="true"></span>
+                    <div>
+                        <h2 id="lobby-save-title">Your saved game<?php if ($lobbySave !== null): ?>: <span class="lobby-current-name"><?= htmlspecialchars($lobbySave['name']) ?></span><?php endif; ?></h2>
+                        <?php if ($lobbySave !== null): ?>
+                            <p class="lobby-hint">
+                                <?= implode(', ', array_map(static fn (array $player): string => htmlspecialchars($player['name']) . ($player['bankrupt'] ? ' (bankrupt)' : ''), $lobbySave['players'])) ?>
+                                &middot; Round <?= $lobbySave['round'] ?> &middot; Saved <?= lobbyAgo($lobbySave['minutesAgo']) ?>
+                            </p>
+                            <?php if ($lobbySave['isPlaying']): ?>
+                                <p class="lobby-hint">It's being played right now, so it can't be continued or deleted until everyone has left it.</p>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
                 <?php if ($lobbySave !== null): ?>
-                    <p class="games-save-name"><?= htmlspecialchars($lobbySave['name']) ?></p>
-                    <p class="casino-hint">
-                        <?= implode(', ', array_map(static fn (array $player): string => htmlspecialchars($player['name']) . ($player['bankrupt'] ? ' (bankrupt)' : ''), $lobbySave['players'])) ?>
-                        &middot; Round <?= $lobbySave['round'] ?> &middot; Saved <?= lobbyAgo($lobbySave['minutesAgo']) ?>
-                    </p>
-                    <?php if ($lobbySave['isPlaying']): ?>
-                        <p class="casino-hint">It's being played right now, so it can't be continued or deleted until everyone has left it.</p>
-                    <?php endif; ?>
-                    <div class="casino-actions">
+                    <div class="lobby-actions">
                         <form method="post">
                             <input type="hidden" name="action" value="continue">
                             <button type="submit" class="casino-btn casino-btn-primary"<?= $lobbySave['isPlaying'] || $lobbyRoom !== null ? ' disabled' : '' ?>>Continue it</button>
@@ -200,81 +235,98 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
             </section>
         <?php endif; ?>
 
-        <div class="casino-overview">
-            <section class="casino-card" aria-labelledby="lobby-join-title">
-                <h2 id="lobby-join-title">Join a game</h2>
-                <fieldset class="casino-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
-                    <form method="post" class="casino-form">
-                        <input type="hidden" name="action" value="joinCode">
-                        <label class="casino-label" for="lobby-code">Join code</label>
-                        <div class="casino-inline">
-                            <input type="text" id="lobby-code" name="code" class="casino-input casino-code-input" maxlength="16" required
-                                   autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7PX3M"
-                                   value="<?= htmlspecialchars($lobbyValues['code']) ?>"<?= isset($lobbyErrors['code']) ? ' aria-describedby="lobby-code-error"' : '' ?>>
-                            <button type="submit" class="casino-btn casino-btn-primary">Join</button>
-                        </div>
-                        <?php if (isset($lobbyErrors['code'])): ?>
-                            <p class="casino-error" id="lobby-code-error" role="alert"><?= htmlspecialchars($lobbyErrors['code']) ?></p>
-                        <?php endif; ?>
-                    </form>
-                    <p class="casino-hint">Or pick a public game or one of your invites below.</p>
-                </fieldset>
-            </section>
+        <div class="lobby-body">
+            <div class="lobby-side">
+                <section class="lobby-panel" aria-labelledby="lobby-join-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-join-title">Join a game</h2>
+                    </div>
+                    <fieldset class="lobby-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
+                        <form method="post" class="lobby-form">
+                            <input type="hidden" name="action" value="joinCode">
+                            <label class="casino-label" for="lobby-code">Join code</label>
+                            <div class="lobby-code">
+                                <input type="text" id="lobby-code" name="code" class="casino-input" maxlength="16" required
+                                       autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7PX3M"
+                                       value="<?= htmlspecialchars($lobbyValues['code']) ?>"<?= isset($lobbyErrors['code']) ? ' aria-describedby="lobby-code-error"' : '' ?>>
+                                <button type="submit" class="casino-btn casino-btn-primary">Join</button>
+                            </div>
+                            <?php if (isset($lobbyErrors['code'])): ?>
+                                <p class="casino-error" id="lobby-code-error" role="alert"><?= htmlspecialchars($lobbyErrors['code']) ?></p>
+                            <?php endif; ?>
+                        </form>
+                        <p class="lobby-hint lobby-form-note">Or pick a public game or one of your invites.</p>
+                    </fieldset>
+                </section>
 
-            <section class="casino-card" aria-labelledby="lobby-create-title">
-                <h2 id="lobby-create-title">Open a game</h2>
-                <fieldset class="casino-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
-                    <form method="post" class="casino-form">
-                        <input type="hidden" name="action" value="create">
-                        <label class="casino-label" for="lobby-name">Name <span class="casino-optional">(optional)</span></label>
-                        <input type="text" id="lobby-name" name="name" class="casino-input" maxlength="<?= HBHUB_MATADOR_ROOM_NAME_MAX ?>"
-                               placeholder="<?= htmlspecialchars(hbHubMatadorRoomName(null, $hbHubUser['userName'])) ?>"
-                               value="<?= htmlspecialchars($lobbyValues['name']) ?>">
+                <section class="lobby-panel" id="open" aria-labelledby="lobby-create-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-create-title">Open a game</h2>
+                    </div>
+                    <fieldset class="lobby-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
+                        <form method="post" class="lobby-form">
+                            <input type="hidden" name="action" value="create">
+                            <label class="casino-label" for="lobby-name">Name <span class="casino-optional">(optional)</span></label>
+                            <input type="text" id="lobby-name" name="name" class="casino-input" maxlength="<?= HBHUB_MATADOR_ROOM_NAME_MAX ?>"
+                                   placeholder="<?= htmlspecialchars(hbHubMatadorRoomName(null, $hbHubUser['userName'])) ?>"
+                                   value="<?= htmlspecialchars($lobbyValues['name']) ?>">
 
-                        <fieldset class="casino-choices">
-                            <legend class="casino-label">Who can join</legend>
-                            <?php foreach ([
-                                'public' => ['Public', 'Listed below, so anyone can join.'],
-                                'code' => ['With the code', 'Not listed. Anyone you give the code to can join.'],
-                                'invite' => ['Invite-only', 'Not listed. Only people you invite can join.'],
-                            ] as $value => [$label, $hint]): ?>
-                                <label class="casino-choice">
-                                    <input type="radio" name="type" value="<?= $value ?>"<?= $lobbyValues['type'] === $value ? ' checked' : '' ?>>
-                                    <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
-                                </label>
-                            <?php endforeach; ?>
-                        </fieldset>
+                            <fieldset class="lobby-choices">
+                                <legend class="casino-label">Who can join</legend>
+                                <?php foreach ([
+                                    'public' => ['Public', 'Listed here, so anyone can join.'],
+                                    'code' => ['With the code', 'Not listed. Anyone you give the code to can join.'],
+                                    'invite' => ['Invite-only', 'Not listed. Only people you invite can join.'],
+                                ] as $value => [$label, $hint]): ?>
+                                    <label class="lobby-option">
+                                        <input type="radio" name="type" value="<?= $value ?>"<?= $lobbyValues['type'] === $value ? ' checked' : '' ?>>
+                                        <span class="lobby-option-text"><strong><?= $label ?></strong> <span class="lobby-hint"><?= $hint ?></span></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </fieldset>
 
-                        <?php if ($lobbySave !== null): ?>
-                            <p class="casino-hint games-warning">
-                                You have a saved game. A new game is saved in its place once it starts, so
-                                <strong><?= htmlspecialchars($lobbySave['name']) ?></strong> will be gone.
-                            </p>
-                        <?php endif; ?>
+                            <?php if ($lobbySave !== null): ?>
+                                <p class="casino-hint games-warning">
+                                    You have a saved game. A new game is saved in its place once it starts, so
+                                    <strong><?= htmlspecialchars($lobbySave['name']) ?></strong> will be gone.
+                                </p>
+                            <?php endif; ?>
 
-                        <button type="submit" class="casino-btn casino-btn-primary">Open game</button>
-                        <?php if (isset($lobbyErrors['create'])): ?>
-                            <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['create']) ?></p>
-                        <?php endif; ?>
-                    </form>
-                </fieldset>
-            </section>
+                            <button type="submit" class="casino-btn casino-btn-primary lobby-submit">Open game</button>
+                            <?php if (isset($lobbyErrors['create'])): ?>
+                                <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['create']) ?></p>
+                            <?php endif; ?>
+                        </form>
+                    </fieldset>
+                </section>
+            </div>
+
+            <div class="lobby-lists">
+                <section class="lobby-panel lobby-list lobby-invites is-empty" id="invites" aria-labelledby="lobby-invites-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-invites-title">Your invites</h2>
+                        <span class="lobby-count" data-mt-invites-count></span>
+                    </div>
+                    <ul class="lobby-rooms" data-mt-invites></ul>
+                    <p class="lobby-empty" data-mt-invites-empty>Loading…</p>
+                </section>
+
+                <section class="lobby-panel lobby-list" aria-labelledby="lobby-rooms-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-rooms-title">Public games</h2>
+                        <span class="lobby-count" data-mt-rooms-count></span>
+                        <span class="lobby-live" title="This list keeps itself up to date"><span class="lobby-pulse" aria-hidden="true"></span>Live</span>
+                    </div>
+                    <ul class="lobby-rooms" data-mt-rooms></ul>
+                    <p class="lobby-empty" data-mt-rooms-empty>Loading…</p>
+                </section>
+            </div>
         </div>
 
-        <section class="casino-card casino-list-card" id="invites" aria-labelledby="lobby-invites-title">
-            <h2 id="lobby-invites-title">Your invites</h2>
-            <ul class="casino-rooms" data-mt-invites></ul>
-            <p class="casino-hint" data-mt-invites-empty>Loading…</p>
-        </section>
-
-        <section class="casino-card casino-list-card" aria-labelledby="lobby-rooms-title">
-            <h2 id="lobby-rooms-title">Public games</h2>
-            <ul class="casino-rooms" data-mt-rooms></ul>
-            <p class="casino-hint" data-mt-rooms-empty>Loading…</p>
-        </section>
-
-        <section class="casino-card casino-rules" aria-labelledby="lobby-rules-title">
-            <h2 id="lobby-rules-title">Rules</h2>
+        <section class="lobby-panel lobby-rules" id="rules" aria-labelledby="lobby-rules-title">
+            <div class="lobby-panel-head">
+                <h2 id="lobby-rules-title">Rules</h2>
+            </div>
             <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/matador/rules.php'; ?>
         </section>
 

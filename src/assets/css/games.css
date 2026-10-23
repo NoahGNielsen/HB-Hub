@@ -24,26 +24,7 @@
   padding: 8px 14px;
 }
 
-/* The saved game (games/matador/) */
-.games-save {
-  margin-bottom: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.games-save h2 {
-  margin-bottom: 0;
-}
-
-.games-save-name {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-
+/* "You have a saved game" when opening a new one (games/matador/) */
 .games-warning {
   padding: 10px 12px;
   border-radius: 10px;

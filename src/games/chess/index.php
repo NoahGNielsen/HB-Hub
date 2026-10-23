@@ -98,31 +98,58 @@ $lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playi
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
+    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/lobby.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/lobby.css') ?>">
     <title>Chess - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Play chess against your friends on the HB Hub">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino games" data-ch-lobby data-seated="<?= $lobbyRoom !== null ? '1' : '0' ?>">
-        <a class="casino-back" href="/games/">&larr; Games</a>
-        <div class="casino-title-row">
-            <h1>Chess</h1>
-            <a class="casino-btn" href="/games/chess/leaderboard">Leaderboard</a>
+    <main class="lobby lobby-chess" data-ch-lobby data-seated="<?= $lobbyRoom !== null ? '1' : '0' ?>">
+        <a class="lobby-back" href="/games/">&larr; Games</a>
+        <header class="lobby-hero">
+            <div class="lobby-hero-icon">
+                <!-- A pawn -->
+                <svg viewBox="0 0 64 64" aria-hidden="true">
+                    <circle cx="32" cy="16" r="8" fill="#fff"/>
+                    <path d="M23 27h18l-3.5 4c0 7.5 2.5 12.5 7.5 16.5h-26c5-4 7.5-9 7.5-16.5z" fill="#fff"/>
+                    <rect x="15" y="49" width="34" height="8" rx="3" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="lobby-hero-text">
+                <h1>Chess</h1>
+                <p class="lobby-tagline">Play chess against someone else on the HB Hub, with or without a clock.</p>
+                <ul class="lobby-facts">
+                    <li><?= HBHUB_CHESS_SEATS ?> players</li>
+                    <li>With or without a clock</li>
+                    <li>Draw offers and rematches</li>
+                </ul>
+            </div>
+            <div class="lobby-hero-actions">
+                <a class="lobby-hero-btn" href="/games/chess/leaderboard">Leaderboard</a>
+                <a class="lobby-hero-btn" href="#rules">Rules</a>
+            </div>
+        </header>
+
+        <div class="lobby-notes">
+            <?php if (isset($lobbyErrors['list'])): ?>
+                <p class="casino-alert" role="alert"><?= htmlspecialchars($lobbyErrors['list']) ?></p>
+            <?php endif; ?>
         </div>
-        <p class="casino-intro">Play chess against someone else on the HB Hub, with or without a clock.</p>
-        <?php if (isset($lobbyErrors['list'])): ?>
-            <p class="casino-alert" role="alert"><?= htmlspecialchars($lobbyErrors['list']) ?></p>
-        <?php endif; ?>
 
         <?php if ($lobbyRoom !== null): ?>
-            <section class="casino-card casino-your-table" aria-labelledby="lobby-yours-title">
-                <h2 id="lobby-yours-title">Your game</h2>
-                <p class="casino-hint">
-                    You're in <strong><?= htmlspecialchars($lobbyRoom['roomName']) ?></strong>. You can be in one chess game at a time.
-                    <?php if ($lobbyIsPlaying): ?>Leaving it while it's being played loses it.<?php endif; ?>
-                </p>
-                <div class="casino-actions">
+            <section class="lobby-panel lobby-current" aria-labelledby="lobby-yours-title">
+                <div class="lobby-current-text">
+                    <span class="lobby-pulse" aria-hidden="true"></span>
+                    <div>
+                        <h2 id="lobby-yours-title">Your game</h2>
+                        <p class="lobby-hint">
+                            You're in <strong class="lobby-current-name"><?= htmlspecialchars($lobbyRoom['roomName']) ?></strong>. You can be in one chess game at a time.
+                            <?php if ($lobbyIsPlaying): ?>Leaving it while it's being played loses it.<?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+                <div class="lobby-actions">
                     <a class="casino-btn casino-btn-primary" href="/games/chess/game?room=<?= $lobbyRoom['roomId'] ?>">Back to your game</a>
                     <form method="post"<?= $lobbyIsPlaying ? ' data-ch-leave-form' : '' ?>>
                         <input type="hidden" name="action" value="leave">
@@ -132,75 +159,92 @@ $lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playi
             </section>
         <?php endif; ?>
 
-        <div class="casino-overview">
-            <section class="casino-card" aria-labelledby="lobby-join-title">
-                <h2 id="lobby-join-title">Join a game</h2>
-                <fieldset class="casino-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
-                    <form method="post" class="casino-form">
-                        <input type="hidden" name="action" value="joinCode">
-                        <label class="casino-label" for="lobby-code">Join code</label>
-                        <div class="casino-inline">
-                            <input type="text" id="lobby-code" name="code" class="casino-input casino-code-input" maxlength="16" required
-                                   autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7PX3M"
-                                   value="<?= htmlspecialchars($lobbyValues['code']) ?>"<?= isset($lobbyErrors['code']) ? ' aria-describedby="lobby-code-error"' : '' ?>>
-                            <button type="submit" class="casino-btn casino-btn-primary">Join</button>
-                        </div>
-                        <?php if (isset($lobbyErrors['code'])): ?>
-                            <p class="casino-error" id="lobby-code-error" role="alert"><?= htmlspecialchars($lobbyErrors['code']) ?></p>
-                        <?php endif; ?>
-                    </form>
-                    <p class="casino-hint">Or pick a public game or one of your invites below.</p>
-                </fieldset>
-            </section>
+        <div class="lobby-body">
+            <div class="lobby-side">
+                <section class="lobby-panel" aria-labelledby="lobby-join-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-join-title">Join a game</h2>
+                    </div>
+                    <fieldset class="lobby-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
+                        <form method="post" class="lobby-form">
+                            <input type="hidden" name="action" value="joinCode">
+                            <label class="casino-label" for="lobby-code">Join code</label>
+                            <div class="lobby-code">
+                                <input type="text" id="lobby-code" name="code" class="casino-input" maxlength="16" required
+                                       autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7PX3M"
+                                       value="<?= htmlspecialchars($lobbyValues['code']) ?>"<?= isset($lobbyErrors['code']) ? ' aria-describedby="lobby-code-error"' : '' ?>>
+                                <button type="submit" class="casino-btn casino-btn-primary">Join</button>
+                            </div>
+                            <?php if (isset($lobbyErrors['code'])): ?>
+                                <p class="casino-error" id="lobby-code-error" role="alert"><?= htmlspecialchars($lobbyErrors['code']) ?></p>
+                            <?php endif; ?>
+                        </form>
+                        <p class="lobby-hint lobby-form-note">Or pick a public game or one of your invites.</p>
+                    </fieldset>
+                </section>
 
-            <section class="casino-card" aria-labelledby="lobby-create-title">
-                <h2 id="lobby-create-title">Open a game</h2>
-                <fieldset class="casino-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
-                    <form method="post" class="casino-form">
-                        <input type="hidden" name="action" value="create">
-                        <label class="casino-label" for="lobby-name">Name <span class="casino-optional">(optional)</span></label>
-                        <input type="text" id="lobby-name" name="name" class="casino-input" maxlength="<?= HBHUB_CHESS_ROOM_NAME_MAX ?>"
-                               placeholder="<?= htmlspecialchars(hbHubChessRoomName(null, $hbHubUser['userName'])) ?>"
-                               value="<?= htmlspecialchars($lobbyValues['name']) ?>">
+                <section class="lobby-panel" id="open" aria-labelledby="lobby-create-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-create-title">Open a game</h2>
+                    </div>
+                    <fieldset class="lobby-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
+                        <form method="post" class="lobby-form">
+                            <input type="hidden" name="action" value="create">
+                            <label class="casino-label" for="lobby-name">Name <span class="casino-optional">(optional)</span></label>
+                            <input type="text" id="lobby-name" name="name" class="casino-input" maxlength="<?= HBHUB_CHESS_ROOM_NAME_MAX ?>"
+                                   placeholder="<?= htmlspecialchars(hbHubChessRoomName(null, $hbHubUser['userName'])) ?>"
+                                   value="<?= htmlspecialchars($lobbyValues['name']) ?>">
 
-                        <fieldset class="casino-choices">
-                            <legend class="casino-label">Who can join</legend>
-                            <?php foreach ([
-                                'public' => ['Public', 'Listed below, so anyone can join.'],
-                                'code' => ['With the code', 'Not listed. Anyone you give the code to can join.'],
-                                'invite' => ['Invite-only', 'Not listed. Only people you invite can join.'],
-                            ] as $value => [$label, $hint]): ?>
-                                <label class="casino-choice">
-                                    <input type="radio" name="type" value="<?= $value ?>"<?= $lobbyValues['type'] === $value ? ' checked' : '' ?>>
-                                    <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
-                                </label>
-                            <?php endforeach; ?>
-                        </fieldset>
+                            <fieldset class="lobby-choices">
+                                <legend class="casino-label">Who can join</legend>
+                                <?php foreach ([
+                                    'public' => ['Public', 'Listed here, so anyone can join.'],
+                                    'code' => ['With the code', 'Not listed. Anyone you give the code to can join.'],
+                                    'invite' => ['Invite-only', 'Not listed. Only people you invite can join.'],
+                                ] as $value => [$label, $hint]): ?>
+                                    <label class="lobby-option">
+                                        <input type="radio" name="type" value="<?= $value ?>"<?= $lobbyValues['type'] === $value ? ' checked' : '' ?>>
+                                        <span class="lobby-option-text"><strong><?= $label ?></strong> <span class="lobby-hint"><?= $hint ?></span></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </fieldset>
 
-                        <p class="casino-hint">You pick the clock and the colours in the game's settings, and start the game once someone has joined.</p>
-                        <button type="submit" class="casino-btn casino-btn-primary">Open game</button>
-                        <?php if (isset($lobbyErrors['create'])): ?>
-                            <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['create']) ?></p>
-                        <?php endif; ?>
-                    </form>
-                </fieldset>
-            </section>
+                            <p class="lobby-hint lobby-form-note">You pick the clock and the colours in the game's settings, and start the game once someone has joined.</p>
+                            <button type="submit" class="casino-btn casino-btn-primary lobby-submit">Open game</button>
+                            <?php if (isset($lobbyErrors['create'])): ?>
+                                <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['create']) ?></p>
+                            <?php endif; ?>
+                        </form>
+                    </fieldset>
+                </section>
+            </div>
+
+            <div class="lobby-lists">
+                <section class="lobby-panel lobby-list lobby-invites is-empty" id="invites" aria-labelledby="lobby-invites-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-invites-title">Your invites</h2>
+                        <span class="lobby-count" data-ch-invites-count></span>
+                    </div>
+                    <ul class="lobby-rooms" data-ch-invites></ul>
+                    <p class="lobby-empty" data-ch-invites-empty>Loading…</p>
+                </section>
+
+                <section class="lobby-panel lobby-list" aria-labelledby="lobby-rooms-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-rooms-title">Public games</h2>
+                        <span class="lobby-count" data-ch-rooms-count></span>
+                        <span class="lobby-live" title="This list keeps itself up to date"><span class="lobby-pulse" aria-hidden="true"></span>Live</span>
+                    </div>
+                    <ul class="lobby-rooms" data-ch-rooms></ul>
+                    <p class="lobby-empty" data-ch-rooms-empty>Loading…</p>
+                </section>
+            </div>
         </div>
 
-        <section class="casino-card casino-list-card" id="invites" aria-labelledby="lobby-invites-title">
-            <h2 id="lobby-invites-title">Your invites</h2>
-            <ul class="casino-rooms" data-ch-invites></ul>
-            <p class="casino-hint" data-ch-invites-empty>Loading…</p>
-        </section>
-
-        <section class="casino-card casino-list-card" aria-labelledby="lobby-rooms-title">
-            <h2 id="lobby-rooms-title">Public games</h2>
-            <ul class="casino-rooms" data-ch-rooms></ul>
-            <p class="casino-hint" data-ch-rooms-empty>Loading…</p>
-        </section>
-
-        <section class="casino-card casino-rules" aria-labelledby="lobby-rules-title">
-            <h2 id="lobby-rules-title">Rules</h2>
+        <section class="lobby-panel lobby-rules" id="rules" aria-labelledby="lobby-rules-title">
+            <div class="lobby-panel-head">
+                <h2 id="lobby-rules-title">Rules</h2>
+            </div>
             <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/chess/rules.php'; ?>
         </section>
 

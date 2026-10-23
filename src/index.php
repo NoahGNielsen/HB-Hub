@@ -235,7 +235,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 </p>
                 <ul class="home-ticks">
                     <li>Blackjack solo, or at a table of up to 5</li>
-                    <li>Baccarat with 2-6 friends: Player or Banker?</li>
+                    <li>Baccarat solo, or with up to 6: Player or Banker?</li>
                     <li>European Roulette, every bet on the board</li>
                     <li>Leaderboards, if you're that good!</li>
                 </ul>

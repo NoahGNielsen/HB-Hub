@@ -78,7 +78,7 @@ function casinoCountdown(int $seconds): string
                 <li>
                     <a class="casino-game" href="/gambling/baccarat/">
                         <span class="casino-game-name">Baccarat</span>
-                        <span class="casino-game-text">Bet on the Player or the Banker, whichever ends closest to 9, at a table of 2-6 players.</span>
+                        <span class="casino-game-text">Bet on the Player or the Banker, whichever ends closest to 9, solo or at a table of up to 6.</span>
                     </a>
                 </li>
                 <li>

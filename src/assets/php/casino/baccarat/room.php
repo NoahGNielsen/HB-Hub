@@ -1,11 +1,10 @@
 <?php
 // Baccarat rooms (tables) in the database: making and joining them, who sits where, invites, and loading and saving
 // the hand being played (HBHub-BaccaratRooms, HBHub-BaccaratSeats and HBHub-BaccaratInvites). The hands themselves
-// are played in round.php. Built the same way as the Blackjack tables (casino/blackjack/room.php), but for 2-6 players,
-// so there are no solo tables: bets only open once HBHUB_BACCARAT_MIN_PLAYERS are at the table.
+// are played in round.php. Built the same way as the Blackjack tables (casino/blackjack/room.php), solo tables too.
 //
 // Who can join (hbHubBaccaratJoin()): anyone a public room, anyone with its code a code room, and only invited users an
-// invite-only room (its code alone isn't enough). Anyone invited can join any room.
+// invite-only room (its code alone isn't enough). Anyone invited can join any room. A solo room is just its maker's.
 // Every room has a code, whatever its type. The host (who made it, at first) is the one who can invite people.
 //
 // Everything that changes a table goes through hbHubBaccaratPlay(), which locks the room's row first, so only one
@@ -20,19 +19,23 @@ require_once __DIR__ . '/round.php';
 const HBHUB_BACCARAT_ROOM_PUBLIC = 1; // roomType
 const HBHUB_BACCARAT_ROOM_INVITE = 2;
 const HBHUB_BACCARAT_ROOM_CODE = 3;
+const HBHUB_BACCARAT_ROOM_SOLO = 4;
 const HBHUB_BACCARAT_ROOM_TYPES = [ // as the forms and baccaratTable.js name them
     HBHUB_BACCARAT_ROOM_PUBLIC => 'public',
     HBHUB_BACCARAT_ROOM_INVITE => 'invite',
     HBHUB_BACCARAT_ROOM_CODE => 'code',
+    HBHUB_BACCARAT_ROOM_SOLO => 'solo',
 ];
 const HBHUB_BACCARAT_ROOM_TYPE_NAMES = [
     HBHUB_BACCARAT_ROOM_PUBLIC => 'Public table',
     HBHUB_BACCARAT_ROOM_INVITE => 'Invite-only table',
     HBHUB_BACCARAT_ROOM_CODE => 'Table with a code',
+    HBHUB_BACCARAT_ROOM_SOLO => 'Solo table',
 ];
-const HBHUB_BACCARAT_SEATS = 6;
+const HBHUB_BACCARAT_SEATS = 6; // a solo table has 1
 const HBHUB_BACCARAT_ROOM_NAME_MAX = 48; // roomName column
 const HBHUB_BACCARAT_MIN_BETS = [10, 50, 100, 500]; // what a room's minimum bet can be
+const HBHUB_BACCARAT_SOLO_MIN_BET = 10;
 const HBHUB_BACCARAT_CODE_LETTERS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0 O 1 I L, as they look alike
 const HBHUB_BACCARAT_CODE_LENGTH = 6;
 const HBHUB_BACCARAT_AWAY_SECONDS = 10; // a table that hasn't checked in for this long counts as away
@@ -49,6 +52,11 @@ const HBHUB_BACCARAT_STATUS_BANNED = 4; // userStatus in HBHub-Users
 function hbHubBaccaratNow(): int
 {
     return (int) floor(microtime(true) * 1000);
+}
+
+function hbHubBaccaratMaxSeats(int $type): int
+{
+    return $type === HBHUB_BACCARAT_ROOM_SOLO ? 1 : HBHUB_BACCARAT_SEATS;
 }
 
 /**
@@ -316,6 +324,9 @@ function hbHubBaccaratJoin(PDO $db, int $userId, int $roomId, bool $hasCode): ?s
     try {
         $played = hbHubBaccaratPlay($db, $roomId, function (array &$room, array &$seats, int $now) use ($db, $userId, $hasCode): ?string {
             $type = $room['roomType'];
+            if ($type === HBHUB_BACCARAT_ROOM_SOLO) {
+                return 'That\'s a solo table, just for the one who opened it.';
+            }
             $mayJoin = hbHubBaccaratIsInvited($db, $room['roomId'], $userId)
                 || $type === HBHUB_BACCARAT_ROOM_PUBLIC
                 || ($type === HBHUB_BACCARAT_ROOM_CODE && $hasCode);
@@ -358,7 +369,7 @@ function hbHubBaccaratFreeSeat(array $room, array $seats): ?int
         $taken = [...$taken, ...array_column($round['players'], 'seat')];
     }
 
-    for ($seat = 1; $seat <= HBHUB_BACCARAT_SEATS; $seat++) {
+    for ($seat = 1; $seat <= hbHubBaccaratMaxSeats($room['roomType']); $seat++) {
         if (!in_array($seat, $taken, true)) {
             return $seat;
         }
@@ -421,6 +432,10 @@ function hbHubBaccaratLeave(PDO $db, int $userId): void
  */
 function hbHubBaccaratSitOut(PDO $db, array &$room, array &$seats, int $userId, bool $sitOut, int $now): ?string
 {
+    if ($room['roomType'] === HBHUB_BACCARAT_ROOM_SOLO) {
+        return 'There\'s nobody to sit out for at a solo table.';
+    }
+
     $db->prepare('UPDATE `HBHub-BaccaratSeats` SET seatSittingOut = ? WHERE roomId = ? AND userId = ?')
         ->execute([$sitOut ? 1 : 0, $room['roomId'], $userId]);
     foreach ($seats as &$seat) {
@@ -442,6 +457,9 @@ function hbHubBaccaratSitOut(PDO $db, array &$room, array &$seats, int $userId, 
  */
 function hbHubBaccaratInvite(PDO $db, array $room, array $seats, int $hostId, mixed $userId): ?string
 {
+    if ($room['roomType'] === HBHUB_BACCARAT_ROOM_SOLO) {
+        return 'Nobody can join a solo table. Open a table for more players from the Baccarat page.';
+    }
     if ($room['roomHostUserId'] !== $hostId) {
         return 'Only the host can invite people.';
     }

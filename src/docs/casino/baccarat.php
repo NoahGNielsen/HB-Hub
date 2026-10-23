@@ -83,7 +83,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="tables" aria-labelledby="docs-tables">
                         <h2 id="docs-tables">Tables and leaderboard</h2>
                         <p>
-                            Open a table (public, with a code or invite-only) or join one from the lobby. More in
+                            Press <strong>Play solo</strong> for a table of your own, open one for others (public, with a code
+                            or invite-only), or join one from the lobby. More in
                             <a href="/docs/casino/#tables">How the casino works</a>. Every hand counts towards the
                             <a href="/gambling/baccarat/leaderboard">Baccarat leaderboard</a>.
                         </p>

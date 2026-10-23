@@ -40,7 +40,7 @@ const HBHUB_DOCS_SECTIONS = [
         'pages' => [
             '/docs/casino/' => ['How the casino works', 'Chips, the daily chips, tables and codes, leaderboards, and what chips are and aren\'t.'],
             '/docs/casino/blackjack' => ['Blackjack', 'Beat the dealer without going over 21, solo or at a table with up to 5 players.'],
-            '/docs/casino/baccarat' => ['Baccarat', 'Bet on the Player, the Banker or a tie at a table with up to 6 players.'],
+            '/docs/casino/baccarat' => ['Baccarat', 'Bet on the Player, the Banker or a tie, solo or at a table with up to 6 players.'],
             '/docs/casino/roulette' => ['Roulette', 'European roulette with a single zero, and every bet placed straight on the board.'],
         ],
     ],
