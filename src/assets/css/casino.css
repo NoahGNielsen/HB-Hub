@@ -640,12 +640,15 @@ a.casino-game:hover .casino-game-art {
   text-align: left;
 }
 
-/* Headings like "Strange Matter" can take two lines, which is what keeps the widest boards from scrolling */
-.casino-table thead th {
+/* Headings like "Strange Matter" can take two lines, which is what keeps the widest boards from scrolling. They're
+   centred both ways, Player's too */
+.casino-table thead th,
+.casino-table thead th:nth-child(2) {
   padding-top: 14px;
   padding-bottom: 14px;
   white-space: normal;
-  vertical-align: bottom;
+  text-align: center;
+  vertical-align: middle;
   border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
   font-size: 0.75rem;
   letter-spacing: 0.05em;
@@ -713,9 +716,10 @@ a.casino-game:hover .casino-game-art {
   color: var(--accent);
 }
 
+/* Taken out of the flow with no offsets, so it still sits right after the last word but doesn't count when the heading
+   is centred (or wrap onto a line of its own) */
 .casino-sort-arrow {
-  display: inline-block;
-  width: 1em;
+  position: absolute;
 }
 
 .casino-rank {
