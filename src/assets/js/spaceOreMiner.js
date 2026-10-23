@@ -614,8 +614,8 @@
     // are around it (data-miner-scene). parts are its pieces, each a span with the class miner-sprite-<part> and one of
     // the drawn icons (see iconBox(); the same as in the store, or a scene* piece of one) or nothing (drawn in CSS: the
     // laser beam, the rocks the Moon Excavator dumps, the Black Hole Siphon's pull and the ore going up it, the embers
-    // out of the Star Forge's chimney, and the nebula,
-    // Dyson Swarm and multiverse rift, which fill the space around the asteroid). Where the nth
+    // out of the Star Forge's chimney, the nebula, the Dyson Swarm, and the multiverse rift with its flash and the ore
+    // that falls out of it, which fill the space around the asteroid). Where the nth
     // one goes and how it moves is in spaceOreMiner.css (.miner-sprite.is-<building>.is-<n>; the Ore Freighters' ways are
     // picked by flyFreighter()). The Dyson Swarm's ring is
     // two from the start: the half behind the asteroid and the half in front of it.
@@ -634,7 +634,7 @@
         nebula: { at: [1], parts: { body: '' } },
         dyson: { at: [1, 1], parts: { body: '' } },
         wormhole: { at: [1], parts: { body: 'wormhole' } },
-        multiverse: { at: [1], parts: { glow: '', edge: '', body: '' } },
+        multiverse: { at: [1], parts: { glow: '', flash: '', edge: '', body: '', ours: 'sceneMultiverseDrill', theirs: 'sceneMultiverseDrillMirror', spill: '' } },
     };
     const SURFACE = ['pickaxe', 'rig', 'base'];
     // (how long it lasts, the ore a lucky one gave, its multiplier with Antimatter Comets)
