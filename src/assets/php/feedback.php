@@ -38,6 +38,18 @@ function hbHubFeedbackPage(?string $return): ?string
 }
 
 /**
+ * Tidies text typed into the feedback or reply box: Windows/old Mac line breaks become "\n", the ends are trimmed and
+ * any run of empty lines (or lines with only spaces or invisible characters) shrinks to a single empty line, so a
+ * paragraph break still works but a wall of new lines doesn't. Also used when showing feedback saved before this.
+ */
+function hbHubFeedbackTidy(string $text): string
+{
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
+    // \h is every horizontal space (with /u), plus zero-width spaces/joiners, the word joiner and the BOM
+    return trim((string) preg_replace('/(?:[\h\x{200B}-\x{200D}\x{2060}\x{FEFF}]*\n){3,}/u', "\n\n", $text));
+}
+
+/**
  * How many more the user can send right now (HBHUB_FEEDBACK_PER_HOUR in the last hour).
  */
 function hbHubFeedbackLeft(PDO $db, int $userId): int
@@ -79,7 +91,7 @@ function hbHubFeedbackSetDone(PDO $db, int $feedbackId, bool $done, int $adminId
  */
 function hbHubFeedbackReplyText(mixed $reply): ?string
 {
-    $reply = is_string($reply) ? trim(str_replace("\r\n", "\n", mb_scrub($reply, 'UTF-8'))) : '';
+    $reply = is_string($reply) ? hbHubFeedbackTidy(mb_scrub($reply, 'UTF-8')) : '';
     return $reply !== '' && mb_strlen($reply) <= HBHUB_FEEDBACK_REPLY_MAX ? $reply : null;
 }
 

@@ -17,7 +17,8 @@ $feedbackMessage = '';
 $feedbackError = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $feedbackMessage = is_string($_POST['message'] ?? null) ? trim(str_replace("\r\n", "\n", $_POST['message'])) : '';
+    // Tidied so a wall of empty lines shrinks to one (hbHubFeedbackTidy() gives '' for broken UTF-8)
+    $feedbackMessage = is_string($_POST['message'] ?? null) ? hbHubFeedbackTidy($_POST['message']) : '';
 
     if ($feedbackMessage === '' || !mb_check_encoding($feedbackMessage, 'UTF-8')) {
         $feedbackError = 'Please write something first.';

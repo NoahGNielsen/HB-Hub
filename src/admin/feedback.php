@@ -121,7 +121,7 @@ $adminFormAction = '/admin/feedback' . ($adminPage > 1 ? '?page=' . $adminPage :
                                         <?php endif; ?>
                                         <span class="settings-status<?= $feedbackDone ? '' : ' is-on' ?>"><?= $feedbackDone ? 'Done' : 'New' ?></span>
                                     </div>
-                                    <p class="admin-feedback-text"><?= nl2br(htmlspecialchars($feedback['feedbackContent'])) ?></p>
+                                    <p class="admin-feedback-text"><?= nl2br(htmlspecialchars(hbHubFeedbackTidy($feedback['feedbackContent']))) ?></p>
                                     <div class="admin-feedback-foot">
                                         <?php if ($feedbackDone): ?>
                                             <span class="admin-small">Done <?= adminTime($feedback['feedbackDoneTimestamp']) ?><?php if ($feedback['feedbackDoneByUserId'] !== null): ?>
