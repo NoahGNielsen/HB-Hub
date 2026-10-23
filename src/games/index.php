@@ -51,8 +51,14 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                             <span class="casino-game-kicker">2 players</span>
                             <span class="casino-game-name">Chess</span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
-                                <path d="M22 54h28v-6l-4-3c-1-6-1-12 2-17l-6-12c-4-2-9-2-12 2l-8 13 4 4 7-4c1 5-2 9-6 14l-5 3z"/>
-                                <circle class="casino-game-art-mark" cx="35" cy="20" r="2.2"/>
+                                <!-- A queen with a jewel in her crown, and a pawn beside her -->
+                                <path d="M8 56H36V51H33L29 32H32V28H28L33 14L27 20L22 9L17 20L11 14L16 28H12V32H15L11 51H8Z"/>
+                                <circle cx="11" cy="13" r="2.4"/>
+                                <circle cx="22" cy="8" r="2.4"/>
+                                <circle cx="33" cy="13" r="2.4"/>
+                                <circle class="casino-game-art-mark" cx="22" cy="23" r="2"/>
+                                <path d="M38 56H58V51H55C54 45 52 41 52 38H55V35H41V38H44C44 41 42 45 41 51H38Z"/>
+                                <circle cx="48" cy="28" r="6.5"/>
                             </svg>
                         </span>
                         <span class="casino-game-text">Play chess against your friends, with or without a clock. Draw offers, rematches and a leaderboard.</span>
