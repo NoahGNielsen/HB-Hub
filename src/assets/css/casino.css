@@ -411,7 +411,45 @@ a.casino-game:focus-visible {
   display: block;
 }
 
-/* Leaderboards (gambling/blackjack/leaderboard.php, gambling/roulette/leaderboard.php) */
+/* "Games" and the casino leaderboard's button on the casino home (gambling/index.php) */
+.casino-games-head {
+  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.casino .casino-games-head h2 {
+  margin: 0;
+}
+
+/* Leaderboards: gambling/leaderboard.php for the whole casino, and every game's leaderboard.php in gambling/ and games/
+   (<main class="casino casino-leaderboard">). Wider than the other casino pages so the columns fit without scrolling
+   sideways; on a small screen the table still scrolls, inside its card. */
+.casino.casino-leaderboard {
+  max-width: 1320px;
+}
+
+/* The table runs to the card's edges, and its outer cells have the card's padding instead */
+.casino-card.casino-board {
+  padding: 6px 0;
+  overflow: hidden;
+}
+
+.casino-board > .casino-hint {
+  padding: 22px 28px;
+}
+
+/* The games' own leaderboards, above the casino leaderboard */
+.casino-board-links {
+  margin: -8px 0 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .casino-table-wrap {
   overflow-x: auto;
 }
@@ -424,9 +462,22 @@ a.casino-game:focus-visible {
 
 .casino-table th,
 .casino-table td {
-  padding: 10px 12px;
+  padding: 12px 14px;
   text-align: right;
   white-space: nowrap;
+}
+
+/* The rank: only as wide as it needs */
+.casino-table th:first-child,
+.casino-table td:first-child {
+  width: 1%;
+  padding-left: 24px;
+  text-align: center;
+}
+
+.casino-table th:last-child,
+.casino-table td:last-child {
+  padding-right: 28px;
 }
 
 .casino-table th:nth-child(2),
@@ -434,21 +485,63 @@ a.casino-game:focus-visible {
   text-align: left;
 }
 
+/* Headings like "Strange Matter" can take two lines, which is what keeps the widest boards from scrolling */
 .casino-table thead th {
-  border-bottom: 2px solid color-mix(in srgb, var(--text) 15%, transparent);
-  font-size: 0.85rem;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  white-space: normal;
+  vertical-align: bottom;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .casino-table tbody tr + tr td {
-  border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+/* Row colours are background-color only, so the top three's medals (a background-image, below) still show */
+.casino-table tbody tr:hover td {
+  background-color: color-mix(in srgb, var(--text) 4%, transparent);
 }
 
 .casino-table tbody tr.is-you td {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.casino-table tbody tr.is-you td:first-child {
+  box-shadow: inset 3px 0 var(--accent);
+}
+
+/* Gold, silver and bronze behind the top three's rank (data-podium, only while sorted best first) */
+.casino-table td[data-podium] {
+  color: #1d1f24;
+  font-weight: 800;
+  background-image: radial-gradient(circle 14px at center, var(--casino-podium) 13px, transparent 14px);
+}
+
+.casino-table td[data-podium="1"] {
+  --casino-podium: #e8b931;
+}
+
+.casino-table td[data-podium="2"] {
+  --casino-podium: #c3cad6;
+}
+
+.casino-table td[data-podium="3"] {
+  --casino-podium: #d08a4f;
+}
+
+/* The word in a big number, like "quattuordecillion", small under it (games/spaceOreMiner/leaderboard.php) */
+.casino-table-unit {
+  display: block;
+  font-size: 0.72rem;
+  opacity: 0.6;
 }
 
 .casino-sort {
-  color: inherit;
+  color: color-mix(in srgb, var(--text) 65%, transparent);
   font-weight: 700;
   text-decoration: none;
 }
@@ -465,14 +558,15 @@ a.casino-game:focus-visible {
 }
 
 .casino-rank {
-  opacity: 0.6;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+  font-weight: 600;
 }
 
 .casino-player {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  max-width: 220px;
+  gap: 10px;
+  max-width: 260px;
   color: inherit;
   font-weight: 700;
   text-decoration: none;
@@ -526,13 +620,18 @@ a.casino-game:focus-visible {
   color: color-mix(in srgb, var(--bac-banker) 80%, var(--text));
 }
 
-/* Chips won or lost (gambling/roulette/leaderboard.php) */
+/* Chips won or lost (gambling/leaderboard.php, gambling/roulette/leaderboard.php) */
 .casino-net-up {
   color: var(--casino-up);
 }
 
 .casino-net-down {
   color: var(--casino-down);
+}
+
+/* All the games together, on the casino leaderboard */
+.casino-board-total {
+  font-weight: 700;
 }
 
 @media (max-width: 700px) {
@@ -558,9 +657,27 @@ a.casino-game:focus-visible {
     align-self: stretch;
   }
 
+  .casino-card.casino-board {
+    padding: 4px 0;
+  }
+
+  .casino-board > .casino-hint {
+    padding: 18px 16px;
+  }
+
   .casino-table th,
   .casino-table td {
-    padding: 8px 8px;
+    padding: 10px 8px;
+  }
+
+  .casino-table th:first-child,
+  .casino-table td:first-child {
+    padding-left: 12px;
+  }
+
+  .casino-table th:last-child,
+  .casino-table td:last-child {
+    padding-right: 16px;
   }
 }
 

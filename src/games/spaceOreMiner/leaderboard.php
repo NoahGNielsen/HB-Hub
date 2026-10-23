@@ -51,13 +51,14 @@ function leaderboardNumberNames(): array
 }
 
 /**
- * A big number, short: 1,234 under a million, then like 1.23 million.
+ * A big number, short: 1,234 under a million, then like 1.23 million, as HTML. The word goes in its own span, which
+ * casino.css puts small under the number, so names like "quattuordecillion" don't make the table too wide.
  */
 function leaderboardNumber(float $number): string
 {
     foreach (leaderboardNumberNames() as [$size, $word]) {
         if ($number >= $size) {
-            return number_format($number / $size, 2) . ' ' . $word;
+            return number_format($number / $size, 2) . ' <span class="casino-table-unit">' . $word . '</span>';
         }
     }
     return number_format(floor($number));
@@ -68,6 +69,9 @@ $userId = (int) $hbHubUser['userId'];
 
 $sort = is_string($_GET['sort'] ?? null) && isset(LEADERBOARD_COLUMNS[$_GET['sort']]) ? $_GET['sort'] : 'ore';
 $dir = in_array($_GET['dir'] ?? null, ['asc', 'desc'], true) ? $_GET['dir'] : LEADERBOARD_COLUMNS[$sort][1];
+// The top three get a gold, silver and bronze rank, but only while it's sorted the way the column sorts first (not by
+// name, or turned round)
+$podium = $sort !== 'player' && $dir === LEADERBOARD_COLUMNS[$sort][1];
 
 // Everyone who has mined anything. Banned and deleted accounts (userStatus NULL) are left out. A tie goes to the most
 // ore, then by name. The column and direction come from the lists above, never straight from the address.
@@ -102,7 +106,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino games">
+    <main class="casino casino-leaderboard games">
         <a class="casino-back" href="/games/ore-mining-inc/">&larr; Ore Mining Inc.</a>
         <h1>Ore Mining Inc. leaderboard</h1>
         <p class="casino-intro">
@@ -110,7 +114,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
             without comets. It's updated every time their game saves.
         </p>
 
-        <section class="casino-card" aria-label="Leaderboard">
+        <section class="casino-card casino-board" aria-label="Leaderboard">
             <?php if ($rows === []): ?>
                 <p class="casino-hint">Nobody has mined anything yet. <a href="/games/ore-mining-inc/">Be the first!</a></p>
             <?php else: ?>
@@ -132,9 +136,10 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                             <?php foreach ($rows as $index => $row):
                                 $rowUserId = (int) $row['userId'];
                                 $avatarSrc = hbHubAvatarUrl($rowUserId, $row['userAvatarAttachmentId'] !== null ? (int) $row['userAvatarAttachmentId'] : null);
+                                $place = $podium && $index < 3 ? $index + 1 : null;
                             ?>
                                 <tr<?= $rowUserId === $userId ? ' class="is-you"' : '' ?>>
-                                    <td class="casino-rank"><?= $index + 1 ?></td>
+                                    <td class="casino-rank"<?= $place !== null ? ' data-podium="' . $place . '"' : '' ?>><?= $index + 1 ?></td>
                                     <td>
                                         <a class="casino-player" href="<?= htmlspecialchars(hbHubProfileUrl($rowUserId)) ?>">
                                             <span class="casino-avatar" aria-hidden="true">

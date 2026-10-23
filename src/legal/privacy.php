@@ -182,7 +182,12 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h3>Casino and games</h3>
                         <ul>
                             <li>Your chip balance and every change to it (bets, payouts, the daily chips, and chips a site admin added or took away, with which admin it was).</li>
-                            <li>The rounds you played in the casino games, for example but not limited to Blackjack, Baccarat and Roulette, used for the leaderboards.</li>
+                            <li>
+                                The rounds you played in the casino games, for example but not limited to Blackjack, Baccarat
+                                and Roulette, used for the leaderboards. Other people only see the totals there: rounds, wins,
+                                losses, win %, the biggest win, the chips you've won or lost in each game and in all of them
+                                together, and your chips right now.
+                            </li>
                             <li>Your Chess and Matador games: seats, moves, saves, results and the in-game chat.</li>
                             <li>
                                 Your UNO games: your seat, the cards in your hand and what you played, invites, and the

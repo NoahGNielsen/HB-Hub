@@ -1,7 +1,8 @@
 <?php
 // Roulette leaderboard: everyone who has spun, from HBHub-RouletteSpins (one row per spin): spins, wins and losses (by
-// whether the spin won or lost chips overall), win %, the biggest win on one spin, chips won or lost on Roulette
-// altogether and their chips now. Sorted by any column with ?sort=column&dir=asc|desc, which the column headings link to.
+// whether the spin won or lost chips overall), win %, the biggest win on one spin and chips won or lost on Roulette
+// altogether. Sorted by any column with ?sort=column&dir=asc|desc, which the column headings link to. Everyone's chips
+// are on the whole casino's leaderboard (gambling/leaderboard.php).
 // Win % only counts from LEADERBOARD_RANKED_SPINS spins, so one lucky spin doesn't top it: anyone with fewer has "–",
 // and comes after everyone with a win % when sorting by it (whichever way).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -21,7 +22,6 @@ const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first]
     'winRate' => ['Win %', 'desc'],
     'biggestWin' => ['Biggest win', 'desc'],
     'net' => ['Won / lost', 'desc'],
-    'chips' => ['Chips', 'desc'],
 ];
 
 $db = hbHubDatabase();
@@ -29,9 +29,12 @@ $userId = (int) $hbHubUser['userId'];
 
 $sort = is_string($_GET['sort'] ?? null) && isset(LEADERBOARD_COLUMNS[$_GET['sort']]) ? $_GET['sort'] : 'net';
 $dir = in_array($_GET['dir'] ?? null, ['asc', 'desc'], true) ? $_GET['dir'] : LEADERBOARD_COLUMNS[$sort][1];
+// The top three get a gold, silver and bronze rank, but only while it's sorted the way the column sorts first (not by
+// name, or turned round)
+$podium = $sort !== 'player' && $dir === LEADERBOARD_COLUMNS[$sort][1];
 
 // Banned and deleted accounts (userStatus NULL) are left out
-$statement = $db->prepare('SELECT s.userId, u.userName, u.userAvatarAttachmentId, COALESCE(w.walletChips, 0) AS chips,
+$statement = $db->prepare('SELECT s.userId, u.userName, u.userAvatarAttachmentId,
         COUNT(*) AS spins,
         SUM(s.spinNet > 0) AS wins,
         SUM(s.spinNet < 0) AS losses,
@@ -39,9 +42,8 @@ $statement = $db->prepare('SELECT s.userId, u.userName, u.userAvatarAttachmentId
         SUM(s.spinNet) AS net
     FROM `HBHub-RouletteSpins` s
     JOIN `HBHub-Users` u ON u.userId = s.userId
-    LEFT JOIN `HBHub-CasinoWallets` w ON w.userId = s.userId
     WHERE u.userStatus IS NOT NULL AND u.userStatus <> ?
-    GROUP BY s.userId, u.userName, u.userAvatarAttachmentId, w.walletChips');
+    GROUP BY s.userId, u.userName, u.userAvatarAttachmentId');
 $statement->execute([LEADERBOARD_STATUS_BANNED]);
 
 $rows = array_map(static function (array $row): array {
@@ -56,7 +58,6 @@ $rows = array_map(static function (array $row): array {
         'winRate' => $spins >= LEADERBOARD_RANKED_SPINS ? (int) $row['wins'] / $spins : null,
         'biggestWin' => (int) $row['biggestWin'],
         'net' => (int) $row['net'],
-        'chips' => (int) $row['chips'],
     ];
 }, $statement->fetchAll());
 
@@ -97,15 +98,16 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino">
+    <main class="casino casino-leaderboard">
         <a class="casino-back" href="/gambling/roulette/">&larr; Roulette</a>
         <h1>Roulette leaderboard</h1>
         <p class="casino-intro">
             A spin is a win when it paid back more than everything bet on it, and a loss when it paid back less.
             Win % is only shown from <?= LEADERBOARD_RANKED_SPINS ?> spins, so one lucky spin doesn't top the board.
+            Everyone's chips are on the <a href="/gambling/leaderboard">casino leaderboard</a>.
         </p>
 
-        <section class="casino-card" aria-label="Leaderboard">
+        <section class="casino-card casino-board" aria-label="Leaderboard">
             <?php if ($rows === []): ?>
                 <p class="casino-hint">Nobody has spun yet. <a href="/gambling/roulette/">Be the first!</a></p>
             <?php else: ?>
@@ -127,9 +129,10 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                             <?php foreach ($rows as $index => $row):
                                 $avatarSrc = hbHubAvatarUrl($row['userId'], $row['avatarId']);
                                 $isUnranked = $sort === 'winRate' && $row['winRate'] === null;
+                                $place = $podium && !$isUnranked && $index < 3 ? $index + 1 : null;
                             ?>
                                 <tr<?= $row['userId'] === $userId ? ' class="is-you"' : '' ?>>
-                                    <td class="casino-rank"><?= $isUnranked ? '–' : $index + 1 ?></td>
+                                    <td class="casino-rank"<?= $place !== null ? ' data-podium="' . $place . '"' : '' ?>><?= $isUnranked ? '–' : $index + 1 ?></td>
                                     <td>
                                         <a class="casino-player" href="<?= htmlspecialchars(hbHubProfileUrl($row['userId'])) ?>">
                                             <span class="casino-avatar" aria-hidden="true">
@@ -162,7 +165,6 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                                     <td class="<?= $row['net'] > 0 ? 'casino-net-up' : ($row['net'] < 0 ? 'casino-net-down' : '') ?>">
                                         <?= $row['net'] > 0 ? '+' : ($row['net'] < 0 ? '−' : '') ?><?= number_format(abs($row['net'])) ?>
                                     </td>
-                                    <td><?= number_format($row['chips']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

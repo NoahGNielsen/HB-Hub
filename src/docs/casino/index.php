@@ -84,9 +84,11 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="leaderboards" aria-labelledby="docs-leaderboards">
                         <h2 id="docs-leaderboards">Leaderboards</h2>
                         <p>
-                            Each game has its own leaderboard, with hands (or spins), wins, losses and your chips, plus the biggest
-                            win and how much you've won or lost in Roulette. Click a column's heading to sort by it. Win % only counts
-                            once you've played 20 hands or spins, so one lucky round can't top it.
+                            The <a href="/gambling/leaderboard">casino leaderboard</a> shows how many chips everyone has won or
+                            lost in each game and in all of them together, and their chips right now. The daily chips don't count
+                            as won. Each game also has its own leaderboard, with hands (or spins), wins, losses and win %, plus the
+                            biggest win and how much you've won or lost in Roulette. Click a column's heading to sort by it. Win %
+                            only counts once you've played 20 hands or spins, so one lucky round can't top it.
                         </p>
                     </section>
 
