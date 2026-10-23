@@ -763,6 +763,7 @@
     let shownCometAt = 0; // when it was drawn, in performance.now() time (Comet Catcher waits a moment after)
     let saveSoonTimer = 0;
     const sprites = Object.fromEntries(Object.keys(SCENE).map((id) => [id, []])); // the ones in the picture, per building
+    let stageTimer = 0; // takes is-changing off the asteroid once it's faded into its new stage (renderStage())
 
     // The Long-Range Hot Keys switch, kept in this browser like the sound. It only does anything with the upgrade.
     const LATE_KEYS_KEY = 'hbHubMinerLateKeys';
@@ -1216,7 +1217,22 @@
         bot.hidden = autoClicks(state) === 0;
         renderScene();
 
-        asteroid.dataset.stage = String(STAGES.findLastIndex((at) => state.runOre >= at));
+        renderStage();
+    }
+
+    // The asteroid's look (STAGES). When it changes, is-changing fades the colours into the new ones with a flash (see
+    // spaceOreMiner.css); not the first time, when the page opens on it, or it would fade in from grey rock every time.
+    function renderStage() {
+        const stage = String(STAGES.findLastIndex((at) => state.runOre >= at));
+        if (asteroid.dataset.stage === stage) return;
+        if (asteroid.dataset.stage !== undefined) {
+            asteroid.classList.remove('is-changing');
+            void asteroid.offsetWidth; // so the flash starts over if it's still going
+            asteroid.classList.add('is-changing');
+            clearTimeout(stageTimer);
+            stageTimer = setTimeout(() => asteroid.classList.remove('is-changing'), 1700); // once the colours are done
+        }
+        asteroid.dataset.stage = stage;
     }
 
     // The buildings in the picture (SCENE). Only what changed is added or taken away, so the rest keep moving instead of

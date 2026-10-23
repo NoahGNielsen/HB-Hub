@@ -376,6 +376,32 @@
   animation: miner-drift 8s ease-in-out infinite;
 }
 
+/* The asteroid's colours, registered as colours so they can fade from one stage's to the next (on their own they're
+   just text, and a gradient made of them would only ever switch) */
+@property --rock-light {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #9a9a9a;
+}
+
+@property --rock {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #6c6c6c;
+}
+
+@property --rock-dark {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #3a3a3a;
+}
+
+@property --rock-glow {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
 .miner-asteroid {
   --rock-light: #9a9a9a;
   --rock: #6c6c6c;
@@ -393,7 +419,35 @@
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.08s ease, background 1s ease;
+  transition: transform 0.08s ease;
+}
+
+/* When it reaches a new stage (spaceOreMiner.js adds is-changing for a moment, but not when the page opens), the colours
+   fade into the new ones, a flash of light goes over it and a ring of the new colour goes out from it */
+.miner-asteroid.is-changing {
+  transition: transform 0.08s ease, --rock-light 1.6s ease, --rock 1.6s ease, --rock-dark 1.6s ease, --rock-glow 1.6s ease;
+}
+
+.miner-asteroid.is-changing::before,
+.miner-asteroid.is-changing::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* The ring: behind the craters and the buildings on top */
+.miner-asteroid.is-changing::before {
+  border: 3px solid var(--rock-light);
+  box-shadow: 0 0 24px var(--rock-glow), inset 0 0 24px var(--rock-glow);
+  animation: miner-stage-ring 1.4s ease-out forwards;
+}
+
+/* The flash: over everything on it */
+.miner-asteroid.is-changing::after {
+  background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.2) 55%, transparent 75%);
+  animation: miner-stage-flash 1.2s ease-out forwards;
 }
 
 .miner-asteroid:hover {
@@ -514,6 +568,14 @@
 
 @keyframes miner-pulse {
   to { box-shadow: inset -18px -22px 40px rgba(0, 0, 0, 0.45), 0 0 80px var(--rock-glow); }
+}
+
+@keyframes miner-stage-ring {
+  to { scale: 1.7; opacity: 0; }
+}
+
+@keyframes miner-stage-flash {
+  to { opacity: 0; }
 }
 
 /* The Auto-Clicker Bot, going round the asteroid */
@@ -3195,8 +3257,8 @@
 
   .miner-field,
   .miner-asteroid.is-hit,
-  .miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"]),
-  .miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"]).is-hit,
+  .miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"], [data-stage="9"]),
+  .miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"], [data-stage="9"]).is-hit,
   .miner-orbit,
   .miner-buff,
   .miner-menu-news,
@@ -3209,6 +3271,11 @@
   .miner-prestige.is-ready .miner-prestige-btn,
   .miner-progress-bar.is-full .miner-progress-fill {
     animation: none;
+  }
+
+  /* A new stage still fades and flashes, but without the ring going out */
+  .miner-asteroid.is-changing::before {
+    content: none;
   }
 
   .miner-comet {
