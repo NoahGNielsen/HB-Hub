@@ -355,7 +355,7 @@
 }
 
 /* The asteroid. Its colours change with data-stage (0 grey rock, 1 iron, 2 gold, 3 crystal, 4 alien core, 5 molten,
-   6 amethyst, 7 neutron star, 8 black hole core). The space
+   6 amethyst, 7 neutron star, 8 black hole core, 9 nebula heart). The space
    around it takes what's left of the card's height. The variables size the buildings in the picture (see "The
    buildings in the picture" below), and get smaller with the asteroid on small screens. */
 .miner-field {
@@ -473,12 +473,20 @@
   --rock-glow: rgba(255, 120, 60, 0.55);
 }
 
+/* Out the other side of the black hole: a bright pink and blue nebula, so the last one isn't dark */
+.miner-asteroid[data-stage="9"] {
+  --rock-light: #fff0fb;
+  --rock: #ff6fc8;
+  --rock-dark: #3a5cff;
+  --rock-glow: rgba(255, 130, 220, 0.6);
+}
+
 /* The glowing ones pulse */
-.miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"]) {
+.miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"], [data-stage="9"]) {
   animation: miner-pulse 2s ease-in-out infinite alternate;
 }
 
-.miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"]).is-hit {
+.miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"], [data-stage="9"]).is-hit {
   animation: miner-hit 0.15s ease, miner-pulse 2s ease-in-out infinite alternate;
 }
 
