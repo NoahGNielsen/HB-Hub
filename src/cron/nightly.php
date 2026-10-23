@@ -6,7 +6,7 @@
 //   - casino tables and game rooms nobody has open anymore (a batch of each, like a lobby visit)
 //   - GIF searches cached longer than 15 minutes
 //   - admin log rows older than a year (assets/php/adminLog.php)
-//   - Space Ore Miner crash reports older than 90 days (assets/php/games/spaceOreMiner/crashReports.php)
+//   - Ore Mining Inc. crash reports older than 90 days (assets/php/games/spaceOreMiner/crashReports.php)
 // Each job runs on its own, so one failing doesn't stop the rest. It prints one line per job, and errors go to
 // stderr with exit code 1, so the crontab's mail (if MAILTO is set) only has something to say when it matters.
 //

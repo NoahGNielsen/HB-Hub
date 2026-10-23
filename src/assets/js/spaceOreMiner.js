@@ -1,4 +1,4 @@
-// Space Ore Miner (games/spaceOreMiner/): runs the clicker game in the browser and saves it to the server.
+// Ore Mining Inc. (games/spaceOreMiner/): runs the clicker game in the browser and saves it to the server.
 // The page gives the game's data and numbers in data-config (hbHubMinerConfig() in
 // assets/php/games/spaceOreMiner/miner.php: buildings, upgrades, darkUpgrades, antiUpgrades, achievements, comets and
 // the numbers)
@@ -6,7 +6,7 @@
 // for this tab (a game open in another tab then gets 409 "otherTab" and stops).
 // The rules in "The game" below are a copy of miner.php's, function for function, because the server plays every
 // action again to check it: each click, purchase, comet, Warp Jump and Big Crunch is done here right away (so it's
-// smooth) and also kept in a list with its time, which goes to /games/space-ore-miner/save every 30 seconds, when the tab is hidden and
+// smooth) and also kept in a list with its time, which goes to /games/ore-mining-inc/save every 30 seconds, when the tab is hidden and
 // when it's closed. The server answers with the save as it worked it out, and the game carries on from that, with
 // whatever was done while the save was on its way done again on top.
 // Times are the server's Unix ms (the difference to this computer's clock is measured on every save).
@@ -879,7 +879,7 @@
         step(was);
 
         try {
-            const response = await fetch('/games/space-ore-miner/save', {
+            const response = await fetch('/games/ore-mining-inc/save', {
                 method: 'POST', headers: { Accept: 'application/json' }, body, keepalive,
             });
             step('save: answer');
@@ -2965,7 +2965,7 @@
     // ----- Crash reports. When the page opens, it looks for crashes: the freezes the watchdog saved in IndexedDB, and
     // the pages that crashed (isCrash()). If there are any, it asks whether it may send a crash report, with the
     // newest one in the words and all that would be sent under "What's in it". If the player says yes, the newest
-    // CRASH_SEND_MAX go to /games/space-ore-miner/crash; either way they're deleted. Closing the popup without answering
+    // CRASH_SEND_MAX go to /games/ore-mining-inc/crash; either way they're deleted. Closing the popup without answering
     // keeps them, to ask again next time.
 
     const CRASH_SEND_MAX = 5;
@@ -3017,11 +3017,11 @@
         const when = new Date(report.hang?.at ?? report.page.lastSeen)
             .toLocaleString('en-GB', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
         if (report.kind === 'hang') {
-            return 'On ' + when + ', Space Ore Miner froze and stopped answering' + (report.hang.recovered
+            return 'On ' + when + ', Ore Mining Inc. froze and stopped answering' + (report.hang.recovered
                 ? ' for ' + secondsText(report.hang.lasted) + ' before it came back.'
                 : '. It was still frozen ' + secondsText(report.hang.lasted) + ' later, so the browser most likely closed it.');
         }
-        return 'On ' + when + ', Space Ore Miner stopped while you were playing, without closing properly. That happens when the '
+        return 'On ' + when + ', Ore Mining Inc. stopped while you were playing, without closing properly. That happens when the '
             + 'browser closes a page that froze or ran out of memory, or when the computer turns off.';
     }
 
@@ -3061,7 +3061,7 @@
         let sent = 0;
         for (const report of crashes.slice(0, CRASH_SEND_MAX)) {
             try {
-                const response = await fetch('/games/space-ore-miner/crash', {
+                const response = await fetch('/games/ore-mining-inc/crash', {
                     method: 'POST',
                     headers: { Accept: 'application/json' },
                     body: new URLSearchParams({ action: 'report', kind: report.kind, report: JSON.stringify(sentReport(report)) }),

@@ -1,4 +1,4 @@
-// Space Ore Miner's watchdog: a Web Worker spaceOreMiner.js starts (new Worker(data-watchdog)), so it runs on a thread
+// Ore Mining Inc.'s watchdog: a Web Worker spaceOreMiner.js starts (new Worker(data-watchdog)), so it runs on a thread
 // of its own and keeps going when the game's page freezes. A frozen page can't write anything down itself, so this
 // does it for the page: when the page stops answering for HANG_MS while it's being looked at, it saves a crash report
 // in the browser's IndexedDB (the "hbHubMiner" database, "crashes" store, one record per freeze, keyed by id). It never

@@ -50,8 +50,8 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     </a>
                 </li>
                 <li>
-                    <a class="casino-game" href="/games/space-ore-miner/">
-                        <span class="casino-game-name">Space Ore Miner</span>
+                    <a class="casino-game" href="/games/ore-mining-inc/">
+                        <span class="casino-game-name">Ore Mining Inc.</span>
                         <span class="casino-game-text">Click an asteroid for ore, buy machines that mine for you, catch Golden Comets and Warp Jump to new galaxies. A clicker game with a leaderboard.</span>
                         <span class="casino-game-badge">Beta</span>
                     </a>

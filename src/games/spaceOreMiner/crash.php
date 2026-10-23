@@ -1,5 +1,5 @@
 <?php
-// Space Ore Miner's crash reports, for spaceOreMiner.js. POST only, and only after the player said yes when the page
+// Ore Mining Inc.'s crash reports, for spaceOreMiner.js. POST only, and only after the player said yes when the page
 // asked (the next time the game was opened after it froze or closed badly):
 //   action=report, kind (a key of HBHUB_MINER_CRASH_KINDS) and report (the report as a JSON object, see
 //   assets/php/games/spaceOreMiner/crashReports.php for what's in it).

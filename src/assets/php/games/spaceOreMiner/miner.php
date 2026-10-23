@@ -1,5 +1,5 @@
 <?php
-// Space Ore Miner, the clicker game: click the asteroid for ore, buy machines that mine for you, and grow from one
+// Ore Mining Inc., the clicker game: click the asteroid for ore, buy machines that mine for you, and grow from one
 // miner on a rock into a galaxy-wide mining company. Warp Jump (prestige) starts over in a new galaxy for Dark Matter,
 // which makes everything mine faster for good. Big Crunch (the prestige after that) collapses the whole universe, Dark
 // Matter and all, for Antimatter, which makes everything mine faster and Warp Jumps give more Dark Matter. Big Rip (the

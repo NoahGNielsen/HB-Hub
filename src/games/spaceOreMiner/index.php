@@ -1,9 +1,9 @@
 <?php
-// Space Ore Miner: the clicker game. Click the asteroid for ore, spend it on buildings and upgrades that mine for you,
+// Ore Mining Inc.: the clicker game. Click the asteroid for ore, spend it on buildings and upgrades that mine for you,
 // catch Golden Comets, Warp Jump to a new galaxy for Dark Matter, Big Crunch the universe for Antimatter and Big Rip
 // the multiverse for Strange Matter, which buys skills in the skill tree. The rules are in
 // assets/php/games/spaceOreMiner/miner.php.
-// The page only has the empty spaces: spaceOreMiner.js loads the save from /games/space-ore-miner/save on its first save
+// The page only has the empty spaces: spaceOreMiner.js loads the save from /games/ore-mining-inc/save on its first save
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
@@ -21,10 +21,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/crashR
 hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 
 const MINER_VIEWS = [ // ?view= => [the menu's text, its address]
-    'ore' => ['Ore', '/games/space-ore-miner/'],
-    'darkMatter' => ['Dark Matter', '/games/space-ore-miner/?view=darkMatter'],
-    'antimatter' => ['Antimatter', '/games/space-ore-miner/?view=antimatter'],
-    'strangeMatter' => ['Strange Matter', '/games/space-ore-miner/?view=strangeMatter'],
+    'ore' => ['Ore', '/games/ore-mining-inc/'],
+    'darkMatter' => ['Dark Matter', '/games/ore-mining-inc/?view=darkMatter'],
+    'antimatter' => ['Antimatter', '/games/ore-mining-inc/?view=antimatter'],
+    'strangeMatter' => ['Strange Matter', '/games/ore-mining-inc/?view=strangeMatter'],
 ];
 $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 ?>
@@ -35,9 +35,9 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/spaceOreMiner.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/spaceOreMiner.css') ?>">
-    <title>Space Ore Miner - HB Hub</title>
+    <title>Ore Mining Inc. - HB Hub</title>
     <meta name="robots" content="noindex">
-    <meta name="description" content="Mine an asteroid, build a galaxy-wide mining company and Warp Jump to new galaxies in Space Ore Miner on the HB Hub">
+    <meta name="description" content="Mine an asteroid, build a galaxy-wide mining company and Warp Jump to new galaxies in Ore Mining Inc. on the HB Hub">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
@@ -47,7 +47,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
           data-config="<?= htmlspecialchars(json_encode(hbHubMinerConfig())) ?>">
         <a class="casino-back" href="/games/">&larr; Games</a>
         <div class="casino-title-row">
-            <h1>Space Ore Miner</h1>
+            <h1>Ore Mining Inc.</h1>
             <div class="miner-title-actions">
                 <button type="button" class="casino-btn miner-sound" aria-pressed="true" data-miner-sound>
                     <svg class="miner-sound-icon is-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z M16 8.5a5 5 0 0 1 0 7 M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>
@@ -55,7 +55,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <span class="games-visually-hidden">Sound</span>
                 </button>
                 <!-- On phones only the icons show; the words stay for screen readers -->
-                <a class="casino-btn miner-title-btn" href="/games/space-ore-miner/leaderboard"><?= hbHubMinerIcon('podium', 'miner-title-icon') ?> <span class="miner-title-label">Leaderboard</span></a>
+                <a class="casino-btn miner-title-btn" href="/games/ore-mining-inc/leaderboard"><?= hbHubMinerIcon('podium', 'miner-title-icon') ?> <span class="miner-title-label">Leaderboard</span></a>
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="stats" aria-haspopup="dialog"><?= hbHubMinerIcon('stats', 'miner-title-icon') ?> <span class="miner-title-label">Stats</span></button>
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="achievements" aria-haspopup="dialog">
                     <?= hbHubMinerIcon('trophy', 'miner-title-icon') ?> <span class="miner-title-label">Achievements</span>
@@ -65,7 +65,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             </div>
         </div>
 
-        <p class="casino-alert games-notice games-beta">Space Ore Miner is in beta, so things might break or change. If something goes wrong, tell us with the Feedback button in the side bar.</p>
+        <p class="casino-alert games-notice games-beta">Ore Mining Inc. is in beta, so things might break or change. If something goes wrong, tell us with the Feedback button in the side bar.</p>
 
         <p class="miner-ticker" data-miner-ticker><span class="miner-ticker-text" data-miner-ticker-text>Loading the news from space…</span></p>
 
@@ -409,7 +409,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <kbd>1</kbd>-<kbd>9</kbd> and <kbd>0</kbd> now buy the buildings in the store, <kbd>B</kbd> the best one you
                 can afford and <kbd>U</kbd> the cheapest upgrade. Hold a key down to keep buying.
             </p>
-            <p><a href="/docs/games/space-ore-miner#hot-keys" target="_blank" rel="noopener">See all the hot keys</a> (opens in a new tab)</p>
+            <p><a href="/docs/games/ore-mining-inc#hot-keys" target="_blank" rel="noopener">See all the hot keys</a> (opens in a new tab)</p>
             <div class="games-dialog-actions">
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-keys-close>Got it</button>
             </div>
@@ -417,7 +417,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
 
         <dialog class="games-dialog" data-miner-other-tab aria-labelledby="miner-other-tab-title">
             <h2 id="miner-other-tab-title">Playing somewhere else</h2>
-            <p>You opened Space Ore Miner in another tab or on another device, so it's stopped here. Your game carries on there.</p>
+            <p>You opened Ore Mining Inc. in another tab or on another device, so it's stopped here. Your game carries on there.</p>
             <div class="games-dialog-actions">
                 <a class="casino-btn" href="/games/">Back to Games</a>
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-reload>Play here instead</button>

@@ -35,11 +35,11 @@
 |---|---|
 | **Wordle** | The daily word game: guess the five-letter word in six tries. There's an English and a Danish word every day (the Danish keyboard has æ, ø and å), the same for everyone, with stats, sharing and a leaderboard for each language with win %, average guesses and the current and longest streak |
 
-## Space Ore Miner
+## Ore Mining Inc.
 
 | | |
 |---|---|
-| **Space Ore Miner** | A clicker game, like Cookie Clicker: click the asteroid for ore, and spend it on 15 buildings (from a Space Pickaxe Guy to a Multiverse Drill) that mine for you. Each one costs 15% more than the last |
+| **Ore Mining Inc.** | A clicker game, like Cookie Clicker: click the asteroid for ore, and spend it on 15 buildings (from a Space Pickaxe Guy to a Multiverse Drill) that mine for you. Each one costs 15% more than the last |
 | **Upgrades** | Click upgrades (critical clicks, clicks worth a share of your production, an Auto-Clicker Bot and Swarm), six upgrades per building at 10, 25, 50, 100, 150 and 200 owned, synergies between buildings, and comet upgrades (one of them lets you catch comets with the C key) |
 | **Golden Comets** | A comet flies across the screen now and then. Catch it for a pile of ore, 7× production or 77× clicks for a while, or (rarely) a Diamond Comet with 777× production |
 | **Warp Jump** | Prestige: after a billion ore in a run, start over in a new galaxy for Dark Matter, ∛(ore mined in this universe ÷ 1 billion). Every Dark Matter earned is +5% production (7.5% with Dark Matter Reactor) until the next Big Crunch, and it buys upgrades that last until then too |

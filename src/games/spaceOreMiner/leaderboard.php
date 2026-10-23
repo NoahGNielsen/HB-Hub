@@ -1,5 +1,5 @@
 <?php
-// Space Ore Miner leaderboard, from the numbers each save keeps in its own columns in HBHub-MinerSaves (written by
+// Ore Mining Inc. leaderboard, from the numbers each save keeps in its own columns in HBHub-MinerSaves (written by
 // hbHubMinerSync() in assets/php/games/spaceOreMiner/miner.php on every save): ore mined ever, ore per second (without
 // comets), Dark Matter earned in this universe, Antimatter earned in this multiverse, Strange Matter ever earned, Warp
 // Jumps, clicks and achievements. Sorted by any column with ?sort=column&dir=asc|desc, which the headings link to.
@@ -96,15 +96,15 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
-    <title>Space Ore Miner leaderboard - HB Hub</title>
+    <title>Ore Mining Inc. leaderboard - HB Hub</title>
     <meta name="robots" content="noindex">
-    <meta name="description" content="Who has built the biggest mining company in Space Ore Miner on the HB Hub">
+    <meta name="description" content="Who has built the biggest mining company in Ore Mining Inc. on the HB Hub">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="casino games">
-        <a class="casino-back" href="/games/space-ore-miner/">&larr; Space Ore Miner</a>
-        <h1>Space Ore Miner leaderboard</h1>
+        <a class="casino-back" href="/games/ore-mining-inc/">&larr; Ore Mining Inc.</a>
+        <h1>Ore Mining Inc. leaderboard</h1>
         <p class="casino-intro">
             Ore mined is everything someone has ever mined, in every galaxy. Ore per second is how fast they mine right now,
             without comets. It's updated every time their game saves.
@@ -112,7 +112,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
 
         <section class="casino-card" aria-label="Leaderboard">
             <?php if ($rows === []): ?>
-                <p class="casino-hint">Nobody has mined anything yet. <a href="/games/space-ore-miner/">Be the first!</a></p>
+                <p class="casino-hint">Nobody has mined anything yet. <a href="/games/ore-mining-inc/">Be the first!</a></p>
             <?php else: ?>
                 <div class="casino-table-wrap">
                     <table class="casino-table">

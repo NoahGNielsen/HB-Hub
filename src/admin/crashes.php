@@ -1,5 +1,5 @@
 <?php
-// Admin panel's Space Ore Miner crash reports: /admin/crashes, in the admin panel's side menu (adminListsMenuHtml()).
+// Admin panel's Ore Mining Inc. crash reports: /admin/crashes, in the admin panel's side menu (adminListsMenuHtml()).
 // Everyone but site admins gets a 404, so it doesn't show that the page is here.
 //
 // The reports players agreed to send after the game froze or closed badly (games/spaceOreMiner/crash.php,
@@ -124,7 +124,7 @@ function adminCrashStepLine(mixed $entry, string $sentOn): ?string
  */
 function adminCrashCopyText(array $crash, array $report, string $sentOn): string
 {
-    $lines = ['Space Ore Miner crash report #' . (int) $crash['crashReportId'] . ' (' . ($crash['crashReportKind']) . '), sent '
+    $lines = ['Ore Mining Inc. crash report #' . (int) $crash['crashReportId'] . ' (' . ($crash['crashReportKind']) . '), sent '
         . adminTime($crash['crashReportCreatedTimestamp']) . ' by ' . ($crash['userName'] ?? 'Deleted User'),
         adminCrashSummary($crash['crashReportKind'], $report) . '.', adminCrashPageLine($report, $sentOn)];
     if ($crash['crashReportUserAgent'] !== null) {
@@ -210,7 +210,7 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
                 <section class="settings-card" id="list" aria-labelledby="admin-list-heading">
                     <div class="settings-card-head">
                         <div>
-                            <h2 id="admin-list-heading">Space Ore Miner crash reports</h2>
+                            <h2 id="admin-list-heading">Ore Mining Inc. crash reports</h2>
                             <p class="settings-intro">
                                 Sent by players who said yes when the game asked, the next time they opened it after it froze or
                                 closed badly. Kept for <?= HBHUB_MINER_CRASH_KEEP_DAYS ?> days.

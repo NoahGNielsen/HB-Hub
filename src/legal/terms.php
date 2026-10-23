@@ -182,7 +182,7 @@ const HBHUB_TERMS_UPDATED = '23 October 2026';
                                 the day's word for others, for example in a group chat, before the day is over.
                             </li>
                             <li>
-                                Space Ore Miner saves on HB Hub's server and checks what you do there, so only things that
+                                Ore Mining Inc. saves on HB Hub's server and checks what you do there, so only things that
                                 could really have happened count. Clicks count up to 20 a second, and a game only runs in one
                                 tab at a time. No auto-clickers, macros or scripts: clicks that look like they come from one
                                 only mine 20% of what they would. Admins can reset a save that was cheated

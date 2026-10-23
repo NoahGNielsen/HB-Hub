@@ -1,5 +1,5 @@
 <?php
-// Help docs: Space Ore Miner - getting started, every building (straight from HBHUB_MINER_BUILDINGS in
+// Help docs: Ore Mining Inc. - getting started, every building (straight from HBHUB_MINER_BUILDINGS in
 // assets/php/games/spaceOreMiner/miner.php, so a new one or a new price shows up here by itself), the comets, the three
 // prestiges, the skill tree, saving and the game's own How to play (rules.php, included as the game shows it).
 // How much Strange Matter a Big Rip gives is still being balanced, so it's only described, never given as numbers.
@@ -27,9 +27,9 @@ function docsMinerNumber(float $number): string
     return $number < 1 ? (string) $number : number_format($number);
 }
 
-$docsPath = '/docs/games/space-ore-miner';
+$docsPath = '/docs/games/ore-mining-inc';
 $docsIntro = 'Click an asteroid for ore, hire machines that mine for you, and keep growing, from one pickaxe to a drill
-    that mines the multiverse. Play it on the <a href="/games/space-ore-miner/">Space Ore Miner</a> page.';
+    that mines the multiverse. Play it on the <a href="/games/ore-mining-inc/">Ore Mining Inc.</a> page.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">
@@ -185,7 +185,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         </p>
                         <p>
                             The server plays every click and purchase again to check it, so the
-                            <a href="/games/space-ore-miner/leaderboard">leaderboard</a> can't be cheated from the browser. Clicks only
+                            <a href="/games/ore-mining-inc/leaderboard">leaderboard</a> can't be cheated from the browser. Clicks only
                             count up to <?= HBHUB_MINER_CLICKS_PER_SECOND ?> a second, and clicks at a perfectly even pace (like an
                             auto-clicker's, or a held-down key) only mine <?= HBHUB_MINER_AUTO_VALUE * 100 ?>% until the pace changes.
                             Auto-clickers and scripts aren't allowed anyway.

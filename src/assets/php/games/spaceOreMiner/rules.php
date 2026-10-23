@@ -1,6 +1,6 @@
 <?php
-// How to play Space Ore Miner, shown in the game's How to play popup (games/spaceOreMiner/index.php) and on its docs
-// page (docs/games/space-ore-miner.php). The numbers are miner.php's, so it has to be included first. miner.php and
+// How to play Ore Mining Inc., shown in the game's How to play popup (games/spaceOreMiner/index.php) and on its docs
+// page (docs/games/ore-mining-inc.php). The numbers are miner.php's, so it has to be included first. miner.php and
 // spaceOreMiner.js play by these rules, so change them together.
 ?>
 <ul class="casino-rule-list">

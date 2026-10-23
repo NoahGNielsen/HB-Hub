@@ -1,5 +1,5 @@
 <?php
-// Space Ore Miner's crash reports. When the game froze or closed without saving properly, the page asks the next time
+// Ore Mining Inc.'s crash reports. When the game froze or closed without saving properly, the page asks the next time
 // it's opened whether it may send a report about it (see "Crash reports" in spaceOreMiner.js), and only sends one if the
 // player says yes. games/spaceOreMiner/crash takes it and saves it here with hbHubMinerCrashSave(), and site admins
 // read them on the admin panel's Crash reports list (admin/crashes.php).

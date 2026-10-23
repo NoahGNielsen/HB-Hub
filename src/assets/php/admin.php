@@ -1,6 +1,6 @@
 <?php
 // The admin panel's pages: the lists of users and chats (admin/index.php), the banned pictures (admin/banned.php), the
-// feedback (admin/feedback.php), Space Ore Miner's crash reports (admin/crashes.php), the admin log (admin/log.php),
+// feedback (admin/feedback.php), Ore Mining Inc.'s crash reports (admin/crashes.php), the admin log (admin/log.php),
 // and one user (admin/user.php) or chat (admin/chat.php).
 // Only site admins (userRole 2) get in, everyone else gets a 404 so it doesn't show they're there. What the pages share
 // is here: who gets in, the side menus (the settings page's, settings.css), and how dates, statuses, pictures, messages

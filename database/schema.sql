@@ -665,7 +665,7 @@ CREATE TABLE `HBHub-MinerCrashReports` (
   `crashReportData` json NOT NULL COMMENT 'What the page wrote down while it ran: what it was doing, the last things that happened, memory used, the save (see src/assets/php/games/spaceOreMiner/crashReports.php)',
   `crashReportUserAgent` varchar(255) DEFAULT NULL COMMENT 'The browser''s user agent, as it sent the report',
   `crashReportCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Deleted after HBHUB_MINER_CRASH_KEEP_DAYS'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Space Ore Miner crash reports, only sent when the player says yes, read on the admin panel (src/admin/crashes.php)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Ore Mining Inc. crash reports, only sent when the player says yes, read on the admin panel (src/admin/crashes.php)';
 
 -- --------------------------------------------------------
 
@@ -675,7 +675,7 @@ CREATE TABLE `HBHub-MinerCrashReports` (
 
 CREATE TABLE `HBHub-MinerSaves` (
   `userId` int UNSIGNED NOT NULL,
-  `saveState` json NOT NULL COMMENT 'The whole Space Ore Miner game: ore, buildings, upgrades, Dark Matter, Antimatter, Strange Matter, skills, comets, achievements (hbHubMinerNewState() in src/assets/php/games/spaceOreMiner/miner.php)',
+  `saveState` json NOT NULL COMMENT 'The whole Ore Mining Inc. game: ore, buildings, upgrades, Dark Matter, Antimatter, Strange Matter, skills, comets, achievements (hbHubMinerNewState() in src/assets/php/games/spaceOreMiner/miner.php)',
   `saveTab` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The random id of the browser tab playing it; saves from any other tab are turned away',
   `saveOreAllTime` double NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: ore mined ever, in every galaxy',
   `saveOrePerSecond` double NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: ore per second at the last save, without comets',

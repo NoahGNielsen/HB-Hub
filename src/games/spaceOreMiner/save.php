@@ -1,5 +1,5 @@
 <?php
-// Space Ore Miner's JSON, for spaceOreMiner.js (the page around it is index.php). POST only:
+// Ore Mining Inc.'s JSON, for spaceOreMiner.js (the page around it is index.php). POST only:
 //   action=sync, tab (the page's own random id, 32 hex characters), claim=1 on the page's first save (it takes the game
 //   over from any other tab) and actions (a JSON list of what the player did since the last save, each with "at", the
 //   time in Unix ms; see hbHubMinerApply() and hbHubMinerSync() in assets/php/games/spaceOreMiner/miner.php), and on

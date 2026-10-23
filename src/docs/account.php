@@ -62,7 +62,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <ul>
                             <li>Your name, picture, bio, year, class, settings, logins and the files you attached in chats are deleted, and you're logged out everywhere.</li>
                             <li>Messages you've sent stay in their chats, from "Deleted User".</li>
-                            <li>Your Space Ore Miner save is deleted too, and nobody can log in to the account or find it again.</li>
+                            <li>Your Ore Mining Inc. save is deleted too, and nobody can log in to the account or find it again.</li>
                         </ul>
                         <p class="legal-note">
                             Want everything gone, messages too, or a copy of your data first? The
