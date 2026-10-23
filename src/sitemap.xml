@@ -1,5 +1,5 @@
-<?xml version="1.1" encoding="UTF-8"?>
-<!-- The pages visitors can open without logging in (robots.txt points here). The rest of the site needs an account. -->
+<?xml version="1.2" encoding="UTF-8"?>
+<!-- The pages visitors can open without logging in (robots.txt points here): the frontpage, login, sign-up, the legal pages and the help docs (src/docs/, in the order of HBHUB_DOCS_SECTIONS in assets/php/docs/pages.php). The rest of the site needs an account. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
         <loc>https://hbhub.noahgajnielsen.dk/</loc>
@@ -24,5 +24,77 @@
     </url>
     <url>
         <loc>https://hbhub.noahgajnielsen.dk/legal/credits</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/getting-started</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/account</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/two-factor</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/notifications</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/self-blocking</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/feedback</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/chat/</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/chat/formatting</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/chat/groups</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/chat/attachments</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/chat/gifs</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/chat/mentions</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/chat/safety</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/casino/</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/casino/blackjack</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/casino/baccarat</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/casino/roulette</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/games/</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/games/matador</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/games/chess</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/games/uno</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/games/wordle</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/games/space-ore-miner</loc>
     </url>
 </urlset>

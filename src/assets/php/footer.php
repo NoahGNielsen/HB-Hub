@@ -1,6 +1,7 @@
 <?php
-// Set $hbHubShowSiteFooter = true before including this file to show the site footer (legal links and copyright).
-// Only the frontpage, login and onboarding do - everywhere else this just renders the toast and the cookie notice.
+// Set $hbHubShowSiteFooter = true before including this file to show the site footer (the docs, legal links and
+// copyright). Only the frontpage, login, onboarding and the pages built like them (legal/, docs/) do - everywhere else
+// this just renders the toast and the cookie notice.
 if (!empty($hbHubShowSiteFooter)):
     // header.php has normally loaded the config already (through maintenance.php)
     $siteConfig ??= require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
@@ -8,6 +9,7 @@ if (!empty($hbHubShowSiteFooter)):
 ?>
 <footer class="site-footer">
     <nav class="site-footer-links" aria-label="Footer">
+        <a href="/docs/">Help &amp; docs</a>
         <a href="/legal/terms">Terms</a>
         <a href="/legal/privacy">Privacy</a>
         <a href="/legal/code-of-conduct">Code of Conduct</a>

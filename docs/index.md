@@ -7,6 +7,10 @@
 | [Config options](config.md) | The main keys in `hbHubSiteConfig.php` |
 | [Project structure](project-structure.md) | The tech stack and what's in each folder |
 
+How to use the site (for its users, not for running it) is in the help docs on the site itself:
+[hbhub.noahgajnielsen.dk/docs/](https://hbhub.noahgajnielsen.dk/docs/), from `src/docs/`. A new page goes in
+`HBHUB_DOCS_SECTIONS` in `src/assets/php/docs/pages.php` and in `src/sitemap.xml`.
+
 Security problems: see [SECURITY.md](../SECURITY.md) for how to report them privately.
 
 ---

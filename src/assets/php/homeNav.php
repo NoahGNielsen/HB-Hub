@@ -3,7 +3,7 @@
 // app's nav panel (navPanel.php). Styled by homepage.css, so the page has to load that and give body "home-body".
 // Visitors get Log in / Sign up, logged in users a way back into the app and their profile picture.
 // The section links point at the frontpage's sections: set $homeNavSectionBase = '/' first on any other page,
-// so they go to /#chat instead of #chat. Needs session.php (with $hbHubSessionOptional = true) included first.
+// so they go to /#chat instead of #chat. Docs, after them, always goes to the help docs (docs/). Needs session.php (with $hbHubSessionOptional = true) included first.
 require_once __DIR__ . '/userAvatar.php';
 
 $homeNavUser = $hbHubUser ?? null;
@@ -17,11 +17,12 @@ $homeNavSectionBase ??= '';
         <span class="home-brand-mark" aria-hidden="true">HB</span>
         <span class="home-brand-name">Hub</span>
     </a>
-    <nav class="home-nav-links" aria-label="Frontpage sections">
+    <nav class="home-nav-links" aria-label="Site">
         <a href="<?= htmlspecialchars($homeNavSectionBase) ?>#chat">Chat</a>
         <a href="<?= htmlspecialchars($homeNavSectionBase) ?>#casino">Casino</a>
         <a href="<?= htmlspecialchars($homeNavSectionBase) ?>#games">Games</a>
         <a href="<?= htmlspecialchars($homeNavSectionBase) ?>#safety">Safety</a>
+        <a href="/docs/">Docs</a>
     </nav>
     <div class="home-nav-actions">
         <?php if ($homeNavUser === null): ?>

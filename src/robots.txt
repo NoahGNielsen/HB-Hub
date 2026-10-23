@@ -1,4 +1,5 @@
-# Only the frontpage, login, sign-up and credits are open to visitors; everything else sends them to the login page.
+# Only the frontpage, login, sign-up, the legal pages and the help docs (/docs/) are open to visitors; everything else
+# sends them to the login page.
 # CSS, JS and images stay crawlable so search engines can render the pages and show the favicon.
 User-agent: *
 Allow: /

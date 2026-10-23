@@ -20,9 +20,10 @@ HB-Hub/
 │   ├── userMgmt/        Login and sign-up
 │   ├── otherPages/      Profile, settings and notifications
 │   ├── legal/           Terms, privacy policy and credits
+│   ├── docs/            The help docs on the site (/docs/): a page for every feature and game
 │   ├── cron/            The nightly clean-up (see Setup)
 │   └── assets/          CSS, JavaScript, images and the shared PHP code
-├── docs/                This documentation
+├── docs/                This documentation (for running and working on HB Hub)
 ├── config-examples/     Templates for config files that live outside the web root
 ├── database/            Database schema, update scripts and default values
 │                        (defaultUserSettings.json and defaultChatSettings.json are the

@@ -1,0 +1,543 @@
+/* Help docs (src/docs/, built by assets/php/docs/top.php and bottom.php). Each page is a legal page (legal.css, on top
+   of homepage.css) with a few changes: breadcrumbs in the hero, the side menu with every docs page (.docs-nav) instead
+   of the numbered contents, and Previous / Next links (.docs-pager) under the text. The rest are the bits the pages
+   use in their text: the front page's cards (.docs-sections), quick facts (.docs-facts), steps (.docs-steps), tables
+   (.docs-table), keys (kbd), and the formatting examples (.docs-format), which show messages the way the chat does. */
+.docs-page {
+  --legal-toc-width: 240px;
+}
+
+/* ---------- Hero ---------- */
+.docs-crumbs {
+  margin: 0 0 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.docs-crumbs span {
+  opacity: 0.55;
+}
+
+.legal-hero .docs-crumbs a {
+  text-decoration: none;
+}
+
+.legal-hero .docs-crumbs a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Side menu ---------- */
+.docs-nav {
+  position: sticky;
+  top: 88px; /* below the top bar */
+  max-height: calc(100vh - 112px);
+  overflow-y: auto;
+  display: grid;
+  gap: 22px;
+  font-size: 0.92rem;
+}
+
+.docs-nav-title {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.docs-nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.docs-nav a {
+  margin-left: -1px; /* so the hover line covers the grey one */
+  padding: 5px 0 5px 14px;
+  display: block;
+  border-left: 2px solid transparent;
+  color: inherit;
+  line-height: 1.35;
+  text-decoration: none;
+  opacity: 0.7;
+  transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.docs-nav a:hover,
+.docs-nav a:focus-visible {
+  border-left-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  opacity: 1;
+}
+
+.docs-nav a[aria-current="page"] {
+  border-left-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+  opacity: 1;
+}
+
+/* ---------- Text (the sections and their spacing are legal.css's .legal-body) ---------- */
+.docs-body ol {
+  margin: 12px 0;
+  padding-left: 1.4em;
+}
+
+.docs-body ol li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.docs-body .legal-note {
+  margin: 20px 0;
+}
+
+.docs-body kbd {
+  min-width: 1.6em;
+  padding: 1px 7px;
+  display: inline-block;
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  border-bottom-width: 3px;
+  border-radius: 6px;
+  background: var(--secondary);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85em;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* The rules files the games show (assets/php/casino/<game>/rules.php and games/<game>/rules.php), included as they are */
+.docs-body .casino-rule-list {
+  margin: 12px 0;
+}
+
+.docs-body .casino-bac-player {
+  color: color-mix(in srgb, #2f6fd6 75%, var(--text));
+}
+
+.docs-body .casino-bac-banker {
+  color: color-mix(in srgb, #d23c3c 75%, var(--text));
+}
+
+/* ---------- Quick facts: a row of small cards at the top of a game's page ---------- */
+.docs-facts {
+  margin: 0 0 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.docs-facts div {
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  background: var(--secondary);
+}
+
+.docs-facts dt {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.docs-facts dd {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+/* ---------- Steps: a numbered list with the numbers in circles ---------- */
+.docs-body .docs-steps {
+  padding: 0;
+  list-style: none;
+  counter-reset: docs-step;
+}
+
+.docs-steps li {
+  position: relative;
+  padding-left: 44px;
+  counter-increment: docs-step;
+}
+
+.docs-steps li + li {
+  margin-top: 14px;
+}
+
+.docs-steps li::before {
+  content: counter(docs-step);
+  position: absolute;
+  top: 0.1em;
+  left: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+/* ---------- Tables (payouts, settings, shortcuts) ---------- */
+.docs-table-wrap {
+  margin: 16px 0 24px;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.docs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.96rem;
+}
+
+.docs-table th,
+.docs-table td {
+  padding: 11px 16px;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.docs-table th {
+  background: var(--secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.docs-table td {
+  border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  color: color-mix(in srgb, var(--text) 84%, var(--background));
+}
+
+.docs-table td:first-child {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ---------- Formatting examples: what you type next to the message it makes ---------- */
+.docs-format {
+  margin: 16px 0 24px;
+  display: grid;
+  gap: 10px;
+}
+
+.docs-format-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.docs-format-head {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.docs-body .docs-format-typed {
+  margin: 0;
+  padding: 10px 14px;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+/* A chat bubble, with chatFormatHtml()'s output styled like chat.css does in the chat */
+.docs-bubble {
+  justify-self: start;
+  max-width: 100%;
+  padding: 9px 14px;
+  overflow-wrap: anywhere;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--secondary);
+  color: var(--text);
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.docs-bubble.is-own {
+  justify-self: end;
+  border-radius: 16px 16px 4px 16px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.docs-body .docs-bubble p,
+.docs-body .docs-bubble li {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.docs-body .docs-bubble > * + * {
+  margin-top: 4px;
+}
+
+.docs-body .docs-bubble a {
+  color: inherit;
+}
+
+.docs-body .docs-bubble strong {
+  color: inherit;
+}
+
+.docs-body .docs-bubble ul,
+.docs-body .docs-bubble ol {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+.docs-body .docs-bubble li + li {
+  margin-top: 0;
+}
+
+.docs-body .docs-bubble li::marker {
+  color: inherit;
+}
+
+.docs-bubble .chat-message-heading {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.docs-bubble .chat-message-heading.is-level-1 { font-size: 1.4rem; }
+.docs-bubble .chat-message-heading.is-level-2 { font-size: 1.2rem; }
+.docs-bubble .chat-message-heading.is-level-3 { font-size: 1.05rem; }
+
+.docs-body .docs-bubble .chat-message-code,
+.docs-bubble .chat-message-codeblock {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.88em;
+}
+
+.docs-bubble.is-own .chat-message-code,
+.docs-bubble.is-own .chat-message-codeblock {
+  background: color-mix(in srgb, #000 18%, transparent);
+}
+
+.docs-bubble .chat-message-codeblock {
+  margin: 0;
+  padding: 8px 10px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* The <code> inside a code block, which legal.css would otherwise give a background of its own */
+.docs-body .docs-bubble .chat-message-codeblock code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
+/* A mention, lit up like chat.css's .chat-mention */
+.docs-mention {
+  padding: 0 3px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.docs-bubble.is-own .docs-mention {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+/* ---------- Wordle's coloured letters ---------- */
+.docs-tiles {
+  margin: 12px 0 20px;
+  display: flex;
+  gap: 6px;
+}
+
+.docs-tile,
+.docs-body .docs-tile-word {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 4px;
+  background: #3a414d;
+  color: #fff;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.docs-tile {
+  width: 46px;
+  height: 46px;
+  font-size: 1.3rem;
+}
+
+.docs-body .docs-tile-word {
+  padding: 0 6px;
+  display: inline-block;
+  font-size: 0.9em;
+  text-transform: none;
+}
+
+.docs-tile.is-correct,
+.docs-tile-word.is-correct {
+  background: #2fa36b;
+}
+
+.docs-tile.is-present,
+.docs-tile-word.is-present {
+  background: #c9a227;
+}
+
+/* ---------- The docs' front page: a card for each section with its pages ---------- */
+.docs-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.docs-section-card {
+  padding: 22px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.docs-body .docs-section-card h2 {
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+}
+
+.docs-body .docs-section-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.docs-body .docs-section-card li + li {
+  margin-top: 10px;
+}
+
+.docs-body .docs-section-card a {
+  display: block;
+  text-decoration: none;
+}
+
+.docs-body .docs-section-card a:hover {
+  text-decoration: underline;
+}
+
+.docs-body .docs-section-card li span {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+/* ---------- Previous / Next ---------- */
+.docs-pager {
+  margin: 64px 0 0;
+  padding-top: 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.docs-body .docs-pager-link {
+  padding: 14px 18px;
+  display: grid;
+  gap: 2px;
+  border-radius: 12px;
+  background: var(--secondary);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.docs-body .docs-pager-link:hover {
+  background: color-mix(in srgb, var(--accent) 14%, var(--secondary));
+}
+
+.docs-pager-link.is-next {
+  grid-column: 2;
+  text-align: right;
+}
+
+.docs-pager-label {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.docs-pager-title {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ---------- Smaller screens ---------- */
+@media (max-width: 960px) {
+  /* The menu goes under the text, as a box, so a page opens on what it's about */
+  .docs-nav {
+    order: 2;
+    position: static;
+    max-height: none;
+    padding: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    border-radius: var(--radius);
+    background: var(--secondary);
+  }
+}
+
+@media (max-width: 600px) {
+  .docs-format-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .docs-format-head:last-child {
+    display: none; /* the rows stack, so one "Type this" heading is enough */
+  }
+
+  .docs-bubble.is-own {
+    justify-self: start;
+  }
+
+  .docs-pager {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .docs-pager-link.is-next {
+    grid-column: auto;
+  }
+
+  .docs-tile {
+    width: 40px;
+    height: 40px;
+  }
+}
