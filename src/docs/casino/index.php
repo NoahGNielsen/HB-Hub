@@ -97,6 +97,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             biggest win and how much you've won or lost in Roulette. Click a column's heading to sort by it. Win %
                             only counts once you've played 20 hands or spins, so one lucky round can't top it.
                         </p>
+                        <p>
+                            The <a href="/gambling/">casino's home page</a> shows the top 5 of the casino leaderboard and your own
+                            place on it, and under each game how many tables are open and how many people are playing right now.
+                        </p>
                     </section>
 
                     <section id="not-money" aria-labelledby="docs-not-money">

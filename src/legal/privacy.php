@@ -184,7 +184,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Your chip balance and every change to it (bets, payouts, the daily chips, and chips a site admin added or took away, with which admin it was), and the last day you collected the daily chips and how many days in a row that was (your place on the daily calendar). That goes when your account is deleted.</li>
                             <li>
                                 The rounds you played in the casino games, for example but not limited to Blackjack, Baccarat
-                                and Roulette, used for the leaderboards. Other people only see the totals there: rounds, wins,
+                                and Roulette, used for the leaderboards (the casino's home page shows the top of the casino
+                                leaderboard, and how many people are playing at the tables right now, without names). Other
+                                people only see the totals there: rounds, wins,
                                 losses, win %, the biggest win, the chips you've won or lost in each game and in all of them
                                 together, and your chips right now.
                             </li>

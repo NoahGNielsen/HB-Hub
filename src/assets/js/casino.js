@@ -1,6 +1,6 @@
 // Casino chips (assets/php/casino/wallet.php), on every casino page: keeps the chip count in the top bar up to date,
-// and on the casino home the big chip count too, and the daily chips card with its countdown and Collect button, its
-// streak and the 30-day calendar under it (which days are ticked off and which one is next).
+// and on the casino home the big chip count too, and the daily chips panel with its countdown and Collect button, its
+// streak and the 30-day calendar under it (which days are ticked off, which one is next, and the progress bar over it).
 // The chips come along with navUpdates.js's request (every 15 seconds while the page is in view: wallet=1 on nav:poll,
 // the answer's "wallet" on nav:update). /gambling/chips is only asked when the daily chips' countdown runs out and to
 // collect them. A game that gets a new balance in its own answers passes it on straight away with
@@ -16,6 +16,8 @@
     const dailyDay = daily?.querySelector('[data-casino-daily-day]');
     const dailyAmount = daily?.querySelector('[data-casino-daily-amount]');
     const calendarDays = document.querySelectorAll('[data-casino-calendar] [data-day]');
+    const progress = document.querySelector('[data-casino-progress]');
+    const progressText = document.querySelector('[data-casino-progress-text]');
 
     let chips = counts.length > 0 ? Number(counts[0].dataset.casinoChips) : null;
     let nextDailyAt = null; // Date.now() when the daily chips can be collected again, null while they can be
@@ -76,6 +78,9 @@
         dailyWhen.textContent = state.ready ? 'Today' : 'Tomorrow';
         dailyDay.textContent = String(state.day);
         dailyAmount.textContent = formatChips(state.amount);
+        daily.classList.toggle('is-ready', state.ready);
+        if (progress) progress.value = state.collected;
+        if (progressText) progressText.textContent = String(state.collected);
 
         calendarDays.forEach((cell) => {
             const day = Number(cell.dataset.day);

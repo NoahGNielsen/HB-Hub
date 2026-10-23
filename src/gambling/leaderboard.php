@@ -5,15 +5,16 @@
 // HBHub-RouletteSpins (playerNet / spinNet: chips won or lost, insurance included), the chips from HBHub-CasinoWallets.
 // Sorted by any column with ?sort=column&dir=asc|desc, which the column headings link to. A game someone has never
 // played is "–", and comes after everyone who has when sorting by it (whichever way).
-// Each game's own leaderboard (gambling/<game>/leaderboard.php) has the wins, losses and win %.
+// Each game's own leaderboard (gambling/<game>/leaderboard.php) has the wins, losses and win %. The rows come from
+// assets/php/casino/leaderboard.php, which the casino home uses for its top players too.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/leaderboard.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
 
 const LEADERBOARD_ROWS = 200;
-const LEADERBOARD_STATUS_BANNED = 4; // userStatus in HBHub-Users
 const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first]
     'player' => ['Player', 'asc'],
     'rounds' => ['Rounds', 'desc'],
@@ -23,7 +24,7 @@ const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first]
     'net' => ['Total won / lost', 'desc'],
     'chips' => ['Chips', 'desc'],
 ];
-const LEADERBOARD_NULLABLE = ['blackjack', 'baccarat', 'roulette']; // "–" for a game never played
+const LEADERBOARD_NULLABLE = HBHUB_CASINO_LEADERBOARD_GAMES; // "–" for a game never played
 const LEADERBOARD_GAMES = [ // the games' own leaderboards, linked above the table
     'Blackjack' => '/gambling/blackjack/leaderboard',
     'Baccarat' => '/gambling/baccarat/leaderboard',
@@ -39,56 +40,8 @@ $dir = in_array($_GET['dir'] ?? null, ['asc', 'desc'], true) ? $_GET['dir'] : LE
 // name, or turned round)
 $podium = $sort !== 'player' && $dir === LEADERBOARD_COLUMNS[$sort][1];
 
-// Each game's rounds and chips won or lost per player, one line per game, added up per player. Banned and deleted
-// accounts (userStatus NULL) are left out
-$statement = $db->prepare('SELECT g.userId, u.userName, u.userAvatarAttachmentId, COALESCE(w.walletChips, 0) AS chips,
-        SUM(g.blackjackRounds) AS blackjackRounds, SUM(g.blackjackNet) AS blackjackNet,
-        SUM(g.baccaratRounds) AS baccaratRounds, SUM(g.baccaratNet) AS baccaratNet,
-        SUM(g.rouletteRounds) AS rouletteRounds, SUM(g.rouletteNet) AS rouletteNet
-    FROM (
-        SELECT userId, COUNT(*) AS blackjackRounds, SUM(playerNet) AS blackjackNet,
-            0 AS baccaratRounds, 0 AS baccaratNet, 0 AS rouletteRounds, 0 AS rouletteNet
-        FROM `HBHub-BlackjackPlayerRounds` GROUP BY userId
-        UNION ALL
-        SELECT userId, 0, 0, COUNT(*), SUM(playerNet), 0, 0 FROM `HBHub-BaccaratPlayerRounds` GROUP BY userId
-        UNION ALL
-        SELECT userId, 0, 0, 0, 0, COUNT(*), SUM(spinNet) FROM `HBHub-RouletteSpins` GROUP BY userId
-    ) g
-    JOIN `HBHub-Users` u ON u.userId = g.userId
-    LEFT JOIN `HBHub-CasinoWallets` w ON w.userId = g.userId
-    WHERE u.userStatus IS NOT NULL AND u.userStatus <> ?
-    GROUP BY g.userId, u.userName, u.userAvatarAttachmentId, w.walletChips');
-$statement->execute([LEADERBOARD_STATUS_BANNED]);
-
-$rows = array_map(static function (array $row): array {
-    $games = [];
-    foreach (['blackjack', 'baccarat', 'roulette'] as $game) {
-        $games[$game] = (int) $row[$game . 'Rounds'] > 0 ? (int) $row[$game . 'Net'] : null;
-    }
-    return [
-        'userId' => (int) $row['userId'],
-        'player' => $row['userName'],
-        'avatarId' => $row['userAvatarAttachmentId'] !== null ? (int) $row['userAvatarAttachmentId'] : null,
-        'rounds' => (int) $row['blackjackRounds'] + (int) $row['baccaratRounds'] + (int) $row['rouletteRounds'],
-        ...$games,
-        'net' => (int) $row['blackjackNet'] + (int) $row['baccaratNet'] + (int) $row['rouletteNet'],
-        'chips' => (int) $row['chips'],
-    ];
-}, $statement->fetchAll());
-
-usort($rows, static function (array $a, array $b) use ($sort, $dir): int {
-    if (in_array($sort, LEADERBOARD_NULLABLE, true) && ($a[$sort] === null) !== ($b[$sort] === null)) {
-        return $a[$sort] === null ? 1 : -1; // never played it: after everyone who has
-    }
-    $order = $sort === 'player'
-        ? strcmp(mb_strtolower($a['player']), mb_strtolower($b['player']))
-        : $a[$sort] <=> $b[$sort];
-    if ($dir === 'desc') {
-        $order = -$order;
-    }
-    // A tie goes to who played more, then by name
-    return $order ?: ($b['rounds'] <=> $a['rounds'] ?: strcmp(mb_strtolower($a['player']), mb_strtolower($b['player'])));
-});
+// Banned and deleted accounts are left out (assets/php/casino/leaderboard.php)
+$rows = hbHubCasinoLeaderboardSort(hbHubCasinoLeaderboardRows($db), $sort, $dir === 'desc');
 $rows = array_slice($rows, 0, LEADERBOARD_ROWS);
 
 $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
