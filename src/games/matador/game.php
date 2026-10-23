@@ -402,11 +402,12 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                 <fieldset class="casino-choices" data-mt-settings-fields>
                     <legend class="casino-label">Building houses and hotels</legend>
                     <?php foreach ([
-                        'off' => ['Only with the whole group (default)', 'You need every street in a colour before you can build on it.'],
-                        'on' => ['On any street you own', 'Build on your streets without owning the rest of the colour. They still go up evenly across the streets of it you have.'],
+                        'group' => ['Only with the whole group (default)', 'You need every street in a colour before you can build on it, and the houses go up evenly.'],
+                        'uneven' => ['With the whole group, not evenly', 'You still need every street in a colour, but you can put the houses on whichever of them you like.'],
+                        'any' => ['On any street you own', 'Build on your streets without owning the rest of the colour. They still go up evenly across the streets of it you have.'],
                     ] as $value => [$label, $hint]): ?>
                         <label class="casino-choice">
-                            <input type="radio" name="buildAnyStreet" value="<?= $value ?>">
+                            <input type="radio" name="building" value="<?= $value ?>">
                             <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
                         </label>
                     <?php endforeach; ?>

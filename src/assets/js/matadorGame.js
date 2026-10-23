@@ -20,9 +20,10 @@
 // The host can pause the game (the button in the header, game.paused). Nothing can be done in it then but the chat,
 // so the moves, trades, building and keyboard shortcuts are left out until it goes on.
 //
-// The room's settings (game.settings: dice, jailRent, parkingPot and buildAnyStreet) are shown in their dialog, where
-// the host changes them before the game starts. With buildAnyStreet, the Build button works on a street without the
-// rest of its colour. With parkingPot, what's in Parkering's account (game.pot) is shown on its field. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
+// The room's settings (game.settings: dice, jailRent, parkingPot, buildAnyStreet and buildUnevenly) are shown in their
+// dialog, where the host changes them before the game starts. With buildAnyStreet, the Build button works on a street
+// without the rest of its colour. buildUnevenly (houses don't have to go up evenly) only changes what the server
+// allows, so it's only in the dialog here. With parkingPot, what's in Parkering's account (game.pot) is shown on its field. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
 // on (after asking) and Backspace leaves it with the bank, and Enter ends the turn.
 (() => {
     const root = document.querySelector('[data-matador]');
@@ -1288,7 +1289,11 @@
     const JAIL_RENT_TEXT = { yes: 'rent is paid in jail', no: 'no rent in jail', bank: 'rent in jail goes to the bank' };
     const settingsText = () => (game.settings.dice === 2 ? '2 dice' : '1 die') + ', ' + JAIL_RENT_TEXT[game.settings.jailRent]
         + ', ' + (game.settings.parkingPot ? 'taxes and fines go to Parkering' : 'no Parkering account')
-        + ', ' + (game.settings.buildAnyStreet ? 'build on any street' : 'build only with the whole group');
+        + ', ' + (game.settings.buildAnyStreet ? 'build on any street'
+            : game.settings.buildUnevenly ? 'build with the whole group, not evenly' : 'build only with the whole group');
+
+    // The building choice the two settings make (game.php's HBHUB_MATADOR_BUILDING_CHOICES)
+    const buildingChoice = () => (game.settings.buildAnyStreet ? 'any' : game.settings.buildUnevenly ? 'uneven' : 'group');
 
     // The choices are only filled in from the game when it opens, or while it can't be changed (so a poll doesn't
     // undo what the host has just clicked)
@@ -1296,7 +1301,7 @@
         settingsForm.elements.dice.value = String(game.settings.dice);
         settingsForm.elements.jailRent.value = game.settings.jailRent;
         settingsForm.elements.parkingPot.value = game.settings.parkingPot ? 'on' : 'off';
-        settingsForm.elements.buildAnyStreet.value = game.settings.buildAnyStreet ? 'on' : 'off';
+        settingsForm.elements.building.value = buildingChoice();
     }
 
     function renderSettings() {
@@ -1326,7 +1331,7 @@
             dice: settingsForm.elements.dice.value,
             jailRent: settingsForm.elements.jailRent.value,
             parkingPot: settingsForm.elements.parkingPot.value,
-            buildAnyStreet: settingsForm.elements.buildAnyStreet.value,
+            building: settingsForm.elements.building.value,
         }, settingsMessage);
         if (data && !data.error) settingsDialog.close();
     });

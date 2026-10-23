@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Matador** | The Danish Monopoly for 2-4 players. Games can be public, joined with a 6-character code, or invite-only |
-| **House rules** | One dice (a 6 gives another roll), no auctions: a property nobody buys stays with the bank. Get out of jail by paying, using a "benådet" card or rolling a 6. Taxes and Prøv lykken payments go into Parkering's account, and whoever lands on Parkering gets it (a room setting, on by default). The host can also let players build houses and hotels on any street they own, without the whole colour (off by default) |
+| **House rules** | One dice (a 6 gives another roll), no auctions: a property nobody buys stays with the bank. Get out of jail by paying, using a "benådet" card or rolling a 6. Taxes and Prøv lykken payments go into Parkering's account, and whoever lands on Parkering gets it (a room setting, on by default). The host can also let players build houses and hotels on any street they own, without the whole colour, or build with the whole colour but not evenly (both off by default) |
 | **Full game** | Houses and hotels, mortgages, Prøv lykken cards, the income tax choice, and trading properties, money and cards with the other players at any time |
 | **Turn timer** | 30 seconds to act, reset by every move. Run out and your turn is passed on. The timer pauses while you owe money, and the host can pause the whole game |
 | **Saves** | The game saves after every move. Leave and your seat is kept for you. The host can give an empty seat to someone else, or save and stop the game to continue it later |

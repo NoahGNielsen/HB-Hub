@@ -22,8 +22,8 @@
     <li>
         Own every street in a colour to build houses on it in your turn, evenly, and a hotel after 4 houses. The bank has
         <?= HBHUB_MATADOR_BANK_HOUSES ?> houses and <?= HBHUB_MATADOR_BANK_HOTELS ?> hotels. Selling them back gives half the price.
-        The host can let you build on any street you own in the room's settings: then they go up evenly across the
-        streets of the colour you have.
+        The host can change this in the room's settings: let you build on any street you own (then they go up evenly across the
+        streets of the colour you have), or still need the whole colour but build on its streets in any order.
     </li>
     <li>
         Mortgage a property in your turn for half its price (sell the houses in its colour first). No rent is paid for it while it's mortgaged,
