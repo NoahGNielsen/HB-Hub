@@ -11,12 +11,15 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.
 /**
  * A big number the way people say it: 12,000, 1.4 million, 75 billion. Above a quadrillion it's still words, up to
  * the decillions, which is further than any price in the store.
+ * The list is keyed by the power of ten, not the number itself: PHP turns float keys into ints, and 1e21 and up
+ * don't fit in one (that broke the page with "0 octillion").
  */
 function docsMinerNumber(float $number): string
 {
-    $names = [1e33 => 'decillion', 1e30 => 'nonillion', 1e27 => 'octillion', 1e24 => 'septillion', 1e21 => 'sextillion',
-        1e18 => 'quintillion', 1e15 => 'quadrillion', 1e12 => 'trillion', 1e9 => 'billion', 1e6 => 'million'];
-    foreach ($names as $size => $name) {
+    $names = [33 => 'decillion', 30 => 'nonillion', 27 => 'octillion', 24 => 'septillion', 21 => 'sextillion',
+        18 => 'quintillion', 15 => 'quadrillion', 12 => 'trillion', 9 => 'billion', 6 => 'million'];
+    foreach ($names as $power => $name) {
+        $size = 10.0 ** $power;
         if ($number >= $size) {
             return rtrim(rtrim(number_format($number / $size, 1), '0'), '.') . ' ' . $name;
         }
