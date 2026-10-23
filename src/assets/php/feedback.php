@@ -10,7 +10,7 @@
 
 const HBHUB_FEEDBACK_MAX = 2000; // characters, the length of feedbackContent
 const HBHUB_FEEDBACK_PER_HOUR = 5; // per user, so the button can't be used to spam the admins
-const HBHUB_FEEDBACK_PAGE = '/otherPages/feedback';
+const HBHUB_FEEDBACK_PAGE = '/feedback';
 const HBHUB_FEEDBACK_REPLY_MAX = 500; // characters, the message an admin sends with Reply, and mark completed
 
 /**

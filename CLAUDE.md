@@ -100,7 +100,10 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
 - **JSON endpoints**: the JS calls them with `fetch(url, { headers: { Accept: 'application/json' } })` and form-encoded
   POSTs with an `action=` field. They set `Content-Type: application/json` + `Cache-Control: no-store`, answer errors as
   `http_response_code(4xx); echo json_encode(['error' => 'camelCaseCode'])`, and reject wrong methods with 405 + `Allow`.
-- **Clean URLs**: `.htaccess` strips `.php`/`.html`, so link to `/chat/users`, not `/chat/users.php`.
+- **Clean URLs**: `.htaccess` strips `.php`/`.html`, so link to `/chat/users`, not `/chat/users.php`. `otherPages/`,
+  `userMgmt/` and `games/spaceOreMiner/` have short addresses (`/profile`, `/settings`, `/login`, `/nav-updates`,
+  `/games/space-ore-miner/`, ...; "SHORT ADDRESSES" in `.htaccess`): always link to those. A new page in `otherPages/`
+  or `userMgmt/` needs adding to both lists of names there.
 - **Security**: all SQL via prepared statements; escape output with `htmlspecialchars`. The CSP in `src/.htaccess`
   allows no inline scripts/styles and only Giphy/Google Fonts as externals. Uploaded images exclude SVG.
 - **Concurrency**: anything that changes shared game/wallet state runs in a transaction and locks the row first

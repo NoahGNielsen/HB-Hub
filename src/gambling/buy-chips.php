@@ -46,7 +46,7 @@ $buyChipsSellerId = $statement->fetchColumn();
             <p class="casino-hint">
                 If you really want more chips, you can buy them. Write to
                 <?php if ($buyChipsSellerId !== false): ?>
-                    <a href="/otherPages/profile?user=<?= (int) $buyChipsSellerId ?>"><strong><?= htmlspecialchars(BUY_CHIPS_SELLER_NAME) ?></strong></a>
+                    <a href="/profile?user=<?= (int) $buyChipsSellerId ?>"><strong><?= htmlspecialchars(BUY_CHIPS_SELLER_NAME) ?></strong></a>
                 <?php else: ?>
                     <strong><?= htmlspecialchars(BUY_CHIPS_SELLER_NAME) ?></strong>
                 <?php endif; ?>

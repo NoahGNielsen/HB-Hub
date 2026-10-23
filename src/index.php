@@ -108,8 +108,8 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     </p>
                     <div class="home-hero-actions">
                         <?php if ($homeUser === null): ?>
-                            <a class="home-btn home-btn-primary home-btn-lg" href="/userMgmt/onboarding">Make an account</a>
-                            <a class="home-btn home-btn-glass home-btn-lg" href="/userMgmt/login">I already have one</a>
+                            <a class="home-btn home-btn-primary home-btn-lg" href="/onboarding">Make an account</a>
+                            <a class="home-btn home-btn-glass home-btn-lg" href="/login">I already have one</a>
                         <?php else: ?>
                             <p class="home-welcome">Welcome back, <?= htmlspecialchars($homeUser['userName']) ?>.</p>
                             <a class="home-btn home-btn-primary home-btn-lg" href="/chat/">Go to your chats</a>
@@ -381,8 +381,8 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 <h2 id="home-cta-title">Your class is already in here.</h2>
                 <p>Sign up in under a minute and stop missing the joke.</p>
                 <div class="home-hero-actions">
-                    <a class="home-btn home-btn-primary home-btn-lg" href="/userMgmt/onboarding">Sign up</a>
-                    <a class="home-btn home-btn-glass home-btn-lg" href="/userMgmt/login">Log in</a>
+                    <a class="home-btn home-btn-primary home-btn-lg" href="/onboarding">Sign up</a>
+                    <a class="home-btn home-btn-glass home-btn-lg" href="/login">Log in</a>
                 </div>
             <?php else: ?>
                 <h2 id="home-cta-title">Miss anything?</h2>

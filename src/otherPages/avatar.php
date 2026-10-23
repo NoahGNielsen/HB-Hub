@@ -1,5 +1,5 @@
 <?php
-// Profile pictures: /otherPages/avatar?user=id sends the user's profile picture. For any logged in user,
+// Profile pictures: /avatar?user=id sends the user's profile picture. For any logged in user,
 // except for banned users' pictures (they don't have a profile) - only site admins see those, in the admin panel.
 // The page adds &v=<attachment id>, so a changed picture gets a new address and the old one can be cached for good.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';

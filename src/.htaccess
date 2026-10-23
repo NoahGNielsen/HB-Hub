@@ -114,6 +114,19 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # Wordle used to be called Ordle and live at /games/ordle/, so old links and bookmarks still work.
     RewriteRule ^games/ordle(/.*)?$ /games/wordle$1 [R=301,L]
 
+    # The pages that used to live at a long address (/otherPages/profile, /userMgmt/login, /games/spaceOreMiner/)
+    # now have a short one (SHORT ADDRESSES below), so old links and bookmarks are sent on to it. Only for GET/HEAD:
+    # a redirected POST turns into a GET and loses its form, so a form or a game that was open before the change still
+    # posts to the old address, which still works. THE_REQUEST is what the browser itself asked for, so the short
+    # address (rewritten to the long one further down) isn't sent back here in a loop.
+    RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+    RewriteCond %{THE_REQUEST} ^[A-Z]+\ /(otherPages|userMgmt)/
+    RewriteRule ^(?:otherPages|userMgmt)/(profile|settings|notifications|feedback|avatar|login|onboarding)(?:\.php)?$ /$1 [R=301,L]
+
+    RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+    RewriteCond %{THE_REQUEST} ^[A-Z]+\ /games/spaceOreMiner
+    RewriteRule ^games/spaceOreMiner(/.*)?$ /games/space-ore-miner$1 [R=301,L]
+
     # 1. ALLOW ACCESS TO .well-known (Required for SSL certificates like Let's Encrypt)
     RewriteRule ^\.well-known/ - [L]
 
@@ -133,6 +146,20 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # A. Redirect external requests containing extensions to their clean URL version
     RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.(html|htm|php)[\ \?] [NC]
     RewriteRule ^ /%1 [R=301,L]
+
+    # --------------------------------------------------------------------------
+    # SHORT ADDRESSES
+    # --------------------------------------------------------------------------
+    # The files stay in their folders, but the address bar never shows the folder's name: /profile is
+    # otherPages/profile.php, /login is userMgmt/login.php and /games/space-ore-miner/ is games/spaceOreMiner/.
+    # The code links to the short ones; the old long ones are redirected near the top.
+    RewriteRule ^(profile|settings|notifications|feedback|avatar)$ otherPages/$1.php [L]
+    RewriteRule ^nav-updates$ otherPages/navUpdates.php [L]
+    RewriteRule ^(login|onboarding)$ userMgmt/$1.php [L]
+
+    # Without the slash Apache would add it itself, to the folder's real name, so it's added here first
+    RewriteRule ^games/space-ore-miner$ /games/space-ore-miner/ [R=301,L]
+    RewriteRule ^games/space-ore-miner/(.*)$ games/spaceOreMiner/$1 [L]
 
     # B. Serve .html if the clean URL matches a .html file
     RewriteCond %{REQUEST_FILENAME} !-d

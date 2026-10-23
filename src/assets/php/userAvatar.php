@@ -3,7 +3,7 @@
 
 function hbHubProfileUrl(int $userId): string
 {
-    return '/otherPages/profile?user=' . $userId;
+    return '/profile?user=' . $userId;
 }
 
 /**
@@ -12,5 +12,5 @@ function hbHubProfileUrl(int $userId): string
  */
 function hbHubAvatarUrl(int $userId, ?int $attachmentId): ?string
 {
-    return $attachmentId !== null ? '/otherPages/avatar?user=' . $userId . '&v=' . $attachmentId : null;
+    return $attachmentId !== null ? '/avatar?user=' . $userId . '&v=' . $attachmentId : null;
 }

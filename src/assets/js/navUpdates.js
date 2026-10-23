@@ -1,4 +1,4 @@
-// Keeps the nav bar up to date on every page for logged in users, with one request to /otherPages/navUpdates every
+// Keeps the nav bar up to date on every page for logged in users, with one request to /nav-updates every
 // 15 seconds. The hosting only runs about 10 PHP requests at once for the whole site, so the bell, the number on Chat,
 // the casino chips and the browser notifications all share this one instead of each asking on their own.
 // The other scripts take part through two events on document:
@@ -22,7 +22,7 @@
         isPolling = true;
         const query = detail.params.toString();
         try {
-            const response = await fetch('/otherPages/navUpdates' + (query !== '' ? '?' + query : ''), {
+            const response = await fetch('/nav-updates' + (query !== '' ? '?' + query : ''), {
                 headers: { Accept: 'application/json' },
             });
             if (response.ok) document.dispatchEvent(new CustomEvent('nav:update', { detail: await response.json() }));

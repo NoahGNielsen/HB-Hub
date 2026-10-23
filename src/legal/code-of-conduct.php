@@ -144,7 +144,7 @@ const HBHUB_CONDUCT_UPDATED = '21 October 2026';
                         </ul>
                         <p class="legal-note">
                             If the casino or games are taking up more of your time than you'd like, especially in class, you can
-                            block them for yourself in your <a href="/otherPages/settings">settings</a>. If gambling, also with real
+                            block them for yourself in your <a href="/settings">settings</a>. If gambling, also with real
                             money, is starting to feel like a problem for you or a friend,
                             <a href="https://stopspillet.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a> gives free
                             and anonymous help.

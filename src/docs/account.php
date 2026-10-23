@@ -6,7 +6,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/account';
-$docsIntro = 'Everything about your account is on the <a href="/otherPages/settings">settings page</a>: open your profile
+$docsIntro = 'Everything about your account is on the <a href="/settings">settings page</a>: open your profile
     (your picture in the top bar) and press the cog.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>

@@ -8,8 +8,8 @@
 // the middle 80%, since Android crops them to a circle or squircle. Shortcuts (long-press the icon) open Chat, Casino
 // and Games. iOS still uses appleTouchIcon.png for the icon.
 //
-// The canonical URL is the page's clean path without the query string, so /userMgmt/login?return=%2Fchat (where
-// session.php sends visitors who aren't logged in) counts as /userMgmt/login, and /index as /. Error pages (anything
+// The canonical URL is the page's clean path without the query string, so /login?return=%2Fchat (where
+// session.php sends visitors who aren't logged in) counts as /login, and /index as /. Error pages (anything
 // that isn't a 200) are noindex, so they get none.
 //
 // Pages under the frontpage's top bar (homeNav.php) instead of the app's nav panel set $headerHomeNav = true before

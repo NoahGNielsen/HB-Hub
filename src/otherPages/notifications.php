@@ -1,7 +1,7 @@
 <?php
 // The list under the bell in the nav bar, for notificationBell.js. Answers as JSON (the number on the bell is kept up
 // to date by otherPages/navUpdates.php):
-// - /otherPages/notifications is the newest notifications, from every part of the site, how many are unread and the
+// - /notifications is the newest notifications, from every part of the site, how many are unread and the
 //   newest one's id
 // - POST action=read&upTo=id marks them read up to that one, once the list has been opened. Only up to the newest one
 //   the user was shown, so one that came in meanwhile still counts as new.

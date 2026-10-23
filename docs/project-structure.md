@@ -31,6 +31,18 @@ HB-Hub/
 └── .github/workflows/   Deploying, and updating the README badges every hour
 ```
 
+## 🔗 Addresses
+
+`src/.htaccess` drops `.php` from every address, and gives a few pages a shorter one than their folder:
+
+| Address                   | File                          |
+|---------------------------|-------------------------------|
+| `/login`, `/onboarding`   | `userMgmt/login.php`, `userMgmt/onboarding.php` |
+| `/profile`, `/settings`, `/notifications`, `/feedback`, `/avatar`, `/nav-updates` | `otherPages/*.php` |
+| `/games/space-ore-miner/` | `games/spaceOreMiner/`        |
+
+Links in the code use the short address. The old long ones still work: a GET is redirected to the short one.
+
 ---
 
 [← Back to the docs](index.md)

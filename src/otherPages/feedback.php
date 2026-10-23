@@ -1,5 +1,5 @@
 <?php
-// Feedback page: /otherPages/feedback, opened from the Feedback button at the bottom of the side bar (navPanel.php).
+// Feedback page: /feedback, opened from the Feedback button at the bottom of the side bar (navPanel.php).
 // Lets a logged in user write to the site admins: a bug, an idea, something they'd like changed. Only site admins
 // can read it, on the admin panel's Feedback tab (admin/feedback.php).
 //

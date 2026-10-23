@@ -1,5 +1,5 @@
 <?php
-// Profile page: /otherPages/profile?user=id shows that user, without ?user= it shows the logged in user.
+// Profile page: /profile?user=id shows that user, without ?user= it shows the logged in user.
 // Banned users don't have a profile (the same as in the chat's user search).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
@@ -71,7 +71,7 @@ $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvata
     <main class="profile">
         <?php if ($profileIsOwn): ?>
             <!-- Own profile: a cog in the top right corner that goes to settings (the same icon as next to your name in the chat) -->
-            <a class="profile-settings" href="/otherPages/settings" aria-label="Settings" title="Settings">
+            <a class="profile-settings" href="/settings" aria-label="Settings" title="Settings">
                 <img src="/assets/images/icons/settings.png" alt="">
             </a>
         <?php endif; ?>

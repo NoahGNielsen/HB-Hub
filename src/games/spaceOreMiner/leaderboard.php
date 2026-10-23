@@ -103,7 +103,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="casino games">
-        <a class="casino-back" href="/games/spaceOreMiner/">&larr; Space Ore Miner</a>
+        <a class="casino-back" href="/games/space-ore-miner/">&larr; Space Ore Miner</a>
         <h1>Space Ore Miner leaderboard</h1>
         <p class="casino-intro">
             Ore mined is everything someone has ever mined, in every galaxy. Ore per second is how fast they mine right now,
@@ -112,7 +112,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
 
         <section class="casino-card" aria-label="Leaderboard">
             <?php if ($rows === []): ?>
-                <p class="casino-hint">Nobody has mined anything yet. <a href="/games/spaceOreMiner/">Be the first!</a></p>
+                <p class="casino-hint">Nobody has mined anything yet. <a href="/games/space-ore-miner/">Be the first!</a></p>
             <?php else: ?>
                 <div class="casino-table-wrap">
                     <table class="casino-table">

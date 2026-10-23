@@ -3,7 +3,7 @@
 // catch Golden Comets, Warp Jump to a new galaxy for Dark Matter, Big Crunch the universe for Antimatter and Big Rip
 // the multiverse for Strange Matter, which buys skills in the skill tree. The rules are in
 // assets/php/games/spaceOreMiner/miner.php.
-// The page only has the empty spaces: spaceOreMiner.js loads the save from /games/spaceOreMiner/save on its first save
+// The page only has the empty spaces: spaceOreMiner.js loads the save from /games/space-ore-miner/save on its first save
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
@@ -21,10 +21,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/crashR
 hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 
 const MINER_VIEWS = [ // ?view= => [the menu's text, its address]
-    'ore' => ['Ore', '/games/spaceOreMiner/'],
-    'darkMatter' => ['Dark Matter', '/games/spaceOreMiner/?view=darkMatter'],
-    'antimatter' => ['Antimatter', '/games/spaceOreMiner/?view=antimatter'],
-    'strangeMatter' => ['Strange Matter', '/games/spaceOreMiner/?view=strangeMatter'],
+    'ore' => ['Ore', '/games/space-ore-miner/'],
+    'darkMatter' => ['Dark Matter', '/games/space-ore-miner/?view=darkMatter'],
+    'antimatter' => ['Antimatter', '/games/space-ore-miner/?view=antimatter'],
+    'strangeMatter' => ['Strange Matter', '/games/space-ore-miner/?view=strangeMatter'],
 ];
 $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 ?>
@@ -55,7 +55,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <span class="games-visually-hidden">Sound</span>
                 </button>
                 <!-- On phones only the icons show; the words stay for screen readers -->
-                <a class="casino-btn miner-title-btn" href="/games/spaceOreMiner/leaderboard"><?= hbHubMinerIcon('podium', 'miner-title-icon') ?> <span class="miner-title-label">Leaderboard</span></a>
+                <a class="casino-btn miner-title-btn" href="/games/space-ore-miner/leaderboard"><?= hbHubMinerIcon('podium', 'miner-title-icon') ?> <span class="miner-title-label">Leaderboard</span></a>
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="stats" aria-haspopup="dialog"><?= hbHubMinerIcon('stats', 'miner-title-icon') ?> <span class="miner-title-label">Stats</span></button>
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="achievements" aria-haspopup="dialog">
                     <?= hbHubMinerIcon('trophy', 'miner-title-icon') ?> <span class="miner-title-label">Achievements</span>

@@ -248,7 +248,7 @@ function loginSetPendingCookie(string $pendingId): void
 {
     setcookie(LOGIN_PENDING_COOKIE, $pendingId, [
         'expires' => time() + LOGIN_PENDING_MINUTES * 60,
-        'path' => '/userMgmt/',
+        'path' => '/login',
         'secure' => true,
         'httponly' => true,
         'samesite' => 'Lax',
@@ -259,7 +259,7 @@ function loginClearPendingCookie(): void
 {
     setcookie(LOGIN_PENDING_COOKIE, '', [
         'expires' => 1,
-        'path' => '/userMgmt/',
+        'path' => '/login',
         'secure' => true,
         'httponly' => true,
         'samesite' => 'Lax',

@@ -127,7 +127,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             and when it runs out, plus a short name for the browser and system it's on, like "Chrome on
                             Windows". That name is worked out from what your browser sends (its user agent), and only the
                             short name is stored, never the rest. It's there so you can see where you're logged in under
-                            Logged in devices on the <a href="/otherPages/settings#devices">settings page</a>, and log out
+                            Logged in devices on the <a href="/settings#devices">settings page</a>, and log out
                             any of them, or all of them at once. Browsers you've logged in from are also remembered by a
                             random token (only a hash of it is stored) and how many wrong passwords they've tried.
                         </p>
@@ -359,7 +359,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             with it (how many, how big each was, its type and the dates), never the files or their names.
                         </p>
                         <p>
-                            You can <strong>delete your account</strong> yourself on the <a href="/otherPages/settings">settings page</a>.
+                            You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
                             That right away removes your name, profile picture, bio, year, class, settings, password, two-factor
                             secret, IP addresses, logins, known devices, your Space Ore Miner save and crash reports, and the files you attached in chats. Your name is replaced
                             with "Deleted User".

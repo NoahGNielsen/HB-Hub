@@ -1,7 +1,7 @@
 <?php
 // Everything the nav bar keeps up to date, in one request, for navUpdates.js: the hosting only runs about 10 PHP
 // requests at once for the whole site, so every open page asking once instead of once per number matters.
-// GET /otherPages/navUpdates answers, as JSON:
+// GET /nav-updates answers, as JSON:
 // - unread: unread notifications, the number on the bell (notificationBell.js)
 // - unreadChats: chats with unread messages, the number on Chat in the side bar (chatUnread.js)
 // - with &wallet=1 (casino pages, casino.js): wallet, the chips and daily chips like /gambling/chips sends them.

@@ -76,7 +76,7 @@ const HBHUB_TERMS_UPDATED = '23 October 2026';
                             <li><strong>Be yourself.</strong> Use a name people from school will recognise you by, and don't pretend to be someone else.</li>
                             <li>Names and bios can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them. A bio can't have a link to one of the blocked sites in it either (see section 3).</li>
                             <li><strong>Keep it to yourself.</strong> Don't share your password or let others use your account. You're responsible for what happens on it.</li>
-                            <li>Turning on two-factor login in your <a href="/otherPages/settings">settings</a> is a good idea. If you think someone else has got into your account, change your password and tell an admin.</li>
+                            <li>Turning on two-factor login in your <a href="/settings">settings</a> is a good idea. If you think someone else has got into your account, change your password and tell an admin.</li>
                         </ul>
                     </section>
 
@@ -160,7 +160,7 @@ const HBHUB_TERMS_UPDATED = '23 October 2026';
                         </ul>
                         <p class="legal-note">
                             If you'd rather not see the casino or games, especially during school hours, you can block them for
-                            yourself in your <a href="/otherPages/settings">settings</a>. If gambling of any kind, also with real
+                            yourself in your <a href="/settings">settings</a>. If gambling of any kind, also with real
                             money, is starting to feel like a problem, you can get free and anonymous help from
                             <a href="https://stopspillet.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a>.
                         </p>
@@ -227,7 +227,7 @@ const HBHUB_TERMS_UPDATED = '23 October 2026';
                         <h2 id="terms-leaving">8. Leaving HB Hub</h2>
                         <p>
                             You can stop using HB Hub whenever you want, and delete your account on the
-                            <a href="/otherPages/settings">settings page</a>. The <a href="/legal/privacy#keep">Privacy Policy</a>
+                            <a href="/settings">settings page</a>. The <a href="/legal/privacy#keep">Privacy Policy</a>
                             explains what's removed then, and how to get everything deleted.
                         </p>
                         <p>

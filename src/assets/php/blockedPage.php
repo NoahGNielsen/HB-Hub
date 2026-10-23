@@ -24,7 +24,7 @@
             <?php endif; ?>
         </p>
         <?php if (!$blockIsAdmin): ?>
-            <a class="blocked-link" href="/otherPages/settings#block">Change this in settings</a>
+            <a class="blocked-link" href="/settings#block">Change this in settings</a>
         <?php endif; ?>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>

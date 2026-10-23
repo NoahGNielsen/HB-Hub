@@ -1,4 +1,4 @@
-// The bell in the nav bar: clicking it opens the list of notifications (from /otherPages/notifications), and opening
+// The bell in the nav bar: clicking it opens the list of notifications (from /notifications), and opening
 // it marks them read. The red number on it is how many are unread, kept up to date by navUpdates.js (nav:update).
 // The new ones stay highlighted in the list until it's opened again.
 (() => {
@@ -86,7 +86,7 @@
             event.preventDefault(); // inside a link, the notification itself isn't opened
             event.stopPropagation();
             button.disabled = true;
-            const result = await request('/otherPages/notifications', {
+            const result = await request('/notifications', {
                 method: 'POST',
                 body: new URLSearchParams({ action: 'act', notification: String(notification.id) }),
             });
@@ -100,7 +100,7 @@
     }
 
     async function load() {
-        const data = await request('/otherPages/notifications');
+        const data = await request('/notifications');
         if (data === null) {
             if (list.children.length === 0) empty.textContent = 'Could not load notifications';
             return;
@@ -112,7 +112,7 @@
 
         // Only up to the newest one loaded, so one that came in meanwhile still counts as new
         if (data.unread > 0 && data.newestId !== null) {
-            const read = await request('/otherPages/notifications', {
+            const read = await request('/notifications', {
                 method: 'POST',
                 body: new URLSearchParams({ action: 'read', upTo: String(data.newestId) }),
             });
