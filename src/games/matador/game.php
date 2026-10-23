@@ -399,6 +399,18 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
                         </label>
                     <?php endforeach; ?>
                 </fieldset>
+                <fieldset class="casino-choices" data-mt-settings-fields>
+                    <legend class="casino-label">Building houses and hotels</legend>
+                    <?php foreach ([
+                        'off' => ['Only with the whole group (default)', 'You need every street in a colour before you can build on it.'],
+                        'on' => ['On any street you own', 'Build on your streets without owning the rest of the colour. They still go up evenly across the streets of it you have.'],
+                    ] as $value => [$label, $hint]): ?>
+                        <label class="casino-choice">
+                            <input type="radio" name="buildAnyStreet" value="<?= $value ?>">
+                            <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
                 <p class="mt-message" role="alert" data-mt-settings-message></p>
                 <div class="games-dialog-actions">
                     <button type="button" class="casino-btn" data-mt-settings-close>Close</button>

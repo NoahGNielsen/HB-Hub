@@ -65,6 +65,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><strong>Dice</strong>: one die (a 6 rolls again), or two (doubles roll again).</li>
                             <li><strong>Parkering's account</strong>: taxes and Prøv lykken payments go to whoever lands on Parkering (on by default), or to the bank.</li>
                             <li><strong>Rent in jail</strong>: whether you still get rent while you're in jail, don't, or it goes to the bank.</li>
+                            <li><strong>Building houses and hotels</strong>: only once you own every street in a colour (the default), or on any street you own.</li>
                         </ul>
                     </section>
 

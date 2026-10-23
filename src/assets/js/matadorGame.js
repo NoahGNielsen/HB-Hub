@@ -20,8 +20,9 @@
 // The host can pause the game (the button in the header, game.paused). Nothing can be done in it then but the chat,
 // so the moves, trades, building and keyboard shortcuts are left out until it goes on.
 //
-// The room's settings (game.settings: dice, jailRent and parkingPot) are shown in their dialog, where the host changes
-// them before the game starts. With parkingPot, what's in Parkering's account (game.pot) is shown on its field. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
+// The room's settings (game.settings: dice, jailRent, parkingPot and buildAnyStreet) are shown in their dialog, where
+// the host changes them before the game starts. With buildAnyStreet, the Build button works on a street without the
+// rest of its colour. With parkingPot, what's in Parkering's account (game.pot) is shown on its field. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
 // on (after asking) and Backspace leaves it with the bank, and Enter ends the turn.
 (() => {
     const root = document.querySelector('[data-matador]');
@@ -908,12 +909,17 @@
     const tradeGetCards = find('[data-mt-trade-get-cards]');
     const tradeMessage = find('[data-mt-trade-message]');
 
-    // A property can be traded when nothing is built anywhere in its colour
+    // A property can be traded when nothing is built on the seat's own streets in its colour (someone else's houses
+    // there, with the buildAnyStreet setting, don't count)
     function tradable(seat) {
         return game.fields
             .map((property, number) => ({ property, number }))
-            .filter(({ property, number }) => property?.owner === seat
-                && GROUP_FIELDS[FIELDS[number].group].every((other) => (game.fields[other]?.houses ?? 0) === 0));
+            .filter(({ property, number }) => property?.owner === seat && !builtInGroup(seat, FIELDS[number].group));
+    }
+
+    // Whether anything is built on the seat's own fields in the group (game.php's hbHubMatadorGroupHasBuildings())
+    function builtInGroup(seat, group) {
+        return GROUP_FIELDS[group].some((other) => game.fields[other]?.owner === seat && (game.fields[other]?.houses ?? 0) > 0);
     }
 
     function fieldChoices(container, seat) {
@@ -1213,11 +1219,12 @@
             list.push(paragraph('You can build, sell and mortgage in your own turn.', 'mt-hint'));
         } else if (isMine) {
             const houses = property.houses;
-            const groupBuilt = GROUP_FIELDS[field.group].some((other) => (game.fields[other]?.houses ?? 0) > 0);
+            const groupBuilt = builtInGroup(game.you, field.group);
             if (field.type === 'street') {
-                const ownsAll = GROUP_FIELDS[field.group].every((other) => game.fields[other]?.owner === game.you);
+                const canBuild = game.settings.buildAnyStreet
+                    || GROUP_FIELDS[field.group].every((other) => game.fields[other]?.owner === game.you);
                 if (houses < 5) {
-                    list.push(deedButton(houses === 4 ? 'Build a hotel (' + kr(field.house) + ')' : 'Build a house (' + kr(field.house) + ')', 'build', !ownsAll));
+                    list.push(deedButton(houses === 4 ? 'Build a hotel (' + kr(field.house) + ')' : 'Build a house (' + kr(field.house) + ')', 'build', !canBuild));
                 }
                 if (houses > 0) {
                     list.push(deedButton(houses === 5 ? 'Sell the hotel' : 'Sell a house (+' + kr(field.house / 2) + ')', 'sell'));
@@ -1280,7 +1287,8 @@
     const canChangeSettings = () => game.isHost && game.phase === 'lobby';
     const JAIL_RENT_TEXT = { yes: 'rent is paid in jail', no: 'no rent in jail', bank: 'rent in jail goes to the bank' };
     const settingsText = () => (game.settings.dice === 2 ? '2 dice' : '1 die') + ', ' + JAIL_RENT_TEXT[game.settings.jailRent]
-        + ', ' + (game.settings.parkingPot ? 'taxes and fines go to Parkering' : 'no Parkering account');
+        + ', ' + (game.settings.parkingPot ? 'taxes and fines go to Parkering' : 'no Parkering account')
+        + ', ' + (game.settings.buildAnyStreet ? 'build on any street' : 'build only with the whole group');
 
     // The choices are only filled in from the game when it opens, or while it can't be changed (so a poll doesn't
     // undo what the host has just clicked)
@@ -1288,6 +1296,7 @@
         settingsForm.elements.dice.value = String(game.settings.dice);
         settingsForm.elements.jailRent.value = game.settings.jailRent;
         settingsForm.elements.parkingPot.value = game.settings.parkingPot ? 'on' : 'off';
+        settingsForm.elements.buildAnyStreet.value = game.settings.buildAnyStreet ? 'on' : 'off';
     }
 
     function renderSettings() {
@@ -1317,6 +1326,7 @@
             dice: settingsForm.elements.dice.value,
             jailRent: settingsForm.elements.jailRent.value,
             parkingPot: settingsForm.elements.parkingPot.value,
+            buildAnyStreet: settingsForm.elements.buildAnyStreet.value,
         }, settingsMessage);
         if (data && !data.error) settingsDialog.close();
     });

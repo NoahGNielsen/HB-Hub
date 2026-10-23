@@ -22,6 +22,8 @@
     <li>
         Own every street in a colour to build houses on it in your turn, evenly, and a hotel after 4 houses. The bank has
         <?= HBHUB_MATADOR_BANK_HOUSES ?> houses and <?= HBHUB_MATADOR_BANK_HOTELS ?> hotels. Selling them back gives half the price.
+        The host can let you build on any street you own in the room's settings: then they go up evenly across the
+        streets of the colour you have.
     </li>
     <li>
         Mortgage a property in your turn for half its price (sell the houses in its colour first). No rent is paid for it while it's mortgaged,
@@ -41,7 +43,7 @@
     </li>
     <li>Prøv lykken: draw a card and do what it says. The "benådet" cards are kept until they're used, or traded.</li>
     <li>
-        Trade with the others at any time, also in their turns: properties (with nothing built in their colour), money and "benådet" cards.
+        Trade with the others at any time, also in their turns: properties (with nothing built on your streets in their colour), money and "benådet" cards.
         Whoever gets a mortgaged property pays the <?= HBHUB_MATADOR_INTEREST_PERCENT ?> % interest on it straight away.
         An offer made to you pops up. You can minimize it to look at the board first, but then it runs out if you haven't
         answered it within <?= HBHUB_MATADOR_TRADE_SECONDS ?> seconds.

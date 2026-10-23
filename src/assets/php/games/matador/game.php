@@ -9,12 +9,14 @@
 // The host can change some of this in the room's settings before the game starts (hbHubMatadorSettings()): two dice,
 // where doubles take the place of the 6, whether rent is paid to a player who's in jail, and Parkering's account
 // (parkingPot, on by default): the taxes and what the Prøv lykken cards make you pay go into it instead of to the bank,
-// and whoever lands on Parkering gets all of it.
+// and whoever lands on Parkering gets all of it. And buildAnyStreet (off by default): houses and hotels can be built
+// on any street the player owns, not only once they have the whole group. They still go up evenly, across the streets
+// in the group that are the player's, and the rent for an unbuilt street is still only doubled with the whole group.
 //
 // The state:
 //   phase       'lobby' (waiting for players), 'resume' (a saved game waiting for its players), 'playing' or 'ended'
-//   settings    the room's settings: dice (1 or 2), jailRent ('yes', 'no' or 'bank') and parkingPot (true or false).
-//               Missing in games from before them, so always read through hbHubMatadorSettings()
+//   settings    the room's settings: dice (1 or 2), jailRent ('yes', 'no' or 'bank'), parkingPot and buildAnyStreet
+//               (true or false). Missing in games from before them, so always read through hbHubMatadorSettings()
 //   pot         the money in Parkering's account (with the parkingPot setting). Missing in games from before it
 //   players     in turn order: seat (1-4, the seat in HBHub-MatadorSeats), userId (who plays it, null while it's
 //               empty), originalUserId (who it's kept for when they leave), reservedFor (who the host gave it to),
@@ -50,12 +52,12 @@ const HBHUB_MATADOR_JAIL_RENT_CHOICES = [ // the jailRent setting: what happens 
     'no' => 'No',
     'bank' => 'Yes, but the bank gets the money',
 ];
-const HBHUB_MATADOR_DEFAULT_SETTINGS = ['dice' => 1, 'jailRent' => 'yes', 'parkingPot' => true];
+const HBHUB_MATADOR_DEFAULT_SETTINGS = ['dice' => 1, 'jailRent' => 'yes', 'parkingPot' => true, 'buildAnyStreet' => false];
 
 /**
  * The room's settings, with the defaults for anything a game from before them doesn't have.
  *
- * @return array{dice: int, jailRent: string, parkingPot: bool}
+ * @return array{dice: int, jailRent: string, parkingPot: bool, buildAnyStreet: bool}
  */
 function hbHubMatadorSettings(array $state): array
 {
@@ -63,23 +65,23 @@ function hbHubMatadorSettings(array $state): array
 }
 
 /**
- * The settings as sent from the room's settings (dice: "1" or "2", jailRent: one of the choices, parkingPot: "on" or
- * "off"), or null when they can't be.
+ * The settings as sent from the room's settings (dice: "1" or "2", jailRent: one of the choices, parkingPot and
+ * buildAnyStreet: "on" or "off"), or null when they can't be.
  *
- * @return ?array{dice: int, jailRent: string, parkingPot: bool}
+ * @return ?array{dice: int, jailRent: string, parkingPot: bool, buildAnyStreet: bool}
  */
-function hbHubMatadorCleanSettings(mixed $dice, mixed $jailRent, mixed $parkingPot): ?array
+function hbHubMatadorCleanSettings(mixed $dice, mixed $jailRent, mixed $parkingPot, mixed $buildAnyStreet): ?array
 {
     $dice = is_string($dice) && ctype_digit($dice) && strlen($dice) === 1 ? (int) $dice : null;
     if (!in_array($dice, HBHUB_MATADOR_DICE_CHOICES, true) || !is_string($jailRent) || !isset(HBHUB_MATADOR_JAIL_RENT_CHOICES[$jailRent])
-        || !in_array($parkingPot, ['on', 'off'], true)) {
+        || !in_array($parkingPot, ['on', 'off'], true) || !in_array($buildAnyStreet, ['on', 'off'], true)) {
         return null;
     }
-    return ['dice' => $dice, 'jailRent' => $jailRent, 'parkingPot' => $parkingPot === 'on'];
+    return ['dice' => $dice, 'jailRent' => $jailRent, 'parkingPot' => $parkingPot === 'on', 'buildAnyStreet' => $buildAnyStreet === 'on'];
 }
 
 /**
- * The settings in a few words, for the log: "2 dice, no rent in jail, no Parkering account".
+ * The settings in a few words, for the log: "2 dice, no rent in jail, no Parkering account, build on any street".
  */
 function hbHubMatadorSettingsText(array $settings): string
 {
@@ -89,7 +91,8 @@ function hbHubMatadorSettingsText(array $settings): string
         'bank' => 'rent in jail goes to the bank',
     };
     return ($settings['dice'] === 1 ? '1 die' : $settings['dice'] . ' dice') . ', ' . $rent
-        . ', ' . ($settings['parkingPot'] ? 'taxes and fines go to Parkering' : 'no Parkering account');
+        . ', ' . ($settings['parkingPot'] ? 'taxes and fines go to Parkering' : 'no Parkering account')
+        . ', ' . ($settings['buildAnyStreet'] ? 'build on any street' : 'build only with the whole group');
 }
 
 function hbHubMatadorNewState(string $roomName, int $roomType): array
@@ -281,9 +284,26 @@ function hbHubMatadorOwnsGroup(array $state, int $seat, int|string $group): bool
     return true;
 }
 
-function hbHubMatadorGroupHasBuildings(array $state, int|string $group): bool
+/**
+ * The fields in the group that the seat owns. Only all of them with the whole group, which building needs unless the
+ * room has the buildAnyStreet setting.
+ *
+ * @return list<int>
+ */
+function hbHubMatadorOwnedInGroup(array $state, int $seat, int|string $group): array
 {
-    foreach (hbHubMatadorGroupFields($group) as $field) {
+    return array_values(array_filter(hbHubMatadorGroupFields($group),
+        static fn (int $field): bool => $state['fields'][$field]['owner'] === $seat));
+}
+
+/**
+ * Whether anything is built on the seat's own fields in the group. Only their own: with the buildAnyStreet setting,
+ * someone else's houses in the same group don't stop them mortgaging or trading theirs. (Without it, buildings mean
+ * one player owns the whole group, so it's the same thing.)
+ */
+function hbHubMatadorGroupHasBuildings(array $state, int $seat, int|string $group): bool
+{
+    foreach (hbHubMatadorOwnedInGroup($state, $seat, $group) as $field) {
         if ($state['fields'][$field]['houses'] > 0) {
             return true;
         }
@@ -575,7 +595,7 @@ function hbHubMatadorRaise(array &$state, int $seat, int $amount): void
             if ($property['houses'] > 0 && ($built === null || $property['houses'] > $state['fields'][$built]['houses'])) {
                 $built = $field;
             }
-            $canMortgage = !$property['mortgaged'] && !hbHubMatadorGroupHasBuildings($state, HBHUB_MATADOR_FIELDS[$field]['group']);
+            $canMortgage = !$property['mortgaged'] && !hbHubMatadorGroupHasBuildings($state, $seat, HBHUB_MATADOR_FIELDS[$field]['group']);
             if ($canMortgage && ($mortgage === null || HBHUB_MATADOR_FIELDS[$field]['price'] < HBHUB_MATADOR_FIELDS[$mortgage]['price'])) {
                 $mortgage = $field;
             }
@@ -1085,12 +1105,12 @@ function hbHubMatadorBuild(array &$state, int $seat, mixed $field): ?string
     if (($state['pending']['type'] ?? null) === 'debt' && $state['turn']['seat'] === $seat) {
         return 'Pay what you owe first.';
     }
-    if (!hbHubMatadorOwnsGroup($state, $seat, $info['group'])) {
+    if (!hbHubMatadorSettings($state)['buildAnyStreet'] && !hbHubMatadorOwnsGroup($state, $seat, $info['group'])) {
         return 'You need every street in the group to build on it.';
     }
 
-    $levels = [];
-    foreach (hbHubMatadorGroupFields($info['group']) as $other) {
+    $levels = []; // evenly across the player's streets in the group (all of them, without buildAnyStreet)
+    foreach (hbHubMatadorOwnedInGroup($state, $seat, $info['group']) as $other) {
         if ($state['fields'][$other]['mortgaged']) {
             return 'Pay back the mortgages in the group first.';
         }
@@ -1134,7 +1154,8 @@ function hbHubMatadorSell(array &$state, int $seat, mixed $field): ?string
     if ($houses === 0) {
         return 'There\'s nothing built on ' . $info['name'] . '.';
     }
-    $most = max(array_map(static fn (int $other): int => $state['fields'][$other]['houses'], hbHubMatadorGroupFields($info['group'])));
+    $most = max(array_map(static fn (int $other): int => $state['fields'][$other]['houses'],
+        hbHubMatadorOwnedInGroup($state, $seat, $info['group'])));
     if ($houses < $most) {
         return 'Sell from the other streets in the group first. Houses come down evenly.';
     }
@@ -1160,7 +1181,7 @@ function hbHubMatadorMortgage(array &$state, int $seat, mixed $field): ?string
     if ($state['fields'][$field]['mortgaged']) {
         return hbHubMatadorFieldName($field) . ' is already mortgaged.';
     }
-    if (hbHubMatadorGroupHasBuildings($state, HBHUB_MATADOR_FIELDS[$field]['group'])) {
+    if (hbHubMatadorGroupHasBuildings($state, $seat, HBHUB_MATADOR_FIELDS[$field]['group'])) {
         return 'Sell the houses in the group first.';
     }
 
@@ -1239,7 +1260,7 @@ function hbHubMatadorTradeProblem(array $state, array $trade, bool $accepting = 
             if (($state['fields'][$field]['owner'] ?? null) !== $player['seat']) {
                 return $player['name'] . ' doesn\'t own ' . hbHubMatadorFieldName($field) . ' (anymore).';
             }
-            if (hbHubMatadorGroupHasBuildings($state, HBHUB_MATADOR_FIELDS[$field]['group'])) {
+            if (hbHubMatadorGroupHasBuildings($state, $player['seat'], HBHUB_MATADOR_FIELDS[$field]['group'])) {
                 return 'Houses and hotels in the group of ' . hbHubMatadorFieldName($field) . ' have to be sold before it can be traded.';
             }
             if ($state['fields'][$field]['mortgaged']) {
