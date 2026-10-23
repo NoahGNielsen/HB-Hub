@@ -64,9 +64,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="help" aria-haspopup="dialog"><?= hbHubMinerIcon('question', 'miner-title-icon') ?> <span class="miner-title-label">How to play</span></button>
             </div>
         </div>
-
-        <p class="casino-alert games-notice games-beta">Ore Mining Inc. is in beta, so things might break or change. If something goes wrong, tell us with the Feedback button in the side bar.</p>
-
+        
         <p class="miner-ticker" data-miner-ticker><span class="miner-ticker-text" data-miner-ticker-text>Loading the news from space…</span></p>
 
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
