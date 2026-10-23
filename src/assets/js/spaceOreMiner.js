@@ -101,31 +101,113 @@
 
     const canAfford = (s, cost) => cost <= s.ore * (1 + 1e-9) + 1e-9;
 
-    function buildingRates(s) {
+    // What the upgrades bought add up to, for buildingRates(), clickValue() and autoClicks(): one pass over them here
+    // instead of one in each (miner.php does the same passes inside those three, in the same order, so the numbers come
+    // out exactly the same). Auto Buy works it out once and tries each upgrade on top with ratePartsWith(), instead of
+    // going through every upgrade bought again for each one it weighs up. Shape: {multipliers, crew (by building),
+    // global (before the buildings owned count), click, clickShare, clicks}.
+    function rateParts(s) {
         const effects = skillEffects(s);
-        const multipliers = Object.fromEntries(BUILDING_IDS.map((id) => [id, 1]));
-        const crew = Object.fromEntries(BUILDING_IDS.map((id) => [id, 0]));
         let global = (1 + darkBonus(s) * s.darkEarned) * antiMultiplier(s) * strangeMultiplier(s);
         if (hasDark(s, 'darkEngines')) global *= 1.5;
         if (hasAnti(s, 'annihilation')) global *= 2;
         global *= effects.production * (1 + effects.perSkill * s.skills.length) * (1 + effects.perWarp * s.warps)
             * (1 + effects.perCrunch * s.crunches);
+        const parts = {
+            multipliers: Object.fromEntries(BUILDING_IDS.map((id) => [id, 1])),
+            crew: Object.fromEntries(BUILDING_IDS.map((id) => [id, 0])),
+            global,
+            click: hasDark(s, 'darkPickaxe') ? CONFIG.darkPickaxe : 1,
+            clickShare: 0,
+            clicks: 0,
+        };
+        for (const upgradeId of s.upgrades) addRatePart(s, parts, UPGRADES[upgradeId], effects);
+        return parts;
+    }
+
+    // What a building or synergy upgrade multiplies its building's ore per second by
+    function upgradeMultiplier(s, upgrade, effects) {
+        return upgrade.type === 'building' ? 2 * effects.buildingUpgrade
+            : 1 + upgrade.per * Math.floor(s.buildings[upgrade.source] / upgrade.every);
+    }
+
+    function addRatePart(s, parts, upgrade, effects) {
+        if (upgrade.type === 'building' || upgrade.type === 'synergy') {
+            parts.multipliers[upgrade.building] *= upgradeMultiplier(s, upgrade, effects);
+        } else if (upgrade.type === 'crew') {
+            parts.crew[upgrade.building] += upgrade.value * effects.crew;
+        } else if (upgrade.type === 'global') {
+            parts.global *= 1 + upgrade.value;
+        } else if (upgrade.type === 'click') {
+            parts.click *= upgrade.value;
+        } else if (upgrade.type === 'clickPct') {
+            parts.clickShare += upgrade.value;
+        } else if (upgrade.type === 'auto') {
+            parts.clicks += upgrade.value;
+        }
+    }
+
+    // The parts with one more upgrade bought, as if it were last in s.upgrades (where buying puts it)
+    function ratePartsWith(s, parts, upgradeId) {
+        const more = { ...parts, multipliers: { ...parts.multipliers }, crew: { ...parts.crew } };
+        addRatePart(s, more, UPGRADES[upgradeId], skillEffects(s));
+        return more;
+    }
+
+    // The only part that depends on how many there are of each building is the synergy upgrades' multipliers. This is
+    // which buildings' multipliers each building is counted for, as a Map {source => [building, ...]}; with more of a
+    // building that isn't in it, the same parts still hold.
+    function rateSynergies(s) {
+        const synergies = new Map();
         for (const upgradeId of s.upgrades) {
             const upgrade = UPGRADES[upgradeId];
-            if (upgrade.type === 'building') {
-                multipliers[upgrade.building] *= 2 * effects.buildingUpgrade;
-            } else if (upgrade.type === 'synergy') {
-                multipliers[upgrade.building] *= 1 + upgrade.per * Math.floor(s.buildings[upgrade.source] / upgrade.every);
-            } else if (upgrade.type === 'crew') {
-                crew[upgrade.building] += upgrade.value * effects.crew;
-            } else if (upgrade.type === 'global') {
-                global *= 1 + upgrade.value;
+            if (upgrade.type !== 'synergy') continue;
+            if (!synergies.has(upgrade.source)) synergies.set(upgrade.source, []);
+            synergies.get(upgrade.source).push(upgrade.building);
+        }
+        return synergies;
+    }
+
+    // The parts for s, which has more of a building than the save the parts are from: the multipliers of buildings
+    // (the ones rateSynergies() gives for it) are worked out again, in the same order rateParts() does
+    function ratePartsRecounted(s, parts, buildings) {
+        const effects = skillEffects(s);
+        const multipliers = { ...parts.multipliers };
+        for (const id of buildings) multipliers[id] = 1;
+        for (const upgradeId of s.upgrades) {
+            const upgrade = UPGRADES[upgradeId];
+            if ((upgrade.type === 'building' || upgrade.type === 'synergy') && buildings.includes(upgrade.building)) {
+                multipliers[upgrade.building] *= upgradeMultiplier(s, upgrade, effects);
             }
         }
+        return { ...parts, multipliers };
+    }
+
+    // Calls each(id, ore per second) for every building, in order
+    function eachBuildingRate(s, parts, each) {
+        const effects = skillEffects(s);
         const owned = sum(Object.values(s.buildings));
-        global *= 1 + effects.owned * owned;
-        return Object.fromEntries(BUILDING_IDS.map((id) => [id,
-            (BUILDINGS[id].rate + crew[id] * (owned - s.buildings[id])) * s.buildings[id] * multipliers[id] * global * (effects.buildings[id] ?? 1)]));
+        const global = parts.global * (1 + effects.owned * owned);
+        for (const id of BUILDING_IDS) {
+            each(id, (BUILDINGS[id].rate + parts.crew[id] * (owned - s.buildings[id])) * s.buildings[id] * parts.multipliers[id] * global * (effects.buildings[id] ?? 1));
+        }
+    }
+
+    function buildingRates(s, parts = rateParts(s)) {
+        const rates = {};
+        eachBuildingRate(s, parts, (id, value) => {
+            rates[id] = value;
+        });
+        return rates;
+    }
+
+    // All the buildings' ore per second added up, the same as sum(Object.values(buildingRates())) without the object
+    function production(s, parts) {
+        let total = 0;
+        eachBuildingRate(s, parts, (id, value) => {
+            total += value;
+        });
+        return total;
     }
 
     function buff(s, kind, time) {
@@ -133,34 +215,24 @@
         return running && running.until > time ? running.multiplier : 1;
     }
 
-    function clickValue(s, time) {
+    function clickValue(s, time, parts = rateParts(s)) {
         const effects = skillEffects(s);
-        let value = hasDark(s, 'darkPickaxe') ? CONFIG.darkPickaxe : 1;
-        let share = 0;
-        for (const upgradeId of s.upgrades) {
-            if (UPGRADES[upgradeId].type === 'click') value *= UPGRADES[upgradeId].value;
-            else if (UPGRADES[upgradeId].type === 'clickPct') share += UPGRADES[upgradeId].value;
-        }
-        value *= effects.click;
-        share += effects.clickShare;
-        const production = share > 0 ? sum(Object.values(buildingRates(s))) * buff(s, 'production', time) : 0;
-        return (value + share * production) * buff(s, 'click', time);
+        const value = parts.click * effects.click;
+        const share = parts.clickShare + effects.clickShare;
+        const steady = share > 0 ? production(s, parts) * buff(s, 'production', time) : 0;
+        return (value + share * steady) * buff(s, 'click', time);
     }
 
     // How many times a second the auto upgrades and skills click, together (hbHubMinerAutoClicks())
-    function autoClicks(s) {
-        let clicks = 0;
-        for (const upgradeId of s.upgrades) {
-            if (UPGRADES[upgradeId].type === 'auto') clicks += UPGRADES[upgradeId].value;
-        }
-        return clicks + skillEffects(s).auto;
+    function autoClicks(s, parts = rateParts(s)) {
+        return parts.clicks + skillEffects(s).auto;
     }
 
-    // time Infinity: the steady rate, without comets
-    function rate(s, time) {
-        let total = sum(Object.values(buildingRates(s))) * buff(s, 'production', time);
-        const clicks = autoClicks(s);
-        if (clicks > 0) total += clicks * clickValue(s, time);
+    // time Infinity: the steady rate, without comets. parts: rateParts(s), when it's already been worked out.
+    function rate(s, time, parts = rateParts(s)) {
+        let total = production(s, parts) * buff(s, 'production', time);
+        const clicks = autoClicks(s, parts);
+        if (clicks > 0) total += clicks * clickValue(s, time, parts);
         return total;
     }
 
@@ -226,8 +298,11 @@
         const need = upgrade.need;
         if (need.ore !== undefined && s.runOre < need.ore) return false;
         if (need.comets !== undefined && s.comets < need.comets) return false;
-        if (!(need.upgrades ?? []).every((id) => has(s, id))) return false;
-        return Object.entries(need.owned ?? {}).every(([id, count]) => s.buildings[id] >= count);
+        if (need.upgrades && !need.upgrades.every((id) => has(s, id))) return false;
+        for (const id in need.owned) { // plain loops, as the store asks this of every upgrade a few times a second
+            if (!(s.buildings[id] >= need.owned[id])) return false;
+        }
+        return true;
     }
 
     function darkTotal(universeOre) {
@@ -972,7 +1047,8 @@
     }
 
     function availableUpgrades() {
-        return Object.keys(UPGRADES).filter((id) => !has(state, id) && upgradeUnlocked(state, UPGRADES[id]));
+        const owned = new Set(state.upgrades); // has() would look through the whole list for each upgrade
+        return Object.keys(UPGRADES).filter((id) => !owned.has(id) && upgradeUnlocked(state, UPGRADES[id]));
     }
 
     function renderStore() {
@@ -2000,13 +2076,17 @@
     // The shown building that adds the most ore per second for each ore it costs, of those that can be afforded amount at
     // a time, as {id, cost, gain (how much the ore per second goes up)}, or null. The gain is how much the whole steady
     // rate goes up, so crew, synergy and click-share upgrades count too. The B key and Auto Buy both pick with this.
-    function bestBuilding(amount) {
-        const before = rate(state, Infinity);
+    // parts: rateParts(state), when it's already been worked out; each building is tried on top of it.
+    function bestBuilding(amount, parts = rateParts(state)) {
+        const before = rate(state, Infinity, parts);
+        const synergies = rateSynergies(state);
         let best = null;
         for (const id of visibleBuildings().shown) {
             const cost = buildingCost(state, id, amount);
             if (!canAfford(state, cost)) continue;
-            const gain = rate({ ...state, buildings: { ...state.buildings, [id]: state.buildings[id] + amount } }, Infinity) - before;
+            const after = { ...state, buildings: { ...state.buildings, [id]: state.buildings[id] + amount } };
+            const counted = synergies.get(id);
+            const gain = rate(after, Infinity, counted ? ratePartsRecounted(after, parts, counted) : parts) - before;
             if (!best || gain / cost > best.gain / best.cost) best = { id, cost, gain };
         }
         return best;
@@ -2025,12 +2105,13 @@
 
     // What Auto Buy should do now: {type: 'buy', ...} or {type: 'upgrade', ...} (the action to take), or null to wait
     function autoBuyChoice() {
-        const before = rate(state, Infinity);
-        const building = bestBuilding(1);
+        const parts = rateParts(state);
+        const before = rate(state, Infinity, parts);
+        const building = bestBuilding(1, parts);
         let best = building && building.gain > 0 ? { action: { type: 'buy', building: building.id, amount: 1 }, payback: building.cost / building.gain } : null;
         for (const id of availableUpgrades()) {
             const cost = upgradeCost(state, id);
-            const gain = rate({ ...state, upgrades: [...state.upgrades, id] }, Infinity) - before;
+            const gain = rate(state, Infinity, ratePartsWith(state, parts, id)) - before;
             if (gain <= 0) {
                 if (canAfford(state, cost) && cost <= before * AUTO_BUY_EXTRA_SECONDS) return { type: 'upgrade', id };
                 continue;
