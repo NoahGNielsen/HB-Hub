@@ -1904,7 +1904,7 @@
         ['Alien influencer posts selfie with the asteroid. 3 likes.'],
         ['Asteroid voted "Most Likely to Be Mined" in the galaxy yearbook.'],
         ['Galactic lottery won by a rock. Rock spends it all on some ore.'],
-        ['Miner discovers the keyboard. Space mines the asteroid, and the Hot Key Panel upgrade adds more. See How to play.'],
+        ['Miner discovers the keyboard. Spacebar mines the asteroid, and the Hot Key Panel upgrade adds more. See How to play.'],
     ];
     let lastNews = -1;
 
