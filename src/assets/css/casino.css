@@ -615,10 +615,11 @@ a.casino-game:hover .casino-game-art {
   font-variant-numeric: tabular-nums;
 }
 
+/* Everything's centred in its column, apart from the players' names (below) */
 .casino-table th,
 .casino-table td {
   padding: 12px 14px;
-  text-align: right;
+  text-align: center;
   white-space: nowrap;
 }
 
@@ -627,7 +628,6 @@ a.casino-game:hover .casino-game-art {
 .casino-table td:first-child {
   width: 1%;
   padding-left: 24px;
-  text-align: center;
 }
 
 .casino-table th:last-child,
