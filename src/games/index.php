@@ -117,7 +117,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     <a class="casino-game casino-game-miner" href="/games/ore-mining-inc/">
                         <span class="casino-game-cover">
                             <span class="casino-game-kicker">Clicker game</span>
-                            <span class="casino-game-name">Ore Mining Inc. <span class="casino-game-badge">Beta</span></span>
+                            <span class="casino-game-name">Ore Mining Inc.</span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
                                 <!-- A cratered asteroid with gold ore in it, a pickaxe biting into it and a Golden Comet flying past -->
                                 <path class="casino-game-art-tail" d="M10.5 15.5L2 2L15.5 10.5Z"/>
