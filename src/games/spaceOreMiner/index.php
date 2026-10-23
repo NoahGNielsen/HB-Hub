@@ -398,6 +398,19 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             </div>
         </dialog>
 
+        <!-- Shown the first time the Hot Key Panel upgrade is bought in this browser (showKeysHelp() in spaceOreMiner.js) -->
+        <dialog class="games-dialog" data-miner-keys-dialog aria-labelledby="miner-keys-dialog-title">
+            <h2 id="miner-keys-dialog-title">Hot keys unlocked</h2>
+            <p>
+                <kbd>1</kbd>-<kbd>9</kbd> and <kbd>0</kbd> now buy the buildings in the store, <kbd>B</kbd> the best one you
+                can afford and <kbd>U</kbd> the cheapest upgrade. Hold a key down to keep buying.
+            </p>
+            <p><a href="/docs/games/space-ore-miner#hot-keys" target="_blank" rel="noopener">See all the hot keys</a> (opens in a new tab)</p>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn casino-btn-primary" data-miner-keys-close>Got it</button>
+            </div>
+        </dialog>
+
         <dialog class="games-dialog" data-miner-other-tab aria-labelledby="miner-other-tab-title">
             <h2 id="miner-other-tab-title">Playing somewhere else</h2>
             <p>You opened Space Ore Miner in another tab or on another device, so it's stopped here. Your game carries on there.</p>
