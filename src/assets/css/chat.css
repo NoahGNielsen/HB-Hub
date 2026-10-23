@@ -1208,28 +1208,27 @@ a.chat-message-reply:hover {
   border-top-right-radius: 4px;
 }
 
-/* Only the last in a group shows its time. The others' sits beside the bubble, towards the middle of the chat, and
-   only shows when the message is pointed at (or reached with the arrow keys). It's faded out rather than hidden, so
-   screen readers still read it, and taken out of the flow, so showing it doesn't move anything. */
+/* Only the last in a group shows its time. The others' sits beside the bottom of the bubble, towards the middle of the
+   chat, and only shows when the message is pointed at (or reached with the arrow keys). It's faded out rather than
+   hidden, so screen readers still read it, and taken out of the flow, so showing it doesn't move anything. */
 .chat-message {
   position: relative;
 }
 
 .chat-message.has-next > .chat-message-meta {
   position: absolute;
-  top: 50%;
+  bottom: 0;
   left: 100%;
   margin: 0 8px;
-  translate: 0 -50%;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
 }
 
-/* Placed in the bubble's grid row, so it's centered on the bubble and not on the sender's name or reply quote above
-   it. The bubble is the 1st row, or the 2nd or 3rd after those. Only the first in a group shows the name - the rest
-   still have it, hidden (above). */
+/* Placed in the bubble's grid row, so it lines up with the bottom of the bubble and not of the sender's name or reply
+   quote above it. The bubble is the 1st row, or the 2nd or 3rd after those. Only the first in a group shows the name -
+   the rest still have it, hidden (above). */
 .chat-message.has-next > .chat-message-meta {
   grid-row: 1;
   grid-column: 1;
