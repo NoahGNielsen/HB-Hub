@@ -2,7 +2,8 @@
 // The chess game's JSON, for chessGame.js (the page around it is game.php). Only for the user's own game:
 // - GET ?room=id&v=version is the game as the user sees it (hbHubChessView() in game.php), with the game's version
 //   (hbHubChessVersion() in room.php). When the version hasn't changed it's just {"v": version, "same": true}.
-//   The game asks every second.
+//   The game asks every second. About every 15 seconds navUpdates.js sends the nav bar's request along (?nav=), and
+//   then either answer has "nav" too (hbHubNavRide() in assets/php/navUpdates.php).
 // - POST room=id&action=... does something in the game, and answers with the whole game the same way, plus "error"
 //   (a message to show) when it couldn't be done. The actions:
 //     move (from, to: squares like "e2", promotion: q, r, b or n, ply: how many moves the game had when it was made, so
@@ -18,6 +19,7 @@
 //   @mentions in "parts" (hbHubMentionParts()), and who can be mentioned in "chatMentions" (for mentions.js).
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navUpdates.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/chess/room.php';
 hbHubGamesJson($hbHubUser); // blocked in settings, or not open yet
@@ -113,8 +115,9 @@ if ($played === null || !empty($played[0]['isDeleted']) || !hbHubChessSeated($pl
 $error ??= $chatError;
 
 $version = hbHubChessVersion($room, $seats, hbHubChessLastChatId($db, $roomId));
+$nav = hbHubNavRide($db, $hbHubUser); // the nav bar's numbers, when navUpdates.js sent its request along (?nav=)
 if (!$isPost && ($input['v'] ?? null) === $version) {
-    echo json_encode(['v' => $version, 'same' => true]);
+    echo json_encode(['v' => $version, 'same' => true] + ($nav !== null ? ['nav' => $nav] : []), JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 
@@ -159,5 +162,8 @@ $response = [
 ];
 if (is_string($error)) {
     $response['error'] = $error;
+}
+if ($nav !== null) {
+    $response['nav'] = $nav;
 }
 echo json_encode($response, JSON_INVALID_UTF8_SUBSTITUTE);

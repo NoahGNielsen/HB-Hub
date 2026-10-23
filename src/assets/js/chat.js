@@ -3283,7 +3283,11 @@ chatPart(() => {
 // The open chat's background is kept up to date too, so a new one shows up without a reload, and so are the reactions
 // on the messages already shown (?from= the oldest one), which change on old messages as well.
 // Message requests are swapped in the same way, and the requests button shows up when there are any.
+// Both come with a version (chatListV, requestsV), sent back as ?listV= and ?requestsV=: while it's still the one shown,
+// the server leaves the HTML out, as most polls nothing in them changed.
 // The number of unread chats is passed on to the red number on Chat in the side bar.
+// The nav bar's request (navUpdates.js) comes along about every 15 seconds (nav:ride, ?nav=), so the chat page doesn't
+// send that one on its own as well. Its answer is "nav", passed on as nav:update.
 // Polling keeps the user's last seen time up to date too, like any other request (session.php).
 // While the page is hidden (another tab, minimised) it doesn't poll at all: each poll is one of the few PHP requests the
 // hosting runs at once, for the whole site. Coming back to the page polls straight away.
@@ -3300,8 +3304,8 @@ chatPart((signal) => {
     if (!list) return;
 
     const keepUnread = new URLSearchParams(location.search).get('unread') === '1';
-    let shownChatList = null; // the chat list HTML last swapped in, so it's only swapped again when something changed
-    let shownRequests = null; // the same for the message requests
+    let shownChatListV = null; // the version of the chat list last swapped in, so it's only sent again when something changed
+    let shownRequestsV = null; // the same for the message requests
 
     function messageItems() {
         return messages.querySelectorAll('[data-message-id]');
@@ -3333,8 +3337,9 @@ chatPart((signal) => {
         if (items.length > 0 && !items.some((item) => item.tabIndex === 0)) items.at(-1).tabIndex = 0;
     }
 
-    function updateChatList(html) {
-        if (html === shownChatList) return;
+    // html is undefined when it's still the one shown
+    function updateChatList(html, version) {
+        if (html === undefined || version === shownChatListV) return;
         // Not while the chat menu or a popup may be about a chat in the list - a later poll swaps it instead
         if (!chatMenu.hidden || document.querySelector('dialog[open]:not(.chat-viewer)')) return;
 
@@ -3343,18 +3348,18 @@ chatPart((signal) => {
             ? document.activeElement.closest('[data-chat-id]')?.dataset.chatId ?? null
             : null;
         list.innerHTML = html;
-        shownChatList = html;
+        shownChatListV = version;
         if (focusedChatId !== null) list.querySelector(`[data-chat-id="${focusedChatId}"] a`)?.focus();
         list.dispatchEvent(new Event('chat-list-update')); // the search filter runs again on the new list
     }
 
-    function updateRequests(html, count) {
-        if (html === shownRequests) return;
+    function updateRequests(html, version, count) {
+        if (html === undefined || version === shownRequestsV) return;
         // Not while the popup is open, so Accept and Decline don't move under the pointer - a later poll swaps it instead
         if (requestsDialog.open) return;
 
         requestsList.innerHTML = html;
-        shownRequests = html;
+        shownRequestsV = version;
         requestsButton.hidden = count === 0;
         requestsButton.setAttribute('aria-label', `Message requests (${count})`);
         requestsCount.textContent = count > 9 ? '9+' : String(count);
@@ -3381,11 +3386,17 @@ chatPart((signal) => {
             // too: one that's only showing behind or beside another window still counts as visible.
             if (document.visibilityState === 'visible' && document.hasFocus()) params.set('looking', '1');
         }
+        if (shownChatListV !== null) params.set('listV', shownChatListV);
+        if (shownRequestsV !== null) params.set('requestsV', shownRequestsV);
+        const ride = { params: null };
+        document.dispatchEvent(new CustomEvent('nav:ride', { detail: ride })); // navUpdates.js
+        if (ride.params !== null) params.set('nav', ride.params);
 
         try {
             const response = await fetch('/chat/?' + params, { headers: { Accept: 'application/json' } });
             if (!response.ok) throw new Error(response.statusText);
             const data = await response.json();
+            if (data.nav) document.dispatchEvent(new CustomEvent('nav:update', { detail: data.nav }));
             if (signal.aborted) return; // another chat was opened while it was on its way, and polls for itself
 
             if (messages && !data.openChat) {
@@ -3402,8 +3413,8 @@ chatPart((signal) => {
                 addMessages(data.messages);
                 chatShowBackground(messages, data.background);
             }
-            updateChatList(data.chatList);
-            updateRequests(data.requests, data.requestCount);
+            updateChatList(data.chatList, data.chatListV);
+            updateRequests(data.requests, data.requestsV, data.requestCount);
             document.dispatchEvent(new CustomEvent('chat:unread', { detail: { unreadChats: data.unreadChats } })); // chatUnread.js
         } catch {
             // Offline for a moment, or logged out (the login page isn't JSON) - try again next time

@@ -25,6 +25,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
     'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it\'s still there when you refresh or come back to the chat. Kept in session storage, so it\'s gone when you close the tab.',
     'hbHubNotifiedMessageId' => 'The last message you got a browser notification or sound for, so you don\'t get it twice.',
+    'hbHubNavPolledAt' => 'When one of your HB Hub tabs last checked for new messages for browser notifications or the sound (just a time), so the tabs you aren\'t looking at don\'t all check at once.',
     'hbHubChessSound, hbHubMatadorSound, hbHubUnoSound, hbHubMinerSound' => 'Whether you turned the game sounds on or off.',
     'hbHubMinerLateKeys' => 'Whether you switched Ore Mining Inc.\'s 1-9 and 0 hot keys to your last ten buildings (with the Long-Range Hot Keys upgrade).',
     'hbHubMinerAutoBuy' => 'Whether you switched Ore Mining Inc.\'s Auto Buy on or off (with the Auto Buy upgrade).',

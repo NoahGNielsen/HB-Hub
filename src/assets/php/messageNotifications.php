@@ -31,10 +31,14 @@ function hbHubMessageNotifications(PDO $db, int $userId, array $userSettings, mi
 
     $mutedChatIds = hbHubMutedChatIds($userSettings); // muted from the chat menu, so no notifications from them
 
-    $statement = $db->prepare('SELECT COALESCE(MAX(m.messageId), 0) FROM `HBHub-Messages` m
-        JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = ?
-        JOIN `HBHub-Chats` c ON c.chatId = m.chatId AND c.chatStatus = ?');
-    $statement->execute([$userId, HBHUB_NOTIFY_CHAT_ACTIVE]);
+    // Each chat's newest message on its own, which the chatId index has at its end, so it's one look per chat instead
+    // of reading through every message in all of them (this is asked every 15 seconds while any page is open)
+    $statement = $db->prepare('SELECT COALESCE(MAX(chatLatest), 0) FROM (
+            SELECT (SELECT MAX(m.messageId) FROM `HBHub-Messages` m WHERE m.chatId = cm.chatId) AS chatLatest
+            FROM `HBHub-ChatMembers` cm JOIN `HBHub-Chats` c ON c.chatId = cm.chatId AND c.chatStatus = ?
+            WHERE cm.userId = ?
+        ) AS latestPerChat');
+    $statement->execute([HBHUB_NOTIFY_CHAT_ACTIVE, $userId]);
     $latest = (int) $statement->fetchColumn();
 
     $messages = [];

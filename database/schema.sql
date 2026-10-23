@@ -1117,7 +1117,6 @@ ALTER TABLE `HBHub-MessageReactions`
 --
 ALTER TABLE `HBHub-Messages`
   ADD PRIMARY KEY (`messageId`),
-  ADD UNIQUE KEY `messageId` (`messageId`),
   ADD KEY `userId` (`userId`),
   ADD KEY `chatId` (`chatId`),
   ADD KEY `messageTimestamp` (`messageSentTimestamp`,`chatId`),

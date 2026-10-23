@@ -6,6 +6,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatAttachments.php'; // f
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatFormat.php'; // **bold**, lists, code blocks and links in messages
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatUnread.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navUpdates.php'; // the nav bar's request, which polling takes along
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be sent
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
@@ -1942,6 +1943,11 @@ if ($isOlder) {
 // The answer to chat.js polling: the open chat's new messages, the whole chat list and the message requests, all as HTML.
 // openChat is false when the open chat is gone (left, deleted or removed from it), so chat.js can leave it.
 // background is the open chat's background, so a new one shows up for everyone in it.
+// The chat list and the requests come with a version (chatListV, requestsV: a hash of the HTML), and chat.js sends back
+// the ones it shows (?listV=, ?requestsV=). Most polls nothing in them changed, so then the HTML is left out, and the
+// same few KB aren't sent every 2 seconds to every open chat.
+// About every 15 seconds navUpdates.js sends the nav bar's request along too (?nav=), answered in "nav"
+// (hbHubNavRide() in assets/php/navUpdates.php).
 if ($isPoll) {
     ob_start();
     foreach ($pollMessages as $message) {
@@ -1967,18 +1973,30 @@ if ($isPoll) {
         $pollReactionsHtml[$messageId] = chatReactionsHtml($openChat, $userId, $reactions);
     }
 
-    header('Content-Type: application/json; charset=utf-8');
-    header('Cache-Control: no-store');
-    echo json_encode([
+    $pollAnswer = [
         'openChat' => $openChat !== null,
         'background' => $openChat['chatBackground'] ?? null,
         'messages' => $pollMessagesHtml,
         'reactions' => (object) $pollReactionsHtml, // an object even when empty
-        'chatList' => $pollChatListHtml,
-        'requests' => $pollRequestsHtml,
+        'chatListV' => hash('xxh64', $pollChatListHtml),
+        'requestsV' => hash('xxh64', $pollRequestsHtml),
         'requestCount' => count($chatRequests),
         'unreadChats' => hbHubUnreadChatCount($db, $userId, $userSettings), // the number on Chat in the side bar
-    ], JSON_INVALID_UTF8_SUBSTITUTE);
+    ];
+    if (($_GET['listV'] ?? null) !== $pollAnswer['chatListV']) {
+        $pollAnswer['chatList'] = $pollChatListHtml;
+    }
+    if (($_GET['requestsV'] ?? null) !== $pollAnswer['requestsV']) {
+        $pollAnswer['requests'] = $pollRequestsHtml;
+    }
+    $pollNav = hbHubNavRide($db, $hbHubUser);
+    if ($pollNav !== null) {
+        $pollAnswer['nav'] = $pollNav;
+    }
+
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo json_encode($pollAnswer, JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 ?>
