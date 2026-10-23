@@ -25,7 +25,7 @@ Last updated 22/10-26
   `19 October 2026`. When it's unclear whether a page needs a change, update it anyway or tell the owner.
 - **Automatically make a commit after making changes**, with an appropriate commit message. Existing history uses
   short, lowercase, plain-English messages (`added leaderboard`, `QOL update to matador`).
-- `CLAUDE.md` and `database/migrations/*` are in `.gitignore`, so they are never part of a commit.
+- `database/migrations/*` is in `.gitignore`, so migrations are never part of a commit.
 - **Simulations and other long runs log live.** Anything that runs for more than a minute or two (balance sims,
   headless-browser scripts, batch jobs) writes its output line by line to a file as it goes, never only at the end, so
   a run that hangs or gets killed still leaves its results and can be checked while it runs. See "Long runs" below.
@@ -110,7 +110,8 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
   (`SELECT ... FOR UPDATE`). Moves carry an id so a double click only counts once.
 - **Polling**: only while the page is visible. The nav bar's numbers, casino chips and browser notifications share one
   request every 15 s (`assets/js/navUpdates.js`, the `nav:poll`/`nav:update` events) - add new counters there instead
-  of a new poll.
+  of a new poll. A page with its own poll takes that request along (`nav:ride` event in JS, `hbHubNavRide()` in
+  `assets/php/navUpdates.php` adding `"nav"` to the answer), so a new poller should do the same.
 - **Pictures served by PHP**: the hosting only runs ~10 PHP requests at once, so lists of them use
   `<img data-queued-picture="url">` (+ a `<noscript>` copy) and `assets/js/pictureQueue.js`.
 - **Asset cache busting**: stylesheets/scripts are linked with `?v=<?= filemtime(...) ?>` (static assets are cached
