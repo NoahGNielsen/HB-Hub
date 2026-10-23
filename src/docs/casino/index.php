@@ -47,7 +47,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 </thead>
                                 <tbody>
                                     <tr><td><a href="/docs/casino/blackjack">Blackjack</a></td><td>Get closer to 21 than the dealer without going over.</td><td>Solo, or up to 5 at a table</td></tr>
-                                    <tr><td><a href="/docs/casino/baccarat">Baccarat</a></td><td>Bet on which hand ends closest to 9.</td><td>Up to 6 at a table</td></tr>
+                                    <tr><td><a href="/docs/casino/baccarat">Baccarat</a></td><td>Bet on which hand ends closest to 9.</td><td>Solo, or up to 6 at a table</td></tr>
                                     <tr><td><a href="/docs/casino/roulette">Roulette</a></td><td>Bet on where the ball lands.</td><td>On your own</td></tr>
                                 </tbody>
                             </table>
@@ -66,7 +66,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td>Public</td><td>Anyone. It's listed in the game's lobby.</td></tr>
                                     <tr><td>Code</td><td>Anyone with its 6-character code. Type it under <strong>Join a table</strong> on the game's page.</td></tr>
                                     <tr><td>Invite-only</td><td>Only the people the host invites. They get a <a href="/docs/notifications">notification</a>, and it shows under <strong>Your invites</strong> on the game's page.</td></tr>
-                                    <tr><td>Solo (Blackjack)</td><td>Just you and the dealer.</td></tr>
+                                    <tr><td>Solo</td><td>Just you and the dealer.</td></tr>
                                 </tbody>
                             </table>
                         </div>

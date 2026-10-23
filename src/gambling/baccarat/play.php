@@ -93,7 +93,7 @@ $response = [
             'code' => $room['roomCode'],
             'type' => HBHUB_BACCARAT_ROOM_TYPES[$room['roomType']] ?? 'public',
             'minBet' => $room['roomMinBet'],
-            'seats' => HBHUB_BACCARAT_SEATS,
+            'seats' => hbHubBaccaratMaxSeats($room['roomType']),
             'players' => count($seats),
         ],
     ] + hbHubBaccaratTableView($room['state'], $seats, $people, $userId, $room['roomHostUserId'], hbHubBaccaratNow()),

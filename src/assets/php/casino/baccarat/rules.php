@@ -29,9 +29,9 @@
         new shoe before the next hand, and the table tells everyone.
     </li>
     <li>
-        For <?= HBHUB_BACCARAT_MIN_PLAYERS ?>-<?= HBHUB_BACCARAT_SEATS ?> players: bets open once at least
-        <?= HBHUB_BACCARAT_MIN_PLAYERS ?> are at the table. Betting closes <?= HBHUB_BACCARAT_BETTING_MS / 1000 ?> seconds
+        Play solo against the dealer, or with up to <?= HBHUB_BACCARAT_SEATS ?> players at a table, everyone betting on
+        the same hands against the house, not each other. Betting closes <?= HBHUB_BACCARAT_BETTING_MS / 1000 ?> seconds
         after the first bet, or as soon as everyone has bet.
     </li>
-    <li>Joining during a hand, you're in from the next one. Sit out to skip hands without leaving.</li>
+    <li>Joining during a hand, you're in from the next one. At a table for more players, sit out to skip hands without leaving.</li>
 </ul>

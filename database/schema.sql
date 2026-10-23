@@ -74,7 +74,7 @@ CREATE TABLE `HBHub-BaccaratPlayerRounds` (
   `playerRoundId` bigint UNSIGNED NOT NULL,
   `roundId` bigint UNSIGNED NOT NULL,
   `roomId` int UNSIGNED DEFAULT NULL COMMENT 'NULL once the room is gone',
-  `roomType` tinyint UNSIGNED NOT NULL COMMENT 'The room''s type then: 1 Public, 2 Invite-only, 3 Code',
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT 'The room''s type then: 1 Public, 2 Invite-only, 3 Code, 4 Solo',
   `userId` int UNSIGNED NOT NULL,
   `seatNumber` tinyint UNSIGNED NOT NULL,
   `playersInRound` tinyint UNSIGNED NOT NULL COMMENT 'How many players bet on the hand, this one included',
@@ -99,7 +99,7 @@ CREATE TABLE `HBHub-BaccaratPlayerRounds` (
 CREATE TABLE `HBHub-BaccaratRooms` (
   `roomId` int UNSIGNED NOT NULL,
   `roomName` varchar(48) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `roomType` tinyint UNSIGNED NOT NULL COMMENT '1 Public (listed in the lobby)\r\n2 Invite-only (only invited users can join, also with the code)\r\n3 Code (anyone with the code can join)',
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT '1 Public (listed in the lobby)\r\n2 Invite-only (only invited users can join, also with the code)\r\n3 Code (anyone with the code can join)\r\n4 Solo (just the one who made it)',
   `roomCode` char(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Join code: capital letters and digits, without 0 O 1 I L',
   `roomMinBet` int UNSIGNED NOT NULL COMMENT 'The least a player''s bets on a hand can be together',
   `roomHostUserId` int UNSIGNED DEFAULT NULL,

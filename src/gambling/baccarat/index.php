@@ -1,9 +1,8 @@
 <?php
-// The Baccarat lobby: join a table by its code, open a table, the user's invites and the public tables (both kept up
-// to date by baccaratLobby.js), and the rules. A user sits at one Baccarat table at a time. There's no solo play, as
-// Baccarat is for 2-6 players.
-// The forms post here (action): joinCode (code), join (room - from the lists), create (name, type, minBet) and leave.
-// Joining or opening a table goes straight to it.
+// The Baccarat lobby: join a table by its code, play solo, open a table, the user's invites and the public tables
+// (both kept up to date by baccaratLobby.js), and the rules. A user sits at one Baccarat table at a time.
+// The forms post here (action): joinCode (code), join (room - from the lists), solo, create (name, type, minBet) and
+// leave. Joining or opening a table goes straight to it.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
@@ -46,12 +45,19 @@ $lobbyErrors = [];
 $lobbyValues = ['name' => '', 'type' => 'public', 'minBet' => HBHUB_BACCARAT_MIN_BETS[0], 'code' => ''];
 $action = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? null) : null; // only from the site itself (session.php)
 
-if ($action === 'create') {
+if (in_array($action, ['solo', 'create'], true)) {
     $seat = hbHubBaccaratUserSeat($db, $userId);
     if ($seat !== null) {
         lobbyGoToTable($seat['roomId']);
     }
+}
 
+if ($action === 'solo') {
+    $lobbyErrors['solo'] = lobbyCreate($db, $hbHubUser, hbHubBaccaratRoomName(null, $hbHubUser['userName']),
+        HBHUB_BACCARAT_ROOM_SOLO, HBHUB_BACCARAT_SOLO_MIN_BET);
+}
+
+if ($action === 'create') {
     $lobbyValues['name'] = is_string($_POST['name'] ?? null) ? $_POST['name'] : '';
     $lobbyValues['type'] = $_POST['type'] ?? null;
     $lobbyValues['minBet'] = (int) ($_POST['minBet'] ?? 0);
@@ -132,7 +138,7 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
             </div>
             <div class="lobby-hero-text">
                 <h1>Baccarat</h1>
-                <p class="lobby-tagline">Bet on the Player or the Banker, whichever ends closest to 9. Everyone at the table bets on the same hands.</p>
+                <p class="lobby-tagline">Bet on the Player or the Banker, whichever ends closest to 9. Play on your own, or with friends betting on the same hands.</p>
                 <ul class="lobby-facts">
                     <li><?= HBHUB_BACCARAT_MIN_PLAYERS ?>-<?= HBHUB_BACCARAT_SEATS ?> players</li>
                     <li>Min bet <?= number_format(min(HBHUB_BACCARAT_MIN_BETS)) ?>-<?= number_format(max(HBHUB_BACCARAT_MIN_BETS)) ?> chips</li>
@@ -191,9 +197,14 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
                             <?php endif; ?>
                         </form>
 
-                        <p class="lobby-hint lobby-form-note">
-                            Or join one of the public tables. If there are none, open a table and bring your friends.
-                        </p>
+                        <p class="lobby-or">or</p>
+                        <form method="post" class="lobby-form">
+                            <input type="hidden" name="action" value="solo">
+                            <button type="submit" class="casino-btn lobby-submit">Play solo against the dealer</button>
+                            <?php if (isset($lobbyErrors['solo'])): ?>
+                                <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['solo']) ?></p>
+                            <?php endif; ?>
+                        </form>
                     </fieldset>
                 </section>
 

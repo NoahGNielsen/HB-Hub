@@ -1,8 +1,8 @@
 <?php
 // A Baccarat table (?room=id). This is just the page around it: baccaratTable.js draws the table and plays it through
 // /gambling/baccarat/play. Only for the table the user sits at - anyone else is sent to the Baccarat page, where tables
-// are joined. There's also the table's join code, sitting out, and for the host, inviting people (searched for with
-// the chat's /chat/users).
+// are joined. At a table for more players there's also its join code, sitting out, and for the host, inviting people
+// (searched for with the chat's /chat/users).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
@@ -21,6 +21,7 @@ if ($room === null) {
 
 $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
 $tableChips = [10, 50, 100, 500, 1000]; // the chips to make up the bets with
+$tableIsSolo = $room['roomType'] === HBHUB_BACCARAT_ROOM_SOLO;
 $tableCommission = (HBHUB_BACCARAT_BANKER_COMMISSION / 10) . '%'; // taken off a winning Banker bet's win, like "2.7%"
 $tableSpots = [ // the betting board, in the order it's laid out: [name, what it pays]
     'playerPair' => ['Player pair', HBHUB_BACCARAT_PAYS['playerPair'] . ':1'],
@@ -48,20 +49,24 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, what it
                 <h1 class="bac-title"><?= htmlspecialchars($room['roomName']) ?></h1>
                 <p class="bac-meta">
                     <?= HBHUB_BACCARAT_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Table' ?>
-                    &middot; <span data-bac-players>1</span>/<?= HBHUB_BACCARAT_SEATS ?> players
+                    <?php if (!$tableIsSolo): ?>
+                        &middot; <span data-bac-players>1</span>/<?= HBHUB_BACCARAT_SEATS ?> players
+                    <?php endif; ?>
                     &middot; Minimum bet <?= number_format($room['roomMinBet']) ?>
                     &middot; Player 1:1 &middot; Banker 1:1 with <?= $tableCommission ?> cut &middot; Tie 8:1 &middot; Pairs 11:1
                 </p>
             </div>
             <div class="bac-header-actions">
-                <button type="button" class="bac-code" data-bac-code="<?= htmlspecialchars($room['roomCode']) ?>"
-                        aria-label="Join code <?= htmlspecialchars(implode(' ', str_split($room['roomCode']))) ?>, copy it">
-                    <span class="bac-code-label">Code</span>
-                    <strong class="bac-code-value"><?= htmlspecialchars($room['roomCode']) ?></strong>
-                    <span class="bac-code-copied" data-bac-code-copied aria-live="polite"></span>
-                </button>
-                <button type="button" class="casino-btn" data-bac-invite hidden>Invite</button>
-                <button type="button" class="casino-btn" data-bac-sit-out hidden>Sit out</button>
+                <?php if (!$tableIsSolo): ?>
+                    <button type="button" class="bac-code" data-bac-code="<?= htmlspecialchars($room['roomCode']) ?>"
+                            aria-label="Join code <?= htmlspecialchars(implode(' ', str_split($room['roomCode']))) ?>, copy it">
+                        <span class="bac-code-label">Code</span>
+                        <strong class="bac-code-value"><?= htmlspecialchars($room['roomCode']) ?></strong>
+                        <span class="bac-code-copied" data-bac-code-copied aria-live="polite"></span>
+                    </button>
+                    <button type="button" class="casino-btn" data-bac-invite hidden>Invite</button>
+                    <button type="button" class="casino-btn" data-bac-sit-out hidden>Sit out</button>
+                <?php endif; ?>
                 <button type="button" class="casino-btn" data-bac-leave>Leave table</button>
             </div>
         </div>
@@ -153,22 +158,24 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, what it
             <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/baccarat/rules.php'; ?>
         </details>
 
-        <dialog class="bac-dialog bac-invite" aria-labelledby="bac-invite-title" data-bac-invite-dialog>
-            <h2 id="bac-invite-title">Invite people</h2>
-            <p>
-                <?php if ($room['roomType'] === HBHUB_BACCARAT_ROOM_INVITE): ?>
-                    Only people you invite can join this table.
-                <?php endif; ?>
-                They get a notification, and join from the Baccarat page.
-            </p>
-            <label class="casino-label" for="bac-invite-search">Find people</label>
-            <input type="search" id="bac-invite-search" class="casino-input" placeholder="Search by name" autocomplete="off" data-bac-invite-search>
-            <ul class="bac-invite-list" data-bac-invite-list></ul>
-            <p class="bac-hint" role="status" data-bac-invite-status></p>
-            <div class="bac-panel-actions">
-                <button type="button" class="casino-btn" data-bac-invite-close>Done</button>
-            </div>
-        </dialog>
+        <?php if (!$tableIsSolo): ?>
+            <dialog class="bac-dialog bac-invite" aria-labelledby="bac-invite-title" data-bac-invite-dialog>
+                <h2 id="bac-invite-title">Invite people</h2>
+                <p>
+                    <?php if ($room['roomType'] === HBHUB_BACCARAT_ROOM_INVITE): ?>
+                        Only people you invite can join this table.
+                    <?php endif; ?>
+                    They get a notification, and join from the Baccarat page.
+                </p>
+                <label class="casino-label" for="bac-invite-search">Find people</label>
+                <input type="search" id="bac-invite-search" class="casino-input" placeholder="Search by name" autocomplete="off" data-bac-invite-search>
+                <ul class="bac-invite-list" data-bac-invite-list></ul>
+                <p class="bac-hint" role="status" data-bac-invite-status></p>
+                <div class="bac-panel-actions">
+                    <button type="button" class="casino-btn" data-bac-invite-close>Done</button>
+                </div>
+            </dialog>
+        <?php endif; ?>
 
         <dialog class="bac-dialog" aria-labelledby="bac-leave-title" data-bac-leave-dialog>
             <h2 id="bac-leave-title">Leave the table?</h2>

@@ -38,7 +38,7 @@ const HBHUB_BACCARAT_PAYS = ['player' => 1, 'banker' => 1, 'tie' => 8, 'playerPa
 // What's taken off a winning Banker bet's win, in thousandths (2.7%). The Banker wins a little more often than the
 // Player (45.9% to 44.6% of hands), so at a full 1:1 always betting Banker would win chips. 2.7% evens that out.
 const HBHUB_BACCARAT_BANKER_COMMISSION = 27;
-const HBHUB_BACCARAT_MIN_PLAYERS = 1; // at the table (and not sitting out or away) before bets can be placed
+const HBHUB_BACCARAT_MIN_PLAYERS = 1; // at the table (and not sitting out or away) before bets can be placed. 1 for solo tables
 const HBHUB_BACCARAT_BET_STEP = 10;
 const HBHUB_BACCARAT_BET_MAX_DIGITS = 9;
 const HBHUB_BACCARAT_BETTING_MS = 15000; // from the first bet, unless everyone has bet before

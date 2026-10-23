@@ -8,7 +8,7 @@
 // Asks what's new every second while the page is in view, and every 4 seconds while it isn't (so the table doesn't count
 // the player as away, which takes 10 seconds without hearing from them), and straight away when the next card is due.
 // The whole table only comes back when its version changed: something happened, or someone joined, left, went away or
-// came back.
+// came back. A solo table has no join code, inviting or sitting out, so those aren't on the page.
 (() => {
     const root = document.querySelector('[data-baccarat]');
     if (!root) return;
@@ -192,11 +192,13 @@
     }
 
     function renderHeader() {
-        playersText.textContent = String(table.room.players);
-        inviteButton.hidden = !table.you?.isHost;
-        sitOutButton.hidden = !table.you;
-        sitOutButton.textContent = table.you?.sittingOut ? 'Sit back in' : 'Sit out';
-        sitOutButton.disabled = isBusy;
+        if (playersText) playersText.textContent = String(table.room.players);
+        if (inviteButton) inviteButton.hidden = !table.you?.isHost;
+        if (sitOutButton) {
+            sitOutButton.hidden = !table.you;
+            sitOutButton.textContent = table.you?.sittingOut ? 'Sit back in' : 'Sit out';
+            sitOutButton.disabled = isBusy;
+        }
     }
 
     // Told once the shoe has been shuffled, before anyone bets on the hand from the new one, and while that's dealt
@@ -394,7 +396,7 @@
         tag.append(avatar, name);
 
         const badges = [];
-        if (seat.isHost) badges.push(['Host', 'is-host']);
+        if (seat.isHost && table.room.type !== 'solo') badges.push(['Host', 'is-host']);
         if (seat.left) badges.push(['Left', '']);
         else if (seat.away) badges.push(['Away', '']);
         else if (seat.sittingOut) badges.push(['Sitting out', '']);
@@ -556,10 +558,10 @@
     });
     takeBackButton.addEventListener('click', () => act('clearBet'));
 
-    sitOutButton.addEventListener('click', () => act('sitOut', { out: table?.you?.sittingOut ? '0' : '1' }));
+    sitOutButton?.addEventListener('click', () => act('sitOut', { out: table?.you?.sittingOut ? '0' : '1' }));
 
     // The join code: a click copies it, to send to others
-    codeButton.addEventListener('click', async () => {
+    codeButton?.addEventListener('click', async () => {
         try {
             await navigator.clipboard.writeText(codeButton.dataset.bacCode);
             codeCopied.textContent = 'Copied';
@@ -570,7 +572,7 @@
     });
 
     // Inviting (only the host sees the button): find people with the chat's user search
-    {
+    if (inviteDialog) {
         const search = inviteDialog.querySelector('[data-bac-invite-search]');
         const list = inviteDialog.querySelector('[data-bac-invite-list]');
         const status = inviteDialog.querySelector('[data-bac-invite-status]');
