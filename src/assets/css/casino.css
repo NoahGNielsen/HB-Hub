@@ -1458,6 +1458,7 @@ a.casino-home-game:hover .casino-home-game-art {
   border: 2px solid var(--art-side);
   border-radius: 10px;
   background: color-mix(in srgb, var(--art-side) 16%, transparent);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.25); /* shades the spot's felt darker than the table's green around it */
   color: color-mix(in srgb, var(--art-side) 55%, #fff);
   font-size: 0.85rem;
   font-weight: 800;
