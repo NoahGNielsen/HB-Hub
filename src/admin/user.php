@@ -1198,7 +1198,7 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                 <?php if ($adminAvatarSrc !== null): ?>
                                     <div class="settings-field">
                                         <label class="settings-checkbox">
-                                            <input type="checkbox" name="banAvatar" value="0" checked aria-describedby="admin-ban-avatar-hint">
+                                            <input type="checkbox" name="banAvatar" value="1" aria-describedby="admin-ban-avatar-hint">
                                             <span>Ban their profile picture too</span>
                                         </label>
                                         <p class="settings-hint" id="admin-ban-avatar-hint">
