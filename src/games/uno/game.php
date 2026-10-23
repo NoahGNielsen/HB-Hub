@@ -183,8 +183,8 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
                 <fieldset class="casino-choices" data-uno-settings-fields>
                     <legend class="casino-label">Stacking</legend>
                     <?php foreach ([
-                        'off' => ['Off (default)', 'A Draw Two or Wild Draw Four is drawn straight away.'],
-                        'on' => ['On', 'Answer a Draw Two with a Draw Two, or a Wild Draw Four with a Wild Draw Four, to pass them all on.'],
+                        'off' => ['Off', 'A Draw Two or Wild Draw Four is drawn straight away.'],
+                        'on' => ['On (default)', 'Answer a Draw Two with a Draw Two, or a Wild Draw Four with a Wild Draw Four, to pass them all on.'],
                     ] as $value => [$label, $hint]): ?>
                         <label class="casino-choice">
                             <input type="radio" name="stacking" value="<?= $value ?>">
