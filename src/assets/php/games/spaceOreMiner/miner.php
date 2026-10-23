@@ -364,7 +364,7 @@ const HBHUB_MINER_SKILLS = [
     'darkCatalyst' => ['name' => 'Dark Catalyst', 'icon' => 'darkEngine', 'branch' => 'cosmos', 'cost' => 1, 'at' => [1, 4], 'after' => ['strangeSkies'],
         'type' => 'darkGain', 'times' => 2],
     'antiEcho' => ['name' => 'Antimatter Echo', 'icon' => 'cycle', 'branch' => 'cosmos', 'cost' => 2, 'at' => [2, 4], 'after' => ['darkCatalyst'],
-        'type' => 'keepAnti', 'text' => 'Keep your Antimatter upgrades when you Big Rip.'],
+        'type' => 'keepAnti', 'text' => 'Keep your Antimatter upgrades when you Big Rip. With Dark Echo, your Dark Matter upgrades are kept too.'],
     'timeLoop' => ['name' => 'Time Loop', 'icon' => 'hourglass', 'branch' => 'cosmos', 'cost' => 2, 'at' => [3, 4], 'after' => ['antiEcho'],
         'type' => 'offline', 'times' => 4],
     'denseDark' => ['name' => 'Dense Dark Matter', 'icon' => 'radiation', 'branch' => 'cosmos', 'cost' => 3, 'at' => [4, 4], 'after' => ['timeLoop'],
