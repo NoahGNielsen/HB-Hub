@@ -183,7 +183,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
             </a>
 
             <div class="casino-home-wallet">
-                <p class="casino-kicker">Chips, not cash</p>
+                <p class="casino-kicker">Chips & Fun!</p>
                 <h1>Casino</h1>
                 <p class="casino-home-label">Your chips</p>
                 <p class="casino-home-balance">
@@ -275,7 +275,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
 
         <section class="casino-home-tables" aria-labelledby="casino-games-title">
             <div class="casino-home-section-head">
-                <h2 id="casino-games-title">Tables</h2>
+                <h2 id="casino-games-title">Games</h2>
                 <p class="casino-hint">Every game uses the same chips.</p>
             </div>
             <ul class="casino-home-games">
@@ -285,11 +285,19 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                             <?php if ($casinoTables['blackjack']['seat'] !== null): ?>
                                 <span class="casino-home-game-seated">You're at <?= htmlspecialchars($casinoTables['blackjack']['seat']['roomName']) ?></span>
                             <?php endif; ?>
-                            <svg class="casino-home-game-art" viewBox="0 0 64 64" aria-hidden="true">
-                                <rect x="8" y="14" width="26" height="38" rx="4" transform="rotate(-12 21 33)"/>
-                                <rect x="28" y="10" width="26" height="38" rx="4" transform="rotate(10 41 29)"/>
-                                <path class="casino-home-game-mark" d="M41 19c-3.5 4.5-7.5 6.5-7.5 10.5a3.8 3.8 0 0 0 6.5 2.5l-1 5h4l-1-5a3.8 3.8 0 0 0 6.5-2.5c0-4-4-6-7.5-10.5z" transform="rotate(10 41 29)"/>
-                            </svg>
+                            <!-- The front page's blackjack hand (a blackjack, with its total) next to a bet -->
+                            <span class="casino-home-game-art casino-art-blackjack" aria-hidden="true">
+                                <span class="casino-art-hand">
+                                    <span class="casino-art-card is-black"><span class="casino-art-card-corner">K<br>♠</span><span class="casino-art-card-pip">♠</span></span>
+                                    <span class="casino-art-card"><span class="casino-art-card-corner">A<br>♥</span><span class="casino-art-card-pip">♥</span></span>
+                                    <span class="casino-art-hand-total">21</span>
+                                </span>
+                                <span class="casino-art-bet">
+                                    <img src="/assets/images/icons/chip.svg" alt="">
+                                    <img src="/assets/images/icons/chip.svg" alt="">
+                                    <img src="/assets/images/icons/chip.svg" alt="">
+                                </span>
+                            </span>
                         </span>
                         <span class="casino-home-game-body">
                             <span class="casino-home-game-head">
@@ -310,12 +318,21 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                             <?php if ($casinoTables['baccarat']['seat'] !== null): ?>
                                 <span class="casino-home-game-seated">You're at <?= htmlspecialchars($casinoTables['baccarat']['seat']['roomName']) ?></span>
                             <?php endif; ?>
-                            <svg class="casino-home-game-art" viewBox="0 0 64 64" aria-hidden="true">
-                                <rect x="6" y="14" width="26" height="38" rx="4" transform="rotate(-8 19 33)"/>
-                                <rect x="32" y="14" width="26" height="38" rx="4" transform="rotate(8 45 33)"/>
-                                <path class="casino-home-game-mark" d="M19 25l6 8-6 8-6-8z" transform="rotate(-8 19 33)"/>
-                                <path class="casino-home-game-mark" d="M45 41s-8-5-8-10a4 4 0 0 1 8-1.5 4 4 0 0 1 8 1.5c0 5-8 10-8 10z" transform="rotate(8 45 33)"/>
-                            </svg>
+                            <!-- The front page's piece of a Baccarat table: the side bets on top, the Player and the Banker
+                                 under them, with a bet on the Banker. The payouts are the table's own (round.php). -->
+                            <span class="casino-home-game-art casino-art-baccarat" aria-hidden="true">
+                                <span class="casino-art-spot is-side">P Pair<small><?= HBHUB_BACCARAT_PAYS['playerPair'] ?> to 1</small></span>
+                                <span class="casino-art-spot is-side is-tie">Tie<small><?= HBHUB_BACCARAT_PAYS['tie'] ?> to 1</small></span>
+                                <span class="casino-art-spot is-side is-banker">B Pair<small><?= HBHUB_BACCARAT_PAYS['bankerPair'] ?> to 1</small></span>
+                                <span class="casino-art-spot">Player<small><?= HBHUB_BACCARAT_PAYS['player'] ?> to 1</small></span>
+                                <span class="casino-art-spot is-banker">
+                                    Banker<small><?= HBHUB_BACCARAT_PAYS['banker'] ?> to 1<br>with <?= HBHUB_BACCARAT_BANKER_COMMISSION / 10 ?>% cut</small>
+                                    <span class="casino-art-spot-chips">
+                                        <img src="/assets/images/icons/chip.svg" alt="">
+                                        <img src="/assets/images/icons/chip.svg" alt="">
+                                    </span>
+                                </span>
+                            </span>
                         </span>
                         <span class="casino-home-game-body">
                             <span class="casino-home-game-head">
@@ -333,13 +350,10 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                 <li>
                     <a class="casino-home-game casino-home-game-roulette" href="/gambling/roulette/">
                         <span class="casino-home-game-felt">
-                            <svg class="casino-home-game-art" viewBox="0 0 64 64" aria-hidden="true">
-                                <circle cx="32" cy="32" r="26"/>
-                                <circle class="casino-home-game-line" cx="32" cy="32" r="17"/>
-                                <path class="casino-home-game-line" d="M32 6v52M6 32h52M13.6 13.6l36.8 36.8M50.4 13.6L13.6 50.4"/>
-                                <circle class="casino-home-game-mark" cx="32" cy="32" r="6"/>
-                                <circle class="casino-home-game-mark" cx="47" cy="19" r="3.5"/>
-                            </svg>
+                            <!-- The front page's European roulette wheel, the ball resting on 17 -->
+                            <span class="casino-home-game-art casino-art-roulette" aria-hidden="true">
+                                <span class="casino-art-roulette-pockets"><span class="casino-art-roulette-ball"></span></span>
+                            </span>
                         </span>
                         <span class="casino-home-game-body">
                             <span class="casino-home-game-head">

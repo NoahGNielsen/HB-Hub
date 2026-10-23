@@ -1249,8 +1249,8 @@ a.casino-game:hover .casino-game-art {
   40% { transform: scale(1.18) rotate(25deg); }
 }
 
-/* The games: a card each, with a felt top in the game's colours and a drawing of it (inline SVG), then what's on at it
-   and how the user has done. Each game sets --felt-from/--felt-to (the felt) and --felt-mark (the drawing's details). */
+/* The games: a card each, with a felt top in the game's colours and the game's drawing from the front page
+   (homepage.css), then what's on at it and how the user has done. Each game sets --felt-from/--felt-to (the felt). */
 .casino-home-games {
   margin: 0;
   padding: 0;
@@ -1263,7 +1263,6 @@ a.casino-game:hover .casino-game-art {
 .casino-home-game {
   --felt-from: #3a4252;
   --felt-to: #20252f;
-  --felt-mark: var(--accent);
   height: 100%;
   box-sizing: border-box;
   overflow: hidden;
@@ -1288,11 +1287,13 @@ a.casino-home-game:focus-visible {
 }
 
 .casino-home-game-felt {
+  --felt-zoom: 1; /* how big the drawings are; smaller felts turn it down */
   position: relative;
   height: 170px;
   flex: none;
   overflow: hidden;
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* the felt's width, even where a drawing is wider */
   place-items: center;
   background:
     radial-gradient(ellipse 90% 80% at 50% 0%, rgba(255, 255, 255, 0.18), transparent 70%),
@@ -1311,12 +1312,14 @@ a.casino-home-game:focus-visible {
   border-radius: 50%;
 }
 
+/* The drawings are the front page's, at the front page's sizes, scaled down to fit the felt: each one sets --art-size
+   (its size on a full felt) and the felt's --felt-zoom shrinks them all on smaller screens */
 .casino-home-game-art {
+  --art-size: 1;
   position: relative;
-  width: 118px;
-  height: 118px;
-  fill: rgba(255, 255, 255, 0.94);
-  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.35));
+  flex: none;
+  justify-self: unsafe center; /* stays centred where it's wider than the felt before it's scaled down */
+  scale: calc(var(--art-size) * var(--felt-zoom));
   transition: transform 0.3s ease;
 }
 
@@ -1324,14 +1327,254 @@ a.casino-home-game:hover .casino-home-game-art {
   transform: translateY(-4px) rotate(-4deg) scale(1.06);
 }
 
-.casino-home-game-art .casino-home-game-mark {
-  fill: var(--felt-mark);
+/* Blackjack: the player's hand from the front page's table, a blackjack with its total under it, and the bet next
+   to it */
+.casino-art-blackjack {
+  --art-size: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
-.casino-home-game-art .casino-home-game-line {
-  fill: none;
-  stroke: var(--felt-mark);
-  stroke-width: 3;
+.casino-art-hand {
+  position: relative;
+  width: 160px;
+  height: 130px;
+  flex: none;
+}
+
+.casino-art-card {
+  position: absolute;
+  width: 88px;
+  height: 124px;
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #fbfaf6;
+  color: #c8102e;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.4);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.casino-art-card:first-child {
+  left: 14px;
+  transform: rotate(-9deg);
+}
+
+.casino-art-card:nth-child(2) {
+  right: 14px;
+  transform: rotate(8deg) translateY(-4px);
+}
+
+.casino-art-card.is-black {
+  color: #1a1d23;
+}
+
+.casino-art-card-corner {
+  display: block;
+  width: 1em;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+.casino-art-card-pip {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 2.6rem;
+}
+
+.casino-art-hand-total {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  z-index: 1;
+  translate: -50% 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* The betting spot, with a few chips on it */
+.casino-art-bet {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex: none;
+  border: 2px solid rgba(244, 231, 197, 0.45);
+  border-radius: 50%;
+}
+
+.casino-art-bet img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.35));
+}
+
+.casino-art-bet img:nth-child(2) { transform: translateY(-5px) rotate(40deg); }
+.casino-art-bet img:nth-child(3) { transform: translateY(-10px) rotate(80deg); }
+
+/* Baccarat: the front page's piece of a table, charcoal felt behind a padded rail with the betting spots outlined in
+   the Player blue, Banker red and Tie green. The side bets in a row on top, the Player and the Banker under them. It
+   lies at an angle with rotate, so the hover's transform doesn't straighten it. */
+.casino-art-baccarat {
+  --art-size: 0.72;
+  width: 250px;
+  padding: 10px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* the side bets take 2 columns each, the Player and Banker 3 */
+  gap: 7px;
+  border: 7px solid #2b1b0f;
+  border-radius: 20px;
+  background: radial-gradient(120% 90% at 50% 20%, #2a2f3a, #14171d 85%);
+  box-shadow: 0 0 0 2px #5a3a22, inset 0 0 0 1px rgba(244, 231, 197, 0.12), 0 24px 40px rgba(0, 0, 0, 0.3);
+  color: #f4e7c5;
+  rotate: -4deg;
+}
+
+.casino-art-spot {
+  --art-side: #2f6fd6;
+  position: relative;
+  grid-column: span 3;
+  min-width: 0;
+  padding: 9px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* the Player's name sits at the top, level with the Banker's above its chips */
+  gap: 6px;
+  border: 2px solid var(--art-side);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--art-side) 16%, transparent);
+  color: color-mix(in srgb, var(--art-side) 55%, #fff);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.casino-art-spot small {
+  display: block;
+  margin-top: -3px; /* closer to its name than the flex gap */
+  color: #f4e7c5;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+.casino-art-spot.is-side {
+  grid-column: span 2;
+  padding: 5px 4px;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+
+.casino-art-spot.is-side small {
+  font-size: 0.55rem;
+}
+
+.casino-art-spot.is-tie {
+  --art-side: #2fa36b;
+}
+
+.casino-art-spot.is-banker {
+  --art-side: #d23c3c;
+}
+
+/* The bet: two chips stacked on the Banker, under its name */
+.casino-art-spot-chips {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex: none;
+}
+
+.casino-art-spot-chips img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45));
+}
+
+.casino-art-spot-chips img:nth-child(2) {
+  transform: translateY(-5px) rotate(40deg);
+}
+
+/* Roulette: the front page's wheel. 37 pockets, 0 at the top and then red and black clockwise in the wheel's order;
+   the ball sits in pocket number 9 of the order (0, 32, 15, 19, 4, 21, 2, 25, 17), so on 17 */
+.casino-art-roulette {
+  --art-size: 0.72;
+  --art-pocket: 9.7297deg; /* 360deg / 37 */
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #3d2716 62%, #7a5232 64%, #5a3a22 80%, #3d2716 100%);
+  box-shadow: 0 0 0 2px #2b1b0f, 0 24px 40px rgba(0, 0, 0, 0.35);
+}
+
+.casino-art-roulette-pockets {
+  position: absolute;
+  inset: 11%;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(from calc(var(--art-pocket) / -2), rgba(244, 231, 197, 0.6) 0 0.6deg, transparent 0 var(--art-pocket)),
+    conic-gradient(from calc(var(--art-pocket) / -2), #1d8a4e 0 var(--art-pocket), transparent 0),
+    repeating-conic-gradient(from calc(var(--art-pocket) / 2), #c8102e 0 var(--art-pocket), #1a1d23 0 calc(var(--art-pocket) * 2));
+}
+
+/* The cone in the middle, with the turret on top */
+.casino-art-roulette-pockets::after {
+  content: "";
+  position: absolute;
+  inset: 24%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #e2bd6e 0 9%, #8a6a32 10% 13%, #7a5232 14%, #4a2f1b 100%);
+  box-shadow: 0 0 0 3px #c9a45c, 0 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.casino-art-roulette-ball {
+  position: absolute;
+  inset: 0;
+  transform: rotate(calc(var(--art-pocket) * 8));
+}
+
+.casino-art-roulette-ball::before {
+  content: "";
+  position: absolute;
+  top: 7%;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff, #c9ced6);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .casino-art-roulette-pockets {
+    animation: casino-art-spin 40s linear infinite;
+  }
+}
+
+@keyframes casino-art-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* "You're at (the table's name)", over the felt */
@@ -1484,23 +1727,16 @@ a.casino-home-game:hover .casino-home-game-art {
 .casino-home-game-blackjack {
   --felt-from: #1d8a57;
   --felt-to: #0a3a24;
-  --felt-mark: #14231b;
 }
 
 .casino-home-game-baccarat {
   --felt-from: #8a1a2e;
   --felt-to: #2a0a12;
-  --felt-mark: #d23c3c;
 }
 
 .casino-home-game-roulette {
   --felt-from: #a3281f;
   --felt-to: #220a09;
-  --felt-mark: #1d1f24;
-}
-
-.casino-home-game-roulette .casino-home-game-art {
-  fill: var(--casino-gold);
 }
 
 /* Top players and Good to know, side by side */
@@ -1654,6 +1890,7 @@ a.casino-home-game:hover .casino-home-game-art {
   }
 
   .casino-home-game-felt {
+    --felt-zoom: 0.78;
     width: 180px;
     height: auto;
     min-height: 150px;
@@ -1756,14 +1993,10 @@ a.casino-home-game:hover .casino-home-game-art {
   }
 
   .casino-home-game-felt {
+    --felt-zoom: 0.78;
     width: auto;
     height: 130px;
     min-height: 0;
-  }
-
-  .casino-home-game-art {
-    width: 96px;
-    height: 96px;
   }
 
   .casino-home-game-seated {
