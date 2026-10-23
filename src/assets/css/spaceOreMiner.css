@@ -403,9 +403,9 @@
   transform: scale(0.95);
 }
 
+/* No focus ring: after a click, pressing any key makes the browser show it, and Space mines from anywhere anyway */
 .miner-asteroid:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 8px;
+  outline: none;
 }
 
 .miner-asteroid:disabled {
