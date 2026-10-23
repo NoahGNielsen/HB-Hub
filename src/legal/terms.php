@@ -137,7 +137,10 @@ const HBHUB_TERMS_UPDATED = '23 October 2026';
                         <h2 id="terms-chips">5. The casino and chips</h2>
                         <p>
                             The casino on HB Hub is a game. You get <?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips when you
-                            start, and <?= number_format(HBHUB_CASINO_DAILY_CHIPS) ?> more every day for free.
+                            start, and <?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> to
+                            <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?> more every day for free. How many depends on how
+                            many days in a row you collect them: they follow a <?= HBHUB_CASINO_DAILY_DAYS ?>-day calendar on the
+                            casino's home page, and missing a day starts it over at day 1.
                         </p>
                         <ul>
                             <li><strong>Chips are not money.</strong> They can't be swapped back into real money, gift cards or anything else, and nothing you win in the casino can be paid out.</li>

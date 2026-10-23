@@ -90,8 +90,50 @@
   align-items: flex-start;
 }
 
-.casino-daily .casino-hint {
-  margin-bottom: 16px;
+.casino-daily-head {
+  width: 100%;
+  margin-bottom: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.casino .casino-daily-head h2 {
+  margin: 0;
+}
+
+.casino-streak {
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, var(--background));
+  color: color-mix(in srgb, var(--accent) 70%, var(--text));
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.casino-daily-next {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.casino-daily-amount {
+  margin: 2px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.casino-daily-icon {
+  width: 32px;
+  height: 32px;
 }
 
 .casino-daily-timer {
@@ -113,6 +155,163 @@
 
 .casino-daily-message.is-error {
   color: var(--casino-down);
+}
+
+/* The daily chips' 30-day calendar (gambling/index.php): a week to a row, so the end-of-week bonus days line up on the
+   right, and day 30 fills the last row. casino.js moves is-collected/is-next/is-ready along. */
+.casino-calendar-card {
+  margin-bottom: 32px;
+  --casino-gold: #e8b931;
+}
+
+.casino-calendar-head {
+  margin-bottom: 18px;
+}
+
+.casino .casino-calendar-head h2 {
+  margin-bottom: 4px;
+}
+
+.casino-calendar {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+}
+
+.casino-calendar-day {
+  position: relative;
+  min-height: 66px;
+  padding: 8px 6px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--background);
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.3s ease, border-color 0.3s ease, opacity 0.3s ease;
+}
+
+.casino-calendar-number {
+  position: absolute;
+  top: 5px;
+  left: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  opacity: 0.55;
+}
+
+.casino-calendar-short {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+/* Only for screen readers, except on day 30 (below) */
+.casino-calendar-full {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.casino-calendar-tick {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  box-sizing: border-box;
+  display: none;
+  border-radius: 50%;
+  background: var(--casino-up);
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The end of each week */
+.casino-calendar-day.is-big {
+  background: color-mix(in srgb, var(--casino-gold) 16%, var(--background));
+  color: color-mix(in srgb, var(--casino-gold) 75%, var(--text));
+}
+
+/* Day 30: the rest of the last row, with its chips written out */
+.casino-calendar-day.is-last {
+  grid-column: span 6;
+  flex-direction: row;
+  gap: 12px;
+  background:
+    radial-gradient(circle at 15% 50%, color-mix(in srgb, var(--casino-gold) 30%, transparent), transparent 60%),
+    color-mix(in srgb, var(--casino-gold) 14%, var(--background));
+  color: color-mix(in srgb, var(--casino-gold) 80%, var(--text));
+}
+
+.casino-calendar-day.is-last .casino-calendar-number {
+  position: static;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.casino-calendar-day.is-last .casino-calendar-short {
+  display: none;
+}
+
+.casino-calendar-day.is-last .casino-calendar-full {
+  position: static;
+  width: auto;
+  height: auto;
+  clip-path: none;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.casino-calendar-day.is-collected {
+  background: color-mix(in srgb, var(--casino-up) 14%, var(--background));
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.casino-calendar-day.is-collected .casino-calendar-tick {
+  display: block;
+}
+
+/* The day the next daily chips are for: outlined, and glowing while they can be collected */
+.casino-calendar-day.is-next {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  border-style: dashed;
+}
+
+.casino-calendar-day.is-ready {
+  border-color: var(--accent);
+  border-style: solid;
+  background: color-mix(in srgb, var(--accent) 18%, var(--background));
+  color: var(--text);
+  animation: casino-calendar-ready 2s ease-in-out infinite;
+}
+
+@keyframes casino-calendar-ready {
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+}
+
+/* Ticked off just now (casino.js) */
+.casino-calendar-day.is-just-collected {
+  animation: casino-calendar-collect 0.6s ease;
+}
+
+@keyframes casino-calendar-collect {
+  40% { transform: scale(1.12); }
 }
 
 .casino-btn {
@@ -152,33 +351,59 @@
   cursor: not-allowed;
 }
 
-/* Games */
+/* The big title on the casino and games homes (gambling/index.php, games/index.php): a small orange line over it */
+.casino-hero {
+  margin-bottom: 8px;
+}
+
+.casino-kicker {
+  margin: 0 0 4px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.casino .casino-hero h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 7vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+/* Games: a card each, with a coloured cover holding the game's name and a drawing of it (inline SVG). Each game sets
+   its own colours with --game-from/--game-to (the cover) and --game-mark (the drawing's details). */
 .casino-game-list {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 16px;
   list-style: none;
 }
 
 .casino-game {
+  --game-from: #3a4252;
+  --game-to: #20252f;
+  --game-mark: var(--accent);
   height: 100%;
-  padding: 20px 24px;
   box-sizing: border-box;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
   border: 2px solid transparent;
   border-radius: var(--radius);
   background: var(--secondary);
   color: inherit;
   text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 a.casino-game:hover {
   border-color: var(--accent);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  transform: translateY(-3px);
 }
 
 a.casino-game:focus-visible {
@@ -186,30 +411,157 @@ a.casino-game:focus-visible {
   outline-offset: 2px;
 }
 
+.casino-game-cover {
+  position: relative;
+  min-height: 118px;
+  padding: 18px 22px;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.16), transparent 55%),
+    linear-gradient(135deg, var(--game-from), var(--game-to));
+  color: #fff;
+}
+
+/* The drawing, big and half off the cover's right edge, behind the name */
+.casino-game-art {
+  position: absolute;
+  top: 50%;
+  right: -10px;
+  width: 112px;
+  height: 112px;
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: none;
+  opacity: 0.9;
+  transform: translateY(-50%) rotate(-6deg);
+  transition: transform 0.3s ease;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.3));
+}
+
+a.casino-game:hover .casino-game-art {
+  transform: translateY(-50%) rotate(0deg) scale(1.06);
+}
+
+.casino-game-art .casino-game-art-mark {
+  fill: var(--game-mark);
+}
+
+.casino-game-art .casino-game-art-line {
+  fill: none;
+  stroke: var(--game-mark);
+  stroke-width: 3;
+}
+
+.casino-game-kicker,
 .casino-game-name {
-  font-size: 1.15rem;
+  position: relative; /* over the drawing */
+  max-width: calc(100% - 84px);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.casino-game-kicker {
+  font-size: 0.72rem;
   font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.casino-game-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .casino-game-text {
+  padding: 16px 22px 20px;
   font-size: 0.9rem;
   line-height: 1.45;
   opacity: 0.75;
 }
 
 .casino-game-badge {
-  margin-top: 6px;
-  padding: 3px 10px;
+  padding: 3px 9px;
   border-radius: 999px;
-  background: var(--background);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-shadow: none;
 }
 
-.casino-game.is-soon {
-  opacity: 0.7;
+.casino-game-blackjack {
+  --game-from: #1f7a4d;
+  --game-to: #0d3b27;
+  --game-mark: #1d1f24;
+}
+
+.casino-game-baccarat {
+  --game-from: #7a1f3a;
+  --game-to: #34101e;
+  --game-mark: #d23c3c;
+}
+
+.casino-game-roulette {
+  --game-from: #a3281f;
+  --game-to: #2b0d0b;
+  --game-mark: #1d1f24;
+}
+
+.casino-game-roulette .casino-game-art {
+  fill: #e8b931;
+}
+
+.casino-game-matador {
+  --game-from: #c4421a;
+  --game-to: #5a1c0b;
+  --game-mark: #c4421a;
+}
+
+.casino-game-chess {
+  --game-from: #50586a;
+  --game-to: #1c2029;
+  --game-mark: #1c2029;
+}
+
+.casino-game-uno {
+  --game-from: #d63a2f;
+  --game-to: #2056b8;
+  --game-mark: #e8b931;
+}
+
+.casino-game-wordle {
+  --game-from: #3f8f4a;
+  --game-to: #6b5d14;
+  --game-mark: #c9b458;
+}
+
+.casino-game-wordle .casino-game-art {
+  fill: #6aaa64;
+}
+
+.casino-game-miner {
+  --game-from: #3b2a78;
+  --game-to: #0d0b26;
+  --game-mark: #e8b931;
+}
+
+.casino-game-miner .casino-game-art {
+  fill: #8a8fa3;
+}
+
+.casino-game-miner .casino-game-name {
+  font-size: 1.4rem; /* the longest name, on two lines instead of three */
 }
 
 /* A game's page (like gambling/blackjack/) */
@@ -679,15 +1031,60 @@ a.casino-game:focus-visible {
   .casino-table td:last-child {
     padding-right: 16px;
   }
+
+  /* Seven narrow squares still fit a phone, just smaller */
+  .casino-calendar {
+    gap: 4px;
+  }
+
+  .casino-calendar-day {
+    min-height: 52px;
+    padding: 6px 2px;
+    border-radius: 9px;
+  }
+
+  .casino-calendar-number {
+    top: 3px;
+    left: 5px;
+    font-size: 0.62rem;
+  }
+
+  .casino-calendar-short {
+    font-size: 0.72rem;
+  }
+
+  .casino-calendar-tick {
+    top: 3px;
+    right: 3px;
+    width: 13px;
+    height: 13px;
+  }
+
+  .casino-calendar-day.is-last .casino-calendar-full {
+    font-size: 1.05rem;
+  }
+
+  .casino-game-name {
+    font-size: 1.45rem;
+  }
+
+  .casino-game-miner .casino-game-name {
+    font-size: 1.3rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .casino-pay-link {
+  .casino-pay-link,
+  .casino-game,
+  .casino-game-art,
+  .casino-calendar-day {
     transition: none;
   }
 
   [data-casino-chips].is-up,
-  [data-casino-chips].is-down {
+  [data-casino-chips].is-down,
+  .casino-calendar-day.is-ready,
+  .casino-calendar-day.is-just-collected {
     animation: none;
   }
 }

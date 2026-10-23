@@ -1,5 +1,6 @@
 // Casino chips (assets/php/casino/wallet.php), on every casino page: keeps the chip count in the top bar up to date,
-// and on the casino home the big chip count too, and the daily chips card with its countdown and Collect button.
+// and on the casino home the big chip count too, and the daily chips card with its countdown and Collect button, its
+// streak and the 30-day calendar under it (which days are ticked off and which one is next).
 // The chips come along with navUpdates.js's request (every 15 seconds while the page is in view: wallet=1 on nav:poll,
 // the answer's "wallet" on nav:update). /gambling/chips is only asked when the daily chips' countdown runs out and to
 // collect them. A game that gets a new balance in its own answers passes it on straight away with
@@ -10,6 +11,11 @@
     const claimButton = daily?.querySelector('[data-casino-claim]');
     const dailyTimer = daily?.querySelector('[data-casino-daily-timer]');
     const dailyMessage = daily?.querySelector('[data-casino-daily-message]');
+    const dailyStreak = daily?.querySelector('[data-casino-streak]');
+    const dailyWhen = daily?.querySelector('[data-casino-daily-when]');
+    const dailyDay = daily?.querySelector('[data-casino-daily-day]');
+    const dailyAmount = daily?.querySelector('[data-casino-daily-amount]');
+    const calendarDays = document.querySelectorAll('[data-casino-calendar] [data-day]');
 
     let chips = counts.length > 0 ? Number(counts[0].dataset.casinoChips) : null;
     let nextDailyAt = null; // Date.now() when the daily chips can be collected again, null while they can be
@@ -59,6 +65,32 @@
         dailyTimer.textContent = 'Next daily chips in ' + formatCountdown(left);
     }
 
+    // The same as casinoStreakText() in gambling/index.php
+    const streakText = (collected) => collected === 0 ? 'No streak yet'
+        : collected === 1 ? '1 day in a row' : collected + ' days in a row';
+
+    // Ticks off the days collected so far and marks the next one, like gambling/index.php does when it makes the page.
+    // A day that's ticked off now but wasn't before bounces once.
+    function showCalendar(state) {
+        dailyStreak.textContent = streakText(state.collected);
+        dailyWhen.textContent = state.ready ? 'Today' : 'Tomorrow';
+        dailyDay.textContent = String(state.day);
+        dailyAmount.textContent = formatChips(state.amount);
+
+        calendarDays.forEach((cell) => {
+            const day = Number(cell.dataset.day);
+            const isCollected = day <= state.collected;
+            const isNext = !isCollected && day === state.day;
+            if (isCollected && !cell.classList.contains('is-collected')) {
+                cell.classList.add('is-just-collected');
+                cell.addEventListener('animationend', () => cell.classList.remove('is-just-collected'), { once: true });
+            }
+            cell.classList.toggle('is-collected', isCollected);
+            cell.classList.toggle('is-next', isNext);
+            cell.classList.toggle('is-ready', isNext && state.ready);
+        });
+    }
+
     // The server sends how many seconds are left instead of a time, so the countdown is right even when this
     // device's clock isn't
     function showDaily(state) {
@@ -66,6 +98,7 @@
         clearInterval(countdownTimer);
         countdownTimer = null;
         claimButton.disabled = !state.ready || isClaiming;
+        showCalendar(state);
 
         if (state.ready) {
             nextDailyAt = null;
@@ -107,7 +140,7 @@
 
         show(wallet);
         showMessage(wallet.claimed
-            ? 'You collected ' + formatChips(wallet.daily.amount) + ' chips!'
+            ? 'You collected ' + formatChips(wallet.claimedAmount) + ' chips! Come back tomorrow for day ' + wallet.daily.day + '.'
             : 'You already collected your chips today.');
     });
 
@@ -117,9 +150,15 @@
         if (event.detail.wallet) show(event.detail.wallet);
     });
 
-    // The page was made with the daily chips' state, so only the countdown needs starting
+    // The page was made with the daily chips' state, so this only starts the countdown (the calendar already matches)
     if (daily) {
         const seconds = Number(daily.dataset.seconds);
-        showDaily({ ready: seconds === 0, seconds, amount: Number(daily.dataset.amount) });
+        showDaily({
+            ready: seconds === 0,
+            seconds,
+            amount: Number(daily.dataset.amount),
+            day: Number(daily.dataset.day),
+            collected: Number(daily.dataset.collected),
+        });
     }
 })();

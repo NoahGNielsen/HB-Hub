@@ -14,7 +14,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">
                         <div><dt>To start</dt><dd><?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips</dd></div>
-                        <div><dt>Every day</dt><dd>+<?= number_format(HBHUB_CASINO_DAILY_CHIPS) ?> chips</dd></div>
+                        <div><dt>Every day</dt><dd>+<?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> to <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?> chips</dd></div>
                         <div><dt>New day at</dt><dd><?= HBHUB_CASINO_DAY_START ?> AM</dd></div>
                         <div><dt>Games</dt><dd>3</dd></div>
                     </dl>
@@ -31,10 +31,17 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="daily" aria-labelledby="docs-daily">
                         <h2 id="docs-daily">Daily chips</h2>
                         <p>
-                            Press <strong>Collect daily chips</strong> on the casino's home page for
-                            <strong><?= number_format(HBHUB_CASINO_DAILY_CHIPS) ?> free chips</strong>, once a day. A new casino day
-                            starts at <?= HBHUB_CASINO_DAY_START ?> AM (Danish time), and until then the button shows how long is left.
-                            Missed a day? They don't pile up, so come back tomorrow.
+                            Press <strong>Collect daily chips</strong> on the casino's home page for free chips, once a day. A new
+                            casino day starts at <?= HBHUB_CASINO_DAY_START ?> AM (Danish time), and until then the button shows how
+                            long is left.
+                        </p>
+                        <p>
+                            How many you get follows a <strong><?= HBHUB_CASINO_DAILY_DAYS ?>-day calendar</strong>: day 1 is
+                            <strong><?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> chips</strong>, and every day in a row
+                            moves you one day further. Most days give more than the one before and a few give a bit less, the end
+                            of every week is a bonus, and day <?= HBHUB_CASINO_DAILY_DAYS ?> is
+                            <strong><?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?> chips</strong>. After that the calendar
+                            starts over. Missed a day? Then you're back at day 1, and missed days don't pile up.
                         </p>
                     </section>
 

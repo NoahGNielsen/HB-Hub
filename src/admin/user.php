@@ -127,7 +127,7 @@ function adminSessions(PDO $db, int $userId): array
  */
 function adminWallet(PDO $db, int $userId): ?array
 {
-    $statement = $db->prepare('SELECT walletChips, walletDailyDay, walletCreatedTimestamp FROM `HBHub-CasinoWallets` WHERE userId = ?');
+    $statement = $db->prepare('SELECT walletChips, walletDailyDay, walletDailyStreak, walletCreatedTimestamp FROM `HBHub-CasinoWallets` WHERE userId = ?');
     $statement->execute([$userId]);
     return $statement->fetch() ?: null;
 }

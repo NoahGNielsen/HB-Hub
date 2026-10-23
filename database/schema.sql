@@ -288,6 +288,7 @@ CREATE TABLE `HBHub-CasinoWallets` (
   `userId` int UNSIGNED NOT NULL,
   `walletChips` bigint NOT NULL COMMENT 'Only changed through hbHubCasinoChange() (src/assets/php/casino/wallet.php), which logs it in HBHub-CasinoTransactions',
   `walletDailyDay` date DEFAULT NULL COMMENT 'The casino day (Danish date, starting at 3 AM) the daily chips were last collected on, NULL if never',
+  `walletDailyStreak` tinyint UNSIGNED NOT NULL DEFAULT '0' COMMENT 'The day (1-30) on the daily chips calendar collected on walletDailyDay, 0 if never (HBHUB_CASINO_DAILY_CALENDAR)',
   `walletCreatedTimestamp` datetime NOT NULL COMMENT 'UTC',
   CONSTRAINT `chk_casinowallets_chips` CHECK (`walletChips` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

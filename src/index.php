@@ -173,7 +173,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 <?php endif; ?>
                 <div>
                     <dt>Chips every day</dt>
-                    <dd><?= number_format(HBHUB_CASINO_DAILY_CHIPS) ?></dd>
+                    <dd>Up to <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?></dd>
                 </div>
                 <div>
                     <dt>Teachers involved</dt>
@@ -230,7 +230,8 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 <h2 id="home-casino-title">Chips, not cash.</h2>
                 <p>
                     Everyone starts with <?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips and can collect
-                    <?= number_format(HBHUB_CASINO_DAILY_CHIPS) ?> more every day. Lose them all and the only thing
+                    <?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> or more every day, up to
+                    <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?> on a <?= HBHUB_CASINO_DAILY_DAYS ?>-day streak. Lose them all and the only thing
                     you're out is bragging rights.
                 </p>
                 <ul class="home-ticks">

@@ -33,7 +33,7 @@ $buyChipsSellerId = $statement->fetchColumn();
         <a class="casino-back" href="/gambling/">&larr; Casino</a>
         <h1>Buy chips</h1>
         <p class="casino-intro">
-            Normally I don't take money for chips. Everyone gets <?= number_format(HBHUB_CASINO_DAILY_CHIPS) ?> free
+            Normally I don't take money for chips. Everyone gets at least <?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> free
             chips every day, and that's how the casino is meant to be played.
         </p>
 

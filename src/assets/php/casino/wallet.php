@@ -6,7 +6,10 @@
 //
 // Every user gets a wallet with HBHUB_CASINO_START_CHIPS the first time it's needed, old accounts too.
 // The daily chips can be collected once per casino day, which starts at 3 AM Danish time. Only the last day they were
-// collected on is kept (walletDailyDay), so days that were missed can't add up.
+// collected on is kept (walletDailyDay), so days that were missed can't add up. They follow a 30-day calendar
+// (HBHUB_CASINO_DAILY_CALENDAR): each day in a row moves one day further on it, which mostly gives more, and
+// walletDailyStreak is the day on it that was collected last. Missing a casino day starts it over at day 1, and so
+// does finishing day 30.
 //
 // To use the chips in a game:
 //   $chips = hbHubCasinoChange($db, $userId, -$bet, 'bet', 'blackjack', $roundId); // null when there aren't enough
@@ -14,7 +17,16 @@
 require_once __DIR__ . '/../database.php';
 
 const HBHUB_CASINO_START_CHIPS = 2500;
-const HBHUB_CASINO_DAILY_CHIPS = 2500;
+// The daily chips on each day of the calendar, day 1 first: mostly more the further in, with a few lean days in between,
+// a big one at the end of each week and the biggest on day 30. Day 1 is what everyone gets without a streak.
+const HBHUB_CASINO_DAILY_CALENDAR = [
+    2500, 2750, 3000, 3250, 2000, 3500, 5000,
+    3500, 3750, 4000, 2500, 4250, 4500, 7500,
+    4500, 4750, 3000, 5000, 5250, 5500, 10000,
+    5500, 3500, 5750, 6000, 6250, 6500, 4000, 7000,
+    15000,
+];
+const HBHUB_CASINO_DAILY_DAYS = 30; // how many days the calendar has, count(HBHUB_CASINO_DAILY_CALENDAR)
 const HBHUB_CASINO_TIME_ZONE = 'Europe/Copenhagen';
 const HBHUB_CASINO_DAY_START = 3; // 3 AM, when a new casino day starts
 const HBHUB_CASINO_CHIPS_PER_KRONE = 100; // what 1 kr buys, when someone buys extra chips from the owner (gambling/buy-chips.php)
@@ -79,8 +91,8 @@ function hbHubCasinoChange(PDO $db, int $userId, int $amount, string $reason, ?s
 }
 
 /**
- * Gives the user their daily chips, unless they've already had them this casino day.
- * Returns the chips after, or null when they'd already had them.
+ * Gives the user their daily chips for their next day on the calendar, unless they've already had them this casino day.
+ * Returns how many chips that was, or null when they'd already had them.
  */
 function hbHubCasinoClaimDaily(PDO $db, int $userId, ?int $now = null): ?int
 {
@@ -93,27 +105,59 @@ function hbHubCasinoClaimDaily(PDO $db, int $userId, ?int $now = null): ?int
             return null;
         }
 
-        $db->prepare('UPDATE `HBHub-CasinoWallets` SET walletDailyDay = ? WHERE userId = ?')->execute([$today, $userId]);
-        return hbHubCasinoChange($db, $userId, HBHUB_CASINO_DAILY_CHIPS, HBHUB_CASINO_REASON_DAILY);
+        $day = hbHubCasinoDailyCalendar($wallet, $today)['day'];
+        $amount = HBHUB_CASINO_DAILY_CALENDAR[$day - 1];
+        $db->prepare('UPDATE `HBHub-CasinoWallets` SET walletDailyDay = ?, walletDailyStreak = ? WHERE userId = ?')
+            ->execute([$today, $day, $userId]);
+        hbHubCasinoChange($db, $userId, $amount, HBHUB_CASINO_REASON_DAILY);
+        return $amount;
     });
 }
 
 /**
- * The user's chips and daily chips, as sent to casino.js. ready says whether the daily chips can be collected now,
- * seconds how long until they can (0 when ready).
+ * Where the user is on the daily chips' calendar on the casino day $today:
+ * - collected: how many of its days are ticked off (0 to 30), which is their streak while it's still going
+ * - day: the day the next daily chips are for (1 to 30), so today's when they haven't been collected yet, else tomorrow's
+ * A streak is still going when the last ones were collected today or yesterday. One that finished day 30 yesterday
+ * gets a new calendar today, and one that finishes it today shows the full calendar until tomorrow.
  *
- * @return array{chips: int, daily: array{amount: int, ready: bool, seconds: int}}
+ * @param array{dailyDay: ?string, dailyStreak: int} $wallet
+ * @return array{collected: int, day: int}
+ */
+function hbHubCasinoDailyCalendar(array $wallet, string $today): array
+{
+    $yesterday = (new DateTimeImmutable($today . ' 12:00'))->modify('-1 day')->format('Y-m-d');
+    $isCollectedToday = $wallet['dailyDay'] !== null && $wallet['dailyDay'] >= $today;
+    $isGoing = $isCollectedToday || $wallet['dailyDay'] === $yesterday;
+    $collected = $isGoing ? min(max($wallet['dailyStreak'], 0), HBHUB_CASINO_DAILY_DAYS) : 0;
+
+    if (!$isCollectedToday && $collected === HBHUB_CASINO_DAILY_DAYS) {
+        $collected = 0;
+    }
+    return ['collected' => $collected, 'day' => $collected % HBHUB_CASINO_DAILY_DAYS + 1];
+}
+
+/**
+ * The user's chips and daily chips, as sent to casino.js. ready says whether the daily chips can be collected now,
+ * seconds how long until they can (0 when ready). collected and day are where they are on the calendar
+ * (hbHubCasinoDailyCalendar()), and amount is what that day gives: today's chips when ready, else tomorrow's.
+ *
+ * @return array{chips: int, daily: array{amount: int, day: int, collected: int, ready: bool, seconds: int}}
  */
 function hbHubCasinoStatus(PDO $db, int $userId, ?int $now = null): array
 {
     $now ??= time();
+    $today = hbHubCasinoDay($now);
     $wallet = hbHubCasinoWallet($db, $userId);
-    $isReady = $wallet['dailyDay'] === null || $wallet['dailyDay'] < hbHubCasinoDay($now);
+    $isReady = $wallet['dailyDay'] === null || $wallet['dailyDay'] < $today;
+    $calendar = hbHubCasinoDailyCalendar($wallet, $today);
 
     return [
         'chips' => $wallet['chips'],
         'daily' => [
-            'amount' => HBHUB_CASINO_DAILY_CHIPS,
+            'amount' => HBHUB_CASINO_DAILY_CALENDAR[$calendar['day'] - 1],
+            'day' => $calendar['day'],
+            'collected' => $calendar['collected'],
             'ready' => $isReady,
             'seconds' => $isReady ? 0 : max(1, hbHubCasinoNextDay($now) - $now),
         ],
@@ -123,24 +167,24 @@ function hbHubCasinoStatus(PDO $db, int $userId, ?int $now = null): array
 /**
  * The user's wallet, made with the starting chips if they don't have one yet. Not locked, so only for showing it.
  *
- * @return array{chips: int, dailyDay: ?string}
+ * @return array{chips: int, dailyDay: ?string, dailyStreak: int}
  */
 function hbHubCasinoWallet(PDO $db, int $userId): array
 {
-    $statement = $db->prepare('SELECT walletChips, walletDailyDay FROM `HBHub-CasinoWallets` WHERE userId = ?');
+    $statement = $db->prepare('SELECT walletChips, walletDailyDay, walletDailyStreak FROM `HBHub-CasinoWallets` WHERE userId = ?');
     $statement->execute([$userId]);
     $wallet = $statement->fetch();
     if ($wallet === false) {
         return hbHubCasinoTransaction($db, fn (): array => hbHubCasinoLockWallet($db, $userId));
     }
-    return ['chips' => (int) $wallet['walletChips'], 'dailyDay' => $wallet['walletDailyDay']];
+    return ['chips' => (int) $wallet['walletChips'], 'dailyDay' => $wallet['walletDailyDay'], 'dailyStreak' => (int) $wallet['walletDailyStreak']];
 }
 
 /**
  * Locks the user's wallet until the transaction ends and returns it. A user without one gets it now, with the
  * starting chips (logged like any other change). Only inside a transaction.
  *
- * @return array{chips: int, dailyDay: ?string}
+ * @return array{chips: int, dailyDay: ?string, dailyStreak: int}
  */
 function hbHubCasinoLockWallet(PDO $db, int $userId): array
 {
@@ -157,10 +201,10 @@ function hbHubCasinoLockWallet(PDO $db, int $userId): array
         }
     }
 
-    $statement = $db->prepare('SELECT walletChips, walletDailyDay FROM `HBHub-CasinoWallets` WHERE userId = ? FOR UPDATE');
+    $statement = $db->prepare('SELECT walletChips, walletDailyDay, walletDailyStreak FROM `HBHub-CasinoWallets` WHERE userId = ? FOR UPDATE');
     $statement->execute([$userId]);
     $wallet = $statement->fetch();
-    return ['chips' => (int) $wallet['walletChips'], 'dailyDay' => $wallet['walletDailyDay']];
+    return ['chips' => (int) $wallet['walletChips'], 'dailyDay' => $wallet['walletDailyDay'], 'dailyStreak' => (int) $wallet['walletDailyStreak']];
 }
 
 function hbHubCasinoLog(PDO $db, int $userId, int $amount, int $balance, string $reason, ?string $game, ?int $reference): void
