@@ -1,6 +1,7 @@
 // The chess lobby (games/chess/): the user's invites and the public games, from /games/chess/lobby, kept up to date
 // every 5 seconds while the page is in view. Joining is a normal form post to the lobby, which checks everything again
-// and goes to the game. Also asks before the user leaves a game that's being played, as that loses it.
+// and goes to the game. Also asks before the user leaves a game that's being played, as that loses it. Each game is a
+// row (lobby.css): its name and who it's against, the clock and the colour the user would play, and the button.
 (() => {
     const root = document.querySelector('[data-ch-lobby]');
     if (!root) return;
@@ -8,9 +9,13 @@
     const POLL_MS = 5000;
     const roomList = root.querySelector('[data-ch-rooms]');
     const roomsEmpty = root.querySelector('[data-ch-rooms-empty]');
+    const roomsCount = root.querySelector('[data-ch-rooms-count]');
     const inviteList = root.querySelector('[data-ch-invites]');
     const invitesEmpty = root.querySelector('[data-ch-invites-empty]');
+    const invitesCount = root.querySelector('[data-ch-invites-count]');
+    const inviteSection = inviteList.closest('.lobby-invites');
     let isSeated = root.dataset.seated === '1';
+    let isFirstShow = true;
 
     const TYPE_NAMES = { public: 'Public', code: 'With a code', invite: 'Invite-only' };
     // What the one joining plays, from the colour the host chose
@@ -29,20 +34,24 @@
         }
     }
 
-    // Built with textContent, as the names are typed in by users
-    function roomItem(room, details) {
-        const item = document.createElement('li');
-        item.className = 'casino-room';
+    function element(tag, className, text) {
+        const node = document.createElement(tag);
+        node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+    }
 
-        const text = document.createElement('div');
-        text.className = 'casino-room-text';
-        const name = document.createElement('span');
-        name.className = 'casino-room-name';
-        name.textContent = room.name;
-        const meta = document.createElement('span');
-        meta.className = 'casino-room-meta';
-        meta.textContent = details.filter(Boolean).join(' · ');
-        text.append(name, meta);
+    // Built with textContent, as the names are typed in by users. details is the line under the name, tags the clock
+    // and the colours
+    function roomItem(room, details, isInvite) {
+        const item = element('li', 'lobby-room' + (isInvite ? ' is-invite' : ''));
+
+        const text = element('div', 'lobby-room-text');
+        text.append(element('span', 'lobby-room-name', room.name),
+            element('span', 'lobby-room-meta', details.filter(Boolean).join(' · ')));
+
+        const info = element('div', 'lobby-room-info');
+        info.append(...[room.clock, YOU_PLAY[room.colour]].filter(Boolean).map((tag) => element('span', 'lobby-tag', tag)));
 
         const form = document.createElement('form');
         form.method = 'post';
@@ -54,15 +63,13 @@
         roomId.type = 'hidden';
         roomId.name = 'room';
         roomId.value = String(room.id);
-        const button = document.createElement('button');
+        const button = element('button', 'casino-btn casino-btn-primary', 'Play');
         button.type = 'submit';
-        button.className = 'casino-btn casino-btn-primary';
-        button.textContent = 'Play';
         button.disabled = isSeated;
         if (isSeated) button.title = 'Leave your game first';
         form.append(action, roomId, button);
 
-        item.append(text, form);
+        item.append(text, info, form);
         return item;
     }
 
@@ -71,20 +78,23 @@
 
         roomList.replaceChildren(...data.rooms.map((room) => roomItem(room, [
             room.host ? 'Against ' + room.host : null,
-            room.clock,
-            YOU_PLAY[room.colour],
-        ])));
-        roomsEmpty.textContent = 'No public games waiting for a player right now. Open one above!';
+        ], false)));
+        roomsEmpty.textContent = 'No public games waiting for a player right now. Open one, and it shows up here for everyone.';
         roomsEmpty.hidden = data.rooms.length > 0;
+        roomsCount.textContent = data.rooms.length > 0 ? String(data.rooms.length) : '';
 
         inviteList.replaceChildren(...data.invites.map((room) => roomItem(room, [
             room.invitedBy ? 'From ' + room.invitedBy : null,
             TYPE_NAMES[room.type] ?? 'Game',
-            room.clock,
-            YOU_PLAY[room.colour],
-        ])));
+        ], true)));
         invitesEmpty.textContent = 'No invites right now. When someone invites you to a game, it shows up here.';
         invitesEmpty.hidden = data.invites.length > 0;
+        invitesCount.textContent = data.invites.length > 0 ? String(data.invites.length) : '';
+        inviteSection.classList.toggle('is-empty', data.invites.length === 0); // goes under the public games
+
+        // Coming from an invite's notification (#invites): the invites have just moved above the games
+        if (isFirstShow && location.hash === '#invites') inviteSection.scrollIntoView();
+        isFirstShow = false;
     }
 
     async function poll() {

@@ -327,15 +327,6 @@ a.casino-game:focus-visible {
   font-weight: 600;
 }
 
-.casino-your-table {
-  margin-bottom: 20px;
-  border: 2px solid var(--accent);
-}
-
-.casino-your-table .casino-hint {
-  margin-bottom: 16px;
-}
-
 .casino-actions {
   display: flex;
   flex-wrap: wrap;
@@ -347,29 +338,7 @@ a.casino-game:focus-visible {
   margin: 0;
 }
 
-/* The lobby's forms (gambling/blackjack/) */
-.casino-fieldset {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: none;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.casino-fieldset:disabled {
-  opacity: 0.5;
-}
-
-.casino-form {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
+/* Forms (the lobbies' are in lobby.css, the games' room settings use these too) */
 .casino-label {
   padding: 0;
   font-size: 0.9rem;
@@ -408,18 +377,6 @@ a.casino-game:focus-visible {
   min-width: 0;
 }
 
-.casino-code-input {
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-.casino-code-input::placeholder {
-  font-weight: 500;
-  opacity: 0.4;
-}
-
 .casino-choices {
   width: 100%;
   margin: 4px 0;
@@ -452,61 +409,6 @@ a.casino-game:focus-visible {
 
 .casino-choice .casino-hint {
   display: block;
-}
-
-.casino-form .casino-btn {
-  margin-top: 4px;
-}
-
-/* The lists of tables */
-.casino-list-card {
-  margin-bottom: 20px;
-  scroll-margin-top: calc(var(--nav-top-h) + 16px);
-}
-
-.casino-rooms {
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  list-style: none;
-}
-
-.casino-rooms:empty {
-  display: none;
-}
-
-.casino-room {
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-radius: 12px;
-  background: var(--background);
-}
-
-.casino-room-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.casino-room-name {
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-
-.casino-room-meta {
-  font-size: 0.85rem;
-  opacity: 0.75;
-}
-
-.casino-room form {
-  flex: none;
-  margin: 0;
 }
 
 /* Leaderboards (gambling/blackjack/leaderboard.php, gambling/roulette/leaderboard.php) */
@@ -654,15 +556,6 @@ a.casino-game:focus-visible {
 
   .casino-daily .casino-btn {
     align-self: stretch;
-  }
-
-  .casino-room {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .casino-room .casino-btn {
-    width: 100%;
   }
 
   .casino-table th,

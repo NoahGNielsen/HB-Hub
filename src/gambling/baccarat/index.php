@@ -110,31 +110,57 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
+    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/lobby.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/lobby.css') ?>">
     <title>Baccarat - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Baccarat in the HB Hub casino">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino" data-bac-lobby data-seated="<?= $lobbyRoom !== null ? '1' : '0' ?>">
-        <a class="casino-back" href="/gambling/">&larr; Casino</a>
-        <div class="casino-title-row">
-            <h1>Baccarat</h1>
-            <a class="casino-btn" href="/gambling/baccarat/leaderboard">Leaderboard</a>
+    <main class="lobby lobby-baccarat" data-bac-lobby data-seated="<?= $lobbyRoom !== null ? '1' : '0' ?>">
+        <a class="lobby-back" href="/gambling/">&larr; Casino</a>
+        <header class="lobby-hero">
+            <div class="lobby-hero-icon">
+                <!-- The Player's card and the Banker's, in their colours -->
+                <svg viewBox="0 0 64 64" aria-hidden="true">
+                    <rect x="7" y="12" width="28" height="40" rx="5" fill="#fff" transform="rotate(-10 21 32)"/>
+                    <rect x="11" y="16" width="20" height="32" rx="3" fill="#2f6fd6" transform="rotate(-10 21 32)"/>
+                    <rect x="29" y="12" width="28" height="40" rx="5" fill="#fff" transform="rotate(10 43 32)"/>
+                    <rect x="33" y="16" width="20" height="32" rx="3" fill="#d23c3c" transform="rotate(10 43 32)"/>
+                    <circle cx="32" cy="50" r="7" fill="#e8b64c" stroke="#fff" stroke-width="2"/>
+                </svg>
+            </div>
+            <div class="lobby-hero-text">
+                <h1>Baccarat</h1>
+                <p class="lobby-tagline">Bet on the Player or the Banker, whichever ends closest to 9. Everyone at the table bets on the same hands.</p>
+                <ul class="lobby-facts">
+                    <li><?= HBHUB_BACCARAT_MIN_PLAYERS ?>-<?= HBHUB_BACCARAT_SEATS ?> players</li>
+                    <li>Min bet <?= number_format(min(HBHUB_BACCARAT_MIN_BETS)) ?>-<?= number_format(max(HBHUB_BACCARAT_MIN_BETS)) ?> chips</li>
+                    <li>Tie pays 8:1</li>
+                </ul>
+            </div>
+            <div class="lobby-hero-actions">
+                <a class="lobby-hero-btn" href="/gambling/baccarat/leaderboard">Leaderboard</a>
+                <a class="lobby-hero-btn" href="#rules">Rules</a>
+            </div>
+        </header>
+
+        <div class="lobby-notes">
+            <?php if (isset($lobbyErrors['list'])): ?>
+                <p class="casino-alert" role="alert"><?= htmlspecialchars($lobbyErrors['list']) ?></p>
+            <?php endif; ?>
         </div>
-        <p class="casino-intro">
-            Bet on the <strong class="casino-bac-player">Player</strong> or the <strong class="casino-bac-banker">Banker</strong>,
-            whichever ends closest to 9. For <?= HBHUB_BACCARAT_MIN_PLAYERS ?>-<?= HBHUB_BACCARAT_SEATS ?> players at a table.
-        </p>
-        <?php if (isset($lobbyErrors['list'])): ?>
-            <p class="casino-alert" role="alert"><?= htmlspecialchars($lobbyErrors['list']) ?></p>
-        <?php endif; ?>
 
         <?php if ($lobbyRoom !== null): ?>
-            <section class="casino-card casino-your-table" aria-labelledby="lobby-yours-title">
-                <h2 id="lobby-yours-title">Your table</h2>
-                <p class="casino-hint">You're sitting at <strong><?= htmlspecialchars($lobbyRoom['roomName']) ?></strong>. You can be at one table at a time.</p>
-                <div class="casino-actions">
+            <section class="lobby-panel lobby-current" aria-labelledby="lobby-yours-title">
+                <div class="lobby-current-text">
+                    <span class="lobby-pulse" aria-hidden="true"></span>
+                    <div>
+                        <h2 id="lobby-yours-title">Your table</h2>
+                        <p class="lobby-hint">You're sitting at <strong class="lobby-current-name"><?= htmlspecialchars($lobbyRoom['roomName']) ?></strong>. You can be at one table at a time.</p>
+                    </div>
+                </div>
+                <div class="lobby-actions">
                     <a class="casino-btn casino-btn-primary" href="/gambling/baccarat/table?room=<?= $lobbyRoom['roomId'] ?>">Back to your table</a>
                     <form method="post">
                         <input type="hidden" name="action" value="leave">
@@ -144,84 +170,104 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
             </section>
         <?php endif; ?>
 
-        <div class="casino-overview">
-            <section class="casino-card" aria-labelledby="lobby-join-title">
-                <h2 id="lobby-join-title">Join a table</h2>
-                <fieldset class="casino-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
-                    <form method="post" class="casino-form">
-                        <input type="hidden" name="action" value="joinCode">
-                        <label class="casino-label" for="lobby-code">Join code</label>
-                        <div class="casino-inline">
-                            <input type="text" id="lobby-code" name="code" class="casino-input casino-code-input" maxlength="16" required
-                                   autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7PX3M"
-                                   value="<?= htmlspecialchars($lobbyValues['code']) ?>"<?= isset($lobbyErrors['code']) ? ' aria-describedby="lobby-code-error"' : '' ?>>
-                            <button type="submit" class="casino-btn casino-btn-primary">Join</button>
-                        </div>
-                        <?php if (isset($lobbyErrors['code'])): ?>
-                            <p class="casino-error" id="lobby-code-error" role="alert"><?= htmlspecialchars($lobbyErrors['code']) ?></p>
-                        <?php endif; ?>
-                    </form>
-                    <p class="casino-hint">
-                        Or join one of the public tables below. Baccarat needs at least <?= HBHUB_BACCARAT_MIN_PLAYERS ?>
-                        players, so open a table and bring a friend if there are none.
-                    </p>
-                </fieldset>
-            </section>
+        <div class="lobby-body">
+            <div class="lobby-side">
+                <section class="lobby-panel" aria-labelledby="lobby-join-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-join-title">Join a table</h2>
+                    </div>
+                    <fieldset class="lobby-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
+                        <form method="post" class="lobby-form">
+                            <input type="hidden" name="action" value="joinCode">
+                            <label class="casino-label" for="lobby-code">Join code</label>
+                            <div class="lobby-code">
+                                <input type="text" id="lobby-code" name="code" class="casino-input" maxlength="16" required
+                                       autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7PX3M"
+                                       value="<?= htmlspecialchars($lobbyValues['code']) ?>"<?= isset($lobbyErrors['code']) ? ' aria-describedby="lobby-code-error"' : '' ?>>
+                                <button type="submit" class="casino-btn casino-btn-primary">Join</button>
+                            </div>
+                            <?php if (isset($lobbyErrors['code'])): ?>
+                                <p class="casino-error" id="lobby-code-error" role="alert"><?= htmlspecialchars($lobbyErrors['code']) ?></p>
+                            <?php endif; ?>
+                        </form>
 
-            <section class="casino-card" aria-labelledby="lobby-create-title">
-                <h2 id="lobby-create-title">Open a table</h2>
-                <fieldset class="casino-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
-                    <form method="post" class="casino-form">
-                        <input type="hidden" name="action" value="create">
-                        <label class="casino-label" for="lobby-name">Name <span class="casino-optional">(optional)</span></label>
-                        <input type="text" id="lobby-name" name="name" class="casino-input" maxlength="<?= HBHUB_BACCARAT_ROOM_NAME_MAX ?>"
-                               placeholder="<?= htmlspecialchars(hbHubBaccaratRoomName(null, $hbHubUser['userName'])) ?>"
-                               value="<?= htmlspecialchars($lobbyValues['name']) ?>">
+                        <p class="lobby-hint lobby-form-note">
+                            Or join one of the public tables. If there are none, open a table and bring your friends.
+                        </p>
+                    </fieldset>
+                </section>
 
-                        <fieldset class="casino-choices">
-                            <legend class="casino-label">Who can join</legend>
-                            <?php foreach ([
-                                'public' => ['Public', 'Listed below, so anyone can join.'],
-                                'code' => ['With the code', 'Not listed. Anyone you give the code to can join.'],
-                                'invite' => ['Invite-only', 'Not listed. Only people you invite can join.'],
-                            ] as $value => [$label, $hint]): ?>
-                                <label class="casino-choice">
-                                    <input type="radio" name="type" value="<?= $value ?>"<?= $lobbyValues['type'] === $value ? ' checked' : '' ?>>
-                                    <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
-                                </label>
-                            <?php endforeach; ?>
-                        </fieldset>
+                <section class="lobby-panel" id="open" aria-labelledby="lobby-create-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-create-title">Open a table</h2>
+                    </div>
+                    <fieldset class="lobby-fieldset"<?= $lobbyRoom !== null ? ' disabled' : '' ?>>
+                        <form method="post" class="lobby-form">
+                            <input type="hidden" name="action" value="create">
+                            <label class="casino-label" for="lobby-name">Name <span class="casino-optional">(optional)</span></label>
+                            <input type="text" id="lobby-name" name="name" class="casino-input" maxlength="<?= HBHUB_BACCARAT_ROOM_NAME_MAX ?>"
+                                   placeholder="<?= htmlspecialchars(hbHubBaccaratRoomName(null, $hbHubUser['userName'])) ?>"
+                                   value="<?= htmlspecialchars($lobbyValues['name']) ?>">
 
-                        <label class="casino-label" for="lobby-min-bet">Minimum bet</label>
-                        <select id="lobby-min-bet" name="minBet" class="casino-input">
-                            <?php foreach (HBHUB_BACCARAT_MIN_BETS as $minBet): ?>
-                                <option value="<?= $minBet ?>"<?= $lobbyValues['minBet'] === $minBet ? ' selected' : '' ?>><?= number_format($minBet) ?> chips</option>
-                            <?php endforeach; ?>
-                        </select>
+                            <fieldset class="lobby-choices">
+                                <legend class="casino-label">Who can join</legend>
+                                <?php foreach ([
+                                    'public' => ['Public', 'Listed here, so anyone can join.'],
+                                    'code' => ['With the code', 'Not listed. Anyone you give the code to can join.'],
+                                    'invite' => ['Invite-only', 'Not listed. Only people you invite can join.'],
+                                ] as $value => [$label, $hint]): ?>
+                                    <label class="lobby-option">
+                                        <input type="radio" name="type" value="<?= $value ?>"<?= $lobbyValues['type'] === $value ? ' checked' : '' ?>>
+                                        <span class="lobby-option-text"><strong><?= $label ?></strong> <span class="lobby-hint"><?= $hint ?></span></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </fieldset>
 
-                        <button type="submit" class="casino-btn casino-btn-primary">Open table</button>
-                        <?php if (isset($lobbyErrors['create'])): ?>
-                            <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['create']) ?></p>
-                        <?php endif; ?>
-                    </form>
-                </fieldset>
-            </section>
+                            <fieldset class="lobby-bets">
+                                <legend class="casino-label">Minimum bet in chips</legend>
+                                <?php foreach (HBHUB_BACCARAT_MIN_BETS as $minBet): ?>
+                                    <label class="lobby-bet">
+                                        <input type="radio" name="minBet" value="<?= $minBet ?>"<?= $lobbyValues['minBet'] === $minBet ? ' checked' : '' ?>>
+                                        <img src="/assets/images/icons/chip.svg" alt=""><?= number_format($minBet) ?>
+                                    </label>
+                                <?php endforeach; ?>
+                            </fieldset>
+
+                            <button type="submit" class="casino-btn casino-btn-primary lobby-submit">Open table</button>
+                            <?php if (isset($lobbyErrors['create'])): ?>
+                                <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['create']) ?></p>
+                            <?php endif; ?>
+                        </form>
+                    </fieldset>
+                </section>
+            </div>
+
+            <div class="lobby-lists">
+                <section class="lobby-panel lobby-list lobby-invites is-empty" id="invites" aria-labelledby="lobby-invites-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-invites-title">Your invites</h2>
+                        <span class="lobby-count" data-bac-invites-count></span>
+                    </div>
+                    <ul class="lobby-rooms" data-bac-invites></ul>
+                    <p class="lobby-empty" data-bac-invites-empty>Loading…</p>
+                </section>
+
+                <section class="lobby-panel lobby-list" aria-labelledby="lobby-rooms-title">
+                    <div class="lobby-panel-head">
+                        <h2 id="lobby-rooms-title">Public tables</h2>
+                        <span class="lobby-count" data-bac-rooms-count></span>
+                        <span class="lobby-live" title="This list keeps itself up to date"><span class="lobby-pulse" aria-hidden="true"></span>Live</span>
+                    </div>
+                    <ul class="lobby-rooms" data-bac-rooms></ul>
+                    <p class="lobby-empty" data-bac-rooms-empty>Loading…</p>
+                </section>
+            </div>
         </div>
 
-        <section class="casino-card casino-list-card" id="invites" aria-labelledby="lobby-invites-title">
-            <h2 id="lobby-invites-title">Your invites</h2>
-            <ul class="casino-rooms" data-bac-invites></ul>
-            <p class="casino-hint" data-bac-invites-empty>Loading…</p>
-        </section>
-
-        <section class="casino-card casino-list-card" aria-labelledby="lobby-rooms-title">
-            <h2 id="lobby-rooms-title">Public tables</h2>
-            <ul class="casino-rooms" data-bac-rooms></ul>
-            <p class="casino-hint" data-bac-rooms-empty>Loading…</p>
-        </section>
-
-        <section class="casino-card casino-rules" aria-labelledby="lobby-rules-title">
-            <h2 id="lobby-rules-title">Rules</h2>
+        <section class="lobby-panel lobby-rules" id="rules" aria-labelledby="lobby-rules-title">
+            <div class="lobby-panel-head">
+                <h2 id="lobby-rules-title">Rules</h2>
+            </div>
             <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/baccarat/rules.php'; ?>
         </section>
     </main>

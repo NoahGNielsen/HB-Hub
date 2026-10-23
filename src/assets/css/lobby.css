@@ -1,0 +1,828 @@
+/* The game lobbies (gambling/blackjack/, gambling/baccarat/, games/matador/, games/chess/, games/uno/): a header in
+   the game's own colours, the user's table, the forms to join or open one, the lists of tables (built by
+   <game>Lobby.js) and the rules. Loaded after casino.css (and games.css), whose buttons, inputs and dialogs they use.
+   Each lobby's <main> has a lobby-<game> class that sets its colours:
+   --lobby-from/--lobby-to the header's gradient, --lobby-pattern drawn over it, --lobby-tint the game's colour for the
+   small things (seat dots, the stripe on a table's row). */
+.lobby {
+  --lobby-from: #2b3442;
+  --lobby-to: #161a21;
+  --lobby-pattern: none;
+  --lobby-tint: var(--accent);
+  --lobby-live: #2fa36b;
+  --lobby-busy: #f0a01f;
+  --lobby-line: color-mix(in srgb, var(--text) 8%, transparent);
+  --casino-up: #2fa36b; /* for casino.css's errors and alerts, set on .casino there */
+  --casino-down: #d64545;
+  max-width: 1120px;
+  margin: 32px auto 48px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  font-variant-numeric: lining-nums; /* Raleway's numbers are old-style, and a lobby is mostly counts and bets */
+}
+
+.lobby [hidden] {
+  display: none !important;
+}
+
+/* The games' colours */
+.lobby-blackjack {
+  --lobby-from: #17804f;
+  --lobby-to: #0a3a24;
+  --lobby-pattern: radial-gradient(ellipse 70% 90% at 75% -10%, rgba(255, 255, 255, 0.2), transparent 70%);
+  --lobby-tint: #34c27a;
+}
+
+.lobby-baccarat {
+  --lobby-from: #7c1527;
+  --lobby-to: #2a0a12;
+  --lobby-pattern: radial-gradient(circle at 88% 15%, rgba(232, 182, 76, 0.4), transparent 45%);
+  --lobby-tint: #e8b64c;
+}
+
+.lobby-matador {
+  --lobby-from: #c8102e;
+  --lobby-to: #560716;
+  /* The squares round the edge of a Matador board */
+  --lobby-pattern: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 2px, transparent 2px 64px);
+  --lobby-tint: #f0485c;
+}
+
+.lobby-chess {
+  --lobby-from: #6e4c2f;
+  --lobby-to: #21170f;
+  --lobby-pattern: repeating-conic-gradient(rgba(255, 255, 255, 0.07) 0 25%, transparent 0 50%) 0 0 / 56px 56px;
+  --lobby-tint: #e0ad74;
+}
+
+.lobby-uno {
+  --lobby-from: #e5322d;
+  --lobby-to: #1c6dd0;
+  /* Darkened, so the white text can be read on the yellow and green */
+  --lobby-pattern: linear-gradient(rgba(10, 12, 16, 0.38), rgba(10, 12, 16, 0.38)),
+    linear-gradient(135deg, #e5322d 0 25%, #f2b705 25% 50%, #2f9e44 50% 75%, #1c6dd0 75%);
+  --lobby-tint: #f2b705;
+}
+
+/* The way back to the casino or the games */
+.lobby-back {
+  margin-bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  opacity: 0.7;
+}
+
+.lobby-back:hover,
+.lobby-back:focus-visible {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* The header */
+.lobby-hero {
+  position: relative;
+  padding: 32px 36px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 28px;
+  overflow: hidden;
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--lobby-pattern), linear-gradient(135deg, var(--lobby-from), var(--lobby-to));
+  color: #fff;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.lobby-hero-icon {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.lobby-hero-icon svg {
+  width: 56px;
+  height: 56px;
+}
+
+.lobby-hero-text {
+  min-width: 0;
+}
+
+.lobby-hero h1 {
+  margin: 0;
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.lobby-tagline {
+  max-width: 56ch;
+  margin: 8px 0 0;
+  line-height: 1.5;
+  opacity: 0.88;
+}
+
+/* The game's facts under the tagline, like "2-4 players" */
+.lobby-facts {
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+}
+
+.lobby-facts li {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.lobby-hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lobby-hero-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.lobby-hero-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.lobby-hero-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Messages under the header ("That table isn't there anymore.", UNO's beta note, Matador's stopped game) */
+.lobby-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lobby-notes:has(> *) {
+  margin-top: 20px;
+}
+
+.lobby-notes .casino-alert {
+  margin: 0;
+}
+
+/* The panels everything else is in */
+.lobby-panel {
+  padding: 24px;
+  box-sizing: border-box;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  box-shadow: inset 0 0 0 1px var(--lobby-line);
+}
+
+.lobby h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.lobby-panel-head {
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.lobby-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  opacity: 0.75;
+}
+
+/* The table or game the user is at, and Matador's saved game: a strip right under the header */
+.lobby-current {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 16%, var(--secondary)), var(--secondary) 70%);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.lobby-current-text {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.lobby-current-text h2 {
+  margin-bottom: 4px;
+}
+
+.lobby-current-name {
+  overflow-wrap: anywhere;
+}
+
+/* The dot that pulses on "Your table" and "Live" */
+.lobby-pulse {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
+  animation: lobby-pulse 2s ease-out infinite;
+}
+
+@keyframes lobby-pulse {
+  70% { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.lobby-current-saved {
+  background: var(--secondary);
+  box-shadow: inset 0 0 0 1px var(--lobby-line);
+}
+
+.lobby-current-saved .lobby-pulse {
+  background: var(--lobby-tint);
+  animation: none;
+}
+
+.lobby-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.lobby-actions form {
+  margin: 0;
+}
+
+.lobby-current .casino-error {
+  flex-basis: 100%;
+}
+
+/* The forms on the right and the lists on the left. On small screens they go under each other, the forms first */
+.lobby-body {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-areas: "lists side";
+  align-items: start;
+  gap: 24px;
+}
+
+.lobby-side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lobby-lists {
+  grid-area: lists;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* The forms are switched off while the user is at a table */
+.lobby-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.lobby-fieldset:disabled {
+  opacity: 0.5;
+}
+
+.lobby-form {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lobby-form + .lobby-form,
+.lobby-form .lobby-submit {
+  margin-top: 12px;
+}
+
+.lobby-submit {
+  width: 100%;
+}
+
+/* A line of text under a form, like Baccarat's "Or join one of the public tables" */
+.lobby-form-note {
+  margin-top: 16px;
+}
+
+.lobby-code {
+  display: flex;
+  gap: 8px;
+}
+
+.lobby-code .casino-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.lobby-code .casino-input::placeholder {
+  font-weight: 600;
+  opacity: 0.3;
+}
+
+/* "or" between the join code and playing solo */
+.lobby-or {
+  margin: 16px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.lobby-or::before,
+.lobby-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.4;
+}
+
+/* Who can join: a tile for each choice */
+.lobby-choices {
+  min-width: 0;
+  margin: 8px 0 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lobby-choices legend {
+  margin-bottom: 8px;
+}
+
+.lobby-option {
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: 12px;
+  background: var(--background);
+  box-shadow: inset 0 0 0 2px transparent;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.lobby-option:hover {
+  background: color-mix(in srgb, var(--text) 5%, var(--background));
+}
+
+.lobby-option:has(input:checked) {
+  background: color-mix(in srgb, var(--accent) 10%, var(--background));
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.lobby-option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lobby-option input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+
+.lobby-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lobby-option-text .lobby-hint {
+  font-size: 0.85rem;
+}
+
+/* The minimum bet: a row of chips to pick from */
+.lobby-bets {
+  min-width: 0;
+  margin: 8px 0 0;
+  padding: 0;
+  border: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 8px;
+}
+
+.lobby-bets legend {
+  margin-bottom: 8px;
+}
+
+.lobby-bet {
+  position: relative;
+  padding: 10px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: var(--background);
+  box-shadow: inset 0 0 0 2px transparent;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.lobby-bet:hover {
+  background: color-mix(in srgb, var(--text) 5%, var(--background));
+}
+
+.lobby-bet input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lobby-bet:has(input:checked) {
+  background: color-mix(in srgb, var(--accent) 14%, var(--background));
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.lobby-bet:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lobby-bet img {
+  width: 16px;
+  height: 16px;
+}
+
+.lobby-side .games-warning {
+  margin-top: 12px;
+}
+
+/* The lists of tables */
+.lobby-list {
+  scroll-margin-top: calc(var(--nav-top-h, 0px) + 16px);
+}
+
+/* With no invites, the invites go under the public tables (the lobby's JS sets is-empty) */
+.lobby-invites.is-empty {
+  order: 1;
+}
+
+.lobby-count {
+  min-width: 1.6em;
+  padding: 2px 8px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--background);
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.lobby-count:empty {
+  display: none;
+}
+
+.lobby-live {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.lobby-live .lobby-pulse {
+  width: 8px;
+  height: 8px;
+  margin: 0;
+  background: var(--lobby-live);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--lobby-live) 60%, transparent);
+}
+
+.lobby-rooms {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+}
+
+.lobby-rooms:empty {
+  display: none;
+}
+
+/* The name over the details, the button on the right */
+.lobby-room {
+  padding: 14px 16px 14px 20px;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "text button" "info button";
+  align-items: center;
+  gap: 8px 20px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--background);
+}
+
+/* The game's colour down the left edge, the accent on an invite */
+.lobby-room::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--lobby-tint);
+}
+
+.lobby-room.is-invite {
+  background: color-mix(in srgb, var(--accent) 8%, var(--background));
+}
+
+.lobby-room.is-invite::before {
+  background: var(--accent);
+}
+
+.lobby-room.is-full::before {
+  opacity: 0.3;
+}
+
+.lobby-room-text {
+  grid-area: text;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.lobby-room-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.lobby-room-meta {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.lobby-room-meta:empty {
+  display: none;
+}
+
+.lobby-room-info {
+  grid-area: info;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  font-size: 0.85rem;
+}
+
+.lobby-room form {
+  grid-area: button;
+  margin: 0;
+}
+
+.lobby-room .casino-btn {
+  min-width: 92px;
+}
+
+/* How many seats are taken, as dots */
+.lobby-seats {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lobby-seat-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.lobby-seat {
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border: 2px solid color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: 50%;
+}
+
+.lobby-seat.is-taken {
+  border-color: var(--lobby-tint);
+  background: var(--lobby-tint);
+}
+
+.lobby-tag {
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: var(--secondary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lobby-tag img {
+  width: 14px;
+  height: 14px;
+}
+
+/* "In a hand" or "Waiting" */
+.lobby-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--lobby-live);
+}
+
+.lobby-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.lobby-status.is-busy {
+  color: var(--lobby-busy);
+}
+
+/* What a list says when it's empty (or still loading) */
+.lobby-empty {
+  margin: 0;
+  padding: 22px 16px;
+  border: 2px dashed var(--lobby-line);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  text-align: center;
+  opacity: 0.75;
+}
+
+/* The rules */
+.lobby-rules {
+  margin-top: 24px;
+  scroll-margin-top: calc(var(--nav-top-h, 0px) + 16px);
+}
+
+.lobby-rules .casino-rule-list {
+  columns: 2 320px;
+  column-gap: 40px;
+  display: block;
+}
+
+.lobby-rules .casino-rule-list li {
+  margin-bottom: 8px;
+  break-inside: avoid;
+}
+
+@media (max-width: 900px) {
+  .lobby-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "side" "lists";
+  }
+
+  .lobby-side {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    align-items: start;
+  }
+
+  .lobby-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .lobby-hero-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .lobby {
+    margin-top: 16px;
+  }
+
+  .lobby-hero {
+    padding: 24px 20px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .lobby-hero-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+  }
+
+  .lobby-hero-icon svg {
+    width: 38px;
+    height: 38px;
+  }
+
+  .lobby-hero h1 {
+    font-size: 2rem;
+  }
+
+  .lobby-hero-btn {
+    flex: 1;
+  }
+
+  .lobby-panel {
+    padding: 20px 16px;
+  }
+
+  .lobby-current .lobby-actions,
+  .lobby-current .lobby-actions > * {
+    flex: 1;
+  }
+
+  .lobby-current .casino-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .lobby-room {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "text" "info" "button";
+  }
+
+  .lobby-room .casino-btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lobby-pulse {
+    animation: none;
+  }
+
+  .lobby-option,
+  .lobby-bet {
+    transition: none;
+  }
+}
