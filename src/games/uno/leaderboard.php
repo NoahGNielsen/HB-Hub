@@ -30,6 +30,9 @@ $userId = (int) $hbHubUser['userId'];
 
 $sort = is_string($_GET['sort'] ?? null) && isset(LEADERBOARD_COLUMNS[$_GET['sort']]) ? $_GET['sort'] : 'wins';
 $dir = in_array($_GET['dir'] ?? null, ['asc', 'desc'], true) ? $_GET['dir'] : LEADERBOARD_COLUMNS[$sort][1];
+// The top three get a gold, silver and bronze rank, but only while it's sorted the way the column sorts first (not by
+// name, or turned round)
+$podium = $sort !== 'player' && $dir === LEADERBOARD_COLUMNS[$sort][1];
 
 // Banned and deleted accounts (userStatus NULL) are left out
 $statement = $db->prepare('SELECT r.userId, u.userName, u.userAvatarAttachmentId,
@@ -95,7 +98,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino games">
+    <main class="casino casino-leaderboard games">
         <a class="casino-back" href="/games/uno/">&larr; UNO</a>
         <h1>UNO leaderboard</h1>
         <p class="casino-intro">
@@ -104,7 +107,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
             everyone else's hands: Points is all of them together, and Best win the most in one game.
         </p>
 
-        <section class="casino-card" aria-label="Leaderboard">
+        <section class="casino-card casino-board" aria-label="Leaderboard">
             <?php if ($rows === []): ?>
                 <p class="casino-hint">Nobody has finished a game yet. <a href="/games/uno/">Be the first!</a></p>
             <?php else: ?>
@@ -126,9 +129,10 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                             <?php foreach ($rows as $index => $row):
                                 $avatarSrc = hbHubAvatarUrl($row['userId'], $row['avatarId']);
                                 $isUnranked = in_array($sort, LEADERBOARD_NULLABLE, true) && $row[$sort] === null;
+                                $place = $podium && !$isUnranked && $index < 3 ? $index + 1 : null;
                             ?>
                                 <tr<?= $row['userId'] === $userId ? ' class="is-you"' : '' ?>>
-                                    <td class="casino-rank"><?= $isUnranked ? '–' : $index + 1 ?></td>
+                                    <td class="casino-rank"<?= $place !== null ? ' data-podium="' . $place . '"' : '' ?>><?= $isUnranked ? '–' : $index + 1 ?></td>
                                     <td>
                                         <a class="casino-player" href="<?= htmlspecialchars(hbHubProfileUrl($row['userId'])) ?>">
                                             <span class="casino-avatar" aria-hidden="true">

@@ -1,5 +1,5 @@
 <?php
-// Casino home (the Gambling section): the user's chips, the daily chips and the games.
+// Casino home (the Gambling section): the user's chips, the daily chips, the games and a link to the casino leaderboard.
 // casino.js (loaded by navPanel.php along with the chip count in the top bar) keeps the chips and the countdown up to date.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
@@ -67,7 +67,10 @@ function casinoCountdown(int $seconds): string
         </div>
 
         <section class="casino-games" aria-labelledby="casino-games-title">
-            <h2 id="casino-games-title">Games</h2>
+            <div class="casino-games-head">
+                <h2 id="casino-games-title">Games</h2>
+                <a class="casino-btn" href="/gambling/leaderboard">Leaderboard</a>
+            </div>
             <ul class="casino-game-list">
                 <li>
                     <a class="casino-game" href="/gambling/blackjack/">

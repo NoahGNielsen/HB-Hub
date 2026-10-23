@@ -31,6 +31,9 @@ $today = hbHubWordleToday();
 $language = is_string($_GET['lang'] ?? null) && isset(HBHUB_WORDLE_LANGUAGES[$_GET['lang']]) ? $_GET['lang'] : 'en';
 $sort = is_string($_GET['sort'] ?? null) && isset(LEADERBOARD_COLUMNS[$_GET['sort']]) ? $_GET['sort'] : 'currentStreak';
 $dir = in_array($_GET['dir'] ?? null, ['asc', 'desc'], true) ? $_GET['dir'] : LEADERBOARD_COLUMNS[$sort][1];
+// The top three get a gold, silver and bronze rank, but only while it's sorted the way the column sorts first (not by
+// name, or turned round)
+$podium = $sort !== 'player' && $dir === LEADERBOARD_COLUMNS[$sort][1];
 
 // Every counted game in the language, grouped by player below. Banned and deleted accounts (userStatus NULL) are left out.
 $statement = $db->prepare('SELECT g.userId, u.userName, u.userAvatarAttachmentId, g.gameDate, g.gameResult, g.gameGuesses
@@ -104,7 +107,7 @@ function leaderboardSortUrl(string $language, string $column, string $sort, stri
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino games wordle">
+    <main class="casino casino-leaderboard games wordle">
         <a class="casino-back" href="/games/wordle/?lang=<?= $language ?>">&larr; Wordle</a>
         <h1>Wordle leaderboard</h1>
         <p class="casino-intro">
@@ -122,7 +125,7 @@ function leaderboardSortUrl(string $language, string $column, string $sort, stri
             <?php endforeach; ?>
         </nav>
 
-        <section class="casino-card" aria-label="<?= HBHUB_WORDLE_LANGUAGES[$language] ?> leaderboard">
+        <section class="casino-card casino-board" aria-label="<?= HBHUB_WORDLE_LANGUAGES[$language] ?> leaderboard">
             <?php if ($rows === []): ?>
                 <p class="casino-hint">Nobody has finished a <?= HBHUB_WORDLE_LANGUAGES[$language] ?> word yet. <a href="/games/wordle/?lang=<?= $language ?>">Be the first!</a></p>
             <?php else: ?>
@@ -144,9 +147,10 @@ function leaderboardSortUrl(string $language, string $column, string $sort, stri
                             <?php foreach ($rows as $index => $row):
                                 $avatarSrc = hbHubAvatarUrl($row['userId'], $row['avatarId']);
                                 $isUnranked = in_array($sort, LEADERBOARD_NULLABLE, true) && $row[$sort] === null;
+                                $place = $podium && !$isUnranked && $index < 3 ? $index + 1 : null;
                             ?>
                                 <tr<?= $row['userId'] === $userId ? ' class="is-you"' : '' ?>>
-                                    <td class="casino-rank"><?= $isUnranked ? '–' : $index + 1 ?></td>
+                                    <td class="casino-rank"<?= $place !== null ? ' data-podium="' . $place . '"' : '' ?>><?= $isUnranked ? '–' : $index + 1 ?></td>
                                     <td>
                                         <a class="casino-player" href="<?= htmlspecialchars(hbHubProfileUrl($row['userId'])) ?>">
                                             <span class="casino-avatar" aria-hidden="true">
