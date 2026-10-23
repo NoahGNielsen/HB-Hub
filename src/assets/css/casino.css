@@ -302,13 +302,41 @@ a.casino-game:hover .casino-game-art {
   --game-mark: #e8b931;
 }
 
-/* The UNO cards in the game's own colours (yellow is --game-mark) */
+/* The UNO cards in the game's own colours (yellow is --game-mark), with solid white borders so the cards under them
+   don't show through */
+.casino-game-uno .casino-game-art {
+  fill: #fff;
+}
+
 .casino-game-uno .casino-game-art-red {
   fill: #d63a2f;
 }
 
 .casino-game-uno .casino-game-art-green {
   fill: #3a9a4a;
+}
+
+/* The numbers: chunky, slanted and outlined in black like on the real cards. The big one in the oval is in the card's
+   colour, the small corner ones are white */
+.casino-game-uno .casino-game-art-number,
+.casino-game-uno .casino-game-art-corner {
+  font-family: "Arial Black", Arial, sans-serif;
+  font-weight: 900;
+  font-style: italic;
+  stroke: #1d1f24;
+  paint-order: stroke;
+}
+
+.casino-game-uno .casino-game-art-number {
+  font-size: 15px;
+  fill: #d63a2f;
+  stroke-width: 1.2px;
+}
+
+.casino-game-uno .casino-game-art-corner {
+  font-size: 6px;
+  fill: #fff;
+  stroke-width: 0.8px;
 }
 
 .casino-game-wordle {

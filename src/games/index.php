@@ -70,17 +70,26 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                             <span class="casino-game-kicker">2 to 6 players</span>
                             <span class="casino-game-name">UNO <span class="casino-game-badge">Beta</span></span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
-                                <!-- A fanned-out hand of three cards, green, yellow and red, with the UNO oval on the front one -->
+                                <!-- A fanned-out hand of three UNO cards: a green 3, a yellow 5 and a red 7 in front. Each has the
+                                     white border and its number in the corner; the front one also has the tilted white oval with
+                                     the big number in it, and the upside-down number in the bottom corner -->
                                 <g transform="rotate(-20 32 60)">
                                     <rect x="19" y="6" width="26" height="40" rx="4"/>
                                     <rect class="casino-game-art-green" x="21.5" y="8.5" width="21" height="35" rx="2.5"/>
+                                    <text class="casino-game-art-corner" x="23.5" y="15.5">3</text>
                                 </g>
-                                <rect x="19" y="6" width="26" height="40" rx="4"/>
-                                <rect class="casino-game-art-mark" x="21.5" y="8.5" width="21" height="35" rx="2.5"/>
+                                <g>
+                                    <rect x="19" y="6" width="26" height="40" rx="4"/>
+                                    <rect class="casino-game-art-mark" x="21.5" y="8.5" width="21" height="35" rx="2.5"/>
+                                    <text class="casino-game-art-corner" x="23.5" y="15.5">5</text>
+                                </g>
                                 <g transform="rotate(20 32 60)">
                                     <rect x="19" y="6" width="26" height="40" rx="4"/>
                                     <rect class="casino-game-art-red" x="21.5" y="8.5" width="21" height="35" rx="2.5"/>
-                                    <ellipse cx="32" cy="26" rx="7" ry="12.5" transform="rotate(35 32 26)"/>
+                                    <ellipse cx="32" cy="26" rx="7.5" ry="13" transform="rotate(35 32 26)"/>
+                                    <text class="casino-game-art-number" x="32" y="31.5" text-anchor="middle">7</text>
+                                    <text class="casino-game-art-corner" x="23.5" y="15.5">7</text>
+                                    <text class="casino-game-art-corner" transform="translate(40.5 36.5) rotate(180)">7</text>
                                 </g>
                             </svg>
                         </span>
