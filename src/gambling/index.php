@@ -183,7 +183,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
             </a>
 
             <div class="casino-home-wallet">
-                <p class="casino-kicker">Chips & Fun!</p>
+                <p class="casino-kicker">Gambling, Chips & Fun!</p>
                 <h1>Casino</h1>
                 <p class="casino-home-label">Your chips</p>
                 <p class="casino-home-balance">
@@ -276,7 +276,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
         <section class="casino-home-tables" aria-labelledby="casino-games-title">
             <div class="casino-home-section-head">
                 <h2 id="casino-games-title">Games</h2>
-                <p class="casino-hint">Every game uses the same chips.</p>
+                <p class="casino-hint">Every game uses chips.</p>
             </div>
             <ul class="casino-home-games">
                 <li>
@@ -405,7 +405,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
             <section class="casino-card casino-home-info" aria-labelledby="casino-info-title">
                 <h2 id="casino-info-title">Good to know</h2>
                 <ul class="casino-home-facts">
-                    <li>A new casino day starts at <?= HBHUB_CASINO_DAY_START ?> AM, Danish time.</li>
+                    <li>A new casino day starts at <?= HBHUB_CASINO_DAY_START ?> AM.</li>
                     <li>Chips are only for fun here: they can't be cashed out, and nothing you win is real money.</li>
                     <li>Each game has its own leaderboard with wins, losses and win %.</li>
                 </ul>
