@@ -627,7 +627,9 @@
 
     const asteroid = root.querySelector('[data-miner-asteroid]');
     const field = root.querySelector('[data-miner-field]');
+    const oreLine = root.querySelector('[data-miner-ore-line]');
     const oreText = root.querySelector('[data-miner-ore]');
+    const oreWord = root.querySelector('[data-miner-ore-word]');
     const rateText = root.querySelector('[data-miner-rate]');
     const clickText = root.querySelector('[data-miner-click]');
     const saveText = root.querySelector('[data-miner-save]');
@@ -999,13 +1001,24 @@
 
     // ----- Drawing
 
+    // The ore you have: the digits in one span, and the number's word (million, quattuordecillion, ...) in another
+    // next to "ore", which then gets its own line (is-long), so it doesn't jump between lines as the digits change
+    function showOre() {
+        const [number, word = ''] = format(state.ore, { long: true }).split(' ');
+        oreText.textContent = number;
+        if (oreWord.textContent !== word) {
+            oreWord.textContent = word;
+            oreLine.classList.toggle('is-long', word !== '');
+        }
+    }
+
     function frame() {
         if (!isPlaying) return;
         step('frame');
         framesSinceBeat++; // for the frame rate in crash reports (see beat())
         if (!document.hidden) {
             catchUp();
-            oreText.textContent = format(state.ore, { long: true });
+            showOre();
             rateText.textContent = format(rate(state, state.tick), { decimals: true });
         }
         requestAnimationFrame(frame);
@@ -2116,7 +2129,7 @@
         asteroid.classList.remove('is-hit');
         void asteroid.offsetWidth;
         asteroid.classList.add('is-hit');
-        oreText.textContent = format(state.ore, { long: true });
+        showOre();
     }
 
     asteroid.addEventListener('click', (event) => mine(event, event.detail === 0));

@@ -84,7 +84,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
         <div class="miner-view miner-layout" data-miner-view="ore"<?= $minerView !== 'ore' ? ' hidden' : '' ?>>
             <section class="casino-card miner-mine" aria-labelledby="miner-ore-title">
                 <h2 id="miner-ore-title" class="games-visually-hidden">Your asteroid</h2>
-                <p class="miner-ore"><span class="miner-ore-number" data-miner-ore>0</span> <span class="miner-ore-unit">ore</span></p>
+                <!-- From a million up the number's word goes with "ore" on its own line (is-long), see showOre() -->
+                <p class="miner-ore" data-miner-ore-line><span class="miner-ore-number" data-miner-ore>0</span> <span class="miner-ore-words"><span data-miner-ore-word></span> <span class="miner-ore-unit">ore</span></span></p>
                 <p class="miner-rate"><span data-miner-rate>0</span> ore per second</p>
                 <ul class="miner-buffs" data-miner-buffs aria-label="Comet effects"></ul>
 
