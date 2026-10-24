@@ -300,12 +300,6 @@
   color: var(--accent);
 }
 
-/* "293.962 quattuordecillion ore" is too wide for one line, and letting it wrap by itself made "ore" jump up and down
-   as the digits changed width, so from a million up the word and "ore" always get their own line */
-.miner-ore.is-long .miner-ore-words {
-  display: block;
-}
-
 .miner-rate,
 .miner-click-value {
   margin: 4px 0 0;
