@@ -999,13 +999,19 @@
 
     // ----- Drawing
 
+    // The ore you have. From a million up the number's word starts a new line ("293.962\nquattuordecillion", shown
+    // by white-space: pre-line in the CSS), so "ore" doesn't jump between lines as the digits change width
+    function showOre() {
+        oreText.textContent = format(state.ore, { long: true }).replace(' ', '\n');
+    }
+
     function frame() {
         if (!isPlaying) return;
         step('frame');
         framesSinceBeat++; // for the frame rate in crash reports (see beat())
         if (!document.hidden) {
             catchUp();
-            oreText.textContent = format(state.ore, { long: true });
+            showOre();
             rateText.textContent = format(rate(state, state.tick), { decimals: true });
         }
         requestAnimationFrame(frame);
@@ -2116,7 +2122,7 @@
         asteroid.classList.remove('is-hit');
         void asteroid.offsetWidth;
         asteroid.classList.add('is-hit');
-        oreText.textContent = format(state.ore, { long: true });
+        showOre();
     }
 
     asteroid.addEventListener('click', (event) => mine(event, event.detail === 0));

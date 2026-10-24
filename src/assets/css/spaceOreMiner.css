@@ -296,6 +296,12 @@
   overflow-wrap: anywhere;
 }
 
+/* spaceOreMiner.js puts a line break before the number's word (293.962 / quattuordecillion ore), so the line doesn't
+   wrap by itself and make "ore" jump up and down as the digits change width */
+.miner-ore-number {
+  white-space: pre-line;
+}
+
 .miner-ore-unit {
   color: var(--accent);
 }
