@@ -1019,8 +1019,6 @@
         step('tick: achievements');
         checkAchievements(state);
         renderAchievementsUnlocked();
-        step('tick: Auto Buy');
-        autoBuy();
         step('tick: Autopilot and Auto Crunch');
         autoPrestige();
         step('tick: store');
@@ -1039,6 +1037,13 @@
         renderMenu();
         step(null);
     }, 200);
+    // Auto Buy on its own, quicker timer (10 times a second, twice the tick above), so it keeps up with fast production
+    setInterval(() => {
+        if (!isPlaying || document.hidden) return;
+        step('tick: Auto Buy');
+        autoBuy();
+        step(null);
+    }, 100);
     setInterval(() => {
         if (!isPlaying || document.hidden || !statsPopup.open) return;
         step('stats');
@@ -2180,7 +2185,7 @@
         return best;
     }
 
-    // ----- Auto Buy (the Dark Matter upgrade): while it's switched on, a few times a second it buys whatever pays for
+    // ----- Auto Buy (the Dark Matter upgrade): while it's switched on, 10 times a second it buys whatever pays for
     // itself soonest. The choices are the building the B key would buy (one at a time) and every upgrade in the store,
     // affordable or not. Each one's payback time is how long until it can be afforded (at the ore per second now) plus
     // how long the ore per second it adds takes to earn its price back. When the best is an upgrade that can't be
