@@ -178,7 +178,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         </button>
                         <!-- With the Autopilot skill: Warp Jumps by itself while it's on (autoPrestige() in spaceOreMiner.js) -->
                         <button type="button" class="miner-amount miner-auto-prestige" aria-pressed="false"
-                                title="Warp Jump by itself whenever a jump would at least double your Dark Matter" data-miner-auto-warp hidden>
+                                title="Warp Jump by itself whenever a jump would at least quadruple your Dark Matter" data-miner-auto-warp hidden>
                             Autopilot
                         </button>
                     </div>
@@ -231,7 +231,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                             </button>
                             <!-- With the Auto Crunch skill: Big Crunches by itself while it's on (autoPrestige() in spaceOreMiner.js) -->
                             <button type="button" class="miner-amount miner-auto-prestige" aria-pressed="false"
-                                    title="Big Crunch by itself whenever a crunch would give at least a quarter of the Antimatter you've earned" data-miner-auto-crunch hidden>
+                                    title="Big Crunch by itself whenever a crunch would at least quadruple the Antimatter you've earned" data-miner-auto-crunch hidden>
                                 Auto Crunch
                             </button>
                         </div>

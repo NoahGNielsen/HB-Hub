@@ -2413,17 +2413,17 @@
     }
 
     // ----- Autopilot and Auto Crunch (the skills): while one is switched on, a few times a second it Warp Jumps once a
-    // jump would at least double the Dark Matter earned in this universe, or Big Crunches once a crunch would give at
-    // least AUTO_CRUNCH_SHARE of the Antimatter earned in this multiverse. Through act(), like the buttons, so the
+    // jump would make the Dark Matter earned in this universe at least AUTO_PRESTIGE_TIMES as much, or Big Crunches once
+    // a crunch would do the same for the Antimatter earned in this multiverse. Through act(), like the buttons, so the
     // server checks them as usual. Only while the page is open, like Auto Buy.
-    const AUTO_CRUNCH_SHARE = 0.25;
+    const AUTO_PRESTIGE_TIMES = 4;
 
     function autoPrestige() {
         const effects = skillEffects(state);
         if (isAutoCrunching && effects.autoCrunch) {
             catchUp();
             const gain = crunchGain(state);
-            if (gain >= 1 && gain >= state.antimatterEarned * AUTO_CRUNCH_SHARE) {
+            if (gain >= 1 && gain >= state.antimatterEarned * (AUTO_PRESTIGE_TIMES - 1)) {
                 doCrunch(true);
                 return;
             }
@@ -2431,7 +2431,7 @@
         if (isAutoWarping && effects.autoWarp) {
             catchUp();
             const gain = warpGain(state);
-            if (gain >= 1 && gain >= state.darkEarned) doWarp(true);
+            if (gain >= 1 && gain >= state.darkEarned * (AUTO_PRESTIGE_TIMES - 1)) doWarp(true);
         }
     }
 
