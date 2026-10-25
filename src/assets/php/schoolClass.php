@@ -16,7 +16,8 @@
 //
 // Class chats: everyone who started 1. year in the same year with the same field is a class, and has one group chat
 // (chatClassKey in HBHub-Chats, like "2026-X"). It follows the class through the years, so its messages stay, and it's
-// renamed when they move up ("1.X" to "2.X"). People are put in it as already accepted, so it's never a message request.
+// renamed when they move up ("1.X" to "2.X"). It's made by the system account (HBHUB_SYSTEM_USER_ID), not by whoever
+// happened to be first in the class. People are put in it as already accepted, so it's never a message request.
 // Nobody is a group admin in it, so nobody can rename it, kick or delete it, and members can't leave it or add others
 // (chat/index.php); only site admins can, from the admin panel. Changing class in settings moves them to the other one.
 require_once __DIR__ . '/chat.php';
@@ -214,7 +215,7 @@ function hbHubClassChatJoin(PDO $db, int $userId, string $key, string $name): vo
 
     if ($chat === false) {
         $db->prepare('INSERT INTO `HBHub-Chats` (chatName, chatType, chatCreatedBy, chatClassKey) VALUES (?, ?, ?, ?)')
-            ->execute([$name, HBHUB_CHAT_TYPE_GROUP, $userId, $key]);
+            ->execute([$name, HBHUB_CHAT_TYPE_GROUP, HBHUB_SYSTEM_USER_ID, $key]);
         $chatId = (int) $db->lastInsertId();
     } else {
         $chatId = (int) $chat['chatId'];

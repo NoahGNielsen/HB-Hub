@@ -43,7 +43,7 @@ function hbHubNameError(string $name, int $nameMax, ?string $currentName = null)
         return 'Names can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.';
     } elseif (mb_strlen($name) > $nameMax) {
         return "Please keep it to $nameMax characters or fewer.";
-    } elseif (hbHubIsDeletedUserName($name)) {
+    } elseif (hbHubIsReservedUserName($name)) {
         return 'That name can\'t be used. Please choose another one.';
     }
     return null;

@@ -14,6 +14,10 @@ const HBHUB_SESSION_COOKIE = 'hbHubSession';
 const HBHUB_SESSION_DAYS = 30;
 const HBHUB_SESSION_STATUS_BANNED = 4; // userStatus in HBHub-Users
 const HBHUB_DELETED_USER_NAME = 'Deleted User'; // userName of a deleted account, so nobody else can choose it
+// The site's own account, which makes what no user did (class chats, in assets/php/schoolClass.php). It's stored like a
+// deleted account (no password, userStatus NULL), so nobody can log in to it and it's left out of every user list.
+const HBHUB_SYSTEM_USER_ID = 0; // userId in HBHub-Users
+const HBHUB_SYSTEM_USER_NAME = 'HB Hub System'; // its userName, so nobody else can choose it
 // Set in a browser once a banned account is used in it, so onboarding doesn't make a new account there.
 // Holds the banned account's id, so logging in to that account again (after it's unbanned) takes it away.
 const HBHUB_BANNED_COOKIE = 'hbHubBanned';
@@ -138,11 +142,11 @@ function hbHubBannedCookieUserId(): ?int
 }
 
 /**
- * Whether the name is the one deleted accounts get (in any capitalisation), so it can't be chosen.
+ * Whether the name is the one deleted accounts get or the system account's (in any capitalisation), so it can't be chosen.
  */
-function hbHubIsDeletedUserName(string $name): bool
+function hbHubIsReservedUserName(string $name): bool
 {
-    return mb_strtolower($name) === mb_strtolower(HBHUB_DELETED_USER_NAME);
+    return in_array(mb_strtolower($name), [mb_strtolower(HBHUB_DELETED_USER_NAME), mb_strtolower(HBHUB_SYSTEM_USER_NAME)], true);
 }
 
 /**

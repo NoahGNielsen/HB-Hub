@@ -348,7 +348,7 @@ CREATE TABLE `HBHub-Chats` (
   `chatName` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `chatType` tinyint NOT NULL COMMENT '1 DM''s\r\n2 GDM''s',
   `chatStatus` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Active\r\n2 Deleted (everyone left, or a group admin deleted it)\r\n3 Deleted by a site admin (admin panel), at chatBannedTimestamp',
-  `chatCreatedBy` int UNSIGNED NOT NULL,
+  `chatCreatedBy` int UNSIGNED NOT NULL COMMENT 'userId of who made it. 0 (the HB Hub System account) for a class chat',
   `chatSettings` json DEFAULT NULL,
   `chatIconAttachmentId` int UNSIGNED DEFAULT NULL,
   `chatCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -836,6 +836,16 @@ CREATE TABLE `HBHub-Users` (
   `userGhostBannedTimestamp` datetime DEFAULT NULL COMMENT 'When a site admin ghost banned the account: what they do in chats only shows to themselves. NULL when not ghost banned',
   `userAttachmentTicketsExtra` smallint NOT NULL DEFAULT '0' COMMENT 'Chat attachment tickets a site admin added (positive) or took away (negative), on top of the 10 everyone has'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `HBHub-Users`
+--
+-- The HB Hub System account (HBHUB_SYSTEM_USER_ID), which makes the class chats. Stored like a deleted account, so
+-- nobody can log in to it and it's left out of every user list. Needs NO_AUTO_VALUE_ON_ZERO (set at the top) for id 0.
+--
+
+INSERT INTO `HBHub-Users` (`userId`, `userName`, `userNameLower`, `userPasswordHash`, `userFailedLoginCount`, `userStatus`, `userRole`) VALUES
+(0, 'HB Hub System', NULL, NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
