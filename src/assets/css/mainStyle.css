@@ -51,7 +51,7 @@
 
   /* Nav bars */
   --nav-bg: #161a21;
-  --nav-side-bg: #222833;
+  --nav-side-bg: #222833; /* a raised surface, like the ore mining toasts (the side bar itself is --nav-bg now) */
   --nav-text: #eceef2;
   --nav-hover: rgba(255, 255, 255, 0.08);
   --radius: 16px;
