@@ -1022,6 +1022,7 @@
     // says which.
     setInterval(() => {
         if (!isPlaying || document.hidden) return;
+        forgetFieldBox(); // the page may have moved it (see fieldBox())
         step('tick: achievements');
         checkAchievements(state);
         renderAchievementsUnlocked();
@@ -2109,21 +2110,41 @@
 
         const result = act(auto ? { type: 'click', count: 1, auto: true } : { type: 'click', count: 1 });
         if (!result) return;
-        const box = field.getBoundingClientRect();
-        const x = fromKeyboard ? box.width / 2 : event.clientX - box.left;
-        const y = fromKeyboard ? box.height / 2 : event.clientY - box.top;
-        burst(x, y, result.mined, result.crits > 0);
-        sound(result.crits > 0 ? 'crit' : 'click');
         if (auto && !wasAuto) {
             toast('robot', 'Hey! Looks like you\'re using an auto-clicker, so your clicks are only worth '
                 + CONFIG.autoValue * 100 + '% now.', '', 9000);
         }
         wasAuto = auto;
-        asteroid.classList.remove('is-hit');
-        void asteroid.offsetWidth;
-        asteroid.classList.add('is-hit');
         showOre();
+
+        // Behind: the clicks are coming in faster than this computer can show them (an auto-clicker on a slow one), so
+        // they only count until it's caught up. The browser always handles clicks waiting before its timers, so without
+        // this they piled up and the game's timers never got a turn: the store, Auto Buy and the watchdog's beat all
+        // stopped, which looked like a freeze (crash report #3)
+        if (performance.now() - event.timeStamp > CLICK_BEHIND_MS) return;
+        const box = fieldBox();
+        const x = fromKeyboard ? box.width / 2 : event.clientX - box.left;
+        const y = fromKeyboard ? box.height / 2 : event.clientY - box.top;
+        burst(x, y, result.mined, result.crits > 0);
+        sound(result.crits > 0 ? 'crit' : 'click');
+        // The shake, started over: switching to its other name does that (see .is-hit-again in the CSS)
+        const hit = asteroid.classList.contains('is-hit') ? 'is-hit-again' : 'is-hit';
+        asteroid.classList.remove('is-hit', 'is-hit-again');
+        asteroid.classList.add(hit);
     }
+
+    const CLICK_BEHIND_MS = 100; // a click handled this long after it happened: mine() is behind
+
+    // Where the picture is on the screen, for the clicks' bursts. Kept, because asking for it right after the last
+    // click's bits were added makes the browser lay the whole page out there and then, which on a slow computer took
+    // most of a click's time; forgotten a few times a second (the tick below) and when the page scrolls or resizes.
+    let fieldBoxKept = null;
+    const fieldBox = () => (fieldBoxKept ??= field.getBoundingClientRect());
+    const forgetFieldBox = () => {
+        fieldBoxKept = null;
+    };
+    addEventListener('resize', forgetFieldBox);
+    addEventListener('scroll', forgetFieldBox, { capture: true, passive: true });
 
     asteroid.addEventListener('click', (event) => mine(event, event.detail === 0));
 
@@ -2622,6 +2643,7 @@
             else link.removeAttribute('aria-current');
         }
         if (scrollY > 0) scrollTo({ top: 0 }); // the Ore view fits the screen from the top
+        forgetFieldBox(); // a hidden picture has no box
         placeSkillInfo(); // the screen may have changed size while the tree was out of sight
     }
 

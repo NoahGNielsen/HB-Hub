@@ -473,8 +473,14 @@
   cursor: progress;
 }
 
+/* Shaken when it's clicked. is-hit-again is the same shake under another name: spaceOreMiner.js switches between the
+   two, which starts it over without making the browser lay the page out again on every click */
 .miner-asteroid.is-hit {
   animation: miner-hit 0.15s ease;
+}
+
+.miner-asteroid.is-hit-again {
+  animation: miner-hit-again 0.15s ease;
 }
 
 .miner-asteroid[data-stage="1"] {
@@ -550,6 +556,10 @@
   animation: miner-hit 0.15s ease, miner-pulse 2s ease-in-out infinite alternate;
 }
 
+.miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"], [data-stage="9"]).is-hit-again {
+  animation: miner-hit-again 0.15s ease, miner-pulse 2s ease-in-out infinite alternate;
+}
+
 .miner-crater {
   position: absolute;
   border-radius: 50%;
@@ -569,6 +579,10 @@
 }
 
 @keyframes miner-hit {
+  50% { scale: 0.94; }
+}
+
+@keyframes miner-hit-again {
   50% { scale: 0.94; }
 }
 
@@ -3262,9 +3276,9 @@
   }
 
   .miner-field,
-  .miner-asteroid.is-hit,
+  .miner-asteroid:is(.is-hit, .is-hit-again),
   .miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"], [data-stage="9"]),
-  .miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"], [data-stage="9"]).is-hit,
+  .miner-asteroid:is([data-stage="4"], [data-stage="7"], [data-stage="8"], [data-stage="9"]):is(.is-hit, .is-hit-again),
   .miner-orbit,
   .miner-buff,
   .miner-menu-news,
