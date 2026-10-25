@@ -18,12 +18,12 @@
         if (timer !== null) {
             clearTimeout(timer);
             timer = null;
-            window.location.href = '/';
+            window.location.href = '/chat/';
             return;
         }
         timer = setTimeout(() => {
             timer = null;
-            window.location.href = '/chat/';
+            window.location.href = '/';
         }, DOUBLE_TAP_MS);
     });
 })();
