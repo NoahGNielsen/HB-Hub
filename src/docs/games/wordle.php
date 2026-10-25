@@ -14,12 +14,6 @@ $docsIntro = 'One word a day, ' . HBHUB_WORDLE_TRIES . ' tries to guess it. Ther
     the same for everyone. Play it on the <a href="/games/wordle/">Wordle</a> page.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
-                    <dl class="docs-facts">
-                        <div><dt>Letters</dt><dd><?= HBHUB_WORDLE_LENGTH ?></dd></div>
-                        <div><dt>Tries</dt><dd><?= HBHUB_WORDLE_TRIES ?></dd></div>
-                        <div><dt>Words a day</dt><dd><?= count(HBHUB_WORDLE_LANGUAGES) ?></dd></div>
-                        <div><dt>New words at</dt><dd>Midnight</dd></div>
-                    </dl>
 
                     <section id="play" aria-labelledby="docs-play">
                         <h2 id="docs-play">How to play</h2>

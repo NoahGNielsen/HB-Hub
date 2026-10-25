@@ -36,7 +36,6 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <div><dt>Buildings</dt><dd><?= count(HBHUB_MINER_BUILDINGS) ?></dd></div>
                         <div><dt>Skills</dt><dd><?= count(HBHUB_MINER_SKILLS) ?></dd></div>
                         <div><dt>Achievements</dt><dd><?= count(HBHUB_MINER_ACHIEVEMENTS) ?></dd></div>
-                        <div><dt>Saves every</dt><dd><?= HBHUB_MINER_SAVE_SECONDS ?> s</dd></div>
                     </dl>
 
                     <section id="start" aria-labelledby="docs-start">

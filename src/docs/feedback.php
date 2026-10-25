@@ -26,7 +26,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="admins" aria-labelledby="docs-admins">
                         <h2 id="docs-admins">Who are the admins?</h2>
                         <p>
-                            Site admins run HB Hub. They have a <strong>Site Admin</strong> badge in group member lists. They help
+                            Site admins run HB Hub. They have a <strong>Site Admin</strong> badge on their profiles. They help
                             people who are stuck, look into reports, and can ban accounts or delete messages that break the
                             <a href="/legal/code-of-conduct">Code of Conduct</a>. Everything they do in the admin panel is logged.
                         </p>
