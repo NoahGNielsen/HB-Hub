@@ -13,8 +13,6 @@
 // number of new feedback on it.
 // Feedback, at the bottom of the side bar (at the end of the bottom bar on a phone), opens otherPages/feedback.php with
 // the path of the page it was pressed on, so the feedback says where it came from and the user is sent back there.
-// The logo goes to the frontpage, except in the installed app, where one tap goes to the chats and two to the frontpage
-// (navBrand.js).
 require_once __DIR__ . '/chatUnread.php';
 require_once __DIR__ . '/feedback.php';
 require_once __DIR__ . '/notifications.php';
@@ -69,7 +67,7 @@ $navFeedbackHref = $navOnFeedback
     : HBHUB_FEEDBACK_PAGE . ($navFeedbackFrom !== null ? '?from=' . rawurlencode($navFeedbackFrom) : '');
 ?>
 <header class="nav-top">
-    <a class="nav-brand" href="/" aria-label="HB Hub, frontpage" data-nav-brand>
+    <a class="nav-brand" href="/" aria-label="HB Hub, frontpage">
         <span class="nav-brand-mark" aria-hidden="true">HB</span>
         <span class="nav-brand-name">Hub</span>
     </a>
@@ -133,7 +131,6 @@ $navFeedbackHref = $navOnFeedback
         </a>
     <?php endif; ?>
 </nav>
-<script src="https://hbhub.noahgajnielsen.dk/assets/js/navBrand.js?v=<?= filemtime(__DIR__ . '/../js/navBrand.js') ?>" defer></script>
 <?php if ($navUser !== null): ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/notificationBell.js?v=<?= filemtime(__DIR__ . '/../js/notificationBell.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/chatUnread.js?v=<?= filemtime(__DIR__ . '/../js/chatUnread.js') ?>" defer></script>
