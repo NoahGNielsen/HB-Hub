@@ -97,7 +97,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h3>Your account</h3>
                         <ul>
                             <li>Your name, and if you add them: your profile picture and bio.</li>
-                            <li>Your class: the school year you started 1. year at HTX in and your field of study (X, U, T, Y or Z), or that you don't go to HTX. Your year (or "Student" once you're past 3. year) is worked out from that, so it goes up every July 1st without anything being changed. If you're at HTX, you're also a member of your class's group chat (see Messages and chats below).</li>
+                            <li>Your class: the school year you started 1. year at HTX in and your field of study (X, U, T, Y or Z), or that you don't go to HTX. Your year (or "Graduate" once you're past 3. year) is worked out from that, so it goes up every July 1st without anything being changed. If you're at HTX, you're also a member of your class's group chat (see Messages and chats below).</li>
                             <li>Your password, but only as a one-way hash. Nobody, not even an admin, can read your password.</li>
                             <li>The secret behind your two-factor codes, if you turn two-factor login on.</li>
                             <li>Your settings, like which chats you've muted, hidden or blocked, whether new messages give you a browser notification or a sound, and whether you've blocked the Casino and Games, or a site admin has blocked them for you.</li>
@@ -295,7 +295,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <section id="see" aria-labelledby="privacy-see">
                         <h2 id="privacy-see">4. Who can see what</h2>
                         <ul>
-                            <li><strong>Everyone with an account</strong> can see your name, profile picture, bio, class (like "2.X", "Student (X)" or "Not HTX"), when you were last online, and your spot on the leaderboards.</li>
+                            <li><strong>Everyone with an account</strong> can see your name, profile picture, bio, class (like "2.X", "Graduate (X)" or "Not HTX"), when you were last online, and your spot on the leaderboards.</li>
                             <li><strong>Everyone in your class's group chat</strong> (everyone on HB Hub who started HTX the same year in the same field) can see that you're in it, and the messages you send there. You're put in it automatically when you sign up or change your class, and taken out of your old class's chat when you change it. Nobody is a group admin there, so only site admins can remove anyone or delete messages in it.</li>
                             <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group. When they remove a site admin, the site admin can undo it from their notification: they're put back in the group as they were, and the notice about it in the chat is deleted.</li>
                             <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>

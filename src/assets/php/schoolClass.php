@@ -6,7 +6,7 @@
 // Saved in userSettings (database/defaultUserSettings.json):
 // - classStartYear: the school year they were (or are) in 1. year, as the calendar year it starts in, so a 2. year in
 //   the 2026/27 school year has 2025. Their year itself isn't saved but worked out from this, so everyone moves up a
-//   year on July 1st without anything having to run: 1. becomes 2., 2. becomes 3., and 3. becomes "Student" (they've
+//   year on July 1st without anything having to run: 1. becomes 2., 2. becomes 3., and 3. becomes "Graduate" (they've
 //   graduated), still with their field of study. NULL when they don't go to HTX.
 // - class: their field of study, one of HBHUB_CLASS_FIELDS. NULL when they don't go to HTX.
 // - classNotHtx: true when they said they don't go to HTX
@@ -24,9 +24,9 @@ require_once __DIR__ . '/userSettings.php';
 
 const HBHUB_CLASS_YEARS = ['1', '2', '3']; // the years someone can say they're in, as the forms send them
 const HBHUB_CLASS_NOT_HTX = 'none'; // the year the forms send for "Not HTX"
-const HBHUB_CLASS_STUDENT = 'student'; // the year settings sends for a graduate keeping their class as it is
+const HBHUB_CLASS_GRADUATE = 'graduate'; // the year settings sends for a graduate keeping their class as it is
 const HBHUB_CLASS_FIELDS = ['X', 'U', 'T', 'Y', 'Z'];
-const HBHUB_CLASS_LAST_YEAR = 3; // after this they're a Student
+const HBHUB_CLASS_LAST_YEAR = 3; // after this they're a Graduate
 const HBHUB_CLASS_NEW_YEAR_MONTH = 7; // everyone moves up a year on the 1st of this month
 const HBHUB_CLASS_TIME_ZONE = 'Europe/Copenhagen'; // July 1st in the school's time, not the server's
 const HBHUB_CLASS_OLD_SETTINGS_SCHOOL_YEAR = 2026; // the school year an old "year" setting was picked in (see the top)
@@ -43,7 +43,7 @@ function hbHubClassSchoolYear(): int
 
 /**
  * Someone's class from their settings, or null when they haven't said (or it can't be read).
- * year is 1-3, or null when they've graduated or don't go to HTX. label is what profiles show: "2.X", "Student (X)"
+ * year is 1-3, or null when they've graduated or don't go to HTX. label is what profiles show: "2.X", "Graduate (X)"
  * or "Not HTX".
  *
  * @return ?array{notHtx: bool, startYear: ?int, year: ?int, field: ?string, label: string}
@@ -65,14 +65,14 @@ function hbHubClassOf(array $settings): ?array
 
     $year = max(1, hbHubClassSchoolYear() - $startYear + 1); // a start year in the future counts as 1. year
     if ($year > HBHUB_CLASS_LAST_YEAR) {
-        return ['notHtx' => false, 'startYear' => $startYear, 'year' => null, 'field' => $field, 'label' => 'Student (' . $field . ')'];
+        return ['notHtx' => false, 'startYear' => $startYear, 'year' => null, 'field' => $field, 'label' => 'Graduate (' . $field . ')'];
     }
     return ['notHtx' => false, 'startYear' => $startYear, 'year' => $year, 'field' => $field, 'label' => $year . '.' . $field];
 }
 
 /**
  * What the year and field pickers start on for someone's class: the year as the forms send it ('1'-'3', 'none' or
- * 'student') and the field, both '' when they haven't said.
+ * 'graduate') and the field, both '' when they haven't said.
  *
  * @return array{year: string, field: string}
  */
@@ -82,18 +82,18 @@ function hbHubClassFormValues(array $settings): array
     return match (true) {
         $class === null => ['year' => '', 'field' => ''],
         $class['notHtx'] => ['year' => HBHUB_CLASS_NOT_HTX, 'field' => ''],
-        $class['year'] === null => ['year' => HBHUB_CLASS_STUDENT, 'field' => $class['field']],
+        $class['year'] === null => ['year' => HBHUB_CLASS_GRADUATE, 'field' => $class['field']],
         default => ['year' => (string) $class['year'], 'field' => $class['field']],
     };
 }
 
 /**
  * Why the picked year and field can't be saved, or null when they can. The field only counts for 1. to 3. year.
- * $canBeStudent is for settings, where a graduate can keep being one.
+ * $canBeGraduate is for settings, where a graduate can stay one.
  */
-function hbHubClassError(string $year, string $field, bool $canBeStudent = false): ?string
+function hbHubClassError(string $year, string $field, bool $canBeGraduate = false): ?string
 {
-    $isHtx = in_array($year, HBHUB_CLASS_YEARS, true) || ($canBeStudent && $year === HBHUB_CLASS_STUDENT);
+    $isHtx = in_array($year, HBHUB_CLASS_YEARS, true) || ($canBeGraduate && $year === HBHUB_CLASS_GRADUATE);
     if (!$isHtx && $year !== HBHUB_CLASS_NOT_HTX) {
         return 'Please choose your year.';
     }
@@ -105,7 +105,7 @@ function hbHubClassError(string $year, string $field, bool $canBeStudent = false
 
 /**
  * The settings with the picked year and field saved in them (checked with hbHubClassError() first).
- * Picking 'student' keeps the start year they have, so it only works for someone who's already a Student.
+ * Picking 'graduate' keeps the start year they have, so it only works for someone who's already a Graduate.
  */
 function hbHubClassSetSettings(array $settings, string $year, string $field): array
 {
@@ -120,7 +120,7 @@ function hbHubClassSetSettings(array $settings, string $year, string $field): ar
     }
 
     $settings['classNotHtx'] = false;
-    $settings['classStartYear'] = $year === HBHUB_CLASS_STUDENT
+    $settings['classStartYear'] = $year === HBHUB_CLASS_GRADUATE
         ? $class['startYear'] ?? hbHubClassSchoolYear() - HBHUB_CLASS_LAST_YEAR
         : hbHubClassSchoolYear() - (int) $year + 1;
     $settings['class'] = $field;
@@ -138,7 +138,7 @@ function hbHubClassChatKey(?array $class): ?string
 }
 
 /**
- * What the class chat is called right now: "2.X", or for a class that has graduated "Student (X) 2029",
+ * What the class chat is called right now: "2.X", or for a class that has graduated "Graduate (X) 2029",
  * so the classes of different years can be told apart.
  *
  * @param array $class from hbHubClassOf(), with a class chat

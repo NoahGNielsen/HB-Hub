@@ -3,7 +3,7 @@
 // Banned users don't have a profile (the same as in the chat's user search).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // "2.X", "Student (X)" or "Not HTX"
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // "2.X", "Graduate (X)" or "Not HTX"
 
 const PROFILE_ROLE_ADMIN = 2; // userRole in HBHub-Users
 

@@ -16,7 +16,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <ul>
                             <li><strong>Picture</strong>: a PNG, JPEG, GIF or WebP. It shows next to your messages, in the chat list and on the leaderboards.</li>
                             <li><strong>Name</strong>: what everyone sees you as, and what you log in with.</li>
-                            <li><strong>Year and field of study</strong>: 1., 2. or 3. year and X, U, T, Y or Z, or Not HTX, so people know who you are. Your year goes up by itself every July 1st, and after 3. year you're shown as a Student. Changing it moves you to the other <a href="/docs/chat/groups#class">class chat</a>.</li>
+                            <li><strong>Year and field of study</strong>: 1., 2. or 3. year and X, U, T, Y or Z, or Not HTX, so people know who you are. Your year goes up by itself every July 1st, and after 3. year you're shown as a Graduate. Changing it moves you to the other <a href="/docs/chat/groups#class">class chat</a>.</li>
                             <li><strong>Bio</strong>: a few words about yourself.</li>
                         </ul>
                         <p>

@@ -93,7 +93,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             of study, so the chat is called something like <strong>1.X</strong>.
                         </p>
                         <ul>
-                            <li>It follows your class: on July 1st it's renamed with the new year (<strong>1.X</strong> becomes <strong>2.X</strong>), and the messages stay. After 3. year it's called something like <strong>Student (X) 2029</strong>.</li>
+                            <li>It follows your class: on July 1st it's renamed with the new year (<strong>1.X</strong> becomes <strong>2.X</strong>), and the messages stay. After 3. year it's called something like <strong>Graduate (X) 2029</strong>.</li>
                             <li>Nobody is the owner or an admin, so nobody can rename it, kick people or delete it. Only site admins can.</li>
                             <li>You can mute or hide it, but not leave it, and you can't add people to it.</li>
                             <li>Changing your class in your <a href="/docs/account#profile">settings</a> moves you to the other class's chat.</li>

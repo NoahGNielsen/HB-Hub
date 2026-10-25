@@ -62,8 +62,8 @@ $settingsUser = $statement->fetch();
 $savedSettings = hbHubUserSettings($settingsUser['userSettings']);
 
 $settingsClass = hbHubClassFormValues($savedSettings);
-// A graduate gets "Student" in the year picker, so they can keep it (it can't be picked otherwise)
-$settingsIsStudent = $settingsClass['year'] === HBHUB_CLASS_STUDENT;
+// A graduate gets "Graduate" in the year picker, so they can keep it (it can't be picked otherwise)
+$settingsIsGraduate = $settingsClass['year'] === HBHUB_CLASS_GRADUATE;
 $settingsValues = [
     'name' => $settingsUser['userName'],
     'year' => $settingsClass['year'],
@@ -244,8 +244,8 @@ if ($settingsAction === 'profile') {
             $settingsErrors['name'] = $nameError;
         }
 
-        // Class - the field of study only for 1. to 3. year (and Student), not for Not HTX
-        if (($classError = hbHubClassError($settingsValues['year'], $settingsValues['class'], $settingsIsStudent)) !== null) {
+        // Class - the field of study only for 1. to 3. year (and Graduate), not for Not HTX
+        if (($classError = hbHubClassError($settingsValues['year'], $settingsValues['class'], $settingsIsGraduate)) !== null) {
             $settingsErrors['class'] = $classError;
         }
 
@@ -553,8 +553,8 @@ function settingsTime(?string $timestamp): string
                                         <?php foreach (HBHUB_CLASS_YEARS as $year): ?>
                                             <option value="<?= $year ?>"<?= $settingsValues['year'] === $year ? ' selected' : '' ?>><?= $year ?>.</option>
                                         <?php endforeach; ?>
-                                        <?php if ($settingsIsStudent): ?>
-                                            <option value="<?= HBHUB_CLASS_STUDENT ?>"<?= $settingsValues['year'] === HBHUB_CLASS_STUDENT ? ' selected' : '' ?>>Student</option>
+                                        <?php if ($settingsIsGraduate): ?>
+                                            <option value="<?= HBHUB_CLASS_GRADUATE ?>"<?= $settingsValues['year'] === HBHUB_CLASS_GRADUATE ? ' selected' : '' ?>>Graduate</option>
                                         <?php endif; ?>
                                         <option value="<?= HBHUB_CLASS_NOT_HTX ?>"<?= $settingsValues['year'] === HBHUB_CLASS_NOT_HTX ? ' selected' : '' ?>>Not HTX</option>
                                     </select>
@@ -571,7 +571,7 @@ function settingsTime(?string $timestamp): string
                                     </select>
                                 </div>
                             </div>
-                            <p class="settings-hint">Your year goes up by itself every July 1st, and after 3. you're a Student. You're in your class's group chat, and changing class moves you to the other one.</p>
+                            <p class="settings-hint">Your year goes up by itself every July 1st, and after 3. you're a Graduate. You're in your class's group chat, and changing class moves you to the other one.</p>
                             <?php if (isset($settingsErrors['class'])): ?>
                                 <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['class']) ?></p>
                             <?php endif; ?>
