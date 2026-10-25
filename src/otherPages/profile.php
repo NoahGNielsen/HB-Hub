@@ -88,7 +88,7 @@ $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvata
                 <h1 class="profile-name">
                     <?= htmlspecialchars($profile['userName']) ?>
                     <?php if ($profileIsAdmin): ?>
-                        <span class="profile-badge">Admin</span>
+                        <span class="profile-badge">Site Admin</span>
                     <?php endif; ?>
                 </h1>
                 <p class="profile-status<?= $profileIsOnline ? ' is-online' : '' ?>">
