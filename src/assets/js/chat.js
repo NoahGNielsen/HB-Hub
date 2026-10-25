@@ -2665,7 +2665,10 @@ chatPart((signal) => {
             const text = element('span', 'chat-ticket-text');
             text.append(
                 element('span', 'chat-ticket-name', attachment.name),
-                element('span', 'chat-ticket-info', `In ${attachment.chat} · ${attachment.size} · until ${attachment.expires}`),
+                // A profile banner isn't in a chat and never runs out (chat and expires are null)
+                element('span', 'chat-ticket-info', attachment.chat === null
+                    ? `Your profile banner · ${attachment.size} · until you change it`
+                    : `In ${attachment.chat} · ${attachment.size} · until ${attachment.expires}`),
             );
 
             // The ticket stub on the left: how many tickets it takes

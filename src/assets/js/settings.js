@@ -1,4 +1,5 @@
-// Settings page: hides the field of study for Not HTX, draws the QR code for setting up two-factor login, shows how strong a new password is, asks the browser for permission
+// Settings page: hides the field of study for Not HTX, shows the profile banner being picked and gets a banner picture
+// ready (JPEG XL), adds emoji to pick for the status, draws the QR code for setting up two-factor login, shows how strong a new password is, asks the browser for permission
 // to show notifications once they're turned on, plays the message sound when it's turned on, and asks "are you sure?"
 // before deleting the account.
 // Without JS the 2FA key can still be typed in by hand, and deleting still needs the password.
@@ -110,6 +111,149 @@
         newPassword.addEventListener('input', updatePassword);
         newPasswordConfirm.addEventListener('input', checkPasswordsMatch);
         updatePassword();
+    }
+
+    // Profile banner: Colors shows the gradient pickers, Picture the file input, and the preview above shows whichever
+    // is picked (set from here, as the content security policy doesn't allow style attributes). A new picture is
+    // made smaller and turned into JPEG XL by the JPEG XL worker (chatJxlWorker.js) straight away, and put back in the
+    // file input in place of the original, as the server only takes JPEG XL. Save waits until it's ready.
+    const banner = document.querySelector('[data-banner]');
+    if (banner) {
+        const form = banner.closest('form');
+        const preview = banner.querySelector('[data-banner-preview]');
+        const colors = banner.querySelector('[data-banner-colors]');
+        const upload = banner.querySelector('[data-banner-upload]');
+        const input = banner.querySelector('[data-banner-input]'); // not there while banner pictures are off
+        const status = banner.querySelector('[data-banner-status]');
+        const saveButton = form.querySelector('[data-profile-save]');
+        const maxBytes = Number(banner.dataset.bannerMaxBytes);
+        const ticketBytes = Number(banner.dataset.ticketBytes);
+        let picked = null; // { url } of the new picture's original, for the preview
+        let converting = 0; // which conversion is going on, so an older one that finishes late is ignored
+
+        const sizeLabel = (bytes) => (bytes < 1024 * 1024
+            ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+            : `${(bytes / 1024 / 1024).toFixed(1).replace(/\.0$/, '')} MB`);
+
+        function show() {
+            const type = form.elements.bannerType.value;
+            colors.hidden = type !== 'colors';
+            upload.hidden = type !== 'picture';
+            // The saved picture (an <img>, or the canvas jxlImages.js drew it into) or the new one
+            const current = preview.querySelector('[data-banner-current]');
+            let newPicture = preview.querySelector('[data-banner-new]');
+            if (type === 'picture' && picked) {
+                if (!newPicture) {
+                    newPicture = document.createElement('img');
+                    newPicture.className = 'settings-banner-picture';
+                    newPicture.alt = '';
+                    newPicture.dataset.bannerNew = '';
+                    preview.append(newPicture);
+                }
+                newPicture.src = picked.url;
+            }
+            if (newPicture) newPicture.hidden = type !== 'picture' || !picked;
+            if (current) current.hidden = type !== 'picture' || picked !== null;
+            const { bannerColor1, bannerColor2, bannerAngle } = form.elements;
+            preview.style.backgroundImage = type === 'colors'
+                ? `linear-gradient(${bannerAngle.value}deg, ${bannerColor1.value}, ${bannerColor2.value})` : '';
+        }
+
+        function setStatus(text, isError = false) {
+            status.textContent = text;
+            status.classList.toggle('settings-error', isError);
+        }
+
+        input?.addEventListener('change', async () => {
+            const file = input.files[0];
+            const id = ++converting;
+            if (picked) URL.revokeObjectURL(picked.url);
+            picked = null;
+            if (!file) {
+                setStatus('');
+                saveButton.disabled = false;
+                show();
+                return;
+            }
+            picked = { url: URL.createObjectURL(file) };
+            show();
+            saveButton.disabled = true;
+            setStatus('Getting your picture ready…');
+            try {
+                const buffer = await bannerJxlEncode(banner.dataset.jxlWorker, file, Number(banner.dataset.bannerMaxSide));
+                if (id !== converting) return;
+                if (buffer.byteLength > maxBytes) throw new Error('tooBig');
+                const jxl = new File([buffer], 'banner.jxl', { type: 'image/jxl' });
+                const files = new DataTransfer();
+                files.items.add(jxl);
+                input.files = files.files; // doesn't fire change again
+                const tickets = Math.max(1, Math.ceil(jxl.size / ticketBytes));
+                setStatus(`Ready: ${sizeLabel(jxl.size)}, takes ${tickets} ${tickets === 1 ? 'ticket' : 'tickets'}. Save profile to use it.`);
+            } catch (error) {
+                if (id !== converting) return;
+                input.value = '';
+                URL.revokeObjectURL(picked.url);
+                picked = null;
+                show();
+                setStatus(error.message === 'tooBig'
+                    ? 'That picture is too big, even made smaller. Please choose another one.'
+                    : "That picture couldn't be got ready. Please try another one.", true);
+            }
+            saveButton.disabled = false;
+        });
+
+        form.addEventListener('input', show);
+        form.addEventListener('change', show);
+        show();
+    }
+
+    // One JPEG XL job (chatJxlWorker.js) in a worker of its own, which is stopped again once it's done
+    function bannerJxlEncode(url, file, maxSide) {
+        return new Promise((resolve, reject) => {
+            const worker = new Worker(url, { type: 'module' });
+            worker.addEventListener('message', ({ data }) => {
+                worker.terminate();
+                if (data.error) reject(new Error(data.error));
+                else resolve(data.buffer);
+            });
+            worker.addEventListener('error', () => {
+                worker.terminate();
+                reject(new Error('workerFailed'));
+            });
+            worker.postMessage({ id: 1, type: 'encode', file, maxSide });
+        });
+    }
+
+    // Status: a row of emoji to pick from (any other one can be typed in), and the text stops at its last line
+    const statusEmoji = document.querySelector('[data-status-emoji]');
+    if (statusEmoji) {
+        const picks = document.querySelector('[data-status-picks]');
+        for (const emoji of ['😀', '📚', '🎮', '💻', '🎧', '😴', '🤒', '🍕', '⚽', '🎉', '🔥', '❤️']) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'settings-status-pick';
+            button.textContent = emoji;
+            button.setAttribute('aria-label', `Use ${emoji}`);
+            button.addEventListener('click', () => {
+                statusEmoji.value = emoji;
+                statusEmoji.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            picks.append(button);
+        }
+        const clear = document.createElement('button');
+        clear.type = 'button';
+        clear.className = 'settings-status-pick';
+        clear.textContent = '×';
+        clear.setAttribute('aria-label', 'No emoji');
+        clear.addEventListener('click', () => { statusEmoji.value = ''; });
+        picks.append(clear);
+        picks.hidden = false;
+
+        const statusText = document.querySelector('[data-status-text]');
+        const maxLines = Number(statusText.dataset.maxLines);
+        statusText.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && statusText.value.split('\n').length >= maxLines) event.preventDefault();
+        });
     }
 
     // The message sound plays when its box is ticked, so the user hears what it sounds like (assets/js/messageSound.js)

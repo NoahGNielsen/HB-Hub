@@ -302,8 +302,8 @@ CREATE TABLE `HBHub-CasinoWallets` (
 CREATE TABLE `HBHub-ChatAttachments` (
   `attachmentId` int UNSIGNED NOT NULL,
   `userId` int UNSIGNED NOT NULL COMMENT 'Who sent it, whose tickets it takes',
-  `chatId` int UNSIGNED NOT NULL,
-  `messageId` bigint UNSIGNED DEFAULT NULL COMMENT 'The message it was sent in (one message can have up to 10), only NULL if that message row is ever removed',
+  `chatId` int UNSIGNED DEFAULT NULL COMMENT 'The chat it was sent in, NULL for a profile banner',
+  `messageId` bigint UNSIGNED DEFAULT NULL COMMENT 'The message it was sent in (one message can have up to 10), NULL for a profile banner or if that message row is ever removed',
   `attachmentKey` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Random name of the file on disk, in attachments_path from the config',
   `attachmentName` varchar(255) DEFAULT NULL COMMENT 'The file name as sent (ending in .jxl when converted), NULL once the file is gone',
   `attachmentType` varchar(100) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Content-Type it is sent back with: a picture type, or application/octet-stream for any other file',
@@ -313,7 +313,7 @@ CREATE TABLE `HBHub-ChatAttachments` (
   `attachmentTickets` tinyint UNSIGNED NOT NULL COMMENT 'One per started 5 MB of attachmentSize',
   `attachmentStatus` tinyint UNSIGNED NOT NULL DEFAULT '0' COMMENT '0 The file is there and takes its tickets\r\n1 Deleted (with its message, from the attachments popup, or with its chat or account)\r\n2 Expired',
   `attachmentUploadedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `attachmentExpiresTimestamp` datetime NOT NULL COMMENT '90 days after upload, 3 days when it takes more than 5 tickets',
+  `attachmentExpiresTimestamp` datetime NOT NULL COMMENT '90 days after upload, 3 days when it takes more than 5 tickets, 9999-12-31 23:59:59 for a profile banner (never)',
   `attachmentRemovedTimestamp` datetime DEFAULT NULL COMMENT 'When attachmentStatus stopped being 0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -818,6 +818,7 @@ CREATE TABLE `HBHub-Users` (
   `userDescription` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `userSettings` json DEFAULT NULL,
   `userAvatarAttachmentId` int UNSIGNED DEFAULT NULL,
+  `userBannerAttachmentId` int UNSIGNED DEFAULT NULL COMMENT 'Their profile banner picture in HBHub-ChatAttachments, NULL for the colors in userSettings',
   `userIpv4AdresseOnAccountCreate` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `userIpv6AdresseOnAccountCreate` varchar(62) DEFAULT NULL,
   `userIpv4AdresseLastAccessed` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
@@ -1236,7 +1237,8 @@ ALTER TABLE `HBHub-UnoSeats`
 ALTER TABLE `HBHub-Users`
   ADD PRIMARY KEY (`userId`),
   ADD UNIQUE KEY `userNameLower` (`userNameLower`),
-  ADD KEY `fk_users_avatar` (`userAvatarAttachmentId`);
+  ADD KEY `fk_users_avatar` (`userAvatarAttachmentId`),
+  ADD KEY `fk_users_banner` (`userBannerAttachmentId`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -1716,7 +1718,8 @@ ALTER TABLE `HBHub-UnoSeats`
 -- Constraints for table `HBHub-Users`
 --
 ALTER TABLE `HBHub-Users`
-  ADD CONSTRAINT `fk_users_avatar` FOREIGN KEY (`userAvatarAttachmentId`) REFERENCES `HBHub-Attachments` (`attachmentId`) ON DELETE SET NULL;
+  ADD CONSTRAINT `fk_users_avatar` FOREIGN KEY (`userAvatarAttachmentId`) REFERENCES `HBHub-Attachments` (`attachmentId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_users_banner` FOREIGN KEY (`userBannerAttachmentId`) REFERENCES `HBHub-ChatAttachments` (`attachmentId`) ON DELETE SET NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

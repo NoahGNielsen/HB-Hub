@@ -17,10 +17,13 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><strong>Picture</strong>: a PNG, JPEG, GIF or WebP. It shows next to your messages, in the chat list and on the leaderboards.</li>
                             <li><strong>Name</strong>: what everyone sees you as, and what you log in with.</li>
                             <li><strong>Year and field of study</strong>: 1., 2. or 3. year and X, U, T, Y or Z, or Not HTX, so people know who you are. Your year goes up by itself every July 1st, and after 3. year you're shown as a Graduate. Changing it moves you to the other <a href="/docs/chat/groups#class">class chat</a>.</li>
+                            <li><strong>Banner</strong>: the wide strip along the top of your profile. Pick two colors and which way they go, like a <a href="/docs/chat/groups#look">chat background</a>, or a picture. A picture is made smaller and turned into JPEG XL on your device, and takes one of your <a href="/docs/chat/attachments#tickets">attachment tickets</a> for as long as it's your banner (it never runs out). Going back to colors gives the ticket back.</li>
+                            <li><strong>Education</strong>: a badge for the kind of education you're taking, like 💻 IT and media or 🍳 Food and service.</li>
+                            <li><strong>Status</strong>: an emoji and up to 45 characters on up to two lines, shown under your name. Like the bio, it only takes the Latin alphabet, numbers, punctuation and emoji.</li>
                             <li><strong>Bio</strong>: a few words about yourself.</li>
                         </ul>
                         <p>
-                            Anyone logged in can open your profile, from the chat, a leaderboard or a game. Pictures have to follow
+                            Anyone logged in can open your profile, from the chat, a leaderboard or a game, and message you from it. Next to your class and education it shows a Site admin badge for site admins, and whether you're online. Pictures have to follow
                             the <a href="/legal/code-of-conduct">Code of Conduct</a> like everything else: a profile picture
                             that gets an account banned is banned too, on every account.
                         </p>
@@ -60,7 +63,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             account straight away. This can't be undone.
                         </p>
                         <ul>
-                            <li>Your name, picture, bio, year, class, settings, logins and the files you attached in chats are deleted, and you're logged out everywhere.</li>
+                            <li>Your name, picture, banner, bio, status, year, class, settings, logins and the files you attached in chats are deleted, and you're logged out everywhere.</li>
                             <li>Messages you've sent stay in their chats, from "Deleted User".</li>
                             <li>Your Ore Mining Inc. save is deleted too, and nobody can log in to the account or find it again.</li>
                         </ul>

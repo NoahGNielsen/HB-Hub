@@ -5,6 +5,8 @@
 // - Profile (#profile): picture, name, class and bio, with the same rules as onboarding (userMgmt/onboarding.php).
 //   A new class moves them to its class chat (assets/php/schoolClass.php).
 //   A picture on the banned list bans the account (assets/php/bannedAvatars.php).
+//   Also the banner (colors, or a picture that takes tickets), the status and the education badge (assets/php/profile.php).
+//   settings.js turns a banner picture into JPEG XL before the form is sent, as only that is taken.
 // - Notifications (#notifications): a browser notification and/or a sound for new messages while the site is open
 //   (assets/js/notifications.js, assets/js/messageSound.js)
 // - Gambling and Games (#block): blocking them, during school hours or all the time (assets/php/block.php)
@@ -28,6 +30,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be in a bio
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // the same year and field choices as onboarding, and the class chat
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/profile.php'; // banner, status and education badge
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
 const SETTINGS_ROLE_ADMIN = 2; // userRole in HBHub-Users
@@ -55,8 +58,9 @@ $settingsDescriptionMode = (int) $siteConfig['onboarding_description_requirement
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 
-$statement = $db->prepare('SELECT userName, userDescription, userSettings, userAvatarAttachmentId, userPasswordHash, userTotpSecret, userTotpLastStep
-    FROM `HBHub-Users` WHERE userId = ?');
+$statement = $db->prepare('SELECT u.userName, u.userDescription, u.userSettings, u.userAvatarAttachmentId, u.userPasswordHash,
+        u.userTotpSecret, u.userTotpLastStep, ' . hbHubProfileBannerIdSql('u') . ' AS bannerId
+    FROM `HBHub-Users` u WHERE u.userId = ?');
 $statement->execute([$userId]);
 $settingsUser = $statement->fetch();
 $savedSettings = hbHubUserSettings($settingsUser['userSettings']);
@@ -64,17 +68,31 @@ $savedSettings = hbHubUserSettings($settingsUser['userSettings']);
 $settingsClass = hbHubClassFormValues($savedSettings);
 // A graduate gets "Graduate" in the year picker, so they can keep it (it can't be picked otherwise)
 $settingsIsGraduate = $settingsClass['year'] === HBHUB_CLASS_GRADUATE;
+$settingsStatus = hbHubProfileStatus($savedSettings);
+$settingsBannerId = $settingsUser['bannerId'] !== null ? (int) $settingsUser['bannerId'] : null;
+// A banner without colors of its own starts the pickers at the site's orange going right into purple, like the chat's
+$settingsBannerGradient = hbHubProfileBannerGradient($savedSettings) ?? ['#f2711c', '#6a4bd6', 90];
 $settingsValues = [
     'name' => $settingsUser['userName'],
     'year' => $settingsClass['year'],
     'class' => $settingsClass['field'],
     'description' => $settingsUser['userDescription'] ?? '',
+    'statusEmoji' => $settingsStatus['emoji'],
+    'statusText' => $settingsStatus['text'],
+    'education' => hbHubProfileEducation($savedSettings)[0] ?? '',
+    'bannerType' => $settingsBannerId !== null ? 'picture' : 'colors', // colors | picture
+    'bannerColor1' => $settingsBannerGradient[0],
+    'bannerColor2' => $settingsBannerGradient[1],
+    'bannerAngle' => (string) $settingsBannerGradient[2],
 ];
 $settingsErrors = []; // field name => message
 
 $settingsAvatarId = $settingsUser['userAvatarAttachmentId'] !== null ? (int) $settingsUser['userAvatarAttachmentId'] : null;
 $settingsCanUploadAvatar = $settingsAvatarMode !== SETTINGS_DISABLED;
 $settingsCanRemoveAvatar = $settingsAvatarId !== null && $settingsAvatarMode !== SETTINGS_REQUIRED;
+// Banner pictures are attachments, so they're off whenever those are (site_save_diskspace 2)
+$settingsCanUploadBanner = (int) $siteConfig['site_save_diskspace'] !== 2;
+$settingsTicketsFree = hbHubChatAttachmentTicketsFree($db, $userId);
 
 $settingsTotpIsOn = $settingsUser['userTotpSecret'] !== null;
 // Setting up 2FA: a new secret from ?totp=setup, or the one sent back when the code was wrong
@@ -85,9 +103,12 @@ $settingsTotpSetupSecret = !$settingsTotpIsOn && ($_GET['totp'] ?? null) === 'se
  * so settings saved somewhere else at the same time aren't lost.
  * Returns [] when it was saved, otherwise field name => message to show on the form.
  *
+ * $profile is what goes in the settings for the banner, status and education badge (assets/php/profile.php).
+ *
  * @param ?array{0: string, 1: string} $avatar [type, file], or null to keep the current picture
+ * @param array{profileStatus: array, profileEducation: ?string, profileBanner: array} $profile
  */
-function settingsSave(PDO $db, int $userId, array $values, bool $saveDescription, ?array $avatar): array
+function settingsSave(PDO $db, int $userId, array $values, bool $saveDescription, ?array $avatar, array $profile): array
 {
     try {
         $db->beginTransaction();
@@ -101,6 +122,7 @@ function settingsSave(PDO $db, int $userId, array $values, bool $saveDescription
         if ($isClassChanged) {
             $settings = hbHubClassSetSettings($settings, $values['year'], $values['class']);
         }
+        $settings = $profile + $settings;
 
         $oldAvatarId = $current['userAvatarAttachmentId'];
         $avatarId = $oldAvatarId;
@@ -296,9 +318,54 @@ if ($settingsAction === 'profile') {
             }
         }
 
+        // Status - one emoji and a short text, with the bio's rules (assets/php/profile.php)
+        if (($statusError = hbHubProfileStatusError($settingsValues['statusEmoji'], $settingsValues['statusText'], $settingsStatus)) !== null) {
+            $settingsErrors['status'] = $statusError;
+        }
+
+        // Education badge - one from the list, or none
+        if ($settingsValues['education'] !== '' && !isset(HBHUB_PROFILE_EDUCATIONS[$settingsValues['education']])) {
+            $settingsErrors['education'] = 'Please choose one of the options.';
+        }
+
+        // Banner - the colors are saved either way, so going back from a picture finds them as they were.
+        // A new picture has to have been turned into JPEG XL by settings.js.
+        $bannerGradient = chatBackgroundOf($settingsValues['bannerColor1'], $settingsValues['bannerColor2'], $settingsValues['bannerAngle']);
+        $bannerFile = $settingsCanUploadBanner ? ($_FILES['banner'] ?? null) : null;
+        $hasBannerFile = is_array($bannerFile) && is_int($bannerFile['error'] ?? null) && $bannerFile['error'] !== UPLOAD_ERR_NO_FILE;
+        if (!in_array($settingsValues['bannerType'], ['colors', 'picture'], true) || $bannerGradient === null) {
+            $settingsErrors['banner'] = 'Please choose colors and a direction, or a picture.';
+        } elseif ($settingsValues['bannerType'] === 'picture' && !$hasBannerFile && $settingsBannerId === null) {
+            $settingsErrors['banner'] = $settingsCanUploadBanner ? 'Please choose a picture for your banner.' : 'Banner pictures are turned off for now.';
+        }
+
+        // The picture is saved first, as it can still fail on tickets. Then nothing else is saved, so it can be fixed.
+        if (!$settingsErrors && $settingsValues['bannerType'] === 'picture' && $hasBannerFile) {
+            $bannerError = hbHubProfileSetBanner($db, $userId, $bannerFile);
+            if ($bannerError !== null) {
+                $settingsErrors['banner'] = match ($bannerError) {
+                    'notJxl' => 'Your browser couldn\'t get the picture ready. Please try another picture, or another browser.',
+                    'tooBig' => 'That picture is too big. Please choose a smaller one.',
+                    'notEnoughTickets' => 'You don\'t have enough free tickets for this banner. Delete some of your attachments in the chat (Attach, then Your attachments) to make room.',
+                    'disabled' => 'Banner pictures are turned off for now.',
+                    'storageFull' => 'HB Hub\'s storage is full right now. Try again once some attachments have expired, or use colors.',
+                    'busy' => 'Lots of pictures are being sent right now. Try again in a moment.',
+                    default => 'Something went wrong uploading your banner. Please try again.',
+                };
+            }
+        }
+
         if (!$settingsErrors) {
-            $settingsErrors = settingsSave($db, $userId, $settingsValues, $settingsDescriptionMode !== SETTINGS_DISABLED, $avatar);
+            $settingsErrors = settingsSave($db, $userId, $settingsValues, $settingsDescriptionMode !== SETTINGS_DISABLED, $avatar, [
+                'profileStatus' => ['emoji' => $settingsValues['statusEmoji'], 'text' => $settingsValues['statusText']],
+                'profileEducation' => $settingsValues['education'] !== '' ? $settingsValues['education'] : null,
+                'profileBanner' => ['color1' => $bannerGradient[0], 'color2' => $bannerGradient[1], 'gradientAngle' => $bannerGradient[2]],
+            ]);
             if (!$settingsErrors) {
+                // Back to colors: the picture goes, and its tickets are free again
+                if ($settingsValues['bannerType'] === 'colors' && $settingsBannerId !== null) {
+                    hbHubProfileRemoveBanner($db, $userId);
+                }
                 settingsRedirect('settings', 'profile');
             }
         }
@@ -446,6 +513,7 @@ function settingsTime(?string $timestamp): string
     <?php endif; ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/settingsMenu.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/settingsMenu.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/settings.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/settings.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/jxlImages.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/jxlImages.js') ?>" defer></script>
     <title>Settings - HB Hub</title>
     <meta name="description" content="Settings page for the HB Hub">
 </head>
@@ -534,6 +602,76 @@ function settingsTime(?string $timestamp): string
                         </div>
                         <?php endif; ?>
 
+                        <!-- Banner (assets/php/profile.php): two colors and a direction like a chat's background, or a picture.
+                             settings.js shows the one picked in the preview, and turns a new picture into JPEG XL
+                             before the form is sent. Without JS the preview stays plain, and a picture isn't taken. -->
+                        <fieldset class="settings-field settings-banner" data-banner
+                                  data-jxl-worker="/assets/js/chatJxlWorker.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatJxlWorker.js') ?>"
+                                  data-banner-max-side="<?= HBHUB_PROFILE_BANNER_MAX_SIDE ?>" data-banner-max-bytes="<?= HBHUB_PROFILE_BANNER_MAX_BYTES ?>"
+                                  data-ticket-bytes="<?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES ?>">
+                            <legend class="settings-label">Banner</legend>
+                            <div class="settings-banner-preview" aria-hidden="true" data-banner-preview>
+                                <?php if ($settingsBannerId !== null): ?>
+                                    <img class="settings-banner-picture" src="<?= htmlspecialchars(hbHubProfileBannerUrl($userId, $settingsBannerId)) ?>" alt=""
+                                         data-banner-current data-jxl data-jxl-worker="/assets/js/chatJxlWorker.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatJxlWorker.js') ?>">
+                                <?php endif; ?>
+                            </div>
+                            <div class="settings-banner-types">
+                                <label class="settings-banner-type">
+                                    <input type="radio" name="bannerType" value="colors"<?= $settingsValues['bannerType'] === 'colors' ? ' checked' : '' ?> data-banner-type>
+                                    <span>Colors</span>
+                                </label>
+                                <label class="settings-banner-type">
+                                    <input type="radio" name="bannerType" value="picture"<?= $settingsValues['bannerType'] === 'picture' ? ' checked' : '' ?>
+                                           <?= !$settingsCanUploadBanner && $settingsBannerId === null ? ' disabled' : '' ?> data-banner-type>
+                                    <span>Picture</span>
+                                </label>
+                            </div>
+
+                            <div class="settings-banner-colors" data-banner-colors>
+                                <div class="settings-row">
+                                    <div class="settings-field">
+                                        <label class="settings-label" for="settings-banner-color1">From</label>
+                                        <input type="color" id="settings-banner-color1" name="bannerColor1" value="<?= htmlspecialchars($settingsValues['bannerColor1']) ?>">
+                                    </div>
+                                    <div class="settings-field">
+                                        <label class="settings-label" for="settings-banner-color2">To</label>
+                                        <input type="color" id="settings-banner-color2" name="bannerColor2" value="<?= htmlspecialchars($settingsValues['bannerColor2']) ?>">
+                                    </div>
+                                </div>
+                                <fieldset class="settings-directions">
+                                    <legend class="settings-label">Direction</legend>
+                                    <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [$arrow, $label]): ?>
+                                        <label title="<?= $label ?>">
+                                            <input type="radio" class="settings-visually-hidden" name="bannerAngle" value="<?= $angle ?>"<?= $settingsValues['bannerAngle'] === (string) $angle ? ' checked' : '' ?>>
+                                            <span class="settings-direction-arrow" aria-hidden="true"><?= $arrow ?></span>
+                                            <span class="settings-visually-hidden"><?= $label ?></span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </fieldset>
+                            </div>
+
+                            <div class="settings-banner-upload" data-banner-upload>
+                                <?php if ($settingsCanUploadBanner): ?>
+                                    <label class="settings-visually-hidden" for="settings-banner"><?= $settingsBannerId !== null ? 'Change banner picture' : 'Upload a banner picture' ?></label>
+                                    <input type="file" id="settings-banner" name="banner" accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp,image/jxl"
+                                           aria-describedby="settings-banner-hint" data-banner-input>
+                                    <p class="settings-hint" id="settings-banner-hint">
+                                        Made smaller and turned into JPEG XL on your device first. It takes a ticket from your chat attachments
+                                        (you have <?= $settingsTicketsFree ?> free) for as long as it's your banner, and never runs out.
+                                        <?= $settingsBannerId !== null ? 'Choosing colors again gives the ticket back.' : '' ?>
+                                    </p>
+                                <?php else: ?>
+                                    <p class="settings-hint">New banner pictures are turned off for now.</p>
+                                <?php endif; ?>
+                                <!-- settings.js: how getting the picture ready is going -->
+                                <p class="settings-hint" aria-live="polite" data-banner-status></p>
+                            </div>
+                            <?php if (isset($settingsErrors['banner'])): ?>
+                                <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['banner']) ?></p>
+                            <?php endif; ?>
+                        </fieldset>
+
                         <div class="settings-field">
                             <label class="settings-label" for="settings-name">Name</label>
                             <input type="text" id="settings-name" name="name" maxlength="<?= $settingsNameMax ?>" required autocomplete="username"
@@ -577,6 +715,41 @@ function settingsTime(?string $timestamp): string
                             <?php endif; ?>
                         </div>
 
+                        <div class="settings-field">
+                            <label class="settings-label" for="settings-education">Education <span class="settings-optional">(Optional)</span></label>
+                            <select id="settings-education" name="education" aria-describedby="settings-education-hint">
+                                <option value="">None</option>
+                                <?php foreach (HBHUB_PROFILE_EDUCATIONS as $key => [$emoji, $name, $examples]): ?>
+                                    <option value="<?= $key ?>" title="<?= htmlspecialchars($examples) ?>"<?= $settingsValues['education'] === $key ? ' selected' : '' ?>><?= $emoji ?> <?= htmlspecialchars($name) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="settings-hint" id="settings-education-hint">A badge on your profile for the kind of education you're taking. Pick the one closest to yours.</p>
+                            <?php if (isset($settingsErrors['education'])): ?>
+                                <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['education']) ?></p>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Status (assets/php/profile.php): an emoji and a short text under the name. settings.js adds a row of
+                             emoji to pick from, and stops the text at two lines. -->
+                        <div class="settings-field">
+                            <label class="settings-label" for="settings-status-text">Status <span class="settings-optional">(Optional)</span></label>
+                            <div class="settings-status-row">
+                                <label class="settings-visually-hidden" for="settings-status-emoji">Status emoji</label>
+                                <input type="text" id="settings-status-emoji" class="settings-status-emoji" name="statusEmoji" maxlength="16"
+                                       placeholder="😀" autocomplete="off" value="<?= htmlspecialchars($settingsValues['statusEmoji']) ?>" data-status-emoji>
+                                <textarea id="settings-status-text" name="statusText" maxlength="<?= HBHUB_PROFILE_STATUS_TEXT_MAX ?>" rows="2"
+                                          placeholder="What are you up to?" aria-describedby="settings-status-hint" data-status-text
+                                          data-max-lines="<?= HBHUB_PROFILE_STATUS_LINES_MAX ?>"><?= htmlspecialchars($settingsValues['statusText']) ?></textarea>
+                            </div>
+                            <div class="settings-status-picks" data-status-picks hidden></div>
+                            <p class="settings-hint" id="settings-status-hint">
+                                Shown under your name. One emoji and up to <?= HBHUB_PROFILE_STATUS_TEXT_MAX ?> characters on up to <?= HBHUB_PROFILE_STATUS_LINES_MAX ?> lines.
+                            </p>
+                            <?php if (isset($settingsErrors['status'])): ?>
+                                <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['status']) ?></p>
+                            <?php endif; ?>
+                        </div>
+
                         <?php if ($settingsDescriptionMode !== SETTINGS_DISABLED): ?>
                         <div class="settings-field">
                             <label class="settings-label" for="settings-description">Bio<?php if ($settingsDescriptionMode === SETTINGS_OPTIONAL): ?> <span class="settings-optional">(Optional)</span><?php endif; ?></label>
@@ -594,7 +767,7 @@ function settingsTime(?string $timestamp): string
 
                         <div class="settings-actions">
                             <a class="settings-btn" href="/profile">View your profile</a>
-                            <button type="submit" class="settings-btn settings-btn-primary">Save profile</button>
+                            <button type="submit" class="settings-btn settings-btn-primary" data-profile-save>Save profile</button>
                         </div>
                     </form>
 

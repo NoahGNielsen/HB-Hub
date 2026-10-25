@@ -3,6 +3,16 @@
     "class": null,
     "classNotHtx": false,
     "classChatSchoolYear": null,
+    "profileStatus": {
+        "emoji": "",
+        "text": ""
+    },
+    "profileEducation": null,
+    "profileBanner": {
+        "color1": "default",
+        "color2": "default",
+        "gradientAngle": 90
+    },
     "notifications": false,
     "notificationSound": false,
     "block": {

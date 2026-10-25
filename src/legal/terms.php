@@ -75,7 +75,7 @@ const HBHUB_TERMS_UPDATED = '25 October 2026';
                             <li><strong>One account per person.</strong> Don't make extra accounts, for example to get more daily chips or to get around a ban. Admins can see which accounts are used in the same browser, and can treat them as one person (see section 7).</li>
                             <li><strong>Be yourself.</strong> Use a name people from school will recognise you by, and don't pretend to be someone else.</li>
                             <li><strong>Your class.</strong> When you sign up you say which year of HTX you're in (1., 2. or 3.) and your field of study, or that you don't go to HTX. Pick your real class. Your year goes up by itself every July 1st, and after 3. year you're shown as a Graduate, with your field of study. At HTX you're put in your class's group chat straight away, with no message request. You can mute or hide it, but not leave it; changing your class in your <a href="/settings">settings</a> moves you to the other class's chat.</li>
-                            <li>Names and bios can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them. A bio can't have a link to one of the blocked sites in it either (see section 3).</li>
+                            <li>Names, bios and statuses can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them. A bio or status can't have a link to one of the blocked sites in it either (see section 3).</li>
                             <li><strong>Keep it to yourself.</strong> Don't share your password or let others use your account. You're responsible for what happens on it.</li>
                             <li>Turning on two-factor login in your <a href="/settings">settings</a> is a good idea. If you think someone else has got into your account, change your password and tell an admin.</li>
                         </ul>
@@ -101,11 +101,11 @@ const HBHUB_TERMS_UPDATED = '25 October 2026';
                     <section id="content" aria-labelledby="terms-content">
                         <h2 id="terms-content">4. What you post</h2>
                         <p>
-                            What you write and upload (messages, reactions, attachments, profile pictures, group icons and backgrounds) is
+                            What you write and upload (messages, reactions, attachments, profile pictures and banners, group icons and backgrounds) is
                             still yours. By posting it, you let HB Hub store it and show it to the people it's meant for, which is
                             needed for the site to work. That includes turning pictures you attach into JPEG XL (without losing
-                            any detail, except JPEG photos, which are made smaller in a way that looks the same), and zipping
-                            other files, so they take less space.
+                            any detail, except JPEG photos, which are made smaller in a way that looks the same), making a banner
+                            picture smaller and turning it into JPEG XL, and zipping other files, so they take less space.
                         </p>
                         <ul>
                             <li>Only upload pictures and files you're allowed to share. Don't post photos of other people without asking them.</li>

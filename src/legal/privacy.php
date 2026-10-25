@@ -96,7 +96,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-what">2. What is stored</h2>
                         <h3>Your account</h3>
                         <ul>
-                            <li>Your name, and if you add them: your profile picture and bio.</li>
+                            <li>Your name, and if you add them: your profile picture, bio, status (an emoji and a short text), education badge (a kind of education, like "IT and media"), and banner. A banner is either two colors and a direction, or a picture: a banner picture is made smaller and turned into JPEG XL in your own browser before it's sent (so it doesn't keep where a photo was taken), kept as a file on HB Hub's server like a chat attachment, and takes one of your attachment tickets for as long as it's your banner. It never runs out by itself: it's deleted when you change it, go back to colors, delete it from Your attachments in the chat, or delete your account.</li>
                             <li>Your class: the school year you started 1. year at HTX in and your field of study (X, U, T, Y or Z), or that you don't go to HTX. Your year (or "Graduate" once you're past 3. year) is worked out from that, so it goes up every July 1st without anything being changed. If you're at HTX, you're also a member of your class's group chat (see Messages and chats below).</li>
                             <li>Your password, but only as a one-way hash. Nobody, not even an admin, can read your password.</li>
                             <li>The secret behind your two-factor codes, if you turn two-factor login on.</li>
@@ -295,7 +295,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <section id="see" aria-labelledby="privacy-see">
                         <h2 id="privacy-see">4. Who can see what</h2>
                         <ul>
-                            <li><strong>Everyone with an account</strong> can see your name, profile picture, bio, class (like "2.X", "Graduate (X)" or "Not HTX"), when you were last online, and your spot on the leaderboards.</li>
+                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, when you were last online and when you joined, and your spot on the leaderboards.</li>
                             <li><strong>Everyone in your class's group chat</strong> (everyone on HB Hub who started HTX the same year in the same field) can see that you're in it, and the messages you send there. You're put in it automatically when you sign up or change your class, and taken out of your old class's chat when you change it. Nobody is a group admin there, so only site admins can remove anyone or delete messages in it.</li>
                             <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group. When they remove a site admin, the site admin can undo it from their notification: they're put back in the group as they were, and the notice about it in the chat is deleted.</li>
                             <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
@@ -303,7 +303,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 <strong>Site admins</strong> can see everything about an account in the admin panel, including
                                 messages in every chat (also deleted ones), IP addresses and logins, the list of banned
                                 pictures, and all feedback. The admin panel lists the attachments you've sent that are still
-                                kept (their name, size, which chat and how many tickets they take) but doesn't open them,
+                                kept (their name, size, which chat and how many tickets they take), and your banner picture with them, but doesn't open them,
                                 though the site's owner can reach attachment files on the server. Site admins can delete your
                                 attachments and give you more tickets or take some away. They use it to deal with abuse, bans and
                                 broken accounts, and to improve the site. Feedback and Ore Mining Inc. crash reports are only
@@ -382,7 +382,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
-                            That right away removes your name, profile picture, bio, year, class, settings, password, two-factor
+                            That right away removes your name, profile picture, banner, bio, status, education badge, year, class, settings, password, two-factor
                             secret, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, and the files you attached in chats. Your name is replaced
                             with "Deleted User".
                         </p>

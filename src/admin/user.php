@@ -223,7 +223,7 @@ function adminAttachments(PDO $db, int $userId): array
     $statement = $db->prepare('SELECT a.attachmentId, a.chatId, c.chatType, c.chatStatus, ' . adminChatTitleSql('a.userId') . ' AS chatTitle,
             a.attachmentName, a.attachmentKind, a.attachmentSize, a.attachmentStoredSize, a.attachmentTickets,
             a.attachmentUploadedTimestamp, a.attachmentExpiresTimestamp
-        FROM `HBHub-ChatAttachments` a JOIN `HBHub-Chats` c ON c.chatId = a.chatId
+        FROM `HBHub-ChatAttachments` a LEFT JOIN `HBHub-Chats` c ON c.chatId = a.chatId
         WHERE a.userId = ? AND a.attachmentStatus = ? AND a.attachmentExpiresTimestamp > NOW()
         ORDER BY a.attachmentId DESC');
     $statement->execute([$userId, HBHUB_CHAT_ATTACHMENT_KEPT]);
@@ -481,7 +481,8 @@ switch ($adminAction) {
             WHERE userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL');
         $statement->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, $targetId]);
         adminLog($db, $adminId, 'user.messages', $targetId, null, ['count' => $statement->rowCount()]);
-        hbHubChatAttachmentsRemove($db, 'a.userId = ?', [$targetId]); // every attachment was in one of them
+        // every attachment was in one of them, except their profile banner (no chat), which isn't a message
+        hbHubChatAttachmentsRemove($db, 'a.userId = ? AND a.chatId IS NOT NULL', [$targetId]);
         // and every @mention in them (chat.mention notifications), which only ever come from the one who wrote them
         $db->prepare('DELETE FROM `HBHub-Notifications` WHERE notificationType = ? AND notificationByUserId = ?')
             ->execute(['chat.mention', $targetId]);
@@ -993,11 +994,16 @@ $adminMessageCounts = $statement->fetch();
                                         <tr>
                                             <td class="admin-nowrap"><?= adminTime($attachment['attachmentUploadedTimestamp']) ?></td>
                                             <td>
-                                                <a class="admin-link" href="/admin/chat?chat=<?= (int) $attachment['chatId'] ?>"><?= htmlspecialchars($attachment['chatTitle']) ?></a>
-                                                <span class="admin-small">
-                                                    <?= (int) $attachment['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?><?=
-                                                    (int) $attachment['chatStatus'] !== HBHUB_CHAT_STATUS_ACTIVE ? ', chat deleted' : '' ?>
-                                                </span>
+                                                <?php if ($attachment['chatId'] === null): ?>
+                                                    <!-- Their profile banner (assets/php/profile.php): not in a chat, never runs out -->
+                                                    <a class="admin-link" href="/profile?user=<?= $targetId ?>">Profile banner</a>
+                                                <?php else: ?>
+                                                    <a class="admin-link" href="/admin/chat?chat=<?= (int) $attachment['chatId'] ?>"><?= htmlspecialchars($attachment['chatTitle']) ?></a>
+                                                    <span class="admin-small">
+                                                        <?= (int) $attachment['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?><?=
+                                                        (int) $attachment['chatStatus'] !== HBHUB_CHAT_STATUS_ACTIVE ? ', chat deleted' : '' ?>
+                                                    </span>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="admin-message-text">
                                                 <?= htmlspecialchars($attachment['attachmentName'] ?? 'file') ?>
@@ -1010,7 +1016,7 @@ $adminMessageCounts = $statement->fetch();
                                                 <?php endif; ?>
                                             </td>
                                             <td><?= (int) $attachment['attachmentTickets'] ?></td>
-                                            <td class="admin-nowrap"><?= adminTime($attachment['attachmentExpiresTimestamp']) ?></td>
+                                            <td class="admin-nowrap"><?= $attachment['chatId'] === null ? 'Never' : adminTime($attachment['attachmentExpiresTimestamp']) ?></td>
                                             <td>
                                                 <?php if ($adminCanDeleteMessages): ?>
                                                     <form action="/admin/user?user=<?= $targetId ?>#attachments" method="post"

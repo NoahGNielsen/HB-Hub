@@ -20,6 +20,7 @@
 // Files live on disk, not in the database: attachments_path in the config, by default a folder next to the config
 // file, above the web root. Each one is named after its random attachmentKey, so the name never says what's in it.
 // The rows are in HBHub-ChatAttachments, and each one points at the message it was sent in with messageId.
+// Profile banners (profile.php) are kept here too, without a chat or a message, and never expire.
 require_once __DIR__ . '/session.php';
 
 const HBHUB_CHAT_ATTACHMENT_TICKETS = 10; // per user
