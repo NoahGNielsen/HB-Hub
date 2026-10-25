@@ -825,7 +825,7 @@ CREATE TABLE `HBHub-Users` (
   `userTotpSecret` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Base32 TOTP secret, NULL when 2FA is off',
   `userTotpLastStep` int UNSIGNED DEFAULT NULL COMMENT 'Time step of the last accepted 2FA code, so a code only works once',
   `userFailedLoginCount` smallint UNSIGNED DEFAULT '0' COMMENT 'NULL for a deleted account',
-  `userStatus` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Online\r\n2 Offiline\r\n3 Account Locked\r\n4 Banned\r\nNULL for a deleted account',
+  `userStatus` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Normal (has logged in since the last unlock/unban)\r\n2 Normal (unlocked or unbanned by a site admin, not logged in since)\r\n3 Account Locked\r\n4 Banned\r\nNULL for a deleted account',
   `userRole` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Normal User\r\n2 Admin\r\nNULL for a deleted account',
   `userCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `userLastSeenTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
