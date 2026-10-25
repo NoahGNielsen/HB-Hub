@@ -1225,11 +1225,16 @@ a.chat-message-reply:hover {
   position: relative;
 }
 
+/* Beside a bubble of one line it sits in the middle instead. CSS can't count lines, so it goes by the bubble's height:
+   one line is about 35px tall, two about 54px, so anything under 2.8rem is one line. The clamp() is a switch - 0 for a
+   short bubble, so the top is the middle, and half the height for a taller one, so the top is the bottom minus the
+   time's own height (fixed at 1rem by the line-height to make that sum work). */
 .chat-message.has-next > .chat-message-meta {
   position: absolute;
-  bottom: 0;
+  top: calc((100% - 1rem) / 2 + clamp(0px, (100% - 2.8rem) * 1000, (100% - 1rem) / 2));
   left: 100%;
   margin: 0 8px;
+  line-height: 1rem;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
