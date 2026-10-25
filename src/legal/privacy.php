@@ -7,14 +7,14 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '23 October 2026';
+const HBHUB_PRIVACY_UPDATED = '25 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
 const HBHUB_PRIVACY_COOKIES = [
     'hbHubSession' => ['Keeps you logged in. Holds a random id that points at your login.', '30 days, or until you log out'],
     'hbHubPendingLogin' => ['Remembers that you typed the right password while you enter your two-factor code.', '5 minutes'],
-    'hbHubDevice' => ['Recognises a browser you have logged in from before, so someone guessing your password can\'t lock you out of it. It\'s also how a ghost ban is passed on to a new account used in the same browser.', '180 days'],
+    'hbHubDevice' => ['Recognises a browser you have logged in from or are logged in on, so someone guessing your password can\'t lock you out of it. It\'s also how a ghost ban is passed on to a new account used in the same browser, and how site admins see which accounts are used in the same browser.', '180 days'],
     'hbHubBanned' => ['Set when a banned account is used in the browser, so it can\'t just make a new account.', '400 days, or until the account is unbanned and logs in again'],
     'hbHubToast' => ['A short message for the next page, like "Your password was changed".', '60 seconds'],
 ];
@@ -308,6 +308,11 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 ever seen by site admins, never by other users. They can never see your password or your two-factor secret. Everything they do
                                 there, also just looking at your account or a chat you're in, goes in the admin log, which only
                                 site admins can read and nobody can change or delete.
+                                Site admins can also see which accounts have been logged in to from the same browser (the
+                                hbHubDevice cookie, see <a href="#privacy-cookies">Cookies and local storage</a>, never your IP
+                                address), with when each browser was first and last used, and put those accounts side by side on
+                                one page, to deal with one person's extra accounts together, like banning them all at once.
+                                Nothing new is stored for this: it uses the known devices that are already kept for the login.
                             </li>
                         </ul>
                         <p class="legal-note">

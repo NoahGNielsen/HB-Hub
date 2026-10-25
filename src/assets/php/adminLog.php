@@ -13,6 +13,8 @@
 // A row is: the admin (adminLogByUserId), what they did (adminLogAction, one of ADMIN_LOG_ACTIONS), the user and/or
 // chat it was about, a few details as JSON (adminLogData, like {"amount": -500} for chips) and why (adminLogReason).
 // Never a password, a name or a message's text: those are on the user's or chat's own page, and go away with them.
+// What was done to all of a person's accounts at once (admin/person.php, adminAccounts.php) is one row per account,
+// each with {"personOf": userId}, the account the admin started from.
 //
 // The reason: before any form in the admin panel is sent, admin.js opens a popup where the admin can type why, and
 // sends it along as the form's `reason` field. adminLog() picks it up from there by itself (adminLogReason()), so the
@@ -49,6 +51,7 @@ const ADMIN_LOG_ACTIONS = [
     'user.attachments' => 'Deleted all of {user}\'s attachments',
     'user.tickets' => 'Changed {user}\'s attachment tickets',
     'user.delete' => 'Deleted {user}\'s account',
+    'person.view' => 'Opened the person page of {user} (every account used in the same browsers)',
     'message.delete' => 'Deleted a message from {user} in {chat}',
     'chat.view' => 'Opened the admin panel of {chat}',
     'chat.rename' => 'Renamed {chat}',

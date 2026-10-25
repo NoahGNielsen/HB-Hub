@@ -152,8 +152,8 @@ function hbHubIsDeletedUserName(string $name): bool
  * Banning keeps the user's sessions, so the first visit after it can mark the browser (hbHubSetBannedCookie())
  * before the session is deleted.
  * userGhostBanned is whether a site admin ghost banned them (assets/php/chat.php): only the chat looks at it, and it's
- * never shown to the user. Their browser is made one of their known devices, so it passes the ghost ban on to a new
- * account made in it (loginLimit.php).
+ * never shown to the user. Their browser is made one of their known devices (loginLimit.php), so it passes a ghost ban
+ * on to a new account made in it and site admins can see which accounts are used in the same browser.
  *
  * @return ?array{userId: int, userName: string, userRole: int, userAvatarAttachmentId: ?int, userSettings: ?string, userGhostBanned: int}
  */
@@ -201,9 +201,11 @@ function hbHubSessionUser(): ?array
                     userIpv4AdresseLastAccessed = ?, userIpv6AdresseLastAccessed = ? WHERE userId = ?')
                 ->execute([$ipv4, $ipv6, $user['userId']]);
         }
-        // A ghost-banned account's browser has to be one of its known devices, so a new account made in it is ghost
-        // banned too (loginLimit.php). Logging in makes it one, but a login from before the known devices came in didn't.
-        if ($user['userGhostBanned']) {
+        // Every browser someone is logged in on is one of their known devices: logging in makes it one, but a login
+        // from before the known devices came in didn't. It's what ties a person's accounts together in the admin panel
+        // (admin.php, adminPersonGroups()), so checked once a minute with the last seen time. A ghost-banned account's
+        // is checked on every request, so a new account made in it is ghost banned too (loginLimit.php).
+        if ($user['userGhostBanned'] || $user['sessionIsStale']) {
             require_once __DIR__ . '/loginLimit.php';
             if (hbHubKnownDevice($db, (int) $user['userId']) === null) {
                 hbHubLoginTrustDevice($db, (int) $user['userId']);

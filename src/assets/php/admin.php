@@ -1,7 +1,8 @@
 <?php
-// The admin panel's pages: the lists of users and chats (admin/index.php), the banned pictures (admin/banned.php), the
-// feedback (admin/feedback.php), Ore Mining Inc.'s crash reports (admin/crashes.php), the admin log (admin/log.php),
-// and one user (admin/user.php) or chat (admin/chat.php).
+// The admin panel's pages: the lists of users and chats (admin/index.php), the people with more than one account
+// (admin/people.php), the banned pictures (admin/banned.php), the feedback (admin/feedback.php), Ore Mining Inc.'s crash
+// reports (admin/crashes.php), the admin log (admin/log.php), and one user (admin/user.php), person (admin/person.php)
+// or chat (admin/chat.php).
 // Only site admins (userRole 2) get in, everyone else gets a 404 so it doesn't show they're there. What the pages share
 // is here: who gets in, the side menus (the settings page's, settings.css), and how dates, statuses, pictures, messages
 // and chat names are shown. Everything they do is logged with adminLog.php.
@@ -37,10 +38,83 @@ function adminOnly(array $user): void
 }
 
 /**
- * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), Banned pictures (admin/banned.php),
- * Feedback (admin/feedback.php), Crash reports (admin/crashes.php) and Admin log (admin/log.php), each with how many
- * there are in all, or for Feedback how many are new. $active is 'users', 'chats', 'banned', 'feedback', 'crashes' or
- * 'log'.
+ * Every person with more than one account: the accounts that have logged in from the same browser (a known device in
+ * HBHub-LoginDevices, the hbHubDevice cookie, loginLimit.php), and the ones those have logged in from, and so on. So
+ * someone who made a new account on their phone and logged in to it once on their computer counts as one person.
+ * session.php makes every browser someone is logged in on a known device, so logins from before the known devices
+ * came in count too. Every known device counts, also ones not used for longer than HBHUB_DEVICE_DAYS (their rows go
+ * the next time the account logs in). A deleted account has no known devices left, so it's never part of a person.
+ * Each person is ['userIds' => their accounts' ids, lowest first, 'devices' => how many browsers they share between
+ * them], the people with the newest account first. A shared computer (like at school) can tie two people together,
+ * which is why the person page (admin/person.php) lists the devices and lets the admin pick the accounts.
+ *
+ * @return list<array{userIds: list<int>, devices: int}>
+ */
+function adminPersonGroups(PDO $db): array
+{
+    // Union-find: every account starts as its own person, and each browser joins the accounts known in it
+    $parent = [];
+    $find = function (int $id) use (&$parent): int {
+        while ($parent[$id] !== $id) {
+            $parent[$id] = $parent[$parent[$id]];
+            $id = $parent[$id];
+        }
+        return $id;
+    };
+    $deviceFirstUser = []; // deviceTokenHash => the first account seen in it
+    foreach ($db->query('SELECT deviceTokenHash, userId FROM `HBHub-LoginDevices`') as $row) {
+        $userId = (int) $row['userId'];
+        $parent[$userId] ??= $userId;
+        $first = $deviceFirstUser[$row['deviceTokenHash']] ??= $userId;
+        $root = $find($userId);
+        $firstRoot = $find($first);
+        if ($root !== $firstRoot) {
+            $parent[$root] = $firstRoot;
+        }
+    }
+
+    $groups = [];
+    foreach (array_keys($parent) as $userId) {
+        $groups[$find($userId)][] = $userId;
+    }
+    $devices = [];
+    foreach ($deviceFirstUser as $first) {
+        $root = $find($first);
+        $devices[$root] = ($devices[$root] ?? 0) + 1;
+    }
+
+    $people = [];
+    foreach ($groups as $root => $userIds) {
+        if (count($userIds) > 1) {
+            sort($userIds);
+            $people[] = ['userIds' => $userIds, 'devices' => $devices[$root] ?? 0];
+        }
+    }
+    usort($people, fn (array $a, array $b): int => end($b['userIds']) <=> end($a['userIds']));
+    return $people;
+}
+
+/**
+ * The ids of every account of the person $userId is one of (adminPersonGroups()), lowest first, $userId included.
+ * Just [$userId] when it's the only one.
+ *
+ * @return list<int>
+ */
+function adminPersonUserIds(PDO $db, int $userId): array
+{
+    foreach (adminPersonGroups($db) as $person) {
+        if (in_array($userId, $person['userIds'], true)) {
+            return $person['userIds'];
+        }
+    }
+    return [$userId];
+}
+
+/**
+ * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), People (admin/people.php), Banned
+ * pictures (admin/banned.php), Feedback (admin/feedback.php), Crash reports (admin/crashes.php) and Admin log
+ * (admin/log.php), each with how many there are in all, or for Feedback how many are new. $active is 'users', 'chats',
+ * 'people', 'banned', 'feedback', 'crashes' or 'log'.
  */
 function adminListsMenuHtml(PDO $db, string $active): string
 {
@@ -49,9 +123,11 @@ function adminListsMenuHtml(PDO $db, string $active): string
         (SELECT COUNT(*) FROM `HBHub-Feedback` WHERE feedbackDoneTimestamp IS NULL) AS feedback,
         (SELECT COUNT(*) FROM `HBHub-MinerCrashReports`) AS crashes,
         (SELECT COUNT(*) FROM `HBHub-AdminLog`) AS log')->fetch();
+    $totals['people'] = count(adminPersonGroups($db));
     $lists = [
         'users' => ['Users', '/admin/?list=users'],
         'chats' => ['Chats', '/admin/?list=chats'],
+        'people' => ['People', '/admin/people'],
         'banned' => ['Banned pictures', '/admin/banned'],
         'feedback' => ['Feedback', '/admin/feedback'],
         'crashes' => ['Crash reports', '/admin/crashes'],
@@ -104,6 +180,15 @@ function adminPageMenuHtml(string $backHref, string $backLabel, ?string $avatarS
 function adminTime(?string $timestamp): string
 {
     return $timestamp !== null ? date('d/m/Y H:i', strtotime($timestamp)) : '–';
+}
+
+/**
+ * The addresses, IPv4 and/or IPv6, or a dash when neither was saved.
+ */
+function adminIps(?string $ipv4, ?string $ipv6): string
+{
+    $ips = array_filter([$ipv4, $ipv6], fn (?string $ip): bool => $ip !== null && $ip !== '');
+    return $ips !== [] ? implode(' / ', $ips) : '–';
 }
 
 /**

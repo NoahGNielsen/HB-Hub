@@ -1,4 +1,4 @@
-// Admin panel (admin/user.php, admin/chat.php, admin/banned.php and admin/feedback.php): before any of its forms is sent,
+// Admin panel (admin/user.php, admin/person.php, admin/chat.php, admin/banned.php and admin/feedback.php): before any of its forms is sent,
 // a popup asks "are you sure?" (the button's or the form's data-confirm, like "Ban Name?", or the button's own text) and lets the admin type
 // a reason, which is sent along as the form's `reason` field and kept in the admin log with the action (adminLog.php).
 // A form with data-reply-to (Reply, and mark completed on admin/feedback.php) asks for a message to that user instead,
@@ -56,7 +56,9 @@
             hint.textContent = `${replyTo} gets it as a notification: "An admin has marked your feedback as completed with the message: …", and the feedback is marked as done. It's saved in the admin log as the reason.`;
             ok.textContent = 'Send, and mark completed';
         } else {
-            title.textContent = submitter?.dataset.confirm || form.dataset.confirm || `${label}?`;
+            // data-confirm-all instead while the "Also ... their other accounts" switch is on (admin/user.php)
+            const confirmAll = form.elements.allAccounts?.checked ? form.dataset.confirmAll : undefined;
+            title.textContent = submitter?.dataset.confirm || confirmAll || form.dataset.confirm || `${label}?`;
             fieldLabel.textContent = 'Reason';
             hint.textContent = 'Why you\'re doing it. It\'s saved in the admin log with what you did.';
             ok.textContent = label;

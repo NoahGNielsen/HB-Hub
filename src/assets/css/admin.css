@@ -1,4 +1,4 @@
-/* Admin panel (admin/index.php, admin/banned.php, admin/feedback.php, admin/log.php, admin/user.php and admin/chat.php). Built on the settings page's
+/* Admin panel (admin/index.php, admin/people.php, admin/banned.php, admin/feedback.php, admin/log.php, admin/user.php, admin/person.php and admin/chat.php). Built on the settings page's
    side menu, cards, fields and buttons (settings.css); this is what only the admin panel has: tables, lists and details. */
 
 .admin-link:focus-visible,
@@ -617,6 +617,41 @@
 .admin-directions input:focus-visible + .admin-direction {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* People (admin/people.php): a person's accounts, one per line in their row */
+.admin-person-accounts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-person-accounts li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+/* A person's page (admin/person.php): the tick box for each account a form changes */
+.admin-person-pick {
+  min-width: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+  gap: 10px;
+}
+
+.admin-person-pick legend {
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+.admin-person-pick .settings-checkbox {
+  flex-wrap: wrap;
 }
 
 @media (max-width: 600px) {

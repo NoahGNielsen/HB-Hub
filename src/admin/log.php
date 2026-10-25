@@ -116,6 +116,10 @@ function adminLogText(array $entry): string
             ? ADMIN_LOG_ACTIONS[$entry['adminLogAction']] . ' #' . (int) $data['pictureId'] : null,
         default => null,
     } ?? ADMIN_LOG_ACTIONS[$entry['adminLogAction']] ?? $entry['adminLogAction'];
+    // Done to every account of a person at once (adminAccounts.php), from the person around this account
+    if (isset($data['personOf'])) {
+        $text .= ' (as one of the accounts of the person around account #' . (int) $data['personOf'] . ')';
+    }
 
     $user = $entry['adminLogUserId'] !== null
         ? adminLogNameLink('/admin/user?user=' . (int) $entry['adminLogUserId'], $entry['userName'])

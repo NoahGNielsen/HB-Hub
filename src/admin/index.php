@@ -7,7 +7,8 @@
 // ?q= searches the list by name (a chat by its name or its members' names), or by id when it's a number,
 // ?sort= and ?dir= put it in order by one of its columns (ADMIN_USER_SORTS / ADMIN_CHAT_SORTS, picked by clicking a
 // column heading), and ?page= goes through it ADMIN_LIST_SHOWN at a time. The side menu (adminListsMenuHtml()) switches between the two,
-// and goes to the other lists, Banned pictures and Feedback, which are their own pages (admin/banned.php, admin/feedback.php).
+// and goes to the other lists, People, Banned pictures and Feedback, which are their own pages (admin/people.php,
+// admin/banned.php, admin/feedback.php).
 // The pictures in the lists are loaded by pictureQueue.js two at a time (data-queued-picture), as each one is a PHP request.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';

@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '23 October 2026';
+const HBHUB_TERMS_UPDATED = '25 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -72,7 +72,7 @@ const HBHUB_TERMS_UPDATED = '23 October 2026';
                     <section id="account" aria-labelledby="terms-account">
                         <h2 id="terms-account">2. Your account</h2>
                         <ul>
-                            <li><strong>One account per person.</strong> Don't make extra accounts, for example to get more daily chips or to get around a ban.</li>
+                            <li><strong>One account per person.</strong> Don't make extra accounts, for example to get more daily chips or to get around a ban. Admins can see which accounts are used in the same browser, and can treat them as one person (see section 7).</li>
                             <li><strong>Be yourself.</strong> Use a name people from school will recognise you by, and don't pretend to be someone else.</li>
                             <li>Names and bios can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them. A bio can't have a link to one of the blocked sites in it either (see section 3).</li>
                             <li><strong>Keep it to yourself.</strong> Don't share your password or let others use your account. You're responsible for what happens on it.</li>
@@ -212,6 +212,7 @@ const HBHUB_TERMS_UPDATED = '23 October 2026';
                                 old) that's made or used in the same browser is ghost banned too,
                             </li>
                             <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture.</li>
+                            <li>do any of the above to all of a person's accounts at once. Accounts that have been logged in to from the same browser are taken to be the same person, and admins check that it isn't just a shared computer first.</li>
                         </ul>
                         <p>
                             Using a banned profile picture is against the rules too: an account that uploads one, or signs up with
