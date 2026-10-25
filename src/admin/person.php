@@ -9,7 +9,8 @@
 // the gambling block and the admin block, logging out everywhere, ghost ban or lift it, ban or unban (with or without
 // their pictures) and delete. Each form has a tick box for every account it can change, all ticked to begin with,
 // since a shared computer (like at school) can link someone who isn't the same person: untick them. Site admins and
-// deleted accounts are never in them. Each account is changed like on its own page (adminAccounts.php), and logged in
+// deleted accounts are never in them. admin.js greys out a button while none of the ticked accounts would be changed
+// by it (nothing ticked, or Unban with only accounts that aren't banned, and so on). Each account is changed like on its own page (adminAccounts.php), and logged in
 // the admin log with {"personOf": id}, the account in the address. Before any form is sent, admin.js asks for a reason.
 // Opening the page is logged too ('person.view'), as it shows every account's personal info.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -204,15 +205,23 @@ $personHasAvatars = array_filter($personChangeable, fn (array $account): bool =>
 
 /**
  * A tick box for every account a form on the page can change, all ticked to begin with, with its status so it's clear
- * which ones the action does anything to. $card keeps the ids apart between the forms.
+ * which ones the action does anything to. $card keeps the ids apart between the forms. data-person-state lists what
+ * the account is now ("banned ghost adminBlock"), so admin.js can grey out the buttons that wouldn't change any of the
+ * ticked ones (data-person-needs on the button).
  */
 function personAccountsFieldHtml(array $accounts, string $card): string
 {
     $html = '<fieldset class="settings-field admin-person-pick"><legend class="settings-label">Accounts</legend>';
     foreach ($accounts as $account) {
         $id = 'person-' . $card . '-' . (int) $account['userId'];
+        $state = array_keys(array_filter([
+            'banned' => (int) $account['userStatus'] === HBHUB_SESSION_STATUS_BANNED,
+            'ghost' => $account['userGhostBannedTimestamp'] !== null,
+            'adminBlock' => hbHubBlockIsAdmin(hbHubUserSettings($account['userSettings'])),
+        ]));
         $html .= '<label class="settings-checkbox" for="' . $id . '">'
-            . '<input type="checkbox" id="' . $id . '" name="accounts[]" value="' . (int) $account['userId'] . '" checked>'
+            . '<input type="checkbox" id="' . $id . '" name="accounts[]" value="' . (int) $account['userId'] . '" checked'
+            . ' data-person-state="' . implode(' ', $state) . '">'
             . '<span>' . htmlspecialchars($account['userName']) . '</span> ' . adminStatusHtml(adminUserStatus($account)) . '</label>';
     }
     return $html . '<p class="settings-hint">Untick an account that isn\'t theirs, like one only linked by a shared computer.</p></fieldset>';
@@ -410,7 +419,7 @@ function personNamesHtml(array $userIds, array $accounts): string
                             </div>
                             <?= personAccountsFieldHtml($personChangeable, 'block') ?>
                             <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-primary">Save</button>
+                                <button type="submit" class="settings-btn settings-btn-primary" data-person-needs="">Save</button>
                             </div>
                         </form>
 
@@ -426,9 +435,9 @@ function personNamesHtml(array $userIds, array $accounts): string
                             </div>
                             <?= personAccountsFieldHtml($personChangeable, 'block-admin') ?>
                             <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-primary" name="action" value="blockAdminLift"
+                                <button type="submit" class="settings-btn settings-btn-primary" name="action" value="blockAdminLift" data-person-needs="adminBlock"
                                         data-confirm="Lift the admin block on Gambling and Games for the ticked accounts?">Lift admin block</button>
-                                <button type="submit" class="settings-btn settings-btn-danger" name="action" value="blockAdmin"
+                                <button type="submit" class="settings-btn settings-btn-danger" name="action" value="blockAdmin" data-person-needs="!adminBlock"
                                         data-confirm="Block Gambling and Games for the ticked accounts?">Block Gambling and Games</button>
                             </div>
                         </form>
@@ -476,7 +485,7 @@ function personNamesHtml(array $userIds, array $accounts): string
                             </div>
                             <?= personAccountsFieldHtml($personChangeable, 'logout') ?>
                             <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-danger">Log out everywhere</button>
+                                <button type="submit" class="settings-btn settings-btn-danger" data-person-needs="">Log out everywhere</button>
                             </div>
                         </form>
                     <?php endif; ?>
@@ -501,9 +510,9 @@ function personNamesHtml(array $userIds, array $accounts): string
                         <form action="/admin/person?user=<?= $targetId ?>#ghost" method="post">
                             <?= personAccountsFieldHtml($personChangeable, 'ghost') ?>
                             <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-primary" name="action" value="ghostUnban"
+                                <button type="submit" class="settings-btn settings-btn-primary" name="action" value="ghostUnban" data-person-needs="ghost"
                                         data-confirm="Lift the ghost ban of the ticked accounts?">Lift ghost ban</button>
-                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid" name="action" value="ghostBan"
+                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid" name="action" value="ghostBan" data-person-needs="!ghost"
                                         data-confirm="Ghost ban the ticked accounts?">Ghost ban</button>
                             </div>
                         </form>
@@ -539,9 +548,9 @@ function personNamesHtml(array $userIds, array $accounts): string
                             <?php endif; ?>
                             <?= personAccountsFieldHtml($personChangeable, 'ban') ?>
                             <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-primary" name="action" value="unban"
+                                <button type="submit" class="settings-btn settings-btn-primary" name="action" value="unban" data-person-needs="banned"
                                         data-confirm="Unban the ticked accounts?">Unban</button>
-                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid" name="action" value="ban"
+                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid" name="action" value="ban" data-person-needs="!banned"
                                         data-confirm="Ban the ticked accounts?">Ban</button>
                             </div>
                         </form>
@@ -570,7 +579,7 @@ function personNamesHtml(array $userIds, array $accounts): string
                                 <?php endif; ?>
                             </div>
                             <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid">Delete accounts</button>
+                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid" data-person-needs="">Delete accounts</button>
                             </div>
                         </form>
                     </section>

@@ -4,6 +4,7 @@
 // A form with data-reply-to (Reply, and mark completed on admin/feedback.php) asks for a message to that user instead,
 // which has to be filled in and is sent as `reply`. Those forms are hidden until this shows them, as they need the popup.
 // Generate fills in a random password for Reset password, shown so it can be passed on to the user,
+// on admin/person.php the buttons that wouldn't change any ticked account are greyed out,
 // and the chat's Background card shows the gradient as it's picked. On admin/crashes.php, Copy everything copies a crash report. (The pictures in the lists load two at a time, from pictureQueue.js.)
 // Without JS the forms are sent straight away with no reason, the password has to be typed in and there's no preview.
 (() => {
@@ -140,6 +141,30 @@
         input.focus();
         input.select();
     });
+})();
+
+// Person page (admin/person.php): a button is greyed out while none of its form's ticked accounts would be changed by
+// it. data-person-needs on the button says what a ticked account has to be (from its tick box's data-person-state):
+// "banned" for Unban, "!banned" (not banned) for Ban, and empty for any ticked account at all. The server checks
+// the same thing again, so without JS the buttons just stay on.
+(() => {
+    const buttons = document.querySelectorAll('button[data-person-needs]');
+
+    function update(form) {
+        const ticked = [...form.querySelectorAll('input[name="accounts[]"]:checked')]
+            .map((box) => box.dataset.personState.split(' '));
+        for (const button of form.querySelectorAll('button[data-person-needs]')) {
+            const needs = button.dataset.personNeeds;
+            const wanted = needs.replace(/^!/, '');
+            button.disabled = !ticked.some((state) => needs === '' || state.includes(wanted) !== needs.startsWith('!'));
+        }
+    }
+
+    const forms = new Set([...buttons].map((button) => button.form));
+    for (const form of forms) {
+        update(form);
+        form.addEventListener('change', () => update(form));
+    }
 })();
 
 // Background (admin/chat.php): the preview shows the gradient from the two colors, going the way the picked arrow points.

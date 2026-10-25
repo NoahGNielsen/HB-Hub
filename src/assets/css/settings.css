@@ -825,6 +825,14 @@
   filter: brightness(1.08);
 }
 
+/* Greyed out, like when none of the ticked accounts would be changed by it (admin/person.php) */
+.settings-btn:disabled,
+.settings-btn:disabled:hover {
+  opacity: 0.45;
+  filter: none;
+  cursor: not-allowed;
+}
+
 .settings-btn-small {
   align-self: flex-start;
   padding: 6px 12px;
