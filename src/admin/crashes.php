@@ -212,8 +212,7 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
                         <div>
                             <h2 id="admin-list-heading">Ore Mining Inc. crash reports</h2>
                             <p class="settings-intro">
-                                Sent by players who said yes when the game asked, the next time they opened it after it froze or
-                                closed badly. Kept for <?= HBHUB_MINER_CRASH_KEEP_DAYS ?> days.
+                                Reports kept for <?= HBHUB_MINER_CRASH_KEEP_DAYS ?> days.
                             </p>
                         </div>
                     </div>
