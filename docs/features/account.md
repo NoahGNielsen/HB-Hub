@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Profiles** | Profile picture, name, year, class and bio |
+| **Profiles** | Profile picture, name, class and bio. The class is 1., 2. or 3. year with a field of study (X, U, T, Y, Z), or Not HTX; the year goes up by itself every July 1st, and after 3. year it shows as Student |
 | **Two-factor login** | TOTP codes from any authenticator app, set up with a QR code |
 | **Login protection** | Password strength rules, a common-password list and lockout after failed attempts. Devices you've logged in on before have their own lock, so nobody can lock you out by guessing |
 | **Logged in devices** | See every browser you're logged in on and when it was last used, log out any of them, or log out everywhere at once |

@@ -937,7 +937,8 @@ function chatGroupMessages(messages) {
     previous?.classList.remove('has-next');
 }
 
-// Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to mute, hide or leave it.
+// Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to mute, hide or leave it
+// (not a class chat, data-chat-class).
 // In a DM the other person's profile can be opened (otherPages/profile.php) and they can be given a nickname.
 // Group admins can also change the group's name or icon, or delete it.
 // Group admins and both people in a DM can change the chat's background.
@@ -976,6 +977,8 @@ chatPart((signal) => {
             menu.querySelectorAll('[data-menu-dm]').forEach((menuItem) => { menuItem.hidden = isGroup; });
             menu.querySelectorAll('[data-menu-admin]').forEach((menuItem) => { menuItem.hidden = !isAdmin; });
             menu.querySelector('[data-menu-action="background"]').hidden = isGroup && !isAdmin;
+            // Everyone at HTX is in their class chat, so it can be hidden but not left
+            menu.querySelector('[data-menu-action="leave"]').hidden = item.hasAttribute('data-chat-class');
             // Nobody to give a nickname in a DM the other person left
             if (!item.hasAttribute('data-chat-username')) menu.querySelector('[data-menu-action="nickname"]').hidden = true;
             const isMuted = item.hasAttribute('data-chat-muted');

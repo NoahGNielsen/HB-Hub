@@ -1,7 +1,7 @@
 <?php
 // Help docs: group chats - making one, adding people, the owner/admin/member roles (HBHUB_CHAT_ROLE_* in
 // assets/php/chat.php), changing the name, icon and background, kicking, leaving and deleting, and the notices
-// a group shows. Open to everyone. Built by assets/php/docs/top.php and bottom.php.
+// a group shows, and class chats (assets/php/schoolClass.php). Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
@@ -82,6 +82,21 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><strong>Kick</strong> takes someone out of the group. They get a notification, and can only come back if someone adds them again.</li>
                             <li><strong>Leave chat</strong> in the chat menu takes you out. Your messages stay.</li>
                             <li><strong>Delete group</strong> (admins) closes the group for everyone, and deletes the files sent in it. A group everyone has left is deleted too.</li>
+                        </ul>
+                    </section>
+
+                    <section id="class" aria-labelledby="docs-class">
+                        <h2 id="docs-class">Your class chat</h2>
+                        <p>
+                            If you're at HTX, you're put in your class's group chat as soon as you sign up, with no message
+                            request to accept. Your class is everyone who started 1. year the same year as you in the same field
+                            of study, so the chat is called something like <strong>1.X</strong>.
+                        </p>
+                        <ul>
+                            <li>It follows your class: on July 1st it's renamed with the new year (<strong>1.X</strong> becomes <strong>2.X</strong>), and the messages stay. After 3. year it's called something like <strong>Student (X) 2029</strong>.</li>
+                            <li>Nobody is the owner or an admin, so nobody can rename it, kick people or delete it. Only site admins can.</li>
+                            <li>You can mute or hide it, but not leave it, and you can't add people to it.</li>
+                            <li>Changing your class in your <a href="/docs/account#profile">settings</a> moves you to the other class's chat.</li>
                         </ul>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

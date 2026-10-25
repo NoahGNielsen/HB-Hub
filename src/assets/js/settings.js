@@ -1,4 +1,4 @@
-// Settings page: draws the QR code for setting up two-factor login, shows how strong a new password is, asks the browser for permission
+// Settings page: hides the field of study for Not HTX, draws the QR code for setting up two-factor login, shows how strong a new password is, asks the browser for permission
 // to show notifications once they're turned on, plays the message sound when it's turned on, and asks "are you sure?"
 // before deleting the account.
 // Without JS the 2FA key can still be typed in by hand, and deleting still needs the password.
@@ -9,6 +9,22 @@
                 event.preventDefault();
             }
         });
+    }
+
+    // Profile: the field of study is only asked for when a year at HTX is picked, not for Not HTX.
+    // Turned off otherwise, so it isn't checked or sent.
+    const classYear = document.querySelector('[data-class-year]');
+    if (classYear) {
+        const classField = document.querySelector('[data-class-field]');
+        const classSelect = classField.querySelector('select');
+        const updateClassField = () => {
+            const isHtx = classYear.value !== '' && classYear.value !== 'none';
+            classField.hidden = !isHtx;
+            classSelect.disabled = !isHtx;
+            classSelect.required = isHtx;
+        };
+        classYear.addEventListener('change', updateClassField);
+        updateClassField();
     }
 
     // qrcode.js (assets/js/vendor) is only loaded while setting up two-factor login

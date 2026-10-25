@@ -3,6 +3,7 @@
 // one form per card, in the menu's three groups:
 // Personal
 // - Profile (#profile): picture, name, class and bio, with the same rules as onboarding (userMgmt/onboarding.php).
+//   A new class moves them to its class chat (assets/php/schoolClass.php).
 //   A picture on the banned list bans the account (assets/php/bannedAvatars.php).
 // - Notifications (#notifications): a browser notification and/or a sound for new messages while the site is open
 //   (assets/js/notifications.js, assets/js/messageSound.js)
@@ -26,11 +27,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/totp.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be in a bio
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // the same year and field choices as onboarding, and the class chat
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
 const SETTINGS_ROLE_ADMIN = 2; // userRole in HBHub-Users
-const SETTINGS_YEARS = ['1', '2', '3']; // the same choices as onboarding
-const SETTINGS_CLASSES = ['T', 'Y', 'X', 'U'];
 const SETTINGS_AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']; // no SVG, it can carry scripts
 
 // Requirement modes used by the onboarding_*_requirements settings
@@ -61,10 +61,13 @@ $statement->execute([$userId]);
 $settingsUser = $statement->fetch();
 $savedSettings = hbHubUserSettings($settingsUser['userSettings']);
 
+$settingsClass = hbHubClassFormValues($savedSettings);
+// A graduate gets "Student" in the year picker, so they can keep it (it can't be picked otherwise)
+$settingsIsStudent = $settingsClass['year'] === HBHUB_CLASS_STUDENT;
 $settingsValues = [
     'name' => $settingsUser['userName'],
-    'year' => is_scalar($savedSettings['year'] ?? null) ? (string) $savedSettings['year'] : '',
-    'class' => is_scalar($savedSettings['class'] ?? null) ? (string) $savedSettings['class'] : '',
+    'year' => $settingsClass['year'],
+    'class' => $settingsClass['field'],
     'description' => $settingsUser['userDescription'] ?? '',
 ];
 $settingsErrors = []; // field name => message
@@ -92,10 +95,12 @@ function settingsSave(PDO $db, int $userId, array $values, bool $saveDescription
         $statement->execute([$userId]);
         $current = $statement->fetch();
 
-        // Anything else saved in the settings is kept
+        // Anything else saved in the settings is kept. The class is only saved again when it was changed.
         $settings = hbHubUserSettings($current['userSettings']);
-        $settings['year'] = (int) $values['year'];
-        $settings['class'] = $values['class'];
+        $isClassChanged = hbHubClassFormValues($settings) !== ['year' => $values['year'], 'field' => $values['year'] === HBHUB_CLASS_NOT_HTX ? '' : $values['class']];
+        if ($isClassChanged) {
+            $settings = hbHubClassSetSettings($settings, $values['year'], $values['class']);
+        }
 
         $oldAvatarId = $current['userAvatarAttachmentId'];
         $avatarId = $oldAvatarId;
@@ -131,6 +136,16 @@ function settingsSave(PDO $db, int $userId, array $values, bool $saveDescription
         }
         error_log('Settings: could not save the profile: ' . $e->getMessage());
         return ['profile' => 'Something went wrong saving your profile. Please try again.'];
+    }
+
+    // A new class is a new class chat, and the old one is left (assets/php/schoolClass.php).
+    // The profile is saved either way, and the chat page tries again if this fails.
+    if ($isClassChanged) {
+        try {
+            hbHubClassChatSync($db, $userId);
+        } catch (PDOException $e) {
+            error_log('Settings: could not move the user to their new class chat: ' . $e->getMessage());
+        }
     }
 
     return [];
@@ -229,11 +244,9 @@ if ($settingsAction === 'profile') {
             $settingsErrors['name'] = $nameError;
         }
 
-        // Class
-        if (!in_array($settingsValues['year'], SETTINGS_YEARS, true)) {
-            $settingsErrors['class'] = 'Please choose your year.';
-        } elseif (!in_array($settingsValues['class'], SETTINGS_CLASSES, true)) {
-            $settingsErrors['class'] = 'Please choose your class.';
+        // Class - the field of study only for 1. to 3. year (and Student), not for Not HTX
+        if (($classError = hbHubClassError($settingsValues['year'], $settingsValues['class'], $settingsIsStudent)) !== null) {
+            $settingsErrors['class'] = $classError;
         }
 
         // Picture - only when a new one was chosen
@@ -535,23 +548,30 @@ function settingsTime(?string $timestamp): string
                             <div class="settings-row">
                                 <div class="settings-field">
                                     <label class="settings-label" for="settings-year">Year</label>
-                                    <select id="settings-year" name="year" required>
-                                        <option value="" disabled<?= !in_array($settingsValues['year'], SETTINGS_YEARS, true) ? ' selected' : '' ?>>Choose your year</option>
-                                        <?php foreach (SETTINGS_YEARS as $year): ?>
-                                            <option value="<?= $year ?>"<?= $settingsValues['year'] === $year ? ' selected' : '' ?>><?= $year ?></option>
+                                    <select id="settings-year" name="year" required data-class-year>
+                                        <option value="" disabled<?= $settingsValues['year'] === '' ? ' selected' : '' ?>>Choose your year</option>
+                                        <?php foreach (HBHUB_CLASS_YEARS as $year): ?>
+                                            <option value="<?= $year ?>"<?= $settingsValues['year'] === $year ? ' selected' : '' ?>><?= $year ?>.</option>
                                         <?php endforeach; ?>
+                                        <?php if ($settingsIsStudent): ?>
+                                            <option value="<?= HBHUB_CLASS_STUDENT ?>"<?= $settingsValues['year'] === HBHUB_CLASS_STUDENT ? ' selected' : '' ?>>Student</option>
+                                        <?php endif; ?>
+                                        <option value="<?= HBHUB_CLASS_NOT_HTX ?>"<?= $settingsValues['year'] === HBHUB_CLASS_NOT_HTX ? ' selected' : '' ?>>Not HTX</option>
                                     </select>
                                 </div>
-                                <div class="settings-field">
-                                    <label class="settings-label" for="settings-class">Class</label>
-                                    <select id="settings-class" name="class" required>
-                                        <option value="" disabled<?= !in_array($settingsValues['class'], SETTINGS_CLASSES, true) ? ' selected' : '' ?>>Choose your class</option>
-                                        <?php foreach (SETTINGS_CLASSES as $class): ?>
-                                            <option value="<?= $class ?>"<?= $settingsValues['class'] === $class ? ' selected' : '' ?>><?= $class ?></option>
+                                <!-- Not for Not HTX: settings.js hides it then. Not required in the markup, so Not HTX can be
+                                     saved without JS; the server checks it. -->
+                                <div class="settings-field" data-class-field>
+                                    <label class="settings-label" for="settings-class">Field of study</label>
+                                    <select id="settings-class" name="class">
+                                        <option value="" disabled<?= !in_array($settingsValues['class'], HBHUB_CLASS_FIELDS, true) ? ' selected' : '' ?>>Choose your field</option>
+                                        <?php foreach (HBHUB_CLASS_FIELDS as $field): ?>
+                                            <option value="<?= $field ?>"<?= $settingsValues['class'] === $field ? ' selected' : '' ?>><?= $field ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
+                            <p class="settings-hint">Your year goes up by itself every July 1st, and after 3. you're a Student. You're in your class's group chat, and changing class moves you to the other one.</p>
                             <?php if (isset($settingsErrors['class'])): ?>
                                 <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['class']) ?></p>
                             <?php endif; ?>

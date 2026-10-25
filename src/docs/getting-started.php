@@ -14,7 +14,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>Press <strong>Sign up</strong> on the <a href="/">frontpage</a>. It asks you a few questions, one at a time:</p>
                         <ol class="docs-steps">
                             <li><strong>What should you be known as?</strong> The name people see in the chat and on the leaderboards. Use a name people from school will know you by. It's also what you log in with.</li>
-                            <li><strong>Which class are you in?</strong> Your year and class, shown on your profile.</li>
+                            <li><strong>Which year are you in?</strong> 1., 2. or 3. year at HTX, and then your field of study (X, U, T, Y or Z), or Not HTX. It's shown on your profile, and at HTX you're put in your <a href="/docs/chat/groups#class">class chat</a> straight away.</li>
                             <li><strong>A picture of yourself.</strong> Your profile picture. You can skip it and add one later.</li>
                             <li><strong>Describe yourself.</strong> A short bio for your profile.</li>
                             <li><strong>Your password.</strong> The form tells you while you type if it's too weak, or one that's used so often it's easy to guess.</li>

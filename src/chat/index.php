@@ -8,6 +8,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatUnread.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navUpdates.php'; // the nav bar's request, which polling takes along
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // the class chat everyone at HTX is put in
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be sent
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
@@ -59,12 +60,15 @@ $chatIsGhost = (bool) $hbHubUser['userGhostBanned'];
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 $chatGifsEnabled = hbHubGiphyApiKey($siteConfig) !== null; // the GIF button and picker
 
+// The class chat is renamed once the class has moved up a year (July 1st), and accounts from before class chats get theirs
+hbHubClassChatSyncIfDue($db, $userId, hbHubUserSettings($hbHubUser['userSettings']));
+
 /**
  * The chat with the id, or null when it doesn't exist, isn't active or the user isn't a member of it.
  * A chat the user hasn't accepted yet (a message request) only counts when $isRequest is true,
  * and then it's the only kind that counts. An invite from a ghost-banned user (memberIsGhost) never counts.
  *
- * @return ?array{chatId: int, chatType: int, memberRole: int, memberMutedUntil: ?string, lastReadMessageId: ?int}
+ * @return ?array{chatId: int, chatType: int, chatClassKey: ?string, memberRole: int, memberMutedUntil: ?string, lastReadMessageId: ?int}
  */
 function chatMembership(PDO $db, int $userId, mixed $chatId, bool $isRequest = false): ?array
 {
@@ -72,7 +76,7 @@ function chatMembership(PDO $db, int $userId, mixed $chatId, bool $isRequest = f
         return null;
     }
 
-    $statement = $db->prepare('SELECT c.chatId, c.chatType, cm.memberRole, cm.memberMutedUntil, cm.lastReadMessageId
+    $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatClassKey, cm.memberRole, cm.memberMutedUntil, cm.lastReadMessageId
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
         WHERE cm.chatId = ? AND cm.userId = ? AND c.chatStatus = ? AND cm.userAcknowledgedJoin = ? AND cm.memberIsGhost = 0');
     $statement->execute([(int) $chatId, $userId, HBHUB_CHAT_STATUS_ACTIVE, $isRequest ? 0 : 1]);
@@ -869,7 +873,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
             chatSetHidden($db, $userId, (int) $chat['chatId'], true);
             break;
         case 'leave':
-            chatLeave($db, $userId, $chat);
+            // Everyone at HTX is in their class chat (assets/php/schoolClass.php), so it can only be hidden
+            if ($chat['chatClassKey'] === null) {
+                chatLeave($db, $userId, $chat);
+            }
             break;
         case 'rename':
             // Left empty, the group is named after its members again
@@ -1014,10 +1021,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
 }
 
-// Add to chat, for every member of a group (not only admins): the picked users are invited to it
+// Add to chat, for every member of a group (not only admins): the picked users are invited to it.
+// Not a class chat: who's in it goes by their class.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'add') {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
-    if ($chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
+    if ($chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP && $chat['chatClassKey'] === null) {
         chatAddMembers($db, $userId, hbHubUserSettings($hbHubUser['userSettings']), (int) $chat['chatId'], $_POST['users'] ?? null, $chatIsGhost);
     }
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
@@ -1419,7 +1427,7 @@ if ($isPage && $openMembership !== null && ($_GET['unread'] ?? null) !== '1') {
 // Ghosts (assets/php/chat.php) are left out: other people's messages and ghost invites, and chats the user only has a
 // ghost invite to. A ghost-banned user's own messages don't move a chat up anyone's list (lastMessageTimestamp),
 // so for them it's worked out from those too, and the list looks like it always does.
-$statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAttachmentId, c.chatSettings,
+$statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAttachmentId, c.chatSettings, c.chatClassKey,
         cm.userAcknowledgedJoin, cm.memberRole,
         ' . ($chatIsGhost
             ? 'GREATEST(COALESCE(c.lastMessageTimestamp, c.chatCreatedTimestamp), COALESCE((
@@ -1731,6 +1739,7 @@ function chatListItem(array $chat): void
                         $chat['chatNickname'] !== null ? ' data-chat-nickname="' . htmlspecialchars($chat['chatNickname']) . '"' : '' ?><?=
                         $chat['chatIsGroupAdmin'] ? ' data-chat-admin' : '' ?><?=
                         $chat['chatIsGroupOwner'] ? ' data-chat-owner' : '' ?><?=
+                        $chat['chatClassKey'] !== null ? ' data-chat-class' : '' ?><?=
                         $chat['chatIconAttachmentId'] !== null ? ' data-chat-icon' : '' ?><?=
                         $chat['chatBackground'] !== null ? ' data-chat-background="' . htmlspecialchars($chat['chatBackground']) . '"' : '' ?><?=
                         $chat['chatMutedLabel'] !== null ? ' data-chat-muted' : '' ?><?=
@@ -2152,12 +2161,14 @@ if ($isPoll) {
                         <h2 class="chat-window-title"><?= htmlspecialchars($openChat['chatTitle']) ?></h2>
                     <?php endif; ?>
                     <?php if ($openChatMembers !== []): ?>
-                        <!-- Groups: the person with a plus opens the Add to chat popup (any member can add people),
-                             the person button the Members popup (chat.js) -->
+                        <!-- Groups: the person with a plus opens the Add to chat popup (any member can add people, but not
+                             to a class chat), the person button the Members popup (chat.js) -->
+                        <?php if ($openChat['chatClassKey'] === null): ?>
                         <button type="button" class="chat-icon-btn chat-add-btn" aria-label="Add to chat" title="Add to chat"
                                 aria-haspopup="dialog" data-add-open>
                             <img src="/assets/images/icons/addUser.svg" alt="">
                         </button>
+                        <?php endif; ?>
                         <button type="button" class="chat-icon-btn chat-members-btn" aria-label="Members (<?= count($openChatMembers) ?>)"
                                 title="Members" aria-haspopup="dialog" data-members-open>
                             <img src="/assets/images/icons/user.png" alt="">
@@ -2552,7 +2563,8 @@ if ($isPoll) {
                 </dialog>
 
                 <!-- Add to chat popup (chat.js), for every member: search users and pick who to add, like New chat.
-                     Who's in the group already (invited too) shows, but can't be picked. -->
+                     Who's in the group already (invited too) shows, but can't be picked. Not in a class chat. -->
+                <?php if ($openChat['chatClassKey'] === null): ?>
                 <dialog class="chat-new chat-add" aria-labelledby="chat-add-title" data-members-max="<?= HBHUB_CHAT_MEMBERS_MAX ?>"
                         data-member-ids="<?= implode(',', array_map('intval', array_column($openChatMembers, 'userId'))) ?>">
                     <form class="chat-new-form" action="/chat/" method="post">
@@ -2579,6 +2591,7 @@ if ($isPoll) {
                         </footer>
                     </form>
                 </dialog>
+                <?php endif; ?>
 
                 <?php if ($openChat['chatIsGroupAdmin']): ?>
                     <!-- Make admin, Remove admin and Kick ask first (chat.js fills in which, and who it's about) -->

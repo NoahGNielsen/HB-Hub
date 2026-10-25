@@ -32,6 +32,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // their class, as their profile shows it
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php'; // taking back the @mentions in deleted messages
@@ -555,8 +556,7 @@ switch ($adminAction) {
 // What the page shows, which is logged: it has all their messages and personal info
 adminLogView($db, $adminId, 'user.view', $targetId, null);
 $adminSettings = hbHubUserSettings($target['userSettings']);
-$adminYear = is_scalar($adminSettings['year'] ?? null) ? (string) $adminSettings['year'] : '';
-$adminClass = is_scalar($adminSettings['class'] ?? null) ? (string) $adminSettings['class'] : '';
+$adminClass = hbHubClassOf($adminSettings);
 $adminBlock = hbHubBlockSettings($adminSettings);
 $adminBlockIsAdmin = hbHubBlockIsAdmin($adminSettings);
 $adminAvatarSrc = hbHubAvatarUrl($targetId, $target['userAvatarAttachmentId'] !== null ? (int) $target['userAvatarAttachmentId'] : null);
@@ -651,7 +651,7 @@ $adminMessageCounts = $statement->fetch();
                         <?php if ($targetIsGhost): ?>
                             <div><dt>Ghost banned</dt><dd><?= adminTime($target['userGhostBannedTimestamp']) ?></dd></div>
                         <?php endif; ?>
-                        <div><dt>Class</dt><dd><?= $adminYear !== '' && $adminClass !== '' ? htmlspecialchars($adminYear . '.' . $adminClass) : '–' ?></dd></div>
+                        <div><dt>Class</dt><dd><?= $adminClass !== null ? htmlspecialchars($adminClass['label']) : '–' ?></dd></div>
                         <div><dt>Two-factor login</dt><dd><?= $target['totpIsOn'] ? 'On' : 'Off' ?></dd></div>
                         <div><dt>Wrong passwords in a row</dt><dd><?= (int) $target['userFailedLoginCount'] ?></dd></div>
                         <div><dt>Last locked</dt><dd><?= adminTime($target['userAccountLockedTimestamp']) ?><?= $target['isLocked'] ? ' (still locked)' : '' ?></dd></div>

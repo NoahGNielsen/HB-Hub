@@ -3,6 +3,7 @@
 // Banned users don't have a profile (the same as in the chat's user search).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // "2.X", "Student (X)" or "Not HTX"
 
 const PROFILE_ROLE_ADMIN = 2; // userRole in HBHub-Users
 
@@ -53,8 +54,7 @@ $profileIsOnline = (int) $profile['lastSeenSeconds'] <= HBHUB_SESSION_ONLINE_SEC
 
 // Same shape as database/defaultUserSettings.json
 $profileSettings = json_decode($profile['userSettings'] ?? '', true);
-$profileYear = is_array($profileSettings) && is_scalar($profileSettings['year'] ?? null) ? (string) $profileSettings['year'] : '';
-$profileClass = is_array($profileSettings) && is_scalar($profileSettings['class'] ?? null) ? (string) $profileSettings['class'] : '';
+$profileClass = hbHubClassOf(is_array($profileSettings) ? $profileSettings : []);
 
 $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvatarAttachmentId'] !== null ? (int) $profile['userAvatarAttachmentId'] : null);
 ?>
@@ -118,7 +118,7 @@ $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvata
         <dl class="profile-details">
             <div class="profile-detail">
                 <dt>Class</dt>
-                <dd><?= $profileYear !== '' && $profileClass !== '' ? htmlspecialchars($profileYear . '.' . $profileClass) : '&ndash;' ?></dd>
+                <dd><?= $profileClass !== null ? htmlspecialchars($profileClass['label']) : '&ndash;' ?></dd>
             </div>
             <div class="profile-detail">
                 <dt>Member for</dt>

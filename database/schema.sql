@@ -353,7 +353,8 @@ CREATE TABLE `HBHub-Chats` (
   `chatIconAttachmentId` int UNSIGNED DEFAULT NULL,
   `chatCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `lastMessageTimestamp` datetime DEFAULT NULL,
-  `chatBannedTimestamp` datetime DEFAULT NULL
+  `chatBannedTimestamp` datetime DEFAULT NULL,
+  `chatClassKey` varchar(16) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Class chat: the school year the class started 1. year in and its field of study, like 2026-X. NULL for any other chat, and once a class chat is deleted'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -825,7 +826,7 @@ CREATE TABLE `HBHub-Users` (
   `userTotpSecret` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Base32 TOTP secret, NULL when 2FA is off',
   `userTotpLastStep` int UNSIGNED DEFAULT NULL COMMENT 'Time step of the last accepted 2FA code, so a code only works once',
   `userFailedLoginCount` smallint UNSIGNED DEFAULT '0' COMMENT 'NULL for a deleted account',
-  `userStatus` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Normal (has logged in since the last unlock/unban)\r\n2 Normal (unlocked or unbanned by a site admin, not logged in since)\r\n3 Account Locked\r\n4 Banned\r\nNULL for a deleted account',
+  `userStatus` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Normal\r\n2 Normal (unlocked or unbanned by a site admin, not logged in since)\r\n3 Account Locked\r\n4 Banned\r\nNULL for a deleted account',
   `userRole` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Normal User\r\n2 Admin\r\nNULL for a deleted account',
   `userCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `userLastSeenTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -989,7 +990,8 @@ ALTER TABLE `HBHub-Chats`
   ADD PRIMARY KEY (`chatId`),
   ADD KEY `chatName` (`chatName`),
   ADD KEY `chatCreatedBy` (`chatCreatedBy`),
-  ADD KEY `fk_chats_icon` (`chatIconAttachmentId`);
+  ADD KEY `fk_chats_icon` (`chatIconAttachmentId`),
+  ADD UNIQUE KEY `chatClassKey` (`chatClassKey`);
 
 --
 -- Indexes for table `HBHub-ChessChat`

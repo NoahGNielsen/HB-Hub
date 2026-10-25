@@ -1,6 +1,8 @@
 {
-    "year": null,
+    "classStartYear": null,
     "class": null,
+    "classNotHtx": false,
+    "classChatSchoolYear": null,
     "notifications": false,
     "notificationSound": false,
     "block": {

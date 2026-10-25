@@ -9,7 +9,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_CONDUCT_UPDATED = '21 October 2026';
+const HBHUB_CONDUCT_UPDATED = '25 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -102,6 +102,11 @@ const HBHUB_CONDUCT_UPDATED = '21 October 2026';
                         <p>
                             Group admins can delete messages in their group, but if something serious happens there, still tell a
                             site admin, so it can be dealt with properly.
+                        </p>
+                        <p>
+                            Class chats are different: everyone in your class is put in one automatically, and nobody in it is a
+                            group admin. It's a chat for the whole class, so keep it something everyone in it can be part of, and
+                            tell a site admin if something there needs dealing with.
                         </p>
                     </section>
 

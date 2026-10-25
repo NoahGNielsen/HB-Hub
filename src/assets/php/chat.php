@@ -21,7 +21,7 @@ require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/chatAttachments.php'; // a deleted chat's attachments are deleted with it
 
 const HBHUB_CHAT_TYPE_DM = 1; // chatType in HBHub-Chats
-const HBHUB_CHAT_TYPE_GROUP = 2;
+const HBHUB_CHAT_TYPE_GROUP = 2; // class chats are groups too, with a chatClassKey (assets/php/schoolClass.php)
 const HBHUB_CHAT_STATUS_ACTIVE = 1; // chatStatus in HBHub-Chats
 const HBHUB_CHAT_STATUS_DELETED = 2; // everyone left, or a group admin deleted it
 const HBHUB_CHAT_STATUS_DELETED_BY_SITE_ADMIN = 3; // from the admin panel, at chatBannedTimestamp
@@ -119,7 +119,7 @@ function chatNotificationData(PDO $db, int $chatId): array
  * Takes the user out of the chat, with a notice that they left, or that $kickedBy kicked them.
  * When they leave a DM, the other person gets a notification about it (once they've accepted it).
  * A group is never left without an owner: when the owner leaves, the admin who has been in it the longest takes over,
- * or the longest-standing member when there's no admin left, and a notice says who.
+ * or the longest-standing member when there's no admin left, and a notice says who. A class chat never gets one.
  * A chat with nobody left in it is deleted, and so are its attachments.
  *
  * @param array{chatId: int, chatType: int} $chat
@@ -158,8 +158,13 @@ function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null, boo
             $kickNoticeId = chatNotice($db, $kickedBy, $chatId, HBHUB_CHAT_EVENT_KICK, $userId, null, $kickedBySiteAdmin);
         }
 
+        // A class chat (assets/php/schoolClass.php) has no owner or admins on purpose
+        $statement = $db->prepare('SELECT chatClassKey IS NOT NULL FROM `HBHub-Chats` WHERE chatId = ?');
+        $statement->execute([$chatId]);
+        $isClassChat = (bool) $statement->fetchColumn();
+
         $roles = array_map('intval', array_column($members, 'memberRole'));
-        if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP && !in_array(HBHUB_CHAT_ROLE_OWNER, $roles, true)) {
+        if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP && !$isClassChat && !in_array(HBHUB_CHAT_ROLE_OWNER, $roles, true)) {
             $adminIndex = array_search(HBHUB_CHAT_ROLE_ADMIN, $roles, true);
             $newOwnerId = (int) $members[$adminIndex === false ? 0 : $adminIndex]['userId'];
             $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ?')
