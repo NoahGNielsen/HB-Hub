@@ -21,6 +21,7 @@ const HBHUB_CHAT_MESSAGES_SHOWN = 20; // the newest ones when a chat opens, and 
 const HBHUB_CHAT_MESSAGES_UNREAD_MAX = 100; // with more unread than SHOWN, a chat opens with up to this many, so the "New messages" line is there
 const HBHUB_CHAT_MESSAGES_POLLED = 100; // new ones per poll, a later poll gets the rest
 const HBHUB_CHAT_MESSAGES_JUMP_MAX = 500; // per request when clicking a reply quote loads back to its message, chat.js asks again for the rest
+const HBHUB_CHAT_EMOJI_ONLY_MAX = 75; // a message of just emoji, up to this many, is shown big and without a bubble (chatEmojiOnly())
 const HBHUB_CHAT_SEND_MAX = 10; // messages one user can send (in all chats together, attachments and GIFs too) per HBHUB_CHAT_SEND_SECONDS
 const HBHUB_CHAT_SEND_SECONDS = 5;
 const HBHUB_CHAT_REACTIONS_MAX = 20; // different emoji under one message
@@ -574,6 +575,32 @@ function chatGifId(?string $content): ?string
 {
     return $content !== null && preg_match('~^https://media\.giphy\.com/media/([A-Za-z0-9]{1,64})/giphy\.gif$~', $content, $match)
         ? $match[1] : null;
+}
+
+/**
+ * Whether the message is nothing but emoji (and spaces), at most HBHUB_CHAT_EMOJI_ONLY_MAX of them, so it's shown big.
+ * It goes by whole characters as they're drawn (\X), so 👨‍👩‍👧, 👍🏽 and 🇩🇰 each count as one. Each one has to start
+ * with a character from the emoji blocks, or be a flag (two regional letters) or a keycap (1️⃣, #️⃣).
+ * The blocks are listed by hand instead of \p{Extended_Pictographic}, which older PCRE builds don't know.
+ */
+function chatEmojiOnly(?string $content): bool
+{
+    if ($content === null || !mb_check_encoding($content, 'UTF-8')) {
+        return false;
+    }
+    $content = preg_replace('~\s+~u', '', $content);
+    if ($content === '' || !preg_match_all('~\X~u', $content, $matches) || count($matches[0]) > HBHUB_CHAT_EMOJI_ONLY_MAX) {
+        return false;
+    }
+    foreach ($matches[0] as $character) {
+        if (!preg_match('~^(?:[\x{1F1E6}-\x{1F1FF}]{2}|[0-9#*]\x{FE0F}?\x{20E3}'
+            . '|[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{231A}\x{231B}\x{2328}\x{23CF}\x{23E9}-\x{23F3}\x{23F8}-\x{23FA}'
+            . '\x{2B05}-\x{2B07}\x{2B1B}\x{2B1C}\x{2B50}\x{2B55}\x{2194}-\x{2199}\x{21A9}\x{21AA}\x{25AA}\x{25AB}\x{25B6}\x{25C0}\x{25FB}-\x{25FE}'
+            . '\x{2934}\x{2935}\x{3030}\x{303D}\x{3297}\x{3299}\x{203C}\x{2049}\x{2122}\x{2139}\x{24C2}\x{00A9}\x{00AE}].*)$~su', $character)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /**
@@ -1934,6 +1961,8 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
         ? chatFormatHtml($message['messageContent'], $openChat['chatMentions'] ?? [])
         : null;
     $isMention = !$isOwn && $textHtml !== null && str_contains($textHtml, ' data-mention-you');
+    // Just emoji, with no attachment: big, and without the bubble around them (is-emoji)
+    $isEmoji = $textHtml !== null && !$hasAttachment && chatEmojiOnly($message['messageContent']);
     ?>
                         <li class="chat-message<?= $isOwn ? ' is-own' : '' ?><?= $isMention ? ' is-mention' : '' ?>" id="message-<?= (int) $message['messageId'] ?>" tabindex="-1"
                             data-message-id="<?= (int) $message['messageId'] ?>" data-message-user-id="<?= (int) $message['userId'] ?>"
@@ -1952,7 +1981,7 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
                             <?php if ($message['messageReplyToId'] !== null && !$isDeleted): ?>
                                 <?= chatReplyHtml($openChat, $userId, $message) ?>
                             <?php endif; ?>
-                            <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?><?= $hasAttachment ? ' has-attachment' : '' ?>">
+                            <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?><?= $hasAttachment ? ' has-attachment' : '' ?><?= $isEmoji ? ' is-emoji' : '' ?>">
                                 <?php if ($isDeleted): ?>
                                     <p class="chat-message-deleted"><?= chatDeletedLabel($message['messageDeletedByAdmin']) ?></p>
                                 <?php elseif ($gifId !== null): ?>
