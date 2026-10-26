@@ -67,7 +67,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             username next to it.
                         </p>
                         <p>
-                            Nicknames are up to 35 characters. Leave it empty to take the nickname away. Each change shows up
+                            Nicknames are up to 35 characters, with the same rules as names and bios: only letters from the
+                            Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji, and no blocked links.
+                            Leave it empty to take the nickname away. Each change shows up
                             as a <a href="#notices">notice</a> in the chat, saying who gave it, and whoever gets a new
                             nickname from someone else gets a notification about it (not from a group they muted or from
                             someone they blocked). You can't give nicknames

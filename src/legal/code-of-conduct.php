@@ -126,9 +126,9 @@ const HBHUB_CONDUCT_UPDATED = '26 October 2026';
                         <p>
                             Your name, profile picture, banner, bio and status are seen by everyone on HB Hub, so the same rules apply to them as to
                             messages. Use a name people from school recognise you by, and don't make your profile look like
-                            someone else's. Names, bios and statuses can only be written with the Latin alphabet (like a-z, æ, ø and å),
-                            numbers, punctuation and emoji, so everyone can read them. The links that are blocked in messages
-                            can't be put in a bio or status either. Pick the class and education badge that are really yours.
+                            someone else's. Names, bios, statuses and the nicknames you give people in chats can only be written
+                            with the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji, so everyone can read
+                            them. The links that are blocked in messages can't be put in a bio, status or nickname either. Pick the class and education badge that are really yours.
                         </p>
                         <p>
                             A banned account's profile picture can't be used again, and neither can a profile picture an admin

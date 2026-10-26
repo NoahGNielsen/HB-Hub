@@ -481,6 +481,16 @@ function chatRedirectLinkBlocked(int $chatId): never
 }
 
 /**
+ * Back to the chat page after a nickname wasn't given because of what's in it (chatNicknameError()), with the chat
+ * that was open still open. ?nicknameRefused=latin or =link opens the Nickname not saved popup, which says why.
+ */
+function chatRedirectNicknameRefused(?int $chatId, string $why): never
+{
+    header('Location: /chat/?' . ($chatId !== null ? 'chat=' . $chatId . '&' : '') . 'nicknameRefused=' . $why, true, 303);
+    exit;
+}
+
+/**
  * Whether sending $count more messages now would take the user over HBHUB_CHAT_SEND_MAX in the last
  * HBHUB_CHAT_SEND_SECONDS, in all their chats together. Notices (messageEvent) don't count.
  * It only looks at the user's newest few messages: when the one that would be the oldest of the allowed ones is
@@ -816,23 +826,44 @@ function chatUnhideForEveryone(PDO $db, int $chatId): void
 }
 
 /**
+ * Why the nickname can't be given, or null when it's fine. Nicknames have the rules names and bios have: only the
+ * Latin alphabet, numbers, punctuation and emoji (hbHubIsLatinText() in assets/php/account.php), and no blacklisted
+ * links (assets/php/urlBlacklist.php). Empty is always fine, as that takes the nickname away.
+ *
+ * @return ?string 'latin' or 'link', for chatRedirectNicknameRefused()
+ */
+function chatNicknameError(string $nickname): ?string
+{
+    if ($nickname !== '' && !hbHubIsLatinText($nickname)) {
+        return 'latin';
+    }
+    return hbHubUrlBlacklisted($nickname) ? 'link' : null;
+}
+
+/**
  * Gives the other person in a DM a nickname, or takes it away when it's empty.
  * It's saved in the chat's settings under the userId it's for, and shown as the chat's name.
+ *
+ * @return ?string why it wasn't given (chatNicknameError()), or null
  */
-function chatSetNickname(PDO $db, int $userId, int $chatId, mixed $nickname): void
+function chatSetNickname(PDO $db, int $userId, int $chatId, mixed $nickname): ?string
 {
     $nickname = is_string($nickname) ? trim($nickname) : '';
+    if (($error = chatNicknameError($nickname)) !== null) {
+        return $error;
+    }
 
     $statement = $db->prepare('SELECT userId FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId <> ? LIMIT 1');
     $statement->execute([$chatId, $userId]);
     $otherUserId = $statement->fetchColumn();
     if ($otherUserId === false) {
-        return; // nobody to give a nickname when the other person left
+        return null; // nobody to give a nickname when the other person left
     }
 
     chatChangeSettings($db, $chatId, function (stdClass $settings) use ($otherUserId, $nickname): void {
         $settings->chatNicknames->{$otherUserId} = $nickname === '' ? null : mb_substr($nickname, 0, HBHUB_CHAT_NICKNAME_MAX);
     });
+    return null;
 }
 
 /**
@@ -843,13 +874,17 @@ function chatSetNickname(PDO $db, int $userId, int $chatId, mixed $nickname): vo
  * user sees either.
  *
  * @param array $chat from chatMembership()
+ * @return ?string why it wasn't given (chatNicknameError()), or null
  */
-function chatSetMemberNickname(PDO $db, int $userId, array $chat, mixed $memberId, mixed $nickname, bool $isGhost): void
+function chatSetMemberNickname(PDO $db, int $userId, array $chat, mixed $memberId, mixed $nickname, bool $isGhost): ?string
 {
     if ((int) $chat['chatType'] !== HBHUB_CHAT_TYPE_GROUP || !is_string($memberId) || !ctype_digit($memberId)) {
-        return;
+        return null;
     }
     $nickname = is_string($nickname) ? trim($nickname) : '';
+    if (($error = chatNicknameError($nickname)) !== null) {
+        return $error;
+    }
     $nickname = $nickname === '' ? null : mb_substr($nickname, 0, HBHUB_CHAT_NICKNAME_MAX);
 
     // Only someone in the group, and a ghost invite only for the ghost-banned user who made it
@@ -862,27 +897,28 @@ function chatSetMemberNickname(PDO $db, int $userId, array $chat, mixed $memberI
         ? [$nickname, $userId, $chat['chatId'], (int) $memberId, $userId, $nickname]
         : [$nickname, $chat['chatId'], (int) $memberId, $nickname]);
     if ($statement->rowCount() === 0) {
-        return;
+        return null;
     }
     chatNotice($db, $userId, (int) $chat['chatId'], HBHUB_CHAT_EVENT_NICKNAME, (int) $memberId, $nickname, false, $isGhost);
 
     // Whoever got it is told (chat.nickname), unless it was their own doing, it was taken away, they haven't accepted the
     // group yet, or it's a ghost one. Not from a chat they muted or someone they blocked either, like a mention.
     if ($isGhost || $nickname === null || (int) $memberId === $userId) {
-        return;
+        return null;
     }
     $statement = $db->prepare('SELECT u.userSettings FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
         WHERE cm.chatId = ? AND cm.userId = ? AND cm.userAcknowledgedJoin = 1');
     $statement->execute([$chat['chatId'], (int) $memberId]);
     $memberSettings = $statement->fetchColumn();
     if ($memberSettings === false) {
-        return;
+        return null;
     }
     $settings = hbHubUserSettings($memberSettings);
     if (!hbHubChatIsMuted($settings, (int) $chat['chatId']) && !chatHasBlocked($settings, $userId)) {
         hbHubNotify($db, (int) $memberId, 'chat.nickname', $userId,
             chatNotificationData($db, (int) $chat['chatId']) + ['nickname' => $nickname]);
     }
+    return null;
 }
 
 /**
@@ -995,8 +1031,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
 
     switch ($chat !== null ? $_POST['action'] : null) {
         case 'nickname':
-            if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM) {
-                chatSetNickname($db, $userId, (int) $chat['chatId'], $_POST['nickname'] ?? null);
+            if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM
+                && ($refused = chatSetNickname($db, $userId, (int) $chat['chatId'], $_POST['nickname'] ?? null)) !== null) {
+                chatRedirectNicknameRefused($openChatId, $refused);
             }
             break;
         case 'mute':
@@ -1166,8 +1203,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
 // Not while muted: everyone sees it, like a message.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'memberNickname') {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
-    if ($chat !== null && !chatIsMuted($chat)) {
-        chatSetMemberNickname($db, $userId, $chat, $_POST['member'] ?? null, $_POST['nickname'] ?? null, $chatIsGhost);
+    if ($chat !== null && !chatIsMuted($chat)
+        && ($refused = chatSetMemberNickname($db, $userId, $chat, $_POST['member'] ?? null, $_POST['nickname'] ?? null, $chatIsGhost)) !== null) {
+        chatRedirectNicknameRefused((int) $chat['chatId'], $refused);
     }
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
 }
@@ -3284,6 +3322,30 @@ if ($isPoll) {
                         Boddy, your sending messeges really quickly. And i think i didn't get the last one. 
                         Take a moment and try again.
                     </p>
+
+                    <footer class="chat-new-footer chat-dialog-footer">
+                        <button type="button" class="chat-new-btn" data-dialog-close>Okay</button>
+                    </footer>
+                </div>
+            </dialog>
+        <?php endif; ?>
+
+        <!-- Nickname not saved popup (chat.js), when a nickname wasn't given because of what's in it (chatNicknameError(),
+             ?nicknameRefused=latin or =link): the same rules as names and bios. -->
+        <?php if (in_array($_GET['nicknameRefused'] ?? null, ['latin', 'link'], true)): ?>
+            <dialog class="chat-dialog chat-nickname-refused" aria-labelledby="chat-nickname-refused-title">
+                <div class="chat-requests-body">
+                    <header class="chat-new-header">
+                        <h2 id="chat-nickname-refused-title">Nickname not saved</h2>
+                        <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                    </header>
+
+                    <p class="chat-dialog-text">
+                        <?= $_GET['nicknameRefused'] === 'latin'
+                            ? 'Nicknames can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.'
+                            : htmlspecialchars(HBHUB_URL_BLACKLIST_MESSAGE) ?>
+                    </p>
+                    <p class="chat-dialog-text">It hasn't been given. Change it and try again.</p>
 
                     <footer class="chat-new-footer chat-dialog-footer">
                         <button type="button" class="chat-new-btn" data-dialog-close>Okay</button>

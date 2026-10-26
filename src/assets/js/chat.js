@@ -706,6 +706,27 @@ chatPart(() => {
     dialog.showModal();
 });
 
+// Nickname not saved popup: only on the page when the server didn't give a nickname because of what's in it
+// (?nicknameRefused=latin or =link). It opens straight away, and the ?nicknameRefused= is taken out of the address
+// so a refresh doesn't open it again.
+chatPart(() => {
+    const dialog = document.querySelector('.chat-nickname-refused');
+    if (!dialog) return;
+
+    dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+        button.addEventListener('click', () => dialog.close());
+    });
+
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+
+    const url = new URL(location.href);
+    url.searchParams.delete('nicknameRefused');
+    history.replaceState(null, '', url);
+    dialog.showModal();
+});
+
 // Message requests popup: chats the user was added to but hasn't accepted yet.
 // Accept and Decline are plain form posts, the server does the rest.
 // A message request notification links to /chat/?requests=1, which opens it straight away (when there still are any).
@@ -3743,7 +3764,7 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
     // Copies of the pictures for browsers without JS. Parsed here they're real <img>s, which would all load at once.
     newMain.querySelectorAll('noscript').forEach((noscript) => noscript.remove());
 
-    // The address first, as the parts read it (?unread=1, ?linkBlocked=1, ?tooFast=1, ?requests=1, ?pins=, #message-)
+    // The address first, as the parts read it (?unread=1, ?linkBlocked=1, ?tooFast=1, ?nicknameRefused=, ?requests=1, ?pins=, #message-)
     const path = address.pathname + address.search;
     if (fromHistory) history.replaceState(null, '', path + location.hash);
     else if (replace || path === location.pathname + location.search) history.replaceState(null, '', path);
