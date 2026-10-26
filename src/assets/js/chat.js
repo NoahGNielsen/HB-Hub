@@ -2814,6 +2814,37 @@ function chatEmojiSection(name, icon, emoji) {
 let chatEmojiCategoriesMade = null;
 let chatEmojiPickerCount = 0; // so each picker's heading ids are its own
 
+// fn(deadline) when the browser has a moment: deadline.timeRemaining() is how many ms it has left (0 without
+// requestIdleCallback, so the caller does a little and asks again)
+function chatEmojiWhenIdle(fn) {
+    if ('requestIdleCallback' in window) requestIdleCallback(fn);
+    else setTimeout(() => fn({ timeRemaining: () => 0 }));
+}
+
+// The browser is slow to measure each emoji the first time it meets one after the page loads (~0.6 ms each, so most of
+// a second for the whole picker), and quick after that, even in another picker or after swapping chats. So, a few at a
+// time while it has nothing else to do, they're measured in a hidden box (.chat-emoji-warm, chat.css) in the picker's
+// font, and the first open is quick too. Once per page load.
+let chatEmojiWarmed = false;
+function chatEmojiWarmUp(emoji) {
+    if (chatEmojiWarmed) return;
+    chatEmojiWarmed = true;
+    const box = document.createElement('div');
+    box.className = 'chat-emoji-warm';
+    box.setAttribute('aria-hidden', 'true');
+    document.body.append(box);
+    let next = 0;
+    const step = (deadline) => {
+        do {
+            box.textContent = emoji.slice(next, next += 10).join(' ');
+            void box.offsetWidth; // measures them
+        } while (next < emoji.length && deadline.timeRemaining() > 5);
+        if (next < emoji.length) chatEmojiWhenIdle(step);
+        else box.remove();
+    };
+    chatEmojiWhenIdle(step);
+}
+
 // An emoji picker (the message box's and Add reaction's): category tabs along the top, and below them the emoji by
 // category, with the recently used ones first. The categories are put in once (when the browser has a moment after the
 // page loads, or on the first open if that's sooner) and kept, and render() on each open only redoes Recently used when
@@ -2847,8 +2878,8 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
         }
         list.append(chatEmojiCategoriesMade.cloneNode(true));
     }
-    if ('requestIdleCallback' in window) requestIdleCallback(build);
-    else setTimeout(build);
+    chatEmojiWhenIdle(build);
+    chatEmojiWarmUp(categories.flatMap(([, , emoji]) => emoji.split(' ')));
 
     // Recently used and the tabs, made again only when the recent ones changed since the last open
     let shownRecent = null;

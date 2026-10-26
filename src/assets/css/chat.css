@@ -1366,8 +1366,22 @@ a.chat-message-reply:hover {
 }
 
 .chat-emoji-picker,
-.chat-emoji-picker button {
+.chat-emoji-picker button,
+.chat-emoji-warm {
   font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* Where chat.js has the browser measure the emoji ahead of the picker's first open, out of sight. The same font and size
+   as the picker's emoji, as that's what the browser remembers them by. */
+.chat-emoji-warm {
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  width: 340px;
+  visibility: hidden;
+  pointer-events: none;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 /* A row of category buttons along the top, each jumping to its section */
