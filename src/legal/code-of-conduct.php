@@ -97,7 +97,7 @@ const HBHUB_CONDUCT_UPDATED = '26 October 2026';
                             <li>Pick a group name, icon and background that everyone in it would be fine with.</li>
                             <li>Don't make groups to talk about, or make fun of, someone who isn't in them.</li>
                             <li>Removing people is fine, but don't use it to single out or embarrass someone.</li>
-                            <li>Nicknames you give people should be ones they'd be happy to see.</li>
+                            <li>Nicknames you give people should be ones they'd be happy to see, especially in a group, where everyone sees them.</li>
                         </ul>
                         <p>
                             Group admins can delete messages in their group and unpin anything pinned in it, but if something

@@ -11,6 +11,7 @@
 //   (lastMessageTimestamp), don't bring it back for people who hid it and don't @mention anyone
 // - editing a message everyone can see saves the new text in messageGhostContent, which only they see
 // - their reactions are saved with reactionIsGhost, and the messages they pin with messagePinIsGhost (unpinning is real)
+// - nicknames they give in a group are saved in memberGhostNickname, which only they see (chatMemberNameSql())
 // - people they start a chat with or add to a group get memberIsGhost: no message request and no notification, the chat
 //   just isn't there for them (chat/index.php's chatMembership() and chat list leave those rows out). Someone else adding
 //   them for real, or them starting a DM with the ghost-banned user, turns it into a normal membership.
@@ -61,6 +62,7 @@ const HBHUB_CHAT_EVENT_ADD = 11;
 const HBHUB_CHAT_EVENT_OWNER = 12; // took over as owner when the owner left, so they're both userId and messageEventUserId
 const HBHUB_CHAT_EVENT_PIN = 13; // messageReplyToId is the message pinned, for these two
 const HBHUB_CHAT_EVENT_UNPIN = 14;
+const HBHUB_CHAT_EVENT_NICKNAME = 15; // a group member's nickname, messageEventUserId is whose and messageContent the new one (NULL when taken away)
 // Added to the event when a site admin made the change from the admin panel (admin/chat.php), so 101 is a group renamed
 // by a site admin. The notice says "A site admin" then, and userId is still the admin who did it.
 const HBHUB_CHAT_EVENT_BY_SITE_ADMIN = 100;
@@ -137,6 +139,17 @@ function chatGhostContentSql(string $alias, int $viewerId): string
 {
     return 'IF(' . $alias . '.userId = ' . $viewerId . ', COALESCE(' . $alias . '.messageGhostContent, ' . $alias . '.messageContent), '
         . $alias . '.messageContent)';
+}
+
+/**
+ * The SQL for a member's name as $viewerId sees it in a group: their nickname, or their username without one.
+ * A nickname the viewer gave them while ghost banned (memberGhostNickname, see the top) wins over the real one, for the
+ * viewer only. $member is the HBHub-ChatMembers alias (can be a LEFT JOIN that found nobody), $user the HBHub-Users one.
+ */
+function chatMemberNameSql(string $member, string $user, int $viewerId): string
+{
+    return 'IF(' . $member . '.memberGhostNicknameBy <=> ' . $viewerId . ', COALESCE(' . $member . '.memberGhostNickname, ' . $user . '.userName), '
+        . 'COALESCE(' . $member . '.memberNickname, ' . $user . '.userName))';
 }
 
 /**
@@ -488,6 +501,33 @@ function chatNoticeHtml(array $openChat, int $userId, array $message): string
         HBHUB_CHAT_EVENT_OWNER => $by . ((int) $message['userId'] === $userId ? ' are' : ' is') . ' now the group owner',
         HBHUB_CHAT_EVENT_PIN => $by . ' pinned ' . $pinnedMessage,
         HBHUB_CHAT_EVENT_UNPIN => $by . ' unpinned ' . $pinnedMessage,
+        HBHUB_CHAT_EVENT_NICKNAME => chatNicknameNoticeHtml($by, $userId, $message),
         default => $by . ' changed the ' . $chatWord,
     };
+}
+
+/**
+ * What a nickname notice (HBHUB_CHAT_EVENT_NICKNAME) says, as HTML, for chatNoticeHtml(): "<strong>Alice</strong> gave
+ * <strong>bob</strong> the nickname <strong>Bobby</strong>". Whoever got it goes by their username here, as the name the
+ * chat shows them by now could be the very nickname it's about. A nickname given to yourself or to the user says "your"
+ * or "their" instead.
+ *
+ * @param string $by who gave it, as HTML
+ * @param array $message the notice, with eventRealName (the username) or else eventUserName (the admin panel's is the username)
+ */
+function chatNicknameNoticeHtml(string $by, int $userId, array $message): string
+{
+    $name = fn (string $name): string => '<strong>' . htmlspecialchars($name) . '</strong>';
+    $aboutUserId = $message['messageEventUserId'] !== null ? (int) $message['messageEventUserId'] : null;
+    $nickname = $message['messageContent'];
+
+    if ($aboutUserId === (int) $message['userId']) {
+        $whose = $aboutUserId === $userId ? 'your' : 'their';
+        return $nickname === null ? $by . ' removed ' . $whose . ' nickname' : $by . ' changed ' . $whose . ' nickname to ' . $name($nickname);
+    }
+    if ($aboutUserId === $userId) {
+        return $nickname === null ? $by . ' removed your nickname' : $by . ' gave you the nickname ' . $name($nickname);
+    }
+    $about = $name($aboutUserId === null ? 'someone' : $message['eventRealName'] ?? $message['eventUserName'] ?? 'someone');
+    return $nickname === null ? $by . ' removed ' . $about . '\'s nickname' : $by . ' gave ' . $about . ' the nickname ' . $name($nickname);
 }

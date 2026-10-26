@@ -160,9 +160,9 @@ function chatPinnedSql(string $alias, int $viewerId): string
  */
 function chatPins(PDO $db, int $userId, int $chatId): array
 {
-    $statement = $db->prepare('SELECT m.messageId, m.userId, COALESCE(cm.memberNickname, u.userName) AS senderName,
+    $statement = $db->prepare('SELECT m.messageId, m.userId, ' . chatMemberNameSql('cm', 'u', $userId) . ' AS senderName,
             ' . chatGhostContentSql('m', $userId) . ' AS messageContent, ' . hbHubChatAttachmentsCountSql('m') . ' AS attachmentCount,
-            m.messageSentTimestamp, m.messagePinnedBy, COALESCE(pcm.memberNickname, pu.userName) AS pinnedByName, m.messagePinnedTimestamp
+            m.messageSentTimestamp, m.messagePinnedBy, ' . chatMemberNameSql('pcm', 'pu', $userId) . ' AS pinnedByName, m.messagePinnedTimestamp
         FROM `HBHub-Messages` m
         JOIN `HBHub-Users` u ON u.userId = m.userId
         LEFT JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = m.userId
@@ -188,7 +188,7 @@ function chatCanUnpin(array $chat, int $userId, ?int $pinnedBy): bool
 
 /**
  * Messages in the chat, oldest at the top, each with the message it replies to (r) if any.
- * Notices are in there too, with the name of who they're about (eventUserName).
+ * Notices are in there too, with the name of who they're about (eventUserName, and their username in eventRealName).
  * Each one has its attachments (attachments, from chatAttachments()).
  * Without $afterId it's the newest $limit ones (before $beforeId, if given, for scrolling up),
  * with only $afterId the first ones after that message (the ones polling hasn't shown yet),
@@ -204,11 +204,12 @@ function chatMessages(PDO $db, int $userId, int $chatId, int $limit, ?int $after
                 m.messageDeletedTimestamp, m.messageDeletedByAdmin, m.messageReplyToId,
                 m.messageIsEdited OR (m.userId = ' . $userId . ' AND m.messageGhostContent IS NOT NULL) AS messageIsEdited,
                 ' . chatPinnedSql('m', $userId) . ' AS messageIsPinned,
-                m.messageEvent, m.messageEventType, m.messageEventUserId, COALESCE(ecm.memberNickname, eu.userName) AS eventUserName,
-                COALESCE(cm.memberNickname, u.userName) AS senderName,
+                m.messageEvent, m.messageEventType, m.messageEventUserId, ' . chatMemberNameSql('ecm', 'eu', $userId) . ' AS eventUserName,
+                eu.userName AS eventRealName,
+                ' . chatMemberNameSql('cm', 'u', $userId) . ' AS senderName,
                 u.userAvatarAttachmentId AS senderAvatarId, u.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' AS senderBanned,
                 r.messageId AS replyId, r.userId AS replyUserId, ' . chatGhostContentSql('r', $userId) . ' AS replyContent,
-                r.messageDeletedTimestamp AS replyDeletedTimestamp, r.messageDeletedByAdmin AS replyDeletedByAdmin, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName
+                r.messageDeletedTimestamp AS replyDeletedTimestamp, r.messageDeletedByAdmin AS replyDeletedByAdmin, ' . chatMemberNameSql('rcm', 'ru', $userId) . ' AS replySenderName
             FROM `HBHub-Messages` m
             JOIN `HBHub-Users` u ON u.userId = m.userId
             LEFT JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = m.userId
@@ -272,7 +273,7 @@ function chatAttachments(PDO $db, int $chatId, int $fromId, int $toId): array
  */
 function chatReactions(PDO $db, int $userId, int $chatId, int $fromId, int $toId): array
 {
-    $statement = $db->prepare('SELECT r.messageId, r.reactionEmoji, r.userId, COALESCE(cm.memberNickname, u.userName) AS reactorName
+    $statement = $db->prepare('SELECT r.messageId, r.reactionEmoji, r.userId, ' . chatMemberNameSql('cm', 'u', $userId) . ' AS reactorName
         FROM `HBHub-MessageReactions` r
         JOIN `HBHub-Messages` m ON m.messageId = r.messageId
         JOIN `HBHub-Users` u ON u.userId = r.userId
@@ -330,18 +331,20 @@ function chatNamesContext(PDO $db, int $userId, array $chat): array
  * Everyone who can be @mentioned in the chat (assets/php/mentions.php): the members who have accepted it, leaving out
  * banned and deleted accounts. By userId, each with the name the chat shows them by and every name they can be
  * mentioned by: their username, and their nickname in the chat if they have one (a group's memberNickname, or the one
- * given in a DM). The user is in there too (isYou), so their own name lights up in others' messages.
+ * given in a DM; a group nickname the user gave while ghost banned instead, like chatMemberNameSql()). The user is in
+ * there too (isYou), so their own name lights up in others' messages.
  *
  * @return array<int, array{name: string, names: list<string>, userName: string, isYou: bool}>
  */
 function chatMentionPeople(PDO $db, int $chatId, int $userId): array
 {
-    $statement = $db->prepare('SELECT cm.userId, cm.memberNickname, u.userName, c.chatType, c.chatSettings
+    $statement = $db->prepare('SELECT cm.userId, IF(cm.memberGhostNicknameBy <=> ?, cm.memberGhostNickname, cm.memberNickname) AS memberNickname,
+            u.userName, c.chatType, c.chatSettings
         FROM `HBHub-ChatMembers` cm
         JOIN `HBHub-Users` u ON u.userId = cm.userId
         JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
         WHERE cm.chatId = ? AND cm.userAcknowledgedJoin = 1 AND u.userStatus IS NOT NULL AND u.userStatus <> ?');
-    $statement->execute([$chatId, HBHUB_SESSION_STATUS_BANNED]);
+    $statement->execute([$userId, $chatId, HBHUB_SESSION_STATUS_BANNED]);
 
     $people = [];
     foreach ($statement->fetchAll() as $member) {
@@ -400,7 +403,7 @@ function chatMarkTyping(PDO $db, int $chatId, int $userId, bool $isTyping): void
  */
 function chatTyping(PDO $db, int $chatId, int $userId): array
 {
-    $statement = $db->prepare('SELECT COALESCE(cm.memberNickname, u.userName) AS typerName
+    $statement = $db->prepare('SELECT ' . chatMemberNameSql('cm', 'u', $userId) . ' AS typerName
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
         WHERE cm.chatId = ? AND cm.userId <> ? AND cm.userAcknowledgedJoin = 1 AND cm.memberIsGhost = 0
             AND cm.memberTypingTimestamp > UTC_TIMESTAMP() - INTERVAL ' . HBHUB_CHAT_TYPING_SECONDS . ' SECOND
@@ -833,6 +836,37 @@ function chatSetNickname(PDO $db, int $userId, int $chatId, mixed $nickname): vo
 }
 
 /**
+ * Gives a member of the group a nickname everyone in it sees them by, or takes it away when it's empty, with a notice
+ * about it. Any member who isn't muted can (checked before), for anyone in the group, themselves too. Saving the nickname they already have isn't a change,
+ * so there's no notice then.
+ * Ghost banned (assets/php/chat.php), it's saved in memberGhostNickname instead and its notice is a ghost, so only the
+ * user sees either.
+ *
+ * @param array $chat from chatMembership()
+ */
+function chatSetMemberNickname(PDO $db, int $userId, array $chat, mixed $memberId, mixed $nickname, bool $isGhost): void
+{
+    if ((int) $chat['chatType'] !== HBHUB_CHAT_TYPE_GROUP || !is_string($memberId) || !ctype_digit($memberId)) {
+        return;
+    }
+    $nickname = is_string($nickname) ? trim($nickname) : '';
+    $nickname = $nickname === '' ? null : mb_substr($nickname, 0, HBHUB_CHAT_NICKNAME_MAX);
+
+    // Only someone in the group, and a ghost invite only for the ghost-banned user who made it
+    $statement = $isGhost
+        ? $db->prepare('UPDATE `HBHub-ChatMembers` SET memberGhostNickname = ?, memberGhostNicknameBy = ?
+            WHERE chatId = ? AND userId = ? AND NOT (IF(memberGhostNicknameBy <=> ?, memberGhostNickname, memberNickname) <=> ?)')
+        : $db->prepare('UPDATE `HBHub-ChatMembers` SET memberNickname = ?
+            WHERE chatId = ? AND userId = ? AND memberIsGhost = 0 AND NOT (memberNickname <=> ?)');
+    $statement->execute($isGhost
+        ? [$nickname, $userId, $chat['chatId'], (int) $memberId, $userId, $nickname]
+        : [$nickname, $chat['chatId'], (int) $memberId, $nickname]);
+    if ($statement->rowCount() > 0) {
+        chatNotice($db, $userId, (int) $chat['chatId'], HBHUB_CHAT_EVENT_NICKNAME, (int) $memberId, $nickname, false, $isGhost);
+    }
+}
+
+/**
  * Starts a chat with the picked users: a DM for one, a group DM for more.
  * A DM that already exists with that user is reused instead of making a second one.
  * Anyone who blocked the user from sending them requests is left out of a new chat, and picking someone the user
@@ -1106,6 +1140,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
         hbHubNotify($db, (int) $member['userId'], $notification, $userId, chatNotificationData($db, (int) $chat['chatId']));
     }
 
+    chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
+}
+
+// Nickname in the Members popup, for every member of a group (not only admins): give anyone in it a nickname, or take it away.
+// Not while muted: everyone sees it, like a message.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'memberNickname') {
+    $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
+    if ($chat !== null && !chatIsMuted($chat)) {
+        chatSetMemberNickname($db, $userId, $chat, $_POST['member'] ?? null, $_POST['nickname'] ?? null, $chatIsGhost);
+    }
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
 }
 
@@ -1598,7 +1642,7 @@ $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAt
             WHERE om.chatId = c.chatId AND om.userId <> ? AND c.chatType = ' . HBHUB_CHAT_TYPE_DM . ' LIMIT 1
         ) AS dmUserAvatarId,
         COALESCE(NULLIF(c.chatName, \'\'), (
-            SELECT GROUP_CONCAT(COALESCE(om.memberNickname, ou.userName) ORDER BY ou.userName SEPARATOR \', \')
+            SELECT GROUP_CONCAT(' . chatMemberNameSql('om', 'ou', $userId) . ' ORDER BY ou.userName SEPARATOR \', \')
             FROM `HBHub-ChatMembers` om JOIN `HBHub-Users` ou ON ou.userId = om.userId
             WHERE om.chatId = c.chatId AND om.userId <> ?' . ($chatIsGhost ? '' : ' AND om.memberIsGhost = 0') . '
         )) AS chatTitle,
@@ -1694,11 +1738,13 @@ if ($openChat !== null && ($isPage || $isOlder || $pollMessages !== [])) {
 
 // Everyone in the open group, for the Members popup: site admins first, then the group owner and admins, then the ones who accepted,
 // then by name. Banned and deleted accounts get no profile link, like their messages.
+// With their username and their nickname (memberNickname, the user's own while ghost banned, chatMemberNameSql()) for Nickname.
 // Ghost invites (assets/php/chat.php) are only there for a ghost-banned user, to whom they look like any other invite.
 $openChatMembers = [];
 if ($openChat !== null && $isPage && (int) $openChat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
     $statement = $db->prepare('SELECT cm.userId, cm.memberRole, cm.userAcknowledgedJoin, u.userRole = ? AS memberIsSiteAdmin,
-            COALESCE(cm.memberNickname, u.userName) AS memberName, u.userAvatarAttachmentId,
+            ' . chatMemberNameSql('cm', 'u', $userId) . ' AS memberName, u.userName, u.userAvatarAttachmentId,
+            IF(cm.memberGhostNicknameBy <=> ' . $userId . ', cm.memberGhostNickname, cm.memberNickname) AS memberNickname,
             u.userStatus IS NULL OR u.userStatus = ? AS memberNoProfile
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
         WHERE cm.chatId = ?' . ($chatIsGhost ? '' : ' AND cm.memberIsGhost = 0') . '
@@ -2753,7 +2799,8 @@ if ($isPoll) {
 
             <?php if ($openChatMembers !== []): ?>
                 <!-- Members popup (chat.js): everyone in the open group, each going to their profile.
-                     Members who haven't accepted the group yet show as invited.
+                     Members who haven't accepted the group yet show as invited, and a nickname shows the username next to it.
+                     Everyone gets Nickname next to everyone (not while muted), which opens the Nickname popup below.
                      Group admins also get Make admin (for members who accepted) and Kick next to normal members.
                      The group owner also gets Remove admin and Kick next to admins.
                      Site admins can right-click anyone else for their admin panel (data-member-user-id). -->
@@ -2770,6 +2817,8 @@ if ($isPoll) {
                                 $memberUserId = (int) $member['userId'];
                                 $memberInner = chatUserAvatarHtml($memberUserId, $member['memberName'], $member['memberNoProfile'] ? null : $member['userAvatarAttachmentId'])
                                     . '<span class="chat-member-name">' . htmlspecialchars($member['memberName'])
+                                    // A nickname shows who it really is
+                                    . ($member['memberNickname'] !== null ? ' <span class="chat-member-real-name">' . htmlspecialchars($member['userName']) . '</span>' : '')
                                     . ($memberUserId === $userId ? ' <span class="chat-member-you">(you)</span>' : '') . '</span>'
                                     // One admin badge: Site Admin wins over Group Owner, which wins over Group Admin
                                     . ($member['memberIsSiteAdmin'] ? '<span class="chat-member-badge is-site-admin">Site Admin</span>'
@@ -2790,8 +2839,14 @@ if ($isPoll) {
                                     <?php else: ?>
                                         <a class="chat-member" href="<?= htmlspecialchars(hbHubProfileUrl($memberUserId)) ?>" title="View profile"><?= $memberInner ?></a>
                                     <?php endif; ?>
-                                    <?php if ($memberCanKick): ?>
-                                        <span class="chat-member-actions">
+                                    <span class="chat-member-actions">
+                                        <?php if (!chatIsMuted($openMembership)): ?>
+                                            <button type="button" class="chat-btn" data-member-nickname-open
+                                                    data-member-id="<?= $memberUserId ?>" data-member-username="<?= htmlspecialchars($member['userName']) ?>"
+                                                    data-member-nickname="<?= htmlspecialchars($member['memberNickname'] ?? '') ?>"
+                                                    aria-label="Give <?= htmlspecialchars($member['memberName']) ?> a nickname">Nickname</button>
+                                        <?php endif; ?>
+                                        <?php if ($memberCanKick): ?>
                                             <?php if ($memberRole === HBHUB_CHAT_ROLE_MEMBER && $member['userAcknowledgedJoin']): ?>
                                                 <button type="button" class="chat-btn" data-member-action="makeAdmin"
                                                         data-member-id="<?= $memberUserId ?>" data-member-name="<?= htmlspecialchars($member['memberName']) ?>">Make admin</button>
@@ -2802,8 +2857,8 @@ if ($isPoll) {
                                             <button type="button" class="chat-btn is-danger" data-member-action="kick"
                                                     data-member-id="<?= $memberUserId ?>" data-member-name="<?= htmlspecialchars($member['memberName']) ?>"
                                                     <?= !$member['userAcknowledgedJoin'] ? 'data-member-invited' : '' ?>>Kick</button>
-                                        </span>
-                                    <?php endif; ?>
+                                        <?php endif; ?>
+                                    </span>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
@@ -2848,6 +2903,31 @@ if ($isPoll) {
                     </form>
                 </dialog>
                 <?php endif; ?>
+
+                <!-- Nickname popup (chat.js fills in who it's for), for every member: the name everyone in the group sees them by -->
+                <dialog class="chat-dialog chat-member-nickname" aria-labelledby="chat-member-nickname-title">
+                    <form class="chat-requests-body" action="/chat/" method="post">
+                        <input type="hidden" name="action" value="memberNickname">
+                        <input type="hidden" name="chat" value="<?= $openChat['chatId'] ?>">
+                        <input type="hidden" name="member">
+
+                        <header class="chat-new-header">
+                            <h2 id="chat-member-nickname-title">Give nickname</h2>
+                            <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                        </header>
+
+                        <div class="chat-new-group">
+                            <label for="chat-member-nickname-name" data-member-nickname-label>Nickname</label>
+                            <input type="text" id="chat-member-nickname-name" name="nickname" maxlength="<?= HBHUB_CHAT_NICKNAME_MAX ?>" autocomplete="off">
+                        </div>
+                        <p class="chat-dialog-hint" data-member-nickname-hint></p>
+
+                        <footer class="chat-new-footer chat-dialog-footer">
+                            <button type="button" class="chat-btn" data-dialog-close>Cancel</button>
+                            <button type="submit" class="chat-new-btn">Save</button>
+                        </footer>
+                    </form>
+                </dialog>
 
                 <?php if ($openChat['chatIsGroupAdmin']): ?>
                     <!-- Make admin, Remove admin and Kick ask first (chat.js fills in which, and who it's about) -->

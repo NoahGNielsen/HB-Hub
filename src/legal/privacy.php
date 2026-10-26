@@ -161,6 +161,14 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             </li>
                             <li>The chats you're in, group names, icons and backgrounds, and nicknames you give people.</li>
                             <li>
+                                Nicknames in a group: a nickname you give someone in a group (or that someone gives you) is
+                                kept with their membership of that group, and everyone in the group sees it instead of their
+                                username. Giving or taking one away also puts a notice in the chat saying who did it, to whom
+                                and what the nickname is, which stays like other messages. The nickname goes when it's taken
+                                away or when they leave the group or are kicked from it. A nickname you give the other person
+                                in a DM is kept in the chat's settings and only shown to you.
+                            </li>
+                            <li>
                                 While you're typing a message in a chat, the time you last typed is kept with your membership
                                 of it, so the others in the chat see "... is typing". Only the time is stored, never what
                                 you've typed, and it's cleared when you send the message, empty the message box or stop
@@ -184,7 +192,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             </li>
                             <li>
                                 Ghost bans: a site admin can ghost ban an account that breaks the rules, without telling it.
-                                What it does in chats from then on (messages, attachments, edits, reactions, pins, and the chats it
+                                What it does in chats from then on (messages, attachments, edits, reactions, pins, nicknames, and the chats it
                                 starts or adds people to) is stored like anything else, but marked so that only that account
                                 and site admins can see it. People it starts a chat with or adds to a group are stored as
                                 invited, marked the same way, so they never see the chat or get a request or notification about

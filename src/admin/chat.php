@@ -47,7 +47,7 @@ $adminIsGroup = (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP;
 function adminChatMembers(PDO $db, int $chatId): array
 {
     $statement = $db->prepare('SELECT cm.userId, u.userName, u.userRole, u.userStatus, u.userAvatarAttachmentId, u.userGhostBannedTimestamp,
-            cm.memberNickname, cm.memberRole, cm.userAcknowledgedJoin, cm.memberIsGhost, cm.memberJoinedTimestamp
+            cm.memberNickname, cm.memberGhostNickname, cm.memberGhostNicknameBy, cm.memberRole, cm.userAcknowledgedJoin, cm.memberIsGhost, cm.memberJoinedTimestamp
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
         WHERE cm.chatId = ?
         ORDER BY cm.memberRole DESC, cm.userAcknowledgedJoin DESC, u.userName');
@@ -231,6 +231,7 @@ $adminBackground = chatBackground(chatSettings($chat['chatSettings']));
 $adminIconSrc = adminChatIconUrl($chatId, $chat['chatIconAttachmentId']);
 
 $adminMembers = adminChatMembers($db, $chatId);
+$adminMemberNames = array_column($adminMembers, 'userName', 'userId'); // who gave a ghost nickname
 $adminInvited = count(array_filter($adminMembers, fn (array $member): bool => !$member['userAcknowledgedJoin']));
 $adminPins = adminChatPins($db, $chatId);
 
@@ -464,6 +465,12 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
                                                 <?php endif; ?>
                                                 <?php if ($member['memberNickname'] !== null): ?>
                                                     <span class="admin-small">Goes by "<?= htmlspecialchars($member['memberNickname']) ?>" here</span>
+                                                <?php endif; ?>
+                                                <?php if ($member['memberGhostNicknameBy'] !== null): ?>
+                                                    <!-- A nickname given while ghost banned, which only whoever gave it sees (NULL: they took it away, for themselves) -->
+                                                    <span class="settings-status admin-status-ghost" title="Given while ghost banned">Ghost nickname</span>
+                                                    <span class="admin-small"><?= htmlspecialchars($adminMemberNames[(int) $member['memberGhostNicknameBy']] ?? 'Someone who left') ?>
+                                                        sees them as "<?= htmlspecialchars($member['memberGhostNickname'] ?? $member['userName']) ?>"</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td><?= $member['userAcknowledgedJoin'] ? htmlspecialchars(ADMIN_CHAT_ROLES[(int) $member['memberRole']] ?? 'Member')

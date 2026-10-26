@@ -17,7 +17,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         </ol>
                         <p>
                             You can also just type the name after the <code>@</code>. It works with spaces in names too, and upper or
-                            lower case doesn't matter. In a DM, a nickname you gave someone works as well. An @ in the middle of a
+                            lower case doesn't matter. A nickname works as well: in a DM the one you gave
+                            someone, in a group the one they have there. An @ in the middle of a
                             word (like in an email address) isn't a mention.
                         </p>
                     </section>

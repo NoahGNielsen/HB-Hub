@@ -734,12 +734,14 @@ chatPart(() => {
 // Members popup: the person button in a group's header lists everyone in it.
 // Group admins can make a member an admin or kick them, and the group owner can remove an admin,
 // all asked about first in a popup on top of it.
+// Everyone can give anyone a nickname, in the Nickname popup on top of it.
 chatPart(() => {
     const dialog = document.querySelector('.chat-members');
     if (!dialog) return;
 
     const confirmDialog = document.querySelector('.chat-member-confirm');
-    let memberButton = null; // the Make admin, Remove admin or Kick button that opened the confirm popup
+    const nicknameDialog = document.querySelector('.chat-member-nickname');
+    let memberButton = null; // the Nickname, Make admin, Remove admin or Kick button that opened the popup on top
 
     document.querySelector('[data-members-open]').addEventListener('click', () => dialog.showModal());
 
@@ -779,12 +781,29 @@ chatPart(() => {
         confirmDialog.querySelector('.chat-btn[data-dialog-close]').focus(); // the safe choice is the one Enter picks
     }
 
+    // Filled in with who it's for and the nickname they have now, which can be changed or emptied to take it away
+    function openNickname(button) {
+        const userName = button.dataset.memberUsername;
+        const form = nicknameDialog.querySelector('form');
+        memberButton = button;
+        form.elements.member.value = button.dataset.memberId;
+        form.elements.nickname.value = button.dataset.memberNickname;
+        nicknameDialog.querySelector('[data-member-nickname-label]').textContent = `Nickname for ${userName}`;
+        nicknameDialog.querySelector('[data-member-nickname-hint]').textContent =
+            `Everyone in the group sees it instead of their username. Leave it empty to go back to ${userName}.`;
+        nicknameDialog.showModal();
+        form.elements.nickname.focus();
+        form.elements.nickname.select();
+    }
+
     dialog.addEventListener('click', (event) => {
+        const nicknameButton = event.target.closest('[data-member-nickname-open]');
+        if (nicknameButton) openNickname(nicknameButton);
         const button = event.target.closest('[data-member-action]');
         if (button) confirmMember(button);
     });
 
-    [dialog, confirmDialog].forEach((popup) => {
+    [dialog, confirmDialog, nicknameDialog].forEach((popup) => {
         if (!popup) return; // the confirm popup is only there for group admins
 
         popup.querySelectorAll('[data-dialog-close]').forEach((button) => {
@@ -799,6 +818,7 @@ chatPart(() => {
 
     // Back on the button it was opened from, in the Members popup still open below it
     confirmDialog?.addEventListener('close', () => memberButton?.focus());
+    nicknameDialog.addEventListener('close', () => memberButton?.focus());
 });
 
 // Member menu, for site admins: right-click someone in the Members popup (or use the menu key / Shift+F10 on them)

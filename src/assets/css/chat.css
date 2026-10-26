@@ -2489,7 +2489,8 @@ a.chat-member:focus-visible {
   font-weight: 600;
 }
 
-.chat-member-you {
+.chat-member-you,
+.chat-member-real-name {
   font-weight: 400;
   opacity: 0.6;
 }
@@ -2516,7 +2517,7 @@ a.chat-member:focus-visible {
   background: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-/* Make admin, Remove admin and Kick, only shown to group admins */
+/* Nickname, and for group admins Make admin, Remove admin and Kick */
 .chat-member-actions {
   flex: none;
   display: flex;
@@ -2526,6 +2527,21 @@ a.chat-member:focus-visible {
 .chat-member-actions .chat-btn {
   padding: 6px 12px;
   font-size: 0.85rem;
+}
+
+/* Phones: the buttons go under the member when they don't fit next to them, so the name isn't squeezed to nothing */
+@media (max-width: 600px) {
+  .chat-members-list > li {
+    flex-wrap: wrap;
+  }
+
+  .chat-member {
+    min-width: 60%;
+  }
+
+  .chat-member-actions {
+    margin-left: auto;
+  }
 }
 
 /* Added, but hasn't accepted the group yet */

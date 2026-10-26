@@ -210,7 +210,7 @@ const HBHUB_TERMS_UPDATED = '26 October 2026';
                             <li>
                                 ghost ban the account, for a while or for good, without telling the person. The chat keeps
                                 working like normal for them, but what they do in it (messages, attachments, edits, reactions, pins,
-                                and the chats they start or add people to) only shows to themselves and site admins. Nobody
+                                nicknames, and the chats they start or add people to) only shows to themselves and site admins. Nobody
                                 else sees it or gets a notification or message request from it. A new account (up to 3 days
                                 old) that's made or used in the same browser is ghost banned too,
                             </li>

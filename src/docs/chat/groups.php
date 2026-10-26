@@ -1,6 +1,6 @@
 <?php
 // Help docs: group chats - making one, adding people, the owner/admin/member roles (HBHUB_CHAT_ROLE_* in
-// assets/php/chat.php), changing the name, icon and background, kicking, leaving and deleting, and the notices
+// assets/php/chat.php), nicknames (memberNickname, chat/index.php's chatSetMemberNickname()), changing the name, icon and background, kicking, leaving and deleting, and the notices
 // a group shows, and class chats (assets/php/schoolClass.php). Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -42,7 +42,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 <tbody>
                                     <tr><td>Group Owner</td><td>Everything an admin can, and also kick admins or remove them as admin. Whoever made the group is its owner, and there's only one.</td></tr>
                                     <tr><td>Group Admin</td><td>Rename the group, change or remove its icon, change its background, make members admin, kick members, delete anyone's messages, <a href="/docs/chat/#pins">unpin</a> anyone's pinned messages and delete the whole group.</td></tr>
-                                    <tr><td>Member</td><td>Write, react, add people and leave.</td></tr>
+                                    <tr><td>Member</td><td>Write, react, add people, <a href="#nicknames">give nicknames</a> and leave.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -54,6 +54,23 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             You might also see <strong>Site Admin</strong> on someone. They run HB Hub itself, not the group, see
                             <a href="/docs/feedback#admins">Who are the admins?</a>
+                        </p>
+                    </section>
+
+                    <section id="nicknames" aria-labelledby="docs-nicknames">
+                        <h2 id="docs-nicknames">Nicknames</h2>
+                        <p>
+                            Anyone in a group can give anyone in it a nickname, themselves too: open <strong>Members</strong>
+                            and press <strong>Nickname</strong> next to them. Everyone in the group then sees them by that
+                            name instead of their username, on their messages, reactions, in the member list and so on, and
+                            they can be <a href="/docs/chat/mentions">@mentioned</a> by it. The member list still shows their
+                            username next to it.
+                        </p>
+                        <p>
+                            Nicknames are up to 35 characters. Leave it empty to take the nickname away. Each change shows up
+                            as a <a href="#notices">notice</a> in the chat, saying who gave it. You can't give nicknames
+                            while you're muted in the group. Nicknames only count in that group, and in a DM a nickname is
+                            different: only you see it (see <a href="/docs/chat/#chat-menu">the chat menu</a>).
                         </p>
                     </section>
 
@@ -72,7 +89,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-notices">Notices</h2>
                         <p>
                             Changes to a group show up in the chat as small notices, so everyone knows what happened: a new name,
-                            icon or background, someone joining, leaving, being added or kicked, someone becoming admin or owner, and messages being pinned or unpinned.
+                            icon or background, someone joining, leaving, being added or kicked, someone becoming admin or owner, a new nickname, and messages being pinned or unpinned.
                         </p>
                     </section>
 
