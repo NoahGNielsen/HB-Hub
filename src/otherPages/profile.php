@@ -242,7 +242,7 @@ $profileJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUM
                         </select>
                     </div>
                     <p class="profile-dialog-hint" id="profile-status-hint">
-                        One emoji and up to <?= HBHUB_PROFILE_STATUS_TEXT_MAX ?> characters on up to <?= HBHUB_PROFILE_STATUS_LINES_MAX ?> lines. Everyone can see it.
+                        Remember, everyone can see it.
                     </p>
                     <?php if ($profileStatusError !== null): ?>
                         <p class="profile-dialog-error" role="alert"><?= htmlspecialchars($profileStatusError) ?></p>
