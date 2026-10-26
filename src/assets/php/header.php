@@ -29,6 +29,8 @@ if (http_response_code() === 200) {
 ?>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Dark before mainStyle.css has loaded, so a slow page load doesn't flash white first -->
+<meta name="color-scheme" content="dark">
 <link rel="icon" type="image/svg+xml" href="https://hbhub.noahgajnielsen.dk/assets/images/favicon.svg?v=<?= filemtime(__DIR__ . '/../images/favicon.svg') ?>">
 <link rel="apple-touch-icon" href="https://hbhub.noahgajnielsen.dk/assets/images/appleTouchIcon.png?v=<?= filemtime(__DIR__ . '/../images/appleTouchIcon.png') ?>">
 <link rel="manifest" href="https://hbhub.noahgajnielsen.dk/manifest.json?v=<?= filemtime(__DIR__ . '/../../manifest.json') ?>">

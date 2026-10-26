@@ -57,9 +57,15 @@
   --radius: 16px;
 }
 
+/* On html too, not only body: on a slow PC the browser can show a bit of the page it hasn't drawn yet (switching the
+   Ore Mining Inc. views, scrolling fast), and it fills that with html's own colour, which was white */
+html,
+body {
+  background: var(--background);
+}
+
 body {
   font-family: "Raleway", sans-serif;
-  background: var(--background);
   color: var(--text);
 }
 
