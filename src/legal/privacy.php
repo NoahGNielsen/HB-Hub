@@ -164,7 +164,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 Nicknames in a group: a nickname you give someone in a group (or that someone gives you) is
                                 kept with their membership of that group, and everyone in the group sees it instead of their
                                 username. Giving or taking one away also puts a notice in the chat saying who did it, to whom
-                                and what the nickname is, which stays like other messages. The nickname goes when it's taken
+                                and what the nickname is, which stays like other messages. When someone else gives you one,
+                                you also get a notification under the bell saying who, which group and the nickname (not
+                                from a group you muted or someone you blocked). The nickname goes when it's taken
                                 away or when they leave the group or are kicked from it. A nickname you give the other person
                                 in a DM is kept in the chat's settings and only shown to you.
                             </li>

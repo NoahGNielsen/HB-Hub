@@ -838,7 +838,7 @@ function chatSetNickname(PDO $db, int $userId, int $chatId, mixed $nickname): vo
 /**
  * Gives a member of the group a nickname everyone in it sees them by, or takes it away when it's empty, with a notice
  * about it. Any member who isn't muted can (checked before), for anyone in the group, themselves too. Saving the nickname they already have isn't a change,
- * so there's no notice then.
+ * so there's no notice then. Whoever got a new one gets a notification about it too (chat.nickname).
  * Ghost banned (assets/php/chat.php), it's saved in memberGhostNickname instead and its notice is a ghost, so only the
  * user sees either.
  *
@@ -861,8 +861,27 @@ function chatSetMemberNickname(PDO $db, int $userId, array $chat, mixed $memberI
     $statement->execute($isGhost
         ? [$nickname, $userId, $chat['chatId'], (int) $memberId, $userId, $nickname]
         : [$nickname, $chat['chatId'], (int) $memberId, $nickname]);
-    if ($statement->rowCount() > 0) {
-        chatNotice($db, $userId, (int) $chat['chatId'], HBHUB_CHAT_EVENT_NICKNAME, (int) $memberId, $nickname, false, $isGhost);
+    if ($statement->rowCount() === 0) {
+        return;
+    }
+    chatNotice($db, $userId, (int) $chat['chatId'], HBHUB_CHAT_EVENT_NICKNAME, (int) $memberId, $nickname, false, $isGhost);
+
+    // Whoever got it is told (chat.nickname), unless it was their own doing, it was taken away, they haven't accepted the
+    // group yet, or it's a ghost one. Not from a chat they muted or someone they blocked either, like a mention.
+    if ($isGhost || $nickname === null || (int) $memberId === $userId) {
+        return;
+    }
+    $statement = $db->prepare('SELECT u.userSettings FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
+        WHERE cm.chatId = ? AND cm.userId = ? AND cm.userAcknowledgedJoin = 1');
+    $statement->execute([$chat['chatId'], (int) $memberId]);
+    $memberSettings = $statement->fetchColumn();
+    if ($memberSettings === false) {
+        return;
+    }
+    $settings = hbHubUserSettings($memberSettings);
+    if (!hbHubChatIsMuted($settings, (int) $chat['chatId']) && !chatHasBlocked($settings, $userId)) {
+        hbHubNotify($db, (int) $memberId, 'chat.nickname', $userId,
+            chatNotificationData($db, (int) $chat['chatId']) + ['nickname' => $nickname]);
     }
 }
 

@@ -68,7 +68,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         </p>
                         <p>
                             Nicknames are up to 35 characters. Leave it empty to take the nickname away. Each change shows up
-                            as a <a href="#notices">notice</a> in the chat, saying who gave it. You can't give nicknames
+                            as a <a href="#notices">notice</a> in the chat, saying who gave it, and whoever gets a new
+                            nickname from someone else gets a notification about it (not from a group they muted or from
+                            someone they blocked). You can't give nicknames
                             while you're muted in the group. Nicknames only count in that group, and in a DM a nickname is
                             different: only you see it (see <a href="/docs/chat/#chat-menu">the chat menu</a>).
                         </p>
