@@ -3,6 +3,7 @@
 .profile {
   --profile-online: #2fa36b;
   --profile-offline: #8a93a3;
+  --profile-danger: #e05252; /* the same red as settings.css */
   --profile-avatar: 128px;
   --profile-pad: 32px;
   max-width: 680px;
@@ -242,6 +243,29 @@
   transform: translateY(-50%) rotate(45deg);
 }
 
+/* Your own status is a link that opens the popup to change it */
+a.profile-status {
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+a.profile-status:hover {
+  background: color-mix(in srgb, var(--text) 10%, var(--background));
+}
+
+a.profile-status:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* No status yet: the same bubble, greyed out, only on your own profile */
+.profile-status.is-placeholder .profile-status-text {
+  font-style: italic;
+  opacity: 0.55;
+}
+
 .profile-status-emoji {
   flex: none;
   font-size: 1.4rem;
@@ -325,6 +349,187 @@
   border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
   font-size: 0.85rem;
   opacity: 0.6;
+}
+
+.profile-btn.is-danger {
+  border-color: var(--profile-danger);
+  color: var(--profile-danger);
+}
+
+.profile-btn.is-danger:hover {
+  background: color-mix(in srgb, var(--profile-danger) 14%, transparent);
+}
+
+/* ---------- The status popup (own profile only) ---------- */
+
+.profile-dialog {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  box-sizing: border-box;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+.profile-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.profile-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 20px;
+}
+
+.profile-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-dialog-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.profile-dialog-close {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.profile-dialog-close:hover {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.profile-dialog-close:focus-visible,
+.profile-status-picks button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The emoji in a little box next to the text, like in settings */
+.profile-status-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.profile-dialog input[type="text"],
+.profile-dialog select,
+.profile-dialog textarea {
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+}
+
+.profile-dialog input[type="text"]:focus,
+.profile-dialog select:focus,
+.profile-dialog textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.profile-dialog input.profile-status-emoji-input {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.profile-dialog textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  resize: none;
+}
+
+.profile-status-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.profile-status-picks button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.profile-status-picks button:hover {
+  background: color-mix(in srgb, var(--accent) 20%, var(--background));
+}
+
+.profile-status-clear {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.profile-status-clear select {
+  min-width: 0;
+}
+
+.profile-dialog-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.profile-dialog-error {
+  margin: 0;
+  color: var(--profile-danger);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.profile-dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Clear status on the left, away from Save */
+.profile-dialog-footer .is-danger {
+  margin-right: auto;
+}
+
+.profile-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 @media (max-width: 600px) {

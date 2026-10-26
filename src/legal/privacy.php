@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '25 October 2026';
+const HBHUB_PRIVACY_UPDATED = '26 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -96,7 +96,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-what">2. What is stored</h2>
                         <h3>Your account</h3>
                         <ul>
-                            <li>Your name, and if you add them: your profile picture, bio, status (an emoji and a short text), education badge (a kind of education, like "IT and media"), and banner. A banner is either two colors and a direction, or a picture: a banner picture is made smaller and turned into JPEG XL in your own browser before it's sent (so it doesn't keep where a photo was taken), kept as a file on HB Hub's server like a chat attachment, and takes one of your attachment tickets for as long as it's your banner. It never runs out by itself: it's deleted when you change it, go back to colors, delete it from Your attachments in the chat, or delete your account.</li>
+                            <li>Your name, and if you add them: your profile picture, bio, status (an emoji, a short text and when it clears itself; once it has, it's no longer shown and is written over the next time you save your status or profile), education badge (a kind of education, like "IT and media"), and banner. A banner is either two colors and a direction, or a picture: a banner picture is made smaller and turned into JPEG XL in your own browser before it's sent (so it doesn't keep where a photo was taken), kept as a file on HB Hub's server like a chat attachment, and takes one of your attachment tickets for as long as it's your banner. It never runs out by itself: it's deleted when you change it, go back to colors, delete it from Your attachments in the chat, or delete your account.</li>
                             <li>Your class: the school year you started 1. year at HTX in and your field of study (X, U, T, Y or Z), or that you don't go to HTX. Your year (or "Graduate" once you're past 3. year) is worked out from that, so it goes up every July 1st without anything being changed. If you're at HTX, you're also a member of your class's group chat (see Messages and chats below).</li>
                             <li>Your password, but only as a one-way hash. Nobody, not even an admin, can read your password.</li>
                             <li>The secret behind your two-factor codes, if you turn two-factor login on.</li>

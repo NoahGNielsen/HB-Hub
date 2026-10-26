@@ -79,6 +79,7 @@ $settingsValues = [
     'description' => $settingsUser['userDescription'] ?? '',
     'statusEmoji' => $settingsStatus['emoji'],
     'statusText' => $settingsStatus['text'],
+    'statusClearAfter' => '', // the picker's default (hbHubProfileStatusClearOptions())
     'education' => hbHubProfileEducation($savedSettings)[0] ?? '',
     'bannerType' => $settingsBannerId !== null ? 'picture' : 'colors', // colors | picture
     'bannerColor1' => $settingsBannerGradient[0],
@@ -318,9 +319,11 @@ if ($settingsAction === 'profile') {
             }
         }
 
-        // Status - one emoji and a short text, with the bio's rules (assets/php/profile.php)
-        if (($statusError = hbHubProfileStatusError($settingsValues['statusEmoji'], $settingsValues['statusText'], $settingsStatus)) !== null) {
-            $settingsErrors['status'] = $statusError;
+        // Status - one emoji and a short text, with the bio's rules, and when it clears (assets/php/profile.php)
+        $statusToSave = hbHubProfileStatusFromForm($settingsValues['statusEmoji'], $settingsValues['statusText'],
+            $settingsValues['statusClearAfter'], $settingsStatus);
+        if (is_string($statusToSave)) {
+            $settingsErrors['status'] = $statusToSave;
         }
 
         // Education badge - one from the list, or none
@@ -357,7 +360,7 @@ if ($settingsAction === 'profile') {
 
         if (!$settingsErrors) {
             $settingsErrors = settingsSave($db, $userId, $settingsValues, $settingsDescriptionMode !== SETTINGS_DISABLED, $avatar, [
-                'profileStatus' => ['emoji' => $settingsValues['statusEmoji'], 'text' => $settingsValues['statusText']],
+                'profileStatus' => $statusToSave,
                 'profileEducation' => $settingsValues['education'] !== '' ? $settingsValues['education'] : null,
                 'profileBanner' => ['color1' => $bannerGradient[0], 'color2' => $bannerGradient[1], 'gradientAngle' => $bannerGradient[2]],
             ]);
@@ -513,6 +516,7 @@ function settingsTime(?string $timestamp): string
     <?php endif; ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/settingsMenu.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/settingsMenu.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/settings.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/settings.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/statusForm.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/statusForm.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/jxlImages.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/jxlImages.js') ?>" defer></script>
     <title>Settings - HB Hub</title>
     <meta name="description" content="Settings page for the HB Hub">
@@ -729,8 +733,8 @@ function settingsTime(?string $timestamp): string
                             <?php endif; ?>
                         </div>
 
-                        <!-- Status (assets/php/profile.php): an emoji and a short text under the name. settings.js adds a row of
-                             emoji to pick from, and stops the text at two lines. -->
+                        <!-- Status (assets/php/profile.php): an emoji and a short text under the name, and when it clears.
+                             statusForm.js adds a row of emoji to pick from, and stops the text at two lines. -->
                         <div class="settings-field">
                             <label class="settings-label" for="settings-status-text">Status <span class="settings-optional">(Optional)</span></label>
                             <div class="settings-status-row">
@@ -742,8 +746,14 @@ function settingsTime(?string $timestamp): string
                                           data-max-lines="<?= HBHUB_PROFILE_STATUS_LINES_MAX ?>"><?= htmlspecialchars($settingsValues['statusText']) ?></textarea>
                             </div>
                             <div class="settings-status-picks" data-status-picks hidden></div>
+                            <div class="settings-status-clear">
+                                <label for="settings-status-clear">Clear after</label>
+                                <select id="settings-status-clear" name="statusClearAfter">
+                                    <?= hbHubProfileStatusClearOptions($settingsStatus, $settingsValues['statusClearAfter']) ?>
+                                </select>
+                            </div>
                             <p class="settings-hint" id="settings-status-hint">
-                                Shown under your name. One emoji and up to <?= HBHUB_PROFILE_STATUS_TEXT_MAX ?> characters on up to <?= HBHUB_PROFILE_STATUS_LINES_MAX ?> lines.
+                                Shown next to your profile picture. One emoji and up to <?= HBHUB_PROFILE_STATUS_TEXT_MAX ?> characters on up to <?= HBHUB_PROFILE_STATUS_LINES_MAX ?> lines.
                             </p>
                             <?php if (isset($settingsErrors['status'])): ?>
                                 <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['status']) ?></p>

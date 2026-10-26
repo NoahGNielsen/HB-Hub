@@ -3,8 +3,12 @@
 // education badge. Set in settings (otherPages/settings.php), shown on profiles (otherPages/profile.php).
 //
 // Saved in userSettings (database/defaultUserSettings.json):
-// - profileStatus: { emoji, text } - one emoji and up to HBHUB_PROFILE_STATUS_TEXT_MAX characters on up to
+// - profileStatus: { emoji, text, expires } - one emoji and up to HBHUB_PROFILE_STATUS_TEXT_MAX characters on up to
 //   HBHUB_PROFILE_STATUS_LINES_MAX lines, with the same rules as the bio (account.php, urlBlacklist.php). '' when not set.
+//   expires is the Unix time it clears itself at (picked from HBHUB_PROFILE_STATUS_CLEAR_AFTER), or null when it doesn't.
+//   It isn't deleted right then: past it, it's just not shown or put in the forms any more, so the next save of the
+//   status (or the profile in settings) writes over it. Statuses from before this have no expires and don't clear.
+//   It's set in settings, or in the popup on your own profile (otherPages/profile.php, hbHubProfileSaveStatus()).
 // - profileEducation: which kind of education they're taking, a key of HBHUB_PROFILE_EDUCATIONS, or null
 // - profileBanner: { color1, color2, gradientAngle } - the banner's gradient, made like a chat's background (Change
 //   background in the chat, chatBackgroundOf() in chat.php). "default" colors for the site's own one.
@@ -18,9 +22,22 @@
 require_once __DIR__ . '/chat.php'; // chatBackgroundOf() and the gradient directions, and chatAttachments.php
 require_once __DIR__ . '/account.php'; // the allow list the bio uses
 require_once __DIR__ . '/urlBlacklist.php'; // and its blacklisted links
+require_once __DIR__ . '/userSettings.php'; // hbHubUserSettings(), for saving the status
 
 const HBHUB_PROFILE_STATUS_TEXT_MAX = 45;
 const HBHUB_PROFILE_STATUS_LINES_MAX = 2;
+// The "Clear after" choices for a status: form value => [seconds, label]. null seconds is "Don't clear".
+const HBHUB_PROFILE_STATUS_CLEAR_AFTER = [
+    '30m' => [30 * 60, '30 minutes'],
+    '1h' => [3600, '1 hour'],
+    '8h' => [8 * 3600, '8 hours'],
+    '24h' => [24 * 3600, '24 hours'],
+    '7d' => [7 * 86400, '7 days'],
+    'never' => [null, 'Don\'t clear'],
+];
+const HBHUB_PROFILE_STATUS_CLEAR_DEFAULT = '24h';
+// The extra choice when there's a status already, so editing it doesn't move when it clears
+const HBHUB_PROFILE_STATUS_CLEAR_KEEP = 'keep';
 // The banner after the browser has made it smaller: two tickets' worth, which a JPEG XL of that size never gets near
 const HBHUB_PROFILE_BANNER_MAX_BYTES = 2 * HBHUB_CHAT_ATTACHMENT_TICKET_BYTES;
 // The biggest a banner picture is made by the browser (settings.js), both ways, so a phone photo isn't kept at full size
@@ -44,17 +61,142 @@ const HBHUB_PROFILE_EDUCATIONS = [
 ];
 
 /**
- * The user's status from their settings: ['emoji' => ..., 'text' => ...], both '' when not set.
+ * A length of time as "5 minutes", "3 days", "1 year" etc., rounded down to the biggest whole unit.
+ */
+function hbHubProfileTimeSpan(int $seconds): string
+{
+    $units = [
+        'year' => 365 * 86400,
+        'month' => 30 * 86400,
+        'week' => 7 * 86400,
+        'day' => 86400,
+        'hour' => 3600,
+        'minute' => 60,
+    ];
+    foreach ($units as $name => $length) {
+        $count = intdiv($seconds, $length);
+        if ($count >= 1) {
+            return $count . ' ' . $name . ($count === 1 ? '' : 's');
+        }
+    }
+    return 'less than a minute';
+}
+
+/**
+ * The user's status from their settings: ['emoji' => ..., 'text' => ..., 'expires' => ...], the first two '' when not
+ * set or when it has cleared itself. expires is a Unix time, or null when it doesn't clear.
  *
- * @return array{emoji: string, text: string}
+ * @return array{emoji: string, text: string, expires: ?int}
  */
 function hbHubProfileStatus(array $settings): array
 {
     $status = $settings['profileStatus'] ?? null;
+    $expires = is_int($status['expires'] ?? null) ? $status['expires'] : null;
+    if ($expires !== null && $expires <= time()) {
+        return ['emoji' => '', 'text' => '', 'expires' => null];
+    }
     return [
         'emoji' => is_string($status['emoji'] ?? null) ? $status['emoji'] : '',
         'text' => is_string($status['text'] ?? null) ? $status['text'] : '',
+        'expires' => $expires,
     ];
+}
+
+/**
+ * Whether there's a status to show (an emoji, a text or both).
+ *
+ * @param array{emoji: string, text: string, expires: ?int} $status
+ */
+function hbHubProfileHasStatus(array $status): bool
+{
+    return $status['emoji'] !== '' || $status['text'] !== '';
+}
+
+/**
+ * The status to save from a form's emoji, text and "Clear after" choice (a key of HBHUB_PROFILE_STATUS_CLEAR_AFTER, or
+ * HBHUB_PROFILE_STATUS_CLEAR_KEEP for when the status there is now clears), or why it can't be saved.
+ * $current is the status they have now (hbHubProfileStatus()).
+ *
+ * @param array{emoji: string, text: string, expires: ?int} $current
+ * @return array{emoji: string, text: string, expires: ?int}|string
+ */
+function hbHubProfileStatusFromForm(string $emoji, string $text, string $clearAfter, array $current): array|string
+{
+    $error = hbHubProfileStatusError($emoji, $text, $current);
+    if ($error !== null) {
+        return $error;
+    }
+    if ($emoji === '' && $text === '') {
+        return ['emoji' => '', 'text' => '', 'expires' => null];
+    }
+    // Left as it is, but it cleared while the form was open: the default, as for a new one
+    if ($clearAfter === HBHUB_PROFILE_STATUS_CLEAR_KEEP && !hbHubProfileHasStatus($current)) {
+        $clearAfter = HBHUB_PROFILE_STATUS_CLEAR_DEFAULT;
+    }
+    if ($clearAfter === HBHUB_PROFILE_STATUS_CLEAR_KEEP) {
+        $expires = $current['expires'];
+    } elseif (isset(HBHUB_PROFILE_STATUS_CLEAR_AFTER[$clearAfter])) {
+        $seconds = HBHUB_PROFILE_STATUS_CLEAR_AFTER[$clearAfter][0];
+        $expires = $seconds !== null ? time() + $seconds : null;
+    } else {
+        return 'Please choose when your status should clear.';
+    }
+    return ['emoji' => $emoji, 'text' => $text, 'expires' => $expires];
+}
+
+/**
+ * The <option>s of a status's "Clear after" picker, with $selected picked. With a status already there's a first one
+ * that leaves when it clears as it is, like "Leave as it is (clears in 3 hours)", which is the one picked by default.
+ * Without one it's HBHUB_PROFILE_STATUS_CLEAR_DEFAULT.
+ *
+ * @param array{emoji: string, text: string, expires: ?int} $current
+ */
+function hbHubProfileStatusClearOptions(array $current, ?string $selected = null): string
+{
+    $options = [];
+    if (hbHubProfileHasStatus($current)) {
+        $options[HBHUB_PROFILE_STATUS_CLEAR_KEEP] = 'Leave as it is (' . ($current['expires'] !== null
+            ? 'clears in ' . hbHubProfileTimeSpan(max(0, $current['expires'] - time()))
+            : 'doesn\'t clear') . ')';
+    }
+    foreach (HBHUB_PROFILE_STATUS_CLEAR_AFTER as $key => [, $label]) {
+        $options[$key] = $label;
+    }
+    if ($selected === null || !isset($options[$selected])) {
+        $selected = array_key_first($options) === HBHUB_PROFILE_STATUS_CLEAR_KEEP ? HBHUB_PROFILE_STATUS_CLEAR_KEEP : HBHUB_PROFILE_STATUS_CLEAR_DEFAULT;
+    }
+
+    $html = '';
+    foreach ($options as $key => $label) {
+        $html .= '<option value="' . htmlspecialchars($key) . '"' . ($key === $selected ? ' selected' : '') . '>'
+            . htmlspecialchars($label) . '</option>';
+    }
+    return $html;
+}
+
+/**
+ * Saves the user's status (from hbHubProfileStatusFromForm()), and nothing else in their settings. Locked while that
+ * happens, so settings saved somewhere else at the same time aren't lost.
+ *
+ * @param array{emoji: string, text: string, expires: ?int} $status
+ */
+function hbHubProfileSaveStatus(PDO $db, int $userId, array $status): void
+{
+    try {
+        $db->beginTransaction();
+        $statement = $db->prepare('SELECT userSettings FROM `HBHub-Users` WHERE userId = ? FOR UPDATE');
+        $statement->execute([$userId]);
+        $settings = hbHubUserSettings($statement->fetchColumn() ?: null);
+        $settings['profileStatus'] = $status;
+        $db->prepare('UPDATE `HBHub-Users` SET userSettings = ? WHERE userId = ?')
+            ->execute([json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE), $userId]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
 }
 
 /**

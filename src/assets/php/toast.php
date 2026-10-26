@@ -7,6 +7,9 @@ const HBHUB_TOASTS = [
     'login' => 'You are now logged in. Welcome back!',
     'onboarding' => 'Your account has been created. Welcome to HB Hub!',
     'settings' => 'Your settings have been saved.',
+    // The status popup on your own profile (otherPages/profile.php)
+    'statusSaved' => 'Your status has been saved.',
+    'statusCleared' => 'Your status has been cleared.',
     'password' => 'Your password has been changed. Your other devices have been logged out.',
     'totpOn' => 'Two-factor login is now on.',
     'totpOff' => 'Two-factor login is now off.',

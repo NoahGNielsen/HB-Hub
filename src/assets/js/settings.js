@@ -1,7 +1,8 @@
 // Settings page: hides the field of study for Not HTX, shows the profile banner being picked and gets a banner picture
-// ready (JPEG XL), adds emoji to pick for the status, draws the QR code for setting up two-factor login, shows how strong a new password is, asks the browser for permission
+// ready (JPEG XL), draws the QR code for setting up two-factor login, shows how strong a new password is, asks the browser for permission
 // to show notifications once they're turned on, plays the message sound when it's turned on, and asks "are you sure?"
 // before deleting the account.
+// The status's emoji row is statusForm.js, as the popup on your own profile has it too.
 // Without JS the 2FA key can still be typed in by hand, and deleting still needs the password.
 (() => {
     for (const form of document.querySelectorAll('form[data-confirm]')) {
@@ -221,38 +222,6 @@
                 reject(new Error('workerFailed'));
             });
             worker.postMessage({ id: 1, type: 'encode', file, maxSide });
-        });
-    }
-
-    // Status: a row of emoji to pick from (any other one can be typed in), and the text stops at its last line
-    const statusEmoji = document.querySelector('[data-status-emoji]');
-    if (statusEmoji) {
-        const picks = document.querySelector('[data-status-picks]');
-        for (const emoji of ['😀', '📚', '🎮', '💻', '🎧', '😴', '🤒', '🍕', '⚽', '🎉', '🔥', '❤️']) {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'settings-status-pick';
-            button.textContent = emoji;
-            button.setAttribute('aria-label', `Use ${emoji}`);
-            button.addEventListener('click', () => {
-                statusEmoji.value = emoji;
-                statusEmoji.dispatchEvent(new Event('input', { bubbles: true }));
-            });
-            picks.append(button);
-        }
-        const clear = document.createElement('button');
-        clear.type = 'button';
-        clear.className = 'settings-status-pick';
-        clear.textContent = '×';
-        clear.setAttribute('aria-label', 'No emoji');
-        clear.addEventListener('click', () => { statusEmoji.value = ''; });
-        picks.append(clear);
-        picks.hidden = false;
-
-        const statusText = document.querySelector('[data-status-text]');
-        const maxLines = Number(statusText.dataset.maxLines);
-        statusText.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && statusText.value.split('\n').length >= maxLines) event.preventDefault();
         });
     }
 

@@ -5,8 +5,11 @@
 // picture over its bottom edge with a dot for online (hover it for how long they've been offline), their status next to
 // it, and on the right a Message button (someone else) or the settings cog (your own). Under it the name, badges
 // (Site admin, class, education), the bio and when they joined. Everything on it is changed in settings (otherPages/settings.php).
-// profile.js paints the banner's colors, as the content security policy doesn't allow style attributes, and
-// jxlImages.js draws a banner picture for browsers that can't show JPEG XL.
+// On your own profile the status can be clicked to change it in a popup (or, without a status, a greyed out "Click here
+// to add a status!" only you see). The popup is a form POSTed back here with action=status (and clear=1 for Clear
+// status), which saves only the status and comes back with a toast. Without JS the status links to settings instead.
+// profile.js paints the banner's colors, as the content security policy doesn't allow style attributes, and opens the
+// popup; statusForm.js adds its emoji row. jxlImages.js draws a banner picture for browsers that can't show JPEG XL.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
@@ -15,29 +18,38 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/profile.php'; // banner, s
 
 const PROFILE_ROLE_ADMIN = 2; // userRole in HBHub-Users
 
-/**
- * A length of time as "5 minutes", "3 days", "1 year" etc., rounded down to the biggest whole unit.
- */
-function profileTimeSpan(int $seconds): string
-{
-    $units = [
-        'year' => 365 * 86400,
-        'month' => 30 * 86400,
-        'week' => 7 * 86400,
-        'day' => 86400,
-        'hour' => 3600,
-        'minute' => 60,
-    ];
-    foreach ($units as $name => $length) {
-        $count = intdiv($seconds, $length);
-        if ($count >= 1) {
-            return $count . ' ' . $name . ($count === 1 ? '' : 's');
-        }
+// Saving your status from the popup. A wrong one shows your profile again with the popup open and the error in it.
+$profileStatusError = null;
+$profileStatusForm = null; // what was typed in, when it's shown again: [emoji, text, clearAfter]
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (($_POST['action'] ?? null) !== 'status') {
+        http_response_code(400);
+        exit;
     }
-    return 'less than a minute';
+    $statement = hbHubDatabase()->prepare('SELECT userSettings FROM `HBHub-Users` WHERE userId = ?');
+    $statement->execute([(int) $hbHubUser['userId']]);
+    $currentStatus = hbHubProfileStatus(hbHubUserSettings($statement->fetchColumn() ?: null));
+
+    $postValue = static fn (string $key): string => is_string($_POST[$key] ?? null) ? trim(str_replace("\r\n", "\n", $_POST[$key])) : '';
+    $isClear = ($_POST['clear'] ?? null) === '1';
+    $statusToSave = $isClear
+        ? ['emoji' => '', 'text' => '', 'expires' => null]
+        : hbHubProfileStatusFromForm($postValue('statusEmoji'), $postValue('statusText'), $postValue('statusClearAfter'), $currentStatus);
+
+    if (is_string($statusToSave)) {
+        $profileStatusError = $statusToSave;
+        $profileStatusForm = [$postValue('statusEmoji'), $postValue('statusText'), $postValue('statusClearAfter')];
+    } else {
+        hbHubProfileSaveStatus(hbHubDatabase(), (int) $hbHubUser['userId'], $statusToSave);
+        require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
+        hbHubSetToast(hbHubProfileHasStatus($statusToSave) ? 'statusSaved' : 'statusCleared');
+        header('Location: /profile', true, 303);
+        exit;
+    }
 }
 
-$profileUserId = $_GET['user'] ?? (string) $hbHubUser['userId'];
+// Only your own profile can be POSTed to, so a status error always shows yours
+$profileUserId = $profileStatusError === null ? ($_GET['user'] ?? (string) $hbHubUser['userId']) : (string) $hbHubUser['userId'];
 if (!is_string($profileUserId) || !ctype_digit($profileUserId)) {
     require $_SERVER['DOCUMENT_ROOT'] . '/assets/php/statusCodesPages/404.php';
     exit;
@@ -60,7 +72,7 @@ $profileIsOwn = (int) $profile['userId'] === (int) $hbHubUser['userId'];
 $profileIsAdmin = (int) $profile['userRole'] === PROFILE_ROLE_ADMIN;
 $profileIsOnline = (int) $profile['lastSeenSeconds'] <= HBHUB_SESSION_ONLINE_SECONDS;
 // The online dot's tooltip
-$profilePresence = $profileIsOnline ? 'Online' : 'Offline for ' . profileTimeSpan((int) $profile['lastSeenSeconds']);
+$profilePresence = $profileIsOnline ? 'Online' : 'Offline for ' . hbHubProfileTimeSpan((int) $profile['lastSeenSeconds']);
 // A deleted account (userStatus NULL) and the system account that makes class chats can't be messaged
 $profileCanMessage = !$profileIsOwn && $profile['userStatus'] !== null && (int) $profile['userId'] !== HBHUB_SYSTEM_USER_ID;
 
@@ -69,7 +81,9 @@ $profileSettings = hbHubUserSettings($profile['userSettings']);
 $profileClass = hbHubClassOf($profileSettings);
 $profileEducation = hbHubProfileEducation($profileSettings);
 $profileStatus = hbHubProfileStatus($profileSettings);
-$profileHasStatus = $profileStatus['emoji'] !== '' || $profileStatus['text'] !== '';
+$profileHasStatus = hbHubProfileHasStatus($profileStatus);
+// The popup's fields: what was typed in after an error, otherwise the status you have now
+[$profileStatusEmoji, $profileStatusText, $profileStatusClearAfter] = $profileStatusForm ?? [$profileStatus['emoji'], $profileStatus['text'], null];
 $profileGradient = hbHubProfileBannerGradient($profileSettings);
 
 $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvatarAttachmentId'] !== null ? (int) $profile['userAvatarAttachmentId'] : null);
@@ -82,6 +96,9 @@ $profileJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUM
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/profile.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/profile.css') ?>">
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/profile.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/profile.js') ?>" defer></script>
+    <?php if ($profileIsOwn): ?>
+        <script src="https://hbhub.noahgajnielsen.dk/assets/js/statusForm.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/statusForm.js') ?>" defer></script>
+    <?php endif; ?>
     <?php if ($profileBannerSrc !== null): ?>
         <script src="https://hbhub.noahgajnielsen.dk/assets/js/jxlImages.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/jxlImages.js') ?>" defer></script>
     <?php endif; ?>
@@ -113,7 +130,23 @@ $profileJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUM
                         <span class="profile-status-dot<?= $profileIsOnline ? ' is-online' : '' ?>" tabindex="0" role="img" aria-label="<?= $profilePresence ?>" data-tooltip="<?= $profilePresence ?>"></span>
                     </div>
 
-                    <?php if ($profileHasStatus): ?>
+                    <?php if ($profileIsOwn): ?>
+                        <!-- Your own status, or a greyed out one to add one. profile.js opens the popup from it; without JS it's
+                             a link to the status in settings. -->
+                        <a class="profile-status is-own<?= $profileHasStatus ? '' : ' is-placeholder' ?>" href="/settings#settings-status-text"
+                           aria-label="<?= $profileHasStatus ? 'Change your status' : 'Add a status' ?>" data-status-open>
+                            <?php if ($profileHasStatus): ?>
+                                <?php if ($profileStatus['emoji'] !== ''): ?>
+                                    <span class="profile-status-emoji"><?= htmlspecialchars($profileStatus['emoji']) ?></span>
+                                <?php endif; ?>
+                                <?php if ($profileStatus['text'] !== ''): ?>
+                                    <span class="profile-status-text"><?= htmlspecialchars($profileStatus['text']) ?></span>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <span class="profile-status-text">Click here to add a status!</span>
+                            <?php endif; ?>
+                        </a>
+                    <?php elseif ($profileHasStatus): ?>
                         <!-- Their status, in a bubble pointing at the picture -->
                         <p class="profile-status">
                             <?php if ($profileStatus['emoji'] !== ''): ?>
@@ -176,10 +209,55 @@ $profileJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUM
 
                 <p class="profile-joined">
                     Joined <?= date('j F Y', strtotime($profile['userCreatedTimestamp'])) ?>
-                    &middot; a member for <?= profileTimeSpan((int) $profile['memberSeconds']) ?>
+                    &middot; a member for <?= hbHubProfileTimeSpan((int) $profile['memberSeconds']) ?>
                 </p>
             </div>
         </article>
+
+        <?php if ($profileIsOwn): ?>
+            <!-- The status popup (the same fields as in settings). data-open opens it straight away, when saving it went wrong. -->
+            <dialog class="profile-dialog" aria-labelledby="profile-status-heading" data-status-dialog<?= $profileStatusError !== null ? ' data-open' : '' ?>>
+                <form class="profile-dialog-form" action="/profile" method="post">
+                    <input type="hidden" name="action" value="status">
+                    <div class="profile-dialog-header">
+                        <h2 id="profile-status-heading"><?= $profileHasStatus ? 'Change your status' : 'Add a status' ?></h2>
+                        <button type="button" class="profile-dialog-close" aria-label="Close" data-status-close>×</button>
+                    </div>
+
+                    <div class="profile-status-row">
+                        <label class="profile-visually-hidden" for="profile-status-emoji">Status emoji</label>
+                        <input type="text" id="profile-status-emoji" class="profile-status-emoji-input" name="statusEmoji" maxlength="16"
+                               placeholder="😀" autocomplete="off" value="<?= htmlspecialchars($profileStatusEmoji) ?>" data-status-emoji>
+                        <label class="profile-visually-hidden" for="profile-status-text">Status text</label>
+                        <textarea id="profile-status-text" name="statusText" maxlength="<?= HBHUB_PROFILE_STATUS_TEXT_MAX ?>" rows="2"
+                                  placeholder="What are you up to?" aria-describedby="profile-status-hint" data-status-text
+                                  data-max-lines="<?= HBHUB_PROFILE_STATUS_LINES_MAX ?>"><?= htmlspecialchars($profileStatusText) ?></textarea>
+                    </div>
+                    <div class="profile-status-picks" data-status-picks hidden></div>
+
+                    <div class="profile-status-clear">
+                        <label for="profile-status-clear">Clear after</label>
+                        <select id="profile-status-clear" name="statusClearAfter">
+                            <?= hbHubProfileStatusClearOptions($profileStatus, $profileStatusClearAfter) ?>
+                        </select>
+                    </div>
+                    <p class="profile-dialog-hint" id="profile-status-hint">
+                        One emoji and up to <?= HBHUB_PROFILE_STATUS_TEXT_MAX ?> characters on up to <?= HBHUB_PROFILE_STATUS_LINES_MAX ?> lines. Everyone can see it.
+                    </p>
+                    <?php if ($profileStatusError !== null): ?>
+                        <p class="profile-dialog-error" role="alert"><?= htmlspecialchars($profileStatusError) ?></p>
+                    <?php endif; ?>
+
+                    <div class="profile-dialog-footer">
+                        <?php if ($profileHasStatus): ?>
+                            <button type="submit" class="profile-btn is-danger" name="clear" value="1" formnovalidate>Clear status</button>
+                        <?php endif; ?>
+                        <button type="button" class="profile-btn" data-status-close>Cancel</button>
+                        <button type="submit" class="profile-btn is-primary">Save</button>
+                    </div>
+                </form>
+            </dialog>
+        <?php endif; ?>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

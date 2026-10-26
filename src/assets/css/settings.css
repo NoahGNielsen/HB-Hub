@@ -899,7 +899,7 @@
   gap: 4px;
 }
 
-.settings-status-pick {
+.settings-status-picks button {
   width: 36px;
   height: 36px;
   padding: 0;
@@ -911,13 +911,27 @@
   cursor: pointer;
 }
 
-.settings-status-pick:hover {
+.settings-status-picks button:hover {
   background: color-mix(in srgb, var(--accent) 20%, var(--background));
 }
 
-.settings-status-pick:focus-visible {
+.settings-status-picks button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* "Clear after" and its picker on one line */
+.settings-status-clear {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.settings .settings-status-clear select {
+  width: auto;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 /* ---------- Two-factor login set-up ---------- */

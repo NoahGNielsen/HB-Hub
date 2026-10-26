@@ -5,7 +5,8 @@
     "classChatSchoolYear": null,
     "profileStatus": {
         "emoji": "",
-        "text": ""
+        "text": "",
+        "expires": null
     },
     "profileEducation": null,
     "profileBanner": {
