@@ -2783,13 +2783,46 @@ function chatOwnReactions(item) {
     return new Set([...item.querySelectorAll('[data-reactions] .is-mine')].map((reaction) => reaction.dataset.reaction));
 }
 
+// One section of an emoji picker: its heading and a grid of a button per emoji. The tab's name and icon go along in
+// data-tab-name/data-tab-icon, and the heading gets its id (for the grid's aria-labelledby) once it's in a picker.
+function chatEmojiSection(name, icon, emoji) {
+    const heading = document.createElement('h3');
+    heading.className = 'chat-emoji-heading';
+    heading.textContent = name;
+
+    const grid = document.createElement('div');
+    grid.className = 'chat-emoji-grid';
+    grid.setAttribute('role', 'group');
+    grid.append(...emoji.map((character) => {
+        const pick = document.createElement('button');
+        pick.type = 'button';
+        pick.tabIndex = -1;
+        pick.textContent = character;
+        pick.dataset.emoji = character;
+        return pick;
+    }));
+
+    const section = document.createElement('section');
+    section.dataset.tabName = name;
+    section.dataset.tabIcon = icon;
+    section.append(heading, grid);
+    return section;
+}
+
+// The category sections are made once per page load and copied into each picker, as making the ~1,200 buttons is what
+// made opening it slow. The chat page swapping in the next chat keeps this, so its new pickers are just a copy away.
+let chatEmojiCategoriesMade = null;
+let chatEmojiPickerCount = 0; // so each picker's heading ids are its own
+
 // An emoji picker (the message box's and Add reaction's): category tabs along the top, and below them the emoji by
-// category, with the recently used ones first. render() fills it in each time it opens, so the recent ones are up to date
-// (but don't move around while picking). onPick(emoji) is called when one is picked, and onClose(returnFocus) when
-// Escape or Tab should close it. The arrow keys, Home and End move through the emoji.
+// category, with the recently used ones first. The categories are put in once (when the browser has a moment after the
+// page loads, or on the first open if that's sooner) and kept, and render() on each open only redoes Recently used when
+// it changed, so the recent ones are up to date (but don't move around while picking). onPick(emoji) is called when one
+// is picked, and onClose(returnFocus) when Escape or Tab should close it. The arrow keys, Home and End move through the emoji.
 function chatEmojiPicker(picker, { onPick, onClose }) {
     const tabs = picker.querySelector('[data-emoji-tabs]');
     const list = picker.querySelector('[data-emoji-list]');
+    const idPrefix = 'chat-emoji-' + chatEmojiPickerCount++ + '-section-';
 
     // [name, tab icon, the emoji with spaces between]
     const categories = [
@@ -2803,47 +2836,51 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
         ['Symbols', '❤️', '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ☮️ ✝️ ☪️ 🕉️ ☸️ ✡️ 🔯 ☯️ ☦️ 🛐 ⛎ ♈ ♉ ♊ ♋ ♌ ♍ ♎ ♏ ♐ ♑ ♒ ♓ 🆔 ⚛️ ☢️ ☣️ 📴 📳 🆚 💮 🉐 🅰️ 🅱️ 🆎 🆑 🅾️ 🆘 ❌ ⭕ 🛑 ⛔ 📛 🚫 💯 💢 ♨️ 🚷 🚯 🚳 🚱 🔞 📵 🚭 ❗ ❕ ❓ ❔ ‼️ ⁉️ 🔅 🔆 ⚠️ 🚸 🔱 ⚜️ 🔰 ♻️ ✅ ❇️ ✳️ ❎ 🌐 💠 Ⓜ️ 🌀 💤 🏧 🚾 ♿ 🅿️ 🚹 🚺 🚼 🚻 🚮 🎦 📶 🆗 🆙 🆒 🆕 🆓 🔟 🔢 #️⃣ *️⃣ ▶️ ⏸️ ⏯️ ⏹️ ⏺️ ⏭️ ⏮️ ⏩ ⏪ 🔀 🔁 🔂 ◀️ 🔼 🔽 ⏫ ⏬ ➡️ ⬅️ ⬆️ ⬇️ ↗️ ↘️ ↙️ ↖️ ↕️ ↔️ ↪️ ↩️ ⤴️ ⤵️ 🔄 🔃 🎵 🎶 ➕ ➖ ➗ ✖️ ♾️ 💲 💱 ™️ ©️ ®️ 〰️ ➰ ➿ 🔚 🔙 🔛 🔝 🔜 ✔️ ☑️ 🔘 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🟤 🔺 🔻 🔸 🔹 🔶 🔷 🔳 🔲 ▪️ ▫️ ◾ ◽ ◼️ ◻️ 🟥 🟧 🟨 🟩 🟦 🟪 ⬛ ⬜ 🟫 🔈 🔇 🔉 🔊 🔔 🔕 📣 📢 💬 💭 🗯️ ♠️ ♣️ ♥️ ♦️ 🃏 🎴 🀄 🕐 🕑 🕒 🕓 🕔 🕕 🕖 🕗 🕘 🕙 🕚 🕛'],
     ];
 
+    // Puts the categories in, the first time only
+    let isBuilt = false;
+    function build() {
+        if (isBuilt) return;
+        isBuilt = true;
+        if (!chatEmojiCategoriesMade) {
+            chatEmojiCategoriesMade = document.createDocumentFragment();
+            chatEmojiCategoriesMade.append(...categories.map(([name, icon, emoji]) => chatEmojiSection(name, icon, emoji.split(' '))));
+        }
+        list.append(chatEmojiCategoriesMade.cloneNode(true));
+    }
+    if ('requestIdleCallback' in window) requestIdleCallback(build);
+    else setTimeout(build);
+
+    // Recently used and the tabs, made again only when the recent ones changed since the last open
+    let shownRecent = null;
     function render() {
+        build();
         const recent = chatRecentEmoji();
-        const sections = (recent.length > 0 ? [['Recently used', '🕘', recent]] : [])
-            .concat(categories.map(([name, icon, emoji]) => [name, icon, emoji.split(' ')]));
+        if (recent.join(' ') !== shownRecent) {
+            shownRecent = recent.join(' ');
+            list.querySelector('[data-emoji-recent]')?.remove();
+            if (recent.length > 0) {
+                const section = chatEmojiSection('Recently used', '🕘', recent);
+                section.dataset.emojiRecent = '';
+                list.prepend(section);
+            }
 
-        tabs.replaceChildren();
-        list.replaceChildren();
-        sections.forEach(([name, icon, emoji], index) => {
-            const heading = document.createElement('h3');
-            heading.className = 'chat-emoji-heading';
-            heading.id = 'chat-emoji-section-' + index;
-            heading.textContent = name;
+            tabs.replaceChildren(...[...list.children].map((section, index) => {
+                const heading = section.querySelector('.chat-emoji-heading');
+                heading.id = idPrefix + index;
+                section.querySelector('.chat-emoji-grid').setAttribute('aria-labelledby', heading.id);
 
-            const grid = document.createElement('div');
-            grid.className = 'chat-emoji-grid';
-            grid.setAttribute('role', 'group');
-            grid.setAttribute('aria-labelledby', heading.id);
-            grid.append(...emoji.map((character) => {
-                const pick = document.createElement('button');
-                pick.type = 'button';
-                pick.tabIndex = -1;
-                pick.textContent = character;
-                pick.dataset.emoji = character;
-                return pick;
+                const tab = document.createElement('button');
+                tab.type = 'button';
+                tab.textContent = section.dataset.tabIcon;
+                tab.title = section.dataset.tabName;
+                tab.setAttribute('aria-label', section.dataset.tabName);
+                tab.addEventListener('click', () => {
+                    list.scrollTop = section.offsetTop - list.offsetTop;
+                    setActive(section.querySelector('[data-emoji]'));
+                });
+                return tab;
             }));
-
-            const section = document.createElement('section');
-            section.append(heading, grid);
-            list.append(section);
-
-            const tab = document.createElement('button');
-            tab.type = 'button';
-            tab.textContent = icon;
-            tab.title = name;
-            tab.setAttribute('aria-label', name);
-            tab.addEventListener('click', () => {
-                list.scrollTop = section.offsetTop - list.offsetTop;
-                setActive(grid.querySelector('button'));
-            });
-            tabs.append(tab);
-        });
+        }
 
         list.scrollTop = 0;
         markCurrentTab();
