@@ -6,7 +6,8 @@
 //   A new class moves them to its class chat (assets/php/schoolClass.php).
 //   A picture on the banned list bans the account (assets/php/bannedAvatars.php).
 //   Also the banner (colors, or a picture that takes tickets), the status and the education badge (assets/php/profile.php).
-//   settings.js turns a banner picture into JPEG XL before the form is sent, as only that is taken.
+//   settings.js turns a banner picture into JPEG XL before the form is sent, as only that is taken, and adds a small PNG
+//   check copy of it (bannerCheck), so a banner on the banned list (or a similar copy) bans the account too.
 // - Notifications (#notifications): a browser notification and/or a sound for new messages while the site is open
 //   (assets/js/notifications.js, assets/js/messageSound.js)
 // - Gambling and Games (#block): blocking them, during school hours or all the time (assets/php/block.php)
@@ -289,11 +290,29 @@ if ($settingsAction === 'profile') {
             }
         }
 
-        // A picture on the banned list (bannedAvatars.php) bans the account, whatever else is on the form.
-        // Site admins can't be banned, so it doesn't happen to them.
-        if ($avatar !== null && (int) $hbHubUser['userRole'] !== SETTINGS_ROLE_ADMIN
-            && ($bannedAvatarId = hbHubBannedAvatarFind($db, $avatar[1])) !== null) {
+        // Banner picture - only a new one, which settings.js has turned into JPEG XL and sent with a small PNG check
+        // copy of (bannedAvatars.php). Read here for the banned list below, saved further down.
+        $bannerFile = $settingsCanUploadBanner ? ($_FILES['banner'] ?? null) : null;
+        $hasBannerFile = is_array($bannerFile) && is_int($bannerFile['error'] ?? null) && $bannerFile['error'] !== UPLOAD_ERR_NO_FILE;
+        $bannerUpload = $hasBannerFile && $settingsValues['bannerType'] === 'picture' && $bannerFile['error'] === UPLOAD_ERR_OK && is_uploaded_file($bannerFile['tmp_name'])
+            && $bannerFile['size'] <= HBHUB_PROFILE_BANNER_MAX_BYTES ? file_get_contents($bannerFile['tmp_name']) : null;
+        $bannerCheckCopy = hbHubBannedAvatarCheckCopy('bannerCheck');
+
+        // A picture on the banned list (bannedAvatars.php) bans the account, whatever else is on the form, as a profile
+        // picture or as a banner. Site admins can't be banned, so it doesn't happen to them.
+        $isSettingsAdmin = (int) $hbHubUser['userRole'] === SETTINGS_ROLE_ADMIN;
+        $bannedAvatarId = null;
+        if ($avatar !== null && !$isSettingsAdmin && ($bannedAvatarId = hbHubBannedAvatarFind($db, $avatar[1])) !== null) {
             hbHubBannedAvatarBanUploader($db, $userId, $avatar, $bannedAvatarId);
+        } elseif (is_string($bannerUpload) && !$isSettingsAdmin
+            && ($bannedAvatarId = hbHubBannedAvatarFindBanner($db, $bannerUpload, $bannerCheckCopy)) !== null) {
+            // Still made their banner when it can be (it can be turned down for tickets or space), so admins can see it
+            hbHubProfileSetBanner($db, $userId, $bannerFile);
+            $db->beginTransaction();
+            hbHubBannedAvatarAutoban($db, $userId, $bannedAvatarId, false, true);
+            $db->commit();
+        }
+        if ($bannedAvatarId !== null) {
             // What session.php does on a banned account's next visit, straight away here: the browser is marked and
             // this session is gone. Their other browsers get the same on their next visit.
             hbHubSetBannedCookie($userId);
@@ -332,14 +351,14 @@ if ($settingsAction === 'profile') {
         }
 
         // Banner - the colors are saved either way, so going back from a picture finds them as they were.
-        // A new picture has to have been turned into JPEG XL by settings.js.
+        // A new picture has to have been turned into JPEG XL by settings.js, and have its check copy with it.
         $bannerGradient = chatBackgroundOf($settingsValues['bannerColor1'], $settingsValues['bannerColor2'], $settingsValues['bannerAngle']);
-        $bannerFile = $settingsCanUploadBanner ? ($_FILES['banner'] ?? null) : null;
-        $hasBannerFile = is_array($bannerFile) && is_int($bannerFile['error'] ?? null) && $bannerFile['error'] !== UPLOAD_ERR_NO_FILE;
         if (!in_array($settingsValues['bannerType'], ['colors', 'picture'], true) || $bannerGradient === null) {
             $settingsErrors['banner'] = 'Please choose colors and a direction, or a picture.';
         } elseif ($settingsValues['bannerType'] === 'picture' && !$hasBannerFile && $settingsBannerId === null) {
             $settingsErrors['banner'] = $settingsCanUploadBanner ? 'Please choose a picture for your banner.' : 'Banner pictures are turned off for now.';
+        } elseif ($settingsValues['bannerType'] === 'picture' && is_string($bannerUpload) && $bannerCheckCopy === null) {
+            $settingsErrors['banner'] = 'Your browser couldn\'t get the picture ready. Please try another picture, or another browser.';
         }
 
         // The picture is saved first, as it can still fail on tickets. Then nothing else is saved, so it can be fixed.
@@ -660,6 +679,9 @@ function settingsTime(?string $timestamp): string
                                     <label class="settings-visually-hidden" for="settings-banner"><?= $settingsBannerId !== null ? 'Change banner picture' : 'Upload a banner picture' ?></label>
                                     <input type="file" id="settings-banner" name="banner" accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp,image/jxl"
                                            aria-describedby="settings-banner-hint" data-banner-input>
+                                    <!-- settings.js puts the banner's check copy for the banned pictures list here (assets/php/bannedAvatars.php) -->
+                                    <input type="file" name="bannerCheck" hidden tabindex="-1" aria-hidden="true"
+                                           data-banner-check="<?= HBHUB_BANNED_AVATAR_CHECK_SIDE ?>">
                                     <p class="settings-hint" id="settings-banner-hint">
                                         Made smaller and turned into JPEG XL on your device first. It takes a ticket from your chat attachments
                                         (you have <?= $settingsTicketsFree ?> free) for as long as it's your banner, and never runs out.

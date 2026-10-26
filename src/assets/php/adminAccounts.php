@@ -16,18 +16,22 @@ require_once __DIR__ . '/userSettings.php';
 const ADMIN_STATUS_OFFLINE = 2; // userStatus in HBHub-Users (HBHUB_SESSION_STATUS_BANNED is 4)
 
 /**
- * Bans the account, and with $banAvatar puts its picture on the banned pictures list too. The sessions stay until the
- * user's next visit: session.php then marks their browser, so they can't just make a new account. Call
- * hbHubBannedAvatarFillFingerprints() once every account is done, so the ban doesn't wait on it.
+ * Bans the account, and with $banAvatar puts its picture on the banned pictures list too, with $banBanner its banner
+ * picture (its fingerprints from $bannerCheckCopy, the admin's browser's PNG of it, see bannedAvatars.php). The
+ * sessions stay until the user's next visit: session.php then marks their browser, so they can't just make a new
+ * account. Call hbHubBannedAvatarFillFingerprints() once every account is done, so the ban doesn't wait on it.
  */
-function adminAccountBan(PDO $db, int $adminId, int $userId, bool $banAvatar, array $logData = []): void
+function adminAccountBan(PDO $db, int $adminId, int $userId, bool $banAvatar, array $logData = [], bool $banBanner = false, ?string $bannerCheckCopy = null): void
 {
     $db->beginTransaction();
     hbHubBanUser($db, $userId, HBHUB_BAN_REASON_ADMIN);
     if ($banAvatar) {
         hbHubBannedAvatarAddFromUser($db, $userId, $adminId);
     }
-    adminLog($db, $adminId, 'user.ban', $userId, null, ['avatar' => $banAvatar] + $logData);
+    if ($banBanner) {
+        hbHubBannedAvatarAddBannerFromUser($db, $userId, $adminId, $bannerCheckCopy);
+    }
+    adminLog($db, $adminId, 'user.ban', $userId, null, ['avatar' => $banAvatar] + ($banBanner ? ['banner' => true] : []) + $logData);
     $db->commit();
 }
 

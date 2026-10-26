@@ -25,7 +25,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             Anyone logged in can open your profile, from the chat, a leaderboard or a game, and message you from it. Next to your class and education it shows a Site admin badge for site admins, and whether you're online. Pictures have to follow
                             the <a href="/legal/code-of-conduct">Code of Conduct</a> like everything else: a profile picture
-                            that gets an account banned is banned too, on every account.
+                            or banner picture that gets an account banned is banned too, on every account, as a profile picture
+                            and as a banner. Site admins can also remove a status or a banner picture that breaks the rules.
                         </p>
                     </section>
 

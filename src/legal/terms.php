@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '25 October 2026';
+const HBHUB_TERMS_UPDATED = '26 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -201,7 +201,8 @@ const HBHUB_TERMS_UPDATED = '25 October 2026';
                         <h2 id="terms-moderation">7. When the rules are broken</h2>
                         <p>Depending on how serious it is, admins can:</p>
                         <ul>
-                            <li>delete messages, attachments, pictures or groups, and ban a profile picture they delete, so it can't be used again,</li>
+                            <li>delete messages, attachments, pictures, banner pictures or groups, and ban a profile picture or banner picture they delete, so it can't be used again,</li>
+                            <li>change or remove a name, bio or status,</li>
                             <li>reset or take away chips, or remove game results from the leaderboards,</li>
                             <li>take away attachment tickets, so fewer (or no) new attachments can be sent,</li>
                             <li>block the Casino and Games for the account, all the time. Unlike a block you set yourself, it can't be turned off in your settings, only an admin can lift it,</li>
@@ -212,15 +213,16 @@ const HBHUB_TERMS_UPDATED = '25 October 2026';
                                 else sees it or gets a notification or message request from it. A new account (up to 3 days
                                 old) that's made or used in the same browser is ghost banned too,
                             </li>
-                            <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture.</li>
+                            <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture, and can cover its banner picture.</li>
                             <li>do any of the above to all of a person's accounts at once. Accounts that have been logged in to from the same browser are taken to be the same person, and admins check that it isn't just a shared computer first.</li>
                         </ul>
                         <p>
-                            Using a banned profile picture is against the rules too: an account that uploads one, or signs up with
-                            one, is banned straight away, without an admin having to do anything. That includes edited copies that
-                            look almost the same, like a resized or cropped one, and the account the picture was removed from.
-                            Banned pictures are the pictures of banned accounts, profile pictures admins have removed and banned,
-                            and other pictures admins have added.
+                            Using a banned picture is against the rules too: an account that uploads one as its profile picture or
+                            banner, or signs up with one, is banned straight away, without an admin having to do anything. That
+                            includes edited copies that look almost the same, like a resized or cropped one, and the account the
+                            picture was removed from. Banned pictures are the profile pictures and banner pictures of banned
+                            accounts, profile pictures and banner pictures admins have removed and banned, and other pictures
+                            admins have added. Admins can also change or remove a status that breaks the rules.
                         </p>
                         <p>
                             Admins decide what breaks the rules, also for things these terms don't list. If you think a decision

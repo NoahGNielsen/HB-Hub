@@ -105,6 +105,28 @@
   overflow-wrap: anywhere;
 }
 
+/* The bio under the status */
+.admin-bio + .settings-label {
+  margin: 16px 0 0;
+}
+
+/* A user's banner picture over its Remove buttons (an <img>, or the <canvas> jxlImages.js draws it in), cut like on
+   their profile */
+.admin-banner-preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  margin: 0 0 12px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--background);
+}
+
+/* One emoji doesn't need half the row */
+.settings-row:has(> .admin-status-emoji) {
+  grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
+}
+
 .admin-mono {
   font-family: ui-monospace, monospace;
   font-size: 0.9em;

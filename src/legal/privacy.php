@@ -107,12 +107,16 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </ul>
                         <h3>Banned pictures</h3>
                         <p>
-                            When an account is banned, a copy of its profile picture is usually put on a list of banned pictures,
-                            together with which account it came from and which admin banned it. When an admin removes a profile
-                            picture that breaks the rules, they can put a copy of it on the list the same way without banning the
-                            account. Admins can also add pictures to the list themselves. When you upload a profile picture, or sign up with one, it's compared with the
+                            When an account is banned, a copy of its profile picture, and sometimes its banner picture, is usually
+                            put on a list of banned pictures, together with which account it came from and which admin banned it.
+                            When an admin removes a profile picture or banner picture that breaks the rules, they can put a copy of
+                            it on the list the same way without banning the account. Admins can also add pictures to the list
+                            themselves. When you upload a profile picture or banner picture, or sign up with a profile picture, it's compared with the
                             list in two ways: a fingerprint of the file (its SHA-256 hash), and a fingerprint of what the picture
                             looks like, made from a tiny greyscale copy of it, so a resized or slightly cropped copy is found too.
+                            The server can't read a banner picture's JPEG XL file, so your browser sends a small PNG copy of it
+                            (at most 256 pixels wide or tall) along with it for the second check; the admin's browser does the same
+                            when an admin bans a banner picture. The PNG copy is only used for the comparison and never stored.
                             If it's the same file, or looks almost the same as a banned picture, the account is banned straight
                             away and keeps the picture, so admins can see why. The fingerprints of banned pictures are stored with
                             them; the fingerprints of other pictures are only used for the comparison and never stored.
@@ -266,8 +270,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             password, a name or what a message said. Before every change, the admin can type why they're doing
                             it, and that reason is kept with it in the log. When an admin replies to feedback, the reply is kept
                             there as the reason. When an account is banned automatically for uploading a
-                            banned profile picture, that goes in the admin log too, with which picture it was and whether it
-                            happened when signing up.
+                            banned picture, that goes in the admin log too, with which picture it was, whether it was uploaded as
+                            a banner and whether it happened when signing up. If a site admin changes or removes your status, or
+                            removes your profile picture or banner picture, that's in the admin log too, but not what the status said.
                         </p>
                         <h3>What isn't stored</h3>
                         <p>

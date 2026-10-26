@@ -118,6 +118,8 @@
     // is picked (set from here, as the content security policy doesn't allow style attributes). A new picture is
     // made smaller and turned into JPEG XL by the JPEG XL worker (chatJxlWorker.js) straight away, and put back in the
     // file input in place of the original, as the server only takes JPEG XL. Save waits until it's ready.
+    // A small PNG of it goes in the hidden data-banner-check input too: the server can't read JPEG XL, so that's what it
+    // compares with the banned pictures list (assets/php/bannedAvatars.php).
     const banner = document.querySelector('[data-banner]');
     if (banner) {
         const form = banner.closest('form');
@@ -125,6 +127,7 @@
         const colors = banner.querySelector('[data-banner-colors]');
         const upload = banner.querySelector('[data-banner-upload]');
         const input = banner.querySelector('[data-banner-input]'); // not there while banner pictures are off
+        const checkInput = banner.querySelector('[data-banner-check]');
         const status = banner.querySelector('[data-banner-status]');
         const saveButton = form.querySelector('[data-profile-save]');
         const maxBytes = Number(banner.dataset.bannerMaxBytes);
@@ -170,6 +173,7 @@
             const id = ++converting;
             if (picked) URL.revokeObjectURL(picked.url);
             picked = null;
+            if (checkInput) checkInput.value = '';
             if (!file) {
                 setStatus('');
                 saveButton.disabled = false;
@@ -181,18 +185,25 @@
             saveButton.disabled = true;
             setStatus('Getting your picture ready…');
             try {
-                const buffer = await bannerJxlEncode(banner.dataset.jxlWorker, file, Number(banner.dataset.bannerMaxSide));
+                const buffer = await bannerJxlJob(banner.dataset.jxlWorker, { type: 'encode', file, maxSide: Number(banner.dataset.bannerMaxSide) });
                 if (id !== converting) return;
                 if (buffer.byteLength > maxBytes) throw new Error('tooBig');
                 const jxl = new File([buffer], 'banner.jxl', { type: 'image/jxl' });
+                // Made from the JPEG XL rather than the original, so it's the picture the server gets, whatever kind it was
+                const check = await bannerCheckCopy(banner.dataset.jxlWorker, buffer.slice(0), Number(checkInput.dataset.bannerCheck));
+                if (id !== converting) return;
                 const files = new DataTransfer();
                 files.items.add(jxl);
                 input.files = files.files; // doesn't fire change again
+                const checkFiles = new DataTransfer();
+                checkFiles.items.add(check);
+                checkInput.files = checkFiles.files;
                 const tickets = Math.max(1, Math.ceil(jxl.size / ticketBytes));
                 setStatus(`Ready: ${sizeLabel(jxl.size)}, takes ${tickets} ${tickets === 1 ? 'ticket' : 'tickets'}. Save profile to use it.`);
             } catch (error) {
                 if (id !== converting) return;
                 input.value = '';
+                checkInput.value = '';
                 URL.revokeObjectURL(picked.url);
                 picked = null;
                 show();
@@ -208,21 +219,42 @@
         show();
     }
 
-    // One JPEG XL job (chatJxlWorker.js) in a worker of its own, which is stopped again once it's done
-    function bannerJxlEncode(url, file, maxSide) {
+    // One JPEG XL job (chatJxlWorker.js) in a worker of its own, which is stopped again once it's done. Gives back the
+    // .jxl file's buffer for an encode, and { pixels, width, height } for a decode.
+    function bannerJxlJob(url, message, transfer = []) {
         return new Promise((resolve, reject) => {
             const worker = new Worker(url, { type: 'module' });
             worker.addEventListener('message', ({ data }) => {
                 worker.terminate();
                 if (data.error) reject(new Error(data.error));
-                else resolve(data.buffer);
+                else resolve(message.type === 'encode' ? data.buffer : data);
             });
             worker.addEventListener('error', () => {
                 worker.terminate();
                 reject(new Error('workerFailed'));
             });
-            worker.postMessage({ id: 1, type: 'encode', file, maxSide });
+            worker.postMessage({ id: 1, ...message }, transfer);
         });
+    }
+
+    // The banner's check copy for the banned pictures list: the JPEG XL in buffer as a PNG, at most maxSide on its
+    // longest side. admin.js makes the same one when an admin bans a banner.
+    async function bannerCheckCopy(url, buffer, maxSide) {
+        const { pixels, width, height } = await bannerJxlJob(url, { type: 'decode', buffer }, [buffer]);
+        const full = document.createElement('canvas');
+        full.width = width;
+        full.height = height;
+        full.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(pixels), width, height), 0, 0);
+        const scale = Math.min(1, maxSide / Math.max(width, height));
+        const small = document.createElement('canvas');
+        small.width = Math.max(1, Math.round(width * scale));
+        small.height = Math.max(1, Math.round(height * scale));
+        const context = small.getContext('2d');
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(full, 0, 0, small.width, small.height);
+        const blob = await new Promise((resolve) => small.toBlob(resolve, 'image/png'));
+        if (!blob) throw new Error('checkFailed');
+        return new File([blob], 'check.png', { type: 'image/png' });
     }
 
     // The message sound plays when its box is ticked, so the user hears what it sounds like (assets/js/messageSound.js)

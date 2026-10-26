@@ -85,15 +85,20 @@ function adminLogText(array $entry): string
     $amount = (int) ($data['amount'] ?? 0);
 
     $text = match ($entry['adminLogAction']) {
-        'user.ban' => !empty($data['avatar']) ? 'Banned {user} and their profile picture' : null,
+        'user.ban' => !empty($data['avatar']) || !empty($data['banner'])
+            ? 'Banned {user} and their ' . implode(' and ', array_keys(array_filter(['profile picture' => !empty($data['avatar']), 'banner picture' => !empty($data['banner'])])))
+            : null,
         'user.autoGhostBan' => isset($data['fromUserId'])
             ? '{user} was ghost banned automatically for using a browser ghost-banned account #' . (int) $data['fromUserId'] . ' uses' : null,
         'user.autoban' => isset($data['pictureId'])
             ? '{user} was banned automatically for ' . (!empty($data['signup']) ? 'signing up with' : 'uploading')
-                . ' banned picture #' . (int) $data['pictureId'] : null,
+                . ' banned picture #' . (int) $data['pictureId'] . (!empty($data['banner']) ? ' as their banner' : '') : null,
         'user.avatarBan' => isset($data['pictureId'])
             ? 'Removed {user}\'s profile picture and banned it as picture #' . (int) $data['pictureId'] : null,
+        'user.bannerBan' => isset($data['pictureId'])
+            ? 'Removed {user}\'s banner picture and banned it as picture #' . (int) $data['pictureId'] : null,
         'user.bio' => !empty($data['removed']) ? 'Removed {user}\'s bio' : null,
+        'user.status' => !empty($data['removed']) ? 'Removed {user}\'s status' : null,
         'user.block' => is_string($data['mode'] ?? null) && isset(HBHUB_BLOCK_MODES[$data['mode']])
             ? 'Set {user}\'s gambling block to "' . HBHUB_BLOCK_MODES[$data['mode']] . '"' : null,
         'user.chips' => $amount > 0 ? 'Gave {user} ' . number_format($amount) . ' chips'
