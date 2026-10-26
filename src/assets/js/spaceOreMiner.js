@@ -971,13 +971,39 @@
         setSaveText('Stopped: playing somewhere else.', true);
     }
 
+    // ----- The game's timers. The browser handles clicks and drawing before timers, so with an auto-clicker going and
+    // the page slow to draw, setInterval could go seconds without a turn even with every click handled in time: the
+    // store, Auto Buy, saving and the watchdog's beat all stopped while the clicks and frames went on, which the
+    // watchdog took for a freeze (crash reports #4 and #6). So each timer made with every() is also run by the frame
+    // loop (runLateTimers()) once it's TIMER_LATE_MS late.
+    const TIMER_LATE_MS = 500;
+    const timers = []; // {ms, run, at (performance.now() of its last run)}
+
+    function every(ms, run) {
+        const timer = { ms, run, at: performance.now() };
+        timers.push(timer);
+        setInterval(() => {
+            timer.at = performance.now();
+            run();
+        }, ms);
+    }
+
+    function runLateTimers() {
+        const now = performance.now();
+        for (const timer of timers) {
+            if (now - timer.at < timer.ms + TIMER_LATE_MS) continue;
+            timer.at = now;
+            timer.run();
+        }
+    }
+
     // Saves every so often while the page is visible, and when it's hidden or closed
-    setInterval(() => {
+    every(1000, () => {
         step('save timer');
         if (isPlaying && !document.hidden && Date.now() - lastSentAt >= (saveFailed ? 10 : CONFIG.saveSeconds) * 1000) save();
         renderSave();
         step(null);
-    }, 1000);
+    });
     document.addEventListener('visibilitychange', () => {
         note(document.hidden ? 'Hidden' : 'Shown');
         beat(); // straight away, so the watchdog stops (or starts) watching now, not a second later
@@ -1005,10 +1031,15 @@
         oreText.textContent = format(state.ore, { long: true }).replace(' ', '\n');
     }
 
-    function frame() {
+    let lastFrameAt = 0;
+    let frameGap = 0; // ms between the last two frames, for mine(): how slow the page is to draw right now
+
+    function frame(at) {
         if (!isPlaying) return;
         step('frame');
         framesSinceBeat++; // for the frame rate in crash reports (see beat())
+        if (lastFrameAt > 0) frameGap = at - lastFrameAt;
+        lastFrameAt = at;
         if (!document.hidden) {
             catchUp();
             showOre();
@@ -1016,11 +1047,12 @@
         }
         requestAnimationFrame(frame);
         step(null);
+        runLateTimers();
     }
 
     // The slower parts, a few times a second. Each part tells the watchdog what it's doing, so a freeze in one of them
     // says which.
-    setInterval(() => {
+    every(200, () => {
         if (!isPlaying || document.hidden) return;
         forgetFieldBox(); // the page may have moved it (see fieldBox())
         step('tick: achievements');
@@ -1043,20 +1075,20 @@
         step('tick: menu');
         renderMenu();
         step(null);
-    }, 200);
+    });
     // Auto Buy on its own, quicker timer (10 times a second, twice the tick above), so it keeps up with fast production
-    setInterval(() => {
+    every(100, () => {
         if (!isPlaying || document.hidden) return;
         step('tick: Auto Buy');
         autoBuy();
         step(null);
-    }, 100);
-    setInterval(() => {
+    });
+    every(1000, () => {
         if (!isPlaying || document.hidden || !statsPopup.open) return;
         step('stats');
         renderStats();
         step(null);
-    }, 1000);
+    });
 
     // withNews: a new line in the news ticker too (not for what Autopilot and Auto Crunch do every few seconds)
     function renderAll(withNews = true) {
@@ -2121,7 +2153,9 @@
         // they only count until it's caught up. The browser always handles clicks waiting before its timers, so without
         // this they piled up and the game's timers never got a turn: the store, Auto Buy and the watchdog's beat all
         // stopped, which looked like a freeze (crash report #3)
-        if (performance.now() - event.timeStamp > CLICK_BEHIND_MS) return;
+        // Slow to draw (under 1000 / SLOW_DRAW_MS frames a second): the bits flying off each click are much of what it
+        // has to draw, so they wait until it's quicker again (crash reports #4 and #6, at about 14 frames a second)
+        if (performance.now() - event.timeStamp > CLICK_BEHIND_MS || frameGap > SLOW_DRAW_MS) return;
         const box = fieldBox();
         const x = fromKeyboard ? box.width / 2 : event.clientX - box.left;
         const y = fromKeyboard ? box.height / 2 : event.clientY - box.top;
@@ -2134,6 +2168,7 @@
     }
 
     const CLICK_BEHIND_MS = 100; // a click handled this long after it happened: mine() is behind
+    const SLOW_DRAW_MS = 50; // this long between frames: the page is slow to draw (under 20 frames a second)
 
     // Where the picture is on the screen, for the clicks' bursts. Kept, because asking for it right after the last
     // click's bits were added makes the browser lay the whole page out there and then, which on a slow computer took
@@ -3128,7 +3163,7 @@
 
     note('Opened on the ' + root.dataset.view + ' view');
     watchSlowFrames();
-    setInterval(beat, BEAT_MS);
+    every(BEAT_MS, beat);
     askAboutCrashes();
     save({ claim: true });
 })();
