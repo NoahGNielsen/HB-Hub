@@ -202,13 +202,14 @@ const HBHUB_TERMS_UPDATED = '26 October 2026';
                         <p>Depending on how serious it is, admins can:</p>
                         <ul>
                             <li>delete messages, attachments, pictures, banner pictures or groups, and ban a profile picture or banner picture they delete, so it can't be used again,</li>
+                            <li>unpin messages pinned in a chat,</li>
                             <li>change or remove a name, bio or status,</li>
                             <li>reset or take away chips, or remove game results from the leaderboards,</li>
                             <li>take away attachment tickets, so fewer (or no) new attachments can be sent,</li>
                             <li>block the Casino and Games for the account, all the time. Unlike a block you set yourself, it can't be turned off in your settings, only an admin can lift it,</li>
                             <li>
                                 ghost ban the account, for a while or for good, without telling the person. The chat keeps
-                                working like normal for them, but what they do in it (messages, attachments, edits, reactions,
+                                working like normal for them, but what they do in it (messages, attachments, edits, reactions, pins,
                                 and the chats they start or add people to) only shows to themselves and site admins. Nobody
                                 else sees it or gets a notification or message request from it. A new account (up to 3 days
                                 old) that's made or used in the same browser is ghost banned too,

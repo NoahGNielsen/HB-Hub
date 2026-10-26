@@ -9,7 +9,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_CONDUCT_UPDATED = '25 October 2026';
+const HBHUB_CONDUCT_UPDATED = '26 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -100,8 +100,9 @@ const HBHUB_CONDUCT_UPDATED = '25 October 2026';
                             <li>Nicknames you give people should be ones they'd be happy to see.</li>
                         </ul>
                         <p>
-                            Group admins can delete messages in their group, but if something serious happens there, still tell a
-                            site admin, so it can be dealt with properly.
+                            Group admins can delete messages in their group and unpin anything pinned in it, but if something
+                            serious happens there, still tell a site admin, so it can be dealt with properly. Anyone can pin a
+                            message for the whole chat to see, so pin what's useful to everyone, not something to embarrass someone.
                         </p>
                         <p>
                             Class chats are different: everyone in your class is put in one automatically, and nobody in it is a

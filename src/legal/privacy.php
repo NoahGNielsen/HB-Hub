@@ -153,6 +153,12 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 Reactions you put on messages: which emoji, on which message, and when. Taking a reaction back
                                 deletes it.
                             </li>
+                            <li>
+                                Messages you pin in a chat: which message, that you pinned it and when, which everyone in the
+                                chat can see. Pinning or unpinning also puts a notice in the chat saying who did it. Unpinning
+                                (by you, a group admin, the other person in a DM, or a site admin) clears who pinned it and
+                                when, but the notices stay like other messages.
+                            </li>
                             <li>The chats you're in, group names, icons and backgrounds, and nicknames you give people.</li>
                             <li>
                                 While you're typing a message in a chat, the time you last typed is kept with your membership
@@ -178,7 +184,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             </li>
                             <li>
                                 Ghost bans: a site admin can ghost ban an account that breaks the rules, without telling it.
-                                What it does in chats from then on (messages, attachments, edits, reactions, and the chats it
+                                What it does in chats from then on (messages, attachments, edits, reactions, pins, and the chats it
                                 starts or adds people to) is stored like anything else, but marked so that only that account
                                 and site admins can see it. People it starts a chat with or adds to a group are stored as
                                 invited, marked the same way, so they never see the chat or get a request or notification about

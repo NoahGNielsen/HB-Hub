@@ -603,12 +603,15 @@ CREATE TABLE `HBHub-Messages` (
   `messageDeletedTimestamp` datetime DEFAULT NULL,
   `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin\r\n2 Deleted by a site admin (admin panel)',
   `messageIsEdited` tinyint NOT NULL DEFAULT '0',
-  `messageReplyToId` bigint UNSIGNED DEFAULT NULL,
+  `messageReplyToId` bigint UNSIGNED DEFAULT NULL COMMENT 'The message it replies to. On a pin or unpin notice (messageEventType 13 and 14), the message that was pinned or unpinned',
   `messageEvent` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 A normal message\r\n1 A notice about a change in the chat, made by userId (messageEventType says which)',
-  `messageEventType` tinyint UNSIGNED DEFAULT NULL COMMENT 'NULL for a normal message\r\n1 Renamed the group (messageContent is the new name, NULL when taken away)\r\n2 Changed the group icon\r\n3 Removed the group icon\r\n4 Changed the background\r\n5 Reset the background\r\n6 Made messageEventUserId a group admin\r\n7 Removed messageEventUserId as group admin\r\n8 Kicked messageEventUserId\r\n9 Joined the group\r\n10 Left the chat\r\n11 Added messageEventUserId to the group\r\n12 Became the group owner when the owner left\r\n100 + one of these: the same change made by a site admin from the admin panel (101 renamed the group), the notice says "A site admin"',
+  `messageEventType` tinyint UNSIGNED DEFAULT NULL COMMENT 'NULL for a normal message\r\n1 Renamed the group (messageContent is the new name, NULL when taken away)\r\n2 Changed the group icon\r\n3 Removed the group icon\r\n4 Changed the background\r\n5 Reset the background\r\n6 Made messageEventUserId a group admin\r\n7 Removed messageEventUserId as group admin\r\n8 Kicked messageEventUserId\r\n9 Joined the group\r\n10 Left the chat\r\n11 Added messageEventUserId to the group\r\n12 Became the group owner when the owner left\r\n13 Pinned the message messageReplyToId\r\n14 Unpinned the message messageReplyToId\r\n100 + one of these: the same change made by a site admin from the admin panel (101 renamed the group), the notice says "A site admin"',
   `messageEventUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who the notice is about (messageEventType 6, 7, 8, 11 and 12)',
   `messageIsGhost` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 Sent while the user was ghost banned, so only they (and site admins) see it',
-  `messageGhostContent` varchar(2500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'An edit made while ghost banned to a message everyone sees: shown only to the sender, NULL otherwise'
+  `messageGhostContent` varchar(2500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'An edit made while ghost banned to a message everyone sees: shown only to the sender, NULL otherwise',
+  `messagePinnedTimestamp` datetime DEFAULT NULL COMMENT 'When it was pinned to the chat, NULL while it isn''t pinned (unpinning sets it back)',
+  `messagePinnedBy` int UNSIGNED DEFAULT NULL COMMENT 'Who pinned it, NULL while it isn''t pinned',
+  `messagePinIsGhost` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 Pinned while messagePinnedBy was ghost banned, so only they (and site admins) see it pinned'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -1136,7 +1139,9 @@ ALTER TABLE `HBHub-Messages`
   ADD KEY `chatId` (`chatId`),
   ADD KEY `messageTimestamp` (`messageSentTimestamp`,`chatId`),
   ADD KEY `fk_messages_replyto` (`messageReplyToId`),
-  ADD KEY `fk_messages_eventuser` (`messageEventUserId`);
+  ADD KEY `fk_messages_eventuser` (`messageEventUserId`),
+  ADD KEY `messagePinned` (`chatId`,`messagePinnedTimestamp`),
+  ADD KEY `fk_messages_pinnedby` (`messagePinnedBy`);
 
 --
 -- Indexes for table `HBHub-Notifications`
@@ -1640,6 +1645,7 @@ ALTER TABLE `HBHub-Messages`
   ADD CONSTRAINT `fk_messages_chat` FOREIGN KEY (`chatId`) REFERENCES `HBHub-Chats` (`chatId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_messages_replyto` FOREIGN KEY (`messageReplyToId`) REFERENCES `HBHub-Messages` (`messageId`),
   ADD CONSTRAINT `fk_messages_eventuser` FOREIGN KEY (`messageEventUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_messages_pinnedby` FOREIGN KEY (`messagePinnedBy`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_messages_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --

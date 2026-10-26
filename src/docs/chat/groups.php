@@ -41,7 +41,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 </thead>
                                 <tbody>
                                     <tr><td>Group Owner</td><td>Everything an admin can, and also kick admins or remove them as admin. Whoever made the group is its owner, and there's only one.</td></tr>
-                                    <tr><td>Group Admin</td><td>Rename the group, change or remove its icon, change its background, make members admin, kick members, delete anyone's messages and delete the whole group.</td></tr>
+                                    <tr><td>Group Admin</td><td>Rename the group, change or remove its icon, change its background, make members admin, kick members, delete anyone's messages, <a href="/docs/chat/#pins">unpin</a> anyone's pinned messages and delete the whole group.</td></tr>
                                     <tr><td>Member</td><td>Write, react, add people and leave.</td></tr>
                                 </tbody>
                             </table>
@@ -72,7 +72,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-notices">Notices</h2>
                         <p>
                             Changes to a group show up in the chat as small notices, so everyone knows what happened: a new name,
-                            icon or background, someone joining, leaving, being added or kicked, and someone becoming admin or owner.
+                            icon or background, someone joining, leaving, being added or kicked, someone becoming admin or owner, and messages being pinned or unpinned.
                         </p>
                     </section>
 

@@ -3,8 +3,9 @@
 | | |
 |---|---|
 | **Direct messages & group chats** | Message requests (with Block, to stop someone sending more), replies, emoji reactions, edits, deletions and unread counts |
+| **Pinned messages** | Anyone in a chat can pin a message (up to 50 per chat) from the message menu; it gets a pin on its bubble and a notice in the chat. The pin in the chat's header lists them with Jump. Whoever pinned it, group admins, either person in a DM and site admins (admin panel) can unpin |
 | **Class chats** | Everyone at HTX is put in their class's group chat automatically (no message request). It follows the class through the years and is renamed every July 1st (1.X → 2.X). Nobody is an admin, and it can't be left or added to; changing class moves you to the other one |
-| **Group roles** | Group owners and admins can rename the group, change its icon and background, and add, kick, mute and promote members |
+| **Group roles** | Group owners and admins can rename the group, change its icon and background, unpin anyone's pins, and add, kick, mute and promote members |
 | **Message groups** | Messages sent in a row by the same person (less than 10 minutes apart) are shown together, and pointing at one shows when it was sent |
 | **Typing indicator** | "Alice is typing..." shows just above the message box for everyone else in the chat while someone is typing (up to 3 names, then "Several people are typing..."). It goes away when they send, empty the box or stop for a few seconds. Comes along with the chat's normal poll, so it costs no extra requests |
 | **Chat notices** | Changes in a group (new name, new admin, someone joined) show up in the chat |

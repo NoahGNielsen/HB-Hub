@@ -56,6 +56,7 @@ const ADMIN_LOG_ACTIONS = [
     'user.delete' => 'Deleted {user}\'s account',
     'person.view' => 'Opened the person page of {user} (every account used in the same browsers)',
     'message.delete' => 'Deleted a message from {user} in {chat}',
+    'message.unpin' => 'Unpinned a message from {user} in {chat}',
     'chat.view' => 'Opened the admin panel of {chat}',
     'chat.rename' => 'Renamed {chat}',
     'chat.icon' => 'Removed the icon of {chat}',

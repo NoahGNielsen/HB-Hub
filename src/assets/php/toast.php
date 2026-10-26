@@ -34,6 +34,7 @@ const HBHUB_TOASTS = [
     'adminChipsAdded' => 'The chips have been added.',
     'adminChipsRemoved' => 'The chips have been taken away.',
     'adminMessageDeleted' => 'The message has been deleted.',
+    'adminMessageUnpinned' => 'The message has been unpinned.',
     'adminMessagesDeleted' => 'All of the user\'s messages have been deleted.',
     'adminAttachmentDeleted' => 'The attachment has been deleted, and its tickets are free again.',
     'adminAttachmentsDeleted' => 'All of the user\'s attachments have been deleted, and their tickets are free again.',

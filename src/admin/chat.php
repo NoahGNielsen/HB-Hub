@@ -5,11 +5,11 @@
 //
 // Shows the chat, its members, and its messages with the notices about changes to it, newest first. The actions are one
 // form per card, like admin/user.php: change a group's name, remove its icon, change or reset the background, delete
-// the chat, kick members and delete messages. Each change shows up in the chat as made by "A site admin" (chat.php),
-// and someone kicked gets a notification that says the same. Like in admin/user.php, site admins can't be kicked and
-// their messages can't be deleted here. A deleted chat can only be looked at.
+// the chat, kick members, delete messages and unpin pinned messages. Each change shows up in the chat as made by
+// "A site admin" (chat.php), and someone kicked gets a notification that says the same. Like in admin/user.php, site
+// admins can't be kicked and their messages can't be deleted here. A deleted chat can only be looked at.
 // The side menu (adminPageMenuHtml()) links to the cards in the order they're on the page: Information, then Manage
-// (name and icon, background), Activity (members, messages) and the Danger zone (delete) last.
+// (name and icon, background), Activity (members, pinned messages, messages) and the Danger zone (delete) last.
 // Opening the page and every change are logged in the admin log (assets/php/adminLog.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
@@ -64,7 +64,7 @@ function adminChatMessages(PDO $db, int $chatId, ?int $beforeId, int $limit): ar
 {
     $statement = $db->prepare('SELECT m.messageId, m.userId, u.userName AS senderName, u.userRole AS senderRole,
             m.messageContent, ' . hbHubChatAttachmentsCountSql('m') . ' AS attachmentCount, m.messageSentTimestamp, m.messageDeletedTimestamp, m.messageDeletedByAdmin,
-            m.messageIsEdited, m.messageIsGhost, m.messageGhostContent,
+            m.messageIsEdited, m.messageIsGhost, m.messageGhostContent, m.messagePinnedTimestamp,
             m.messageEvent, m.messageEventType, m.messageEventUserId, eu.userName AS eventUserName
         FROM `HBHub-Messages` m
         JOIN `HBHub-Users` u ON u.userId = m.userId
@@ -72,6 +72,25 @@ function adminChatMessages(PDO $db, int $chatId, ?int $beforeId, int $limit): ar
         WHERE m.chatId = ?' . ($beforeId !== null ? ' AND m.messageId < ?' : '') . '
         ORDER BY m.messageId DESC LIMIT ' . $limit);
     $statement->execute($beforeId !== null ? [$chatId, $beforeId] : [$chatId]);
+    return $statement->fetchAll();
+}
+
+/**
+ * The chat's pinned messages, the newest pin first, with who pinned each one (their real name) and when. Pins made while
+ * ghost banned (messagePinIsGhost, assets/php/chat.php) too, which only whoever made them sees pinned in the chat.
+ * A deleted message isn't shown pinned in the chat anymore, so it isn't here either.
+ */
+function adminChatPins(PDO $db, int $chatId): array
+{
+    $statement = $db->prepare('SELECT m.messageId, m.userId, u.userName AS senderName, m.messageContent,
+            ' . hbHubChatAttachmentsCountSql('m') . ' AS attachmentCount, m.messageSentTimestamp, m.messageIsGhost, m.messageGhostContent,
+            m.messagePinnedTimestamp, m.messagePinnedBy, pu.userName AS pinnedByName, m.messagePinIsGhost
+        FROM `HBHub-Messages` m
+        JOIN `HBHub-Users` u ON u.userId = m.userId
+        LEFT JOIN `HBHub-Users` pu ON pu.userId = m.messagePinnedBy
+        WHERE m.chatId = ? AND m.messagePinnedTimestamp IS NOT NULL AND m.messageDeletedTimestamp IS NULL AND m.messageEvent = 0
+        ORDER BY m.messagePinnedTimestamp DESC, m.messageId DESC');
+    $statement->execute([$chatId]);
     return $statement->fetchAll();
 }
 
@@ -184,6 +203,17 @@ switch ($adminAction) {
         }
         adminChatRedirect($chatId, 'adminMessageDeleted', 'messages', $adminMessagesBefore !== null ? '&before=' . $adminMessagesBefore : '');
 
+    case 'unpin':
+        // Anyone's pin, with a notice in the chat that a site admin unpinned it (chatUnpin(), none for a ghost's pin)
+        $messageId = $_POST['message'] ?? null;
+        if (is_string($messageId) && ctype_digit($messageId) && strlen($messageId) <= 19
+            && chatUnpin($db, $adminId, $chatId, (int) $messageId, true)) {
+            $statement = $db->prepare('SELECT userId FROM `HBHub-Messages` WHERE messageId = ?');
+            $statement->execute([(int) $messageId]);
+            adminLog($db, $adminId, 'message.unpin', (int) $statement->fetchColumn(), $chatId, ['messageId' => (int) $messageId]);
+        }
+        adminChatRedirect($chatId, 'adminMessageUnpinned', 'pins', $adminMessagesBefore !== null ? '&before=' . $adminMessagesBefore : '');
+
     case 'deleteChat':
         // Gone for everyone in it, like when a group admin deletes a group, but marked as done by a site admin
         $db->prepare('UPDATE `HBHub-Chats` SET chatStatus = ?, chatBannedTimestamp = NOW() WHERE chatId = ? AND chatStatus = ?')
@@ -202,6 +232,7 @@ $adminIconSrc = adminChatIconUrl($chatId, $chat['chatIconAttachmentId']);
 
 $adminMembers = adminChatMembers($db, $chatId);
 $adminInvited = count(array_filter($adminMembers, fn (array $member): bool => !$member['userAcknowledgedJoin']));
+$adminPins = adminChatPins($db, $chatId);
 
 // One more than is shown, to know whether there are older ones
 $adminMessages = adminChatMessages($db, $chatId, $adminMessagesBefore, ADMIN_MESSAGES_SHOWN + 1);
@@ -238,7 +269,7 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
                 'Manage' => $adminIsActive
                     ? ($adminIsGroup || $adminIconSrc !== null ? ['group' => $adminIsGroup ? 'Name and icon' : 'Icon'] : []) + ['background' => 'Background']
                     : [],
-                'Activity' => ['members' => 'Members', 'messages' => 'Messages'],
+                'Activity' => ['members' => 'Members', 'pins' => 'Pinned messages', 'messages' => 'Messages'],
                 ADMIN_MENU_DANGER => $adminIsActive ? ['delete' => 'Delete chat'] : [],
             ]) ?>
 
@@ -458,6 +489,63 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
                     <?php endif; ?>
                 </section>
 
+                <!-- Pinned messages, the newest pin first -->
+                <section class="settings-card" id="pins" aria-labelledby="admin-pins-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-pins-heading">Pinned messages</h2>
+                            <?php if ($adminIsActive): ?>
+                                <p class="settings-intro">
+                                    Everyone in the chat can pin messages, and see them under the pin at the top of the chat.
+                                    Unpinning one here puts a notice in the chat that a site admin unpinned it.
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                        <span class="settings-status"><?= count($adminPins) ?></span>
+                    </div>
+                    <?php if ($adminPins === []): ?>
+                        <p class="settings-hint">Nothing is pinned in this chat.</p>
+                    <?php else: ?>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table admin-messages">
+                                <thead><tr><th scope="col">Pinned</th><th scope="col">By</th><th scope="col">From</th><th scope="col">Message</th><th scope="col"><span class="settings-visually-hidden">Actions</span></th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($adminPins as $pin): ?>
+                                        <tr>
+                                            <td class="admin-nowrap"><?= adminTime($pin['messagePinnedTimestamp']) ?></td>
+                                            <td>
+                                                <?php if ($pin['pinnedByName'] !== null): ?>
+                                                    <a class="admin-link" href="/admin/user?user=<?= (int) $pin['messagePinnedBy'] ?>"><?= htmlspecialchars($pin['pinnedByName']) ?></a>
+                                                <?php else: ?>
+                                                    &ndash;
+                                                <?php endif; ?>
+                                                <?php if ($pin['messagePinIsGhost']): ?>
+                                                    <span class="settings-status admin-status-ghost" title="Pinned while ghost banned">Only they see it pinned</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><a class="admin-link" href="/admin/user?user=<?= (int) $pin['userId'] ?>"><?= htmlspecialchars($pin['senderName']) ?></a></td>
+                                            <td class="admin-message-text">
+                                                <?= adminMessageHtml($pin) ?>
+                                                <span class="admin-small">Sent <?= adminTime($pin['messageSentTimestamp']) ?></span>
+                                            </td>
+                                            <td>
+                                                <?php if ($adminIsActive): ?>
+                                                    <form action="<?= $adminFormAction ?><?= $adminMessagesBefore !== null ? '&amp;before=' . $adminMessagesBefore : '' ?>#pins"
+                                                          method="post" data-confirm="Unpin this message?">
+                                                        <input type="hidden" name="action" value="unpin">
+                                                        <input type="hidden" name="message" value="<?= (int) $pin['messageId'] ?>">
+                                                        <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Unpin</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </section>
+
                 <!-- Messages, with the notices about changes to the chat -->
                 <section class="settings-card" id="messages" aria-labelledby="admin-messages-heading">
                     <div class="settings-card-head">
@@ -495,6 +583,9 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
                                                         <span class="admin-small"><?= $isDeleted
                                                             ? htmlspecialchars(ADMIN_MESSAGE_DELETED_LABELS[(int) $message['messageDeletedByAdmin']] ?? 'Deleted') . ' ' . adminTime($message['messageDeletedTimestamp'])
                                                             : 'Edited' ?></span>
+                                                    <?php endif; ?>
+                                                    <?php if ($message['messagePinnedTimestamp'] !== null && !$isDeleted): ?>
+                                                        <a class="admin-small admin-link" href="#pins">Pinned</a>
                                                     <?php endif; ?>
                                                 <?php endif; ?>
                                             </td>

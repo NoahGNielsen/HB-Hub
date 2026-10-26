@@ -755,7 +755,7 @@ chatPart(() => {
         if (action === 'makeAdmin') {
             confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Make ${name} an admin?`;
             confirmDialog.querySelector('[data-member-confirm-text]').textContent =
-                `${name} will be able to rename the group, change its icon and background, delete messages, make others admin, kick members and delete the group.`;
+                `${name} will be able to rename the group, change its icon and background, delete messages, unpin anyone's pins, make others admin, kick members and delete the group.`;
             submit.textContent = 'Make admin';
         } else if (action === 'removeAdmin') {
             confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Remove ${name} as admin?`;
@@ -1275,8 +1275,10 @@ chatPart(() => {
 });
 
 // Message menu: right-click a message in the open chat (or use the menu key / Shift+F10 on it) to react to it, reply to
-// it, or mark the chat unread from it on. Your own messages can also be edited or deleted,
+// it, pin it, or mark the chat unread from it on. Your own messages can also be edited or deleted,
 // and group admins can delete anyone's (shown as deleted by a group admin).
+// Pinned messages get Unpin message instead, when the Pinned messages popup's list says the user can (data-pin-unpinnable:
+// their own pin, a group admin, or a DM). Pinning isn't there while muted, like reactions.
 // Along the top are the emoji used most recently (chatQuickReactions()) and + for all of them, which the reactions part
 // below handles (chat:react and chat:react-more). An emoji the user already reacted with is lit up, and takes it back.
 // Site admins also get Admin panel on other people's messages, which opens the sender's admin panel (admin/user.php).
@@ -1292,6 +1294,8 @@ chatPart((signal) => {
     const replyInput = composer.querySelector('[data-reply-input]');
     const replyBar = composer.querySelector('[data-reply-bar]');
     const unreadForm = document.querySelector('[data-message-unread]');
+    const pinForm = document.querySelector('[data-message-pin]');
+    const pinsList = document.querySelector('[data-pins-list]');
     const editDialog = document.querySelector('.chat-message-edit');
     const editForm = editDialog.querySelector('form');
     const editText = editForm.elements.content;
@@ -1395,6 +1399,10 @@ chatPart((signal) => {
             if (canReact) fillReactions(item);
             menu.querySelector('[data-menu-action="reply"]').hidden = isDeleted;
             menu.querySelector('[data-menu-action="edit"]').hidden = !isOwn || !item.querySelector('[data-message-text]');
+            const isPinned = item.hasAttribute('data-message-pinned');
+            const pin = pinsList.querySelector(`[data-pin-id="${item.dataset.messageId}"]`);
+            menu.querySelector('[data-menu-action="pin"]').hidden = !canReact || isPinned;
+            menu.querySelector('[data-menu-action="unpin"]').hidden = isDeleted || !isPinned || !pin?.hasAttribute('data-pin-unpinnable');
             menu.querySelectorAll('[data-menu-delete]').forEach((menuItem) => { menuItem.hidden = !canDelete; });
             const isFromOther = !item.hasAttribute('data-message-own');
             siteAdminItems.forEach((menuItem) => {
@@ -1476,6 +1484,16 @@ chatPart((signal) => {
             unreadForm.elements.message.value = item.dataset.messageId;
             chatSubmit(unreadForm);
         },
+        pin(item) {
+            pinForm.elements.action.value = 'pin';
+            pinForm.elements.message.value = item.dataset.messageId;
+            chatSubmit(pinForm);
+        },
+        unpin(item) {
+            pinForm.elements.action.value = 'unpin';
+            pinForm.elements.message.value = item.dataset.messageId;
+            chatSubmit(pinForm);
+        },
     };
 
     menu.addEventListener('click', (event) => {
@@ -1542,6 +1560,7 @@ chatPart((signal) => {
         }));
     }
 
+    // Pin and unpin notices link to their message the same way
     messages.addEventListener('click', (event) => {
         const link = event.target.closest('[data-reply-link]');
         if (!link) return;
@@ -1549,10 +1568,75 @@ chatPart((signal) => {
         jumpToId(link.dataset.replyId);
     });
 
+    // Jump in the Pinned messages popup (the pins part below)
+    messages.addEventListener('chat:jump', (event) => jumpToId(event.detail.messageId));
+
     // A mention notification links to its message (#message-id), which is jumped to the same way once the page is up.
     // After the rest of this file has run, as the part that loads older messages comes further down.
     const linked = /^#message-(\d+)$/.exec(location.hash);
     if (linked) setTimeout(() => jumpToId(linked[1]));
+});
+
+// Pinned messages popup: the pin in the chat's header lists the messages pinned in the open chat, the newest pin first
+// (Pin message in the message menu above pins one). Jump closes it and scrolls to the message, loading back to it when
+// it isn't on the page yet (chat:jump, the message menu part). Unpin is a plain form post that opens it again (?pins=1),
+// and a pin that didn't fit opens it with ?pins=full, which shows the line saying why.
+// Polling swaps in the list when it changed (chat:pins-update), and the messages shown are marked pinned or not from it
+// (data-message-pinned, chat.css). The ones that come in later are marked by the server already.
+chatPart(() => {
+    const dialog = document.querySelector('.chat-pins');
+    const messages = document.querySelector('[data-chat-messages]');
+    if (!dialog || !messages) return;
+
+    const openButton = document.querySelector('[data-pins-open]');
+    const list = dialog.querySelector('[data-pins-list]');
+    const count = dialog.querySelector('[data-pins-count]');
+    const empty = dialog.querySelector('[data-pins-empty]');
+    const full = dialog.querySelector('[data-pins-full]');
+
+    // The count, the empty line and the marks on the messages, from the list
+    function sync() {
+        const pinnedIds = new Set([...list.querySelectorAll('[data-pin-id]')].map((pin) => pin.dataset.pinId));
+        count.textContent = String(pinnedIds.size);
+        empty.hidden = pinnedIds.size > 0;
+        openButton.setAttribute('aria-label', `Pinned messages (${pinnedIds.size})`);
+        messages.querySelectorAll('[data-message-id]').forEach((item) => {
+            item.toggleAttribute('data-message-pinned', pinnedIds.has(item.dataset.messageId));
+        });
+    }
+
+    list.addEventListener('chat:pins-update', sync);
+
+    openButton.addEventListener('click', () => {
+        full.hidden = true;
+        dialog.showModal();
+    });
+
+    const params = new URLSearchParams(location.search);
+    const opened = params.get('pins');
+    if (opened !== null) {
+        params.delete('pins'); // so a refresh doesn't open it again
+        history.replaceState(null, '', location.pathname + (params.size > 0 ? '?' + params : ''));
+        full.hidden = opened !== 'full';
+        dialog.showModal();
+    }
+
+    dialog.addEventListener('click', (event) => {
+        // Clicking the dimmed area around the popup closes it
+        if (event.target === dialog) {
+            dialog.close();
+            return;
+        }
+        const jump = event.target.closest('[data-pin-jump]');
+        if (!jump) return;
+        event.preventDefault(); // not the link to the chat page itself (Switching chats, at the bottom of this file)
+        dialog.close();
+        messages.dispatchEvent(new CustomEvent('chat:jump', { detail: { messageId: jump.dataset.pinJump } }));
+    });
+
+    dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+        button.addEventListener('click', () => dialog.close());
+    });
 });
 
 // Attach popup: the button left of the message box opens a small menu just above it.
@@ -3356,9 +3440,10 @@ chatPart(() => {
 // and swaps in the chat list when something in it changed (new messages, unread counts, new chats).
 // The open chat's background is kept up to date too, so a new one shows up without a reload, and so are the reactions
 // on the messages already shown (?from= the oldest one), which change on old messages as well.
-// Message requests are swapped in the same way, and the requests button shows up when there are any.
-// Both come with a version (chatListV, requestsV), sent back as ?listV= and ?requestsV=: while it's still the one shown,
-// the server leaves the HTML out, as most polls nothing in them changed.
+// Message requests are swapped in the same way, and the requests button shows up when there are any. So is the list in
+// the Pinned messages popup, as messages are pinned and unpinned (which tells the pins part above, chat:pins-update).
+// All three come with a version (chatListV, requestsV, pinsV), sent back as ?listV=, ?requestsV= and ?pinsV=: while
+// it's still the one shown, the server leaves the HTML out, as most polls nothing in them changed.
 // The number of unread chats is passed on to the red number on Chat in the side bar.
 // The nav bar's request (navUpdates.js) comes along about every 15 seconds (nav:ride, ?nav=), so the chat page doesn't
 // send that one on its own as well. Its answer is "nav", passed on as nav:update.
@@ -3384,11 +3469,13 @@ chatPart((signal, isSwap) => {
     const requestsCount = document.querySelector('[data-requests-count]');
     const requestsDialog = document.querySelector('.chat-requests');
     const requestsList = document.querySelector('[data-requests-list]');
+    const pinsList = document.querySelector('[data-pins-list]');
     if (!list) return;
 
     const keepUnread = new URLSearchParams(location.search).get('unread') === '1';
     let shownChatListV = null; // the version of the chat list last swapped in, so it's only sent again when something changed
     let shownRequestsV = null; // the same for the message requests
+    let shownPinsV = null; // and the pinned messages
 
     function messageItems() {
         return messages.querySelectorAll('[data-message-id]');
@@ -3448,6 +3535,16 @@ chatPart((signal, isSwap) => {
         requestsCount.textContent = count > 9 ? '9+' : String(count);
     }
 
+    function updatePins(html, version) {
+        if (html === undefined || version === shownPinsV || !pinsList) return;
+        // Not while the popup is open, so Jump and Unpin don't move under the pointer - a later poll swaps it instead
+        if (pinsList.closest('dialog').open) return;
+
+        pinsList.innerHTML = html;
+        shownPinsV = version;
+        pinsList.dispatchEvent(new Event('chat:pins-update'));
+    }
+
     let typedAt = null; // when a key was last pressed in the message box, null while it's empty
     // The server was told they're typing, and not yet that they stopped. After a swap it may have been: sending a message
     // stops it, but a poll that went just before can land after that, so the first poll after a swap says they stopped.
@@ -3492,6 +3589,7 @@ chatPart((signal, isSwap) => {
             if (document.visibilityState === 'visible' && document.hasFocus()) params.set('looking', '1');
             if (isTyping() && !chatIsPosting) params.set('typing', '1'); // not while the message is being sent
             else if (isTypingSaved) params.set('typing', '0');
+            if (shownPinsV !== null) params.set('pinsV', shownPinsV);
         }
         if (shownChatListV !== null) params.set('listV', shownChatListV);
         if (shownRequestsV !== null) params.set('requestsV', shownRequestsV);
@@ -3519,6 +3617,7 @@ chatPart((signal, isSwap) => {
                     }));
                 }
                 addMessages(data.messages);
+                updatePins(data.pins, data.pinsV); // after the new messages, so they're marked too
                 chatShowBackground(messages, data.background);
                 showTyping(data.typing ?? []);
             }
@@ -3624,7 +3723,7 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
     // Copies of the pictures for browsers without JS. Parsed here they're real <img>s, which would all load at once.
     newMain.querySelectorAll('noscript').forEach((noscript) => noscript.remove());
 
-    // The address first, as the parts read it (?unread=1, ?linkBlocked=1, ?tooFast=1, ?requests=1, #message-)
+    // The address first, as the parts read it (?unread=1, ?linkBlocked=1, ?tooFast=1, ?requests=1, ?pins=, #message-)
     const path = address.pathname + address.search;
     if (fromHistory) history.replaceState(null, '', path + location.hash);
     else if (replace || path === location.pathname + location.search) history.replaceState(null, '', path);
