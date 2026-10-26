@@ -2,9 +2,9 @@
 // Profile page: /profile?user=id shows that user, without ?user= it shows the logged in user.
 // Banned users don't have a profile (the same as in the chat's user search).
 // A card with the banner along the top (a picture, or the colors they picked: assets/php/profile.php), the profile
-// picture over its bottom edge with a dot for online, and next to it a Message button (someone else) or the settings cog
-// (your own). Under it the name, when they were last online, their status, badges (Site admin, class, education),
-// the bio and when they joined. Everything on it is changed in settings (otherPages/settings.php).
+// picture over its bottom edge with a dot for online (hover it for how long they've been offline), their status next to
+// it, and on the right a Message button (someone else) or the settings cog (your own). Under it the name, badges
+// (Site admin, class, education), the bio and when they joined. Everything on it is changed in settings (otherPages/settings.php).
 // profile.js paints the banner's colors, as the content security policy doesn't allow style attributes, and
 // jxlImages.js draws a banner picture for browsers that can't show JPEG XL.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -59,6 +59,8 @@ if ($profile === false) {
 $profileIsOwn = (int) $profile['userId'] === (int) $hbHubUser['userId'];
 $profileIsAdmin = (int) $profile['userRole'] === PROFILE_ROLE_ADMIN;
 $profileIsOnline = (int) $profile['lastSeenSeconds'] <= HBHUB_SESSION_ONLINE_SECONDS;
+// The online dot's tooltip
+$profilePresence = $profileIsOnline ? 'Online' : 'Offline for ' . profileTimeSpan((int) $profile['lastSeenSeconds']);
 // A deleted account (userStatus NULL) and the system account that makes class chats can't be messaged
 $profileCanMessage = !$profileIsOwn && $profile['userStatus'] !== null && (int) $profile['userId'] !== HBHUB_SYSTEM_USER_ID;
 
@@ -106,8 +108,22 @@ $profileJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUM
                         <?php else: ?>
                             <span class="profile-avatar profile-avatar-initial" aria-hidden="true"><?= htmlspecialchars(mb_strtoupper(mb_substr($profile['userName'], 0, 1))) ?></span>
                         <?php endif; ?>
-                        <span class="profile-status-dot<?= $profileIsOnline ? ' is-online' : '' ?>" title="<?= $profileIsOnline ? 'Online' : 'Offline' ?>" aria-hidden="true"></span>
+                        <!-- Hovering (or tapping, as it can take focus) shows "Online" or "Offline for 5 hours" over it,
+                             from data-tooltip in profile.css -->
+                        <span class="profile-status-dot<?= $profileIsOnline ? ' is-online' : '' ?>" tabindex="0" role="img" aria-label="<?= $profilePresence ?>" data-tooltip="<?= $profilePresence ?>"></span>
                     </div>
+
+                    <?php if ($profileHasStatus): ?>
+                        <!-- Their status, in a bubble pointing at the picture -->
+                        <p class="profile-status">
+                            <?php if ($profileStatus['emoji'] !== ''): ?>
+                                <span class="profile-status-emoji"><?= htmlspecialchars($profileStatus['emoji']) ?></span>
+                            <?php endif; ?>
+                            <?php if ($profileStatus['text'] !== ''): ?>
+                                <span class="profile-status-text"><?= htmlspecialchars($profileStatus['text']) ?></span>
+                            <?php endif; ?>
+                        </p>
+                    <?php endif; ?>
 
                     <div class="profile-actions">
                         <?php if ((int) $hbHubUser['userRole'] === PROFILE_ROLE_ADMIN && !$profileIsOwn): ?>
@@ -134,24 +150,6 @@ $profileJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUM
                 </div>
 
                 <h1 class="profile-name" id="profile-name"><?= htmlspecialchars($profile['userName']) ?></h1>
-                <p class="profile-presence<?= $profileIsOnline ? ' is-online' : '' ?>">
-                    <?php if ($profileIsOnline): ?>
-                        Online
-                    <?php else: ?>
-                        Offline &middot; last seen <?= profileTimeSpan((int) $profile['lastSeenSeconds']) ?> ago
-                    <?php endif; ?>
-                </p>
-
-                <?php if ($profileHasStatus): ?>
-                    <p class="profile-status">
-                        <?php if ($profileStatus['emoji'] !== ''): ?>
-                            <span class="profile-status-emoji"><?= htmlspecialchars($profileStatus['emoji']) ?></span>
-                        <?php endif; ?>
-                        <?php if ($profileStatus['text'] !== ''): ?>
-                            <span class="profile-status-text"><?= htmlspecialchars($profileStatus['text']) ?></span>
-                        <?php endif; ?>
-                    </p>
-                <?php endif; ?>
 
                 <?php if ($profileIsAdmin || $profileClass !== null || $profileEducation !== null): ?>
                     <ul class="profile-badges" aria-label="Badges">

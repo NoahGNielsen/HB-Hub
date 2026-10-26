@@ -19,7 +19,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><strong>Year and field of study</strong>: 1., 2. or 3. year and X, U, T, Y or Z, or Not HTX, so people know who you are. Your year goes up by itself every July 1st, and after 3. year you're shown as a Graduate. Changing it moves you to the other <a href="/docs/chat/groups#class">class chat</a>.</li>
                             <li><strong>Banner</strong>: the wide strip along the top of your profile. Pick two colors and which way they go, like a <a href="/docs/chat/groups#look">chat background</a>, or a picture. A picture is made smaller and turned into JPEG XL on your device, and takes one of your <a href="/docs/chat/attachments#tickets">attachment tickets</a> for as long as it's your banner (it never runs out). Going back to colors gives the ticket back.</li>
                             <li><strong>Education</strong>: a badge for the kind of education you're taking, like 💻 IT and media or 🍳 Food and service.</li>
-                            <li><strong>Status</strong>: an emoji and up to 45 characters on up to two lines, shown under your name. Like the bio, it only takes the Latin alphabet, numbers, punctuation and emoji.</li>
+                            <li><strong>Status</strong>: an emoji and up to 45 characters on up to two lines, shown next to your profile picture. Like the bio, it only takes the Latin alphabet, numbers, punctuation and emoji.</li>
                             <li><strong>Bio</strong>: a few words about yourself.</li>
                         </ul>
                         <p>
