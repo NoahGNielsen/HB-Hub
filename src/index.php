@@ -236,9 +236,9 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     you're out is bragging rights.
                 </p>
                 <ul class="home-ticks">
-                    <li>Blackjack solo, or at a table of up to 5</li>
-                    <li>Baccarat solo, or with up to 6: Player or Banker?</li>
-                    <li>European Roulette, every bet on the board</li>
+                    <li>Play solo, or at a table with friends</li>
+                    <li>Card games and roulette, with the classic rules and bets</li>
+                    <li>Fresh chips every day, more the longer your streak</li>
                     <li>Leaderboards, if you're that good!</li>
                 </ul>
                 <a class="home-link" href="/gambling/">Open the casino <span aria-hidden="true">→</span></a>
@@ -297,19 +297,17 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <section class="home-feature" id="games" aria-labelledby="home-games-title">
             <div class="home-feature-text">
                 <p class="home-kicker"><img src="/assets/images/icons/small/controler.png" width="18" height="18" alt="">Games<?php if (!$homeGamesOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
-                <h2 id="home-games-title">Board games, without the box.</h2>
+                <h2 id="home-games-title">Games, without the box.</h2>
                 <p>
-                    Matador, the Danish classic for 2 to 4 players, with houses, hotels and Prøv lykken, and a
-                    30 second turn timer so nobody can stall when they're losing. Or chess against a friend, with a
-                    clock from 3 to 30 minutes, or none at all.
+                    Classic board and card games to play with your friends, plus a daily puzzle and a game to
+                    sink a free period into. Timers keep things moving, so nobody can stall when they're losing.
                 </p>
                 <ul class="home-ticks">
-                    <li>Matador saves after every move, so you can finish tomorrow</li>
-                    <li>Draw offers and rematches in chess</li>
-                    <li>Wordle: a new word to guess every day, in English and Danish</li>
-                    <li>Ore Mining Inc.: click an asteroid and build a galaxy-wide mining company</li>
-                    <li>Chats and a leaderboards</li>
-                    <li>Public, private with a code or invite only mode</li>
+                    <li>Play with friends, or on your own</li>
+                    <li>Saved as you go, so you can finish tomorrow</li>
+                    <li>Public rooms, private with a code, or invite only</li>
+                    <li>Chat with the table while you play</li>
+                    <li>Leaderboards and rematches</li>
                 </ul>
                 <a class="home-link" href="/games/">Open games <span aria-hidden="true">→</span></a>
             </div>
