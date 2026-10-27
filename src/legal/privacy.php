@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '26 October 2026';
+const HBHUB_PRIVACY_UPDATED = '27 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -259,7 +259,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 and system you use): what the game noted down, what it was doing when it froze and for how long,
                                 your Ore Mining Inc. save as it was then, your screen size, how many processor cores and how
                                 much memory your device has (as your browser tells, rounded), and the name of its graphics card
-                                (as your browser tells it, some browsers give a general or made-up one). If you say no, nothing is sent
+                                (as your browser tells it, some browsers give a general or made-up one). If it crashed more than
+                                once since you last answered, it's still one report, with when and how the older crashes
+                                happened in it too (up to 4 of them). If you say no, nothing is sent
                                 and it's deleted from your browser.
                             </li>
                         </ul>

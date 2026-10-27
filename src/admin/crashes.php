@@ -5,7 +5,8 @@
 // The reports players agreed to send after the game froze or closed badly (games/spaceOreMiner/crash.php,
 // assets/php/games/spaceOreMiner/crashReports.php has what's in one), newest first, ADMIN_CRASHES_SHOWN at a time
 // (?page=). Each shows who sent it, when, its browser and graphics card, what happened in a line (what the page was
-// doing when it froze, for how long, whether it came back), the steps it did just before it froze, every 30 seconds'
+// doing when it froze, for how long, whether it came back), the steps it did just before it froze, the older crashes
+// sent along with it (earlier) in a line each, every 30 seconds'
 // memory, elements, animations, frame rate and slowest steps, the last things it wrote down (the trail), and the whole
 // report as JSON under "Everything" (the save as the page had it is in there, to play it again). Copy everything
 // (admin.js) copies all of that as text (adminCrashCopyText()), to paste somewhere else.
@@ -108,6 +109,19 @@ function adminCrashPageLine(array $report, string $sentOn): string
 }
 
 /**
+ * One of the older crashes sent along with a report (its earlier: {kind, page, hang}) in a line: when, and what
+ * happened. Null when it isn't one.
+ */
+function adminCrashEarlierLine(mixed $entry, string $sentOn): ?string
+{
+    if (!is_array($entry) || !is_string($entry['kind'] ?? null) || !is_array($entry['page'] ?? null)) {
+        return null;
+    }
+    return adminCrashTime($entry['hang']['at'] ?? $entry['page']['lastSeen'] ?? null, $sentOn) . ' '
+        . adminCrashSummary($entry['kind'], $entry) . ' (the page was opened ' . adminCrashTime($entry['page']['opened'] ?? null, $sentOn) . ')';
+}
+
+/**
  * One of the steps before a freeze ([Unix ms, name, times in a row, longest ms]) in a line, or null when it isn't one.
  */
 function adminCrashStepLine(mixed $entry, string $sentOn): ?string
@@ -137,6 +151,7 @@ function adminCrashCopyText(array $crash, array $report, string $sentOn): string
     }
     $sections = [
         'The last steps before it froze' => $before,
+        'It also crashed before that' => array_map(static fn (mixed $entry): ?string => adminCrashEarlierLine($entry, $sentOn), $list($report['earlier'] ?? null)),
         'Every 30 seconds' => array_map(static fn (mixed $sample): ?string => adminCrashSample($sample, $sentOn), $list($report['samples'] ?? null)),
         'The last things it wrote down' => array_map(static fn (mixed $entry): ?string => is_array($entry) && count($entry) === 2 && is_string($entry[1])
             ? adminCrashTime($entry[0], $sentOn) . ' ' . $entry[1] : null, $list($report['trail'] ?? null)),
@@ -235,6 +250,8 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
                                 $crashTrail = is_array($crashReport['trail'] ?? null) ? $crashReport['trail'] : [];
                                 $crashSamples = is_array($crashReport['samples'] ?? null) ? $crashReport['samples'] : [];
                                 $crashBefore = is_array($crashReport['hang']['before'] ?? null) ? $crashReport['hang']['before'] : [];
+                                $crashEarlier = array_filter(array_map(static fn (mixed $entry): ?string => adminCrashEarlierLine($entry, $crashSentOn),
+                                    is_array($crashReport['earlier'] ?? null) ? $crashReport['earlier'] : []), 'is_string');
                                 ?>
                                 <li class="admin-feedback-item">
                                     <div class="admin-feedback-head">
@@ -263,6 +280,16 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
                                                 <?php if (is_string($crashReport['hang']['step'] ?? null)): ?>
                                                     <li><strong><?= htmlspecialchars($crashReport['hang']['step']) ?>, where it froze</strong></li>
                                                 <?php endif; ?>
+                                            </ol>
+                                        </details>
+                                    <?php endif; ?>
+                                    <?php if ($crashEarlier !== []): ?>
+                                        <details open>
+                                            <summary>It also crashed <?= count($crashEarlier) ?> <?= count($crashEarlier) === 1 ? 'time' : 'times' ?> before that (newest first, the full steps are under Everything)</summary>
+                                            <ol class="admin-crash-trail">
+                                                <?php foreach ($crashEarlier as $earlierLine): ?>
+                                                    <li><?= htmlspecialchars($earlierLine) ?></li>
+                                                <?php endforeach; ?>
                                             </ol>
                                         </details>
                                     <?php endif; ?>

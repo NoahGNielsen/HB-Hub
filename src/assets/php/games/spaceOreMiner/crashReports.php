@@ -11,7 +11,8 @@
 // screen, cores, memory and graphics card, the auto switches), trail (the last things that happened: saves, errors, slow
 // frames, freezes, frame rate drops, as [Unix ms, text]), samples (every 30 seconds: memory used, elements and
 // animations on the page, frame rate and the slowest steps), state (the save as the page had it), pending (how many
-// actions weren't saved)}.
+// actions weren't saved), earlier (when the page found more than one crash: the older ones, newest first, as {kind,
+// page, hang}, so one yes is one report)}.
 // Nothing in it is checked here beyond being a JSON object of at most HBHUB_MINER_CRASH_MAX_BYTES: it's only ever read
 // by admins, and escaped when shown. They're kept HBHUB_MINER_CRASH_KEEP_DAYS, and deleted with the account.
 require_once __DIR__ . '/../../database.php';

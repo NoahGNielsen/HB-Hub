@@ -3048,11 +3048,13 @@
 
     // ----- Crash reports. When the page opens, it looks for crashes: the freezes the watchdog saved in IndexedDB, and
     // the pages that crashed (isCrash()). If there are any, it asks whether it may send a crash report, with the
-    // newest one in the words and all that would be sent under "What's in it". If the player says yes, the newest
-    // CRASH_SEND_MAX go to /games/ore-mining-inc/crash; either way they're deleted. Closing the popup without answering
-    // keeps them, to ask again next time.
+    // newest one in the words and all that would be sent under "What's in it". If the player says yes, it goes to
+    // /games/ore-mining-inc/crash as one report: the newest crash, with up to CRASH_EARLIER_MAX older ones in it under
+    // earlier (sentReport()), so one yes is one report, not one per freeze (a page that struggles can freeze several
+    // times before it's closed). Either way they're deleted. Closing the popup without answering keeps them, to ask
+    // again next time.
 
-    const CRASH_SEND_MAX = 5;
+    const CRASH_EARLIER_MAX = 4;
     const crashDialog = root.querySelector('[data-miner-crash-dialog]');
     const crashDialogText = root.querySelector('[data-miner-crash-text]');
     const crashDialogJson = root.querySelector('[data-miner-crash-json]');
@@ -3109,10 +3111,12 @@
             + 'browser closes a page that froze or ran out of memory, or when the computer turns off.';
     }
 
-    // The report as it's sent: without the watchdog's id for it
-    function sentReport(report) {
-        const { id, ...rest } = report;
-        return rest;
+    // The report as it's sent: the newest crash (without the watchdog's id for it), and the older ones as earlier, newest
+    // first, each with only its kind, page and hang (the save, trail and samples are much the same as the newest's)
+    function sentReport() {
+        const { id, ...newest } = crashes[0];
+        const earlier = crashes.slice(1, 1 + CRASH_EARLIER_MAX).map(({ kind, page, hang }) => ({ kind, page, ...(hang ? { hang } : {}) }));
+        return earlier.length > 0 ? { ...newest, earlier } : newest;
     }
 
     async function askAboutCrashes() {
@@ -3125,11 +3129,12 @@
         note('Found ' + crashes.length + ' crash' + (crashes.length === 1 ? '' : 'es') + ' from before');
         const more = crashes.length - 1;
         crashDialogText.textContent = crashText(crashes[0]) + (more > 0 ? ' It happened ' + more + ' more ' + (more === 1 ? 'time' : 'times') + ' before that too.' : '');
-        crashDialogJson.textContent = JSON.stringify(crashes.slice(0, CRASH_SEND_MAX).map(sentReport), null, 2);
+        crashDialogJson.textContent = JSON.stringify(sentReport(), null, 2);
         crashDialog.showModal();
     }
 
     async function answerCrashes(isSending) {
+        if (crashesAnswered) return; // answered already (a second click before the popup closed)
         crashDialog.close();
         crashesAnswered = true;
         for (const run of crashRuns) {
@@ -3142,20 +3147,18 @@
         deleteHangs(hangIds);
         if (!isSending) return;
 
-        let sent = 0;
-        for (const report of crashes.slice(0, CRASH_SEND_MAX)) {
-            try {
-                const response = await fetch('/games/ore-mining-inc/crash', {
-                    method: 'POST',
-                    headers: { Accept: 'application/json' },
-                    body: new URLSearchParams({ action: 'report', kind: report.kind, report: JSON.stringify(sentReport(report)) }),
-                });
-                if (response.ok) sent++;
-            } catch {
-                // counted as not sent
-            }
+        let isSent = false;
+        try {
+            const response = await fetch('/games/ore-mining-inc/crash', {
+                method: 'POST',
+                headers: { Accept: 'application/json' },
+                body: new URLSearchParams({ action: 'report', kind: crashes[0].kind, report: JSON.stringify(sentReport()) }),
+            });
+            isSent = response.ok;
+        } catch {
+            // not sent
         }
-        toast('', sent > 0 ? 'Thanks! The crash report was sent, so it can be looked into.' : 'Couldn\'t send the crash report, sorry.', '', 6000);
+        toast('', isSent ? 'Thanks! The crash report was sent, so it can be looked into.' : 'Couldn\'t send the crash report, sorry.', '', 6000);
     }
 
     root.querySelector('[data-miner-crash-send]').addEventListener('click', () => answerCrashes(true));
