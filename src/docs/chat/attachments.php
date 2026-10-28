@@ -73,7 +73,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-tickets">How tickets work</h2>
                         <p>
                             The server only has so much space, so attachments are paid for with tickets. Everyone has
-                            <strong><?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> tickets</strong>.
+                            <strong><?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> tickets</strong>, and site admins have
+                            <?= HBHUB_CHAT_ATTACHMENT_TICKETS_ADMIN ?>.
                         </p>
                         <ul>
                             <li>Every started <?= $docsTicketMb ?> MB of a file takes one ticket. A 1 MB photo takes 1, a 12 MB video takes 3. Each file pays for itself, so three small files take three tickets.</li>

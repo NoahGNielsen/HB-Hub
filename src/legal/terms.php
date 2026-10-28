@@ -111,7 +111,7 @@ const HBHUB_TERMS_UPDATED = '28 October 2026';
                         <ul>
                             <li>Only upload pictures and files you're allowed to share. Don't post photos of other people without asking them.</li>
                             <li>
-                                Attachments don't stay forever. Everyone has 10 tickets, and every started 5 MB of an attachment
+                                Attachments don't stay forever. Everyone has 10 tickets (site admins have 20), and every started 5 MB of an attachment
                                 takes one. A message can have up to 10 attachments, 50 MB together, and each one takes its own
                                 tickets. Site admins can give an account more tickets, or take some away (for example if
                                 attachments are misused). It's deleted after 90 days (3 days when it takes more than 5 tickets), and then the

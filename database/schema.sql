@@ -841,7 +841,7 @@ CREATE TABLE `HBHub-Users` (
   `userBannedTimestamp` datetime DEFAULT NULL,
   `userBannedReason` tinyint UNSIGNED DEFAULT NULL COMMENT '1 By a site admin\r\n2 Automatically, for uploading a banned profile picture\r\nNULL when not banned',
   `userGhostBannedTimestamp` datetime DEFAULT NULL COMMENT 'When a site admin ghost banned the account: what they do in chats only shows to themselves. NULL when not ghost banned',
-  `userAttachmentTicketsExtra` smallint NOT NULL DEFAULT '0' COMMENT 'Chat attachment tickets a site admin added (positive) or took away (negative), on top of the 10 everyone has'
+  `userAttachmentTicketsExtra` smallint NOT NULL DEFAULT '0' COMMENT 'Chat attachment tickets a site admin added (positive) or took away (negative), on top of the 10 everyone has (20 for site admins)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --

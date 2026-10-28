@@ -567,7 +567,7 @@ switch ($adminAction) {
         // Checked and changed in one go, so two admins at once can't push it past 0 or ADMIN_TICKETS_MAX
         $statement = $db->prepare('UPDATE `HBHub-Users` SET userAttachmentTicketsExtra = userAttachmentTicketsExtra + ?
             WHERE userId = ? AND ? + userAttachmentTicketsExtra + ? BETWEEN 0 AND ?');
-        $statement->execute([$ticketsAmount, $targetId, HBHUB_CHAT_ATTACHMENT_TICKETS, $ticketsAmount, ADMIN_TICKETS_MAX]);
+        $statement->execute([$ticketsAmount, $targetId, hbHubChatAttachmentTicketsBase((int) $target['userRole']), $ticketsAmount, ADMIN_TICKETS_MAX]);
         $ticketsTotal = hbHubChatAttachmentTicketsTotal($db, $targetId);
         if ($statement->rowCount() === 0) {
             $adminErrors['tickets'] = $ticketsAmount < 0
@@ -612,7 +612,8 @@ $adminTransactions = adminTransactions($db, $targetId, ADMIN_TRANSACTIONS_SHOWN)
 $adminAttachments = adminAttachments($db, $targetId);
 $adminTicketsUsed = array_sum(array_map(fn (array $attachment): int => (int) $attachment['attachmentTickets'], $adminAttachments));
 $adminTicketsExtra = (int) $target['userAttachmentTicketsExtra'];
-$adminTicketsTotal = max(0, HBHUB_CHAT_ATTACHMENT_TICKETS + $adminTicketsExtra); // like hbHubChatAttachmentTicketsTotal()
+$adminTicketsBase = hbHubChatAttachmentTicketsBase((int) $target['userRole']); // 20 for a site admin, 10 for everyone else
+$adminTicketsTotal = max(0, $adminTicketsBase + $adminTicketsExtra); // like hbHubChatAttachmentTicketsTotal()
 
 // One more than is shown, to know whether there are older ones
 $adminMessages = adminMessages($db, $targetId, $adminMessagesBefore, ADMIN_MESSAGES_SHOWN + 1);
@@ -1161,7 +1162,7 @@ $adminMessageCounts = $statement->fetch();
                                 <input type="text" id="admin-tickets" name="tickets" inputmode="numeric" maxlength="4" required autocomplete="off"
                                        value="<?= htmlspecialchars($adminValues['tickets']) ?>" aria-describedby="admin-tickets-hint">
                                 <p class="settings-hint" id="admin-tickets-hint">
-                                    They have <?= $adminTicketsTotal ?> <?= $adminTicketsTotal === 1 ? 'ticket' : 'tickets' ?> in all: the <?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> everyone has<?=
+                                    They have <?= $adminTicketsTotal ?> <?= $adminTicketsTotal === 1 ? 'ticket' : 'tickets' ?> in all: the <?= $adminTicketsBase ?> <?= $targetIsAdmin ? 'every site admin' : 'everyone' ?> has<?=
                                     $adminTicketsExtra > 0 ? ', plus ' . $adminTicketsExtra . ' added by site admins' : ($adminTicketsExtra < 0 ? ', minus ' . -$adminTicketsExtra . ' taken away by site admins' : '') ?>.
                                     Revoking tickets doesn't delete anything they've sent, they just can't send more until they're under it.
                                     One attachment can still take at most <?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> tickets. Nobody can have more than <?= number_format(ADMIN_TICKETS_MAX) ?>.

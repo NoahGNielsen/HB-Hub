@@ -4,7 +4,8 @@
 // own and deletes them.
 //
 // The server's disk is small, so attachments are paid for with tickets. Everyone has HBHUB_CHAT_ATTACHMENT_TICKETS
-// (site admins can add or take away some for one user in the admin panel), and each started HBHUB_CHAT_ATTACHMENT_TICKET_BYTES of a file takes one
+// (site admins have HBHUB_CHAT_ATTACHMENT_TICKETS_ADMIN, and can add or take away some for one user in the admin panel),
+// and each started HBHUB_CHAT_ATTACHMENT_TICKET_BYTES of a file takes one
 // (as it was sent, so zipping it here doesn't make it cheaper - it matches the size people see). Every file in a
 // message pays for itself, so three small files take three tickets.
 // A file keeps its tickets for 90 days, or only 3 when it takes more than 5 of them, and then it expires: the file
@@ -25,8 +26,11 @@
 require_once __DIR__ . '/session.php';
 
 const HBHUB_CHAT_ATTACHMENT_TICKETS = 10; // per user
+const HBHUB_CHAT_ATTACHMENT_TICKETS_ADMIN = 20; // per site admin instead
+const HBHUB_CHAT_ATTACHMENT_SITE_ROLE_ADMIN = 2; // userRole in HBHub-Users
 const HBHUB_CHAT_ATTACHMENT_TICKET_BYTES = 5 * 1024 * 1024;
-// All the files in one message together, as uploaded: all tickets (post_max_size in src/.htaccess fits it)
+// All the files in one message together, as uploaded: everyone's tickets (post_max_size in src/.htaccess fits it).
+// Site admins have more tickets, but one message still can't be bigger than this.
 const HBHUB_CHAT_ATTACHMENT_MAX_BYTES = HBHUB_CHAT_ATTACHMENT_TICKETS * HBHUB_CHAT_ATTACHMENT_TICKET_BYTES;
 const HBHUB_CHAT_ATTACHMENT_FILES_MAX = 10; // files in one message (PHP's max_file_uploads is 20)
 const HBHUB_CHAT_ATTACHMENT_DAYS = 90;
@@ -128,16 +132,30 @@ function hbHubChatAttachmentDays(int $tickets): int
 }
 
 /**
- * How many tickets the user has in all: HBHUB_CHAT_ATTACHMENT_TICKETS, plus the ones a site admin added or minus the
+ * The tickets a user with $userRole (userRole in HBHub-Users) has before any a site admin added or took away:
+ * HBHUB_CHAT_ATTACHMENT_TICKETS_ADMIN for site admins, HBHUB_CHAT_ATTACHMENT_TICKETS for everyone else.
+ */
+function hbHubChatAttachmentTicketsBase(?int $userRole): int
+{
+    return $userRole === HBHUB_CHAT_ATTACHMENT_SITE_ROLE_ADMIN ? HBHUB_CHAT_ATTACHMENT_TICKETS_ADMIN : HBHUB_CHAT_ATTACHMENT_TICKETS;
+}
+
+/**
+ * How many tickets the user has in all: hbHubChatAttachmentTicketsBase(), plus the ones a site admin added or minus the
  * ones they took away in the admin panel (userAttachmentTicketsExtra in HBHub-Users, admin/user.php). Never below 0.
  * Taking tickets away doesn't touch the attachments already sent, the user just can't send more until they're under.
  * One attachment can still be at most HBHUB_CHAT_ATTACHMENT_TICKETS big, however many tickets they have.
  */
 function hbHubChatAttachmentTicketsTotal(PDO $db, int $userId): int
 {
-    $statement = $db->prepare('SELECT userAttachmentTicketsExtra FROM `HBHub-Users` WHERE userId = ?');
+    $statement = $db->prepare('SELECT userRole, userAttachmentTicketsExtra FROM `HBHub-Users` WHERE userId = ?');
     $statement->execute([$userId]);
-    return max(0, HBHUB_CHAT_ATTACHMENT_TICKETS + (int) $statement->fetchColumn());
+    $user = $statement->fetch();
+    if (!$user) {
+        return 0;
+    }
+    $role = $user['userRole'] === null ? null : (int) $user['userRole'];
+    return max(0, hbHubChatAttachmentTicketsBase($role) + (int) $user['userAttachmentTicketsExtra']);
 }
 
 /**
