@@ -201,7 +201,7 @@ foreach ($onboardingSteps as $index => $step) {
                 <h2 id="onboarding-q1"><label for="onboarding-name">Choose a username</label></h2>
                 <p class="onboarding-hint" id="onboarding-name-about">
                     Everyone on HB Hub sees you by it, and you log in with it. It can be your name, a nickname or anything
-                    else - just <strong>not your email</strong>, HB Hub doesn't use one.
+                    else.
                 </p>
                 <div class="onboarding-input-wrap">
                     <!-- autocomplete="username" so password managers save it with the password, but that also makes some

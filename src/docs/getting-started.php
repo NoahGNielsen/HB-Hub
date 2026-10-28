@@ -13,7 +13,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-sign-up">Making an account</h2>
                         <p>Press <strong>Sign up</strong> on the <a href="/">frontpage</a>. It asks you a few questions, one at a time:</p>
                         <ol class="docs-steps">
-                            <li><strong>Choose a username.</strong> The name people see in the chat and on the leaderboards, and what you log in with. It can be your name, a nickname or anything else, but not an email address: HB Hub doesn't use email, and your username is shown to everyone. Use a name people from school will know you by.</li>
+                            <li><strong>Choose a username.</strong> The name people see in the chat and on the leaderboards, and what you log in with. It can be your name, a nickname or anything else.</li>
                             <li><strong>Which year are you in?</strong> 1., 2. or 3. year at HTX, and then your field of study (X, U, T, Y or Z), or Not HTX. It's shown on your profile, and at HTX you're put in your <a href="/docs/chat/groups#class">class chat</a> straight away.</li>
                             <li><strong>A picture of yourself.</strong> Your profile picture. You can skip it and add one later.</li>
                             <li><strong>Describe yourself.</strong> A short bio for your profile.</li>
