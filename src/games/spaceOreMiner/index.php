@@ -178,12 +178,16 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         </button>
                         <!-- With the Autopilot skill: Warp Jumps by itself while it's on (autoPrestige() in spaceOreMiner.js) -->
                         <button type="button" class="miner-amount miner-auto-prestige" aria-pressed="false"
-                                title="Warp Jump by itself whenever a jump would at least quadruple your Dark Matter" data-miner-auto-warp hidden>
+                                title="Warp Jump by itself whenever a jump would multiply your Dark Matter by at least the number next to it" data-miner-auto-warp hidden>
                             Autopilot
                         </button>
                     </div>
                     <p class="miner-prestige-hint" data-miner-warp-hint></p>
                 </div>
+                        <!-- How many times as much Dark Matter a jump has to give before Autopilot makes it (4 to start with) -->
+                        <label class="miner-auto-times" title="Autopilot waits until a jump would multiply your Dark Matter by at least this much" data-miner-auto-warp-times hidden>
+                            &times;<input type="number" min="2" step="any" value="4" inputmode="decimal" aria-label="Autopilot jumps at this many times your Dark Matter">
+                        </label>
             </div>
             <p class="casino-hint miner-prestige-about">
                 A Warp Jump starts you over in a new galaxy with no ore, buildings or upgrades, but you get Dark Matter for all
@@ -231,12 +235,16 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                             </button>
                             <!-- With the Auto Crunch skill: Big Crunches by itself while it's on (autoPrestige() in spaceOreMiner.js) -->
                             <button type="button" class="miner-amount miner-auto-prestige" aria-pressed="false"
-                                    title="Big Crunch by itself whenever a crunch would at least quadruple the Antimatter you've earned" data-miner-auto-crunch hidden>
+                                    title="Big Crunch by itself whenever a crunch would multiply the Antimatter you've earned by at least the number next to it" data-miner-auto-crunch hidden>
                                 Auto Crunch
                             </button>
                         </div>
                         <p class="miner-prestige-hint" data-miner-crunch-hint></p>
                     </div>
+                            <!-- The same for Auto Crunch and Antimatter -->
+                            <label class="miner-auto-times" title="Auto Crunch waits until a crunch would multiply the Antimatter you've earned by at least this much" data-miner-auto-crunch-times hidden>
+                                &times;<input type="number" min="2" step="any" value="4" inputmode="decimal" aria-label="Auto Crunch crunches at this many times your Antimatter">
+                            </label>
                 </div>
             </div>
             <div data-miner-crunch-section hidden>

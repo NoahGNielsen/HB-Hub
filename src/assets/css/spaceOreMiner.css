@@ -2366,6 +2366,29 @@
   color: var(--view);
 }
 
+/* The "x4" box next to the switch: how much a jump or crunch has to multiply by before the switch makes it */
+.miner-auto-times {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.miner-auto-times input {
+  width: 5em;
+  padding: 8px 8px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+}
+
+.miner-auto-times input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .miner-prestige-hint {
   margin: 10px 0 0;
   font-size: 0.9rem;

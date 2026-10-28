@@ -156,7 +156,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><strong>Hands</strong>: clicks, critical clicks and auto-clicks.</li>
                             <li><strong>Core</strong>, across the middle: big production boosts.</li>
                             <li><strong>Sky</strong>: comets.</li>
-                            <li><strong>Cosmos</strong>: more Dark Matter, Antimatter and Strange Matter, more ore while you're away, and the Autopilot and Auto Crunch switches, which Warp Jump and Big Crunch for you.</li>
+                            <li><strong>Cosmos</strong>: more Dark Matter, Antimatter and Strange Matter, more ore while you're away, and the Autopilot and Auto Crunch switches, which Warp Jump and Big Crunch for you once it would multiply your Dark Matter or Antimatter by the number you put next to them (4 to start with).</li>
                         </ul>
                         <p>
                             A skill can be learned once every skill linked to the left of it is, the ones in the branch next to it

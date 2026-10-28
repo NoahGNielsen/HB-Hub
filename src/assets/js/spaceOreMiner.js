@@ -674,6 +674,8 @@
     const autoWarpSwitch = root.querySelector('[data-miner-auto-warp]');
     const autoCrunchSwitch = root.querySelector('[data-miner-auto-crunch]');
     const ripView = root.querySelector('[data-miner-rip-view]');
+    const autoWarpTimesBox = root.querySelector('[data-miner-auto-warp-times]');
+    const autoCrunchTimesBox = root.querySelector('[data-miner-auto-crunch-times]');
     const ripSections = root.querySelectorAll('[data-miner-rip-section]');
     const ripLocked = root.querySelector('[data-miner-rip-locked]');
     const strangeText = root.querySelector('[data-miner-strange]');
@@ -805,6 +807,25 @@
     }
 
     // Whether the popup about the hot keys has been shown in this browser (see showKeysHelp())
+    // How many times as much Dark Matter (or Antimatter) a jump (or crunch) has to give before they make it: the box
+    // next to each switch, 4 until it's changed, at least 2 (lower and they'd go off over and over).
+    const AUTO_PRESTIGE_TIMES = 4;
+    const AUTO_PRESTIGE_MIN_TIMES = 2;
+    const AUTO_WARP_TIMES_KEY = 'hbHubMinerAutoWarpTimes';
+    const AUTO_CRUNCH_TIMES_KEY = 'hbHubMinerAutoCrunchTimes';
+    const readTimes = (text) => {
+        const times = Number(text);
+        return text !== null && text !== '' && Number.isFinite(times) && times >= AUTO_PRESTIGE_MIN_TIMES ? times : null;
+    };
+    let autoWarpTimes = AUTO_PRESTIGE_TIMES;
+    let autoCrunchTimes = AUTO_PRESTIGE_TIMES;
+    try {
+        autoWarpTimes = readTimes(localStorage.getItem(AUTO_WARP_TIMES_KEY)) ?? AUTO_PRESTIGE_TIMES;
+        autoCrunchTimes = readTimes(localStorage.getItem(AUTO_CRUNCH_TIMES_KEY)) ?? AUTO_PRESTIGE_TIMES;
+    } catch {
+        // no storage: 4 each
+    }
+
     const KEYS_HELP_KEY = 'hbHubMinerKeysHelp';
 
     const serverNow = () => Date.now() + clockOffset;
@@ -1399,7 +1420,7 @@
         warpHint.textContent = state.runOre < CONFIG.warpOre
             ? 'Mine ' + format(CONFIG.warpOre - state.runOre) + ' more ore this run to unlock the Warp Jump.'
             : gain < 1 ? 'Mine a bit more first: a jump now wouldn\'t give you any Dark Matter.' : '';
-        renderAutoSwitch(autoWarpSwitch, skillEffects(state).autoWarp, isAutoWarping);
+        renderAutoSwitch(autoWarpSwitch, autoWarpTimesBox, skillEffects(state).autoWarp, isAutoWarping);
 
         const key = state.dark + '|' + state.darkUpgrades.join();
         if (key === darkKey) return;
@@ -1462,7 +1483,7 @@
         crunchButton.disabled = gain < 1;
         crunchHint.textContent = gain < 1
             ? 'Earn ' + format(target - state.darkEarned) + ' more Dark Matter in this universe to unlock the Big Crunch.' : '';
-        renderAutoSwitch(autoCrunchSwitch, skillEffects(state).autoCrunch, isAutoCrunching);
+        renderAutoSwitch(autoCrunchSwitch, autoCrunchTimesBox, skillEffects(state).autoCrunch, isAutoCrunching);
 
         const key = state.antimatter + '|' + state.antiUpgrades.join();
         if (key === antiKey) return;
@@ -1471,8 +1492,8 @@
         antiList.replaceChildren(...prestigeUpgrades(ANTI_UPGRADES, state.antiUpgrades, state.antimatter, 'anti', 'Antimatter'));
     }
 
-    // The Autopilot or Auto Crunch switch: only there with its skill, lit while it's on
-    function renderAutoSwitch(button, isThere, isOn) {
+    // The Autopilot or Auto Crunch switch and its "x4" box: only there with its skill, the switch lit while it's on
+    function renderAutoSwitch(button, timesBox, isThere, isOn) {
         button.hidden = !isThere;
         button.classList.toggle('is-active', isOn);
         button.setAttribute('aria-pressed', String(isOn));
@@ -1492,6 +1513,7 @@
         // Until a rip gives something, the bar and the target are for the first Antimatter that does: 10,000 for the
         // first rip, after that whatever beats the best multiverse so far
         const gain = ripGain(state);
+        timesBox.hidden = !isThere;
         const next = nextRip(state);
         const target = gain < 1 && next ? next.at : CONFIG.ripAnti;
         ripNumbers.anti.textContent = format(state.antimatterEarned);
@@ -2494,17 +2516,16 @@
     }
 
     // ----- Autopilot and Auto Crunch (the skills): while one is switched on, a few times a second it Warp Jumps once a
-    // jump would make the Dark Matter earned in this universe at least AUTO_PRESTIGE_TIMES as much, or Big Crunches once
-    // a crunch would do the same for the Antimatter earned in this multiverse. Through act(), like the buttons, so the
-    // server checks them as usual. Only while the page is open, like Auto Buy.
-    const AUTO_PRESTIGE_TIMES = 4;
-
+    // jump would make the Dark Matter earned in this universe at least autoWarpTimes as much, or Big Crunches once a
+    // crunch would make the Antimatter earned in this multiverse at least autoCrunchTimes as much (the boxes next to the
+    // switches). Through act(), like the buttons, so the server checks them as usual. Only while the page is open, like
+    // Auto Buy.
     function autoPrestige() {
         const effects = skillEffects(state);
         if (isAutoCrunching && effects.autoCrunch) {
             catchUp();
             const gain = crunchGain(state);
-            if (gain >= 1 && gain >= state.antimatterEarned * (AUTO_PRESTIGE_TIMES - 1)) {
+            if (gain >= 1 && gain >= state.antimatterEarned * (autoCrunchTimes - 1)) {
                 doCrunch(true);
                 return;
             }
@@ -2512,7 +2533,7 @@
         if (isAutoWarping && effects.autoWarp) {
             catchUp();
             const gain = warpGain(state);
-            if (gain >= 1 && gain >= state.darkEarned * (AUTO_PRESTIGE_TIMES - 1)) doWarp(true);
+            if (gain >= 1 && gain >= state.darkEarned * (autoWarpTimes - 1)) doWarp(true);
         }
     }
 
@@ -2567,6 +2588,33 @@
         toast('bigRip', 'The multiverse tore apart and started over. You got ' + format(gain) + ' Strange Matter.', 'is-comet', 7000);
         renderAll();
         saveSoon();
+    // The "x4" boxes: a number of 2 or more is kept (in this browser, like the switches); anything else puts the old
+    // one back. onTimes gets the new number.
+    function bindTimesBox(box, times, key, name, onTimes) {
+        const input = box.querySelector('input');
+        input.min = String(AUTO_PRESTIGE_MIN_TIMES);
+        input.value = String(times);
+        input.addEventListener('change', () => {
+            const newTimes = readTimes(input.value.trim());
+            if (newTimes === null) {
+                input.value = String(times);
+                return;
+            }
+            times = newTimes;
+            input.value = String(times);
+            onTimes(times);
+            note(name + ' at x' + times);
+            try {
+                localStorage.setItem(key, String(times));
+            } catch {
+                // only kept until the page is closed
+            }
+        });
+    }
+
+    bindTimesBox(autoWarpTimesBox, autoWarpTimes, AUTO_WARP_TIMES_KEY, 'Autopilot', (times) => { autoWarpTimes = times; });
+    bindTimesBox(autoCrunchTimesBox, autoCrunchTimes, AUTO_CRUNCH_TIMES_KEY, 'Auto Crunch', (times) => { autoCrunchTimes = times; });
+
     });
 
     // A skill opens its panel (or closes it, if it's the one already open). The panel closes again with its ×, Escape
