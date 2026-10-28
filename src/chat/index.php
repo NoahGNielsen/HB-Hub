@@ -2577,7 +2577,8 @@ if ($isPoll) {
                     <!-- The attachments picked with Files (or pasted or dropped), waiting to be sent (chat.js): a row of tiles,
                          each with a preview, its name, how big it is in tickets and a × to take it out, and a + tile to add
                          more. Under them how much they come to, the box to keep pictures as they are instead of turning them
-                         into JPEG XL (not ticked to begin with, only there when a picture would be), and Remove all.
+                         into JPEG XL (not ticked to begin with, only there when a picture would be), the same for videos
+                         instead of turning them into WebM, and Remove all.
                          The bar along the top fills up while they're on their way. -->
                     <div class="chat-tray" hidden data-attach-tray>
                         <div class="chat-tray-progress" hidden data-attach-progress><span class="chat-tray-progress-fill" data-attach-progress-fill></span></div>
@@ -2587,6 +2588,10 @@ if ($isPoll) {
                             <label class="chat-tray-keep" hidden data-attach-keep-label>
                                 <input type="checkbox" data-attach-keep> Keep original pictures
                                 <span class="chat-tray-keep-hint">(don't convert to JPEG XL)</span>
+                            </label>
+                            <label class="chat-tray-keep" hidden data-attach-keep-video-label>
+                                <input type="checkbox" data-attach-keep-video> Keep original videos
+                                <span class="chat-tray-keep-hint">(don't convert to WebM)</span>
                             </label>
                             <button type="button" class="chat-tray-clear" data-attach-clear>Remove all</button>
                         </div>

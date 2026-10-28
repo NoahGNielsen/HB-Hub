@@ -48,11 +48,12 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             on the server and unzipped again when someone downloads them, so you get back the same file.
                         </p>
                         <p>
-                            Videos are always turned into WebM with VP9 before they're sent, so every video plays in the chat and
+                            Videos are turned into WebM with VP9 before they're sent, so every video plays in the chat and
                             takes less space (a phone video often takes a lot fewer tickets afterwards). Ones bigger than 1080p
                             are made 1080p. This happens in your browser, and the tile shows how far it's got; a long video can
-                            take a while, and you can send already, it goes once it's done. If your browser can't make WebM
-                            videos, the video is sent as it is.
+                            take a while, and you can send already, it goes once it's done. Tick <strong>Keep original
+                            videos</strong> to send them exactly as they are instead (an MKV video is then sent as a file to
+                            download, without a player). If your browser can't make WebM videos, the video is sent as it is.
                         </p>
                     </section>
 

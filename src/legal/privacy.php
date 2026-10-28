@@ -153,7 +153,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 picture doesn't keep the details a camera or phone saves in it, like where a photo was taken.
                                 Videos are turned into WebM (VP9) in your own browser too, so they play in the chat and
                                 take less space, and the converted video doesn't keep details like where it was filmed
-                                either. Only if your browser can't do that is the video sent as it is. Other files are zipped on
+                                either. Only if you tick the box to keep the original, or your browser can't convert it, is
+                                the video sent as it is. Other files are zipped on
                                 the server to take less space. If a site admin has given you more
                                 attachment tickets or taken some away, how many is stored with your account.
                             </li>
