@@ -196,6 +196,11 @@
   font-variant-numeric: lining-nums tabular-nums;
 }
 
+/* "At least 3 of these:" above the password checklist gets some room on both sides */
+.onboarding-hint:has(+ .onboarding-checklist) {
+  margin: 10px 0 6px;
+}
+
 .onboarding-hint a {
   color: var(--accent);
 }

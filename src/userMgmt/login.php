@@ -107,6 +107,7 @@ $loginIsTotpStep = loginPendingUserId() !== null;
 
             <section class="onboarding-step" aria-labelledby="login-q1">
                 <h2 id="login-q1"><label for="login-name">What's your username?</label></h2>
+                <p class="onboarding-hint" id="login-name-about">The name you picked when you signed up, not your email.</p>
                 <div class="onboarding-input-wrap">
                     <input type="text" id="login-name" name="name" maxlength="35" required autocomplete="username" aria-describedby="login-name-about"
                            value="<?= htmlspecialchars($loginName) ?>"<?= $loginName === '' ? ' autofocus' : '' ?>>
