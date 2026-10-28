@@ -71,7 +71,7 @@ $loginIsTotpStep = loginPendingUserId() !== null;
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/login.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/login.js') ?>" defer></script>
     <title>Log in - HB Hub</title>
-    <meta name="description" content="Log in to HB Hub, the chat, casino and games site for HB's students.">
+    <meta name="description" content="Log in to HB Hub, the student-made chat, casino and games site for HANSENBERG Tekniske Gymnasium (HTX): your class chat, DMs, play chips and games.">
 </head>
 <body>
     <main>

@@ -83,14 +83,18 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
 <!DOCTYPE html>
 <html lang="en" class="home">
 <head>
-    <?php $headerHomeNav = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php
+    $headerHomeNav = true;
+    $headerKeywords = ['HANSENBERG chat', 'HTX klassechat', 'skolechat', 'school chat', 'Matador online', 'UNO online', 'chess online'];
+    include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php';
+    ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
-    <title>HB Hub - Chat, casino and games for HB's students</title>
-    <meta name="description" content="HB Hub is where school hangs out online: group chats and DMs, Blackjack, Baccarat and Roulette with play chips, and Matador and chess with your friends.">
+    <title>HB Hub - Chat, casino and games for HANSENBERG students</title>
+    <meta name="description" content="HB Hub is the student-made hangout for HANSENBERG Tekniske Gymnasium (HTX): class group chats, DMs, a play-chip casino, and Matador, chess, UNO and Wordle.">
     <meta property="og:title" content="HB Hub - The whole school, one tab away">
-    <meta property="og:description" content="Group chats with your class, Blackjack with chips that aren't real money, and Matador and chess with your friends. All in your browser.">
-    <!-- Tells Google the site's name for search results. A data block, not a script, so the CSP doesn't stop it. -->
-    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "HB Hub", "alternateName": "HBHub", "url": "https://hbhub.noahgajnielsen.dk/"}</script>
+    <meta property="og:description" content="Group chats with your HTX class, Blackjack with chips that aren't real money, and Matador and chess with your friends from HANSENBERG. All in your browser.">
+    <!-- Tells Google the site's name for search results, and who it's for. A data block, not a script, so the CSP doesn't stop it. -->
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "HB Hub", "alternateName": "HBHub", "url": "https://hbhub.noahgajnielsen.dk/", "description": "A student-made chat, casino and games site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark.", "inLanguage": "en", "keywords": "HANSENBERG, HANSENBERG Tekniske Gymnasium, HTX, Kolding, school chat", "audience": {"@type": "EducationalAudience", "educationalRole": "student", "audienceType": "Students at HANSENBERG Tekniske Gymnasium (HTX)"}}</script>
 </head>
 <body class="home-body">
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>

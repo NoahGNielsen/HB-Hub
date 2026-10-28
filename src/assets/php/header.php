@@ -15,6 +15,11 @@
 // Pages under the frontpage's top bar (homeNav.php) instead of the app's nav panel set $headerHomeNav = true before
 // including this, so they don't wait for navPanel.css, which they don't use.
 //
+// The keywords tag holds the school's names (HB Hub is made by and for students at HANSENBERG, though it's not run by
+// the school, see the terms) on every page, plus the page's own: a page sets $headerKeywords (a list of words)
+// before including this, and the free games (guestGames.php) bring theirs in $guestGame['keywords']. Google ignores
+// the tag, but Bing and the smaller search engines still read it; the descriptions do most of the work.
+//
 // The font (Raleway, assets/fonts/, @font-face in mainStyle.css) is our own copy instead of Google Fonts', so the
 // first paint doesn't wait on two other servers. Its Latin file is preloaded, since the browser would otherwise only
 // find it after mainStyle.css has loaded.
@@ -26,6 +31,13 @@ if (http_response_code() === 200) {
     $headerPath = is_string($headerPath) && str_starts_with($headerPath, '/') ? $headerPath : '/';
     $headerCanonical = 'https://hbhub.noahgajnielsen.dk' . preg_replace('~(^|/)index$~', '$1', $headerPath);
 }
+
+$headerKeywords = array_unique([
+    ...($headerKeywords ?? []),
+    ...($guestGame['keywords'] ?? []),
+    'HB Hub', 'HBHub', 'HANSENBERG', 'HANSENBERG Tekniske Gymnasium', 'Hansenberg HTX', 'HTX', 'HTX Kolding',
+    'Teknisk Gymnasium', 'Kolding', 'gymnasium', 'elever', 'students',
+]);
 ?>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -49,6 +61,7 @@ if (http_response_code() === 200) {
 <link rel="canonical" href="<?= htmlspecialchars($headerCanonical) ?>">
 <meta property="og:url" content="<?= htmlspecialchars($headerCanonical) ?>">
 <?php endif; ?>
+<meta name="keywords" content="<?= htmlspecialchars(implode(', ', $headerKeywords)) ?>">
 <meta property="og:site_name" content="HB Hub">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">

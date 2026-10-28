@@ -32,7 +32,8 @@ const HBHUB_GUEST_SITE = 'https://hbhub.noahgajnielsen.dk';
 // Every guest game: its address, the normal version's (where logging in takes them), which section's access it
 // follows (games_access or casino_access in the site config: a guest game is only open while its section is open to
 // everyone), and its texts for search engines: the <title>, the meta description, the text under the game, its genre
-// for the structured data, and what the sign-up popup says ({startChips} is what a new account starts with, HBHUB_CASINO_START_CHIPS).
+// for the structured data, its keywords (English and Danish searches, added to the site's own in header.php) and what
+// the sign-up popup says ({startChips} is what a new account starts with, HBHUB_CASINO_START_CHIPS).
 const HBHUB_GUEST_GAMES = [
     'wordle' => [
         'path' => '/play/wordle',
@@ -43,6 +44,7 @@ const HBHUB_GUEST_GAMES = [
         'description' => 'Guess today\'s five-letter word in six tries. A new English and a new Danish Wordle every day at midnight. Free to play in your browser, no account needed.',
         'card' => 'Guess the day\'s five-letter word in six tries, in English or Danish.',
         'genre' => ['Word game', 'Puzzle'],
+        'keywords' => ['Wordle', 'Wordle dansk', 'dansk Wordle', 'daily Wordle', 'gratis Wordle', 'ordspil', 'word game'],
         'languages' => ['en', 'da'],
         'about' => [
             'Wordle is the daily word game: you get six tries to guess a five-letter word, and after every guess the letters turn green (right letter, right place), yellow (in the word, somewhere else) or grey (not in it). HB Hub has two a day, one in English and one in Danish (dansk Wordle, with æ, ø and å), and everyone gets the same words.',
@@ -60,6 +62,7 @@ const HBHUB_GUEST_GAMES = [
         'description' => 'Mine an asteroid, build a galaxy-wide mining company and prestige across the multiverse in this free idle clicker game. Plays in your browser, no sign-up needed.',
         'card' => 'An idle clicker: mine an asteroid, build a mining company and prestige across the multiverse.',
         'genre' => ['Idle game', 'Clicker game', 'Incremental game'],
+        'keywords' => ['Ore Mining Inc.', 'idle game', 'clicker game', 'incremental game', 'browser game', 'gratis spil', 'browserspil'],
         'languages' => ['en'],
         'about' => [
             'Ore Mining Inc. is a free idle clicker game. Click the asteroid to mine ore, spend it on drones, drills and laser rigs that mine for you, and grow from one miner on a rock into a mining company that spans the galaxy. Catch Golden Comets for boosts, unlock upgrades and hot keys, and earn achievements on the way.',
@@ -77,6 +80,7 @@ const HBHUB_GUEST_GAMES = [
         'description' => 'Play free blackjack against the dealer with play chips: 6 decks, blackjack pays 3:2, double, split and insurance. No account, no download and no real money.',
         'card' => 'Beat the dealer without going over 21. Double, split and insurance, with play chips.',
         'genre' => ['Card game', 'Casino game'],
+        'keywords' => ['blackjack', 'free blackjack', 'blackjack online', 'gratis blackjack', 'kortspil', 'play chips'],
         'languages' => ['en'],
         'about' => [
             'Blackjack is the casino card game where you play against the dealer: get closer to 21 than the dealer without going over. This is a free solo table with play chips, using the same rules as the tables on HB Hub: 6 decks, blackjack pays 3:2, the dealer stands on every 17, and you can double down, split up to 3 hands and take insurance.',
@@ -94,6 +98,7 @@ const HBHUB_GUEST_GAMES = [
         'description' => 'Bet on Player, Banker or Tie in free punto banco baccarat with play chips. 8 decks, the real drawing rules and pair bets. No account and no real money needed.',
         'card' => 'Bet on Player, Banker or a tie in punto banco, with play chips.',
         'genre' => ['Card game', 'Casino game'],
+        'keywords' => ['baccarat', 'punto banco', 'free baccarat', 'gratis baccarat', 'kortspil', 'play chips'],
         'languages' => ['en'],
         'about' => [
             'Baccarat (punto banco) is the casino card game where you bet on which hand ends closest to 9: the Player or the Banker, or that they tie. Nobody plays the hands, the cards are dealt by fixed rules, so it\'s easy to learn. This is a free solo table with play chips, using the same rules as the tables on HB Hub: 8 decks, Player pays 1:1, Banker 1:1 less a small cut, Tie 8:1 and the pairs 11:1.',
@@ -111,6 +116,7 @@ const HBHUB_GUEST_GAMES = [
         'description' => 'Spin a single-zero European roulette wheel for free with play chips: straight, split, street, corner, line and outside bets. No account, no download, no real money.',
         'card' => 'Spin a single-zero wheel and bet straight on the board, with play chips.',
         'genre' => ['Casino game'],
+        'keywords' => ['roulette', 'European roulette', 'free roulette', 'roulette online', 'gratis roulette', 'play chips'],
         'languages' => ['en'],
         'about' => [
             'Roulette is the casino game of the spinning wheel: bet on where the ball lands. This is European roulette with a single green zero, played free with play chips. Bet on a number (35:1), a split, street, corner or line, or the outside bets: red or black, odd or even, 1-18 or 19-36, a dozen or a column.',
