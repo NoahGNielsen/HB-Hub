@@ -15,9 +15,11 @@
 // config (9 GB by default), nobody can send new ones until some expire or are deleted.
 //
 // Pictures are turned into JPEG XL in the browser before they're sent (chat.js, chatJxlWorker.js), unless the user
-// ticks the box to keep the original: lossless, except JPEGs, which get one that looks the same. They're stored as they come. Videos
-// browsers can play (MP4, MOV, WebM) are stored as they come too, and get a player in the chat. Any other file is zipped
-// here and unzipped again when it's downloaded.
+// ticks the box to keep the original: lossless, except JPEGs, which get one that looks the same. They're stored as they come.
+// Videos are turned into WebM + VP9 in the browser too (chat.js, chatVideoWorker.js), always, so that's what's stored;
+// the server can't convert anything itself. Only from a browser that can't make them does an MP4 or MOV come as it is.
+// Videos browsers can play (MP4, MOV, WebM) are stored as they come, and get a player in the chat. Any other file is
+// zipped here and unzipped again when it's downloaded.
 //
 // Files live on disk, not in the database: attachments_path in the config, by default a folder next to the config
 // file, above the web root. Each one is named after its random attachmentKey, so the name never says what's in it.

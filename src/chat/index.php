@@ -2414,9 +2414,11 @@ if ($isPoll) {
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <!-- data-jxl-worker: the script that turns pictures into JPEG XL, and draws JPEG XL ones in browsers that can't (chat.js) -->
+    <!-- data-jxl-worker: the script that turns pictures into JPEG XL, and draws JPEG XL ones in browsers that can't (chat.js).
+         data-video-worker: the one that turns videos into WebM + VP9 before they're sent. -->
     <main class="chat<?= $openChat !== null ? ' has-open-chat' : '' ?>"
-          data-jxl-worker="/assets/js/chatJxlWorker.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatJxlWorker.js') ?>">
+          data-jxl-worker="/assets/js/chatJxlWorker.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatJxlWorker.js') ?>"
+          data-video-worker="/assets/js/chatVideoWorker.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatVideoWorker.js') ?>">
         <h1 class="chat-visually-hidden">Chat</h1>
 
         <!-- Left: search, new chat and every chat the user is in -->

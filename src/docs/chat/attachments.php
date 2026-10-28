@@ -34,19 +34,25 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             to go with them. Then send as normal. Several pictures in one message show as a gallery.
                         </p>
                         <p>
-                            Videos (MP4, MOV and WebM) get a player right in the chat, so they can be watched without downloading
+                            Videos (MP4, MOV, WebM and MKV) get a player right in the chat, so they can be watched without downloading
                             them. If your browser can't play one, it shows the video's name instead, which downloads it.
                         </p>
                     </section>
 
                     <section id="smaller" aria-labelledby="docs-smaller">
-                        <h2 id="docs-smaller">Pictures are made smaller</h2>
+                        <h2 id="docs-smaller">Pictures and videos are made smaller</h2>
                         <p>
                             Before a picture is sent, your browser turns it into JPEG XL, a newer kind of picture file that takes
                             much less space. It doesn't lose any detail, except JPEG photos, which get one that looks the same. Tick
-                            <strong>Keep original pictures</strong> to send them exactly as they are instead. Videos are kept as they
-                            are. Other files are zipped
+                            <strong>Keep original pictures</strong> to send them exactly as they are instead. Other files are zipped
                             on the server and unzipped again when someone downloads them, so you get back the same file.
+                        </p>
+                        <p>
+                            Videos are always turned into WebM with VP9 before they're sent, so every video plays in the chat and
+                            takes less space (a phone video often takes a lot fewer tickets afterwards). Ones bigger than 1080p
+                            are made 1080p. This happens in your browser, and the tile shows how far it's got; a long video can
+                            take a while, and you can send already, it goes once it's done. If your browser can't make WebM
+                            videos, the video is sent as it is.
                         </p>
                     </section>
 

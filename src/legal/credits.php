@@ -143,6 +143,21 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <p class="credits-license">Apache 2.0 and BSD 3-Clause licenses</p>
                 </div>
             </div>
+            <div class="credits-library">
+                <!-- A made-up video file, like the JPEG XL one, tilted the other way with its bar played most of the way -->
+                <div class="credits-jxl credits-webm" aria-hidden="true">
+                    <span class="credits-jxl-letters">WebM</span>
+                    <span class="credits-jxl-bar"></span>
+                </div>
+                <div class="credits-library-text">
+                    <h3><a href="https://github.com/Vanilagy/mediabunny" target="_blank" rel="noopener noreferrer">Mediabunny</a></h3>
+                    <p>
+                        By Vanilagy and contributors. Reads videos you attach in the chat and, with your browser's own
+                        codecs, turns them into WebM with VP9 before they're sent.
+                    </p>
+                    <p class="credits-license">Mozilla Public License 2.0</p>
+                </div>
+            </div>
             <p class="credits-fineprint">"QR Code" is a registered trademark of DENSO WAVE INCORPORATED.</p>
         </section>
 

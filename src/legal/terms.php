@@ -105,8 +105,9 @@ const HBHUB_TERMS_UPDATED = '28 October 2026';
                             still yours. By posting it, you let HB Hub store it and show it to the people it's meant for, which is
                             needed for the site to work. That includes turning pictures you attach into JPEG XL (without losing
                             any detail, except JPEG photos, which are made smaller in a way that looks the same), making a banner
-                            picture smaller and turning it into JPEG XL, and zipping other files (not videos, which are kept
-                            as they are so they can be played in the chat), so they take less space.
+                            picture smaller and turning it into JPEG XL, turning videos into WebM (VP9, made smaller when
+                            they're bigger than 1080p, in a way that looks close to the original), and zipping other files,
+                            so they take less space and can be played in the chat.
                         </p>
                         <ul>
                             <li>Only upload pictures and files you're allowed to share. Don't post photos of other people without asking them.</li>

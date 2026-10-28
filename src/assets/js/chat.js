@@ -1723,13 +1723,19 @@ chatPart((signal) => {
 });
 
 // A JPEG XL worker (chatJxlWorker.js, its address is data-jxl-worker on the page), started the first time it's used.
-// run(type, data, transfer) sends it a job and gives back a promise of its answer. cancel() stops the worker
-// and everything it was doing (those promises fail with an AbortError), and the next job starts a new one.
 // The composer and the messages each have their own, so cancelling a conversion never stops a picture being drawn.
 function chatJxlWorker() {
+    return chatWorker('data-jxl-worker');
+}
+
+// A worker whose address is in the page's attribute named attribute (like 'data-jxl-worker'), started the first
+// time it's used. run(type, data, transfer, onProgress) sends it a job and gives back a promise of its
+// answer, and onProgress gets the worker's { progress } messages on the way. cancel() stops the worker and everything
+// it was doing (those promises fail with an AbortError), and the next job starts a new one.
+function chatWorker(attribute) {
     let worker = null;
     let nextId = 0;
-    const jobs = new Map(); // id -> { resolve, reject }
+    const jobs = new Map(); // id -> { resolve, reject, onProgress }
 
     function stop(error) {
         worker?.terminate();
@@ -1739,10 +1745,14 @@ function chatJxlWorker() {
     }
 
     function start() {
-        worker = new Worker(document.querySelector('[data-jxl-worker]').dataset.jxlWorker, { type: 'module' });
+        worker = new Worker(document.querySelector(`[${attribute}]`).getAttribute(attribute), { type: 'module' });
         worker.addEventListener('message', ({ data }) => {
             const job = jobs.get(data.id);
             if (!job) return;
+            if ('progress' in data) {
+                job.onProgress?.(data.progress);
+                return;
+            }
             jobs.delete(data.id);
             if (data.error) job.reject(new Error(data.error));
             else job.resolve(data);
@@ -1752,11 +1762,11 @@ function chatJxlWorker() {
     }
 
     return {
-        run(type, data, transfer = []) {
+        run(type, data, transfer = [], onProgress = null) {
             if (!worker) start();
             const id = ++nextId;
             return new Promise((resolve, reject) => {
-                jobs.set(id, { resolve, reject });
+                jobs.set(id, { resolve, reject, onProgress });
                 worker.postMessage({ id, type, ...data }, transfer);
             });
         },
@@ -2111,7 +2121,9 @@ chatPart((signal) => {
 // straight away, one after another, unless "Keep original pictures" is ticked, and JPEGs into a JPEG XL that looks the
 // same (chatJxlWorker.js). The original is sent instead when the JPEG XL isn't smaller. Other pictures that are already
 // compressed with loss (AVIF, lossy WebP) are sent as they are, and so are animated ones, which would lose their
-// animation. Anything else is zipped by the server.
+// animation. Videos (MP4, MOV, WebM, MKV) are always turned into WebM + VP9 by the video worker (chatVideoWorker.js),
+// in the same queue, whatever "Keep original pictures" says; only when this browser can't do that is the original
+// sent instead. Anything else is zipped by the server.
 // All of them go to the chat page in one upload (action=upload with files[] and converted[], answered as JSON), and then
 // the chat is loaded again with the message in it (chatLoad, at the bottom). From Send until then, the message is shown
 // faded at the bottom of the chat with "Sending…", so it's clear Send worked while pictures are still being converted and
@@ -2144,6 +2156,7 @@ chatPart((signal) => {
     const ticketBytes = Number(composer.dataset.ticketBytes);
     const maxMb = maxBytes / 1024 / 1024;
     const jxl = chatJxlWorker();
+    const video = chatWorker('data-video-worker');
     // What went wrong with one file: short on its tile, and the rest of a sentence about it under the tiles.
     // The keys are the server's error codes too, which say which file with file (its place in files[]).
     const FILE_ERRORS = {
@@ -2167,13 +2180,14 @@ chatPart((signal) => {
     };
 
     // The files waiting to be sent, in the order they're shown and sent: { file, name, kind, ready, result, failed,
-    // serverError, url, previewFailed, tile }
+    // progress, serverError, url, previewFailed, tile }
     // kind is null until ready (the promise of working it out) says: 'convert' (a picture to turn into JPEG XL),
-    // 'image' (a picture sent as it is) or 'file'. result is the JPEG XL once made, kept so unticking "Keep original
-    // pictures" again doesn't make it twice, and failed says why there isn't one when it couldn't be made.
+    // 'image' (a picture sent as it is), 'video' (a video to turn into WebM + VP9) or 'file'. result is the JPEG XL or
+    // WebM once made, kept so unticking "Keep original pictures" again doesn't make it twice, and failed says why
+    // there isn't one when it couldn't be made. progress is how far a video's conversion has got, 0 to 1.
     // serverError is what the server said was wrong with it (a FILE_ERRORS key). url is the picture for its preview.
     let jobs = [];
-    let converting = null; // the picture being turned into JPEG XL: { job, promise }, the rest wait their turn
+    let converting = null; // the picture or video being converted: { job, promise }, the rest wait their turn
     let notice = null; // a note under the tiles until something changes: { text, isError }
     let isSending = false; // from Send until the answer, waiting for conversions included
     let isUploading = false; // only while the files are on their way, when they can't be taken back any more
@@ -2214,12 +2228,19 @@ chatPart((signal) => {
     // What kind of attachment the file is, by its first bytes rather than its name. Pictures worth converting are the
     // ones stored without loss, PNG and BMP, and WebP when it's the lossless kind (a VP8L chunk), plus JPEG. Animated
     // ones (an acTL chunk before the PNG's image data, an ANIM chunk in a WebP) are left alone. Other pictures the
-    // server shows as pictures.
+    // server shows as pictures. Videos are told apart like hbHubChatAttachmentVideoType() in chatAttachments.php does:
+    // MP4 and MOV by a video brand in their ftyp box, WebM and MKV by the Matroska header.
     async function kindOf(file) {
         // One character per byte, in pieces, as too many arguments at once is too many for fromCharCode
         const bytes = new Uint8Array(await file.slice(0, 64 * 1024).arrayBuffer());
         let text = '';
         for (let i = 0; i < bytes.length; i += 8192) text += String.fromCharCode(...bytes.subarray(i, i + 8192));
+        if (text.slice(4, 8) === 'ftyp') {
+            const brand = text.slice(8, 12);
+            const brands = ['qt  ', 'iso', 'mp41', 'mp42', 'avc1', 'M4V', 'dash', 'mmp4', 'MSNV', 'XAVC'];
+            if (brands.some((videoBrand) => brand.startsWith(videoBrand))) return 'video';
+        }
+        if (text.startsWith('\x1A\x45\xDF\xA3') && /webm|matroska/.test(text.slice(0, 64))) return 'video';
         if (text.startsWith('\x89PNG')) {
             const animation = text.indexOf('acTL');
             const imageData = text.indexOf('IDAT');
@@ -2234,18 +2255,23 @@ chatPart((signal) => {
         return isImage ? 'image' : 'file';
     }
 
-    // Still to be turned into JPEG XL before it can go (being converted now, or waiting its turn)
+    // Still to be turned into JPEG XL or WebM before it can go (being converted now, or waiting its turn)
     function isWaiting(job) {
-        return job.kind === 'convert' && !keep.checked && !job.result && !job.failed;
+        const isConverted = job.kind === 'video' || (job.kind === 'convert' && !keep.checked);
+        return isConverted && !job.result && !job.failed;
     }
 
-    // What's sent: the JPEG XL when there is one, it's smaller and the originals aren't kept, otherwise the file itself
+    // What's sent: a video's WebM when there is one (bigger or not, videos are all kept as WebM), a picture's JPEG XL
+    // when there is one, it's smaller and the originals aren't kept, otherwise the file itself
     function toSend(job) {
+        if (job.kind === 'video') return job.result ?? job.file;
         return job.kind === 'convert' && !keep.checked && job.result && job.result.size < job.file.size ? job.result : job.file;
     }
 
     function uploadName(job) {
-        return toSend(job) === job.result ? (job.file.name || 'picture').replace(/\.[^.]*$/, '') + '.jxl' : job.file.name || 'picture.png';
+        if (toSend(job) !== job.result) return job.file.name || 'picture.png';
+        const base = (job.file.name || (job.kind === 'video' ? 'video' : 'picture')).replace(/\.[^.]*$/, '');
+        return base + (job.kind === 'video' ? '.webm' : '.jxl');
     }
 
     // Why it can't be sent (a FILE_ERRORS key), or null. One that's too big may still fit once it's converted.
@@ -2255,17 +2281,27 @@ chatPart((signal) => {
         return job.kind !== null && !isWaiting(job) && toSend(job).size > maxBytes ? 'tooBig' : null;
     }
 
-    // The next picture waiting to be turned into JPEG XL, one at a time so they don't fight over the computer
+    // The next picture or video waiting to be converted, one at a time so they don't fight over the computer.
+    // A video says how far it's got on its tile as it goes (they can take a while).
     function convertNext() {
-        if (converting || keep.checked) return;
+        if (converting) return;
         const job = jobs.find(isWaiting);
         if (!job) return;
-        const promise = jxl.run('encode', { file: job.file })
+        const isVideo = job.kind === 'video';
+        const onProgress = (progress) => {
+            job.progress = progress;
+            if (converting?.job === job) renderTile(job);
+        };
+        const run = isVideo ? video.run('encode', { file: job.file }, [], onProgress) : jxl.run('encode', { file: job.file });
+        const promise = run
             .then(({ buffer }) => {
-                job.result = new Blob([buffer], { type: 'image/jxl' });
+                job.result = new Blob([buffer], { type: isVideo ? 'video/webm' : 'image/jxl' });
             })
             .catch((error) => {
-                if (error.name !== 'AbortError') job.failed = "Sent as it is, as it couldn't be converted";
+                if (error.name === 'AbortError') return;
+                job.failed = error.message === 'noEncoder'
+                    ? "Sent as it is, as this browser can't make WebM videos"
+                    : "Sent as it is, as it couldn't be converted";
             })
             .finally(() => {
                 if (converting?.job !== job) return; // stopped (taken out, or Keep ticked) and moved on from already
@@ -2278,13 +2314,18 @@ chatPart((signal) => {
 
     function stopConverting() {
         if (!converting) return;
+        const { job } = converting;
         converting = null;
-        jxl.cancel(); // the promise above settles with an AbortError, which is left quiet
+        job.progress = 0;
+        // The promise above settles with an AbortError, which is left quiet
+        if (job.kind === 'video') video.cancel();
+        else jxl.cancel();
     }
 
     // A conversion on its way stops when another chat opens, and the previews' pictures are let go of
     signal.addEventListener('abort', () => {
         jxl.cancel();
+        video.cancel();
         jobs.forEach((job) => job.url && URL.revokeObjectURL(job.url));
     });
 
@@ -2362,15 +2403,23 @@ chatPart((signal) => {
         } else if (job.kind === null) {
             info.textContent = 'Checking…';
         } else if (isWaiting(job)) {
-            info.textContent = isBusy ? 'Converting…' : 'Waiting to convert';
-            details.push('Being turned into JPEG XL, which makes it smaller without losing anything.');
+            const percent = job.kind === 'video' && job.progress > 0 ? ` ${Math.floor(job.progress * 100)}%` : '';
+            info.textContent = isBusy ? `Converting…${percent}` : 'Waiting to convert';
+            details.push(job.kind === 'video'
+                ? 'Being turned into a WebM video (VP9), which every video in the chat is kept as.'
+                : 'Being turned into JPEG XL, which makes it smaller without losing anything.');
         } else {
-            info.textContent = sizeLabel(file.size) + (file === job.result ? ' · JXL' : '');
-            if (file === job.result) details.push(`JPEG XL, ${sizeLabel(file.size)} (was ${sizeLabel(job.file.size)})`);
-            else details.push(sizeLabel(file.size));
+            const format = job.kind === 'video' ? 'WebM' : 'JXL';
+            info.textContent = sizeLabel(file.size) + (file === job.result ? ` · ${format}` : '');
+            if (file === job.result) {
+                details.push(`${job.kind === 'video' ? 'WebM (VP9)' : 'JPEG XL'}, ${sizeLabel(file.size)} (was ${sizeLabel(job.file.size)})`);
+            } else {
+                details.push(sizeLabel(file.size));
+            }
             // The server zips other files first, so they may take fewer
             details.push(job.kind === 'file' ? `Up to ${ticketsLabel(tickets)}` : ticketsLabel(tickets));
             if (tickets > 5) details.push('Kept for 3 days, as it takes more than 5 tickets');
+            if (job.kind === 'video' && job.failed) details.push(job.failed);
             if (job.kind === 'convert' && !keep.checked) {
                 if (job.failed) details.push(job.failed);
                 else if (file !== job.result) details.push("Sent as it is, as JPEG XL wasn't smaller");
@@ -2399,7 +2448,12 @@ chatPart((signal) => {
             isError = false;
             const parts = [`${jobs.length} ${jobs.length === 1 ? 'attachment' : 'attachments'}`];
             if (waiting > 0) {
-                parts.push(`converting ${waiting === 1 ? 'a picture' : `${waiting} pictures`} to JPEG XL… You can send already, they go once it's done`);
+                const videos = jobs.filter((job) => isWaiting(job) && job.kind === 'video').length;
+                const pictures = waiting - videos;
+                const what = [];
+                if (pictures > 0) what.push(`${pictures === 1 ? 'a picture' : `${pictures} pictures`} to JPEG XL`);
+                if (videos > 0) what.push(`${videos === 1 ? 'a video' : `${videos} videos`} to WebM`);
+                parts.push(`converting ${what.join(' and ')}… You can send already, they go once it's done`);
             } else {
                 const tickets = jobs.reduce((sum, job) => sum + ticketsFor(toSend(job).size), 0);
                 parts.push(sizeLabel(totalBytes));
@@ -2438,7 +2492,7 @@ chatPart((signal) => {
         files.slice(0, room).forEach((file) => {
             const job = {
                 file, name: file.name || 'Pasted picture', kind: null, ready: null, result: null, failed: null,
-                serverError: null, url: null, previewFailed: false, tile: null,
+                progress: 0, serverError: null, url: null, previewFailed: false, tile: null,
             };
             jobs.push(job);
             makeTile(job);
@@ -2446,7 +2500,7 @@ chatPart((signal) => {
             job.ready = kindOf(file).catch(() => 'file').then((kind) => {
                 job.kind = kind;
                 if (!jobs.includes(job)) return; // taken out in the meantime
-                if (kind !== 'file') showPreview(job);
+                if (kind === 'convert' || kind === 'image') showPreview(job);
                 convertNext();
                 render();
             });
@@ -2526,12 +2580,12 @@ chatPart((signal) => {
         });
     }
 
-    // Keeping the originals stops a conversion on its way. Unticking it again uses the JPEG XLs already made,
-    // and goes on making the rest.
+    // Keeping the originals stops a picture's conversion on its way (a video's goes on). Unticking it again uses the
+    // JPEG XLs already made, and goes on making the rest.
     keep.addEventListener('change', () => {
         notice = null;
-        if (keep.checked) stopConverting();
-        else convertNext();
+        if (keep.checked && converting?.job.kind === 'convert') stopConverting();
+        convertNext(); // the videos still go on when the originals are kept
         render();
     });
 
@@ -2568,7 +2622,7 @@ chatPart((signal) => {
         const bubble = element('div', 'chat-message-bubble has-attachment');
         const box = element('div', 'chat-attachments');
         const sizes = [];
-        const pictures = jobs.filter((job) => job.kind !== 'file' && job.url && !job.previewFailed);
+        const pictures = jobs.filter((job) => job.url && !job.previewFailed);
         const files = jobs.filter((job) => !pictures.includes(job));
 
         if (pictures.length === 1) {
@@ -2666,7 +2720,7 @@ chatPart((signal) => {
         let isSent = false;
         try {
             // They only go once it's known which pictures to convert, and the conversions are done.
-            // Ticking "Keep original pictures" meanwhile stops waiting and sends the originals.
+            // Ticking "Keep original pictures" meanwhile stops waiting and sends the originals (videos are always waited for).
             await Promise.all(jobs.map((job) => job.ready));
             if (!isCurrent()) return;
             showSending();

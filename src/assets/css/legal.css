@@ -608,6 +608,15 @@
   background: linear-gradient(90deg, var(--accent) 45%, color-mix(in srgb, #1a1d23 12%, transparent) 45%);
 }
 
+/* Mediabunny's card: the same, tilted the other way, with a video's bar played most of the way */
+.credits-webm {
+  rotate: -3deg;
+}
+
+.credits-webm .credits-jxl-bar {
+  background: linear-gradient(90deg, var(--accent) 70%, color-mix(in srgb, #1a1d23 12%, transparent) 70%);
+}
+
 .credits-fineprint {
   margin: 16px 0 0;
   font-size: 0.85rem;
