@@ -178,11 +178,13 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # --------------------------------------------------------------------------
     # FREE GAMES
     # --------------------------------------------------------------------------
-    # The games visitors can play without an account (assets/php/guestGames/guestGames.php): /play/ lists them, and
+    # The games visitors can play without an account (assets/php/guestGames/guestGames.php): /play lists them, and
     # each has a short address for search engines, with its JSON under it. The files are in guestGames/, which can't
     # be opened by its own name (4. above). The normal versions in games/ and gambling/ still need an account.
-    RewriteRule ^play$ /play/ [R=301,L]
-    RewriteRule ^play/$ guestGames/index.php [L]
+    # /play is served as it is (Google reported the redirect it used to have as an error), and /play/ is sent there,
+    # like the games' addresses with a slash below.
+    RewriteRule ^play$ guestGames/index.php [L]
+    RewriteRule ^play/$ /play [R=301,L]
     RewriteRule ^play/(wordle|blackjack|baccarat|roulette)$ guestGames/$1/index.php [L]
     RewriteRule ^play/(wordle|blackjack|baccarat|roulette)/(guess|play|spin)$ guestGames/$1/$2.php [L]
     RewriteRule ^play/ore-mining-inc$ guestGames/spaceOreMiner/index.php [L]

@@ -1,6 +1,6 @@
 <?php
 // The games visitors can play without an account, mostly so search engines have something to find: Wordle,
-// Ore Mining Inc., and solo Blackjack, Baccarat and Roulette, at /play/ (the files are in guestGames/, which is only
+// Ore Mining Inc., and solo Blackjack, Baccarat and Roulette, at /play (the files are in guestGames/, which is only
 // reached through the rewrites in .htaccess). The normal versions (games/, gambling/) still need an account, and
 // so does everything else on the site.
 //
@@ -23,6 +23,7 @@
 //   they never come over to an account. A guest who runs out gets a new stack (hbHubGuestCasinoRefill()).
 require_once __DIR__ . '/../games/access.php';
 require_once __DIR__ . '/../casino/access.php';
+require_once __DIR__ . '/../loginLimit.php'; // hbHubDeviceToken(), for browsers that have logged in before
 
 const HBHUB_GUEST_TOKEN_MAX = 300000; // characters. An Ore Mining Inc. save late in the game is the biggest, at well under 100 KB
 const HBHUB_GUEST_CASINO_CHIPS = 2500; // what a guest starts with at the casino games, and gets again when they run out
@@ -131,15 +132,22 @@ function hbHubGuestGameIsOpen(array $game): bool
 
 /**
  * For the guest pages in guestGames/, after session.php (with $hbHubSessionOptional = true): someone who's logged in
- * is sent to the normal version of the game (with the same ?view= or ?lang=), and while the game isn't open to
- * everyone the page doesn't exist. Returns the game, with its key in 'key', for the game's page to see as $guestGame.
+ * is sent to the normal version of the game (with the same ?view= or ?lang=). So is a browser that has ever logged in
+ * (it has the hbHubDevice cookie, see loginLimit.php), through the login: the free games are for visitors without an
+ * account, and someone who has one should play the real thing. While the game isn't open to everyone the page doesn't
+ * exist. Returns the game, with its key in 'key', for the game's page to see as $guestGame.
  */
 function hbHubGuestGamePage(string $key, ?array $user): array
 {
     $game = HBHUB_GUEST_GAMES[$key] + ['key' => $key];
+    $query = $_SERVER['QUERY_STRING'] ?? '';
+    $realGame = $game['game'] . ($query !== '' ? '?' . $query : '');
     if ($user !== null) {
-        $query = $_SERVER['QUERY_STRING'] ?? '';
-        header('Location: ' . $game['game'] . ($query !== '' ? '?' . $query : ''), true, 302);
+        header('Location: ' . $realGame, true, 302);
+        exit;
+    }
+    if (hbHubDeviceToken() !== null) {
+        header('Location: /login?return=' . rawurlencode($realGame), true, 302);
         exit;
     }
     if (!hbHubGuestGameIsOpen($game)) {

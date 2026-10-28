@@ -64,7 +64,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
           data-watchdog="/assets/js/spaceOreMinerWatchdog.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/spaceOreMinerWatchdog.js') ?>"
           data-config="<?= htmlspecialchars(json_encode(hbHubMinerConfig())) ?>">
         <?php if ($guestGame !== null): ?>
-            <a class="casino-back" href="/play/">&larr; Free games</a>
+            <a class="casino-back" href="/">&larr; HB Hub</a>
         <?php else: ?>
             <a class="casino-back" href="/games/">&larr; Games</a>
         <?php endif; ?>
@@ -456,7 +456,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
             <p>You opened Ore Mining Inc. in another tab or on another device, so it's stopped here. Your game carries on there.</p>
             <div class="games-dialog-actions">
                 <?php if ($guestGame !== null): ?>
-                    <a class="casino-btn" href="/play/">Back to the free games</a>
+                    <a class="casino-btn" href="/">Back to HB Hub</a>
                 <?php else: ?>
                     <a class="casino-btn" href="/games/">Back to Games</a>
                 <?php endif; ?>

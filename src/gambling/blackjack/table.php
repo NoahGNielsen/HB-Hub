@@ -59,7 +59,7 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
     <main class="bj" data-blackjack data-room="<?= $room['roomId'] ?>" data-min-bet="<?= $room['roomMinBet'] ?>"
           data-api="<?= $guestGame !== null ? '/play/blackjack/play' : '/gambling/blackjack/play' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
         <?php if ($guestGame !== null): ?>
-            <a class="casino-back" href="/play/">&larr; Free games</a>
+            <a class="casino-back" href="/">&larr; HB Hub</a>
         <?php endif; ?>
         <div class="bj-header">
             <div class="bj-heading">

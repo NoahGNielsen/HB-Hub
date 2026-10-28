@@ -23,7 +23,7 @@ $guestPrompt = str_replace('{startChips}', number_format(HBHUB_CASINO_START_CHIP
                 <li><a href="<?= htmlspecialchars($guestOther['path']) ?>"><?= htmlspecialchars($guestOther['name']) ?></a></li>
             <?php endif; ?>
         <?php endforeach; ?>
-        <li><a href="/play/">All free games</a></li>
+        <li><a href="/play">All free games</a></li>
     </ul>
 </section>
 

@@ -23,7 +23,7 @@
 // saves to /play/ore-mining-inc/save (data-save), which keeps nothing: each answer has the game as a sealed token, kept
 // in localStorage (GUEST_KEY, with the tab playing it) and sent with the next save. A guest can't send crash reports,
 // so any crashes found are just cleared. On the members' page, a guest token found in the browser goes with the first
-// save, to become the account's save if it has none yet (that's where logging in or signing up from /play/ leads).
+// save, to become the account's save if it has none yet (that's where logging in or signing up from /play leads).
 (() => {
     const root = document.querySelector('[data-miner]');
     if (!root) return;

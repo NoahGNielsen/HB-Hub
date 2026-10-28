@@ -688,7 +688,7 @@
     // Leaving: asked first when there are chips on the table
     async function leave() {
         if (IS_GUEST) {
-            location.assign('/play/'); // nothing to leave: the table is only in this page
+            location.assign('/'); // nothing to leave: the table is only in this page, so back to the frontpage
             return;
         }
         const data = await post('leave');

@@ -151,7 +151,7 @@ const HBHUB_TERMS_UPDATED = '28 October 2026';
                         </ul>
                         <h3>Play chips in the free games</h3>
                         <p>
-                            Blackjack, Baccarat and Roulette can also be tried without an account at <a href="/play/">/play/</a>,
+                            Blackjack, Baccarat and Roulette can also be tried without an account at <a href="/play">/play</a>,
                             with play chips. Play chips are even less than chips: they aren't money either, they only last
                             until you close or reload the page, you get a new stack when you run out, and they never become
                             chips on an account, also if you sign up or log in.
@@ -204,12 +204,13 @@ const HBHUB_TERMS_UPDATED = '28 October 2026';
                                 open the game in that browser, but that isn't a promise: progress that's never saved can be lost.
                             </li>
                             <li>
-                                The free games at <a href="/play/">/play/</a> can be played without an account, and these terms
+                                The free games at <a href="/play">/play</a> can be played without an account, and these terms
                                 apply there too. Without an account, your Wordle and Ore Mining Inc. games are only kept in your
                                 browser, so clearing the site's data, or using another browser, starts them over. If you log in
                                 or sign up from one, today's Wordle games and your Ore Mining Inc. game come with you, but only
                                 into an account that doesn't have them yet: your account's own games are never written over.
-                                Don't use scripts or bots to flood the free games with requests.
+                                In a browser that has logged in to HB Hub before, the free games send you to the login and the
+                                normal game instead. Don't use scripts or bots to flood the free games with requests.
                             </li>
                         </ul>
                     </section>

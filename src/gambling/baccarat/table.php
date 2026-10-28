@@ -66,7 +66,7 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, what it
     <main class="bac" data-baccarat data-room="<?= $room['roomId'] ?>" data-min-bet="<?= $room['roomMinBet'] ?>"
           data-api="<?= $guestGame !== null ? '/play/baccarat/play' : '/gambling/baccarat/play' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
         <?php if ($guestGame !== null): ?>
-            <a class="casino-back" href="/play/">&larr; Free games</a>
+            <a class="casino-back" href="/">&larr; HB Hub</a>
         <?php endif; ?>
         <div class="bac-header">
             <div class="bac-heading">

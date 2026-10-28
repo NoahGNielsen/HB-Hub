@@ -110,7 +110,7 @@ function rouletteWheelPockets(): string
     <main class="rl" data-roulette data-chips="<?= $navCasinoChips ?>" data-bet-step="<?= HBHUB_ROULETTE_BET_STEP ?>"
           data-api="<?= $guestGame !== null ? '/play/roulette/spin' : '/gambling/roulette/spin' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
         <?php if ($guestGame !== null): ?>
-            <a class="casino-back" href="/play/">&larr; Free games</a>
+            <a class="casino-back" href="/">&larr; HB Hub</a>
         <?php else: ?>
             <a class="casino-back" href="/gambling/">&larr; Casino</a>
         <?php endif; ?>

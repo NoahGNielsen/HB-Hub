@@ -14,7 +14,7 @@ const HBHUB_PRIVACY_UPDATED = '28 October 2026';
 const HBHUB_PRIVACY_COOKIES = [
     'hbHubSession' => ['Keeps you logged in. Holds a random id that points at your login.', '30 days, or until you log out'],
     'hbHubPendingLogin' => ['Remembers that you typed the right password while you enter your two-factor code.', '5 minutes'],
-    'hbHubDevice' => ['Recognises a browser you have logged in from or are logged in on, so someone guessing your password can\'t lock you out of it. It\'s also how a ghost ban is passed on to a new account used in the same browser, and how site admins see which accounts are used in the same browser.', '180 days'],
+    'hbHubDevice' => ['Recognises a browser you have logged in from or are logged in on, so someone guessing your password can\'t lock you out of it. It\'s also how a ghost ban is passed on to a new account used in the same browser, and how site admins see which accounts are used in the same browser. The free games at /play also check whether it\'s there, and send a browser that has logged in before to the login and on to the normal game.', '180 days'],
     'hbHubBanned' => ['Set when a banned account is used in the browser, so it can\'t just make a new account.', '400 days, or until the account is unbanned and logs in again'],
     'hbHubToast' => ['A short message for the next page, like "Your password was changed".', '60 seconds'],
 ];
@@ -278,14 +278,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <h3>Playing without an account</h3>
                         <p>
-                            The free games at <a href="/play/">/play/</a> (Wordle, Ore Mining Inc., and Blackjack, Baccarat and
+                            The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., and Blackjack, Baccarat and
                             Roulette with play chips) can be played without an account. Then nothing about you or your game is
                             stored on HB Hub's server. Your game is kept in your own browser instead, encrypted by HB Hub so it
                             can't be read or changed there, and sent along with each move, so the server can check it with the
                             same rules as the normal games and send it back. Wordle and Ore Mining Inc. keep it in local storage
                             (see <a href="#cookies">Cookies and local storage</a>); the casino games only keep it in the open page,
-                            so the play chips start over every time. No cookie is set, and the free games have no leaderboards,
-                            stats or crash reports. The only thing they store on the server is each day's Wordle word, which is
+                            so the play chips start over every time. No cookie is set (they only look at whether the browser
+                            already has the hbHubDevice cookie from logging in before, see <a href="#cookies">Cookies and local
+                            storage</a>), and the free games have no leaderboards, stats or crash reports. The only thing they store on the server is each day's Wordle word, which is
                             the same for everyone.
                         </p>
                         <p>

@@ -1,5 +1,5 @@
 <?php
-// The free games (/play/): every game visitors can play without an account (HBHUB_GUEST_GAMES in
+// The free games (/play): every game visitors can play without an account (HBHUB_GUEST_GAMES in
 // assets/php/guestGames/guestGames.php), for search engines and anyone who wants to try HB Hub first. Open to
 // everyone, logged in or not (a member who opens a game from here is sent to the normal version of it), and built
 // like the docs and legal pages: the frontpage's top bar and a dark hero (legal.css), then a card per game.

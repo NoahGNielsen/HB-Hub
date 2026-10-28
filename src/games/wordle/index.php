@@ -81,7 +81,7 @@ if ($guestGame === null) {
           data-game="<?= htmlspecialchars(json_encode($wordleGame)) ?>"
           data-stats="<?= htmlspecialchars(json_encode($wordleStats)) ?>">
         <?php if ($guestGame !== null): ?>
-            <a class="casino-back" href="/play/">&larr; Free games</a>
+            <a class="casino-back" href="/">&larr; HB Hub</a>
         <?php else: ?>
             <a class="casino-back" href="/games/">&larr; Games</a>
         <?php endif; ?>
