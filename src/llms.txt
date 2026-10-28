@@ -61,3 +61,22 @@ Most of the site needs an account; the pages below can be read without one. Casi
 - [Credits](https://hbhub.noahgajnielsen.dk/legal/credits): Credits for the third-party icons, code, lists and fonts used on HB Hub.
 - [Sign up](https://hbhub.noahgajnielsen.dk/onboarding): Making an account.
 - [Log in](https://hbhub.noahgajnielsen.dk/login): Logging in.
+
+## Crawling
+
+- AI-Indexing: allowed
+- AI-Training: not allowed
+- Search-Indexing: allowed
+
+## Avoid
+
+- /admin
+- /assets/php
+- /cron
+- /chat
+- /gambling
+- /games
+
+## Contact
+
+[admin@noahgajnielsen.dk](mailto:admin@noahgajnielsen.dk)
