@@ -147,6 +147,12 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     RewriteCond %{REQUEST_URI} \.(bak|config|sql|ini|log|sh|inc|swp|dist|env|yml|yaml)$ [NC]
     RewriteRule ^ - [F,L]
 
+    # 4. The guest games' folder only exists under its own addresses (/play/..., FREE GAMES below), so search engines
+    # only ever find one address for each page. Asked for by its real name, it isn't there. THE_REQUEST is what the
+    # browser itself asked for, so the rewrites below (to the real folder) aren't caught by this.
+    RewriteCond %{THE_REQUEST} ^[A-Z]+\ /guestGames(?:[/?\ ]|\.php)
+    RewriteRule ^ - [R=404,L]
+
     # --------------------------------------------------------------------------
     # UNIVERSAL FILE EXTENSION REMOVAL (.html, .php, .htm)
     # --------------------------------------------------------------------------
@@ -168,6 +174,22 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # games/space-ore-miner/ is the game's old name, only still reached by POSTs (see near the top).
     RewriteRule ^games/ore-mining-inc$ /games/ore-mining-inc/ [R=301,L]
     RewriteRule ^games/(?:ore-mining-inc|space-ore-miner)/(.*)$ games/spaceOreMiner/$1 [L]
+
+    # --------------------------------------------------------------------------
+    # FREE GAMES
+    # --------------------------------------------------------------------------
+    # The games visitors can play without an account (assets/php/guestGames/guestGames.php): /play/ lists them, and
+    # each has a short address for search engines, with its JSON under it. The files are in guestGames/, which can't
+    # be opened by its own name (4. above). The normal versions in games/ and gambling/ still need an account.
+    RewriteRule ^play$ /play/ [R=301,L]
+    RewriteRule ^play/$ guestGames/index.php [L]
+    RewriteRule ^play/(wordle|blackjack|baccarat|roulette)$ guestGames/$1/index.php [L]
+    RewriteRule ^play/(wordle|blackjack|baccarat|roulette)/(guess|play|spin)$ guestGames/$1/$2.php [L]
+    RewriteRule ^play/ore-mining-inc$ guestGames/spaceOreMiner/index.php [L]
+    RewriteRule ^play/ore-mining-inc/save$ guestGames/spaceOreMiner/save.php [L]
+    # With a slash at the end (or Ore Mining Inc.'s old name), to the one address each page has
+    RewriteRule ^play/(wordle|blackjack|baccarat|roulette|ore-mining-inc)/$ /play/$1 [R=301,L]
+    RewriteRule ^play/(?:space-ore-miner|spaceOreMiner)/?$ /play/ore-mining-inc [R=301,L]
 
     # B. Serve .html if the clean URL matches a .html file
     RewriteCond %{REQUEST_FILENAME} !-d

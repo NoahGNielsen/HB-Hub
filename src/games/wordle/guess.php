@@ -9,6 +9,9 @@
 // - 400 {"error": "badRequest"}: no such language or action.
 // A guess on an older view of the game (another tab, a double click) or in a game that's over isn't an error: the
 // answer is just the game as it is, for the page to catch up with.
+// Also action=import, tokens (a JSON object, language => token): brings the games the user played today as a guest on
+// /play/wordle over to their account, after they logged in or signed up from there (hbHubWordleImport() in wordle.php).
+// The page sends it when it finds the guest's tokens in the browser. Answers {"imported": [the languages brought over]}.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/wordle/wordle.php';
@@ -18,6 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
     echo json_encode(['error' => 'methodNotAllowed']);
+    exit;
+}
+
+if (($_POST['action'] ?? null) === 'import') {
+    $tokens = json_decode(is_string($_POST['tokens'] ?? null) ? $_POST['tokens'] : '{}', true, 4);
+    echo json_encode(['imported' => hbHubWordleImport(hbHubDatabase(), (int) $hbHubUser['userId'], is_array($tokens) ? $tokens : [])]);
     exit;
 }
 

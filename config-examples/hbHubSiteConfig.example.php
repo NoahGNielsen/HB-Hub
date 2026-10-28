@@ -37,6 +37,8 @@ return [
     ],
     'casino_access' => 1, // Default: 1 | Who can open the casino (the Gambling pages): 0 = nobody, 1 = everyone, 2 = only admins (userRole 2)
     'games_access' => 1, // Default: 1 | Who can open the Games pages (Matador, Chess, UNO, Wordle, Ore Mining Inc.): 0 = nobody, 1 = everyone, 2 = only admins (userRole 2)
+    // The free games at /play/ (Wordle, Ore Mining Inc., and solo Blackjack, Baccarat and Roulette with play chips) are open without an account only while their section above is 1 (everyone)
+    'guest_games_secret' => 'a_long_random_string', // Default: made from database_credentials | The key the free games' guest tokens are sealed with (AES-256-GCM), so guests' browsers can keep their game but not read or change it. Any long random string, e.g. bin2hex(random_bytes(32)). Changing it (or the database login, without it) starts every guest's game over
 
     'giphy_gif_integration' => true, // Default: true | Set to false to disable Giphy integration
     'giphy_api_key' => 'your_giphy_api_key', // Required for Giphy integration. Get one at https://developers.giphy.com/

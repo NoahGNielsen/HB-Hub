@@ -11,6 +11,7 @@ Played with virtual chips only. No real money is involved anywhere.
 | **Baccarat** | Punto banco, solo or at a table with up to 6 players. Tables can be public, joined with a code, or invite-only. Bet on Player (1:1), Banker (1:1 less 2.7%, so neither side has an edge), Tie (8:1) and the pairs (11:1). 8 decks, shuffled at 75% with a notice to everyone at the table |
 | **Roulette** | European roulette (single zero). Every inside and outside bet can be placed straight on the board |
 | **Leaderboards** | A casino leaderboard with the chips everyone has won or lost in each game and in all of them together, and their chips now. Plus separate leaderboards for Blackjack, Baccarat and Roulette with wins, losses and win %. All can be sorted by any column, and win % only counts once you've played 20 rounds |
+| **Free tables** | Solo Blackjack, solo Baccarat and Roulette can be played without an account at `/play/blackjack`, `/play/baccarat` and `/play/roulette`, with 2,500 play chips that only live in the page (a new stack when they run out, and never carried over to an account). The table is a token encrypted by the server, so the shoe and hole card stay hidden, and it's played with the same rules and code as the members' solo tables. See [Games](games.md#free-games-without-an-account) for the sign-up prompt |
 
 The Casino can be opened to everyone, only to admins, or to nobody with `casino_access` in the [config](../config.md),
 and players can block it for themselves (see [Account & security](account.md)).

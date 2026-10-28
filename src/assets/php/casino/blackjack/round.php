@@ -525,23 +525,7 @@ function hbHubBlackjackSettle(PDO $db, array &$room, int $now): void
         $staked = 0;
         $handsPayout = 0;
         foreach ($player['hands'] as &$hand) {
-            [$total] = hbHubBlackjackTotal($hand['cards']);
-            $isNatural = hbHubBlackjackIsHandNatural($hand);
-            $hand['result'] = match (true) {
-                $isNatural && $dealerNatural => 'push',
-                $isNatural => 'blackjack',
-                $total > 21 => 'bust',
-                $dealerNatural => 'lose',
-                $dealerTotal > 21, $total > $dealerTotal => 'win',
-                $total === $dealerTotal => 'push',
-                default => 'lose',
-            };
-            $hand['payout'] = match ($hand['result']) {
-                'blackjack' => $hand['bet'] + intdiv($hand['bet'] * 3, 2),
-                'win' => $hand['bet'] * 2,
-                'push' => $hand['bet'],
-                default => 0,
-            };
+            [$hand['result'], $hand['payout']] = hbHubBlackjackHandPayout($hand, $dealerTotal, $dealerNatural);
             $staked += $hand['bet'];
             $handsPayout += $hand['payout'];
         }
@@ -568,6 +552,34 @@ function hbHubBlackjackSettle(PDO $db, array &$room, int $now): void
         ->execute([implode(' ', $round['dealer']), $dealerTotal, $round['id']]);
 
     hbHubBlackjackSetPhase($state, 'results', $now, HBHUB_BLACKJACK_RESULTS_MS);
+}
+
+/**
+ * How a hand did against the dealer's cards, and what it pays back, the bet included: blackjack 3:2, a win 1:1, a
+ * push the bet back. Also used by the guests' table (guest.php), so both pay the same.
+ *
+ * @return array{0: string, 1: int} [blackjack, win, push, bust or lose, payout]
+ */
+function hbHubBlackjackHandPayout(array $hand, int $dealerTotal, bool $dealerNatural): array
+{
+    [$total] = hbHubBlackjackTotal($hand['cards']);
+    $isNatural = hbHubBlackjackIsHandNatural($hand);
+    $result = match (true) {
+        $isNatural && $dealerNatural => 'push',
+        $isNatural => 'blackjack',
+        $total > 21 => 'bust',
+        $dealerNatural => 'lose',
+        $dealerTotal > 21, $total > $dealerTotal => 'win',
+        $total === $dealerTotal => 'push',
+        default => 'lose',
+    };
+    $payout = match ($result) {
+        'blackjack' => $hand['bet'] + intdiv($hand['bet'] * 3, 2),
+        'win' => $hand['bet'] * 2,
+        'push' => $hand['bet'],
+        default => 0,
+    };
+    return [$result, $payout];
 }
 
 /**

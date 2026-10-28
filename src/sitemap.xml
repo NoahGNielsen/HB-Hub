@@ -1,8 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The pages visitors can open without logging in (robots.txt points here): the frontpage, login, sign-up, the legal pages and the help docs (src/docs/, in the order of HBHUB_DOCS_SECTIONS in assets/php/docs/pages.php). The rest of the site needs an account. -->
+<!-- The pages visitors can open without logging in (robots.txt points here): the frontpage, the free games (/play/, in the order of HBHUB_GUEST_GAMES in assets/php/guestGames/guestGames.php), login, sign-up, the legal pages and the help docs (src/docs/, in the order of HBHUB_DOCS_SECTIONS in assets/php/docs/pages.php). The rest of the site needs an account. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
         <loc>https://hbhub.noahgajnielsen.dk/</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/play/</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/play/wordle</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/play/ore-mining-inc</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/play/blackjack</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/play/baccarat</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/play/roulette</loc>
     </url>
     <url>
         <loc>https://hbhub.noahgajnielsen.dk/onboarding</loc>

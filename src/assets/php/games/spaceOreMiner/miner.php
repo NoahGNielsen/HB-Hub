@@ -1583,15 +1583,19 @@ function hbHubMinerCheckAchievements(array &$state): void
  * (the page that opens next finds them in the browser and sends them with its first save, see "Crash recovery" in
  * spaceOreMiner.js). Some of them may have been saved after all, but those all happened before the save's time, so
  * only the ones after it count, played before $actions.
+ * $guestState: a game played as a guest at /play/ore-mining-inc (opened from its token by the caller), to bring over
+ * to the account after logging in or signing up from there. It only becomes the save when the user has none yet, so
+ * it never writes over one; the answer's 'guest' then says 'imported', or 'kept' when the user's own save was kept.
  */
-function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $actions, array $recovered = []): array|string
+function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $actions, array $recovered = [], ?array $guestState = null): array|string
 {
     $db->beginTransaction();
     try {
         $now = hbHubMinerNow();
-        $db->prepare('INSERT IGNORE INTO `HBHub-MinerSaves` (userId, saveState, saveTab, saveStartTimestamp, saveUpdatedTimestamp)
-            VALUES (?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())')
-            ->execute([$userId, hbHubMinerEncode(hbHubMinerNewState($now)), $tab]);
+        $insert = $db->prepare('INSERT IGNORE INTO `HBHub-MinerSaves` (userId, saveState, saveTab, saveStartTimestamp, saveUpdatedTimestamp)
+            VALUES (?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())');
+        $insert->execute([$userId, hbHubMinerEncode($guestState !== null ? hbHubMinerNormalize($guestState, $now) : hbHubMinerNewState($now)), $tab]);
+        $guestResult = $guestState === null ? null : ($insert->rowCount() > 0 ? 'imported' : 'kept');
         $statement = $db->prepare('SELECT saveState, saveTab, saveRateCount,
                 saveRateTimestamp > UTC_TIMESTAMP() - INTERVAL ' . HBHUB_MINER_SAVES_SECONDS . ' SECOND AS inRateWindow
             FROM `HBHub-MinerSaves` WHERE userId = ? FOR UPDATE');
@@ -1612,33 +1616,7 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         }
 
         $state = hbHubMinerNormalize(json_decode($row['saveState'], true, 64, JSON_THROW_ON_ERROR), $now);
-        $since = min($state['tick'], $now);
-        $fullUntil = $since + HBHUB_MINER_ONLINE_MS;
-        $clicksLeft = (int) floor(($now - $since) / 1000 * HBHUB_MINER_CLICKS_PER_SECOND) + HBHUB_MINER_CLICKS_PER_SECOND;
-        $offlineOre = 0.0;
-
-        $recovered = array_values(array_filter(array_slice($recovered, 0, HBHUB_MINER_MAX_ACTIONS),
-            static fn (mixed $action): bool => is_array($action) && is_numeric($action['at'] ?? null) && (int) $action['at'] > $since));
-        $recoveredCount = 0;
-        foreach (array_slice(array_merge($recovered, $actions), 0, HBHUB_MINER_MAX_ACTIONS) as $index => $action) {
-            if (!is_array($action)) {
-                continue;
-            }
-            if (($action['type'] ?? null) === 'click') {
-                $action['count'] = min((int) ($action['count'] ?? 0), $clicksLeft);
-                $clicksLeft -= max(0, $action['count']);
-            }
-            $at = is_numeric($action['at'] ?? null) ? (int) $action['at'] : $now;
-            $offlineOre += hbHubMinerAdvance($state, max($state['tick'], min($at, $now)), $fullUntil);
-            if (hbHubMinerApply($state, $action)) {
-                hbHubMinerCheckAchievements($state);
-                if ($index < count($recovered)) {
-                    $recoveredCount++;
-                }
-            }
-        }
-        $offlineOre += hbHubMinerAdvance($state, $now, $fullUntil);
-        hbHubMinerCheckAchievements($state);
+        $replay = hbHubMinerReplay($state, $actions, $recovered, $now);
 
         $db->prepare('UPDATE `HBHub-MinerSaves` SET saveState = ?, saveTab = ?, saveOreAllTime = ?, saveOrePerSecond = ?,
                 saveDarkMatter = ?, saveAntimatter = ?, saveStrangeMatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?,
@@ -1658,6 +1636,50 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
     return [
         'state' => hbHubMinerView($state),
         'now' => $now,
+        'offline' => $replay['offline'],
+        'recovered' => $replay['recovered'],
+    ] + ($guestResult !== null ? ['guest' => $guestResult] : []);
+}
+
+/**
+ * Plays what the player did since the last save on the game, up to $now: the part of hbHubMinerSync() that doesn't
+ * touch the database, also used for guests (/play/ore-mining-inc, whose game is a token in their browser instead of a
+ * row). $actions and $recovered are as hbHubMinerSync() takes them. Returns 'offline' (null, or ['ms' => away for,
+ * 'ore' => mined meanwhile]) and 'recovered' (how many of $recovered counted).
+ *
+ * @return array{offline: ?array{ms: int, ore: float}, recovered: int}
+ */
+function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $now): array
+{
+    $since = min($state['tick'], $now);
+    $fullUntil = $since + HBHUB_MINER_ONLINE_MS;
+    $clicksLeft = (int) floor(($now - $since) / 1000 * HBHUB_MINER_CLICKS_PER_SECOND) + HBHUB_MINER_CLICKS_PER_SECOND;
+    $offlineOre = 0.0;
+
+    $recovered = array_values(array_filter(array_slice($recovered, 0, HBHUB_MINER_MAX_ACTIONS),
+        static fn (mixed $action): bool => is_array($action) && is_numeric($action['at'] ?? null) && (int) $action['at'] > $since));
+    $recoveredCount = 0;
+    foreach (array_slice(array_merge($recovered, $actions), 0, HBHUB_MINER_MAX_ACTIONS) as $index => $action) {
+        if (!is_array($action)) {
+            continue;
+        }
+        if (($action['type'] ?? null) === 'click') {
+            $action['count'] = min((int) ($action['count'] ?? 0), $clicksLeft);
+            $clicksLeft -= max(0, $action['count']);
+        }
+        $at = is_numeric($action['at'] ?? null) ? (int) $action['at'] : $now;
+        $offlineOre += hbHubMinerAdvance($state, max($state['tick'], min($at, $now)), $fullUntil);
+        if (hbHubMinerApply($state, $action)) {
+            hbHubMinerCheckAchievements($state);
+            if ($index < count($recovered)) {
+                $recoveredCount++;
+            }
+        }
+    }
+    $offlineOre += hbHubMinerAdvance($state, $now, $fullUntil);
+    hbHubMinerCheckAchievements($state);
+
+    return [
         'offline' => $offlineOre > 0 ? ['ms' => $now - $since, 'ore' => $offlineOre] : null,
         'recovered' => $recoveredCount,
     ];

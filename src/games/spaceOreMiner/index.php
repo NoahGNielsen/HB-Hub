@@ -14,38 +14,60 @@
 // running; ?view= only picks the one shown first. Stats, achievements and how to play are popups.
 // data-watchdog is the worker that notices when the page freezes (spaceOreMinerWatchdog.js). After a crash, the next
 // time the game is opened, the script asks in data-miner-crash-dialog whether it may send a crash report.
+//
+// It's also the guest Ore Mining Inc. at /play/ore-mining-inc, for visitors without an account: guestGames/spaceOreMiner/
+// sets $guestGame and includes this page (see assets/php/guestGames/guestGames.php). Then it has the frontpage's top
+// bar, the guest bar and the text for search engines, no leaderboard or crash reports, and saves to
+// /play/ore-mining-inc/save (data-save), which hands the game back as a token for the script to keep (data-guest).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/crashReports.php';
-hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
+$guestGame ??= null;
+if ($guestGame === null) {
+    hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
+}
 
-const MINER_VIEWS = [ // ?view= => [the menu's text, its address]
-    'ore' => ['Ore', '/games/ore-mining-inc/'],
-    'darkMatter' => ['Dark Matter', '/games/ore-mining-inc/?view=darkMatter'],
-    'antimatter' => ['Antimatter', '/games/ore-mining-inc/?view=antimatter'],
-    'strangeMatter' => ['Strange Matter', '/games/ore-mining-inc/?view=strangeMatter'],
+const MINER_VIEWS = [ // ?view= => [the menu's text, its address after the game's own]
+    'ore' => ['Ore', ''],
+    'darkMatter' => ['Dark Matter', '?view=darkMatter'],
+    'antimatter' => ['Antimatter', '?view=antimatter'],
+    'strangeMatter' => ['Strange Matter', '?view=strangeMatter'],
 ];
 $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
+$minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-inc/';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/spaceOreMiner.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/spaceOreMiner.css') ?>">
-    <title>Ore Mining Inc. - HB Hub</title>
-    <meta name="robots" content="noindex">
-    <meta name="description" content="Mine an asteroid, build a galaxy-wide mining company and Warp Jump to new galaxies in Ore Mining Inc. on the HB Hub">
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/head.php'; ?>
+    <?php else: ?>
+        <title>Ore Mining Inc. - HB Hub</title>
+        <meta name="robots" content="noindex">
+        <meta name="description" content="Mine an asteroid, build a galaxy-wide mining company and Warp Jump to new galaxies in Ore Mining Inc. on the HB Hub">
+    <?php endif; ?>
 </head>
-<body>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
+<body<?= $guestGame !== null ? ' class="home-body"' : '' ?>>
+    <?php if ($guestGame !== null): ?>
+        <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
+    <?php else: ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
+    <?php endif; ?>
     <main class="casino games miner is-loading" data-miner data-view="<?= $minerView ?>"
+          data-save="<?= $guestGame !== null ? '/play/ore-mining-inc/save' : '/games/ore-mining-inc/save' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>
           data-tab="<?= bin2hex(random_bytes(16)) ?>" data-icons="<?= htmlspecialchars(hbHubMinerIconsUrl()) ?>"
           data-watchdog="/assets/js/spaceOreMinerWatchdog.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/spaceOreMinerWatchdog.js') ?>"
           data-config="<?= htmlspecialchars(json_encode(hbHubMinerConfig())) ?>">
-        <a class="casino-back" href="/games/">&larr; Games</a>
+        <?php if ($guestGame !== null): ?>
+            <a class="casino-back" href="/play/">&larr; Free games</a>
+        <?php else: ?>
+            <a class="casino-back" href="/games/">&larr; Games</a>
+        <?php endif; ?>
         <div class="casino-title-row">
             <h1>Ore Mining Inc.</h1>
             <div class="miner-title-actions">
@@ -55,7 +77,9 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <span class="games-visually-hidden">Sound</span>
                 </button>
                 <!-- On phones only the icons show; the words stay for screen readers -->
-                <a class="casino-btn miner-title-btn" href="/games/ore-mining-inc/leaderboard"><?= hbHubMinerIcon('podium', 'miner-title-icon') ?> <span class="miner-title-label">Leaderboard</span></a>
+                <?php if ($guestGame === null): ?>
+                    <a class="casino-btn miner-title-btn" href="/games/ore-mining-inc/leaderboard"><?= hbHubMinerIcon('podium', 'miner-title-icon') ?> <span class="miner-title-label">Leaderboard</span></a>
+                <?php endif; ?>
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="stats" aria-haspopup="dialog"><?= hbHubMinerIcon('stats', 'miner-title-icon') ?> <span class="miner-title-label">Stats</span></button>
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="achievements" aria-haspopup="dialog">
                     <?= hbHubMinerIcon('trophy', 'miner-title-icon') ?> <span class="miner-title-label">Achievements</span>
@@ -64,13 +88,16 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="help" aria-haspopup="dialog"><?= hbHubMinerIcon('question', 'miner-title-icon') ?> <span class="miner-title-label">How to play</span></button>
             </div>
         </div>
-        
+        <?php if ($guestGame !== null): ?>
+            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/top.php'; ?>
+        <?php endif; ?>
+
         <p class="miner-ticker" data-miner-ticker><span class="miner-ticker-text" data-miner-ticker-text>Loading the news from space…</span></p>
 
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
         <nav class="miner-menu" aria-label="Views" data-miner-menu>
-            <?php foreach (MINER_VIEWS as $view => [$text, $url]): ?>
-                <a class="miner-menu-link is-<?= $view ?>" href="<?= htmlspecialchars($url) ?>" data-miner-view-link="<?= $view ?>"<?= $view === $minerView ? ' aria-current="page"' : '' ?>>
+            <?php foreach (MINER_VIEWS as $view => [$text, $query]): ?>
+                <a class="miner-menu-link is-<?= $view ?>" href="<?= htmlspecialchars($minerAddress . $query) ?>" data-miner-view-link="<?= $view ?>"<?= $view === $minerView ? ' aria-current="page"' : '' ?>>
                     <span class="miner-menu-text"><?= $text ?></span>
                     <?php if ($view !== 'ore'): ?>
                         <span class="miner-menu-count" data-miner-menu-count="<?= $view ?>"></span>
@@ -428,13 +455,19 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             <h2 id="miner-other-tab-title">Playing somewhere else</h2>
             <p>You opened Ore Mining Inc. in another tab or on another device, so it's stopped here. Your game carries on there.</p>
             <div class="games-dialog-actions">
-                <a class="casino-btn" href="/games/">Back to Games</a>
+                <?php if ($guestGame !== null): ?>
+                    <a class="casino-btn" href="/play/">Back to the free games</a>
+                <?php else: ?>
+                    <a class="casino-btn" href="/games/">Back to Games</a>
+                <?php endif; ?>
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-reload>Play here instead</button>
             </div>
         </dialog>
 
+        <?php if ($guestGame === null): ?>
         <!-- Only shown after a crash: whether the reports the page found may be sent (see "Crash reports" in
-             spaceOreMiner.js). What would be sent is under "What's in it", word for word. -->
+             spaceOreMiner.js). What would be sent is under "What's in it", word for word. Not for guests, who
+             can't send crash reports. -->
         <dialog class="games-dialog miner-crash-dialog" data-miner-crash-dialog aria-labelledby="miner-crash-title">
             <h2 id="miner-crash-title">The game crashed last time</h2>
             <p data-miner-crash-text></p>
@@ -454,8 +487,12 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-crash-send>Send crash report</button>
             </div>
         </dialog>
+        <?php endif; ?>
     </main>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/bottom.php'; ?>
+    <?php endif; ?>
+    <?php $hbHubShowSiteFooter = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/spaceOreMiner.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/spaceOreMiner.js') ?>" defer></script>
 </body>
 </html>

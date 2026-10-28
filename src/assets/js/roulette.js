@@ -3,11 +3,15 @@
 // The bets stay on the table after a spin, so spinning again with the same bets is one click, or Space (which also
 // puts the last spin's bets back if the table was cleared since).
 // Click a bet to put the chosen chip on it, right-click to take one off.
+// The guest Roulette at /play/roulette (data-guest, see assets/php/guestGames/guestGames.php) spins through
+// /play/roulette/spin (data-api) with play chips: they come back as a sealed token with every spin, kept here in the
+// page only (so they start over when it's opened again), and a guest who runs out gets a new stack ("notice").
 (() => {
     const root = document.querySelector('[data-roulette]');
     if (!root) return;
 
-    const API = '/gambling/roulette/spin';
+    const API = root.dataset.api;
+    const IS_GUEST = 'guest' in root.dataset;
     const SPIN_MS = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 5000;
     const WHEEL_TURNS = 4;
     const BALL_TURNS = 6;
@@ -56,6 +60,7 @@
     let wheelTurn = 0; // degrees, only ever growing so the wheel always turns the same way
     let ballTurn = 0;
     let covered = []; // the cells lit up for the bet under the pointer
+    let guestToken = ''; // a guest's play chips, sealed by the server (none before the first spin: a new stack)
 
     const formatChips = (amount) => amount.toLocaleString('en-US');
     const total = () => [...bets.values()].reduce((sum, amount) => sum + amount, 0);
@@ -177,12 +182,16 @@
 
     async function request(sentBets) {
         try {
-            const response = await fetch(API, {
-                method: 'POST',
-                headers: { Accept: 'application/json' },
-                body: new URLSearchParams({ bets: JSON.stringify(Object.fromEntries(sentBets)) }),
-            });
-            return await response.json();
+            const body = new URLSearchParams({ bets: JSON.stringify(Object.fromEntries(sentBets)) });
+            if (IS_GUEST) body.set('token', guestToken);
+            const response = await fetch(API, { method: 'POST', headers: { Accept: 'application/json' }, body });
+            if (IS_GUEST && response.status === 403) {
+                location.reload(); // the casino was closed: the page is gone
+                return null;
+            }
+            const answer = await response.json();
+            if (IS_GUEST && typeof answer?.token === 'string') guestToken = answer.token;
+            return answer;
         } catch {
             return null; // offline for a moment, or logged out in another tab
         }
@@ -262,6 +271,10 @@
         lastBets = sentBets;
         setChips(answer.chips); // only now, so the top bar doesn't give the result away while the wheel turns
         showResult(answer, sentBets);
+        if (answer.notice) { // a guest who ran out: a new stack of play chips
+            setChips(answer.refilledChips);
+            showMessage(answer.notice);
+        }
         draw();
         spinButton.focus({ preventScroll: true });
     }

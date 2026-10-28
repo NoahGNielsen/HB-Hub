@@ -2,12 +2,23 @@
 // data-game ({guesses: [{word, score: ['correct' | 'present' | 'absent', ...]}], result: 'playing' | 'won' | 'lost',
 // answer: the word once it's over, else null}) and the stats in data-stats (played, wins, winRate, averageGuesses,
 // distribution {1..6: wins}, currentStreak, longestStreak). Typing works with the keyboard or by tapping the keys;
-// Enter posts the guess to /games/wordle/guess, which checks it and answers with the game and stats the same way.
-// A new guess flips its tiles over one by one (not when the device asks for less motion).
+// Enter posts the guess to /games/wordle/guess (data-api), which checks it and answers with the game and stats the
+// same way. A new guess flips its tiles over one by one (not when the device asks for less motion).
+//
+// The guest Wordle at /play/wordle (data-guest, see assets/php/guestGames/guestGames.php) works the same, but a guest's
+// game is only kept in this browser: each answer from /play/wordle/guess has the game as a sealed token, kept in
+// localStorage (GUEST_KEY) and sent along with the next guess. The page starts on an empty board and loads the game
+// from the tokens (action=view), with how far the guest is in each language for the tabs. Guests have no stats; a
+// finished game asks them to sign up (the guest:prompt event, guestPrompt.js). On the members' page, tokens found from
+// today are sent once to be brought over to the account (action=import), as that's where logging in or signing up
+// from the guest page leads.
 (() => {
     const root = document.querySelector('[data-wordle]');
     if (!root) return;
 
+    const API = root.dataset.api;
+    const IS_GUEST = 'guest' in root.dataset;
+    const GUEST_KEY = 'hbHubGuestWordle'; // a guest's games of today: {date, en: token, da: token}
     const LANGUAGE = root.dataset.lang;
     const LANGUAGE_NAME = root.dataset.languageName;
     const DATE = root.dataset.date;
@@ -18,6 +29,7 @@
     const STATUS_RANK = { absent: 1, present: 2, correct: 3 }; // a key shows the best a letter has done
     const STATUS_WORDS = { correct: 'right place', present: 'wrong place', absent: 'not in the word' };
     const RESULT_STATUS = { playing: ['playing', 'Playing'], won: ['won', 'Solved'], lost: ['lost', 'Missed'] };
+    const STATUS_NAMES = { new: 'New word', playing: 'Playing', won: 'Solved', lost: 'Missed' }; // the tabs, like the page's WORDLE_STATUS_NAMES
     const WIN_WORDS = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
 
     const rows = [...root.querySelectorAll('.wordle-row')];
@@ -35,6 +47,25 @@
     let typed = []; // the letters of the guess being typed
     let isBusy = false; // a guess is on its way, or its tiles are still turning
     let messageTimer = 0;
+
+    // A guest's tokens from today, {date, en: token, da: token}, or just the date when there are none (or only older ones)
+    function guestTokens() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(GUEST_KEY));
+            if (saved?.date === DATE) return saved;
+        } catch {
+            // no storage, or something broken in it
+        }
+        return { date: DATE };
+    }
+
+    function keepGuestToken(token) {
+        try {
+            localStorage.setItem(GUEST_KEY, JSON.stringify({ ...guestTokens(), [LANGUAGE]: token }));
+        } catch {
+            // no storage: the game only lasts as long as the page
+        }
+    }
 
     function say(text, keepFor = 2000) {
         clearTimeout(messageTimer);
@@ -147,13 +178,11 @@
         }
         isBusy = true;
         const before = game.guesses.length;
+        const body = new URLSearchParams({ action: 'guess', lang: LANGUAGE, date: DATE, turn: String(before), word: typed.join('') });
+        if (IS_GUEST) body.set('token', guestTokens()[LANGUAGE] ?? '');
         let response;
         try {
-            response = await fetch('/games/wordle/guess', {
-                method: 'POST',
-                headers: { Accept: 'application/json' },
-                body: new URLSearchParams({ action: 'guess', lang: LANGUAGE, date: DATE, turn: String(before), word: typed.join('') }),
-            });
+            response = await fetch(API, { method: 'POST', headers: { Accept: 'application/json' }, body });
         } catch {
             isBusy = false;
             say('Couldn\'t send your guess. Check your connection and try again.');
@@ -184,16 +213,18 @@
 
         game = data.game;
         typed = [];
+        if (IS_GUEST && data.token) keepGuestToken(data.token);
         const isNewGuess = game.guesses.length === before + 1;
         const animate = isNewGuess && !reduceMotion.matches;
         drawBoard(animate ? before : -1);
         const done = () => {
             isBusy = false;
             drawKeys();
-            drawStats(data.stats);
+            if (data.stats) drawStats(data.stats);
             drawResult();
             if (!isNewGuess) say('Your game was updated from another tab.');
             else if (game.result !== 'playing') say(resultTitle.textContent + ' ' + resultText.textContent, 0);
+            if (IS_GUEST && isNewGuess && game.result !== 'playing') document.dispatchEvent(new CustomEvent('guest:prompt'));
         };
         if (animate) setTimeout(done, FLIP_MS * (LENGTH - 1) + 500);
         else done();
@@ -250,9 +281,84 @@
         }
     });
 
+    // The tabs' "Solved", "Missed" and so on, from the guest's tokens (members get them from the page)
+    function drawStatuses(statuses) {
+        root.querySelectorAll('[data-wordle-status-of]').forEach((status) => {
+            const name = statuses[status.dataset.wordleStatusOf];
+            if (!STATUS_NAMES[name]) return;
+            status.className = 'wordle-language-status is-' + name;
+            status.textContent = STATUS_NAMES[name];
+        });
+    }
+
+    // A guest's game of today, from the tokens this browser keeps. Typing waits until it's here.
+    async function loadGuestGame() {
+        const tokens = guestTokens();
+        if (Object.keys(tokens).length <= 1) return; // only the date: nothing played today
+        isBusy = true;
+        let data = null;
+        try {
+            const response = await fetch(API, {
+                method: 'POST',
+                headers: { Accept: 'application/json' },
+                body: new URLSearchParams({ action: 'view', lang: LANGUAGE, tokens: JSON.stringify(tokens) }),
+            });
+            if (response.status === 403) {
+                location.reload(); // the games were closed: the page is gone
+                return;
+            }
+            data = await response.json();
+        } catch {
+            say('Couldn\'t load your game. Check your connection and reload the page.', 0);
+        }
+        isBusy = false;
+        if (!data?.game) return;
+        game = data.game;
+        drawBoard();
+        drawKeys();
+        drawResult();
+        drawStatuses(data.statuses ?? {});
+    }
+
+    // On the members' page: the games played today as a guest before logging in or signing up, brought over to the
+    // account. The tokens are only forgotten once the server has answered, and the page reloads when it took any.
+    async function importGuestGames() {
+        let saved = null;
+        try {
+            saved = localStorage.getItem(GUEST_KEY);
+        } catch {
+            return; // no storage, so no guest games either
+        }
+        if (saved === null) return;
+        const tokens = guestTokens();
+        let imported = [];
+        if (Object.keys(tokens).length > 1) {
+            try {
+                const response = await fetch(API, {
+                    method: 'POST',
+                    headers: { Accept: 'application/json' },
+                    body: new URLSearchParams({ action: 'import', tokens: JSON.stringify(tokens) }),
+                });
+                if (!response.ok) return; // tried again next time
+                imported = (await response.json()).imported ?? [];
+            } catch {
+                return;
+            }
+        }
+        try {
+            localStorage.removeItem(GUEST_KEY);
+        } catch {
+            // no storage
+        }
+        if (imported.length > 0) location.reload();
+    }
+
     drawBoard();
     drawKeys();
-    drawStats(JSON.parse(root.dataset.stats));
+    const stats = JSON.parse(root.dataset.stats);
+    if (stats) drawStats(stats);
     drawResult();
     setInterval(drawCountdown, 1000);
+    if (IS_GUEST) loadGuestGame();
+    else importGuestGames();
 })();

@@ -3,22 +3,29 @@
 // the first language the user hasn't finished today opens. The words and rules are in assets/php/games/wordle/wordle.php.
 // The page only has the board's and keyboard's empty spaces: wordle.js fills them in from the game in data-game
 // (hbHubWordleView(): the guesses so far with how their letters did, the result, and the word once it's over) and the
-// stats in data-stats (hbHubWordleStats()), and sends guesses to /games/wordle/guess.
+// stats in data-stats (hbHubWordleStats()), and sends guesses to /games/wordle/guess (data-api).
+//
+// It's also the guest Wordle at /play/wordle, for visitors without an account: guestGames/wordle/ sets $guestGame and
+// includes this page (see assets/php/guestGames/guestGames.php). Then it has the frontpage's top bar, the guest bar and
+// the text for search engines, no stats or leaderboard, and starts on an empty board: a guest's game is a token in
+// their browser, which wordle.js sends to /play/wordle/guess to load it (data-guest).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/wordle/wordle.php';
-hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
+$guestGame ??= null;
+if ($guestGame === null) {
+    hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
+}
 
 const WORDLE_STATUS_NAMES = ['new' => 'New word', 'playing' => 'Playing', 'won' => 'Solved', 'lost' => 'Missed'];
 
 $db = hbHubDatabase();
-$userId = (int) $hbHubUser['userId'];
 $today = hbHubWordleToday();
 
-// How far the user is with each language today, for the tabs
+// How far the user is with each language today, for the tabs. A guest's are filled in by wordle.js.
 $wordleStatus = [];
 foreach (array_keys(HBHUB_WORDLE_LANGUAGES) as $code) {
-    $game = hbHubWordleGame($db, $userId, $code, $today);
+    $game = $guestGame === null ? hbHubWordleGame($db, (int) $hbHubUser['userId'], $code, $today) : null;
     $wordleStatus[$code] = match ($game['result'] ?? null) {
         null => 'new',
         HBHUB_WORDLE_WON => 'won',
@@ -33,23 +40,38 @@ if (!is_string($language) || !isset(HBHUB_WORDLE_LANGUAGES[$language])) {
         ?? 'en';
 }
 
-$wordleGame = hbHubWordleView(hbHubWordleGame($db, $userId, $language, $today), hbHubWordleDailyWord($db, $language, $today));
-$wordleStats = hbHubWordleUserStats($db, $userId, $language);
+$wordleAnswer = hbHubWordleDailyWord($db, $language, $today);
+if ($guestGame === null) {
+    $wordleGame = hbHubWordleView(hbHubWordleGame($db, (int) $hbHubUser['userId'], $language, $today), $wordleAnswer);
+    $wordleStats = hbHubWordleUserStats($db, (int) $hbHubUser['userId'], $language);
+} else {
+    $wordleGame = hbHubWordleView(null, $wordleAnswer);
+    $wordleStats = null;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/wordle.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/wordle.css') ?>">
-    <title>Wordle - HB Hub</title>
-    <meta name="robots" content="noindex">
-    <meta name="description" content="Guess the daily five-letter word on the HB Hub, in English or Danish">
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/head.php'; ?>
+    <?php else: ?>
+        <title>Wordle - HB Hub</title>
+        <meta name="robots" content="noindex">
+        <meta name="description" content="Guess the daily five-letter word on the HB Hub, in English or Danish">
+    <?php endif; ?>
 </head>
-<body>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
+<body<?= $guestGame !== null ? ' class="home-body"' : '' ?>>
+    <?php if ($guestGame !== null): ?>
+        <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
+    <?php else: ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
+    <?php endif; ?>
     <main class="casino games wordle" data-wordle
+          data-api="<?= $guestGame !== null ? '/play/wordle/guess' : '/games/wordle/guess' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>
           data-lang="<?= $language ?>"
           data-language-name="<?= HBHUB_WORDLE_LANGUAGES[$language] ?>"
           data-date="<?= $today ?>"
@@ -58,11 +80,20 @@ $wordleStats = hbHubWordleUserStats($db, $userId, $language);
           data-length="<?= HBHUB_WORDLE_LENGTH ?>"
           data-game="<?= htmlspecialchars(json_encode($wordleGame)) ?>"
           data-stats="<?= htmlspecialchars(json_encode($wordleStats)) ?>">
-        <a class="casino-back" href="/games/">&larr; Games</a>
+        <?php if ($guestGame !== null): ?>
+            <a class="casino-back" href="/play/">&larr; Free games</a>
+        <?php else: ?>
+            <a class="casino-back" href="/games/">&larr; Games</a>
+        <?php endif; ?>
         <div class="casino-title-row">
             <h1>Wordle</h1>
-            <a class="casino-btn" href="/games/wordle/leaderboard?lang=<?= $language ?>">Leaderboard</a>
+            <?php if ($guestGame === null): ?>
+                <a class="casino-btn" href="/games/wordle/leaderboard?lang=<?= $language ?>">Leaderboard</a>
+            <?php endif; ?>
         </div>
+        <?php if ($guestGame !== null): ?>
+            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/top.php'; ?>
+        <?php endif; ?>
         <p class="casino-intro">
             Guess the day's five-letter word in six tries. There's a new word every day at midnight, one in English and
             one in Danish, and everyone gets the same ones.
@@ -73,7 +104,7 @@ $wordleStats = hbHubWordleUserStats($db, $userId, $language);
                 <a class="wordle-language<?= $code === $language ? ' is-active' : '' ?>" href="?lang=<?= $code ?>"
                    lang="<?= $code ?>"<?= $code === $language ? ' aria-current="page"' : '' ?>>
                     <span class="wordle-language-name"><?= $name ?></span>
-                    <span class="wordle-language-status is-<?= $wordleStatus[$code] ?>" lang="en"<?= $code === $language ? ' data-wordle-status' : '' ?>><?= WORDLE_STATUS_NAMES[$wordleStatus[$code]] ?></span>
+                    <span class="wordle-language-status is-<?= $wordleStatus[$code] ?>" lang="en" data-wordle-status-of="<?= $code ?>"<?= $code === $language ? ' data-wordle-status' : '' ?>><?= WORDLE_STATUS_NAMES[$wordleStatus[$code]] ?></span>
                 </a>
             <?php endforeach; ?>
         </nav>
@@ -116,7 +147,7 @@ $wordleStats = hbHubWordleUserStats($db, $userId, $language);
             <div class="casino-actions">
                 <button type="button" class="casino-btn casino-btn-primary" data-wordle-share>Share</button>
                 <?php foreach (HBHUB_WORDLE_LANGUAGES as $code => $name): ?>
-                    <?php if ($code !== $language && in_array($wordleStatus[$code], ['new', 'playing'], true)): ?>
+                    <?php if ($code !== $language && ($guestGame !== null || in_array($wordleStatus[$code], ['new', 'playing'], true))): ?>
                         <a class="casino-btn" href="?lang=<?= $code ?>">Play the <?= $name ?> word</a>
                     <?php endif; ?>
                 <?php endforeach; ?>
@@ -124,6 +155,7 @@ $wordleStats = hbHubWordleUserStats($db, $userId, $language);
             <p class="casino-hint wordle-next" data-wordle-next></p>
         </section>
 
+        <?php if ($guestGame === null): ?>
         <section class="casino-card wordle-stats" aria-labelledby="wordle-stats-title">
             <h2 id="wordle-stats-title">Your <?= HBHUB_WORDLE_LANGUAGES[$language] ?> stats</h2>
             <dl class="wordle-numbers">
@@ -143,6 +175,7 @@ $wordleStats = hbHubWordleUserStats($db, $userId, $language);
                 <?php endfor; ?>
             </ol>
         </section>
+        <?php endif; ?>
 
         <section class="casino-card casino-rules" aria-labelledby="wordle-rules-title">
             <h2 id="wordle-rules-title">How to play</h2>
@@ -151,11 +184,14 @@ $wordleStats = hbHubWordleUserStats($db, $userId, $language);
                 <li>After each guess the letters change colour: <span class="wordle-rule-tile is-correct">green</span> is the right letter in the right place, <span class="wordle-rule-tile is-present">yellow</span> is in the word but somewhere else, and <span class="wordle-rule-tile is-absent">grey</span> isn't in the word (or not that many times).</li>
                 <li>Type on your keyboard or tap the letters<?= $language === 'da' ? '. The Danish word can have æ, ø and å in it' : '' ?>.</li>
                 <li>There's one English and one Danish word a day, and you get one go at each. A new one comes at midnight (Danish time).</li>
-                <li>Your streak is the days in a row you've guessed the word. Missing a day, or not getting it, starts it over. A word you start but don't finish by midnight counts as missed.</li>
+                <li><?= $guestGame !== null ? 'With an account, your' : 'Your' ?> streak is the days in a row you've guessed the word. Missing a day, or not getting it, starts it over. A word you start but don't finish by midnight counts as missed.</li>
             </ul>
         </section>
     </main>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/bottom.php'; ?>
+    <?php endif; ?>
+    <?php $hbHubShowSiteFooter = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/wordle.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/wordle.js') ?>" defer></script>
 </body>
 </html>

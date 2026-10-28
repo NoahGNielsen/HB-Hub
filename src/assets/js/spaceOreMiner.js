@@ -18,9 +18,19 @@
 // one sends it with its first save. A watchdog worker (data-watchdog, spaceOreMinerWatchdog.js) notices when the page
 // freezes, and the next time the game is opened after one, it asks whether it may send a crash report. See "Crash
 // recovery" and "Crash reports" near the end.
+//
+// The guest version at /play/ore-mining-inc (data-guest, see assets/php/guestGames/guestGames.php) plays the same, but
+// saves to /play/ore-mining-inc/save (data-save), which keeps nothing: each answer has the game as a sealed token, kept
+// in localStorage (GUEST_KEY, with the tab playing it) and sent with the next save. A guest can't send crash reports,
+// so any crashes found are just cleared. On the members' page, a guest token found in the browser goes with the first
+// save, to become the account's save if it has none yet (that's where logging in or signing up from /play/ leads).
 (() => {
     const root = document.querySelector('[data-miner]');
     if (!root) return;
+
+    const SAVE_URL = root.dataset.save;
+    const IS_GUEST = 'guest' in root.dataset;
+    const GUEST_KEY = 'hbHubGuestMiner'; // a guest's game: {tab: the tab playing it, token}
 
     const CONFIG = JSON.parse(root.dataset.config);
     const TAB = root.dataset.tab;
@@ -888,8 +898,42 @@
 
     const KEEPALIVE_BYTES = 60000; // a bit under the 64 KB browsers allow a keepalive request
 
+    // A guest's game as this browser keeps it ({tab, token}), or null
+    function guestSave() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(GUEST_KEY));
+            return typeof saved?.token === 'string' ? saved : null;
+        } catch {
+            return null; // no storage, or something broken in it
+        }
+    }
+
+    function keepGuestSave(token) {
+        try {
+            localStorage.setItem(GUEST_KEY, JSON.stringify({ tab: TAB, token }));
+        } catch {
+            // no storage, or it's full: the game only lasts as long as the page
+        }
+    }
+
+    function forgetGuestSave() {
+        try {
+            localStorage.removeItem(GUEST_KEY);
+        } catch {
+            // no storage
+        }
+    }
+
     async function save({ claim = false, keepalive = false } = {}) {
         if (isSending || (!isPlaying && !claim)) return;
+        // A guest's game opened in another tab since: like the members' 409 "otherTab", but found here, as the
+        // browser is the only place that knows
+        if (IS_GUEST && !claim && guestSave()?.tab !== TAB) {
+            note('Another tab took the game over');
+            stop();
+            otherTabDialog.showModal();
+            return;
+        }
         const was = step('save');
         isSending = true;
         clearTimeout(saveSoonTimer);
@@ -901,6 +945,9 @@
         const body = new URLSearchParams({ action: 'sync', tab: TAB, actions: JSON.stringify(batch) });
         if (claim) body.set('claim', '1');
         if (claim && recovered.length > 0) body.set('recovered', JSON.stringify(recovered));
+        const guestToken = guestSave()?.token ?? '';
+        if (IS_GUEST) body.set('token', guestToken);
+        else if (claim && guestToken !== '') body.set('guest', guestToken); // brought over to the account, see the top
         // A keepalive request can't be bigger than 64 KB (the browser fails it at once), so a big batch goes as a normal
         // one, which still gets there as long as the page isn't closed
         if (body.toString().length > KEEPALIVE_BYTES) keepalive = false;
@@ -910,7 +957,7 @@
         step(was);
 
         try {
-            const response = await fetch('/games/ore-mining-inc/save', {
+            const response = await fetch(SAVE_URL, {
                 method: 'POST', headers: { Accept: 'application/json' }, body, keepalive,
             });
             step('save: answer');
@@ -929,6 +976,14 @@
             if (!response.ok || !data.state) throw new Error(data.error || 'HTTP ' + response.status);
 
             clockOffset = Math.round(data.now - (sentAt + Date.now()) / 2);
+            if (IS_GUEST && typeof data.token === 'string') keepGuestSave(data.token);
+            if (data.guest) {
+                forgetGuestSave();
+                toast('orePile', data.guest === 'imported'
+                    ? 'Your guest game is on your account now. Welcome to HB Hub!'
+                    : 'You already had a game on this account, so you\'re carrying on with that one. The guest game was left behind.',
+                'is-welcome', 9000);
+            }
             step('save: adopt');
             adopt(data.state, claim);
             lastSavedAt = Date.now();
@@ -3086,7 +3141,7 @@
     // the ones that did get there aren't counted twice. Then they're taken away, except from a page that crashed
     // (isCrash()), which stays (without its actions) until the player has answered about its crash report.
 
-    const RUN_KEY = 'hbHubMinerRun:';
+    const RUN_KEY = IS_GUEST ? 'hbHubGuestMinerRun:' : 'hbHubMinerRun:'; // a guest's never end up in an account's game
     const CRASH_STALE_MS = 10000; // a page on screen says something every second: after this long without, it's gone
     const openedAt = Date.now();
     let inflight = []; // the last save's actions while it's on its way
@@ -3234,6 +3289,10 @@
         hangIds = hangs.map((hang) => hang.id);
         if (crashes.length === 0) return;
         note('Found ' + crashes.length + ' crash' + (crashes.length === 1 ? '' : 'es') + ' from before');
+        if (IS_GUEST) {
+            answerCrashes(false); // a guest can't send crash reports (the page has no popup for it): just cleared
+            return;
+        }
         const more = crashes.length - 1;
         crashDialogText.textContent = crashText(crashes[0]) + (more > 0 ? ' It happened ' + more + ' more ' + (more === 1 ? 'time' : 'times') + ' before that too.' : '');
         crashDialogJson.textContent = JSON.stringify(sentReport(), null, 2);
@@ -3242,7 +3301,7 @@
 
     async function answerCrashes(isSending) {
         if (crashesAnswered) return; // answered already (a second click before the popup closed)
-        crashDialog.close();
+        crashDialog?.close();
         crashesAnswered = true;
         for (const run of crashRuns) {
             try {
@@ -3268,8 +3327,8 @@
         toast('', isSent ? 'Thanks! The crash report was sent, so it can be looked into.' : 'Couldn\'t send the crash report, sorry.', '', 6000);
     }
 
-    root.querySelector('[data-miner-crash-send]').addEventListener('click', () => answerCrashes(true));
-    root.querySelector('[data-miner-crash-skip]').addEventListener('click', () => answerCrashes(false));
+    root.querySelector('[data-miner-crash-send]')?.addEventListener('click', () => answerCrashes(true));
+    root.querySelector('[data-miner-crash-skip]')?.addEventListener('click', () => answerCrashes(false));
 
     note('Opened on the ' + root.dataset.view + ' view');
     watchSlowFrames();

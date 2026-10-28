@@ -6,15 +6,26 @@
 // around it (a split to the next row, a corner and so on). Each one sits on the line it's named after in roulette.css,
 // which lays the table out across on wide screens and down on narrow ones. Where each cell goes is in classes there
 // too (rl-row-*, rl-place-*, rl-at-*), as the site's CSP doesn't allow style attributes.
+//
+// It's also the guest Roulette at /play/roulette, for visitors without an account: guestGames/roulette/ sets
+// $guestGame and includes this page (see assets/php/guestGames/guestGames.php). Then it has the frontpage's top bar,
+// the guest bar (with the play chips, which start over every time) and the text for search engines, no leaderboard or
+// spins from before, and spins through /play/roulette/spin (data-api).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/roulette/roulette.php';
-hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
+$guestGame ??= null;
+if ($guestGame === null) {
+    hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
 
-$db = hbHubDatabase();
-$userId = (int) $hbHubUser['userId'];
-$navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
-$rouletteHistory = hbHubRouletteHistory($db, $userId);
+    $db = hbHubDatabase();
+    $userId = (int) $hbHubUser['userId'];
+    $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
+    $rouletteHistory = hbHubRouletteHistory($db, $userId);
+} else {
+    $navCasinoChips = HBHUB_GUEST_CASINO_CHIPS; // in the guest bar instead (guestGames/top.php)
+    $rouletteHistory = [];
+}
 $rouletteChips = [10, 50, 100, 500, 1000]; // the chips to bet with
 
 const ROULETTE_OUTSIDE_NAMES = [
@@ -79,24 +90,42 @@ function rouletteWheelPockets(): string
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/roulette.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/roulette.css') ?>">
-    <title>Roulette - HB Hub</title>
-    <meta name="robots" content="noindex">
-    <meta name="description" content="Roulette in the HB Hub casino">
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/head.php'; ?>
+    <?php else: ?>
+        <title>Roulette - HB Hub</title>
+        <meta name="robots" content="noindex">
+        <meta name="description" content="Roulette in the HB Hub casino">
+    <?php endif; ?>
 </head>
-<body>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="rl" data-roulette data-chips="<?= $navCasinoChips ?>" data-bet-step="<?= HBHUB_ROULETTE_BET_STEP ?>">
-        <a class="casino-back" href="/gambling/">&larr; Casino</a>
+<body<?= $guestGame !== null ? ' class="home-body"' : '' ?>>
+    <?php if ($guestGame !== null): ?>
+        <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
+    <?php else: ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
+    <?php endif; ?>
+    <main class="rl" data-roulette data-chips="<?= $navCasinoChips ?>" data-bet-step="<?= HBHUB_ROULETTE_BET_STEP ?>"
+          data-api="<?= $guestGame !== null ? '/play/roulette/spin' : '/gambling/roulette/spin' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
+        <?php if ($guestGame !== null): ?>
+            <a class="casino-back" href="/play/">&larr; Free games</a>
+        <?php else: ?>
+            <a class="casino-back" href="/gambling/">&larr; Casino</a>
+        <?php endif; ?>
         <div class="rl-header">
             <div>
                 <h1 class="rl-title">Roulette</h1>
                 <p class="rl-meta">Single zero &middot; A number pays 35:1 &middot; Bets in steps of <?= HBHUB_ROULETTE_BET_STEP ?></p>
             </div>
-            <a class="casino-btn" href="/gambling/roulette/leaderboard">Leaderboard</a>
+            <?php if ($guestGame === null): ?>
+                <a class="casino-btn" href="/gambling/roulette/leaderboard">Leaderboard</a>
+            <?php endif; ?>
         </div>
+        <?php if ($guestGame !== null): ?>
+            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/top.php'; ?>
+        <?php endif; ?>
 
         <section class="rl-top" aria-label="The wheel">
             <div class="rl-wheel">
@@ -205,7 +234,11 @@ function rouletteWheelPockets(): string
                 <button type="button" class="casino-btn casino-btn-primary rl-spin" data-rl-spin title="Spin (Space)" aria-keyshortcuts="Space" disabled>Spin</button>
             </div>
             <p class="rl-hint" data-rl-broke hidden>
-                You're out of chips. <a href="/gambling/">Collect your daily chips</a>
+                <?php if ($guestGame !== null): ?>
+                    You're out of chips. Reload the page for a new stack.
+                <?php else: ?>
+                    You're out of chips. <a href="/gambling/">Collect your daily chips</a>
+                <?php endif; ?>
             </p>
         </section>
 
@@ -214,7 +247,10 @@ function rouletteWheelPockets(): string
             <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/roulette/rules.php'; ?>
         </details>
     </main>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/bottom.php'; ?>
+    <?php endif; ?>
+    <?php $hbHubShowSiteFooter = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/roulette.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/roulette.js') ?>" defer></script>
 </body>
 </html>

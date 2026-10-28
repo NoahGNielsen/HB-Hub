@@ -1,0 +1,213 @@
+/* The guest games (/play/, assets/php/guestGames/): the "playing as a guest" bar at the top of a game (top.php), the
+   text about the game under it and the sign-up popup (bottom.php), and the list of free games (guestGames/index.php).
+   Loaded on top of the game's own stylesheets (and casino.css, for .casino-btn), under the frontpage's top bar
+   (homepage.css). */
+
+.guest-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- The bar at the top of a game ---------- */
+.guest-bar {
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 8%, var(--secondary));
+}
+
+.guest-bar-text {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.guest-bar-chips {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.guest-bar-chips-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.guest-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.guest-bar-actions .casino-btn {
+  padding: 7px 14px;
+  font-size: 0.9rem;
+}
+
+/* ---------- Under the game ---------- */
+.guest-about {
+  max-width: 880px;
+  margin: 8px auto 48px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  line-height: 1.6;
+}
+
+.guest-about h2 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+}
+
+.guest-about p {
+  margin: 0 0 12px;
+  opacity: 0.85;
+}
+
+.guest-about a {
+  color: var(--accent);
+}
+
+.guest-about-more {
+  margin: 24px 0 8px;
+  font-size: 1rem;
+}
+
+.guest-about-games {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  list-style: none;
+}
+
+/* ---------- The sign-up popup ---------- */
+/* No padding on the dialog itself: guestPrompt.js counts a click on it (and not on .guest-prompt-body) as a click on
+   the backdrop, which closes it */
+.guest-prompt {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  overflow-y: auto;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+.guest-prompt::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.guest-prompt-body {
+  padding: 24px;
+}
+
+.guest-prompt h2 {
+  margin: 0 0 10px;
+  font-size: 1.3rem;
+}
+
+.guest-prompt p {
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.guest-prompt-hint {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.guest-prompt-actions {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---------- The list of free games (/play/) ---------- */
+.guest-hub {
+  max-width: 1040px;
+  margin: 40px auto 56px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.guest-hub-games {
+  margin: 0 0 40px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+  list-style: none;
+}
+
+.guest-hub-game {
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.guest-hub-game h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.guest-hub-kind {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.guest-hub-game p {
+  margin: 0;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.guest-hub-game .home-btn {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+.guest-hub-text {
+  max-width: 46em;
+  line-height: 1.6;
+}
+
+.guest-hub-text h2 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+}
+
+.guest-hub-text p {
+  margin: 0 0 12px;
+  opacity: 0.85;
+}
+
+.guest-hub-text a {
+  color: var(--accent);
+}

@@ -149,6 +149,13 @@ const HBHUB_TERMS_UPDATED = '28 October 2026';
                             <li>Don't sell, buy or bet chips, accounts or casino results for real money or real things between each other, on HB Hub or anywhere else.</li>
                             <li>Site admins can add chips to an account or take them away. That's how bought chips are added, and how balances are corrected or reset, for example after a bug, or if chips were got by cheating.</li>
                         </ul>
+                        <h3>Play chips in the free games</h3>
+                        <p>
+                            Blackjack, Baccarat and Roulette can also be tried without an account at <a href="/play/">/play/</a>,
+                            with play chips. Play chips are even less than chips: they aren't money either, they only last
+                            until you close or reload the page, you get a new stack when you run out, and they never become
+                            chips on an account, also if you sign up or log in.
+                        </p>
                         <h3>Buying extra chips</h3>
                         <p>
                             Chips are normally free. If you want more, you can buy them from the owner of HB Hub at
@@ -195,6 +202,14 @@ const HBHUB_TERMS_UPDATED = '28 October 2026';
                                 or take it off the leaderboard. If the game crashes or is closed before it's saved, what you
                                 did just before is kept in your browser and saved (and checked the same way) the next time you
                                 open the game in that browser, but that isn't a promise: progress that's never saved can be lost.
+                            </li>
+                            <li>
+                                The free games at <a href="/play/">/play/</a> can be played without an account, and these terms
+                                apply there too. Without an account, your Wordle and Ore Mining Inc. games are only kept in your
+                                browser, so clearing the site's data, or using another browser, starts them over. If you log in
+                                or sign up from one, today's Wordle games and your Ore Mining Inc. game come with you, but only
+                                into an account that doesn't have them yet: your account's own games are never written over.
+                                Don't use scripts or bots to flood the free games with requests.
                             </li>
                         </ul>
                     </section>

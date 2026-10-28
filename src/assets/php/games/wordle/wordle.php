@@ -8,8 +8,11 @@
 // so the browser never knows the word until the game is over (hbHubWordleView()).
 // A day is a day in Denmark: the new words come at midnight there. A game that isn't won by the end of its day counts
 // as lost, so giving up halfway doesn't save a streak or the win %.
-// Used by games/wordle/ (the page), games/wordle/guess (the JSON the page sends guesses to) and games/wordle/leaderboard.
+// Used by games/wordle/ (the page), games/wordle/guess (the JSON the page sends guesses to) and games/wordle/leaderboard,
+// and by the guest version at /play/wordle (guestGames/wordle/), where a visitor without an account plays the same
+// words: their game is only kept in their own browser (see "Guests" at the bottom).
 require_once __DIR__ . '/../../database.php';
+require_once __DIR__ . '/../../guestGames/guestGames.php';
 
 const HBHUB_WORDLE_LANGUAGES = ['en' => 'English', 'da' => 'Danish']; // wordLanguage / gameLanguage
 const HBHUB_WORDLE_LANGUAGE_NAMES = ['en' => 'English', 'da' => 'Dansk']; // what each one is called on its own tab
@@ -157,6 +160,20 @@ function hbHubWordleScore(string $guess, string $answer): array
 }
 
 /**
+ * Whether a game with these guesses is won (the last one was the word), lost (all tries used) or still going.
+ *
+ * @param string[] $guesses
+ */
+function hbHubWordleResult(array $guesses, string $answer): int
+{
+    return match (true) {
+        $guesses !== [] && end($guesses) === $answer => HBHUB_WORDLE_WON,
+        count($guesses) >= HBHUB_WORDLE_TRIES => HBHUB_WORDLE_LOST,
+        default => HBHUB_WORDLE_PLAYING,
+    };
+}
+
+/**
  * The user's game for a language and day, or null before their first guess: ['guesses' => string[], 'result' => int].
  */
 function hbHubWordleGame(PDO $db, int $userId, string $language, string $date, bool $lock = false): ?array
@@ -203,11 +220,7 @@ function hbHubWordleGuess(PDO $db, int $userId, string $language, mixed $word, m
         }
 
         $game['guesses'][] = $guess;
-        $result = match (true) {
-            $guess === $answer => HBHUB_WORDLE_WON,
-            count($game['guesses']) >= HBHUB_WORDLE_TRIES => HBHUB_WORDLE_LOST,
-            default => HBHUB_WORDLE_PLAYING,
-        };
+        $result = hbHubWordleResult($game['guesses'], $answer);
         $db->prepare('UPDATE `HBHub-WordleGames` SET gameGuesses = ?, gameResult = ?,
                 gameEndTimestamp = IF(? = ?, NULL, UTC_TIMESTAMP())
             WHERE userId = ? AND gameLanguage = ? AND gameDate = ?')
@@ -313,4 +326,61 @@ function hbHubWordleUserStats(PDO $db, int $userId, string $language): array
         WHERE g.userId = ? AND g.gameLanguage = ? AND ' . HBHUB_WORDLE_COUNTED_SQL . ' ORDER BY g.gameDate');
     $statement->execute([$userId, $language, $today]);
     return hbHubWordleStats(array_map('hbHubWordleStatsGame', $statement->fetchAll()), $today);
+}
+
+// ----- Guests (/play/wordle, see assets/php/guestGames/guestGames.php). A guest's game of the day is a sealed token
+// in their browser, ['lang' => 'en', 'date' => '2026-10-19', 'guesses' => ['crane', ...]], played by the same rules
+// as above. They only get today's games: no stats or streaks, which need an account.
+
+/**
+ * The guesses in a guest's token, when it's for that language and day. Otherwise none, so a new game: a token from
+ * yesterday, the other language or that's been changed is just ignored.
+ *
+ * @return string[]
+ */
+function hbHubWordleGuestGuesses(mixed $token, string $language, string $date): array
+{
+    $game = hbHubGuestOpen('wordle', $token);
+    if ($game === null || ($game['lang'] ?? null) !== $language || ($game['date'] ?? null) !== $date || !is_array($game['guesses'] ?? null)) {
+        return [];
+    }
+    return array_slice(array_values(array_filter($game['guesses'], 'is_string')), 0, HBHUB_WORDLE_TRIES);
+}
+
+/**
+ * A guest's game as a token for their browser to keep.
+ *
+ * @param string[] $guesses
+ */
+function hbHubWordleGuestToken(string $language, string $date, array $guesses): string
+{
+    return hbHubGuestSeal('wordle', ['lang' => $language, 'date' => $date, 'guesses' => $guesses]);
+}
+
+/**
+ * Brings a guest's games of today over to the user's account, after they logged in or signed up from /play/wordle:
+ * each token in $tokens (language => token) with a guess in today's game, into a language the user hasn't started
+ * today. A game the user already has is never written over. Returns the languages that were brought over.
+ *
+ * @return string[]
+ */
+function hbHubWordleImport(PDO $db, int $userId, array $tokens): array
+{
+    $date = hbHubWordleToday();
+    $imported = [];
+    foreach (array_keys(HBHUB_WORDLE_LANGUAGES) as $language) {
+        $guesses = hbHubWordleGuestGuesses($tokens[$language] ?? null, $language, $date);
+        if ($guesses === []) {
+            continue;
+        }
+        $result = hbHubWordleResult($guesses, hbHubWordleDailyWord($db, $language, $date));
+        $statement = $db->prepare('INSERT IGNORE INTO `HBHub-WordleGames` (userId, gameLanguage, gameDate, gameGuesses, gameResult,
+                gameStartTimestamp, gameEndTimestamp)
+            VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP(), IF(? = ?, NULL, UTC_TIMESTAMP()))');
+        $statement->execute([$userId, $language, $date, implode(',', $guesses), $result, $result, HBHUB_WORDLE_PLAYING]);
+        if ($statement->rowCount() > 0) {
+            $imported[] = $language;
+        }
+    }
+    return $imported;
 }

@@ -3,23 +3,35 @@
 // through /gambling/blackjack/play. Only for the table the user sits at - anyone else is sent to the Blackjack page,
 // where tables are joined. At a table for more players there's also its join code, sitting out, and for the host,
 // inviting people (searched for with the chat's /chat/users).
+//
+// It's also the guest Blackjack at /play/blackjack, a solo table with play chips for visitors without an account:
+// guestGames/blackjack/ sets $guestGame and includes this page (see assets/php/guestGames/guestGames.php). Then it has
+// the frontpage's top bar, the guest bar (with the play chips) and the text for search engines, and the table is
+// played through /play/blackjack/play (data-api, assets/php/casino/blackjack/guest.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/room.php';
-hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
+$guestGame ??= null;
+if ($guestGame === null) {
+    hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
 
-$db = hbHubDatabase();
-$userId = (int) $hbHubUser['userId'];
+    $db = hbHubDatabase();
+    $userId = (int) $hbHubUser['userId'];
 
-$seat = hbHubBlackjackUserSeat($db, $userId);
-$room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubBlackjackRoom($db, $seat['roomId']) : null;
-if ($room === null) {
-    header('Location: /gambling/blackjack/', true, 302);
-    exit;
+    $seat = hbHubBlackjackUserSeat($db, $userId);
+    $room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubBlackjackRoom($db, $seat['roomId']) : null;
+    if ($room === null) {
+        header('Location: /gambling/blackjack/', true, 302);
+        exit;
+    }
+
+    $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
+} else {
+    // The guest's solo table, only in their token: just what the page needs to know about it
+    $room = ['roomId' => 0, 'roomName' => 'Blackjack', 'roomType' => HBHUB_BLACKJACK_ROOM_SOLO,
+        'roomMinBet' => HBHUB_BLACKJACK_SOLO_MIN_BET, 'roomCode' => ''];
 }
-
-$navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
 $tableChips = [10, 50, 100, 500, 1000]; // the chips to make up a bet with
 $tableIsSolo = $room['roomType'] === HBHUB_BLACKJACK_ROOM_SOLO;
 $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
@@ -27,16 +39,28 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/blackjack.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/blackjack.css') ?>">
-    <title><?= htmlspecialchars($room['roomName']) ?> - Blackjack - HB Hub</title>
-    <meta name="robots" content="noindex">
-    <meta name="description" content="A Blackjack table in the HB Hub casino">
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/head.php'; ?>
+    <?php else: ?>
+        <title><?= htmlspecialchars($room['roomName']) ?> - Blackjack - HB Hub</title>
+        <meta name="robots" content="noindex">
+        <meta name="description" content="A Blackjack table in the HB Hub casino">
+    <?php endif; ?>
 </head>
-<body>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="bj" data-blackjack data-room="<?= $room['roomId'] ?>" data-min-bet="<?= $room['roomMinBet'] ?>">
+<body<?= $guestGame !== null ? ' class="home-body"' : '' ?>>
+    <?php if ($guestGame !== null): ?>
+        <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
+    <?php else: ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
+    <?php endif; ?>
+    <main class="bj" data-blackjack data-room="<?= $room['roomId'] ?>" data-min-bet="<?= $room['roomMinBet'] ?>"
+          data-api="<?= $guestGame !== null ? '/play/blackjack/play' : '/gambling/blackjack/play' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
+        <?php if ($guestGame !== null): ?>
+            <a class="casino-back" href="/play/">&larr; Free games</a>
+        <?php endif; ?>
         <div class="bj-header">
             <div class="bj-heading">
                 <h1 class="bj-title"><?= htmlspecialchars($room['roomName']) ?></h1>
@@ -62,6 +86,9 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
                 <button type="button" class="casino-btn" data-bj-leave>Leave table</button>
             </div>
         </div>
+        <?php if ($guestGame !== null): ?>
+            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/top.php'; ?>
+        <?php endif; ?>
 
         <section class="bj-table" aria-label="The table" data-bj-table>
             <div class="bj-dealer">
@@ -109,7 +136,11 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
                     <button type="button" class="casino-btn casino-btn-primary" data-bj-bet-place>Place bet</button>
                 </div>
                 <p class="bj-hint" data-bj-broke hidden>
-                    You don't have enough chips for this table. <a href="/gambling/">Collect your daily chips</a>
+                    <?php if ($guestGame !== null): ?>
+                        You don't have enough chips for this table. Reload the page for a new stack.
+                    <?php else: ?>
+                        You don't have enough chips for this table. <a href="/gambling/">Collect your daily chips</a>
+                    <?php endif; ?>
                 </p>
             </div>
 
@@ -180,7 +211,10 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
             </div>
         </dialog>
     </main>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/bottom.php'; ?>
+    <?php endif; ?>
+    <?php $hbHubShowSiteFooter = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/blackjackTable.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/blackjackTable.js') ?>" defer></script>
 </body>
 </html>

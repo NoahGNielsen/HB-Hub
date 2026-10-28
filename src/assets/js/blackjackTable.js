@@ -5,11 +5,16 @@
 // Asks what's new every second while the page is in view, and every 4 seconds while it isn't (so the table doesn't count
 // the player as away, which takes 10 seconds without hearing from them). The whole table only comes back when its
 // version changed: something happened, or someone joined, left, went away or came back.
+//
+// The guest Blackjack at /play/blackjack (data-guest, see assets/php/guestGames/guestGames.php) is a solo table played
+// the same way through /play/blackjack/play (data-api), but the server keeps nothing: every answer has the table and
+// the play chips as a sealed token, kept here in the page only, and every request sends it back (guestRequest()).
 (() => {
     const root = document.querySelector('[data-blackjack]');
     if (!root) return;
 
-    const API = '/gambling/blackjack/play';
+    const API = root.dataset.api;
+    const IS_GUEST = 'guest' in root.dataset;
     const POLL_MS = 1000;
     const HIDDEN_POLL_MS = 4000;
     const BET_STEP = 10;
@@ -78,12 +83,40 @@
     let shownCards = {}; // the cards each hand had last time it was drawn, so only new ones are animated
     let shownRound = null;
     let isFirstDraw = true; // nothing is animated when the page opens
+    let guestToken = ''; // a guest's table and play chips, sealed by the server (none at first: a new table)
+    let guestQueue = Promise.resolve();
 
     const formatChips = (amount) => amount.toLocaleString('en-US');
     const signed = (amount) => (amount > 0 ? '+' : '−') + formatChips(Math.abs(amount));
     const isInHand = () => IN_HAND_PHASES.includes(table.phase);
 
+    // A guest's requests go one at a time, each with the newest token: two at once would both start from the same
+    // table, and the one answered last would undo the other. A check for what's new is action=poll.
+    function guestRequest(options) {
+        const send = async () => {
+            const body = options.body ?? new URLSearchParams({ action: 'poll' });
+            body.set('token', guestToken);
+            try {
+                const response = await fetch(API, { method: 'POST', headers: { Accept: 'application/json' }, body });
+                if (response.status === 403) {
+                    location.reload(); // the casino was closed: the page is gone
+                    return null;
+                }
+                const data = await response.json().catch(() => null);
+                if (!response.ok) return null;
+                if (typeof data?.token === 'string') guestToken = data.token;
+                return data;
+            } catch {
+                return null; // offline for a moment
+            }
+        };
+        const answer = guestQueue.then(send);
+        guestQueue = answer;
+        return answer;
+    }
+
     async function request(options, query = '') {
+        if (IS_GUEST) return guestRequest(options);
         try {
             const response = await fetch(API + query, { headers: { Accept: 'application/json' }, ...options });
             const data = await response.json().catch(() => null);
@@ -115,6 +148,7 @@
         deadlineAt = table.timer ? Date.now() + table.timer.left : null;
         timerTotal = table.timer?.total ?? 0;
         hasAskedAtDeadline = false;
+        if (data.notice) showMessage(data.notice); // a guest who ran out of play chips got a new stack
         render();
     }
 
@@ -618,6 +652,10 @@
 
     // Leaving: asked first when there are chips on the table
     async function leave() {
+        if (IS_GUEST) {
+            location.assign('/play/'); // nothing to leave: the table is only in this page
+            return;
+        }
         const data = await post('leave');
         if (data?.left) {
             location.assign('/gambling/blackjack/');
@@ -633,8 +671,8 @@
             leave();
             return;
         }
-        leaveText.textContent = isPlaying
-            ? 'You\'re in the middle of a hand. Your hand will stand, and anything it wins still goes to your chips.'
+        leaveText.textContent = IS_GUEST ? 'You\'re in the middle of a hand. Leaving ends it, and your play chips start over.'
+            : isPlaying ? 'You\'re in the middle of a hand. Your hand will stand, and anything it wins still goes to your chips.'
             : 'Your bet on the next hand will be given back.';
         leaveDialog.showModal();
         find('[data-bj-leave-cancel]').focus(); // the safe choice is the one Enter picks

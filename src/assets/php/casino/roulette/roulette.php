@@ -129,6 +129,36 @@ function hbHubRouletteCleanBets(mixed $json): ?array
 }
 
 /**
+ * Spins the wheel for the bets and works out what they pay, without touching any chips: the part of a spin that's the
+ * same for members (hbHubRouletteSpin()) and guests (/play/roulette, whose play chips are in a token instead).
+ *
+ * @param array<string, int> $bets from hbHubRouletteCleanBets()
+ * @return array{number: int, color: string, wagered: int, payout: int, net: int, wins: array<string, int>}
+ *         wins is every winning bet => what it paid back
+ */
+function hbHubRouletteResolve(array $bets): array
+{
+    $number = random_int(0, 36);
+    $wins = [];
+    foreach ($bets as $bet => $amount) {
+        if (in_array($number, hbHubRouletteBets()[$bet], true)) {
+            $wins[(string) $bet] = $amount * hbHubRouletteReturn((string) $bet);
+        }
+    }
+    $wagered = array_sum($bets);
+    $payout = array_sum($wins);
+
+    return [
+        'number' => $number,
+        'color' => hbHubRouletteColor($number),
+        'wagered' => $wagered,
+        'payout' => $payout,
+        'net' => $payout - $wagered,
+        'wins' => $wins,
+    ];
+}
+
+/**
  * Takes the bets from the user's chips, spins and pays the winning bets, all at once.
  * Returns null when the user doesn't have the chips for every bet (then nothing changes).
  *
@@ -146,33 +176,16 @@ function hbHubRouletteSpin(PDO $db, int $userId, array $bets): ?array
             return null;
         }
 
-        $number = random_int(0, 36);
-        $wins = [];
-        foreach ($bets as $bet => $amount) {
-            if (in_array($number, hbHubRouletteBets()[$bet], true)) {
-                $wins[(string) $bet] = $amount * hbHubRouletteReturn((string) $bet);
-            }
-        }
-        $payout = array_sum($wins);
-
+        $spin = hbHubRouletteResolve($bets);
         $db->prepare('INSERT INTO `HBHub-RouletteSpins` (userId, spinNumber, spinWagered, spinPayout, spinNet, spinBets, spinTimestamp)
             VALUES (?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())')
-            ->execute([$userId, $number, $wagered, $payout, $payout - $wagered, json_encode($bets, JSON_FORCE_OBJECT)]);
+            ->execute([$userId, $spin['number'], $wagered, $spin['payout'], $spin['net'], json_encode($bets, JSON_FORCE_OBJECT)]);
         $spinId = (int) $db->lastInsertId();
 
         hbHubCasinoChange($db, $userId, -$wagered, 'bet', HBHUB_ROULETTE_GAME, $spinId);
-        $chips = hbHubCasinoChange($db, $userId, $payout, 'payout', HBHUB_ROULETTE_GAME, $spinId);
+        $chips = hbHubCasinoChange($db, $userId, $spin['payout'], 'payout', HBHUB_ROULETTE_GAME, $spinId);
 
-        return [
-            'spinId' => $spinId,
-            'number' => $number,
-            'color' => hbHubRouletteColor($number),
-            'wagered' => $wagered,
-            'payout' => $payout,
-            'net' => $payout - $wagered,
-            'chips' => $chips,
-            'wins' => $wins,
-        ];
+        return ['spinId' => $spinId] + $spin + ['chips' => $chips];
     });
 }
 

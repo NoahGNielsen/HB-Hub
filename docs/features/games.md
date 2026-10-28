@@ -53,8 +53,16 @@
 | **Saving** | Saved on the server every 30 seconds and when you leave, and you keep mining at 5% while you're away. The server plays every click and purchase again to check it, so the leaderboard can't be cheated from the browser, and clicks only count up to 20 a second. Clicks at exactly the same pace for 20 seconds (an auto-clicker or a held-down key), or 40 clicks in a row whose gaps vary less than 10% (standard deviation of the gaps, as a share of the average gap), only mine 20%, until the pace changes. The game runs in one tab at a time |
 | **Crash recovery and reports** | What isn't saved yet is also kept in the browser, so after a crash or freeze it's saved the next time the game is opened (the server only counts what's newer than the save, so nothing counts twice). A watchdog worker notices when the page freezes, and the game notes down what it was doing (saves, errors, slow frames, memory, frame rate, animations, how long each part of the game takes, the last steps before a freeze, and the graphics card). The next time it's opened after a crash, it asks whether it may send a crash report, which site admins read under Crash reports in the admin panel. Kept 90 days |
 
+## Free games without an account
+
+| | |
+|---|---|
+| **/play/** | Wordle and Ore Mining Inc. (and the casino games, see [Casino](casino.md)) can be played without an account at `/play/wordle` and `/play/ore-mining-inc`, listed on `/play/`, in the sitemap and with their own titles, descriptions and structured data for search engines. The normal versions still need an account, and logged-in visitors are sent to them |
+| **Saving** | Nothing about a guest is stored on the server: the game is kept in the browser as a token encrypted and signed with the site key (`guest_games_secret`), sent with every guess or save and checked with the same rules as the normal game. Guests get no stats, leaderboards or crash reports |
+| **Signing up** | A bar on top of each free game, and a popup after 3 minutes of play (then every 10 minutes, and when a Wordle is finished), asks the visitor to sign up or log in. Doing that leads to the normal game, which brings today's Wordle games and the Ore Mining Inc. save over to the account, but only where it has none yet |
+
 The Games section can be opened to everyone, only to admins, or to nobody with `games_access` in the
-[config](../config.md), and players can block it for themselves (see [Account & security](account.md)).
+[config](../config.md), and players can block it for themselves (see [Account & security](account.md)). The free games are only open while it's open to everyone.
 
 ---
 
