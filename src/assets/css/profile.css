@@ -12,6 +12,22 @@
   box-sizing: border-box;
 }
 
+/* "← Back to Chess leaderboard" over the card, when it was opened from one (like .casino-back in casino.css) */
+.profile-back {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  opacity: 0.75;
+}
+
+.profile-back:hover,
+.profile-back:focus-visible {
+  color: var(--accent);
+  opacity: 1;
+}
+
 .profile-card {
   overflow: hidden;
   border-radius: var(--radius);

@@ -152,7 +152,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
 
     return '<li class="casino-home-player' . ($row['userId'] === $userId ? ' is-you' : '') . '">'
         . '<span class="casino-home-place"' . ($place <= 3 ? ' data-podium="' . $place . '"' : '') . '>' . $place . '</span>'
-        . '<a class="casino-player" href="' . htmlspecialchars(hbHubProfileUrl($row['userId'])) . '">'
+        . '<a class="casino-player" href="' . htmlspecialchars(hbHubProfileUrl($row['userId'], $_SERVER['REQUEST_URI'])) . '">'
         . '<span class="casino-avatar" aria-hidden="true">' . $avatar . '</span>'
         . '<span class="casino-player-name">' . htmlspecialchars($row['player']) . '</span></a>'
         . '<span class="casino-home-player-net ' . $net['class'] . '">' . $net['text'] . '</span>'

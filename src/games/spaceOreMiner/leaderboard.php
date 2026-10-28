@@ -141,7 +141,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                                 <tr<?= $rowUserId === $userId ? ' class="is-you"' : '' ?>>
                                     <td class="casino-rank"<?= $place !== null ? ' data-podium="' . $place . '"' : '' ?>><?= $index + 1 ?></td>
                                     <td>
-                                        <a class="casino-player" href="<?= htmlspecialchars(hbHubProfileUrl($rowUserId)) ?>">
+                                        <a class="casino-player" href="<?= htmlspecialchars(hbHubProfileUrl($rowUserId, $_SERVER['REQUEST_URI'])) ?>">
                                             <span class="casino-avatar" aria-hidden="true">
                                                 <?php if ($avatarSrc !== null): ?>
                                                     <img src="<?= htmlspecialchars($avatarSrc) ?>" alt="" loading="lazy">

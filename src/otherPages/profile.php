@@ -89,6 +89,8 @@ $profileGradient = hbHubProfileBannerGradient($profileSettings);
 $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvatarAttachmentId'] !== null ? (int) $profile['userAvatarAttachmentId'] : null);
 $profileBannerSrc = $profile['bannerId'] !== null ? hbHubProfileBannerUrl((int) $profile['userId'], (int) $profile['bannerId']) : null;
 $profileJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatJxlWorker.js');
+// Opened from a leaderboard (?from=, see hbHubProfileUrl()): a link back to it over the card
+$profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -108,6 +110,9 @@ $profileJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUM
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="profile">
+        <?php if ($profileBack !== null): ?>
+            <a class="profile-back" href="<?= htmlspecialchars($profileBack[0]) ?>">&larr; Back to <?= htmlspecialchars($profileBack[1]) ?></a>
+        <?php endif; ?>
         <article class="profile-card" aria-labelledby="profile-name">
             <!-- The banner: a picture, or the colors they picked as "#a1b2c3 #d4e5f6 90" (profile.js paints them).
                  Without either, the site's own colors from profile.css. -->
