@@ -6,7 +6,9 @@
 //   then either answer has "nav" too (hbHubNavRide() in assets/php/navUpdates.php).
 // - POST room=id&action=... does something in the game, and answers with the whole game the same way, plus "error"
 //   (a message to show) when it couldn't be done. The actions:
-//     play (card: like "r7" or "W", colour: r, y, g or b for a wild card, uno: 1 when they called UNO with it), draw and
+//     play (card: like "r7" or "W", or several with the same number or symbol in the order they were clicked, like
+//       "r7,r7,b7" - game.php's hbHubUnoPlayCard(); colour: r, y, g or b for a wild card, uno: 1 when they called UNO
+//       with it), draw and
 //       keep (the card just drawn) - all three with turn: the turn's id the user saw, so a double click only counts once
 //     uno (call it after playing the second-to-last card) and catch (someone who didn't)
 //     invite (user), for the host while there's a free seat

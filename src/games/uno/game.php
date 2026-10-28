@@ -112,6 +112,8 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
                 <div class="uno-hand-bar" data-uno-hand-bar hidden>
                     <h2 class="uno-hand-title" data-uno-hand-title>Your cards</h2>
                     <div class="uno-hand-actions">
+                        <button type="button" class="casino-btn" data-uno-pick-cancel hidden>Cancel</button>
+                        <button type="button" class="casino-btn casino-btn-primary" data-uno-pick-play hidden>Play</button>
                         <button type="button" class="casino-btn uno-keep" data-uno-keep hidden>Keep it</button>
                         <button type="button" class="uno-call" aria-pressed="false" data-uno-call hidden>UNO!</button>
                     </div>

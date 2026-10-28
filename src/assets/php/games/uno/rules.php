@@ -18,6 +18,12 @@
         works like a Skip). Draw Two: the next player draws 2 cards and misses their turn.
     </li>
     <li>
+        Got more than one card with the same number or symbol? Play them together, whatever their colour: click the one
+        that goes on the top card, then the others in the order you want, and press Play. The last one decides the
+        colour to play on. Each card counts, so two Skips skip two players and two Draw Twos make 4 cards to draw.
+        Wild cards, and a card you've just drawn, are played one at a time.
+    </li>
+    <li>
         Can't or don't want to play? Draw: you keep drawing until you get a card that can be played (unless the host
         has set it to one card), then you can play it straight away or keep it.
     </li>

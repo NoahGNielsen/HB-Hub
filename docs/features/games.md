@@ -24,6 +24,7 @@
 | | |
 |---|---|
 | **UNO** | The card game for 2-6 players, with the full 108-card deck: numbers, Skip, Reverse, Draw Two, Wild and Wild Draw Four (which can be played at any time). Public, code or invite-only games. The host starts the game once someone has joined, and a new one when it's over; new players can join between games |
+| **Several cards at once** | Cards with the same number or symbol can be played together, any colour: click the one that fits, then the others in the order you want, and press Play. The last one decides the colour, and every card counts (two Skips skip two players, two Draw Twos make 4). Not for wild cards or a card just drawn |
 | **Calling UNO** | Press UNO! when you play your second-to-last card. Forget, and anyone can catch you before the next player moves: you draw 2 |
 | **Settings** | The host picks the time for a turn (15, 30 or 60 seconds), stacking (answer a Draw Two with a Draw Two, or a Wild Draw Four with a Wild Draw Four, to pass them all on; on by default) and drawing until you can play (on by default), in the game's settings |
 | **Turn timer** | Run out of time and you draw a card (or the cards waiting for you), and your turn is over. The host can pause the game |

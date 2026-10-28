@@ -2,6 +2,8 @@
 // Everything is decided on the server - which cards can be played, what they do, the turn timer. The server sends the
 // player's own cards and which of them can be played right now (game.game.playable), and only how many cards everyone
 // else has, so this only has to show them. A card is played by clicking it; a wild card asks for the colour first.
+// When the player has other cards with the same number or symbol, the click picks it instead: they click the others
+// they want to play with it (any colour), in the order they want them, and press Play. The last one decides the colour.
 //
 // Asks what's new every second while the page is in view, and every 4 seconds while it isn't (so the game doesn't count
 // the player as away, which takes 10 seconds without hearing from them). The whole game only comes back when its
@@ -50,6 +52,8 @@
     const handTitle = find('[data-uno-hand-title]');
     const hand = find('[data-uno-hand]');
     const keepButton = find('[data-uno-keep]');
+    const pickPlayButton = find('[data-uno-pick-play]');
+    const pickCancelButton = find('[data-uno-pick-cancel]');
     const callButton = find('[data-uno-call]');
     const logList = find('[data-uno-log]');
     const logEmpty = find('[data-uno-log-empty]');
@@ -84,6 +88,8 @@
     let shownChat = null; // the newest chat message drawn (its id)
     let unoArmed = false; // the player pressed UNO! before playing their second-to-last card
     let armedTurn = null; // the turn they pressed it in
+    let picked = []; // the cards picked to play together, as places in the sorted hand, in the order they were clicked
+    let pickedIn = null; // the turn and hand they were picked in: when either changes, picking starts over
 
     const state = () => game?.game ?? null;
     const isPlaying = () => game !== null && game.phase === 'playing' && state() !== null;
@@ -416,31 +422,52 @@
         const drawn = isMyTurn() ? current.turn.drawn : null;
         let isDrawnMarked = false;
 
+        const pickingIn = isMyTurn() && drawn === null ? current.turn.id + ':' + cards.join(',') : null;
+        if (pickingIn !== pickedIn) picked = [];
+        pickedIn = pickingIn;
+        const pickedValue = picked.length > 0 ? valueOf(cards[picked[0]]) : null;
+
         handBar.hidden = hand.hidden = game.phase !== 'playing' || current?.you == null;
         handTitle.textContent = 'Your cards (' + cards.length + ')';
         hand.classList.toggle('is-my-turn', isMyTurn());
         hand.style.setProperty('--uno-hand-count', String(cards.length));
-        hand.replaceChildren(...cards.map((card) => {
+        hand.replaceChildren(...cards.map((card, index) => {
             const element = cardElement(card, 'button');
             element.type = 'button';
             const canPlay = playable.includes(card);
-            element.classList.toggle('is-playable', canPlay);
-            element.disabled = !canPlay;
+            const canPick = !isBusy && pickedValue !== null && !isWild(card) && valueOf(card) === pickedValue;
+            const pickedAt = picked.indexOf(index);
+            element.classList.toggle('is-playable', canPlay || canPick);
+            element.disabled = !canPlay && !canPick;
             if (card === drawn && !isDrawnMarked) {
                 isDrawnMarked = true; // the same card can be there twice: only one of them was drawn
                 element.classList.add('is-drawn');
             }
-            element.setAttribute('aria-label', cardName(card) + (canPlay ? ', play it' : '') + (element.classList.contains('is-drawn') ? ', just drawn' : ''));
-            element.addEventListener('click', () => play(card));
+            if (pickedAt !== -1) {
+                element.classList.add('is-picked');
+                const number = document.createElement('span');
+                number.className = 'uno-pick-number';
+                number.setAttribute('aria-hidden', 'true');
+                number.textContent = String(pickedAt + 1);
+                element.append(number);
+            }
+            element.setAttribute('aria-label', cardName(card)
+                + (pickedAt !== -1 ? ', picked ' + (pickedAt + 1) + ', unpick it' : canPick ? ', pick it too' : canPlay ? ', play it' : '')
+                + (element.classList.contains('is-drawn') ? ', just drawn' : ''));
+            element.addEventListener('click', () => choose(index));
             return element;
         }));
 
         keepButton.hidden = drawn === null;
         keepButton.disabled = isBusy;
+        pickPlayButton.hidden = pickCancelButton.hidden = picked.length === 0;
+        pickPlayButton.disabled = pickCancelButton.disabled = isBusy;
+        pickPlayButton.textContent = picked.length > 1 ? 'Play ' + picked.length + ' cards' : 'Play it';
 
-        // UNO!: before playing the second-to-last card (pressed in, and sent with the card), or after it, until caught
+        // UNO!: before playing the second-to-last card (pressed in, and sent with the card), or after it, until caught.
+        // With cards picked, it's when they'd leave one card.
         if (armedTurn !== (isMyTurn() ? current.turn.id : null)) unoArmed = false;
-        const canArm = isMyTurn() && cards.length === 2 && playable.length > 0;
+        const canArm = isMyTurn() && playable.length > 0 && cards.length - Math.max(1, picked.length) === 1;
         const canCall = isPlaying() && current.uno !== null && current.uno === current.you;
         callButton.hidden = !canArm && !canCall;
         callButton.disabled = isBusy;
@@ -450,19 +477,59 @@
             : unoArmed ? 'You\'ll call UNO with your next card' : 'Call UNO with your next card';
     }
 
-    async function play(card) {
+    // A click on the card at that place in the sorted hand. It's played straight away when it's the only one of its
+    // number or symbol (or a wild card, or the card just drawn). Otherwise it's picked, and the other cards like it can
+    // be picked after it. A picked card is unpicked by clicking it again - the first one unpicks them all, as the
+    // others may not go on the top card on their own.
+    function choose(index) {
         const current = state();
-        if (!isMyTurn() || isBusy || !current.playable.includes(card)) return;
-        const fields = { card, turn: String(current.turn.id) };
-        if (isWild(card)) {
+        if (!isMyTurn() || isBusy) return;
+        const cards = sortCards(current.hand);
+        const card = cards[index];
+        const at = picked.indexOf(index);
+        if (at !== -1) {
+            picked = at === 0 ? [] : picked.filter((place) => place !== index);
+        } else if (picked.length > 0 && !isWild(card) && valueOf(card) === valueOf(cards[picked[0]])) {
+            picked.push(index);
+        } else if (current.playable.includes(card)) {
+            const hasMore = !isWild(card) && current.turn.drawn === null
+                && cards.some((other, place) => place !== index && !isWild(other) && valueOf(other) === valueOf(card));
+            if (!hasMore) {
+                picked = [];
+                play([card]);
+                return;
+            }
+            picked = [index];
+        }
+        renderHand();
+        renderStatus();
+    }
+
+    // Plays the cards (one, or several picked together, the last on top)
+    async function play(list) {
+        const current = state();
+        if (!isMyTurn() || isBusy || !current.playable.includes(list[0])) return;
+        const fields = { card: list.join(','), turn: String(current.turn.id) };
+        if (isWild(list[0])) {
             const colour = await chooseColour();
             if (colour === null) return;
             fields.colour = colour;
         }
-        if (unoArmed && current.hand.length === 2) fields.uno = '1';
+        if (unoArmed && current.hand.length - list.length === 1) fields.uno = '1';
         unoArmed = false;
+        picked = [];
         act('play', fields);
     }
+
+    pickPlayButton.addEventListener('click', () => {
+        const cards = sortCards(state()?.hand ?? []);
+        if (picked.length > 0) play(picked.map((place) => cards[place]));
+    });
+    pickCancelButton.addEventListener('click', () => {
+        picked = [];
+        renderHand();
+        renderStatus();
+    });
 
     deckButton.addEventListener('click', () => {
         if (isMyTurn() && !state().turn.hasDrawn) act('draw', { turn: String(state().turn.id) });
@@ -587,6 +654,9 @@
         if (isMyTurn()) {
             if (current.turn.drawn !== null) {
                 list.push(paragraph('You drew the ' + cardName(current.turn.drawn) + '. Play it, or keep it.'));
+            } else if (picked.length > 0) {
+                list.push(paragraph('Click your other cards with the same number or symbol to play them too, in the order you want: '
+                    + 'the last one decides the colour. Then press ' + pickPlayButton.textContent + '.'));
             } else if (current.playable.length === 0) {
                 list.push(paragraph(current.penalty > 0 ? 'You can\'t stack, so draw the cards.' : 'You have nothing to play. Draw a card.'));
             } else {

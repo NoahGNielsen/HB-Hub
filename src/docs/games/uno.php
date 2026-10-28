@@ -40,7 +40,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="turn" aria-labelledby="docs-turn">
                         <h2 id="docs-turn">A turn</h2>
                         <ol class="docs-steps">
-                            <li>Play a card that matches the top card's colour, number or symbol, or a wild card.</li>
+                            <li>Play a card that matches the top card's colour, number or symbol, or a wild card. Got more with the same number or symbol? Click them too, in any colour, and press <strong>Play</strong>: the last one picks the colour.</li>
                             <li>Can't, or don't want to? Draw a card. If it fits, play it straight away or keep it.</li>
                             <li>Down to your last card? Press <strong>UNO!</strong> as you play your second-to-last one.</li>
                         </ol>

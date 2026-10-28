@@ -39,10 +39,11 @@
 //       (everyone else left) or "stopped" (everyone had gone), points: the value of the cards left in everyone else's
 //       hands, which the winner scores}
 //     recorded: it's in HBHub-UnoResults (results.php)
-//     turns: how many cards have been played
+//     turns: how many cards have been played (several played together count one each)
 //     log: what happened, the newest last ({n, text}), and logCount (n of the newest)
 //     last: what happened last, for unoGame.js to show: {n (counts up, so a new one can be told from the last one), type
-//       ("play", "draw", "uno" or "catch"), seat, card (for "play"), count (for "draw" and "catch")}, or null
+//       ("play", "draw", "uno" or "catch"), seat, card (for "play": the last one played), count (for "draw" and
+//       "catch", and how many were played together for "play")}, or null
 
 const HBHUB_UNO_MIN_PLAYERS = 2;
 const HBHUB_UNO_MAX_PLAYERS = 6;
@@ -444,10 +445,14 @@ function hbHubUnoCantAct(array $state, int $seat, bool $anyTurn = false): ?strin
 }
 
 /**
- * The seat's player plays $card (as sent), with $colour (as sent: r, y, g or b) for a wild card. $saidUno: they called
- * UNO with it, which counts when it leaves them with one card. Returns null when it's played, otherwise why not.
+ * The seat's player plays $cards (as sent: one card like "r7", or several with the same number or symbol in the order
+ * they were clicked, like "r7,r7,b7"), with $colour (as sent: r, y, g or b) for a wild card. Only the first card has to
+ * go on the top card; the others just have to match it, whatever their colour, and the last one decides the colour to
+ * play on. Each card does what it does: two Skips skip two players, two Draw Twos make 4 cards to draw. The wild cards
+ * and a card just drawn only go one at a time. $saidUno: they called UNO with it, which counts when it leaves them with
+ * one card. Returns null when it's played, otherwise why not.
  */
-function hbHubUnoPlayCard(array &$state, int $seat, mixed $card, mixed $colour, bool $saidUno, int $now): ?string
+function hbHubUnoPlayCard(array &$state, int $seat, mixed $cards, mixed $colour, bool $saidUno, int $now): ?string
 {
     $error = hbHubUnoCantAct($state, $seat);
     if ($error !== null) {
@@ -455,11 +460,21 @@ function hbHubUnoPlayCard(array &$state, int $seat, mixed $card, mixed $colour, 
     }
     $game = &$state['game'];
     $i = hbHubUnoIndex($game, $seat);
-    $at = is_string($card) ? array_search($card, $game['players'][$i]['hand'], true) : false;
-    if ($at === false) {
+    $cards = is_string($cards) && strlen($cards) <= 100 ? explode(',', $cards) : [];
+    $hand = $game['players'][$i]['hand'];
+    foreach ($cards as $card) {
+        $at = array_search($card, $hand, true); // taken out as it goes, so two of the same card need two in the hand
+        if ($at === false) {
+            return 'You don\'t have that card.';
+        }
+        array_splice($hand, $at, 1);
+    }
+    if ($cards === []) {
         return 'You don\'t have that card.';
     }
-    if ($game['turn']['drawn'] !== null && $card !== $game['turn']['drawn']) {
+    $card = $cards[0];
+    $count = count($cards);
+    if ($game['turn']['drawn'] !== null && ($card !== $game['turn']['drawn'] || $count > 1)) {
         return 'You can only play the card you just drew, or keep it.';
     }
     if (!hbHubUnoCanPlay($game, $card)) {
@@ -468,6 +483,9 @@ function hbHubUnoPlayCard(array &$state, int $seat, mixed $card, mixed $colour, 
             : 'That card can\'t go on the ' . hbHubUnoCardName(hbHubUnoTop($game)) . '.';
     }
     $isWild = hbHubUnoIsWild($card);
+    if ($count > 1 && ($isWild || array_filter($cards, static fn (string $other): bool => hbHubUnoValue($other) !== hbHubUnoValue($card)) !== [])) {
+        return $isWild ? 'Wild cards are played one at a time.' : 'Cards played together need the same number or symbol.';
+    }
     if ($isWild && !in_array($colour, HBHUB_UNO_COLOURS, true)) {
         return 'Choose a colour for the wild card.';
     }
@@ -475,13 +493,15 @@ function hbHubUnoPlayCard(array &$state, int $seat, mixed $card, mixed $colour, 
     $settings = hbHubUnoSettings($state);
     $name = $game['players'][$i]['name'];
     $game['uno'] = null; // the next player has done something: too late to catch whoever it was
-    array_splice($game['players'][$i]['hand'], $at, 1);
-    $left = count($game['players'][$i]['hand']);
-    $game['discard'][] = $card;
+    $game['players'][$i]['hand'] = $hand;
+    $left = count($hand);
+    $card = $cards[$count - 1]; // the last one is on top
+    array_push($game['discard'], ...$cards);
     $game['colour'] = $isWild ? $colour : $card[0];
-    $game['turns']++;
-    hbHubUnoLast($game, 'play', $seat, $card);
-    hbHubUnoLog($game, $name . ' played ' . hbHubUnoCardName($card) . ($isWild ? ' and chose ' . HBHUB_UNO_COLOUR_NAMES[$colour] : '') . '.');
+    $game['turns'] += $count;
+    hbHubUnoLast($game, 'play', $seat, $card, $count);
+    hbHubUnoLog($game, $name . ' played ' . implode(', ', array_map('hbHubUnoCardName', array_slice($cards, 0, -1)))
+        . ($count > 1 ? ' and ' : '') . hbHubUnoCardName($card) . ($isWild ? ' and chose ' . HBHUB_UNO_COLOUR_NAMES[$colour] : '') . '.');
     if ($left === 1) {
         if ($saidUno) {
             hbHubUnoLog($game, $name . ': UNO!');
@@ -490,17 +510,21 @@ function hbHubUnoPlayCard(array &$state, int $seat, mixed $card, mixed $colour, 
         }
     }
 
+    // Each Skip skips one more player, but never round the table back past whoever played them
     $skip = 0;
     $value = hbHubUnoValue($card);
+    $mostSkipped = count(hbHubUnoActive($game)) - 1;
     if ($value === 'R') {
-        $game['direction'] = -$game['direction'];
-        if (count(hbHubUnoActive($game)) === 2) {
+        if ($count % 2 === 1) {
+            $game['direction'] = -$game['direction'];
+        }
+        if ($mostSkipped === 1) {
             $skip = 1; // with two players a Reverse works like a Skip
         }
     } elseif ($value === 'S') {
-        $skip = 1;
+        $skip = min($count, $mostSkipped);
     } elseif ($value === 'D' || $value === 'F') {
-        $cards = $value === 'D' ? 2 : 4;
+        $cards = ($value === 'D' ? 2 : 4) * $count;
         if ($settings['stacking'] && $left > 0) {
             $game['penalty'] += $cards; // the next player stacks another one on, or draws them all
         } else {
