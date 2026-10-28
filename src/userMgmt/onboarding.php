@@ -237,11 +237,11 @@ foreach ($onboardingSteps as $index => $step) {
                 <div class="onboarding-input-wrap">
                     <!-- autocomplete="username" so password managers save it with the password, but that also makes some
                          browsers suggest a saved email here - the check in onboarding.js catches that -->
-                    <input type="text" id="onboarding-name" name="name" maxlength="<?= $onboardingNameMax ?>" required autocomplete="username"
+                    <input type="text" id="onboarding-name" name="name" minlength="<?= HBHUB_USER_NAME_MIN ?>" maxlength="<?= $onboardingNameMax ?>" required autocomplete="username"
                            placeholder="e.g. Alex, alex_h or TheChessKing" aria-describedby="onboarding-name-about"
                            value="<?= htmlspecialchars($onboardingValues['name']) ?>" data-counter="onboarding-name-counter">
                 </div>
-                <p class="onboarding-hint"><span id="onboarding-name-counter"><?= mb_strlen($onboardingValues['name']) ?></span>/<?= $onboardingNameMax ?> characters</p>
+                <p class="onboarding-hint"><span id="onboarding-name-counter"><?= mb_strlen($onboardingValues['name']) ?></span>/<?= $onboardingNameMax ?> characters (at least <?= HBHUB_USER_NAME_MIN ?>)</p>
                 <p class="onboarding-warning" role="alert" data-name-email-warning hidden>
                     That looks like an email address. Pick a name or nickname instead - it's shown to everyone.
                 </p>

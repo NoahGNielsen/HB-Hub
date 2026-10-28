@@ -747,7 +747,7 @@ $adminMessageCounts = $statement->fetch();
                             <input type="hidden" name="action" value="name">
                             <div class="settings-field">
                                 <label class="settings-label" for="admin-name">Name</label>
-                                <input type="text" id="admin-name" name="name" maxlength="<?= $adminNameMax ?>" required autocomplete="off"
+                                <input type="text" id="admin-name" name="name" minlength="<?= HBHUB_USER_NAME_MIN ?>" maxlength="<?= $adminNameMax ?>" required autocomplete="off"
                                        value="<?= htmlspecialchars($adminValues['name']) ?>" aria-describedby="admin-name-hint">
                                 <p class="settings-hint" id="admin-name-hint">They log in with it too, so tell them when it changes.</p>
                                 <?php if (isset($adminErrors['name'])): ?>

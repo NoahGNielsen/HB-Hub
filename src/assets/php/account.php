@@ -14,6 +14,8 @@ const HBHUB_LATIN_TEXT_LETTERS = '\x{20}-\x{7E}\x{A1}-\x{AC}\x{AE}-\x{24F}\x{1E0
 // right after/between these, so they can't be used to make a name that looks like someone else's.
 const HBHUB_LATIN_TEXT_EMOJI = '\x{2190}-\x{21FF}\x{2300}-\x{23FF}\x{2600}-\x{27BF}\x{2B00}-\x{2BFF}\x{1F000}-\x{1FAFF}';
 
+const HBHUB_USER_NAME_MIN = 3; // characters a new userName needs at least (older, shorter ones may stay)
+
 /**
  * Whether the text only uses characters on the allow list above. Used for new names and bios (not for ones saved
  * before the list was added, so nobody is forced to change theirs). Newlines are only allowed when $allowNewlines.
@@ -43,7 +45,7 @@ function hbHubLooksLikeEmail(string $text): bool
 /**
  * Why the name can't be used, or null when it's fine. Taken names are found when saving (userNameLower is unique).
  * $currentName is the name the account has now: keeping it is fine even if it's from before the allow list (or an
- * email address from before that rule).
+ * email address or a name shorter than HBHUB_USER_NAME_MIN from before those rules).
  */
 function hbHubNameError(string $name, int $nameMax, ?string $currentName = null): ?string
 {
@@ -53,6 +55,8 @@ function hbHubNameError(string $name, int $nameMax, ?string $currentName = null)
         return 'That looks like an email address. Your username is shown to everyone, so pick a name or nickname instead - you don\'t need an email here.';
     } elseif ($name !== $currentName && !hbHubIsLatinText($name)) {
         return 'Names can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.';
+    } elseif ($name !== $currentName && mb_strlen($name) < HBHUB_USER_NAME_MIN) {
+        return 'Please use at least ' . HBHUB_USER_NAME_MIN . ' characters.';
     } elseif (mb_strlen($name) > $nameMax) {
         return "Please keep it to $nameMax characters or fewer.";
     } elseif (hbHubIsReservedUserName($name)) {

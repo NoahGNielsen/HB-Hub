@@ -700,9 +700,9 @@ function settingsTime(?string $timestamp): string
 
                         <div class="settings-field">
                             <label class="settings-label" for="settings-name">Name</label>
-                            <input type="text" id="settings-name" name="name" maxlength="<?= $settingsNameMax ?>" required autocomplete="username"
+                            <input type="text" id="settings-name" name="name" minlength="<?= HBHUB_USER_NAME_MIN ?>" maxlength="<?= $settingsNameMax ?>" required autocomplete="username"
                                    value="<?= htmlspecialchars($settingsValues['name']) ?>" aria-describedby="settings-name-hint">
-                            <p class="settings-hint" id="settings-name-hint">What everyone else sees you as, and what you log in with. Up to <?= $settingsNameMax ?> characters.</p>
+                            <p class="settings-hint" id="settings-name-hint">What everyone else sees you as, and what you log in with. <?= HBHUB_USER_NAME_MIN ?> to <?= $settingsNameMax ?> characters.</p>
                             <?php if (isset($settingsErrors['name'])): ?>
                                 <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['name']) ?></p>
                             <?php endif; ?>
