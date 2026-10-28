@@ -318,7 +318,6 @@ foreach ($onboardingSteps as $index => $step) {
                     <p class="userMgmt-or"><span>or</span></p>
                     <!-- Belongs to the form below this one, so it doesn't need anything filled in -->
                     <button type="submit" class="onboarding-btn userMgmt-discord" form="onboarding-discord"><?= hbHubDiscordLogo() ?>Sign up with Discord</button>
-                    <p class="onboarding-hint">Fills in your name, bio and picture from Discord, and lets you log in with it. You can still change them.</p>
                     <?php if ($onboardingDiscordError !== null): ?>
                         <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingDiscordError) ?></p>
                     <?php endif; ?>
