@@ -879,6 +879,7 @@
     function fillSettings() {
         settingsForm.elements.turnSeconds.value = String(game.settings.turnSeconds);
         settingsForm.elements.stacking.value = game.settings.stacking ? 'on' : 'off';
+        settingsForm.elements.stackMixing.value = game.settings.stackMixing ? 'on' : 'off';
         settingsForm.elements.drawUntil.value = game.settings.drawUntil ? 'on' : 'off';
     }
 
@@ -909,6 +910,7 @@
         const data = await act('settings', {
             turnSeconds: settingsForm.elements.turnSeconds.value,
             stacking: settingsForm.elements.stacking.value,
+            stackMixing: settingsForm.elements.stackMixing.value,
             drawUntil: settingsForm.elements.drawUntil.value,
         }, settingsMessage);
         if (data && !data.error) settingsDialog.close();

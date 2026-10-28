@@ -14,7 +14,7 @@
 //     invite (user), for the host while there's a free seat
 //     start, for the host once at least 2 players are in (game.php's hbHubUnoStart()), also for a new game
 //     pause and resume, for the host while a game is being played (game.php's hbHubUnoPause())
-//     settings (turnSeconds, stacking: on or off, drawUntil: on or off), for the host while no game is being played
+//     settings (turnSeconds, stacking, stackMixing and drawUntil: on or off), for the host while no game is being played
 //       (game.php's hbHubUnoChangeSettings())
 //     chat (text) writes in the game's chat (chat.php), and leave
 //   The game has the chat's newest messages in "chat", with isYou on the user's own and the text cut up into its
@@ -84,7 +84,7 @@ $do = match ($action) {
     'invite' => static fn (array &$room): ?string => hbHubUnoInvite($db, $room, $userId, $input['user'] ?? null),
     'start' => static fn (array &$room): ?string => hbHubUnoStart($room['state'], $room['roomHostUserId'] === $userId, hbHubUnoNowMs()),
     'settings' => static fn (array &$room): ?string => hbHubUnoChangeSettings($room['state'], $room['roomHostUserId'] === $userId,
-        $input['turnSeconds'] ?? null, $input['stacking'] ?? null, $input['drawUntil'] ?? null),
+        $input['turnSeconds'] ?? null, $input['stacking'] ?? null, $input['stackMixing'] ?? null, $input['drawUntil'] ?? null),
     default => false,
 };
 if ($do === false) {

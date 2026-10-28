@@ -11,12 +11,13 @@
 // card turned up is always a number card, and someone who leaves a game being played is out of it - the last player
 // left in wins. The host can change some of it in the room's settings while no game is being played
 // (hbHubUnoSettings()): the time for a turn, stacking (a Draw Two can be answered with a Draw Two and a Wild Draw Four
-// with a Wild Draw Four, passing them all on to the next player) and drawing until there's a card that can be played.
+// with a Wild Draw Four, passing them all on to the next player), mixing them while stacking (a Wild Draw Four on a
+// Draw Two and a Draw Two on a Wild Draw Four) and drawing until there's a card that can be played.
 //
 // The state:
 //   phase: "lobby" (waiting for players, or for the host to start, hbHubUnoStart()), "playing" or "ended" (the players
 //     are still there, new ones can join, and the host can start a new game)
-//   settings: the room's settings, {turnSeconds, stacking, drawUntil}. Always read through hbHubUnoSettings()
+//   settings: the room's settings, {turnSeconds, stacking, stackMixing, drawUntil}. Always read through hbHubUnoSettings()
 //   players: who sits in the room, [{seat: 1-6, userId, name}], in seat order
 //   games: how many games have been started in the room
 //   note: something to tell the players left waiting (like "Alice left."), or null
@@ -54,7 +55,7 @@ const HBHUB_UNO_LOG_KEPT = 30;
 const HBHUB_UNO_COLOURS = ['r', 'y', 'g', 'b'];
 const HBHUB_UNO_COLOUR_NAMES = ['r' => 'red', 'y' => 'yellow', 'g' => 'green', 'b' => 'blue'];
 const HBHUB_UNO_TURN_CHOICES = [15, 30, 60]; // the turnSeconds setting
-const HBHUB_UNO_DEFAULT_SETTINGS = ['turnSeconds' => 30, 'stacking' => true, 'drawUntil' => true];
+const HBHUB_UNO_DEFAULT_SETTINGS = ['turnSeconds' => 30, 'stacking' => true, 'stackMixing' => true, 'drawUntil' => true];
 
 function hbHubUnoNowMs(): int
 {
@@ -84,7 +85,7 @@ function hbHubUnoNewPlayer(int $seat, int $userId, string $name): array
 /**
  * The room's settings, with the defaults for anything that's missing.
  *
- * @return array{turnSeconds: int, stacking: bool, drawUntil: bool}
+ * @return array{turnSeconds: int, stacking: bool, stackMixing: bool, drawUntil: bool}
  */
 function hbHubUnoSettings(array $state): array
 {
@@ -92,27 +93,30 @@ function hbHubUnoSettings(array $state): array
 }
 
 /**
- * The settings as sent from the game's settings (turnSeconds: one of HBHUB_UNO_TURN_CHOICES, stacking and drawUntil:
- * "on" or "off"), or null when they can't be.
+ * The settings as sent from the game's settings (turnSeconds: one of HBHUB_UNO_TURN_CHOICES, stacking, stackMixing and
+ * drawUntil: "on" or "off"), or null when they can't be.
  *
- * @return ?array{turnSeconds: int, stacking: bool, drawUntil: bool}
+ * @return ?array{turnSeconds: int, stacking: bool, stackMixing: bool, drawUntil: bool}
  */
-function hbHubUnoCleanSettings(mixed $turnSeconds, mixed $stacking, mixed $drawUntil): ?array
+function hbHubUnoCleanSettings(mixed $turnSeconds, mixed $stacking, mixed $stackMixing, mixed $drawUntil): ?array
 {
     $turnSeconds = is_string($turnSeconds) && ctype_digit($turnSeconds) && strlen($turnSeconds) <= 3 ? (int) $turnSeconds : null;
     if (!in_array($turnSeconds, HBHUB_UNO_TURN_CHOICES, true) || !in_array($stacking, ['on', 'off'], true)
-        || !in_array($drawUntil, ['on', 'off'], true)) {
+        || !in_array($stackMixing, ['on', 'off'], true) || !in_array($drawUntil, ['on', 'off'], true)) {
         return null;
     }
-    return ['turnSeconds' => $turnSeconds, 'stacking' => $stacking === 'on', 'drawUntil' => $drawUntil === 'on'];
+    return ['turnSeconds' => $turnSeconds, 'stacking' => $stacking === 'on', 'stackMixing' => $stackMixing === 'on',
+        'drawUntil' => $drawUntil === 'on'];
 }
 
 /**
- * The settings in a few words, for the lobby and the game: "30 seconds a turn, stacking, draw until you can play".
+ * The settings in a few words, for the lobby and the game: "30 seconds a turn, stacking, draw until you can play"
+ * ("stacking the same card" when Draw Twos and Wild Draw Fours can't be mixed).
  */
 function hbHubUnoSettingsText(array $settings): string
 {
-    return $settings['turnSeconds'] . ' seconds a turn, ' . ($settings['stacking'] ? 'stacking' : 'no stacking')
+    return $settings['turnSeconds'] . ' seconds a turn, '
+        . ($settings['stacking'] ? ($settings['stackMixing'] ? 'stacking' : 'stacking the same card') : 'no stacking')
         . ', ' . ($settings['drawUntil'] ? 'draw until you can play' : 'draw one card');
 }
 
@@ -340,15 +344,18 @@ function hbHubUnoTop(array $game): string
 }
 
 /**
- * Whether the card can be played now. With cards to draw waiting (stacking), only the same kind of card can: a Draw
- * Two on a Draw Two, a Wild Draw Four on a Wild Draw Four. Otherwise a wild card always can, and any other card when it
- * has the colour to play on or what's on the top card (a number, Skip, Reverse or Draw Two).
+ * Whether the card can be played now. With cards to draw waiting (stacking), only a draw card can: any Draw Two or
+ * Wild Draw Four with $stackMixing (the stackMixing setting), otherwise only the same kind - a Draw Two on a Draw Two,
+ * a Wild Draw Four on a Wild Draw Four. Otherwise a wild card always can, and any other card when it has the colour to
+ * play on or what's on the top card (a number, Skip, Reverse or Draw Two).
  */
-function hbHubUnoCanPlay(array $game, string $card): bool
+function hbHubUnoCanPlay(array $game, string $card, bool $stackMixing): bool
 {
     $top = hbHubUnoTop($game);
     if ($game['penalty'] > 0) {
-        return hbHubUnoValue($card) === hbHubUnoValue($top);
+        return $stackMixing
+            ? in_array(hbHubUnoValue($card), ['D', 'F'], true)
+            : hbHubUnoValue($card) === hbHubUnoValue($top);
     }
     return hbHubUnoIsWild($card)
         || $card[0] === $game['colour']
@@ -472,14 +479,16 @@ function hbHubUnoPlayCard(array &$state, int $seat, mixed $cards, mixed $colour,
     if ($cards === []) {
         return 'You don\'t have that card.';
     }
+    $settings = hbHubUnoSettings($state);
     $card = $cards[0];
     $count = count($cards);
     if ($game['turn']['drawn'] !== null && ($card !== $game['turn']['drawn'] || $count > 1)) {
         return 'You can only play the card you just drew, or keep it.';
     }
-    if (!hbHubUnoCanPlay($game, $card)) {
+    if (!hbHubUnoCanPlay($game, $card, $settings['stackMixing'])) {
         return $game['penalty'] > 0
-            ? 'Stack a ' . (hbHubUnoTop($game) === 'F' ? 'Wild Draw Four' : 'Draw Two') . ' on it, or draw the ' . $game['penalty'] . ' cards.'
+            ? 'Stack a ' . ($settings['stackMixing'] ? 'Draw Two or Wild Draw Four' : (hbHubUnoTop($game) === 'F' ? 'Wild Draw Four' : 'Draw Two'))
+                . ' on it, or draw the ' . $game['penalty'] . ' cards.'
             : 'That card can\'t go on the ' . hbHubUnoCardName(hbHubUnoTop($game)) . '.';
     }
     $isWild = hbHubUnoIsWild($card);
@@ -490,7 +499,6 @@ function hbHubUnoPlayCard(array &$state, int $seat, mixed $cards, mixed $colour,
         return 'Choose a colour for the wild card.';
     }
 
-    $settings = hbHubUnoSettings($state);
     $name = $game['players'][$i]['name'];
     $game['uno'] = null; // the next player has done something: too late to catch whoever it was
     $game['players'][$i]['hand'] = $hand;
@@ -562,6 +570,7 @@ function hbHubUnoDraw(array &$state, int $seat, int $now): ?string
     if ($game['turn']['drawn'] !== null) {
         return 'You\'ve drawn a card already. Play it or keep it.';
     }
+    $settings = hbHubUnoSettings($state);
     $name = hbHubUnoName($game, $seat);
     $game['uno'] = null;
 
@@ -579,7 +588,7 @@ function hbHubUnoDraw(array &$state, int $seat, int $now): ?string
     do {
         $cards = hbHubUnoGive($game, $seat, 1);
         array_push($drawn, ...$cards);
-    } while ($cards !== [] && hbHubUnoSettings($state)['drawUntil'] && !hbHubUnoCanPlay($game, $cards[0]));
+    } while ($cards !== [] && $settings['drawUntil'] && !hbHubUnoCanPlay($game, $cards[0], $settings['stackMixing']));
     hbHubUnoLast($game, 'draw', $seat, null, count($drawn));
     hbHubUnoLog($game, $name . match (count($drawn)) {
         0 => ' couldn\'t draw, as there are no cards left.',
@@ -588,7 +597,7 @@ function hbHubUnoDraw(array &$state, int $seat, int $now): ?string
     });
 
     $card = $drawn !== [] ? $drawn[count($drawn) - 1] : null;
-    if ($card !== null && hbHubUnoCanPlay($game, $card)) {
+    if ($card !== null && hbHubUnoCanPlay($game, $card, $settings['stackMixing'])) {
         $game['turn']['drawn'] = $card;
         $game['turn']['id']++;
         $game['turn']['deadline'] = max($game['turn']['deadline'], $now + HBHUB_UNO_DRAWN_SECONDS * 1000); // time to choose
@@ -802,7 +811,8 @@ function hbHubUnoPause(array &$state, bool $isHost, bool $pause, int $now): ?str
  * The host changes the room's settings (as sent, hbHubUnoCleanSettings()) while no game is being played. Returns null
  * when they're changed, otherwise why not.
  */
-function hbHubUnoChangeSettings(array &$state, bool $isHost, mixed $turnSeconds, mixed $stacking, mixed $drawUntil): ?string
+function hbHubUnoChangeSettings(array &$state, bool $isHost, mixed $turnSeconds, mixed $stacking, mixed $stackMixing,
+    mixed $drawUntil): ?string
 {
     if (!$isHost) {
         return 'Only the host can change the settings.';
@@ -810,7 +820,7 @@ function hbHubUnoChangeSettings(array &$state, bool $isHost, mixed $turnSeconds,
     if ($state['phase'] === 'playing') {
         return 'The settings can\'t be changed while a game is being played.';
     }
-    $settings = hbHubUnoCleanSettings($turnSeconds, $stacking, $drawUntil);
+    $settings = hbHubUnoCleanSettings($turnSeconds, $stacking, $stackMixing, $drawUntil);
     if ($settings === null) {
         return 'Choose the settings.';
     }
@@ -864,7 +874,7 @@ function hbHubUnoView(array $state, array $people, array $seats, int $userId, ?i
     $isYourTurn = $isPlaying && !$isPaused && $you !== null && $game['turn']['seat'] === $you;
     $drawn = $game['turn']['drawn'];
     $playable = $isYourTurn
-        ? array_values(array_unique(array_filter($hand, static fn (string $card): bool => hbHubUnoCanPlay($game, $card)
+        ? array_values(array_unique(array_filter($hand, static fn (string $card): bool => hbHubUnoCanPlay($game, $card, $settings['stackMixing'])
             && ($drawn === null || $card === $drawn))))
         : [];
 

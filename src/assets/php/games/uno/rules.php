@@ -28,8 +28,10 @@
         has set it to one card), then you can play it straight away or keep it.
     </li>
     <li>
-        With stacking on, a Draw Two can be answered with another Draw Two, and a Wild Draw Four with another Wild Draw
-        Four. The cards add up, and whoever can't (or won't) stack draws them all and misses their turn.
+        With stacking on, a Draw Two or a Wild Draw Four can be answered with another one, passing it on to the next
+        player. Unless the host has turned mixing off, a Draw Two can go on a Wild Draw Four and the other way round;
+        otherwise only the same kind goes. The cards add up, and whoever can't (or won't) stack draws them all and
+        misses their turn.
     </li>
     <li>
         Press UNO! when you play your second-to-last card. If you forget, anyone can catch you before the next player
