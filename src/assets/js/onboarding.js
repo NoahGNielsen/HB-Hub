@@ -1,6 +1,7 @@
 // Onboarding: shows one question at a time with Back/Next.
 // Without JS the form still works as one long page.
 // Which questions exist and how strict they are comes from the site config, via the markup.
+// After "Sign up with Discord", data-discord-avatar on the form is where the Discord picture to start with is.
 (() => {
     const form = document.querySelector('.onboarding');
     if (!form) return;
@@ -173,6 +174,21 @@
             showAvatarError('');
             avatarInput.focus();
         });
+
+        // Signed up with Discord: start with its picture, put in the file input as if it had been chosen, so it's
+        // sent, checked and can be removed or swapped like any other. Left out quietly when it can't be fetched.
+        if (form.dataset.discordAvatar) {
+            fetch(form.dataset.discordAvatar)
+                .then((response) => (response.ok ? response.blob() : Promise.reject(response.status)))
+                .then((blob) => {
+                    if (avatarInput.files.length > 0 || !avatarTypes.includes(blob.type) || blob.size > avatarMaxBytes) return;
+                    const transfer = new DataTransfer();
+                    transfer.items.add(new File([blob], `discord.${blob.type.split('/')[1]}`, { type: blob.type }));
+                    avatarInput.files = transfer.files;
+                    avatarInput.dispatchEvent(new Event('change'));
+                })
+                .catch(() => {});
+        }
     }
 
     // A required description has a minimum length (minlength alone isn't checked on prefilled values)

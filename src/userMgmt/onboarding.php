@@ -72,6 +72,21 @@ if (isset($_GET['checkName'])) {
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // the years and fields of study, and the class chat
 $onboardingAvatarTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
+// "Sign up with Discord" on the first step, when it's set up (assets/php/discord.php). Once they're back from Discord,
+// $onboardingDiscordUser is who they are there: the form starts with its name, bio and picture, and the account is
+// made linked to it. Nobody signs up with Discord alone: the rest of the form is filled in as usual.
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/discord.php';
+$onboardingDiscord = hbHubDiscordClient($siteConfig);
+$onboardingHasDiscord = $onboardingDiscord !== null;
+$onboardingDiscordUser = $onboardingHasDiscord ? hbHubDiscordSignupGet($onboardingDiscord) : null;
+
+// GET /onboarding?discordForget: "Don't link it" - forgets the Discord account, and the form starts over without it
+if (isset($_GET['discordForget'])) {
+    hbHubDiscordSignupClear();
+    header('Location: /onboarding' . hbHubReturnQuery(), true, 303);
+    exit;
+}
+
 // Requirement modes used by the onboarding_*_requirements settings
 const ONBOARDING_REQUIRED = 0;
 const ONBOARDING_OPTIONAL = 1;
@@ -90,6 +105,23 @@ if ((int) $siteConfig['site_save_diskspace'] === 2) {
 }
 $onboardingDescriptionMode = (int) $siteConfig['onboarding_description_requirements'];
 
+// GET /onboarding?discordAvatar: the Discord account's picture, for onboarding.js to put in the picture step as if it
+// had been chosen (so it can still be removed or swapped). Fetched by the server, as the CSP keeps Discord's CDN out.
+// 404 when there's no Discord account being signed up with, it has no picture or pictures are turned off.
+if (isset($_GET['discordAvatar'])) {
+    $discordAvatar = $onboardingDiscordUser !== null && $onboardingAvatarMode !== ONBOARDING_DISABLED
+        ? hbHubDiscordAvatarFetch($onboardingDiscordUser) : null;
+    $discordAvatarType = $discordAvatar !== null ? (new finfo(FILEINFO_MIME_TYPE))->buffer($discordAvatar) : null;
+    header('Cache-Control: no-store');
+    if ($discordAvatar === null || !in_array($discordAvatarType, $onboardingAvatarTypes, true) || strlen($discordAvatar) > $onboardingAvatarMaxBytes) {
+        http_response_code(404);
+        exit;
+    }
+    header('Content-Type: ' . $discordAvatarType);
+    echo $discordAvatar;
+    exit;
+}
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php'; // the name rules and the allow list of characters
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be in a bio
@@ -106,12 +138,25 @@ $onboardingSteps[] = 'password';
 $onboardingValues = ['name' => '', 'year' => '', 'class' => '', 'description' => ''];
 $onboardingErrors = []; // step name => message
 
-// The box on the last step for linking Discord once the account is made (assets/php/discord.php), when it's set up.
-// Nobody signs up with Discord alone: the account is made as usual first, then it's on to Discord.
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/discord.php';
-$onboardingDiscord = hbHubDiscordClient($siteConfig);
-$onboardingHasDiscord = $onboardingDiscord !== null;
-$onboardingLinkDiscord = $onboardingHasDiscord && ($_POST['linkDiscord'] ?? null) === '1';
+// Back from Discord: start with its display name (or username, when the display name breaks the name rules), and its
+// bio when Discord sent one that's allowed here. Only a start - they're normal fields, so they can change both.
+if ($onboardingDiscordUser !== null && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    foreach ([$onboardingDiscordUser['displayName'] ?? '', $onboardingDiscordUser['name'] ?? ''] as $discordName) {
+        $discordName = is_string($discordName) ? mb_substr(trim($discordName), 0, $onboardingNameMax) : '';
+        if ($discordName !== '' && hbHubNameError($discordName, $onboardingNameMax) === null) {
+            $onboardingValues['name'] = $discordName;
+            break;
+        }
+    }
+    $discordBio = is_string($onboardingDiscordUser['bio'] ?? null) ? mb_substr(trim($onboardingDiscordUser['bio']), 0, $onboardingDescriptionMax) : '';
+    if ($onboardingDescriptionMode !== ONBOARDING_DISABLED && hbHubIsLatinText($discordBio, true) && !hbHubUrlBlacklisted($discordBio)) {
+        $onboardingValues['description'] = str_replace("\r\n", "\n", $discordBio);
+    }
+}
+
+// Why signing up with Discord didn't work, from /discord (userMgmt/discord.php)
+$onboardingDiscordError = $onboardingHasDiscord && $onboardingDiscordUser === null && ($_GET['discord'] ?? null) === 'failed'
+    ? 'Signing up with Discord didn\'t work. Please try again, or fill in the form yourself.' : null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($_POST) && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
@@ -186,13 +231,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/onboardingSaveToDB.php';
             // A whole class signing up at school shares one address, so the default leaves room for that
             $onboardingAccountsPerHour = max(1, (int) ($siteConfig['onboarding_accounts_per_ip_hour'] ?? 20));
-            $onboardingErrors = onboardingSaveToDB($onboardingValues, $password, $avatarBlob, $avatarType, $onboardingAccountsPerHour);
+            $onboardingErrors = onboardingSaveToDB($onboardingValues, $password, $avatarBlob, $avatarType, $onboardingAccountsPerHour, $onboardingDiscordUser);
             if (!$onboardingErrors) {
                 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
-                hbHubSetToast('onboarding');
-                if ($onboardingLinkDiscord) {
-                    // Logged in now (the session cookie goes with this answer), so /discord links it to the new account
-                    hbHubDiscordStart($onboardingDiscord, 'signup', hbHubReturnPath());
+                hbHubSetToast($onboardingDiscordUser !== null ? 'onboardingDiscord' : 'onboarding');
+                if ($onboardingDiscordUser !== null) {
+                    hbHubDiscordSignupClear(); // linked now
                 }
                 header('Location: ' . hbHubReturnPath(), true, 303);
                 exit;
@@ -222,6 +266,7 @@ foreach ($onboardingSteps as $index => $step) {
 <body>
     <main>
         <form class="onboarding" action="/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" enctype="multipart/form-data" data-start-step="<?= $onboardingStartStep ?>"
+              <?php if ($onboardingDiscordUser !== null && ($onboardingDiscordUser['avatar'] ?? null) !== null && $onboardingAvatarMode !== ONBOARDING_DISABLED && $_SERVER['REQUEST_METHOD'] !== 'POST'): ?>data-discord-avatar="/onboarding?discordAvatar=1"<?php endif; ?>
               data-common-passwords="/assets/commonPasswords.txt?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/commonPasswords.txt') ?>">
             <div class="onboarding-header">
                 <img class="onboarding-logo" src="/assets/images/favicon.svg" alt="">
@@ -262,6 +307,21 @@ foreach ($onboardingSteps as $index => $step) {
                 </p>
                 <?php if (isset($onboardingErrors['name'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['name']) ?></p>
+                <?php endif; ?>
+                <?php if ($onboardingDiscordUser !== null): ?>
+                    <p class="onboarding-discord-linked">
+                        <?= hbHubDiscordLogo() ?>
+                        <span>Signing up with Discord as <strong><?= htmlspecialchars($onboardingDiscordUser['name'] ?? '') ?></strong>, so you can log in with it too. Your name, bio and picture are from Discord - change them as you like.
+                        <a href="/onboarding<?= htmlspecialchars(hbHubReturnQuery() === '' ? '?discordForget=1' : hbHubReturnQuery() . '&discordForget=1') ?>">Don't link it</a></span>
+                    </p>
+                <?php elseif ($onboardingHasDiscord): ?>
+                    <p class="userMgmt-or"><span>or</span></p>
+                    <!-- Belongs to the form below this one, so it doesn't need anything filled in -->
+                    <button type="submit" class="onboarding-btn userMgmt-discord" form="onboarding-discord"><?= hbHubDiscordLogo() ?>Sign up with Discord</button>
+                    <p class="onboarding-hint">Fills in your name, bio and picture from Discord, and lets you log in with it. You can still change them.</p>
+                    <?php if ($onboardingDiscordError !== null): ?>
+                        <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingDiscordError) ?></p>
+                    <?php endif; ?>
                 <?php endif; ?>
             </section>
 
@@ -374,13 +434,6 @@ foreach ($onboardingSteps as $index => $step) {
                 <?php if (isset($onboardingErrors['password'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['password']) ?></p>
                 <?php endif; ?>
-                <?php if ($onboardingHasDiscord): ?>
-                <label class="onboarding-checkbox">
-                    <input type="checkbox" name="linkDiscord" value="1" aria-describedby="onboarding-discord-hint"<?= $onboardingLinkDiscord ? ' checked' : '' ?>>
-                    <span>Link my Discord account, so I can log in with Discord too <span class="onboarding-optional">(Optional)</span></span>
-                </label>
-                <p class="onboarding-hint" id="onboarding-discord-hint">Once your account is made, Discord asks you to allow it. You can also do it later in your settings.</p>
-                <?php endif; ?>
                 <p class="onboarding-hint">By creating an account, you agree to the <a href="/legal/terms" target="_blank">Terms of Service</a> and the <a href="/legal/privacy" target="_blank">Privacy Policy</a>.</p>
             </section>
 
@@ -392,6 +445,11 @@ foreach ($onboardingSteps as $index => $step) {
 
             <p class="userMgmt-switch">Already have an account? <a href="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to login</a></p>
         </form>
+        <?php if ($onboardingHasDiscord && $onboardingDiscordUser === null): ?>
+        <form id="onboarding-discord" action="/discord<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" hidden>
+            <input type="hidden" name="action" value="onboarding">
+        </form>
+        <?php endif; ?>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

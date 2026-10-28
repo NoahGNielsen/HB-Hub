@@ -14,8 +14,9 @@ require_once __DIR__ . '/schoolClass.php'; // how the class is saved, and the cl
  * Returns [] when the account was created, otherwise step name => message to show on the form.
  * No more than $accountsPerHour accounts are made from the same address in an hour.
  * A banned picture doesn't return: the banned account is made and it redirects to the login page.
+ * $discord is the Discord account they signed up with (hbHubDiscordSignupGet() in discord.php), made linked to it.
  */
-function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob, ?string $avatarType, int $accountsPerHour): array
+function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob, ?string $avatarType, int $accountsPerHour, ?array $discord = null): array
 {
     [$ipv4, $ipv6] = hbHubClientIp();
 
@@ -49,8 +50,9 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
         }
 
         $db->prepare('INSERT INTO `HBHub-Users` (userName, userNameLower, userDescription, userSettings, userAvatarAttachmentId,
-                userIpv4AdresseOnAccountCreate, userIpv6AdresseOnAccountCreate, userIpv4AdresseLastAccessed, userIpv6AdresseLastAccessed, userPasswordHash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                userIpv4AdresseOnAccountCreate, userIpv6AdresseOnAccountCreate, userIpv4AdresseLastAccessed, userIpv6AdresseLastAccessed, userPasswordHash,
+                userDiscordId, userDiscordName)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
             ->execute([
                 $values['name'],
                 mb_strtolower($values['name']),
@@ -62,6 +64,8 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
                 $ipv4,
                 $ipv6,
                 password_hash($password, PASSWORD_DEFAULT),
+                $discord['id'] ?? null,
+                $discord['name'] ?? null,
             ]);
         $userId = (int) $db->lastInsertId();
 
@@ -79,8 +83,11 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
         if ($db !== null && $db->inTransaction()) {
             $db->rollBack();
         }
-        if (($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userNameLower is unique
-            return ['name' => 'That name is already taken. Please choose another one.'];
+        if (($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userNameLower and userDiscordId are unique
+            // The message names the key, and a Discord account only gets this far when it was linked in the meantime
+            return str_contains($e->getMessage(), 'userDiscordId')
+                ? ['name' => 'That Discord account has just been linked to another HB Hub account. Choose "Don\'t link it" to sign up without it.']
+                : ['name' => 'That name is already taken. Please choose another one.'];
         }
         error_log('Onboarding: could not create the account: ' . $e->getMessage());
         return ['password' => 'Something went wrong creating your account. Please try again.'];

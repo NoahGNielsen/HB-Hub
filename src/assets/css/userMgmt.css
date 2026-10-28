@@ -599,23 +599,32 @@
   background: #4752c4;
 }
 
-/* The box on onboarding's last step for linking Discord straight after */
-.onboarding-checkbox {
+/* On onboarding's first step after "Sign up with Discord": which Discord account it'll be linked to */
+.onboarding-discord-linked {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   margin-top: 16px;
-  font-weight: 600;
-  cursor: pointer;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 0.9rem;
 }
 
-.onboarding-checkbox input {
+.onboarding-discord-linked .discord-logo {
   flex: none;
-  width: 20px;
-  height: 20px;
-  margin: 1px 0 0;
-  accent-color: var(--accent);
-  cursor: pointer;
+  margin-top: 2px;
+  color: #5865f2;
+}
+
+.onboarding-discord-linked a {
+  color: inherit;
+  white-space: nowrap;
+}
+
+/* The Discord button and its hint on onboarding's first step, a little apart from the name */
+.onboarding-step .userMgmt-discord + .onboarding-hint {
+  margin-top: 8px;
 }
 
 @keyframes onboarding-in {

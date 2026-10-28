@@ -37,11 +37,11 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                         <p>
                             You can link your Discord account to HB Hub and then log in with <strong>Log in with Discord</strong>
                             on the login page, instead of typing your password. Your password keeps working too, and with
-                            two-factor login on you're still asked for the code. HB Hub only sees your Discord username, nothing
-                            else from Discord.
+                            two-factor login on you're still asked for the code. HB Hub only sees your Discord username, display
+                            name and profile picture (and your bio, if Discord shares it), nothing else from Discord.
                         </p>
                         <ul>
-                            <li>You sign up the normal way. The last step has a box to link Discord straight after your account is made.</li>
+                            <li>Sign up with <strong>Sign up with Discord</strong> on the first step of sign-up. Your name, bio and picture start out as your Discord ones, and you can change them before your account is made. You still choose your class and a password, and the account is linked to Discord straight away. <strong>Don't link it</strong> goes back to a normal sign-up.</li>
                             <li>Or link it later in the <strong>Discord login</strong> card in your <a href="/settings#discord">settings</a>.</li>
                             <li>The same card unlinks it again. One Discord account can only be linked to one HB Hub account.</li>
                         </ul>

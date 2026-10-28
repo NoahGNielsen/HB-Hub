@@ -1,13 +1,15 @@
 <?php
 // Log in with Discord: an account can be linked to a Discord account (userDiscordId and userDiscordName in
 // HBHub-Users), and then logging in with Discord works like the right password (two-factor login still asks for the
-// code). Linking is only ever done to an account that already exists: on the last step of onboarding (a box to tick,
-// the account is made first and then it's on to Discord) or in the settings. Nobody signs up
-// with Discord alone.
+// code). It's linked in the settings, or by signing up with Discord: the button on onboarding's first step goes to
+// Discord first, fills in the form's name, bio and picture from the Discord account (all still editable) and keeps who
+// it was in the sealed hbHubDiscordSignup cookie, so the account is made already linked. Nobody signs up with Discord
+// alone: the rest of the form, password included, is filled in as usual.
 // Set up by discord_client_id and discord_client_secret in hbHubSiteConfig.php; without them the buttons aren't shown.
 //
-// It's Discord's OAuth2 "authorization code" flow, asking only for the identify scope (the id and username):
-// 1. hbHubDiscordStart() remembers what was started (login, link or signup) in the hbHubDiscordState cookie, with a
+// It's Discord's OAuth2 "authorization code" flow, asking only for the identify scope (the id, username, display name and
+// picture - no email, friends or servers):
+// 1. hbHubDiscordStart() remembers what was started (login, link or onboarding) in the hbHubDiscordState cookie, with a
 //    random state, and sends the browser to Discord.
 // 2. Discord sends it back to /discord (userMgmt/discord.php) with a code and the same state. hbHubDiscordTakeState()
 //    checks the state against the cookie, so only the browser that started it can finish it (otherwise someone could
@@ -19,7 +21,10 @@ const HBHUB_DISCORD_API = 'https://discord.com/api/v10';
 const HBHUB_DISCORD_AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
 const HBHUB_DISCORD_STATE_COOKIE = 'hbHubDiscordState';
 const HBHUB_DISCORD_STATE_MINUTES = 10; // how long there is to click Authorize on Discord
-const HBHUB_DISCORD_MODES = ['login', 'link', 'signup']; // signup is linking right after onboarding made the account
+const HBHUB_DISCORD_MODES = ['login', 'link', 'onboarding']; // onboarding is signing up with Discord
+const HBHUB_DISCORD_SIGNUP_COOKIE = 'hbHubDiscordSignup';
+const HBHUB_DISCORD_SIGNUP_MINUTES = 30; // how long there is to finish signing up after coming back from Discord
+const HBHUB_DISCORD_AVATAR_SIZE = 256; // pixels, the size of the Discord picture onboarding starts with
 
 /**
  * Discord's logo (the "Clyde" face) as inline SVG, for the start of a "Log in with Discord" button. It's drawn in
@@ -118,7 +123,10 @@ function hbHubDiscordTakeState(): ?array
  * Swaps the code Discord sent back for the Discord account it belongs to, or null when that didn't work (an old or
  * made-up code, or Discord didn't answer). The token is revoked again once used, as it's never needed after this.
  *
- * @return ?array{id: string, name: string} the account's id (a snowflake, up to 20 digits) and username
+ * @return ?array{id: string, name: string, displayName: string, avatar: ?string, bio: string} the account's id (a
+ *     snowflake, up to 20 digits), username, display name (the username when there's none), picture's hash (null when
+ *     it has none) and bio ('' when Discord doesn't send one: it isn't in Discord's documented user object, so it's
+ *     only used when it's there)
  */
 function hbHubDiscordFetchUser(array $client, mixed $code): ?array
 {
@@ -145,7 +153,109 @@ function hbHubDiscordFetchUser(array $client, mixed $code): ?array
     if (!is_string($id) || !ctype_digit($id) || strlen($id) > 20 || !is_string($name)) {
         return null;
     }
-    return ['id' => $id, 'name' => mb_substr($name, 0, 32)];
+    $displayName = is_string($user['global_name'] ?? null) && trim($user['global_name']) !== '' ? $user['global_name'] : $name;
+    $avatar = is_string($user['avatar'] ?? null) && preg_match('/^(?:a_)?[0-9a-f]{32}$/', $user['avatar']) ? $user['avatar'] : null;
+    return [
+        'id' => $id,
+        'name' => mb_substr($name, 0, 32),
+        'displayName' => mb_substr(trim($displayName), 0, 32),
+        'avatar' => $avatar,
+        'bio' => is_string($user['bio'] ?? null) ? mb_substr(trim($user['bio']), 0, 255) : '',
+    ];
+}
+
+/**
+ * The key the hbHubDiscordSignup cookie is sealed with, made from the app's client secret (which only the server has).
+ */
+function hbHubDiscordSignupKey(array $client): string
+{
+    return hash('sha256', 'HB Hub Discord signup|' . $client['secret'], true);
+}
+
+/**
+ * Remembers the Discord account someone is signing up with (from hbHubDiscordFetchUser()) in the hbHubDiscordSignup
+ * cookie, for onboarding to fill in the form and link it once the account is made. Sealed with AES-256-GCM, so the
+ * browser can't read or change it - otherwise anyone could get any Discord id linked to their new account.
+ * Only sent to /onboarding.
+ */
+function hbHubDiscordSignupSet(array $client, array $discordUser): void
+{
+    $expires = time() + HBHUB_DISCORD_SIGNUP_MINUTES * 60;
+    $nonce = random_bytes(12);
+    $tag = '';
+    $sealed = openssl_encrypt(json_encode(['user' => $discordUser, 'expires' => $expires], JSON_THROW_ON_ERROR), 'aes-256-gcm',
+        hbHubDiscordSignupKey($client), OPENSSL_RAW_DATA, $nonce, $tag);
+    hbHubDiscordSignupCookie(rtrim(strtr(base64_encode($nonce . $tag . $sealed), '+/', '-_'), '='), $expires);
+}
+
+/**
+ * The Discord account from the hbHubDiscordSignup cookie (same shape as hbHubDiscordFetchUser()), or null when there's
+ * none, it ran out or it was changed.
+ */
+function hbHubDiscordSignupGet(array $client): ?array
+{
+    $cookie = $_COOKIE[HBHUB_DISCORD_SIGNUP_COOKIE] ?? null;
+    if (!is_string($cookie) || strlen($cookie) > 3000 || !preg_match('/^[A-Za-z0-9_-]+$/', $cookie)) {
+        return null;
+    }
+    $raw = base64_decode(strtr($cookie, '-_', '+/'), true);
+    if ($raw === false || strlen($raw) <= 28) {
+        return null;
+    }
+    $json = openssl_decrypt(substr($raw, 28), 'aes-256-gcm', hbHubDiscordSignupKey($client), OPENSSL_RAW_DATA,
+        substr($raw, 0, 12), substr($raw, 12, 16));
+    $data = $json === false ? null : json_decode($json, true);
+    if (!is_array($data) || !is_int($data['expires'] ?? null) || $data['expires'] < time() || !is_array($data['user'] ?? null)) {
+        return null;
+    }
+    return $data['user'];
+}
+
+/**
+ * Forgets the Discord account being signed up with (once the account is made, or they chose not to link it).
+ */
+function hbHubDiscordSignupClear(): void
+{
+    hbHubDiscordSignupCookie('', 1);
+}
+
+/**
+ * Sets the hbHubDiscordSignup cookie, or removes it with an $expires in the past.
+ */
+function hbHubDiscordSignupCookie(string $value, int $expires): void
+{
+    setcookie(HBHUB_DISCORD_SIGNUP_COOKIE, $value, [
+        'expires' => $expires,
+        'path' => '/onboarding',
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+/**
+ * Downloads a Discord account's picture from Discord's CDN as a PNG (an animated one's first frame), or null when it
+ * has none or that didn't work. Done by the server, so the browser never talks to Discord's CDN (the CSP doesn't allow it).
+ */
+function hbHubDiscordAvatarFetch(array $discordUser): ?string
+{
+    if (!is_string($discordUser['avatar'] ?? null) || !ctype_digit($discordUser['id'] ?? '')) {
+        return null;
+    }
+    $curl = curl_init('https://cdn.discordapp.com/avatars/' . $discordUser['id'] . '/' . $discordUser['avatar'] . '.png?size=' . HBHUB_DISCORD_AVATAR_SIZE);
+    curl_setopt_array($curl, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_USERAGENT => 'HB Hub (https://hbhub.noahgajnielsen.dk)',
+    ]);
+    $body = curl_exec($curl);
+    $status = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+    if (!is_string($body) || $status !== 200) {
+        error_log('Discord: could not download a picture (' . $status . ')');
+        return null;
+    }
+    return $body;
 }
 
 /**
