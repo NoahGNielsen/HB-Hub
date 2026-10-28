@@ -674,9 +674,9 @@
     const crunchDialogText = root.querySelector('[data-miner-crunch-dialog-text]');
     const autoWarpSwitch = root.querySelector('[data-miner-auto-warp]');
     const autoCrunchSwitch = root.querySelector('[data-miner-auto-crunch]');
-    const ripView = root.querySelector('[data-miner-rip-view]');
     const autoWarpTimesBox = root.querySelector('[data-miner-auto-warp-times]');
     const autoCrunchTimesBox = root.querySelector('[data-miner-auto-crunch-times]');
+    const ripView = root.querySelector('[data-miner-rip-view]');
     const ripSections = root.querySelectorAll('[data-miner-rip-section]');
     const ripLocked = root.querySelector('[data-miner-rip-locked]');
     const strangeText = root.querySelector('[data-miner-strange]');
@@ -807,7 +807,6 @@
         // no storage: they start off
     }
 
-    // Whether the popup about the hot keys has been shown in this browser (see showKeysHelp())
     // How many times as much Dark Matter (or Antimatter) a jump (or crunch) has to give before they make it: the box
     // next to each switch, 4 until it's changed, at least 2 (lower and they'd go off over and over).
     const AUTO_PRESTIGE_TIMES = 4;
@@ -827,6 +826,7 @@
         // no storage: 4 each
     }
 
+    // Whether the popup about the hot keys has been shown in this browser (see showKeysHelp())
     const KEYS_HELP_KEY = 'hbHubMinerKeysHelp';
 
     const serverNow = () => Date.now() + clockOffset;
@@ -1513,6 +1513,7 @@
     // The Autopilot or Auto Crunch switch and its "x4" box: only there with its skill, the switch lit while it's on
     function renderAutoSwitch(button, timesBox, isThere, isOn) {
         button.hidden = !isThere;
+        timesBox.hidden = !isThere;
         button.classList.toggle('is-active', isOn);
         button.setAttribute('aria-pressed', String(isOn));
     }
@@ -1531,7 +1532,6 @@
         // Until a rip gives something, the bar and the target are for the first Antimatter that does: 10,000 for the
         // first rip, after that whatever beats the best multiverse so far
         const gain = ripGain(state);
-        timesBox.hidden = !isThere;
         const next = nextRip(state);
         const target = gain < 1 && next ? next.at : CONFIG.ripAnti;
         ripNumbers.anti.textContent = format(state.antimatterEarned);
@@ -2588,26 +2588,6 @@
         sound('buy');
     });
 
-    // ----- Big Rip and the skill tree
-
-    ripButton.addEventListener('click', () => {
-        const gain = ripGain(state);
-        if (gain < 1) return;
-        ripDialogText.textContent = 'You\'ll get ' + format(gain) + ' Strange Matter to spend on skills, and it makes everything mine '
-            + format(CONFIG.strangeBonus * 100 * gain) + '% faster for good. Your ore, buildings, upgrades, Dark Matter and Antimatter start over'
-            + (skillEffects(state).keepAnti ? ', but you keep your Antimatter upgrades.' : ', and so do your Antimatter upgrades.');
-        ripDialog.showModal();
-    });
-    root.querySelector('[data-miner-rip-cancel]').addEventListener('click', () => ripDialog.close());
-    root.querySelector('[data-miner-rip-confirm]').addEventListener('click', () => {
-        ripDialog.close();
-        const gain = act({ type: 'rip' });
-        if (!gain) return;
-        sound('rip');
-        shake('is-ripping');
-        toast('bigRip', 'The multiverse tore apart and started over. You got ' + format(gain) + ' Strange Matter.', 'is-comet', 7000);
-        renderAll();
-        saveSoon();
     // The "x4" boxes: a number of 2 or more is kept (in this browser, like the switches); anything else puts the old
     // one back. onTimes gets the new number.
     function bindTimesBox(box, times, key, name, onTimes) {
@@ -2635,6 +2615,26 @@
     bindTimesBox(autoWarpTimesBox, autoWarpTimes, AUTO_WARP_TIMES_KEY, 'Autopilot', (times) => { autoWarpTimes = times; });
     bindTimesBox(autoCrunchTimesBox, autoCrunchTimes, AUTO_CRUNCH_TIMES_KEY, 'Auto Crunch', (times) => { autoCrunchTimes = times; });
 
+    // ----- Big Rip and the skill tree
+
+    ripButton.addEventListener('click', () => {
+        const gain = ripGain(state);
+        if (gain < 1) return;
+        ripDialogText.textContent = 'You\'ll get ' + format(gain) + ' Strange Matter to spend on skills, and it makes everything mine '
+            + format(CONFIG.strangeBonus * 100 * gain) + '% faster for good. Your ore, buildings, upgrades, Dark Matter and Antimatter start over'
+            + (skillEffects(state).keepAnti ? ', but you keep your Antimatter upgrades.' : ', and so do your Antimatter upgrades.');
+        ripDialog.showModal();
+    });
+    root.querySelector('[data-miner-rip-cancel]').addEventListener('click', () => ripDialog.close());
+    root.querySelector('[data-miner-rip-confirm]').addEventListener('click', () => {
+        ripDialog.close();
+        const gain = act({ type: 'rip' });
+        if (!gain) return;
+        sound('rip');
+        shake('is-ripping');
+        toast('bigRip', 'The multiverse tore apart and started over. You got ' + format(gain) + ' Strange Matter.', 'is-comet', 7000);
+        renderAll();
+        saveSoon();
     });
 
     // A skill opens its panel (or closes it, if it's the one already open). The panel closes again with its ×, Escape
