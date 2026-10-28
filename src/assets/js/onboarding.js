@@ -8,7 +8,7 @@
     const steps = [...form.querySelectorAll('.onboarding-step')];
     const progress = form.querySelector('.onboarding-progress');
     const counter = form.querySelector('.onboarding-counter');
-    const progressBar = form.querySelector('.onboarding-progress-bar');
+    const progressSegments = [...form.querySelectorAll('.onboarding-progress-steps li')];
     const backBtn = form.querySelector('[data-action="back"]');
     const nextBtn = form.querySelector('[data-action="next"]');
     const submitBtn = form.querySelector('[data-action="submit"]');
@@ -16,9 +16,10 @@
     const nameInput = form.querySelector('#onboarding-name');
     const nameEmailWarning = form.querySelector('[data-name-email-warning]');
 
-    const yearSelect = form.querySelector('#onboarding-year');
+    // Year and field of study are radio buttons drawn as tiles
+    const yearInputs = [...form.querySelectorAll('input[name="year"]')];
     const classField = form.querySelector('[data-class-field]');
-    const classSelect = form.querySelector('#onboarding-class');
+    const classInputs = [...classField.querySelectorAll('input[name="class"]')];
 
     // The picture and description steps can be turned off, so these may be null
     const avatarInput = form.querySelector('#onboarding-avatar');
@@ -51,7 +52,10 @@
         updateNextLabel();
 
         counter.textContent = `Step ${index + 1} of ${steps.length}`;
-        progressBar.style.width = `${((index + 1) / steps.length) * 100}%`;
+        progressSegments.forEach((segment, i) => {
+            segment.classList.toggle('is-done', i < index);
+            segment.classList.toggle('is-current', i === index);
+        });
         if (steps[index].contains(password)) loadCommonPasswords();
 
         if (focus) steps[index].querySelector('input, select, textarea')?.focus();
@@ -99,15 +103,20 @@
     // The field of study is only asked for once 1., 2. or 3. year is picked, not for Not HTX.
     // Turned off otherwise, so it isn't checked or sent.
     function updateClassField() {
-        const isHtx = yearSelect.value !== '' && yearSelect.value !== 'none';
+        const year = yearInputs.find((input) => input.checked)?.value ?? '';
+        const isHtx = year !== '' && year !== 'none';
         classField.hidden = !isHtx;
-        classSelect.disabled = !isHtx;
-        classSelect.required = isHtx;
+        for (const input of classInputs) {
+            input.disabled = !isHtx;
+            input.required = isHtx;
+        }
     }
-    yearSelect.addEventListener('change', () => {
-        updateClassField();
-        if (!classSelect.disabled && classSelect.value === '') classSelect.focus();
-    });
+    for (const input of yearInputs) {
+        input.addEventListener('change', () => {
+            updateClassField();
+            if (!classField.hidden && !classInputs.some((classInput) => classInput.checked)) classInputs[0].focus();
+        });
+    }
 
     // Picture preview (data: URL, since the CSP doesn't allow blob: images)
     if (avatarInput) {

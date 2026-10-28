@@ -181,11 +181,20 @@ foreach ($onboardingSteps as $index => $step) {
     <main>
         <form class="onboarding" action="/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" enctype="multipart/form-data" data-start-step="<?= $onboardingStartStep ?>"
               data-common-passwords="/assets/commonPasswords.txt?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/commonPasswords.txt') ?>">
-            <h1>Welcome to HB Hub!</h1>
+            <div class="onboarding-header">
+                <img class="onboarding-logo" src="/assets/images/favicon.svg" alt="">
+                <div>
+                    <h1>Welcome to HB Hub!</h1>
+                    <p class="onboarding-intro">Let's set up your account. It only takes a minute.</p>
+                </div>
+            </div>
 
+            <!-- One segment per question, filled in by onboarding.js -->
             <div class="onboarding-progress" hidden>
                 <p class="onboarding-counter">Step 1 of <?= count($onboardingSteps) ?></p>
-                <div class="onboarding-progress-track"><div class="onboarding-progress-bar"></div></div>
+                <ol class="onboarding-progress-steps" aria-hidden="true">
+                    <?php foreach ($onboardingSteps as $step): ?><li></li><?php endforeach; ?>
+                </ol>
             </div>
 
             <section class="onboarding-step" aria-labelledby="onboarding-q1">
@@ -212,27 +221,35 @@ foreach ($onboardingSteps as $index => $step) {
 
             <section class="onboarding-step" aria-labelledby="onboarding-q2">
                 <h2 id="onboarding-q2">Which year are you in?</h2>
-                <div class="onboarding-field">
-                    <label for="onboarding-year">Year</label>
-                    <select id="onboarding-year" name="year" required>
-                        <option value="" disabled<?= $onboardingValues['year'] === '' ? ' selected' : '' ?>>Choose your year</option>
+                <!-- Radio buttons drawn as tiles; the form sends the same year/class values the dropdowns used to -->
+                <fieldset class="onboarding-choice">
+                    <legend>Year</legend>
+                    <div class="onboarding-tiles onboarding-tiles-year">
                         <?php foreach (HBHUB_CLASS_YEARS as $year): ?>
-                            <option value="<?= $year ?>"<?= $onboardingValues['year'] === $year ? ' selected' : '' ?>><?= $year ?>.</option>
+                            <label class="onboarding-tile">
+                                <input type="radio" name="year" value="<?= $year ?>" required<?= $onboardingValues['year'] === $year ? ' checked' : '' ?>>
+                                <span class="onboarding-tile-face"><?= $year ?>.<span class="onboarding-tile-sub">year</span></span>
+                            </label>
                         <?php endforeach; ?>
-                        <option value="<?= HBHUB_CLASS_NOT_HTX ?>"<?= $onboardingValues['year'] === HBHUB_CLASS_NOT_HTX ? ' selected' : '' ?>>Not HTX</option>
-                    </select>
-                </div>
+                        <label class="onboarding-tile">
+                            <input type="radio" name="year" value="<?= HBHUB_CLASS_NOT_HTX ?>" required<?= $onboardingValues['year'] === HBHUB_CLASS_NOT_HTX ? ' checked' : '' ?>>
+                            <span class="onboarding-tile-face onboarding-tile-face-text">Not HTX</span>
+                        </label>
+                    </div>
+                </fieldset>
                 <!-- Only for 1. to 3. year: hidden by onboarding.js until one of them is picked. Not required in the markup,
                      so Not HTX can be sent without JS; the server checks it. -->
-                <div class="onboarding-field onboarding-reveal" data-class-field>
-                    <label for="onboarding-class">Field of study</label>
-                    <select id="onboarding-class" name="class">
-                        <option value="" disabled<?= $onboardingValues['class'] === '' ? ' selected' : '' ?>>Choose your field of study</option>
+                <fieldset class="onboarding-choice onboarding-reveal" data-class-field>
+                    <legend>Field of study</legend>
+                    <div class="onboarding-tiles onboarding-tiles-class">
                         <?php foreach (HBHUB_CLASS_FIELDS as $field): ?>
-                            <option value="<?= $field ?>"<?= $onboardingValues['class'] === $field ? ' selected' : '' ?>><?= $field ?></option>
+                            <label class="onboarding-tile">
+                                <input type="radio" name="class" value="<?= $field ?>"<?= $onboardingValues['class'] === $field ? ' checked' : '' ?>>
+                                <span class="onboarding-tile-face"><?= $field ?></span>
+                            </label>
                         <?php endforeach; ?>
-                    </select>
-                </div>
+                    </div>
+                </fieldset>
                 <p class="onboarding-hint">You'll be put in your class's group chat. Your year goes up by itself every July 1st.</p>
                 <?php if (isset($onboardingErrors['class'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['class']) ?></p>
@@ -243,7 +260,10 @@ foreach ($onboardingSteps as $index => $step) {
             <section class="onboarding-step" aria-labelledby="onboarding-q3">
                 <h2 id="onboarding-q3">Upload a picture of yourself!<?php if ($onboardingAvatarMode === ONBOARDING_OPTIONAL): ?> <span class="onboarding-optional">(Optional)</span><?php endif; ?></h2>
                 <div class="onboarding-avatar">
-                    <img class="onboarding-avatar-preview is-placeholder" src="/assets/images/icons/user.png" alt="">
+                    <!-- The picture itself opens the file picker too -->
+                    <label for="onboarding-avatar" class="onboarding-avatar-frame">
+                        <img class="onboarding-avatar-preview is-placeholder" src="/assets/images/icons/user.png" alt="">
+                    </label>
                     <div class="onboarding-avatar-actions">
                         <input type="file" id="onboarding-avatar" name="avatar" class="onboarding-file-input"<?= $onboardingAvatarMode === ONBOARDING_REQUIRED ? ' required' : '' ?>
                                accept="<?= implode(',', $onboardingAvatarTypes) ?>" data-max-bytes="<?= $onboardingAvatarMaxBytes ?>" data-max-label="<?= $onboardingAvatarMaxLabel ?>">
