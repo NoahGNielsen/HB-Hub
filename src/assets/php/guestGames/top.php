@@ -17,7 +17,7 @@ $guestIsCasino = $guestGame['section'] === 'casino';
     </p>
     <?php if ($guestIsCasino): ?>
         <p class="guest-bar-chips">
-            <img class="guest-bar-chips-icon" src="/assets/images/icons/chip.svg" alt="">
+            <img class="guest-bar-chips-icon" src="/assets/images/icons/chip.svg" alt="Chips" aria-hidden="true">
             <span data-casino-chips="<?= HBHUB_GUEST_CASINO_CHIPS ?>"><?= number_format(HBHUB_GUEST_CASINO_CHIPS) ?></span>
             <span class="guest-visually-hidden">play chips</span>
         </p>

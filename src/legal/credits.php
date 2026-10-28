@@ -57,7 +57,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
 
                 <ul class="credits-stickers" aria-hidden="true">
                     <?php foreach (HBHUB_CREDITS_ICONS as $creditsIcon): ?>
-                        <li><img src="/assets/images/icons/<?= htmlspecialchars($creditsIcon['file']) ?>" alt=""></li>
+                        <li><img src="/assets/images/icons/<?= htmlspecialchars($creditsIcon['file']) ?>" alt="<?= htmlspecialchars($creditsIcon['name']) ?> icon"></li>
                     <?php endforeach; ?>
                 </ul>
             </div>
@@ -94,7 +94,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
             <ul class="credits-grid">
                 <?php foreach (HBHUB_CREDITS_ICONS as $creditsIcon): ?>
                     <li class="credits-card">
-                        <span class="credits-card-icon"><img src="/assets/images/icons/<?= htmlspecialchars($creditsIcon['file']) ?>" alt="" width="28" height="28"></span>
+                        <span class="credits-card-icon"><img src="/assets/images/icons/<?= htmlspecialchars($creditsIcon['file']) ?>" alt="<?= htmlspecialchars($creditsIcon['name']) ?> icon" aria-hidden="true" width="28" height="28"></span>
                         <h3><?= htmlspecialchars($creditsIcon['name']) ?></h3>
                         <p class="credits-card-use"><?= htmlspecialchars($creditsIcon['use']) ?></p>
                         <p class="credits-card-by"><a  target="_blank" rel="noopener noreferrer" href="<?= htmlspecialchars($creditsIcon['href']) ?>" title="<?= htmlspecialchars($creditsIcon['title']) ?>"><?= htmlspecialchars($creditsIcon['text']) ?></a></p>

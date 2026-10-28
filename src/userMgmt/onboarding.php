@@ -269,7 +269,7 @@ foreach ($onboardingSteps as $index => $step) {
               <?php if ($onboardingDiscordUser !== null && ($onboardingDiscordUser['avatar'] ?? null) !== null && $onboardingAvatarMode !== ONBOARDING_DISABLED && $_SERVER['REQUEST_METHOD'] !== 'POST'): ?>data-discord-avatar="/onboarding?discordAvatar=1"<?php endif; ?>
               data-common-passwords="/assets/commonPasswords.txt?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/commonPasswords.txt') ?>">
             <div class="onboarding-header">
-                <img class="onboarding-logo" src="/assets/images/favicon.svg" alt="">
+                <img class="onboarding-logo" src="/assets/images/favicon.svg" alt="HB Hub logo">
                 <div>
                     <h1>Welcome to HB Hub!</h1>
                     <p class="onboarding-intro">Let's set up your account. It only takes a minute.</p>
@@ -366,7 +366,7 @@ foreach ($onboardingSteps as $index => $step) {
                 <div class="onboarding-avatar">
                     <!-- The picture itself opens the file picker too -->
                     <label for="onboarding-avatar" class="onboarding-avatar-frame">
-                        <img class="onboarding-avatar-preview is-placeholder" src="/assets/images/icons/user.png" alt="">
+                        <img class="onboarding-avatar-preview is-placeholder" src="/assets/images/icons/user.png" alt="Your profile picture">
                     </label>
                     <div class="onboarding-avatar-actions">
                         <input type="file" id="onboarding-avatar" name="avatar" class="onboarding-file-input"<?= $onboardingAvatarMode === ONBOARDING_REQUIRED ? ' required' : '' ?>

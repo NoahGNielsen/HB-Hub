@@ -44,7 +44,7 @@ if (!empty($hbHubUser)):
 <dialog class="app-prompt" aria-labelledby="app-prompt-title" data-app-prompt>
     <!-- The dialog itself has no padding, so a click on it (not on this) is a click on the backdrop -->
     <div class="app-prompt-body">
-        <img class="app-prompt-icon" src="https://hbhub.noahgajnielsen.dk/assets/images/appIcon192.png?v=<?= filemtime(__DIR__ . '/../images/appIcon192.png') ?>" alt="" width="64" height="64">
+        <img class="app-prompt-icon" src="https://hbhub.noahgajnielsen.dk/assets/images/appIcon192.png?v=<?= filemtime(__DIR__ . '/../images/appIcon192.png') ?>" alt="HB Hub app icon" aria-hidden="true" width="64" height="64">
         <h2 id="app-prompt-title">Put HB Hub on your home screen</h2>
         <p>Then it's one tap away like any other app, and opens without the browser bars.</p>
         <p class="app-prompt-how" data-app-prompt-how="ios" hidden>

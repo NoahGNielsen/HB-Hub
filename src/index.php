@@ -124,7 +124,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
 
                 <!-- A made-up group chat, with a chip, a card and a die around it -->
                 <div class="home-stage" aria-hidden="true">
-                    <img class="home-float home-float-chip" src="/assets/images/icons/chip.svg" alt="">
+                    <img class="home-float home-float-chip" src="/assets/images/icons/chip.svg" alt="Casino chip">
                     <div class="home-float home-float-card">
                         <span class="home-card-corner">A<br>♥</span>
                         <span class="home-card-pip">♥</span>
@@ -190,7 +190,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <!-- Chat -->
         <section class="home-feature" id="chat" aria-labelledby="home-chat-title">
             <div class="home-feature-text">
-                <p class="home-kicker"><img src="/assets/images/icons/small/chat.png" width="18" height="18" alt="">Chat</p>
+                <p class="home-kicker"><img src="/assets/images/icons/small/chat.png" width="18" height="18" alt="Chat icon" aria-hidden="true">Chat</p>
                 <h2 id="home-chat-title">Every group chat you actually need.</h2>
                 <p>
                     DMs, group chats for the class, the project and the people you sit with at lunch.
@@ -231,7 +231,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <!-- Casino -->
         <section class="home-feature home-feature-flip" id="casino" aria-labelledby="home-casino-title">
             <div class="home-feature-text">
-                <p class="home-kicker"><img src="/assets/images/icons/small/dice.png" width="18" height="18" alt="">Casino<?php if (!$homeCasinoOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
+                <p class="home-kicker"><img src="/assets/images/icons/small/dice.png" width="18" height="18" alt="Dice icon" aria-hidden="true">Casino<?php if (!$homeCasinoOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
                 <h2 id="home-casino-title">Chips, not cash.</h2>
                 <p>
                     Everyone starts with <?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips and can collect
@@ -268,9 +268,9 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                             <span class="home-hand-total">21</span>
                         </div>
                         <div class="home-bet">
-                            <img src="/assets/images/icons/chip.svg" alt="">
-                            <img src="/assets/images/icons/chip.svg" alt="">
-                            <img src="/assets/images/icons/chip.svg" alt="">
+                            <img src="/assets/images/icons/chip.svg" alt="Casino chip">
+                            <img src="/assets/images/icons/chip.svg" alt="Casino chip">
+                            <img src="/assets/images/icons/chip.svg" alt="Casino chip">
                         </div>
                     </div>
                 </div>
@@ -289,8 +289,8 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <p class="home-baccarat-spot is-banker">
                         Banker<small><?= HBHUB_BACCARAT_PAYS['banker'] ?> to 1<br>with <?= HBHUB_BACCARAT_BANKER_COMMISSION / 10 ?>% cut</small>
                         <span class="home-baccarat-chips">
-                            <img src="/assets/images/icons/chip.svg" alt="">
-                            <img src="/assets/images/icons/chip.svg" alt="">
+                            <img src="/assets/images/icons/chip.svg" alt="Casino chip">
+                            <img src="/assets/images/icons/chip.svg" alt="Casino chip">
                         </span>
                     </p>
                 </div>
@@ -300,7 +300,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <!-- Games -->
         <section class="home-feature" id="games" aria-labelledby="home-games-title">
             <div class="home-feature-text">
-                <p class="home-kicker"><img src="/assets/images/icons/small/controler.png" width="18" height="18" alt="">Games<?php if (!$homeGamesOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
+                <p class="home-kicker"><img src="/assets/images/icons/small/controler.png" width="18" height="18" alt="Game controller icon" aria-hidden="true">Games<?php if (!$homeGamesOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
                 <h2 id="home-games-title">Games, without the box.</h2>
                 <p>
                     Classic board and card games to play with your friends, plus a daily puzzle and a game to
