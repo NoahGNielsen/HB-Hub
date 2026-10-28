@@ -144,7 +144,7 @@ $loginIsTotpStep = loginPendingUserId() !== null;
             <?php if ($loginHasDiscord): ?>
                 <p class="userMgmt-or"><span>or</span></p>
                 <!-- Belongs to the form below this one, so it doesn't need the name and password -->
-                <button type="submit" class="onboarding-btn userMgmt-discord" form="login-discord">Log in with Discord</button>
+                <button type="submit" class="onboarding-btn userMgmt-discord" form="login-discord"><?= hbHubDiscordLogo() ?>Log in with Discord</button>
             <?php endif; ?>
 
             <p class="userMgmt-switch">New here? <a href="/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>">Sign Up!</a></p>

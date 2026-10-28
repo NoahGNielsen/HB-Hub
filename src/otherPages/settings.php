@@ -1084,7 +1084,7 @@ function settingsTime(?string $timestamp): string
                                 <span class="settings-label">Link Discord</span>
                                 <p class="settings-hint">Discord asks you to allow HB Hub to see your Discord username. Nothing else is shared.</p>
                             </div>
-                            <button type="submit" class="settings-btn settings-btn-discord">Log in with Discord</button>
+                            <button type="submit" class="settings-btn settings-btn-discord"><?= hbHubDiscordLogo() ?>Log in with Discord</button>
                         </form>
                     <?php endif; ?>
                 </section>

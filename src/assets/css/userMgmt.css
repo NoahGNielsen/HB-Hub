@@ -559,6 +559,11 @@
   text-decoration: underline;
 }
 
+/* Discord's logo on its button (hbHubDiscordLogo() in assets/php/discord.php), never squashed */
+.userMgmt-discord .discord-logo {
+  flex: none;
+}
+
 /* "or" between the login form and Log in with Discord */
 .userMgmt-or {
   display: flex;
@@ -576,8 +581,12 @@
   border-top: 1px solid var(--line);
 }
 
-/* Log in with Discord, in Discord's own blurple */
+/* Log in with Discord, in Discord's own blurple, with its small logo before the text */
 .userMgmt-discord {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   border-color: transparent;
   background: #5865f2;

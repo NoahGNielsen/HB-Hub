@@ -1019,8 +1019,12 @@
   filter: brightness(1.08);
 }
 
-/* Linking Discord, in Discord's own blurple like the button on the login page */
+/* Linking Discord, in Discord's own blurple with its small logo, like the button on the login page */
 .settings-btn-discord {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border-color: transparent;
   background: #5865f2;
   color: #fff;
@@ -1030,6 +1034,10 @@
 .settings-btn-discord:focus-visible {
   border-color: transparent;
   background: #4752c4;
+}
+
+.settings-btn-discord .discord-logo {
+  flex: none;
 }
 
 .settings-btn-danger {

@@ -258,6 +258,11 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
             </div>
         </section>
+
+        <!-- Logos: other companies' logos on HB Hub's buttons -->
+        <section class="credits-section" id="logos">
+            <p class="credits-fineprint">The small logo on the Log in with Discord buttons is Discord's own. Discord and its logo are trademarks of Discord Inc., which has nothing to do with HB Hub beyond letting you log in with it.</p>
+        </section>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>
