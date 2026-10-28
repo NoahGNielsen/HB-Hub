@@ -29,8 +29,8 @@
     </li>
     <li>
         With stacking on, a Draw Two or a Wild Draw Four can be answered with another one, passing it on to the next
-        player. Unless the host has turned mixing off, a Draw Two can go on a Wild Draw Four and the other way round;
-        otherwise only the same kind goes. The cards add up, and whoever can't (or won't) stack draws them all and
+        player. Unless the host has set stacking to the same card only, a Draw Two can go on a Wild Draw Four and the
+        other way round; otherwise only the same kind goes. The cards add up, and whoever can't (or won't) stack draws them all and
         misses their turn.
     </li>
     <li>

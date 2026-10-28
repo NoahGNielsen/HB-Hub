@@ -186,22 +186,11 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
                     <legend class="casino-label">Stacking</legend>
                     <?php foreach ([
                         'off' => ['Off', 'A Draw Two or Wild Draw Four is drawn straight away.'],
-                        'on' => ['On (default)', 'Answer a Draw Two with a Draw Two, or a Wild Draw Four with a Wild Draw Four, to pass them all on.'],
+                        'same' => ['Same card only', 'Answer a Draw Two with a Draw Two, or a Wild Draw Four with a Wild Draw Four, to pass them all on.'],
+                        'mixed' => ['Any draw card (default)', 'Like above, and a Wild Draw Four can also go on a Draw Two, and a Draw Two on a Wild Draw Four.'],
                     ] as $value => [$label, $hint]): ?>
                         <label class="casino-choice">
                             <input type="radio" name="stacking" value="<?= $value ?>">
-                            <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
-                        </label>
-                    <?php endforeach; ?>
-                </fieldset>
-                <fieldset class="casino-choices" data-uno-settings-fields>
-                    <legend class="casino-label">Mixing when stacking</legend>
-                    <?php foreach ([
-                        'off' => ['Off', 'Only a Draw Two goes on a Draw Two, and only a Wild Draw Four on a Wild Draw Four.'],
-                        'on' => ['On (default)', 'A Wild Draw Four can go on a Draw Two, and a Draw Two on a Wild Draw Four. Only with stacking on.'],
-                    ] as $value => [$label, $hint]): ?>
-                        <label class="casino-choice">
-                            <input type="radio" name="stackMixing" value="<?= $value ?>">
                             <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
                         </label>
                     <?php endforeach; ?>

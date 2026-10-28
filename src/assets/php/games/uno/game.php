@@ -93,19 +93,20 @@ function hbHubUnoSettings(array $state): array
 }
 
 /**
- * The settings as sent from the game's settings (turnSeconds: one of HBHUB_UNO_TURN_CHOICES, stacking, stackMixing and
- * drawUntil: "on" or "off"), or null when they can't be.
+ * The settings as sent from the game's settings (turnSeconds: one of HBHUB_UNO_TURN_CHOICES, stacking: "off", "same"
+ * (only the same kind of draw card) or "mixed" (any draw card on any), drawUntil: "on" or "off"), or null when they
+ * can't be. Stacking is one choice in the settings but kept as two: stacking and stackMixing.
  *
  * @return ?array{turnSeconds: int, stacking: bool, stackMixing: bool, drawUntil: bool}
  */
-function hbHubUnoCleanSettings(mixed $turnSeconds, mixed $stacking, mixed $stackMixing, mixed $drawUntil): ?array
+function hbHubUnoCleanSettings(mixed $turnSeconds, mixed $stacking, mixed $drawUntil): ?array
 {
     $turnSeconds = is_string($turnSeconds) && ctype_digit($turnSeconds) && strlen($turnSeconds) <= 3 ? (int) $turnSeconds : null;
-    if (!in_array($turnSeconds, HBHUB_UNO_TURN_CHOICES, true) || !in_array($stacking, ['on', 'off'], true)
-        || !in_array($stackMixing, ['on', 'off'], true) || !in_array($drawUntil, ['on', 'off'], true)) {
+    if (!in_array($turnSeconds, HBHUB_UNO_TURN_CHOICES, true) || !in_array($stacking, ['off', 'same', 'mixed'], true)
+        || !in_array($drawUntil, ['on', 'off'], true)) {
         return null;
     }
-    return ['turnSeconds' => $turnSeconds, 'stacking' => $stacking === 'on', 'stackMixing' => $stackMixing === 'on',
+    return ['turnSeconds' => $turnSeconds, 'stacking' => $stacking !== 'off', 'stackMixing' => $stacking === 'mixed',
         'drawUntil' => $drawUntil === 'on'];
 }
 
@@ -811,8 +812,7 @@ function hbHubUnoPause(array &$state, bool $isHost, bool $pause, int $now): ?str
  * The host changes the room's settings (as sent, hbHubUnoCleanSettings()) while no game is being played. Returns null
  * when they're changed, otherwise why not.
  */
-function hbHubUnoChangeSettings(array &$state, bool $isHost, mixed $turnSeconds, mixed $stacking, mixed $stackMixing,
-    mixed $drawUntil): ?string
+function hbHubUnoChangeSettings(array &$state, bool $isHost, mixed $turnSeconds, mixed $stacking, mixed $drawUntil): ?string
 {
     if (!$isHost) {
         return 'Only the host can change the settings.';
@@ -820,7 +820,7 @@ function hbHubUnoChangeSettings(array &$state, bool $isHost, mixed $turnSeconds,
     if ($state['phase'] === 'playing') {
         return 'The settings can\'t be changed while a game is being played.';
     }
-    $settings = hbHubUnoCleanSettings($turnSeconds, $stacking, $stackMixing, $drawUntil);
+    $settings = hbHubUnoCleanSettings($turnSeconds, $stacking, $drawUntil);
     if ($settings === null) {
         return 'Choose the settings.';
     }
