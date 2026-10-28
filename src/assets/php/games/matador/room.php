@@ -410,7 +410,8 @@ function hbHubMatadorJoin(PDO $db, int $userId, string $userName, int $roomId, b
 /**
  * Takes the user out of the game. Before it starts their seat just goes. After that it's kept for them, empty (their
  * turns are skipped, game.php's hbHubMatadorAdvance()), with an invite back in the lobby, and the host can give it to
- * someone else. When they were the host, the next player takes over.
+ * someone else. Leaving while it's being played counts as a loss, unless the host has paused it (results.php's
+ * hbHubMatadorRecordLeft()). When they were the host, the next player takes over.
  */
 function hbHubMatadorRemoveSeat(PDO $db, array &$room, array &$seats, int $userId): void
 {
@@ -424,12 +425,16 @@ function hbHubMatadorRemoveSeat(PDO $db, array &$room, array &$seats, int $userI
             $state['players'] = array_values(array_filter($state['players'], static fn (array $player): bool => $player['seat'] !== $seat));
         } else {
             $i = hbHubMatadorIndex($state, $seat);
+            $forfeitedBefore = count($state['forfeited'] ?? []);
+            hbHubMatadorRecordLeft($db, $room, $seat, $userId); // a loss, unless the host paused the game (results.php)
+            $isLoss = count($state['forfeited'] ?? []) > $forfeitedBefore;
             $state['players'][$i]['userId'] = null;
             hbHubMatadorCancelTrades($state, $seat);
             if (!$state['players'][$i]['bankrupt'] && in_array($state['phase'], ['resume', 'playing'], true)) {
                 hbHubMatadorAddInvite($db, $room['roomId'], $userId, null, $seat);
                 if ($state['phase'] === 'playing') {
-                    hbHubMatadorLog($state, $state['players'][$i]['name'] . ' left. Their seat is kept for them, and their turns are skipped.');
+                    hbHubMatadorLog($state, $state['players'][$i]['name'] . ' left' . ($isLoss ? ', which counts as a loss for them' : '')
+                        . '. Their seat is kept for them, and their turns are skipped.');
                 }
             }
         }

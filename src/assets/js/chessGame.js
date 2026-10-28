@@ -683,7 +683,9 @@
     function resultText(result) {
         const { winner, reason } = result;
         if (reason === 'aborted') return 'The game was aborted.';
-        if (reason === 'stopped') return 'The game was stopped, as both players had gone.';
+        if (reason === 'stopped') return 'The game was stopped, as both players had gone while it was paused. It doesn\'t count.';
+        if (reason === 'bothLeft') return 'The game was stopped, as both players had gone. It counts as a loss for both.';
+        if (reason === 'pausedLeft') return 'The game was stopped, as a player left while it was paused. It doesn\'t count.';
         if (winner === null) {
             const loser = playerOf(game.game.turn); // whose clock ran out
             return {
@@ -1180,13 +1182,16 @@
         setTimeout(() => (codeCopied.textContent = ''), 2000);
     });
 
-    // ----- Leaving: a game being played is lost (or aborted, before both players have moved)
+    // ----- Leaving: a game being played is lost (or aborted, before both players have moved, or just ended without
+    // counting, while the host has paused it)
 
     leaveButton.addEventListener('click', async () => {
         if (isPlaying() && game.you !== null) {
             const ok = game.game.canAbort
                 ? await confirmDialog('Leave the game?', 'Nobody has lost yet, so the game is just aborted.', 'Leave')
-                : await confirmDialog('Leave the game?', 'Leaving loses the game.', 'Leave and lose');
+                : game.game.paused
+                    ? await confirmDialog('Leave the game?', 'The game is paused, so it just ends, and doesn\'t count for either of you.', 'Leave')
+                    : await confirmDialog('Leave the game?', 'Leaving loses the game.', 'Leave and lose');
             if (!ok) return;
         }
         const data = await post('leave');

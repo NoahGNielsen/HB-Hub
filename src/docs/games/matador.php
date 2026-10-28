@@ -88,6 +88,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li>Keep some money back. Landing on a hotel with nothing in the bank means selling or mortgaging in a hurry.</li>
                             <li>Trade offers can be made at any time, also in other players' turns, with streets, money and "benådet" cards.</li>
                         </ul>
-                        <p>Every game counts towards the <a href="/games/matador/leaderboard">Matador leaderboard</a>, with your wins and fastest win.</p>
+                        <p>
+                            Every game counts towards the <a href="/games/matador/leaderboard">Matador leaderboard</a>, with your wins and fastest win.
+                            Leaving a game while it's being played counts as a loss straight away, even if you come back, unless the host had paused it.
+                        </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

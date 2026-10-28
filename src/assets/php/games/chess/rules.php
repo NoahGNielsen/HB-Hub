@@ -31,8 +31,9 @@
         doesn't count). A draw offer is taken back when your opponent plays a move instead of answering it.
     </li>
     <li>
-        Leaving the game loses it. If your opponent's game has been closed for <?= HBHUB_CHESS_CLAIM_SECONDS ?> seconds,
-        you can claim the win.
+        Leaving the game loses it, unless the host has paused it: then it just ends, and doesn't count for either of
+        you. If your opponent's game has been closed for <?= HBHUB_CHESS_CLAIM_SECONDS ?> seconds, you can claim the
+        win, and if you've both been gone so long that you leave, it's a loss for both.
     </li>
     <li>
         The host can pause the game. The clocks stop and nobody can move or offer a draw until the host goes on, and

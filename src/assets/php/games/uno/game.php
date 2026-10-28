@@ -21,7 +21,8 @@
 //   games: how many games have been started in the room
 //   note: something to tell the players left waiting (like "Alice left."), or null
 //   game: the game being played, or the last one, or null:
-//     players: everyone dealt in, in seat order (the order of play): {seat, userId, name, hand: [cards], out: they left}
+//     players: everyone dealt in, in seat order (the order of play): {seat, userId, name, hand: [cards], out: they left,
+//       excused: they left while the host had paused the game, so it doesn't count for them (missing until they leave)}
 //     deck: the draw pile, its top card last. Never sent to anyone
 //     discard: the cards played, the top card last
 //     colour: the colour to play on (for a wild card, the one its player chose)
@@ -711,6 +712,7 @@ function hbHubUnoDropPlayer(array &$state, int $userId, bool $isGone, int $now):
     $game['deck'] = hbHubUnoShuffle([...$game['deck'], ...$game['players'][$i]['hand']]);
     $game['players'][$i]['hand'] = [];
     $game['players'][$i]['out'] = true;
+    $game['players'][$i]['excused'] = $game['pausedSince'] !== null; // leaving while it's paused isn't a loss (results.php)
     if ($game['uno'] === $seat) {
         $game['uno'] = null;
     }
@@ -725,6 +727,23 @@ function hbHubUnoDropPlayer(array &$state, int $userId, bool $isGone, int $now):
         $state['game']['penalty'] = 0;
         hbHubUnoPassTurn($state, 0, $now);
     }
+}
+
+/**
+ * Stops the game being played, as everyone has gone (room.php): they've all left it, so it's a loss for each of them,
+ * unless the host had paused it.
+ */
+function hbHubUnoStop(array &$state): void
+{
+    $game = &$state['game'];
+    foreach ($game['players'] as &$player) {
+        if (!$player['out']) {
+            $player['out'] = true;
+            $player['excused'] = $game['pausedSince'] !== null;
+        }
+    }
+    unset($player, $game);
+    hbHubUnoEnd($state, null, 'stopped');
 }
 
 /**

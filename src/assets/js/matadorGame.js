@@ -1455,9 +1455,12 @@
         const you = game ? me() : null;
         const keepsSeat = game !== null && (isPlaying() || game.phase === 'resume') && you && !you.bankrupt;
         if (keepsSeat) {
+            // Leaving a game being played counts as a loss, unless the host has paused it (results.php)
+            const countsAsLoss = isPlaying() && !isPaused();
             const ok = await confirmDialog('Leave the game?',
-                'Your seat is kept for you, and your turns are skipped while you\'re gone. You can come back from your invites on the Matador page.',
-                'Leave');
+                (countsAsLoss ? 'It\'s being played, so leaving counts as a loss, even if you come back. ' : '')
+                    + 'Your seat is kept for you, and your turns are skipped while you\'re gone. You can come back from your invites on the Matador page.',
+                countsAsLoss ? 'Leave and lose' : 'Leave');
             if (!ok) return;
         }
         leave();

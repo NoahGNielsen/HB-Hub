@@ -180,6 +180,7 @@ const HBHUB_TERMS_UPDATED = '28 October 2026';
                                 it on purpose counts as cheating.
                             </li>
                             <li>Games have timers. If you leave or don't make your move in time, the game carries on without you, and that can cost you the game.</li>
+                            <li>Leaving a Chess, Matador or UNO game while it's being played (or closing it until you're counted as gone) counts as a loss on its leaderboard, unless the host has paused the game. In Matador it still counts if you come back.</li>
                             <li>
                                 Wordle has one English and one Danish word a day, and you get one go at each. A word you start
                                 but don't guess by midnight (Danish time) counts as missed, and ends your streak. Don't spoil

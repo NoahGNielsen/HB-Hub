@@ -1,7 +1,8 @@
 <?php
 // How chess games ended (HBHub-ChessResults), for the leaderboard (games/chess/leaderboard.php): one row per player per
-// game, stored once the game is over (from room.php, in hbHubChessPlay()'s transaction). Aborted games, and games
-// stopped because both players had gone, aren't stored (HBHUB_CHESS_UNCOUNTED).
+// game, stored once the game is over (from room.php, in hbHubChessPlay()'s transaction). Aborted games, and games a
+// player left (or both had gone from) while the host had paused them, aren't stored (HBHUB_CHESS_UNCOUNTED). When both
+// had gone without the pause (bothLeft), it's a loss for both.
 require_once __DIR__ . '/../../database.php';
 require_once __DIR__ . '/game.php';
 
@@ -35,9 +36,10 @@ function hbHubChessRecordResults(PDO $db, array &$room): void
             $room['roomType'],
             $game[$side === 'white' ? 'black' : 'white']['userId'],
             $colour,
-            match ($winner) {
-                null => HBHUB_CHESS_RESULT_DRAW,
-                $colour => HBHUB_CHESS_RESULT_WIN,
+            match (true) {
+                $game['result']['reason'] === 'bothLeft' => HBHUB_CHESS_RESULT_LOSS,
+                $winner === null => HBHUB_CHESS_RESULT_DRAW,
+                $winner === $colour => HBHUB_CHESS_RESULT_WIN,
                 default => HBHUB_CHESS_RESULT_LOSS,
             },
             $game['result']['reason'],

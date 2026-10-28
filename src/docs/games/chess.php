@@ -79,7 +79,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             The <a href="/games/chess/leaderboard">Chess leaderboard</a> counts your games, wins, draws and losses,
                             and your fastest checkmate. The score is a point for every win and half a point for every draw, out of all
-                            your games, and only counts from 5 games. Aborted games don't count.
+                            your games, and only counts from 5 games. Aborted games don't count. Leaving a game counts as a loss,
+                            unless the host had paused it.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

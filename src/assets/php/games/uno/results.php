@@ -1,8 +1,8 @@
 <?php
 // How UNO games ended (HBHub-UnoResults), for the leaderboard (games/uno/leaderboard.php): one row per player per game,
 // stored once the game is over (from room.php, in hbHubUnoPlay()'s transaction). Everyone dealt in gets one: the winner,
-// everyone who lost, and everyone who left the game before it was over. Games stopped because everyone had gone aren't
-// stored.
+// everyone who lost, and everyone who left the game before it was over - also when everyone had gone, and the game was
+// stopped. Only someone who left while the host had paused the game (excused) gets none.
 require_once __DIR__ . '/../../database.php';
 require_once __DIR__ . '/game.php';
 
@@ -12,7 +12,7 @@ const HBHUB_UNO_RESULT_LEFT = 2; // left the game before it was over: a loss too
 
 /**
  * Stores how the room's game ended for everyone who played it, once (it marks the game as recorded). Players whose
- * account is gone are left out.
+ * account is gone, and players who left while the game was paused, are left out.
  */
 function hbHubUnoRecordResults(PDO $db, array &$room): void
 {
@@ -21,9 +21,6 @@ function hbHubUnoRecordResults(PDO $db, array &$room): void
         return;
     }
     $game['recorded'] = true;
-    if ($game['result']['reason'] === 'stopped') {
-        return;
-    }
 
     $statement = $db->prepare('INSERT INTO `HBHub-UnoResults`
             (roomId, roomType, userId, playerResult, playerPoints, playerCardsLeft, gamePlayers, gameTurns, resultTimestamp)
@@ -31,6 +28,9 @@ function hbHubUnoRecordResults(PDO $db, array &$room): void
         FROM `HBHub-Users` WHERE userId = ?');
     $winner = $game['result']['winner'];
     foreach ($game['players'] as $player) {
+        if (!empty($player['excused'])) {
+            continue;
+        }
         $isWinner = $player['seat'] === $winner;
         $statement->execute([
             $room['roomId'],

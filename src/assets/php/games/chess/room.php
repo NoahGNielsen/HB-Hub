@@ -8,7 +8,8 @@
 // a code, whatever its type. Once the second player has sat down, the host starts the game (game.php's
 // hbHubChessStart()), so they can still change the settings first.
 //
-// Leaving a game that's being played loses it (or aborts it, before both players have moved). A player whose game
+// Leaving a game that's being played loses it (or aborts it, before both players have moved), unless the host has
+// paused it: then it just ends, and doesn't count for either player. A player whose game
 // hasn't checked in for HBHUB_CHESS_CLAIM_SECONDS can be beaten by the other one (game.php's hbHubChessClaim()), and
 // after HBHUB_CHESS_PLAYING_GRACE_SECONDS they leave on their own. The one left waits for a new player in the same room.
 //
@@ -251,7 +252,14 @@ function hbHubChessPlay(PDO $db, int $roomId, ?callable $action = null): ?array
             $grace = hbHubChessGraceSeconds($room['state']);
             $gone = array_filter($seats, static fn (array $seat): bool => $seat['idleSeconds'] >= $grace);
             if ($gone !== [] && count($gone) === count($seats) && $room['state']['phase'] === 'playing') {
-                hbHubChessEnd($room['state'], null, 'stopped', $now); // both gone: neither of them loses for it
+                // Both gone: they both lose, unless the host had paused it (or neither had lost anything yet)
+                $game = $room['state']['game'];
+                $reason = match (true) {
+                    count($game['moves']) < HBHUB_CHESS_ABORT_MOVES => 'aborted',
+                    hbHubChessIsPaused($game) => 'stopped',
+                    default => 'bothLeft',
+                };
+                hbHubChessEnd($room['state'], null, $reason, $now);
             }
             foreach ($gone as $seat) {
                 hbHubChessRemoveSeat($db, $room, $seats, $seat['userId'], true);
@@ -379,7 +387,7 @@ function hbHubChessJoin(PDO $db, int $userId, string $userName, int $roomId, boo
 
 /**
  * Takes the user out of the room. Leaving a game that's being played loses it, or aborts it before both players have
- * moved. The player left waits in the room for someone new (the last game stays on the board until then). When the
+ * moved. While the host has paused it, it just ends, and doesn't count for either player. The player left waits in the room for someone new (the last game stays on the board until then). When the
  * host leaves, the other player becomes the host. $isGone says they didn't leave themselves, their game just stopped
  * checking in.
  */
@@ -404,6 +412,8 @@ function hbHubChessRemoveSeat(PDO $db, array &$room, array &$seats, int $userId,
     if ($state['phase'] === 'playing' && $colour !== null) {
         if (count($state['game']['moves']) < HBHUB_CHESS_ABORT_MOVES) {
             hbHubChessEnd($state, null, 'aborted', hbHubChessNowMs());
+        } elseif (hbHubChessIsPaused($state['game'])) {
+            hbHubChessEnd($state, null, 'pausedLeft', hbHubChessNowMs()); // the host paused it: it doesn't count
         } else {
             hbHubChessEnd($state, hbHubChessOpponent($colour), 'left', hbHubChessNowMs());
         }

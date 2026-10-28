@@ -400,7 +400,7 @@ CREATE TABLE `HBHub-ChessResults` (
   `opponentUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who they played, NULL once that account is gone',
   `playerColour` char(1) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'w White, b Black',
   `playerResult` tinyint UNSIGNED NOT NULL COMMENT '0 Lost\r\n1 Draw\r\n2 Won',
-  `resultReason` varchar(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'How it ended: checkmate, resign, time, abandoned, left, stalemate, repetition, fiftyMoves, material or agreement',
+  `resultReason` varchar(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'How it ended: checkmate, resign, time, abandoned, left, bothLeft (a loss for both), stalemate, repetition, fiftyMoves, material or agreement',
   `gameMoves` smallint UNSIGNED NOT NULL COMMENT 'Full moves played (White''s and Black''s count as one)',
   `gameClock` varchar(8) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The time control, like 10+0 (minutes + seconds per move), NULL without a clock',
   `resultTimestamp` datetime NOT NULL COMMENT 'UTC, when the game ended'
@@ -517,14 +517,15 @@ CREATE TABLE `HBHub-MatadorInvites` (
 
 CREATE TABLE `HBHub-MatadorResults` (
   `resultId` bigint UNSIGNED NOT NULL,
-  `roomId` int UNSIGNED DEFAULT NULL COMMENT 'The room it was won in, NULL once the room is gone',
+  `roomId` int UNSIGNED DEFAULT NULL COMMENT 'The room it was played in, NULL once the room is gone',
   `roomType` tinyint UNSIGNED NOT NULL COMMENT 'The room''s type then: 1 Public, 2 Invite-only, 3 Code',
-  `userId` int UNSIGNED NOT NULL COMMENT 'Who played the seat at the end (who took it over, when the host gave it away)',
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who played the seat at the end (who took it over, when the host gave it away), or who left it',
   `seatNumber` tinyint UNSIGNED NOT NULL,
   `playersInGame` tinyint UNSIGNED NOT NULL COMMENT 'How many players the game had, this one included',
-  `playerWon` tinyint(1) NOT NULL COMMENT '1 for the winner, 0 for everyone who went bankrupt',
-  `gameRounds` smallint UNSIGNED NOT NULL COMMENT 'The round the game was won in',
-  `resultTimestamp` datetime NOT NULL COMMENT 'UTC, when the game was won'
+  `playerWon` tinyint(1) NOT NULL COMMENT '1 for the winner, 0 for everyone who went bankrupt or left',
+  `playerLeft` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 when they left the game while it was played and not paused (a loss, stored when they left)',
+  `gameRounds` smallint UNSIGNED NOT NULL COMMENT 'The round the game was won in, or they left in',
+  `resultTimestamp` datetime NOT NULL COMMENT 'UTC, when the game was won, or they left it'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -772,7 +773,7 @@ CREATE TABLE `HBHub-UnoResults` (
   `userId` int UNSIGNED NOT NULL,
   `playerResult` tinyint UNSIGNED NOT NULL COMMENT '0 Lost\r\n1 Won\r\n2 Left the game before it was over (counts as a loss)',
   `playerPoints` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'What the winner scored: the value of the cards left in everyone else''s hands. 0 for everyone else',
-  `playerCardsLeft` tinyint UNSIGNED NOT NULL COMMENT 'The cards left in their hand when the game ended (0 for the winner and for players who left)',
+  `playerCardsLeft` tinyint UNSIGNED NOT NULL COMMENT 'The cards left in their hand when the game ended (0 for the winner and for players who left, unless everyone had gone)',
   `gamePlayers` tinyint UNSIGNED NOT NULL COMMENT 'How many were dealt in (2-6)',
   `gameTurns` int UNSIGNED NOT NULL COMMENT 'Cards played in the game',
   `resultTimestamp` datetime NOT NULL COMMENT 'UTC, when the game ended'

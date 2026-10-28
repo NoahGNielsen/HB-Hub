@@ -1,6 +1,7 @@
 // The Matador lobby (games/matador/): the user's invites and the public games, from /games/matador/lobby, kept up to
 // date every 5 seconds while the page is in view. Joining is a normal form post to the lobby, which checks everything
-// again and goes to the game. Also asks before the saved game is deleted. Each game is a row (lobby.css): its name and
+// again and goes to the game. Also asks before the saved game is deleted, and before the user leaves a game when that
+// counts as a loss (it's being played and isn't paused). Each game is a row (lobby.css): its name and
 // host, its seats as dots, whether it's being played, and the button.
 (() => {
     const root = document.querySelector('[data-mt-lobby]');
@@ -150,6 +151,24 @@
             deleteDialog.close();
             deleteForm.dataset.confirmed = '1';
             deleteForm.requestSubmit();
+        });
+    }
+
+    // Leaving a game when it counts as a loss is asked first (the form only has data-mt-leave-form then)
+    const leaveForm = root.querySelector('[data-mt-leave-form]');
+    const leaveDialog = root.querySelector('[data-mt-leave-dialog]');
+    if (leaveForm && leaveDialog) {
+        leaveForm.addEventListener('submit', (event) => {
+            if (leaveForm.dataset.confirmed) return;
+            event.preventDefault();
+            leaveDialog.showModal();
+            leaveDialog.querySelector('[data-mt-leave-cancel]').focus(); // the safe choice is the one Enter picks
+        });
+        leaveDialog.querySelector('[data-mt-leave-cancel]').addEventListener('click', () => leaveDialog.close());
+        leaveDialog.querySelector('[data-mt-leave-confirm]').addEventListener('click', () => {
+            leaveDialog.close();
+            leaveForm.dataset.confirmed = '1';
+            leaveForm.requestSubmit();
         });
     }
 

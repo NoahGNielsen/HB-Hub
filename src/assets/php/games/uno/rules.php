@@ -38,8 +38,8 @@
         20, and wild cards 50.
     </li>
     <li>
-        Leaving a game that's being played counts as a loss, and your cards are shuffled back into the deck. Close the
-        game for <?= HBHUB_UNO_GRACE_SECONDS ?> seconds and you leave it too. If everyone else leaves, the last player
-        left wins.
+        Leaving a game that's being played counts as a loss (unless the host has paused it), and your cards are
+        shuffled back into the deck. Close the game for <?= HBHUB_UNO_GRACE_SECONDS ?> seconds and you leave it too. If
+        everyone else leaves, the last player left wins.
     </li>
 </ul>

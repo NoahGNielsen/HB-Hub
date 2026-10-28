@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '27 October 2026';
+const HBHUB_PRIVACY_UPDATED = '28 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -218,7 +218,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 losses, win %, the biggest win, the chips you've won or lost in each game and in all of them
                                 together, and your chips right now.
                             </li>
-                            <li>Your Chess and Matador games: seats, moves, saves, results and the in-game chat.</li>
+                            <li>Your Chess and Matador games: seats, moves, saves, results (including when you left a game before it was over, which counts as a loss) and the in-game chat.</li>
                             <li>
                                 Your UNO games: your seat, the cards in your hand and what you played, invites, and the
                                 in-game chat. Only you see your cards while the game is played; when it's over, everyone in it

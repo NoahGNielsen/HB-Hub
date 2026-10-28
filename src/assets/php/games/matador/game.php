@@ -31,6 +31,9 @@
 //               Unix milliseconds: when the player hasn't done anything by then, their turn is passed on for them)
 //   paused      the host has paused the game (hbHubMatadorPause() in room.php): nobody can do anything in it, and no
 //               turn runs out or is skipped, until the host lets it go on. Missing in games from before pausing
+//   forfeited   the userIds who left while it was played and not paused: their loss is already on the leaderboard
+//               (results.php's hbHubMatadorRecordLeft()), so the game's end leaves them out, even if they came back.
+//               Missing in games from before it
 //   pending     what the player whose turn it is has to answer: buy (field), tax, or debt (amount, to: a seat or null
 //               for the bank, reason, move: steps to move once it's paid - after the third try in jail, pot: true when
 //               it goes into Parkering's account once it's paid)
@@ -123,6 +126,7 @@ function hbHubMatadorNewState(string $roomName, int $roomType): array
         'deck' => [],
         'turn' => null,
         'paused' => false,
+        'forfeited' => [],
         'pending' => null,
         'trades' => [],
         'nextTradeId' => 1,

@@ -102,7 +102,8 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
         <a class="casino-back" href="/games/chess/">&larr; Chess</a>
         <h1>Chess leaderboard</h1>
         <p class="casino-intro">
-            Every finished game counts, except aborted ones. Score is a point for a win and half a point for a draw, out of
+            Every finished game counts, except aborted ones, and leaving a game counts as a loss, unless the host had
+            paused it. Score is a point for a win and half a point for a draw, out of
             every game played. It's only shown from <?= LEADERBOARD_RANKED_GAMES ?> games, so one lucky game doesn't top the
             board. Fastest mate is the fewest moves a player has checkmated someone in.
         </p>

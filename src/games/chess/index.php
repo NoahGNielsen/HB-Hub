@@ -90,7 +90,8 @@ if ($action === 'leave') {
 hbHubChessSweep($db); // games everyone has closed, so they don't show
 $lobbySeat = hbHubChessUserSeat($db, $userId);
 $lobbyRoom = $lobbySeat !== null ? hbHubChessRoom($db, $lobbySeat['roomId']) : null;
-$lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playing';
+// Leaving loses the game while it's being played, unless the host has paused it (room.php's hbHubChessRemoveSeat())
+$lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playing' && !hbHubChessIsPaused($lobbyRoom['state']['game']);
 ?>
 <!DOCTYPE html>
 <html lang="en">

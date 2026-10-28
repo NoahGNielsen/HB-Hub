@@ -9,7 +9,7 @@
 // 2 players are in (game.php's hbHubUnoStart()), and a new one when it's over.
 //
 // Leaving a game that's being played takes the player out of it (game.php's hbHubUnoDropPlayer()), and counts as a
-// loss (results.php). A player whose game hasn't checked in for HBHUB_UNO_GRACE_SECONDS leaves on their own; until then
+// loss (results.php), unless the host has paused it. A player whose game hasn't checked in for HBHUB_UNO_GRACE_SECONDS leaves on their own; until then
 // the turn timer plays their turns for them.
 //
 // Everything that changes a game goes through hbHubUnoPlay(), which locks the room's row first, so only one request at
@@ -239,7 +239,7 @@ function hbHubUnoPlay(PDO $db, int $roomId, ?callable $action = null): ?array
             hbHubUnoAdvance($room['state'], hbHubUnoNowMs());
             $gone = array_filter($seats, static fn (array $seat): bool => $seat['idleSeconds'] >= HBHUB_UNO_GRACE_SECONDS);
             if ($gone !== [] && count($gone) === count($seats) && $room['state']['phase'] === 'playing') {
-                hbHubUnoEnd($room['state'], null, 'stopped'); // everyone gone: nobody wins or loses for it
+                hbHubUnoStop($room['state']); // everyone gone: they all lose, unless the host had paused it
             }
             foreach ($gone as $seat) {
                 hbHubUnoRemoveSeat($db, $room, $seats, $seat['userId'], true);

@@ -951,11 +951,13 @@
         setTimeout(() => (codeCopied.textContent = ''), 2000);
     });
 
-    // ----- Leaving: a game being played counts as a loss
+    // ----- Leaving: a game being played counts as a loss, unless the host has paused it
 
     leaveButton.addEventListener('click', async () => {
         if (isPlaying() && state().you !== null
-            && !await confirmDialog('Leave the game?', 'It\'s being played, so leaving counts as a loss. The others play on without you.', 'Leave')) {
+            && !await confirmDialog('Leave the game?', isPaused()
+                ? 'The game is paused, so leaving doesn\'t count as a loss. The others play on without you.'
+                : 'It\'s being played, so leaving counts as a loss. The others play on without you.', 'Leave')) {
             return;
         }
         const data = await post('leave');

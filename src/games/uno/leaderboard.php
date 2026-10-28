@@ -102,7 +102,8 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
         <a class="casino-back" href="/games/uno/">&larr; UNO</a>
         <h1>UNO leaderboard</h1>
         <p class="casino-intro">
-            Every finished game counts, and leaving a game before it's over counts as a loss. Win % is only shown from
+            Every finished game counts, and leaving a game before it's over counts as a loss, unless the host had paused
+            it. Win % is only shown from
             <?= LEADERBOARD_RANKED_GAMES ?> games, so one lucky game doesn't top the board. A win scores the cards left in
             everyone else's hands: Points is all of them together, and Best win the most in one game.
         </p>

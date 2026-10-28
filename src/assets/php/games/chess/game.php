@@ -54,8 +54,9 @@ const HBHUB_CHESS_ABORT_MOVES = 2; // a game can be aborted (no result) until bo
 const HBHUB_CHESS_CLAIM_SECONDS = 60; // a player gone this long can be beaten by the one still there (claim)
 const HBHUB_CHESS_PIECE_COUNTS = ['p' => 8, 'n' => 2, 'b' => 2, 'r' => 2, 'q' => 1]; // to work out what's been taken
 // Games that ended like this (result.reason) don't count for anyone on the leaderboard (results.php). A game is
-// stopped when both players have been gone so long that their seats went (room.php)
-const HBHUB_CHESS_UNCOUNTED = ['aborted', 'stopped'];
+// stopped when both players have been gone so long that their seats went while the host had paused it (without the
+// pause it's bothLeft, a loss for both), and pausedLeft when a player left while it was paused (room.php)
+const HBHUB_CHESS_UNCOUNTED = ['aborted', 'stopped', 'pausedLeft'];
 
 function hbHubChessNowMs(): int
 {

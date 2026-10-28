@@ -1,6 +1,7 @@
 <?php
-// Matador leaderboard: everyone who has played a game to the end, from HBHub-MatadorResults (one row per player per
-// game that was won, results.php): games, wins, losses, win % and the fastest win (the fewest rounds). Sorted by any
+// Matador leaderboard: everyone who has played a game to the end or left one, from HBHub-MatadorResults (one row per
+// player per game that was won, or that they left while it was played, results.php): games, wins, losses, win % and
+// the fastest win (the fewest rounds). Sorted by any
 // column with ?sort=column&dir=asc|desc, which the column headings link to.
 // Win % only counts from LEADERBOARD_RANKED_GAMES games, so one lucky game doesn't top it: anyone with fewer has "–",
 // and comes after everyone with a win % when sorting by it (whichever way). The same for the fastest win without a win.
@@ -98,8 +99,9 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
         <a class="casino-back" href="/games/matador/">&larr; Matador</a>
         <h1>Matador leaderboard</h1>
         <p class="casino-intro">
-            A game counts once it has been won: a win for the winner, a loss for everyone who went bankrupt. A seat
-            the host gave away counts for whoever played it at the end. Fastest win is the fewest rounds a game was won in.
+            A game counts once it has been won: a win for the winner, a loss for everyone who went bankrupt. Leaving a
+            game while it's being played counts as a loss straight away, unless the host had paused it. A seat the host
+            gave away counts for whoever played it at the end. Fastest win is the fewest rounds a game was won in.
             Win % is only shown from <?= LEADERBOARD_RANKED_GAMES ?> games, so one lucky game doesn't top the board.
         </p>
 

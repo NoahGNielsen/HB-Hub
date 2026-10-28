@@ -62,6 +62,10 @@
         your turns are skipped. The host can give an empty seat to someone else, or save the game and stop it.
     </li>
     <li>
+        Leaving while the game is being played (or closing it for <?= HBHUB_MATADOR_GRACE_SECONDS ?> seconds) counts as a
+        loss on the leaderboard, even if you come back, unless the host has paused the game.
+    </li>
+    <li>
         The host can pause the game. Nobody can roll, build or trade, and no turn runs out or is skipped, until the host
         goes on. Then the player whose turn it is gets their full <?= HBHUB_MATADOR_TURN_SECONDS ?> seconds again.
     </li>

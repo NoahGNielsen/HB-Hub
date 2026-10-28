@@ -128,6 +128,10 @@ if ($action === 'leave') {
 hbHubMatadorSweep($db); // games everyone has closed, so they don't show (and are saved)
 $lobbySeat = hbHubMatadorUserSeat($db, $userId);
 $lobbyRoom = $lobbySeat !== null ? hbHubMatadorRoom($db, $lobbySeat['roomId']) : null;
+// Leaving the game counts as a loss while it's being played and not paused, unless it already has (results.php)
+$lobbyPlayer = $lobbyRoom !== null ? hbHubMatadorPlayerOf($lobbyRoom['state'], $lobbySeat['seat']) : null;
+$lobbyLeaveLoses = $lobbyPlayer !== null && $lobbyRoom['state']['phase'] === 'playing' && !hbHubMatadorIsPaused($lobbyRoom['state'])
+    && !$lobbyPlayer['bankrupt'] && !in_array($userId, $lobbyRoom['state']['forfeited'] ?? [], true);
 $lobbySave = hbHubMatadorSaveOf($db, $userId);
 $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
 ?>
@@ -187,12 +191,15 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
                     <span class="lobby-pulse" aria-hidden="true"></span>
                     <div>
                         <h2 id="lobby-yours-title">Your game</h2>
-                        <p class="lobby-hint">You're in <strong class="lobby-current-name"><?= htmlspecialchars($lobbyRoom['roomName']) ?></strong>. You can be in one game at a time.</p>
+                        <p class="lobby-hint">
+                            You're in <strong class="lobby-current-name"><?= htmlspecialchars($lobbyRoom['roomName']) ?></strong>. You can be in one game at a time.
+                            <?php if ($lobbyLeaveLoses): ?>Leaving it while it's being played counts as a loss.<?php endif; ?>
+                        </p>
                     </div>
                 </div>
                 <div class="lobby-actions">
                     <a class="casino-btn casino-btn-primary" href="/games/matador/game?room=<?= $lobbyRoom['roomId'] ?>">Back to your game</a>
-                    <form method="post">
+                    <form method="post"<?= $lobbyLeaveLoses ? ' data-mt-leave-form' : '' ?>>
                         <input type="hidden" name="action" value="leave">
                         <button type="submit" class="casino-btn">Leave it</button>
                     </form>
@@ -336,6 +343,15 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
             <div class="games-dialog-actions">
                 <button type="button" class="casino-btn" data-mt-delete-cancel>Keep it</button>
                 <button type="button" class="casino-btn casino-btn-primary" data-mt-delete-confirm>Delete</button>
+            </div>
+        </dialog>
+
+        <dialog class="games-dialog" aria-labelledby="lobby-leave-title" data-mt-leave-dialog>
+            <h2 id="lobby-leave-title">Leave your game?</h2>
+            <p>It's being played, so leaving counts as a loss, even if you come back. Your seat is kept for you.</p>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn" data-mt-leave-cancel>Stay</button>
+                <button type="button" class="casino-btn casino-btn-primary" data-mt-leave-confirm>Leave</button>
             </div>
         </dialog>
     </main>

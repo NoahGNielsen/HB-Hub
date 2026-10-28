@@ -90,7 +90,8 @@ if ($action === 'leave') {
 hbHubUnoSweep($db); // games everyone has closed, so they don't show
 $lobbySeat = hbHubUnoUserSeat($db, $userId);
 $lobbyRoom = $lobbySeat !== null ? hbHubUnoRoom($db, $lobbySeat['roomId']) : null;
-$lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playing';
+// Leaving counts as a loss while the game is being played, unless the host has paused it (results.php)
+$lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playing' && $lobbyRoom['state']['game']['pausedSince'] === null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
