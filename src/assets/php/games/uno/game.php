@@ -55,7 +55,7 @@ const HBHUB_UNO_LOG_KEPT = 30;
 const HBHUB_UNO_COLOURS = ['r', 'y', 'g', 'b'];
 const HBHUB_UNO_COLOUR_NAMES = ['r' => 'red', 'y' => 'yellow', 'g' => 'green', 'b' => 'blue'];
 const HBHUB_UNO_TURN_CHOICES = [15, 30, 60]; // the turnSeconds setting
-const HBHUB_UNO_DEFAULT_SETTINGS = ['turnSeconds' => 30, 'stacking' => true, 'stackMixing' => true, 'drawUntil' => true];
+const HBHUB_UNO_DEFAULT_SETTINGS = ['turnSeconds' => 30, 'stacking' => true, 'stackMixing' => true, 'drawUntil' => false];
 
 function hbHubUnoNowMs(): int
 {
@@ -111,7 +111,7 @@ function hbHubUnoCleanSettings(mixed $turnSeconds, mixed $stacking, mixed $drawU
 }
 
 /**
- * The settings in a few words, for the lobby and the game: "30 seconds a turn, stacking, draw until you can play"
+ * The settings in a few words, for the lobby and the game: "30 seconds a turn, stacking, draw one card"
  * ("stacking the same card" when Draw Twos and Wild Draw Fours can't be mixed).
  */
 function hbHubUnoSettingsText(array $settings): string
