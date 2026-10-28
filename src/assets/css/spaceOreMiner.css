@@ -1584,13 +1584,17 @@
   margin: 0;
 }
 
+/* Takes up the rest of the row, so the switches (Auto buy, Late-game keys) sit on the left and the amounts get
+   pushed over to the right by their margin-left: auto */
 .miner-store-tools {
+  flex: 1 1 auto;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .miner-amounts {
+  margin-left: auto;
   display: flex;
   gap: 4px;
 }
