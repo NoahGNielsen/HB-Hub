@@ -191,9 +191,44 @@
     function checkName() {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(nameInput.value.trim());
         nameEmailWarning.hidden = !isEmail;
-        nameInput.setCustomValidity(isEmail ? 'That looks like an email address. Pick a name or nickname instead.' : '');
+        nameTakenError.hidden = isEmail || !nameTaken;
+        let message = '';
+        if (isEmail) message = 'That looks like an email address. Pick a name or nickname instead.';
+        else if (nameTaken) message = 'That name is already taken. Please choose another one.';
+        nameInput.setCustomValidity(message);
     }
-    nameInput.addEventListener('input', checkName);
+
+    // Half a second after they stop typing, ask the server whether the name is taken (GET /onboarding?checkName=).
+    // Only a hint - the server checks again when the account is made. Upper/lowercase doesn't matter, like on the server.
+    const nameTakenError = form.querySelector('[data-name-taken-error]');
+    let nameTaken = false;
+    let nameCheckTimer = null;
+    let nameCheckAbort = null;
+
+    function scheduleNameCheck() {
+        clearTimeout(nameCheckTimer);
+        nameCheckAbort?.abort();
+        nameTaken = false; // not known for what they typed now, so it doesn't block Next meanwhile
+        checkName();
+
+        const name = nameInput.value.trim();
+        if (name === '' || !nameEmailWarning.hidden) return;
+        nameCheckTimer = setTimeout(() => {
+            nameCheckAbort = new AbortController();
+            fetch(`${form.getAttribute('action').split('?')[0]}?checkName=${encodeURIComponent(name)}`, {
+                headers: { Accept: 'application/json' },
+                signal: nameCheckAbort.signal,
+            })
+                .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+                .then((data) => {
+                    if (nameInput.value.trim().toLowerCase() !== name.toLowerCase()) return; // changed since
+                    nameTaken = data.taken === true;
+                    checkName();
+                })
+                .catch(() => {}); // aborted or offline - the server still catches it on submit
+        }, 500);
+    }
+    nameInput.addEventListener('input', scheduleNameCheck);
 
     // Live character counters
     for (const field of form.querySelectorAll('[data-counter]')) {
@@ -285,13 +320,15 @@
     // Clear a server-side error once that answer is edited
     form.addEventListener('input', (event) => {
         if (event.target === avatarInput) return;
-        event.target.closest('.onboarding-step')?.querySelector('.onboarding-error')?.remove();
+        event.target.closest('.onboarding-step')?.querySelector('.onboarding-error:not([data-name-taken-error])')?.remove();
     });
 
     form.noValidate = true; // validation is done per step above
     progress.hidden = false;
     updateClassField();
-    checkName();
+    // A name sent back after a failed sign-up is checked too, unless the server already said what's wrong with it
+    if (nameInput.closest('.onboarding-step').querySelector('.onboarding-error:not([data-name-taken-error])')) checkName();
+    else scheduleNameCheck();
     if (description) checkDescription();
     updatePassword();
     showStep(Math.min(Math.max(Number(form.dataset.startStep) || 1, 1), steps.length) - 1);

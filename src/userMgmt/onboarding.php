@@ -38,6 +38,37 @@ if (hbHubBannedCookieUserId() !== null):
     exit;
 endif;
 
+// GET /onboarding?checkName=... answers {"taken": true|false}, so onboarding.js can say a name is taken while they
+// type. Only a hint: the unique userNameLower is what really stops two accounts sharing a name when saving.
+if (isset($_GET['checkName'])) {
+    header('Content-Type: application/json');
+    header('Cache-Control: no-store');
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        http_response_code(405);
+        header('Allow: GET');
+        echo json_encode(['error' => 'methodNotAllowed']);
+        exit;
+    }
+    $checkName = is_string($_GET['checkName']) ? trim($_GET['checkName']) : '';
+    if ($checkName === '' || mb_strlen($checkName) > 35) { // 35 is the most a name can be
+        http_response_code(400);
+        echo json_encode(['error' => 'invalidName']);
+        exit;
+    }
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/database.php';
+    try {
+        // Same lookup as the login (loginCheckDB.php); deleted accounts have userNameLower NULL, so they free their name
+        $statement = hbHubDatabase()->prepare('SELECT 1 FROM `HBHub-Users` WHERE userNameLower = ? LIMIT 1');
+        $statement->execute([mb_strtolower($checkName)]);
+        echo json_encode(['taken' => $statement->fetchColumn() !== false]);
+    } catch (PDOException $e) {
+        error_log('Onboarding: could not check a name: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'databaseError']);
+    }
+    exit;
+}
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // the years and fields of study, and the class chat
 $onboardingAvatarTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
@@ -213,6 +244,10 @@ foreach ($onboardingSteps as $index => $step) {
                 <p class="onboarding-hint"><span id="onboarding-name-counter"><?= mb_strlen($onboardingValues['name']) ?></span>/<?= $onboardingNameMax ?> characters</p>
                 <p class="onboarding-warning" role="alert" data-name-email-warning hidden>
                     That looks like an email address. Pick a name or nickname instead - it's shown to everyone.
+                </p>
+                <!-- Shown by onboarding.js once it has checked the name half a second after they stop typing -->
+                <p class="onboarding-error" role="alert" data-name-taken-error hidden>
+                    That name is already taken. Please choose another one.
                 </p>
                 <?php if (isset($onboardingErrors['name'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['name']) ?></p>
