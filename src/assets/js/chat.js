@@ -1244,7 +1244,7 @@ chatPart((signal) => {
 
         const rows = [
             ['Type', infoTypes[info.type]],
-            ['Created', info.createdBy !== null ? `${info.created} by ${info.createdBy}` : info.created],
+            ['Created', `${info.created} by ${info.createdBy}`],
             ['Members', info.members.toLocaleString()],
             ['Messages', info.messages.toLocaleString()],
             ['You joined', info.joined],

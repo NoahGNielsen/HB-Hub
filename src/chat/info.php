@@ -1,8 +1,8 @@
 <?php
 // Chat info in the chat menu (chat.js): /chat/info?chat=12 returns some basic info about a chat the user is in, as JSON:
-// {type: "dm"|"group"|"class", created: "d/m/Y", createdBy: name or null, members: count, messages: count,
+// {type: "dm"|"group"|"class", created: "d/m/Y", createdBy: name, members: count, messages: count,
 //  joined: "d/m/Y", role: "owner"|"admin"|"member"|null}
-// createdBy is null for a class chat (the HB Hub System account made it), role is null in a DM.
+// createdBy is HB Hub System for a class chat (that account made it, chatCreatedBy 0), role is null in a DM.
 // Like the chat list, ghost invites and other people's ghost messages aren't counted (see the top of assets/php/chat.php),
 // except for a ghost-banned user, to whom their own look like everyone else's.
 // 404 when the chat doesn't exist, isn't active or the user isn't in it (or hasn't accepted it yet).
@@ -57,11 +57,10 @@ if (!$chat) {
 }
 
 $isDm = (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM;
-$isClass = $chat['chatClassKey'] !== null;
 echo json_encode([
-    'type' => $isDm ? 'dm' : ($isClass ? 'class' : 'group'),
+    'type' => $isDm ? 'dm' : ($chat['chatClassKey'] !== null ? 'class' : 'group'),
     'created' => date('d/m/Y', strtotime($chat['chatCreatedTimestamp'])),
-    'createdBy' => $isClass ? null : ($chat['creatorName'] ?? 'Deleted User'),
+    'createdBy' => $chat['creatorName'] ?? 'Deleted User',
     'members' => (int) $chat['memberCount'],
     'messages' => (int) $chat['messageCount'],
     'joined' => date('d/m/Y', strtotime($chat['memberJoinedTimestamp'])),
