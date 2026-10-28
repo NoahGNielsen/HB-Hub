@@ -14,8 +14,9 @@
 // config (9 GB by default), nobody can send new ones until some expire or are deleted.
 //
 // Pictures are turned into JPEG XL in the browser before they're sent (chat.js, chatJxlWorker.js), unless the user
-// ticks the box to keep the original: lossless, except JPEGs, which get one that looks the same. They're stored as they come. Any other file is zipped here and
-// unzipped again when it's downloaded.
+// ticks the box to keep the original: lossless, except JPEGs, which get one that looks the same. They're stored as they come. Videos
+// browsers can play (MP4, MOV, WebM) are stored as they come too, and get a player in the chat. Any other file is zipped
+// here and unzipped again when it's downloaded.
 //
 // Files live on disk, not in the database: attachments_path in the config, by default a folder next to the config
 // file, above the web root. Each one is named after its random attachmentKey, so the name never says what's in it.
@@ -39,7 +40,7 @@ const HBHUB_CHAT_ATTACHMENT_DEFAULT_MAX_TOTAL = 9 * 1024 * 1024 * 1024; // attac
 const HBHUB_CHAT_ATTACHMENT_KIND_IMAGE = 0; // a picture, stored as it came (the user kept the original, or it's a kind that isn't converted)
 const HBHUB_CHAT_ATTACHMENT_KIND_JXL = 1; // a picture the browser turned into JPEG XL
 const HBHUB_CHAT_ATTACHMENT_KIND_ZIP = 2; // any other file, zipped
-const HBHUB_CHAT_ATTACHMENT_KIND_FILE = 3; // any other file, stored as it came because zipping didn't make it smaller
+const HBHUB_CHAT_ATTACHMENT_KIND_FILE = 3; // a video, or any other file that zipping didn't make smaller, stored as it came
 
 // attachmentStatus in HBHub-ChatAttachments
 const HBHUB_CHAT_ATTACHMENT_KEPT = 0; // the file is there and takes its tickets
@@ -49,6 +50,9 @@ const HBHUB_CHAT_ATTACHMENT_EXPIRED = 2; // its tickets ran out
 // Pictures that are shown in the chat, by what's in the file (never SVG, it can carry scripts).
 // Anything else is a file to download.
 const HBHUB_CHAT_ATTACHMENT_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif', 'image/bmp', 'image/jxl'];
+// Videos that get a player in the chat, also by what's in the file. Whether one really plays depends on the browser
+// knowing its codec (an iPhone's HEVC video doesn't play in every browser), so the player always has a download link.
+const HBHUB_CHAT_ATTACHMENT_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
 
 /**
  * The site config, read once. The attachment functions need it from pages that don't load it themselves.
@@ -224,6 +228,32 @@ function hbHubChatAttachmentImageType(string $path): ?string
 }
 
 /**
+ * The video type of the file by what's in it (one of HBHUB_CHAT_ATTACHMENT_VIDEO_TYPES), or null when it isn't one of
+ * those videos. MP4 and MOV start with an ftyp box naming a brand, and only video brands count, so a HEIC photo or an
+ * M4A song isn't one. WebM is Matroska with "webm" as its doctype near the start.
+ */
+function hbHubChatAttachmentVideoType(string $path): ?string
+{
+    $start = (string) @file_get_contents($path, false, null, 0, 64);
+    if (substr($start, 4, 4) === 'ftyp') {
+        $brand = substr($start, 8, 4);
+        if ($brand === 'qt  ') {
+            return 'video/quicktime';
+        }
+        foreach (['iso', 'mp41', 'mp42', 'avc1', 'M4V', 'dash', 'mmp4', 'MSNV', 'XAVC'] as $videoBrand) {
+            if (str_starts_with($brand, $videoBrand)) {
+                return 'video/mp4';
+            }
+        }
+        return null;
+    }
+    if (str_starts_with($start, "\x1A\x45\xDF\xA3") && str_contains($start, 'webm')) {
+        return 'video/webm';
+    }
+    return null;
+}
+
+/**
  * SQL for how many attachments the message $alias (an `HBHub-Messages` alias, written in the code) was sent with,
  * gone ones included, for lists that only name them ("3 attachments") rather than show them.
  */
@@ -339,7 +369,17 @@ function hbHubChatAttachmentPrepare(mixed $file, bool $converted): array|string
         return ['path' => $path, 'key' => $key, 'name' => $name, 'type' => $imageType, 'kind' => $kind, 'size' => $size, 'storedSize' => $size];
     }
 
-    // Anything else is zipped as hard as deflate goes. Already-packed files (videos, zips) don't get any smaller,
+    // A video is stored as it is too: zipping doesn't make it smaller, and the player has to jump around in it
+    $videoType = hbHubChatAttachmentVideoType($tmp);
+    if ($videoType !== null) {
+        if (!move_uploaded_file($tmp, $path)) {
+            return 'storageError';
+        }
+        return ['path' => $path, 'key' => $key, 'name' => $name, 'type' => $videoType,
+            'kind' => HBHUB_CHAT_ATTACHMENT_KIND_FILE, 'size' => $size, 'storedSize' => $size];
+    }
+
+    // Anything else is zipped as hard as deflate goes. Already-packed files (other videos, zips) don't get any smaller,
     // so when the zip isn't smaller the file is kept as it came instead.
     if (class_exists(ZipArchive::class)) {
         $zip = new ZipArchive();

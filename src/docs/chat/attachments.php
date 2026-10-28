@@ -33,6 +33,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             They wait as small preview tiles above the message box, so you can take one out again or write a message
                             to go with them. Then send as normal. Several pictures in one message show as a gallery.
                         </p>
+                        <p>
+                            Videos (MP4, MOV and WebM) get a player right in the chat, so they can be watched without downloading
+                            them. If your browser can't play one, it shows the video's name instead, which downloads it.
+                        </p>
                     </section>
 
                     <section id="smaller" aria-labelledby="docs-smaller">
@@ -40,7 +44,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             Before a picture is sent, your browser turns it into JPEG XL, a newer kind of picture file that takes
                             much less space. It doesn't lose any detail, except JPEG photos, which get one that looks the same. Tick
-                            <strong>Keep original pictures</strong> to send them exactly as they are instead. Other files are zipped
+                            <strong>Keep original pictures</strong> to send them exactly as they are instead. Videos are kept as they
+                            are. Other files are zipped
                             on the server and unzipped again when someone downloads them, so you get back the same file.
                         </p>
                     </section>

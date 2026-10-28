@@ -2142,10 +2142,12 @@ function chatAttachmentsGoneHtml(int $deleted, int $expired): string
 }
 
 /**
- * A message's attachments, above its text (data-attachments): first its pictures, then its other files, then one line
- * for the ones whose file is gone (deleted or expired).
+ * A message's attachments, above its text (data-attachments): first its pictures, then its videos, then its other
+ * files, then one line for the ones whose file is gone (deleted or expired).
  * One picture is shown 200px tall with its name below (which downloads it). Several go in a gallery
  * (chat-attachment-gallery) of square tiles, two or three to a row, without names - the picture viewer shows each one's.
+ * Each video gets the browser's own player, one under the other, with its name below like a single picture. When the
+ * browser can't play it, chat.js marks it is-unplayable and it's just the name to download.
  * Any other file is a card with its extension on a little document, which downloads it.
  * A JPEG XL picture has data-attachment-jxl, so chat.js can draw it itself in browsers that can't show JPEG XL.
  * Clicking a picture opens it in the picture viewer (chat.js), which goes through the message's pictures, and whose
@@ -2157,6 +2159,7 @@ function chatAttachmentsGoneHtml(int $deleted, int $expired): string
 function chatAttachmentsHtml(array $attachments): string
 {
     $pictures = [];
+    $videos = [];
     $files = [];
     $deleted = 0;
     $expired = 0;
@@ -2186,6 +2189,17 @@ function chatAttachmentsHtml(array $attachments): string
                 . '</figure>';
             continue;
         }
+        if (in_array($attachment['attachmentType'], HBHUB_CHAT_ATTACHMENT_VIDEO_TYPES, true)) {
+            // Only how long it is and its first frame are loaded until someone presses play
+            $videos[] = '<figure class="chat-attachment is-video" data-attachment-name="' . $name . '">'
+                . '<video class="chat-attachment-video" src="' . $url . '" controls preload="metadata" playsinline'
+                . ' title="' . $name . '" aria-label="' . $name . '"></video>'
+                . '<figcaption class="chat-attachment-caption">'
+                . '<a class="chat-attachment-download" href="' . $downloadUrl . '" download="' . $name . '" title="Download">' . $name . '</a>'
+                . '<span class="chat-attachment-size">' . $size . '</span></figcaption>'
+                . '</figure>';
+            continue;
+        }
         $files[] = '<a class="chat-attachment is-file" href="' . $downloadUrl . '" download="' . $name . '" title="Download ' . $name . '">'
             . '<span class="chat-attachment-ext" aria-hidden="true">' . chatAttachmentExtension($attachment['attachmentName']) . '</span>'
             . '<span class="chat-attachment-text"><span class="chat-attachment-name">' . $name . '</span>'
@@ -2202,6 +2216,7 @@ function chatAttachmentsHtml(array $attachments): string
         $columns = in_array(count($pictures), [2, 4], true) ? 2 : 3;
         $html .= '<div class="chat-attachment-gallery is-cols-' . $columns . '">' . implode('', $pictures) . '</div>';
     }
+    $html .= implode('', $videos);
     if ($files !== []) {
         $html .= '<div class="chat-attachment-files">' . implode('', $files) . '</div>';
     }

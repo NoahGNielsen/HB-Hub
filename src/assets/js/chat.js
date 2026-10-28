@@ -1808,6 +1808,23 @@ chatPart((signal) => {
     });
 });
 
+// Videos in the chat: when the browser can't play one (a codec it doesn't know, like an iPhone's HEVC in some browsers,
+// or the file is gone since the page loaded), its figure gets is-unplayable, which hides the broken player in chat.css
+// and leaves its name, which downloads it.
+chatPart(() => {
+    const messages = document.querySelector('[data-chat-messages]');
+    if (!messages) return;
+    const unplayable = (video) => video.closest('.chat-attachment')?.classList.add('is-unplayable');
+
+    // Error events don't bubble, so they're caught on the way down, like the JPEG XL ones above
+    messages.addEventListener('error', (event) => {
+        if (event.target instanceof HTMLVideoElement && event.target.classList.contains('chat-attachment-video')) unplayable(event.target);
+    }, true);
+    messages.querySelectorAll('video.chat-attachment-video').forEach((video) => {
+        if (video.error) unplayable(video);
+    });
+});
+
 // Picture viewer: clicking a picture in the open chat shows it big in a popup (.chat-viewer in chat/index.php), with zoom,
 // Info, Download and × along the top. Clicking anywhere that isn't the picture, a button or the Info panel closes it,
 // and so does Escape. A message with several pictures (a gallery) gets arrows on each side to go through them, and the

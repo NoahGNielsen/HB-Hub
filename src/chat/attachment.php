@@ -1,7 +1,9 @@
 <?php
-// One attachment's file: /chat/attachment?id=attachmentId sends it, shown in the page for a picture, or as a download
-// with &download=1 (and always for anything that isn't a picture). Zipped files (assets/php/chatAttachments.php) are
+// One attachment's file: /chat/attachment?id=attachmentId sends it, shown in the page for a picture or a video, or as a
+// download with &download=1 (and always for anything else). Zipped files (assets/php/chatAttachments.php) are
 // unzipped on the way out, so what's downloaded is the file as it was sent.
+// A video's player asks for one piece at a time (a Range header), so it can start straight away and jump around, and
+// Safari won't play it at all otherwise. Only files stored as they are can be sent in pieces, which videos always are.
 // Only for members of the chat it was sent in, while its message isn't deleted and its tickets haven't run out.
 // One sent by a ghost-banned user (messageIsGhost, assets/php/chat.php) is only for them.
 // An attachment never changes, so its id is its ETag, and the browser's copy is used again after a quick check.
@@ -43,14 +45,41 @@ if (($_SERVER['HTTP_IF_NONE_MATCH'] ?? null) === $etag) {
     exit;
 }
 
-// Pictures can be shown in the page. Anything else only ever downloads, as a plain stream of bytes the browser won't open.
-$isImage = in_array($attachment['attachmentType'], HBHUB_CHAT_ATTACHMENT_IMAGE_TYPES, true);
-$isDownload = !$isImage || ($_GET['download'] ?? null) === '1';
+// Pictures and videos can be shown in the page. Anything else only ever downloads, as a plain stream of bytes the browser won't open.
+$isShown = in_array($attachment['attachmentType'], [...HBHUB_CHAT_ATTACHMENT_IMAGE_TYPES, ...HBHUB_CHAT_ATTACHMENT_VIDEO_TYPES], true);
+$isDownload = !$isShown || ($_GET['download'] ?? null) === '1';
 $name = $attachment['attachmentName'];
 $asciiName = preg_replace('~[^A-Za-z0-9._ -]+~', '_', $name) ?? 'file';
-header('Content-Type: ' . ($isImage ? $attachment['attachmentType'] : 'application/octet-stream'));
+header('Content-Type: ' . ($isShown ? $attachment['attachmentType'] : 'application/octet-stream'));
 header('Content-Disposition: ' . ($isDownload ? 'attachment' : 'inline') . '; filename="' . $asciiName . '"; filename*=UTF-8\'\'' . rawurlencode($name));
-header('Content-Length: ' . (int) $attachment['attachmentSize']);
+
+// The piece asked for, as [first byte, last byte], when it's one piece of a file stored as it is. Several pieces at
+// once are never asked for by a player, so those just get the whole file, which a Range header allows.
+$size = (int) $attachment['attachmentSize'];
+$range = null;
+$isStoredAsIs = (int) $attachment['attachmentKind'] !== HBHUB_CHAT_ATTACHMENT_KIND_ZIP;
+if ($isStoredAsIs) {
+    header('Accept-Ranges: bytes');
+    if (preg_match('~^bytes=(\d*)-(\d*)$~', trim((string) ($_SERVER['HTTP_RANGE'] ?? '')), $match) === 1 && $match[1] . $match[2] !== '') {
+        // "bytes=500-" is from byte 500 to the end, "bytes=-500" is the last 500 bytes
+        $first = $match[1] !== '' ? (int) $match[1] : max(0, $size - (int) $match[2]);
+        $last = $match[1] !== '' && $match[2] !== '' ? min((int) $match[2], $size - 1) : $size - 1;
+        if ($first > $last || $first >= $size) {
+            header_remove('Content-Disposition');
+            header('Content-Range: bytes */' . $size);
+            http_response_code(416);
+            exit;
+        }
+        $range = [$first, $last];
+    }
+}
+if ($range !== null) {
+    http_response_code(206);
+    header('Content-Range: bytes ' . $range[0] . '-' . $range[1] . '/' . $size);
+    header('Content-Length: ' . ($range[1] - $range[0] + 1));
+} else {
+    header('Content-Length: ' . $size);
+}
 
 // Up to 50 MB, so it's streamed rather than read into memory, and isn't cut off on a slow connection
 set_time_limit(0);
@@ -58,7 +87,21 @@ while (ob_get_level() > 0) {
     ob_end_clean();
 }
 
-if ((int) $attachment['attachmentKind'] === HBHUB_CHAT_ATTACHMENT_KIND_ZIP) {
+if ($range !== null) {
+    $file = fopen($path, 'rb');
+    fseek($file, $range[0]);
+    $left = $range[1] - $range[0] + 1;
+    while ($left > 0 && !feof($file) && !connection_aborted()) {
+        $chunk = fread($file, min(64 * 1024, $left));
+        if ($chunk === false || $chunk === '') {
+            break;
+        }
+        echo $chunk;
+        flush();
+        $left -= strlen($chunk);
+    }
+    fclose($file);
+} elseif ((int) $attachment['attachmentKind'] === HBHUB_CHAT_ATTACHMENT_KIND_ZIP) {
     $zip = new ZipArchive();
     $stream = $zip->open($path, ZipArchive::RDONLY) === true ? $zip->getStream(HBHUB_CHAT_ATTACHMENT_ZIP_ENTRY) : false;
     if ($stream === false) {
