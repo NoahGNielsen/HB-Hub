@@ -45,7 +45,7 @@
         the Hot Key Panel upgrade, <kbd>1</kbd>-<kbd>9</kbd> and <kbd>0</kbd>
         buy the buildings in the order they're listed (the last ten instead, with Long-Range Hot Keys switched
         on, which <kbd>K</kbd> does too), <kbd>U</kbd> buys the cheapest upgrade you can afford and <kbd>B</kbd>
-        the building you can afford that gives the most ore per second for its price. <kbd>A</kbd> switches between buying 1, 10 and 100, <kbd>W</kbd> opens the
+        the building you can afford that gives the most ore per second for its price. <kbd>A</kbd> switches between buying 1, 10, 100 and as many as you can afford (with Max Buying), <kbd>W</kbd> opens the
         Warp Jump, <kbd>X</kbd> the Big Crunch, <kbd>R</kbd> the Big Rip (then <kbd>Y</kbd>, or the same key again, says yes and <kbd>N</kbd> not yet) and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once, but
         holding <kbd>1</kbd>-<kbd>9</kbd>, <kbd>0</kbd>, <kbd>U</kbd> or <kbd>B</kbd> keeps buying.
     </li>

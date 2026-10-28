@@ -132,14 +132,17 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                                     title="Make the 1-9 and 0 keys buy your last ten buildings instead of your first ten (K)" data-miner-key-switch hidden>
                                 Late-game keys
                             </button>
-                            <!-- With Bulk Buying: A goes through these in turn (the hot keys at the bottom of spaceOreMiner.js) -->
+                            <!-- With Bulk Buying: A goes through these in turn (the hot keys at the bottom of spaceOreMiner.js).
+                                 Max only shows with Max Buying. -->
                             <div class="miner-amounts" role="group" aria-label="How many to buy" data-miner-amounts hidden>
                                 <button type="button" class="miner-amount is-active" data-amount="1" aria-pressed="true" aria-keyshortcuts="A"
-                                        title="Buy 1 at a time (A switches between 1, 10 and 100)">×1</button>
+                                        title="Buy 1 at a time (A switches between the amounts)">×1</button>
                                 <button type="button" class="miner-amount" data-amount="10" aria-pressed="false" aria-keyshortcuts="A"
-                                        title="Buy 10 at a time (A switches between 1, 10 and 100)">×10</button>
+                                        title="Buy 10 at a time (A switches between the amounts)">×10</button>
                                 <button type="button" class="miner-amount" data-amount="100" aria-pressed="false" aria-keyshortcuts="A"
-                                        title="Buy 100 at a time (A switches between 1, 10 and 100)">×100</button>
+                                        title="Buy 100 at a time (A switches between the amounts)">×100</button>
+                                <button type="button" class="miner-amount" data-amount="max" aria-pressed="false" aria-keyshortcuts="A"
+                                        title="Buy as many as you can afford (A switches between the amounts)" hidden>Max</button>
                             </div>
                         </div>
                     </div>

@@ -140,7 +140,8 @@ const HBHUB_MINER_BUILDING_UPGRADE_COST = [2.5, 3, 5, 8, 8, 8];
 // 'type' says what it does:
 // - click: clicks mine 'value' times as much. clickPct: each click also mines 'value' of the ore per second.
 // - crit: a click can be critical (HBHUB_MINER_CRIT_CHANCE, HBHUB_MINER_CRIT_MULTIPLIER). auto: 'value' more clicks a second.
-// - global: every building mines 'value' more (0.1 = +10%), all of them multiplied together. bulk: the x10 and x100 buttons.
+// - global: every building mines 'value' more (0.1 = +10%), all of them multiplied together. bulk: the x10 and x100 buttons
+//   (and the Max button, for Max Buying).
 // - synergy: 'building' mines 'per' more for every 'every' of 'source' owned.
 // - crew: each of 'building' mines another 'value' ore per second (before its other upgrades) for every other building
 //   owned, so Space Pickaxe Guys keep up with the rest.
@@ -171,6 +172,8 @@ const HBHUB_MINER_OTHER_UPGRADES = [
         'need' => ['owned' => ['pickaxe' => 200]], 'text' => 'Each Space Pickaxe Guy mines another 500 ore per second for every other building you own.'],
     'autoAim' => ['name' => 'Auto-Aim Laser', 'icon' => 'target', 'cost' => 50000, 'type' => 'clickPct', 'value' => 0.01, 'text' => 'Each click also mines 1% of your ore per second.'],
     'bulk' => ['name' => 'Bulk Buying', 'icon' => 'crates', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time. Press A to switch between them.'],
+    'bulkMax' => ['name' => 'Max Buying', 'icon' => 'cartFull', 'cost' => 5e6, 'type' => 'bulk', 'need' => ['ore' => 2.5e6, 'upgrades' => ['bulk']],
+        'text' => 'Unlocks the Max button next to ×100, to buy as many of a building as you can afford at once.'],
     'quantum' => ['name' => 'Quantum Hammer', 'icon' => 'quantumHammer', 'cost' => 500000, 'type' => 'clickPct', 'value' => 0.02, 'text' => 'Each click mines another 2% of your ore per second.'],
     'cometKey' => ['name' => 'Comet Hot Key', 'icon' => 'keyC', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1, 'upgrades' => ['quickKeys']], 'text' => 'Press C to catch a comet, without having to hit it.'],
     'radar' => ['name' => 'Comet Radar', 'icon' => 'radar', 'cost' => 777777, 'type' => 'comet', 'effect' => 'often', 'need' => ['comets' => 3], 'text' => 'Comets show up twice as often.'],
@@ -239,7 +242,7 @@ const HBHUB_MINER_ANTI_UPGRADES = [
     'echo' => ['name' => 'Dark Echo', 'icon' => 'cycle', 'cost' => 1, 'text' => 'Keep your Dark Matter upgrades when you Big Crunch.'],
     'converter' => ['name' => 'Matter Converter', 'icon' => 'flask', 'cost' => 3, 'text' => 'Warp Jumps give twice as much Dark Matter.'],
     'leftovers' => ['name' => 'Big Bang Leftovers', 'icon' => 'orePile', 'cost' => 5, 'text' => 'Start every run with 10 million ore.'],
-    'eternal' => ['name' => 'Eternal Blueprints', 'icon' => 'blueprint', 'cost' => 10, 'text' => 'Keep Bulk Buying and your comet upgrades when you Warp Jump.'],
+    'eternal' => ['name' => 'Eternal Blueprints', 'icon' => 'blueprint', 'cost' => 10, 'text' => 'Keep Bulk Buying, Max Buying and your comet upgrades when you Warp Jump.'],
     'cometCatcher' => ['name' => 'Comet Catcher', 'icon' => 'cometCatcher', 'cost' => 15, 'text' => 'Catches every Golden Comet for you while the game is open. Diamond Comets are still yours to catch.'],
     'annihilation' => ['name' => 'Annihilation Engines', 'icon' => 'annihilation', 'cost' => 25, 'text' => 'All buildings mine twice as much.'],
     'antiComets' => ['name' => 'Antimatter Comets', 'icon' => 'antiComet', 'cost' => 50, 'text' => 'Comet effects are twice as strong.'],
@@ -1331,7 +1334,7 @@ function hbHubMinerCatchComet(array &$state): ?string
 
 /**
  * Starts a new run, for a Warp Jump, Big Crunch or Big Rip: ore, buildings and upgrades start over, apart from the click
- * upgrades with Persistent Memory, Bulk Buying and the comet upgrades with Eternal Blueprints, the upgrades the keep
+ * upgrades with Persistent Memory, Bulk Buying, Max Buying and the comet upgrades with Eternal Blueprints, the upgrades the keep
  * skills keep, the drones from Head Start, the buildings from the start skills and the ore from Big Bang Leftovers or
  * Strange Leftovers.
  */
@@ -1429,7 +1432,8 @@ function hbHubMinerRip(array &$state): bool
  * One thing the player did, at the game's time. Returns whether it counted.
  * - ['type' => 'click', 'count' => n, 'auto' => true when they look like an auto-clicker's (left out otherwise)]: see
  *   hbHubMinerSync() for the limit.
- * - ['type' => 'buy', 'building' => id, 'amount' => 1, 10 or 100] (10 and 100 need Bulk Buying).
+ * - ['type' => 'buy', 'building' => id, 'amount' => 1, 10 or 100] (10 and 100 need Bulk Buying). With Max Buying any
+ *   amount: the page works out how many the Max button can afford, and it's checked here like any other amount.
  * - ['type' => 'upgrade', 'id' => id], ['type' => 'dark', 'id' => id] (a Dark Matter upgrade), ['type' => 'anti',
  *   'id' => id] (an Antimatter upgrade), ['type' => 'skill', 'id' => id] (learning a skill).
  * - ['type' => 'comet'], ['type' => 'warp'], ['type' => 'crunch'], ['type' => 'rip'].
@@ -1450,8 +1454,9 @@ function hbHubMinerApply(array &$state, array $action): bool
     if ($type === 'buy') {
         $buildingId = $action['building'] ?? null;
         $amount = (int) ($action['amount'] ?? 1);
-        if (!is_string($buildingId) || !isset(HBHUB_MINER_BUILDINGS[$buildingId]) || !in_array($amount, [1, 10, 100], true)
-            || ($amount > 1 && !hbHubMinerHas($state, 'bulk'))) {
+        if (!is_string($buildingId) || !isset(HBHUB_MINER_BUILDINGS[$buildingId]) || $amount < 1
+            || ($amount > 1 && !hbHubMinerHas($state, 'bulk'))
+            || (!in_array($amount, [1, 10, 100], true) && !hbHubMinerHas($state, 'bulkMax'))) {
             return false;
         }
         $cost = hbHubMinerBuildingCost($state, $buildingId, $amount);

@@ -499,7 +499,8 @@
                 return action.count >= 1 ? click(s, action.count, action.auto === true) : false;
             case 'buy': {
                 const { building, amount } = action;
-                if (!BUILDINGS[building] || ![1, 10, 100].includes(amount) || (amount > 1 && !has(s, 'bulk'))) return false;
+                if (!BUILDINGS[building] || !Number.isInteger(amount) || amount < 1 || (amount > 1 && !has(s, 'bulk'))
+                    || (![1, 10, 100].includes(amount) && !has(s, 'bulkMax'))) return false;
                 const cost = buildingCost(s, building, amount);
                 if (!canAfford(s, cost)) return false;
                 s.ore = Math.max(0, s.ore - cost);
@@ -1189,13 +1190,28 @@
         return Object.keys(UPGRADES).filter((id) => !owned.has(id) && upgradeUnlocked(state, UPGRADES[id]));
     }
 
+    // The store's amount buttons say 1, 10, 100 or max (Max Buying)
+    const parseAmount = (value) => (value === 'max' ? 'max' : Number(value));
+
+    // How many of a building a click on it buys, at the amount picked: with Max that's as many as can be afforded, but at
+    // least 1, so it still shows what the next one costs when not even that can be. The guess from the cost formula can
+    // be one off after the rounding up, so it's checked against buildingCost() both ways.
+    function storeAmount(id, amount = buyAmount) {
+        if (amount !== 'max') return amount;
+        const growth = costGrowth(state, id);
+        let n = Math.max(1, Math.floor(Math.log(state.ore * (growth - 1) / buildingCost(state, id, 1) + 1) / Math.log(growth)));
+        while (n > 1 && !canAfford(state, buildingCost(state, id, n))) n--;
+        while (canAfford(state, buildingCost(state, id, n + 1))) n++;
+        return n;
+    }
+
     function renderStore() {
         const { shown, mystery } = visibleBuildings();
         const upgrades = availableUpgrades();
-        if (!has(state, 'bulk')) buyAmount = 1;
+        if (!has(state, 'bulk') || (buyAmount === 'max' && !has(state, 'bulkMax'))) buyAmount = 1;
         const offset = keyOffset(shown.length);
         const hasKeys = has(state, 'quickKeys');
-        const key = [shown.join(), mystery, upgrades.join(), buyAmount, has(state, 'bulk'), hasKeys, hasDark(state, 'lateKeys'), lateKeys, offset,
+        const key = [shown.join(), mystery, upgrades.join(), buyAmount, has(state, 'bulk'), has(state, 'bulkMax'), hasKeys, hasDark(state, 'lateKeys'), lateKeys, offset,
             hasDark(state, 'autoBuy'), isAutoBuying, skillEffects(state).upgradeCost].join('|');
 
         if (key !== storeKey) { // something new to show: build the lists again
@@ -1207,8 +1223,9 @@
             keySwitch.hidden = !hasDark(state, 'lateKeys') || !hasKeys; // it only moves the 1-9 and 0 keys
             keySwitch.classList.toggle('is-active', lateKeys);
             keySwitch.setAttribute('aria-pressed', String(lateKeys));
+            amounts.querySelector('[data-amount="max"]').hidden = !has(state, 'bulkMax');
             for (const button of amounts.querySelectorAll('[data-amount]')) {
-                const isActive = Number(button.dataset.amount) === buyAmount;
+                const isActive = parseAmount(button.dataset.amount) === buyAmount;
                 button.classList.toggle('is-active', isActive);
                 button.setAttribute('aria-pressed', String(isActive));
             }
@@ -1276,14 +1293,15 @@
         for (const button of buildingList.querySelectorAll('[data-building]')) {
             const id = button.dataset.building;
             const owned = state.buildings[id];
-            const cost = buildingCost(state, id, buyAmount);
+            const amount = storeAmount(id);
+            const cost = buildingCost(state, id, amount);
             const each = owned > 0 ? rates[id] / owned : buildingRates({ ...state, buildings: { ...state.buildings, [id]: 1 } })[id];
             button.classList.toggle('is-affordable', canAfford(state, cost));
-            button.querySelector('.miner-building-cost').textContent = (buyAmount > 1 ? '×' + buyAmount + ': ' : '') + format(cost) + ' ore';
+            button.querySelector('.miner-building-cost').textContent = (buyAmount !== 1 ? '×' + format(amount) + ': ' : '') + format(cost) + ' ore';
             button.querySelector('.miner-building-info').textContent = 'Each mines ' + format(each, { decimals: true }) + '/s'
                 + (owned > 0 && total > 0 ? ' · ' + Math.round(rates[id] / total * 100) + '% of your production' : '');
             button.querySelector('.miner-building-owned').textContent = owned > 0 ? format(owned) : '';
-            button.setAttribute('aria-label', BUILDINGS[id].name + ', you have ' + owned + '. Buy ' + buyAmount + ' for ' + format(cost) + ' ore.');
+            button.setAttribute('aria-label', BUILDINGS[id].name + ', you have ' + owned + '. Buy ' + amount + ' for ' + format(cost) + ' ore.');
         }
 
         clickText.textContent = format(clickValue(state, state.tick), { decimals: true });
@@ -2225,7 +2243,7 @@
     amounts.addEventListener('click', (event) => {
         const button = event.target.closest('[data-amount]');
         if (!button) return;
-        buyAmount = Number(button.dataset.amount);
+        buyAmount = parseAmount(button.dataset.amount);
         renderStore();
     });
 
@@ -2263,15 +2281,17 @@
     // The shown building that adds the most ore per second for each ore it costs, of those that can be afforded amount at
     // a time, as {id, cost, gain (how much the ore per second goes up)}, or null. The gain is how much the whole steady
     // rate goes up, so crew, synergy and click-share upgrades count too. The B key and Auto Buy both pick with this.
-    // parts: rateParts(state), when it's already been worked out; each building is tried on top of it.
+    // amount can be 'max' too (storeAmount()). parts: rateParts(state), when it's already been worked out; each building
+    // is tried on top of it.
     function bestBuilding(amount, parts = rateParts(state)) {
         const before = rate(state, Infinity, parts);
         const synergies = rateSynergies(state);
         let best = null;
         for (const id of visibleBuildings().shown) {
-            const cost = buildingCost(state, id, amount);
+            const count = storeAmount(id, amount);
+            const cost = buildingCost(state, id, count);
             if (!canAfford(state, cost)) continue;
-            const after = { ...state, buildings: { ...state.buildings, [id]: state.buildings[id] + amount } };
+            const after = { ...state, buildings: { ...state.buildings, [id]: state.buildings[id] + count } };
             const counted = synergies.get(id);
             const gain = rate(after, Infinity, counted ? ratePartsRecounted(after, parts, counted) : parts) - before;
             if (!best || gain / cost > best.gain / best.cost) best = { id, cost, gain };
@@ -2338,7 +2358,7 @@
     buildingList.addEventListener('click', (event) => {
         const button = event.target.closest('[data-building]');
         if (!button) return;
-        if (act({ type: 'buy', building: button.dataset.building, amount: buyAmount })) {
+        if (act({ type: 'buy', building: button.dataset.building, amount: storeAmount(button.dataset.building) })) {
             sound('buy');
             renderStore();
         }
@@ -2707,8 +2727,8 @@
         },
         a: () => {
             if (amounts.hidden) return;
-            const options = [...amounts.querySelectorAll('[data-amount]')];
-            const now = options.findIndex((button) => Number(button.dataset.amount) === buyAmount);
+            const options = [...amounts.querySelectorAll('[data-amount]')].filter((button) => !button.hidden);
+            const now = options.findIndex((button) => parseAmount(button.dataset.amount) === buyAmount);
             options[(now + 1) % options.length].click();
         },
         k: () => {
