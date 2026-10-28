@@ -18,7 +18,7 @@ Most of the site needs an account; the pages below can be read without one. Casi
 - [Help & docs](https://hbhub.noahgajnielsen.dk/docs/): Everything HB Hub can do, and how to use it.
 - [Getting started](https://hbhub.noahgajnielsen.dk/docs/getting-started): Making an account, logging in and finding your way around HB Hub.
 - [Profile & settings](https://hbhub.noahgajnielsen.dk/docs/account): Your profile picture, name and bio, your password, your devices and deleting your account.
-- [Two-factor login & security](https://hbhub.noahgajnielsen.dk/docs/two-factor): Turning on two-factor login, the password rules and what happens after wrong guesses.
+- [Two-factor login & security](https://hbhub.noahgajnielsen.dk/docs/two-factor): Turning on two-factor login, logging in with Discord, the password rules and what happens after wrong guesses.
 - [Notifications](https://hbhub.noahgajnielsen.dk/docs/notifications): The bell, browser notifications, the message sound and muting chats.
 - [Blocking the Casino & Games](https://hbhub.noahgajnielsen.dk/docs/self-blocking): Blocking the Casino and Games for yourself, during school hours or all the time.
 - [Feedback & getting help](https://hbhub.noahgajnielsen.dk/docs/feedback): Reporting bugs and people, sending ideas, and who to ask for help.

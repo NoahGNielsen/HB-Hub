@@ -14,6 +14,8 @@
 // Security
 // - Password (#password): a new one, after entering the current one. Logs out every other session.
 // - Two-factor login (#totp): a code from an authenticator app when logging in (assets/php/totp.php)
+// - Discord login (#discord): linking a Discord account to log in with (assets/php/discord.php), after the password,
+//   or unlinking it. Only there when Discord login is set up.
 // - Logged in devices (#devices): every session (HBHub-Sessions) with its browser and system and when it was last used,
 //   a button to log out each of the others, and one to log out everywhere (this device too)
 // Account
@@ -27,6 +29,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/totp.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/discord.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be in a bio
@@ -60,7 +63,7 @@ $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 
 $statement = $db->prepare('SELECT u.userName, u.userDescription, u.userSettings, u.userAvatarAttachmentId, u.userPasswordHash,
-        u.userTotpSecret, u.userTotpLastStep, ' . hbHubProfileBannerIdSql('u') . ' AS bannerId
+        u.userTotpSecret, u.userTotpLastStep, u.userDiscordName, ' . hbHubProfileBannerIdSql('u') . ' AS bannerId
     FROM `HBHub-Users` u WHERE u.userId = ?');
 $statement->execute([$userId]);
 $settingsUser = $statement->fetch();
@@ -99,6 +102,10 @@ $settingsTicketsFree = hbHubChatAttachmentTicketsFree($db, $userId);
 $settingsTotpIsOn = $settingsUser['userTotpSecret'] !== null;
 // Setting up 2FA: a new secret from ?totp=setup, or the one sent back when the code was wrong
 $settingsTotpSetupSecret = !$settingsTotpIsOn && ($_GET['totp'] ?? null) === 'setup' ? hbHubTotpNewSecret() : null;
+
+// Log in with Discord (assets/php/discord.php): the card is only there when it's set up
+$settingsDiscord = hbHubDiscordClient($siteConfig);
+$settingsDiscordName = $settingsUser['userDiscordName']; // the linked account's Discord username, NULL when none is
 
 /**
  * Saves the changed profile, and the new picture when there is one. Locked while that happens,
@@ -448,6 +455,25 @@ if ($settingsAction === 'totpDisable' && $settingsTotpIsOn) {
     }
 }
 
+// Linking asks for the password: a linked Discord account logs in without it, so a session someone left open
+// mustn't be enough to give a stranger their own way in. On to Discord, and /discord links it once it's allowed there.
+if ($settingsAction === 'discordLink' && $settingsDiscord !== null) {
+    $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+    $discordError = settingsConfirm($db, $userId, $siteConfig,
+        fn (): bool => strlen($password) <= 72 && password_verify($password, $settingsUser['userPasswordHash']),
+        'That isn\'t your password.');
+    if ($discordError !== null) {
+        $settingsErrors['discord'] = $discordError;
+    } else {
+        hbHubDiscordStart($settingsDiscord, 'link', HBHUB_RETURN_DEFAULT);
+    }
+}
+
+if ($settingsAction === 'discordUnlink') {
+    $db->prepare('UPDATE `HBHub-Users` SET userDiscordId = NULL, userDiscordName = NULL WHERE userId = ?')->execute([$userId]);
+    settingsRedirect('discordUnlinked', 'discord');
+}
+
 if ($settingsAction === 'notifications') {
     $notificationsOn = ($_POST['notifications'] ?? null) === '1';
     $notificationSoundOn = ($_POST['notificationSound'] ?? null) === '1';
@@ -568,6 +594,9 @@ function settingsTime(?string $timestamp): string
                         <ul class="settings-menu-list">
                             <li><a class="settings-menu-link" href="#password">Password</a></li>
                             <li><a class="settings-menu-link" href="#totp">Two-factor login</a></li>
+                            <?php if ($settingsDiscord !== null): ?>
+                                <li><a class="settings-menu-link" href="#discord">Discord login</a></li>
+                            <?php endif; ?>
                             <li><a class="settings-menu-link" href="#devices">Logged in devices</a></li>
                         </ul>
                     </div>
@@ -1030,6 +1059,54 @@ function settingsTime(?string $timestamp): string
                         </div>
                     <?php endif; ?>
                 </section>
+
+                <?php if ($settingsDiscord !== null): ?>
+                <!-- Discord login -->
+                <section class="settings-card" id="discord" aria-labelledby="settings-discord-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="settings-discord-heading">Discord login</h2>
+                            <p class="settings-intro">
+                                <?php if ($settingsDiscordName !== null): ?>
+                                    Linked to <strong><?= htmlspecialchars($settingsDiscordName) ?></strong> on Discord, so you can log in with Discord instead of your password.<?= $settingsTotpIsOn ? ' You\'re still asked for your two-factor code.' : '' ?>
+                                <?php else: ?>
+                                    Link your Discord account, so you can log in with Discord instead of typing your password. Your password keeps working too.
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                        <span class="settings-status<?= $settingsDiscordName !== null ? ' is-on' : '' ?>"><?= $settingsDiscordName !== null ? 'Linked' : 'Not linked' ?></span>
+                    </div>
+
+                    <?php if ($settingsDiscordName !== null): ?>
+                        <form class="settings-item" action="/settings#discord" method="post" data-confirm="Unlink your Discord account? You can only log in with your password after this.">
+                            <input type="hidden" name="action" value="discordUnlink">
+                            <div class="settings-item-text">
+                                <span class="settings-label">Unlink Discord</span>
+                                <p class="settings-hint">You can link it again (or another one) at any time.</p>
+                            </div>
+                            <button type="submit" class="settings-btn settings-btn-danger">Unlink</button>
+                        </form>
+                    <?php else: ?>
+                        <form action="/settings#discord" method="post">
+                            <input type="hidden" name="action" value="discordLink">
+                            <!-- For password managers, so they know which account the password is for -->
+                            <input type="text" name="username" value="<?= htmlspecialchars($settingsUser['userName']) ?>" autocomplete="username" hidden>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-discord-password">Enter your password to link Discord</label>
+                                <input type="password" id="settings-discord-password" name="password" maxlength="72" required autocomplete="current-password"
+                                       aria-describedby="settings-discord-hint">
+                                <p class="settings-hint" id="settings-discord-hint">Then Discord asks you to allow HB Hub to see your Discord username. Nothing else is shared.</p>
+                                <?php if (isset($settingsErrors['discord'])): ?>
+                                    <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['discord']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="settings-actions">
+                                <button type="submit" class="settings-btn settings-btn-primary">Link Discord</button>
+                            </div>
+                        </form>
+                    <?php endif; ?>
+                </section>
+                <?php endif; ?>
 
                 <!-- Logged in devices -->
                 <section class="settings-card" id="devices" aria-labelledby="settings-devices-heading">

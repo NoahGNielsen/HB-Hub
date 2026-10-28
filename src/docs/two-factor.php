@@ -1,5 +1,5 @@
 <?php
-// Help docs: two-factor login and security - setting up TOTP, the password rules, the login lock after wrong guesses
+// Help docs: two-factor login and security - setting up TOTP, logging in with Discord, the password rules, the login lock after wrong guesses
 // (per known device, assets/php/loginLimit.php) and what to do when an account might be someone else's hands.
 // The numbers come from the site config, which header.php (through top.php) has loaded. Open to everyone. Built by
 // assets/php/docs/top.php and bottom.php.
@@ -32,6 +32,21 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                         </p>
                     </section>
 
+                    <section id="discord" aria-labelledby="docs-discord">
+                        <h2 id="docs-discord">Logging in with Discord</h2>
+                        <p>
+                            You can link your Discord account to HB Hub and then log in with <strong>Log in with Discord</strong>
+                            on the login page, instead of typing your password. Your password keeps working too, and with
+                            two-factor login on you're still asked for the code. HB Hub only sees your Discord username, nothing
+                            else from Discord.
+                        </p>
+                        <ul>
+                            <li>You sign up the normal way. The last step has a box to link Discord straight after your account is made.</li>
+                            <li>Or link it later in the <strong>Discord login</strong> card in your <a href="/settings#discord">settings</a>, after typing your password.</li>
+                            <li>The same card unlinks it again. One Discord account can only be linked to one HB Hub account.</li>
+                        </ul>
+                    </section>
+
                     <section id="passwords" aria-labelledby="docs-passwords">
                         <h2 id="docs-passwords">The password rules</h2>
                         <p>
@@ -60,7 +75,7 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                         <ol class="docs-steps">
                             <li>Log in and <a href="/docs/account#password">change your password</a>. That logs out every other device.</li>
                             <li>Check <a href="/docs/account#devices">Logged in devices</a> for anything you don't recognise.</li>
-                            <li>Turn on two-factor login, if it isn't already.</li>
+                            <li>Turn on two-factor login, if it isn't already, and unlink a Discord account you don't recognise under <a href="/settings#discord">Discord login</a>.</li>
                             <li>Tell an admin, send a message to <a href="https://hbhub.noahgajnielsen.dk/profile?user=1">Noha Gayy</a> or by email to <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>, especially if you can't log in any more.</li>
                         </ol>
                         <p>

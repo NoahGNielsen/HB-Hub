@@ -13,6 +13,12 @@ const HBHUB_TOASTS = [
     'password' => 'Your password has been changed. Your other devices have been logged out.',
     'totpOn' => 'Two-factor login is now on.',
     'totpOff' => 'Two-factor login is now off.',
+    // Log in with Discord (userMgmt/discord.php and the settings page)
+    'onboardingDiscord' => 'Your account has been created and your Discord is linked. Welcome to HB Hub!',
+    'discordLinked' => 'Your Discord account is now linked. You can log in with it from now on.',
+    'discordUnlinked' => 'Your Discord account has been unlinked.',
+    'discordTaken' => 'That Discord account is already linked to another HB Hub account.',
+    'discordFailed' => 'Linking Discord didn\'t work. Please try again.',
     'blockPending' => 'Saved. Your block will change later, see the settings for when.',
     'logout' => 'You are now logged out.',
     'deviceLoggedOut' => 'That device has been logged out.',

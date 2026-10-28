@@ -11,7 +11,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_DO_NOT_SELL_UPDATED = '20 October 2026';
+const HBHUB_DO_NOT_SELL_UPDATED = '28 October 2026';
 
 // Global Privacy Control: browsers with it turned on send "Sec-GPC: 1" on every request
 $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
@@ -101,6 +101,7 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                             <li><strong>Simply.com</strong> (Denmark) hosts the website and the database, in the EU.</li>
                             <li><strong>Giphy</strong> sees your IP address when your browser loads a GIF in the chat. Your GIF searches go through HB Hub's server, so Giphy doesn't learn who searched.</li>
                             <li><strong>GitHub</strong> only gets the total number of members and messages, for the counters in the README.</li>
+                            <li><strong>Discord</strong>, only if you log in with Discord or link your Discord account: you allow it on Discord's own page, so Discord sees your IP address and that you use HB Hub. HB Hub never sends Discord anything about you.</li>
                         </ul>
                         <p>
                             The <a href="/legal/privacy#services">Privacy Policy</a> has the full details, and the

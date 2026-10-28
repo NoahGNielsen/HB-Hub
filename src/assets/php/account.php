@@ -103,7 +103,8 @@ function hbHubDeleteAccount(PDO $db, int $userId): void
                 userAvatarAttachmentId = NULL, userBannerAttachmentId = NULL,
                 userIpv4AdresseOnAccountCreate = NULL, userIpv6AdresseOnAccountCreate = NULL,
                 userIpv4AdresseLastAccessed = NULL, userIpv6AdresseLastAccessed = NULL, userPasswordHash = NULL,
-                userTotpSecret = NULL, userTotpLastStep = NULL, userFailedLoginCount = NULL, userStatus = NULL,
+                userTotpSecret = NULL, userTotpLastStep = NULL, userDiscordId = NULL, userDiscordName = NULL,
+                userFailedLoginCount = NULL, userStatus = NULL,
                 userRole = NULL, userAccountLockedTimestamp = NULL, userBannedTimestamp = NULL, userBannedReason = NULL,
                 userGhostBannedTimestamp = NULL, userAttachmentTicketsExtra = 0
             WHERE userId = ?')

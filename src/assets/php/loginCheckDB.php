@@ -1,5 +1,6 @@
 <?php
-// Checks a name and password against HBHub-Users and logs the user in when they match.
+// Checks a name and password against HBHub-Users and logs the user in when they match. Logging in with a linked
+// Discord account (discord.php, userMgmt/discord.php) ends up here too, in loginDiscord().
 // With two-factor login turned on (userTotpSecret), the right password only starts the login: it's kept as a
 // session waiting for the code (sessionTotpPending) for a few minutes, and loginCheckTotp() finishes it.
 // Wrong passwords and codes are counted, and locked out, by loginLimit.php.
@@ -71,10 +72,7 @@ function loginCheckDB(string $name, string $password, int $attemptsMax, int $loc
 
         if ($user['userTotpSecret'] !== null) {
             // The wrong password count isn't reset yet, wrong codes carry on counting from it
-            $pendingId = bin2hex(random_bytes(16));
-            $db->prepare('INSERT INTO `HBHub-Sessions` (sessionId, userId, sessionValidUntil, sessionTotpPending)
-                VALUES (?, ?, NOW() + INTERVAL ' . LOGIN_PENDING_MINUTES . ' MINUTE, 1)')
-                ->execute([$pendingId, $userId]);
+            $pendingId = loginStorePending($db, $userId);
             $db->commit();
 
             loginSetPendingCookie($pendingId);
@@ -91,6 +89,58 @@ function loginCheckDB(string $name, string $password, int $attemptsMax, int $loc
         }
         error_log('Login: could not log in: ' . $e->getMessage());
         return 'Something went wrong logging you in. Please try again.';
+    }
+
+    hbHubSetSessionCookie($sessionId);
+
+    return null;
+}
+
+/**
+ * Logs in the account linked to the Discord account (discord.php), once Discord has said who it is. That counts as
+ * the right password: two-factor login still asks for the code ($needsTotp, like loginCheckDB()), and a banned account
+ * gets its browser marked. The login lock is about guessing passwords, which this isn't, so it doesn't stop it.
+ * Returns null when it worked, otherwise why not: 'notLinked', 'banned' or 'failed'.
+ */
+function loginDiscord(string $discordId, ?bool &$needsTotp = null): ?string
+{
+    $needsTotp = false;
+
+    $db = null;
+    try {
+        $db = hbHubDatabase();
+
+        // A deleted account's userDiscordId is NULL, so it can't be one
+        $statement = $db->prepare('SELECT userId, userStatus, userTotpSecret FROM `HBHub-Users` WHERE userDiscordId = ?');
+        $statement->execute([$discordId]);
+        $user = $statement->fetch();
+        if ($user === false) {
+            return 'notLinked';
+        }
+
+        $userId = (int) $user['userId'];
+        if ((int) $user['userStatus'] === LOGIN_STATUS_BANNED) {
+            hbHubSetBannedCookie($userId);
+            return 'banned';
+        }
+
+        $db->beginTransaction();
+        if ($user['userTotpSecret'] !== null) {
+            $pendingId = loginStorePending($db, $userId);
+            $db->commit();
+
+            loginSetPendingCookie($pendingId);
+            $needsTotp = true;
+            return null;
+        }
+        $sessionId = loginFinish($db, $userId);
+        $db->commit();
+    } catch (PDOException $e) {
+        if ($db !== null && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('Login: could not log in with Discord: ' . $e->getMessage());
+        return 'failed';
     }
 
     hbHubSetSessionCookie($sessionId);
@@ -236,6 +286,19 @@ function loginFinish(PDO $db, int $userId): string
     hbHubGhostBanFromDevice($db); // a new account used where a ghost-banned one is gets ghost banned too (loginLimit.php)
 
     return hbHubCreateSession($db, $userId);
+}
+
+/**
+ * Stores a login waiting for its 2FA code (sessionTotpPending) and returns its id. Run inside a transaction, then
+ * pass the id to loginSetPendingCookie() once committed.
+ */
+function loginStorePending(PDO $db, int $userId): string
+{
+    $pendingId = bin2hex(random_bytes(16));
+    $db->prepare('INSERT INTO `HBHub-Sessions` (sessionId, userId, sessionValidUntil, sessionTotpPending)
+        VALUES (?, ?, NOW() + INTERVAL ' . LOGIN_PENDING_MINUTES . ' MINUTE, 1)')
+        ->execute([$pendingId, $userId]);
+    return $pendingId;
 }
 
 function loginPendingId(): ?string

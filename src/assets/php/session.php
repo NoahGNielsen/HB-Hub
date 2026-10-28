@@ -245,10 +245,11 @@ const HBHUB_RETURN_DEFAULT = '/chat/'; // where logging in / signing up from the
  * Where to go after logging in: the ?return= path the login redirect added, or the chat when it's missing, points off
  * the site or is the homepage (whose Log in / Sign up buttons don't add one) - there's nothing to do there once
  * logged in.
+ * $path is checked the same way instead of ?return= when given (the path Discord login kept in its cookie, discord.php).
  */
-function hbHubReturnPath(): string
+function hbHubReturnPath(?string $path = null): string
 {
-    $path = $_GET['return'] ?? null;
+    $path ??= $_GET['return'] ?? null;
     // One leading slash only - "//host" and "/\host" are treated by browsers as another site
     if (!is_string($path) || preg_match('#^/(?![/\\\\])[^\p{Cc}]*$#u', $path) !== 1) {
         return HBHUB_RETURN_DEFAULT;
@@ -263,9 +264,9 @@ function hbHubReturnPath(): string
 /**
  * "?return=..." for passing the return path on to the next login/onboarding URL, or '' when it's just the default.
  */
-function hbHubReturnQuery(): string
+function hbHubReturnQuery(?string $path = null): string
 {
-    $path = hbHubReturnPath();
+    $path = hbHubReturnPath($path);
     return $path === HBHUB_RETURN_DEFAULT ? '' : '?return=' . rawurlencode($path);
 }
 

@@ -124,7 +124,7 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # address (rewritten to the long one further down) isn't sent back here in a loop.
     RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
     RewriteCond %{THE_REQUEST} ^[A-Z]+\ /(otherPages|userMgmt)/
-    RewriteRule ^(?:otherPages|userMgmt)/(profile|settings|notifications|feedback|avatar|banner|login|onboarding)(?:\.php)?$ /$1 [R=301,L]
+    RewriteRule ^(?:otherPages|userMgmt)/(profile|settings|notifications|feedback|avatar|banner|login|onboarding|discord)(?:\.php)?$ /$1 [R=301,L]
 
     RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
     RewriteCond %{THE_REQUEST} ^[A-Z]+\ /games/spaceOreMiner
@@ -171,7 +171,7 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # The code links to the short ones; the old long ones are redirected near the top.
     RewriteRule ^(profile|settings|notifications|feedback|avatar|banner)$ otherPages/$1.php [L]
     RewriteRule ^nav-updates$ otherPages/navUpdates.php [L]
-    RewriteRule ^(login|onboarding)$ userMgmt/$1.php [L]
+    RewriteRule ^(login|onboarding|discord)$ userMgmt/$1.php [L]
 
     # Without the slash Apache would add it itself, to the folder's real name, so it's added here first.
     # games/space-ore-miner/ is the game's old name, only still reached by POSTs (see near the top).

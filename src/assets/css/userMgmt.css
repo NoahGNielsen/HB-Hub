@@ -559,6 +559,56 @@
   text-decoration: underline;
 }
 
+/* "or" between the login form and Log in with Discord */
+.userMgmt-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.userMgmt-or::before,
+.userMgmt-or::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+
+/* Log in with Discord, in Discord's own blurple */
+.userMgmt-discord {
+  width: 100%;
+  border-color: transparent;
+  background: #5865f2;
+  color: #fff;
+}
+
+.userMgmt-discord:hover,
+.userMgmt-discord:focus-visible {
+  border-color: transparent;
+  background: #4752c4;
+}
+
+/* The box on onboarding's last step for linking Discord straight after */
+.onboarding-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.onboarding-checkbox input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 @keyframes onboarding-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }

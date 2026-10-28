@@ -106,6 +106,13 @@ $onboardingSteps[] = 'password';
 $onboardingValues = ['name' => '', 'year' => '', 'class' => '', 'description' => ''];
 $onboardingErrors = []; // step name => message
 
+// The box on the last step for linking Discord once the account is made (assets/php/discord.php), when it's set up.
+// Nobody signs up with Discord alone: the account is made as usual first, then it's on to Discord.
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/discord.php';
+$onboardingDiscord = hbHubDiscordClient($siteConfig);
+$onboardingHasDiscord = $onboardingDiscord !== null;
+$onboardingLinkDiscord = $onboardingHasDiscord && ($_POST['linkDiscord'] ?? null) === '1';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($_POST) && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
         // Body was larger than post_max_size, so PHP dropped all of it - the picture is the only thing that big
@@ -183,6 +190,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$onboardingErrors) {
                 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
                 hbHubSetToast('onboarding');
+                if ($onboardingLinkDiscord) {
+                    // Logged in now (the session cookie goes with this answer), so /discord links it to the new account
+                    hbHubDiscordStart($onboardingDiscord, 'signup', hbHubReturnPath());
+                }
                 header('Location: ' . hbHubReturnPath(), true, 303);
                 exit;
             }
@@ -362,6 +373,13 @@ foreach ($onboardingSteps as $index => $step) {
                 </div>
                 <?php if (isset($onboardingErrors['password'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['password']) ?></p>
+                <?php endif; ?>
+                <?php if ($onboardingHasDiscord): ?>
+                <label class="onboarding-checkbox">
+                    <input type="checkbox" name="linkDiscord" value="1" aria-describedby="onboarding-discord-hint"<?= $onboardingLinkDiscord ? ' checked' : '' ?>>
+                    <span>Link my Discord account, so I can log in with Discord too <span class="onboarding-optional">(Optional)</span></span>
+                </label>
+                <p class="onboarding-hint" id="onboarding-discord-hint">Once your account is made, Discord asks you to allow it. You can also do it later in your settings.</p>
                 <?php endif; ?>
                 <p class="onboarding-hint">By creating an account, you agree to the <a href="/legal/terms" target="_blank">Terms of Service</a> and the <a href="/legal/privacy" target="_blank">Privacy Policy</a>.</p>
             </section>

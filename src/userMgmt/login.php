@@ -17,6 +17,18 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginCheckDB.php';
 $loginName = '';
 $loginError = null;
 
+// "Log in with Discord" under the form, when it's set up (assets/php/discord.php). /discord sends the browser back
+// here with ?discord=<why> when it didn't work.
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/discord.php';
+$loginHasDiscord = hbHubDiscordClient($siteConfig) !== null;
+$loginError = match ($_SERVER['REQUEST_METHOD'] === 'GET' ? ($_GET['discord'] ?? null) : null) {
+    'notLinked' => 'That Discord account isn\'t linked to an HB Hub account. Log in with your name and password, then link Discord in your settings.',
+    'banned' => 'This account has been banned.',
+    'failed' => 'Logging in with Discord didn\'t work. Please try again.',
+    'expired' => 'That took too long. Please try logging in with Discord again.',
+    default => null,
+};
+
 /**
  * Logged in, so on to where they were headed with the "welcome back" toast.
  */
@@ -129,8 +141,19 @@ $loginIsTotpStep = loginPendingUserId() !== null;
                 <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Log in</button>
             </div>
 
+            <?php if ($loginHasDiscord): ?>
+                <p class="userMgmt-or"><span>or</span></p>
+                <!-- Belongs to the form below this one, so it doesn't need the name and password -->
+                <button type="submit" class="onboarding-btn userMgmt-discord" form="login-discord">Log in with Discord</button>
+            <?php endif; ?>
+
             <p class="userMgmt-switch">New here? <a href="/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>">Sign Up!</a></p>
         </form>
+        <?php if ($loginHasDiscord): ?>
+        <form id="login-discord" action="/discord<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" hidden>
+            <input type="hidden" name="action" value="login">
+        </form>
+        <?php endif; ?>
         <?php endif; ?>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>

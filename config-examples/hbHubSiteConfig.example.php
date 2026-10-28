@@ -42,4 +42,7 @@ return [
 
     'giphy_gif_integration' => true, // Default: true | Set to false to disable Giphy integration
     'giphy_api_key' => 'your_giphy_api_key', // Required for Giphy integration. Get one at https://developers.giphy.com/
+
+    'discord_client_id' => 'your_discord_client_id', // Default: none, Discord login is off | The Client ID from the app's OAuth2 page at https://discord.com/developers/applications. Its redirect has to be https://<your site>/discord
+    'discord_client_secret' => 'your_discord_client_secret', // Default: none, Discord login is off | The Client Secret from the same page. Keep it secret: anyone with it can pretend to be the app
 ];

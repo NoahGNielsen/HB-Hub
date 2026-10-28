@@ -13,7 +13,8 @@ const HBHUB_PRIVACY_UPDATED = '28 October 2026';
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
 const HBHUB_PRIVACY_COOKIES = [
     'hbHubSession' => ['Keeps you logged in. Holds a random id that points at your login.', '30 days, or until you log out'],
-    'hbHubPendingLogin' => ['Remembers that you typed the right password while you enter your two-factor code.', '5 minutes'],
+    'hbHubPendingLogin' => ['Remembers that you typed the right password (or logged in with Discord) while you enter your two-factor code.', '5 minutes'],
+    'hbHubDiscordState' => ['Set when you click Log in with Discord or link your Discord account. Holds a random code, what you started and the page to go back to, so only your browser can finish it when Discord sends you back. Removed as soon as you\'re back.', '10 minutes'],
     'hbHubDevice' => ['Recognises a browser you have logged in from or are logged in on, so someone guessing your password can\'t lock you out of it. It\'s also how a ghost ban is passed on to a new account used in the same browser, and how site admins see which accounts are used in the same browser. The free games at /play also check whether it\'s there, and send a browser that has logged in before to the login and on to the normal game.', '180 days'],
     'hbHubBanned' => ['Set when a banned account is used in the browser, so it can\'t just make a new account.', '400 days, or until the account is unbanned and logs in again'],
     'hbHubToast' => ['A short message for the next page, like "Your password was changed".', '60 seconds'],
@@ -106,6 +107,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Your class: the school year you started 1. year at HTX in and your field of study (X, U, T, Y or Z), or that you don't go to HTX. Your year (or "Graduate" once you're past 3. year) is worked out from that, so it goes up every July 1st without anything being changed. If you're at HTX, you're also a member of your class's group chat (see Messages and chats below).</li>
                             <li>Your password, but only as a one-way hash. Nobody, not even an admin, can read your password.</li>
                             <li>The secret behind your two-factor codes, if you turn two-factor login on.</li>
+                            <li>If you link your Discord account (to log in with Discord): its Discord id and the Discord username it had when you linked it. Only you see them, in your settings. Nothing else from Discord is kept: no email, no friends or servers, and not the token Discord hands over, which is only used once to ask who you are and then cancelled. Unlinking it in your settings deletes both straight away.</li>
                             <li>Your settings, like which chats you've muted, hidden or blocked, whether new messages give you a browser notification or a sound, and whether you've blocked the Casino and Games, or a site admin has blocked them for you.</li>
                             <li>When you made the account and when you were last on the site (updated at most once a minute).</li>
                             <li>Failed logins, whether the account is locked or banned, and whether a ban was by an admin or automatic.</li>
@@ -388,6 +390,13 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 IP address when your browser shows one.
                             </li>
                             <li><strong>GitHub</strong> hosts the site's code. It only gets the total number of members and messages, for the counters in the README, never anything about one person.</li>
+                            <li>
+                                <strong>Discord</strong>, only if you log in with Discord or link your Discord account. You're
+                                sent to Discord to allow it, so Discord sees that you use HB Hub and your IP address, and
+                                HB Hub gets your Discord id and username from Discord (see Your account above). HB Hub never
+                                sends Discord anything about you, and can't post or read anything on Discord for you.
+                                <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">Discord's privacy policy</a> covers what Discord does.
+                            </li>
                         </ul>
                     </section>
 
@@ -435,7 +444,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
                             That right away removes your name, profile picture, banner, bio, status, education badge, year, class, settings, password, two-factor
-                            secret, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, and the files you attached in chats. Your name is replaced
+                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, and the files you attached in chats. Your name is replaced
                             with "Deleted User".
                         </p>
                         <p>
