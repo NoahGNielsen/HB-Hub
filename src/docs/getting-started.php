@@ -13,7 +13,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-sign-up">Making an account</h2>
                         <p>Press <strong>Sign up</strong> on the <a href="/">frontpage</a>. It asks you a few questions, one at a time:</p>
                         <ol class="docs-steps">
-                            <li><strong>What should you be known as?</strong> The name people see in the chat and on the leaderboards. Use a name people from school will know you by. It's also what you log in with.</li>
+                            <li><strong>Choose a username.</strong> The name people see in the chat and on the leaderboards, and what you log in with. It can be your name, a nickname or anything else, but not an email address: HB Hub doesn't use email, and your username is shown to everyone. Use a name people from school will know you by.</li>
                             <li><strong>Which year are you in?</strong> 1., 2. or 3. year at HTX, and then your field of study (X, U, T, Y or Z), or Not HTX. It's shown on your profile, and at HTX you're put in your <a href="/docs/chat/groups#class">class chat</a> straight away.</li>
                             <li><strong>A picture of yourself.</strong> Your profile picture. You can skip it and add one later.</li>
                             <li><strong>Describe yourself.</strong> A short bio for your profile.</li>
@@ -29,7 +29,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="log-in" aria-labelledby="docs-log-in">
                         <h2 id="docs-log-in">Logging in</h2>
                         <p>
-                            Press <strong>Log in</strong> on the frontpage and type your name and password. If you've turned on
+                            Press <strong>Log in</strong> on the frontpage and type your username and password. If you've turned on
                             <a href="/docs/two-factor">two-factor login</a>, it asks for the 6-digit code from your authenticator
                             app too. You stay logged in on that browser until you log out, and you can see and log out every
                             device you're logged in on from your <a href="/docs/account#devices">settings</a>.

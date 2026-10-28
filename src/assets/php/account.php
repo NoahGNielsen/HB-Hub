@@ -32,13 +32,25 @@ function hbHubIsLatinText(string $text, bool $allowNewlines = false): bool
 }
 
 /**
+ * Whether the text looks like an email address (something@something.something). Some people typed their email as
+ * their name when signing up, which then shows to everyone, so names can't be one. onboarding.js has the same check.
+ */
+function hbHubLooksLikeEmail(string $text): bool
+{
+    return preg_match('/^[^\s@]+@[^\s@]+\.[^\s@]+$/u', $text) === 1;
+}
+
+/**
  * Why the name can't be used, or null when it's fine. Taken names are found when saving (userNameLower is unique).
- * $currentName is the name the account has now: keeping it is fine even if it's from before the allow list.
+ * $currentName is the name the account has now: keeping it is fine even if it's from before the allow list (or an
+ * email address from before that rule).
  */
 function hbHubNameError(string $name, int $nameMax, ?string $currentName = null): ?string
 {
     if ($name === '') {
-        return 'Please tell us what you should be known as.';
+        return 'Please choose a username.';
+    } elseif ($name !== $currentName && hbHubLooksLikeEmail($name)) {
+        return 'That looks like an email address. Your username is shown to everyone, so pick a name or nickname instead - you don\'t need an email here.';
     } elseif ($name !== $currentName && !hbHubIsLatinText($name)) {
         return 'Names can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.';
     } elseif (mb_strlen($name) > $nameMax) {

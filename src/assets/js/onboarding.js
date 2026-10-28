@@ -13,6 +13,9 @@
     const nextBtn = form.querySelector('[data-action="next"]');
     const submitBtn = form.querySelector('[data-action="submit"]');
 
+    const nameInput = form.querySelector('#onboarding-name');
+    const nameEmailWarning = form.querySelector('[data-name-email-warning]');
+
     const yearSelect = form.querySelector('#onboarding-year');
     const classField = form.querySelector('[data-class-field]');
     const classSelect = form.querySelector('#onboarding-class');
@@ -174,6 +177,15 @@
         updateNextLabel();
     });
 
+    // People kept typing their email as their name (and browsers suggest one here), so say so while they type.
+    // Same pattern as hbHubLooksLikeEmail() in account.php, which checks it again on the server.
+    function checkName() {
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(nameInput.value.trim());
+        nameEmailWarning.hidden = !isEmail;
+        nameInput.setCustomValidity(isEmail ? 'That looks like an email address. Pick a name or nickname instead.' : '');
+    }
+    nameInput.addEventListener('input', checkName);
+
     // Live character counters
     for (const field of form.querySelectorAll('[data-counter]')) {
         const output = document.getElementById(field.dataset.counter);
@@ -270,6 +282,7 @@
     form.noValidate = true; // validation is done per step above
     progress.hidden = false;
     updateClassField();
+    checkName();
     if (description) checkDescription();
     updatePassword();
     showStep(Math.min(Math.max(Number(form.dataset.startStep) || 1, 1), steps.length) - 1);

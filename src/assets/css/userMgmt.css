@@ -192,6 +192,19 @@
   color: #ff6b5e;
 }
 
+/* Shown live while typing (like an email as the username), so its own class: onboarding.js removes the first
+   .onboarding-error in a step as soon as it's edited */
+.onboarding-warning {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffb547;
+}
+
+.onboarding-warning[hidden] {
+  display: none;
+}
+
 /* Picture */
 .onboarding-avatar {
   display: flex;

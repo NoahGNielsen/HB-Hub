@@ -189,12 +189,22 @@ foreach ($onboardingSteps as $index => $step) {
             </div>
 
             <section class="onboarding-step" aria-labelledby="onboarding-q1">
-                <h2 id="onboarding-q1"><label for="onboarding-name">What should you be known as?</label></h2>
+                <h2 id="onboarding-q1"><label for="onboarding-name">Choose a username</label></h2>
+                <p class="onboarding-hint" id="onboarding-name-about">
+                    Everyone on HB Hub sees you by it, and you log in with it. It can be your name, a nickname or anything
+                    else - just <strong>not your email</strong>, HB Hub doesn't use one.
+                </p>
                 <div class="onboarding-input-wrap">
+                    <!-- autocomplete="username" so password managers save it with the password, but that also makes some
+                         browsers suggest a saved email here - the check in onboarding.js catches that -->
                     <input type="text" id="onboarding-name" name="name" maxlength="<?= $onboardingNameMax ?>" required autocomplete="username"
+                           placeholder="e.g. Alex, alex_h or TheChessKing" aria-describedby="onboarding-name-about"
                            value="<?= htmlspecialchars($onboardingValues['name']) ?>" data-counter="onboarding-name-counter">
                 </div>
                 <p class="onboarding-hint"><span id="onboarding-name-counter"><?= mb_strlen($onboardingValues['name']) ?></span>/<?= $onboardingNameMax ?> characters</p>
+                <p class="onboarding-warning" role="alert" data-name-email-warning hidden>
+                    That looks like an email address. Pick a name or nickname instead - it's shown to everyone.
+                </p>
                 <?php if (isset($onboardingErrors['name'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['name']) ?></p>
                 <?php endif; ?>
