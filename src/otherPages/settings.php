@@ -187,14 +187,15 @@ function settingsRedirect(string $toast, string $card): never
 }
 
 /**
- * Logged out or the account is gone: the session cookie is removed, and on to the login page with a toast.
+ * Logged out or the account is gone: the session cookie is removed, and on to the login page with a toast. A deleted
+ * account has nothing left to log in to, so that one goes to the frontpage instead ($to = '/').
  */
-function settingsRedirectToLogin(string $toast): never
+function settingsRedirectToLogin(string $toast, string $to = '/login'): never
 {
     require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
     hbHubClearSessionCookie();
     hbHubSetToast($toast);
-    header('Location: /login', true, 303);
+    header('Location: ' . $to, true, 303);
     exit;
 }
 
@@ -504,7 +505,7 @@ if ($settingsAction === 'deleteAccount') {
         $settingsErrors['deleteAccount'] = $deleteError;
     } else {
         hbHubDeleteAccount($db, $userId);
-        settingsRedirectToLogin('accountDeleted');
+        settingsRedirectToLogin('accountDeleted', '/');
     }
 }
 
