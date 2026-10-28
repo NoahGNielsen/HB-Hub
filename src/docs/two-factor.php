@@ -42,7 +42,7 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                         </p>
                         <ul>
                             <li>You sign up the normal way. The last step has a box to link Discord straight after your account is made.</li>
-                            <li>Or link it later in the <strong>Discord login</strong> card in your <a href="/settings#discord">settings</a>, after typing your password.</li>
+                            <li>Or link it later in the <strong>Discord login</strong> card in your <a href="/settings#discord">settings</a>.</li>
                             <li>The same card unlinks it again. One Discord account can only be linked to one HB Hub account.</li>
                         </ul>
                     </section>

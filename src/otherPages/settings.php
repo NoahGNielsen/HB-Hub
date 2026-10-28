@@ -14,8 +14,8 @@
 // Security
 // - Password (#password): a new one, after entering the current one. Logs out every other session.
 // - Two-factor login (#totp): a code from an authenticator app when logging in (assets/php/totp.php)
-// - Discord login (#discord): linking a Discord account to log in with (assets/php/discord.php), after the password,
-//   or unlinking it. Only there when Discord login is set up.
+// - Discord login (#discord): linking a Discord account to log in with (assets/php/discord.php), or unlinking it.
+//   Only there when Discord login is set up.
 // - Logged in devices (#devices): every session (HBHub-Sessions) with its browser and system and when it was last used,
 //   a button to log out each of the others, and one to log out everywhere (this device too)
 // Account
@@ -455,18 +455,9 @@ if ($settingsAction === 'totpDisable' && $settingsTotpIsOn) {
     }
 }
 
-// Linking asks for the password: a linked Discord account logs in without it, so a session someone left open
-// mustn't be enough to give a stranger their own way in. On to Discord, and /discord links it once it's allowed there.
+// On to Discord, and /discord links it once it's allowed there
 if ($settingsAction === 'discordLink' && $settingsDiscord !== null) {
-    $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
-    $discordError = settingsConfirm($db, $userId, $siteConfig,
-        fn (): bool => strlen($password) <= 72 && password_verify($password, $settingsUser['userPasswordHash']),
-        'That isn\'t your password.');
-    if ($discordError !== null) {
-        $settingsErrors['discord'] = $discordError;
-    } else {
-        hbHubDiscordStart($settingsDiscord, 'link', HBHUB_RETURN_DEFAULT);
-    }
+    hbHubDiscordStart($settingsDiscord, 'link', HBHUB_RETURN_DEFAULT);
 }
 
 if ($settingsAction === 'discordUnlink') {
@@ -1087,22 +1078,13 @@ function settingsTime(?string $timestamp): string
                             <button type="submit" class="settings-btn settings-btn-danger">Unlink</button>
                         </form>
                     <?php else: ?>
-                        <form action="/settings#discord" method="post">
+                        <form class="settings-item" action="/settings#discord" method="post">
                             <input type="hidden" name="action" value="discordLink">
-                            <!-- For password managers, so they know which account the password is for -->
-                            <input type="text" name="username" value="<?= htmlspecialchars($settingsUser['userName']) ?>" autocomplete="username" hidden>
-                            <div class="settings-field">
-                                <label class="settings-label" for="settings-discord-password">Enter your password to link Discord</label>
-                                <input type="password" id="settings-discord-password" name="password" maxlength="72" required autocomplete="current-password"
-                                       aria-describedby="settings-discord-hint">
-                                <p class="settings-hint" id="settings-discord-hint">Then Discord asks you to allow HB Hub to see your Discord username. Nothing else is shared.</p>
-                                <?php if (isset($settingsErrors['discord'])): ?>
-                                    <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['discord']) ?></p>
-                                <?php endif; ?>
+                            <div class="settings-item-text">
+                                <span class="settings-label">Link Discord</span>
+                                <p class="settings-hint">Discord asks you to allow HB Hub to see your Discord username. Nothing else is shared.</p>
                             </div>
-                            <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-primary">Link Discord</button>
-                            </div>
+                            <button type="submit" class="settings-btn settings-btn-discord">Log in with Discord</button>
                         </form>
                     <?php endif; ?>
                 </section>

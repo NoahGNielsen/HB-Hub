@@ -2,7 +2,7 @@
 // Log in with Discord: an account can be linked to a Discord account (userDiscordId and userDiscordName in
 // HBHub-Users), and then logging in with Discord works like the right password (two-factor login still asks for the
 // code). Linking is only ever done to an account that already exists: on the last step of onboarding (a box to tick,
-// the account is made first and then it's on to Discord) or in the settings, after the password. Nobody signs up
+// the account is made first and then it's on to Discord) or in the settings. Nobody signs up
 // with Discord alone.
 // Set up by discord_client_id and discord_client_secret in hbHubSiteConfig.php; without them the buttons aren't shown.
 //

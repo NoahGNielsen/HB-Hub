@@ -1019,6 +1019,19 @@
   filter: brightness(1.08);
 }
 
+/* Linking Discord, in Discord's own blurple like the button on the login page */
+.settings-btn-discord {
+  border-color: transparent;
+  background: #5865f2;
+  color: #fff;
+}
+
+.settings-btn-discord:hover,
+.settings-btn-discord:focus-visible {
+  border-color: transparent;
+  background: #4752c4;
+}
+
 .settings-btn-danger {
   border-color: var(--settings-danger);
   color: var(--settings-danger);
