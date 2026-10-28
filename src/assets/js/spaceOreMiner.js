@@ -214,9 +214,13 @@
         return total;
     }
 
+    // All the comet effects running on 'production' or 'click', multiplied together (hbHubMinerBuff())
     function buff(s, kind, time) {
-        const running = s.buffs[kind];
-        return running && running.until > time ? running.multiplier : 1;
+        let multiplier = 1;
+        for (const running of Object.values(s.buffs)) {
+            if (COMETS[running.kind].buff === kind && running.until > time) multiplier *= running.multiplier;
+        }
+        return multiplier;
     }
 
     function clickValue(s, time, parts = rateParts(s)) {
@@ -410,7 +414,11 @@
         const comet = COMETS[kind];
         let ore = 0;
         if (comet.buff !== null) {
-            s.buffs[comet.buff] = { kind, multiplier: comet.multiplier * cometPower(s), until: time + cometLength(s, kind) };
+            // The same comet's effect starts over and the others keep running alongside it (hbHubMinerCatchComet())
+            for (const [key, running] of Object.entries(s.buffs)) {
+                if (running.kind === kind) delete s.buffs[key];
+            }
+            s.buffs[kind] = { kind, multiplier: comet.multiplier * cometPower(s), until: time + cometLength(s, kind) };
         } else {
             const production = sum(Object.values(buildingRates(s))) * buff(s, 'production', time);
             const [min, max] = CONFIG.luckySeconds;
@@ -2590,9 +2598,23 @@
     // listed (the last ten, with Long-Range Hot Keys switched on: see keyOffset()), U buys the
     // cheapest upgrade you can afford and B the affordable building with the most ore/s for its price (at the ×1/×10/×100
     // picked). K flips the Long-Range switch, A switches between ×1, ×10
-    // and ×100, W opens the Warp Jump box, X the Big Crunch box, R the Big Rip box and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
+    // and ×100, W opens the Warp Jump box, X the Big Crunch box, R the Big Rip box (Y or the same key again says yes in
+    // them, N not yet) and M turns the sound on or off. They're left alone while typing, with Ctrl/Alt/Cmd held (the browser's own
     // shortcuts) and while a box is open. The buying keys (1-9, 0, B and U) can be held down to keep buying; the others
     // only count once per press, so holding M doesn't flick the sound on and off.
+
+    // In the Warp Jump, Big Crunch and Big Rip boxes, Y (or the key that opened the box, pressed again) says yes and N
+    // not yet. A held-down key doesn't count, so holding W can't open the box and jump straight away.
+    for (const [dialog, openKey, name] of [[warpDialog, 'w', 'warp'], [crunchDialog, 'x', 'crunch'], [ripDialog, 'r', 'rip']]) {
+        dialog.addEventListener('keydown', (event) => {
+            if (event.repeat || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+            const key = event.key.toLowerCase();
+            const button = key === 'y' || key === openKey ? 'confirm' : key === 'n' ? 'cancel' : null;
+            if (!button) return;
+            event.preventDefault();
+            root.querySelector('[data-miner-' + name + '-' + button + ']').click();
+        });
+    }
 
     const REPEAT_KEYS = ['b', 'u'];
     const HOT_KEYS = {

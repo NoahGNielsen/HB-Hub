@@ -101,7 +101,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 </tbody>
                             </table>
                         </div>
-                        <p>Diamond Rush is rare. Comet upgrades in the store make comets come more often, stay longer and give more.</p>
+                        <p>Diamond Rush is rare. Different comets' effects stack: a Diamond Rush caught during a Supernova multiplies on top of it. Comet upgrades in the store make comets come more often, stay longer and give more.</p>
                     </section>
 
                     <section id="prestige" aria-labelledby="docs-prestige">

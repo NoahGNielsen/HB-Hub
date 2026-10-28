@@ -64,6 +64,7 @@ const HBHUB_MINER_TAB_PATTERN = '/^[0-9a-f]{32}$/';
 // What a comet does when it's caught: production or clicks times 'multiplier' for 'ms' (doubled with Tail Collector),
 // or ore right away (lucky: 30 to 90 seconds of production, plus 13, doubled with Stardust Trail). Antimatter Comets doubles
 // all of them (the multiplier, or the lucky ore). 'frenzy' is shown as Supernova, the key stays so old saves still work.
+// Different comets' effects stack (a Diamond Rush during a Supernova is 7 × 777); the same comet again starts its over.
 const HBHUB_MINER_COMETS = [
     'frenzy' => ['name' => 'Supernova', 'buff' => 'production', 'multiplier' => 7, 'ms' => 30000],
     'lucky' => ['name' => 'Lucky', 'buff' => null, 'multiplier' => 1, 'ms' => 0],
@@ -695,7 +696,8 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  *   the order they were learned. rips: Big Rips made.
  * - clicks, crits, comets (caught), diamonds (Diamond Comets caught): counted ever.
  * - comet: the next or current comet: n (its number, for its luck) and at (when it shows up).
- * - buffs: the comet effects running: 'production' or 'click' => {kind, multiplier, until}.
+ * - buffs: the comet effects running: the comet's kind => {kind, multiplier, until}. (Older saves keyed them by
+ *   'production' or 'click' instead, so nothing goes by the key: see hbHubMinerBuff().)
  * - achievements: the ids done. tick: how far the game has run. started, runStarted: when the save and this run began.
  */
 function hbHubMinerNewState(int $now): array
@@ -965,12 +967,18 @@ function hbHubMinerBuildingRates(array $state): array
 }
 
 /**
- * A comet effect's multiplier at $time (1 when none is running). $time PHP_INT_MAX leaves comets out.
+ * The comet effects' multiplier on 'production' or 'click' at $time: all the ones running on it multiplied together (1
+ * when none is). $time PHP_INT_MAX leaves comets out.
  */
 function hbHubMinerBuff(array $state, string $buff, int $time): float
 {
-    $running = $state['buffs'][$buff] ?? null;
-    return $running !== null && $running['until'] > $time ? (float) $running['multiplier'] : 1.0;
+    $multiplier = 1.0;
+    foreach ($state['buffs'] as $running) {
+        if (HBHUB_MINER_COMETS[$running['kind']]['buff'] === $buff && $running['until'] > $time) {
+            $multiplier *= $running['multiplier'];
+        }
+    }
+    return $multiplier;
 }
 
 /**
@@ -1297,7 +1305,10 @@ function hbHubMinerCatchComet(array &$state): ?string
     $kind = hbHubMinerCometKind($state);
     $comet = HBHUB_MINER_COMETS[$kind];
     if ($comet['buff'] !== null) {
-        $state['buffs'][$comet['buff']] = [
+        // The same comet's effect starts over (also one an older save keeps under 'production' or 'click'), and the
+        // others keep running alongside it
+        $state['buffs'] = array_filter($state['buffs'], static fn (array $buff): bool => $buff['kind'] !== $kind);
+        $state['buffs'][$kind] = [
             'kind' => $kind,
             'multiplier' => $comet['multiplier'] * hbHubMinerCometPower($state),
             'until' => $time + hbHubMinerCometLength($state, $kind),
