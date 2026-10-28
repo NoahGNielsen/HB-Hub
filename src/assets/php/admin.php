@@ -135,7 +135,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
     ];
 
     $html = '<nav class="settings-menu" aria-label="Admin panel"><div class="settings-menu-links"><div class="settings-menu-group">'
-        . '<p class="settings-menu-heading">Lists</p><ul class="settings-menu-list">';
+        . '<p class="settings-menu-heading">Admin panel</p><ul class="settings-menu-list">';
     foreach ($lists as $list => [$label, $href]) {
         $count = (int) $totals[$list];
         $html .= '<li><a class="settings-menu-link" href="' . $href . '"' . ($list === $active ? ' aria-current="page"' : '') . '>'
