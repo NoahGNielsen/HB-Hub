@@ -971,13 +971,39 @@
         setSaveText('Stopped: playing somewhere else.', true);
     }
 
+    // ----- The game's timers. The browser handles clicks and drawing before timers, so with an auto-clicker going and
+    // the page slow to draw, setInterval could go seconds without a turn even with every click handled in time: the
+    // store, Auto Buy, saving and the watchdog's beat all stopped while the clicks and frames went on, which the
+    // watchdog took for a freeze (crash reports #4 and #6). So each timer made with every() is also run by the frame
+    // loop (runLateTimers()) once it's TIMER_LATE_MS late.
+    const TIMER_LATE_MS = 500;
+    const timers = []; // {ms, run, at (performance.now() of its last run)}
+
+    function every(ms, run) {
+        const timer = { ms, run, at: performance.now() };
+        timers.push(timer);
+        setInterval(() => {
+            timer.at = performance.now();
+            run();
+        }, ms);
+    }
+
+    function runLateTimers() {
+        const now = performance.now();
+        for (const timer of timers) {
+            if (now - timer.at < timer.ms + TIMER_LATE_MS) continue;
+            timer.at = now;
+            timer.run();
+        }
+    }
+
     // Saves every so often while the page is visible, and when it's hidden or closed
-    setInterval(() => {
+    every(1000, () => {
         step('save timer');
         if (isPlaying && !document.hidden && Date.now() - lastSentAt >= (saveFailed ? 10 : CONFIG.saveSeconds) * 1000) save();
         renderSave();
         step(null);
-    }, 1000);
+    });
     document.addEventListener('visibilitychange', () => {
         note(document.hidden ? 'Hidden' : 'Shown');
         beat(); // straight away, so the watchdog stops (or starts) watching now, not a second later
@@ -1005,10 +1031,15 @@
         oreText.textContent = format(state.ore, { long: true }).replace(' ', '\n');
     }
 
-    function frame() {
+    let lastFrameAt = 0;
+    let frameGap = 0; // ms between the last two frames, for mine(): how slow the page is to draw right now
+
+    function frame(at) {
         if (!isPlaying) return;
         step('frame');
         framesSinceBeat++; // for the frame rate in crash reports (see beat())
+        if (lastFrameAt > 0) frameGap = at - lastFrameAt;
+        lastFrameAt = at;
         if (!document.hidden) {
             catchUp();
             showOre();
@@ -1016,12 +1047,14 @@
         }
         requestAnimationFrame(frame);
         step(null);
+        runLateTimers();
     }
 
     // The slower parts, a few times a second. Each part tells the watchdog what it's doing, so a freeze in one of them
     // says which.
-    setInterval(() => {
+    every(200, () => {
         if (!isPlaying || document.hidden) return;
+        forgetFieldBox(); // the page may have moved it (see fieldBox())
         step('tick: achievements');
         checkAchievements(state);
         renderAchievementsUnlocked();
@@ -1042,20 +1075,20 @@
         step('tick: menu');
         renderMenu();
         step(null);
-    }, 200);
+    });
     // Auto Buy on its own, quicker timer (10 times a second, twice the tick above), so it keeps up with fast production
-    setInterval(() => {
+    every(100, () => {
         if (!isPlaying || document.hidden) return;
         step('tick: Auto Buy');
         autoBuy();
         step(null);
-    }, 100);
-    setInterval(() => {
+    });
+    every(1000, () => {
         if (!isPlaying || document.hidden || !statsPopup.open) return;
         step('stats');
         renderStats();
         step(null);
-    }, 1000);
+    });
 
     // withNews: a new line in the news ticker too (not for what Autopilot and Auto Crunch do every few seconds)
     function renderAll(withNews = true) {
@@ -2109,21 +2142,44 @@
 
         const result = act(auto ? { type: 'click', count: 1, auto: true } : { type: 'click', count: 1 });
         if (!result) return;
-        const box = field.getBoundingClientRect();
-        const x = fromKeyboard ? box.width / 2 : event.clientX - box.left;
-        const y = fromKeyboard ? box.height / 2 : event.clientY - box.top;
-        burst(x, y, result.mined, result.crits > 0);
-        sound(result.crits > 0 ? 'crit' : 'click');
         if (auto && !wasAuto) {
             toast('robot', 'Hey! Looks like you\'re using an auto-clicker, so your clicks are only worth '
                 + CONFIG.autoValue * 100 + '% now.', '', 9000);
         }
         wasAuto = auto;
-        asteroid.classList.remove('is-hit');
-        void asteroid.offsetWidth;
-        asteroid.classList.add('is-hit');
         showOre();
+
+        // Behind: the clicks are coming in faster than this computer can show them (an auto-clicker on a slow one), so
+        // they only count until it's caught up. The browser always handles clicks waiting before its timers, so without
+        // this they piled up and the game's timers never got a turn: the store, Auto Buy and the watchdog's beat all
+        // stopped, which looked like a freeze (crash report #3)
+        // Slow to draw (under 1000 / SLOW_DRAW_MS frames a second): the bits flying off each click are much of what it
+        // has to draw, so they wait until it's quicker again (crash reports #4 and #6, at about 14 frames a second)
+        if (performance.now() - event.timeStamp > CLICK_BEHIND_MS || frameGap > SLOW_DRAW_MS) return;
+        const box = fieldBox();
+        const x = fromKeyboard ? box.width / 2 : event.clientX - box.left;
+        const y = fromKeyboard ? box.height / 2 : event.clientY - box.top;
+        burst(x, y, result.mined, result.crits > 0);
+        sound(result.crits > 0 ? 'crit' : 'click');
+        // The shake, started over: switching to its other name does that (see .is-hit-again in the CSS)
+        const hit = asteroid.classList.contains('is-hit') ? 'is-hit-again' : 'is-hit';
+        asteroid.classList.remove('is-hit', 'is-hit-again');
+        asteroid.classList.add(hit);
     }
+
+    const CLICK_BEHIND_MS = 100; // a click handled this long after it happened: mine() is behind
+    const SLOW_DRAW_MS = 50; // this long between frames: the page is slow to draw (under 20 frames a second)
+
+    // Where the picture is on the screen, for the clicks' bursts. Kept, because asking for it right after the last
+    // click's bits were added makes the browser lay the whole page out there and then, which on a slow computer took
+    // most of a click's time; forgotten a few times a second (the tick below) and when the page scrolls or resizes.
+    let fieldBoxKept = null;
+    const fieldBox = () => (fieldBoxKept ??= field.getBoundingClientRect());
+    const forgetFieldBox = () => {
+        fieldBoxKept = null;
+    };
+    addEventListener('resize', forgetFieldBox);
+    addEventListener('scroll', forgetFieldBox, { capture: true, passive: true });
 
     asteroid.addEventListener('click', (event) => mine(event, event.detail === 0));
 
@@ -2622,6 +2678,7 @@
             else link.removeAttribute('aria-current');
         }
         if (scrollY > 0) scrollTo({ top: 0 }); // the Ore view fits the screen from the top
+        forgetFieldBox(); // a hidden picture has no box
         placeSkillInfo(); // the screen may have changed size while the tree was out of sight
     }
 
@@ -2991,11 +3048,13 @@
 
     // ----- Crash reports. When the page opens, it looks for crashes: the freezes the watchdog saved in IndexedDB, and
     // the pages that crashed (isCrash()). If there are any, it asks whether it may send a crash report, with the
-    // newest one in the words and all that would be sent under "What's in it". If the player says yes, the newest
-    // CRASH_SEND_MAX go to /games/ore-mining-inc/crash; either way they're deleted. Closing the popup without answering
-    // keeps them, to ask again next time.
+    // newest one in the words and all that would be sent under "What's in it". If the player says yes, it goes to
+    // /games/ore-mining-inc/crash as one report: the newest crash, with up to CRASH_EARLIER_MAX older ones in it under
+    // earlier (sentReport()), so one yes is one report, not one per freeze (a page that struggles can freeze several
+    // times before it's closed). Either way they're deleted. Closing the popup without answering keeps them, to ask
+    // again next time.
 
-    const CRASH_SEND_MAX = 5;
+    const CRASH_EARLIER_MAX = 4;
     const crashDialog = root.querySelector('[data-miner-crash-dialog]');
     const crashDialogText = root.querySelector('[data-miner-crash-text]');
     const crashDialogJson = root.querySelector('[data-miner-crash-json]');
@@ -3052,10 +3111,12 @@
             + 'browser closes a page that froze or ran out of memory, or when the computer turns off.';
     }
 
-    // The report as it's sent: without the watchdog's id for it
-    function sentReport(report) {
-        const { id, ...rest } = report;
-        return rest;
+    // The report as it's sent: the newest crash (without the watchdog's id for it), and the older ones as earlier, newest
+    // first, each with only its kind, page and hang (the save, trail and samples are much the same as the newest's)
+    function sentReport() {
+        const { id, ...newest } = crashes[0];
+        const earlier = crashes.slice(1, 1 + CRASH_EARLIER_MAX).map(({ kind, page, hang }) => ({ kind, page, ...(hang ? { hang } : {}) }));
+        return earlier.length > 0 ? { ...newest, earlier } : newest;
     }
 
     async function askAboutCrashes() {
@@ -3068,11 +3129,12 @@
         note('Found ' + crashes.length + ' crash' + (crashes.length === 1 ? '' : 'es') + ' from before');
         const more = crashes.length - 1;
         crashDialogText.textContent = crashText(crashes[0]) + (more > 0 ? ' It happened ' + more + ' more ' + (more === 1 ? 'time' : 'times') + ' before that too.' : '');
-        crashDialogJson.textContent = JSON.stringify(crashes.slice(0, CRASH_SEND_MAX).map(sentReport), null, 2);
+        crashDialogJson.textContent = JSON.stringify(sentReport(), null, 2);
         crashDialog.showModal();
     }
 
     async function answerCrashes(isSending) {
+        if (crashesAnswered) return; // answered already (a second click before the popup closed)
         crashDialog.close();
         crashesAnswered = true;
         for (const run of crashRuns) {
@@ -3085,20 +3147,18 @@
         deleteHangs(hangIds);
         if (!isSending) return;
 
-        let sent = 0;
-        for (const report of crashes.slice(0, CRASH_SEND_MAX)) {
-            try {
-                const response = await fetch('/games/ore-mining-inc/crash', {
-                    method: 'POST',
-                    headers: { Accept: 'application/json' },
-                    body: new URLSearchParams({ action: 'report', kind: report.kind, report: JSON.stringify(sentReport(report)) }),
-                });
-                if (response.ok) sent++;
-            } catch {
-                // counted as not sent
-            }
+        let isSent = false;
+        try {
+            const response = await fetch('/games/ore-mining-inc/crash', {
+                method: 'POST',
+                headers: { Accept: 'application/json' },
+                body: new URLSearchParams({ action: 'report', kind: crashes[0].kind, report: JSON.stringify(sentReport()) }),
+            });
+            isSent = response.ok;
+        } catch {
+            // not sent
         }
-        toast('', sent > 0 ? 'Thanks! The crash report was sent, so it can be looked into.' : 'Couldn\'t send the crash report, sorry.', '', 6000);
+        toast('', isSent ? 'Thanks! The crash report was sent, so it can be looked into.' : 'Couldn\'t send the crash report, sorry.', '', 6000);
     }
 
     root.querySelector('[data-miner-crash-send]').addEventListener('click', () => answerCrashes(true));
@@ -3106,7 +3166,7 @@
 
     note('Opened on the ' + root.dataset.view + ' view');
     watchSlowFrames();
-    setInterval(beat, BEAT_MS);
+    every(BEAT_MS, beat);
     askAboutCrashes();
     save({ claim: true });
 })();

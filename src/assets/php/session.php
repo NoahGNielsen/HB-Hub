@@ -14,6 +14,10 @@ const HBHUB_SESSION_COOKIE = 'hbHubSession';
 const HBHUB_SESSION_DAYS = 30;
 const HBHUB_SESSION_STATUS_BANNED = 4; // userStatus in HBHub-Users
 const HBHUB_DELETED_USER_NAME = 'Deleted User'; // userName of a deleted account, so nobody else can choose it
+// The site's own account, which makes what no user did (class chats, in assets/php/schoolClass.php). It's stored like a
+// deleted account (no password, userStatus NULL), so nobody can log in to it and it's left out of every user list.
+const HBHUB_SYSTEM_USER_ID = 0; // userId in HBHub-Users
+const HBHUB_SYSTEM_USER_NAME = 'HB Hub System'; // its userName, so nobody else can choose it
 // Set in a browser once a banned account is used in it, so onboarding doesn't make a new account there.
 // Holds the banned account's id, so logging in to that account again (after it's unbanned) takes it away.
 const HBHUB_BANNED_COOKIE = 'hbHubBanned';
@@ -138,11 +142,11 @@ function hbHubBannedCookieUserId(): ?int
 }
 
 /**
- * Whether the name is the one deleted accounts get (in any capitalisation), so it can't be chosen.
+ * Whether the name is the one deleted accounts get or the system account's (in any capitalisation), so it can't be chosen.
  */
-function hbHubIsDeletedUserName(string $name): bool
+function hbHubIsReservedUserName(string $name): bool
 {
-    return mb_strtolower($name) === mb_strtolower(HBHUB_DELETED_USER_NAME);
+    return in_array(mb_strtolower($name), [mb_strtolower(HBHUB_DELETED_USER_NAME), mb_strtolower(HBHUB_SYSTEM_USER_NAME)], true);
 }
 
 /**
@@ -152,8 +156,8 @@ function hbHubIsDeletedUserName(string $name): bool
  * Banning keeps the user's sessions, so the first visit after it can mark the browser (hbHubSetBannedCookie())
  * before the session is deleted.
  * userGhostBanned is whether a site admin ghost banned them (assets/php/chat.php): only the chat looks at it, and it's
- * never shown to the user. Their browser is made one of their known devices, so it passes the ghost ban on to a new
- * account made in it (loginLimit.php).
+ * never shown to the user. Their browser is made one of their known devices (loginLimit.php), so it passes a ghost ban
+ * on to a new account made in it and site admins can see which accounts are used in the same browser.
  *
  * @return ?array{userId: int, userName: string, userRole: int, userAvatarAttachmentId: ?int, userSettings: ?string, userGhostBanned: int}
  */
@@ -201,9 +205,11 @@ function hbHubSessionUser(): ?array
                     userIpv4AdresseLastAccessed = ?, userIpv6AdresseLastAccessed = ? WHERE userId = ?')
                 ->execute([$ipv4, $ipv6, $user['userId']]);
         }
-        // A ghost-banned account's browser has to be one of its known devices, so a new account made in it is ghost
-        // banned too (loginLimit.php). Logging in makes it one, but a login from before the known devices came in didn't.
-        if ($user['userGhostBanned']) {
+        // Every browser someone is logged in on is one of their known devices: logging in makes it one, but a login
+        // from before the known devices came in didn't. It's what ties a person's accounts together in the admin panel
+        // (admin.php, adminPersonGroups()), so checked once a minute with the last seen time. A ghost-banned account's
+        // is checked on every request, so a new account made in it is ghost banned too (loginLimit.php).
+        if ($user['userGhostBanned'] || $user['sessionIsStale']) {
             require_once __DIR__ . '/loginLimit.php';
             if (hbHubKnownDevice($db, (int) $user['userId']) === null) {
                 hbHubLoginTrustDevice($db, (int) $user['userId']);

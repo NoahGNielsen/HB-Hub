@@ -1,10 +1,13 @@
-// JPEG XL for the chat, in a module worker so the page doesn't freeze while it works. chat.js starts it (chatJxlWorker()).
+// JPEG XL for the chat and profile banners, in a module worker so the page doesn't freeze while it works. chat.js starts it
+// (chatJxlWorker()), and so do settings.js (making a banner) and profile.js (showing one).
 // The codec is libjxl compiled to WebAssembly, from jSquash (assets/js/vendor/jxl/, see its LICENSE files). Its encoder
 // and decoder are only loaded the first time they're needed. The site's content security policy allows WebAssembly
 // with 'wasm-unsafe-eval' (src/.htaccess).
 //
 // Messages in: { id, type: 'encode', file }    a picture (File or Blob) to turn into JPEG XL: lossless, or for a JPEG
 //                                              one that looks the same (see JPEG_OPTIONS)
+//              { id, type: 'encode', file, maxSide }  the same, made smaller first so neither side is longer than
+//                                              maxSide (a profile banner), and always with JPEG_OPTIONS
 //              { id, type: 'decode', buffer }  a JPEG XL file (ArrayBuffer) to turn into pixels, for browsers that can't show it
 // Messages out: { id, buffer }                         encode: the .jxl file
 //               { id, pixels, width, height }          decode: RGBA pixels, 4 bytes each
@@ -44,11 +47,23 @@ async function isJpeg(file) {
     return start[0] === 0xFF && start[1] === 0xD8 && start[2] === 0xFF;
 }
 
-async function encode(file) {
-    const options = await isJpeg(file) ? JPEG_OPTIONS : ENCODE_OPTIONS;
+async function encode(file, maxSide = null) {
+    // A picture made smaller has lost detail already, so it isn't worth keeping without loss either
+    const options = maxSide !== null || await isJpeg(file) ? JPEG_OPTIONS : ENCODE_OPTIONS;
     // premultiplyAlpha 'none' keeps half see-through pixels exactly as they are, and imageOrientation turns a photo
     // the way its EXIF says, as the JPEG XL doesn't keep that (or any other EXIF, like where it was taken)
-    const bitmap = await createImageBitmap(file, { premultiplyAlpha: 'none', imageOrientation: 'from-image' });
+    let bitmap = await createImageBitmap(file, { premultiplyAlpha: 'none', imageOrientation: 'from-image' });
+    const scale = maxSide !== null ? Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height)) : 1;
+    if (scale < 1) {
+        const original = bitmap;
+        bitmap = await createImageBitmap(original, {
+            premultiplyAlpha: 'none',
+            resizeWidth: Math.max(1, Math.round(original.width * scale)),
+            resizeHeight: Math.max(1, Math.round(original.height * scale)),
+            resizeQuality: 'high',
+        });
+        original.close();
+    }
     const { width, height } = bitmap;
     if (width * height > MAX_PIXELS) {
         bitmap.close();
@@ -80,7 +95,7 @@ self.addEventListener('message', async ({ data }) => {
     const { id, type } = data;
     try {
         if (type === 'encode') {
-            const buffer = await encode(data.file);
+            const buffer = await encode(data.file, data.maxSide ?? null);
             self.postMessage({ id, buffer }, [buffer]);
         } else if (type === 'decode') {
             const image = await decode(data.buffer);

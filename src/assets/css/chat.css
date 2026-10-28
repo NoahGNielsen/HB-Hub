@@ -756,6 +756,16 @@ body:has(> .chat) {
   object-fit: contain;
 }
 
+/* A message of just emoji (chatEmojiOnly() in chat/index.php): big, with no bubble behind them */
+.chat-message-bubble.is-emoji,
+.chat-message.is-own .chat-message-bubble.is-emoji {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
 .chat-message-deleted {
   font-style: italic;
   opacity: 0.7;
@@ -1157,6 +1167,61 @@ a.chat-message-reply:hover {
   opacity: 0.6;
 }
 
+/* "a message" in a pin or unpin notice, which scrolls to it */
+.chat-notice-text a {
+  color: inherit;
+  font-weight: 700;
+}
+
+/* A pinned message (Pin message in the message menu): a pin on the top corner of its bubble, on the side towards the
+   middle of the chat, and "pinned" after its time. chat.js marks it from the Pinned messages popup's list. */
+.chat-message[data-message-pinned] > .chat-message-bubble {
+  position: relative;
+}
+
+.chat-message[data-message-pinned] > .chat-message-bubble::before,
+.chat-message[data-message-pinned] > .chat-message-bubble::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* The round backing, then the pin on it (pin.svg is black, so it's used as a mask for a white one) */
+.chat-message[data-message-pinned] > .chat-message-bubble::before {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--secondary);
+}
+
+.chat-message[data-message-pinned] > .chat-message-bubble::after {
+  background: #fff;
+  -webkit-mask: url("/assets/images/icons/pin.svg") center / 12px no-repeat;
+  mask: url("/assets/images/icons/pin.svg") center / 12px no-repeat;
+}
+
+.chat-message.is-own[data-message-pinned] > .chat-message-bubble::before,
+.chat-message.is-own[data-message-pinned] > .chat-message-bubble::after {
+  right: auto;
+  left: -7px;
+}
+
+/* A GIF's bubble cuts off what sticks out of it, so a pinned one rounds the GIF itself instead */
+.chat-message[data-message-pinned] > .chat-message-bubble.is-gif {
+  overflow: visible;
+}
+
+.chat-message[data-message-pinned] .chat-message-gif {
+  border-radius: inherit;
+}
+
+.chat-message:not([data-message-pinned]) .chat-message-pin-label {
+  display: none;
+}
+
 .chat-messages.has-background .chat-notice-text {
   background: color-mix(in srgb, var(--secondary) 85%, transparent);
 }
@@ -1215,11 +1280,16 @@ a.chat-message-reply:hover {
   position: relative;
 }
 
+/* Beside a bubble of one line it sits in the middle instead. CSS can't count lines, so it goes by the bubble's height:
+   one line is about 35px tall, two about 54px, so anything under 2.8rem is one line. The clamp() is a switch - 0 for a
+   short bubble, so the top is the middle, and half the height for a taller one, so the top is the bottom minus the
+   time's own height (fixed at 1rem by the line-height to make that sum work). */
 .chat-message.has-next > .chat-message-meta {
   position: absolute;
-  bottom: 0;
+  top: calc((100% - 1rem) / 2 + clamp(0px, (100% - 2.8rem) * 1000, (100% - 1rem) / 2));
   left: 100%;
   margin: 0 8px;
+  line-height: 1rem;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
@@ -1351,8 +1421,22 @@ a.chat-message-reply:hover {
 }
 
 .chat-emoji-picker,
-.chat-emoji-picker button {
+.chat-emoji-picker button,
+.chat-emoji-warm {
   font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* Where chat.js has the browser measure the emoji ahead of the picker's first open, out of sight. The same font and size
+   as the picker's emoji, as that's what the browser remembers them by. */
+.chat-emoji-warm {
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  width: 340px;
+  visibility: hidden;
+  pointer-events: none;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 /* A row of category buttons along the top, each jumping to its section */
@@ -2328,14 +2412,16 @@ a.chat-message-reply:hover {
   background: var(--secondary);
 }
 
-/* Add to chat and Members popups (groups): opened by the two buttons at the right of the chat's header */
+/* Pinned messages (every chat), Add to chat and Members (groups): the popups opened by the buttons at the right of the
+   chat's header */
+.chat-window-header .chat-pins-btn,
 .chat-window-header .chat-add-btn,
 .chat-window-header .chat-members-btn {
   width: 40px;
   height: 40px;
 }
 
-.chat-window-header .chat-add-btn {
+.chat-window-header .chat-pins-btn {
   margin-left: auto;
 }
 
@@ -2403,7 +2489,8 @@ a.chat-member:focus-visible {
   font-weight: 600;
 }
 
-.chat-member-you {
+.chat-member-you,
+.chat-member-real-name {
   font-weight: 400;
   opacity: 0.6;
 }
@@ -2430,7 +2517,7 @@ a.chat-member:focus-visible {
   background: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-/* Make admin, Remove admin and Kick, only shown to group admins */
+/* Nickname, and for group admins Make admin, Remove admin and Kick */
 .chat-member-actions {
   flex: none;
   display: flex;
@@ -2442,11 +2529,118 @@ a.chat-member:focus-visible {
   font-size: 0.85rem;
 }
 
+/* Phones: the buttons go under the member when they don't fit next to them, so the name isn't squeezed to nothing */
+@media (max-width: 600px) {
+  .chat-members-list > li {
+    flex-wrap: wrap;
+  }
+
+  .chat-member {
+    min-width: 60%;
+  }
+
+  .chat-member-actions {
+    margin-left: auto;
+  }
+}
+
 /* Added, but hasn't accepted the group yet */
 .chat-member-badge.is-invited {
   background: transparent;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 30%, transparent);
   opacity: 0.8;
+}
+
+/* Pinned messages popup: a card for each pinned message, with who pinned it, Jump and Unpin along the bottom */
+.chat-pins-list {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -4px;
+  padding: 0 4px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.chat-pins-list:empty {
+  display: none;
+}
+
+.chat-pin {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--background);
+}
+
+.chat-pin-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.chat-pin-sender {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.chat-pin-time,
+.chat-pin-by {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.chat-pin-time {
+  flex: none;
+}
+
+/* A long one is cut off after 4 lines - Jump shows the rest */
+.chat-pin-text {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-pin-text.is-deleted {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.chat-pin-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-pin-by {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-pin-bottom form {
+  display: contents;
+}
+
+.chat-pin-bottom .chat-btn {
+  padding: 6px 12px;
+  background: var(--secondary);
+  font-size: 0.85rem;
+  text-decoration: none;
 }
 
 /* Link warning popup */

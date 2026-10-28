@@ -1,6 +1,8 @@
-// Settings page: draws the QR code for setting up two-factor login, shows how strong a new password is, asks the browser for permission
+// Settings page: hides the field of study for Not HTX, shows the profile banner being picked and gets a banner picture
+// ready (JPEG XL), draws the QR code for setting up two-factor login, shows how strong a new password is, asks the browser for permission
 // to show notifications once they're turned on, plays the message sound when it's turned on, and asks "are you sure?"
 // before deleting the account.
+// The status's emoji row is statusForm.js, as the popup on your own profile has it too.
 // Without JS the 2FA key can still be typed in by hand, and deleting still needs the password.
 (() => {
     for (const form of document.querySelectorAll('form[data-confirm]')) {
@@ -9,6 +11,22 @@
                 event.preventDefault();
             }
         });
+    }
+
+    // Profile: the field of study is only asked for when a year at HTX is picked, not for Not HTX.
+    // Turned off otherwise, so it isn't checked or sent.
+    const classYear = document.querySelector('[data-class-year]');
+    if (classYear) {
+        const classField = document.querySelector('[data-class-field]');
+        const classSelect = classField.querySelector('select');
+        const updateClassField = () => {
+            const isHtx = classYear.value !== '' && classYear.value !== 'none';
+            classField.hidden = !isHtx;
+            classSelect.disabled = !isHtx;
+            classSelect.required = isHtx;
+        };
+        classYear.addEventListener('change', updateClassField);
+        updateClassField();
     }
 
     // qrcode.js (assets/js/vendor) is only loaded while setting up two-factor login
@@ -94,6 +112,149 @@
         newPassword.addEventListener('input', updatePassword);
         newPasswordConfirm.addEventListener('input', checkPasswordsMatch);
         updatePassword();
+    }
+
+    // Profile banner: Colors shows the gradient pickers, Picture the file input, and the preview above shows whichever
+    // is picked (set from here, as the content security policy doesn't allow style attributes). A new picture is
+    // made smaller and turned into JPEG XL by the JPEG XL worker (chatJxlWorker.js) straight away, and put back in the
+    // file input in place of the original, as the server only takes JPEG XL. Save waits until it's ready.
+    // A small PNG of it goes in the hidden data-banner-check input too: the server can't read JPEG XL, so that's what it
+    // compares with the banned pictures list (assets/php/bannedAvatars.php).
+    const banner = document.querySelector('[data-banner]');
+    if (banner) {
+        const form = banner.closest('form');
+        const preview = banner.querySelector('[data-banner-preview]');
+        const colors = banner.querySelector('[data-banner-colors]');
+        const upload = banner.querySelector('[data-banner-upload]');
+        const input = banner.querySelector('[data-banner-input]'); // not there while banner pictures are off
+        const checkInput = banner.querySelector('[data-banner-check]');
+        const status = banner.querySelector('[data-banner-status]');
+        const saveButton = form.querySelector('[data-profile-save]');
+        const maxBytes = Number(banner.dataset.bannerMaxBytes);
+        const ticketBytes = Number(banner.dataset.ticketBytes);
+        let picked = null; // { url } of the new picture's original, for the preview
+        let converting = 0; // which conversion is going on, so an older one that finishes late is ignored
+
+        const sizeLabel = (bytes) => (bytes < 1024 * 1024
+            ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+            : `${(bytes / 1024 / 1024).toFixed(1).replace(/\.0$/, '')} MB`);
+
+        function show() {
+            const type = form.elements.bannerType.value;
+            colors.hidden = type !== 'colors';
+            upload.hidden = type !== 'picture';
+            // The saved picture (an <img>, or the canvas jxlImages.js drew it into) or the new one
+            const current = preview.querySelector('[data-banner-current]');
+            let newPicture = preview.querySelector('[data-banner-new]');
+            if (type === 'picture' && picked) {
+                if (!newPicture) {
+                    newPicture = document.createElement('img');
+                    newPicture.className = 'settings-banner-picture';
+                    newPicture.alt = '';
+                    newPicture.dataset.bannerNew = '';
+                    preview.append(newPicture);
+                }
+                newPicture.src = picked.url;
+            }
+            if (newPicture) newPicture.hidden = type !== 'picture' || !picked;
+            if (current) current.hidden = type !== 'picture' || picked !== null;
+            const { bannerColor1, bannerColor2, bannerAngle } = form.elements;
+            preview.style.backgroundImage = type === 'colors'
+                ? `linear-gradient(${bannerAngle.value}deg, ${bannerColor1.value}, ${bannerColor2.value})` : '';
+        }
+
+        function setStatus(text, isError = false) {
+            status.textContent = text;
+            status.classList.toggle('settings-error', isError);
+        }
+
+        input?.addEventListener('change', async () => {
+            const file = input.files[0];
+            const id = ++converting;
+            if (picked) URL.revokeObjectURL(picked.url);
+            picked = null;
+            if (checkInput) checkInput.value = '';
+            if (!file) {
+                setStatus('');
+                saveButton.disabled = false;
+                show();
+                return;
+            }
+            picked = { url: URL.createObjectURL(file) };
+            show();
+            saveButton.disabled = true;
+            setStatus('Getting your picture ready…');
+            try {
+                const buffer = await bannerJxlJob(banner.dataset.jxlWorker, { type: 'encode', file, maxSide: Number(banner.dataset.bannerMaxSide) });
+                if (id !== converting) return;
+                if (buffer.byteLength > maxBytes) throw new Error('tooBig');
+                const jxl = new File([buffer], 'banner.jxl', { type: 'image/jxl' });
+                // Made from the JPEG XL rather than the original, so it's the picture the server gets, whatever kind it was
+                const check = await bannerCheckCopy(banner.dataset.jxlWorker, buffer.slice(0), Number(checkInput.dataset.bannerCheck));
+                if (id !== converting) return;
+                const files = new DataTransfer();
+                files.items.add(jxl);
+                input.files = files.files; // doesn't fire change again
+                const checkFiles = new DataTransfer();
+                checkFiles.items.add(check);
+                checkInput.files = checkFiles.files;
+                const tickets = Math.max(1, Math.ceil(jxl.size / ticketBytes));
+                setStatus(`Ready: ${sizeLabel(jxl.size)}, takes ${tickets} ${tickets === 1 ? 'ticket' : 'tickets'}. Save profile to use it.`);
+            } catch (error) {
+                if (id !== converting) return;
+                input.value = '';
+                checkInput.value = '';
+                URL.revokeObjectURL(picked.url);
+                picked = null;
+                show();
+                setStatus(error.message === 'tooBig'
+                    ? 'That picture is too big, even made smaller. Please choose another one.'
+                    : "That picture couldn't be got ready. Please try another one.", true);
+            }
+            saveButton.disabled = false;
+        });
+
+        form.addEventListener('input', show);
+        form.addEventListener('change', show);
+        show();
+    }
+
+    // One JPEG XL job (chatJxlWorker.js) in a worker of its own, which is stopped again once it's done. Gives back the
+    // .jxl file's buffer for an encode, and { pixels, width, height } for a decode.
+    function bannerJxlJob(url, message, transfer = []) {
+        return new Promise((resolve, reject) => {
+            const worker = new Worker(url, { type: 'module' });
+            worker.addEventListener('message', ({ data }) => {
+                worker.terminate();
+                if (data.error) reject(new Error(data.error));
+                else resolve(message.type === 'encode' ? data.buffer : data);
+            });
+            worker.addEventListener('error', () => {
+                worker.terminate();
+                reject(new Error('workerFailed'));
+            });
+            worker.postMessage({ id: 1, ...message }, transfer);
+        });
+    }
+
+    // The banner's check copy for the banned pictures list: the JPEG XL in buffer as a PNG, at most maxSide on its
+    // longest side. admin.js makes the same one when an admin bans a banner.
+    async function bannerCheckCopy(url, buffer, maxSide) {
+        const { pixels, width, height } = await bannerJxlJob(url, { type: 'decode', buffer }, [buffer]);
+        const full = document.createElement('canvas');
+        full.width = width;
+        full.height = height;
+        full.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(pixels), width, height), 0, 0);
+        const scale = Math.min(1, maxSide / Math.max(width, height));
+        const small = document.createElement('canvas');
+        small.width = Math.max(1, Math.round(width * scale));
+        small.height = Math.max(1, Math.round(height * scale));
+        const context = small.getContext('2d');
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(full, 0, 0, small.width, small.height);
+        const blob = await new Promise((resolve) => small.toBlob(resolve, 'image/png'));
+        if (!blob) throw new Error('checkFailed');
+        return new File([blob], 'check.png', { type: 'image/png' });
     }
 
     // The message sound plays when its box is ticked, so the user hears what it sounds like (assets/js/messageSound.js)

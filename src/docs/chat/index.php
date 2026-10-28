@@ -1,5 +1,5 @@
 <?php
-// Help docs: chat basics - starting a DM, message requests, sending, replies, reactions, editing and deleting, unread
+// Help docs: chat basics - starting a DM, message requests, sending, replies, reactions, editing and deleting, pinned messages, unread
 // messages, the chat list's right-click menu and nicknames. Follows chat/index.php and chat.js. Open to everyone.
 // Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
@@ -61,11 +61,26 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td>Reactions</td><td>The emoji along the top are the ones you've used most lately. Press one to react with it, or <strong>+</strong> for all the others. Press a reaction under a message to add yours or take it away, and point at it to see who reacted.</td></tr>
                                     <tr><td>Reply</td><td>Quotes the message above yours. Click a quote to jump back to the message it answers. <kbd>Esc</kbd> cancels the reply.</td></tr>
                                     <tr><td>Edit message</td><td>Your own messages only. The message shows that it was edited.</td></tr>
+                                    <tr><td>Pin message</td><td>Pins it to the chat for everyone in it, see <a href="#pins">Pinned messages</a>. A pinned message gets <strong>Unpin message</strong> instead, if you can unpin it.</td></tr>
                                     <tr><td>Mark unread</td><td>Marks the chat as unread from that message, so you remember to come back to it.</td></tr>
                                     <tr><td>Delete message</td><td>Your own messages, or anyone's if you're an admin of the group. It shows as "Message deleted" for everyone.</td></tr>
                                 </tbody>
                             </table>
                         </div>
+                    </section>
+
+                    <section id="pins" aria-labelledby="docs-pins">
+                        <h2 id="docs-pins">Pinned messages</h2>
+                        <p>
+                            Pin a message to keep it easy to find, like plans, homework or a link everyone needs. Anyone in a
+                            chat can pin a message from the <a href="#message-menu">message menu</a>, and it gets a small pin
+                            in its corner. Everyone in the chat sees a notice that you pinned it.
+                        </p>
+                        <ul>
+                            <li>The <strong>pin</strong> at the top right of the chat lists everything pinned in it, the newest first. <strong>Jump</strong> scrolls up to the message.</li>
+                            <li>You can unpin the messages you pinned yourself. Group admins can unpin anything in their group, and in a DM either of you can unpin anything.</li>
+                            <li>A chat can have up to 50 pinned messages. Deleting a pinned message unpins it.</li>
+                        </ul>
                     </section>
 
                     <section id="unread" aria-labelledby="docs-unread">
@@ -81,7 +96,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-chat-menu">The chat menu</h2>
                         <p>Right-click a chat in your list (or long-press it) for more:</p>
                         <ul>
-                            <li><strong>Show profile</strong> and <strong>Give nickname</strong> (DMs): open their profile, or give them a name only you see.</li>
+                            <li><strong>Show profile</strong> and <strong>Give nickname</strong> (DMs): open their profile, or give them a name only you see. In a group, nicknames are given from <strong>Members</strong> instead, and everyone sees them (see <a href="/docs/chat/groups#nicknames">Nicknames</a>).</li>
                             <li><strong>Mute chat</strong>: no notifications or sounds from it for a while, or for good. See <a href="/docs/notifications#mute">Muting a chat</a>.</li>
                             <li><strong>Hide chat</strong>: takes it out of your list until a new message comes in, or you search for it and open it.</li>
                             <li><strong>Change background</strong>: give the chat a colour or gradient, for everyone in it. Either of you can in a DM, only admins in a group.</li>

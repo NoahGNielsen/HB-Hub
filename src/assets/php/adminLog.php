@@ -13,6 +13,8 @@
 // A row is: the admin (adminLogByUserId), what they did (adminLogAction, one of ADMIN_LOG_ACTIONS), the user and/or
 // chat it was about, a few details as JSON (adminLogData, like {"amount": -500} for chips) and why (adminLogReason).
 // Never a password, a name or a message's text: those are on the user's or chat's own page, and go away with them.
+// What was done to all of a person's accounts at once (admin/person.php, adminAccounts.php) is one row per account,
+// each with {"personOf": userId}, the account the admin started from.
 //
 // The reason: before any form in the admin panel is sent, admin.js opens a popup where the admin can type why, and
 // sends it along as the form's `reason` field. adminLog() picks it up from there by itself (adminLogReason()), so the
@@ -29,7 +31,7 @@ const ADMIN_LOG_ACTIONS = [
     'user.export' => 'Downloaded all of {user}\'s data',
     'user.ban' => 'Banned {user}',
     'user.unban' => 'Unbanned {user}',
-    'user.autoban' => '{user} was banned automatically for uploading a banned profile picture', // no admin, see the top
+    'user.autoban' => '{user} was banned automatically for uploading a banned picture', // no admin, see the top
     'user.ghostBan' => 'Ghost banned {user}',
     'user.ghostUnban' => 'Lifted {user}\'s ghost ban',
     'user.autoGhostBan' => '{user} was ghost banned automatically for using a browser a ghost-banned account uses', // no admin, see the top
@@ -37,6 +39,9 @@ const ADMIN_LOG_ACTIONS = [
     'user.bio' => 'Changed {user}\'s bio',
     'user.avatar' => 'Removed {user}\'s profile picture',
     'user.avatarBan' => 'Removed and banned {user}\'s profile picture',
+    'user.banner' => 'Removed {user}\'s banner picture',
+    'user.bannerBan' => 'Removed and banned {user}\'s banner picture',
+    'user.status' => 'Changed {user}\'s status',
     'user.block' => 'Changed {user}\'s gambling block',
     'user.blockAdmin' => 'Blocked Gambling and Games for {user} (they can\'t lift it)',
     'user.blockAdminLift' => 'Lifted the admin block on Gambling and Games for {user}',
@@ -49,7 +54,9 @@ const ADMIN_LOG_ACTIONS = [
     'user.attachments' => 'Deleted all of {user}\'s attachments',
     'user.tickets' => 'Changed {user}\'s attachment tickets',
     'user.delete' => 'Deleted {user}\'s account',
+    'person.view' => 'Opened the person page of {user} (every account used in the same browsers)',
     'message.delete' => 'Deleted a message from {user} in {chat}',
+    'message.unpin' => 'Unpinned a message from {user} in {chat}',
     'chat.view' => 'Opened the admin panel of {chat}',
     'chat.rename' => 'Renamed {chat}',
     'chat.icon' => 'Removed the icon of {chat}',

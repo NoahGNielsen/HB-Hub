@@ -7,7 +7,7 @@
 | [🎲 Games](games.md) | Matador, Chess, UNO, Wordle and Ore Mining Inc. |
 | [🔔 Notifications](notifications.md) | The notification bell and browser notifications |
 | [🔐 Account & security](account.md) | Profiles, two-factor login, login protection, devices, self-blocking, deletion and feedback |
-| [🛠️ For site admins](admin.md) | The admin panel, ghost bans, banned pictures, the feedback inbox, the admin log and the site switches |
+| [🛠️ For site admins](admin.md) | The admin panel, people with more than one account, ghost bans, banned pictures, the feedback inbox, the admin log and the site switches |
 
 ---
 

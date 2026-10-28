@@ -53,6 +53,11 @@ return [
             'text' => static fn (array $data): string => 'mentioned you in ' . (!empty($data['isGroup']) ? $group($data) : 'your DM'),
             'link' => static fn (array $data): string => $openChat($data) . '#message-' . (int) ($data['messageId'] ?? 0),
         ],
+        // Someone gave the user a nickname in a group (chat/index.php's chatSetMemberNickname()). Its data has the nickname too.
+        'nickname' => [
+            'text' => static fn (array $data): string => 'gave you the nickname ' . ($data['nickname'] ?? '') . ' in ' . $group($data),
+            'link' => $openChat,
+        ],
         'removedAdmin' => [
             'text' => static fn (array $data): string => 'removed you as admin in ' . $group($data),
             'link' => $openChat,

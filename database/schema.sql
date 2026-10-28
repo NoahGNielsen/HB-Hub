@@ -302,8 +302,8 @@ CREATE TABLE `HBHub-CasinoWallets` (
 CREATE TABLE `HBHub-ChatAttachments` (
   `attachmentId` int UNSIGNED NOT NULL,
   `userId` int UNSIGNED NOT NULL COMMENT 'Who sent it, whose tickets it takes',
-  `chatId` int UNSIGNED NOT NULL,
-  `messageId` bigint UNSIGNED DEFAULT NULL COMMENT 'The message it was sent in (one message can have up to 10), only NULL if that message row is ever removed',
+  `chatId` int UNSIGNED DEFAULT NULL COMMENT 'The chat it was sent in, NULL for a profile banner',
+  `messageId` bigint UNSIGNED DEFAULT NULL COMMENT 'The message it was sent in (one message can have up to 10), NULL for a profile banner or if that message row is ever removed',
   `attachmentKey` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Random name of the file on disk, in attachments_path from the config',
   `attachmentName` varchar(255) DEFAULT NULL COMMENT 'The file name as sent (ending in .jxl when converted), NULL once the file is gone',
   `attachmentType` varchar(100) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Content-Type it is sent back with: a picture type, or application/octet-stream for any other file',
@@ -313,7 +313,7 @@ CREATE TABLE `HBHub-ChatAttachments` (
   `attachmentTickets` tinyint UNSIGNED NOT NULL COMMENT 'One per started 5 MB of attachmentSize',
   `attachmentStatus` tinyint UNSIGNED NOT NULL DEFAULT '0' COMMENT '0 The file is there and takes its tickets\r\n1 Deleted (with its message, from the attachments popup, or with its chat or account)\r\n2 Expired',
   `attachmentUploadedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `attachmentExpiresTimestamp` datetime NOT NULL COMMENT '90 days after upload, 3 days when it takes more than 5 tickets',
+  `attachmentExpiresTimestamp` datetime NOT NULL COMMENT '90 days after upload, 3 days when it takes more than 5 tickets, 9999-12-31 23:59:59 for a profile banner (never)',
   `attachmentRemovedTimestamp` datetime DEFAULT NULL COMMENT 'When attachmentStatus stopped being 0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -329,7 +329,9 @@ CREATE TABLE `HBHub-ChatMembers` (
   `memberRole` int UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Normal Member\r\n2 Group Admin\r\n3 Group Owner',
   `lastReadMessageId` int UNSIGNED DEFAULT NULL,
   `memberJoinedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `memberNickname` varchar(64) DEFAULT NULL,
+  `memberNickname` varchar(64) DEFAULT NULL COMMENT 'In a group, the name everyone in it sees them by instead of their username. Any member can give it (chat/index.php)',
+  `memberGhostNickname` varchar(64) DEFAULT NULL COMMENT 'A nickname memberGhostNicknameBy gave them while ghost banned, which only that user sees (instead of memberNickname). NULL with memberGhostNicknameBy set: they took the nickname away, for themselves',
+  `memberGhostNicknameBy` int UNSIGNED DEFAULT NULL COMMENT 'userId of the ghost-banned user who gave memberGhostNickname, NULL when nobody did',
   `memberMutedUntil` timestamp NULL DEFAULT NULL,
   `memberLastViewedTimestamp` datetime DEFAULT NULL COMMENT 'UTC, last time the member had the chat open and in view',
   `memberTypingTimestamp` datetime DEFAULT NULL COMMENT 'UTC, last time the member said they were typing a message in the chat, NULL once they stopped or sent it',
@@ -348,12 +350,13 @@ CREATE TABLE `HBHub-Chats` (
   `chatName` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `chatType` tinyint NOT NULL COMMENT '1 DM''s\r\n2 GDM''s',
   `chatStatus` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Active\r\n2 Deleted (everyone left, or a group admin deleted it)\r\n3 Deleted by a site admin (admin panel), at chatBannedTimestamp',
-  `chatCreatedBy` int UNSIGNED NOT NULL,
+  `chatCreatedBy` int UNSIGNED NOT NULL COMMENT 'userId of who made it. 0 (the HB Hub System account) for a class chat',
   `chatSettings` json DEFAULT NULL,
   `chatIconAttachmentId` int UNSIGNED DEFAULT NULL,
   `chatCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `lastMessageTimestamp` datetime DEFAULT NULL,
-  `chatBannedTimestamp` datetime DEFAULT NULL
+  `chatBannedTimestamp` datetime DEFAULT NULL,
+  `chatClassKey` varchar(16) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Class chat: the school year the class started 1. year in and its field of study, like 2026-X. NULL for any other chat, and once a class chat is deleted'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -602,12 +605,15 @@ CREATE TABLE `HBHub-Messages` (
   `messageDeletedTimestamp` datetime DEFAULT NULL,
   `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin\r\n2 Deleted by a site admin (admin panel)',
   `messageIsEdited` tinyint NOT NULL DEFAULT '0',
-  `messageReplyToId` bigint UNSIGNED DEFAULT NULL,
+  `messageReplyToId` bigint UNSIGNED DEFAULT NULL COMMENT 'The message it replies to. On a pin or unpin notice (messageEventType 13 and 14), the message that was pinned or unpinned',
   `messageEvent` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 A normal message\r\n1 A notice about a change in the chat, made by userId (messageEventType says which)',
-  `messageEventType` tinyint UNSIGNED DEFAULT NULL COMMENT 'NULL for a normal message\r\n1 Renamed the group (messageContent is the new name, NULL when taken away)\r\n2 Changed the group icon\r\n3 Removed the group icon\r\n4 Changed the background\r\n5 Reset the background\r\n6 Made messageEventUserId a group admin\r\n7 Removed messageEventUserId as group admin\r\n8 Kicked messageEventUserId\r\n9 Joined the group\r\n10 Left the chat\r\n11 Added messageEventUserId to the group\r\n12 Became the group owner when the owner left\r\n100 + one of these: the same change made by a site admin from the admin panel (101 renamed the group), the notice says "A site admin"',
+  `messageEventType` tinyint UNSIGNED DEFAULT NULL COMMENT 'NULL for a normal message\r\n1 Renamed the group (messageContent is the new name, NULL when taken away)\r\n2 Changed the group icon\r\n3 Removed the group icon\r\n4 Changed the background\r\n5 Reset the background\r\n6 Made messageEventUserId a group admin\r\n7 Removed messageEventUserId as group admin\r\n8 Kicked messageEventUserId\r\n9 Joined the group\r\n10 Left the chat\r\n11 Added messageEventUserId to the group\r\n12 Became the group owner when the owner left\r\n13 Pinned the message messageReplyToId\r\n14 Unpinned the message messageReplyToId\r\n15 Changed the nickname of messageEventUserId in a group (messageContent is the new nickname, NULL when taken away)\r\n100 +one of these: the same change made by a site admin from the admin panel (101 renamed the group), the notice says "A site admin"',
   `messageEventUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who the notice is about (messageEventType 6, 7, 8, 11 and 12)',
   `messageIsGhost` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 Sent while the user was ghost banned, so only they (and site admins) see it',
-  `messageGhostContent` varchar(2500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'An edit made while ghost banned to a message everyone sees: shown only to the sender, NULL otherwise'
+  `messageGhostContent` varchar(2500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'An edit made while ghost banned to a message everyone sees: shown only to the sender, NULL otherwise',
+  `messagePinnedTimestamp` datetime DEFAULT NULL COMMENT 'When it was pinned to the chat, NULL while it isn''t pinned (unpinning sets it back)',
+  `messagePinnedBy` int UNSIGNED DEFAULT NULL COMMENT 'Who pinned it, NULL while it isn''t pinned',
+  `messagePinIsGhost` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 Pinned while messagePinnedBy was ghost banned, so only they (and site admins) see it pinned'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -817,6 +823,7 @@ CREATE TABLE `HBHub-Users` (
   `userDescription` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `userSettings` json DEFAULT NULL,
   `userAvatarAttachmentId` int UNSIGNED DEFAULT NULL,
+  `userBannerAttachmentId` int UNSIGNED DEFAULT NULL COMMENT 'Their profile banner picture in HBHub-ChatAttachments, NULL for the colors in userSettings',
   `userIpv4AdresseOnAccountCreate` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `userIpv6AdresseOnAccountCreate` varchar(62) DEFAULT NULL,
   `userIpv4AdresseLastAccessed` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
@@ -825,7 +832,7 @@ CREATE TABLE `HBHub-Users` (
   `userTotpSecret` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Base32 TOTP secret, NULL when 2FA is off',
   `userTotpLastStep` int UNSIGNED DEFAULT NULL COMMENT 'Time step of the last accepted 2FA code, so a code only works once',
   `userFailedLoginCount` smallint UNSIGNED DEFAULT '0' COMMENT 'NULL for a deleted account',
-  `userStatus` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Online\r\n2 Offiline\r\n3 Account Locked\r\n4 Banned\r\nNULL for a deleted account',
+  `userStatus` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Normal\r\n2 Normal (unlocked or unbanned by a site admin, not logged in since)\r\n3 Account Locked\r\n4 Banned\r\nNULL for a deleted account',
   `userRole` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Normal User\r\n2 Admin\r\nNULL for a deleted account',
   `userCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `userLastSeenTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -835,6 +842,16 @@ CREATE TABLE `HBHub-Users` (
   `userGhostBannedTimestamp` datetime DEFAULT NULL COMMENT 'When a site admin ghost banned the account: what they do in chats only shows to themselves. NULL when not ghost banned',
   `userAttachmentTicketsExtra` smallint NOT NULL DEFAULT '0' COMMENT 'Chat attachment tickets a site admin added (positive) or took away (negative), on top of the 10 everyone has'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `HBHub-Users`
+--
+-- The HB Hub System account (HBHUB_SYSTEM_USER_ID), which makes the class chats. Stored like a deleted account, so
+-- nobody can log in to it and it's left out of every user list. Needs NO_AUTO_VALUE_ON_ZERO (set at the top) for id 0.
+--
+
+INSERT INTO `HBHub-Users` (`userId`, `userName`, `userNameLower`, `userPasswordHash`, `userFailedLoginCount`, `userStatus`, `userRole`) VALUES
+(0, 'HB Hub System', NULL, NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -989,7 +1006,8 @@ ALTER TABLE `HBHub-Chats`
   ADD PRIMARY KEY (`chatId`),
   ADD KEY `chatName` (`chatName`),
   ADD KEY `chatCreatedBy` (`chatCreatedBy`),
-  ADD KEY `fk_chats_icon` (`chatIconAttachmentId`);
+  ADD KEY `fk_chats_icon` (`chatIconAttachmentId`),
+  ADD UNIQUE KEY `chatClassKey` (`chatClassKey`);
 
 --
 -- Indexes for table `HBHub-ChessChat`
@@ -1123,7 +1141,9 @@ ALTER TABLE `HBHub-Messages`
   ADD KEY `chatId` (`chatId`),
   ADD KEY `messageTimestamp` (`messageSentTimestamp`,`chatId`),
   ADD KEY `fk_messages_replyto` (`messageReplyToId`),
-  ADD KEY `fk_messages_eventuser` (`messageEventUserId`);
+  ADD KEY `fk_messages_eventuser` (`messageEventUserId`),
+  ADD KEY `messagePinned` (`chatId`,`messagePinnedTimestamp`),
+  ADD KEY `fk_messages_pinnedby` (`messagePinnedBy`);
 
 --
 -- Indexes for table `HBHub-Notifications`
@@ -1224,7 +1244,8 @@ ALTER TABLE `HBHub-UnoSeats`
 ALTER TABLE `HBHub-Users`
   ADD PRIMARY KEY (`userId`),
   ADD UNIQUE KEY `userNameLower` (`userNameLower`),
-  ADD KEY `fk_users_avatar` (`userAvatarAttachmentId`);
+  ADD KEY `fk_users_avatar` (`userAvatarAttachmentId`),
+  ADD KEY `fk_users_banner` (`userBannerAttachmentId`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -1626,6 +1647,7 @@ ALTER TABLE `HBHub-Messages`
   ADD CONSTRAINT `fk_messages_chat` FOREIGN KEY (`chatId`) REFERENCES `HBHub-Chats` (`chatId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_messages_replyto` FOREIGN KEY (`messageReplyToId`) REFERENCES `HBHub-Messages` (`messageId`),
   ADD CONSTRAINT `fk_messages_eventuser` FOREIGN KEY (`messageEventUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_messages_pinnedby` FOREIGN KEY (`messagePinnedBy`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_messages_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
@@ -1704,7 +1726,8 @@ ALTER TABLE `HBHub-UnoSeats`
 -- Constraints for table `HBHub-Users`
 --
 ALTER TABLE `HBHub-Users`
-  ADD CONSTRAINT `fk_users_avatar` FOREIGN KEY (`userAvatarAttachmentId`) REFERENCES `HBHub-Attachments` (`attachmentId`) ON DELETE SET NULL;
+  ADD CONSTRAINT `fk_users_avatar` FOREIGN KEY (`userAvatarAttachmentId`) REFERENCES `HBHub-Attachments` (`attachmentId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_users_banner` FOREIGN KEY (`userBannerAttachmentId`) REFERENCES `HBHub-ChatAttachments` (`attachmentId`) ON DELETE SET NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

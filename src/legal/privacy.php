@@ -7,14 +7,14 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '23 October 2026';
+const HBHUB_PRIVACY_UPDATED = '27 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
 const HBHUB_PRIVACY_COOKIES = [
     'hbHubSession' => ['Keeps you logged in. Holds a random id that points at your login.', '30 days, or until you log out'],
     'hbHubPendingLogin' => ['Remembers that you typed the right password while you enter your two-factor code.', '5 minutes'],
-    'hbHubDevice' => ['Recognises a browser you have logged in from before, so someone guessing your password can\'t lock you out of it. It\'s also how a ghost ban is passed on to a new account used in the same browser.', '180 days'],
+    'hbHubDevice' => ['Recognises a browser you have logged in from or are logged in on, so someone guessing your password can\'t lock you out of it. It\'s also how a ghost ban is passed on to a new account used in the same browser, and how site admins see which accounts are used in the same browser.', '180 days'],
     'hbHubBanned' => ['Set when a banned account is used in the browser, so it can\'t just make a new account.', '400 days, or until the account is unbanned and logs in again'],
     'hbHubToast' => ['A short message for the next page, like "Your password was changed".', '60 seconds'],
 ];
@@ -96,7 +96,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-what">2. What is stored</h2>
                         <h3>Your account</h3>
                         <ul>
-                            <li>Your name, and if you add them: your profile picture, bio, year and class.</li>
+                            <li>Your name, and if you add them: your profile picture, bio, status (an emoji, a short text and when it clears itself; once it has, it's no longer shown and is written over the next time you save your status or profile), education badge (a kind of education, like "IT and media"), and banner. A banner is either two colors and a direction, or a picture: a banner picture is made smaller and turned into JPEG XL in your own browser before it's sent (so it doesn't keep where a photo was taken), kept as a file on HB Hub's server like a chat attachment, and takes one of your attachment tickets for as long as it's your banner. It never runs out by itself: it's deleted when you change it, go back to colors, delete it from Your attachments in the chat, or delete your account.</li>
+                            <li>Your class: the school year you started 1. year at HTX in and your field of study (X, U, T, Y or Z), or that you don't go to HTX. Your year (or "Graduate" once you're past 3. year) is worked out from that, so it goes up every July 1st without anything being changed. If you're at HTX, you're also a member of your class's group chat (see Messages and chats below).</li>
                             <li>Your password, but only as a one-way hash. Nobody, not even an admin, can read your password.</li>
                             <li>The secret behind your two-factor codes, if you turn two-factor login on.</li>
                             <li>Your settings, like which chats you've muted, hidden or blocked, whether new messages give you a browser notification or a sound, and whether you've blocked the Casino and Games, or a site admin has blocked them for you.</li>
@@ -106,12 +107,16 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </ul>
                         <h3>Banned pictures</h3>
                         <p>
-                            When an account is banned, a copy of its profile picture is usually put on a list of banned pictures,
-                            together with which account it came from and which admin banned it. When an admin removes a profile
-                            picture that breaks the rules, they can put a copy of it on the list the same way without banning the
-                            account. Admins can also add pictures to the list themselves. When you upload a profile picture, or sign up with one, it's compared with the
+                            When an account is banned, a copy of its profile picture, and sometimes its banner picture, is usually
+                            put on a list of banned pictures, together with which account it came from and which admin banned it.
+                            When an admin removes a profile picture or banner picture that breaks the rules, they can put a copy of
+                            it on the list the same way without banning the account. Admins can also add pictures to the list
+                            themselves. When you upload a profile picture or banner picture, or sign up with a profile picture, it's compared with the
                             list in two ways: a fingerprint of the file (its SHA-256 hash), and a fingerprint of what the picture
                             looks like, made from a tiny greyscale copy of it, so a resized or slightly cropped copy is found too.
+                            The server can't read a banner picture's JPEG XL file, so your browser sends a small PNG copy of it
+                            (at most 256 pixels wide or tall) along with it for the second check; the admin's browser does the same
+                            when an admin bans a banner picture. The PNG copy is only used for the comparison and never stored.
                             If it's the same file, or looks almost the same as a banned picture, the account is banned straight
                             away and keeps the picture, so admins can see why. The fingerprints of banned pictures are stored with
                             them; the fingerprints of other pictures are only used for the comparison and never stored.
@@ -148,7 +153,23 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 Reactions you put on messages: which emoji, on which message, and when. Taking a reaction back
                                 deletes it.
                             </li>
+                            <li>
+                                Messages you pin in a chat: which message, that you pinned it and when, which everyone in the
+                                chat can see. Pinning or unpinning also puts a notice in the chat saying who did it. Unpinning
+                                (by you, a group admin, the other person in a DM, or a site admin) clears who pinned it and
+                                when, but the notices stay like other messages.
+                            </li>
                             <li>The chats you're in, group names, icons and backgrounds, and nicknames you give people.</li>
+                            <li>
+                                Nicknames in a group: a nickname you give someone in a group (or that someone gives you) is
+                                kept with their membership of that group, and everyone in the group sees it instead of their
+                                username. Giving or taking one away also puts a notice in the chat saying who did it, to whom
+                                and what the nickname is, which stays like other messages. When someone else gives you one,
+                                you also get a notification under the bell saying who, which group and the nickname (not
+                                from a group you muted or someone you blocked). The nickname goes when it's taken
+                                away or when they leave the group or are kicked from it. A nickname you give the other person
+                                in a DM is kept in the chat's settings and only shown to you.
+                            </li>
                             <li>
                                 While you're typing a message in a chat, the time you last typed is kept with your membership
                                 of it, so the others in the chat see "... is typing". Only the time is stored, never what
@@ -173,7 +194,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             </li>
                             <li>
                                 Ghost bans: a site admin can ghost ban an account that breaks the rules, without telling it.
-                                What it does in chats from then on (messages, attachments, edits, reactions, and the chats it
+                                What it does in chats from then on (messages, attachments, edits, reactions, pins, nicknames, and the chats it
                                 starts or adds people to) is stored like anything else, but marked so that only that account
                                 and site admins can see it. People it starts a chat with or adds to a group are stored as
                                 invited, marked the same way, so they never see the chat or get a request or notification about
@@ -238,7 +259,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 and system you use): what the game noted down, what it was doing when it froze and for how long,
                                 your Ore Mining Inc. save as it was then, your screen size, how many processor cores and how
                                 much memory your device has (as your browser tells, rounded), and the name of its graphics card
-                                (as your browser tells it, some browsers give a general or made-up one). If you say no, nothing is sent
+                                (as your browser tells it, some browsers give a general or made-up one). If it crashed more than
+                                once since you last answered, it's still one report, with when and how the older crashes
+                                happened in it too (up to 4 of them). If you say no, nothing is sent
                                 and it's deleted from your browser.
                             </li>
                         </ul>
@@ -265,8 +288,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             password, a name or what a message said. Before every change, the admin can type why they're doing
                             it, and that reason is kept with it in the log. When an admin replies to feedback, the reply is kept
                             there as the reason. When an account is banned automatically for uploading a
-                            banned profile picture, that goes in the admin log too, with which picture it was and whether it
-                            happened when signing up.
+                            banned picture, that goes in the admin log too, with which picture it was, whether it was uploaded as
+                            a banner and whether it happened when signing up. If a site admin changes or removes your status, or
+                            removes your profile picture or banner picture, that's in the admin log too, but not what the status said.
                         </p>
                         <h3>What isn't stored</h3>
                         <p>
@@ -294,20 +318,26 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <section id="see" aria-labelledby="privacy-see">
                         <h2 id="privacy-see">4. Who can see what</h2>
                         <ul>
-                            <li><strong>Everyone with an account</strong> can see your name, profile picture, bio, year, class, when you were last online, and your spot on the leaderboards.</li>
+                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, when you were last online and when you joined, and your spot on the leaderboards.</li>
+                            <li><strong>Everyone in your class's group chat</strong> (everyone on HB Hub who started HTX the same year in the same field) can see that you're in it, and the messages you send there. You're put in it automatically when you sign up or change your class, and taken out of your old class's chat when you change it. Nobody is a group admin there, so only site admins can remove anyone or delete messages in it.</li>
                             <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group. When they remove a site admin, the site admin can undo it from their notification: they're put back in the group as they were, and the notice about it in the chat is deleted.</li>
                             <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
                             <li>
                                 <strong>Site admins</strong> can see everything about an account in the admin panel, including
                                 messages in every chat (also deleted ones), IP addresses and logins, the list of banned
                                 pictures, and all feedback. The admin panel lists the attachments you've sent that are still
-                                kept (their name, size, which chat and how many tickets they take) but doesn't open them,
+                                kept (their name, size, which chat and how many tickets they take), and your banner picture with them, but doesn't open them,
                                 though the site's owner can reach attachment files on the server. Site admins can delete your
                                 attachments and give you more tickets or take some away. They use it to deal with abuse, bans and
                                 broken accounts, and to improve the site. Feedback and Ore Mining Inc. crash reports are only
                                 ever seen by site admins, never by other users. They can never see your password or your two-factor secret. Everything they do
                                 there, also just looking at your account or a chat you're in, goes in the admin log, which only
                                 site admins can read and nobody can change or delete.
+                                Site admins can also see which accounts have been logged in to from the same browser (the
+                                hbHubDevice cookie, see <a href="#privacy-cookies">Cookies and local storage</a>, never your IP
+                                address), with when each browser was first and last used, and put those accounts side by side on
+                                one page, to deal with one person's extra accounts together, like banning them all at once.
+                                Nothing new is stored for this: it uses the known devices that are already kept for the login.
                             </li>
                         </ul>
                         <p class="legal-note">
@@ -375,7 +405,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
-                            That right away removes your name, profile picture, bio, year, class, settings, password, two-factor
+                            That right away removes your name, profile picture, banner, bio, status, education badge, year, class, settings, password, two-factor
                             secret, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, and the files you attached in chats. Your name is replaced
                             with "Deleted User".
                         </p>

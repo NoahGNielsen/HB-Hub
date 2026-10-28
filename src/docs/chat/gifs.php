@@ -31,6 +31,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             to put it in your message where the cursor is. You can of course also type emoji straight from your
                             phone's keyboard, or with <kbd>Win</kbd> + <kbd>.</kbd> on Windows and <kbd>Ctrl</kbd> + <kbd>&#8984;</kbd> + <kbd>Space</kbd> on a Mac.
                         </p>
+                        <p>
+                            A message that's only emoji (up to 75 of them) is shown big, without the bubble around it.
+                        </p>
                     </section>
 
                     <section id="reactions" aria-labelledby="docs-reactions">

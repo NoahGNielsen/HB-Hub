@@ -1,7 +1,7 @@
 <?php
 // Help docs: group chats - making one, adding people, the owner/admin/member roles (HBHUB_CHAT_ROLE_* in
-// assets/php/chat.php), changing the name, icon and background, kicking, leaving and deleting, and the notices
-// a group shows. Open to everyone. Built by assets/php/docs/top.php and bottom.php.
+// assets/php/chat.php), nicknames (memberNickname, chat/index.php's chatSetMemberNickname()), changing the name, icon and background, kicking, leaving and deleting, and the notices
+// a group shows, and class chats (assets/php/schoolClass.php). Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
@@ -41,8 +41,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 </thead>
                                 <tbody>
                                     <tr><td>Group Owner</td><td>Everything an admin can, and also kick admins or remove them as admin. Whoever made the group is its owner, and there's only one.</td></tr>
-                                    <tr><td>Group Admin</td><td>Rename the group, change or remove its icon, change its background, make members admin, kick members, delete anyone's messages and delete the whole group.</td></tr>
-                                    <tr><td>Member</td><td>Write, react, add people and leave.</td></tr>
+                                    <tr><td>Group Admin</td><td>Rename the group, change or remove its icon, change its background, make members admin, kick members, delete anyone's messages, <a href="/docs/chat/#pins">unpin</a> anyone's pinned messages and delete the whole group.</td></tr>
+                                    <tr><td>Member</td><td>Write, react, add people, <a href="#nicknames">give nicknames</a> and leave.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -54,6 +54,27 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             You might also see <strong>Site Admin</strong> on someone. They run HB Hub itself, not the group, see
                             <a href="/docs/feedback#admins">Who are the admins?</a>
+                        </p>
+                    </section>
+
+                    <section id="nicknames" aria-labelledby="docs-nicknames">
+                        <h2 id="docs-nicknames">Nicknames</h2>
+                        <p>
+                            Anyone in a group can give anyone in it a nickname, themselves too: open <strong>Members</strong>
+                            and press <strong>Nickname</strong> next to them. Everyone in the group then sees them by that
+                            name instead of their username, on their messages, reactions, in the member list and so on, and
+                            they can be <a href="/docs/chat/mentions">@mentioned</a> by it. The member list still shows their
+                            username next to it.
+                        </p>
+                        <p>
+                            Nicknames are up to 35 characters, with the same rules as names and bios: only letters from the
+                            Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji, and no blocked links.
+                            Leave it empty to take the nickname away. Each change shows up
+                            as a <a href="#notices">notice</a> in the chat, saying who gave it, and whoever gets a new
+                            nickname from someone else gets a notification about it (not from a group they muted or from
+                            someone they blocked). You can't give nicknames
+                            while you're muted in the group. Nicknames only count in that group, and in a DM a nickname is
+                            different: only you see it (see <a href="/docs/chat/#chat-menu">the chat menu</a>).
                         </p>
                     </section>
 
@@ -72,7 +93,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-notices">Notices</h2>
                         <p>
                             Changes to a group show up in the chat as small notices, so everyone knows what happened: a new name,
-                            icon or background, someone joining, leaving, being added or kicked, and someone becoming admin or owner.
+                            icon or background, someone joining, leaving, being added or kicked, someone becoming admin or owner, a new nickname, and messages being pinned or unpinned.
                         </p>
                     </section>
 
@@ -82,6 +103,21 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><strong>Kick</strong> takes someone out of the group. They get a notification, and can only come back if someone adds them again.</li>
                             <li><strong>Leave chat</strong> in the chat menu takes you out. Your messages stay.</li>
                             <li><strong>Delete group</strong> (admins) closes the group for everyone, and deletes the files sent in it. A group everyone has left is deleted too.</li>
+                        </ul>
+                    </section>
+
+                    <section id="class" aria-labelledby="docs-class">
+                        <h2 id="docs-class">Your class chat</h2>
+                        <p>
+                            If you're at HTX, you're put in your class's group chat as soon as you sign up, with no message
+                            request to accept. Your class is everyone who started 1. year the same year as you in the same field
+                            of study, so the chat is called something like <strong>1.X</strong>.
+                        </p>
+                        <ul>
+                            <li>It follows your class: on July 1st it's renamed with the new year (<strong>1.X</strong> becomes <strong>2.X</strong>), and the messages stay. After 3. year it's called something like <strong>Graduate (X) 2029</strong>.</li>
+                            <li>Nobody is the owner or an admin, so nobody can rename it, kick people or delete it. Only site admins can.</li>
+                            <li>You can mute or hide it, but not leave it, and you can't add people to it.</li>
+                            <li>Changing your class in your <a href="/docs/account#profile">settings</a> moves you to the other class's chat.</li>
                         </ul>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

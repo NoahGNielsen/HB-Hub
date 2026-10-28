@@ -93,13 +93,17 @@
         firstInvalidField(steps[invalidIndex]).reportValidity();
     });
 
-    // Class picker only appears once a year is picked
+    // The field of study is only asked for once 1., 2. or 3. year is picked, not for Not HTX.
+    // Turned off otherwise, so it isn't checked or sent.
     function updateClassField() {
-        classField.hidden = yearSelect.value === '';
+        const isHtx = yearSelect.value !== '' && yearSelect.value !== 'none';
+        classField.hidden = !isHtx;
+        classSelect.disabled = !isHtx;
+        classSelect.required = isHtx;
     }
     yearSelect.addEventListener('change', () => {
         updateClassField();
-        if (classSelect.value === '') classSelect.focus();
+        if (!classSelect.disabled && classSelect.value === '') classSelect.focus();
     });
 
     // Picture preview (data: URL, since the CSP doesn't allow blob: images)

@@ -38,8 +38,7 @@ if (hbHubBannedCookieUserId() !== null):
     exit;
 endif;
 
-$onboardingYears = ['1', '2', '3'];
-$onboardingClasses = ['T', 'Y', 'X', 'U'];
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // the years and fields of study, and the class chat
 $onboardingAvatarTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
 // Requirement modes used by the onboarding_*_requirements settings
@@ -100,11 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $onboardingErrors['name'] = $nameError;
         }
 
-        // Class
-        if (!in_array($onboardingValues['year'], $onboardingYears, true)) {
-            $onboardingErrors['class'] = 'Please choose your year.';
-        } elseif (!in_array($onboardingValues['class'], $onboardingClasses, true)) {
-            $onboardingErrors['class'] = 'Please choose your class.';
+        // Class - the field of study only for 1. to 3. year, not for Not HTX
+        if (($classError = hbHubClassError($onboardingValues['year'], $onboardingValues['class'])) !== null) {
+            $onboardingErrors['class'] = $classError;
         }
 
         // Picture
@@ -204,25 +201,29 @@ foreach ($onboardingSteps as $index => $step) {
             </section>
 
             <section class="onboarding-step" aria-labelledby="onboarding-q2">
-                <h2 id="onboarding-q2">Which class are you in?</h2>
+                <h2 id="onboarding-q2">Which year are you in?</h2>
                 <div class="onboarding-field">
                     <label for="onboarding-year">Year</label>
                     <select id="onboarding-year" name="year" required>
                         <option value="" disabled<?= $onboardingValues['year'] === '' ? ' selected' : '' ?>>Choose your year</option>
-                        <?php foreach ($onboardingYears as $year): ?>
-                            <option value="<?= $year ?>"<?= $onboardingValues['year'] === $year ? ' selected' : '' ?>><?= $year ?></option>
+                        <?php foreach (HBHUB_CLASS_YEARS as $year): ?>
+                            <option value="<?= $year ?>"<?= $onboardingValues['year'] === $year ? ' selected' : '' ?>><?= $year ?>.</option>
                         <?php endforeach; ?>
+                        <option value="<?= HBHUB_CLASS_NOT_HTX ?>"<?= $onboardingValues['year'] === HBHUB_CLASS_NOT_HTX ? ' selected' : '' ?>>Not HTX</option>
                     </select>
                 </div>
+                <!-- Only for 1. to 3. year: hidden by onboarding.js until one of them is picked. Not required in the markup,
+                     so Not HTX can be sent without JS; the server checks it. -->
                 <div class="onboarding-field onboarding-reveal" data-class-field>
-                    <label for="onboarding-class">Class</label>
-                    <select id="onboarding-class" name="class" required>
-                        <option value="" disabled<?= $onboardingValues['class'] === '' ? ' selected' : '' ?>>Choose your class</option>
-                        <?php foreach ($onboardingClasses as $class): ?>
-                            <option value="<?= $class ?>"<?= $onboardingValues['class'] === $class ? ' selected' : '' ?>><?= $class ?></option>
+                    <label for="onboarding-class">Field of study</label>
+                    <select id="onboarding-class" name="class">
+                        <option value="" disabled<?= $onboardingValues['class'] === '' ? ' selected' : '' ?>>Choose your field of study</option>
+                        <?php foreach (HBHUB_CLASS_FIELDS as $field): ?>
+                            <option value="<?= $field ?>"<?= $onboardingValues['class'] === $field ? ' selected' : '' ?>><?= $field ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <p class="onboarding-hint">You'll be put in your class's group chat. Your year goes up by itself every July 1st.</p>
                 <?php if (isset($onboardingErrors['class'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['class']) ?></p>
                 <?php endif; ?>

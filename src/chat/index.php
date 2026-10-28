@@ -8,6 +8,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatUnread.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navUpdates.php'; // the nav bar's request, which polling takes along
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // the class chat everyone at HTX is put in
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be sent
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
@@ -20,6 +21,7 @@ const HBHUB_CHAT_MESSAGES_SHOWN = 20; // the newest ones when a chat opens, and 
 const HBHUB_CHAT_MESSAGES_UNREAD_MAX = 100; // with more unread than SHOWN, a chat opens with up to this many, so the "New messages" line is there
 const HBHUB_CHAT_MESSAGES_POLLED = 100; // new ones per poll, a later poll gets the rest
 const HBHUB_CHAT_MESSAGES_JUMP_MAX = 500; // per request when clicking a reply quote loads back to its message, chat.js asks again for the rest
+const HBHUB_CHAT_EMOJI_ONLY_MAX = 75; // a message of just emoji, up to this many, is shown big and without a bubble (chatEmojiOnly())
 const HBHUB_CHAT_SEND_MAX = 10; // messages one user can send (in all chats together, attachments and GIFs too) per HBHUB_CHAT_SEND_SECONDS
 const HBHUB_CHAT_SEND_SECONDS = 5;
 const HBHUB_CHAT_REACTIONS_MAX = 20; // different emoji under one message
@@ -29,6 +31,8 @@ const HBHUB_CHAT_TYPING_SECONDS = 8; // "is typing..." goes away when a member's
 const HBHUB_CHAT_TYPING_EVERY = 3; // seconds between updates of memberTypingTimestamp while typing, as chat.js says so every 2
 const HBHUB_CHAT_REACTION_LENGTH_MAX = 32; // reactionEmoji column, in characters (👨‍👩‍👧‍👦 is 7 joined together)
 const HBHUB_CHAT_REACTION_NAMES_SHOWN = 10; // who reacted, when pointing at a reaction, before it says "and 4 others"
+const HBHUB_CHAT_PINS_MAX = 50; // pinned messages one chat can have, like on Discord
+const HBHUB_CHAT_PIN_PREVIEW_MAX = 300; // characters of a pinned message the Pinned messages popup shows
 // What a reaction can be made of besides the emoji names may use (HBHUB_LATIN_TEXT_EMOJI): the few emoji outside those
 // ranges (© ® ‼ ⁉ ™ ℹ Ⓜ ▪ ▶ ◀ ◻ ⤴ ⤵ 〰 〽 ㊗ ㊙), and what changes or joins emoji (the emoji look, joiners, flag tags)
 const HBHUB_CHAT_REACTION_EXTRA_EMOJI = '\x{A9}\x{AE}\x{203C}\x{2049}\x{2122}\x{2139}\x{24C2}\x{25AA}-\x{25FE}\x{2934}\x{2935}'
@@ -59,12 +63,15 @@ $chatIsGhost = (bool) $hbHubUser['userGhostBanned'];
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 $chatGifsEnabled = hbHubGiphyApiKey($siteConfig) !== null; // the GIF button and picker
 
+// The class chat is renamed once the class has moved up a year (July 1st), and accounts from before class chats get theirs
+hbHubClassChatSyncIfDue($db, $userId, hbHubUserSettings($hbHubUser['userSettings']));
+
 /**
  * The chat with the id, or null when it doesn't exist, isn't active or the user isn't a member of it.
  * A chat the user hasn't accepted yet (a message request) only counts when $isRequest is true,
  * and then it's the only kind that counts. An invite from a ghost-banned user (memberIsGhost) never counts.
  *
- * @return ?array{chatId: int, chatType: int, memberRole: int, memberMutedUntil: ?string, lastReadMessageId: ?int}
+ * @return ?array{chatId: int, chatType: int, chatClassKey: ?string, memberRole: int, memberMutedUntil: ?string, lastReadMessageId: ?int}
  */
 function chatMembership(PDO $db, int $userId, mixed $chatId, bool $isRequest = false): ?array
 {
@@ -72,7 +79,7 @@ function chatMembership(PDO $db, int $userId, mixed $chatId, bool $isRequest = f
         return null;
     }
 
-    $statement = $db->prepare('SELECT c.chatId, c.chatType, cm.memberRole, cm.memberMutedUntil, cm.lastReadMessageId
+    $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatClassKey, cm.memberRole, cm.memberMutedUntil, cm.lastReadMessageId
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
         WHERE cm.chatId = ? AND cm.userId = ? AND c.chatStatus = ? AND cm.userAcknowledgedJoin = ? AND cm.memberIsGhost = 0');
     $statement->execute([(int) $chatId, $userId, HBHUB_CHAT_STATUS_ACTIVE, $isRequest ? 0 : 1]);
@@ -132,13 +139,61 @@ function chatMessage(PDO $db, int $userId, int $chatId, mixed $messageId): ?arra
 }
 
 /**
+ * The SQL for whether the message of $alias shows as pinned to $viewerId: it's pinned, it isn't deleted (a deleted message
+ * drops out of the pinned messages by itself), and the pin isn't someone else's ghost (pinned while ghost banned,
+ * assets/php/chat.php). Whether the message itself can be seen is chatGhostVisibleSql()'s job.
+ * The id is put in as a number, so it needs no parameter.
+ */
+function chatPinnedSql(string $alias, int $viewerId): string
+{
+    return '(' . $alias . '.messagePinnedTimestamp IS NOT NULL AND ' . $alias . '.messageDeletedTimestamp IS NULL'
+        . ' AND (' . $alias . '.messagePinIsGhost = 0 OR ' . $alias . '.messagePinnedBy = ' . $viewerId . '))';
+}
+
+/**
+ * The messages the user sees pinned in the chat (chatPinnedSql()), the newest pin first, for the Pinned messages popup:
+ * who sent each one and when, its text as the user sees it, how many attachments it has, and who pinned it and when.
+ * The names are the ones the chat shows, so a group's nicknames.
+ *
+ * @return list<array{messageId: int, userId: int, senderName: string, messageContent: ?string, attachmentCount: int,
+ *     messageSentTimestamp: string, messagePinnedBy: ?int, pinnedByName: ?string, messagePinnedTimestamp: string}>
+ */
+function chatPins(PDO $db, int $userId, int $chatId): array
+{
+    $statement = $db->prepare('SELECT m.messageId, m.userId, ' . chatMemberNameSql('cm', 'u', $userId) . ' AS senderName,
+            ' . chatGhostContentSql('m', $userId) . ' AS messageContent, ' . hbHubChatAttachmentsCountSql('m') . ' AS attachmentCount,
+            m.messageSentTimestamp, m.messagePinnedBy, ' . chatMemberNameSql('pcm', 'pu', $userId) . ' AS pinnedByName, m.messagePinnedTimestamp
+        FROM `HBHub-Messages` m
+        JOIN `HBHub-Users` u ON u.userId = m.userId
+        LEFT JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = m.userId
+        LEFT JOIN `HBHub-Users` pu ON pu.userId = m.messagePinnedBy
+        LEFT JOIN `HBHub-ChatMembers` pcm ON pcm.chatId = m.chatId AND pcm.userId = m.messagePinnedBy
+        WHERE m.chatId = ? AND m.messageEvent = 0 AND ' . chatPinnedSql('m', $userId) . '
+            AND ' . chatGhostVisibleSql('m', 'messageIsGhost', $userId) . '
+        ORDER BY m.messagePinnedTimestamp DESC, m.messageId DESC');
+    $statement->execute([$chatId]);
+    return $statement->fetchAll();
+}
+
+/**
+ * Whether the user can unpin a message $pinnedBy pinned: their own pin, any pin in a group they're an admin of, and any
+ * pin in a DM, which has no admins (like Change background, either person can). Site admins unpin from the admin panel.
+ *
+ * @param array{chatType: int, memberRole: int} $chat from chatMembership(), or the open chat
+ */
+function chatCanUnpin(array $chat, int $userId, ?int $pinnedBy): bool
+{
+    return $pinnedBy === $userId || chatIsGroupAdmin($chat) || (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM;
+}
+
+/**
  * Messages in the chat, oldest at the top, each with the message it replies to (r) if any.
- * Notices are in there too, with the name of who they're about (eventUserName).
+ * Notices are in there too, with the name of who they're about (eventUserName, and their username in eventRealName).
  * Each one has its attachments (attachments, from chatAttachments()).
  * Without $afterId it's the newest $limit ones (before $beforeId, if given, for scrolling up),
  * with only $afterId the first ones after that message (the ones polling hasn't shown yet),
  * and with both the newest ones between them (loading back to the message a reply quote answers).
- * Each one has its reactions too (reactions, from chatReactions()).
+ * Each one has its reactions too (reactions, from chatReactions()), and whether the user sees it pinned (messageIsPinned).
  * Only what the user can see: other people's ghosts (assets/php/chat.php) are left out, and their own edits made while
  * ghost banned are shown as edited.
  */
@@ -148,11 +203,13 @@ function chatMessages(PDO $db, int $userId, int $chatId, int $limit, ?int $after
             SELECT m.messageId, m.userId, ' . chatGhostContentSql('m', $userId) . ' AS messageContent, m.messageSentTimestamp,
                 m.messageDeletedTimestamp, m.messageDeletedByAdmin, m.messageReplyToId,
                 m.messageIsEdited OR (m.userId = ' . $userId . ' AND m.messageGhostContent IS NOT NULL) AS messageIsEdited,
-                m.messageEvent, m.messageEventType, m.messageEventUserId, COALESCE(ecm.memberNickname, eu.userName) AS eventUserName,
-                COALESCE(cm.memberNickname, u.userName) AS senderName,
+                ' . chatPinnedSql('m', $userId) . ' AS messageIsPinned,
+                m.messageEvent, m.messageEventType, m.messageEventUserId, ' . chatMemberNameSql('ecm', 'eu', $userId) . ' AS eventUserName,
+                eu.userName AS eventRealName,
+                ' . chatMemberNameSql('cm', 'u', $userId) . ' AS senderName,
                 u.userAvatarAttachmentId AS senderAvatarId, u.userStatus = ' . HBHUB_SESSION_STATUS_BANNED . ' AS senderBanned,
                 r.messageId AS replyId, r.userId AS replyUserId, ' . chatGhostContentSql('r', $userId) . ' AS replyContent,
-                r.messageDeletedTimestamp AS replyDeletedTimestamp, r.messageDeletedByAdmin AS replyDeletedByAdmin, COALESCE(rcm.memberNickname, ru.userName) AS replySenderName
+                r.messageDeletedTimestamp AS replyDeletedTimestamp, r.messageDeletedByAdmin AS replyDeletedByAdmin, ' . chatMemberNameSql('rcm', 'ru', $userId) . ' AS replySenderName
             FROM `HBHub-Messages` m
             JOIN `HBHub-Users` u ON u.userId = m.userId
             LEFT JOIN `HBHub-ChatMembers` cm ON cm.chatId = m.chatId AND cm.userId = m.userId
@@ -216,7 +273,7 @@ function chatAttachments(PDO $db, int $chatId, int $fromId, int $toId): array
  */
 function chatReactions(PDO $db, int $userId, int $chatId, int $fromId, int $toId): array
 {
-    $statement = $db->prepare('SELECT r.messageId, r.reactionEmoji, r.userId, COALESCE(cm.memberNickname, u.userName) AS reactorName
+    $statement = $db->prepare('SELECT r.messageId, r.reactionEmoji, r.userId, ' . chatMemberNameSql('cm', 'u', $userId) . ' AS reactorName
         FROM `HBHub-MessageReactions` r
         JOIN `HBHub-Messages` m ON m.messageId = r.messageId
         JOIN `HBHub-Users` u ON u.userId = r.userId
@@ -274,18 +331,20 @@ function chatNamesContext(PDO $db, int $userId, array $chat): array
  * Everyone who can be @mentioned in the chat (assets/php/mentions.php): the members who have accepted it, leaving out
  * banned and deleted accounts. By userId, each with the name the chat shows them by and every name they can be
  * mentioned by: their username, and their nickname in the chat if they have one (a group's memberNickname, or the one
- * given in a DM). The user is in there too (isYou), so their own name lights up in others' messages.
+ * given in a DM; a group nickname the user gave while ghost banned instead, like chatMemberNameSql()). The user is in
+ * there too (isYou), so their own name lights up in others' messages.
  *
  * @return array<int, array{name: string, names: list<string>, userName: string, isYou: bool}>
  */
 function chatMentionPeople(PDO $db, int $chatId, int $userId): array
 {
-    $statement = $db->prepare('SELECT cm.userId, cm.memberNickname, u.userName, c.chatType, c.chatSettings
+    $statement = $db->prepare('SELECT cm.userId, IF(cm.memberGhostNicknameBy <=> ?, cm.memberGhostNickname, cm.memberNickname) AS memberNickname,
+            u.userName, c.chatType, c.chatSettings
         FROM `HBHub-ChatMembers` cm
         JOIN `HBHub-Users` u ON u.userId = cm.userId
         JOIN `HBHub-Chats` c ON c.chatId = cm.chatId
         WHERE cm.chatId = ? AND cm.userAcknowledgedJoin = 1 AND u.userStatus IS NOT NULL AND u.userStatus <> ?');
-    $statement->execute([$chatId, HBHUB_SESSION_STATUS_BANNED]);
+    $statement->execute([$userId, $chatId, HBHUB_SESSION_STATUS_BANNED]);
 
     $people = [];
     foreach ($statement->fetchAll() as $member) {
@@ -344,7 +403,7 @@ function chatMarkTyping(PDO $db, int $chatId, int $userId, bool $isTyping): void
  */
 function chatTyping(PDO $db, int $chatId, int $userId): array
 {
-    $statement = $db->prepare('SELECT COALESCE(cm.memberNickname, u.userName) AS typerName
+    $statement = $db->prepare('SELECT ' . chatMemberNameSql('cm', 'u', $userId) . ' AS typerName
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
         WHERE cm.chatId = ? AND cm.userId <> ? AND cm.userAcknowledgedJoin = 1 AND cm.memberIsGhost = 0
             AND cm.memberTypingTimestamp > UTC_TIMESTAMP() - INTERVAL ' . HBHUB_CHAT_TYPING_SECONDS . ' SECOND
@@ -422,6 +481,16 @@ function chatRedirectLinkBlocked(int $chatId): never
 }
 
 /**
+ * Back to the chat page after a nickname wasn't given because of what's in it (chatNicknameError()), with the chat
+ * that was open still open. ?nicknameRefused=latin or =link opens the Nickname not saved popup, which says why.
+ */
+function chatRedirectNicknameRefused(?int $chatId, string $why): never
+{
+    header('Location: /chat/?' . ($chatId !== null ? 'chat=' . $chatId . '&' : '') . 'nicknameRefused=' . $why, true, 303);
+    exit;
+}
+
+/**
  * Whether sending $count more messages now would take the user over HBHUB_CHAT_SEND_MAX in the last
  * HBHUB_CHAT_SEND_SECONDS, in all their chats together. Notices (messageEvent) don't count.
  * It only looks at the user's newest few messages: when the one that would be the oldest of the allowed ones is
@@ -446,6 +515,16 @@ function chatSendingTooFast(PDO $db, int $userId, int $count = 1): bool
 function chatRedirectTooFast(int $chatId): never
 {
     header('Location: /chat/?chat=' . $chatId . '&tooFast=1', true, 303);
+    exit;
+}
+
+/**
+ * Back to the chat with the Pinned messages popup open (?pins=1), after unpinning from it. ?pins=full opens it saying
+ * the chat already has as many pinned messages as it can, after a pin that didn't fit.
+ */
+function chatRedirectPins(int $chatId, string $pins): never
+{
+    header('Location: /chat/?chat=' . $chatId . '&pins=' . $pins, true, 303);
     exit;
 }
 
@@ -570,6 +649,32 @@ function chatGifId(?string $content): ?string
 {
     return $content !== null && preg_match('~^https://media\.giphy\.com/media/([A-Za-z0-9]{1,64})/giphy\.gif$~', $content, $match)
         ? $match[1] : null;
+}
+
+/**
+ * Whether the message is nothing but emoji (and spaces), at most HBHUB_CHAT_EMOJI_ONLY_MAX of them, so it's shown big.
+ * It goes by whole characters as they're drawn (\X), so 👨‍👩‍👧, 👍🏽 and 🇩🇰 each count as one. Each one has to start
+ * with a character from the emoji blocks, or be a flag (two regional letters) or a keycap (1️⃣, #️⃣).
+ * The blocks are listed by hand instead of \p{Extended_Pictographic}, which older PCRE builds don't know.
+ */
+function chatEmojiOnly(?string $content): bool
+{
+    if ($content === null || !mb_check_encoding($content, 'UTF-8')) {
+        return false;
+    }
+    $content = preg_replace('~\s+~u', '', $content);
+    if ($content === '' || !preg_match_all('~\X~u', $content, $matches) || count($matches[0]) > HBHUB_CHAT_EMOJI_ONLY_MAX) {
+        return false;
+    }
+    foreach ($matches[0] as $character) {
+        if (!preg_match('~^(?:[\x{1F1E6}-\x{1F1FF}]{2}|[0-9#*]\x{FE0F}?\x{20E3}'
+            . '|[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{231A}\x{231B}\x{2328}\x{23CF}\x{23E9}-\x{23F3}\x{23F8}-\x{23FA}'
+            . '\x{2B05}-\x{2B07}\x{2B1B}\x{2B1C}\x{2B50}\x{2B55}\x{2194}-\x{2199}\x{21A9}\x{21AA}\x{25AA}\x{25AB}\x{25B6}\x{25C0}\x{25FB}-\x{25FE}'
+            . '\x{2934}\x{2935}\x{3030}\x{303D}\x{3297}\x{3299}\x{203C}\x{2049}\x{2122}\x{2139}\x{24C2}\x{00A9}\x{00AE}].*)$~su', $character)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /**
@@ -721,23 +826,99 @@ function chatUnhideForEveryone(PDO $db, int $chatId): void
 }
 
 /**
+ * Why the nickname can't be given, or null when it's fine. Nicknames have the rules names and bios have: only the
+ * Latin alphabet, numbers, punctuation and emoji (hbHubIsLatinText() in assets/php/account.php), and no blacklisted
+ * links (assets/php/urlBlacklist.php). Empty is always fine, as that takes the nickname away.
+ *
+ * @return ?string 'latin' or 'link', for chatRedirectNicknameRefused()
+ */
+function chatNicknameError(string $nickname): ?string
+{
+    if ($nickname !== '' && !hbHubIsLatinText($nickname)) {
+        return 'latin';
+    }
+    return hbHubUrlBlacklisted($nickname) ? 'link' : null;
+}
+
+/**
  * Gives the other person in a DM a nickname, or takes it away when it's empty.
  * It's saved in the chat's settings under the userId it's for, and shown as the chat's name.
+ *
+ * @return ?string why it wasn't given (chatNicknameError()), or null
  */
-function chatSetNickname(PDO $db, int $userId, int $chatId, mixed $nickname): void
+function chatSetNickname(PDO $db, int $userId, int $chatId, mixed $nickname): ?string
 {
     $nickname = is_string($nickname) ? trim($nickname) : '';
+    if (($error = chatNicknameError($nickname)) !== null) {
+        return $error;
+    }
 
     $statement = $db->prepare('SELECT userId FROM `HBHub-ChatMembers` WHERE chatId = ? AND userId <> ? LIMIT 1');
     $statement->execute([$chatId, $userId]);
     $otherUserId = $statement->fetchColumn();
     if ($otherUserId === false) {
-        return; // nobody to give a nickname when the other person left
+        return null; // nobody to give a nickname when the other person left
     }
 
     chatChangeSettings($db, $chatId, function (stdClass $settings) use ($otherUserId, $nickname): void {
         $settings->chatNicknames->{$otherUserId} = $nickname === '' ? null : mb_substr($nickname, 0, HBHUB_CHAT_NICKNAME_MAX);
     });
+    return null;
+}
+
+/**
+ * Gives a member of the group a nickname everyone in it sees them by, or takes it away when it's empty, with a notice
+ * about it. Any member who isn't muted can (checked before), for anyone in the group, themselves too. Saving the nickname they already have isn't a change,
+ * so there's no notice then. Whoever got a new one gets a notification about it too (chat.nickname).
+ * Ghost banned (assets/php/chat.php), it's saved in memberGhostNickname instead and its notice is a ghost, so only the
+ * user sees either.
+ *
+ * @param array $chat from chatMembership()
+ * @return ?string why it wasn't given (chatNicknameError()), or null
+ */
+function chatSetMemberNickname(PDO $db, int $userId, array $chat, mixed $memberId, mixed $nickname, bool $isGhost): ?string
+{
+    if ((int) $chat['chatType'] !== HBHUB_CHAT_TYPE_GROUP || !is_string($memberId) || !ctype_digit($memberId)) {
+        return null;
+    }
+    $nickname = is_string($nickname) ? trim($nickname) : '';
+    if (($error = chatNicknameError($nickname)) !== null) {
+        return $error;
+    }
+    $nickname = $nickname === '' ? null : mb_substr($nickname, 0, HBHUB_CHAT_NICKNAME_MAX);
+
+    // Only someone in the group, and a ghost invite only for the ghost-banned user who made it
+    $statement = $isGhost
+        ? $db->prepare('UPDATE `HBHub-ChatMembers` SET memberGhostNickname = ?, memberGhostNicknameBy = ?
+            WHERE chatId = ? AND userId = ? AND NOT (IF(memberGhostNicknameBy <=> ?, memberGhostNickname, memberNickname) <=> ?)')
+        : $db->prepare('UPDATE `HBHub-ChatMembers` SET memberNickname = ?
+            WHERE chatId = ? AND userId = ? AND memberIsGhost = 0 AND NOT (memberNickname <=> ?)');
+    $statement->execute($isGhost
+        ? [$nickname, $userId, $chat['chatId'], (int) $memberId, $userId, $nickname]
+        : [$nickname, $chat['chatId'], (int) $memberId, $nickname]);
+    if ($statement->rowCount() === 0) {
+        return null;
+    }
+    chatNotice($db, $userId, (int) $chat['chatId'], HBHUB_CHAT_EVENT_NICKNAME, (int) $memberId, $nickname, false, $isGhost);
+
+    // Whoever got it is told (chat.nickname), unless it was their own doing, it was taken away, they haven't accepted the
+    // group yet, or it's a ghost one. Not from a chat they muted or someone they blocked either, like a mention.
+    if ($isGhost || $nickname === null || (int) $memberId === $userId) {
+        return null;
+    }
+    $statement = $db->prepare('SELECT u.userSettings FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
+        WHERE cm.chatId = ? AND cm.userId = ? AND cm.userAcknowledgedJoin = 1');
+    $statement->execute([$chat['chatId'], (int) $memberId]);
+    $memberSettings = $statement->fetchColumn();
+    if ($memberSettings === false) {
+        return null;
+    }
+    $settings = hbHubUserSettings($memberSettings);
+    if (!hbHubChatIsMuted($settings, (int) $chat['chatId']) && !chatHasBlocked($settings, $userId)) {
+        hbHubNotify($db, (int) $memberId, 'chat.nickname', $userId,
+            chatNotificationData($db, (int) $chat['chatId']) + ['nickname' => $nickname]);
+    }
+    return null;
 }
 
 /**
@@ -850,8 +1031,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
 
     switch ($chat !== null ? $_POST['action'] : null) {
         case 'nickname':
-            if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM) {
-                chatSetNickname($db, $userId, (int) $chat['chatId'], $_POST['nickname'] ?? null);
+            if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM
+                && ($refused = chatSetNickname($db, $userId, (int) $chat['chatId'], $_POST['nickname'] ?? null)) !== null) {
+                chatRedirectNicknameRefused($openChatId, $refused);
             }
             break;
         case 'mute':
@@ -869,7 +1051,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'
             chatSetHidden($db, $userId, (int) $chat['chatId'], true);
             break;
         case 'leave':
-            chatLeave($db, $userId, $chat);
+            // Everyone at HTX is in their class chat (assets/php/schoolClass.php), so it can only be hidden
+            if ($chat['chatClassKey'] === null) {
+                chatLeave($db, $userId, $chat);
+            }
             break;
         case 'rename':
             // Left empty, the group is named after its members again
@@ -1014,10 +1199,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
 }
 
-// Add to chat, for every member of a group (not only admins): the picked users are invited to it
+// Nickname in the Members popup, for every member of a group (not only admins): give anyone in it a nickname, or take it away.
+// Not while muted: everyone sees it, like a message.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'memberNickname') {
+    $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
+    if ($chat !== null && !chatIsMuted($chat)
+        && ($refused = chatSetMemberNickname($db, $userId, $chat, $_POST['member'] ?? null, $_POST['nickname'] ?? null, $chatIsGhost)) !== null) {
+        chatRedirectNicknameRefused((int) $chat['chatId'], $refused);
+    }
+    chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
+}
+
+// Add to chat, for every member of a group (not only admins): the picked users are invited to it.
+// Not a class chat: who's in it goes by their class.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'add') {
     $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
-    if ($chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
+    if ($chat !== null && (int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP && $chat['chatClassKey'] === null) {
         chatAddMembers($db, $userId, hbHubUserSettings($hbHubUser['userSettings']), (int) $chat['chatId'], $_POST['users'] ?? null, $chatIsGhost);
     }
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
@@ -1075,6 +1272,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, 
             chatRedirect((int) $chat['chatId'], true);
     }
 
+    chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
+}
+
+// Pin message in the message menu pins it to the chat, where everyone in it finds it in the Pinned messages popup (the pin
+// button in the chat's header). Anyone in the chat can pin, up to HBHUB_CHAT_PINS_MAX messages. Unpin message, in the
+// same menu and in the popup, is for whoever pinned it, group admins (any pin in their group) and either person in a DM
+// (chatCanUnpin()). Neither works on a deleted message, and like sending, pinning doesn't while muted. Both put a notice
+// in the chat that links to the message.
+// A ghost-banned user's pins are ghosts (messagePinIsGhost, assets/php/chat.php): only they see the message pinned, and
+// the notice about it. Anyone else pinning it then pins it for real.
+// Unpinned from the popup (pins=1), it opens again afterwards. A pin that doesn't fit opens it with ?pins=full, which says why.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? null, ['pin', 'unpin'], true)) {
+    $chat = chatMembership($db, $userId, $_POST['chat'] ?? null);
+    $message = $chat !== null ? chatMessage($db, $userId, (int) $chat['chatId'], $_POST['message'] ?? null) : null;
+    if ($message !== null && $message['messageDeletedTimestamp'] === null) {
+        $chatId = (int) $chat['chatId'];
+        $messageId = (int) $message['messageId'];
+
+        // The chat is locked, so two pins at once can't take it past the limit
+        $db->beginTransaction();
+        $db->prepare('SELECT chatId FROM `HBHub-Chats` WHERE chatId = ? FOR UPDATE')->execute([$chatId]);
+        $statement = $db->prepare('SELECT m.messageId, m.messagePinnedBy FROM `HBHub-Messages` m
+            WHERE m.chatId = ? AND m.messageEvent = 0 AND ' . chatPinnedSql('m', $userId) . '
+                AND ' . chatGhostVisibleSql('m', 'messageIsGhost', $userId));
+        $statement->execute([$chatId]);
+        $pinnedBy = $statement->fetchAll(PDO::FETCH_KEY_PAIR); // messageId => who pinned it, of the pins the user sees
+        $isPinned = array_key_exists($messageId, $pinnedBy);
+
+        if ($_POST['action'] === 'pin' && !$isPinned && !chatIsMuted($chat)) {
+            if (count($pinnedBy) >= HBHUB_CHAT_PINS_MAX) {
+                $db->rollBack();
+                chatRedirectPins($chatId, 'full');
+            }
+            $db->prepare('UPDATE `HBHub-Messages` SET messagePinnedTimestamp = NOW(), messagePinnedBy = ?, messagePinIsGhost = ?
+                WHERE messageId = ?')
+                ->execute([$userId, (int) $chatIsGhost, $messageId]);
+            chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_PIN, null, null, false, $chatIsGhost, $messageId);
+        }
+        $db->commit();
+
+        if ($_POST['action'] === 'unpin' && $isPinned
+            && chatCanUnpin($chat, $userId, $pinnedBy[$messageId] !== null ? (int) $pinnedBy[$messageId] : null)) {
+            chatUnpin($db, $userId, $chatId, $messageId);
+        }
+    }
+
+    if ($chat !== null && ($_POST['pins'] ?? null) === '1') {
+        chatRedirectPins((int) $chat['chatId'], '1');
+    }
     chatRedirect($chat !== null ? (int) $chat['chatId'] : null);
 }
 
@@ -1345,11 +1591,13 @@ $lastReadMessageId = $openMembership['lastReadMessageId'] ?? null;
 // on old messages as well.
 // ?typing=1 while the user is typing a message in it, and ?typing=0 once when they stop (chatMarkTyping()). Not for a
 // ghost-banned user (nobody else can see what they send anyway) or one a group admin muted (they can't send).
-// Who else is typing comes back in the answer (chatTyping()).
+// Who else is typing comes back in the answer (chatTyping()), and so do the messages pinned in it (chatPins()), as they
+// can be pinned and unpinned any time.
 $isPoll = ($_GET['poll'] ?? null) === '1';
 $pollMessages = [];
 $pollReactions = [];
 $pollTyping = [];
+$pollPins = [];
 $pollAfter = is_string($_GET['after'] ?? null) && ctype_digit($_GET['after']) && strlen($_GET['after']) <= 19 ? (int) $_GET['after'] : null;
 $pollFrom = is_string($_GET['from'] ?? null) && ctype_digit($_GET['from']) && strlen($_GET['from']) <= 19 ? (int) $_GET['from'] : null;
 if ($isPoll && $openMembership !== null && ($_GET['looking'] ?? null) === '1') {
@@ -1361,6 +1609,7 @@ if ($isPoll && $openMembership !== null && in_array($_GET['typing'] ?? null, ['0
 }
 if ($isPoll && $openMembership !== null) {
     $pollTyping = chatTyping($db, (int) $openMembership['chatId'], $userId);
+    $pollPins = chatPins($db, $userId, (int) $openMembership['chatId']);
 }
 if ($isPoll && $openMembership !== null && $pollAfter !== null) {
     if ($pollFrom !== null && $pollFrom <= $pollAfter) {
@@ -1419,7 +1668,7 @@ if ($isPage && $openMembership !== null && ($_GET['unread'] ?? null) !== '1') {
 // Ghosts (assets/php/chat.php) are left out: other people's messages and ghost invites, and chats the user only has a
 // ghost invite to. A ghost-banned user's own messages don't move a chat up anyone's list (lastMessageTimestamp),
 // so for them it's worked out from those too, and the list looks like it always does.
-$statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAttachmentId, c.chatSettings,
+$statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAttachmentId, c.chatSettings, c.chatClassKey,
         cm.userAcknowledgedJoin, cm.memberRole,
         ' . ($chatIsGhost
             ? 'GREATEST(COALESCE(c.lastMessageTimestamp, c.chatCreatedTimestamp), COALESCE((
@@ -1450,7 +1699,7 @@ $statement = $db->prepare('SELECT c.chatId, c.chatType, c.chatName, c.chatIconAt
             WHERE om.chatId = c.chatId AND om.userId <> ? AND c.chatType = ' . HBHUB_CHAT_TYPE_DM . ' LIMIT 1
         ) AS dmUserAvatarId,
         COALESCE(NULLIF(c.chatName, \'\'), (
-            SELECT GROUP_CONCAT(COALESCE(om.memberNickname, ou.userName) ORDER BY ou.userName SEPARATOR \', \')
+            SELECT GROUP_CONCAT(' . chatMemberNameSql('om', 'ou', $userId) . ' ORDER BY ou.userName SEPARATOR \', \')
             FROM `HBHub-ChatMembers` om JOIN `HBHub-Users` ou ON ou.userId = om.userId
             WHERE om.chatId = c.chatId AND om.userId <> ?' . ($chatIsGhost ? '' : ' AND om.memberIsGhost = 0') . '
         )) AS chatTitle,
@@ -1546,11 +1795,13 @@ if ($openChat !== null && ($isPage || $isOlder || $pollMessages !== [])) {
 
 // Everyone in the open group, for the Members popup: site admins first, then the group owner and admins, then the ones who accepted,
 // then by name. Banned and deleted accounts get no profile link, like their messages.
+// With their username and their nickname (memberNickname, the user's own while ghost banned, chatMemberNameSql()) for Nickname.
 // Ghost invites (assets/php/chat.php) are only there for a ghost-banned user, to whom they look like any other invite.
 $openChatMembers = [];
 if ($openChat !== null && $isPage && (int) $openChat['chatType'] === HBHUB_CHAT_TYPE_GROUP) {
     $statement = $db->prepare('SELECT cm.userId, cm.memberRole, cm.userAcknowledgedJoin, u.userRole = ? AS memberIsSiteAdmin,
-            COALESCE(cm.memberNickname, u.userName) AS memberName, u.userAvatarAttachmentId,
+            ' . chatMemberNameSql('cm', 'u', $userId) . ' AS memberName, u.userName, u.userAvatarAttachmentId,
+            IF(cm.memberGhostNicknameBy <=> ' . $userId . ', cm.memberGhostNickname, cm.memberNickname) AS memberNickname,
             u.userStatus IS NULL OR u.userStatus = ? AS memberNoProfile
         FROM `HBHub-ChatMembers` cm JOIN `HBHub-Users` u ON u.userId = cm.userId
         WHERE cm.chatId = ?' . ($chatIsGhost ? '' : ' AND cm.memberIsGhost = 0') . '
@@ -1558,6 +1809,9 @@ if ($openChat !== null && $isPage && (int) $openChat['chatType'] === HBHUB_CHAT_
     $statement->execute([HBHUB_CHAT_SITE_ROLE_ADMIN, HBHUB_SESSION_STATUS_BANNED, $openChat['chatId']]);
     $openChatMembers = $statement->fetchAll();
 }
+
+// The messages pinned in the open chat, for the Pinned messages popup
+$openChatPins = $openChat !== null && $isPage ? chatPins($db, $userId, (int) $openChat['chatId']) : [];
 
 $firstUnreadMessageId = null; // the "New messages" line goes above this one
 $messagesHaveOlder = false; // there are older messages than the ones shown, which chat.js loads when scrolling up
@@ -1716,6 +1970,59 @@ function chatReactionsHtml(array $openChat, int $userId, array $reactions): stri
 }
 
 /**
+ * A message in the Pinned messages popup, for the page and for polling: who sent it and when, its text without the
+ * formatting (or what it sends, like a GIF), and who pinned it. Jump scrolls to it in the chat (chat.js). Unpin is
+ * there when the user can unpin it (chatCanUnpin()), a plain form post that opens the popup again (pins=1), and
+ * data-pin-unpinnable tells the message menu to offer Unpin message too.
+ *
+ * @param array $pin one from chatPins()
+ */
+function chatPinItem(array $openChat, int $userId, array $pin): void
+{
+    $messageId = (int) $pin['messageId'];
+    $pinnedBy = $pin['messagePinnedBy'] !== null ? (int) $pin['messagePinnedBy'] : null;
+    $canUnpin = chatCanUnpin($openChat, $userId, $pinnedBy);
+    $isLabel = true; // what it sends rather than its text, in italics like a reply quote's
+    if ($pin['messageContent'] === null) {
+        $preview = hbHubChatAttachmentsLabel(max(1, (int) $pin['attachmentCount']));
+    } elseif (chatGifId($pin['messageContent']) !== null) {
+        $preview = 'GIF';
+    } else {
+        $isLabel = false;
+        $preview = chatFormatPlain($pin['messageContent']);
+        if (mb_strlen($preview) > HBHUB_CHAT_PIN_PREVIEW_MAX) {
+            $preview = rtrim(mb_substr($preview, 0, HBHUB_CHAT_PIN_PREVIEW_MAX)) . '...';
+        }
+    }
+    $pinnedByName = match ($pinnedBy) {
+        null => 'someone', // their account is gone
+        $userId => 'you',
+        default => chatSenderName($openChat, $userId, $pinnedBy, $pin['pinnedByName']),
+    };
+    ?>
+                            <li class="chat-pin" data-pin-id="<?= $messageId ?>"<?= $canUnpin ? ' data-pin-unpinnable' : '' ?>>
+                                <span class="chat-pin-top">
+                                    <span class="chat-pin-sender"><?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $pin['userId'], $pin['senderName'])) ?></span>
+                                    <time class="chat-pin-time" datetime="<?= htmlspecialchars($pin['messageSentTimestamp']) ?>"><?= chatMessageTime($pin['messageSentTimestamp']) ?></time>
+                                </span>
+                                <p class="chat-pin-text<?= $isLabel ? ' is-deleted' : '' ?>"><?= htmlspecialchars($preview) ?></p>
+                                <span class="chat-pin-bottom">
+                                    <span class="chat-pin-by">Pinned by <?= htmlspecialchars($pinnedByName) ?> &middot; <?= chatMessageTime($pin['messagePinnedTimestamp']) ?></span>
+                                    <a class="chat-btn" href="#message-<?= $messageId ?>" data-pin-jump="<?= $messageId ?>">Jump</a>
+                                    <?php if ($canUnpin): ?>
+                                        <form action="/chat/" method="post">
+                                            <input type="hidden" name="action" value="unpin">
+                                            <input type="hidden" name="chat" value="<?= (int) $openChat['chatId'] ?>">
+                                            <input type="hidden" name="pins" value="1">
+                                            <button type="submit" class="chat-btn is-danger" name="message" value="<?= $messageId ?>">Unpin</button>
+                                        </form>
+                                    <?php endif; ?>
+                                </span>
+                            </li>
+    <?php
+}
+
+/**
  * A chat in the list on the left, for the page and for polling.
  * Right-clicking it opens the chat menu (chat.js), the data-chat-* attributes say what it offers.
  */
@@ -1731,6 +2038,7 @@ function chatListItem(array $chat): void
                         $chat['chatNickname'] !== null ? ' data-chat-nickname="' . htmlspecialchars($chat['chatNickname']) . '"' : '' ?><?=
                         $chat['chatIsGroupAdmin'] ? ' data-chat-admin' : '' ?><?=
                         $chat['chatIsGroupOwner'] ? ' data-chat-owner' : '' ?><?=
+                        $chat['chatClassKey'] !== null ? ' data-chat-class' : '' ?><?=
                         $chat['chatIconAttachmentId'] !== null ? ' data-chat-icon' : '' ?><?=
                         $chat['chatBackground'] !== null ? ' data-chat-background="' . htmlspecialchars($chat['chatBackground']) . '"' : '' ?><?=
                         $chat['chatMutedLabel'] !== null ? ' data-chat-muted' : '' ?><?=
@@ -1906,6 +2214,8 @@ function chatAttachmentsHtml(array $attachments): string
  * data-message-attachment names its attachments whose file is still there (the name of one, or "3 attachments"), for the
  * reply bar and Delete, and data-message-attachments is how many of them there are.
  * data-message-time is when it was sent (Unix seconds), for grouping messages sent close together (chat.js).
+ * data-message-pinned is there while it's pinned, which chat.css shows as a pin on the bubble and "pinned" after the
+ * time. chat.js keeps it up to date from the Pinned messages popup's list as messages are pinned and unpinned.
  */
 function chatMessageItem(array $openChat, int $userId, array $message): void
 {
@@ -1925,12 +2235,15 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
         ? chatFormatHtml($message['messageContent'], $openChat['chatMentions'] ?? [])
         : null;
     $isMention = !$isOwn && $textHtml !== null && str_contains($textHtml, ' data-mention-you');
+    // Just emoji, with no attachment: big, and without the bubble around them (is-emoji)
+    $isEmoji = $textHtml !== null && !$hasAttachment && chatEmojiOnly($message['messageContent']);
     ?>
                         <li class="chat-message<?= $isOwn ? ' is-own' : '' ?><?= $isMention ? ' is-mention' : '' ?>" id="message-<?= (int) $message['messageId'] ?>" tabindex="-1"
                             data-message-id="<?= (int) $message['messageId'] ?>" data-message-user-id="<?= (int) $message['userId'] ?>"
                             data-message-time="<?= (int) strtotime($message['messageSentTimestamp']) ?>"
                             data-message-sender="<?= htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['userId'], $message['senderName'])) ?>"<?=
-                            $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $gifId !== null ? ' data-message-gif' : '' ?><?=
+                            $isOwn ? ' data-message-own' : '' ?><?= $isDeleted ? ' data-message-deleted' : '' ?><?= $message['messageIsPinned'] ? ' data-message-pinned' : '' ?><?=
+                            $gifId !== null ? ' data-message-gif' : '' ?><?=
                             $liveAttachments !== [] ? ' data-message-attachment="' . htmlspecialchars($attachmentLabel) . '" data-message-attachments="' . count($liveAttachments) . '"' : '' ?>>
                             <?php if (!$isOwn && (int) $openChat['chatType'] !== HBHUB_CHAT_TYPE_DM): ?>
                                 <?php if ($message['senderBanned']): ?>
@@ -1943,7 +2256,7 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
                             <?php if ($message['messageReplyToId'] !== null && !$isDeleted): ?>
                                 <?= chatReplyHtml($openChat, $userId, $message) ?>
                             <?php endif; ?>
-                            <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?><?= $hasAttachment ? ' has-attachment' : '' ?>">
+                            <div class="chat-message-bubble<?= $gifId !== null ? ' is-gif' : '' ?><?= $hasAttachment ? ' has-attachment' : '' ?><?= $isEmoji ? ' is-emoji' : '' ?>">
                                 <?php if ($isDeleted): ?>
                                     <p class="chat-message-deleted"><?= chatDeletedLabel($message['messageDeletedByAdmin']) ?></p>
                                 <?php elseif ($gifId !== null): ?>
@@ -1966,6 +2279,9 @@ function chatMessageItem(array $openChat, int $userId, array $message): void
                             <span class="chat-message-meta">
                                 <time datetime="<?= htmlspecialchars($message['messageSentTimestamp']) ?>"><?= chatMessageTime($message['messageSentTimestamp']) ?></time>
                                 <?= $message['messageIsEdited'] && !$isDeleted ? ' &middot; edited' : '' ?>
+                                <?php if (!$isDeleted): ?>
+                                    <span class="chat-message-pin-label">&middot; pinned</span>
+                                <?php endif; ?>
                             </span>
                         </li>
     <?php
@@ -1997,8 +2313,9 @@ if ($isOlder) {
 // openChat is false when the open chat is gone (left, deleted or removed from it), so chat.js can leave it.
 // background is the open chat's background, so a new one shows up for everyone in it.
 // typing is the names of everyone else typing in the open chat right now, for the "... is typing" line.
-// The chat list and the requests come with a version (chatListV, requestsV: a hash of the HTML), and chat.js sends back
-// the ones it shows (?listV=, ?requestsV=). Most polls nothing in them changed, so then the HTML is left out, and the
+// pins is the open chat's list in the Pinned messages popup.
+// The chat list, the requests and the pins come with a version (chatListV, requestsV, pinsV: a hash of the HTML), and
+// chat.js sends back the ones it shows (?listV=, ?requestsV=, ?pinsV=). Most polls nothing in them changed, so then the HTML is left out, and the
 // same few KB aren't sent every 2 seconds to every open chat.
 // About every 15 seconds navUpdates.js sends the nav bar's request along too (?nav=), answered in "nav"
 // (hbHubNavRide() in assets/php/navUpdates.php).
@@ -2027,6 +2344,12 @@ if ($isPoll) {
         $pollReactionsHtml[$messageId] = chatReactionsHtml($openChat, $userId, $reactions);
     }
 
+    ob_start();
+    foreach ($openChat !== null ? $pollPins : [] as $pin) {
+        chatPinItem($openChat, $userId, $pin);
+    }
+    $pollPinsHtml = ob_get_clean();
+
     $pollAnswer = [
         'openChat' => $openChat !== null,
         'background' => $openChat['chatBackground'] ?? null,
@@ -2043,6 +2366,12 @@ if ($isPoll) {
     }
     if (($_GET['requestsV'] ?? null) !== $pollAnswer['requestsV']) {
         $pollAnswer['requests'] = $pollRequestsHtml;
+    }
+    if ($openChat !== null) {
+        $pollAnswer['pinsV'] = hash('xxh64', $pollPinsHtml);
+        if (($_GET['pinsV'] ?? null) !== $pollAnswer['pinsV']) {
+            $pollAnswer['pins'] = $pollPinsHtml;
+        }
     }
     $pollNav = hbHubNavRide($db, $hbHubUser);
     if ($pollNav !== null) {
@@ -2151,13 +2480,20 @@ if ($isPoll) {
                         <?= chatAvatarHtml($openChat) ?>
                         <h2 class="chat-window-title"><?= htmlspecialchars($openChat['chatTitle']) ?></h2>
                     <?php endif; ?>
+                    <!-- The pin opens the Pinned messages popup (chat.js), in every chat -->
+                    <button type="button" class="chat-icon-btn chat-pins-btn" aria-label="Pinned messages (<?= count($openChatPins) ?>)"
+                            title="Pinned messages" aria-haspopup="dialog" data-pins-open>
+                        <img src="/assets/images/icons/pin.svg" alt="">
+                    </button>
                     <?php if ($openChatMembers !== []): ?>
-                        <!-- Groups: the person with a plus opens the Add to chat popup (any member can add people),
-                             the person button the Members popup (chat.js) -->
+                        <!-- Groups: the person with a plus opens the Add to chat popup (any member can add people, but not
+                             to a class chat), the person button the Members popup (chat.js) -->
+                        <?php if ($openChat['chatClassKey'] === null): ?>
                         <button type="button" class="chat-icon-btn chat-add-btn" aria-label="Add to chat" title="Add to chat"
                                 aria-haspopup="dialog" data-add-open>
                             <img src="/assets/images/icons/addUser.svg" alt="">
                         </button>
+                        <?php endif; ?>
                         <button type="button" class="chat-icon-btn chat-members-btn" aria-label="Members (<?= count($openChatMembers) ?>)"
                                 title="Members" aria-haspopup="dialog" data-members-open>
                             <img src="/assets/images/icons/user.png" alt="">
@@ -2360,12 +2696,15 @@ if ($isPoll) {
             <!-- Message menu (chat.js): opened by right-clicking a message in the open chat.
                  Along the top, the emoji the user reacted or typed with most recently to react with (chat.js fills them in),
                  and + for all of them. Edit is only for your own messages, Delete for your own (and everyone's for group
-                 admins), and a deleted message can only be marked unread. -->
+                 admins), and a deleted message can only be marked unread. Pin message for anyone, Unpin message for whoever
+                 pinned it, group admins and either person in a DM. -->
             <div class="chat-menu" role="menu" aria-label="Message options" hidden data-message-menu>
                 <div class="chat-menu-reactions" role="group" aria-label="React" data-menu-row data-menu-reactions></div>
                 <hr class="chat-menu-divider" data-menu-reactions>
                 <button type="button" role="menuitem" data-menu-action="reply">Reply</button>
                 <button type="button" role="menuitem" data-menu-action="edit">Edit message</button>
+                <button type="button" role="menuitem" data-menu-action="pin">Pin message</button>
+                <button type="button" role="menuitem" data-menu-action="unpin">Unpin message</button>
                 <button type="button" role="menuitem" data-menu-action="unread">Mark unread</button>
                 <hr class="chat-menu-divider" data-menu-delete>
                 <button type="button" role="menuitem" class="is-danger" data-menu-action="delete" data-menu-delete>Delete message</button>
@@ -2406,6 +2745,13 @@ if ($isPoll) {
 
             <form action="/chat/" method="post" hidden data-message-unread>
                 <input type="hidden" name="action" value="unread">
+                <input type="hidden" name="chat" value="<?= $openChat['chatId'] ?>">
+                <input type="hidden" name="message">
+            </form>
+
+            <!-- Pin message and Unpin message: chat.js fills in which, and the message -->
+            <form action="/chat/" method="post" hidden data-message-pin>
+                <input type="hidden" name="action">
                 <input type="hidden" name="chat" value="<?= $openChat['chatId'] ?>">
                 <input type="hidden" name="message">
             </form>
@@ -2484,9 +2830,34 @@ if ($isPoll) {
                 </form>
             </dialog>
 
+            <!-- Pinned messages popup (chat.js): the pin in the header opens it. The chat's pinned messages, the newest pin
+                 first (chatPinItem()), each with Jump and, when the user can unpin it, Unpin. Polling keeps the list up
+                 to date. The line at the top only shows after a pin that didn't fit (?pins=full). -->
+            <dialog class="chat-dialog chat-pins" aria-labelledby="chat-pins-title">
+                <div class="chat-requests-body">
+                    <header class="chat-new-header">
+                        <h2 id="chat-pins-title">Pinned messages <span class="chat-members-count" data-pins-count><?= count($openChatPins) ?></span></h2>
+                        <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                    </header>
+
+                    <p class="chat-dialog-hint is-error" role="alert" hidden data-pins-full>
+                        This chat already has <?= HBHUB_CHAT_PINS_MAX ?> pinned messages, the most it can have. Unpin one to pin another.
+                    </p>
+                    <ul class="chat-pins-list" aria-label="Pinned messages" data-pins-list>
+                        <?php foreach ($openChatPins as $pin): ?>
+                            <?php chatPinItem($openChat, $userId, $pin); ?>
+                        <?php endforeach; ?>
+                    </ul>
+                    <p class="chat-dialog-hint"<?= $openChatPins !== [] ? ' hidden' : '' ?> data-pins-empty>
+                        Nothing is pinned here yet. Right-click a message and pick Pin message to keep it here for everyone in the chat.
+                    </p>
+                </div>
+            </dialog>
+
             <?php if ($openChatMembers !== []): ?>
                 <!-- Members popup (chat.js): everyone in the open group, each going to their profile.
-                     Members who haven't accepted the group yet show as invited.
+                     Members who haven't accepted the group yet show as invited, and a nickname shows the username next to it.
+                     Everyone gets Nickname next to everyone (not while muted), which opens the Nickname popup below.
                      Group admins also get Make admin (for members who accepted) and Kick next to normal members.
                      The group owner also gets Remove admin and Kick next to admins.
                      Site admins can right-click anyone else for their admin panel (data-member-user-id). -->
@@ -2503,6 +2874,8 @@ if ($isPoll) {
                                 $memberUserId = (int) $member['userId'];
                                 $memberInner = chatUserAvatarHtml($memberUserId, $member['memberName'], $member['memberNoProfile'] ? null : $member['userAvatarAttachmentId'])
                                     . '<span class="chat-member-name">' . htmlspecialchars($member['memberName'])
+                                    // A nickname shows who it really is
+                                    . ($member['memberNickname'] !== null ? ' <span class="chat-member-real-name">' . htmlspecialchars($member['userName']) . '</span>' : '')
                                     . ($memberUserId === $userId ? ' <span class="chat-member-you">(you)</span>' : '') . '</span>'
                                     // One admin badge: Site Admin wins over Group Owner, which wins over Group Admin
                                     . ($member['memberIsSiteAdmin'] ? '<span class="chat-member-badge is-site-admin">Site Admin</span>'
@@ -2523,8 +2896,14 @@ if ($isPoll) {
                                     <?php else: ?>
                                         <a class="chat-member" href="<?= htmlspecialchars(hbHubProfileUrl($memberUserId)) ?>" title="View profile"><?= $memberInner ?></a>
                                     <?php endif; ?>
-                                    <?php if ($memberCanKick): ?>
-                                        <span class="chat-member-actions">
+                                    <span class="chat-member-actions">
+                                        <?php if (!chatIsMuted($openMembership)): ?>
+                                            <button type="button" class="chat-btn" data-member-nickname-open
+                                                    data-member-id="<?= $memberUserId ?>" data-member-username="<?= htmlspecialchars($member['userName']) ?>"
+                                                    data-member-nickname="<?= htmlspecialchars($member['memberNickname'] ?? '') ?>"
+                                                    aria-label="Give <?= htmlspecialchars($member['memberName']) ?> a nickname">Nickname</button>
+                                        <?php endif; ?>
+                                        <?php if ($memberCanKick): ?>
                                             <?php if ($memberRole === HBHUB_CHAT_ROLE_MEMBER && $member['userAcknowledgedJoin']): ?>
                                                 <button type="button" class="chat-btn" data-member-action="makeAdmin"
                                                         data-member-id="<?= $memberUserId ?>" data-member-name="<?= htmlspecialchars($member['memberName']) ?>">Make admin</button>
@@ -2535,8 +2914,8 @@ if ($isPoll) {
                                             <button type="button" class="chat-btn is-danger" data-member-action="kick"
                                                     data-member-id="<?= $memberUserId ?>" data-member-name="<?= htmlspecialchars($member['memberName']) ?>"
                                                     <?= !$member['userAcknowledgedJoin'] ? 'data-member-invited' : '' ?>>Kick</button>
-                                        </span>
-                                    <?php endif; ?>
+                                        <?php endif; ?>
+                                    </span>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
@@ -2552,7 +2931,8 @@ if ($isPoll) {
                 </dialog>
 
                 <!-- Add to chat popup (chat.js), for every member: search users and pick who to add, like New chat.
-                     Who's in the group already (invited too) shows, but can't be picked. -->
+                     Who's in the group already (invited too) shows, but can't be picked. Not in a class chat. -->
+                <?php if ($openChat['chatClassKey'] === null): ?>
                 <dialog class="chat-new chat-add" aria-labelledby="chat-add-title" data-members-max="<?= HBHUB_CHAT_MEMBERS_MAX ?>"
                         data-member-ids="<?= implode(',', array_map('intval', array_column($openChatMembers, 'userId'))) ?>">
                     <form class="chat-new-form" action="/chat/" method="post">
@@ -2576,6 +2956,32 @@ if ($isPoll) {
                             <p class="chat-new-count" data-picked-count></p>
                             <button type="button" class="chat-btn" data-dialog-close>Cancel</button>
                             <button type="submit" class="chat-new-btn" disabled data-add-submit>Add</button>
+                        </footer>
+                    </form>
+                </dialog>
+                <?php endif; ?>
+
+                <!-- Nickname popup (chat.js fills in who it's for), for every member: the name everyone in the group sees them by -->
+                <dialog class="chat-dialog chat-member-nickname" aria-labelledby="chat-member-nickname-title">
+                    <form class="chat-requests-body" action="/chat/" method="post">
+                        <input type="hidden" name="action" value="memberNickname">
+                        <input type="hidden" name="chat" value="<?= $openChat['chatId'] ?>">
+                        <input type="hidden" name="member">
+
+                        <header class="chat-new-header">
+                            <h2 id="chat-member-nickname-title">Give nickname</h2>
+                            <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                        </header>
+
+                        <div class="chat-new-group">
+                            <label for="chat-member-nickname-name" data-member-nickname-label>Nickname</label>
+                            <input type="text" id="chat-member-nickname-name" name="nickname" maxlength="<?= HBHUB_CHAT_NICKNAME_MAX ?>" autocomplete="off">
+                        </div>
+                        <p class="chat-dialog-hint" data-member-nickname-hint></p>
+
+                        <footer class="chat-new-footer chat-dialog-footer">
+                            <button type="button" class="chat-btn" data-dialog-close>Cancel</button>
+                            <button type="submit" class="chat-new-btn">Save</button>
                         </footer>
                     </form>
                 </dialog>
@@ -2916,6 +3322,30 @@ if ($isPoll) {
                         Boddy, your sending messeges really quickly. And i think i didn't get the last one. 
                         Take a moment and try again.
                     </p>
+
+                    <footer class="chat-new-footer chat-dialog-footer">
+                        <button type="button" class="chat-new-btn" data-dialog-close>Okay</button>
+                    </footer>
+                </div>
+            </dialog>
+        <?php endif; ?>
+
+        <!-- Nickname not saved popup (chat.js), when a nickname wasn't given because of what's in it (chatNicknameError(),
+             ?nicknameRefused=latin or =link): the same rules as names and bios. -->
+        <?php if (in_array($_GET['nicknameRefused'] ?? null, ['latin', 'link'], true)): ?>
+            <dialog class="chat-dialog chat-nickname-refused" aria-labelledby="chat-nickname-refused-title">
+                <div class="chat-requests-body">
+                    <header class="chat-new-header">
+                        <h2 id="chat-nickname-refused-title">Nickname not saved</h2>
+                        <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                    </header>
+
+                    <p class="chat-dialog-text">
+                        <?= $_GET['nicknameRefused'] === 'latin'
+                            ? 'Nicknames can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.'
+                            : htmlspecialchars(HBHUB_URL_BLACKLIST_MESSAGE) ?>
+                    </p>
+                    <p class="chat-dialog-text">It hasn't been given. Change it and try again.</p>
 
                     <footer class="chat-new-footer chat-dialog-footer">
                         <button type="button" class="chat-new-btn" data-dialog-close>Okay</button>

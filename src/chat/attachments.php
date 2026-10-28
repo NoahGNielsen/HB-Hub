@@ -5,7 +5,8 @@
 //                                       and its message stays, showing "Attachment deleted"
 // Only attachments whose file is still there are listed (and take tickets), newest first.
 // size is for people ("4.3 MB"), expires is the date the tickets run out, and chat is the chat it was sent in
-// ("Group name", or "your chat with Name" for a DM).
+// ("Group name", or "your chat with Name" for a DM). Their profile banner (assets/php/profile.php) is listed too, with
+// chat and expires null, as it isn't in a chat and never expires. Deleting it takes it off their profile.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chat.php'; // the kinds of chat (and chatAttachments.php)
 
@@ -41,7 +42,7 @@ $statement = $db->prepare('SELECT a.attachmentId, a.attachmentName, a.attachment
             FROM `HBHub-ChatMembers` om JOIN `HBHub-Users` ou ON ou.userId = om.userId
             WHERE om.chatId = c.chatId AND om.userId <> ?
         ), \'Just you\') AS chatTitle
-    FROM `HBHub-ChatAttachments` a JOIN `HBHub-Chats` c ON c.chatId = a.chatId
+    FROM `HBHub-ChatAttachments` a LEFT JOIN `HBHub-Chats` c ON c.chatId = a.chatId
     WHERE a.userId = ? AND a.attachmentStatus = ? AND a.attachmentExpiresTimestamp > NOW()
     ORDER BY a.attachmentId DESC');
 $statement->execute([$userId, $userId, HBHUB_CHAT_ATTACHMENT_KEPT]);
@@ -54,7 +55,8 @@ echo json_encode([
         'name' => $attachment['attachmentName'],
         'size' => hbHubChatAttachmentSizeLabel((int) $attachment['attachmentSize']),
         'tickets' => (int) $attachment['attachmentTickets'],
-        'expires' => date('d/m/Y', strtotime($attachment['attachmentExpiresTimestamp'])),
-        'chat' => ((int) $attachment['chatType'] === HBHUB_CHAT_TYPE_DM ? 'your chat with ' : '') . $attachment['chatTitle'],
+        'expires' => $attachment['chatType'] === null ? null : date('d/m/Y', strtotime($attachment['attachmentExpiresTimestamp'])),
+        'chat' => $attachment['chatType'] === null ? null
+            : ((int) $attachment['chatType'] === HBHUB_CHAT_TYPE_DM ? 'your chat with ' : '') . $attachment['chatTitle'],
     ], $statement->fetchAll()),
 ], JSON_INVALID_UTF8_SUBSTITUTE);

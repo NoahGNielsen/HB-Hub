@@ -74,6 +74,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li>Every started <?= $docsTicketMb ?> MB of a file takes one ticket. A 1 MB photo takes 1, a 12 MB video takes 3. Each file pays for itself, so three small files take three tickets.</li>
                             <li>A file keeps its tickets for <?= HBHUB_CHAT_ATTACHMENT_DAYS ?> days. Then it's deleted and the tickets are yours again. A big file, taking more than <?= HBHUB_CHAT_ATTACHMENT_BIG_TICKETS ?> tickets, only stays for <?= HBHUB_CHAT_ATTACHMENT_BIG_DAYS ?> days.</li>
                             <li>Deleting the message, or just the attachment, gives the tickets back straight away.</li>
+                            <li>A <a href="/docs/account#profile">profile banner</a> picture takes a ticket too, but never runs out: it keeps it until you change the banner or go back to colors.</li>
                             <li>Site admins can give someone more tickets, or take some away.</li>
                         </ul>
                         <p>

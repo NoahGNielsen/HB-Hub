@@ -1,7 +1,8 @@
 <?php
 // Chats: what the chat page (chat/index.php) and the admin panel's chat page (admin/chat.php) both use.
 // The kinds of chat, member roles and notices, a chat's settings and background, and the changes both make to a chat:
-// renaming a group, its icon, its background and taking someone out of it, each with a notice in the chat about it.
+// renaming a group, its icon, its background, taking someone out of it and unpinning a message, each with a notice in
+// the chat about it.
 // From the admin panel the notice says a site admin made the change, not who (HBHUB_CHAT_EVENT_BY_SITE_ADMIN).
 //
 // Ghost bans: a site admin can ghost ban a user (admin/user.php, userGhostBannedTimestamp in HBHub-Users). Nothing tells
@@ -9,7 +10,8 @@
 // - their messages, GIFs and attachments are saved with messageIsGhost, don't move the chat up anyone else's list
 //   (lastMessageTimestamp), don't bring it back for people who hid it and don't @mention anyone
 // - editing a message everyone can see saves the new text in messageGhostContent, which only they see
-// - their reactions are saved with reactionIsGhost
+// - their reactions are saved with reactionIsGhost, and the messages they pin with messagePinIsGhost (unpinning is real)
+// - nicknames they give in a group are saved in memberGhostNickname, which only they see (chatMemberNameSql())
 // - people they start a chat with or add to a group get memberIsGhost: no message request and no notification, the chat
 //   just isn't there for them (chat/index.php's chatMembership() and chat list leave those rows out). Someone else adding
 //   them for real, or them starting a DM with the ghost-banned user, turns it into a normal membership.
@@ -21,7 +23,7 @@ require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/chatAttachments.php'; // a deleted chat's attachments are deleted with it
 
 const HBHUB_CHAT_TYPE_DM = 1; // chatType in HBHub-Chats
-const HBHUB_CHAT_TYPE_GROUP = 2;
+const HBHUB_CHAT_TYPE_GROUP = 2; // class chats are groups too, with a chatClassKey (assets/php/schoolClass.php)
 const HBHUB_CHAT_STATUS_ACTIVE = 1; // chatStatus in HBHub-Chats
 const HBHUB_CHAT_STATUS_DELETED = 2; // everyone left, or a group admin deleted it
 const HBHUB_CHAT_STATUS_DELETED_BY_SITE_ADMIN = 3; // from the admin panel, at chatBannedTimestamp
@@ -58,6 +60,9 @@ const HBHUB_CHAT_EVENT_JOIN = 9;
 const HBHUB_CHAT_EVENT_LEAVE = 10;
 const HBHUB_CHAT_EVENT_ADD = 11;
 const HBHUB_CHAT_EVENT_OWNER = 12; // took over as owner when the owner left, so they're both userId and messageEventUserId
+const HBHUB_CHAT_EVENT_PIN = 13; // messageReplyToId is the message pinned, for these two
+const HBHUB_CHAT_EVENT_UNPIN = 14;
+const HBHUB_CHAT_EVENT_NICKNAME = 15; // a group member's nickname, messageEventUserId is whose and messageContent the new one (NULL when taken away)
 // Added to the event when a site admin made the change from the admin panel (admin/chat.php), so 101 is a group renamed
 // by a site admin. The notice says "A site admin" then, and userId is still the admin who did it.
 const HBHUB_CHAT_EVENT_BY_SITE_ADMIN = 100;
@@ -71,15 +76,50 @@ const HBHUB_CHAT_EVENT_BY_SITE_ADMIN = 100;
  * @param ?string $content the group's new name, for HBHUB_CHAT_EVENT_RENAME
  * @param bool $bySiteAdmin made from the admin panel, so the notice says a site admin did it
  * @param bool $isGhost made by a ghost-banned user (see the top), so only they see it
+ * @param ?int $aboutMessageId the message pinned or unpinned, kept in messageReplyToId so the notice can link to it
  * @return int the notice's messageId
  */
 function chatNotice(PDO $db, int $userId, int $chatId, int $event, ?int $aboutUserId = null, ?string $content = null,
-    bool $bySiteAdmin = false, bool $isGhost = false): int
+    bool $bySiteAdmin = false, bool $isGhost = false, ?int $aboutMessageId = null): int
 {
-    $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageEvent, messageEventType, messageEventUserId, messageIsGhost)
-        VALUES (?, ?, ?, 1, ?, ?, ?)')
-        ->execute([$userId, $chatId, $content, $bySiteAdmin ? HBHUB_CHAT_EVENT_BY_SITE_ADMIN + $event : $event, $aboutUserId, (int) $isGhost]);
+    $db->prepare('INSERT INTO `HBHub-Messages` (userId, chatId, messageContent, messageReplyToId, messageEvent, messageEventType,
+            messageEventUserId, messageIsGhost)
+        VALUES (?, ?, ?, ?, 1, ?, ?, ?)')
+        ->execute([$userId, $chatId, $content, $aboutMessageId, $bySiteAdmin ? HBHUB_CHAT_EVENT_BY_SITE_ADMIN + $event : $event,
+            $aboutUserId, (int) $isGhost]);
     return (int) $db->lastInsertId();
+}
+
+/**
+ * Unpins the message, with a notice about it. Who may do that is checked before: whoever pinned it, a group admin, either
+ * person in a DM (chat/index.php), or a site admin from the admin panel (admin/chat.php, $bySiteAdmin).
+ * A pin made while ghost banned (messagePinIsGhost, see the top) only ever showed to whoever made it, so its notice does
+ * too - and from the admin panel there's none at all, as nobody but them knew it was pinned.
+ * Returns false when it wasn't pinned (anymore).
+ */
+function chatUnpin(PDO $db, int $userId, int $chatId, int $messageId, bool $bySiteAdmin = false): bool
+{
+    // Locked, so two people unpinning at once only make one notice
+    $db->beginTransaction();
+    $statement = $db->prepare('SELECT messagePinnedBy, messagePinIsGhost FROM `HBHub-Messages`
+        WHERE messageId = ? AND chatId = ? AND messagePinnedTimestamp IS NOT NULL FOR UPDATE');
+    $statement->execute([$messageId, $chatId]);
+    $pin = $statement->fetch();
+    if ($pin === false) {
+        $db->rollBack();
+        return false;
+    }
+
+    $db->prepare('UPDATE `HBHub-Messages` SET messagePinnedTimestamp = NULL, messagePinnedBy = NULL, messagePinIsGhost = 0
+        WHERE messageId = ?')
+        ->execute([$messageId]);
+    if (!$pin['messagePinIsGhost']) {
+        chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_UNPIN, null, null, $bySiteAdmin, false, $messageId);
+    } elseif (!$bySiteAdmin) {
+        chatNotice($db, $userId, $chatId, HBHUB_CHAT_EVENT_UNPIN, null, null, false, true, $messageId);
+    }
+    $db->commit();
+    return true;
 }
 
 /**
@@ -102,6 +142,17 @@ function chatGhostContentSql(string $alias, int $viewerId): string
 }
 
 /**
+ * The SQL for a member's name as $viewerId sees it in a group: their nickname, or their username without one.
+ * A nickname the viewer gave them while ghost banned (memberGhostNickname, see the top) wins over the real one, for the
+ * viewer only. $member is the HBHub-ChatMembers alias (can be a LEFT JOIN that found nobody), $user the HBHub-Users one.
+ */
+function chatMemberNameSql(string $member, string $user, int $viewerId): string
+{
+    return 'IF(' . $member . '.memberGhostNicknameBy <=> ' . $viewerId . ', COALESCE(' . $member . '.memberGhostNickname, ' . $user . '.userName), '
+        . 'COALESCE(' . $member . '.memberNickname, ' . $user . '.userName))';
+}
+
+/**
  * What a chat notification needs to know about the chat (assets/php/notificationTypes/chat.php):
  * its id, its name right now and whether it's a group.
  *
@@ -119,7 +170,7 @@ function chatNotificationData(PDO $db, int $chatId): array
  * Takes the user out of the chat, with a notice that they left, or that $kickedBy kicked them.
  * When they leave a DM, the other person gets a notification about it (once they've accepted it).
  * A group is never left without an owner: when the owner leaves, the admin who has been in it the longest takes over,
- * or the longest-standing member when there's no admin left, and a notice says who.
+ * or the longest-standing member when there's no admin left, and a notice says who. A class chat never gets one.
  * A chat with nobody left in it is deleted, and so are its attachments.
  *
  * @param array{chatId: int, chatType: int} $chat
@@ -158,8 +209,13 @@ function chatLeave(PDO $db, int $userId, array $chat, ?int $kickedBy = null, boo
             $kickNoticeId = chatNotice($db, $kickedBy, $chatId, HBHUB_CHAT_EVENT_KICK, $userId, null, $kickedBySiteAdmin);
         }
 
+        // A class chat (assets/php/schoolClass.php) has no owner or admins on purpose
+        $statement = $db->prepare('SELECT chatClassKey IS NOT NULL FROM `HBHub-Chats` WHERE chatId = ?');
+        $statement->execute([$chatId]);
+        $isClassChat = (bool) $statement->fetchColumn();
+
         $roles = array_map('intval', array_column($members, 'memberRole'));
-        if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP && !in_array(HBHUB_CHAT_ROLE_OWNER, $roles, true)) {
+        if ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_GROUP && !$isClassChat && !in_array(HBHUB_CHAT_ROLE_OWNER, $roles, true)) {
             $adminIndex = array_search(HBHUB_CHAT_ROLE_ADMIN, $roles, true);
             $newOwnerId = (int) $members[$adminIndex === false ? 0 : $adminIndex]['userId'];
             $db->prepare('UPDATE `HBHub-ChatMembers` SET memberRole = ? WHERE chatId = ? AND userId = ?')
@@ -408,6 +464,8 @@ function chatSenderName(array $openChat, int $userId, int $senderId, ?string $se
  * The names are the ones the chat shows, so "You" for the user and the nickname someone was given.
  * A change made from the admin panel says "A site admin" instead of who made it.
  * The admin panel passes 0 as $userId, as nobody is "you" there.
+ * A pin or unpin notice links to its message when $message has messageReplyToId (the chat page, where chat.js scrolls
+ * to it like to a reply's message). The admin panel doesn't fetch it, so there it just says "a message".
  */
 function chatNoticeHtml(array $openChat, int $userId, array $message): string
 {
@@ -422,6 +480,9 @@ function chatNoticeHtml(array $openChat, int $userId, array $message): string
         default => chatSenderName($openChat, $userId, $aboutUserId, $message['eventUserName']),
     });
     $chatWord = (int) $openChat['chatType'] === HBHUB_CHAT_TYPE_GROUP ? 'group' : 'chat';
+    $pinnedMessage = isset($message['messageReplyToId'])
+        ? '<a href="#message-' . (int) $message['messageReplyToId'] . '" data-reply-link data-reply-id="' . (int) $message['messageReplyToId'] . '">a message</a>'
+        : 'a message';
 
     return match ($isBySiteAdmin ? $event - HBHUB_CHAT_EVENT_BY_SITE_ADMIN : $event) {
         HBHUB_CHAT_EVENT_RENAME => $message['messageContent'] === null
@@ -438,6 +499,35 @@ function chatNoticeHtml(array $openChat, int $userId, array $message): string
         HBHUB_CHAT_EVENT_LEAVE => $by . ' left the ' . $chatWord,
         HBHUB_CHAT_EVENT_ADD => $by . ' added ' . $about . ' to the group',
         HBHUB_CHAT_EVENT_OWNER => $by . ((int) $message['userId'] === $userId ? ' are' : ' is') . ' now the group owner',
+        HBHUB_CHAT_EVENT_PIN => $by . ' pinned ' . $pinnedMessage,
+        HBHUB_CHAT_EVENT_UNPIN => $by . ' unpinned ' . $pinnedMessage,
+        HBHUB_CHAT_EVENT_NICKNAME => chatNicknameNoticeHtml($by, $userId, $message),
         default => $by . ' changed the ' . $chatWord,
     };
+}
+
+/**
+ * What a nickname notice (HBHUB_CHAT_EVENT_NICKNAME) says, as HTML, for chatNoticeHtml(): "<strong>Alice</strong> gave
+ * <strong>bob</strong> the nickname <strong>Bobby</strong>". Whoever got it goes by their username here, as the name the
+ * chat shows them by now could be the very nickname it's about. A nickname given to yourself or to the user says "your"
+ * or "their" instead.
+ *
+ * @param string $by who gave it, as HTML
+ * @param array $message the notice, with eventRealName (the username) or else eventUserName (the admin panel's is the username)
+ */
+function chatNicknameNoticeHtml(string $by, int $userId, array $message): string
+{
+    $name = fn (string $name): string => '<strong>' . htmlspecialchars($name) . '</strong>';
+    $aboutUserId = $message['messageEventUserId'] !== null ? (int) $message['messageEventUserId'] : null;
+    $nickname = $message['messageContent'];
+
+    if ($aboutUserId === (int) $message['userId']) {
+        $whose = $aboutUserId === $userId ? 'your' : 'their';
+        return $nickname === null ? $by . ' removed ' . $whose . ' nickname' : $by . ' changed ' . $whose . ' nickname to ' . $name($nickname);
+    }
+    if ($aboutUserId === $userId) {
+        return $nickname === null ? $by . ' removed your nickname' : $by . ' gave you the nickname ' . $name($nickname);
+    }
+    $about = $name($aboutUserId === null ? 'someone' : $message['eventRealName'] ?? $message['eventUserName'] ?? 'someone');
+    return $nickname === null ? $by . ' removed ' . $about . '\'s nickname' : $by . ' gave ' . $about . ' the nickname ' . $name($nickname);
 }

@@ -23,8 +23,17 @@
 // removes and bans an account's picture without banning the account (admin/user.php's "Remove and ban picture", so
 // only uploading it again bans them), or uploads one on the Banned pictures page (admin/banned.php). Unbanning an
 // account takes the pictures that came from it off again, and admins can remove any of them from the Banned pictures page.
+//
+// Profile banners (profile.php) are checked against the same list, and can be put on it the same ways from the admin
+// panel. A banner is a JPEG XL file, which GD can't read, so on its own it could only be caught as the exact file.
+// That's why a "check copy" goes with it: a small PNG of the same picture, at most HBHUB_BANNED_AVATAR_CHECK_SIDE on its
+// longest side, made by the browser that has the picture anyway. The uploader's browser sends one with a new banner
+// (settings.js), which is fingerprinted to find similar copies and then thrown away. The admin's browser sends one when
+// a banner is banned (admin.js), which the banner's fingerprints are made from. The banned row itself keeps the JPEG XL
+// file and its hash, so the exact file is always caught, also without a check copy.
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/adminLog.php';
+require_once __DIR__ . '/chatAttachments.php'; // where banner pictures are kept on disk
 
 const HBHUB_BAN_REASON_ADMIN = 1; // userBannedReason in HBHub-Users
 const HBHUB_BAN_REASON_AVATAR = 2;
@@ -35,6 +44,8 @@ const HBHUB_BANNED_AVATAR_CROP_SCALES = [0.95, 0.9, 0.85, 0.8]; // the crops of 
 const HBHUB_BANNED_AVATAR_PLAIN_BITS = 26; // a fingerprint with fewer 1s (or 0s) than this, about 10%, is too plain
 const HBHUB_BANNED_AVATAR_WORK_SIZE = 256; // pictures are shrunk to this first, so the crops are quick to make
 const HBHUB_BANNED_AVATAR_MAX_PIXELS = 40_000_000; // a bigger picture isn't opened, it takes too much memory
+const HBHUB_BANNED_AVATAR_CHECK_SIDE = 256; // a banner's check copy, the longest side (the same as the work size)
+const HBHUB_BANNED_AVATAR_CHECK_MAX_BYTES = 1024 * 1024; // a PNG that size never gets near this
 
 /**
  * The SHA-256 of a picture's file, as lowercase hex like MySQL's SHA2(), which is what bannedAvatarHash holds.
@@ -303,6 +314,65 @@ function hbHubBannedAvatarAddFromUser(PDO $db, int $userId, int $adminId): ?int
 }
 
 /**
+ * A banner's check copy (see the top) from the form's file field $name, or null when there isn't one or it isn't a
+ * small enough PNG. The file itself, never kept.
+ */
+function hbHubBannedAvatarCheckCopy(string $name): ?string
+{
+    $file = $_FILES[$name] ?? null;
+    if (!is_array($file) || ($file['error'] ?? null) !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])
+        || $file['size'] > HBHUB_BANNED_AVATAR_CHECK_MAX_BYTES) {
+        return null;
+    }
+    $png = file_get_contents($file['tmp_name']);
+    $size = $png !== false ? @getimagesizefromstring($png) : false;
+    return $size !== false && $size[2] === IMAGETYPE_PNG ? $png : null;
+}
+
+/**
+ * The id of the row on the list a new banner is (its JPEG XL file, by hash), or that its check copy is a similar copy
+ * of, or null when it isn't on the list. Without a check copy only the exact file is caught.
+ */
+function hbHubBannedAvatarFindBanner(PDO $db, string $jxl, ?string $checkCopy): ?int
+{
+    return hbHubBannedAvatarFind($db, $jxl) ?? ($checkCopy !== null ? hbHubBannedAvatarFind($db, $checkCopy) : null);
+}
+
+/**
+ * Puts the user's current banner picture on the list, copied, as coming from them, for a ban or for "Remove and ban
+ * banner" in admin/user.php. Its fingerprints come from $checkCopy, the admin's browser's PNG of it; without one it
+ * only catches the exact file. Returns the new row's id, or null when they have no banner, its file is gone or it's
+ * already on the list.
+ */
+function hbHubBannedAvatarAddBannerFromUser(PDO $db, int $userId, int $adminId, ?string $checkCopy): ?int
+{
+    $statement = $db->prepare('SELECT b.attachmentKey, b.attachmentType FROM `HBHub-Users` u
+        JOIN `HBHub-ChatAttachments` b ON b.attachmentId = u.userBannerAttachmentId AND b.attachmentStatus = ?
+        WHERE u.userId = ?');
+    $statement->execute([HBHUB_CHAT_ATTACHMENT_KEPT, $userId]);
+    $banner = $statement->fetch();
+    $dir = hbHubChatAttachmentsDir();
+    $file = $banner !== false && $dir !== null ? @file_get_contents($dir . '/' . $banner['attachmentKey']) : false;
+    if ($file === false) {
+        return null;
+    }
+
+    // Empty instead of NULL without a check copy, so hbHubBannedAvatarFillFingerprints() doesn't try GD on the JPEG XL
+    $fingerprints = $checkCopy !== null ? hbHubBannedAvatarFingerprints($checkCopy) : '';
+    $statement = $db->prepare('INSERT INTO `HBHub-BannedAvatars` (bannedAvatarHash, bannedAvatarType, bannedAvatarFile, bannedAvatarFingerprints,
+            bannedAvatarFromUserId, bannedAvatarAddedByUserId)
+        VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE bannedAvatarId = bannedAvatarId');
+    $statement->bindValue(1, hbHubBannedAvatarHash($file));
+    $statement->bindValue(2, $banner['attachmentType']);
+    $statement->bindValue(3, $file, PDO::PARAM_LOB);
+    $statement->bindValue(4, $fingerprints, $fingerprints !== null ? PDO::PARAM_LOB : PDO::PARAM_NULL);
+    $statement->bindValue(5, $userId, PDO::PARAM_INT);
+    $statement->bindValue(6, $adminId, PDO::PARAM_INT);
+    $statement->execute();
+    return $statement->rowCount() === 1 ? (int) $db->lastInsertId() : null; // 0 when it was already there
+}
+
+/**
  * Takes the pictures that came from the user (their ban, or "Remove and ban picture") off the list, for when they're unbanned. Pictures an admin
  * uploaded stay, as do the ones from other banned accounts.
  */
@@ -335,14 +405,14 @@ function hbHubBanUser(PDO $db, int $userId, int $reason): void
 /**
  * Bans the user for uploading the banned picture $bannedAvatarId, counts the match for the Banned pictures page, and
  * puts it in the admin log as 'user.autoban' with no admin, so it shows up next to the bans admins made. $signup says
- * whether it was when making the account (onboardingSaveToDB.php) or on the settings page. Call it in the transaction
- * that saves the picture.
+ * whether it was when making the account (onboardingSaveToDB.php) or on the settings page, $banner whether it was
+ * uploaded as their banner instead of their profile picture. Call it in the transaction that saves the picture.
  */
-function hbHubBannedAvatarAutoban(PDO $db, int $userId, int $bannedAvatarId, bool $signup): void
+function hbHubBannedAvatarAutoban(PDO $db, int $userId, int $bannedAvatarId, bool $signup, bool $banner = false): void
 {
     hbHubBanUser($db, $userId, HBHUB_BAN_REASON_AVATAR);
     hbHubBannedAvatarCountMatch($db, $bannedAvatarId);
-    adminLog($db, null, 'user.autoban', $userId, null, ['pictureId' => $bannedAvatarId, 'signup' => $signup]);
+    adminLog($db, null, 'user.autoban', $userId, null, ['pictureId' => $bannedAvatarId, 'signup' => $signup] + ($banner ? ['banner' => true] : []));
 }
 
 /**

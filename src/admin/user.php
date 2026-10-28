@@ -7,16 +7,21 @@
 // Shows what there is about the user: their account, sessions (their logins), messages in every chat, chats and casino
 // chips, and ?export=1 downloads all of it as JSON. The actions are one form per card, like the settings page:
 // ghost ban or lift it (what they do in chats only shows to themselves, see the top of assets/php/chat.php),
-// ban or unban, change the name or bio, remove the picture (or remove and ban it), set the gambling block (straight away, without the wait),
+// ban or unban, change the name, bio or status (or remove them), remove the picture or the banner picture (or remove
+// and ban it), set the gambling block (straight away, without the wait),
 // block Gambling and Games with an admin block they can't lift themselves (or lift it, see block.php),
 // reset the password, remove two-factor login, log out every session, add or remove chips, delete messages, delete
 // attachments (one or all, which frees their tickets), add or take away attachment tickets and delete the account.
 // Chips change through hbHubCasinoChange() like in the games, logged with the reason "admin" and the admin's userId,
 // so the chip history shows who did it. Attachments are only listed (name, size, chat, tickets), never opened here.
 // Before any form is sent, admin.js asks for a reason, which goes in the admin log with the action (adminLog.php).
-// Banning puts their picture on the banned pictures list (admin/banned.php) too, unless that's unticked, and
-// unbanning takes it off again. "Remove and ban picture" puts it on the list without banning them, so they're only
-// banned if they upload it (or a similar copy) again, like anyone else would be.
+// Banning can put their picture and banner picture on the banned pictures list (admin/banned.php) too, and
+// unbanning takes them off again. "Remove and ban picture" (or banner) puts it on the list without banning them, so
+// they're only banned if they upload it (or a similar copy) again, like anyone else would be. Banners are JPEG XL,
+// which the server can't read, so admin.js sends a PNG check copy of one along when it's banned (bannedAvatars.php).
+// The Person button goes to the person page (admin/person.php): every account used in the same browsers as this one
+// (admin.php, adminPersonGroups()). Each card in the Danger zone has a switch, off to begin with, that does the same to
+// those other accounts too (the ones it changes anything for, and never a site admin's).
 // Opening the page, downloading the data and every change are logged in the admin log (assets/php/adminLog.php).
 // Site admins can't be changed here (yourself included), and a deleted account only has its messages left to delete.
 // The side menu (adminPageMenuHtml()) links to the cards in the order they're on the page: Information, then Manage
@@ -24,20 +29,22 @@
 // delete) last.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/adminAccounts.php'; // ban, ghost ban, block, log out and delete, shared with admin/person.php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/bannedAvatars.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/account.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // their class, as their profile shows it
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/password.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/notifications.php'; // taking back the @mentions in deleted messages
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/urlBlacklist.php'; // IP loggers and other links that can't be in a bio
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/profile.php'; // their banner and status
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
-const ADMIN_STATUS_OFFLINE = 2; // userStatus in HBHub-Users (HBHUB_SESSION_STATUS_BANNED is 4)
-const ADMIN_STATUS_LOCKED = 3;
+const ADMIN_STATUS_LOCKED = 3; // userStatus in HBHub-Users (ADMIN_STATUS_OFFLINE, 2, is in adminAccounts.php)
 const ADMIN_TRANSACTIONS_SHOWN = 25;
 const ADMIN_CHIPS_MAX = 1_000_000_000; // the most chips that can be added or removed at once, to catch a typo with too many zeros
 const ADMIN_TICKETS_MAX = 1000; // the most attachment tickets one user can have in all (userAttachmentTicketsExtra is a smallint)
@@ -58,12 +65,12 @@ $adminDescriptionMax = max(1, min(255, (int) $siteConfig['user_description_maxSi
 $adminPasswordPolicy = hbHubPasswordPolicy($siteConfig);
 
 // Never the password hash or the 2FA secret, just whether there is one
-$statement = $db->prepare('SELECT userId, userName, userDescription, userSettings, userAvatarAttachmentId,
+$statement = $db->prepare('SELECT userId, userName, userDescription, userSettings, userAvatarAttachmentId, ' . hbHubProfileBannerIdSql('u') . ' AS bannerId,
         userIpv4AdresseOnAccountCreate, userIpv6AdresseOnAccountCreate, userIpv4AdresseLastAccessed, userIpv6AdresseLastAccessed,
         userTotpSecret IS NOT NULL AS totpIsOn, userFailedLoginCount, userStatus, userRole, userCreatedTimestamp, userLastSeenTimestamp,
         userAccountLockedTimestamp, userBannedTimestamp, userBannedReason, userGhostBannedTimestamp, userAttachmentTicketsExtra,
         COALESCE(userAccountLockedTimestamp + INTERVAL ? MINUTE > NOW(), 0) AS isLocked, ' . adminUserOnlineSql() . ' AS isOnline
-    FROM `HBHub-Users` WHERE userId = ?');
+    FROM `HBHub-Users` u WHERE userId = ?');
 $statement->execute([$adminLockoutMinutes, $targetId]);
 $target = $statement->fetch();
 if ($target === false) {
@@ -77,6 +84,69 @@ $targetIsAdmin = (int) $target['userRole'] === ADMIN_ROLE_ADMIN;
 $targetIsSelf = $targetId === (int) $hbHubUser['userId'];
 $adminCanChange = !$targetIsDeleted && !$targetIsAdmin;
 $adminCanDeleteMessages = !$targetIsAdmin;
+
+// The person's other accounts (used in the same browsers, adminPersonUserIds()) that can be changed, for the Danger
+// zone's "Also ... their other accounts" switches
+$adminPersonIds = adminPersonUserIds($db, $targetId);
+$adminOtherIds = array_values(array_diff($adminPersonIds, [$targetId]));
+$adminOthers = [];
+if ($adminOtherIds !== []) {
+    $statement = $db->prepare('SELECT userId, userName, userStatus, userGhostBannedTimestamp FROM `HBHub-Users`
+        WHERE userId IN (' . implode(',', array_fill(0, count($adminOtherIds), '?')) . ') AND userStatus IS NOT NULL AND userRole <> ?
+        ORDER BY userId');
+    $statement->execute([...$adminOtherIds, ADMIN_ROLE_ADMIN]);
+    $adminOthers = $statement->fetchAll();
+}
+
+/**
+ * The other accounts (from $adminOthers) that $action would change anything for: not yet banned for 'ban', banned for
+ * 'unban', and the same for 'ghostBan' / 'ghostUnban'. Every one of them for 'deleteAccount'.
+ */
+function adminOthersFor(array $others, string $action): array
+{
+    return array_values(array_filter($others, fn (array $user): bool => match ($action) {
+        'ban' => (int) $user['userStatus'] !== HBHUB_SESSION_STATUS_BANNED,
+        'unban' => (int) $user['userStatus'] === HBHUB_SESSION_STATUS_BANNED,
+        'ghostBan' => $user['userGhostBannedTimestamp'] === null,
+        'ghostUnban' => $user['userGhostBannedTimestamp'] !== null,
+        default => true,
+    }));
+}
+
+/**
+ * The switch on a Danger zone card that does $action to the person's other accounts too (allAccounts=1), off to
+ * begin with, with their names. Nothing when there are none it would change anything for. $verb is what's done, like
+ * "ban" ("Also ban their other account").
+ */
+function adminAllAccountsSwitchHtml(array $others, string $action, string $verb, int $targetId): string
+{
+    $accounts = adminOthersFor($others, $action);
+    if ($accounts === []) {
+        return '';
+    }
+    $count = count($accounts);
+    $names = implode(', ', array_map(fn (array $user): string => htmlspecialchars($user['userName']), $accounts));
+    return '<div class="settings-field"><label class="settings-checkbox">'
+        . '<input type="checkbox" class="settings-switch" name="allAccounts" value="1" aria-describedby="admin-all-' . $action . '-hint">'
+        . '<span>Also ' . $verb . ' their ' . ($count === 1 ? 'other account' : $count . ' other accounts') . '</span></label>'
+        . '<p class="settings-hint" id="admin-all-' . $action . '-hint">' . $names . ' ' . ($count === 1 ? 'is' : 'are')
+        . ' used in the same browser as this account, so it\'s probably the same person. Check on the '
+        . '<a class="admin-link" href="/admin/person?user=' . $targetId . '">person page</a> first: a shared computer links people too.</p></div>';
+}
+
+/**
+ * When the form's "Also ... their other accounts" switch is on: the ids of the other accounts $action changes
+ * anything for, otherwise none.
+ *
+ * @return list<int>
+ */
+function adminOthersPicked(array $others, string $action): array
+{
+    if (($_POST['allAccounts'] ?? null) !== '1') {
+        return [];
+    }
+    return array_map(fn (array $user): int => (int) $user['userId'], adminOthersFor($others, $action));
+}
 
 /**
  * Every chat the user is in (message requests too, and ghost invites they can't see, assets/php/chat.php), newest first.
@@ -156,7 +226,7 @@ function adminAttachments(PDO $db, int $userId): array
     $statement = $db->prepare('SELECT a.attachmentId, a.chatId, c.chatType, c.chatStatus, ' . adminChatTitleSql('a.userId') . ' AS chatTitle,
             a.attachmentName, a.attachmentKind, a.attachmentSize, a.attachmentStoredSize, a.attachmentTickets,
             a.attachmentUploadedTimestamp, a.attachmentExpiresTimestamp
-        FROM `HBHub-ChatAttachments` a JOIN `HBHub-Chats` c ON c.chatId = a.chatId
+        FROM `HBHub-ChatAttachments` a LEFT JOIN `HBHub-Chats` c ON c.chatId = a.chatId
         WHERE a.userId = ? AND a.attachmentStatus = ? AND a.attachmentExpiresTimestamp > NOW()
         ORDER BY a.attachmentId DESC');
     $statement->execute([$userId, HBHUB_CHAT_ATTACHMENT_KEPT]);
@@ -215,9 +285,14 @@ if (($_GET['export'] ?? null) === '1') {
 $adminMessagesBefore = is_string($_GET['before'] ?? null) && ctype_digit($_GET['before']) && strlen($_GET['before']) <= 19
     ? (int) $_GET['before'] : null;
 
+$adminSettingsSaved = hbHubUserSettings($target['userSettings']);
+$adminStatus = hbHubProfileStatus($adminSettingsSaved);
 $adminValues = [
     'name' => $target['userName'],
     'description' => $target['userDescription'] ?? '',
+    'statusEmoji' => $adminStatus['emoji'],
+    'statusText' => $adminStatus['text'],
+    'statusClearAfter' => '', // the picker's default (hbHubProfileStatusClearOptions())
     'newPassword' => '',
     'chips' => '',
     'tickets' => '',
@@ -233,49 +308,38 @@ if ($adminAction !== null && !($adminIsMessageAction ? $adminCanDeleteMessages :
 
 switch ($adminAction) {
     case 'ban':
-        // The sessions stay until the user's next visit: session.php then marks their browser, so they can't just make a new account.
-        // Their picture goes on the banned list, so a new account can't use it either.
-        $db->beginTransaction();
-        hbHubBanUser($db, $targetId, HBHUB_BAN_REASON_ADMIN);
+        // Their picture goes on the banned list too (unless unticked), so a new account can't use it either.
+        // With the switch on, the person's other accounts are banned the same way (adminOthersPicked()).
+        // Their banner too when ticked, with the check copy admin.js made of it (bannedAvatars.php). The other accounts'
+        // banners have no check copy, so they only catch the exact file.
         $banAvatar = ($_POST['banAvatar'] ?? null) === '1';
-        if ($banAvatar) {
-            hbHubBannedAvatarAddFromUser($db, $targetId, $adminId);
+        $banBanner = ($_POST['banBanner'] ?? null) === '1';
+        $banOthers = adminOthersPicked($adminOthers, 'ban');
+        adminAccountBan($db, $adminId, $targetId, $banAvatar, [], $banBanner, $banBanner ? hbHubBannedAvatarCheckCopy('bannerCheck') : null);
+        foreach ($banOthers as $otherId) {
+            adminAccountBan($db, $adminId, $otherId, $banAvatar, ['personOf' => $targetId], $banBanner);
         }
-        adminLog($db, $adminId, 'user.ban', $targetId, null, ['avatar' => $banAvatar]);
-        $db->commit();
-        hbHubBannedAvatarFillFingerprints($db); // after the commit, so the ban doesn't wait on it
-        adminRedirect($targetId, 'adminBanned', 'ban');
+        hbHubBannedAvatarFillFingerprints($db); // after the commits, so the bans don't wait on it
+        adminRedirect($targetId, $banOthers !== [] ? 'adminBannedAll' : 'adminBanned', 'ban');
 
     case 'unban':
-        // Sessions from before the ban don't come back, they log in again. The pictures their ban put on the banned
-        // list come off it, so uploading their own picture again doesn't ban them.
-        $db->beginTransaction();
-        $db->prepare('UPDATE `HBHub-Users` SET userStatus = ?, userBannedTimestamp = NULL, userBannedReason = NULL WHERE userId = ? AND userStatus = ?')
-            ->execute([ADMIN_STATUS_OFFLINE, $targetId, HBHUB_SESSION_STATUS_BANNED]);
-        $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$targetId]);
-        hbHubBannedAvatarRemoveFromUser($db, $targetId);
-        adminLog($db, $adminId, 'user.unban', $targetId);
-        $db->commit();
-        adminRedirect($targetId, 'adminUnbanned', 'ban');
+        $unbanOthers = adminOthersPicked($adminOthers, 'unban');
+        adminAccountUnban($db, $adminId, $targetId);
+        foreach ($unbanOthers as $otherId) {
+            adminAccountUnban($db, $adminId, $otherId, ['personOf' => $targetId]);
+        }
+        adminRedirect($targetId, $unbanOthers !== [] ? 'adminUnbannedAll' : 'adminUnbanned', 'ban');
 
     case 'ghostBan':
-        // Nothing tells them and they stay logged in. From their next request on, what they do in chats only shows to
-        // themselves (see the top of assets/php/chat.php). What they did before stays as it was.
-        $statement = $db->prepare('UPDATE `HBHub-Users` SET userGhostBannedTimestamp = NOW() WHERE userId = ? AND userGhostBannedTimestamp IS NULL');
-        $statement->execute([$targetId]);
-        if ($statement->rowCount() > 0) {
-            adminLog($db, $adminId, 'user.ghostBan', $targetId);
-        }
-        adminRedirect($targetId, 'adminGhostBanned', 'ghost');
-
     case 'ghostUnban':
-        // What they did while ghost banned stays hidden, only what they do from now on shows again
-        $statement = $db->prepare('UPDATE `HBHub-Users` SET userGhostBannedTimestamp = NULL WHERE userId = ? AND userGhostBannedTimestamp IS NOT NULL');
-        $statement->execute([$targetId]);
-        if ($statement->rowCount() > 0) {
-            adminLog($db, $adminId, 'user.ghostUnban', $targetId);
+        // Lifting it: what they did while ghost banned stays hidden, only what they do from now on shows again
+        $ghostOn = $adminAction === 'ghostBan';
+        $ghostOthers = adminOthersPicked($adminOthers, $adminAction);
+        adminAccountGhostBan($db, $adminId, $targetId, $ghostOn);
+        foreach ($ghostOthers as $otherId) {
+            adminAccountGhostBan($db, $adminId, $otherId, $ghostOn, ['personOf' => $targetId]);
         }
-        adminRedirect($targetId, 'adminGhostUnbanned', 'ghost');
+        adminRedirect($targetId, ($ghostOn ? 'adminGhostBanned' : 'adminGhostUnbanned') . ($ghostOthers !== [] ? 'All' : ''), 'ghost');
 
     case 'name':
         $adminValues['name'] = is_string($_POST['name'] ?? null) ? trim($_POST['name']) : '';
@@ -329,38 +393,50 @@ switch ($adminAction) {
         adminLog($db, $adminId, 'user.avatar', $targetId);
         adminRedirect($targetId, 'adminSaved', 'profile');
 
+    case 'removeBanner':
+        // Like the picture: back to their banner's colors, and its ticket is free again (profile.php). "Remove and ban
+        // banner" copies it to the banned pictures list first, with the check copy admin.js made of it for similar
+        // copies (bannedAvatars.php), so uploading it again as a banner or a profile picture bans them.
+        $bannedAvatarId = null;
+        $banBanner = ($_POST['ban'] ?? null) === '1';
+        if ($banBanner) {
+            $bannedAvatarId = hbHubBannedAvatarAddBannerFromUser($db, $targetId, $adminId, hbHubBannedAvatarCheckCopy('bannerCheck'));
+        }
+        hbHubProfileRemoveBanner($db, $targetId);
+        adminLog($db, $adminId, $banBanner ? 'user.bannerBan' : 'user.banner', $targetId, null, $bannedAvatarId !== null ? ['pictureId' => $bannedAvatarId] : null);
+        adminRedirect($targetId, 'adminSaved', 'profile');
+
+    case 'status':
+        // Remove status, or Save with both emptied, takes it away. Otherwise the same rules as their own (profile.php).
+        $adminValues['statusEmoji'] = ($_POST['remove'] ?? null) === '1' || !is_string($_POST['statusEmoji'] ?? null) ? '' : trim($_POST['statusEmoji']);
+        $adminValues['statusText'] = ($_POST['remove'] ?? null) === '1' || !is_string($_POST['statusText'] ?? null)
+            ? '' : trim(str_replace("\r\n", "\n", $_POST['statusText']));
+        $adminValues['statusClearAfter'] = is_string($_POST['statusClearAfter'] ?? null) ? $_POST['statusClearAfter'] : '';
+        $statusToSave = hbHubProfileStatusFromForm($adminValues['statusEmoji'], $adminValues['statusText'], $adminValues['statusClearAfter'], $adminStatus);
+        if (is_string($statusToSave)) {
+            // The messages are written to the user themselves
+            $adminErrors['status'] = str_replace(['Your status', 'your status'], ['The status', 'the status'], $statusToSave);
+            break;
+        }
+        hbHubProfileSaveStatus($db, $targetId, $statusToSave);
+        adminLog($db, $adminId, 'user.status', $targetId, null, ['removed' => !hbHubProfileHasStatus($statusToSave)]);
+        adminRedirect($targetId, 'adminSaved', 'profile');
+
     case 'block':
-        // Straight away either way: the wait is only there to stop the user turning it off in the moment
+        // Straight away either way (adminAccountBlock())
         $blockMode = $_POST['block'] ?? null;
         if (!hbHubBlockIsMode($blockMode)) {
             $adminErrors['block'] = 'Please choose one of the options.';
             break;
         }
-        hbHubChangeUserSettings($db, $targetId, function (array $settings) use ($blockMode): array {
-            $settings['block'] = ['mode' => $blockMode, 'pendingMode' => null, 'pendingFrom' => null];
-            return $settings;
-        });
-        adminLog($db, $adminId, 'user.block', $targetId, null, ['mode' => $blockMode]);
+        adminAccountBlock($db, $adminId, $targetId, $blockMode);
         adminRedirect($targetId, 'adminSaved', 'block');
 
     case 'blockAdmin':
     case 'blockAdminLift':
-        // Blocks Gambling and Games for good, on top of their own block. They can't lift it in settings, only an admin
-        // can, here (block.php). Their own block stays as it was, so lifting this leaves theirs.
+        // Blocks Gambling and Games for good, on top of their own block, or lifts it (adminAccountBlockAdmin())
         $blockAdminOn = $adminAction === 'blockAdmin';
-        $blockAdminWasOn = null;
-        hbHubChangeUserSettings($db, $targetId, function (array $settings) use ($blockAdminOn, &$blockAdminWasOn): array {
-            $blockAdminWasOn = hbHubBlockIsAdmin($settings);
-            if ($blockAdminOn) {
-                $settings['blockAdmin'] = true;
-            } else {
-                unset($settings['blockAdmin']);
-            }
-            return $settings;
-        });
-        if ($blockAdminWasOn !== $blockAdminOn) {
-            adminLog($db, $adminId, $blockAdminOn ? 'user.blockAdmin' : 'user.blockAdminLift', $targetId);
-        }
+        adminAccountBlockAdmin($db, $adminId, $targetId, $blockAdminOn);
         adminRedirect($targetId, $blockAdminOn ? 'adminBlocked' : 'adminBlockLifted', 'block');
 
     case 'password':
@@ -393,8 +469,7 @@ switch ($adminAction) {
         adminRedirect($targetId, 'adminTotpOff', 'security');
 
     case 'logoutAll':
-        $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$targetId]);
-        adminLog($db, $adminId, 'user.logout', $targetId);
+        adminAccountLogout($db, $adminId, $targetId);
         adminRedirect($targetId, 'adminLoggedOut', 'security');
 
     case 'chips':
@@ -446,7 +521,8 @@ switch ($adminAction) {
             WHERE userId = ? AND messageEvent = 0 AND messageDeletedTimestamp IS NULL');
         $statement->execute([ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN, $targetId]);
         adminLog($db, $adminId, 'user.messages', $targetId, null, ['count' => $statement->rowCount()]);
-        hbHubChatAttachmentsRemove($db, 'a.userId = ?', [$targetId]); // every attachment was in one of them
+        // every attachment was in one of them, except their profile banner (no chat), which isn't a message
+        hbHubChatAttachmentsRemove($db, 'a.userId = ? AND a.chatId IS NOT NULL', [$targetId]);
         // and every @mention in them (chat.mention notifications), which only ever come from the one who wrote them
         $db->prepare('DELETE FROM `HBHub-Notifications` WHERE notificationType = ? AND notificationByUserId = ?')
             ->execute(['chat.mention', $targetId]);
@@ -509,19 +585,24 @@ switch ($adminAction) {
             $adminErrors['delete'] = 'Type the user\'s name exactly to delete the account.';
             break;
         }
-        hbHubDeleteAccount($db, $targetId);
-        adminLog($db, $adminId, 'user.delete', $targetId);
-        adminRedirect($targetId, 'adminAccountDeleted', 'overview');
+        // Their other accounts first: deleting this one takes its known devices, so it isn't part of the person after
+        $deleteOthers = adminOthersPicked($adminOthers, 'deleteAccount');
+        foreach ($deleteOthers as $otherId) {
+            adminAccountDelete($db, $adminId, $otherId, ['personOf' => $targetId]);
+        }
+        adminAccountDelete($db, $adminId, $targetId);
+        adminRedirect($targetId, $deleteOthers !== [] ? 'adminAccountsDeleted' : 'adminAccountDeleted', 'overview');
 }
 
 // What the page shows, which is logged: it has all their messages and personal info
 adminLogView($db, $adminId, 'user.view', $targetId, null);
-$adminSettings = hbHubUserSettings($target['userSettings']);
-$adminYear = is_scalar($adminSettings['year'] ?? null) ? (string) $adminSettings['year'] : '';
-$adminClass = is_scalar($adminSettings['class'] ?? null) ? (string) $adminSettings['class'] : '';
+$adminSettings = $adminSettingsSaved;
+$adminClass = hbHubClassOf($adminSettings);
 $adminBlock = hbHubBlockSettings($adminSettings);
 $adminBlockIsAdmin = hbHubBlockIsAdmin($adminSettings);
 $adminAvatarSrc = hbHubAvatarUrl($targetId, $target['userAvatarAttachmentId'] !== null ? (int) $target['userAvatarAttachmentId'] : null);
+$adminBannerSrc = $target['bannerId'] !== null ? hbHubProfileBannerUrl($targetId, (int) $target['bannerId']) : null;
+$adminJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatJxlWorker.js');
 
 $adminSessions = adminSessions($db, $targetId);
 $adminActiveSessions = count(array_filter($adminSessions, fn (array $session): bool => $session['isValid'] && !$session['sessionTotpPending']));
@@ -542,15 +623,6 @@ $statement = $db->prepare('SELECT COUNT(*) AS total, COUNT(messageDeletedTimesta
     FROM `HBHub-Messages` WHERE userId = ? AND messageEvent = 0');
 $statement->execute([$targetId]);
 $adminMessageCounts = $statement->fetch();
-
-/**
- * The addresses, IPv4 and/or IPv6, or a dash when neither was saved.
- */
-function adminIps(?string $ipv4, ?string $ipv6): string
-{
-    $ips = array_filter([$ipv4, $ipv6], fn (?string $ip): bool => $ip !== null && $ip !== '');
-    return $ips !== [] ? implode(' / ', $ips) : '–';
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -560,6 +632,9 @@ function adminIps(?string $ipv4, ?string $ipv6): string
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/admin.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/admin.css') ?>">
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/settingsMenu.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/settingsMenu.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/admin.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/admin.js') ?>" defer></script>
+    <?php if ($adminBannerSrc !== null): ?>
+        <script src="https://hbhub.noahgajnielsen.dk/assets/js/jxlImages.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/jxlImages.js') ?>" defer></script>
+    <?php endif; ?>
     <title><?= htmlspecialchars($target['userName']) ?> - Admin panel - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
@@ -600,6 +675,9 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                 <?php endif; ?>
                                 <a class="settings-btn settings-btn-small" href="/admin/user?user=<?= $targetId ?>&amp;export=1" download>Download all data (JSON)</a>
                                 <a class="settings-btn settings-btn-small" href="/admin/log?user=<?= $targetId ?>">Admin log</a>
+                                <!-- Every account used in the same browsers as this one -->
+                                <a class="settings-btn settings-btn-small" href="/admin/person?user=<?= $targetId ?>">Person<?= count($adminPersonIds) > 1
+                                    ? ' (' . count($adminPersonIds) . ' accounts)' : '' ?></a>
                             </div>
                         </div>
                     </div>
@@ -619,7 +697,7 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                         <?php if ($targetIsGhost): ?>
                             <div><dt>Ghost banned</dt><dd><?= adminTime($target['userGhostBannedTimestamp']) ?></dd></div>
                         <?php endif; ?>
-                        <div><dt>Class</dt><dd><?= $adminYear !== '' && $adminClass !== '' ? htmlspecialchars($adminYear . '.' . $adminClass) : '–' ?></dd></div>
+                        <div><dt>Class</dt><dd><?= $adminClass !== null ? htmlspecialchars($adminClass['label']) : '–' ?></dd></div>
                         <div><dt>Two-factor login</dt><dd><?= $target['totpIsOn'] ? 'On' : 'Off' ?></dd></div>
                         <div><dt>Wrong passwords in a row</dt><dd><?= (int) $target['userFailedLoginCount'] ?></dd></div>
                         <div><dt>Last locked</dt><dd><?= adminTime($target['userAccountLockedTimestamp']) ?><?= $target['isLocked'] ? ' (still locked)' : '' ?></dd></div>
@@ -635,6 +713,11 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                         <div><dt>Chats</dt><dd><?= count($adminChats) ?></dd></div>
                         <div><dt>Logged in sessions</dt><dd><?= $adminActiveSessions ?></dd></div>
                     </dl>
+                    <?php if (hbHubProfileHasStatus($adminStatus)): ?>
+                        <p class="settings-label">Status</p>
+                        <p class="admin-bio"><?= nl2br(htmlspecialchars(trim($adminStatus['emoji'] . ' ' . $adminStatus['text']))) ?><?php if ($adminStatus['expires'] !== null): ?>
+                            <span class="admin-small">(clears in <?= htmlspecialchars(hbHubProfileTimeSpan(max(0, $adminStatus['expires'] - time()))) ?>)</span><?php endif; ?></p>
+                    <?php endif; ?>
                     <?php if ($target['userDescription'] !== null && trim($target['userDescription']) !== ''): ?>
                         <p class="settings-label">Bio</p>
                         <p class="admin-bio"><?= nl2br(htmlspecialchars($target['userDescription'])) ?></p>
@@ -656,7 +739,7 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                         <div class="settings-card-head">
                             <div>
                                 <h2 id="admin-profile-heading">Profile</h2>
-                                <p class="settings-intro">Their name, bio and picture, for when something on their profile breaks the rules.</p>
+                                <p class="settings-intro">Their name, bio, status, picture and banner, for when something on their profile breaks the rules.</p>
                             </div>
                         </div>
 
@@ -695,6 +778,39 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                             </div>
                         </form>
 
+                        <hr class="settings-divider">
+
+                        <!-- Status (assets/php/profile.php): one emoji and a short text, with the bio's rules, and when it clears -->
+                        <form action="/admin/user?user=<?= $targetId ?>#profile" method="post">
+                            <input type="hidden" name="action" value="status">
+                            <div class="settings-row">
+                                <div class="settings-field admin-status-emoji">
+                                    <label class="settings-label" for="admin-status-emoji">Status emoji</label>
+                                    <input type="text" id="admin-status-emoji" name="statusEmoji" maxlength="16" autocomplete="off"
+                                           value="<?= htmlspecialchars($adminValues['statusEmoji']) ?>">
+                                </div>
+                                <div class="settings-field">
+                                    <label class="settings-label" for="admin-status-clear">Clear after</label>
+                                    <select id="admin-status-clear" name="statusClearAfter">
+                                        <?= hbHubProfileStatusClearOptions($adminStatus, $adminValues['statusClearAfter'] !== '' ? $adminValues['statusClearAfter'] : null) ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="admin-status-text">Status</label>
+                                <textarea id="admin-status-text" name="statusText" maxlength="<?= HBHUB_PROFILE_STATUS_TEXT_MAX ?>" rows="2"><?= htmlspecialchars($adminValues['statusText']) ?></textarea>
+                                <?php if (isset($adminErrors['status'])): ?>
+                                    <p class="settings-error" role="alert"><?= htmlspecialchars($adminErrors['status']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="settings-actions">
+                                <?php if (hbHubProfileHasStatus($adminStatus)): ?>
+                                    <button type="submit" class="settings-btn settings-btn-danger" name="remove" value="1" formnovalidate>Remove status</button>
+                                <?php endif; ?>
+                                <button type="submit" class="settings-btn settings-btn-primary">Save status</button>
+                            </div>
+                        </form>
+
                         <?php if ($adminAvatarSrc !== null): ?>
                             <hr class="settings-divider">
                             <form class="settings-item" action="/admin/user?user=<?= $targetId ?>#profile" method="post" data-confirm="Remove <?= htmlspecialchars($target['userName']) ?>'s profile picture?">
@@ -710,6 +826,32 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                 <button type="submit" class="settings-btn settings-btn-danger">Remove picture</button>
                                 <button type="submit" class="settings-btn settings-btn-danger" name="ban" value="1"
                                         data-confirm="Remove and ban <?= htmlspecialchars($target['userName']) ?>'s profile picture?">Remove and ban picture</button>
+                            </form>
+                        <?php endif; ?>
+
+                        <?php if ($adminBannerSrc !== null): ?>
+                            <hr class="settings-divider">
+                            <!-- Banner picture (assets/php/profile.php), drawn by jxlImages.js where the browser can't show JPEG XL.
+                                 For "Remove and ban", admin.js adds a PNG check copy of it in bannerCheck (assets/php/bannedAvatars.php). -->
+                            <img class="admin-banner-preview" src="<?= htmlspecialchars($adminBannerSrc) ?>" alt="Banner of <?= htmlspecialchars($target['userName']) ?>"
+                                 data-jxl data-jxl-worker="<?= htmlspecialchars($adminJxlWorker) ?>">
+                            <form class="settings-item" action="/admin/user?user=<?= $targetId ?>#profile" method="post" enctype="multipart/form-data"
+                                  data-confirm="Remove <?= htmlspecialchars($target['userName']) ?>'s banner picture?"
+                                  data-banner-check="<?= htmlspecialchars($adminBannerSrc) ?>" data-banner-check-side="<?= HBHUB_BANNED_AVATAR_CHECK_SIDE ?>"
+                                  data-jxl-worker="<?= htmlspecialchars($adminJxlWorker) ?>">
+                                <input type="hidden" name="action" value="removeBanner">
+                                <div class="settings-item-text">
+                                    <span class="settings-label">Banner picture</span>
+                                    <p class="settings-hint">
+                                        Their banner picture is deleted, their banner's colors are shown instead, and its ticket is free again.
+                                        Remove and ban also puts it on the <a class="admin-link" href="/admin/banned">banned pictures</a> list
+                                        without banning them: anyone who uploads it as a banner or a profile picture, or a resized or cropped
+                                        copy, from then on is banned straight away, them included.
+                                    </p>
+                                </div>
+                                <button type="submit" class="settings-btn settings-btn-danger">Remove banner</button>
+                                <button type="submit" class="settings-btn settings-btn-danger" name="ban" value="1"
+                                        data-confirm="Remove and ban <?= htmlspecialchars($target['userName']) ?>'s banner picture?">Remove and ban banner</button>
                             </form>
                         <?php endif; ?>
                     </section>
@@ -961,11 +1103,16 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                         <tr>
                                             <td class="admin-nowrap"><?= adminTime($attachment['attachmentUploadedTimestamp']) ?></td>
                                             <td>
-                                                <a class="admin-link" href="/admin/chat?chat=<?= (int) $attachment['chatId'] ?>"><?= htmlspecialchars($attachment['chatTitle']) ?></a>
-                                                <span class="admin-small">
-                                                    <?= (int) $attachment['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?><?=
-                                                    (int) $attachment['chatStatus'] !== HBHUB_CHAT_STATUS_ACTIVE ? ', chat deleted' : '' ?>
-                                                </span>
+                                                <?php if ($attachment['chatId'] === null): ?>
+                                                    <!-- Their profile banner (assets/php/profile.php): not in a chat, never runs out -->
+                                                    <a class="admin-link" href="/profile?user=<?= $targetId ?>">Profile banner</a>
+                                                <?php else: ?>
+                                                    <a class="admin-link" href="/admin/chat?chat=<?= (int) $attachment['chatId'] ?>"><?= htmlspecialchars($attachment['chatTitle']) ?></a>
+                                                    <span class="admin-small">
+                                                        <?= (int) $attachment['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?><?=
+                                                        (int) $attachment['chatStatus'] !== HBHUB_CHAT_STATUS_ACTIVE ? ', chat deleted' : '' ?>
+                                                    </span>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="admin-message-text">
                                                 <?= htmlspecialchars($attachment['attachmentName'] ?? 'file') ?>
@@ -978,7 +1125,7 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                                 <?php endif; ?>
                                             </td>
                                             <td><?= (int) $attachment['attachmentTickets'] ?></td>
-                                            <td class="admin-nowrap"><?= adminTime($attachment['attachmentExpiresTimestamp']) ?></td>
+                                            <td class="admin-nowrap"><?= $attachment['chatId'] === null ? 'Never' : adminTime($attachment['attachmentExpiresTimestamp']) ?></td>
                                             <td>
                                                 <?php if ($adminCanDeleteMessages): ?>
                                                     <form action="/admin/user?user=<?= $targetId ?>#attachments" method="post"
@@ -1151,8 +1298,11 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                             <?php endif; ?>
                         </div>
                         <form action="/admin/user?user=<?= $targetId ?>#ghost" method="post"
-                              data-confirm="<?= $targetIsGhost ? 'Lift ' . htmlspecialchars($target['userName']) . '\'s ghost ban?' : 'Ghost ban ' . htmlspecialchars($target['userName']) . '?' ?>">
+                              data-confirm="<?= $targetIsGhost ? 'Lift ' . htmlspecialchars($target['userName']) . '\'s ghost ban?' : 'Ghost ban ' . htmlspecialchars($target['userName']) . '?' ?>"
+                              data-confirm-all="<?= $targetIsGhost ? 'Lift the ghost ban of ' . htmlspecialchars($target['userName']) . ' and their other accounts?' : 'Ghost ban ' . htmlspecialchars($target['userName']) . ' and their other accounts?' ?>">
                             <input type="hidden" name="action" value="<?= $targetIsGhost ? 'ghostUnban' : 'ghostBan' ?>">
+                            <?= $targetIsGhost ? adminAllAccountsSwitchHtml($adminOthers, 'ghostUnban', 'lift the ghost ban of', $targetId)
+                                : adminAllAccountsSwitchHtml($adminOthers, 'ghostBan', 'ghost ban', $targetId) ?>
                             <div class="settings-actions">
                                 <?php if ($targetIsGhost): ?>
                                     <button type="submit" class="settings-btn settings-btn-primary">Lift ghost ban</button>
@@ -1186,15 +1336,21 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                             <?php endif; ?>
                         </div>
                         <?php if ($targetIsBanned): ?>
-                            <form action="/admin/user?user=<?= $targetId ?>#ban" method="post" data-confirm="Unban <?= htmlspecialchars($target['userName']) ?>?">
+                            <form action="/admin/user?user=<?= $targetId ?>#ban" method="post" data-confirm="Unban <?= htmlspecialchars($target['userName']) ?>?"
+                                  data-confirm-all="Unban <?= htmlspecialchars($target['userName']) ?> and their other accounts?">
                                 <input type="hidden" name="action" value="unban">
+                                <?= adminAllAccountsSwitchHtml($adminOthers, 'unban', 'unban', $targetId) ?>
                                 <div class="settings-actions">
                                     <button type="submit" class="settings-btn settings-btn-primary">Unban <?= htmlspecialchars($target['userName']) ?></button>
                                 </div>
                             </form>
                         <?php else: ?>
-                            <form action="/admin/user?user=<?= $targetId ?>#ban" method="post" data-confirm="Ban <?= htmlspecialchars($target['userName']) ?>?">
+                            <form action="/admin/user?user=<?= $targetId ?>#ban" method="post" data-confirm="Ban <?= htmlspecialchars($target['userName']) ?>?"
+                                  data-confirm-all="Ban <?= htmlspecialchars($target['userName']) ?> and their other accounts?"<?php if ($adminBannerSrc !== null): ?>
+                                  enctype="multipart/form-data" data-banner-check="<?= htmlspecialchars($adminBannerSrc) ?>"
+                                  data-banner-check-side="<?= HBHUB_BANNED_AVATAR_CHECK_SIDE ?>" data-jxl-worker="<?= htmlspecialchars($adminJxlWorker) ?>"<?php endif; ?>>
                                 <input type="hidden" name="action" value="ban">
+                                <?= adminAllAccountsSwitchHtml($adminOthers, 'ban', 'ban', $targetId) ?>
                                 <?php if ($adminAvatarSrc !== null): ?>
                                     <div class="settings-field">
                                         <label class="settings-checkbox">
@@ -1204,6 +1360,18 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                         <p class="settings-hint" id="admin-ban-avatar-hint">
                                             It goes on the <a class="admin-link" href="/admin/banned">banned pictures</a> list: any account that uploads
                                             it, or a resized or slightly cropped copy, or signs up with it, is banned straight away.
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if ($adminBannerSrc !== null): ?>
+                                    <div class="settings-field">
+                                        <label class="settings-checkbox">
+                                            <input type="checkbox" name="banBanner" value="1" aria-describedby="admin-ban-banner-hint">
+                                            <span>Ban their banner picture too</span>
+                                        </label>
+                                        <p class="settings-hint" id="admin-ban-banner-hint">
+                                            It goes on the <a class="admin-link" href="/admin/banned">banned pictures</a> list too: any account that
+                                            uploads it as a banner or a profile picture, or a resized or slightly cropped copy, is banned straight away.
                                         </p>
                                     </div>
                                 <?php endif; ?>
@@ -1225,8 +1393,10 @@ function adminIps(?string $ipv4, ?string $ipv6): string
                                 </p>
                             </div>
                         </div>
-                        <form action="/admin/user?user=<?= $targetId ?>#delete" method="post" data-confirm="Delete <?= htmlspecialchars($target['userName']) ?>'s account? This can't be undone.">
+                        <form action="/admin/user?user=<?= $targetId ?>#delete" method="post" data-confirm="Delete <?= htmlspecialchars($target['userName']) ?>'s account? This can't be undone."
+                              data-confirm-all="Delete <?= htmlspecialchars($target['userName']) ?>'s account and their other accounts? This can't be undone.">
                             <input type="hidden" name="action" value="deleteAccount">
+                            <?= adminAllAccountsSwitchHtml($adminOthers, 'deleteAccount', 'delete', $targetId) ?>
                             <div class="settings-field">
                                 <label class="settings-label" for="admin-delete-name">Type their name to confirm</label>
                                 <input type="text" id="admin-delete-name" name="confirmName" maxlength="35" required autocomplete="off"

@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '23 October 2026';
+const HBHUB_TERMS_UPDATED = '26 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -72,9 +72,10 @@ const HBHUB_TERMS_UPDATED = '23 October 2026';
                     <section id="account" aria-labelledby="terms-account">
                         <h2 id="terms-account">2. Your account</h2>
                         <ul>
-                            <li><strong>One account per person.</strong> Don't make extra accounts, for example to get more daily chips or to get around a ban.</li>
+                            <li><strong>One account per person.</strong> Don't make extra accounts, for example to get more daily chips or to get around a ban. Admins can see which accounts are used in the same browser, and can treat them as one person (see section 7).</li>
                             <li><strong>Be yourself.</strong> Use a name people from school will recognise you by, and don't pretend to be someone else.</li>
-                            <li>Names and bios can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them. A bio can't have a link to one of the blocked sites in it either (see section 3).</li>
+                            <li><strong>Your class.</strong> When you sign up you say which year of HTX you're in (1., 2. or 3.) and your field of study, or that you don't go to HTX. Pick your real class. Your year goes up by itself every July 1st, and after 3. year you're shown as a Graduate, with your field of study. At HTX you're put in your class's group chat straight away, with no message request. You can mute or hide it, but not leave it; changing your class in your <a href="/settings">settings</a> moves you to the other class's chat.</li>
+                            <li>Names, bios, statuses and nicknames in chats can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them. A bio, status or nickname can't have a link to one of the blocked sites in it either (see section 3).</li>
                             <li><strong>Keep it to yourself.</strong> Don't share your password or let others use your account. You're responsible for what happens on it.</li>
                             <li>Turning on two-factor login in your <a href="/settings">settings</a> is a good idea. If you think someone else has got into your account, change your password and tell an admin.</li>
                         </ul>
@@ -100,11 +101,11 @@ const HBHUB_TERMS_UPDATED = '23 October 2026';
                     <section id="content" aria-labelledby="terms-content">
                         <h2 id="terms-content">4. What you post</h2>
                         <p>
-                            What you write and upload (messages, reactions, attachments, profile pictures, group icons and backgrounds) is
+                            What you write and upload (messages, reactions, attachments, profile pictures and banners, group icons and backgrounds) is
                             still yours. By posting it, you let HB Hub store it and show it to the people it's meant for, which is
                             needed for the site to work. That includes turning pictures you attach into JPEG XL (without losing
-                            any detail, except JPEG photos, which are made smaller in a way that looks the same), and zipping
-                            other files, so they take less space.
+                            any detail, except JPEG photos, which are made smaller in a way that looks the same), making a banner
+                            picture smaller and turning it into JPEG XL, and zipping other files, so they take less space.
                         </p>
                         <ul>
                             <li>Only upload pictures and files you're allowed to share. Don't post photos of other people without asking them.</li>
@@ -200,25 +201,29 @@ const HBHUB_TERMS_UPDATED = '23 October 2026';
                         <h2 id="terms-moderation">7. When the rules are broken</h2>
                         <p>Depending on how serious it is, admins can:</p>
                         <ul>
-                            <li>delete messages, attachments, pictures or groups, and ban a profile picture they delete, so it can't be used again,</li>
+                            <li>delete messages, attachments, pictures, banner pictures or groups, and ban a profile picture or banner picture they delete, so it can't be used again,</li>
+                            <li>unpin messages pinned in a chat,</li>
+                            <li>change or remove a name, bio or status,</li>
                             <li>reset or take away chips, or remove game results from the leaderboards,</li>
                             <li>take away attachment tickets, so fewer (or no) new attachments can be sent,</li>
                             <li>block the Casino and Games for the account, all the time. Unlike a block you set yourself, it can't be turned off in your settings, only an admin can lift it,</li>
                             <li>
                                 ghost ban the account, for a while or for good, without telling the person. The chat keeps
-                                working like normal for them, but what they do in it (messages, attachments, edits, reactions,
-                                and the chats they start or add people to) only shows to themselves and site admins. Nobody
+                                working like normal for them, but what they do in it (messages, attachments, edits, reactions, pins,
+                                nicknames, and the chats they start or add people to) only shows to themselves and site admins. Nobody
                                 else sees it or gets a notification or message request from it. A new account (up to 3 days
                                 old) that's made or used in the same browser is ghost banned too,
                             </li>
-                            <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture.</li>
+                            <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture, and can cover its banner picture.</li>
+                            <li>do any of the above to all of a person's accounts at once. Accounts that have been logged in to from the same browser are taken to be the same person, and admins check that it isn't just a shared computer first.</li>
                         </ul>
                         <p>
-                            Using a banned profile picture is against the rules too: an account that uploads one, or signs up with
-                            one, is banned straight away, without an admin having to do anything. That includes edited copies that
-                            look almost the same, like a resized or cropped one, and the account the picture was removed from.
-                            Banned pictures are the pictures of banned accounts, profile pictures admins have removed and banned,
-                            and other pictures admins have added.
+                            Using a banned picture is against the rules too: an account that uploads one as its profile picture or
+                            banner, or signs up with one, is banned straight away, without an admin having to do anything. That
+                            includes edited copies that look almost the same, like a resized or cropped one, and the account the
+                            picture was removed from. Banned pictures are the profile pictures and banner pictures of banned
+                            accounts, profile pictures and banner pictures admins have removed and banned, and other pictures
+                            admins have added. Admins can also change or remove a status that breaks the rules.
                         </p>
                         <p>
                             Admins decide what breaks the rules, also for things these terms don't list. If you think a decision

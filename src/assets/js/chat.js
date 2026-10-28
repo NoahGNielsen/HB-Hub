@@ -706,6 +706,27 @@ chatPart(() => {
     dialog.showModal();
 });
 
+// Nickname not saved popup: only on the page when the server didn't give a nickname because of what's in it
+// (?nicknameRefused=latin or =link). It opens straight away, and the ?nicknameRefused= is taken out of the address
+// so a refresh doesn't open it again.
+chatPart(() => {
+    const dialog = document.querySelector('.chat-nickname-refused');
+    if (!dialog) return;
+
+    dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+        button.addEventListener('click', () => dialog.close());
+    });
+
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+
+    const url = new URL(location.href);
+    url.searchParams.delete('nicknameRefused');
+    history.replaceState(null, '', url);
+    dialog.showModal();
+});
+
 // Message requests popup: chats the user was added to but hasn't accepted yet.
 // Accept and Decline are plain form posts, the server does the rest.
 // A message request notification links to /chat/?requests=1, which opens it straight away (when there still are any).
@@ -734,12 +755,14 @@ chatPart(() => {
 // Members popup: the person button in a group's header lists everyone in it.
 // Group admins can make a member an admin or kick them, and the group owner can remove an admin,
 // all asked about first in a popup on top of it.
+// Everyone can give anyone a nickname, in the Nickname popup on top of it.
 chatPart(() => {
     const dialog = document.querySelector('.chat-members');
     if (!dialog) return;
 
     const confirmDialog = document.querySelector('.chat-member-confirm');
-    let memberButton = null; // the Make admin, Remove admin or Kick button that opened the confirm popup
+    const nicknameDialog = document.querySelector('.chat-member-nickname');
+    let memberButton = null; // the Nickname, Make admin, Remove admin or Kick button that opened the popup on top
 
     document.querySelector('[data-members-open]').addEventListener('click', () => dialog.showModal());
 
@@ -755,7 +778,7 @@ chatPart(() => {
         if (action === 'makeAdmin') {
             confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Make ${name} an admin?`;
             confirmDialog.querySelector('[data-member-confirm-text]').textContent =
-                `${name} will be able to rename the group, change its icon and background, delete messages, make others admin, kick members and delete the group.`;
+                `${name} will be able to rename the group, change its icon and background, delete messages, unpin anyone's pins, make others admin, kick members and delete the group.`;
             submit.textContent = 'Make admin';
         } else if (action === 'removeAdmin') {
             confirmDialog.querySelector('[data-member-confirm-title]').textContent = `Remove ${name} as admin?`;
@@ -779,12 +802,29 @@ chatPart(() => {
         confirmDialog.querySelector('.chat-btn[data-dialog-close]').focus(); // the safe choice is the one Enter picks
     }
 
+    // Filled in with who it's for and the nickname they have now, which can be changed or emptied to take it away
+    function openNickname(button) {
+        const userName = button.dataset.memberUsername;
+        const form = nicknameDialog.querySelector('form');
+        memberButton = button;
+        form.elements.member.value = button.dataset.memberId;
+        form.elements.nickname.value = button.dataset.memberNickname;
+        nicknameDialog.querySelector('[data-member-nickname-label]').textContent = `Nickname for ${userName}`;
+        nicknameDialog.querySelector('[data-member-nickname-hint]').textContent =
+            `Everyone in the group sees it instead of their username. Leave it empty to go back to ${userName}.`;
+        nicknameDialog.showModal();
+        form.elements.nickname.focus();
+        form.elements.nickname.select();
+    }
+
     dialog.addEventListener('click', (event) => {
+        const nicknameButton = event.target.closest('[data-member-nickname-open]');
+        if (nicknameButton) openNickname(nicknameButton);
         const button = event.target.closest('[data-member-action]');
         if (button) confirmMember(button);
     });
 
-    [dialog, confirmDialog].forEach((popup) => {
+    [dialog, confirmDialog, nicknameDialog].forEach((popup) => {
         if (!popup) return; // the confirm popup is only there for group admins
 
         popup.querySelectorAll('[data-dialog-close]').forEach((button) => {
@@ -799,6 +839,7 @@ chatPart(() => {
 
     // Back on the button it was opened from, in the Members popup still open below it
     confirmDialog?.addEventListener('close', () => memberButton?.focus());
+    nicknameDialog.addEventListener('close', () => memberButton?.focus());
 });
 
 // Member menu, for site admins: right-click someone in the Members popup (or use the menu key / Shift+F10 on them)
@@ -937,7 +978,8 @@ function chatGroupMessages(messages) {
     previous?.classList.remove('has-next');
 }
 
-// Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to mute, hide or leave it.
+// Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to mute, hide or leave it
+// (not a class chat, data-chat-class).
 // In a DM the other person's profile can be opened (otherPages/profile.php) and they can be given a nickname.
 // Group admins can also change the group's name or icon, or delete it.
 // Group admins and both people in a DM can change the chat's background.
@@ -976,6 +1018,8 @@ chatPart((signal) => {
             menu.querySelectorAll('[data-menu-dm]').forEach((menuItem) => { menuItem.hidden = isGroup; });
             menu.querySelectorAll('[data-menu-admin]').forEach((menuItem) => { menuItem.hidden = !isAdmin; });
             menu.querySelector('[data-menu-action="background"]').hidden = isGroup && !isAdmin;
+            // Everyone at HTX is in their class chat, so it can be hidden but not left
+            menu.querySelector('[data-menu-action="leave"]').hidden = item.hasAttribute('data-chat-class');
             // Nobody to give a nickname in a DM the other person left
             if (!item.hasAttribute('data-chat-username')) menu.querySelector('[data-menu-action="nickname"]').hidden = true;
             const isMuted = item.hasAttribute('data-chat-muted');
@@ -1272,8 +1316,10 @@ chatPart(() => {
 });
 
 // Message menu: right-click a message in the open chat (or use the menu key / Shift+F10 on it) to react to it, reply to
-// it, or mark the chat unread from it on. Your own messages can also be edited or deleted,
+// it, pin it, or mark the chat unread from it on. Your own messages can also be edited or deleted,
 // and group admins can delete anyone's (shown as deleted by a group admin).
+// Pinned messages get Unpin message instead, when the Pinned messages popup's list says the user can (data-pin-unpinnable:
+// their own pin, a group admin, or a DM). Pinning isn't there while muted, like reactions.
 // Along the top are the emoji used most recently (chatQuickReactions()) and + for all of them, which the reactions part
 // below handles (chat:react and chat:react-more). An emoji the user already reacted with is lit up, and takes it back.
 // Site admins also get Admin panel on other people's messages, which opens the sender's admin panel (admin/user.php).
@@ -1289,6 +1335,8 @@ chatPart((signal) => {
     const replyInput = composer.querySelector('[data-reply-input]');
     const replyBar = composer.querySelector('[data-reply-bar]');
     const unreadForm = document.querySelector('[data-message-unread]');
+    const pinForm = document.querySelector('[data-message-pin]');
+    const pinsList = document.querySelector('[data-pins-list]');
     const editDialog = document.querySelector('.chat-message-edit');
     const editForm = editDialog.querySelector('form');
     const editText = editForm.elements.content;
@@ -1392,6 +1440,10 @@ chatPart((signal) => {
             if (canReact) fillReactions(item);
             menu.querySelector('[data-menu-action="reply"]').hidden = isDeleted;
             menu.querySelector('[data-menu-action="edit"]').hidden = !isOwn || !item.querySelector('[data-message-text]');
+            const isPinned = item.hasAttribute('data-message-pinned');
+            const pin = pinsList.querySelector(`[data-pin-id="${item.dataset.messageId}"]`);
+            menu.querySelector('[data-menu-action="pin"]').hidden = !canReact || isPinned;
+            menu.querySelector('[data-menu-action="unpin"]').hidden = isDeleted || !isPinned || !pin?.hasAttribute('data-pin-unpinnable');
             menu.querySelectorAll('[data-menu-delete]').forEach((menuItem) => { menuItem.hidden = !canDelete; });
             const isFromOther = !item.hasAttribute('data-message-own');
             siteAdminItems.forEach((menuItem) => {
@@ -1473,6 +1525,16 @@ chatPart((signal) => {
             unreadForm.elements.message.value = item.dataset.messageId;
             chatSubmit(unreadForm);
         },
+        pin(item) {
+            pinForm.elements.action.value = 'pin';
+            pinForm.elements.message.value = item.dataset.messageId;
+            chatSubmit(pinForm);
+        },
+        unpin(item) {
+            pinForm.elements.action.value = 'unpin';
+            pinForm.elements.message.value = item.dataset.messageId;
+            chatSubmit(pinForm);
+        },
     };
 
     menu.addEventListener('click', (event) => {
@@ -1539,6 +1601,7 @@ chatPart((signal) => {
         }));
     }
 
+    // Pin and unpin notices link to their message the same way
     messages.addEventListener('click', (event) => {
         const link = event.target.closest('[data-reply-link]');
         if (!link) return;
@@ -1546,10 +1609,75 @@ chatPart((signal) => {
         jumpToId(link.dataset.replyId);
     });
 
+    // Jump in the Pinned messages popup (the pins part below)
+    messages.addEventListener('chat:jump', (event) => jumpToId(event.detail.messageId));
+
     // A mention notification links to its message (#message-id), which is jumped to the same way once the page is up.
     // After the rest of this file has run, as the part that loads older messages comes further down.
     const linked = /^#message-(\d+)$/.exec(location.hash);
     if (linked) setTimeout(() => jumpToId(linked[1]));
+});
+
+// Pinned messages popup: the pin in the chat's header lists the messages pinned in the open chat, the newest pin first
+// (Pin message in the message menu above pins one). Jump closes it and scrolls to the message, loading back to it when
+// it isn't on the page yet (chat:jump, the message menu part). Unpin is a plain form post that opens it again (?pins=1),
+// and a pin that didn't fit opens it with ?pins=full, which shows the line saying why.
+// Polling swaps in the list when it changed (chat:pins-update), and the messages shown are marked pinned or not from it
+// (data-message-pinned, chat.css). The ones that come in later are marked by the server already.
+chatPart(() => {
+    const dialog = document.querySelector('.chat-pins');
+    const messages = document.querySelector('[data-chat-messages]');
+    if (!dialog || !messages) return;
+
+    const openButton = document.querySelector('[data-pins-open]');
+    const list = dialog.querySelector('[data-pins-list]');
+    const count = dialog.querySelector('[data-pins-count]');
+    const empty = dialog.querySelector('[data-pins-empty]');
+    const full = dialog.querySelector('[data-pins-full]');
+
+    // The count, the empty line and the marks on the messages, from the list
+    function sync() {
+        const pinnedIds = new Set([...list.querySelectorAll('[data-pin-id]')].map((pin) => pin.dataset.pinId));
+        count.textContent = String(pinnedIds.size);
+        empty.hidden = pinnedIds.size > 0;
+        openButton.setAttribute('aria-label', `Pinned messages (${pinnedIds.size})`);
+        messages.querySelectorAll('[data-message-id]').forEach((item) => {
+            item.toggleAttribute('data-message-pinned', pinnedIds.has(item.dataset.messageId));
+        });
+    }
+
+    list.addEventListener('chat:pins-update', sync);
+
+    openButton.addEventListener('click', () => {
+        full.hidden = true;
+        dialog.showModal();
+    });
+
+    const params = new URLSearchParams(location.search);
+    const opened = params.get('pins');
+    if (opened !== null) {
+        params.delete('pins'); // so a refresh doesn't open it again
+        history.replaceState(null, '', location.pathname + (params.size > 0 ? '?' + params : ''));
+        full.hidden = opened !== 'full';
+        dialog.showModal();
+    }
+
+    dialog.addEventListener('click', (event) => {
+        // Clicking the dimmed area around the popup closes it
+        if (event.target === dialog) {
+            dialog.close();
+            return;
+        }
+        const jump = event.target.closest('[data-pin-jump]');
+        if (!jump) return;
+        event.preventDefault(); // not the link to the chat page itself (Switching chats, at the bottom of this file)
+        dialog.close();
+        messages.dispatchEvent(new CustomEvent('chat:jump', { detail: { messageId: jump.dataset.pinJump } }));
+    });
+
+    dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+        button.addEventListener('click', () => dialog.close());
+    });
 });
 
 // Attach popup: the button left of the message box opens a small menu just above it.
@@ -2662,7 +2790,10 @@ chatPart((signal) => {
             const text = element('span', 'chat-ticket-text');
             text.append(
                 element('span', 'chat-ticket-name', attachment.name),
-                element('span', 'chat-ticket-info', `In ${attachment.chat} · ${attachment.size} · until ${attachment.expires}`),
+                // A profile banner isn't in a chat and never runs out (chat and expires are null)
+                element('span', 'chat-ticket-info', attachment.chat === null
+                    ? `Your profile banner · ${attachment.size} · until you change it`
+                    : `In ${attachment.chat} · ${attachment.size} · until ${attachment.expires}`),
             );
 
             // The ticket stub on the left: how many tickets it takes
@@ -2777,13 +2908,77 @@ function chatOwnReactions(item) {
     return new Set([...item.querySelectorAll('[data-reactions] .is-mine')].map((reaction) => reaction.dataset.reaction));
 }
 
+// One section of an emoji picker: its heading and a grid of a button per emoji. The tab's name and icon go along in
+// data-tab-name/data-tab-icon, and the heading gets its id (for the grid's aria-labelledby) once it's in a picker.
+function chatEmojiSection(name, icon, emoji) {
+    const heading = document.createElement('h3');
+    heading.className = 'chat-emoji-heading';
+    heading.textContent = name;
+
+    const grid = document.createElement('div');
+    grid.className = 'chat-emoji-grid';
+    grid.setAttribute('role', 'group');
+    grid.append(...emoji.map((character) => {
+        const pick = document.createElement('button');
+        pick.type = 'button';
+        pick.tabIndex = -1;
+        pick.textContent = character;
+        pick.dataset.emoji = character;
+        return pick;
+    }));
+
+    const section = document.createElement('section');
+    section.dataset.tabName = name;
+    section.dataset.tabIcon = icon;
+    section.append(heading, grid);
+    return section;
+}
+
+// The category sections are made once per page load and copied into each picker, as making the ~1,200 buttons is what
+// made opening it slow. The chat page swapping in the next chat keeps this, so its new pickers are just a copy away.
+let chatEmojiCategoriesMade = null;
+let chatEmojiPickerCount = 0; // so each picker's heading ids are its own
+
+// fn(deadline) when the browser has a moment: deadline.timeRemaining() is how many ms it has left (0 without
+// requestIdleCallback, so the caller does a little and asks again)
+function chatEmojiWhenIdle(fn) {
+    if ('requestIdleCallback' in window) requestIdleCallback(fn);
+    else setTimeout(() => fn({ timeRemaining: () => 0 }));
+}
+
+// The browser is slow to measure each emoji the first time it meets one after the page loads (~0.6 ms each, so most of
+// a second for the whole picker), and quick after that, even in another picker or after swapping chats. So, a few at a
+// time while it has nothing else to do, they're measured in a hidden box (.chat-emoji-warm, chat.css) in the picker's
+// font, and the first open is quick too. Once per page load.
+let chatEmojiWarmed = false;
+function chatEmojiWarmUp(emoji) {
+    if (chatEmojiWarmed) return;
+    chatEmojiWarmed = true;
+    const box = document.createElement('div');
+    box.className = 'chat-emoji-warm';
+    box.setAttribute('aria-hidden', 'true');
+    document.body.append(box);
+    let next = 0;
+    const step = (deadline) => {
+        do {
+            box.textContent = emoji.slice(next, next += 10).join(' ');
+            void box.offsetWidth; // measures them
+        } while (next < emoji.length && deadline.timeRemaining() > 5);
+        if (next < emoji.length) chatEmojiWhenIdle(step);
+        else box.remove();
+    };
+    chatEmojiWhenIdle(step);
+}
+
 // An emoji picker (the message box's and Add reaction's): category tabs along the top, and below them the emoji by
-// category, with the recently used ones first. render() fills it in each time it opens, so the recent ones are up to date
-// (but don't move around while picking). onPick(emoji) is called when one is picked, and onClose(returnFocus) when
-// Escape or Tab should close it. The arrow keys, Home and End move through the emoji.
+// category, with the recently used ones first. The categories are put in once (when the browser has a moment after the
+// page loads, or on the first open if that's sooner) and kept, and render() on each open only redoes Recently used when
+// it changed, so the recent ones are up to date (but don't move around while picking). onPick(emoji) is called when one
+// is picked, and onClose(returnFocus) when Escape or Tab should close it. The arrow keys, Home and End move through the emoji.
 function chatEmojiPicker(picker, { onPick, onClose }) {
     const tabs = picker.querySelector('[data-emoji-tabs]');
     const list = picker.querySelector('[data-emoji-list]');
+    const idPrefix = 'chat-emoji-' + chatEmojiPickerCount++ + '-section-';
 
     // [name, tab icon, the emoji with spaces between]
     const categories = [
@@ -2797,47 +2992,51 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
         ['Symbols', '❤️', '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ☮️ ✝️ ☪️ 🕉️ ☸️ ✡️ 🔯 ☯️ ☦️ 🛐 ⛎ ♈ ♉ ♊ ♋ ♌ ♍ ♎ ♏ ♐ ♑ ♒ ♓ 🆔 ⚛️ ☢️ ☣️ 📴 📳 🆚 💮 🉐 🅰️ 🅱️ 🆎 🆑 🅾️ 🆘 ❌ ⭕ 🛑 ⛔ 📛 🚫 💯 💢 ♨️ 🚷 🚯 🚳 🚱 🔞 📵 🚭 ❗ ❕ ❓ ❔ ‼️ ⁉️ 🔅 🔆 ⚠️ 🚸 🔱 ⚜️ 🔰 ♻️ ✅ ❇️ ✳️ ❎ 🌐 💠 Ⓜ️ 🌀 💤 🏧 🚾 ♿ 🅿️ 🚹 🚺 🚼 🚻 🚮 🎦 📶 🆗 🆙 🆒 🆕 🆓 🔟 🔢 #️⃣ *️⃣ ▶️ ⏸️ ⏯️ ⏹️ ⏺️ ⏭️ ⏮️ ⏩ ⏪ 🔀 🔁 🔂 ◀️ 🔼 🔽 ⏫ ⏬ ➡️ ⬅️ ⬆️ ⬇️ ↗️ ↘️ ↙️ ↖️ ↕️ ↔️ ↪️ ↩️ ⤴️ ⤵️ 🔄 🔃 🎵 🎶 ➕ ➖ ➗ ✖️ ♾️ 💲 💱 ™️ ©️ ®️ 〰️ ➰ ➿ 🔚 🔙 🔛 🔝 🔜 ✔️ ☑️ 🔘 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🟤 🔺 🔻 🔸 🔹 🔶 🔷 🔳 🔲 ▪️ ▫️ ◾ ◽ ◼️ ◻️ 🟥 🟧 🟨 🟩 🟦 🟪 ⬛ ⬜ 🟫 🔈 🔇 🔉 🔊 🔔 🔕 📣 📢 💬 💭 🗯️ ♠️ ♣️ ♥️ ♦️ 🃏 🎴 🀄 🕐 🕑 🕒 🕓 🕔 🕕 🕖 🕗 🕘 🕙 🕚 🕛'],
     ];
 
+    // Puts the categories in, the first time only
+    let isBuilt = false;
+    function build() {
+        if (isBuilt) return;
+        isBuilt = true;
+        if (!chatEmojiCategoriesMade) {
+            chatEmojiCategoriesMade = document.createDocumentFragment();
+            chatEmojiCategoriesMade.append(...categories.map(([name, icon, emoji]) => chatEmojiSection(name, icon, emoji.split(' '))));
+        }
+        list.append(chatEmojiCategoriesMade.cloneNode(true));
+    }
+    chatEmojiWhenIdle(build);
+    chatEmojiWarmUp(categories.flatMap(([, , emoji]) => emoji.split(' ')));
+
+    // Recently used and the tabs, made again only when the recent ones changed since the last open
+    let shownRecent = null;
     function render() {
+        build();
         const recent = chatRecentEmoji();
-        const sections = (recent.length > 0 ? [['Recently used', '🕘', recent]] : [])
-            .concat(categories.map(([name, icon, emoji]) => [name, icon, emoji.split(' ')]));
+        if (recent.join(' ') !== shownRecent) {
+            shownRecent = recent.join(' ');
+            list.querySelector('[data-emoji-recent]')?.remove();
+            if (recent.length > 0) {
+                const section = chatEmojiSection('Recently used', '🕘', recent);
+                section.dataset.emojiRecent = '';
+                list.prepend(section);
+            }
 
-        tabs.replaceChildren();
-        list.replaceChildren();
-        sections.forEach(([name, icon, emoji], index) => {
-            const heading = document.createElement('h3');
-            heading.className = 'chat-emoji-heading';
-            heading.id = 'chat-emoji-section-' + index;
-            heading.textContent = name;
+            tabs.replaceChildren(...[...list.children].map((section, index) => {
+                const heading = section.querySelector('.chat-emoji-heading');
+                heading.id = idPrefix + index;
+                section.querySelector('.chat-emoji-grid').setAttribute('aria-labelledby', heading.id);
 
-            const grid = document.createElement('div');
-            grid.className = 'chat-emoji-grid';
-            grid.setAttribute('role', 'group');
-            grid.setAttribute('aria-labelledby', heading.id);
-            grid.append(...emoji.map((character) => {
-                const pick = document.createElement('button');
-                pick.type = 'button';
-                pick.tabIndex = -1;
-                pick.textContent = character;
-                pick.dataset.emoji = character;
-                return pick;
+                const tab = document.createElement('button');
+                tab.type = 'button';
+                tab.textContent = section.dataset.tabIcon;
+                tab.title = section.dataset.tabName;
+                tab.setAttribute('aria-label', section.dataset.tabName);
+                tab.addEventListener('click', () => {
+                    list.scrollTop = section.offsetTop - list.offsetTop;
+                    setActive(section.querySelector('[data-emoji]'));
+                });
+                return tab;
             }));
-
-            const section = document.createElement('section');
-            section.append(heading, grid);
-            list.append(section);
-
-            const tab = document.createElement('button');
-            tab.type = 'button';
-            tab.textContent = icon;
-            tab.title = name;
-            tab.setAttribute('aria-label', name);
-            tab.addEventListener('click', () => {
-                list.scrollTop = section.offsetTop - list.offsetTop;
-                setActive(grid.querySelector('button'));
-            });
-            tabs.append(tab);
-        });
+        }
 
         list.scrollTop = 0;
         markCurrentTab();
@@ -3282,9 +3481,10 @@ chatPart(() => {
 // and swaps in the chat list when something in it changed (new messages, unread counts, new chats).
 // The open chat's background is kept up to date too, so a new one shows up without a reload, and so are the reactions
 // on the messages already shown (?from= the oldest one), which change on old messages as well.
-// Message requests are swapped in the same way, and the requests button shows up when there are any.
-// Both come with a version (chatListV, requestsV), sent back as ?listV= and ?requestsV=: while it's still the one shown,
-// the server leaves the HTML out, as most polls nothing in them changed.
+// Message requests are swapped in the same way, and the requests button shows up when there are any. So is the list in
+// the Pinned messages popup, as messages are pinned and unpinned (which tells the pins part above, chat:pins-update).
+// All three come with a version (chatListV, requestsV, pinsV), sent back as ?listV=, ?requestsV= and ?pinsV=: while
+// it's still the one shown, the server leaves the HTML out, as most polls nothing in them changed.
 // The number of unread chats is passed on to the red number on Chat in the side bar.
 // The nav bar's request (navUpdates.js) comes along about every 15 seconds (nav:ride, ?nav=), so the chat page doesn't
 // send that one on its own as well. Its answer is "nav", passed on as nav:update.
@@ -3310,11 +3510,13 @@ chatPart((signal, isSwap) => {
     const requestsCount = document.querySelector('[data-requests-count]');
     const requestsDialog = document.querySelector('.chat-requests');
     const requestsList = document.querySelector('[data-requests-list]');
+    const pinsList = document.querySelector('[data-pins-list]');
     if (!list) return;
 
     const keepUnread = new URLSearchParams(location.search).get('unread') === '1';
     let shownChatListV = null; // the version of the chat list last swapped in, so it's only sent again when something changed
     let shownRequestsV = null; // the same for the message requests
+    let shownPinsV = null; // and the pinned messages
 
     function messageItems() {
         return messages.querySelectorAll('[data-message-id]');
@@ -3374,6 +3576,16 @@ chatPart((signal, isSwap) => {
         requestsCount.textContent = count > 9 ? '9+' : String(count);
     }
 
+    function updatePins(html, version) {
+        if (html === undefined || version === shownPinsV || !pinsList) return;
+        // Not while the popup is open, so Jump and Unpin don't move under the pointer - a later poll swaps it instead
+        if (pinsList.closest('dialog').open) return;
+
+        pinsList.innerHTML = html;
+        shownPinsV = version;
+        pinsList.dispatchEvent(new Event('chat:pins-update'));
+    }
+
     let typedAt = null; // when a key was last pressed in the message box, null while it's empty
     // The server was told they're typing, and not yet that they stopped. After a swap it may have been: sending a message
     // stops it, but a poll that went just before can land after that, so the first poll after a swap says they stopped.
@@ -3418,6 +3630,7 @@ chatPart((signal, isSwap) => {
             if (document.visibilityState === 'visible' && document.hasFocus()) params.set('looking', '1');
             if (isTyping() && !chatIsPosting) params.set('typing', '1'); // not while the message is being sent
             else if (isTypingSaved) params.set('typing', '0');
+            if (shownPinsV !== null) params.set('pinsV', shownPinsV);
         }
         if (shownChatListV !== null) params.set('listV', shownChatListV);
         if (shownRequestsV !== null) params.set('requestsV', shownRequestsV);
@@ -3445,6 +3658,7 @@ chatPart((signal, isSwap) => {
                     }));
                 }
                 addMessages(data.messages);
+                updatePins(data.pins, data.pinsV); // after the new messages, so they're marked too
                 chatShowBackground(messages, data.background);
                 showTyping(data.typing ?? []);
             }
@@ -3550,7 +3764,7 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
     // Copies of the pictures for browsers without JS. Parsed here they're real <img>s, which would all load at once.
     newMain.querySelectorAll('noscript').forEach((noscript) => noscript.remove());
 
-    // The address first, as the parts read it (?unread=1, ?linkBlocked=1, ?tooFast=1, ?requests=1, #message-)
+    // The address first, as the parts read it (?unread=1, ?linkBlocked=1, ?tooFast=1, ?nicknameRefused=, ?requests=1, ?pins=, #message-)
     const path = address.pathname + address.search;
     if (fromHistory) history.replaceState(null, '', path + location.hash);
     else if (replace || path === location.pathname + location.search) history.replaceState(null, '', path);

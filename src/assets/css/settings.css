@@ -720,6 +720,220 @@
   gap: 8px;
 }
 
+/* ---------- Profile banner, status (assets/php/profile.php) ---------- */
+
+.settings fieldset.settings-field,
+.settings-directions {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.settings fieldset.settings-field > legend,
+.settings-directions > legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+/* The banner as it looks on the profile (3:1 there too), painted by settings.js. Without a picture or JS, the site's
+   own colors, like a profile without colors of its own */
+.settings-banner-preview {
+  position: relative;
+  aspect-ratio: 3 / 1;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, var(--background)), #6a4bd6);
+}
+
+.settings-banner-picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-banner-types {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Colors / Picture, as two buttons */
+.settings-banner-type {
+  position: relative;
+  cursor: pointer;
+}
+
+.settings-banner-type input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.settings-banner-type span {
+  display: block;
+  padding: 7px 16px;
+  border: 1px solid var(--settings-line);
+  border-radius: 999px;
+  background: var(--background);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.settings-banner-type input:checked + span {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.settings-banner-type input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.settings-banner-type input:disabled + span {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-banner-colors,
+.settings-banner-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.settings-banner-colors input[type="color"] {
+  width: 100%;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  cursor: pointer;
+}
+
+.settings-banner-colors input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.settings-banner-colors input[type="color"]::-webkit-color-swatch {
+  border: 2px solid var(--settings-line);
+  border-radius: 10px;
+}
+
+.settings-banner-colors input[type="color"]::-moz-color-swatch {
+  border: 2px solid var(--settings-line);
+  border-radius: 10px;
+}
+
+.settings-banner-colors input[type="color"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The direction arrows, like Change background in the chat */
+.settings-directions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.settings-directions label {
+  position: relative; /* keeps the hidden radio inside it */
+  cursor: pointer;
+}
+
+.settings-direction-arrow {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--background);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.settings-directions label:hover .settings-direction-arrow {
+  background: color-mix(in srgb, var(--accent) 20%, var(--background));
+}
+
+.settings-directions input:checked + .settings-direction-arrow {
+  background: var(--accent);
+  color: #fff;
+}
+
+.settings-directions input:focus-visible + .settings-direction-arrow {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Status: the emoji in a little box next to the text */
+.settings-status-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.settings input.settings-status-emoji {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.settings-status-row textarea {
+  min-height: 52px;
+  resize: none;
+}
+
+.settings-status-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.settings-status-picks button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.settings-status-picks button:hover {
+  background: color-mix(in srgb, var(--accent) 20%, var(--background));
+}
+
+.settings-status-picks button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* "Clear after" and its picker on one line */
+.settings-status-clear {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.settings .settings-status-clear select {
+  width: auto;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
 /* ---------- Two-factor login set-up ---------- */
 
 .settings-steps {
@@ -823,6 +1037,14 @@
 .settings-btn-danger.settings-btn-solid:hover {
   background: var(--settings-danger);
   filter: brightness(1.08);
+}
+
+/* Greyed out, like when none of the ticked accounts would be changed by it (admin/person.php) */
+.settings-btn:disabled,
+.settings-btn:disabled:hover {
+  opacity: 0.45;
+  filter: none;
+  cursor: not-allowed;
 }
 
 .settings-btn-small {

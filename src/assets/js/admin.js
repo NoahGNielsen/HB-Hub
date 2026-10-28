@@ -1,9 +1,11 @@
-// Admin panel (admin/user.php, admin/chat.php, admin/banned.php and admin/feedback.php): before any of its forms is sent,
+// Admin panel (admin/user.php, admin/person.php, admin/chat.php, admin/banned.php and admin/feedback.php): before any of its forms is sent,
 // a popup asks "are you sure?" (the button's or the form's data-confirm, like "Ban Name?", or the button's own text) and lets the admin type
 // a reason, which is sent along as the form's `reason` field and kept in the admin log with the action (adminLog.php).
+// When the form bans a user's banner picture (admin/user.php, data-banner-check), a PNG check copy of it goes along too.
 // A form with data-reply-to (Reply, and mark completed on admin/feedback.php) asks for a message to that user instead,
 // which has to be filled in and is sent as `reply`. Those forms are hidden until this shows them, as they need the popup.
 // Generate fills in a random password for Reset password, shown so it can be passed on to the user,
+// on admin/person.php the buttons that wouldn't change any ticked account are greyed out,
 // and the chat's Background card shows the gradient as it's picked. On admin/crashes.php, Copy everything copies a crash report. (The pictures in the lists load two at a time, from pictureQueue.js.)
 // Without JS the forms are sent straight away with no reason, the password has to be typed in and there's no preview.
 (() => {
@@ -56,7 +58,9 @@
             hint.textContent = `${replyTo} gets it as a notification: "An admin has marked your feedback as completed with the message: …", and the feedback is marked as done. It's saved in the admin log as the reason.`;
             ok.textContent = 'Send, and mark completed';
         } else {
-            title.textContent = submitter?.dataset.confirm || form.dataset.confirm || `${label}?`;
+            // data-confirm-all instead while the "Also ... their other accounts" switch is on (admin/user.php)
+            const confirmAll = form.elements.allAccounts?.checked ? form.dataset.confirmAll : undefined;
+            title.textContent = submitter?.dataset.confirm || confirmAll || form.dataset.confirm || `${label}?`;
             fieldLabel.textContent = 'Reason';
             hint.textContent = 'Why you\'re doing it. It\'s saved in the admin log with what you did.';
             ok.textContent = label;
@@ -73,7 +77,7 @@
     dialog.querySelector('[data-reason-cancel]').addEventListener('click', () => dialog.close());
     dialog.addEventListener('close', () => { pending = null; });
 
-    dialog.querySelector('form').addEventListener('submit', (event) => {
+    dialog.querySelector('form').addEventListener('submit', async (event) => {
         event.preventDefault();
         if (!pending) return;
         const { form, submitter, name } = pending;
@@ -94,11 +98,72 @@
         }
         field.value = text.value.trim();
 
+        // Banning a banner picture (Remove and ban banner, or Ban with "Ban their banner picture too"): its check copy
+        // goes along, see bannerCheckCopy() below. Sent without it when it can't be made, then only the exact file is caught.
+        if (form.dataset.bannerCheck && (submitter?.name === 'ban' || form.elements.banBanner?.checked)) {
+            if (submitter) submitter.disabled = true;
+            try {
+                await bannerCheckCopy(form);
+            } catch {
+                // Sent anyway
+            }
+            if (submitter) submitter.disabled = false;
+        }
+
         // Sent again with the same button (like Add or Remove chips), this time straight through
         form.dataset.reasonGiven = '1';
         if (submitter) form.requestSubmit(submitter); else form.requestSubmit();
         delete form.dataset.reasonGiven;
     });
+
+    // A banner's check copy for the banned pictures list (assets/php/bannedAvatars.php): the server can't read JPEG XL,
+    // so the banner at data-banner-check is decoded by the JPEG XL worker (chatJxlWorker.js, data-jxl-worker) and put in
+    // the form's bannerCheck file field as a PNG, at most data-banner-check-side on its longest side. settings.js makes
+    // the same one when a banner is uploaded.
+    async function bannerCheckCopy(form) {
+        const response = await fetch(form.dataset.bannerCheck);
+        if (!response.ok) throw new Error('noBanner');
+        const buffer = await response.arrayBuffer();
+        const { pixels, width, height } = await new Promise((resolve, reject) => {
+            const worker = new Worker(form.dataset.jxlWorker, { type: 'module' });
+            worker.addEventListener('message', ({ data }) => {
+                worker.terminate();
+                if (data.error) reject(new Error(data.error));
+                else resolve(data);
+            });
+            worker.addEventListener('error', () => {
+                worker.terminate();
+                reject(new Error('workerFailed'));
+            });
+            worker.postMessage({ id: 1, type: 'decode', buffer }, [buffer]);
+        });
+
+        const full = document.createElement('canvas');
+        full.width = width;
+        full.height = height;
+        full.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(pixels), width, height), 0, 0);
+        const scale = Math.min(1, Number(form.dataset.bannerCheckSide) / Math.max(width, height));
+        const small = document.createElement('canvas');
+        small.width = Math.max(1, Math.round(width * scale));
+        small.height = Math.max(1, Math.round(height * scale));
+        const context = small.getContext('2d');
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(full, 0, 0, small.width, small.height);
+        const blob = await new Promise((resolve) => small.toBlob(resolve, 'image/png'));
+        if (!blob) throw new Error('checkFailed');
+
+        let input = form.querySelector('input[name="bannerCheck"]');
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'file';
+            input.name = 'bannerCheck';
+            input.hidden = true;
+            form.append(input);
+        }
+        const files = new DataTransfer();
+        files.items.add(new File([blob], 'check.png', { type: 'image/png' }));
+        input.files = files.files;
+    }
 })();
 
 (() => {
@@ -138,6 +203,30 @@
         input.focus();
         input.select();
     });
+})();
+
+// Person page (admin/person.php): a button is greyed out while none of its form's ticked accounts would be changed by
+// it. data-person-needs on the button says what a ticked account has to be (from its tick box's data-person-state):
+// "banned" for Unban, "!banned" (not banned) for Ban, and empty for any ticked account at all. The server checks
+// the same thing again, so without JS the buttons just stay on.
+(() => {
+    const buttons = document.querySelectorAll('button[data-person-needs]');
+
+    function update(form) {
+        const ticked = [...form.querySelectorAll('input[name="accounts[]"]:checked')]
+            .map((box) => box.dataset.personState.split(' '));
+        for (const button of form.querySelectorAll('button[data-person-needs]')) {
+            const needs = button.dataset.personNeeds;
+            const wanted = needs.replace(/^!/, '');
+            button.disabled = !ticked.some((state) => needs === '' || state.includes(wanted) !== needs.startsWith('!'));
+        }
+    }
+
+    const forms = new Set([...buttons].map((button) => button.form));
+    for (const form of forms) {
+        update(form);
+        form.addEventListener('change', () => update(form));
+    }
 })();
 
 // Background (admin/chat.php): the preview shows the gradient from the two colors, going the way the picked arrow points.

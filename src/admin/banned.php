@@ -6,8 +6,10 @@
 // It shows every picture on it, newest first, ADMIN_BANNED_SHOWN at a time (?page=): the banned account it came from,
 // or that an admin uploaded it, when and by whom it was added, and how many uploads it has caught.
 // The pictures themselves come from admin/bannedPicture.php, loaded by pictureQueue.js two at a time (data-queued-picture).
+// Banned banner pictures are JPEG XL, so those are loaded straight away instead, and drawn by jxlImages.js where the
+// browser can't show them.
 // Forms (action=): add uploads a picture to the list, remove takes one off (picture=id). Banning an account on its
-// admin panel (admin/user.php) also puts its picture here, and unbanning takes it off again.
+// admin panel (admin/user.php) can also put its picture and banner picture here, and unbanning takes them off again.
 // Adding and removing are logged in the admin log (assets/php/adminLog.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
@@ -81,7 +83,7 @@ $adminSimilarity = rtrim(rtrim(number_format(hbHubBannedAvatarSimilarity(), 1, '
 $adminTotal = (int) $db->query('SELECT COUNT(*) FROM `HBHub-BannedAvatars`')->fetchColumn();
 $adminPages = max(1, intdiv($adminTotal + ADMIN_BANNED_SHOWN - 1, ADMIN_BANNED_SHOWN));
 $adminPage = min($adminPage, $adminPages);
-$adminPictures = $db->query('SELECT b.bannedAvatarId, b.bannedAvatarFromUserId, fu.userName AS fromName,
+$adminPictures = $db->query('SELECT b.bannedAvatarId, b.bannedAvatarType, b.bannedAvatarFromUserId, fu.userName AS fromName,
         b.bannedAvatarAddedByUserId, au.userName AS addedByName, b.bannedAvatarMatchCount, b.bannedAvatarLastMatchTimestamp,
         b.bannedAvatarCreatedTimestamp, LENGTH(b.bannedAvatarFingerprints) > 0 AS catchesSimilar
     FROM `HBHub-BannedAvatars` b
@@ -98,6 +100,7 @@ $adminPictures = $db->query('SELECT b.bannedAvatarId, b.bannedAvatarFromUserId, 
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/admin.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/admin.css') ?>">
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/admin.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/admin.js') ?>" defer></script>
     <script src="https://hbhub.noahgajnielsen.dk/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
+    <script src="https://hbhub.noahgajnielsen.dk/assets/js/jxlImages.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/jxlImages.js') ?>" defer></script>
     <title>Banned pictures - Admin panel - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
@@ -117,7 +120,7 @@ $adminPictures = $db->query('SELECT b.bannedAvatarId, b.bannedAvatarFromUserId, 
                         <div>
                             <h2 id="admin-add-heading">Add a banned picture</h2>
                             <p class="settings-intro">
-                                Any account that uploads one of these as its profile picture, or signs up with it, is banned straight away.
+                                Any account that uploads one of these as its profile picture or banner, or signs up with it, is banned straight away.
                                 Copies count too when they look at least <?= $adminSimilarity ?>% the same: resized, re-saved, or cropped by up to
                                 about a fifth from any side or to a square. A heavier crop, a mirrored copy or one drawn over isn't caught, and a
                                 very plain picture (one colour, a smooth gradient) only catches the exact same file, so it doesn't ban other plain
@@ -162,9 +165,15 @@ $adminPictures = $db->query('SELECT b.bannedAvatarId, b.bannedAvatarFromUserId, 
                                 ?>
                                 <li class="admin-banned-item">
                                     <a class="admin-banned-image" href="<?= $pictureSrc ?>" target="_blank" rel="noopener">
-                                        <!-- pictureQueue.js loads it, two at a time (see there) -->
-                                        <img data-queued-picture="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>">
-                                        <noscript><img src="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>" loading="lazy"></noscript>
+                                        <?php if ($picture['bannedAvatarType'] === 'image/jxl'): ?>
+                                            <!-- A banner picture: jxlImages.js draws it where the browser can't show JPEG XL -->
+                                            <img src="<?= $pictureSrc ?>" alt="Banned banner picture <?= $pictureId ?>" loading="lazy" data-jxl
+                                                 data-jxl-worker="/assets/js/chatJxlWorker.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatJxlWorker.js') ?>">
+                                        <?php else: ?>
+                                            <!-- pictureQueue.js loads it, two at a time (see there) -->
+                                            <img data-queued-picture="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>">
+                                            <noscript><img src="<?= $pictureSrc ?>" alt="Banned picture <?= $pictureId ?>" loading="lazy"></noscript>
+                                        <?php endif; ?>
                                     </a>
                                     <dl class="admin-banned-details">
                                         <div>

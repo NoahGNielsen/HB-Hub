@@ -51,15 +51,21 @@
 
   /* Nav bars */
   --nav-bg: #161a21;
-  --nav-side-bg: #222833;
+  --nav-side-bg: #222833; /* a raised surface, like the ore mining toasts (the side bar itself is --nav-bg now) */
   --nav-text: #eceef2;
   --nav-hover: rgba(255, 255, 255, 0.08);
   --radius: 16px;
 }
 
+/* On html too, not only body: on a slow PC the browser can show a bit of the page it hasn't drawn yet (switching the
+   Ore Mining Inc. views, scrolling fast), and it fills that with html's own colour, which was white */
+html,
+body {
+  background: var(--background);
+}
+
 body {
   font-family: "Raleway", sans-serif;
-  background: var(--background);
   color: var(--text);
 }
 

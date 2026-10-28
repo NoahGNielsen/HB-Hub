@@ -83,19 +83,19 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # --------------------------------------------------------------------------
     # SMART CACHING STRATEGY (Fixes Security Scanner & Handles 304 Validation)
     # --------------------------------------------------------------------------
-    # Neither of the two below touches the scripts that send pictures: profile pictures, chat icons and banned pictures
-    # (otherPages/avatar.php, chat/icon.php, admin/bannedPicture.php). They send their own
+    # Neither of the two below touches the scripts that send pictures: profile pictures, banners, chat icons and banned pictures
+    # (otherPages/avatar.php, otherPages/banner.php, chat/icon.php, admin/bannedPicture.php). They send their own
     # "private, max-age=31536000, immutable", as their address changes with the picture. Apache keeps PHP's headers apart
     # from the ones set here, so a "no-cache" from here would be sent next to theirs and win: every profile picture would
     # ask PHP again on every page, opening another chat too.
 
     # Default for Static Assets (Images, CSS, JS, Fonts): Cache locally for 90 days
-    <FilesMatch "^(?!(avatar|icon|bannedPicture)\.php$)">
+    <FilesMatch "^(?!(avatar|banner|icon|bannedPicture)\.php$)">
         Header set Cache-Control "max-age=7776000, public"
     </FilesMatch>
 
     # Dynamic Pages (HTML/PHP), robots.txt and the sitemap: Force browser to revalidate with 304 checks every time
-    <FilesMatch "^(?!(avatar|icon|bannedPicture)\.php$)(.*\.(html|htm|php)|robots\.txt|sitemap\.xml)$">
+    <FilesMatch "^(?!(avatar|banner|icon|bannedPicture)\.php$)(.*\.(html|htm|php)|robots\.txt|sitemap\.xml)$">
         Header set Cache-Control "no-cache"
     </FilesMatch>
 </IfModule>
@@ -121,7 +121,7 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # address (rewritten to the long one further down) isn't sent back here in a loop.
     RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
     RewriteCond %{THE_REQUEST} ^[A-Z]+\ /(otherPages|userMgmt)/
-    RewriteRule ^(?:otherPages|userMgmt)/(profile|settings|notifications|feedback|avatar|login|onboarding)(?:\.php)?$ /$1 [R=301,L]
+    RewriteRule ^(?:otherPages|userMgmt)/(profile|settings|notifications|feedback|avatar|banner|login|onboarding)(?:\.php)?$ /$1 [R=301,L]
 
     RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
     RewriteCond %{THE_REQUEST} ^[A-Z]+\ /games/spaceOreMiner
@@ -160,7 +160,7 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # The files stay in their folders, but the address bar never shows the folder's name: /profile is
     # otherPages/profile.php, /login is userMgmt/login.php and /games/ore-mining-inc/ is games/spaceOreMiner/.
     # The code links to the short ones; the old long ones are redirected near the top.
-    RewriteRule ^(profile|settings|notifications|feedback|avatar)$ otherPages/$1.php [L]
+    RewriteRule ^(profile|settings|notifications|feedback|avatar|banner)$ otherPages/$1.php [L]
     RewriteRule ^nav-updates$ otherPages/navUpdates.php [L]
     RewriteRule ^(login|onboarding)$ userMgmt/$1.php [L]
 

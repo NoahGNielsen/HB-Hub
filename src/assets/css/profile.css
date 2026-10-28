@@ -1,59 +1,52 @@
-/* Profile page (otherPages/profile.php) */
+/* Profile page (otherPages/profile.php): one card, with the banner along the top and the profile picture over its
+   bottom edge. The banner is 3:1, the same as its preview in settings (settings.css). */
 .profile {
   --profile-online: #2fa36b;
   --profile-offline: #8a93a3;
-  position: relative;
-  max-width: 640px;
+  --profile-danger: #e05252; /* the same red as settings.css */
+  --profile-avatar: 128px;
+  --profile-pad: 32px;
+  max-width: 680px;
   margin: 48px auto;
-  padding: 32px;
+  padding: 0 16px;
   box-sizing: border-box;
+}
+
+.profile-card {
+  overflow: hidden;
   border-radius: var(--radius);
   background: var(--secondary);
 }
 
-/* Own profile only: the settings cog in the card's top right corner */
-.profile-settings {
+/* Without a picture or colors of their own (or without JS), the site's own orange into purple */
+.profile-banner {
+  position: relative;
+  aspect-ratio: 3 / 1;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, var(--background)), #6a4bd6);
+}
+
+/* An <img>, or the <canvas> jxlImages.js draws it into */
+.profile-banner-picture {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 40px;
-  height: 40px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-body {
+  padding: 0 var(--profile-pad) var(--profile-pad);
+}
+
+/* The picture half over the banner, the status next to it and the buttons on the right under it */
+.profile-top {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-
-.profile-settings:hover {
-  background: color-mix(in srgb, var(--text) 8%, transparent);
-}
-
-.profile-settings:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* The icon is black - invert it for the dark background */
-.profile-settings img {
-  width: 22px;
-  height: 22px;
-  opacity: 0.8;
-  filter: invert(1);
-}
-
-.profile-settings:hover img {
-  opacity: 1;
-}
-
-/* Keep a long name from running under the cog */
-.profile-settings + .profile-header {
-  padding-right: 32px;
-}
-
-.profile-header {
-  display: flex;
-  align-items: center;
-  gap: 24px;
+  flex-wrap: wrap; /* the buttons go under the picture when there isn't room next to it */
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: calc(var(--profile-avatar) / -2);
+  margin-bottom: 14px;
 }
 
 .profile-avatar-wrap {
@@ -63,8 +56,10 @@
 
 .profile-avatar {
   display: block;
-  width: 120px;
-  height: 120px;
+  width: var(--profile-avatar);
+  height: var(--profile-avatar);
+  box-sizing: border-box;
+  border: 6px solid var(--secondary);
   border-radius: 50%;
   object-fit: cover;
   background: var(--background);
@@ -77,94 +72,254 @@
   justify-content: center;
   background: var(--accent);
   color: #fff;
-  font-size: 48px;
+  font-size: 52px;
   font-weight: 700;
 }
 
 .profile-status-dot {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
-  width: 22px;
-  height: 22px;
+  right: 10px;
+  bottom: 10px;
+  width: 26px;
+  height: 26px;
   box-sizing: border-box;
-  border: 4px solid var(--secondary);
+  border: 5px solid var(--secondary);
   border-radius: 50%;
   background: var(--profile-offline);
+  z-index: 1; /* its tooltip goes over the status */
 }
 
 .profile-status-dot.is-online {
   background: var(--profile-online);
 }
 
-.profile-heading {
+.profile-status-dot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* "Online" or "Offline for 5 hours" over the dot on hover, or when it's tapped (it takes focus) */
+.profile-status-dot::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s;
+}
+
+.profile-status-dot:hover::after,
+.profile-status-dot:focus::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.profile-actions {
   min-width: 0;
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+}
+
+.profile-actions form {
+  margin: 0;
+}
+
+.profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.profile-btn:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.profile-btn.is-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.profile-btn.is-primary:hover {
+  background: color-mix(in srgb, var(--accent) 85%, #000);
+}
+
+/* The chat icon is black - white on the orange button */
+.profile-btn img {
+  width: 18px;
+  height: 18px;
+  filter: invert(1);
+}
+
+.profile-btn:focus-visible,
+.profile-settings:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Own profile only: the settings cog */
+.profile-settings {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--background);
+}
+
+.profile-settings:hover {
+  background: color-mix(in srgb, var(--text) 12%, var(--background));
+}
+
+/* The icon is black - invert it for the dark background */
+.profile-settings img {
+  width: 22px;
+  height: 22px;
+  opacity: 0.85;
+  filter: invert(1);
+}
+
+.profile-settings:hover img {
+  opacity: 1;
 }
 
 .profile-name {
-  margin: 0 0 6px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
+  margin: 0 0 4px;
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
 }
 
-.profile-badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
+/* Status: the emoji and up to two lines of text, in a bubble next to the picture with a tail pointing at it. It grows
+   up to its text's width and goes under the picture when there isn't 140px for it. */
 .profile-status {
-  margin: 0;
-  font-weight: 600;
-  opacity: 0.75;
+  position: relative;
+  flex: 1 1 140px;
+  max-width: max-content;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px 4px;
+  padding: 8px 14px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: var(--background);
 }
 
-.profile-status.is-online {
-  color: var(--profile-online);
-  opacity: 1;
+.profile-status::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  transform: translateY(-50%) rotate(45deg);
 }
 
-.profile-own {
-  margin: 6px 0 0;
-  font-size: 0.85rem;
-  opacity: 0.6;
-}
-
-/* Only for site admins, looking at someone else */
-.profile-admin-link {
-  display: inline-block;
-  margin-top: 10px;
-  padding: 6px 12px;
-  border: 2px solid var(--accent);
-  border-radius: 10px;
+/* Your own status is a link that opens the popup to change it */
+a.profile-status {
   color: var(--text);
-  font-size: 0.9rem;
-  font-weight: 600;
   text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.profile-admin-link:hover {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+a.profile-status:hover {
+  background: color-mix(in srgb, var(--text) 10%, var(--background));
 }
 
-.profile-admin-link:focus-visible {
+a.profile-status:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
+/* No status yet: the same bubble, greyed out, only on your own profile */
+.profile-status.is-placeholder .profile-status-text {
+  font-style: italic;
+  opacity: 0.55;
+}
+
+.profile-status-emoji {
+  flex: none;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.profile-status-text {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.35;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.profile-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-radius: 999px;
+  background: var(--background);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.profile-badge.is-admin {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+/* The shield icon is black */
+.profile-badge img {
+  width: 15px;
+  height: 15px;
+  filter: invert(1);
+}
+
 .profile-section {
-  margin-top: 28px;
+  margin-top: 26px;
 }
 
 .profile-section h2 {
@@ -188,64 +343,207 @@
   opacity: 0.6;
 }
 
-.profile-details {
-  margin: 28px 0 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.profile-joined {
+  margin: 24px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.profile-btn.is-danger {
+  border-color: var(--profile-danger);
+  color: var(--profile-danger);
+}
+
+.profile-btn.is-danger:hover {
+  background: color-mix(in srgb, var(--profile-danger) 14%, transparent);
+}
+
+/* ---------- The status popup (own profile only) ---------- */
+
+.profile-dialog {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  box-sizing: border-box;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+.profile-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.profile-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 20px;
+}
+
+.profile-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
-.profile-detail {
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: var(--background);
-}
-
-.profile-detail dt {
-  margin-bottom: 4px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  opacity: 0.6;
-}
-
-.profile-detail dd {
+.profile-dialog-header h2 {
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.3rem;
 }
 
-.profile-detail-sub {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  opacity: 0.6;
+.profile-dialog-close {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.profile-dialog-close:hover {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.profile-dialog-close:focus-visible,
+.profile-status-picks button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The emoji in a little box next to the text, like in settings */
+.profile-status-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.profile-dialog input[type="text"],
+.profile-dialog select,
+.profile-dialog textarea {
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+}
+
+.profile-dialog input[type="text"]:focus,
+.profile-dialog select:focus,
+.profile-dialog textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.profile-dialog input.profile-status-emoji-input {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.profile-dialog textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  resize: none;
+}
+
+.profile-status-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.profile-status-picks button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.profile-status-picks button:hover {
+  background: color-mix(in srgb, var(--accent) 20%, var(--background));
+}
+
+.profile-status-clear {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.profile-status-clear select {
+  min-width: 0;
+}
+
+.profile-dialog-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.profile-dialog-error {
+  margin: 0;
+  color: var(--profile-danger);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.profile-dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Clear status on the left, away from Save */
+.profile-dialog-footer .is-danger {
+  margin-right: auto;
+}
+
+.profile-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 @media (max-width: 600px) {
   .profile {
-    margin: 16px;
-    padding: 24px 16px;
-  }
-
-  .profile-settings {
-    top: 8px;
-    right: 8px;
-  }
-
-  /* Stacked and centred here, so the cog sits beside the picture instead */
-  .profile-settings + .profile-header {
-    padding-right: 0;
-  }
-
-  .profile-header {
-    flex-direction: column;
-    text-align: center;
+    --profile-avatar: 104px;
+    --profile-pad: 18px;
+    margin: 16px auto;
   }
 
   .profile-name {
-    justify-content: center;
+    font-size: 1.6rem;
+  }
+
+  .profile-btn {
+    padding: 8px 13px;
   }
 }

@@ -9,7 +9,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_CONDUCT_UPDATED = '21 October 2026';
+const HBHUB_CONDUCT_UPDATED = '26 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -97,11 +97,17 @@ const HBHUB_CONDUCT_UPDATED = '21 October 2026';
                             <li>Pick a group name, icon and background that everyone in it would be fine with.</li>
                             <li>Don't make groups to talk about, or make fun of, someone who isn't in them.</li>
                             <li>Removing people is fine, but don't use it to single out or embarrass someone.</li>
-                            <li>Nicknames you give people should be ones they'd be happy to see.</li>
+                            <li>Nicknames you give people should be ones they'd be happy to see, especially in a group, where everyone sees them.</li>
                         </ul>
                         <p>
-                            Group admins can delete messages in their group, but if something serious happens there, still tell a
-                            site admin, so it can be dealt with properly.
+                            Group admins can delete messages in their group and unpin anything pinned in it, but if something
+                            serious happens there, still tell a site admin, so it can be dealt with properly. Anyone can pin a
+                            message for the whole chat to see, so pin what's useful to everyone, not something to embarrass someone.
+                        </p>
+                        <p>
+                            Class chats are different: everyone in your class is put in one automatically, and nobody in it is a
+                            group admin. It's a chat for the whole class, so keep it something everyone in it can be part of, and
+                            tell a site admin if something there needs dealing with.
                         </p>
                     </section>
 
@@ -118,11 +124,11 @@ const HBHUB_CONDUCT_UPDATED = '21 October 2026';
                     <section id="profile" aria-labelledby="conduct-profile">
                         <h2 id="conduct-profile">5. Your profile</h2>
                         <p>
-                            Your name, profile picture and bio are seen by everyone on HB Hub, so the same rules apply to them as to
+                            Your name, profile picture, banner, bio and status are seen by everyone on HB Hub, so the same rules apply to them as to
                             messages. Use a name people from school recognise you by, and don't make your profile look like
-                            someone else's. Names and bios can only be written with the Latin alphabet (like a-z, æ, ø and å),
-                            numbers, punctuation and emoji, so everyone can read them. The links that are blocked in messages
-                            can't be put in a bio either.
+                            someone else's. Names, bios, statuses and the nicknames you give people in chats can only be written
+                            with the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji, so everyone can read
+                            them. The links that are blocked in messages can't be put in a bio, status or nickname either. Pick the class and education badge that are really yours.
                         </p>
                         <p>
                             A banned account's profile picture can't be used again, and neither can a profile picture an admin

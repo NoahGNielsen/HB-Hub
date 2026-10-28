@@ -3,10 +3,12 @@
 // When the picture is on the banned list (bannedAvatars.php), the account is made banned instead, and it's on to the
 // login page with the browser marked, like a banned account's (session.php).
 // When a ghost-banned account is known in the browser (loginLimit.php), the new account is quietly ghost banned too.
+// A new account at HTX is put in its class chat (schoolClass.php).
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/loginLimit.php';
 require_once __DIR__ . '/bannedAvatars.php';
+require_once __DIR__ . '/schoolClass.php'; // how the class is saved, and the class chat they're put in
 
 /**
  * Returns [] when the account was created, otherwise step name => message to show on the form.
@@ -18,7 +20,7 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
     [$ipv4, $ipv6] = hbHubClientIp();
 
     // Same shape as database/defaultUserSettings.json
-    $settings = json_encode(['year' => (int) $values['year'], 'class' => $values['class']]);
+    $settings = json_encode(hbHubClassSetSettings([], $values['year'], $values['class']));
 
     $db = null;
     $bannedAvatarId = null;
@@ -91,6 +93,13 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
     }
 
     hbHubSetSessionCookie($sessionId);
+
+    // Into their class chat, already accepted. The account is made either way, and the chat page tries again if this fails.
+    try {
+        hbHubClassChatSync($db, $userId);
+    } catch (PDOException $e) {
+        error_log('Onboarding: could not put the account in its class chat: ' . $e->getMessage());
+    }
 
     return [];
 }
