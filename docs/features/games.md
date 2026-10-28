@@ -57,7 +57,7 @@
 
 | | |
 |---|---|
-| **/play** | Wordle and Ore Mining Inc. (and the casino games, see [Casino](casino.md)) can be played without an account at `/play/wordle` and `/play/ore-mining-inc`, listed on `/play`, in the sitemap and with their own titles, descriptions and structured data for search engines. The normal versions still need an account: logged-in visitors are sent to them, and a browser that has ever logged in (it has the `hbHubDevice` cookie) is sent to the login and then to them. The free games' back link goes to the frontpage |
+| **/play** | Wordle and Ore Mining Inc. (and the casino games, see [Casino](casino.md)) can be played without an account at `/play/wordle` and `/play/ore-mining-inc`, listed on `/play`, in the sitemap and `llms.txt` and with their own titles, descriptions and structured data for search engines. The normal versions still need an account: logged-in visitors are sent to them, and a browser that has ever logged in (it has the `hbHubDevice` cookie) is sent to the login and then to them. The free games' back link goes to the frontpage |
 | **Saving** | Nothing about a guest is stored on the server: the game is kept in the browser as a token encrypted and signed with the site key (`guest_games_secret`), sent with every guess or save and checked with the same rules as the normal game. Guests get no stats, leaderboards or crash reports |
 | **Signing up** | A bar on top of each free game, and a popup after 3 minutes of play (then every 10 minutes, and when a Wordle is finished), asks the visitor to sign up or log in. Doing that leads to the normal game, which brings today's Wordle games and the Ore Mining Inc. save over to the account, but only where it has none yet |
 

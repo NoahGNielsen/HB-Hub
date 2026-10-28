@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The pages visitors can open without logging in (robots.txt points here): the frontpage, the free games (/play, in the order of HBHUB_GUEST_GAMES in assets/php/guestGames/guestGames.php), login, sign-up, the legal pages and the help docs (src/docs/, in the order of HBHUB_DOCS_SECTIONS in assets/php/docs/pages.php). The rest of the site needs an account. -->
+<!-- The pages visitors can open without logging in (robots.txt points here; llms.txt lists the same pages with a line on each): the frontpage, the free games (/play, in the order of HBHUB_GUEST_GAMES in assets/php/guestGames/guestGames.php), login, sign-up, the legal pages and the help docs (src/docs/, in the order of HBHUB_DOCS_SECTIONS in assets/php/docs/pages.php). The rest of the site needs an account. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
         <loc>https://hbhub.noahgajnielsen.dk/</loc>

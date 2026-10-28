@@ -1,7 +1,7 @@
 <?php
 // The help docs (src/docs/): every page, grouped the way the side menu and the docs' front page (docs/index.php) list
 // them. top.php and bottom.php build each page around its text from this list, so a new page only needs a line here
-// (and one in sitemap.xml). The order here is also the order of the Previous / Next links under each page.
+// (and one in sitemap.xml and llms.txt). The order here is also the order of the Previous / Next links under each page.
 //
 // Each section is key => ['title', 'icon' (an emoji), 'pages' => [path => [title, summary]]]. The path is the page's
 // clean URL (a folder's index.php is its folder, with the slash at the end), the summary is one sentence, used for the

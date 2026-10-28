@@ -33,7 +33,8 @@ const HBHUB_GUEST_SITE = 'https://hbhub.noahgajnielsen.dk';
 // follows (games_access or casino_access in the site config: a guest game is only open while its section is open to
 // everyone), and its texts for search engines: the <title>, the meta description, the text under the game, its genre
 // for the structured data, its keywords (English and Danish searches, added to the site's own in header.php) and what
-// the sign-up popup says ({startChips} is what a new account starts with, HBHUB_CASINO_START_CHIPS).
+// the sign-up popup says ({startChips} is what a new account starts with, HBHUB_CASINO_START_CHIPS). A new one also
+// needs a line in sitemap.xml and llms.txt.
 const HBHUB_GUEST_GAMES = [
     'wordle' => [
         'path' => '/play/wordle',

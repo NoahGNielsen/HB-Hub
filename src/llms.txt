@@ -1,0 +1,63 @@
+# HB Hub
+
+> HB Hub is a student-made messaging site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark: class group chats and DMs, a casino with play chips that aren't real money (Blackjack, Baccarat, Roulette), and games (Matador, chess, UNO, Wordle and Ore Mining Inc.). It runs in the browser, in English.
+
+Most of the site needs an account; the pages below can be read without one. Casino chips are not money: they can't be swapped for real money or anything else, and nothing won can be paid out. HB Hub is a free student project, made and run by one student, not by the school.
+
+## Free games (no account needed)
+
+- [Free games](https://hbhub.noahgajnielsen.dk/play): Every game that can be played without an account.
+- [Wordle](https://hbhub.noahgajnielsen.dk/play/wordle): Guess the day's five-letter word in six tries, in English or Danish.
+- [Ore Mining Inc.](https://hbhub.noahgajnielsen.dk/play/ore-mining-inc): An idle clicker: mine an asteroid, build a mining company and prestige across the multiverse.
+- [Blackjack](https://hbhub.noahgajnielsen.dk/play/blackjack): Beat the dealer without going over 21. Double, split and insurance, with play chips.
+- [Baccarat](https://hbhub.noahgajnielsen.dk/play/baccarat): Bet on Player, Banker or a tie in punto banco, with play chips.
+- [Roulette](https://hbhub.noahgajnielsen.dk/play/roulette): Spin a single-zero wheel and bet straight on the board, with play chips.
+
+## Help docs
+
+- [Help & docs](https://hbhub.noahgajnielsen.dk/docs/): Everything HB Hub can do, and how to use it.
+- [Getting started](https://hbhub.noahgajnielsen.dk/docs/getting-started): Making an account, logging in and finding your way around HB Hub.
+- [Profile & settings](https://hbhub.noahgajnielsen.dk/docs/account): Your profile picture, name and bio, your password, your devices and deleting your account.
+- [Two-factor login & security](https://hbhub.noahgajnielsen.dk/docs/two-factor): Turning on two-factor login, the password rules and what happens after wrong guesses.
+- [Notifications](https://hbhub.noahgajnielsen.dk/docs/notifications): The bell, browser notifications, the message sound and muting chats.
+- [Blocking the Casino & Games](https://hbhub.noahgajnielsen.dk/docs/self-blocking): Blocking the Casino and Games for yourself, during school hours or all the time.
+- [Feedback & getting help](https://hbhub.noahgajnielsen.dk/docs/feedback): Reporting bugs and people, sending ideas, and who to ask for help.
+
+## Chat
+
+- [Chat basics](https://hbhub.noahgajnielsen.dk/docs/chat/): DMs, message requests, replies, reactions, editing and deleting, pinned messages, and the chat menu.
+- [Styling your messages](https://hbhub.noahgajnielsen.dk/docs/chat/formatting): Bold, italic, underline, code, headings, lists and links in your messages.
+- [Group chats](https://hbhub.noahgajnielsen.dk/docs/chat/groups): Making a group, its owner and admins, nicknames, changing its name, icon and background, and your class chat.
+- [Files & pictures](https://hbhub.noahgajnielsen.dk/docs/chat/attachments): Sending files and pictures, the picture viewer, and how attachment tickets work.
+- [GIFs & smileys](https://hbhub.noahgajnielsen.dk/docs/chat/gifs): Sending GIFs from Giphy and smileys from the smiley menu.
+- [@mentions](https://hbhub.noahgajnielsen.dk/docs/chat/mentions): Mentioning someone in a chat or a game chat, and who gets told.
+- [Staying safe in the chat](https://hbhub.noahgajnielsen.dk/docs/chat/safety): Blocking people, link safety, the spam limit and reporting someone.
+
+## Casino
+
+- [How the casino works](https://hbhub.noahgajnielsen.dk/docs/casino/): Chips, the daily chips, tables and codes, leaderboards, and what chips are and aren't.
+- [Blackjack](https://hbhub.noahgajnielsen.dk/docs/casino/blackjack): Beat the dealer without going over 21, solo or at a table with up to 5 players.
+- [Baccarat](https://hbhub.noahgajnielsen.dk/docs/casino/baccarat): Bet on the Player, the Banker or a tie, solo or at a table with up to 6 players.
+- [Roulette](https://hbhub.noahgajnielsen.dk/docs/casino/roulette): European roulette with a single zero, and every bet placed straight on the board.
+
+## Games
+
+- [How games work](https://hbhub.noahgajnielsen.dk/docs/games/): Opening a game, codes and invites, what the host can do, game chats and leaderboards.
+- [Matador](https://hbhub.noahgajnielsen.dk/docs/games/matador): The Danish Monopoly for 2-4 players, with houses, hotels, trades and Prøv lykken.
+- [Chess](https://hbhub.noahgajnielsen.dk/docs/games/chess): Two-player chess, with or without a clock, draw offers and rematches.
+- [UNO](https://hbhub.noahgajnielsen.dk/docs/games/uno): The card game for 2-6 players, with stacking, catching and official scoring.
+- [Wordle](https://hbhub.noahgajnielsen.dk/docs/games/wordle): Guess the day's five-letter word in six tries, in English and in Danish.
+- [Ore Mining Inc.](https://hbhub.noahgajnielsen.dk/docs/games/ore-mining-inc): A clicker game: mine an asteroid, build a mining company and prestige across the multiverse.
+
+## Legal
+
+- [Terms of service](https://hbhub.noahgajnielsen.dk/legal/terms): The rules for using HB Hub: your account, how to behave in the chat, what the casino chips are, fair play and what happens if the rules are broken.
+- [Privacy policy](https://hbhub.noahgajnielsen.dk/legal/privacy): What HB Hub stores about you, why, who can see it, the cookies it uses and how to get your data deleted.
+- [Code of conduct](https://hbhub.noahgajnielsen.dk/legal/code-of-conduct): How we treat each other on HB Hub: in the chat, in groups, in the games and the casino, and how to report someone who crosses the line.
+
+## Optional
+
+- [Do not sell or share my personal information](https://hbhub.noahgajnielsen.dk/legal/do-not-sell-or-share-my-personal-information): HB Hub never sells or shares your personal information, for advertising or anything else.
+- [Credits](https://hbhub.noahgajnielsen.dk/legal/credits): Credits for the third-party icons, code, lists and fonts used on HB Hub.
+- [Sign up](https://hbhub.noahgajnielsen.dk/onboarding): Making an account.
+- [Log in](https://hbhub.noahgajnielsen.dk/login): Logging in.
