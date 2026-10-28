@@ -68,6 +68,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><strong>iPhone (Safari):</strong> press the Share button, then <strong>Add to Home Screen</strong>.</li>
                             <li><strong>Android (Chrome):</strong> open the browser's menu (&vellip;), then <strong>Add to Home screen</strong> or <strong>Install app</strong>.</li>
                         </ul>
+                        <p>
+                            The first time you log in on a phone, HB Hub asks you about this once with a popup (on Android
+                            it can do it for you with one tap). After that it won't ask again in that browser.
+                        </p>
                     </section>
 
                     <section id="next" aria-labelledby="docs-next">

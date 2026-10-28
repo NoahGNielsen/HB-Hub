@@ -36,3 +36,29 @@ hbHubRenderToast();
     <button type="button" class="cookie-notice-ok" data-cookie-notice-ok>Got it</button>
 </aside>
 <script src="https://hbhub.noahgajnielsen.dk/assets/js/cookieNotice.js?v=<?= filemtime(__DIR__ . '/../js/cookieNotice.js') ?>" defer></script>
+<?php
+// For anyone logged in: the popup asking them to put HB Hub on their phone's home screen. It starts hidden too;
+// appPrompt.js shows it once per browser, and only on phones and tablets.
+if (!empty($hbHubUser)):
+?>
+<dialog class="app-prompt" aria-labelledby="app-prompt-title" data-app-prompt>
+    <!-- The dialog itself has no padding, so a click on it (not on this) is a click on the backdrop -->
+    <div class="app-prompt-body">
+        <img class="app-prompt-icon" src="https://hbhub.noahgajnielsen.dk/assets/images/appIcon192.png?v=<?= filemtime(__DIR__ . '/../images/appIcon192.png') ?>" alt="" width="64" height="64">
+        <h2 id="app-prompt-title">Put HB Hub on your home screen</h2>
+        <p>Then it's one tap away like any other app, and opens without the browser bars.</p>
+        <p class="app-prompt-how" data-app-prompt-how="ios" hidden>
+            Press the <strong>Share</strong> button (the square with an arrow pointing up), then
+            <strong>Add to Home Screen</strong>.
+        </p>
+        <p class="app-prompt-how" data-app-prompt-how="other" hidden>
+            Open your browser's menu (&vellip;), then <strong>Add to Home screen</strong> or <strong>Install app</strong>.
+        </p>
+        <div class="app-prompt-actions">
+            <button type="button" class="app-prompt-btn" data-app-prompt-close>Got it</button>
+            <button type="button" class="app-prompt-btn app-prompt-btn-primary" data-app-prompt-install hidden>Add to home screen</button>
+        </div>
+    </div>
+</dialog>
+<script src="https://hbhub.noahgajnielsen.dk/assets/js/appPrompt.js?v=<?= filemtime(__DIR__ . '/../js/appPrompt.js') ?>" defer></script>
+<?php endif; ?>

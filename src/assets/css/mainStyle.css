@@ -297,3 +297,85 @@ body:has(> .site-footer) {
 .cookie-notice-ok:hover {
   filter: brightness(1.1);
 }
+
+/* "Put HB Hub on your home screen" (assets/php/footer.php + appPrompt.js), shown once on phones after logging in.
+   No padding on the dialog itself: appPrompt.js counts a click on it (and not on .app-prompt-body) as a click on the
+   backdrop, which closes it */
+.app-prompt {
+  width: min(400px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+
+.app-prompt::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.app-prompt-body {
+  padding: 24px;
+}
+
+.app-prompt-icon {
+  display: block;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+}
+
+.app-prompt h2 {
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+}
+
+.app-prompt p {
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.app-prompt-how {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--background);
+  font-size: 0.95rem;
+}
+
+.app-prompt-how[hidden],
+.app-prompt-btn[hidden] {
+  display: none;
+}
+
+.app-prompt-actions {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.app-prompt-btn {
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-prompt-btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.app-prompt-btn:hover {
+  filter: brightness(1.1);
+}
