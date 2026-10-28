@@ -97,6 +97,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>Right-click a chat in your list (or long-press it) for more:</p>
                         <ul>
                             <li><strong>Show profile</strong> and <strong>Give nickname</strong> (DMs): open their profile, or give them a name only you see. In a group, nicknames are given from <strong>Members</strong> instead, and everyone sees them (see <a href="/docs/chat/groups#nicknames">Nicknames</a>).</li>
+                            <li><strong>Chat info</strong>: what kind of chat it is, when it was made and by who, how many people and messages are in it, and when you joined (and your role, in a group).</li>
                             <li><strong>Mute chat</strong>: no notifications or sounds from it for a while, or for good. See <a href="/docs/notifications#mute">Muting a chat</a>.</li>
                             <li><strong>Hide chat</strong>: takes it out of your list until a new message comes in, or you search for it and open it.</li>
                             <li><strong>Change background</strong>: give the chat a colour or gradient, for everyone in it. Either of you can in a DM, only admins in a group.</li>

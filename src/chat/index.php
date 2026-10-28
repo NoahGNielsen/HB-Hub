@@ -2693,6 +2693,7 @@ if ($isPoll) {
             <?php endif; ?>
             <!-- On a DM: the other person's profile (chat.js sets the address) -->
             <a role="menuitem" href="/profile" data-menu-profile data-menu-dm>Show profile</a>
+            <button type="button" role="menuitem" data-menu-action="info">Chat info</button>
             <button type="button" role="menuitem" data-menu-action="nickname" data-menu-dm>Give nickname</button>
             <!-- Mute chat opens its own small menu with how long for, a muted chat gets Unmute chat instead -->
             <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-controls="chat-mute-menu" data-menu-mute>
@@ -3135,6 +3136,23 @@ if ($isPoll) {
                     <button type="submit" class="chat-new-btn is-danger" data-confirm-submit></button>
                 </footer>
             </form>
+        </dialog>
+
+        <!-- Chat info: chat.js fills it in from /chat/info (chat/info.php) -->
+        <dialog class="chat-dialog chat-info" aria-labelledby="chat-info-title">
+            <div class="chat-requests-body">
+                <header class="chat-new-header">
+                    <h2 id="chat-info-title" data-info-title>Chat info</h2>
+                    <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                </header>
+
+                <p class="chat-dialog-hint" role="status" data-info-status></p>
+                <dl class="chat-info-list" hidden data-info-list></dl>
+
+                <footer class="chat-new-footer chat-dialog-footer">
+                    <button type="button" class="chat-btn" data-dialog-close>Close</button>
+                </footer>
+            </div>
         </dialog>
 
         <!-- Give nickname (DMs): chat.js fills in who it's for -->

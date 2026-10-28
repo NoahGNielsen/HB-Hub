@@ -978,8 +978,8 @@ function chatGroupMessages(messages) {
     previous?.classList.remove('has-next');
 }
 
-// Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to mute, hide or leave it
-// (not a class chat, data-chat-class).
+// Chat menu: right-click a chat in the list (or use the menu key / Shift+F10 on it) to see some info about it (Chat info,
+// from chat/info.php), or to mute, hide or leave it (not a class chat, data-chat-class).
 // In a DM the other person's profile can be opened (otherPages/profile.php) and they can be given a nickname.
 // Group admins can also change the group's name or icon, or delete it.
 // Group admins and both people in a DM can change the chat's background.
@@ -1003,6 +1003,7 @@ chatPart((signal) => {
     const renameDialog = document.querySelector('.chat-rename');
     const iconDialog = document.querySelector('.chat-icon-edit');
     const backgroundDialog = document.querySelector('.chat-background-edit');
+    const infoDialog = document.querySelector('.chat-info');
     let chat = null; // the list item the menu was opened on
 
     const chatMenu = contextMenu({
@@ -1209,6 +1210,59 @@ chatPart((signal) => {
 
     backgroundForm.addEventListener('input', showBackgroundPreview);
 
+    // Chat info: what kind of chat it is, when it was made and by who, how many are in it and how many messages it has,
+    // and when the user joined (and their role, in a group). Asked for each time, as the counts change.
+    const infoTitle = infoDialog.querySelector('[data-info-title]');
+    const infoStatus = infoDialog.querySelector('[data-info-status]');
+    const infoList = infoDialog.querySelector('[data-info-list]');
+    const infoTypes = { dm: 'Direct message', group: 'Group', class: 'Class chat' };
+    const infoRoles = { owner: 'Owner', admin: 'Admin', member: 'Member' };
+    let infoRequest = null;
+
+    async function openInfo() {
+        infoRequest?.abort();
+        infoRequest = new AbortController();
+        infoTitle.textContent = chat.dataset.chatTitle;
+        infoStatus.textContent = 'Loading…';
+        infoStatus.hidden = false;
+        infoList.hidden = true;
+        infoDialog.showModal();
+
+        let info;
+        try {
+            const response = await fetch('/chat/info?chat=' + chat.dataset.chatId, {
+                signal: infoRequest.signal,
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) throw new Error(response.statusText);
+            info = await response.json();
+        } catch (error) {
+            if (error.name === 'AbortError') return; // closed before it came back
+            infoStatus.textContent = "Couldn't load the chat's info. Try again.";
+            return;
+        }
+
+        const rows = [
+            ['Type', infoTypes[info.type]],
+            ['Created', info.createdBy !== null ? `${info.created} by ${info.createdBy}` : info.created],
+            ['Members', info.members.toLocaleString()],
+            ['Messages', info.messages.toLocaleString()],
+            ['You joined', info.joined],
+        ];
+        if (info.role !== null) rows.push(['Your role', infoRoles[info.role]]);
+        infoList.replaceChildren(...rows.flatMap(([label, value]) => {
+            const term = document.createElement('dt');
+            term.textContent = label;
+            const detail = document.createElement('dd');
+            detail.textContent = value;
+            return [term, detail];
+        }));
+        infoStatus.hidden = true;
+        infoList.hidden = false;
+    }
+
+    infoDialog.addEventListener('close', () => infoRequest?.abort());
+
     const actions = {
         unmute() {
             muteForm.elements.action.value = 'unmute';
@@ -1242,6 +1296,7 @@ chatPart((signal) => {
         rename: openRename,
         icon: openIcon,
         background: openBackground,
+        info: openInfo,
     };
 
     menu.addEventListener('click', (event) => {
@@ -1251,7 +1306,7 @@ chatPart((signal) => {
         actions[button.dataset.menuAction]();
     });
 
-    [confirmDialog, nicknameDialog, renameDialog, iconDialog, backgroundDialog].forEach((dialog) => {
+    [confirmDialog, nicknameDialog, renameDialog, iconDialog, backgroundDialog, infoDialog].forEach((dialog) => {
         dialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
             button.addEventListener('click', () => dialog.close());
         });
