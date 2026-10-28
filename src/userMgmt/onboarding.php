@@ -220,7 +220,7 @@ foreach ($onboardingSteps as $index => $step) {
             </section>
 
             <section class="onboarding-step" aria-labelledby="onboarding-q2">
-                <h2 id="onboarding-q2">Which year are you in?</h2>
+                <h2 id="onboarding-q2">Which class are you in?</h2>
                 <!-- Radio buttons drawn as tiles; the form sends the same year/class values the dropdowns used to -->
                 <fieldset class="onboarding-choice">
                     <legend>Year</legend>
@@ -250,7 +250,6 @@ foreach ($onboardingSteps as $index => $step) {
                         <?php endforeach; ?>
                     </div>
                 </fieldset>
-                <p class="onboarding-hint">You'll be put in your class's group chat. Your year goes up by itself every July 1st.</p>
                 <?php if (isset($onboardingErrors['class'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['class']) ?></p>
                 <?php endif; ?>
