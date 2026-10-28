@@ -1707,7 +1707,8 @@
 
     // ----- Messages in the corner
 
-    // iconName is one of the icons (see iconBox()) to show in front of the text, or '' for none
+    // iconName is one of the icons (see iconBox()) to show in front of the text, or '' for none. Gives back the <li>, so
+    // a message that gets replaced later (Auto Buy's) can be taken down early.
     function toast(iconName, text, className = '', keepFor = 5000) {
         const item = element('li', 'miner-toast ' + className);
         if (iconName) item.append(iconBox('miner-toast-icon', iconName));
@@ -1718,6 +1719,7 @@
             item.classList.add('is-leaving');
             setTimeout(() => item.remove(), 400);
         }, keepFor);
+        return item;
     }
 
     // ----- The news ticker: a new line every few seconds, some only once you have what they're about
@@ -2286,14 +2288,29 @@
         return best.action;
     }
 
+    // Auto Buy only ever has one message in the corner. autoBuyToast is it (null when there's none showing) and
+    // autoBuyToastCount how many upgrades it's about: one shows that upgrade like before, more shows "Auto Buy bought 3
+    // upgrades", and a new upgrade while it's still up replaces it with the count one higher.
+    let autoBuyToast = null;
+    let autoBuyToastCount = 0;
+
     function autoBuy() {
         if (!isAutoBuying || !hasDark(state, 'autoBuy')) return;
         catchUp();
+        const bought = []; // the upgrades bought this time, for the message
         for (let i = 0; i < AUTO_BUY_PER_TICK; i++) {
             const action = autoBuyChoice();
-            if (!action || !act(action)) return;
-            if (action.type === 'upgrade') toast(UPGRADES[action.id].icon, 'Auto Buy: ' + UPGRADES[action.id].name + ': ' + UPGRADES[action.id].text);
+            if (!action || !act(action)) break;
+            if (action.type === 'upgrade') bought.push(action.id);
         }
+        if (!bought.length) return;
+        const isStillShowing = autoBuyToast && autoBuyToast.isConnected && !autoBuyToast.classList.contains('is-leaving');
+        autoBuyToastCount = (isStillShowing ? autoBuyToastCount : 0) + bought.length;
+        if (autoBuyToast) autoBuyToast.remove();
+        const upgrade = UPGRADES[bought[0]];
+        autoBuyToast = autoBuyToastCount === 1
+            ? toast(upgrade.icon, 'Auto Buy: ' + upgrade.name + ': ' + upgrade.text)
+            : toast('autoBuy', 'Auto Buy bought ' + autoBuyToastCount + ' upgrades');
     }
 
     buildingList.addEventListener('click', (event) => {
