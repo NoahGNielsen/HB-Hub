@@ -69,7 +69,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div>
                     <dt>Code libraries</dt>
-                    <dd>2</dd>
+                    <dd>3</dd>
                 </div>
                 <div>
                     <dt>Blacklists</dt>
@@ -106,7 +106,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
         <!-- Code -->
         <section class="credits-section" id="code" aria-labelledby="credits-code-title">
             <p class="home-kicker credits-kicker">Code</p>
-            <h2 id="credits-code-title">Two libraries, no frameworks.</h2>
+            <h2 id="credits-code-title">Code libraries, no frameworks.</h2>
             <p class="credits-section-lead">Everything else on HB Hub is plain PHP, HTML, CSS and JavaScript.</p>
             <div class="credits-library">
                 <div class="credits-qr" aria-hidden="true">
