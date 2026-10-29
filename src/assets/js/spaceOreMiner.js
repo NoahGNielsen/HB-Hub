@@ -3100,20 +3100,14 @@
         if (!act({ type: 'donate', what: 'ore', parts: 1 })) return;
         sound('buy');
         toast('orePile', 'You gave the Cosmic Engine 1 part for ' + format(cost) + ' ore. Thanks!');
-        engine.parts += 1;
-        engine.total += 1;
-        renderEngine();
-        saveSoon();
+        renderEngine(); // the parts are on the bar already, see announceGiven()
     });
     strangeDonateButton.addEventListener('click', () => {
         const parts = strangeCount();
         if (!act({ type: 'donate', what: 'strange', parts })) return;
         sound('buy');
         toast('strangelet', 'You gave the Cosmic Engine ' + partsText(parts) + ' for ' + format(parts * CONFIG.engineStrangePart) + ' Strange Matter. Thanks!');
-        engine.parts += parts;
-        engine.total += parts;
         renderEngine();
-        saveSoon();
     });
     strangeDonateCount.addEventListener('input', () => {
         if (state) renderEngineGive();
