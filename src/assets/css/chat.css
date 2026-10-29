@@ -806,15 +806,6 @@ body:has(> .chat) {
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
-/* Without a bubble behind it, a picture's name and size under it are small and faded, like a message's time */
-.chat-message-bubble.has-attachment .chat-attachment-caption {
-  opacity: 0.75;
-}
-
-.chat-message.is-own .chat-attachment-caption {
-  justify-content: flex-end;
-}
-
 /* A message's attachments (chatAttachmentsHtml in chat/index.php): its pictures, its file cards, then the gone ones' line */
 .chat-attachments {
   display: flex;
@@ -854,8 +845,9 @@ body:has(> .chat) {
   background: #000;
 }
 
-/* One the browser can't play (chat.js) is just its name to download */
-.chat-attachment.is-unplayable .chat-attachment-video {
+/* One the browser can't play (chat.js) is its file card to download instead, which is hidden until then */
+.chat-attachment.is-unplayable .chat-attachment-video,
+.chat-attachment.is-video:not(.is-unplayable) .chat-attachment.is-file {
   display: none;
 }
 
@@ -864,29 +856,8 @@ body:has(> .chat) {
   cursor: zoom-in;
 }
 
-.chat-attachment-caption {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 4px 8px 2px;
-  font-size: 0.8rem;
-}
-
-.chat-attachment-download {
-  min-width: 0;
-  overflow: hidden;
-  color: inherit;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chat-attachment-size {
-  flex: none;
-  opacity: 0.75;
-}
-
 /* Several pictures: square tiles, two or three to a row, the whole gallery rounded like one picture. Their names are
-   in the picture viewer (and when pointed at), not under each one. A JPEG XL <canvas> fills its tile the same way. */
+   in the picture viewer and File info (and when pointed at). A JPEG XL <canvas> fills its tile the same way. */
 .chat-attachment-gallery {
   display: grid;
   gap: 3px;
@@ -914,10 +885,6 @@ body:has(> .chat) {
 
 .chat-message[data-message-id] .chat-attachment-gallery .chat-attachment-image:hover {
   filter: brightness(1.08);
-}
-
-.chat-attachment-gallery .chat-attachment-caption {
-  display: none;
 }
 
 /* Other files: a card each, one under the other, that downloads it. With no bubble behind them, each card is a solid
@@ -1012,10 +979,6 @@ body:has(> .chat) {
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.chat-attachment.is-file .chat-attachment-size {
-  font-size: 0.8rem;
 }
 
 .chat-message-meta {
