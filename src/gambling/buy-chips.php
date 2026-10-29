@@ -22,7 +22,7 @@ $buyChipsSellerId = $statement->fetchColumn();
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
+    <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <title>Buy chips - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="How to buy extra casino chips on HB Hub">

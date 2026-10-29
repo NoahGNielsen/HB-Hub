@@ -40,8 +40,8 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
 <html lang="en">
 <head>
     <?php $headerHomeNav = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/blackjack.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/blackjack.css') ?>">
+    <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
+    <link rel="stylesheet" href="/assets/css/blackjack.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/blackjack.css') ?>">
     <?php if ($guestGame !== null): ?>
         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/head.php'; ?>
     <?php else: ?>
@@ -215,6 +215,6 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/bottom.php'; ?>
     <?php endif; ?>
     <?php $hbHubShowSiteFooter = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/blackjackTable.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/blackjackTable.js') ?>" defer></script>
+    <script src="/assets/js/blackjackTable.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/blackjackTable.js') ?>" defer></script>
 </body>
 </html>

@@ -2403,11 +2403,11 @@ if ($isPoll) {
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/chat.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/chat.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mentions.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/mentions.css') ?>">
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/chat.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chat.js') ?>" defer></script>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/mentions.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/mentions.js') ?>" defer></script>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
+    <link rel="stylesheet" href="/assets/css/chat.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/chat.css') ?>">
+    <link rel="stylesheet" href="/assets/css/mentions.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/mentions.css') ?>">
+    <script src="/assets/js/chat.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chat.js') ?>" defer></script>
+    <script src="/assets/js/mentions.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/mentions.js') ?>" defer></script>
+    <script src="/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
     <title><?= $openChat !== null ? htmlspecialchars($openChat['chatTitle']) . ' - ' : '' ?>Chat - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Chat page for the HB Hub">

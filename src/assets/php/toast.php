@@ -93,6 +93,6 @@ function hbHubRenderToast(): void
         <p class="toast-message"><?= htmlspecialchars($message) ?></p>
         <div class="toast-timer"></div>
     </div>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/toast.js?v=<?= filemtime(__DIR__ . '/../js/toast.js') ?>" defer></script>
+    <script src="/assets/js/toast.js?v=<?= filemtime(__DIR__ . '/../js/toast.js') ?>" defer></script>
     <?php
 }

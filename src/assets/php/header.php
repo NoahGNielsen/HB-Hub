@@ -43,15 +43,15 @@ $headerKeywords = array_unique([
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Dark before mainStyle.css has loaded, so a slow page load doesn't flash white first -->
 <meta name="color-scheme" content="dark">
-<link rel="icon" type="image/svg+xml" href="https://hbhub.noahgajnielsen.dk/assets/images/favicon.svg?v=<?= filemtime(__DIR__ . '/../images/favicon.svg') ?>">
-<link rel="apple-touch-icon" href="https://hbhub.noahgajnielsen.dk/assets/images/appleTouchIcon.png?v=<?= filemtime(__DIR__ . '/../images/appleTouchIcon.png') ?>">
-<link rel="manifest" href="https://hbhub.noahgajnielsen.dk/manifest.json?v=<?= filemtime(__DIR__ . '/../../manifest.json') ?>">
+<link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg?v=<?= filemtime(__DIR__ . '/../images/favicon.svg') ?>">
+<link rel="apple-touch-icon" href="/assets/images/appleTouchIcon.png?v=<?= filemtime(__DIR__ . '/../images/appleTouchIcon.png') ?>">
+<link rel="manifest" href="/manifest.json?v=<?= filemtime(__DIR__ . '/../../manifest.json') ?>">
 <meta name="apple-mobile-web-app-title" content="HB Hub">
 <meta name="theme-color" content="#161a21">
-<link rel="preload" href="https://hbhub.noahgajnielsen.dk/assets/fonts/raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mainStyle.css?v=<?= filemtime(__DIR__ . '/../css/mainStyle.css') ?>">
+<link rel="preload" href="/assets/fonts/raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/css/mainStyle.css?v=<?= filemtime(__DIR__ . '/../css/mainStyle.css') ?>">
 <?php if (empty($headerHomeNav)): ?>
-<link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
+<link rel="stylesheet" href="/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
 <?php endif; ?>
 <link rel="terms-of-service" href="https://hbhub.noahgajnielsen.dk/legal/terms">
 <link rel="privacy-policy" href="https://hbhub.noahgajnielsen.dk/legal/privacy">

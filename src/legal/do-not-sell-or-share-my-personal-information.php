@@ -20,8 +20,8 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
 <html lang="en" class="home">
 <head>
     <?php $headerHomeNav = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
+    <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
+    <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <title>Do Not Sell or Share My Personal Information - HB Hub</title>
     <meta name="description" content="HB Hub never sells or shares your personal information, for advertising or anything else. Here's what that means and who still sees what.">
 </head>

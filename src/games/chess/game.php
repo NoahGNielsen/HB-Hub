@@ -25,10 +25,10 @@ $gameClockName = HBHUB_CHESS_CLOCK_NAMES[$room['state']['clock']] ?? '';
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/chess.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/chess.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mentions.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/mentions.css') ?>">
+    <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
+    <link rel="stylesheet" href="/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
+    <link rel="stylesheet" href="/assets/css/chess.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/chess.css') ?>">
+    <link rel="stylesheet" href="/assets/css/mentions.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/mentions.css') ?>">
     <title><?= htmlspecialchars($room['roomName']) ?> - Chess - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="A game of chess on the HB Hub">
@@ -215,8 +215,8 @@ $gameClockName = HBHUB_CHESS_CLOCK_NAMES[$room['state']['clock']] ?? '';
         </dialog>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/chessGame.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chessGame.js') ?>" defer></script>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/boardZoom.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/boardZoom.js') ?>" defer></script>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/mentions.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/mentions.js') ?>" defer></script>
+    <script src="/assets/js/chessGame.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chessGame.js') ?>" defer></script>
+    <script src="/assets/js/boardZoom.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/boardZoom.js') ?>" defer></script>
+    <script src="/assets/js/mentions.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/mentions.js') ?>" defer></script>
 </body>
 </html>

@@ -19,7 +19,7 @@ if (hbHubBannedCookieUserId() !== null):
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
+    <link rel="stylesheet" href="/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
     <title>Sign up - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
@@ -258,8 +258,8 @@ foreach ($onboardingSteps as $index => $step) {
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/onboarding.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/onboarding.js') ?>" defer></script>
+    <link rel="stylesheet" href="/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
+    <script src="/assets/js/onboarding.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/onboarding.js') ?>" defer></script>
     <title>Sign up - HB Hub</title>
     <meta name="description" content="Make a free HB Hub account: you're put in your HTX class's group chat at HANSENBERG, and get DMs, a casino with play chips, and Matador, chess and UNO.">
 </head>
