@@ -105,7 +105,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
             <div class="home-hero-glow" aria-hidden="true"></div>
             <div class="home-hero-inner">
                 <div class="home-hero-text">
-                    <p class="home-eyebrow">Made at HANSENBERG, for HB's students</p>
+                    <p class="home-eyebrow">Made for HANSENBERG's students</p>
                     <h1 id="home-title">The whole school,<br><span class="home-hero-accent">one tab away.</span></h1>
                     <p class="home-lead">
                         Group chats with your class, Blackjack,
