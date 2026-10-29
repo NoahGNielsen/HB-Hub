@@ -937,8 +937,10 @@
         const was = step('save');
         isSending = true;
         clearTimeout(saveSoonTimer);
-        const batch = pending;
-        pending = [];
+        // No more than the server replays in one save (it drops the rest): what's over goes with the next one. A lot can
+        // pile up while a save is on its way (1600 Warp Jumps in crash report #32)
+        const batch = pending.slice(0, CONFIG.maxActions);
+        pending = pending.slice(CONFIG.maxActions);
         inflight = batch;
         const sentAt = Date.now();
         lastSentAt = sentAt;
@@ -2533,11 +2535,17 @@
     }
 
     // A Warp Jump, from the box (isAuto false) or Autopilot (quieter: no sound or animation, as it can be every few
-    // seconds)
+    // seconds). Jumps from the box straight after each other (hot keys held by a macro) only get the sound and shake
+    // once every WARP_FX_GAP_MS: each is a second of sound piling up, and the shake makes the browser lay the page out
+    // again there and then.
+    const WARP_FX_GAP_MS = 500;
+    let lastWarpFxAt = -Infinity;
+
     function doWarp(isAuto) {
         const gain = act({ type: 'warp' });
         if (!gain) return;
-        if (!isAuto) {
+        if (!isAuto && performance.now() - lastWarpFxAt >= WARP_FX_GAP_MS) {
+            lastWarpFxAt = performance.now();
             sound('warp');
             shake('is-warping');
         }
@@ -2796,7 +2804,10 @@
     };
 
     document.addEventListener('keydown', (event) => {
-        if (!isPlaying || event.ctrlKey || event.altKey || event.metaKey || document.querySelector('dialog[open]')) return;
+        // defaultPrevented: a box's Y/N/W key (above) that's already been used. The box is closed by the time the key
+        // gets here, so without it the W that said yes to a Warp Jump opened the box again at once, and every press
+        // was a whole jump: with a key-repeating macro, 30 jumps a second froze the page (crash reports #31 and #32)
+        if (!isPlaying || event.defaultPrevented || event.ctrlKey || event.altKey || event.metaKey || document.querySelector('dialog[open]')) return;
         const target = event.target;
         if (target.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
 
