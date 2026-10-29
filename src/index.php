@@ -108,7 +108,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <p class="home-eyebrow">Made at school, for school</p>
                     <h1 id="home-title">The whole school,<br><span class="home-hero-accent">one tab away.</span></h1>
                     <p class="home-lead">
-                        Group chats with your class, Blackjack with chips that aren't real money,
+                        Group chats with your class, Blackjack,
                         and Matador with friends who'll never let you forget Rådhuspladsen. The place for all of HANSENBERG. All in your browser.
                     </p>
                     <div class="home-hero-actions">
