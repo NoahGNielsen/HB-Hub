@@ -3,6 +3,9 @@
 // hbHubMinerSync() in assets/php/games/spaceOreMiner/miner.php on every save): ore mined ever, ore per second (without
 // comets), Dark Matter earned in this universe, Antimatter earned in this multiverse, Strange Matter ever earned, Warp
 // Jumps, clicks and achievements. Sorted by any column with ?sort=column&dir=asc|desc, which the headings link to.
+// Two more tabs (?board=, LEADERBOARD_BOARDS) list who has given the most Engine Parts to the Cosmic Engine, from
+// HBHub-MinerContributions (assets/php/games/spaceOreMiner/engine.php): to the one being built (engine), and to every
+// Engine ever (engineAll), with how many came from Strange Matter, ore and Engine Shifts. They're always by parts.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php';
@@ -21,6 +24,11 @@ const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first, the
     'warps' => ['Warp Jumps', 'desc', 's.saveWarps'],
     'clicks' => ['Clicks', 'desc', 's.saveClicks'],
     'achievements' => ['Achievements', 'desc', 's.saveAchievements'],
+];
+const LEADERBOARD_BOARDS = [ // ?board= => the tab's text
+    'players' => 'Players',
+    'engine' => 'Engine contributors',
+    'engineAll' => 'Engine contributors, all time',
 ];
 
 /**
@@ -66,6 +74,29 @@ function leaderboardNumber(float $number): string
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
+$board = is_string($_GET['board'] ?? null) && isset(LEADERBOARD_BOARDS[$_GET['board']]) ? $_GET['board'] : 'players';
+
+// The Engine tabs: everyone who has given parts, most first (a tie goes to who gave first). Banned and deleted
+// accounts are left out, like on the players' tab, though their parts still count in the Engine.
+$engineRows = [];
+$engineNumber = 0;
+if ($board !== 'players') {
+    $engine = hbHubMinerEngineRow($db, false);
+    $engineNumber = (int) $engine['engineNumber'];
+    $statement = $db->prepare('SELECT c.contributionUserId AS userId, u.userName, u.userAvatarAttachmentId, SUM(c.contributionParts) AS parts,
+            SUM(IF(c.contributionSource = ?, c.contributionParts, 0)) AS fromStrange,
+            SUM(IF(c.contributionSource = ?, c.contributionParts, 0)) AS fromOre,
+            SUM(IF(c.contributionSource = ?, c.contributionParts, 0)) AS fromShifts
+        FROM `HBHub-MinerContributions` c
+        JOIN `HBHub-Users` u ON u.userId = c.contributionUserId
+        WHERE (? OR c.contributionEngineId = ?) AND u.userStatus IS NOT NULL AND u.userStatus <> ?
+        GROUP BY c.contributionUserId, u.userName, u.userAvatarAttachmentId
+        ORDER BY parts DESC, MIN(c.contributionId)
+        LIMIT ' . LEADERBOARD_ROWS);
+    $statement->execute([HBHUB_MINER_ENGINE_SOURCE_STRANGE, HBHUB_MINER_ENGINE_SOURCE_ORE, HBHUB_MINER_ENGINE_SOURCE_SHIFT,
+        (int) ($board === 'engineAll'), (int) $engine['engineId'], LEADERBOARD_STATUS_BANNED]);
+    $engineRows = $statement->fetchAll();
+}
 
 $sort = is_string($_GET['sort'] ?? null) && isset(LEADERBOARD_COLUMNS[$_GET['sort']]) ? $_GET['sort'] : 'ore';
 $dir = in_array($_GET['dir'] ?? null, ['asc', 'desc'], true) ? $_GET['dir'] : LEADERBOARD_COLUMNS[$sort][1];
@@ -100,6 +131,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
+    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/spaceOreMiner.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/spaceOreMiner.css') ?>">
     <title>Ore Mining Inc. leaderboard - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Who has built the biggest mining company in Ore Mining Inc. on the HB Hub">
@@ -109,6 +141,68 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
     <main class="casino casino-leaderboard games">
         <a class="casino-back" href="/games/ore-mining-inc/">&larr; Ore Mining Inc.</a>
         <h1>Ore Mining Inc. leaderboard</h1>
+        <!-- The tabs, in the game's own menu style -->
+        <nav class="miner-menu" aria-label="Leaderboards">
+            <?php foreach (LEADERBOARD_BOARDS as $boardId => $boardText): ?>
+                <a class="miner-menu-link" href="<?= $boardId === 'players' ? '?' : '?board=' . $boardId ?>"<?= $boardId === $board ? ' aria-current="page"' : '' ?>>
+                    <span class="miner-menu-text"><?= $boardText ?></span>
+                </a>
+            <?php endforeach; ?>
+        </nav>
+
+        <?php if ($board !== 'players'): ?>
+        <p class="casino-intro">
+            Who has given the most Engine Parts to <?= $board === 'engine' ? 'Cosmic Engine #' . $engineNumber . ', the one being built' : 'every Cosmic Engine so far' ?>,
+            and how many came from Strange Matter, ore and Engine Shifts. It's updated every time their game saves.
+        </p>
+
+        <section class="casino-card casino-board" aria-label="Engine contributors">
+            <?php if ($engineRows === []): ?>
+                <p class="casino-hint">Nobody has given the Engine any parts yet. <a href="/games/ore-mining-inc/?view=engine">Be the first!</a></p>
+            <?php else: ?>
+                <div class="casino-table-wrap">
+                    <table class="casino-table">
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class="casino-rank">#</span></th>
+                                <th scope="col">Player</th>
+                                <th scope="col" aria-sort="descending">Engine Parts</th>
+                                <th scope="col">From Strange Matter</th>
+                                <th scope="col">From ore</th>
+                                <th scope="col">From Engine Shifts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($engineRows as $index => $row):
+                                $rowUserId = (int) $row['userId'];
+                                $avatarSrc = hbHubAvatarUrl($rowUserId, $row['userAvatarAttachmentId'] !== null ? (int) $row['userAvatarAttachmentId'] : null);
+                            ?>
+                                <tr<?= $rowUserId === $userId ? ' class="is-you"' : '' ?>>
+                                    <td class="casino-rank"<?= $index < 3 ? ' data-podium="' . ($index + 1) . '"' : '' ?>><?= $index + 1 ?></td>
+                                    <td>
+                                        <a class="casino-player" href="<?= htmlspecialchars(hbHubProfileUrl($rowUserId, $_SERVER['REQUEST_URI'])) ?>">
+                                            <span class="casino-avatar" aria-hidden="true">
+                                                <?php if ($avatarSrc !== null): ?>
+                                                    <img src="<?= htmlspecialchars($avatarSrc) ?>" alt="" loading="lazy">
+                                                <?php else: ?>
+                                                    <?= htmlspecialchars(mb_strtoupper(mb_substr($row['userName'], 0, 1))) ?>
+                                                <?php endif; ?>
+                                            </span>
+                                            <span class="casino-player-name"><?= htmlspecialchars($row['userName']) ?></span>
+                                        </a>
+                                    </td>
+                                    <td><?= number_format((int) $row['parts']) ?></td>
+                                    <td><?= number_format((int) $row['fromStrange']) ?></td>
+                                    <td><?= number_format((int) $row['fromOre']) ?></td>
+                                    <td><?= number_format((int) $row['fromShifts']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </section>
+        <?php else: ?>
         <p class="casino-intro">
             Ore mined is everything someone has ever mined, in every galaxy. Ore per second is how fast they mine right now,
             without comets. It's updated every time their game saves.
@@ -167,6 +261,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                 </div>
             <?php endif; ?>
         </section>
+        <?php endif; ?>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

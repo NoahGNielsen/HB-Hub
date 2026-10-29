@@ -676,6 +676,32 @@
   flex-wrap: wrap;
 }
 
+/* The Cosmic Engine page (admin/engine.php): its numbers as label and value side by side, and the cost boxes */
+.admin-engine-numbers {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 16px;
+}
+
+.admin-engine-numbers dt {
+  font-weight: 700;
+}
+
+.admin-engine-numbers dd {
+  margin: 0;
+}
+
+.admin-engine-cost {
+  width: 8em;
+  padding: 6px 8px;
+  border: 1px solid var(--secondary);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+}
+
 @media (max-width: 600px) {
   .admin-header {
     flex-direction: column;

@@ -1,7 +1,8 @@
 <?php
 // Help docs: Ore Mining Inc. - getting started, every building (straight from HBHUB_MINER_BUILDINGS in
 // assets/php/games/spaceOreMiner/miner.php, so a new one or a new price shows up here by itself), the comets, the three
-// prestiges, the skill tree, saving and the game's own How to play (rules.php, included as the game shows it).
+// prestiges, the skill tree, the Cosmic Engine (its stages straight from HBHUB_MINER_ENGINE_STAGES, with their default
+// costs), saving and the game's own How to play (rules.php, included as the game shows it).
 // How much Strange Matter a Big Rip gives is still being balanced, so it's only described, never given as numbers.
 // Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
@@ -164,6 +165,49 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         </p>
                     </section>
 
+                    <section id="engine" aria-labelledby="docs-engine">
+                        <h2 id="docs-engine">The Cosmic Engine</h2>
+                        <p>
+                            The Engine view has a machine everyone on HB Hub builds together, out of Engine Parts. Once you've made
+                            your first Warp Jump, you can help in three ways:
+                        </p>
+                        <ul>
+                            <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day. The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much.</li>
+                            <li><strong>Strange Matter</strong>: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> for a part, as many as you like. It doesn't make you mine slower, as the Strange Matter bonus counts all you've ever earned, not what you have left.</li>
+                            <li>
+                                <strong>Engine Shifts</strong>: <?= HBHUB_MINER_SHIFT_COUNT ?> small tasks a day, the same for everyone (like
+                                <?= strtolower(HBHUB_MINER_SHIFTS['comets']['text']) ?> or <?= strtolower(HBHUB_MINER_SHIFTS['buildings']['text']) ?>),
+                                worth <?= HBHUB_MINER_SHIFT_PARTS ?> parts each, or <?= HBHUB_MINER_SHIFT_PARTS_ALL ?> each once all of them are done.
+                            </li>
+                        </ul>
+                        <p>
+                            The parts go into one stage at a time. When a stage has all its parts, it's finished, and everyone who
+                            plays gets its perk for good. Some stages have a lock too, which has to be met before they finish
+                            however many parts they have: until then the parts wait there (or, for a lock that needs Anomalies, the
+                            Engine takes no more parts). The daily limits and Shifts start over at midnight UTC. The
+                            <a href="/games/ore-mining-inc/leaderboard?board=engine">leaderboard</a> shows who has given the most.
+                            These are the stages so far (<?= HBHUB_MINER_ENGINE_STAGE_TOTAL ?> are planned):
+                        </p>
+                        <div class="docs-table-wrap">
+                            <table class="docs-table">
+                                <thead>
+                                    <tr><th scope="col">Stage</th><th scope="col">Parts</th><th scope="col">Perk</th><th scope="col">Lock</th></tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach (HBHUB_MINER_ENGINE_STAGES as $index => $stage): ?>
+                                        <tr>
+                                            <td><?= $index + 1 ?>. <?= htmlspecialchars($stage['name']) ?></td>
+                                            <td><?= number_format($stage['cost']) ?></td>
+                                            <td><?= htmlspecialchars($stage['perk']['text']) ?></td>
+                                            <td><?= $stage['lock'] !== null ? htmlspecialchars($stage['lock']['text']) : '' ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p>The parts each stage needs can still change as the Engine is tuned.</p>
+                    </section>
+
                     <section id="rules" aria-labelledby="docs-rules">
                         <h2 id="docs-rules">How to play, from the game</h2>
                         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/rules.php'; ?>
@@ -174,7 +218,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             Your game is saved on HB Hub's server every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave,
                             so you can carry on from any device. While you're away, your buildings keep mining at
-                            <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
+                            <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed, or more once the Cosmic Engine has the stages for it.
                         </p>
                         <p>
                             If the game crashes or freezes before it's saved, what you did just before is kept in your browser

@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '28 October 2026';
+const HBHUB_TERMS_UPDATED = '30 October 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -204,6 +204,13 @@ const HBHUB_TERMS_UPDATED = '28 October 2026';
                                 or take it off the leaderboard. If the game crashes or is closed before it's saved, what you
                                 did just before is kept in your browser and saved (and checked the same way) the next time you
                                 open the game in that browser, but that isn't a promise: progress that's never saved can be lost.
+                            </li>
+                            <li>
+                                Ore Mining Inc.'s Cosmic Engine is built by everyone together. Engine Parts you give it (for ore,
+                                Strange Matter or Engine Shifts) can't be taken back, and your name and how many you gave are
+                                shown to everyone with an account. Its perks are for every player. Admins can change how many parts a
+                                stage needs, and the stages and perks may change as the game is balanced. Parts given with a
+                                cheated save can be removed.
                             </li>
                             <li>
                                 The free games at <a href="/play">/play</a> can be played without an account, and these terms

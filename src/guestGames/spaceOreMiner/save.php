@@ -9,6 +9,9 @@
 // no limit on how often it saves, as there's nothing to count it against: each save is still at most
 // HBHUB_MINER_MAX_ACTIONS actions. Errors: 400 {"error": "badRequest"} for no such action, or actions or recovered
 // that aren't a JSON list.
+// A guest can see the Cosmic Engine and gets its perks, but can't give it parts (nothing about guests is kept), so the
+// save gets the Engine's stages and engineOpen false, and the answer its "engine" without who gave what (players'
+// names are only shown to members).
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/guestGames.php';
@@ -27,11 +30,15 @@ $now = hbHubMinerNow();
 $saved = hbHubGuestOpen('miner', $_POST['token'] ?? null)['state'] ?? null;
 $state = is_array($saved) ? hbHubMinerNormalize($saved, $now) : hbHubMinerNewState($now);
 $replay = hbHubMinerReplay($state, $actions, $recovered, $now);
+$db = hbHubDatabase();
+$engine = hbHubMinerEngineRow($db, false);
+hbHubMinerEngineAdopt($state, $engine, false);
 
 echo json_encode([
     'state' => hbHubMinerView($state),
     'now' => $now,
     'offline' => $replay['offline'],
     'recovered' => $replay['recovered'],
+    'engine' => hbHubMinerEngineSummary($db, $engine, null, false), // never who gave what: names are only for members
     'token' => hbHubGuestSeal('miner', ['state' => hbHubMinerView($state)]),
 ], JSON_PRESERVE_ZERO_FRACTION);

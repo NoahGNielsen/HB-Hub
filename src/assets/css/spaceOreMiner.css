@@ -1,13 +1,15 @@
-/* Ore Mining Inc. (games/spaceOreMiner/): the buttons and the menu at the top, the four views (Ore: the asteroid and
-   the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree),
-   the popups (stats, achievements, how to play), the comet flying across the screen and the messages in the corner.
-   Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. */
+/* Ore Mining Inc. (games/spaceOreMiner/): the buttons and the menu at the top, the five views (Ore: the asteroid and
+   the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree;
+   Engine: the Cosmic Engine), the popups (stats, achievements, how to play), the comet flying across the screen and the
+   messages in the corner. Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. The leaderboard
+   loads it too, for its tabs (.miner-menu). */
 .casino.miner {
   --miner-gold: #f5c542;
   --miner-diamond: #8be9ff;
   --miner-dark: #9d7bff;
   --miner-anti: #ff6bb5;
   --miner-strange: #5ef2a6;
+  --miner-engine: #ffa94d;
   --miner-gap: 16px;
   max-width: 1180px;
   margin: 0 auto;
@@ -105,6 +107,10 @@
 
 .miner-menu-link.is-strangeMatter {
   --miner-view-colour: var(--miner-strange);
+}
+
+.miner-menu-link.is-engine {
+  --miner-view-colour: var(--miner-engine);
 }
 
 .miner-menu-link:hover {
@@ -2209,6 +2215,259 @@
 }
 
 /* The jump's side: its name, what you have and what it does for you, the bar towards the next jump and its button */
+/* The Engine (.miner-prestige.is-engine): three gears of different sizes turning round a glowing core, each the
+   next one's way, faster while you can give parts (is-ready) */
+.miner-prestige.is-engine {
+  --view: var(--miner-engine);
+  --view-2: #ffe08a;
+}
+
+.miner-prestige.is-engine .miner-art-ring {
+  box-sizing: border-box;
+  border: 10px dotted color-mix(in srgb, var(--view) 75%, transparent);
+  animation: miner-spin calc(30s / var(--spin)) linear infinite;
+}
+
+.miner-prestige.is-engine .miner-art-ring.is-1 {
+  width: 100%;
+  height: 100%;
+}
+
+.miner-prestige.is-engine .miner-art-ring.is-2 {
+  width: 72%;
+  height: 72%;
+  border-color: color-mix(in srgb, var(--view-2) 70%, transparent);
+  animation-duration: calc(20s / var(--spin));
+  animation-direction: reverse;
+}
+
+.miner-prestige.is-engine .miner-art-ring.is-3 {
+  width: 46%;
+  height: 46%;
+  border-width: 7px;
+  animation-duration: calc(12s / var(--spin));
+}
+
+.miner-prestige.is-engine .miner-art-core {
+  width: 24%;
+  height: 24%;
+  background: radial-gradient(circle, #fff 20%, var(--view-2) 50%, var(--view));
+  box-shadow: 0 0 24px 6px color-mix(in srgb, var(--view) 70%, transparent);
+  animation: miner-throb calc(1.6s / var(--spin)) ease-in-out infinite alternate;
+}
+
+/* Under the top: the boxes (give parts, Shifts, top contributors, latest parts), and the stages across the bottom */
+.miner-engine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+}
+
+.miner-engine-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 14px;
+  background: var(--background);
+}
+
+.miner-engine-card.is-wide {
+  grid-column: 1 / -1;
+}
+
+.miner-engine-card .miner-store-title {
+  margin: 0 0 10px;
+}
+
+.miner-engine-note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in srgb, var(--view) 50%, transparent);
+  border-radius: 10px;
+  line-height: 1.45;
+}
+
+.miner-engine-small {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.75;
+}
+
+.miner-engine-small a {
+  color: var(--view);
+}
+
+.miner-engine-give {
+  margin-bottom: 14px;
+}
+
+.miner-engine-count {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.miner-engine-count input {
+  width: 7em;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 8px;
+  background: var(--secondary);
+  color: var(--text);
+  font: inherit;
+}
+
+.miner-shifts,
+.miner-engine-list,
+.miner-engine-stages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.miner-shift {
+  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  font-size: 0.95rem;
+}
+
+.miner-shift .miner-progress-bar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  height: 8px;
+}
+
+.miner-shift-count {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.miner-shift.is-done .miner-shift-count {
+  color: var(--view);
+  font-weight: 700;
+  opacity: 1;
+}
+
+.miner-engine-row {
+  padding: 6px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  font-size: 0.95rem;
+}
+
+.miner-engine-row.is-you {
+  color: var(--view);
+  font-weight: 700;
+}
+
+.miner-engine-rank {
+  min-width: 1.5em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-engine-who {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.miner-engine-parts,
+.miner-engine-when {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.miner-engine-what {
+  opacity: 0.85;
+}
+
+.miner-engine-empty {
+  opacity: 0.7;
+}
+
+.miner-engine-section {
+  margin: 14px 0 6px;
+  color: var(--view);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.miner-engine-section:first-child {
+  margin-top: 0;
+}
+
+.miner-engine-section.is-later {
+  color: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  opacity: 0.7;
+}
+
+.miner-engine-stage {
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 12px;
+  opacity: 0.65;
+}
+
+.miner-engine-stage.is-now {
+  border-color: var(--view);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--view) 35%, transparent);
+  opacity: 1;
+}
+
+.miner-engine-stage.is-done {
+  background: color-mix(in srgb, var(--view) 10%, transparent);
+  opacity: 1;
+}
+
+.miner-engine-stage-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.miner-engine-stage-number {
+  color: var(--view);
+  font-weight: 800;
+}
+
+.miner-engine-stage-name {
+  font-weight: 700;
+}
+
+.miner-engine-stage-cost {
+  margin-left: auto;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.miner-engine-stage-perk,
+.miner-engine-stage-lock {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+}
+
+.miner-engine-stage-lock {
+  opacity: 0.75;
+}
+
 .miner-prestige-main {
   width: 100%;
   min-width: 0;

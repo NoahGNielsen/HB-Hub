@@ -664,6 +664,23 @@ CREATE TABLE `HBHub-WordleWords` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-MinerContributions`
+--
+
+CREATE TABLE `HBHub-MinerContributions` (
+  `contributionId` bigint UNSIGNED NOT NULL,
+  `contributionEngineId` int UNSIGNED NOT NULL COMMENT 'The Cosmic Engine it went to',
+  `contributionUserId` int UNSIGNED NOT NULL COMMENT 'Who gave it. Kept when the account is deleted (it then shows as Deleted User), as the parts are part of the Engine',
+  `contributionStage` tinyint UNSIGNED NOT NULL COMMENT 'The stage being built when it was given (1 for the first)',
+  `contributionParts` int UNSIGNED NOT NULL COMMENT 'Engine Parts given',
+  `contributionSource` tinyint UNSIGNED NOT NULL COMMENT '1 Ore\r\n2 Strange Matter\r\n3 Engine Shifts\r\n4 Anomalies (HBHUB_MINER_ENGINE_SOURCE_*)',
+  `contributionAnomaly` varchar(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The Anomaly (or stack of them) it was for, with contributionSource 4',
+  `contributionTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Ore Mining Inc.: Engine Parts given to the Cosmic Engine, one row per kind per save (src/assets/php/games/spaceOreMiner/engine.php). Shown to everyone in the game and on its leaderboard';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-MinerCrashReports`
 --
 
@@ -675,6 +692,25 @@ CREATE TABLE `HBHub-MinerCrashReports` (
   `crashReportUserAgent` varchar(255) DEFAULT NULL COMMENT 'The browser''s user agent, as it sent the report',
   `crashReportCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Deleted after HBHUB_MINER_CRASH_KEEP_DAYS'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Ore Mining Inc. crash reports, only sent when the player says yes, read on the admin panel (src/admin/crashes.php)';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-MinerEngines`
+--
+
+CREATE TABLE `HBHub-MinerEngines` (
+  `engineId` int UNSIGNED NOT NULL,
+  `engineNumber` smallint UNSIGNED NOT NULL COMMENT 'Cosmic Engine #1, #2, ...',
+  `engineStage` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How many stages are done (their perks work for everyone)',
+  `engineStageParts` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Engine Parts in the stage being built',
+  `engineParts` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Engine Parts ever given to it',
+  `engineStageCosts` json DEFAULT NULL COMMENT 'Costs set in the admin panel, {"stage": parts}; the rest are the ones in HBHUB_MINER_ENGINE_STAGES',
+  `engineStageFinished` json DEFAULT NULL COMMENT 'When each stage was done, {"stage": "Y-m-d H:i:s"} in UTC',
+  `engineCountdownTimestamp` datetime DEFAULT NULL COMMENT 'UTC, when the last stage (Ignition) has to be full by',
+  `engineStartedTimestamp` datetime NOT NULL COMMENT 'UTC',
+  `engineIgnitedTimestamp` datetime DEFAULT NULL COMMENT 'UTC, when it was finished'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Ore Mining Inc.: the Cosmic Engine the whole site builds together, the newest row being built (src/assets/php/games/spaceOreMiner/engine.php)';
 
 -- --------------------------------------------------------
 
@@ -1171,6 +1207,21 @@ ALTER TABLE `HBHub-WordleWords`
   ADD KEY `languageWord` (`wordLanguage`,`wordText`);
 
 --
+-- Indexes for table `HBHub-MinerContributions`
+--
+ALTER TABLE `HBHub-MinerContributions`
+  ADD PRIMARY KEY (`contributionId`),
+  ADD KEY `engineUser` (`contributionEngineId`,`contributionUserId`,`contributionParts`),
+  ADD KEY `userId` (`contributionUserId`);
+
+--
+-- Indexes for table `HBHub-MinerEngines`
+--
+ALTER TABLE `HBHub-MinerEngines`
+  ADD PRIMARY KEY (`engineId`),
+  ADD UNIQUE KEY `engineNumber` (`engineNumber`);
+
+--
 -- Indexes for table `HBHub-MinerCrashReports`
 --
 ALTER TABLE `HBHub-MinerCrashReports`
@@ -1380,6 +1431,18 @@ ALTER TABLE `HBHub-MessageReactions`
 --
 ALTER TABLE `HBHub-Messages`
   MODIFY `messageId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-MinerContributions`
+--
+ALTER TABLE `HBHub-MinerContributions`
+  MODIFY `contributionId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-MinerEngines`
+--
+ALTER TABLE `HBHub-MinerEngines`
+  MODIFY `engineId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `HBHub-MinerCrashReports`
@@ -1666,6 +1729,13 @@ ALTER TABLE `HBHub-Notifications`
 --
 ALTER TABLE `HBHub-WordleGames`
   ADD CONSTRAINT `fk_wordlegames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-MinerContributions`
+--
+ALTER TABLE `HBHub-MinerContributions`
+  ADD CONSTRAINT `fk_minercontributions_engine` FOREIGN KEY (`contributionEngineId`) REFERENCES `HBHub-MinerEngines` (`engineId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_minercontributions_user` FOREIGN KEY (`contributionUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-MinerCrashReports`
