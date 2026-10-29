@@ -67,6 +67,8 @@ const HBHUB_TOASTS = [
     'adminFeedbackReplied' => 'The feedback has been marked as done, and your reply has been sent to them.',
     'adminFeedbackReplyMissing' => 'Nothing was sent: write a reply of at most 500 characters.',
     'adminCrashDeleted' => 'The crash report has been deleted.',
+    'adminEngineCosts' => 'The stage costs have been saved.',
+    'adminEngineCostsBad' => 'Nothing was saved: every cost has to be a whole number from 1 to 10,000,000.',
 ];
 
 /**

@@ -8,8 +8,9 @@
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
 // It has four views, picked in the menu under the title and the news ticker: Ore (the asteroid and the store, the default), Dark Matter
-// (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch) and Strange Matter
-// (?view=strangeMatter, the Big Rip and the skill tree). They're all on the page, and the
+// (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch), Strange Matter
+// (?view=strangeMatter, the Big Rip and the skill tree) and Engine (?view=engine, the Cosmic Engine the whole site
+// builds together, see assets/php/games/spaceOreMiner/engine.php). They're all on the page, and the
 // script switches between them without loading it again (changing the address, so Back works), so the game keeps
 // running; ?view= only picks the one shown first. Stats, achievements and how to play are popups.
 // data-watchdog is the worker that notices when the page freezes (spaceOreMinerWatchdog.js). After a crash, the next
@@ -33,6 +34,7 @@ const MINER_VIEWS = [ // ?view= => [the menu's text, its address after the game'
     'darkMatter' => ['Dark Matter', '?view=darkMatter'],
     'antimatter' => ['Antimatter', '?view=antimatter'],
     'strangeMatter' => ['Strange Matter', '?view=strangeMatter'],
+    'engine' => ['Engine', '?view=engine'],
 ];
 $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-inc/';
@@ -369,6 +371,95 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                         </button>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Engine: the Cosmic Engine the whole site builds together, built like the other views. On top the stage
+             being built, its parts and its lock; under it what you can give, today's Engine Shifts, every stage with
+             its perk, and who gave the most and last. All filled in by spaceOreMiner.js (renderEngine()) from every
+             save's answer. -->
+        <section class="miner-view casino-card miner-prestige is-engine" aria-labelledby="miner-engine-title" data-miner-view="engine" data-miner-engine-view<?= $minerView !== 'engine' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- Three gears turning round the Engine's glowing core -->
+                <div class="miner-prestige-art" aria-hidden="true">
+                    <span class="miner-art-ring is-1"></span>
+                    <span class="miner-art-ring is-2"></span>
+                    <span class="miner-art-ring is-3"></span>
+                    <span class="miner-art-core"></span>
+                </div>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-engine-title" class="miner-prestige-title">Cosmic Engine <span data-miner-engine="number"></span></h2>
+                    <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-engine="name">Loading…</span></p>
+                    <p class="miner-prestige-bonus" data-miner-engine="stage"></p>
+                    <div class="miner-progress">
+                        <div class="miner-progress-bar" role="progressbar" aria-labelledby="miner-engine-progress-label"
+                             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-miner-engine-progress><span class="miner-progress-fill"></span></div>
+                        <p class="miner-progress-label" id="miner-engine-progress-label">
+                            <span data-miner-engine="parts">0</span> of <span data-miner-engine="cost">0</span> Engine Parts
+                            (<span data-miner-engine="total">0</span> given in all)
+                        </p>
+                    </div>
+                    <p class="miner-prestige-hint" data-miner-engine-lock hidden></p>
+                </div>
+            </div>
+            <p class="casino-hint miner-prestige-about">
+                Everyone on HB Hub builds the Cosmic Engine together, one stage at a time, out of Engine Parts. Each stage
+                finished gives everyone who plays its perk, for good. Some stages have a lock as well, which has to be met
+                before they finish, however many parts they have. Anyone who has made a Warp Jump can give parts.
+            </p>
+
+            <div class="miner-engine-grid">
+                <section class="miner-engine-card" aria-labelledby="miner-engine-give-title">
+                    <h3 class="miner-store-title" id="miner-engine-give-title">Give parts</h3>
+                    <p class="miner-engine-note" data-miner-engine-give-note hidden></p>
+                    <div class="miner-engine-give">
+                        <button type="button" class="miner-prestige-btn" data-miner-donate="ore" disabled>
+                            <span class="miner-prestige-btn-text">Give 1 part</span>
+                            <span class="miner-prestige-btn-gain">for <span data-miner-engine="oreCost"></span> ore</span>
+                        </button>
+                        <p class="miner-engine-small" data-miner-engine="oreLeft"></p>
+                    </div>
+                    <div class="miner-engine-give">
+                        <label class="miner-engine-count">
+                            <span>Parts from Strange Matter</span>
+                            <input type="number" min="1" step="1" value="1" inputmode="numeric" data-miner-donate-count>
+                        </label>
+                        <button type="button" class="miner-prestige-btn" data-miner-donate="strange" disabled>
+                            <span class="miner-prestige-btn-text">Give</span>
+                            <span class="miner-prestige-btn-gain">for <span data-miner-engine="strangeCost"></span> Strange Matter</span>
+                        </button>
+                        <p class="miner-engine-small">You have <span data-miner-engine="strangeHave">0</span> Strange Matter to spend. Giving it doesn't make you mine slower: the bonus counts all you've earned.</p>
+                    </div>
+                    <p class="miner-engine-small">
+                        Parts from ore: the first of the day costs <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore and each next one ten times
+                        as much, <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day at most. Parts from Strange Matter: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> each, as many as you like.
+                    </p>
+                    <p class="miner-engine-small" data-miner-engine="mine" hidden></p>
+                </section>
+
+                <section class="miner-engine-card" aria-labelledby="miner-shifts-title">
+                    <h3 class="miner-store-title" id="miner-shifts-title">Today's Engine Shifts</h3>
+                    <ul class="miner-shifts" data-miner-shifts></ul>
+                    <p class="miner-engine-small" data-miner-shifts-note></p>
+                </section>
+
+                <section class="miner-engine-card" aria-labelledby="miner-engine-top-title">
+                    <h3 class="miner-store-title" id="miner-engine-top-title">Top contributors</h3>
+                    <ol class="miner-engine-list" data-miner-engine-top></ol>
+                    <?php if ($guestGame === null): ?>
+                        <p class="miner-engine-small"><a href="/games/ore-mining-inc/leaderboard?board=engine">Everyone who has given parts</a></p>
+                    <?php endif; ?>
+                </section>
+
+                <section class="miner-engine-card" aria-labelledby="miner-engine-feed-title">
+                    <h3 class="miner-store-title" id="miner-engine-feed-title">Latest parts</h3>
+                    <ul class="miner-engine-list" data-miner-engine-feed></ul>
+                </section>
+
+                <section class="miner-engine-card is-wide" aria-labelledby="miner-engine-stages-title">
+                    <h3 class="miner-store-title" id="miner-engine-stages-title">Stages</h3>
+                    <ol class="miner-engine-stages" data-miner-engine-stages></ol>
+                </section>
             </div>
         </section>
 

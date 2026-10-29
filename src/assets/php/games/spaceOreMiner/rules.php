@@ -37,8 +37,20 @@
         while the game is open. Diamond Comets are left for you to catch yourself.
     </li>
     <li>
+        The Engine view has the Cosmic Engine, which everyone on HB Hub builds together, one stage at a time, out of
+        Engine Parts. Once you've made a Warp Jump you can give it parts: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day
+        for ore (the first for <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?>, each next one that day ten
+        times as much), as many as you like for <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> Strange Matter each (it doesn't
+        make you mine slower, as the Strange Matter bonus counts all you've earned), and by working the day's
+        <?= HBHUB_MINER_SHIFT_COUNT ?> Engine Shifts, small tasks that are the same for everyone and give
+        <?= HBHUB_MINER_SHIFT_PARTS ?> parts each, or <?= HBHUB_MINER_SHIFT_PARTS_ALL ?> each once all of them are done.
+        Every stage finished gives everyone who plays its perk for good. Some stages have a lock too, like a number of
+        different players who have helped, and only finish once it's met.
+    </li>
+    <li>
         The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
-        your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
+        your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed (more once the Cosmic Engine
+        has the stages for it). The daily limits and Engine Shifts start over at midnight UTC.
     </li>
     <li class="miner-hot-keys" id="hot-keys"><!-- the Hot Key Panel's popup in the game links here -->
         Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade). Once you have

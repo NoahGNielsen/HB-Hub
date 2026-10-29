@@ -4,7 +4,8 @@
 // A card with the banner along the top (a picture, or the colors they picked: assets/php/profile.php), the profile
 // picture over its bottom edge with a dot for online (hover it for how long they've been offline), their status next to
 // it, and on the right a Message button (someone else) or the settings cog (your own). Under it the name, badges
-// (Site admin, class, education), the bio and when they joined. Everything on it is changed in settings (otherPages/settings.php).
+// (Site admin, class, education, and Engine Crew for giving parts to Ore Mining Inc.'s Cosmic Engine once its Crew Deck
+// is built), the bio and when they joined. Everything on it is changed in settings (otherPages/settings.php).
 // On your own profile the status can be clicked to change it in a popup (or, without a status, a greyed out "Click here
 // to add a status!" only you see). The popup is a form POSTed back here with action=status (and clear=1 for Clear
 // status), which saves only the status and comes back with a toast. Without JS the status links to settings instead.
@@ -15,6 +16,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // "2.X", "Graduate (X)" or "Not HTX"
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/profile.php'; // banner, status and education badge
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php'; // the Engine Crew badge (engine.php)
 
 const PROFILE_ROLE_ADMIN = 2; // userRole in HBHub-Users
 
@@ -85,6 +87,7 @@ $profileHasStatus = hbHubProfileHasStatus($profileStatus);
 // The popup's fields: what was typed in after an error, otherwise the status you have now
 [$profileStatusEmoji, $profileStatusText, $profileStatusClearAfter] = $profileStatusForm ?? [$profileStatus['emoji'], $profileStatus['text'], null];
 $profileGradient = hbHubProfileBannerGradient($profileSettings);
+$profileEngineCrew = hbHubMinerEngineCrew(hbHubDatabase(), (int) $profile['userId']);
 
 $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvatarAttachmentId'] !== null ? (int) $profile['userAvatarAttachmentId'] : null);
 $profileBannerSrc = $profile['bannerId'] !== null ? hbHubProfileBannerUrl((int) $profile['userId'], (int) $profile['bannerId']) : null;
@@ -189,7 +192,7 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
 
                 <h1 class="profile-name" id="profile-name"><?= htmlspecialchars($profile['userName']) ?></h1>
 
-                <?php if ($profileIsAdmin || $profileClass !== null || $profileEducation !== null): ?>
+                <?php if ($profileIsAdmin || $profileClass !== null || $profileEducation !== null || $profileEngineCrew): ?>
                     <ul class="profile-badges" aria-label="Badges">
                         <?php if ($profileIsAdmin): ?>
                             <li class="profile-badge is-admin"><img src="/assets/images/icons/admin.svg" alt="">Site admin</li>
@@ -199,6 +202,9 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
                         <?php endif; ?>
                         <?php if ($profileEducation !== null): ?>
                             <li class="profile-badge" title="Education"><span aria-hidden="true"><?= $profileEducation[1] ?></span><?= htmlspecialchars($profileEducation[2]) ?></li>
+                        <?php endif; ?>
+                        <?php if ($profileEngineCrew): ?>
+                            <li class="profile-badge" title="Helped build Ore Mining Inc.'s Cosmic Engine"><span aria-hidden="true">⚙️</span>Engine Crew</li>
                         <?php endif; ?>
                     </ul>
                 <?php endif; ?>

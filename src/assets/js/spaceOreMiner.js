@@ -10,9 +10,10 @@
 // when it's closed. The server answers with the save as it worked it out, and the game carries on from that, with
 // whatever was done while the save was on its way done again on top.
 // Times are the server's Unix ms (the difference to this computer's clock is measured on every save).
-// The page has four views (Ore, Dark Matter, Antimatter, Strange Matter, in data-miner-view): the menu's links switch
+// The page has five views (Ore, Dark Matter, Antimatter, Strange Matter, Engine, in data-miner-view): the menu's links switch
 // between them here, with history.pushState, so the game keeps running instead of the page loading again. The Strange
-// Matter view has the skill tree, drawn here from the skills (see renderTree()). Stats, achievements and how to
+// Matter view has the skill tree, drawn here from the skills (see renderTree()). The Engine view is the Cosmic Engine
+// the whole site builds together (see "The Cosmic Engine"): every save's answer says how far it is. Stats, achievements and how to
 // play are popups (data-miner-popup), opened by the buttons by the title (data-miner-open).
 // What hasn't been saved yet is also kept in the browser, so a page that crashes or freezes doesn't lose it: the next
 // one sends it with its first save. A watchdog worker (data-watchdog, spaceOreMinerWatchdog.js) notices when the page
@@ -48,6 +49,9 @@
     const SALT_COMET_KIND = 3;
     const SALT_DIAMOND = 4;
     const SALT_LUCKY = 5;
+    const SALT_SHIFT = 6;
+    const ENGINE_STAGES = CONFIG.engineStages; // stage 1 first
+    const SHIFTS = CONFIG.shifts;
 
     // ----- The game: the same as miner.php. s is the save (hbHubMinerNewState() there has its shape).
 
@@ -99,6 +103,77 @@
         return effects;
     }
 
+    // What the perks of the Cosmic Engine's stages done so far do together (hbHubMinerEngineEffects()), by how many
+    const engineCache = new Map();
+    function engineEffects(s) {
+        const done = Math.min(s.engineStage ?? 0, ENGINE_STAGES.length);
+        if (engineCache.has(done)) return engineCache.get(done);
+        const effects = { ...CONFIG.engineNeutral };
+        for (const stage of ENGINE_STAGES.slice(0, done)) {
+            const perk = stage.perk;
+            if (perk.type === 'offline') effects.offline = Math.max(effects.offline, perk.value);
+            else if (perk.times !== undefined) effects[perk.type] *= perk.times;
+            else if (perk.value !== undefined) effects[perk.type] += perk.value;
+        }
+        engineCache.set(done, effects);
+        return effects;
+    }
+
+    // Whether the player can give the Engine parts right now (hbHubMinerCanGive())
+    const canGive = (s) => s.engineOpen === true && s.warps >= 1;
+
+    // The daily counts start over on a new UTC day (hbHubMinerEngineDay())
+    function engineDay(s) {
+        const day = Math.floor(s.tick / CONFIG.dayMs);
+        if (day !== s.engineDay) {
+            s.engineDay = day;
+            s.donatedToday = 0;
+            s.shifts = new Array(CONFIG.shiftCount).fill(0);
+        }
+    }
+
+    // The day's Engine Shifts, the same for everyone (hbHubMinerShiftTasks())
+    const shiftCache = new Map();
+    function shiftTasks(day) {
+        if (shiftCache.has(day)) return shiftCache.get(day);
+        const left = Object.keys(SHIFTS);
+        const tasks = [];
+        for (let i = 0; i < CONFIG.shiftCount; i++) {
+            const index = Math.floor(random(0, day * CONFIG.shiftCount + i, SALT_SHIFT) * left.length);
+            tasks.push(left.splice(index, 1)[0]);
+        }
+        shiftCache.set(day, tasks);
+        return tasks;
+    }
+
+    // Counts amount towards today's Shift task, and puts a Shift just done in given (hbHubMinerShift()). given is null
+    // for guests, who can't give parts, and then nothing is counted.
+    function shift(s, task, amount, given) {
+        if (given === null || !canGive(s)) return;
+        engineDay(s);
+        const tasks = shiftTasks(s.engineDay);
+        const index = tasks.indexOf(task);
+        const goal = SHIFTS[task].goal;
+        if (index < 0 || s.shifts[index] >= goal) return;
+        s.shifts[index] = Math.min(goal, s.shifts[index] + amount);
+        if (s.shifts[index] < goal) return;
+        const done = tasks.filter((id, i) => s.shifts[i] >= SHIFTS[id].goal).length;
+        given.push([CONFIG.sourceShift, done === CONFIG.shiftCount
+            ? CONFIG.shiftPartsAll * CONFIG.shiftCount - CONFIG.shiftParts * (CONFIG.shiftCount - 1) : CONFIG.shiftParts]);
+    }
+
+    // The ore the next parts parts from ore cost together today (hbHubMinerOreDonationCost())
+    function oreDonationCost(s, parts) {
+        let part = CONFIG.engineOrePart;
+        for (let i = 0; i < s.donatedToday; i++) part *= 10;
+        let cost = 0;
+        for (let i = 0; i < parts; i++) {
+            cost += part;
+            part *= 10;
+        }
+        return cost;
+    }
+
     const darkBonus = (s) => (hasDark(s, 'reactor') ? CONFIG.darkBonusReactor : CONFIG.darkBonus) + skillEffects(s).darkBonus;
     const antiMultiplier = (s) => 1 + (CONFIG.antiBonus + skillEffects(s).antiBonus) * s.antimatterEarned;
     const strangeMultiplier = (s) => 1 + CONFIG.strangeBonus * s.strangeEarned;
@@ -126,7 +201,7 @@
         if (hasDark(s, 'darkEngines')) global *= 1.5;
         if (hasAnti(s, 'annihilation')) global *= 2;
         global *= effects.production * (1 + effects.perSkill * s.skills.length) * (1 + effects.perWarp * s.flights)
-            * (1 + effects.perCrunch * s.crunches);
+            * (1 + effects.perCrunch * s.crunches) * engineEffects(s).production;
         const parts = {
             multipliers: Object.fromEntries(BUILDING_IDS.map((id) => [id, 1])),
             crew: Object.fromEntries(BUILDING_IDS.map((id) => [id, 0])),
@@ -264,13 +339,15 @@
     function cometWait(s, n) {
         const [min, max] = CONFIG.cometWaitMs;
         const wait = min + random(s.seed, n, SALT_COMET_WAIT) * (max - min);
-        return Math.floor((has(s, 'radar') ? wait / 2 : wait) * skillEffects(s).cometWait);
+        return Math.floor((has(s, 'radar') ? wait / 2 : wait) * skillEffects(s).cometWait * engineEffects(s).cometWait);
     }
 
-    const cometStay = (s) => Math.floor((has(s, 'magnet') ? CONFIG.cometStayMs * 2 : CONFIG.cometStayMs) * skillEffects(s).cometStay);
+    const cometStay = (s) => Math.floor((has(s, 'magnet') ? CONFIG.cometStayMs * 2 : CONFIG.cometStayMs) * skillEffects(s).cometStay)
+        + engineEffects(s).cometStay;
 
     // How long a comet's effect lasts, in ms (hbHubMinerCometLength())
-    const cometLength = (s, kind) => Math.floor(COMETS[kind].ms * (has(s, 'tail') ? 2 : 1) * skillEffects(s).cometLength);
+    const cometLength = (s, kind) => Math.floor(COMETS[kind].ms * (has(s, 'tail') ? 2 : 1) * skillEffects(s).cometLength
+        * (kind === 'diamond' ? 1 : engineEffects(s).cometLength));
 
     function cometKind(s) {
         const n = s.comet.n;
@@ -288,7 +365,8 @@
         }
     }
 
-    function advance(s, to, fullUntil = Infinity) {
+    // given: see shift() (hbHubMinerAdvance())
+    function advance(s, to, fullUntil = Infinity, given = null) {
         let offlineOre = 0;
         while (s.tick < to) {
             let next = to;
@@ -296,11 +374,15 @@
                 if (running.until > s.tick && running.until < next) next = running.until;
             }
             if (fullUntil > s.tick && fullUntil < next) next = fullUntil;
+            const midnight = (Math.floor(s.tick / CONFIG.dayMs) + 1) * CONFIG.dayMs;
+            if (midnight < next) next = midnight;
 
             let ore = rate(s, s.tick) * (next - s.tick) / 1000;
             if (s.tick >= fullUntil) {
-                ore *= CONFIG.offlineRate * (hasDark(s, 'timeDilation') ? 2 : 1) * skillEffects(s).offline;
+                ore *= engineEffects(s).offline * (hasDark(s, 'timeDilation') ? 2 : 1) * skillEffects(s).offline;
                 offlineOre += ore;
+            } else {
+                shift(s, 'playing', next - s.tick, given);
             }
             earn(s, ore);
             s.tick = next;
@@ -333,7 +415,8 @@
 
     function warpGain(s) {
         if (s.runOre < CONFIG.warpOre) return 0;
-        const total = Math.floor(darkTotal(s.universeOre) * Math.sqrt(antiMultiplier(s)) * (hasAnti(s, 'converter') ? 2 : 1) * skillEffects(s).darkGain);
+        const total = Math.floor(darkTotal(s.universeOre) * Math.sqrt(antiMultiplier(s)) * (hasAnti(s, 'converter') ? 2 : 1) * skillEffects(s).darkGain
+            * engineEffects(s).darkGain);
         return Math.max(0, total - s.darkEarned);
     }
 
@@ -503,11 +586,16 @@
     }
 
     // Returns false when it didn't count, otherwise something truthy (what click() and catchComet() return, the
-    // Dark Matter from a warp, the Antimatter from a crunch, the Strange Matter from a rip)
-    function apply(s, action) {
+    // Dark Matter from a warp, the Antimatter from a crunch, the Strange Matter from a rip). What's given to the Engine
+    // goes in given as [source, parts] (null for guests, who can't give anything), see hbHubMinerApply().
+    function apply(s, action, given = null) {
         switch (action.type) {
-            case 'click':
-                return action.count >= 1 ? click(s, action.count, action.auto === true) : false;
+            case 'click': {
+                if (!(action.count >= 1)) return false;
+                const result = click(s, action.count, action.auto === true);
+                shift(s, 'clicks', action.count, given);
+                return result;
+            }
             case 'buy': {
                 const { building, amount } = action;
                 if (!BUILDINGS[building] || !Number.isInteger(amount) || amount < 1 || (amount > 1 && !has(s, 'bulk'))
@@ -516,6 +604,7 @@
                 if (!canAfford(s, cost)) return false;
                 s.ore = Math.max(0, s.ore - cost);
                 s.buildings[building] += amount;
+                shift(s, 'buildings', amount, given);
                 return true;
             }
             case 'upgrade': {
@@ -523,6 +612,7 @@
                 if (!upgrade || has(s, action.id) || !upgradeUnlocked(s, upgrade) || !canAfford(s, upgradeCost(s, action.id))) return false;
                 s.ore = Math.max(0, s.ore - upgradeCost(s, action.id));
                 s.upgrades.push(action.id);
+                shift(s, 'upgrades', 1, given);
                 return true;
             }
             case 'dark': {
@@ -548,10 +638,35 @@
                 for (const [buildingId, count] of Object.entries(skillEffects(s).start)) s.buildings[buildingId] = Math.max(s.buildings[buildingId], count);
                 return true;
             }
-            case 'comet':
-                return catchComet(s);
-            case 'warp':
-                return warp(s);
+            case 'comet': {
+                const result = catchComet(s);
+                if (result) shift(s, 'comets', 1, given);
+                return result;
+            }
+            case 'warp': {
+                const result = warp(s);
+                if (result) shift(s, 'warps', 1, given);
+                return result;
+            }
+            case 'donate': {
+                const { parts } = action;
+                if (given === null || !canGive(s) || !Number.isInteger(parts) || parts < 1) return false;
+                engineDay(s);
+                if (action.what === 'ore') {
+                    if (s.donatedToday + parts > CONFIG.engineOreParts || !canAfford(s, oreDonationCost(s, parts))) return false;
+                    s.ore = Math.max(0, s.ore - oreDonationCost(s, parts));
+                    s.donatedToday += parts;
+                    given.push([CONFIG.sourceOre, parts]);
+                    return true;
+                }
+                if (action.what === 'strange') {
+                    if (s.strange < parts * CONFIG.engineStrangePart) return false;
+                    s.strange -= parts * CONFIG.engineStrangePart;
+                    given.push([CONFIG.sourceStrange, parts]);
+                    return true;
+                }
+                return false;
+            }
             case 'crunch':
                 return crunch(s);
             case 'rip':
@@ -847,7 +962,9 @@
     function catchUp() {
         const now = serverNow();
         const limit = lastServerTick + CONFIG.onlineMs;
-        advance(state, Math.min(now, limit));
+        const given = IS_GUEST ? null : [];
+        advance(state, Math.min(now, limit), Infinity, given);
+        announceGiven(given);
         if (now > limit && Date.now() - lastSentAt > 3000) save();
     }
 
@@ -855,7 +972,9 @@
     function act(action) {
         if (!isPlaying) return false;
         catchUp();
-        const result = apply(state, action);
+        const given = IS_GUEST ? null : [];
+        const result = apply(state, action, given);
+        announceGiven(given);
         if (!result) return false;
         if (!['click', 'buy', 'upgrade'].includes(action.type)) note('Did ' + action.type + (action.id ? ' ' + action.id : '')); // not the ones Auto Buy does all the time
 
@@ -886,8 +1005,10 @@
         if (!state.buffs || Array.isArray(state.buffs)) state.buffs = {};
         lastServerTick = state.tick;
         for (const action of pending) {
-            advance(state, Math.max(state.tick, action.at));
-            apply(state, action);
+            // Given again, to count the same as the server will: but they were already shown when they were done
+            const given = IS_GUEST ? null : [];
+            advance(state, Math.max(state.tick, action.at), Infinity, given);
+            apply(state, action, given);
             checkAchievements(state);
         }
         if (isFirst) announced = new Set(state.achievements);
@@ -947,6 +1068,7 @@
         lastSentAt = sentAt;
         const body = new URLSearchParams({ action: 'sync', tab: TAB, actions: JSON.stringify(batch) });
         if (claim) body.set('claim', '1');
+        if (root.dataset.view === 'engine') body.set('engine', '1'); // its top contributors and latest parts
         if (claim && recovered.length > 0) body.set('recovered', JSON.stringify(recovered));
         const guestToken = guestSave()?.token ?? '';
         if (IS_GUEST) body.set('token', guestToken);
@@ -989,6 +1111,7 @@
             }
             step('save: adopt');
             adopt(data.state, claim);
+            if (data.engine) adoptEngine(data.engine);
             lastSavedAt = Date.now();
             saveFailed = false;
             note('Saved in ' + (lastSavedAt - sentAt) + ' ms');
@@ -1160,6 +1283,10 @@
         renderCrunch();
         step('tick: Big Rip and skill tree');
         renderRip();
+        if (root.dataset.view === 'engine') {
+            step('tick: Engine');
+            renderEngine();
+        }
         step('tick: menu');
         renderMenu();
         step(null);
@@ -1187,6 +1314,7 @@
         renderWarp();
         renderCrunch();
         renderRip();
+        renderEngine();
         renderMenu();
         renderAchievements();
         renderStats();
@@ -1194,8 +1322,12 @@
     }
 
     // The Dark Matter, Antimatter and Strange Matter in the menu, and a dot on a view with something to do there: a
-    // jump, crunch or rip that would give something, or an upgrade or skill that can be bought
+    // jump, crunch or rip that would give something, an upgrade or skill that can be bought, or the day's parts from
+    // ore that can still be given to the Engine
     function renderMenu() {
+        const donated = state.engineDay === today() ? state.donatedToday : 0;
+        menuNews.engine.hidden = !canGive(state) || donated >= CONFIG.engineOreParts
+            || !canAfford(state, oreDonationCost({ donatedToday: donated }, 1));
         menuCounts.darkMatter.textContent = state.warps > 0 ? format(state.dark) : '';
         menuCounts.antimatter.textContent = state.crunches > 0 ? format(state.antimatter) : '';
         menuCounts.strangeMatter.textContent = state.rips > 0 ? format(state.strange) : '';
@@ -2074,10 +2206,27 @@
         ['Asteroid voted "Most Likely to Be Mined" in the galaxy yearbook.'],
         ['Galactic lottery won by a rock. Rock spends it all on some ore.'],
         ['Miner discovers the keyboard. Spacebar mines the asteroid, and the Hot Key Panel upgrade adds more. See How to play.'],
+        // The Cosmic Engine, once there's something built
+        ['Scientists ask what the Cosmic Engine is for. The engineers say: "You\'ll see."', (s) => s.warps > 0],
+        ['Cosmic Engine news: the Scaffolding is up. Machines keep working a little while their miners are away.', (s) => s.engineStage >= 1],
+        ['Cosmic Engine news: the Cargo Bay opens. Comets slow down to have a look.', (s) => s.engineStage >= 2],
+        ['Cosmic Engine news: Fuel Lines connected. Comets are queuing up to get in.', (s) => s.engineStage >= 3],
+        ['Cosmic Engine news: the Crew Deck is done. Badges handed out, snacks still missing.', (s) => s.engineStage >= 4],
+        ['Cosmic Engine news: the Foundation Seal holds. Everything mines a bit more, out of pride.', (s) => s.engineStage >= 5],
+        ['Cosmic Engine news: the Reactor Ring spins up. Warp Jumps feel a little darker already.', (s) => s.engineStage >= 6],
+        ['Cosmic Engine news: Coolant Loops installed. The machines say it\'s nice and chilly in there.', (s) => s.engineStage >= 7],
     ];
     let lastNews = -1;
 
     function renderTicker() {
+        if (engineNews !== null) { // a stage just done (adoptEngine()) goes first
+            ticker.textContent = engineNews;
+            engineNews = null;
+            ticker.classList.remove('is-new');
+            void ticker.offsetWidth;
+            ticker.classList.add('is-new');
+            return;
+        }
         const choices = NEWS.map((news, index) => index).filter((index) => index !== lastNews && (!NEWS[index][1] || NEWS[index][1](state)));
         lastNews = choices[Math.floor(Math.random() * choices.length)];
         ticker.textContent = NEWS[lastNews][0];
@@ -2741,6 +2890,229 @@
         saveSoon();
     });
 
+    // ----- The Cosmic Engine (the Engine view): the stage being built and its lock, what you can give it, today's
+    // Engine Shifts, every stage with its perk, the top contributors and the latest parts given. engine is the
+    // server's, from every save's answer (hbHubMinerEngineSummary() in assets/php/games/spaceOreMiner/engine.php: number,
+    // done, parts, total, costs, finished, open, lock); top, feed and mine only come while this view is open
+    // (engine=1 in save()), and the last ones are kept until the next.
+
+    const engineView = root.querySelector('[data-miner-engine-view]');
+    const engineNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-engine]')].map((node) => [node.dataset.minerEngine, node]));
+    const engineProgress = root.querySelector('[data-miner-engine-progress]');
+    const engineLock = root.querySelector('[data-miner-engine-lock]');
+    const engineGiveNote = root.querySelector('[data-miner-engine-give-note]');
+    const oreDonateButton = root.querySelector('[data-miner-donate="ore"]');
+    const strangeDonateButton = root.querySelector('[data-miner-donate="strange"]');
+    const strangeDonateCount = root.querySelector('[data-miner-donate-count]');
+    const shiftList = root.querySelector('[data-miner-shifts]');
+    const shiftNote = root.querySelector('[data-miner-shifts-note]');
+    const engineStageList = root.querySelector('[data-miner-engine-stages]');
+    const engineTop = root.querySelector('[data-miner-engine-top]');
+    const engineFeed = root.querySelector('[data-miner-engine-feed]');
+    const SOURCE_TEXT = { [CONFIG.sourceOre]: 'ore', [CONFIG.sourceStrange]: 'Strange Matter', [CONFIG.sourceShift]: 'an Engine Shift' };
+
+    let engine = null;
+    let engineListsKey = '';
+    let shiftsKey = '';
+    let engineNews = null; // a stage just done, for the news ticker's next line (see renderTicker())
+
+    // A new answer from the server. A stage done since the one before gets a toast and the ticker straight away (not
+    // on the first answer, which only says how far it is).
+    function adoptEngine(next) {
+        if (engine && next.number === engine.number && next.done > engine.done) {
+            for (let stage = engine.done + 1; stage <= next.done && stage <= ENGINE_STAGES.length; stage++) {
+                const { name, perk } = ENGINE_STAGES[stage - 1];
+                toast('starForge', 'The Cosmic Engine\'s ' + name + ' is finished! ' + perk.text, 'is-welcome', 9000);
+                engineNews = 'Cosmic Engine news: the ' + name + ' is finished. ' + perk.text;
+            }
+            renderTicker();
+        }
+        engine = engine && next.number === engine.number ? { ...engine, ...next } : next;
+        engineListsKey = '';
+    }
+
+    // What was just given (apply()'s given): a toast for each Shift done (donations have their own), and the parts on
+    // the bar straight away, until the next save says how far the Engine really is
+    function announceGiven(given) {
+        if (!given || given.length === 0) return;
+        for (const [source, parts] of given) {
+            if (engine) {
+                engine.parts += parts;
+                engine.total += parts;
+            }
+            if (source === CONFIG.sourceShift) {
+                sound('buy');
+                toast('clipboard', 'Engine Shift done! +' + format(parts) + ' Engine Parts for the Cosmic Engine.');
+            }
+        }
+        if (!isSending) saveSoon();
+    }
+
+    const partsText = (parts) => format(parts) + (parts === 1 ? ' part' : ' parts');
+    const today = () => Math.floor(state.tick / CONFIG.dayMs);
+
+    function renderEngine() {
+        if (!engine) return;
+        const done = engine.done;
+        const isAllDone = done >= ENGINE_STAGES.length; // every stage there is so far
+        const index = Math.min(done, ENGINE_STAGES.length - 1);
+        const stage = ENGINE_STAGES[index];
+        const cost = engine.costs[index];
+        engineNumbers.number.textContent = '#' + engine.number;
+        engineNumbers.name.textContent = isAllDone ? 'More stages coming soon' : stage.name;
+        engineNumbers.stage.textContent = isAllDone ? ENGINE_STAGES.length + ' of ' + CONFIG.engineStageTotal + ' stages done'
+            : 'Stage ' + (done + 1) + ' of ' + CONFIG.engineStageTotal + ', ' + CONFIG.engineSections[stage.section];
+        engineNumbers.parts.textContent = format(isAllDone ? cost : engine.parts);
+        engineNumbers.cost.textContent = format(cost);
+        engineNumbers.total.textContent = format(engine.total);
+        setProgress(engineProgress, isAllDone ? 1 : engine.parts / cost);
+        engineLock.hidden = isAllDone || !stage.lock;
+        if (!engineLock.hidden) {
+            const lock = engine.lock ?? { have: 0, need: stage.lock.count };
+            engineLock.textContent = 'Lock: ' + stage.lock.text + ' (' + format(Math.min(lock.have, lock.need)) + ' / ' + format(lock.need) + ').'
+                + (engine.parts >= cost ? ' The stage is full and finishes once this is met.' : '');
+        }
+        engineView.classList.toggle('is-ready', canGive(state));
+        renderEngineGive();
+        renderShifts();
+        renderEngineLists();
+    }
+
+    // The donation buttons, or why you can't give anything
+    function renderEngineGive() {
+        let note = '';
+        if (IS_GUEST) note = 'Only players with an account can give the Engine parts. Sign up to help build it!';
+        else if (state.warps < 1) note = 'Make your first Warp Jump to start giving the Engine parts.';
+        else if (!state.engineOpen) {
+            note = engine.done >= ENGINE_STAGES.length ? 'Every stage there is so far is done. More are coming.'
+                : 'The Engine is full and waiting for its lock, so it takes no parts until then.';
+        }
+        engineGiveNote.textContent = note;
+        engineGiveNote.hidden = note === '';
+        const isOpen = canGive(state);
+
+        const donated = state.engineDay === today() ? state.donatedToday : 0;
+        const left = CONFIG.engineOreParts - donated;
+        const oreCost = oreDonationCost({ donatedToday: donated }, 1);
+        engineNumbers.oreCost.textContent = format(oreCost);
+        engineNumbers.oreLeft.textContent = left > 0 ? left + ' of ' + CONFIG.engineOreParts + ' left today' : 'No more today';
+        oreDonateButton.disabled = !isOpen || left < 1 || !canAfford(state, oreCost);
+
+        const most = Math.floor(state.strange / CONFIG.engineStrangePart);
+        strangeDonateCount.max = String(Math.max(1, most));
+        engineNumbers.strangeCost.textContent = format(strangeCount() * CONFIG.engineStrangePart);
+        engineNumbers.strangeHave.textContent = format(state.strange);
+        strangeDonateButton.disabled = !isOpen || most < 1;
+    }
+
+    // How many parts of Strange Matter the box asks for: at least 1, at most what there is
+    const strangeCount = () => Math.max(1, Math.min(Math.floor(Number(strangeDonateCount.value)) || 1,
+        Math.floor(state.strange / CONFIG.engineStrangePart)));
+
+    // Today's Shifts, with how far each is (none yet when the save's day is an older one)
+    function renderShifts() {
+        const tasks = shiftTasks(today());
+        const progress = state.engineDay === today() ? state.shifts : tasks.map(() => 0);
+        const key = tasks.join() + '|' + progress.join() + '|' + canGive(state);
+        if (key === shiftsKey) return;
+        shiftsKey = key;
+        shiftList.replaceChildren(...tasks.map((id, i) => {
+            const goal = SHIFTS[id].goal;
+            const item = element('li', 'miner-shift' + (progress[i] >= goal ? ' is-done' : ''));
+            const bar = element('div', 'miner-progress-bar');
+            bar.setAttribute('role', 'progressbar');
+            bar.setAttribute('aria-label', SHIFTS[id].text);
+            bar.setAttribute('aria-valuemin', '0');
+            bar.setAttribute('aria-valuemax', '100');
+            bar.append(element('span', 'miner-progress-fill'));
+            setProgress(bar, progress[i] / goal);
+            const count = id === 'playing' ? Math.floor(progress[i] / 60000) + ' / ' + Math.floor(goal / 60000) + ' minutes'
+                : format(progress[i]) + ' / ' + format(goal);
+            item.append(element('span', 'miner-shift-name', SHIFTS[id].text), bar,
+                element('span', 'miner-shift-count', progress[i] >= goal ? 'Done' : count));
+            return item;
+        }));
+        const midnight = new Date((today() + 1) * CONFIG.dayMs).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        shiftNote.textContent = (canGive(state) ? '' : IS_GUEST || state.warps < 1 ? 'Shifts start after your first Warp Jump. '
+            : 'Shifts are paused while the Engine waits for its lock. ')
+            + 'Each Shift gives ' + CONFIG.shiftParts + ' parts, or ' + CONFIG.shiftPartsAll + ' each once all ' + CONFIG.shiftCount
+            + ' are done. New Shifts at ' + midnight + '.';
+    }
+
+    // Every stage there is so far, the top contributors and the latest parts given, built again only when they change
+    function renderEngineLists() {
+        const key = engine.done + '|' + engine.costs.join() + '|' + (engine.top ? engine.feed.length + ':' + (engine.feed[0]?.at ?? 0) + ':' + engine.mine : '');
+        if (key === engineListsKey) return;
+        engineListsKey = key;
+
+        let section = null;
+        const stages = [];
+        ENGINE_STAGES.forEach((stage, index) => {
+            if (stage.section !== section) {
+                section = stage.section;
+                stages.push(element('li', 'miner-engine-section', section + '. ' + CONFIG.engineSections[section]));
+            }
+            const isDone = index < engine.done;
+            const item = element('li', 'miner-engine-stage' + (isDone ? ' is-done' : index === engine.done ? ' is-now' : ''));
+            const head = element('div', 'miner-engine-stage-head');
+            const finishedAt = engine.finished[index + 1];
+            head.append(
+                element('span', 'miner-engine-stage-number', String(index + 1)),
+                element('span', 'miner-engine-stage-name', stage.name),
+                element('span', 'miner-engine-stage-cost', isDone ? 'Done' + (finishedAt ? ' ' + formatDate(finishedAt) : '') : partsText(engine.costs[index])),
+            );
+            item.append(head, element('p', 'miner-engine-stage-perk', stage.perk.text));
+            if (stage.lock) item.append(element('p', 'miner-engine-stage-lock', 'Lock: ' + stage.lock.text + '.'));
+            stages.push(item);
+        });
+        stages.push(element('li', 'miner-engine-section is-later', 'Stages ' + (ENGINE_STAGES.length + 1) + ' to ' + CONFIG.engineStageTotal
+            + ' come with Anomalies.'));
+        engineStageList.replaceChildren(...stages);
+
+        engineNumbers.mine.hidden = IS_GUEST || engine.mine === undefined;
+        engineNumbers.mine.textContent = 'You\'ve given ' + partsText(engine.mine ?? 0) + ' to this Engine.';
+        if (!engine.top) { // guests never get them: players' names are only for members
+            const text = IS_GUEST ? 'Sign up or log in to see who\'s building the Engine.' : 'Loading…';
+            engineTop.replaceChildren(element('li', 'miner-engine-empty', text));
+            engineFeed.replaceChildren(element('li', 'miner-engine-empty', text));
+            return;
+        }
+        engineTop.replaceChildren(...(engine.top.length === 0 ? [element('li', 'miner-engine-empty', 'Nobody has given parts yet. Be the first!')]
+            : engine.top.map((row, index) => {
+                const item = element('li', 'miner-engine-row' + (row.you ? ' is-you' : ''));
+                item.append(element('span', 'miner-engine-rank', String(index + 1)), element('span', 'miner-engine-who', row.name),
+                    element('span', 'miner-engine-parts', partsText(row.parts)));
+                return item;
+            })));
+        engineFeed.replaceChildren(...(engine.feed.length === 0 ? [element('li', 'miner-engine-empty', 'Nothing yet.')]
+            : engine.feed.map((row) => {
+                const item = element('li', 'miner-engine-row');
+                item.append(element('span', 'miner-engine-who', row.name),
+                    element('span', 'miner-engine-what', 'gave ' + partsText(row.parts) + ' from ' + (SOURCE_TEXT[row.source] ?? 'somewhere')),
+                    element('span', 'miner-engine-when', formatDuration(Math.max(0, serverNow() - row.at)) + ' ago'));
+                return item;
+            })));
+    }
+
+    oreDonateButton.addEventListener('click', () => {
+        const donated = state.engineDay === today() ? state.donatedToday : 0;
+        const cost = oreDonationCost({ donatedToday: donated }, 1);
+        if (!act({ type: 'donate', what: 'ore', parts: 1 })) return;
+        sound('buy');
+        toast('orePile', 'You gave the Cosmic Engine 1 part for ' + format(cost) + ' ore. Thanks!');
+        renderEngine(); // the parts are on the bar already, see announceGiven()
+    });
+    strangeDonateButton.addEventListener('click', () => {
+        const parts = strangeCount();
+        if (!act({ type: 'donate', what: 'strange', parts })) return;
+        sound('buy');
+        toast('strangelet', 'You gave the Cosmic Engine ' + partsText(parts) + ' for ' + format(parts * CONFIG.engineStrangePart) + ' Strange Matter. Thanks!');
+        renderEngine();
+    });
+    strangeDonateCount.addEventListener('input', () => {
+        if (state) renderEngineGive();
+    });
+
     // ----- Hot keys: each one presses the button it stands for, so they do exactly what a click would.
     // Space mines (a held-down key only counts once), C catches the comet (once the Comet Hot Key upgrade is bought, it's
     // lost on a Warp Jump like the other upgrades). With the Hot Key Panel upgrade (lost the same way, and needed before
@@ -2855,6 +3227,10 @@
         if (scrollY > 0) scrollTo({ top: 0 }); // the Ore view fits the screen from the top
         forgetFieldBox(); // a hidden picture has no box
         placeSkillInfo(); // the screen may have changed size while the tree was out of sight
+        if (view === 'engine' && isPlaying) {
+            renderEngine();
+            saveSoon(); // for the top contributors and the latest parts given, which only come while it's open
+        }
     }
 
     menu.addEventListener('click', (event) => {

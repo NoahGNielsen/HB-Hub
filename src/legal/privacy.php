@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '28 October 2026';
+const HBHUB_PRIVACY_UPDATED = '30 October 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -258,7 +258,18 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 between clicks and where the pointer is, but that stays in your browser: all it sends is whether
                                 a click looked like an auto-clicker's, and it isn't kept. Other people only see
                                 the totals on the Ore Mining Inc. leaderboard (ore mined, ore per second, Dark Matter, Antimatter,
-                                Strange Matter, Warp Jumps, clicks and achievements).
+                                Strange Matter, Warp Jumps, clicks and achievements). The save also keeps how far you are with
+                                the day's Engine Shifts and how many Engine Parts you've given from ore that day.
+                            </li>
+                            <li>
+                                The Engine Parts you give to Ore Mining Inc.'s Cosmic Engine, which everyone builds together:
+                                how many, whether they came from ore, Strange Matter or an Engine Shift, which stage they went
+                                into, and when (one line per kind for each save). <strong>This is shown to everyone</strong>
+                                with an account: your name and the parts you gave in the Engine view's list of the latest parts and
+                                its top 10, and on the Ore Mining Inc. leaderboard's Engine tabs (with how many came from
+                                each). If you've given parts once the Engine's Crew Deck is built, your profile shows an
+                                Engine Crew badge. When a stage of the Engine is finished, everyone who has made a Warp Jump
+                                gets a notification about it (it doesn't say who helped).
                             </li>
                             <li>
                                 Ore Mining Inc. crash reports, only if you agree to send one. While the game is open, it notes
@@ -351,7 +362,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <section id="see" aria-labelledby="privacy-see">
                         <h2 id="privacy-see">4. Who can see what</h2>
                         <ul>
-                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, when you were last online and when you joined, and your spot on the leaderboards.</li>
+                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, when you were last online and when you joined, and your spot on the leaderboards, and the Engine Parts you've given to Ore Mining Inc.'s Cosmic Engine (with an Engine Crew badge on your profile once its Crew Deck is built). People playing without an account see how far the Engine is, but not who gave what.</li>
                             <li><strong>Everyone in your class's group chat</strong> (everyone on HB Hub who started HTX the same year in the same field) can see that you're in it, and the messages you send there. You're put in it automatically when you sign up or change your class, and taken out of your old class's chat when you change it. Nobody is a group admin there, so only site admins can remove anyone or delete messages in it.</li>
                             <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group. When they remove a site admin, the site admin can undo it from their notification: they're put back in the group as they were, and the notice about it in the chat is deleted.</li>
                             <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
@@ -462,7 +473,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <p>
                             What stays is what other people need for their chats and games to make sense: the messages you sent
-                            and your reactions to messages (shown as from "Deleted User"), your game results and chip history, and any feedback you sent. None of it is connected to your
+                            and your reactions to messages (shown as from "Deleted User"), your game results and chip history,
+                            the Engine Parts you gave to Ore Mining Inc.'s Cosmic Engine (which everyone built together, shown
+                            as from "Deleted User" in the game's list of the latest parts and its top 10), and any feedback you sent. None of it is connected to your
                             name any more.
                         </p>
                         <p>

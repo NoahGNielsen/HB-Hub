@@ -112,9 +112,10 @@ function adminPersonUserIds(PDO $db, int $userId): array
 
 /**
  * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), People (admin/people.php), Banned
- * pictures (admin/banned.php), Feedback (admin/feedback.php), Crash reports (admin/crashes.php) and Admin log
- * (admin/log.php), each with how many there are in all, or for Feedback how many are new. $active is 'users', 'chats',
- * 'people', 'banned', 'feedback', 'crashes' or 'log'.
+ * pictures (admin/banned.php), Feedback (admin/feedback.php), Crash reports (admin/crashes.php), Cosmic Engine
+ * (admin/engine.php) and Admin log (admin/log.php), each with how many there are in all, or for Feedback how many are
+ * new and for the Cosmic Engine how many stages are done. $active is 'users', 'chats', 'people', 'banned', 'feedback',
+ * 'crashes', 'engine' or 'log'.
  */
 function adminListsMenuHtml(PDO $db, string $active): string
 {
@@ -122,6 +123,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
         (SELECT COUNT(*) FROM `HBHub-BannedAvatars`) AS banned,
         (SELECT COUNT(*) FROM `HBHub-Feedback` WHERE feedbackDoneTimestamp IS NULL) AS feedback,
         (SELECT COUNT(*) FROM `HBHub-MinerCrashReports`) AS crashes,
+        (SELECT COALESCE(MAX(engineStage), 0) FROM `HBHub-MinerEngines`) AS engine,
         (SELECT COUNT(*) FROM `HBHub-AdminLog`) AS log')->fetch();
     $totals['people'] = count(adminPersonGroups($db));
     $lists = [
@@ -131,6 +133,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
         'banned' => ['Banned pictures', '/admin/banned'],
         'feedback' => ['Feedback', '/admin/feedback'],
         'crashes' => ['Crash reports', '/admin/crashes'],
+        'engine' => ['Cosmic Engine', '/admin/engine'],
         'log' => ['Admin log', '/admin/log'],
     ];
 

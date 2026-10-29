@@ -24,8 +24,14 @@
 //
 // Time is Unix milliseconds throughout. A gap between two saves of up to HBHUB_MINER_ONLINE_MS counts as playing;
 // anything after that is time away, which mines at HBHUB_MINER_OFFLINE_RATE.
+//
+// The Cosmic Engine (HBHUB_MINER_ENGINE_STAGES) is the one thing in the game that isn't the player's own: a machine the
+// whole site builds together out of Engine Parts, which players give from their game (the 'donate' action, and the
+// daily Engine Shifts, HBHUB_MINER_SHIFTS). The rules for giving them are here like the rest; where they go (the
+// HBHub-MinerEngines and HBHub-MinerContributions tables) is in engine.php, which hbHubMinerSync() calls.
 // Used by games/spaceOreMiner/ (the page), games/spaceOreMiner/save (the JSON the page saves to) and its leaderboard.
 require_once __DIR__ . '/../../database.php';
+require_once __DIR__ . '/engine.php';
 
 const HBHUB_MINER_SAVE_SECONDS = 30; // how often the page saves while it's open
 const HBHUB_MINER_ONLINE_MS = 90000; // a gap between saves up to this long counts as playing, the rest as away
@@ -80,6 +86,7 @@ const HBHUB_MINER_SALT_COMET_WAIT = 2;
 const HBHUB_MINER_SALT_COMET_KIND = 3;
 const HBHUB_MINER_SALT_DIAMOND = 4;
 const HBHUB_MINER_SALT_LUCKY = 5;
+const HBHUB_MINER_SALT_SHIFT = 6; // not the save's luck: the seed is 0, so everyone gets the same Shifts (hbHubMinerShiftTasks())
 
 // Every 'icon' below (and in the upgrades after it) is the name of a drawn icon in assets/images/spaceOreMiner/icons.svg.
 // The buildings, cheapest first. 'rate' is ore per second for each one before upgrades, 'upgrades' their six
@@ -468,6 +475,75 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'skillAll' => ['name' => 'Know-It-All', 'text' => 'Learn every skill in the skill tree.', 'stat' => 'allSkills', 'at' => 1],
 ];
 
+// ----- The Cosmic Engine. Anyone with a Warp Jump can give Engine Parts: ore from their run (HBHUB_MINER_ENGINE_ORE_PARTS
+// a day at most, the first for HBHUB_MINER_ENGINE_ORE_PART and each next one that day ten times the one before, so
+// giving ore is a small daily thing however much a player has), unspent Strange Matter
+// (HBHUB_MINER_ENGINE_STRANGE_PART for a part, as many as they like: it costs nothing to production, as the bonus counts
+// Strange Matter earned, not what's left) and Engine Shifts. The parts go into the stage being built; once it has its
+// cost and its lock is met, it's done, and its perk works for everyone for good. Each stage's 'perk' is a 'type' (the
+// keys of HBHUB_MINER_ENGINE_NEUTRAL, plus badge and skin, which aren't rules) with 'value' (offline: the share mined
+// while away, the highest counts; cometStay: ms added) or 'times' (multiplied together). 'lock' is null, or:
+// - contributors: 'count' different players have given parts to this Engine. Parts keep coming while it waits, and go
+//   on to the next stages once it's met, as it needs more players, not fewer parts.
+// - anomalies: someone has finished each of the 'count' Anomalies of 'tier'. They're not in the game yet, so for now the
+//   stage waits once it's full, and takes no more parts until then (the Engine is "waiting", engineOpen in the save),
+//   so they don't pile up for the stages after it.
+// 'cost' is in parts, and the admin panel can change it (admin/engine.php, kept in engineStageCosts). There are
+// HBHUB_MINER_ENGINE_STAGE_TOTAL stages planned; the rest come with the Anomalies.
+const HBHUB_MINER_ENGINE_SOURCE_ORE = 1; // contributionSource in HBHub-MinerContributions
+const HBHUB_MINER_ENGINE_SOURCE_STRANGE = 2;
+const HBHUB_MINER_ENGINE_SOURCE_SHIFT = 3;
+const HBHUB_MINER_ENGINE_SOURCE_ANOMALY = 4; // not in the game yet
+const HBHUB_MINER_ENGINE_ORE_PART = 1e13; // ore for the day's first part from ore
+const HBHUB_MINER_ENGINE_ORE_PARTS = 5; // parts from ore a day
+const HBHUB_MINER_ENGINE_STRANGE_PART = 10; // Strange Matter for a part
+const HBHUB_MINER_ENGINE_STAGE_TOTAL = 25;
+const HBHUB_MINER_DAY_MS = 86400000; // the daily limit and the Shifts go by UTC days: Math.floor(tick / this)
+const HBHUB_MINER_ENGINE_SECTIONS = ['A' => 'Foundation', 'B' => 'Power', 'C' => 'Drive', 'D' => 'Navigation', 'E' => 'Ignition'];
+const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
+    ['name' => 'Scaffolding', 'section' => 'A', 'cost' => 500, 'lock' => null,
+        'perk' => ['type' => 'offline', 'value' => 0.075, 'text' => 'While you\'re away, your machines mine 7.5% of what they would, instead of 5%.']],
+    ['name' => 'Cargo Bay', 'section' => 'A', 'cost' => 1000, 'lock' => null,
+        'perk' => ['type' => 'cometStay', 'value' => 2000, 'text' => 'Comets stay on screen 2 seconds longer.']],
+    ['name' => 'Fuel Lines', 'section' => 'A', 'cost' => 1750, 'lock' => null,
+        'perk' => ['type' => 'cometWait', 'times' => 0.9, 'text' => 'The wait between comets is 10% shorter.']],
+    ['name' => 'Crew Deck', 'section' => 'A', 'cost' => 2500, 'lock' => null,
+        'perk' => ['type' => 'badge', 'text' => 'Everyone who has given parts to the Engine gets the Engine Crew badge on their profile.']],
+    ['name' => 'Foundation Seal', 'section' => 'A', 'cost' => 3500,
+        'lock' => ['type' => 'contributors', 'count' => 10, 'text' => '10 different players have given parts'],
+        'perk' => ['type' => 'production', 'times' => 1.05, 'text' => 'Everything mines 5% more.']],
+    ['name' => 'Reactor Ring', 'section' => 'B', 'cost' => 5000, 'lock' => null,
+        'perk' => ['type' => 'darkGain', 'times' => 1.1, 'text' => 'Warp Jumps give 10% more Dark Matter.']],
+    ['name' => 'Coolant Loops', 'section' => 'B', 'cost' => 6500, 'lock' => null,
+        'perk' => ['type' => 'offline', 'value' => 0.1, 'text' => 'While you\'re away, your machines mine 10% of what they would, instead of 7.5%.']],
+    ['name' => 'Capacitor Banks', 'section' => 'B', 'cost' => 8000,
+        'lock' => ['type' => 'anomalies', 'tier' => 1, 'count' => 4, 'text' => 'Someone has finished each Tier I Anomaly (Anomalies are coming soon)'],
+        'perk' => ['type' => 'cometLength', 'times' => 1.1, 'text' => 'Golden Comet effects last 10% longer.']],
+    ['name' => 'Power Grid', 'section' => 'B', 'cost' => 10000, 'lock' => null,
+        'perk' => ['type' => 'skin', 'text' => 'The Engine Steel asteroid skin, for everyone.']],
+    ['name' => 'Power Seal', 'section' => 'B', 'cost' => 12500,
+        'lock' => ['type' => 'anomalies', 'tier' => 2, 'count' => 5, 'text' => 'Someone has finished each Tier II Anomaly (Anomalies are coming soon)'],
+        'perk' => ['type' => 'production', 'times' => 1.1, 'text' => 'Everything mines 10% more.']],
+];
+// What the perks do with no stage done, which hbHubMinerEngineEffects() starts from
+const HBHUB_MINER_ENGINE_NEUTRAL = ['offline' => HBHUB_MINER_OFFLINE_RATE, 'cometStay' => 0, 'cometWait' => 1, 'cometLength' => 1, 'production' => 1, 'darkGain' => 1];
+
+// Engine Shifts: HBHUB_MINER_SHIFT_COUNT tasks a day, the same for everyone (hbHubMinerShiftTasks()), for anyone with a
+// Warp Jump while the Engine takes parts. Each is worth HBHUB_MINER_SHIFT_PARTS, or HBHUB_MINER_SHIFT_PARTS_ALL once all
+// of them are done (the last one pays the difference). 'goal' is in what each counts: comets caught, Warp Jumps,
+// buildings and ore upgrades bought, clicks, and ms of playing with the game open (not time away).
+const HBHUB_MINER_SHIFTS = [
+    'comets' => ['goal' => 5, 'text' => 'Catch 5 comets'],
+    'warps' => ['goal' => 2, 'text' => 'Make 2 Warp Jumps'],
+    'buildings' => ['goal' => 100, 'text' => 'Buy 100 buildings'],
+    'upgrades' => ['goal' => 15, 'text' => 'Buy 15 upgrades'],
+    'clicks' => ['goal' => 2000, 'text' => 'Click the asteroid 2,000 times'],
+    'playing' => ['goal' => 1800000, 'text' => 'Mine for 30 minutes with the game open'],
+];
+const HBHUB_MINER_SHIFT_COUNT = 3;
+const HBHUB_MINER_SHIFT_PARTS = 10;
+const HBHUB_MINER_SHIFT_PARTS_ALL = 25;
+
 /**
  * Every upgrade bought with ore, by id: the buildings' own six each (type 'building', ids like drone1 to drone6),
  * then the others, sorted by cost. Each has name, icon, cost, type, text, need, and whatever its type uses.
@@ -629,6 +705,21 @@ function hbHubMinerConfig(): array
         'luckySeconds' => HBHUB_MINER_LUCKY_SECONDS,
         'headStart' => HBHUB_MINER_HEAD_START,
         'buildingUpgradeAt' => HBHUB_MINER_BUILDING_UPGRADE_AT,
+        'engineStages' => HBHUB_MINER_ENGINE_STAGES,
+        'engineSections' => HBHUB_MINER_ENGINE_SECTIONS,
+        'engineNeutral' => HBHUB_MINER_ENGINE_NEUTRAL,
+        'engineStageTotal' => HBHUB_MINER_ENGINE_STAGE_TOTAL,
+        'engineOrePart' => HBHUB_MINER_ENGINE_ORE_PART,
+        'engineOreParts' => HBHUB_MINER_ENGINE_ORE_PARTS,
+        'engineStrangePart' => HBHUB_MINER_ENGINE_STRANGE_PART,
+        'dayMs' => HBHUB_MINER_DAY_MS,
+        'shifts' => HBHUB_MINER_SHIFTS,
+        'shiftCount' => HBHUB_MINER_SHIFT_COUNT,
+        'shiftParts' => HBHUB_MINER_SHIFT_PARTS,
+        'shiftPartsAll' => HBHUB_MINER_SHIFT_PARTS_ALL,
+        'sourceShift' => HBHUB_MINER_ENGINE_SOURCE_SHIFT,
+        'sourceOre' => HBHUB_MINER_ENGINE_SOURCE_ORE,
+        'sourceStrange' => HBHUB_MINER_ENGINE_SOURCE_STRANGE,
     ];
 }
 
@@ -707,6 +798,12 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  * - buffs: the comet effects running: the comet's kind => {kind, multiplier, until}. (Older saves keyed them by
  *   'production' or 'click' instead, so nothing goes by the key: see hbHubMinerBuff().)
  * - achievements: the ids done. tick: how far the game has run. started, runStarted: when the save and this run began.
+ * - engineStage: how many of the Cosmic Engine's stages are done, so which perks work (hbHubMinerEngineEffects()).
+ *   engineOpen: whether the Engine takes parts right now (false for guests, and while a stage waits for an Anomaly
+ *   lock). Both are the server's to set, after each save (hbHubMinerEngineAdopt()), so the replay of the next one and
+ *   the script use the same numbers.
+ * - engineDay: the UTC day (tick / HBHUB_MINER_DAY_MS) the next two are for, which start over on the next one.
+ *   donatedToday: parts given from ore that day. shifts: how far each of the day's Engine Shifts is.
  */
 function hbHubMinerNewState(int $now): array
 {
@@ -742,6 +839,11 @@ function hbHubMinerNewState(int $now): array
         'comet' => ['n' => 0, 'at' => $now],
         'buffs' => [],
         'achievements' => [],
+        'engineStage' => 0,
+        'engineOpen' => false,
+        'engineDay' => 0,
+        'donatedToday' => 0,
+        'shifts' => array_fill(0, HBHUB_MINER_SHIFT_COUNT, 0),
     ];
     $state['comet']['at'] = $now + hbHubMinerCometWait($state, 0);
     return $state;
@@ -765,6 +867,12 @@ function hbHubMinerNormalize(array $saved, int $now): array
     $state['antiUpgrades'] = array_values(array_intersect($state['antiUpgrades'], array_keys(HBHUB_MINER_ANTI_UPGRADES)));
     $state['skills'] = array_values(array_intersect($state['skills'], array_keys(HBHUB_MINER_SKILLS)));
     unset($state['steady'], $state['fast']); // the old auto-clicker checks'
+    $state['engineStage'] = max(0, min((int) $state['engineStage'], count(HBHUB_MINER_ENGINE_STAGES)));
+    $state['engineOpen'] = (bool) $state['engineOpen'];
+    $state['engineDay'] = (int) $state['engineDay'];
+    $state['donatedToday'] = (int) $state['donatedToday'];
+    $state['shifts'] = is_array($state['shifts']) && count($state['shifts']) === HBHUB_MINER_SHIFT_COUNT
+        ? array_map('intval', array_values($state['shifts'])) : array_fill(0, HBHUB_MINER_SHIFT_COUNT, 0);
 
     foreach (['ore', 'runOre', 'universeOre', 'allOre', 'clickOre'] as $key) {
         $state[$key] = (float) $state[$key];
@@ -865,6 +973,119 @@ function hbHubMinerSkillEffects(array $state): array
 }
 
 /**
+ * What the perks of the Cosmic Engine's stages done so far do together ('engineStage' in the save), with the keys of
+ * HBHUB_MINER_ENGINE_NEUTRAL: the highest 'offline', each 'value' added and each 'times' multiplied, in stage order.
+ */
+function hbHubMinerEngineEffects(array $state): array
+{
+    static $cache = [];
+    $done = min((int) $state['engineStage'], count(HBHUB_MINER_ENGINE_STAGES));
+    if (isset($cache[$done])) {
+        return $cache[$done];
+    }
+
+    $effects = HBHUB_MINER_ENGINE_NEUTRAL;
+    foreach (array_slice(HBHUB_MINER_ENGINE_STAGES, 0, $done) as $stage) {
+        $perk = $stage['perk'];
+        if ($perk['type'] === 'offline') {
+            $effects['offline'] = max($effects['offline'], $perk['value']);
+        } elseif (isset($perk['times'])) {
+            $effects[$perk['type']] *= $perk['times'];
+        } elseif (isset($perk['value'])) {
+            $effects[$perk['type']] += $perk['value'];
+        }
+    }
+    return $cache[$done] = $effects;
+}
+
+/**
+ * Whether the player can give parts to the Engine right now: it's taking them, and they've made a Warp Jump.
+ */
+function hbHubMinerCanGive(array $state): bool
+{
+    return $state['engineOpen'] && $state['warps'] >= 1;
+}
+
+/**
+ * Starts the daily counts (donatedToday, shifts) over when the game's time is on a new UTC day.
+ */
+function hbHubMinerEngineDay(array &$state): void
+{
+    $day = (int) floor($state['tick'] / HBHUB_MINER_DAY_MS);
+    if ($day !== $state['engineDay']) {
+        $state['engineDay'] = $day;
+        $state['donatedToday'] = 0;
+        $state['shifts'] = array_fill(0, HBHUB_MINER_SHIFT_COUNT, 0);
+    }
+}
+
+/**
+ * The day's Engine Shifts (keys of HBHUB_MINER_SHIFTS), the same for everyone: picked one by one from the ones left,
+ * with luck that only depends on the day.
+ */
+function hbHubMinerShiftTasks(int $day): array
+{
+    static $cache = [];
+    if (isset($cache[$day])) {
+        return $cache[$day];
+    }
+    $left = array_keys(HBHUB_MINER_SHIFTS);
+    $tasks = [];
+    for ($i = 0; $i < HBHUB_MINER_SHIFT_COUNT; $i++) {
+        $index = (int) floor(hbHubMinerRandom(0, $day * HBHUB_MINER_SHIFT_COUNT + $i, HBHUB_MINER_SALT_SHIFT) * count($left));
+        $tasks[] = $left[$index];
+        array_splice($left, $index, 1);
+    }
+    return $cache[$day] = $tasks;
+}
+
+/**
+ * Counts $amount towards today's Shift $task, if it's one of them. A Shift that's just been done goes in $given as
+ * [HBHUB_MINER_ENGINE_SOURCE_SHIFT, parts]. $given is null when the player can't give parts at all (guests), and
+ * then nothing is counted either.
+ */
+function hbHubMinerShift(array &$state, string $task, int $amount, ?array &$given): void
+{
+    if ($given === null || !hbHubMinerCanGive($state)) {
+        return;
+    }
+    hbHubMinerEngineDay($state);
+    $index = array_search($task, hbHubMinerShiftTasks($state['engineDay']), true);
+    $goal = HBHUB_MINER_SHIFTS[$task]['goal'];
+    if ($index === false || $state['shifts'][$index] >= $goal) {
+        return;
+    }
+    $state['shifts'][$index] = min($goal, $state['shifts'][$index] + $amount);
+    if ($state['shifts'][$index] < $goal) {
+        return;
+    }
+    $done = 0;
+    foreach (hbHubMinerShiftTasks($state['engineDay']) as $i => $id) {
+        $done += $state['shifts'][$i] >= HBHUB_MINER_SHIFTS[$id]['goal'] ? 1 : 0;
+    }
+    $given[] = [HBHUB_MINER_ENGINE_SOURCE_SHIFT, $done === HBHUB_MINER_SHIFT_COUNT
+        ? HBHUB_MINER_SHIFT_PARTS_ALL * HBHUB_MINER_SHIFT_COUNT - HBHUB_MINER_SHIFT_PARTS * (HBHUB_MINER_SHIFT_COUNT - 1) : HBHUB_MINER_SHIFT_PARTS];
+}
+
+/**
+ * The ore the next $parts parts from ore cost together today: the day's first HBHUB_MINER_ENGINE_ORE_PART, each next
+ * one ten times the one before. Multiplied up, so the script gets exactly the same.
+ */
+function hbHubMinerOreDonationCost(array $state, int $parts): float
+{
+    $part = HBHUB_MINER_ENGINE_ORE_PART;
+    for ($i = 0; $i < $state['donatedToday']; $i++) {
+        $part *= 10;
+    }
+    $cost = 0.0;
+    for ($i = 0; $i < $parts; $i++) {
+        $cost += $part;
+        $part *= 10;
+    }
+    return $cost;
+}
+
+/**
  * The production each Dark Matter earned adds (0.05 = +5%).
  */
 function hbHubMinerDarkBonus(array $state): float
@@ -954,7 +1175,7 @@ function hbHubMinerBuildingRates(array $state): array
         $global *= 2;
     }
     $global *= $effects['production'] * (1 + $effects['perSkill'] * count($state['skills'])) * (1 + $effects['perWarp'] * $state['flights'])
-        * (1 + $effects['perCrunch'] * $state['crunches']);
+        * (1 + $effects['perCrunch'] * $state['crunches']) * hbHubMinerEngineEffects($state)['production'];
     foreach ($state['upgrades'] as $upgradeId) {
         $upgrade = $upgrades[$upgradeId];
         if ($upgrade['type'] === 'building') {
@@ -1061,21 +1282,27 @@ function hbHubMinerCometWait(array $state, int $n): int
 {
     [$min, $max] = HBHUB_MINER_COMET_WAIT_MS;
     $wait = $min + hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_COMET_WAIT) * ($max - $min);
-    return (int) floor((hbHubMinerHas($state, 'radar') ? $wait / 2 : $wait) * hbHubMinerSkillEffects($state)['cometWait']);
-}
-
-function hbHubMinerCometStay(array $state): int
-{
-    return (int) floor((hbHubMinerHas($state, 'magnet') ? HBHUB_MINER_COMET_STAY_MS * 2 : HBHUB_MINER_COMET_STAY_MS)
-        * hbHubMinerSkillEffects($state)['cometStay']);
+    return (int) floor((hbHubMinerHas($state, 'radar') ? $wait / 2 : $wait) * hbHubMinerSkillEffects($state)['cometWait']
+        * hbHubMinerEngineEffects($state)['cometWait']);
 }
 
 /**
- * How long a comet's effect lasts, in ms: its own 'ms', doubled with Tail Collector, times the comet skills.
+ * How long a comet stays on screen, in ms: doubled with Comet Magnet, times the skills, plus the Engine's.
+ */
+function hbHubMinerCometStay(array $state): int
+{
+    return (int) floor((hbHubMinerHas($state, 'magnet') ? HBHUB_MINER_COMET_STAY_MS * 2 : HBHUB_MINER_COMET_STAY_MS)
+        * hbHubMinerSkillEffects($state)['cometStay']) + hbHubMinerEngineEffects($state)['cometStay'];
+}
+
+/**
+ * How long a comet's effect lasts, in ms: its own 'ms', doubled with Tail Collector, times the comet skills, and for
+ * the Golden ones (not Diamond Comets) times the Engine's.
  */
 function hbHubMinerCometLength(array $state, string $kind): int
 {
-    return (int) floor(HBHUB_MINER_COMETS[$kind]['ms'] * (hbHubMinerHas($state, 'tail') ? 2 : 1) * hbHubMinerSkillEffects($state)['cometLength']);
+    return (int) floor(HBHUB_MINER_COMETS[$kind]['ms'] * (hbHubMinerHas($state, 'tail') ? 2 : 1) * hbHubMinerSkillEffects($state)['cometLength']
+        * ($kind === 'diamond' ? 1 : hbHubMinerEngineEffects($state)['cometLength']));
 }
 
 /**
@@ -1109,14 +1336,16 @@ function hbHubMinerCometsPassed(array &$state): void
 
 /**
  * Moves the game on to $to (Unix ms): ore mined meanwhile, comet effects running out on time, and comets flying past.
- * Time after $fullUntil is time away, mined at HBHUB_MINER_OFFLINE_RATE (doubled with Time Dilation, times Time Loop).
+ * Time after $fullUntil is time away, mined at HBHUB_MINER_OFFLINE_RATE (or the Engine's, doubled with Time Dilation,
+ * times Time Loop). Time before it counts towards the "playing" Engine Shift ($given: see hbHubMinerShift()).
  * Returns the ore mined while away.
  */
-function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX): float
+function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX, ?array &$given = null): float
 {
     $offlineOre = 0.0;
     while ($state['tick'] < $to) {
-        // In pieces, so the rate is the same all through each: up to an effect running out, or going away
+        // In pieces, so the rate is the same all through each: up to an effect running out, going away, or midnight
+        // (UTC, for the Shifts, which start over then)
         $next = $to;
         foreach ($state['buffs'] as $buff) {
             if ($buff['until'] > $state['tick'] && $buff['until'] < $next) {
@@ -1126,11 +1355,18 @@ function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX)
         if ($fullUntil > $state['tick'] && $fullUntil < $next) {
             $next = $fullUntil;
         }
+        $midnight = (int) ((floor($state['tick'] / HBHUB_MINER_DAY_MS) + 1) * HBHUB_MINER_DAY_MS);
+        if ($midnight < $next) {
+            $next = $midnight;
+        }
 
         $ore = hbHubMinerRate($state, $state['tick']) * ($next - $state['tick']) / 1000;
         if ($state['tick'] >= $fullUntil) {
-            $ore *= HBHUB_MINER_OFFLINE_RATE * (hbHubMinerHasDark($state, 'timeDilation') ? 2 : 1) * hbHubMinerSkillEffects($state)['offline'];
+            $ore *= hbHubMinerEngineEffects($state)['offline'] * (hbHubMinerHasDark($state, 'timeDilation') ? 2 : 1)
+                * hbHubMinerSkillEffects($state)['offline'];
             $offlineOre += $ore;
+        } else {
+            hbHubMinerShift($state, 'playing', $next - $state['tick'], $given);
         }
         hbHubMinerEarn($state, $ore);
         $state['tick'] = $next;
@@ -1202,7 +1438,7 @@ function hbHubMinerWarpGain(array $state): float
         return 0;
     }
     $total = floor(hbHubMinerDarkTotal($state['universeOre']) * sqrt(hbHubMinerAntiMultiplier($state))
-        * (hbHubMinerHasAnti($state, 'converter') ? 2 : 1) * hbHubMinerSkillEffects($state)['darkGain']);
+        * (hbHubMinerHasAnti($state, 'converter') ? 2 : 1) * hbHubMinerSkillEffects($state)['darkGain'] * hbHubMinerEngineEffects($state)['darkGain']);
     return max(0, $total - $state['darkEarned']);
 }
 
@@ -1449,8 +1685,13 @@ function hbHubMinerRip(array &$state): bool
  * - ['type' => 'upgrade', 'id' => id], ['type' => 'dark', 'id' => id] (a Dark Matter upgrade), ['type' => 'anti',
  *   'id' => id] (an Antimatter upgrade), ['type' => 'skill', 'id' => id] (learning a skill).
  * - ['type' => 'comet'], ['type' => 'warp'], ['type' => 'crunch'], ['type' => 'rip'].
+ * - ['type' => 'donate', 'what' => 'ore' or 'strange', 'parts' => n]: gives n parts to the Cosmic Engine, for ore
+ *   (hbHubMinerOreDonationCost(), at most HBHUB_MINER_ENGINE_ORE_PARTS a day) or HBHUB_MINER_ENGINE_STRANGE_PART
+ *   Strange Matter each.
+ * What's given to the Engine (donations and finished Engine Shifts) goes in $given as [source, parts], for
+ * hbHubMinerSync() to put in. $given is null when the player can't give anything (guests): then donating doesn't count.
  */
-function hbHubMinerApply(array &$state, array $action): bool
+function hbHubMinerApply(array &$state, array $action, ?array &$given = null): bool
 {
     $type = $action['type'] ?? null;
 
@@ -1460,6 +1701,7 @@ function hbHubMinerApply(array &$state, array $action): bool
             return false;
         }
         hbHubMinerClick($state, $count, ($action['auto'] ?? false) === true);
+        hbHubMinerShift($state, 'clicks', $count, $given);
         return true;
     }
 
@@ -1477,6 +1719,7 @@ function hbHubMinerApply(array &$state, array $action): bool
         }
         $state['ore'] = max(0.0, $state['ore'] - $cost);
         $state['buildings'][$buildingId] += $amount;
+        hbHubMinerShift($state, 'buildings', $amount, $given);
         return true;
     }
 
@@ -1489,6 +1732,7 @@ function hbHubMinerApply(array &$state, array $action): bool
         }
         $state['ore'] = max(0.0, $state['ore'] - hbHubMinerUpgradeCost($state, $upgradeId));
         $state['upgrades'][] = $upgradeId;
+        hbHubMinerShift($state, 'upgrades', 1, $given);
         return true;
     }
 
@@ -1533,11 +1777,46 @@ function hbHubMinerApply(array &$state, array $action): bool
     }
 
     if ($type === 'comet') {
-        return hbHubMinerCatchComet($state) !== null;
+        if (hbHubMinerCatchComet($state) === null) {
+            return false;
+        }
+        hbHubMinerShift($state, 'comets', 1, $given);
+        return true;
     }
 
     if ($type === 'warp') {
-        return hbHubMinerWarp($state);
+        if (!hbHubMinerWarp($state)) {
+            return false;
+        }
+        hbHubMinerShift($state, 'warps', 1, $given);
+        return true;
+    }
+
+    if ($type === 'donate') {
+        $parts = $action['parts'] ?? null;
+        if ($given === null || !hbHubMinerCanGive($state) || !is_int($parts) || $parts < 1) {
+            return false;
+        }
+        hbHubMinerEngineDay($state);
+        if (($action['what'] ?? null) === 'ore') {
+            if ($state['donatedToday'] + $parts > HBHUB_MINER_ENGINE_ORE_PARTS
+                || !hbHubMinerCanAfford($state, hbHubMinerOreDonationCost($state, $parts))) {
+                return false;
+            }
+            $state['ore'] = max(0.0, $state['ore'] - hbHubMinerOreDonationCost($state, $parts));
+            $state['donatedToday'] += $parts;
+            $given[] = [HBHUB_MINER_ENGINE_SOURCE_ORE, $parts];
+            return true;
+        }
+        if (($action['what'] ?? null) === 'strange') {
+            if ($state['strange'] < $parts * HBHUB_MINER_ENGINE_STRANGE_PART) {
+                return false;
+            }
+            $state['strange'] -= $parts * HBHUB_MINER_ENGINE_STRANGE_PART;
+            $given[] = [HBHUB_MINER_ENGINE_SOURCE_STRANGE, $parts];
+            return true;
+        }
+        return false;
     }
 
     if ($type === 'crunch') {
@@ -1598,8 +1877,11 @@ function hbHubMinerCheckAchievements(array &$state): void
  * $guestState: a game played as a guest at /play/ore-mining-inc (opened from its token by the caller), to bring over
  * to the account after logging in or signing up from there. It only becomes the save when the user has none yet, so
  * it never writes over one; the answer's 'guest' then says 'imported', or 'kept' when the user's own save was kept.
+ * The parts the player gave the Cosmic Engine in these actions go in with the save, and the answer's 'engine' is how
+ * far it is (hbHubMinerEngineSummary(), with the top contributors and the latest parts given when $engineDetails).
  */
-function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $actions, array $recovered = [], ?array $guestState = null): array|string
+function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $actions, array $recovered = [], ?array $guestState = null,
+    bool $engineDetails = false): array|string
 {
     $db->beginTransaction();
     try {
@@ -1628,7 +1910,15 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         }
 
         $state = hbHubMinerNormalize(json_decode($row['saveState'], true, 64, JSON_THROW_ON_ERROR), $now);
-        $replay = hbHubMinerReplay($state, $actions, $recovered, $now);
+        $replay = hbHubMinerReplay($state, $actions, $recovered, $now, true);
+
+        // The parts given go into the Engine, locked so two saves can't both finish the same stage (always after the
+        // save's row, so they can't wait on each other), and the save gets the perks of every stage done so far
+        $engine = hbHubMinerEngineRow($db, $replay['given'] !== []);
+        if ($replay['given'] !== []) {
+            hbHubMinerEngineGive($db, $engine, $userId, $replay['given']);
+        }
+        hbHubMinerEngineAdopt($state, $engine, true);
 
         $db->prepare('UPDATE `HBHub-MinerSaves` SET saveState = ?, saveTab = ?, saveOreAllTime = ?, saveOrePerSecond = ?,
                 saveDarkMatter = ?, saveAntimatter = ?, saveStrangeMatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?,
@@ -1650,19 +1940,22 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         'now' => $now,
         'offline' => $replay['offline'],
         'recovered' => $replay['recovered'],
+        'engine' => hbHubMinerEngineSummary($db, $engine, $userId, $engineDetails),
     ] + ($guestResult !== null ? ['guest' => $guestResult] : []);
 }
 
 /**
  * Plays what the player did since the last save on the game, up to $now: the part of hbHubMinerSync() that doesn't
  * touch the database, also used for guests (/play/ore-mining-inc, whose game is a token in their browser instead of a
- * row). $actions and $recovered are as hbHubMinerSync() takes them. Returns 'offline' (null, or ['ms' => away for,
- * 'ore' => mined meanwhile]) and 'recovered' (how many of $recovered counted).
+ * row). $actions and $recovered are as hbHubMinerSync() takes them. $canGive: a member, who can give parts to the
+ * Engine (guests can't). Returns 'offline' (null, or ['ms' => away for, 'ore' => mined meanwhile]), 'recovered' (how
+ * many of $recovered counted) and 'given' (what was given to the Engine, [source, parts] each, see hbHubMinerApply()).
  *
- * @return array{offline: ?array{ms: int, ore: float}, recovered: int}
+ * @return array{offline: ?array{ms: int, ore: float}, recovered: int, given: list<array{0: int, 1: int}>}
  */
-function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $now): array
+function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $now, bool $canGive = false): array
 {
+    $given = $canGive ? [] : null;
     $since = min($state['tick'], $now);
     $fullUntil = $since + HBHUB_MINER_ONLINE_MS;
     $clicksLeft = (int) floor(($now - $since) / 1000 * HBHUB_MINER_CLICKS_PER_SECOND) + HBHUB_MINER_CLICKS_PER_SECOND;
@@ -1680,19 +1973,20 @@ function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $
             $clicksLeft -= max(0, $action['count']);
         }
         $at = is_numeric($action['at'] ?? null) ? (int) $action['at'] : $now;
-        $offlineOre += hbHubMinerAdvance($state, max($state['tick'], min($at, $now)), $fullUntil);
-        if (hbHubMinerApply($state, $action)) {
+        $offlineOre += hbHubMinerAdvance($state, max($state['tick'], min($at, $now)), $fullUntil, $given);
+        if (hbHubMinerApply($state, $action, $given)) {
             hbHubMinerCheckAchievements($state);
             if ($index < count($recovered)) {
                 $recoveredCount++;
             }
         }
     }
-    $offlineOre += hbHubMinerAdvance($state, $now, $fullUntil);
+    $offlineOre += hbHubMinerAdvance($state, $now, $fullUntil, $given);
     hbHubMinerCheckAchievements($state);
 
     return [
         'offline' => $offlineOre > 0 ? ['ms' => $now - $since, 'ore' => $offlineOre] : null,
         'recovered' => $recoveredCount,
+        'given' => $given ?? [],
     ];
 }
