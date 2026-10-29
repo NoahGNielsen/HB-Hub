@@ -41,6 +41,7 @@ const HBHUB_MINER_SAVES_SECONDS = 10;
 const HBHUB_MINER_COST_GROWTH = 1.15; // each building costs this much more than the one before (unless it has its own 'growth')
 const HBHUB_MINER_COST_GROWTH_PHYSICS = 0.01; // taken off that with Cheaper Physics
 const HBHUB_MINER_WARP_ORE = 1e9; // ore to mine in a run before a Warp Jump
+const HBHUB_MINER_OLD_FLIGHTS = 100; // the most Warp Jumps a save from before 'flights' (hbHubMinerNewState()) keeps as them
 const HBHUB_MINER_DARK_UNIT = 1e9; // all-time ore for the first Dark Matter, see hbHubMinerDarkTotal()
 const HBHUB_MINER_DARK_BONUS = 0.05; // production per Dark Matter earned in this universe
 const HBHUB_MINER_DARK_BONUS_REACTOR = 0.075; // with Dark Matter Reactor
@@ -259,8 +260,8 @@ const HBHUB_MINER_ANTI_UPGRADES = [
 // HBHUB_MINER_SKILL_NEUTRAL for the full list and hbHubMinerSkillEffects() for how they add up. The text is made from
 // the numbers (hbHubMinerSkillText()), unless the skill has its own 'text'.
 // - production: everything mines 'times' as much. buildings: the 'buildings' listed do. perSkill, perWarp, perCrunch,
-//   owned: everything mines 'value' more for every skill learned, Warp Jump ever made, Big Crunch ever made, building
-//   owned.
+//   owned: everything mines 'value' more for every skill learned, Warp Jump ever made that counted ('flights', see
+//   hbHubMinerNewState()), Big Crunch ever made, building owned.
 // - buildingUpgrade: a building's own upgrades are 'times' as strong (2 becomes 2 × times). crew: the crew upgrades are.
 // - cost, upgradeCost: buildings, upgrades cost 'times' as much. start: every run starts with 'count' of each of the
 //   'buildings'. startOre: with this much ore. keep: the ore upgrades of these 'types' are kept on a Warp Jump.
@@ -285,7 +286,8 @@ const HBHUB_MINER_SKILLS = [
     'strangeHeart' => ['name' => 'Heart of Strangeness', 'icon' => 'strangeHeart', 'branch' => 'core', 'cost' => 10, 'at' => [7, 2], 'after' => ['skillSynergy'],
         'type' => 'production', 'times' => 5],
     'frequentFlyer' => ['name' => 'Frequent Flyer Miles', 'icon' => 'medal', 'branch' => 'core', 'cost' => 15, 'at' => [9, 2], 'after' => ['strangeHeart'],
-        'type' => 'perWarp', 'value' => 0.01],
+        'type' => 'perWarp', 'value' => 0.01,
+        'text' => 'Everything mines 1% more for every Warp Jump you\'ve made that at least doubled the Dark Matter you\'d earned in that universe.'],
     'strangeStar' => ['name' => 'Strange Star', 'icon' => 'strangeStar', 'branch' => 'core', 'cost' => 30, 'at' => [11, 2],
         'after' => ['frequentFlyer', 'poltergeist', 'strangeFortune'], 'type' => 'production', 'times' => 10],
     'thinFabric' => ['name' => 'Thin Fabric', 'icon' => 'bigRip', 'branch' => 'core', 'cost' => 40, 'at' => [13, 2], 'after' => ['strangeStar'],
@@ -692,7 +694,10 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  * - ore: to spend. runOre: mined this run (since the last Warp Jump). universeOre: mined in this universe (since the
  *   last Big Crunch, what Dark Matter is worked out from). allOre: mined ever. clickOre: mined by clicking.
  * - buildings: id => how many. upgrades: the ids bought this run. dark: Dark Matter to spend. darkEarned: earned in
- *   this universe (the production bonus). darkUpgrades: bought with it. warps: Warp Jumps made ever.
+ *   this universe (the production bonus). darkUpgrades: bought with it. warps: Warp Jumps made ever. flights: the ones
+ *   that at least doubled darkEarned, which are all Frequent Flyer Miles counts. When it counted every jump, holding
+ *   W down with a macro (30+ jumps a second, each for 1 Dark Matter) was the best way to play: +1% production per
+ *   jump, without end. Doubling each time, there are only so many in a universe however they're made.
  * - antimatter: to spend. antimatterEarned: earned in this multiverse (since the last Big Rip: the bonus, and what
  *   Strange Matter is worked out from). antiUpgrades: bought with it. crunches: Big Crunches made ever.
  * - strange: Strange Matter to spend. strangeEarned: ever earned (the bonus). skills: the skills learned with it, in
@@ -721,6 +726,7 @@ function hbHubMinerNewState(int $now): array
         'darkEarned' => 0,
         'darkUpgrades' => [],
         'warps' => 0,
+        'flights' => 0,
         'antimatter' => 0,
         'antimatterEarned' => 0,
         'antiUpgrades' => [],
@@ -748,6 +754,9 @@ function hbHubMinerNewState(int $now): array
 function hbHubMinerNormalize(array $saved, int $now): array
 {
     $saved['universeOre'] ??= $saved['allOre'] ?? 0.0;
+    // A save from before flights were counted: its jumps count, up to HBHUB_MINER_OLD_FLIGHTS (so a macro's thousands
+    // don't stay in for good)
+    $saved['flights'] ??= min((int) ($saved['warps'] ?? 0), HBHUB_MINER_OLD_FLIGHTS);
     $state = array_replace(hbHubMinerNewState($now), $saved);
     $state['buildings'] = array_replace(array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 0),
         array_intersect_key($state['buildings'], HBHUB_MINER_BUILDINGS));
@@ -944,7 +953,7 @@ function hbHubMinerBuildingRates(array $state): array
     if (hbHubMinerHasAnti($state, 'annihilation')) {
         $global *= 2;
     }
-    $global *= $effects['production'] * (1 + $effects['perSkill'] * count($state['skills'])) * (1 + $effects['perWarp'] * $state['warps'])
+    $global *= $effects['production'] * (1 + $effects['perSkill'] * count($state['skills'])) * (1 + $effects['perWarp'] * $state['flights'])
         * (1 + $effects['perCrunch'] * $state['crunches']);
     foreach ($state['upgrades'] as $upgradeId) {
         $upgrade = $upgrades[$upgradeId];
@@ -1368,6 +1377,9 @@ function hbHubMinerWarp(array &$state): bool
     }
 
     hbHubMinerNewRun($state);
+    if ($gain >= $state['darkEarned']) {
+        $state['flights']++; // Frequent Flyer Miles only counts these (see hbHubMinerNewState())
+    }
     $state['dark'] += $gain;
     $state['darkEarned'] += $gain;
     $state['warps']++;

@@ -125,7 +125,7 @@
         let global = (1 + darkBonus(s) * s.darkEarned) * antiMultiplier(s) * strangeMultiplier(s);
         if (hasDark(s, 'darkEngines')) global *= 1.5;
         if (hasAnti(s, 'annihilation')) global *= 2;
-        global *= effects.production * (1 + effects.perSkill * s.skills.length) * (1 + effects.perWarp * s.warps)
+        global *= effects.production * (1 + effects.perSkill * s.skills.length) * (1 + effects.perWarp * s.flights)
             * (1 + effects.perCrunch * s.crunches);
         const parts = {
             multipliers: Object.fromEntries(BUILDING_IDS.map((id) => [id, 1])),
@@ -462,6 +462,7 @@
         if (gain < 1) return false;
 
         newRun(s);
+        if (gain >= s.darkEarned) s.flights++; // only these count for Frequent Flyer Miles (hbHubMinerWarp())
         s.dark += gain;
         s.darkEarned += gain;
         s.warps++;
@@ -1780,6 +1781,7 @@
             ['Comets caught', format(state.comets)],
             ['Diamond Comets caught', format(state.diamonds)],
             ['Warp Jumps', format(state.warps)],
+            ...(hasSkill(state, 'frequentFlyer') ? [['Warp Jumps for Frequent Flyer Miles', format(state.flights)]] : []),
             ...(state.crunches > 0 ? [
                 ['Ore mined this universe', format(state.universeOre)],
                 ['Big Crunches', format(state.crunches)],
