@@ -771,21 +771,60 @@ body:has(> .chat) {
   opacity: 0.7;
 }
 
-/* A message with an attachment: the attachment fills the bubble edge to edge (nearly), with the text below it */
-.chat-message-bubble.has-attachment {
-  padding: 4px;
+/* A message with an attachment has no bubble around it, like a GIF: the pictures, videos and file cards sit right on the
+   chat, and only its text (and the "Attachment deleted" line) gets a bubble of its own, below them */
+.chat-message-bubble.has-attachment,
+.chat-message.is-own .chat-message-bubble.has-attachment,
+.chat-message.is-mention .chat-message-bubble.has-attachment {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
 }
 
 .chat-message-bubble.has-attachment .chat-message-text,
 .chat-attachment-gone {
-  padding: 4px 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border-radius: 14px 14px 14px 4px;
+  background: var(--background);
+}
+
+.chat-message.is-own .chat-message-bubble.has-attachment .chat-message-text,
+.chat-message.is-own .chat-attachment-gone {
+  margin-left: auto;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.chat-message.is-mention .chat-message-bubble.has-attachment .chat-message-text {
+  background: color-mix(in srgb, var(--accent) 12%, var(--background));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Without a bubble behind it, a picture's name and size under it are small and faded, like a message's time */
+.chat-message-bubble.has-attachment .chat-attachment-caption {
+  opacity: 0.75;
+}
+
+.chat-message.is-own .chat-attachment-caption {
+  justify-content: flex-end;
 }
 
 /* A message's attachments (chatAttachmentsHtml in chat/index.php): its pictures, its file cards, then the gone ones' line */
 .chat-attachments {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
+}
+
+.chat-message.is-own .chat-attachments {
+  align-items: flex-end;
 }
 
 .chat-attachment {
@@ -881,10 +920,12 @@ body:has(> .chat) {
   display: none;
 }
 
-/* Other files: a card each, one under the other, that downloads it */
+/* Other files: a card each, one under the other, that downloads it. With no bubble behind them, each card is a solid
+   block of its own, the same in the user's own messages as in everyone else's. */
 .chat-attachment-files {
   display: flex;
   flex-direction: column;
+  align-items: inherit;
   gap: 4px;
 }
 
@@ -897,17 +938,13 @@ body:has(> .chat) {
   padding: 8px 10px;
   box-sizing: border-box;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--text) 6%, transparent);
-  color: inherit;
+  background: var(--background);
+  color: var(--text);
   text-decoration: none;
 }
 
-.chat-message.is-own .chat-attachment.is-file {
-  background: color-mix(in srgb, #000 14%, transparent);
-}
-
 .chat-attachment.is-file:hover {
-  background: color-mix(in srgb, var(--text) 11%, transparent);
+  background: color-mix(in srgb, var(--text) 6%, var(--background));
 }
 
 /* The little document with the file's extension on it, its top right corner folded over. The tray's tiles use it too. */
@@ -942,16 +979,6 @@ body:has(> .chat) {
   background: color-mix(in srgb, #fff 50%, transparent);
 }
 
-/* In the user's own (accent) bubbles it's white with accent writing instead */
-.chat-message.is-own .chat-attachment-ext {
-  background: #fff;
-  color: var(--accent);
-}
-
-.chat-message.is-own .chat-attachment-ext::before {
-  background: color-mix(in srgb, var(--accent) 35%, #fff);
-}
-
 .chat-attachment-text {
   flex: 1;
   min-width: 0;
@@ -975,18 +1002,9 @@ body:has(> .chat) {
   content: "\2193";
 }
 
-.chat-message.is-own .chat-attachment-save {
-  background: color-mix(in srgb, #000 16%, transparent);
-}
-
 .chat-attachment.is-file:hover .chat-attachment-save {
   background: var(--accent);
   color: #fff;
-}
-
-.chat-message.is-own .chat-attachment.is-file:hover .chat-attachment-save {
-  background: #fff;
-  color: var(--accent);
 }
 
 .chat-attachment-name {
@@ -1075,7 +1093,7 @@ body:has(> .chat) {
 }
 
 .chat-message.is-sending .chat-attachment.is-file:hover {
-  background: color-mix(in srgb, #000 14%, transparent);
+  background: var(--background);
 }
 
 /* Reached with the arrow keys (chat.js), so the message menu can be opened from the keyboard */
