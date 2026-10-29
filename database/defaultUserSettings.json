@@ -9,6 +9,7 @@
         "expires": null
     },
     "profileEducation": null,
+    "profileShowDiscord": true,
     "profileBanner": {
         "color1": "default",
         "color2": "default",

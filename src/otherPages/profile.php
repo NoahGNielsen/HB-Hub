@@ -4,7 +4,8 @@
 // A card with the banner along the top (a picture, or the colors they picked: assets/php/profile.php), the profile
 // picture over its bottom edge with a dot for online (hover it for how long they've been offline), their status next to
 // it, and on the right a Message button (someone else) or the settings cog (your own). Under it the name, badges
-// (Site admin, class, education), the bio and when they joined. Everything on it is changed in settings (otherPages/settings.php).
+// (Site admin, class, education, their linked Discord username unless they turned it off: assets/php/discord.php), the
+// bio and when they joined. Everything on it is changed in settings (otherPages/settings.php).
 // On your own profile the status can be clicked to change it in a popup (or, without a status, a greyed out "Click here
 // to add a status!" only you see). The popup is a form POSTed back here with action=status (and clear=1 for Clear
 // status), which saves only the status and comes back with a toast. Without JS the status links to settings instead.
@@ -15,6 +16,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // "2.X", "Graduate (X)" or "Not HTX"
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/profile.php'; // banner, status and education badge
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/discord.php'; // the Discord badge
 
 const PROFILE_ROLE_ADMIN = 2; // userRole in HBHub-Users
 
@@ -57,7 +59,7 @@ if (!is_string($profileUserId) || !ctype_digit($profileUserId)) {
 
 // The elapsed times are worked out by the database, so PHP's time zone doesn't matter
 $statement = hbHubDatabase()->prepare('SELECT u.userId, u.userName, u.userDescription, u.userSettings, u.userAvatarAttachmentId,
-        u.userRole, u.userStatus, u.userCreatedTimestamp, ' . hbHubProfileBannerIdSql('u') . ' AS bannerId,
+        u.userRole, u.userStatus, u.userCreatedTimestamp, u.userDiscordName, ' .hbHubProfileBannerIdSql('u') . ' AS bannerId,
         GREATEST(TIMESTAMPDIFF(SECOND, u.userCreatedTimestamp, NOW()), 0) AS memberSeconds,
         GREATEST(TIMESTAMPDIFF(SECOND, u.userLastSeenTimestamp, NOW()), 0) AS lastSeenSeconds
     FROM `HBHub-Users` u WHERE u.userId = ? AND (u.userStatus IS NULL OR u.userStatus <> ?)');
@@ -80,6 +82,8 @@ $profileCanMessage = !$profileIsOwn && $profile['userStatus'] !== null && (int) 
 $profileSettings = hbHubUserSettings($profile['userSettings']);
 $profileClass = hbHubClassOf($profileSettings);
 $profileEducation = hbHubProfileEducation($profileSettings);
+// Their linked Discord account's username, null when none is linked or they hid it in settings
+$profileDiscord = $profile['userDiscordName'] !== null && hbHubDiscordShowsOnProfile($profileSettings) ? $profile['userDiscordName'] : null;
 $profileStatus = hbHubProfileStatus($profileSettings);
 $profileHasStatus = hbHubProfileHasStatus($profileStatus);
 // The popup's fields: what was typed in after an error, otherwise the status you have now
@@ -189,7 +193,7 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
 
                 <h1 class="profile-name" id="profile-name"><?= htmlspecialchars($profile['userName']) ?></h1>
 
-                <?php if ($profileIsAdmin || $profileClass !== null || $profileEducation !== null): ?>
+                <?php if ($profileIsAdmin || $profileClass !== null || $profileEducation !== null || $profileDiscord !== null): ?>
                     <ul class="profile-badges" aria-label="Badges">
                         <?php if ($profileIsAdmin): ?>
                             <li class="profile-badge is-admin"><img src="/assets/images/icons/admin.svg" alt="">Site admin</li>
@@ -199,6 +203,9 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
                         <?php endif; ?>
                         <?php if ($profileEducation !== null): ?>
                             <li class="profile-badge" title="Education"><span aria-hidden="true"><?= $profileEducation[1] ?></span><?= htmlspecialchars($profileEducation[2]) ?></li>
+                        <?php endif; ?>
+                        <?php if ($profileDiscord !== null): ?>
+                            <li class="profile-badge is-discord" title="Discord"><?= hbHubDiscordLogo() ?><span class="profile-visually-hidden">Discord: </span><?= htmlspecialchars($profileDiscord) ?></li>
                         <?php endif; ?>
                     </ul>
                 <?php endif; ?>

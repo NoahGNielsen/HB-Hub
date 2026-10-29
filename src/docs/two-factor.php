@@ -43,6 +43,7 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                         <ul>
                             <li>Sign up with <strong>Sign up with Discord</strong> on the first step of sign-up. Your name, bio and picture start out as your Discord ones, and you can change them before your account is made. You still choose your class and a password, and the account is linked to Discord straight away. <strong>Don't link it</strong> goes back to a normal sign-up.</li>
                             <li>Or link it later in the <strong>Discord login</strong> card in your <a href="/settings#discord">settings</a>.</li>
+                            <li>Your Discord username is shown on your profile while it's linked. Turn off <strong>Show my Discord username on my profile</strong> in the same card to hide it. If you change your username on Discord, HB Hub picks up the new one overnight (or the next time you log in with Discord).</li>
                             <li>The same card unlinks it again. One Discord account can only be linked to one HB Hub account.</li>
                         </ul>
                     </section>

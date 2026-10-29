@@ -100,9 +100,10 @@ function loginCheckDB(string $name, string $password, int $attemptsMax, int $loc
  * Logs in the account linked to the Discord account (discord.php), once Discord has said who it is. That counts as
  * the right password: two-factor login still asks for the code ($needsTotp, like loginCheckDB()), and a banned account
  * gets its browser marked. The login lock is about guessing passwords, which this isn't, so it doesn't stop it.
+ * $discordName is the username Discord just gave, saved over the one kept (it's on the profile) in case it changed.
  * Returns null when it worked, otherwise why not: 'notLinked', 'banned' or 'failed'.
  */
-function loginDiscord(string $discordId, ?bool &$needsTotp = null): ?string
+function loginDiscord(string $discordId, string $discordName, ?bool &$needsTotp = null): ?string
 {
     $needsTotp = false;
 
@@ -123,6 +124,9 @@ function loginDiscord(string $discordId, ?bool &$needsTotp = null): ?string
             hbHubSetBannedCookie($userId);
             return 'banned';
         }
+
+        $db->prepare('UPDATE `HBHub-Users` SET userDiscordName = ? WHERE userId = ? AND userDiscordId = ?')
+            ->execute([$discordName, $userId, $discordId]);
 
         $db->beginTransaction();
         if ($user['userTotpSecret'] !== null) {
