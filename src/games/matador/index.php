@@ -139,9 +139,9 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/lobby.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/lobby.css') ?>">
+    <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
+    <link rel="stylesheet" href="/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
+    <link rel="stylesheet" href="/assets/css/lobby.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/lobby.css') ?>">
     <title>Matador - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Matador, the Danish board game, on the HB Hub">
@@ -356,6 +356,6 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
         </dialog>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/matadorLobby.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/matadorLobby.js') ?>" defer></script>
+    <script src="/assets/js/matadorLobby.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/matadorLobby.js') ?>" defer></script>
 </body>
 </html>

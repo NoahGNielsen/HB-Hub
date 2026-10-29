@@ -100,13 +100,13 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/profile.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/profile.css') ?>">
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/profile.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/profile.js') ?>" defer></script>
+    <link rel="stylesheet" href="/assets/css/profile.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/profile.css') ?>">
+    <script src="/assets/js/profile.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/profile.js') ?>" defer></script>
     <?php if ($profileIsOwn): ?>
-        <script src="https://hbhub.noahgajnielsen.dk/assets/js/statusForm.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/statusForm.js') ?>" defer></script>
+        <script src="/assets/js/statusForm.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/statusForm.js') ?>" defer></script>
     <?php endif; ?>
     <?php if ($profileBannerSrc !== null): ?>
-        <script src="https://hbhub.noahgajnielsen.dk/assets/js/jxlImages.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/jxlImages.js') ?>" defer></script>
+        <script src="/assets/js/jxlImages.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/jxlImages.js') ?>" defer></script>
     <?php endif; ?>
     <title><?= htmlspecialchars($profile['userName']) ?> - HB Hub</title>
     <meta name="description" content="Profile page for the HB Hub">

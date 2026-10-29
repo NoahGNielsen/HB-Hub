@@ -19,9 +19,9 @@ $docsIsFront = $docsPath === '/docs/';
     $headerKeywords = [$docsPage['title'], 'HB Hub help', 'HB Hub docs', 'HB Hub guide'];
     include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php';
     ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/docs.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/docs.css') ?>">
+    <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
+    <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
+    <link rel="stylesheet" href="/assets/css/docs.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/docs.css') ?>">
     <title><?= htmlspecialchars($docsIsFront ? 'Help & docs - HB Hub' : $docsPage['title'] . ' - HB Hub docs') ?></title>
     <!-- The summary is short, as it's also a card on the docs' front page, so search engines get who the docs are for too -->
     <meta name="description" content="<?= htmlspecialchars($docsPage['summary'] . ' From the HB Hub help docs, for students at HANSENBERG (HTX).') ?>">

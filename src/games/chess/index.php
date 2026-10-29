@@ -97,9 +97,9 @@ $lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playi
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/lobby.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/lobby.css') ?>">
+    <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
+    <link rel="stylesheet" href="/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
+    <link rel="stylesheet" href="/assets/css/lobby.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/lobby.css') ?>">
     <title>Chess - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="Play chess against your friends on the HB Hub">
@@ -259,6 +259,6 @@ $lobbyIsPlaying = $lobbyRoom !== null && $lobbyRoom['state']['phase'] === 'playi
         </dialog>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/chessLobby.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chessLobby.js') ?>" defer></script>
+    <script src="/assets/js/chessLobby.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chessLobby.js') ?>" defer></script>
 </body>
 </html>

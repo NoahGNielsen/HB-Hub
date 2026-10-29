@@ -25,10 +25,10 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/uno.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/uno.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/mentions.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/mentions.css') ?>">
+    <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
+    <link rel="stylesheet" href="/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
+    <link rel="stylesheet" href="/assets/css/uno.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/uno.css') ?>">
+    <link rel="stylesheet" href="/assets/css/mentions.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/mentions.css') ?>">
     <title><?= htmlspecialchars($room['roomName']) ?> - UNO - HB Hub</title>
     <meta name="robots" content="noindex">
     <meta name="description" content="A game of UNO on the HB Hub">
@@ -237,7 +237,7 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
         </dialog>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/unoGame.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/unoGame.js') ?>" defer></script>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/mentions.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/mentions.js') ?>" defer></script>
+    <script src="/assets/js/unoGame.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/unoGame.js') ?>" defer></script>
+    <script src="/assets/js/mentions.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/mentions.js') ?>" defer></script>
 </body>
 </html>

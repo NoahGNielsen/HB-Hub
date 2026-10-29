@@ -32,9 +32,9 @@ $playStructuredData = json_encode([
     $headerKeywords = ['free online games', 'gratis spil', 'gratis onlinespil', 'browser games', 'no sign-up', ...array_column($playGames, 'name')];
     include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php';
     ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/guestGames.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/guestGames.css') ?>">
+    <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
+    <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
+    <link rel="stylesheet" href="/assets/css/guestGames.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/guestGames.css') ?>">
     <title>Free Online Games - No Sign-Up Needed | HB Hub</title>
     <meta name="description" content="Free browser games from HB Hub at HANSENBERG: Wordle in English and Danish, an idle clicker, and Blackjack, Baccarat and Roulette with play chips. No sign-up.">
     <script type="application/ld+json"><?= $playStructuredData ?></script>

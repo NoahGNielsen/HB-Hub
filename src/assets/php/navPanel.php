@@ -132,19 +132,19 @@ $navFeedbackHref = $navOnFeedback
     <?php endif; ?>
 </nav>
 <?php if ($navUser !== null): ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/notificationBell.js?v=<?= filemtime(__DIR__ . '/../js/notificationBell.js') ?>" defer></script>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/chatUnread.js?v=<?= filemtime(__DIR__ . '/../js/chatUnread.js') ?>" defer></script>
+    <script src="/assets/js/notificationBell.js?v=<?= filemtime(__DIR__ . '/../js/notificationBell.js') ?>" defer></script>
+    <script src="/assets/js/chatUnread.js?v=<?= filemtime(__DIR__ . '/../js/chatUnread.js') ?>" defer></script>
 <?php endif; ?>
 <?php if ($navMessageSound): ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/messageSound.js?v=<?= filemtime(__DIR__ . '/../js/messageSound.js') ?>" defer></script>
+    <script src="/assets/js/messageSound.js?v=<?= filemtime(__DIR__ . '/../js/messageSound.js') ?>" defer></script>
 <?php endif; ?>
 <?php if ($navNotifications): ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>" defer
+    <script src="/assets/js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>" defer
             data-notify="<?= $navNotify ? '1' : '0' ?>" data-sound="<?= $navSound ? '1' : '0' ?>"></script>
 <?php endif; ?>
 <?php if ($navCasinoChips !== null): ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/casino.js?v=<?= filemtime(__DIR__ . '/../js/casino.js') ?>" defer></script>
+    <script src="/assets/js/casino.js?v=<?= filemtime(__DIR__ . '/../js/casino.js') ?>" defer></script>
 <?php endif; ?>
 <?php if ($navUser !== null): ?>
-    <script src="https://hbhub.noahgajnielsen.dk/assets/js/navUpdates.js?v=<?= filemtime(__DIR__ . '/../js/navUpdates.js') ?>" defer></script>
+    <script src="/assets/js/navUpdates.js?v=<?= filemtime(__DIR__ . '/../js/navUpdates.js') ?>" defer></script>
 <?php endif; ?>

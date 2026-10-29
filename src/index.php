@@ -88,7 +88,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
     $headerKeywords = ['HANSENBERG chat', 'HTX klassechat', 'skolechat', 'school chat', 'Matador online', 'UNO online', 'chess online'];
     include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php';
     ?>
-    <link rel="stylesheet" href="https://hbhub.noahgajnielsen.dk/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
+    <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <title>HB Hub - Chat, casino and games for HANSENBERG students</title>
     <meta name="description" content="HB Hub is the student-made hangout for HANSENBERG Tekniske Gymnasium (HTX): class group chats, DMs, a play-chip casino, and Matador, chess, UNO and Wordle.">
     <meta property="og:title" content="HB Hub - The whole school, one tab away">

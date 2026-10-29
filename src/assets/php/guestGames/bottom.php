@@ -41,7 +41,7 @@ $guestPrompt = str_replace('{startChips}', number_format(HBHUB_CASINO_START_CHIP
         </div>
     </div>
 </dialog>
-<script src="https://hbhub.noahgajnielsen.dk/assets/js/guestPrompt.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/guestPrompt.js') ?>" defer></script>
+<script src="/assets/js/guestPrompt.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/guestPrompt.js') ?>" defer></script>
 <?php if ($guestGame['section'] === 'casino'): ?>
-<script src="https://hbhub.noahgajnielsen.dk/assets/js/casino.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/casino.js') ?>" defer></script>
+<script src="/assets/js/casino.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/casino.js') ?>" defer></script>
 <?php endif; ?>
