@@ -88,9 +88,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The menu between the views: a bar, the open view lit up in its own colour. The game has three (.miner-menus), the
-   matters on top, the Engine and Anomalies under them and the Shard Shop under those, once they've opened; the
-   leaderboard has one. */
+/* The menu between the views: a bar, the open view lit up in its own colour. The game has two (.miner-menus), the
+   matters on top and the Engine and Anomalies under them; the leaderboard has one. */
 .miner-menu {
   margin: 8px 0 12px;
   padding: 4px;
@@ -108,11 +107,6 @@
 
 .miner-menus .miner-menu {
   margin: 0;
-}
-
-.miner-menu[hidden],
-.miner-menu-link[hidden] {
-  display: none;
 }
 
 .miner-menu-link {
@@ -177,6 +171,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* "Project " in front of Starbound, only where the menu is a column with room for it (below) */
+.miner-menu-long {
+  display: none;
 }
 
 .miner-menu-count {
@@ -249,6 +248,10 @@
 
   .miner-menus .miner-menu {
     flex-direction: column;
+  }
+
+  .miner-menu-long {
+    display: inline;
   }
 
   /* The name with the amount under it, so long numbers fit */

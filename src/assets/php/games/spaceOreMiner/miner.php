@@ -601,9 +601,9 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'stack6' => ['name' => 'Stacked Deck', 'text' => 'Finish a stack of 5 Anomalies.', 'stat' => 'stack', 'at' => 5],
     'weekly1' => ['name' => 'Weekly Worker', 'text' => 'Finish the weekly Anomaly.', 'stat' => 'weeklies', 'at' => 1],
     'lightHour' => ['name' => 'Faster Than Light', 'text' => 'Finish Speed of Light in under an hour.', 'stat' => 'lightHour', 'at' => 1],
-    'engine1' => ['name' => 'Crew Member', 'text' => 'Give the Cosmic Engine an Engine Part.', 'stat' => 'engineGiven', 'at' => 1],
-    'engine1000' => ['name' => 'Chief Engineer', 'text' => 'Give the Cosmic Engine 1,000 Engine Parts.', 'stat' => 'engineGiven', 'at' => 1000],
-    'shiftDay' => ['name' => 'Full Shift', 'text' => 'Do all of a day\'s Engine Shifts.', 'stat' => 'shiftDays', 'at' => 1],
+    'engine1' => ['name' => 'Crew Member', 'text' => 'Give a Starbound Part.', 'stat' => 'engineGiven', 'at' => 1],
+    'engine1000' => ['name' => 'Chief Engineer', 'text' => 'Give 1,000 Starbound Parts.', 'stat' => 'engineGiven', 'at' => 1000],
+    'shiftDay' => ['name' => 'Full Shift', 'text' => 'Do all of a day\'s Starbound Shifts.', 'stat' => 'shiftDays', 'at' => 1],
 ];
 
 // ----- The Cosmic Engine. Anyone with a Warp Jump can give Engine Parts: ore from their run (HBHUB_MINER_ENGINE_ORE_PARTS
@@ -657,7 +657,7 @@ const HBHUB_MINER_ENGINE_SOURCE_ANOMALY = 4; // with the Anomaly in contribution
 const HBHUB_MINER_ENGINE_ORE_PART = 1e13; // ore for the day's first part from ore
 const HBHUB_MINER_ENGINE_ORE_PARTS = 5; // parts from ore a day
 const HBHUB_MINER_ENGINE_STRANGE_PART = 10; // Strange Matter for a part
-const HBHUB_MINER_ENGINE_STAGE_TOTAL = 25; // stages in each Engine
+const HBHUB_MINER_ENGINE_STAGE_TOTAL = 25; // stages in each build
 const HBHUB_MINER_DAY_MS = 86400000; // the daily limit and the Shifts go by UTC days: Math.floor(tick / this)
 // The Engines, by engineNumber in HBHub-MinerEngines: what each is called (with 'the' in front in sentences), its
 // sections (each stage's 'section') and the badge for whoever gave parts to its last stage before it was done ('crew',
@@ -674,7 +674,7 @@ const HBHUB_MINER_ENGINE_ORE_SHARE = ['A' => 4, 'B' => 4, 'C' => 2, 'D' => 1, 'E
 const HBHUB_MINER_ENGINE_ORE_QUARTERS = 4;
 const HBHUB_MINER_ENGINE_COUNTDOWN_MS = 604800000; // 7 days, to fill Ignition in
 const HBHUB_MINER_ENGINE_DRAIN = 0.5; // of Ignition's parts kept when its time runs out
-const HBHUB_MINER_IGNITION_MS = 259200000; // 72 hours of HBHUB_MINER_IGNITION_TIMES once the Engine is ignited
+const HBHUB_MINER_IGNITION_MS = 259200000; // 72 hours of HBHUB_MINER_IGNITION_TIMES once Project Starbound is ignited
 const HBHUB_MINER_IGNITION_TIMES = 2;
 const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
     ['name' => 'Scaffolding', 'section' => 'A', 'cost' => 500, 'lock' => null,
@@ -684,7 +684,7 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
     ['name' => 'Fuel Lines', 'section' => 'A', 'cost' => 1750, 'lock' => null,
         'perk' => ['type' => 'cometWait', 'times' => 0.9, 'text' => 'The wait between comets is 10% shorter.']],
     ['name' => 'Crew Deck', 'section' => 'A', 'cost' => 2500, 'lock' => null,
-        'perk' => ['type' => 'badge', 'badge' => 'Engine Crew', 'icon' => '⚙️', 'text' => 'Everyone who has given parts to the Engine gets the Engine Crew badge on their profile.']],
+        'perk' => ['type' => 'badge', 'badge' => 'Engine Crew', 'icon' => '⚙️', 'text' => 'Everyone who has given parts to Project Starbound gets the Engine Crew badge on their profile.']],
     ['name' => 'Foundation Seal', 'section' => 'A', 'cost' => 3500,
         'lock' => ['type' => 'contributors', 'count' => 10, 'text' => '10 different players have given parts'],
         'perk' => ['type' => 'production', 'times' => 1.05, 'text' => 'Everything mines 5% more.']],
@@ -708,7 +708,7 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'lock' => ['type' => 'players', 'anomalies' => ['speedOfLight'], 'count' => 5, 'text' => '5 different players have finished Speed of Light'],
         'perk' => ['type' => 'diamond', 'value' => 0.005, 'text' => 'Diamond Comets come a little more often: 5.5% of comets instead of 5%.']],
     ['name' => 'Exhaust Nozzle', 'section' => 'C', 'cost' => 26000, 'lock' => null,
-        'perk' => ['type' => 'news', 'sounds' => 'engine', 'text' => 'New lines in the news ticker, and the Engine makes sounds when it gets parts.']],
+        'perk' => ['type' => 'news', 'sounds' => 'engine', 'text' => 'New lines in the news ticker, and Project Starbound makes sounds when it gets parts.']],
     ['name' => 'Drive Seal', 'section' => 'C', 'cost' => 30000,
         'lock' => ['type' => 'players', 'anomalies' => ['nakedSingularity'], 'count' => 1, 'text' => 'Someone has finished Naked Singularity'],
         'perk' => ['type' => 'production', 'times' => 1.1, 'text' => 'Everything mines 10% more.']],
@@ -718,7 +718,7 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'perk' => ['type' => 'click', 'times' => 1.25, 'text' => 'Clicks mine 25% more.']],
     ['name' => 'Navigation Computer', 'section' => 'D', 'cost' => 48000,
         'lock' => ['type' => 'stack', 'count' => 4, 'text' => 'Someone has finished a stack of 4 Anomalies'],
-        'perk' => ['type' => 'anomalyParts', 'times' => 1.1, 'text' => 'Anomalies give 10% more Engine Parts.']],
+        'perk' => ['type' => 'anomalyParts', 'times' => 1.1, 'text' => 'Anomalies give 10% more Starbound Parts.']],
     ['name' => 'The Bridge', 'section' => 'D', 'cost' => 56000,
         'lock' => ['type' => 'players', 'anomalies' => ['ironUniverse', 'handsOnly'], 'count' => 3, 'text' => '3 different players have finished both Iron Universe and Hands Only'],
         'perk' => ['type' => 'skin', 'text' => 'The animated Engine Core asteroid skin, for everyone.']],
@@ -734,7 +734,7 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'perk' => ['type' => 'upgradeCost', 'times' => 0.9, 'text' => 'Ore upgrades cost 10% less.']],
     ['name' => 'Countdown Clock', 'section' => 'E', 'cost' => 100000,
         'lock' => ['type' => 'weekly', 'count' => 10, 'text' => '10 players have finished the weekly Anomaly in the same week'],
-        'perk' => ['type' => 'title', 'text' => 'Everyone who has given parts to the Engine gets the title "Engineer" on the leaderboard.']],
+        'perk' => ['type' => 'title', 'text' => 'Everyone who has given parts to Project Starbound gets the title "Engineer" on the leaderboard.']],
     ['name' => 'Launch Clamps', 'section' => 'E', 'cost' => 115000,
         'lock' => ['type' => 'each', 'tier' => 3, 'count' => 3, 'text' => 'Every Tier III Anomaly has been finished by at least 3 players'],
         'perk' => ['type' => 'production', 'times' => 1.25, 'text' => 'Everything mines 25% more.']],
@@ -767,16 +767,16 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'lock' => ['type' => 'each', 'tier' => 2, 'count' => 2, 'text' => 'Every Tier II Anomaly has been finished by at least 2 players'],
         'perk' => ['type' => 'production', 'times' => 1.05, 'text' => 'Everything mines 5% more.']],
     ['name' => 'Crucible Shell', 'section' => 'C', 'cost' => 18750, 'lock' => null,
-        'perk' => ['type' => 'shiftSwap', 'value' => 1, 'text' => 'Once a day, you can swap one of your Engine Shifts that isn\'t done for another.']],
+        'perk' => ['type' => 'shiftSwap', 'value' => 1, 'text' => 'Once a day, you can swap one of your Starbound Shifts that isn\'t done for another.']],
     ['name' => 'Slag Channels', 'section' => 'C', 'cost' => 22500,
         'lock' => ['type' => 'source', 'source' => HBHUB_MINER_ENGINE_SOURCE_SHIFT, 'parts' => 75, 'count' => 10,
-            'text' => '10 different players have each given 75 parts from Engine Shifts to the Crucible section'],
+            'text' => '10 different players have each given 75 parts from Starbound Shifts to the Crucible section'],
         'perk' => ['type' => 'cometTrail', 'text' => 'Golden Comets take the colour of your asteroid skin.']],
     ['name' => 'Pour Spout', 'section' => 'C', 'cost' => 27500,
         'lock' => ['type' => 'time', 'anomaly' => 'speedOfLight', 'ms' => 3600000, 'count' => 1, 'text' => 'Someone has finished Speed of Light on its own in under an hour'],
         'perk' => ['type' => 'skin', 'text' => 'The animated Molten asteroid skin, for everyone.']],
     ['name' => 'Alloy Bins', 'section' => 'C', 'cost' => 32500, 'lock' => null,
-        'perk' => ['type' => 'hall', 'text' => 'The Hall of Engines: every finished Engine, when it was done and who built it, in the Engine view.']],
+        'perk' => ['type' => 'hall', 'text' => 'The Starbound Hall: every finished build, when it was done and who built it, in the Project Starbound view.']],
     ['name' => 'Crucible Seal', 'section' => 'C', 'cost' => 37500,
         'lock' => ['type' => 'players', 'anomalies' => ['nakedSingularity', 'ironUniverse'], 'count' => 3, 'text' => '3 different players have finished both Naked Singularity and Iron Universe'],
         'perk' => ['type' => 'sparks', 'text' => 'Clicking the asteroid throws sparks (they can be turned off in the stats).']],
@@ -1476,7 +1476,7 @@ function hbHubMinerNormalize(array $saved, int $now): array
     foreach (is_array($state['anomalies']) ? $state['anomalies'] : [] as $key => $record) {
         if (is_array($record) && hbHubMinerAnomalyMods((string) $key) !== null) {
             $anomalies[(string) $key] = ['done' => (int) ($record['done'] ?? 0), 'best' => (int) ($record['best'] ?? 0),
-                'engine' => max(1, (int) ($record['engine'] ?? 1))]; // the ones from before Engine #2 were for Engine #1
+                'engine' => max(1, (int) ($record['engine'] ?? 1))]; // the ones from before Build #2 were for Build #1
         }
     }
     $state['anomalies'] = $anomalies;
@@ -2154,7 +2154,7 @@ function hbHubMinerCometKind(array $state): string
 {
     $n = $state['comet']['n'];
     $diamondChance = (hbHubMinerHas($state, 'luckyStars') ? HBHUB_MINER_DIAMOND_CHANCE : 0) + hbHubMinerSkillEffects($state)['diamond'];
-    if ($diamondChance > 0) { // the Engine's Plasma Chamber only adds to a chance there is
+    if ($diamondChance > 0) { // Project Starbound's Plasma Chamber only adds to a chance there is
         $diamondChance += hbHubMinerEngineEffects($state)['diamond'];
     }
     if ($diamondChance > 0 &&hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_DIAMOND) < $diamondChance) {

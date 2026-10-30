@@ -116,7 +116,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             (it still goes to your own game), and Comet Catcher leaves it for you. Star Shards are yours for
                             good: Warp Jumps, Big Crunches and Big Rips don't take them.
                         </p>
-                        <p>Spend them in the Shard Shop, a view of its own in the game's menu (it shows up once you've caught your first Star Shard):</p>
+                        <p>Spend them in the Shard Shop, a view of its own in the game's menu:</p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
@@ -179,9 +179,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             A Warp Jump and a Big Rip only give what's more than you've had from them before, so each one has to beat
                             your best. The Antimatter view opens after your first Warp Jump, the Strange Matter view after your first
-                            Big Crunch. The Engine and Anomalies views have their own bar under the menu, which shows up once
-                            they've opened: the Engine after your first Warp Jump, the Anomalies after your first Big Rip. A dot
-                            in the menu shows when there's something to do in a view.
+                            Big Crunch. Project Starbound and Anomalies views have their own bar under the menu: you can give Project Starbound
+                            parts after your first Warp Jump, and start Anomalies after your first Big Rip. A dot in the menu
+                            shows when there's something to do in a view.
                         </p>
                     </section>
 
@@ -205,17 +205,17 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     </section>
 
                     <section id="engine" aria-labelledby="docs-engine">
-                        <h2 id="docs-engine">The Cosmic Engines</h2>
+                        <h2 id="docs-engine">Project Starbound</h2>
                         <p>
-                            The Engine view has a machine everyone on HB Hub builds together, out of Engine Parts, drawn as a rocket
+                            The Project Starbound view has a machine everyone on HB Hub builds together, out of Starbound Parts, drawn as a rocket
                             on its launch pad: each stage done adds a part to it, the one being built fills up as parts come in, and
                             you can point at a part to see its stage. Once you've made your first Warp Jump, you can help in three ways:
                         </p>
                         <ul>
-                            <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day (one more once the Starforge's Air Intakes are done). The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much. From each Engine's third section (stage 11) a part from ore counts as half a part, and from its fourth (stage 16) as a quarter, or half again once the Starforge's Piston Arms are done.</li>
+                            <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day (one more once the Starforge's Air Intakes are done). The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much. From each build's third section (stage 11) a part from ore counts as half a part, and from its fourth (stage 16) as a quarter, or half again once the Starforge's Piston Arms are done.</li>
                             <li><strong>Strange Matter</strong>: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> for a part, as many as you like. It doesn't make you mine slower, as the Strange Matter bonus counts all you've ever earned, not what you have left.</li>
                             <li>
-                                <strong>Engine Shifts</strong>: <?= HBHUB_MINER_SHIFT_COUNT ?> small tasks a day, the same for everyone (like
+                                <strong>Starbound Shifts</strong>: <?= HBHUB_MINER_SHIFT_COUNT ?> small tasks a day, the same for everyone (like
                                 <?= strtolower(HBHUB_MINER_SHIFTS['comets']['text']) ?> or <?= strtolower(HBHUB_MINER_SHIFTS['buildings']['text']) ?>),
                                 worth <?= HBHUB_MINER_SHIFT_PARTS ?> parts each, or <?= HBHUB_MINER_SHIFT_PARTS_ALL ?> each once all of them are done.
                             </li>
@@ -224,7 +224,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             The parts go into one stage at a time. When a stage has all its parts, it's finished, and everyone who
                             plays gets its perk for good. Some stages have a lock too, which has to be met before they finish
                             however many parts they have: until then the parts wait there (or, for a lock that needs Anomalies, the
-                            Engine only takes parts from Anomalies). Finishing <a href="#anomalies">Anomalies</a> gives parts
+                            build only takes parts from Anomalies). Finishing <a href="#anomalies">Anomalies</a> gives parts
                             too, and they're the biggest source of them. The daily limits and Shifts start over at midnight UTC. The
                             <a href="/games/ore-mining-inc/leaderboard?board=engine">leaderboard</a> shows who has given the most.
                         </p>
@@ -238,17 +238,17 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             Ignition badge on their profile and the Ignition asteroid skin.
                         </p>
                         <p>
-                            Once an Engine is done, the next one starts straight away, with new stages and new locks. Its locks
-                            count from nothing again (an Anomaly finished for the Engine before doesn't count), and each Anomaly
-                            or stack gives all its parts again the first time it's finished for the new Engine. Every perk of the
-                            Engines before it stays. Engine #2, the Starforge, has perks that are mostly for looks or to make the
+                            Once a build is done, the next one starts straight away, with new stages and new locks. Its locks
+                            count from nothing again (an Anomaly finished for Project Starbound before doesn't count), and each Anomaly
+                            or stack gives all its parts again the first time it's finished for the new build. Every perk of the
+                            Engines before it stays. Build #2, the Starforge, has perks that are mostly for looks or to make the
                             game easier to play, and only 3 &times; 5% more production, so the game doesn't keep getting
                             faster. Its last stage, First Light, works like Ignition, with a First Light badge and skin. Once
-                            the Starforge's Alloy Bins are done, the Engine view has a Hall of Engines with every Engine done so
+                            the Starforge's Alloy Bins are done, the Project Starbound view has a Starbound Hall with every build done so
                             far. These are the stages:
                         </p>
                         <?php foreach (HBHUB_MINER_ENGINES as $docsEngineNumber => $docsEngine): ?>
-                            <h3>Engine #<?= $docsEngineNumber ?>: the <?= htmlspecialchars($docsEngine['name']) ?></h3>
+                            <h3>Build #<?= $docsEngineNumber ?>: the <?= htmlspecialchars($docsEngine['name']) ?></h3>
                             <div class="docs-table-wrap">
                                 <table class="docs-table">
                                     <thead>
@@ -270,7 +270,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 </table>
                             </div>
                         <?php endforeach; ?>
-                        <p>The parts each stage needs can still change as the Engine is tuned.</p>
+                        <p>The parts each stage needs can still change as Project Starbound is tuned.</p>
                     </section>
 
                     <section id="anomalies" aria-labelledby="docs-anomalies">
@@ -303,7 +303,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <strong>Rewards for you:</strong> a badge and best time for each Anomaly, achievements, asteroid skins
                             (a colour for each Tier II Anomaly, an animated one for each Tier III, and more from the Cosmic
                             Engine), picked in your stats, and the leaderboard titles "Singularity" (Naked Singularity) and
-                            "Gauntlet Runner" (The Gauntlet). Those come before the Engines' titles, "Forgemaster" and
+                            "Gauntlet Runner" (The Gauntlet). Those come before the builds' titles, "Forgemaster" and
                             "Engineer".
                         </p>
                         <p>
@@ -312,13 +312,13 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             and carry on from the Anomalies view later (up to <?= HBHUB_MINER_ANOMALY_SAVED_MAX ?> saved at once,
                             but not Speed of Light). A saved run's clock keeps going, and it mines as if you were away until you
                             carry on. With plain <strong>Leave</strong>, that run is lost. Skills, Big Rips, donations and
-                            Engine Shifts only work in your own game. What you do in an Anomaly doesn't count towards your
+                            Starbound Shifts only work in your own game. What you do in an Anomaly doesn't count towards your
                             stats or the leaderboard, but finishing Anomalies has achievements of its own.
                         </p>
                         <p>
-                            Finishing one gives the Engine being built its parts the first time (and again the first time
-                            for each new Engine) and whenever you beat your best time, and <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% of them otherwise (rounded down). These parts go in
-                            even while the Engine is full and waiting for a lock, since some locks need Anomalies. You also get
+                            Finishing one gives Project Starbound being built its parts the first time (and again the first time
+                            for each new build) and whenever you beat your best time, and <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% of them otherwise (rounded down). These parts go in
+                            even while Project Starbound is full and waiting for a lock, since some locks need Anomalies. You also get
                             a badge for each one in the Anomalies view, with your best time.
                         </p>
                         <p>

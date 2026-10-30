@@ -1232,8 +1232,6 @@
     const statsPopup = root.querySelector('[data-miner-popup="stats"]');
     const views = Object.fromEntries([...root.querySelectorAll('[data-miner-view]')].map((node) => [node.dataset.minerView, node]));
     const menu = root.querySelector('[data-miner-menu]');
-    const laterMenus = menu.querySelectorAll('[data-miner-menu-later]'); // the Engine and Anomalies, and the Shard Shop, hidden until they open
-    const laterLinks = Object.fromEntries([...menu.querySelectorAll('[data-miner-menu-later] [data-miner-view-link]')].map((node) => [node.dataset.minerViewLink, node]));
     const menuCounts = Object.fromEntries([...root.querySelectorAll('[data-miner-menu-count]')].map((node) => [node.dataset.minerMenuCount, node]));
     const menuNews = Object.fromEntries([...root.querySelectorAll('[data-miner-menu-news]')].map((node) => [node.dataset.minerMenuNews, node]));
     const cometButton = root.querySelector('[data-miner-comet]');
@@ -1788,25 +1786,6 @@
         const finished = Object.keys(saveState.anomalies).length;
         menuCounts.anomalies.textContent = finished > 0 ? String(finished) : '';
         menuNews.anomalies.hidden = saveState.anomaly !== null || finished > 0 || !anomalyTierOpen(saveState, 1); // the first one to try
-        renderLaterViews();
-    }
-
-    // The later bars of the menu: the Engine once you've made a Warp Jump (when you can start giving it parts), the
-    // Anomalies once their first tier is open (the first Big Rip), the Shard Shop (in a third bar) once you've caught a
-    // Star Shard, and each bar once any of its views is. Until then they're hidden, so a new player isn't shown things
-    // they can't use yet; a view opened by its address (or Back) before it's open goes back to Ore.
-    function renderLaterViews() {
-        const isOpen = {
-            engine: saveState.warps >= 1,
-            anomalies: saveState.anomaly !== null || anomalyTierOpen(saveState, 1),
-            shop: (saveState.shardsCaught ?? 0) > 0 || (saveState.shards ?? 0) > 0,
-        };
-        for (const [view, open] of Object.entries(isOpen)) laterLinks[view].hidden = !open;
-        for (const laterMenu of laterMenus) laterMenu.hidden = ![...laterMenu.querySelectorAll('[data-miner-view-link]')].some((link) => !link.hidden);
-        if (isOpen[root.dataset.view] === false) {
-            history.replaceState(null, '', menu.querySelector('[data-miner-view-link="ore"]').href);
-            showView('ore');
-        }
     }
 
     // The buildings shown: every one owned or nearly affordable, and the next one as a mystery
@@ -2451,7 +2430,7 @@
             ['Upgrades', saveState.upgrades.length + ' / ' + Object.keys(UPGRADES).length],
             ...(Object.keys(saveState.anomalies).length > 0 ? [['Anomalies finished', ANOMALY_IDS.filter((id) => saveState.anomalies[id]).length + ' / ' + ANOMALY_IDS.length]] : []),
             ...(Object.keys(saveState.anomalies).length > 0 ? [['Biggest stack finished', String(biggestStack(saveState))]] : []),
-            ...(saveState.engineGiven > 0 ? [['Engine Parts given', format(saveState.engineGiven)]] : []),
+            ...(saveState.engineGiven > 0 ? [['Starbound Parts given', format(saveState.engineGiven)]] : []),
             ['Playing since', formatDate(saveState.started)],
             ['This run started', formatDate(saveState.runStarted)],
         ];
@@ -2467,6 +2446,7 @@
     // saying how to get them. Picking one is an action like any other (apply()), so it's saved with the game.
     const skinList = root.querySelector('[data-miner-skins]');
     const SKIN_UNLOCK_TEXT = (unlock) => (unlock.anomaly ? 'Finish ' + ANOMALIES[unlock.anomaly].name + '.'
+        : unlock.shop ? 'Buy it in the Shard Shop.'
         : unlock.stage ? 'Comes with the ' + engineNameOf(Math.ceil(unlock.stage / CONFIG.engineStageTotal)) + '\'s ' + ENGINE_STAGES[unlock.stage - 1].name + '.'
             : 'For everyone who gives parts to the ' + engineNameOf(unlock.crew) + '\'s last stage, ' + ENGINE_STAGES[unlock.crew * CONFIG.engineStageTotal - 1].name + '.');
 
@@ -2846,7 +2826,7 @@
         ['Cosmic Engine news: the Star Charts are in. Nobody can fold them back up.', (s) => s.engineStage >= 16],
         ['Cosmic Engine news: the Bridge has a captain\'s chair now. Everyone wants to sit in it.', (s) => s.engineStage >= 19],
         ['Cosmic Engine news: the Countdown Clock is ticking. Very loudly. All night.', (s) => s.engineStage >= 23],
-        ['Cosmic Engine news: Launch Clamps fitted. The Engine is straining to go somewhere.', (s) => s.engineStage >= 24],
+        ['Cosmic Engine news: Launch Clamps fitted. The Cosmic Engine is straining to go somewhere.', (s) => s.engineStage >= 24],
         ['IGNITION! The Cosmic Engine roars to life. The universe will need a moment.', (s) => s.engineStage >= 25],
         ['Scientists confirm: stacking Anomalies is "not recommended". Miners stack them anyway.', (s) => s.engineStage >= 14],
         ['Survivor of The Gauntlet asked how it was. Just stares into the distance.', (s) => s.engineStage >= 14],
@@ -2858,7 +2838,7 @@
         ['Starforge news: the Bellows breathe. The forge sounds like it\'s snoring.', (s) => s.engineStage >= 32],
         ['Starforge news: Heat Shields up. Somebody can finally see next week coming.', (s) => s.engineStage >= 34],
         ['Starforge news: the Crucible is poured. It smells faintly of hot ore and ambition.', (s) => s.engineStage >= 36],
-        ['Starforge news: the Hall of Engines opens. The Cosmic Engine gets the best spot by the window.', (s) => s.engineStage >= 39],
+        ['Starforge news: the Starbound Hall opens. The Cosmic Engine gets the best spot by the window.', (s) => s.engineStage >= 39],
         ['Starforge news: the Hammer Head is mounted. Please do not stand under the Hammer Head.', (s) => s.engineStage >= 41],
         ['Starforge news: Shockwave Dampers fitted. Neighbouring galaxies say thank you.', (s) => s.engineStage >= 44],
         ['Starforge news: Quench Tanks filled. The steam can be seen from the next universe over.', (s) => s.engineStage >= 46],
@@ -3455,7 +3435,6 @@
         sound('shardCatch');
         toast('shard', '+1 Star Shard! You have ' + saveState.shards + ' now: spend them in the Shard Shop.', 'is-shard', 6000);
         renderShardCount();
-        renderLaterViews(); // the first one opens the Shard Shop
         if (!shopView.hidden) renderShop();
         saveSoon(); // they're rare, so this one isn't left waiting for the next save
     });
@@ -3805,7 +3784,7 @@
     const engineFeed = root.querySelector('[data-miner-engine-feed]');
     const engineHall = root.querySelector('[data-miner-engine-hall]');
     const engineHallList = root.querySelector('[data-miner-engine-hall-list]');
-    const SOURCE_TEXT = { [CONFIG.sourceOre]: 'ore', [CONFIG.sourceStrange]: 'Strange Matter', [CONFIG.sourceShift]: 'an Engine Shift' };
+    const SOURCE_TEXT = { [CONFIG.sourceOre]: 'ore', [CONFIG.sourceStrange]: 'Strange Matter', [CONFIG.sourceShift]: 'a Starbound Shift' };
 
     let engine = null;
     let engineListsKey = '';
@@ -3831,7 +3810,7 @@
     const rocketTrack = root.querySelector('[data-miner-rocket-track]');
     const ROCKET_LAUNCH_MS = 6000; // as long as miner-rocket-launch in spaceOreMiner.css
     let rocketKey = '';
-    let rocketLaunch = null; // { number, until }: an Engine just done, lifting off before the next one shows
+    let rocketLaunch = null; // { number, until }: a build just done, lifting off before the next one shows
     let rocketPicked = -1; // the stage pointed at, on the rocket, the pips or the Stages list
 
     // A new answer from the server. A stage done since the one before gets a toast and the ticker straight away (not
@@ -3852,7 +3831,7 @@
                 rocketLaunch = { number: engine.number, until: performance.now() + ROCKET_LAUNCH_MS };
             }
             if (next.number > engine.number && ENGINES[next.number]) {
-                toast('starForge', 'Engine #' + next.number + ', the ' + engineNameOf(next.number) + ', has started! Every stage of it is new.', 'is-welcome', 9000);
+                toast('starForge', 'Build #' + next.number + ', the ' + engineNameOf(next.number) + ', has started! Every stage of it is new.', 'is-welcome', 9000);
             }
             if (engineEffectsOn('news')) sound(newsSounds() + 'Stage');
             renderTicker();
@@ -3881,7 +3860,7 @@
             }
             if (source === CONFIG.sourceShift) {
                 sound('buy');
-                toast('clipboard', 'Engine Shift done! +' + format(parts) + ' Engine Parts for the ' + engineNameOf(engine?.number ?? engineNumber(saveState)) + '.');
+                toast('clipboard', 'Starbound Shift done! +' + format(parts) + ' Starbound Parts for the ' + engineNameOf(engine?.number ?? engineNumber(saveState)) + '.');
             }
         }
         if (!isSending) saveSoon();
@@ -3898,10 +3877,9 @@
         const index = Math.min(done, stages.length - 1);
         const stage = stages[index];
         const cost = engine.costs[index];
-        engineNumbers.title.textContent = engineNameOf(engine.number);
-        engineNumbers.number.textContent = '#' + engine.number;
+        engineNumbers.number.textContent = '#' + engine.number + ': the ' + engineNameOf(engine.number);
         engineNumbers.name.textContent = isAllDone ? 'Done!' : stage.name;
-        engineNumbers.stage.textContent = isAllDone ? 'All ' + stages.length + ' stages done. Engine #' + (engine.number + 1) + ' is coming.'
+        engineNumbers.stage.textContent = isAllDone ? 'All ' + stages.length + ' stages done. Build #' + (engine.number + 1) + ' is coming.'
             : 'Stage ' + (done + 1) + ' of ' + CONFIG.engineStageTotal + ', ' + ENGINES[engine.number].sections[stage.section];
         engineNumbers.parts.textContent = format(isAllDone ? cost : engine.parts);
         engineNumbers.cost.textContent = format(cost);
@@ -3919,12 +3897,12 @@
         } else if (isAllDone && engine.ignited > 0) {
             const left = engine.ignited + CONFIG.ignitionMs - serverNow();
             lockText = left > 0 ? 'Everything mines ' + CONFIG.ignitionTimes + ' times as much for another ' + formatDuration(left) + '.'
-                : 'The Engine was done ' + formatDate(engine.ignited) + '.';
+                : 'Project Starbound was done ' + formatDate(engine.ignited) + '.';
         }
         // The Engine before this one was just done: its boost still runs for a while
         const boostLeft = (saveState.engineIgnited ?? 0) + CONFIG.ignitionMs - serverNow();
         if (!isAllDone && saveState.engineIgnited > 0 && boostLeft > 0) {
-            lockText = 'Engine #' + (engine.number - 1) + ' is done: everything mines ' + CONFIG.ignitionTimes + ' times as much for another '
+            lockText = 'Build #' + (engine.number - 1) + ' is done: everything mines ' + CONFIG.ignitionTimes + ' times as much for another '
                 + formatDuration(boostLeft) + '.' + (lockText !== '' ? ' ' + lockText : '');
         }
         engineLock.textContent = lockText;
@@ -3938,12 +3916,12 @@
     // The donation buttons, or why you can't give anything
     function renderEngineGive() {
         let note = '';
-        if (IS_GUEST) note = 'Only players with an account can give the Engine parts. Sign up to help build it!';
-        else if (saveState.warps < 1) note = 'Make your first Warp Jump to start giving the Engine parts.';
+        if (IS_GUEST) note = 'Only players with an account can give Project Starbound parts. Sign up to help build it!';
+        else if (saveState.warps < 1) note = 'Make your first Warp Jump to start giving Project Starbound parts.';
         else if (!saveState.engineOpen) {
-            note = engine.done >= engineStagesOf(engine.number).length ? 'The ' + engineNameOf(engine.number) + ' is done! Engine #' + (engine.number + 1)
+            note = engine.done >= engineStagesOf(engine.number).length ? 'The ' + engineNameOf(engine.number) + ' is done! Build #' + (engine.number + 1)
                 + ' is coming. Parts from Anomalies are kept for it.'
-                : 'The Engine is full and waiting for its lock, so it only takes parts from Anomalies until then.';
+                : 'Project Starbound is full and waiting for its lock, so it only takes parts from Anomalies until then.';
         } else if (saveState.anomaly) note = 'You\'re in an Anomaly: leave it, or finish it, to give parts from your own game.';
         engineGiveNote.textContent = note;
         engineGiveNote.hidden = note === '';
@@ -4005,7 +3983,7 @@
         }));
         const midnight = new Date((today() + 1) * CONFIG.dayMs).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         shiftNote.textContent = (canGiveNow() ? '' : IS_GUEST || saveState.warps < 1 ? 'Shifts start after your first Warp Jump. '
-            : saveState.anomaly ? 'Shifts only count in your own game, not in an Anomaly. ' : 'Shifts are paused while the Engine waits for its lock. ')
+            : saveState.anomaly ? 'Shifts only count in your own game, not in an Anomaly. ' : 'Shifts are paused while Project Starbound waits for its lock. ')
             + 'Each Shift gives ' + CONFIG.shiftParts + ' parts, or ' + CONFIG.shiftPartsAll + ' each once all ' + CONFIG.shiftCount
             + ' are done. New Shifts at ' + midnight + '.';
     }
@@ -4042,10 +4020,10 @@
         pickRocket(rocketPicked);
 
         engineNumbers.mine.hidden = IS_GUEST || engine.mine === undefined;
-        engineNumbers.mine.textContent = 'You\'ve given ' + partsText(engine.mine ?? 0) + ' to this Engine.';
+        engineNumbers.mine.textContent = 'You\'ve given ' + partsText(engine.mine ?? 0) + ' to this build.';
         renderEngineHall();
         if (!engine.top) { // guests never get them: players' names are only for members
-            const text = IS_GUEST ? 'Sign up or log in to see who\'s building the Engine.' : 'Loading…';
+            const text = IS_GUEST ? 'Sign up or log in to see who\'s building Project Starbound.' : 'Loading…';
             engineTop.replaceChildren(element('li', 'miner-engine-empty', text));
             engineFeed.replaceChildren(element('li', 'miner-engine-empty', text));
             return;
@@ -4074,7 +4052,7 @@
         if (engineHall.hidden) return;
         engineHallList.replaceChildren(...engine.hall.map((row) => {
             const item = element('li', 'miner-engine-hall-row');
-            item.append(element('strong', 'miner-engine-who', 'Engine #' + row.number + ', the ' + engineNameOf(row.number)),
+            item.append(element('strong', 'miner-engine-who', 'Build #' + row.number + ', the ' + engineNameOf(row.number)),
                 element('span', 'miner-engine-what', 'Done ' + formatDate(row.ignited) + ' with ' + partsText(row.parts) + ' from '
                     + format(row.players) + (row.players === 1 ? ' player' : ' players') + '.'
                     + (row.top.length > 0 ? ' Built most by ' + row.top.join(', ') + '.' : '')));
@@ -4180,7 +4158,7 @@
             mini.dataset.engine = String(index + 1);
             mini.setAttribute('transform', 'translate(' + (186 - (index % 3) * 16) + ' ' + (48 + index * 24) + ') rotate(24)');
             const title = svgElement('title');
-            title.textContent = 'Engine #' + (index + 1) + ', the ' + engineNameOf(index + 1) + ': done';
+            title.textContent = 'Build #' + (index + 1) + ', the ' + engineNameOf(index + 1) + ': done';
             const body = svgElement('g', 'miner-rocket-mini-body');
             body.append(svgPath('is-flame', 'M-3 6 L0 15 L3 6 Z'), svgPath('is-hull-2', 'M-5 1 L-8 9 H-5 Z M5 1 L8 9 H5 Z'),
                 svgPath('is-hull', 'M0 -12 C4 -8 5 -2 5 6 H-5 C-5 -2 -4 -8 0 -12 Z'));
@@ -4425,7 +4403,7 @@
         const record = saveState.anomalies[key] ?? null;
         weeklyText.textContent = anomalyName(key) + ': ' + mods.map((id) => ANOMALIES[id].text).join(' ') + ' Goal: ' + goalText(mods) + ', for '
             + partsText(partsNow(mods)) + ' and ' + afterglowNow(mods) + ' of Afterglow (' + CONFIG.anomalyWeekly + ' times as much as usual, this week only).';
-        weeklyBest.textContent = record ? 'Your best time at it: ' + formatClock(record.best) + '.' + (newForEngine(record) ? ' Not finished for this Engine yet.' : '')
+        weeklyBest.textContent = record ? 'Your best time at it: ' + formatClock(record.best) + '.' + (newForEngine(record) ? ' Not finished for this build yet.' : '')
             : 'You haven\'t finished it yet.';
         weeklyStart.dataset.anomalyStart = key;
         weeklyStart.disabled = !canStart(mods);
@@ -4500,7 +4478,7 @@
                     element('span', 'miner-anomaly-text', anomaly.text),
                     element('span', 'miner-anomaly-goal', 'Goal: ' + goalText([id]) + (tier.fresh ? '. ' + partsText(partsNow([id])) + ' and ' + afterglowNow([id]) + ' of Afterglow.' : '.')),
                     element('span', 'miner-anomaly-best', record ? 'Badge earned. Best time ' + formatClock(record.best) + ', finished '
-                        + (record.done === 1 ? 'once' : record.done + ' times') + '.' + (newForEngine(record) ? ' Not finished for this Engine yet: full parts.' : '')
+                        + (record.done === 1 ? 'once' : record.done + ' times') + '.' + (newForEngine(record) ? ' Not finished for this build yet: full parts.' : '')
                         : 'Not finished yet.'));
                 const button = element('button', 'casino-btn' + (isIn ? '' : ' casino-btn-primary'),
                     isIn ? 'You\'re in it' : saveState.saved?.[id] ? 'Carry on' : record ? 'Go again' : 'Go in');

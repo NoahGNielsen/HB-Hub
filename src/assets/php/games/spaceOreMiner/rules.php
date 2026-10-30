@@ -17,7 +17,7 @@
     <li>
         About every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes while the game is open, a Star Shard flies past the other
         way, for only <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds. Click it to keep it. Star Shards are kept for good,
-        and the Shard Shop view (in the menu once you have one) sells boosts, ore right away, a Comet Beacon that calls the next comet in,
+        and the Shard Shop view sells boosts, ore right away, a Comet Beacon that calls the next comet in,
         asteroid skins and click effects for them. Boosts, ore and comets are for your own game, so not in an Anomaly.
     </li>
     <li>
@@ -46,17 +46,17 @@
         while the game is open. Diamond Comets are left for you to catch yourself.
     </li>
     <li>
-        The Engine view has the Cosmic Engine, which everyone on HB Hub builds together, one stage at a time, out of
-        Engine Parts. Once you've made a Warp Jump you can give it parts: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day
+        the Project Starbound view has the Cosmic Engine, which everyone on HB Hub builds together, one stage at a time, out of
+        Starbound Parts. Once you've made a Warp Jump you can give it parts: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day
         for ore (the first for <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?>, each next one that day ten
         times as much), as many as you like for <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> Strange Matter each (it doesn't
         make you mine slower, as the Strange Matter bonus counts all you've earned), and by working the day's
-        <?= HBHUB_MINER_SHIFT_COUNT ?> Engine Shifts, small tasks that are the same for everyone and give
+        <?= HBHUB_MINER_SHIFT_COUNT ?> Starbound Shifts, small tasks that are the same for everyone and give
         <?= HBHUB_MINER_SHIFT_PARTS ?> parts each, or <?= HBHUB_MINER_SHIFT_PARTS_ALL ?> each once all of them are done.
         Every stage finished gives everyone who plays its perk for good. Some stages have a lock too, like a number of
         different players who have helped, and only finish once it's met. Parts from ore count half from stage 11 and a
-        quarter from stage 16. Once an Engine is done the next one starts, with new stages and locks that count from
-        nothing again; Engine #2 is the Starforge. An Engine's last stage has to be filled within
+        quarter from stage 16. Once a build is done the next one starts, with new stages and locks that count from
+        nothing again; Build #2 is the Starforge. A build's last stage has to be filled within
         <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days of the one before it, or half its parts are
         lost and the time starts over; once it's full, everything mines <?= HBHUB_MINER_IGNITION_TIMES ?> times as much for
         <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours.
@@ -66,8 +66,8 @@
         changed, like no comets or clicks that mine nothing. You keep your skills and Strange Matter, start without Dark
         Matter or Antimatter, and finish one by earning its goal of Antimatter. Meanwhile your own game mines as if you
         were away, and you can leave whenever you like: Save and leave keeps the run to carry on later (its clock keeps
-        going), plain Leave loses it. Finishing one gives the Engine being
-        built parts: all of them the first time for each Engine and for a new best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
+        going), plain Leave loses it. Finishing one gives Project Starbound being
+        built parts: all of them the first time for each build and for a new best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
         Every time you finish one, your own game also gets an Afterglow: it mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much
         for an hour (Tier I), 3 hours (Tier II), 12 hours (Tier III) or 24 hours (The Gauntlet).
         Tier II opens with the Theory of Everything, and turns Autopilot and Auto Crunch off. Tier III opens then too, and
@@ -81,7 +81,7 @@
     <li>
         The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
         your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed (more once the Cosmic Engine
-        has the stages for it). The daily limits and Engine Shifts start over at midnight UTC.
+        has the stages for it). The daily limits and Starbound Shifts start over at midnight UTC.
     </li>
     <li class="miner-hot-keys" id="hot-keys"><!-- the Hot Key Panel's popup in the game links here -->
         Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade). Once you have

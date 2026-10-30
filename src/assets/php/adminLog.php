@@ -68,7 +68,7 @@ const ADMIN_LOG_ACTIONS = [
     'feedback.delete' => 'Deleted feedback',
     'feedback.reply' => 'Replied to feedback and marked it as done',
     'crash.delete' => 'Deleted a Ore Mining Inc. crash report',
-    'engine.costs' => 'Changed the costs of the Ore Mining Inc. Cosmic Engine\'s stages',
+    'engine.costs' => 'Changed the costs of the Ore Mining Inc. Project Starbound stages',
     'banned.add' => 'Added a banned picture',
     'banned.remove' => 'Removed a banned picture',
 ];
