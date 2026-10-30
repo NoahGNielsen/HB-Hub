@@ -206,6 +206,12 @@ const HBHUB_TERMS_UPDATED = '30 October 2026';
                                 open the game in that browser, but that isn't a promise: progress that's never saved can be lost.
                             </li>
                             <li>
+                                Ore Mining Inc.'s Star Shards are only caught in the game, while it's open, and only spent in its
+                                Shard Shop. Like chips, they're not money: they can't be bought, sold, swapped or given to
+                                someone else, and what's in the shop (its items and prices) may change as the game is balanced.
+                                A script or macro that catches them for you counts as cheating, like an auto-clicker.
+                            </li>
+                            <li>
                                 Ore Mining Inc.'s Project Starbound is built by everyone together, one build after the other (the
                                 Cosmic Engine, then the Starforge). Starbound Parts you give them (for ore, Strange Matter, Engine
                                 Shifts or finishing Anomalies) can't be taken back, don't move to the next build, and your name

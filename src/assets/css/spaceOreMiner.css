@@ -1,7 +1,7 @@
 /* Ore Mining Inc. (games/spaceOreMiner/): the buttons at the top, the menu down the right side, the six views (Ore: the asteroid and
    the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree;
-   Engine: the Cosmic Engines; Anomalies: the challenge runs, with the banner over every view while in one), the popups (stats, achievements, how to play), the comet flying across the screen and the
-   messages in the corner. Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. The leaderboard
+   Engine: the Cosmic Engines; Anomalies: the challenge runs, with the banner over every view while in one), the popups (stats, achievements, how to play, the Shard Shop), the comet and the Star Shard flying across the
+   screen and the messages in the corner. Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. The leaderboard
    loads it too, for its tabs (.miner-menu). */
 .casino.miner {
   --miner-gold: #f5c542;
@@ -11,6 +11,7 @@
   --miner-strange: #5ef2a6;
   --miner-engine: #ffa94d;
   --miner-anomaly: #ff5d73;
+  --miner-shard: #ff9ee6; /* Star Shards, with --miner-diamond for their shimmer */
   --miner-gap: 16px;
   max-width: 1180px;
   margin: 0 auto;
@@ -4962,5 +4963,248 @@ body:has(.miner[data-backdrop="aurora"]) {
 @media (prefers-reduced-motion: reduce) {
   .miner.is-comet-bell::after {
     animation-duration: 0.01s;
+  }
+}
+
+/* ----- Star Shards and the Shard Shop (30 Oct 2026) */
+
+/* The Star Shard: a little crystal flying across the whole screen from right to left in the time it stays (the comets
+   go the other way), spinning and glittering. The glow is a drop-shadow on the button, as the clip-path that cuts the
+   crystal out would cut a box-shadow off too. */
+.miner-shard {
+  position: fixed;
+  top: var(--shard-from);
+  left: 0;
+  z-index: 50;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  filter: drop-shadow(0 0 8px var(--miner-shard)) drop-shadow(0 0 18px var(--miner-diamond));
+  cursor: pointer;
+}
+
+.miner-shard.is-flying {
+  animation: miner-shard var(--shard-ms) linear var(--shard-delay) forwards;
+}
+
+.miner-shard:focus-visible {
+  outline: 3px solid var(--accent);
+}
+
+.miner-shard-gem {
+  position: absolute;
+  inset: 8px 14px;
+  clip-path: polygon(50% 0, 100% 38%, 50% 100%, 0 38%);
+  background: linear-gradient(135deg, #fff 10%, var(--miner-shard) 45%, var(--miner-diamond) 80%, #fff);
+  background-size: 200% 200%;
+  animation: miner-shard-shine 0.9s ease-in-out infinite alternate;
+}
+
+/* Its trail of sparkles, behind it on the right (where it came from) */
+.miner-shard::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 55%;
+  width: 110px;
+  height: 10px;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 1.5px, transparent 2.5px) 0 50% / 16px 10px repeat-x,
+    linear-gradient(to right, color-mix(in srgb, var(--miner-shard) 70%, transparent), transparent);
+  filter: blur(0.5px);
+}
+
+@keyframes miner-shard {
+  from { transform: translate(105vw, 0) rotate(0deg); }
+  to { transform: translate(-15vw, calc(var(--shard-to) - var(--shard-from))) rotate(-25deg); }
+}
+
+@keyframes miner-shard-shine {
+  from { background-position: 0 0; scale: 1; }
+  to { background-position: 100% 100%; scale: 1.12; }
+}
+
+/* How many there are, on the Shard Shop's button and in its head */
+.miner-title-count.is-shards {
+  background: color-mix(in srgb, var(--miner-shard) 25%, transparent);
+}
+
+.miner-toast.is-shard {
+  border-left-color: var(--miner-shard);
+}
+
+/* The Shard Shop's boosts, with the comet effects: hours long like the Afterglow, so they don't pulse */
+.miner-buff.is-boost {
+  background: color-mix(in srgb, var(--miner-shard) 25%, var(--background));
+  animation: none;
+}
+
+/* The shop: a card per item, in a list per section */
+.miner-shop-wallet {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-shop-wallet .miner-icon {
+  font-size: 1.4rem;
+}
+
+.miner-shop-note {
+  color: var(--miner-anomaly);
+}
+
+.miner-shop-list {
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 8px;
+  list-style: none;
+}
+
+.miner-shop-item {
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-radius: 12px;
+  background: var(--background);
+}
+
+.miner-shop-icon {
+  font-size: 1.8rem;
+}
+
+.miner-shop-info {
+  display: grid;
+  gap: 2px;
+}
+
+.miner-shop-name {
+  font-weight: 700;
+}
+
+.miner-shop-text,
+.miner-shop-live {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.miner-shop-live:empty {
+  display: none;
+}
+
+.miner-shop-btn {
+  min-width: 72px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-shop-btn[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--miner-shard);
+}
+
+/* A skin's colours, as a little round rock (the same colours as .miner-asteroid[data-skin] below) */
+.miner-shop-swatch {
+  width: 1.8em;
+  height: 1.8em;
+  border-radius: 45% 55% 50% 50%;
+  background: radial-gradient(circle at 35% 30%, var(--rock-light), var(--rock) 55%, var(--rock-dark));
+  box-shadow: 0 0 10px var(--rock-glow);
+}
+
+/* Its skins. Prism moves, fading through a Star Shard's colours like the moving skins above. */
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="frostbite"] { --rock-light: #ffffff; --rock: #7cc8f0; --rock-dark: #123a5a; --rock-glow: rgba(160, 220, 255, 0.45); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="bubblegum"] { --rock-light: #ffe6f4; --rock: #ff8cc8; --rock-dark: #7a1f52; --rock-glow: rgba(255, 140, 200, 0.45); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="gilded"] { --rock-light: #fff6c8; --rock: #e0a920; --rock-dark: #5a3a00; --rock-glow: rgba(255, 210, 80, 0.6); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="prism"] { --rock-light: #ffffff; --rock: #ff9ee6; --rock-dark: #3a1a6a; --rock-glow: rgba(255, 158, 230, 0.6); }
+
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="prism"] {
+  --skin-animation: miner-skin-prism 6s linear infinite;
+  animation: var(--skin-animation);
+}
+
+.miner-asteroid[data-skin="prism"].is-hit {
+  animation: miner-hit 0.15s ease, var(--skin-animation);
+}
+
+.miner-asteroid[data-skin="prism"].is-hit-again {
+  animation: miner-hit-again 0.15s ease, var(--skin-animation);
+}
+
+/* Pink, to ice blue, to gold and back */
+@keyframes miner-skin-prism {
+  33% { --rock: #8be9ff; --rock-dark: #0a3a5a; --rock-glow: rgba(139, 233, 255, 0.6); }
+  66% { --rock: #ffe08a; --rock-dark: #5a3a0a; --rock-glow: rgba(255, 224, 138, 0.6); }
+}
+
+/* The Slag Channels' perk: Golden Comets in their colours too */
+.miner-comet[data-skin="frostbite"] { --miner-gold: #a0dcff; }
+.miner-comet[data-skin="bubblegum"] { --miner-gold: #ff8cc8; }
+.miner-comet[data-skin="gilded"] { --miner-gold: #ffd250; }
+.miner-comet[data-skin="prism"] { --miner-gold: #ff9ee6; }
+
+/* The click effects (burst() in spaceOreMiner.js): confetti and little stars instead of rock bits, or a ring going out
+   from where the click hit */
+.miner-bit.is-confetti {
+  height: calc(var(--size) * 0.55);
+  border-radius: 1px;
+  background: hsl(var(--hue) 90% 62%);
+}
+
+.miner-bit.is-twinkle {
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  width: calc(var(--size) * 1.6);
+  height: calc(var(--size) * 1.6);
+  background: linear-gradient(135deg, #fff, var(--miner-diamond));
+}
+
+.miner-ring {
+  position: absolute;
+  z-index: 3;
+  left: var(--x);
+  top: var(--y);
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 2px solid var(--miner-shard);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: miner-ring 0.5s ease-out forwards;
+}
+
+.miner-ring.is-crit {
+  border-color: var(--miner-gold);
+  border-width: 3px;
+}
+
+@keyframes miner-ring {
+  to { opacity: 0; transform: scale(6); }
+}
+
+/* Less motion: the shard waits in one place, like the comet, and Prism holds still on its first colours */
+@media (prefers-reduced-motion: reduce) {
+  .miner-shard {
+    left: var(--shard-left);
+  }
+
+  .miner-shard.is-flying,
+  .miner-shard-gem,
+  .miner-shop-swatch[data-skin],
+  .miner-asteroid[data-skin="prism"],
+  .miner-asteroid[data-skin="prism"]:is(.is-hit, .is-hit-again) {
+    animation: none;
   }
 }

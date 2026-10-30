@@ -15,8 +15,8 @@
 // Matter view has the skill tree, drawn here from the skills (see renderTree()). The Engine view is the Engine
 // the whole site is building together (see "The Cosmic Engine"): every save's answer says how far it is. The Anomalies view has
 // the challenge runs (see "Anomalies"): while the player is in one, its game is the one played (state), inside the
-// save (saveState), and a banner over every view says so. Stats, achievements and how to
-// play are popups (data-miner-popup), opened by the buttons by the title (data-miner-open).
+// save (saveState), and a banner over every view says so. The Shard Shop (see "Star Shards"), stats, achievements and
+// how to play are popups (data-miner-popup), opened by the buttons by the title (data-miner-open).
 // What hasn't been saved yet is also kept in the browser, so a page that crashes or freezes doesn't lose it: the next
 // one sends it with its first save. A watchdog worker (data-watchdog, spaceOreMinerWatchdog.js) notices when the page
 // freezes, and the next time the game is opened after one, it asks whether it may send a crash report. See "Crash
@@ -55,6 +55,7 @@
     const SALT_ANOMALY = 7;
     const SALT_WEEKLY = 8;
     const SALT_SHIFT_SPARE = 9;
+    const SALT_SHARD = 10;
     const ENGINE_STAGES = CONFIG.engineStages; // stage 1 first
     const SHIFTS = CONFIG.shifts;
     const ANOMALIES = CONFIG.anomalies;
@@ -63,6 +64,7 @@
     const SKINS = CONFIG.skins;
     const BACKDROPS = CONFIG.backdrops;
     const ENGINES = CONFIG.engines; // by number
+    const SHOP = CONFIG.shop; // the Shard Shop, in its order
 
     // ----- The game: the same as miner.php. s is the save (hbHubMinerNewState() there has its shape).
 
@@ -381,11 +383,15 @@
         return total;
     }
 
-    // All the comet effects running on 'production' or 'click', multiplied together (hbHubMinerBuff())
+    // All the comet effects running on 'production' or 'click', multiplied together, with the Shard Shop's boosts
+    // (hbHubMinerBuff())
     function buff(s, kind, time) {
         let multiplier = 1;
         for (const running of Object.values(s.buffs)) {
             if (COMETS[running.kind].buff === kind && running.until > time) multiplier *= running.multiplier;
+        }
+        for (const [id, until] of Object.entries(s.boosts ?? {})) {
+            if (SHOP[id].buff === kind && until > time) multiplier *= SHOP[id].multiplier;
         }
         return multiplier;
     }
@@ -457,6 +463,9 @@
             for (const running of Object.values(s.buffs)) {
                 if (running.until > s.tick && running.until < next) next = running.until;
             }
+            for (const until of Object.values(s.boosts ?? {})) {
+                if (until > s.tick && until < next) next = until;
+            }
             if (fullUntil > s.tick && fullUntil < next) next = fullUntil;
             const midnight = (Math.floor(s.tick / CONFIG.dayMs) + 1) * CONFIG.dayMs;
             if (midnight < next) next = midnight;
@@ -486,6 +495,9 @@
             s.tick = next;
             for (const [kind, running] of Object.entries(s.buffs)) {
                 if (running.until <= next) delete s.buffs[kind];
+            }
+            for (const [id, until] of Object.entries(s.boosts ?? {})) {
+                if (until <= next) delete s.boosts[id];
             }
         }
         cometsPassed(s);
@@ -625,6 +637,55 @@
         s.comet.n++;
         s.comet.at = time + cometWait(s, s.comet.n);
         return { kind, ore };
+    }
+
+    // ----- Star Shards and the Shard Shop (hbHubMinerShardAt(), hbHubMinerCatchShard() and hbHubMinerShopBuy())
+
+    // When the Star Shard of a slot (time / shardSlotMs) shows up: somewhere in it, gone before the next one starts
+    const shardAt = (s, slot) => slot * CONFIG.shardSlotMs
+        + Math.floor(random(s.seed, slot, SALT_SHARD) * (CONFIG.shardSlotMs - CONFIG.shardStayMs));
+
+    // The slot of the Star Shard on screen at time (the game being played's), or null when none is (or it's caught)
+    function shardOnScreen(s, time) {
+        const slot = Math.floor(time / CONFIG.shardSlotMs);
+        const at = shardAt(s, slot);
+        return slot > (s.shardSlot ?? -1) && time >= at && time <= at + CONFIG.shardStayMs ? slot : null;
+    }
+
+    function catchShard(s, time) {
+        const slot = shardOnScreen(s, time);
+        if (slot === null) return false;
+        s.shardSlot = slot;
+        s.shards = (s.shards ?? 0) + 1;
+        s.shardsCaught = (s.shardsCaught ?? 0) + 1;
+        return true;
+    }
+
+    // Returns false, or {ore} (what an ore item gave, 0 for the rest). Boosts, ore and comets only in the player's own game.
+    function shopBuy(s, id) {
+        const item = SHOP[id];
+        if (!item || !Object.hasOwn(SHOP, id)) return false;
+        const isKept = item.kind === 'skin' || item.kind === 'effect';
+        if ((s.shards ?? 0) < item.cost || (isKept ? (s.bought ?? []).includes(id) : s.anomaly)) return false;
+
+        const time = s.tick;
+        let ore = 0;
+        if (item.kind === 'boost') {
+            s.boosts ??= {};
+            const until = Math.min(Math.max(s.boosts[id] ?? 0, time) + item.ms, time + CONFIG.shopBoostMaxMs);
+            if (until <= (s.boosts[id] ?? 0)) return false; // as far ahead as it goes already
+            s.boosts[id] = until;
+        } else if (item.kind === 'ore') {
+            ore = Math.max(rate(s, Infinity) * item.seconds, CONFIG.shopOreMin);
+            earn(s, ore);
+        } else if (item.kind === 'comet') {
+            if (time >= s.comet.at && time <= s.comet.at + cometStay(s)) return false; // one's here already
+            s.comet.at = time;
+        } else {
+            s.bought = [...(s.bought ?? []), id];
+        }
+        s.shards -= item.cost;
+        return { ore };
     }
 
     // The buildings a run starts with (hbHubMinerStartBuildings()): none in Minimalist and One Track, nor of the ones the
@@ -786,6 +847,7 @@
         game.mods = anomalyRules(mods);
         game.destroyed = [];
         game.afterglow = 0; // the player's own game's, not this one's
+        game.boosts = {}; // the same
         game.engineOpen = false;
         game.seed = Math.floor(random(s.seed, s.tick, SALT_ANOMALY) * 0x7FFFFFFE) + 1;
         game.started = s.tick;
@@ -886,6 +948,13 @@
             return true;
         }
         if (action.type === 'shiftSwap') return shiftSwap(s, action.index);
+        if (action.type === 'shard') return catchShard(s, gameOf(s).tick); // these three are the player's own too
+        if (action.type === 'shopBuy') return shopBuy(s, action.id);
+        if (action.type === 'effect') {
+            if (action.id !== null && (!(s.bought ?? []).includes(action.id) || SHOP[action.id].kind !== 'effect')) return false;
+            s.effect = action.id;
+            return true;
+        }
         if (action.type === 'anomalySave') return anomalySave(s);
         if (action.type === 'anomalyResume') return anomalyResume(s, action.key, given);
         if (action.type === 'anomalyDrop') { // throws a saved one away, in an Anomaly too
@@ -1004,6 +1073,7 @@
         if (unlock.anomaly) return anomalyDone(s, unlock.anomaly);
         if (unlock.stage) return (s.engineStage ?? 0) >= unlock.stage;
         if (unlock.crew) return (s.crews ?? []).includes(unlock.crew);
+        if (unlock.shop) return (s.bought ?? []).includes(id);
         return false;
     }
 
@@ -1017,7 +1087,7 @@
             case 'anomalies': return Object.keys(s.anomalies).length;
             case 'stack': return biggestStack(s);
             case 'lightHour': return s.anomalies.speedOfLight && s.anomalies.speedOfLight.best < CONFIG.lightHourMs ? 1 : 0;
-            case 'engineGiven': case 'shiftDays': case 'weeklies': return s[name] ?? 0;
+            case 'engineGiven': case 'shiftDays': case 'weeklies': case 'shardsCaught': return s[name] ?? 0;
             case 'rate': return rate(s, Infinity);
             case 'upgrades': return s.upgrades.length;
             case 'buildings': return sum(Object.values(s.buildings));
@@ -1636,6 +1706,9 @@
         renderBuffs();
         renderComet();
         autoCatchComet();
+        step('tick: Star Shards');
+        renderShard();
+        renderShardCount();
         step('tick: Warp Jump');
         renderWarp();
         step('tick: Big Crunch');
@@ -1666,6 +1739,12 @@
         renderStats();
         step(null);
     });
+    every(1000, () => {
+        if (!isPlaying || document.hidden || !shopPopup.open) return;
+        step('shop');
+        renderShop();
+        step(null);
+    });
 
     // withNews: a new line in the news ticker too (not for what Autopilot and Auto Crunch do every few seconds)
     function renderAll(withNews = true) {
@@ -1673,6 +1752,9 @@
         renderStore();
         renderBuffs();
         renderComet();
+        renderShard();
+        renderShardCount();
+        if (shopPopup.open) renderShop();
         renderWarp();
         renderCrunch();
         renderRip();
@@ -1976,6 +2058,13 @@
                 element('span', 'miner-buff-time', Math.ceil((item.until - state.tick) / 1000) + 's'));
             return row;
         });
+        for (const [id, until] of Object.entries(state.boosts ?? {})) { // the Shard Shop's, a clock too
+            if (until <= state.tick) continue;
+            const row = element('li', 'miner-buff is-boost');
+            row.append(element('span', 'miner-buff-name', SHOP[id].name + ': ' + (SHOP[id].buff === 'click' ? 'clicks' : 'production') + ' ×' + format(SHOP[id].multiplier)),
+                element('span', 'miner-buff-time', formatClock(until - state.tick)));
+            rows.push(row);
+        }
         if (afterglow(state) > 1) { // from finishing an Anomaly, hours long, so it's a clock instead of seconds
             const row = element('li', 'miner-buff is-afterglow');
             row.append(element('span', 'miner-buff-name', 'Afterglow: production ×' + format(CONFIG.afterglowTimes)),
@@ -2324,6 +2413,7 @@
             ['Critical clicks', format(saveState.crits)],
             ['Comets caught', format(saveState.comets)],
             ['Diamond Comets caught', format(saveState.diamonds)],
+            ...((saveState.shardsCaught ?? 0) > 0 ? [['Star Shards caught', format(saveState.shardsCaught)]] : []),
             ['Warp Jumps', format(saveState.warps)],
             ...(hasSkill(saveState, 'frequentFlyer') ? [['Warp Jumps for Frequent Flyer Miles', format(saveState.flights)]] : []),
             ...(saveState.crunches > 0 ? [
@@ -2463,6 +2553,8 @@
     const owned = (s) => Object.values(s.buildings).reduce((total, count) => total + count, 0);
 
     const NEWS = [
+        ['Astronomers still can\'t explain the glittering shards flying past. Miners have stopped asking and started catching.', (s) => (s.shardsCaught ?? 0) > 0],
+        ['Shard Shop insists its Ore Crates are "ethically sourced". The ore was not asked.', (s) => (s.shardsCaught ?? 0) > 0],
         ['Local alien files complaint about missing moon.', (s) => s.buildings.excavator > 0],
         ['Scientists confirm: asteroid is "still mostly rock".'],
         ['Space Pickaxe Guy asks for a pickaxe that works in zero gravity.', (s) => s.buildings.pickaxe > 0],
@@ -2836,6 +2928,10 @@
         forge: [[1760, 0, 0.3, 'triangle', 0.09, 1700], [2637, 0, 0.45, 'sine', 0.05, 2600], [880, 0.01, 0.12, 'square', 0.03, 600]],
         forgeStage: [[110, 0, 0.5, 'square', 0.12, 55], [1319, 0.05, 1.6, 'sine', 0.1, 1300], [1976, 0.1, 1.4, 'triangle', 0.06, 1960], [2637, 0.6, 1.0, 'sine', 0.05]],
         bell: [[2093, 0, 0.8, 'sine', 0.08], [2637, 0.05, 0.7, 'sine', 0.05], [3136, 0.1, 0.6, 'sine', 0.03]],
+        // A Star Shard: a glittery shimmer when one shows up, and a run up the scale when it's caught
+        shard: [[1568, 0, 0.25, 'sine', 0.05], [2349, 0.08, 0.25, 'sine', 0.04], [3136, 0.16, 0.4, 'sine', 0.03]],
+        shardCatch: [[1047, 0, 0.12, 'triangle', 0.15], [1319, 0.06, 0.12, 'triangle', 0.15], [1568, 0.12, 0.12, 'triangle', 0.15],
+            [2093, 0.18, 0.4, 'sine', 0.12], [2637, 0.26, 0.5, 'sine', 0.08]],
     };
 
     function sound(name) {
@@ -2883,8 +2979,18 @@
         field.append(number);
         if (reduceMotion.matches) return;
 
+        // The click effect bought in the Shard Shop: confetti or little stars instead of rock, or a ring going out
+        const effect = saveState.effect ?? null;
+        if (effect === 'shockwave') {
+            const ring = element('span', 'miner-ring' + (isCrit ? ' is-crit' : ''));
+            ring.style.setProperty('--x', x + 'px');
+            ring.style.setProperty('--y', y + 'px');
+            ring.addEventListener('animationend', () => ring.remove());
+            field.append(ring);
+        }
         for (let i = 0; i < (isCrit ? 10 : 5); i++) {
-            const bit = element('span', 'miner-bit');
+            const bit = element('span', 'miner-bit' + (effect === 'confetti' || effect === 'twinkle' ? ' is-' + effect : ''));
+            if (effect === 'confetti') bit.style.setProperty('--hue', String(Math.floor(Math.random() * 360)));
             const angle = Math.random() * Math.PI * 2;
             const distance = 40 + Math.random() * (isCrit ? 120 : 70);
             bit.style.setProperty('--x', x + 'px');
@@ -3269,6 +3375,159 @@
         if (performance.now() - shownCometAt < AUTO_COMET_DELAY_MS || cometKind(state) === 'diamond') return;
         takeComet(true);
     }
+
+    // ----- Star Shards (shardOnScreen()): one flies past in every shardSlotMs, right to left (the comets go the other
+    // way), on every view and in Anomalies too, as they're the player's own. Comet Catcher leaves them alone. They're
+    // spent in the Shard Shop popup (CONFIG.shop). Catching one and buying are actions like any other, so the server
+    // checks them.
+
+    const shardButton = root.querySelector('[data-miner-shard]');
+    const shardCounts = root.querySelectorAll('[data-miner-shard-count]'); // on the title's button and in the shop
+    const shardWord = root.querySelector('[data-miner-shard-word]');
+    const shopPopup = root.querySelector('[data-miner-popup="shop"]');
+    const shopNote = root.querySelector('[data-miner-shop-note]');
+    const shopLists = Object.fromEntries([...root.querySelectorAll('[data-miner-shop-list]')].map((node) => [node.dataset.minerShopList, node]));
+    const SHOP_LIST_OF = { boost: 'boost', comet: 'boost', ore: 'ore', skin: 'skin', effect: 'effect' }; // which list each kind is in
+    const SHOP_BOUGHT_TEXT = {
+        boost: (item) => item.name + '! ' + item.text,
+        ore: (item, ore) => item.name + ': +' + format(ore) + ' ore.',
+        comet: () => 'Comet Beacon: a Golden Comet is on its way!',
+        skin: (item) => item.name + ' is yours, and your asteroid is wearing it.',
+        effect: (item) => item.name + ' is yours, and switched on.',
+    };
+    let shownShard = null; // the slot of the Star Shard on screen
+    let shopKey = '';
+
+    function renderShard() {
+        const slot = shardOnScreen(saveState, state.tick);
+        if (slot === null) {
+            shardButton.hidden = true;
+            return;
+        }
+        if (shownShard === slot && !shardButton.hidden) return;
+
+        // A new one: a random path across the screen, starting as far along it as it already is, like a comet
+        shownShard = slot;
+        shardButton.style.setProperty('--shard-from', (10 + Math.random() * 60) + 'vh');
+        shardButton.style.setProperty('--shard-to', (10 + Math.random() * 60) + 'vh');
+        shardButton.style.setProperty('--shard-left', (10 + Math.random() * 70) + 'vw');
+        shardButton.style.setProperty('--shard-ms', CONFIG.shardStayMs + 'ms');
+        shardButton.style.setProperty('--shard-delay', -(state.tick - shardAt(saveState, slot)) + 'ms');
+        shardButton.hidden = false;
+        shardButton.classList.remove('is-flying');
+        void shardButton.offsetWidth; // so the animation starts over
+        shardButton.classList.add('is-flying');
+        sound('shard');
+    }
+
+    function renderShardCount() {
+        const shards = saveState.shards ?? 0;
+        for (const node of shardCounts) node.textContent = String(shards);
+        shardWord.textContent = shards === 1 ? 'Star Shard' : 'Star Shards';
+    }
+
+    shardButton.addEventListener('click', () => {
+        const result = act({ type: 'shard' });
+        shardButton.hidden = true;
+        if (!result) return;
+        sound('shardCatch');
+        toast('shard', '+1 Star Shard! You have ' + saveState.shards + ' now: spend them in the Shard Shop.', 'is-shard', 6000);
+        renderShardCount();
+        if (shopPopup.open) renderShop();
+        saveSoon(); // they're rare, so this one isn't left waiting for the next save
+    });
+
+    // Whether a Golden Comet is on screen in the player's own game (the Comet Beacon can't be bought then)
+    const cometHere = () => saveState.tick >= saveState.comet.at && saveState.tick <= saveState.comet.at + cometStay(saveState);
+
+    // What changes from second to second on an item: how long a boost has left, and how much ore an ore item gives now
+    function shopLiveText(id, item) {
+        if (item.kind === 'boost') {
+            const left = (saveState.boosts?.[id] ?? 0) - saveState.tick;
+            return left > 0 ? 'Running, ' + formatClock(left) + ' left. Buying it again adds the time on.' : '';
+        }
+        if (item.kind === 'ore') return 'About ' + format(Math.max(rate(saveState, Infinity) * item.seconds, CONFIG.shopOreMin)) + ' ore now.';
+        return '';
+    }
+
+    // The items, built again only when what can be bought or picked changes (so a button doesn't lose its focus every
+    // second), and their live text every time
+    function renderShop() {
+        const shards = saveState.shards ?? 0;
+        const inAnomaly = saveState.anomaly !== null;
+        const bought = saveState.bought ?? [];
+        const key = [shards, inAnomaly, bought.join(), saveState.skin, saveState.effect, cometHere()].join('|');
+        if (key !== shopKey) {
+            shopKey = key;
+            shopNote.hidden = !inAnomaly;
+            const rows = { boost: [], ore: [], skin: [], effect: [] };
+            for (const [id, item] of Object.entries(SHOP)) {
+                const isKept = item.kind === 'skin' || item.kind === 'effect';
+                const row = element('li', 'miner-shop-item is-' + item.kind);
+                if (item.kind === 'skin') {
+                    const swatch = element('span', 'miner-shop-swatch');
+                    swatch.dataset.skin = id;
+                    row.append(swatch);
+                } else {
+                    row.append(iconBox('miner-shop-icon', item.icon));
+                }
+                const info = element('div', 'miner-shop-info');
+                const live = element('span', 'miner-shop-live');
+                live.dataset.shopLive = id;
+                info.append(element('span', 'miner-shop-name', item.name), element('span', 'miner-shop-text', item.text), live);
+                const button = element('button', 'casino-btn miner-shop-btn');
+                button.type = 'button';
+                button.dataset.shopItem = id;
+                if (isKept && bought.includes(id)) {
+                    const isOn = item.kind === 'skin' ? saveState.skin === id : saveState.effect === id;
+                    button.dataset.shopDo = item.kind === 'skin' ? 'wear' : 'use';
+                    button.textContent = item.kind === 'skin' ? (isOn ? 'Wearing' : 'Wear') : (isOn ? 'In use' : 'Use');
+                    button.setAttribute('aria-pressed', String(isOn));
+                } else {
+                    button.dataset.shopDo = 'buy';
+                    button.append(iconBox('miner-shop-cost-icon', 'shard'), document.createTextNode(String(item.cost)));
+                    button.setAttribute('aria-label', 'Buy ' + item.name + ' for ' + item.cost + ' Star Shard' + (item.cost === 1 ? '' : 's'));
+                    button.disabled = shards < item.cost || (!isKept && inAnomaly) || (item.kind === 'comet' && cometHere());
+                    button.classList.toggle('casino-btn-primary', !button.disabled);
+                }
+                row.append(info, button);
+                rows[SHOP_LIST_OF[item.kind]].push(row);
+            }
+            for (const [list, items] of Object.entries(rows)) shopLists[list].replaceChildren(...items);
+        }
+        for (const live of shopPopup.querySelectorAll('[data-shop-live]')) {
+            const text = shopLiveText(live.dataset.shopLive, SHOP[live.dataset.shopLive]);
+            if (live.textContent !== text) live.textContent = text;
+        }
+    }
+
+    shopPopup.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-shop-item]');
+        if (!button || button.disabled) return;
+        const id = button.dataset.shopItem;
+        const item = SHOP[id];
+        if (button.dataset.shopDo === 'buy') {
+            const result = act({ type: 'shopBuy', id });
+            if (!result) return;
+            sound('buy');
+            if (item.kind === 'skin') act({ type: 'skin', id }); // put on straight away
+            if (item.kind === 'effect') act({ type: 'effect', id });
+            toast(item.icon ?? 'shard', SHOP_BOUGHT_TEXT[item.kind](item, result.ore), 'is-shard', 6000);
+            if (item.kind === 'comet') shopPopup.close(); // so it can be caught
+        } else if (!act(button.dataset.shopDo === 'wear' ? { type: 'skin', id: saveState.skin === id ? null : id }
+            : { type: 'effect', id: saveState.effect === id ? null : id })) {
+            return;
+        } else {
+            sound('buy');
+        }
+        renderShop();
+        renderShardCount();
+        renderStage();
+        renderBuffs();
+        renderComet();
+        renderStore();
+        saveSoon();
+    });
 
     // ----- Warp Jump
 
@@ -4484,6 +4743,7 @@
         button.addEventListener('click', () => {
             const popup = root.querySelector('[data-miner-popup="' + button.dataset.minerOpen + '"]');
             if (popup === statsPopup && state) renderStats();
+            if (popup === shopPopup && state) renderShop();
             popup.showModal();
         });
     }
