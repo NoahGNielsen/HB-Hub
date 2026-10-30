@@ -1733,7 +1733,7 @@
   to { background-position: 0 0.06em; }
 }
 
-/* Reality Weaver: its strings twang (flicking between bent one way and the other), and the shuttle shoots across and back,
+/* Loom of Time: its strings twang (flicking between bent one way and the other), and the shuttle shoots across and back,
    leaving a gold thread behind it each way (::before going right, ::after coming back) that's pushed down into the
    cloth. */
 .miner-sprite.is-stringLoom {

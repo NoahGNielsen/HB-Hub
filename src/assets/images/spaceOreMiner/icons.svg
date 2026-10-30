@@ -126,7 +126,7 @@
     <symbol id="sceneMultiverseDrillMirror" viewBox="0 0 32 32"><rect x="9" y="1" width="14" height="12" rx="2.5" fill="#5f45c9"/><rect x="10.5" y="2.2" width="11" height="2.2" rx="1" fill="#9d7bff"/><rect x="12" y="6.5" width="8" height="3.4" rx="1.2" fill="#7cf04a"/><rect x="10" y="12.3" width="12" height="3.4" rx="1" fill="#ff6bb5"/><path d="M10.8 15.5H21.2L16 31z" fill="#a9b4c6"/><path d="M10.8 15.5H16V31z" fill="#e3e9f2"/></symbol>
     <!-- The five after the Multiverse Drill, in pieces the same way: the Time Quarry as its clock face, the clock's two
          hands, the sand in the top and in the bottom (full, the bottom one is the top one upside down, so the hourglass
-         can turn over without a jump) and the hourglass itself (the falling sand is drawn in CSS); the Reality Weaver as
+         can turn over without a jump) and the hourglass itself (the falling sand is drawn in CSS); the Loom of Time as
          its frame with the woven cloth, its strings bent one way and the other way (they twang between the two) and the
          shuttle (the thread it leaves is drawn in CSS); the Big Bang Reactor as its housing with its dark window, the
          little universe inside and two rings round it (the bang is drawn in CSS); the Reality Printer as the sheet it
