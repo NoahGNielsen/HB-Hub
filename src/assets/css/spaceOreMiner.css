@@ -88,8 +88,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The menu between the views: a bar, the open view lit up in its own colour. The game has two (.miner-menus), the
-   matters on top and the Engine and Anomalies under them once they've opened; the leaderboard has one. */
+/* The menu between the views: a bar, the open view lit up in its own colour. The game has three (.miner-menus), the
+   matters on top, the Engine and Anomalies under them and the Shard Shop under those, once they've opened; the
+   leaderboard has one. */
 .miner-menu {
   margin: 8px 0 12px;
   padding: 4px;

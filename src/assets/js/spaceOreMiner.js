@@ -1232,8 +1232,8 @@
     const statsPopup = root.querySelector('[data-miner-popup="stats"]');
     const views = Object.fromEntries([...root.querySelectorAll('[data-miner-view]')].map((node) => [node.dataset.minerView, node]));
     const menu = root.querySelector('[data-miner-menu]');
-    const laterMenu = menu.querySelector('[data-miner-menu-later]'); // the Engine, Anomalies and Shard Shop, hidden until they open
-    const laterLinks = Object.fromEntries([...laterMenu.querySelectorAll('[data-miner-view-link]')].map((node) => [node.dataset.minerViewLink, node]));
+    const laterMenus = menu.querySelectorAll('[data-miner-menu-later]'); // the Engine and Anomalies, and the Shard Shop, hidden until they open
+    const laterLinks = Object.fromEntries([...menu.querySelectorAll('[data-miner-menu-later] [data-miner-view-link]')].map((node) => [node.dataset.minerViewLink, node]));
     const menuCounts = Object.fromEntries([...root.querySelectorAll('[data-miner-menu-count]')].map((node) => [node.dataset.minerMenuCount, node]));
     const menuNews = Object.fromEntries([...root.querySelectorAll('[data-miner-menu-news]')].map((node) => [node.dataset.minerMenuNews, node]));
     const cometButton = root.querySelector('[data-miner-comet]');
@@ -1791,10 +1791,10 @@
         renderLaterViews();
     }
 
-    // The second bar of the menu: the Engine once you've made a Warp Jump (when you can start giving it parts), the
-    // Anomalies once their first tier is open (the first Big Rip), the Shard Shop once you've caught a Star Shard, and
-    // the bar itself once any is. Until then they're hidden, so a new player isn't shown things they can't use yet; a
-    // view opened by its address (or Back) before it's open goes back to Ore.
+    // The later bars of the menu: the Engine once you've made a Warp Jump (when you can start giving it parts), the
+    // Anomalies once their first tier is open (the first Big Rip), the Shard Shop (in a third bar) once you've caught a
+    // Star Shard, and each bar once any of its views is. Until then they're hidden, so a new player isn't shown things
+    // they can't use yet; a view opened by its address (or Back) before it's open goes back to Ore.
     function renderLaterViews() {
         const isOpen = {
             engine: saveState.warps >= 1,
@@ -1802,7 +1802,7 @@
             shop: (saveState.shardsCaught ?? 0) > 0 || (saveState.shards ?? 0) > 0,
         };
         for (const [view, open] of Object.entries(isOpen)) laterLinks[view].hidden = !open;
-        laterMenu.hidden = !Object.values(isOpen).some(Boolean);
+        for (const laterMenu of laterMenus) laterMenu.hidden = ![...laterMenu.querySelectorAll('[data-miner-view-link]')].some((link) => !link.hidden);
         if (isOpen[root.dataset.view] === false) {
             history.replaceState(null, '', menu.querySelector('[data-miner-view-link="ore"]').href);
             showView('ore');
