@@ -1,6 +1,7 @@
-/* Ore Mining Inc. (games/spaceOreMiner/): the buttons at the top, the menu down the right side, the six views (Ore: the asteroid and
+/* Ore Mining Inc. (games/spaceOreMiner/): the buttons at the top, the menu down the right side, the seven views (Ore: the asteroid and
    the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree;
-   Engine: the Cosmic Engines; Anomalies: the challenge runs, with the banner over every view while in one), the popups (stats, achievements, how to play, the Shard Shop), the comet and the Star Shard flying across the
+   Engine: the Cosmic Engines; Anomalies: the challenge runs, with the banner over every view while in one; Shard Shop: spending
+   Star Shards), the popups (stats, achievements, how to play), the comet and the Star Shard flying across the
    screen and the messages in the corner. Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. The leaderboard
    loads it too, for its tabs (.miner-menu). */
 .casino.miner {
@@ -149,6 +150,10 @@
 
 .miner-menu-link.is-engine {
   --miner-view-colour: var(--miner-engine);
+}
+
+.miner-menu-link.is-shop {
+  --miner-view-colour: var(--miner-shard);
 }
 
 .miner-menu-link:hover {
@@ -5024,11 +5029,6 @@ body:has(.miner[data-backdrop="aurora"]) {
   to { background-position: 100% 100%; scale: 1.12; }
 }
 
-/* How many there are, on the Shard Shop's button and in its head */
-.miner-title-count.is-shards {
-  background: color-mix(in srgb, var(--miner-shard) 25%, transparent);
-}
-
 .miner-toast.is-shard {
   border-left-color: var(--miner-shard);
 }
@@ -5039,20 +5039,40 @@ body:has(.miner[data-backdrop="aurora"]) {
   animation: none;
 }
 
+/* The Shard Shop view (.miner-prestige.is-shop), built like the matters' views: on top a big Star Shard glittering in a
+   turning ring, with a soft glow pulsing behind it */
+.miner-prestige.is-shop {
+  --view: var(--miner-shard);
+  --view-2: var(--miner-diamond);
+}
+
+.miner-prestige.is-shop .miner-art-ring.is-1 {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px dashed color-mix(in srgb, var(--view) 50%, transparent);
+  animation: miner-spin calc(30s / var(--spin)) linear infinite;
+}
+
+.miner-prestige.is-shop .miner-art-ring.is-2 {
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--view) 40%, transparent), color-mix(in srgb, var(--view-2) 15%, transparent) 45%, transparent 70%);
+  animation: miner-throb calc(2.4s / var(--spin)) ease-in-out infinite alternate;
+}
+
+/* The crystal itself, cut out like the flying one (.miner-shard-gem) */
+.miner-prestige.is-shop .miner-art-core {
+  width: 42%;
+  height: 58%;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 100% 38%, 50% 100%, 0 38%);
+  background: linear-gradient(135deg, #fff 10%, var(--view) 45%, var(--view-2) 80%, #fff);
+  background-size: 200% 200%;
+  animation: miner-shard-shine 1.6s ease-in-out infinite alternate;
+}
+
 /* The shop: a card per item, in a list per section */
-.miner-shop-wallet {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.miner-shop-wallet .miner-icon {
-  font-size: 1.4rem;
-}
-
 .miner-shop-note {
   color: var(--miner-anomaly);
 }
@@ -5198,6 +5218,9 @@ body:has(.miner[data-backdrop="aurora"]) {
 
   .miner-shard.is-flying,
   .miner-shard-gem,
+  .miner-prestige.is-shop .miner-art-ring.is-1,
+  .miner-prestige.is-shop .miner-art-ring.is-2,
+  .miner-prestige.is-shop .miner-art-core,
   .miner-shop-swatch[data-skin],
   .miner-asteroid[data-skin="prism"],
   .miner-asteroid[data-skin="prism"]:is(.is-hit, .is-hit-again) {

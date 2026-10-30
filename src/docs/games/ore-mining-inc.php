@@ -116,7 +116,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             (it still goes to your own game), and Comet Catcher leaves it for you. Star Shards are yours for
                             good: Warp Jumps, Big Crunches and Big Rips don't take them.
                         </p>
-                        <p>Spend them in the Shard Shop, the button by the game's title:</p>
+                        <p>Spend them in the Shard Shop, a view of its own in the game's menu (it shows up once you've caught your first Star Shard):</p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>

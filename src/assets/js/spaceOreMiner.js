@@ -10,13 +10,13 @@
 // when it's closed. The server answers with the save as it worked it out, and the game carries on from that, with
 // whatever was done while the save was on its way done again on top.
 // Times are the server's Unix ms (the difference to this computer's clock is measured on every save).
-// The page has six views (Ore, Dark Matter, Antimatter, Strange Matter, Engine, Anomalies, in data-miner-view): the menu's links switch
+// The page has seven views (Ore, Dark Matter, Antimatter, Strange Matter, Engine, Anomalies, Shard Shop, in data-miner-view): the menu's links switch
 // between them here, with history.pushState, so the game keeps running instead of the page loading again. The Strange
 // Matter view has the skill tree, drawn here from the skills (see renderTree()). The Engine view is the Engine
 // the whole site is building together (see "The Cosmic Engine"): every save's answer says how far it is. The Anomalies view has
 // the challenge runs (see "Anomalies"): while the player is in one, its game is the one played (state), inside the
-// save (saveState), and a banner over every view says so. The Shard Shop (see "Star Shards"), stats, achievements and
-// how to play are popups (data-miner-popup), opened by the buttons by the title (data-miner-open).
+// save (saveState), and a banner over every view says so. The Shard Shop view spends Star Shards (see "Star Shards").
+// Stats, achievements and how to play are popups (data-miner-popup), opened by the buttons by the title (data-miner-open).
 // What hasn't been saved yet is also kept in the browser, so a page that crashes or freezes doesn't lose it: the next
 // one sends it with its first save. A watchdog worker (data-watchdog, spaceOreMinerWatchdog.js) notices when the page
 // freezes, and the next time the game is opened after one, it asks whether it may send a crash report. See "Crash
@@ -1232,7 +1232,7 @@
     const statsPopup = root.querySelector('[data-miner-popup="stats"]');
     const views = Object.fromEntries([...root.querySelectorAll('[data-miner-view]')].map((node) => [node.dataset.minerView, node]));
     const menu = root.querySelector('[data-miner-menu]');
-    const laterMenu = menu.querySelector('[data-miner-menu-later]'); // the Engine and Anomalies, hidden until they open
+    const laterMenu = menu.querySelector('[data-miner-menu-later]'); // the Engine, Anomalies and Shard Shop, hidden until they open
     const laterLinks = Object.fromEntries([...laterMenu.querySelectorAll('[data-miner-view-link]')].map((node) => [node.dataset.minerViewLink, node]));
     const menuCounts = Object.fromEntries([...root.querySelectorAll('[data-miner-menu-count]')].map((node) => [node.dataset.minerMenuCount, node]));
     const menuNews = Object.fromEntries([...root.querySelectorAll('[data-miner-menu-news]')].map((node) => [node.dataset.minerMenuNews, node]));
@@ -1742,7 +1742,7 @@
         step(null);
     });
     every(1000, () => {
-        if (!isPlaying || document.hidden || !shopPopup.open) return;
+        if (!isPlaying || document.hidden || shopView.hidden) return;
         step('shop');
         renderShop();
         step(null);
@@ -1756,7 +1756,7 @@
         renderComet();
         renderShard();
         renderShardCount();
-        if (shopPopup.open) renderShop();
+        if (!shopView.hidden) renderShop();
         renderWarp();
         renderCrunch();
         renderRip();
@@ -1792,11 +1792,15 @@
     }
 
     // The second bar of the menu: the Engine once you've made a Warp Jump (when you can start giving it parts), the
-    // Anomalies once their first tier is open (the first Big Rip), and the bar itself once either is. Until then
-    // they're hidden, so a new player isn't shown things they can't use yet; a view opened by its address (or Back)
-    // before it's open goes back to Ore.
+    // Anomalies once their first tier is open (the first Big Rip), the Shard Shop once you've caught a Star Shard, and
+    // the bar itself once any is. Until then they're hidden, so a new player isn't shown things they can't use yet; a
+    // view opened by its address (or Back) before it's open goes back to Ore.
     function renderLaterViews() {
-        const isOpen = { engine: saveState.warps >= 1, anomalies: saveState.anomaly !== null || anomalyTierOpen(saveState, 1) };
+        const isOpen = {
+            engine: saveState.warps >= 1,
+            anomalies: saveState.anomaly !== null || anomalyTierOpen(saveState, 1),
+            shop: (saveState.shardsCaught ?? 0) > 0 || (saveState.shards ?? 0) > 0,
+        };
         for (const [view, open] of Object.entries(isOpen)) laterLinks[view].hidden = !open;
         laterMenu.hidden = !Object.values(isOpen).some(Boolean);
         if (isOpen[root.dataset.view] === false) {
@@ -3395,13 +3399,13 @@
 
     // ----- Star Shards (shardOnScreen()): one flies past in every shardSlotMs, right to left (the comets go the other
     // way), on every view and in Anomalies too, as they're the player's own. Comet Catcher leaves them alone. They're
-    // spent in the Shard Shop popup (CONFIG.shop). Catching one and buying are actions like any other, so the server
+    // spent in the Shard Shop view (CONFIG.shop). Catching one and buying are actions like any other, so the server
     // checks them.
 
     const shardButton = root.querySelector('[data-miner-shard]');
-    const shardCounts = root.querySelectorAll('[data-miner-shard-count]'); // on the title's button and in the shop
+    const shardCounts = root.querySelectorAll('[data-miner-shard-count]'); // at the top of the shop
     const shardWord = root.querySelector('[data-miner-shard-word]');
-    const shopPopup = root.querySelector('[data-miner-popup="shop"]');
+    const shopView = views.shop;
     const shopNote = root.querySelector('[data-miner-shop-note]');
     const shopLists = Object.fromEntries([...root.querySelectorAll('[data-miner-shop-list]')].map((node) => [node.dataset.minerShopList, node]));
     const SHOP_LIST_OF = { boost: 'boost', comet: 'boost', ore: 'ore', skin: 'skin', effect: 'effect' }; // which list each kind is in
@@ -3440,6 +3444,7 @@
     function renderShardCount() {
         const shards = saveState.shards ?? 0;
         for (const node of shardCounts) node.textContent = String(shards);
+        menuCounts.shop.textContent = String(shards);
         shardWord.textContent = shards === 1 ? 'Star Shard' : 'Star Shards';
     }
 
@@ -3450,7 +3455,8 @@
         sound('shardCatch');
         toast('shard', '+1 Star Shard! You have ' + saveState.shards + ' now: spend them in the Shard Shop.', 'is-shard', 6000);
         renderShardCount();
-        if (shopPopup.open) renderShop();
+        renderLaterViews(); // the first one opens the Shard Shop
+        if (!shopView.hidden) renderShop();
         saveSoon(); // they're rare, so this one isn't left waiting for the next save
     });
 
@@ -3512,13 +3518,13 @@
             }
             for (const [list, items] of Object.entries(rows)) shopLists[list].replaceChildren(...items);
         }
-        for (const live of shopPopup.querySelectorAll('[data-shop-live]')) {
+        for (const live of shopView.querySelectorAll('[data-shop-live]')) {
             const text = shopLiveText(live.dataset.shopLive, SHOP[live.dataset.shopLive]);
             if (live.textContent !== text) live.textContent = text;
         }
     }
 
-    shopPopup.addEventListener('click', (event) => {
+    shopView.addEventListener('click', (event) => {
         const button = event.target.closest('[data-shop-item]');
         if (!button || button.disabled) return;
         const id = button.dataset.shopItem;
@@ -3530,7 +3536,6 @@
             if (item.kind === 'skin') act({ type: 'skin', id }); // put on straight away
             if (item.kind === 'effect') act({ type: 'effect', id });
             toast(item.icon ?? 'shard', SHOP_BOUGHT_TEXT[item.kind](item, result.ore), 'is-shard', 6000);
-            if (item.kind === 'comet') shopPopup.close(); // so it can be caught
         } else if (!act(button.dataset.shopDo === 'wear' ? { type: 'skin', id: saveState.skin === id ? null : id }
             : { type: 'effect', id: saveState.effect === id ? null : id })) {
             return;
@@ -4743,6 +4748,7 @@
             renderEngine();
             saveSoon(); // for the top contributors and the latest parts given, which only come while it's open
         }
+        if (view === 'shop' && isPlaying) renderShop();
     }
 
     menu.addEventListener('click', (event) => {
@@ -4761,7 +4767,6 @@
         button.addEventListener('click', () => {
             const popup = root.querySelector('[data-miner-popup="' + button.dataset.minerOpen + '"]');
             if (popup === statsPopup && state) renderStats();
-            if (popup === shopPopup && state) renderShop();
             popup.showModal();
         });
     }
