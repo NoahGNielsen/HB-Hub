@@ -3490,6 +3490,28 @@
     let shiftsKey = '';
     let engineNews = null; // a stage just done, for the news ticker's next line (see renderTicker())
 
+    // The rocket at the top (renderRocket()): its parts by stage, counting from 0, and where each one is in the picture
+    // (data-box: x1 y1 x2 y2)
+    const rocket = root.querySelector('[data-miner-rocket]');
+    const rocketParts = [];
+    rocket.querySelectorAll('[data-miner-rocket-part]').forEach((node) => {
+        rocketParts[Number(node.dataset.minerRocketPart)] = node;
+    });
+    const rocketBoxes = rocketParts.map((node) => node.dataset.box.split(' ').map(Number));
+    const rocketFill = rocket.querySelector('[data-miner-rocket-fill]');
+    const rocketClip = rocket.querySelector('[data-miner-rocket-clip]');
+    const rocketWelder = rocket.querySelector('[data-miner-rocket-welder]');
+    const rocketPadlock = rocket.querySelector('[data-miner-rocket-padlock]');
+    const rocketCable = rocket.querySelector('[data-miner-rocket-cable]');
+    const rocketTrolley = rocket.querySelector('[data-miner-rocket-trolley]');
+    const rocketClock = rocket.querySelector('[data-miner-rocket-clock]');
+    const rocketFleet = rocket.querySelector('[data-miner-rocket-fleet]');
+    const rocketTrack = root.querySelector('[data-miner-rocket-track]');
+    const ROCKET_LAUNCH_MS = 6000; // as long as miner-rocket-launch in spaceOreMiner.css
+    let rocketKey = '';
+    let rocketLaunch = null; // { number, until }: an Engine just done, lifting off before the next one shows
+    let rocketPicked = -1; // the stage pointed at, on the rocket, the pips or the Stages list
+
     // A new answer from the server. A stage done since the one before gets a toast and the ticker straight away (not
     // on the first answer, which only says how far it is).
     function adoptEngine(next) {
@@ -3502,6 +3524,10 @@
                 const engineName = engineNameOf(Math.ceil(stage / CONFIG.engineStageTotal));
                 toast('starForge', 'The ' + engineName + '\'s ' + name + ' is finished! ' + perk.text, 'is-welcome', 9000);
                 engineNews = engineName + ' news: the ' + name + ' is finished. ' + perk.text;
+            }
+            // The rocket that was just done lifts off, if anyone's watching
+            if (next.number > engine.number && root.dataset.view === 'engine' && !reduceMotion.matches) {
+                rocketLaunch = { number: engine.number, until: performance.now() + ROCKET_LAUNCH_MS };
             }
             if (next.number > engine.number && ENGINES[next.number]) {
                 toast('starForge', 'Engine #' + next.number + ', the ' + engineNameOf(next.number) + ', has started! Every stage of it is new.', 'is-welcome', 9000);
@@ -3559,6 +3585,7 @@
         engineNumbers.cost.textContent = format(cost);
         engineNumbers.total.textContent = format(engine.total);
         setProgress(engineProgress, isAllDone ? 1 : engine.parts / cost);
+        renderRocket(cost);
         let lockText = '';
         if (!isAllDone && stage.lock) {
             const lock = engine.lock ?? { have: 0, need: stage.lock.count };
@@ -3677,6 +3704,7 @@
             }
             const isDone = index < engine.done;
             const item = element('li', 'miner-engine-stage' + (isDone ? ' is-done' : index === engine.done ? ' is-now' : ''));
+            item.dataset.minerEngineStageIndex = String(index); // for the rocket's parts (pickRocket())
             const head = element('div', 'miner-engine-stage-head');
             const finishedAt = engine.finished[index + 1];
             head.append(
@@ -3689,6 +3717,7 @@
             stages.push(item);
         });
         engineStageList.replaceChildren(...stages);
+        pickRocket(rocketPicked);
 
         engineNumbers.mine.hidden = IS_GUEST || engine.mine === undefined;
         engineNumbers.mine.textContent = 'You\'ve given ' + partsText(engine.mine ?? 0) + ' to this Engine.';
@@ -3730,6 +3759,145 @@
             return item;
         }));
     }
+
+    // ----- The rocket: the Engine drawn as a rocket being built, one part for each of its stages. Parts of stages done
+    // are in the Engine's own paint, the stage being built fills up from the bottom as its parts come in (with the
+    // welder on the line and the crane's hook at the top), or shows a padlock once it's full and waiting on its lock, and
+    // the rest are blueprint outlines. The pips under the stage's name are the same, one a stage. When an Engine is
+    // done while the view is open its rocket lifts off first (rocketLaunch), and from then on flies in the sky with the
+    // ones done before it. The Countdown Clock on the tower counts the stages left, or Ignition's time to fill it.
+
+    function svgElement(tag, className) {
+        const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+        if (className) node.setAttribute('class', className);
+        return node;
+    }
+
+    function svgPath(className, d) {
+        const node = svgElement('path', className);
+        node.setAttribute('d', d);
+        return node;
+    }
+
+    // cost is what the stage being built costs (engine.costs). Built again only when a stage is done or locked; the
+    // fill, the welder and the clock move every time.
+    function renderRocket(cost) {
+        if (rocketLaunch !== null && performance.now() >= rocketLaunch.until) rocketLaunch = null;
+        const isLaunching = rocketLaunch !== null;
+        const number = isLaunching ? rocketLaunch.number : engine.number;
+        const stages = engineStagesOf(number);
+        const built = isLaunching ? stages.length : Math.min(engine.done, stages.length);
+        const now = built < stages.length ? built : -1; // the stage being built
+        const isLocked = now >= 0 && Boolean(stages[now].lock) && engine.parts >= cost;
+        const [x1, y1, x2, y2] = now >= 0 ? rocketBoxes[now] : [0, 0, 0, 0];
+        const middle = (x1 + x2) / 2;
+
+        const key = number + '|' + built + '|' + isLocked + '|' + isLaunching;
+        if (key !== rocketKey) {
+            rocketKey = key;
+            rocket.dataset.engine = String(number);
+            rocket.classList.toggle('is-launching', isLaunching);
+            rocket.classList.toggle('is-built', now < 0 && !isLaunching);
+            rocket.classList.toggle('is-building', now >= 0 && !isLocked);
+            rocket.classList.toggle('is-locked', isLocked);
+            rocket.setAttribute('aria-label', 'The ' + engineNameOf(number) + ' drawn as a rocket: ' + built + ' of ' + stages.length + ' parts built.');
+            rocketParts.forEach((node, index) => {
+                node.classList.toggle('is-done', index < built);
+                node.classList.toggle('is-now', index === now);
+                const title = node.querySelector('title') ?? node.insertBefore(svgElement('title'), node.firstChild);
+                title.textContent = 'Stage ' + (index + 1) + ': ' + stages[index].name
+                    + (index < built ? ' (done)' : index === now ? ' (being built)' : '');
+            });
+            rocketFill.replaceChildren(...(now < 0 ? [] : [...rocketParts[now].children]
+                .filter((node) => node.tagName !== 'title').map((node) => node.cloneNode(true))));
+            if (now >= 0) { // the crane's hook comes down to the top of the part
+                rocketTrolley.setAttribute('x', middle - 6);
+                rocketCable.setAttribute('x1', middle);
+                rocketCable.setAttribute('x2', middle);
+                rocketCable.setAttribute('y2', y1);
+                rocketPadlock.setAttribute('transform', 'translate(' + middle + ' ' + (y1 + y2) / 2 + ')');
+            }
+            rocketTrack.replaceChildren(...stages.map((stage, index) => {
+                const pip = element('li', 'miner-rocket-pip' + (index < built ? ' is-done' : index === now ? ' is-now' : '')
+                    + (index > 0 && stage.section !== stages[index - 1].section ? ' is-section' : ''));
+                pip.title = 'Stage ' + (index + 1) + ': ' + stage.name;
+                pip.dataset.minerRocketPip = String(index);
+                return pip;
+            }));
+            renderRocketFleet(number - 1);
+            pickRocket(rocketPicked);
+        }
+
+        if (now >= 0) {
+            const part = isLocked ? 1 : Math.min(1, Math.max(0, engine.parts / cost));
+            const line = y2 - (y2 - y1) * part;
+            rocketClip.setAttribute('y', line);
+            rocketClip.setAttribute('height', y2 - line);
+            rocketWelder.setAttribute('transform', 'translate(' + middle + ' ' + line + ')');
+            rocketTrack.children[now]?.style.setProperty('--progress', Math.floor(part * 100) + '%');
+        }
+
+        // The Countdown Clock: the stages left, Ignition's time left (red on its last day), or GO! once it's done
+        let clock = now < 0 ? 'GO!' : 'T-' + (stages.length - built);
+        let isUrgent = false;
+        if (now === stages.length - 1 && engine.countdown > 0) {
+            const left = Math.max(0, engine.countdown - serverNow());
+            const hours = Math.floor(left / 3600000);
+            clock = hours >= 24 ? Math.floor(hours / 24) + 'd ' + (hours % 24) + 'h' : hours + 'h ' + (Math.floor(left / 60000) % 60) + 'm';
+            isUrgent = hours < 24;
+        }
+        if (rocketClock.textContent !== clock) rocketClock.textContent = clock;
+        rocket.classList.toggle('is-urgent', isUrgent);
+    }
+
+    // The Engines done before this one (count of them), as little rockets flying off in the sky, each in its paint
+    function renderRocketFleet(count) {
+        if (rocketFleet.childElementCount === count) return;
+        rocketFleet.replaceChildren(...Array.from({ length: count }, (_, index) => {
+            const mini = svgElement('g', 'miner-rocket-mini');
+            mini.dataset.engine = String(index + 1);
+            mini.setAttribute('transform', 'translate(' + (186 - (index % 3) * 16) + ' ' + (48 + index * 24) + ') rotate(24)');
+            const title = svgElement('title');
+            title.textContent = 'Engine #' + (index + 1) + ', the ' + engineNameOf(index + 1) + ': done';
+            const body = svgElement('g', 'miner-rocket-mini-body');
+            body.append(svgPath('is-flame', 'M-3 6 L0 15 L3 6 Z'), svgPath('is-hull-2', 'M-5 1 L-8 9 H-5 Z M5 1 L8 9 H5 Z'),
+                svgPath('is-hull', 'M0 -12 C4 -8 5 -2 5 6 H-5 C-5 -2 -4 -8 0 -12 Z'));
+            mini.append(title, body);
+            return mini;
+        }));
+    }
+
+    // Lights up stage index (-1 for none) on the rocket, the pips and the Stages list together
+    function pickRocket(index) {
+        rocketPicked = index;
+        rocketParts.forEach((node, i) => node.classList.toggle('is-picked', i === index));
+        [...rocketTrack.children].forEach((pip, i) => pip.classList.toggle('is-picked', i === index));
+        engineStageList.querySelectorAll('[data-miner-engine-stage-index]').forEach((item) => {
+            item.classList.toggle('is-picked', Number(item.dataset.minerEngineStageIndex) === index);
+        });
+    }
+
+    // The stage of a part, pip or Stages list item (or -1)
+    function rocketIndexOf(target) {
+        const node = target.closest('[data-miner-rocket-part], [data-miner-rocket-pip], [data-miner-engine-stage-index]');
+        return node ? Number(node.dataset.minerRocketPart ?? node.dataset.minerRocketPip ?? node.dataset.minerEngineStageIndex) : -1;
+    }
+
+    engineView.addEventListener('pointerover', (event) => {
+        const index = rocketIndexOf(event.target);
+        if (index !== rocketPicked) pickRocket(index);
+    });
+    engineView.addEventListener('pointerleave', () => pickRocket(-1));
+    // A part or pip clicked: its stage in the list, which flashes
+    engineView.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-miner-rocket-part], [data-miner-rocket-pip]')) return;
+        const item = engineStageList.querySelector('[data-miner-engine-stage-index="' + rocketIndexOf(event.target) + '"]');
+        if (!item) return;
+        item.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'center' });
+        item.classList.remove('is-flash');
+        void item.offsetWidth; // so the animation starts over
+        item.classList.add('is-flash');
+    });
 
     shiftList.addEventListener('click', (event) => {
         const button = event.target.closest('[data-miner-shift-swap]');

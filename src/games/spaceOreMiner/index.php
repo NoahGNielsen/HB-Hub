@@ -400,23 +400,175 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
             </div>
         </section>
 
-        <!-- Engine: the Cosmic Engine the whole site builds together, built like the other views. On top the stage
-             being built, its parts and its lock; under it what you can give, today's Engine Shifts, every stage with
+        <!-- Engine: the Cosmic Engine the whole site builds together, built like the other views. On top the Engine
+             drawn as a rocket being built, the stage being built, its parts and its lock; under it what you can give, today's Engine Shifts, every stage with
              its perk, and who gave the most and last. All filled in by spaceOreMiner.js (renderEngine()) from every
              save's answer. -->
         <section class="miner-view casino-card miner-prestige is-engine" aria-labelledby="miner-engine-title" data-miner-view="engine" data-miner-engine-view<?= $minerView !== 'engine' ? ' hidden' : '' ?>>
             <div class="miner-prestige-hero">
-                <!-- Three gears turning round the Engine's glowing core -->
-                <div class="miner-prestige-art" aria-hidden="true">
-                    <span class="miner-art-ring is-1"></span>
-                    <span class="miner-art-ring is-2"></span>
-                    <span class="miner-art-ring is-3"></span>
-                    <span class="miner-art-core"></span>
+                <!-- The Engine as a rocket on its launch pad, one part for each stage (renderRocket() in spaceOreMiner.js).
+                     Parts of stages done are in the Engine's paint (data-engine), the stage being built fills up from the
+                     bottom as parts come in (a copy of it in data-miner-rocket-fill, clipped at the line, with the welder
+                     on the line and the crane's hook at its top), and the rest are blueprint outlines. data-miner-rocket-part
+                     is the stage in the Engine counting from 0, data-box its x1 y1 x2 y2 here. They're drawn back to front,
+                     so not in stage order. Engines done before this one fly in the sky (data-miner-rocket-fleet). -->
+                <div class="miner-rocket-art">
+                    <svg class="miner-rocket" viewBox="0 0 240 320" role="img" aria-label="The Engine, drawn as a rocket being built" data-miner-rocket>
+                        <defs>
+                            <!-- The hull's shine, round like a can: dark at the edges, light in the middle -->
+                            <linearGradient id="miner-rocket-shine">
+                                <stop offset="0" class="is-shade"></stop>
+                                <stop offset="0.35" class="is-hull"></stop>
+                                <stop offset="0.5" class="is-light"></stop>
+                                <stop offset="0.65" class="is-hull"></stop>
+                                <stop offset="1" class="is-shade"></stop>
+                            </linearGradient>
+                            <clipPath id="miner-rocket-clip"><rect x="0" y="320" width="240" height="0" data-miner-rocket-clip></rect></clipPath>
+                        </defs>
+                        <g data-miner-rocket-fleet></g>
+
+                        <!-- The crane on the right, its trolley over the part being built -->
+                        <g class="miner-rocket-crane">
+                            <path class="is-line" d="M214 296 V12 M20 12 H232 M214 30 L232 12 M214 30 L196 12 M214 60 H220 M214 120 H220 M214 180 H220 M214 240 H220"></path>
+                            <line class="miner-rocket-cable" x1="120" y1="14" x2="120" y2="40" data-miner-rocket-cable></line>
+                            <rect class="miner-rocket-trolley" x="114" y="9" width="12" height="6" rx="1" data-miner-rocket-trolley></rect>
+                        </g>
+                        <rect class="miner-rocket-ground" x="0" y="296" width="240" height="24"></rect>
+                        <path class="miner-rocket-pad" d="M66 284 H174 L180 296 H60 Z"></path>
+
+                        <!-- The tower: Scaffolding and the Countdown Clock on top -->
+                        <g class="miner-rocket-part" data-miner-rocket-part="0" data-box="26 56 62 296">
+                            <path class="is-line" d="M32 296 V60 M56 296 V60 M32 272 H56 M32 224 H56 M32 176 H56 M32 128 H56 M32 80 H56 M32 296 L56 272 L32 248 L56 224 L32 200 L56 176 L32 152 L56 128 L32 104 L56 80"></path>
+                            <rect class="is-metal" x="26" y="56" width="36" height="5" rx="1"></rect>
+                        </g>
+                        <g class="miner-rocket-part" data-miner-rocket-part="22" data-box="14 30 74 56">
+                            <path class="is-line" d="M36 52 V56 M52 52 V56"></path>
+                            <rect class="is-screen" x="14" y="30" width="60" height="22" rx="3"></rect>
+                            <text class="miner-rocket-clock" x="44" y="45" text-anchor="middle" data-miner-rocket-clock>T-25</text>
+                        </g>
+
+                        <!-- The rocket itself, which lifts off once it's done -->
+                        <g class="miner-rocket-ship">
+                            <g class="miner-rocket-part" data-miner-rocket-part="24" data-box="100 284 140 318">
+                                <path class="is-flame" d="M100 284 Q102 304 120 318 Q138 304 140 284 Z"></path>
+                                <path class="is-flame-core" d="M108 284 Q110 298 120 307 Q130 298 132 284 Z"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="10" data-box="74 216 166 280">
+                                <path class="is-hull-2" d="M95 216 L74 262 L74 280 L95 258 Z M145 216 L166 262 L166 280 L145 258 Z"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="7" data-box="84 150 156 194">
+                                <rect class="is-hull-2" x="84" y="150" width="11" height="44" rx="4"></rect>
+                                <rect class="is-hull-2" x="145" y="150" width="11" height="44" rx="4"></rect>
+                                <circle class="is-lamp" cx="89.5" cy="188" r="2"></circle>
+                                <circle class="is-lamp is-2" cx="150.5" cy="188" r="2"></circle>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="21" data-box="84 167 156 183">
+                                <path class="is-coil" d="M86 168 l7 3 l-7 3 l7 3 l-7 3 l7 3 M147 168 l7 3 l-7 3 l7 3 l-7 3 l7 3"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="11" data-box="96 252 144 266">
+                                <rect class="is-metal" x="97" y="252" width="4" height="14" rx="1"></rect>
+                                <rect class="is-metal" x="139" y="252" width="4" height="14" rx="1"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="12" data-box="103 254 137 264">
+                                <rect class="is-metal" x="103" y="254" width="34" height="10" rx="3"></rect>
+                                <rect class="is-glow" x="108" y="257" width="24" height="4" rx="2"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="13" data-box="100 264 140 284">
+                                <path class="is-metal" d="M109 264 H131 L140 284 H100 Z"></path>
+                                <path class="is-line" d="M105 274 H135"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="20" data-box="84 264 156 277">
+                                <path class="is-spark" d="M98 265 L90 268 L95 271 L86 276 M142 265 L150 268 L145 271 L154 276"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="1" data-box="95 214 145 250">
+                                <rect class="is-hull" x="95" y="214" width="50" height="36"></rect>
+                                <rect class="is-metal" x="110" y="220" width="20" height="18" rx="2"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="3" data-box="95 178 145 214">
+                                <rect class="is-hull" x="95" y="178" width="50" height="36"></rect>
+                                <circle class="is-glass" cx="110" cy="196" r="4"></circle>
+                                <circle class="is-glass" cx="120" cy="196" r="4"></circle>
+                                <circle class="is-glass" cx="130" cy="196" r="4"></circle>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="5" data-box="95 142 145 178">
+                                <rect class="is-hull" x="95" y="142" width="50" height="36"></rect>
+                                <circle class="is-metal" cx="120" cy="160" r="11"></circle>
+                                <circle class="is-glow" cx="120" cy="160" r="6"></circle>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="15" data-box="95 106 145 142">
+                                <rect class="is-hull" x="95" y="106" width="50" height="36"></rect>
+                                <path class="is-trim" d="M127 115 L129.5 121.5 L136 122 L131 126 L132.5 132.5 L127 129 L121.5 132.5 L123 126 L118 122 L124.5 121.5 Z"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="18" data-box="95 30 145 106">
+                                <path class="is-line" d="M120 42 V30"></path>
+                                <path class="is-hull" d="M95 106 C95 76 106 56 120 40 C134 56 145 76 145 106 Z"></path>
+                                <ellipse class="is-glass" cx="120" cy="82" rx="8" ry="10"></ellipse>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="6" data-box="101 146 139 246">
+                                <path class="is-pipe" d="M103 148 V238 Q103 244 109 244 H131 Q137 244 137 238 V148"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="8" data-box="84 155 156 164">
+                                <path class="is-wire" d="M86 157 H110 M86 162 H110 M130 157 H154 M130 162 H154"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="17" data-box="100 111 115 124">
+                                <rect class="is-screen" x="100" y="111" width="15" height="13" rx="2"></rect>
+                                <circle class="is-lamp" cx="104" cy="117.5" r="1.5"></circle>
+                                <circle class="is-lamp is-2" cx="107.5" cy="117.5" r="1.5"></circle>
+                                <circle class="is-lamp is-3" cx="111" cy="117.5" r="1.5"></circle>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="16" data-box="86 117 154 131">
+                                <ellipse class="is-ring" cx="120" cy="124" rx="34" ry="7"></ellipse>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="14" data-box="93 246 147 254">
+                                <rect class="is-trim" x="93" y="246" width="54" height="8" rx="2"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="4" data-box="93 210 147 218">
+                                <rect class="is-trim" x="93" y="210" width="54" height="8" rx="2"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="9" data-box="93 174 147 182">
+                                <rect class="is-trim" x="93" y="174" width="54" height="8" rx="2"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="19" data-box="93 138 147 146">
+                                <rect class="is-trim" x="93" y="138" width="54" height="8" rx="2"></rect>
+                            </g>
+                        </g>
+
+                        <!-- From the tower to the rocket: the Fuel Lines and the Launch Clamps, let go at lift-off -->
+                        <g class="miner-rocket-part is-hoses" data-miner-rocket-part="2" data-box="56 194 95 240">
+                            <path class="is-hose" d="M56 232 Q76 242 95 232 M56 194 Q76 204 95 194"></path>
+                        </g>
+                        <g class="miner-rocket-part is-clamps" data-miner-rocket-part="23" data-box="56 114 97 210">
+                            <path class="is-line is-thick" d="M56 120 H92 M56 204 H92"></path>
+                            <rect class="is-hull-2" x="90" y="114" width="7" height="12" rx="1"></rect>
+                            <rect class="is-hull-2" x="90" y="198" width="7" height="12" rx="1"></rect>
+                        </g>
+
+                        <!-- The stage being built: its filled-in part, the welder on the line, or a padlock while it waits on its lock -->
+                        <g class="miner-rocket-fill" clip-path="url(#miner-rocket-clip)" data-miner-rocket-fill></g>
+                        <g class="miner-rocket-welder" data-miner-rocket-welder>
+                            <circle class="is-ball" r="4"></circle>
+                            <path class="is-spark" d="M0 0 L-7 -5 M0 0 L7 -6 M0 0 L-5 6 M0 0 L6 5"></path>
+                        </g>
+                        <g class="miner-rocket-padlock" data-miner-rocket-padlock>
+                            <path class="is-shackle" d="M-6 -2 V-7 A6 6 0 0 1 6 -7 V-2"></path>
+                            <rect x="-9" y="-2" width="18" height="14" rx="3"></rect>
+                            <circle class="is-hole" cx="0" cy="5" r="2"></circle>
+                        </g>
+                        <g class="miner-rocket-smoke">
+                            <circle cx="66" cy="300" r="10"></circle>
+                            <circle cx="174" cy="300" r="10"></circle>
+                            <circle cx="88" cy="296" r="14"></circle>
+                            <circle cx="152" cy="296" r="14"></circle>
+                            <circle cx="120" cy="302" r="16"></circle>
+                        </g>
+                    </svg>
                 </div>
                 <div class="miner-prestige-main">
                     <h2 id="miner-engine-title" class="miner-prestige-title"><span data-miner-engine="title">Cosmic Engine</span> <span data-miner-engine="number"></span></h2>
                     <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-engine="name">Loading…</span></p>
                     <p class="miner-prestige-bonus" data-miner-engine="stage"></p>
+                    <!-- One pip a stage, the same as the rocket (only for the mouse: the Stages list below says it all) -->
+                    <ol class="miner-rocket-track" aria-hidden="true" data-miner-rocket-track></ol>
                     <div class="miner-progress">
                         <div class="miner-progress-bar" role="progressbar" aria-labelledby="miner-engine-progress-label"
                              aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-miner-engine-progress><span class="miner-progress-fill"></span></div>
@@ -432,7 +584,9 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 Everyone on HB Hub builds the Engines together, one stage at a time, out of Engine Parts. Each stage
                 finished gives everyone who plays its perk, for good. Some stages have a lock as well, which has to be met
                 before they finish, however many parts they have. Once an Engine is done, the next one starts, with locks
-                that count again from nothing. Anyone who has made a Warp Jump can give parts.
+                that count again from nothing. Anyone who has made a Warp Jump can give parts. The rocket shows how far
+                it is: each stage done adds its part, and the one being built fills up as parts come in. Point at a
+                part to see its stage.
             </p>
 
             <div class="miner-engine-grid">

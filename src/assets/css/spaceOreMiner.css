@@ -2706,45 +2706,417 @@
 }
 
 /* The jump's side: its name, what you have and what it does for you, the bar towards the next jump and its button */
-/* The Engine (.miner-prestige.is-engine): three gears of different sizes turning round a glowing core, each the
-   next one's way, faster while you can give parts (is-ready) */
+/* The Engine (.miner-prestige.is-engine): the Engine drawn as a rocket on its launch pad (.miner-rocket, filled in by
+   renderRocket() in spaceOreMiner.js), one part for each stage. A part is a .miner-rocket-part: blueprint outlines
+   until its stage is done (is-done), marching ants while it's the one being built (is-now), whose filled-in copy in
+   .miner-rocket-fill rises as parts come in. The rocket as a whole is is-building (the welder and crane at work),
+   is-locked (a padlock instead), is-built (every stage done, the flame burning on the pad) or is-launching (lifting
+   off, 6 s, as long as ROCKET_LAUNCH_MS). Each Engine has its own paint (data-engine, the --rk-* colours). */
 .miner-prestige.is-engine {
   --view: var(--miner-engine);
   --view-2: #ffe08a;
 }
 
-.miner-prestige.is-engine .miner-art-ring {
-  box-sizing: border-box;
-  border: 10px dotted color-mix(in srgb, var(--view) 75%, transparent);
-  animation: miner-spin calc(30s / var(--spin)) linear infinite;
+.miner-prestige.is-engine .miner-prestige-hero {
+  grid-template-columns: 250px minmax(0, 1fr);
 }
 
-.miner-prestige.is-engine .miner-art-ring.is-1 {
+.miner-rocket-art {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+}
+
+/* Engine #1, the Cosmic Engine: white hull, orange fins, gold seals. The little rockets of Engines done before keep
+   their own paint (.miner-rocket-mini). */
+.miner-rocket,
+.miner-rocket-mini {
+  --rk-hull: #e7ebf2;
+  --rk-light: #ffffff;
+  --rk-shade: #8792a6;
+  --rk-hull-2: var(--miner-engine);
+  --rk-trim: var(--miner-gold);
+  --rk-metal: #6b7486;
+  --rk-glass: var(--miner-diamond);
+  --rk-glow: #ffe08a;
+  --rk-pipe: #4dabf7;
+  --rk-blue: #6ec1ff; /* the blueprint's lines */
+}
+
+/* Engine #2, the Starforge: dark iron and embers */
+.miner-rocket[data-engine="2"],
+.miner-rocket-mini[data-engine="2"] {
+  --rk-hull: #545a68;
+  --rk-light: #9aa2b4;
+  --rk-shade: #23262e;
+  --rk-hull-2: #e8590c;
+  --rk-trim: #ffb347;
+  --rk-glass: #ffd36b;
+  --rk-glow: #ff8a3d;
+  --rk-pipe: #ff6b3d;
+}
+
+.miner-rocket {
+  display: block;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--view) 20%, transparent), transparent 60%);
 }
 
-.miner-prestige.is-engine .miner-art-ring.is-2 {
-  width: 72%;
-  height: 72%;
-  border-color: color-mix(in srgb, var(--view-2) 70%, transparent);
-  animation-duration: calc(20s / var(--spin));
-  animation-direction: reverse;
+.miner-rocket stop.is-hull { stop-color: var(--rk-hull); }
+.miner-rocket stop.is-light { stop-color: var(--rk-light); }
+.miner-rocket stop.is-shade { stop-color: var(--rk-shade); }
+
+.miner-rocket-ground {
+  fill: color-mix(in srgb, var(--text) 8%, var(--background));
 }
 
-.miner-prestige.is-engine .miner-art-ring.is-3 {
-  width: 46%;
-  height: 46%;
-  border-width: 7px;
-  animation-duration: calc(12s / var(--spin));
+.miner-rocket-pad {
+  fill: #3a404c;
+  stroke: #5b6475;
 }
 
-.miner-prestige.is-engine .miner-art-core {
-  width: 24%;
-  height: 24%;
-  background: radial-gradient(circle, #fff 20%, var(--view-2) 50%, var(--view));
-  box-shadow: 0 0 24px 6px color-mix(in srgb, var(--view) 70%, transparent);
-  animation: miner-throb calc(1.6s / var(--spin)) ease-in-out infinite alternate;
+.miner-rocket-crane .is-line {
+  stroke: color-mix(in srgb, var(--text) 25%, transparent);
+  stroke-width: 1.5;
+}
+
+.miner-rocket-trolley {
+  fill: var(--miner-gold);
+}
+
+.miner-rocket-cable {
+  stroke: color-mix(in srgb, var(--text) 45%, transparent);
+  stroke-width: 1;
+  display: none;
+}
+
+/* A part once its stage is done (and the filled-in copy of the one being built): painted */
+.miner-rocket :is(.is-hull, .is-hull-2, .is-trim, .is-metal, .is-glass, .is-screen) {
+  stroke: var(--rk-shade);
+  stroke-width: 0.8;
+}
+
+.miner-rocket .is-hull { fill: url(#miner-rocket-shine); }
+.miner-rocket .is-hull-2 { fill: var(--rk-hull-2); }
+.miner-rocket .is-trim { fill: var(--rk-trim); }
+.miner-rocket .is-metal { fill: var(--rk-metal); }
+.miner-rocket .is-glass { fill: var(--rk-glass); }
+
+.miner-rocket .is-screen {
+  fill: #0b1620;
+  stroke: var(--rk-metal);
+}
+
+.miner-rocket .is-glow {
+  fill: var(--rk-glow);
+  stroke: none;
+  animation: miner-rocket-glow 1.6s ease-in-out infinite alternate;
+}
+
+.miner-rocket .is-lamp {
+  fill: var(--miner-strange);
+  animation: miner-rocket-blink 1.4s steps(1) infinite;
+}
+
+.miner-rocket .is-lamp.is-2 { animation-delay: -0.5s; }
+.miner-rocket .is-lamp.is-3 { animation-delay: -0.9s; }
+
+.miner-rocket :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-ring) {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.miner-rocket .is-line {
+  stroke: var(--rk-metal);
+  stroke-width: 2;
+}
+
+.miner-rocket .is-line.is-thick { stroke-width: 4; }
+
+.miner-rocket .is-pipe {
+  stroke: var(--rk-pipe);
+  stroke-width: 3;
+}
+
+.miner-rocket .is-hose {
+  stroke: var(--rk-hull-2);
+  stroke-width: 3;
+}
+
+/* Power running down the Power Grid's wires, and the Gyroscopes' ring turning */
+.miner-rocket .is-wire {
+  stroke: var(--rk-glow);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  animation: miner-rocket-march 0.8s linear infinite;
+}
+
+.miner-rocket .is-ring {
+  stroke: var(--rk-trim);
+  stroke-width: 1.5;
+  stroke-dasharray: 14 6;
+  animation: miner-rocket-march 1.2s linear infinite;
+}
+
+.miner-rocket .is-coil {
+  stroke: #d08a4a;
+  stroke-width: 1.5;
+}
+
+.miner-rocket .is-spark {
+  stroke: #fff6b0;
+  stroke-width: 1.5;
+  animation: miner-rocket-blink 0.5s steps(1) infinite;
+}
+
+.miner-rocket .is-flame,
+.miner-rocket .is-flame-core {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: miner-rocket-flame 0.15s ease-in-out infinite alternate;
+}
+
+.miner-rocket .is-flame { fill: var(--miner-engine); }
+.miner-rocket .is-flame-core { fill: #fff3bf; }
+
+.miner-rocket-clock {
+  fill: #ff6b6b;
+  font: 800 11px ui-monospace, Consolas, monospace;
+}
+
+.miner-rocket.is-urgent .miner-rocket-clock {
+  animation: miner-rocket-blink 1s steps(1) infinite;
+}
+
+/* The parts not done yet: blueprint outlines, the one being built with marching ants */
+.miner-rocket .miner-rocket-part:not(.is-done) > * {
+  fill: color-mix(in srgb, var(--rk-blue) 7%, transparent);
+  stroke: color-mix(in srgb, var(--rk-blue) 40%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+  animation: none;
+}
+
+.miner-rocket .miner-rocket-part:not(.is-done) > :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-ring) {
+  fill: none;
+}
+
+.miner-rocket .miner-rocket-part:not(.is-done) > text {
+  display: none;
+}
+
+.miner-rocket .miner-rocket-part.is-now > * {
+  stroke: var(--rk-blue);
+  animation: miner-rocket-march 1s linear infinite;
+}
+
+.miner-rocket-part {
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.miner-rocket-part.is-picked {
+  filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px var(--view));
+}
+
+.miner-rocket-fill,
+.miner-rocket-welder,
+.miner-rocket-padlock,
+.miner-rocket-smoke {
+  pointer-events: none;
+}
+
+/* The welder on the fill's line and the crane's hook while a stage is being built */
+.miner-rocket-welder {
+  display: none;
+}
+
+.miner-rocket.is-building :is(.miner-rocket-welder, .miner-rocket-cable),
+.miner-rocket.is-locked .miner-rocket-cable {
+  display: inline;
+}
+
+.miner-rocket-welder .is-ball {
+  fill: #fffbe6;
+  filter: drop-shadow(0 0 3px #8be9ff) drop-shadow(0 0 6px #4dabf7);
+  animation: miner-rocket-weld 0.3s steps(2) infinite;
+}
+
+/* The padlock on a full stage waiting for its lock */
+.miner-rocket-padlock {
+  display: none;
+}
+
+.miner-rocket.is-locked .miner-rocket-padlock {
+  display: inline;
+}
+
+.miner-rocket-padlock rect {
+  fill: var(--miner-gold);
+  stroke: #6b4e00;
+}
+
+.miner-rocket-padlock .is-shackle {
+  fill: none;
+  stroke: #c9ced8;
+  stroke-width: 3;
+}
+
+.miner-rocket-padlock .is-hole {
+  fill: #6b4e00;
+}
+
+.miner-rocket-padlock > * {
+  animation: miner-rocket-glow 1.2s ease-in-out infinite alternate;
+}
+
+/* Every stage done: the flame burns on the pad with smoke round it, until the next Engine starts. Lifting off: the
+   rocket shakes, the clamps and fuel lines let go and up it goes. */
+.miner-rocket-smoke {
+  display: none;
+  fill: color-mix(in srgb, #c9ced8 55%, transparent);
+}
+
+.miner-rocket:is(.is-built, .is-launching) .miner-rocket-smoke {
+  display: inline;
+}
+
+.miner-rocket-smoke circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: miner-rocket-smoke 2.4s ease-in-out infinite alternate;
+}
+
+.miner-rocket-smoke circle:nth-child(2n) {
+  animation-delay: -1.2s;
+}
+
+.miner-rocket.is-launching .miner-rocket-ship {
+  animation: miner-rocket-launch 6s ease-in forwards;
+}
+
+.miner-rocket.is-launching :is(.is-clamps, .is-hoses) {
+  animation: miner-rocket-let-go 1s 1.2s ease-out forwards;
+}
+
+/* The Engines done before, flying off in the sky */
+.miner-rocket-mini .is-hull { fill: var(--rk-hull); }
+.miner-rocket-mini .is-hull-2 { fill: var(--rk-hull-2); }
+
+.miner-rocket-mini-body {
+  animation: miner-rocket-float 3s ease-in-out infinite alternate;
+}
+
+.miner-rocket-mini:nth-child(2n) .miner-rocket-mini-body {
+  animation-delay: -1.5s;
+}
+
+@keyframes miner-rocket-march {
+  to { stroke-dashoffset: -10; }
+}
+
+@keyframes miner-rocket-glow {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+@keyframes miner-rocket-blink {
+  50% { opacity: 0.25; }
+}
+
+@keyframes miner-rocket-weld {
+  50% { opacity: 0.5; }
+}
+
+@keyframes miner-rocket-flame {
+  from { transform: scale(1, 0.85); }
+  to { transform: scale(0.92, 1.08); }
+}
+
+@keyframes miner-rocket-smoke {
+  from { transform: scale(0.85); }
+  to { transform: scale(1.15); }
+}
+
+@keyframes miner-rocket-launch {
+  0%, 30% { transform: translate(0, 0); }
+  5%, 15%, 25% { transform: translate(-1px, 0); }
+  10%, 20% { transform: translate(1px, 0); }
+  100% { transform: translate(0, -440px); }
+}
+
+@keyframes miner-rocket-let-go {
+  to { opacity: 0; transform: translate(-30px, 0); }
+}
+
+@keyframes miner-rocket-float {
+  from { transform: translate(0, 0); }
+  to { transform: translate(2px, -3px); }
+}
+
+/* Under the stage's name: one pip a stage, a gap between the sections, the one being built filling up (--progress,
+   from renderRocket()) */
+.miner-rocket-track {
+  margin: 10px 0 12px;
+  padding: 0;
+  display: flex;
+  gap: 3px;
+  list-style: none;
+}
+
+.miner-rocket-pip {
+  flex: 1;
+  height: 8px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  cursor: pointer;
+}
+
+.miner-rocket-pip.is-section {
+  margin-left: 6px;
+}
+
+.miner-rocket-pip.is-done {
+  background: var(--view);
+}
+
+.miner-rocket-pip.is-now {
+  background: linear-gradient(to right, var(--view) var(--progress, 0%), color-mix(in srgb, var(--view) 22%, transparent) 0);
+  box-shadow: 0 0 6px var(--view);
+}
+
+.miner-rocket-pip.is-picked {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+@media (max-width: 860px) {
+  .miner-prestige.is-engine .miner-prestige-hero {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+}
+
+/* Phones: the rocket on top, the stage under it */
+@media (max-width: 560px) {
+  .miner-prestige.is-engine .miner-prestige-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .miner-rocket-art {
+    width: min(220px, 100%);
+    margin-inline: auto;
+  }
+}
+
+/* Less motion: everything holds still, and a done Engine doesn't lift off (renderRocket() skips it too) */
+@media (prefers-reduced-motion: reduce) {
+  .miner-rocket *,
+  .miner-rocket-pip {
+    animation: none !important;
+  }
 }
 
 /* Under the top: the boxes (give parts, Shifts, top contributors, latest parts), and the stages across the bottom */
@@ -2924,6 +3296,20 @@
 .miner-engine-stage.is-done {
   background: color-mix(in srgb, var(--view) 10%, transparent);
   opacity: 1;
+}
+
+/* Its part pointed at on the rocket (or the stage itself pointed at), and flashing once its part was clicked */
+.miner-engine-stage.is-picked {
+  border-color: color-mix(in srgb, var(--view) 70%, transparent);
+  opacity: 1;
+}
+
+.miner-engine-stage.is-flash {
+  animation: miner-rocket-flash 1.2s ease-out;
+}
+
+@keyframes miner-rocket-flash {
+  from { box-shadow: 0 0 0 3px var(--view), 0 0 18px var(--view); }
 }
 
 .miner-engine-stage-head {

@@ -171,8 +171,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="engine" aria-labelledby="docs-engine">
                         <h2 id="docs-engine">The Cosmic Engines</h2>
                         <p>
-                            The Engine view has a machine everyone on HB Hub builds together, out of Engine Parts. Once you've made
-                            your first Warp Jump, you can help in three ways:
+                            The Engine view has a machine everyone on HB Hub builds together, out of Engine Parts, drawn as a rocket
+                            on its launch pad: each stage done adds a part to it, the one being built fills up as parts come in, and
+                            you can point at a part to see its stage. Once you've made your first Warp Jump, you can help in three ways:
                         </p>
                         <ul>
                             <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day (one more once the Starforge's Air Intakes are done). The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much. From each Engine's third section (stage 11) a part from ore counts as half a part, and from its fourth (stage 16) as a quarter, or half again once the Starforge's Piston Arms are done.</li>
