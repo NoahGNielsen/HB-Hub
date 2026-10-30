@@ -241,7 +241,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir, string $b
 
         <section class="casino-card casino-board" aria-label="Project Starbound contributors">
             <?php if ($engineRows === []): ?>
-                <p class="casino-hint">Nobody has given Project Starbound any parts yet. <a href="/games/ore-mining-inc/?view=engine">Be the first!</a></p>
+                <p class="casino-hint">Nobody has given Project Starbound any parts yet. <a href="/games/ore-mining-inc/?view=starbound">Be the first!</a></p>
             <?php else: ?>
                 <div class="casino-table-wrap">
                     <table class="casino-table">

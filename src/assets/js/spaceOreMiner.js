@@ -1497,7 +1497,7 @@
         lastSentAt = sentAt;
         const body = new URLSearchParams({ action: 'sync', tab: TAB, actions: JSON.stringify(batch) });
         if (claim) body.set('claim', '1');
-        if (root.dataset.view === 'engine') body.set('engine', '1'); // its top contributors and latest parts
+        if (root.dataset.view === 'starbound') body.set('engine', '1'); // its top contributors and latest parts
         if (claim && recovered.length > 0) body.set('recovered', JSON.stringify(recovered));
         const guestToken = guestSave()?.token ?? '';
         if (IS_GUEST) body.set('token', guestToken);
@@ -1715,7 +1715,7 @@
         renderCrunch();
         step('tick: Big Rip and skill tree');
         renderRip();
-        if (root.dataset.view === 'engine') {
+        if (root.dataset.view === 'starbound') {
             step('tick: Engine');
             renderEngine();
         }
@@ -1772,7 +1772,7 @@
     // ore that can still be given to the Engine
     function renderMenu() {
         const donated = saveState.engineDay === today() ? saveState.donatedToday : 0;
-        menuNews.engine.hidden = !canGiveNow() || donated >= orePartsMax(saveState)
+        menuNews.starbound.hidden = !canGiveNow() || donated >= orePartsMax(saveState)
             || !canAfford(saveState, oreDonationCost({ donatedToday: donated }, 1));
         menuCounts.darkMatter.textContent = state.warps > 0 ? format(state.dark) : '';
         menuCounts.antimatter.textContent = state.crunches > 0 ? format(state.antimatter) : '';
@@ -3827,7 +3827,7 @@
                 engineNews = engineName + ' news: the ' + name + ' is finished. ' + perk.text;
             }
             // The rocket that was just done lifts off, if anyone's watching
-            if (next.number > engine.number && root.dataset.view === 'engine' && !reduceMotion.matches) {
+            if (next.number > engine.number && root.dataset.view === 'starbound' && !reduceMotion.matches) {
                 rocketLaunch = { number: engine.number, until: performance.now() + ROCKET_LAUNCH_MS };
             }
             if (next.number > engine.number && ENGINES[next.number]) {
@@ -4722,7 +4722,7 @@
         if (scrollY > 0) scrollTo({ top: 0 }); // the Ore view fits the screen from the top
         forgetFieldBox(); // a hidden picture has no box
         placeSkillInfo(); // the screen may have changed size while the tree was out of sight
-        if (view === 'engine' && isPlaying) {
+        if (view === 'starbound' && isPlaying) {
             renderEngine();
             saveSoon(); // for the top contributors and the latest parts given, which only come while it's open
         }

@@ -13,7 +13,7 @@ return [
         'engineStage' => [
             'text' => static fn (array $data): string => 'The ' . ($data['engineName'] ?? 'Cosmic Engine') . '\'s ' . ($data['name'] ?? 'next stage') . ' (stage '
                 . (int) ($data['stage'] ?? 0) . ') is finished! ' . ($data['perk'] ?? ''),
-            'link' => static fn (array $data): string => '/games/ore-mining-inc/?view=engine',
+            'link' => static fn (array $data): string => '/games/ore-mining-inc/?view=starbound',
         ],
     ],
 ];

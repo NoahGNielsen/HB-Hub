@@ -10,7 +10,7 @@
 // It has seven views, picked in the menu down the right side (over the views on small screens; Engine, Anomalies and
 // the Shard Shop in a second group): Ore (the asteroid and the store, the default), Dark Matter
 // (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch), Strange Matter
-// (?view=strangeMatter, the Big Rip and the skill tree), Engine (?view=engine, the Cosmic Engine the whole site
+// (?view=strangeMatter, the Big Rip and the skill tree), Project Starbound (?view=starbound, the Engine the whole site
 // builds together, see assets/php/games/spaceOreMiner/engine.php), Anomalies (?view=anomalies, the challenge runs,
 // HBHUB_MINER_ANOMALIES; while the player is in one, a banner over every view says so) and the Shard Shop (?view=shop,
 // spending Star Shards, HBHUB_MINER_SHOP). They're all on the page, and the script switches between them without
@@ -37,13 +37,18 @@ const MINER_VIEWS = [ // ?view= => [the menu's text (HTML), its address after th
     'darkMatter' => ['Dark Matter', '?view=darkMatter'],
     'antimatter' => ['Antimatter', '?view=antimatter'],
     'strangeMatter' => ['Strange Matter', '?view=strangeMatter'],
-    'engine' => ['<span class="miner-menu-long">Project </span>Starbound', '?view=engine'], // just "Starbound" in the bar on small screens
+    'starbound' => ['<span class="miner-menu-long">Project </span>Starbound', '?view=starbound'], // just "Starbound" in the bar on small screens
     'anomalies' => ['Anomalies', '?view=anomalies'],
     'shop' => ['Shard Shop', '?view=shop'],
 ];
-const MINER_LATER_VIEWS = ['engine' => true, 'anomalies' => true, 'shop' => true]; // in the second group of the menu
-$minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
+const MINER_LATER_VIEWS = ['starbound' => true, 'anomalies' => true, 'shop' => true]; // in the second group of the menu
 $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-inc/';
+// Project Starbound's view was ?view=engine before it was renamed: old links and bookmarks go to the new one
+if (($_GET['view'] ?? null) === 'engine') {
+    header('Location: ' . $minerAddress . '?view=starbound', true, 301);
+    exit;
+}
+$minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 ?>
 <!DOCTYPE html>
 <html lang="en">
