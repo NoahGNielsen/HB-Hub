@@ -39,7 +39,7 @@ jobs:
     if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     env:
-      INDEXNOW_KEY: 0c3d803453e84331a25ffa85a8d95b7a
+      INDEXNOW_KEY: e261927fab224f5187d022aac6fbdfcb
     steps:
     - name: 🚚 Get latest code
       uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
