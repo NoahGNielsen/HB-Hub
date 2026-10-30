@@ -235,7 +235,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir, string $b
 
         <?php if ($board === 'engine' || $board === 'engineAll'): ?>
         <p class="casino-intro">
-            Who has given the most Engine Parts to <?= $board === 'engine' ? 'Cosmic Engine #' . $engineNumber . ', the one being built' : 'every Cosmic Engine so far' ?>,
+            Who has given the most Engine Parts to <?= $board === 'engine' ? 'the ' . htmlspecialchars(HBHUB_MINER_ENGINES[$engineNumber]['name'] ?? 'Cosmic Engine') . ' (Engine #' . $engineNumber . '), the one being built' : 'every Engine so far' ?>,
             and how many came from Strange Matter, ore, Engine Shifts and Anomalies. It's updated every time their game saves.
         </p>
 

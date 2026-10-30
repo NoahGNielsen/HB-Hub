@@ -12,8 +12,8 @@
 // Times are the server's Unix ms (the difference to this computer's clock is measured on every save).
 // The page has six views (Ore, Dark Matter, Antimatter, Strange Matter, Engine, Anomalies, in data-miner-view): the menu's links switch
 // between them here, with history.pushState, so the game keeps running instead of the page loading again. The Strange
-// Matter view has the skill tree, drawn here from the skills (see renderTree()). The Engine view is the Cosmic Engine
-// the whole site builds together (see "The Cosmic Engine"): every save's answer says how far it is. The Anomalies view has
+// Matter view has the skill tree, drawn here from the skills (see renderTree()). The Engine view is the Engine
+// the whole site is building together (see "The Cosmic Engine"): every save's answer says how far it is. The Anomalies view has
 // the challenge runs (see "Anomalies"): while the player is in one, its game is the one played (state), inside the
 // save (saveState), and a banner over every view says so. Stats, achievements and how to
 // play are popups (data-miner-popup), opened by the buttons by the title (data-miner-open).
@@ -54,12 +54,15 @@
     const SALT_SHIFT = 6;
     const SALT_ANOMALY = 7;
     const SALT_WEEKLY = 8;
+    const SALT_SHIFT_SPARE = 9;
     const ENGINE_STAGES = CONFIG.engineStages; // stage 1 first
     const SHIFTS = CONFIG.shifts;
     const ANOMALIES = CONFIG.anomalies;
     const ANOMALY_IDS = Object.keys(ANOMALIES);
     const ANOMALY_TIERS = CONFIG.anomalyTiers; // by tier number
     const SKINS = CONFIG.skins;
+    const BACKDROPS = CONFIG.backdrops;
+    const ENGINES = CONFIG.engines; // by number
 
     // ----- The game: the same as miner.php. s is the save (hbHubMinerNewState() there has its shape).
 
@@ -112,7 +115,7 @@
         return effects;
     }
 
-    // What the perks of the Cosmic Engine's stages done so far do together (hbHubMinerEngineEffects()), by how many
+    // What the perks of every Engine's stages done so far do together (hbHubMinerEngineEffects()), by how many
     const engineCache = new Map();
     function engineEffects(s) {
         const done = Math.min(s.engineStage ?? 0, ENGINE_STAGES.length);
@@ -128,11 +131,22 @@
         return effects;
     }
 
+    // The stages of Engine number (hbHubMinerEngineStages()), the Engine being built from engineStage
+    // (hbHubMinerEngineNumber()), and whether a stage with a perk of type is done (hbHubMinerEnginePerk())
+    const engineStagesOf = (number) => ENGINE_STAGES.slice((number - 1) * CONFIG.engineStageTotal, number * CONFIG.engineStageTotal);
+    const engineNumber = (s) => Math.floor((s.engineStage ?? 0) / CONFIG.engineStageTotal) + 1;
+    const enginePerk = (s, type) => ENGINE_STAGES.slice(0, s.engineStage ?? 0).some((stage) => stage.perk.type === type);
+    // An Engine's name (HBHUB_MINER_ENGINES), for "the ... is finished"
+    const engineNameOf = (number) => ENGINES[number]?.name ?? 'Cosmic Engine';
+
     // What Ignition does to production at the game's time (hbHubMinerIgnition())
     const ignition = (s) => (s.engineIgnited > 0 && s.tick >= s.engineIgnited && s.tick < s.engineIgnited + CONFIG.ignitionMs ? CONFIG.ignitionTimes : 1);
 
-    // What a part given from ore is worth now, in quarter parts (hbHubMinerOreQuarters())
-    const oreQuarters = (s) => CONFIG.engineOreShare[ENGINE_STAGES[Math.min(s.engineStage ?? 0, ENGINE_STAGES.length - 1)].section];
+    // What a part given from ore is worth now, in quarter parts (hbHubMinerOreQuarters()), and how many can be given a day
+    // (hbHubMinerOrePartsMax())
+    const oreQuarters = (s) => Math.max(CONFIG.engineOreShare[ENGINE_STAGES[Math.min(s.engineStage ?? 0, ENGINE_STAGES.length - 1)].section],
+        engineEffects(s).oreFloor);
+    const orePartsMax = (s) => CONFIG.engineOreParts + engineEffects(s).oreParts;
 
     // Gives gift to the Engine: into given, and counted in engineGiven (hbHubMinerGive())
     function give(s, given, gift) {
@@ -150,6 +164,7 @@
             s.engineDay = day;
             s.donatedToday = 0;
             s.shifts = new Array(CONFIG.shiftCount).fill(0);
+            s.shiftSwap = -1;
         }
     }
 
@@ -167,12 +182,33 @@
         return tasks;
     }
 
+    // The day's spare Shift (hbHubMinerShiftSpare()), the player's Shifts with the swapped one as it (hbHubMinerPlayerShifts(),
+    // after engineDay()), and swapping one (hbHubMinerShiftSwap())
+    function shiftSpare(day) {
+        const left = Object.keys(SHIFTS).filter((id) => !shiftTasks(day).includes(id));
+        return left[Math.floor(random(0, day, SALT_SHIFT_SPARE) * left.length)];
+    }
+    function playerShifts(s) {
+        const tasks = [...shiftTasks(s.engineDay)];
+        if ((s.shiftSwap ?? -1) >= 0) tasks[s.shiftSwap] = shiftSpare(s.engineDay);
+        return tasks;
+    }
+    function shiftSwap(s, index) {
+        if (!Number.isInteger(index) || index < 0 || index >= CONFIG.shiftCount || !canGive(s) || engineEffects(s).shiftSwap < 1) return false;
+        engineDay(s);
+        const task = playerShifts(s)[index];
+        if ((s.shiftSwap ?? -1) >= 0 || s.shifts[index] >= SHIFTS[task].goal) return false;
+        s.shiftSwap = index;
+        s.shifts[index] = 0;
+        return true;
+    }
+
     // Counts amount towards today's Shift task, and puts a Shift just done in given (hbHubMinerShift()). given is null
     // for guests, who can't give parts, and then nothing is counted.
     function shift(s, task, amount, given) {
         if (given === null || !canGive(s)) return;
         engineDay(s);
-        const tasks = shiftTasks(s.engineDay);
+        const tasks = playerShifts(s);
         const index = tasks.indexOf(task);
         const goal = SHIFTS[task].goal;
         if (index < 0 || s.shifts[index] >= goal) return;
@@ -738,6 +774,7 @@
         newMultiverse(game);
         game.comet = { n: 0, at: game.tick + cometWait(game, 0) };
         s.anomaly = { mods, started: s.tick, goal: anomalyGoal(mods), state: game };
+        s.lastAnomaly = anomalyKey(mods);
         return true;
     }
 
@@ -759,8 +796,10 @@
         const isWeekly = anomalyKey(weeklyMods(week)) === key;
         const record = s.anomalies[key] ?? null;
         let parts = anomalyParts(s, anomaly.mods, isWeekly);
-        if (record !== null && ms >= record.best) parts = Math.floor(parts * CONFIG.anomalyRepeat);
-        s.anomalies[key] = { done: (record?.done ?? 0) + 1, best: record !== null ? Math.min(record.best, ms) : ms };
+        // All of them the first time for each Engine, and for a new best time
+        const number = engineNumber(s);
+        if (record !== null && (record.engine ?? 1) >= number && ms >= record.best) parts = Math.floor(parts * CONFIG.anomalyRepeat);
+        s.anomalies[key] = { done: (record?.done ?? 0) + 1, best: record !== null ? Math.min(record.best, ms) : ms, engine: number };
         if (isWeekly) s.weeklies = (s.weeklies ?? 0) + 1;
         if (given !== null && s.warps >= 1) give(s, given, [CONFIG.sourceAnomaly, parts, key, ms, isWeekly ? week : null]);
         anomalyLeave(s);
@@ -791,6 +830,17 @@
             s.skin = action.id;
             return true;
         }
+        if (action.type === 'backdrop') { // these three too
+            if (!enginePerk(s, 'backdrops') || (action.id !== null && !BACKDROPS[action.id])) return false;
+            s.backdrop = action.id;
+            return true;
+        }
+        if (action.type === 'sparks') {
+            if (!enginePerk(s, 'sparks') || typeof action.on !== 'boolean') return false;
+            s.sparks = action.on;
+            return true;
+        }
+        if (action.type === 'shiftSwap') return shiftSwap(s, action.index);
         if (s.anomaly && action.type !== 'anomalyStart' && action.type !== 'anomalyQuit') {
             if (['skill', 'rip', 'donate'].includes(action.type)) return false;
             const result = apply(s.anomaly.state, action, null);
@@ -862,7 +912,7 @@
                 if (given === null || !canGive(s) || !Number.isInteger(parts) || parts < 1) return false;
                 engineDay(s);
                 if (action.what === 'ore') {
-                    if (s.donatedToday + parts > CONFIG.engineOreParts || !canAfford(s, oreDonationCost(s, parts))) return false;
+                    if (s.donatedToday + parts > orePartsMax(s) || !canAfford(s, oreDonationCost(s, parts))) return false;
                     s.ore = Math.max(0, s.ore - oreDonationCost(s, parts));
                     s.donatedToday += parts;
                     // Worth less in the later sections; what doesn't make a whole part waits in engineOreRest
@@ -900,7 +950,7 @@
         if (!unlock) return false;
         if (unlock.anomaly) return anomalyDone(s, unlock.anomaly);
         if (unlock.stage) return (s.engineStage ?? 0) >= unlock.stage;
-        if (unlock.ignition) return s.ignitionCrew === true;
+        if (unlock.crew) return (s.crews ?? []).includes(unlock.crew);
         return false;
     }
 
@@ -1588,7 +1638,7 @@
     // ore that can still be given to the Engine
     function renderMenu() {
         const donated = saveState.engineDay === today() ? saveState.donatedToday : 0;
-        menuNews.engine.hidden = !canGiveNow() || donated >= CONFIG.engineOreParts
+        menuNews.engine.hidden = !canGiveNow() || donated >= orePartsMax(saveState)
             || !canAfford(saveState, oreDonationCost({ donatedToday: donated }, 1));
         menuCounts.darkMatter.textContent = state.warps > 0 ? format(state.dark) : '';
         menuCounts.antimatter.textContent = state.crunches > 0 ? format(state.antimatter) : '';
@@ -1802,6 +1852,12 @@
             if (skin === '') delete asteroid.dataset.skin;
             else asteroid.dataset.skin = skin;
         }
+        // The background picked (data-backdrop on the page, see renderLooks()), while its perk is done
+        const backdrop = engineEffectsOn('backdrops') ? saveState.backdrop ?? '' : '';
+        if ((root.dataset.backdrop ?? '') !== backdrop) {
+            if (backdrop === '') delete root.dataset.backdrop;
+            else root.dataset.backdrop = backdrop;
+        }
         const stage = String(STAGES.findLastIndex((at) => state.runOre >= at));
         if (asteroid.dataset.stage === stage) return;
         if (asteroid.dataset.stage !== undefined) {
@@ -1906,11 +1962,22 @@
         cometButton.style.setProperty('--comet-left', (10 + Math.random() * 70) + 'vw');
         cometButton.style.setProperty('--comet-ms', stay + 'ms');
         cometButton.style.setProperty('--comet-delay', -(state.tick - comet.at) + 'ms');
+        // The Slag Channels' perk: a Golden Comet in the colours of the asteroid's skin
+        const trail = kind !== 'diamond' && engineEffectsOn('cometTrail') ? saveState.skin ?? '' : '';
+        if (trail === '') delete cometButton.dataset.skin;
+        else cometButton.dataset.skin = trail;
         cometButton.hidden = false;
         cometButton.classList.remove('is-flying');
         void cometButton.offsetWidth; // so the animation starts over
         cometButton.classList.add('is-flying');
         sound('comet');
+        // The Anvil Seal's perk: a bell, and the edges of the page glow for a moment (only for a comet that just came)
+        if (engineEffectsOn('cometBell') && state.tick - comet.at < 2000) {
+            sound('bell');
+            root.classList.remove('is-comet-bell');
+            void root.offsetWidth;
+            root.classList.add('is-comet-bell');
+        }
     }
 
     function renderWarp() {
@@ -2245,7 +2312,8 @@
     // saying how to get them. Picking one is an action like any other (apply()), so it's saved with the game.
     const skinList = root.querySelector('[data-miner-skins]');
     const SKIN_UNLOCK_TEXT = (unlock) => (unlock.anomaly ? 'Finish ' + ANOMALIES[unlock.anomaly].name + '.'
-        : unlock.stage ? 'Comes with the Cosmic Engine\'s ' + ENGINE_STAGES[unlock.stage - 1].name + '.' : 'For everyone who gives parts to Ignition.');
+        : unlock.stage ? 'Comes with the ' + engineNameOf(Math.ceil(unlock.stage / CONFIG.engineStageTotal)) + '\'s ' + ENGINE_STAGES[unlock.stage - 1].name + '.'
+            : 'For everyone who gives parts to the ' + engineNameOf(unlock.crew) + '\'s last stage, ' + ENGINE_STAGES[unlock.crew * CONFIG.engineStageTotal - 1].name + '.');
 
     function renderSkins() {
         const buttons = [[null, { name: 'Usual', unlock: null }], ...Object.entries(SKINS)].map(([id, skin]) => {
@@ -2259,7 +2327,47 @@
             return button;
         });
         skinList.replaceChildren(...buttons);
+        renderLooks();
     }
+
+    // The backgrounds (CONFIG.backdrops, with the Hammer Head's perk) and the sparks switch (with the Crucible Seal's),
+    // in the stats popup under the skins. Both are actions, saved with the game like the skin.
+    const looksBox = root.querySelector('[data-miner-looks]');
+    const backdropList = root.querySelector('[data-miner-backdrops]');
+    const sparksBox = root.querySelector('[data-miner-sparks-box]');
+    const sparksSwitch = root.querySelector('[data-miner-sparks]');
+
+    function renderLooks() {
+        const hasBackdrops = engineEffectsOn('backdrops');
+        const hasSparks = engineEffectsOn('sparks');
+        looksBox.hidden = !hasBackdrops && !hasSparks;
+        backdropList.hidden = !hasBackdrops;
+        looksBox.querySelector('h3').hidden = !hasBackdrops;
+        if (hasBackdrops) {
+            backdropList.replaceChildren(...[[null, { name: 'Usual' }], ...Object.entries(BACKDROPS)].map(([id, backdrop]) => {
+                const button = element('button', 'miner-skin', backdrop.name);
+                button.type = 'button';
+                button.dataset.backdrop = id ?? '';
+                button.setAttribute('aria-pressed', String((saveState.backdrop ?? null) === id));
+                return button;
+            }));
+        }
+        sparksBox.hidden = !hasSparks;
+        sparksSwitch.checked = saveState.sparks !== false;
+    }
+
+    backdropList.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-backdrop]');
+        if (!button || !act({ type: 'backdrop', id: button.dataset.backdrop || null })) return;
+        sound('buy');
+        renderLooks();
+        renderStage();
+        saveSoon();
+    });
+    sparksSwitch.addEventListener('change', () => {
+        if (act({ type: 'sparks', on: sparksSwitch.checked })) saveSoon();
+        renderLooks();
+    });
 
     skinList.addEventListener('click', (event) => {
         const button = event.target.closest('[data-skin]');
@@ -2580,6 +2688,22 @@
         ['IGNITION! The Cosmic Engine roars to life. The universe will need a moment.', (s) => s.engineStage >= 25],
         ['Scientists confirm: stacking Anomalies is "not recommended". Miners stack them anyway.', (s) => s.engineStage >= 14],
         ['Survivor of The Gauntlet asked how it was. Just stares into the distance.', (s) => s.engineStage >= 14],
+        // Engine #2, the Starforge (its Bedrock's perk: lines that only come once it's done)
+        ['Starforge news: Bedrock laid. Blacksmiths from three galaxies have applied for the job.', (s) => s.engineStage >= 26],
+        ['Starforge news: the Anvil Plate is in. It is very, very heavy. Nobody knows how it got there.', (s) => s.engineStage >= 27],
+        ['Starforge news: Tool Racks fitted. Every hammer has a name. Most of them are "Gerald".', (s) => s.engineStage >= 28],
+        ['Starforge news: the Anvil Seal holds. A bell has been hung, "for the comets".', (s) => s.engineStage >= 30],
+        ['Starforge news: the Bellows breathe. The forge sounds like it\'s snoring.', (s) => s.engineStage >= 32],
+        ['Starforge news: Heat Shields up. Somebody can finally see next week coming.', (s) => s.engineStage >= 34],
+        ['Starforge news: the Crucible is poured. It smells faintly of hot ore and ambition.', (s) => s.engineStage >= 36],
+        ['Starforge news: the Hall of Engines opens. The Cosmic Engine gets the best spot by the window.', (s) => s.engineStage >= 39],
+        ['Starforge news: the Hammer Head is mounted. Please do not stand under the Hammer Head.', (s) => s.engineStage >= 41],
+        ['Starforge news: Shockwave Dampers fitted. Neighbouring galaxies say thank you.', (s) => s.engineStage >= 44],
+        ['Starforge news: Quench Tanks filled. The steam can be seen from the next universe over.', (s) => s.engineStage >= 46],
+        ['Starforge news: the Master Mould is ready. It is star-shaped. Of course it is.', (s) => s.engineStage >= 49],
+        ['FIRST LIGHT! The Starforge strikes its first star. Astronomers have to update every chart.', (s) => s.engineStage >= 50],
+        ['A Forgemaster was asked what they forge. "Stars," they said, and went back to work.', (s) => s.engineStage >= 26],
+        ['The Starforge\'s anvil rings again. Somewhere, a comet flinches.', (s) => s.engineStage >= 26],
     ];
     let lastNews = -1;
 
@@ -2655,6 +2779,11 @@
         // The Cosmic Engine (once the Exhaust Nozzle is done): a clunk and a hiss when it gets parts, a roar for a stage
         engine: [[90, 0, 0.18, 'square', 0.08, 60], [140, 0.1, 0.25, 'triangle', 0.1, 70], [2400, 0.15, 0.3, 'sawtooth', 0.02, 1200]],
         engineStage: [[55, 0, 1.6, 'sawtooth', 0.12, 220], [110, 0.2, 1.4, 'square', 0.06, 440], [880, 0.9, 0.6, 'sine', 0.1, 1760]],
+        // The Starforge (once its Bedrock is done): an anvil ringing when it gets parts, a hammer blow and a long ring for
+        // a stage. And the Anvil Seal's comet bell.
+        forge: [[1760, 0, 0.3, 'triangle', 0.09, 1700], [2637, 0, 0.45, 'sine', 0.05, 2600], [880, 0.01, 0.12, 'square', 0.03, 600]],
+        forgeStage: [[110, 0, 0.5, 'square', 0.12, 55], [1319, 0.05, 1.6, 'sine', 0.1, 1300], [1976, 0.1, 1.4, 'triangle', 0.06, 1960], [2637, 0.6, 1.0, 'sine', 0.05]],
+        bell: [[2093, 0, 0.8, 'sine', 0.08], [2637, 0.05, 0.7, 'sine', 0.05], [3136, 0.1, 0.6, 'sine', 0.03]],
     };
 
     function sound(name) {
@@ -2712,6 +2841,19 @@
             bit.style.setProperty('--size', 4 + Math.random() * 6 + 'px');
             bit.addEventListener('animationend', () => bit.remove());
             field.append(bit);
+        }
+        // The Crucible Seal's sparks, unless they've been turned off
+        if (!engineEffectsOn('sparks') || saveState.sparks === false) return;
+        for (let i = 0; i < (isCrit ? 8 : 3); i++) {
+            const spark = element('span', 'miner-spark');
+            const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.4; // mostly upwards
+            const distance = 50 + Math.random() * (isCrit ? 140 : 90);
+            spark.style.setProperty('--x', x + 'px');
+            spark.style.setProperty('--y', y + 'px');
+            spark.style.setProperty('--dx', Math.cos(angle) * distance + 'px');
+            spark.style.setProperty('--dy', Math.sin(angle) * distance + 'px');
+            spark.addEventListener('animationend', () => spark.remove());
+            field.append(spark);
         }
     }
 
@@ -3262,8 +3404,9 @@
     // ----- The Cosmic Engine (the Engine view): the stage being built and its lock, what you can give it, today's
     // Engine Shifts, every stage with its perk, the top contributors and the latest parts given. engine is the
     // server's, from every save's answer (hbHubMinerEngineSummary() in assets/php/games/spaceOreMiner/engine.php: number,
-    // done, parts, total, costs, finished, open, lock); top, feed and mine only come while this view is open
-    // (engine=1 in save()), and the last ones are kept until the next.
+    // done, parts, total, costs, finished, open, lock); top, feed, mine and hall only come while this view is open
+    // (engine=1 in save()), and the last ones are kept until the next. It's the Engine being built (number, ENGINES):
+    // done and the stages are its own, while the save's engineStage counts every Engine's.
 
     const engineView = root.querySelector('[data-miner-engine-view]');
     const engineNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-engine]')].map((node) => [node.dataset.minerEngine, node]));
@@ -3278,6 +3421,8 @@
     const engineStageList = root.querySelector('[data-miner-engine-stages]');
     const engineTop = root.querySelector('[data-miner-engine-top]');
     const engineFeed = root.querySelector('[data-miner-engine-feed]');
+    const engineHall = root.querySelector('[data-miner-engine-hall]');
+    const engineHallList = root.querySelector('[data-miner-engine-hall-list]');
     const SOURCE_TEXT = { [CONFIG.sourceOre]: 'ore', [CONFIG.sourceStrange]: 'Strange Matter', [CONFIG.sourceShift]: 'an Engine Shift' };
 
     let engine = null;
@@ -3288,13 +3433,20 @@
     // A new answer from the server. A stage done since the one before gets a toast and the ticker straight away (not
     // on the first answer, which only says how far it is).
     function adoptEngine(next) {
-        if (engine && next.number === engine.number && next.done > engine.done) {
-            for (let stage = engine.done + 1; stage <= next.done && stage <= ENGINE_STAGES.length; stage++) {
+        if (engine && (next.number > engine.number || next.done > engine.done)) {
+            // Counted over every Engine, so the last stages of one that was done meanwhile come first
+            const from = (engine.number - 1) * CONFIG.engineStageTotal + engine.done;
+            const to = Math.min((next.number - 1) * CONFIG.engineStageTotal + next.done, ENGINE_STAGES.length);
+            for (let stage = from + 1; stage <= to; stage++) {
                 const { name, perk } = ENGINE_STAGES[stage - 1];
-                toast('starForge', 'The Cosmic Engine\'s ' + name + ' is finished! ' + perk.text, 'is-welcome', 9000);
-                engineNews = 'Cosmic Engine news: the ' + name + ' is finished. ' + perk.text;
+                const engineName = engineNameOf(Math.ceil(stage / CONFIG.engineStageTotal));
+                toast('starForge', 'The ' + engineName + '\'s ' + name + ' is finished! ' + perk.text, 'is-welcome', 9000);
+                engineNews = engineName + ' news: the ' + name + ' is finished. ' + perk.text;
             }
-            if (engineEffectsOn('news')) sound('engineStage');
+            if (next.number > engine.number && ENGINES[next.number]) {
+                toast('starForge', 'Engine #' + next.number + ', the ' + engineNameOf(next.number) + ', has started! Every stage of it is new.', 'is-welcome', 9000);
+            }
+            if (engineEffectsOn('news')) sound(newsSounds() + 'Stage');
             renderTicker();
         }
         engine = engine && next.number === engine.number ? { ...engine, ...next } : next;
@@ -3305,13 +3457,15 @@
     const canGiveNow = () => canGive(saveState) && !saveState.anomaly;
 
     // Whether the perk of 'type' that isn't a number (news, skin, title, ...) is done, so everyone has it
-    const engineEffectsOn = (type) => ENGINE_STAGES.slice(0, saveState?.engineStage ?? 0).some((stage) => stage.perk.type === type);
+    const engineEffectsOn = (type) => saveState !== null && enginePerk(saveState, type);
+    // The sounds the Engines make when they get parts: the last news perk's (engine, or the Starforge's forge)
+    const newsSounds = () => ENGINE_STAGES.slice(0, saveState?.engineStage ?? 0).filter((stage) => stage.perk.type === 'news').at(-1)?.perk.sounds ?? 'engine';
 
     // What was just given (apply()'s given): a toast for each Shift done (donations and Anomalies have their own), and
     // the parts on the bar straight away, until the next save says how far the Engine really is
     function announceGiven(given) {
         if (!given || given.length === 0) return;
-        if (engineEffectsOn('news')) sound('engine'); // the Exhaust Nozzle's Engine sounds
+        if (engineEffectsOn('news')) sound(newsSounds()); // the Exhaust Nozzle's Engine sounds, or the Bedrock's anvil
         for (const [source, parts] of given) {
             if (engine) {
                 engine.parts += parts;
@@ -3319,7 +3473,7 @@
             }
             if (source === CONFIG.sourceShift) {
                 sound('buy');
-                toast('clipboard', 'Engine Shift done! +' + format(parts) + ' Engine Parts for the Cosmic Engine.');
+                toast('clipboard', 'Engine Shift done! +' + format(parts) + ' Engine Parts for the ' + engineNameOf(engine?.number ?? engineNumber(saveState)) + '.');
             }
         }
         if (!isSending) saveSoon();
@@ -3331,14 +3485,16 @@
     function renderEngine() {
         if (!engine) return;
         const done = engine.done;
-        const isAllDone = done >= ENGINE_STAGES.length; // every stage there is so far
-        const index = Math.min(done, ENGINE_STAGES.length - 1);
-        const stage = ENGINE_STAGES[index];
+        const stages = engineStagesOf(engine.number);
+        const isAllDone = done >= stages.length; // every stage there is so far
+        const index = Math.min(done, stages.length - 1);
+        const stage = stages[index];
         const cost = engine.costs[index];
+        engineNumbers.title.textContent = engineNameOf(engine.number);
         engineNumbers.number.textContent = '#' + engine.number;
-        engineNumbers.name.textContent = isAllDone ? 'Ignited!' : stage.name;
-        engineNumbers.stage.textContent = isAllDone ? 'All ' + ENGINE_STAGES.length + ' stages done. Engine #' + (engine.number + 1) + ' is coming.'
-            : 'Stage ' + (done + 1) + ' of ' + CONFIG.engineStageTotal + ', ' + CONFIG.engineSections[stage.section];
+        engineNumbers.name.textContent = isAllDone ? 'Done!' : stage.name;
+        engineNumbers.stage.textContent = isAllDone ? 'All ' + stages.length + ' stages done. Engine #' + (engine.number + 1) + ' is coming.'
+            : 'Stage ' + (done + 1) + ' of ' + CONFIG.engineStageTotal + ', ' + ENGINES[engine.number].sections[stage.section];
         engineNumbers.parts.textContent = format(isAllDone ? cost : engine.parts);
         engineNumbers.cost.textContent = format(cost);
         engineNumbers.total.textContent = format(engine.total);
@@ -3354,7 +3510,13 @@
         } else if (isAllDone && engine.ignited > 0) {
             const left = engine.ignited + CONFIG.ignitionMs - serverNow();
             lockText = left > 0 ? 'Everything mines ' + CONFIG.ignitionTimes + ' times as much for another ' + formatDuration(left) + '.'
-                : 'The Engine was ignited ' + formatDate(engine.ignited) + '.';
+                : 'The Engine was done ' + formatDate(engine.ignited) + '.';
+        }
+        // The Engine before this one was just done: its boost still runs for a while
+        const boostLeft = (saveState.engineIgnited ?? 0) + CONFIG.ignitionMs - serverNow();
+        if (!isAllDone && saveState.engineIgnited > 0 && boostLeft > 0) {
+            lockText = 'Engine #' + (engine.number - 1) + ' is done: everything mines ' + CONFIG.ignitionTimes + ' times as much for another '
+                + formatDuration(boostLeft) + '.' + (lockText !== '' ? ' ' + lockText : '');
         }
         engineLock.textContent = lockText;
         engineLock.hidden = lockText === '';
@@ -3370,7 +3532,8 @@
         if (IS_GUEST) note = 'Only players with an account can give the Engine parts. Sign up to help build it!';
         else if (saveState.warps < 1) note = 'Make your first Warp Jump to start giving the Engine parts.';
         else if (!saveState.engineOpen) {
-            note = engine.done >= ENGINE_STAGES.length ? 'The Engine is ignited! Engine #' + (engine.number + 1) + ' is coming. Parts from Anomalies are kept for it.'
+            note = engine.done >= engineStagesOf(engine.number).length ? 'The ' + engineNameOf(engine.number) + ' is done! Engine #' + (engine.number + 1)
+                + ' is coming. Parts from Anomalies are kept for it.'
                 : 'The Engine is full and waiting for its lock, so it only takes parts from Anomalies until then.';
         } else if (saveState.anomaly) note = 'You\'re in an Anomaly: leave it, or finish it, to give parts from your own game.';
         engineGiveNote.textContent = note;
@@ -3378,30 +3541,34 @@
         const isOpen = canGiveNow();
 
         const donated = saveState.engineDay === today() ? saveState.donatedToday : 0;
-        const left = CONFIG.engineOreParts - donated;
+        const most = orePartsMax(saveState);
+        const left = most - donated;
         const oreCost = oreDonationCost({ donatedToday: donated }, 1);
         engineNumbers.oreCost.textContent = format(oreCost);
         const share = oreQuarters(saveState) / CONFIG.engineOreQuarters; // less in the later sections
-        engineNumbers.oreLeft.textContent = (left > 0 ? left + ' of ' + CONFIG.engineOreParts + ' left today' : 'No more today')
+        engineNumbers.oreLeft.textContent = (left > 0 ? left + ' of ' + most + ' left today' : 'No more today')
             + (share < 1 ? '. In this section a part from ore counts as ' + (share === 0.5 ? 'half' : 'a quarter') + ' a part.' : '');
         oreDonateButton.disabled = !isOpen || left < 1 || !canAfford(saveState, oreCost);
 
-        const most = Math.floor(saveState.strange / CONFIG.engineStrangePart);
-        strangeDonateCount.max = String(Math.max(1, most));
+        const strangeMost = Math.floor(saveState.strange / CONFIG.engineStrangePart);
+        strangeDonateCount.max = String(Math.max(1, strangeMost));
         engineNumbers.strangeCost.textContent = format(strangeCount() * CONFIG.engineStrangePart);
         engineNumbers.strangeHave.textContent = format(saveState.strange);
-        strangeDonateButton.disabled = !isOpen || most < 1;
+        strangeDonateButton.disabled = !isOpen || strangeMost < 1;
     }
 
     // How many parts of Strange Matter the box asks for: at least 1, at most what there is
     const strangeCount = () => Math.max(1, Math.min(Math.floor(Number(strangeDonateCount.value)) || 1,
         Math.floor(saveState.strange / CONFIG.engineStrangePart)));
 
-    // Today's Shifts, with how far each is (none yet when the save's day is an older one)
+    // Today's Shifts, with how far each is (none yet when the save's day is an older one), and a Swap button on the
+    // ones that aren't done while the player can still swap one today (the shiftSwap perk)
     function renderShifts() {
-        const tasks = shiftTasks(today());
-        const progress = saveState.engineDay === today() ? saveState.shifts : tasks.map(() => 0);
-        const key = tasks.join() + '|' + progress.join() + '|' + canGiveNow();
+        const isToday = saveState.engineDay === today();
+        const tasks = isToday ? playerShifts(saveState) : shiftTasks(today());
+        const progress = isToday ? saveState.shifts : tasks.map(() => 0);
+        const canSwap = canGiveNow() && engineEffects(saveState).shiftSwap >= 1 && (!isToday || (saveState.shiftSwap ?? -1) < 0);
+        const key = tasks.join() + '|' + progress.join() + '|' + canGiveNow() + '|' + canSwap;
         if (key === shiftsKey) return;
         shiftsKey = key;
         shiftList.replaceChildren(...tasks.map((id, i) => {
@@ -3418,6 +3585,13 @@
                 : format(progress[i]) + ' / ' + format(goal);
             item.append(element('span', 'miner-shift-name', SHIFTS[id].text), bar,
                 element('span', 'miner-shift-count', progress[i] >= goal ? 'Done' : count));
+            if (canSwap && progress[i] < goal) {
+                const swap = element('button', 'casino-btn miner-shift-swap', 'Swap');
+                swap.type = 'button';
+                swap.title = 'Swap this Shift for another one (once a day). It starts from nothing.';
+                swap.dataset.minerShiftSwap = String(i);
+                item.append(swap);
+            }
             return item;
         }));
         const midnight = new Date((today() + 1) * CONFIG.dayMs).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -3429,16 +3603,17 @@
 
     // Every stage there is so far, the top contributors and the latest parts given, built again only when they change
     function renderEngineLists() {
-        const key = engine.done + '|' + engine.costs.join() + '|' + (engine.top ? engine.feed.length + ':' + (engine.feed[0]?.at ?? 0) + ':' + engine.mine : '');
+        const key = engine.number + '|' + engine.done + '|' + engine.costs.join() + '|'
+            + (engine.top ? engine.feed.length + ':' + (engine.feed[0]?.at ?? 0) + ':' + engine.mine + ':' + (engine.hall?.length ?? 0) : '');
         if (key === engineListsKey) return;
         engineListsKey = key;
 
         let section = null;
         const stages = [];
-        ENGINE_STAGES.forEach((stage, index) => {
+        engineStagesOf(engine.number).forEach((stage, index) => {
             if (stage.section !== section) {
                 section = stage.section;
-                stages.push(element('li', 'miner-engine-section', section + '. ' + CONFIG.engineSections[section]));
+                stages.push(element('li', 'miner-engine-section', section + '. ' + ENGINES[engine.number].sections[section]));
             }
             const isDone = index < engine.done;
             const item = element('li', 'miner-engine-stage' + (isDone ? ' is-done' : index === engine.done ? ' is-now' : ''));
@@ -3457,6 +3632,7 @@
 
         engineNumbers.mine.hidden = IS_GUEST || engine.mine === undefined;
         engineNumbers.mine.textContent = 'You\'ve given ' + partsText(engine.mine ?? 0) + ' to this Engine.';
+        renderEngineHall();
         if (!engine.top) { // guests never get them: players' names are only for members
             const text = IS_GUEST ? 'Sign up or log in to see who\'s building the Engine.' : 'Loading…';
             engineTop.replaceChildren(element('li', 'miner-engine-empty', text));
@@ -3480,13 +3656,36 @@
             })));
     }
 
+    // The Hall of Engines (the hall perk): every Engine done so far, with when, how many parts from how many players, and
+    // who gave the most. Only there once the server sends it (engine.hall, with the top contributors).
+    function renderEngineHall() {
+        engineHall.hidden = !engine.hall || engine.hall.length === 0;
+        if (engineHall.hidden) return;
+        engineHallList.replaceChildren(...engine.hall.map((row) => {
+            const item = element('li', 'miner-engine-hall-row');
+            item.append(element('strong', 'miner-engine-who', 'Engine #' + row.number + ', the ' + engineNameOf(row.number)),
+                element('span', 'miner-engine-what', 'Done ' + formatDate(row.ignited) + ' with ' + partsText(row.parts) + ' from '
+                    + format(row.players) + (row.players === 1 ? ' player' : ' players') + '.'
+                    + (row.top.length > 0 ? ' Built most by ' + row.top.join(', ') + '.' : '')));
+            return item;
+        }));
+    }
+
+    shiftList.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-miner-shift-swap]');
+        if (!button || !act({ type: 'shiftSwap', index: Number(button.dataset.minerShiftSwap) })) return;
+        sound('buy');
+        toast('clipboard', 'Shift swapped. The new one starts from nothing.');
+        renderShifts();
+    });
+
     oreDonateButton.addEventListener('click', () => {
         const donated = saveState.engineDay === today() ? saveState.donatedToday : 0;
         const cost = oreDonationCost({ donatedToday: donated }, 1);
         const share = oreQuarters(saveState) / CONFIG.engineOreQuarters;
         if (!act({ type: 'donate', what: 'ore', parts: 1 })) return;
         sound('buy');
-        toast('orePile', 'You gave the Cosmic Engine ' + (share === 1 ? '1 part' : share === 0.5 ? 'half a part' : 'a quarter of a part')
+        toast('orePile', 'You gave the ' + engineNameOf(engine?.number ?? engineNumber(saveState)) + ' ' + (share === 1 ? '1 part' : share === 0.5 ? 'half a part' : 'a quarter of a part')
             + ' for ' + format(cost) + ' ore. Thanks!');
         renderEngine(); // the parts are on the bar already, see announceGiven()
     });
@@ -3494,7 +3693,7 @@
         const parts = strangeCount();
         if (!act({ type: 'donate', what: 'strange', parts })) return;
         sound('buy');
-        toast('strangelet', 'You gave the Cosmic Engine ' + partsText(parts) + ' for ' + format(parts * CONFIG.engineStrangePart) + ' Strange Matter. Thanks!');
+        toast('strangelet', 'You gave the ' + engineNameOf(engine?.number ?? engineNumber(saveState)) + ' ' + partsText(parts) + ' for ' + format(parts * CONFIG.engineStrangePart) + ' Strange Matter. Thanks!');
         renderEngine();
     });
     strangeDonateCount.addEventListener('input', () => {
@@ -3519,6 +3718,7 @@
     const weeklyText = root.querySelector('[data-miner-weekly-text]');
     const weeklyBest = root.querySelector('[data-miner-weekly-best]');
     const weeklyStart = root.querySelector('[data-miner-weekly-start]');
+    const weeklyNext = root.querySelector('[data-miner-weekly-next]');
     const stackPicks = root.querySelector('[data-miner-stack-picks]');
     const stackInfo = root.querySelector('[data-miner-stack-text]');
     const stackStart = root.querySelector('[data-miner-stack-start]');
@@ -3575,7 +3775,7 @@
             sound('achievement');
             toast(ANOMALIES[anomalyMods(was.key)[0]].icon, name + ' finished in ' + formatClock(ms)
                 + (was.record === null ? ', for the first time!' : isBest ? ', a new best time!' : '.')
-                + (IS_GUEST || saveState.warps < 1 ? '' : ' +' + partsText(parts) + ' for the Cosmic Engine.') + away, 'is-welcome', 10000);
+                + (IS_GUEST || saveState.warps < 1 ? '' : ' +' + partsText(parts) + ' for the ' + engineNameOf(engineNumber(saveState)) + '.') + away, 'is-welcome', 10000);
         } else if (isLeaving) {
             toast('warp', 'You left ' + name + '.' + away, '', 7000);
         } else {
@@ -3603,7 +3803,11 @@
             ? formatClock(Math.max(0, anomaly.started + CONFIG.lightMs - state.tick)) + ' left'
             : formatClock(state.tick - anomaly.started);
         const stat = anomalyStat(anomaly.mods);
-        anomalyBannerInfo.textContent = time + ' · ' + format(state[stat]) + ' of ' + format(anomaly.goal) + ' ' + GOAL_STAT_TEXT[stat]
+        // The Tempering Ring's perk: the best time to beat, and how far ahead or behind it the run is
+        const record = saveState.anomalies[key] ?? null;
+        const pace = engineEffectsOn('pace') && record ? ' · Best ' + formatClock(record.best)
+            + (state.tick - anomaly.started <= record.best ? ' (still ahead)' : ' (behind it now)') : '';
+        anomalyBannerInfo.textContent = time + ' · ' + format(state[stat]) + ' of ' + format(anomaly.goal) + ' ' + GOAL_STAT_TEXT[stat] + pace
             + (isNoAuto() ? ' · Autopilot and Auto Crunch are off in here' : '');
     }
 
@@ -3622,14 +3826,35 @@
     // Whether the player can go into these Anomalies now: in none already, and every one's tier open
     const canStart = (mods) => !saveState.anomaly && mods.length > 0 && mods.every((id) => anomalyTierOpen(saveState, ANOMALIES[id].tier));
 
-    // This week's Anomaly: what it is, its goal and parts, and the player's best time at it
+    // The Tool Racks' Again button: the last Anomaly or stack gone into (lastAnomaly), while the player could go in
+    const againButton = root.querySelector('[data-miner-anomaly-again]');
+    function renderAgain() {
+        const key = saveState.lastAnomaly ?? null;
+        const mods = key ? anomalyMods(key) : null;
+        againButton.hidden = !engineEffectsOn('again') || !mods;
+        if (againButton.hidden) return;
+        againButton.textContent = 'Again: ' + anomalyName(key);
+        againButton.dataset.anomalyStart = key;
+        againButton.disabled = !canStart(mods);
+    }
+    againButton.addEventListener('click', () => askStart(againButton));
+
+    // Whether an Anomaly or stack hasn't been finished for the Engine being built yet, so it pays in full again
+    const newForEngine = (record) => record !== null && (record.engine ?? 1) < engineNumber(saveState);
+
+    // This week's Anomaly: what it is, its goal and parts, and the player's best time at it, and next week's with the
+    // Heat Shields' perk
     function renderWeekly() {
+        const nextMods = weeklyMods(weekOf(state.tick) + 1);
+        weeklyNext.hidden = !engineEffectsOn('weeklyPreview');
+        weeklyNext.textContent = 'Next week: ' + anomalyName(anomalyKey(nextMods)) + ' (' + nextMods.map((id) => ANOMALIES[id].text).join(' ') + ')';
         const mods = weeklyMods(weekOf(state.tick));
         const key = anomalyKey(mods);
         const record = saveState.anomalies[key] ?? null;
         weeklyText.textContent = anomalyName(key) + ': ' + mods.map((id) => ANOMALIES[id].text).join(' ') + ' Goal: ' + goalText(mods) + ', for '
             + partsText(partsNow(mods)) + ' (' + CONFIG.anomalyWeekly + ' times as many as usual, this week only).';
-        weeklyBest.textContent = record ? 'Your best time at it: ' + formatClock(record.best) + '.' : 'You haven\'t finished it yet.';
+        weeklyBest.textContent = record ? 'Your best time at it: ' + formatClock(record.best) + '.' + (newForEngine(record) ? ' Not finished for this Engine yet.' : '')
+            : 'You haven\'t finished it yet.';
         weeklyStart.dataset.anomalyStart = key;
         weeklyStart.disabled = !canStart(mods);
     }
@@ -3669,11 +3894,12 @@
         const week = weekOf(state.tick);
         const key = JSON.stringify(saveState.anomalies) + '|' + (saveState.anomaly ? anomalyKey(saveState.anomaly.mods) : '')
             + '|' + Object.keys(ANOMALY_TIERS).map((tier) => anomalyTierOpen(saveState, Number(tier))).join() + '|' + week + '|' + saveState.engineStage
-            + '|' + stackPicked.join();
+            + '|' + stackPicked.join() + '|' + (saveState.lastAnomaly ?? '');
         if (key === anomaliesKey) return;
         anomaliesKey = key;
         renderWeekly();
         renderStack();
+        renderAgain();
 
         anomalyTierList.replaceChildren(...Object.entries(ANOMALY_TIERS).map(([tierText, tier]) => {
             const tierNumber = Number(tierText);
@@ -3695,7 +3921,8 @@
                     element('span', 'miner-anomaly-text', anomaly.text),
                     element('span', 'miner-anomaly-goal', 'Goal: ' + goalText([id]) + (tier.fresh ? '. ' + partsText(partsNow([id])) + '.' : '.')),
                     element('span', 'miner-anomaly-best', record ? 'Badge earned. Best time ' + formatClock(record.best) + ', finished '
-                        + (record.done === 1 ? 'once' : record.done + ' times') + '.' : 'Not finished yet.'));
+                        + (record.done === 1 ? 'once' : record.done + ' times') + '.' + (newForEngine(record) ? ' Not finished for this Engine yet: full parts.' : '')
+                        : 'Not finished yet.'));
                 const button = element('button', 'casino-btn' + (isIn ? '' : ' casino-btn-primary'), isIn ? 'You\'re in it' : record ? 'Go again' : 'Go in');
                 button.type = 'button';
                 button.dataset.anomalyStart = id;

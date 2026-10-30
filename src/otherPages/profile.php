@@ -16,7 +16,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // "2.X", "Graduate (X)" or "Not HTX"
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/profile.php'; // banner, status and education badge
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php'; // the Engine Crew badge (engine.php)
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php'; // the Engine badges and weekly medals (engine.php)
 
 const PROFILE_ROLE_ADMIN = 2; // userRole in HBHub-Users
 
@@ -87,8 +87,11 @@ $profileHasStatus = hbHubProfileHasStatus($profileStatus);
 // The popup's fields: what was typed in after an error, otherwise the status you have now
 [$profileStatusEmoji, $profileStatusText, $profileStatusClearAfter] = $profileStatusForm ?? [$profileStatus['emoji'], $profileStatus['text'], null];
 $profileGradient = hbHubProfileBannerGradient($profileSettings);
-$profileEngineCrew = hbHubMinerEngineCrew(hbHubDatabase(), (int) $profile['userId']);
-$profileIgnitionCrew = $profileEngineCrew && hbHubMinerEngineIgnitionCrew(hbHubDatabase(), (int) $profile['userId']);
+// Ore Mining Inc.: a badge for each Engine they helped build and each last stage they helped fill, and their weekly
+// Anomaly medals once the Starforge gives them out
+$profileEngineBadges = hbHubMinerEngineBadges(hbHubDatabase(), (int) $profile['userId']);
+$profileMedals = hbHubMinerWeeklyMedals(hbHubDatabase(), (int) $profile['userId']);
+const PROFILE_MEDALS = [1 => ['🥇', 'Gold', 'fastest'], 2 => ['🥈', 'Silver', '2nd fastest'], 3 => ['🥉', 'Bronze', '3rd fastest']];
 
 $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvatarAttachmentId'] !== null ? (int) $profile['userAvatarAttachmentId'] : null);
 $profileBannerSrc = $profile['bannerId'] !== null ? hbHubProfileBannerUrl((int) $profile['userId'], (int) $profile['bannerId']) : null;
@@ -193,7 +196,7 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
 
                 <h1 class="profile-name" id="profile-name"><?= htmlspecialchars($profile['userName']) ?></h1>
 
-                <?php if ($profileIsAdmin || $profileClass !== null || $profileEducation !== null || $profileEngineCrew): ?>
+                <?php if ($profileIsAdmin || $profileClass !== null || $profileEducation !== null || $profileEngineBadges !== [] || $profileMedals !== []): ?>
                     <ul class="profile-badges" aria-label="Badges">
                         <?php if ($profileIsAdmin): ?>
                             <li class="profile-badge is-admin"><img src="/assets/images/icons/admin.svg" alt="">Site admin</li>
@@ -204,12 +207,12 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
                         <?php if ($profileEducation !== null): ?>
                             <li class="profile-badge" title="Education"><span aria-hidden="true"><?= $profileEducation[1] ?></span><?= htmlspecialchars($profileEducation[2]) ?></li>
                         <?php endif; ?>
-                        <?php if ($profileEngineCrew): ?>
-                            <li class="profile-badge" title="Helped build Ore Mining Inc.'s Cosmic Engine"><span aria-hidden="true">⚙️</span>Engine Crew</li>
-                        <?php endif; ?>
-                        <?php if ($profileIgnitionCrew): ?>
-                            <li class="profile-badge" title="Helped fill the Cosmic Engine's Ignition stage in Ore Mining Inc."><span aria-hidden="true">🚀</span>Ignition</li>
-                        <?php endif; ?>
+                        <?php foreach ($profileEngineBadges as [$badgeIcon, $badgeName, $badgeTitle]): ?>
+                            <li class="profile-badge" title="<?= htmlspecialchars($badgeTitle) ?>"><span aria-hidden="true"><?= $badgeIcon ?></span><?= htmlspecialchars($badgeName) ?></li>
+                        <?php endforeach; ?>
+                        <?php foreach ($profileMedals as $place => $times): ?>
+                            <li class="profile-badge" title="<?= $times ?> <?= $times === 1 ? 'week' : 'weeks' ?> the <?= PROFILE_MEDALS[$place][2] ?> at Ore Mining Inc.'s weekly Anomaly"><span aria-hidden="true"><?= PROFILE_MEDALS[$place][0] ?></span><?= PROFILE_MEDALS[$place][1] ?><?= $times > 1 ? ' ×' . $times : '' ?></li>
+                        <?php endforeach; ?>
                     </ul>
                 <?php endif; ?>
 

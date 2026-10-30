@@ -1,6 +1,6 @@
 /* Ore Mining Inc. (games/spaceOreMiner/): the buttons and the menu at the top, the six views (Ore: the asteroid and
    the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree;
-   Engine: the Cosmic Engine; Anomalies: the challenge runs, with the banner over every view while in one), the popups (stats, achievements, how to play), the comet flying across the screen and the
+   Engine: the Cosmic Engines; Anomalies: the challenge runs, with the banner over every view while in one), the popups (stats, achievements, how to play), the comet flying across the screen and the
    messages in the corner. Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. The leaderboard
    loads it too, for its tabs (.miner-menu). */
 .casino.miner {
@@ -3908,17 +3908,17 @@
 .miner-asteroid[data-skin="ignition"] { --rock-light: #ffffff; --rock: #ffd23a; --rock-dark: #c0200a; --rock-glow: rgba(255, 200, 60, 0.7); }
 
 .miner-asteroid:is([data-skin="nakedSingularity"], [data-skin="ironUniverse"], [data-skin="handsOnly"], [data-skin="gauntlet"],
-  [data-skin="engineCore"], [data-skin="ignition"]) {
+  [data-skin="engineCore"], [data-skin="ignition"], [data-skin="molten"], [data-skin="starforged"], [data-skin="firstLight"]) {
   animation: var(--skin-animation);
 }
 
 .miner-asteroid:is([data-skin="nakedSingularity"], [data-skin="ironUniverse"], [data-skin="handsOnly"], [data-skin="gauntlet"],
-  [data-skin="engineCore"], [data-skin="ignition"]).is-hit {
+  [data-skin="engineCore"], [data-skin="ignition"], [data-skin="molten"], [data-skin="starforged"], [data-skin="firstLight"]).is-hit {
   animation: miner-hit 0.15s ease, var(--skin-animation);
 }
 
 .miner-asteroid:is([data-skin="nakedSingularity"], [data-skin="ironUniverse"], [data-skin="handsOnly"], [data-skin="gauntlet"],
-  [data-skin="engineCore"], [data-skin="ignition"]).is-hit-again {
+  [data-skin="engineCore"], [data-skin="ignition"], [data-skin="molten"], [data-skin="starforged"], [data-skin="firstLight"]).is-hit-again {
   animation: miner-hit-again 0.15s ease, var(--skin-animation);
 }
 
@@ -4014,5 +4014,148 @@
   .miner-asteroid[data-skin],
   .miner-asteroid[data-skin]:is(.is-hit, .is-hit-again) {
     animation: none;
+  }
+}
+
+/* ----- Engine #2, the Starforge (30 Oct 2026) */
+
+/* Its skins: Ember (Draft Vents) holds still; Molten (Pour Spout), Starforged (Shockwave Dampers) and First Light
+   (for whoever gave parts to its last stage) move, like the ones above */
+.miner-asteroid[data-skin="ember"] { --rock-light: #ffd2a0; --rock: #c2410c; --rock-dark: #3a0d02; --rock-glow: rgba(255, 110, 30, 0.45); }
+.miner-asteroid[data-skin="molten"] { --rock-light: #ffe08a; --rock: #e8590c; --rock-dark: #4a0800; --rock-glow: rgba(255, 120, 0, 0.6); }
+.miner-asteroid[data-skin="starforged"] { --rock-light: #dbe8ff; --rock: #2b4bbf; --rock-dark: #050a2a; --rock-glow: rgba(120, 160, 255, 0.6); }
+.miner-asteroid[data-skin="firstLight"] { --rock-light: #ffffff; --rock: #ffe8a8; --rock-dark: #8a5a10; --rock-glow: rgba(255, 240, 190, 0.8); }
+
+.miner-asteroid[data-skin="molten"] { --skin-animation: miner-skin-molten 2s ease-in-out infinite alternate; }
+.miner-asteroid[data-skin="starforged"] { --skin-animation: miner-skin-starforged 3.2s ease-in-out infinite alternate; }
+.miner-asteroid[data-skin="firstLight"] { --skin-animation: miner-skin-first-light 2.8s ease-in-out infinite alternate; }
+
+/* Molten metal, cooling to dark red and heating up again */
+@keyframes miner-skin-molten {
+  to { --rock-light: #ff9a5a; --rock: #8a1a04; --rock-dark: #1a0200; --rock-glow: rgba(255, 60, 0, 0.35); }
+}
+
+/* A blue star being hammered white */
+@keyframes miner-skin-starforged {
+  to { --rock-light: #ffffff; --rock: #8fb0ff; --rock-dark: #1a2a6a; --rock-glow: rgba(220, 235, 255, 0.85); }
+}
+
+/* Dawn: gold to the pale blue of a new star */
+@keyframes miner-skin-first-light {
+  to { --rock-light: #f0faff; --rock: #a8d8ff; --rock-dark: #2a4a8a; --rock-glow: rgba(190, 230, 255, 0.9); }
+}
+
+/* The Slag Channels' perk: a Golden Comet in the colours of the skin picked (data-skin on the comet, set by
+   renderComet()), with the skin's own colour where the gold was */
+.miner-comet[data-skin="entropy"] { --miner-gold: #ff8c46; }
+.miner-comet[data-skin="minimalist"] { --miner-gold: #f2f2f2; }
+.miner-comet[data-skin="oneTrack"] { --miner-gold: #3cdc5a; }
+.miner-comet[data-skin="unstableVacuum"] { --miner-gold: #9a5cff; }
+.miner-comet[data-skin="speedOfLight"] { --miner-gold: #ff3a46; }
+.miner-comet[data-skin="engineSteel"] { --miner-gold: #bed7eb; }
+.miner-comet[data-skin="nakedSingularity"] { --miner-gold: #8f7bff; }
+.miner-comet[data-skin="ironUniverse"] { --miner-gold: #ff7a1e; }
+.miner-comet[data-skin="handsOnly"] { --miner-gold: #ffd296; }
+.miner-comet[data-skin="gauntlet"] { --miner-gold: #ff5a00; }
+.miner-comet[data-skin="engineCore"] { --miner-gold: #3ce6ff; }
+.miner-comet[data-skin="ignition"] { --miner-gold: #ffc83c; }
+.miner-comet[data-skin="ember"] { --miner-gold: #ff6e1e; }
+.miner-comet[data-skin="molten"] { --miner-gold: #ff7800; }
+.miner-comet[data-skin="starforged"] { --miner-gold: #78a0ff; }
+.miner-comet[data-skin="firstLight"] { --miner-gold: #fff0be; }
+
+/* The Anvil Seal's perk: the edges of the screen glow for a moment when a comet comes (is-comet-bell on the page) */
+.miner.is-comet-bell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  pointer-events: none;
+  box-shadow: inset 0 0 90px color-mix(in srgb, var(--miner-gold) 55%, transparent);
+  animation: miner-comet-bell 1.6s ease-out forwards;
+}
+
+@keyframes miner-comet-bell {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* The Crucible Seal's perk: sparks flying up off a click */
+.miner-spark {
+  position: absolute;
+  z-index: 3;
+  left: var(--x);
+  top: var(--y);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff3c4;
+  box-shadow: 0 0 6px 2px #ff9a2a;
+  pointer-events: none;
+  animation: miner-spark 0.6s ease-out forwards;
+}
+
+@keyframes miner-spark {
+  to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.4); }
+}
+
+/* The Hammer Head's perk: backgrounds for the game (data-backdrop on the page, HBHUB_MINER_BACKDROPS), soft light
+   over the site's own dark background, behind everything */
+body:has(.miner[data-backdrop]) {
+  background-attachment: fixed;
+}
+
+body:has(.miner[data-backdrop="nebula"]) {
+  background: radial-gradient(ellipse at 20% 30%, rgba(157, 123, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse at 80% 70%, rgba(255, 107, 181, 0.14), transparent 55%), var(--background);
+}
+
+body:has(.miner[data-backdrop="deepField"]) {
+  background: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.5) 0 1px, transparent 2px),
+    radial-gradient(circle at 70% 40%, rgba(255, 255, 255, 0.4) 0 1px, transparent 2px),
+    radial-gradient(circle at 40% 80%, rgba(180, 200, 255, 0.45) 0 1px, transparent 2px),
+    radial-gradient(ellipse at 50% 50%, rgba(40, 60, 120, 0.25), transparent 70%), var(--background);
+  background-size: 180px 180px, 240px 240px, 300px 300px, auto, auto;
+}
+
+body:has(.miner[data-backdrop="forgeGlow"]) {
+  background: radial-gradient(ellipse at 50% 110%, rgba(255, 110, 30, 0.22), transparent 60%), var(--background);
+}
+
+body:has(.miner[data-backdrop="aurora"]) {
+  background: linear-gradient(160deg, rgba(94, 242, 166, 0.12), transparent 40%),
+    linear-gradient(200deg, rgba(139, 233, 255, 0.12), transparent 45%), var(--background);
+}
+
+/* A Shift's Swap button (the Crucible Shell's perk), under its bar */
+.miner-shift-swap {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 2px 12px;
+  font-size: 0.8rem;
+}
+
+/* The Hall of Engines, and the sparks switch in the stats popup */
+.miner-engine-hall-row {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.miner-sparks-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 12px;
+  font-size: 0.9rem;
+}
+
+[data-miner-anomaly-again] {
+  margin-top: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .miner.is-comet-bell::after {
+    animation-duration: 0.01s;
   }
 }

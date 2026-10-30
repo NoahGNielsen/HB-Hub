@@ -691,6 +691,7 @@ CREATE TABLE `HBHub-MinerContributions` (
   `contributionParts` int UNSIGNED NOT NULL COMMENT 'Engine Parts given',
   `contributionSource` tinyint UNSIGNED NOT NULL COMMENT '1 Ore\r\n2 Strange Matter\r\n3 Engine Shifts\r\n4 Anomalies (HBHUB_MINER_ENGINE_SOURCE_*)',
   `contributionAnomaly` varchar(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The Anomaly (or stack of them) it was for, with contributionSource 4',
+  `contributionMs` int UNSIGNED DEFAULT NULL COMMENT 'How long the Anomaly took, in ms (the fastest, if the save had more than one), with contributionSource 4. For the time locks',
   `contributionTimestamp` datetime NOT NULL COMMENT 'UTC'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Ore Mining Inc.: Engine Parts given to the Cosmic Engine, one row per kind per save (src/assets/php/games/spaceOreMiner/engine.php). Shown to everyone in the game and on its leaderboard';
 

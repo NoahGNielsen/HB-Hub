@@ -410,7 +410,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                     <span class="miner-art-core"></span>
                 </div>
                 <div class="miner-prestige-main">
-                    <h2 id="miner-engine-title" class="miner-prestige-title">Cosmic Engine <span data-miner-engine="number"></span></h2>
+                    <h2 id="miner-engine-title" class="miner-prestige-title"><span data-miner-engine="title">Cosmic Engine</span> <span data-miner-engine="number"></span></h2>
                     <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-engine="name">Loading…</span></p>
                     <p class="miner-prestige-bonus" data-miner-engine="stage"></p>
                     <div class="miner-progress">
@@ -425,9 +425,10 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 </div>
             </div>
             <p class="casino-hint miner-prestige-about">
-                Everyone on HB Hub builds the Cosmic Engine together, one stage at a time, out of Engine Parts. Each stage
+                Everyone on HB Hub builds the Engines together, one stage at a time, out of Engine Parts. Each stage
                 finished gives everyone who plays its perk, for good. Some stages have a lock as well, which has to be met
-                before they finish, however many parts they have. Anyone who has made a Warp Jump can give parts.
+                before they finish, however many parts they have. Once an Engine is done, the next one starts, with locks
+                that count again from nothing. Anyone who has made a Warp Jump can give parts.
             </p>
 
             <div class="miner-engine-grid">
@@ -454,7 +455,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                     </div>
                     <p class="miner-engine-small">
                         Parts from ore: the first of the day costs <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore and each next one ten times
-                        as much, <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day at most. Parts from Strange Matter: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> each, as many as you like.
+                        as much, <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day at most (more with some perks). Parts from Strange Matter: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> each, as many as you like.
                     </p>
                     <p class="miner-engine-small" data-miner-engine="mine" hidden></p>
                 </section>
@@ -478,6 +479,12 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                     <ul class="miner-engine-list" data-miner-engine-feed></ul>
                 </section>
 
+                <!-- Every Engine done so far, once the Starforge's Alloy Bins are (the hall perk, renderEngineHall()) -->
+                <section class="miner-engine-card is-wide" aria-labelledby="miner-engine-hall-title" data-miner-engine-hall hidden>
+                    <h3 class="miner-store-title" id="miner-engine-hall-title">Hall of Engines</h3>
+                    <ul class="miner-engine-list" data-miner-engine-hall-list></ul>
+                </section>
+
                 <section class="miner-engine-card is-wide" aria-labelledby="miner-engine-stages-title">
                     <h3 class="miner-store-title" id="miner-engine-stages-title">Stages</h3>
                     <ol class="miner-engine-stages" data-miner-engine-stages></ol>
@@ -499,6 +506,8 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                     <h2 id="miner-anomalies-title" class="miner-prestige-title">Anomalies</h2>
                     <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-anomalies-count>0</span> finished</p>
                     <p class="miner-prestige-hint" data-miner-anomalies-now></p>
+                    <!-- With the Tool Racks perk: the last Anomaly or stack gone into, again (renderAgain()) -->
+                    <button type="button" class="casino-btn casino-btn-primary" data-miner-anomaly-again hidden>Again</button>
                 </div>
             </div>
             <p class="casino-hint miner-prestige-about">
@@ -506,8 +515,8 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 and your Strange Matter, but no Dark Matter or Antimatter, and finish it by earning its goal of Antimatter in
                 there. Tier III starts you from nothing: no skills, no Strange Matter and no upgrades. While you're in one,
                 your own game waits and mines as if you were away. You can leave whenever you like, but you'll start over
-                next time. Finishing one gives the Cosmic Engine parts: all of them the first time and whenever you beat
-                your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise. What you do in there doesn't count
+                next time. Finishing one gives the Engine being built parts: all of them the first time for each Engine
+                and whenever you beat your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise. What you do in there doesn't count
                 towards your stats or the leaderboard, but finishing them has achievements of its own.
             </p>
             <!-- This week's Anomaly and the stack builder, filled in by spaceOreMiner.js (renderWeekly(), renderStack()) -->
@@ -517,6 +526,8 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 <p class="miner-engine-small" data-miner-weekly-best></p>
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-weekly-start>Go in</button>
                 <a class="casino-btn" href="/games/ore-mining-inc/leaderboard?board=weekly">Fastest this week</a>
+                <!-- With the Heat Shields perk -->
+                <p class="miner-engine-small" data-miner-weekly-next hidden></p>
             </section>
             <section class="miner-anomaly-tier miner-anomaly-stack" aria-labelledby="miner-stack-title">
                 <h3 class="miner-store-title" id="miner-stack-title">Stack Anomalies</h3>
@@ -545,6 +556,14 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 <!-- Asteroid skins (HBHUB_MINER_SKINS), filled in by spaceOreMiner.js (renderSkins()) -->
                 <h3 class="miner-store-title">Asteroid skin</h3>
                 <div class="miner-skins" data-miner-skins></div>
+                <!-- With the Starforge's perks (renderLooks()): backgrounds (HBHUB_MINER_BACKDROPS) and the sparks switch -->
+                <div data-miner-looks hidden>
+                    <h3 class="miner-store-title">Background</h3>
+                    <div class="miner-skins" data-miner-backdrops></div>
+                    <label class="miner-sparks-switch" data-miner-sparks-box hidden>
+                        <input type="checkbox" data-miner-sparks> Sparks when clicking the asteroid
+                    </label>
+                </div>
             </div>
         </dialog>
 

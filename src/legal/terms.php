@@ -206,9 +206,11 @@ const HBHUB_TERMS_UPDATED = '30 October 2026';
                                 open the game in that browser, but that isn't a promise: progress that's never saved can be lost.
                             </li>
                             <li>
-                                Ore Mining Inc.'s Cosmic Engine is built by everyone together. Engine Parts you give it (for ore,
-                                Strange Matter, Engine Shifts or finishing Anomalies) can't be taken back, and your name and how
-                                many you gave are shown to everyone with an account. Its perks are for every player. Admins can
+                                Ore Mining Inc.'s Cosmic Engines are built by everyone together, one after the other (the
+                                Cosmic Engine, then the Starforge). Engine Parts you give them (for ore, Strange Matter, Engine
+                                Shifts or finishing Anomalies) can't be taken back, don't move to the next Engine, and your name
+                                and how many you gave are shown to everyone with an account. Their perks are for every player
+                                and stay once the next Engine starts. Admins can
                                 change how many parts a stage needs, and the stages, perks and Anomalies (their rules, goals and
                                 parts) may change as the game is balanced, also for an Anomaly you're partway through. Parts
                                 given with a cheated save can be removed.
@@ -219,8 +221,9 @@ const HBHUB_TERMS_UPDATED = '30 October 2026';
                                 Anomaly turns Autopilot and Auto Crunch off, using a script or anything else to do their job
                                 counts as cheating. What you do in an Anomaly doesn't count towards your stats or the
                                 leaderboard, but your best times are shown on the leaderboard's Anomaly tabs, and best times or
-                                titles earned by cheating can be removed. The Cosmic Engine's last stage, Ignition, has to be
-                                filled in time or loses part of what's in it, and nobody can claim back what's lost that way.
+                                titles, medals or locks met by cheating can be removed. Each Engine's last stage (Ignition,
+                                First Light) has to be filled in time or loses part of what's in it, and nobody can claim back
+                                what's lost that way.
                             </li>
                             <li>
                                 The free games at <a href="/play">/play</a> can be played without an account, and these terms

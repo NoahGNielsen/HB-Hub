@@ -2,12 +2,13 @@
 // Admin panel's Ore Mining Inc. Cosmic Engine: /admin/engine, in the admin panel's side menu (adminListsMenuHtml()).
 // Everyone but site admins gets a 404, so it doesn't show that the page is here.
 //
-// How far the Engine the whole site builds is (assets/php/games/spaceOreMiner/engine.php): the stage being built, its
-// parts and lock, how many have given parts and what came from where, and every stage with its cost, which can be
-// changed here (they were a first guess, to be tuned once there's real data). A form (action=costs, cost[stage] =
-// parts) saves them all at once, in engineStageCosts; a stage set back to its cost in HBHUB_MINER_ENGINE_STAGES uses
-// that one again. Lowering the cost of the stage being built below its parts finishes it straight away (if its lock
-// is met), with the notifications to everyone. It goes in the admin log (assets/php/adminLog.php).
+// How far the Engine the whole site is building is (the newest one, as each next one starts when the one before is
+// done; assets/php/games/spaceOreMiner/engine.php): the stage being built, its parts and lock, how many have given
+// parts and what came from where, and every stage with its cost, which can be changed here (they were a first guess,
+// to be tuned once there's real data). A form (action=costs, cost[stage] = parts) saves them all at once, in
+// engineStageCosts; a stage set back to its cost in HBHUB_MINER_ENGINE_STAGES uses that one again. Lowering the cost
+// of the stage being built below its parts finishes it straight away (if its lock is met), with the notifications to
+// everyone. It goes in the admin log (assets/php/adminLog.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php';
@@ -20,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'cos
     require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/toast.php';
     $posted = is_array($_POST['cost'] ?? null) ? $_POST['cost'] : [];
     $costs = [];
-    foreach (HBHUB_MINER_ENGINE_STAGES as $index => $stage) {
+    foreach (hbHubMinerEngineStagesOf(hbHubMinerEngineRow($db, false)) as $index => $stage) {
         $value = $posted[$index + 1] ?? null;
         if (!is_string($value) || !ctype_digit($value) || strlen($value) > 9 || (int) $value < 1 || (int) $value > HBHUB_MINER_ENGINE_COST_MAX) {
             hbHubSetToast('adminEngineCostsBad');
@@ -52,7 +53,9 @@ $adminEngine = hbHubMinerEngineRow($db, false);
 $adminCosts = hbHubMinerEngineCosts($adminEngine);
 $adminDone = (int) $adminEngine['engineStage'];
 $adminFinished = $adminEngine['engineStageFinished'] !== null ? (json_decode($adminEngine['engineStageFinished'], true) ?: []) : [];
-$adminLock = $adminDone < count(HBHUB_MINER_ENGINE_STAGES) ? hbHubMinerEngineLock($db, $adminEngine, $adminDone) : null;
+$adminStages = hbHubMinerEngineStagesOf($adminEngine);
+$adminEngineName = HBHUB_MINER_ENGINES[(int) $adminEngine['engineNumber']]['name'] ?? 'Cosmic Engine';
+$adminLock = $adminDone < count($adminStages) ? hbHubMinerEngineLock($db, $adminEngine, $adminDone) : null;
 
 // What's been given to this Engine, by where it came from, and by how many players
 $statement = $db->prepare('SELECT contributionSource, SUM(contributionParts) AS parts FROM `HBHub-MinerContributions`
@@ -97,7 +100,7 @@ const ADMIN_ENGINE_SOURCES = [ // contributionSource => what it's called here
                 <section class="settings-card" id="engine" aria-labelledby="admin-engine-heading">
                     <div class="settings-card-head">
                         <div>
-                            <h2 id="admin-engine-heading">Ore Mining Inc. Cosmic Engine #<?= (int) $adminEngine['engineNumber'] ?></h2>
+                            <h2 id="admin-engine-heading">Ore Mining Inc. <?= htmlspecialchars($adminEngineName) ?> (Engine #<?= (int) $adminEngine['engineNumber'] ?>)</h2>
                             <p class="settings-intro">
                                 Started <?= adminTime($adminEngine['engineStartedTimestamp']) ?> (UTC).
                                 <?= $adminDone ?> of <?= HBHUB_MINER_ENGINE_STAGE_TOTAL ?> stages done.<?= $adminEngine['engineIgnitedTimestamp'] !== null ? ' Ignited ' . adminTime($adminEngine['engineIgnitedTimestamp']) . ' (UTC).' : '' ?>
@@ -105,13 +108,13 @@ const ADMIN_ENGINE_SOURCES = [ // contributionSource => what it's called here
                         </div>
                     </div>
                     <dl class="admin-engine-numbers">
-                        <?php if ($adminDone < count(HBHUB_MINER_ENGINE_STAGES)): ?>
+                        <?php if ($adminDone < count($adminStages)): ?>
                             <dt>Building</dt>
                             <dd>
-                                Stage <?= $adminDone + 1 ?>, <?= htmlspecialchars(HBHUB_MINER_ENGINE_STAGES[$adminDone]['name']) ?>:
+                                Stage <?= $adminDone + 1 ?>, <?= htmlspecialchars($adminStages[$adminDone]['name']) ?>:
                                 <?= number_format((int) $adminEngine['engineStageParts']) ?> of <?= number_format($adminCosts[$adminDone]) ?> parts
                                 <?php if ($adminLock !== null): ?>
-                                    <br>Lock: <?= htmlspecialchars(HBHUB_MINER_ENGINE_STAGES[$adminDone]['lock']['text']) ?> (<?= $adminLock['have'] ?> / <?= $adminLock['need'] ?>)
+                                    <br>Lock: <?= htmlspecialchars($adminStages[$adminDone]['lock']['text']) ?> (<?= $adminLock['have'] ?> / <?= $adminLock['need'] ?>)
                                 <?php endif; ?>
                                 <?php if ($adminEngine['engineCountdownTimestamp'] !== null): ?>
                                     <br>Has to be full by <?= adminTime($adminEngine['engineCountdownTimestamp']) ?> (UTC), or <?= (1 - HBHUB_MINER_ENGINE_DRAIN) * 100 ?>% of its parts are lost
@@ -144,7 +147,7 @@ const ADMIN_ENGINE_SOURCES = [ // contributionSource => what it's called here
                             <table class="admin-table admin-list">
                                 <thead><tr><th scope="col">Stage</th><th scope="col">Perk and lock</th><th scope="col">Done</th><th scope="col">Cost</th></tr></thead>
                                 <tbody>
-                                    <?php foreach (HBHUB_MINER_ENGINE_STAGES as $index => $stage): ?>
+                                    <?php foreach ($adminStages as $index => $stage): ?>
                                         <tr>
                                             <td><?= $index + 1 ?>. <?= htmlspecialchars($stage['name']) ?></td>
                                             <td class="admin-message-text">

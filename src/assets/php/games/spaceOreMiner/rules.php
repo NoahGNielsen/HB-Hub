@@ -46,7 +46,8 @@
         <?= HBHUB_MINER_SHIFT_PARTS ?> parts each, or <?= HBHUB_MINER_SHIFT_PARTS_ALL ?> each once all of them are done.
         Every stage finished gives everyone who plays its perk for good. Some stages have a lock too, like a number of
         different players who have helped, and only finish once it's met. Parts from ore count half from stage 11 and a
-        quarter from stage 16. The last stage, Ignition, has to be filled within
+        quarter from stage 16. Once an Engine is done the next one starts, with new stages and locks that count from
+        nothing again; Engine #2 is the Starforge. An Engine's last stage has to be filled within
         <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days of the one before it, or half its parts are
         lost and the time starts over; once it's full, everything mines <?= HBHUB_MINER_IGNITION_TIMES ?> times as much for
         <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours.
@@ -55,8 +56,8 @@
         After your first Big Rip, the Anomalies view opens: challenge runs in a universe of their own with one rule
         changed, like no comets or clicks that mine nothing. You keep your skills and Strange Matter, start without Dark
         Matter or Antimatter, and finish one by earning its goal of Antimatter. Meanwhile your own game mines as if you
-        were away, and you can leave whenever you like (but that run is lost). Finishing one gives the Cosmic Engine
-        parts: all of them the first time and for a new best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
+        were away, and you can leave whenever you like (but that run is lost). Finishing one gives the Engine being
+        built parts: all of them the first time for each Engine and for a new best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
         Tier II opens with the Theory of Everything, and turns Autopilot and Auto Crunch off. Tier III opens then too, and
         starts you from nothing: no skills, no Strange Matter and no upgrades, with goals of their own (like a Big Rip, or
         ore in one run). Tier I and II Anomalies can be stacked, with all their rules at once, for their parts added up

@@ -1,8 +1,8 @@
 <?php
 // Help docs: Ore Mining Inc. - getting started, every building (straight from HBHUB_MINER_BUILDINGS in
 // assets/php/games/spaceOreMiner/miner.php, so a new one or a new price shows up here by itself), the comets, the three
-// prestiges, the skill tree, the Cosmic Engine (its stages straight from HBHUB_MINER_ENGINE_STAGES, with their default
-// costs), the Anomalies (from HBHUB_MINER_ANOMALIES and HBHUB_MINER_ANOMALY_TIERS), saving and the game's own How to
+// prestiges, the skill tree, the Cosmic Engines (each Engine's stages straight from HBHUB_MINER_ENGINE_STAGES and
+// HBHUB_MINER_ENGINES, with their default costs), the Anomalies (from HBHUB_MINER_ANOMALIES and HBHUB_MINER_ANOMALY_TIERS), saving and the game's own How to
 // play (rules.php, included as the game shows it).
 // How much Strange Matter a Big Rip gives is still being balanced, so it's only described, never given as numbers.
 // Open to everyone. Built by assets/php/docs/top.php and bottom.php.
@@ -169,13 +169,13 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     </section>
 
                     <section id="engine" aria-labelledby="docs-engine">
-                        <h2 id="docs-engine">The Cosmic Engine</h2>
+                        <h2 id="docs-engine">The Cosmic Engines</h2>
                         <p>
                             The Engine view has a machine everyone on HB Hub builds together, out of Engine Parts. Once you've made
                             your first Warp Jump, you can help in three ways:
                         </p>
                         <ul>
-                            <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day. The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much. From the Drive section (stage 11) a part from ore counts as half a part, and from the Navigation section (stage 16) as a quarter.</li>
+                            <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day (one more once the Starforge's Air Intakes are done). The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much. From each Engine's third section (stage 11) a part from ore counts as half a part, and from its fourth (stage 16) as a quarter, or half again once the Starforge's Piston Arms are done.</li>
                             <li><strong>Strange Matter</strong>: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> for a part, as many as you like. It doesn't make you mine slower, as the Strange Matter bonus counts all you've ever earned, not what you have left.</li>
                             <li>
                                 <strong>Engine Shifts</strong>: <?= HBHUB_MINER_SHIFT_COUNT ?> small tasks a day, the same for everyone (like
@@ -198,25 +198,41 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             gets another <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days. Once it's full,
                             everything mines <?= HBHUB_MINER_IGNITION_TIMES ?> times as much for
                             <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours, and everyone who gave parts to Ignition gets the
-                            Ignition badge on their profile and the Ignition asteroid skin. These are the stages:
+                            Ignition badge on their profile and the Ignition asteroid skin.
                         </p>
-                        <div class="docs-table-wrap">
-                            <table class="docs-table">
-                                <thead>
-                                    <tr><th scope="col">Stage</th><th scope="col">Parts</th><th scope="col">Perk</th><th scope="col">Lock</th></tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach (HBHUB_MINER_ENGINE_STAGES as $index => $stage): ?>
-                                        <tr>
-                                            <td><?= $index + 1 ?>. <?= htmlspecialchars($stage['name']) ?></td>
-                                            <td><?= number_format($stage['cost']) ?></td>
-                                            <td><?= htmlspecialchars($stage['perk']['text']) ?></td>
-                                            <td><?= $stage['lock'] !== null ? htmlspecialchars($stage['lock']['text']) : '' ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                        <p>
+                            Once an Engine is done, the next one starts straight away, with new stages and new locks. Its locks
+                            count from nothing again (an Anomaly finished for the Engine before doesn't count), and each Anomaly
+                            or stack gives all its parts again the first time it's finished for the new Engine. Every perk of the
+                            Engines before it stays. Engine #2, the Starforge, has perks that are mostly for looks or to make the
+                            game easier to play, and only 3 &times; 5% more production, so the game doesn't keep getting
+                            faster. Its last stage, First Light, works like Ignition, with a First Light badge and skin. Once
+                            the Starforge's Alloy Bins are done, the Engine view has a Hall of Engines with every Engine done so
+                            far. These are the stages:
+                        </p>
+                        <?php foreach (HBHUB_MINER_ENGINES as $docsEngineNumber => $docsEngine): ?>
+                            <h3>Engine #<?= $docsEngineNumber ?>: the <?= htmlspecialchars($docsEngine['name']) ?></h3>
+                            <div class="docs-table-wrap">
+                                <table class="docs-table">
+                                    <thead>
+                                        <tr><th scope="col">Stage</th><th scope="col">Parts</th><th scope="col">Perk</th><th scope="col">Lock</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach (hbHubMinerEngineStages($docsEngineNumber) as $index => $stage): ?>
+                                            <?php if ($index % 5 === 0): ?>
+                                                <tr><th scope="rowgroup" colspan="4"><?= htmlspecialchars($stage['section'] . '. ' . $docsEngine['sections'][$stage['section']]) ?></th></tr>
+                                            <?php endif; ?>
+                                            <tr>
+                                                <td><?= $index + 1 ?>. <?= htmlspecialchars($stage['name']) ?></td>
+                                                <td><?= number_format($stage['cost']) ?></td>
+                                                <td><?= htmlspecialchars($stage['perk']['text']) ?></td>
+                                                <td><?= $stage['lock'] !== null ? htmlspecialchars($stage['lock']['text']) : '' ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endforeach; ?>
                         <p>The parts each stage needs can still change as the Engine is tuned.</p>
                     </section>
 
@@ -248,7 +264,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <strong>Rewards for you:</strong> a badge and best time for each Anomaly, achievements, asteroid skins
                             (a colour for each Tier II Anomaly, an animated one for each Tier III, and more from the Cosmic
                             Engine), picked in your stats, and the leaderboard titles "Singularity" (Naked Singularity) and
-                            "Gauntlet Runner" (The Gauntlet).
+                            "Gauntlet Runner" (The Gauntlet). Those come before the Engines' titles, "Forgemaster" and
+                            "Engineer".
                         </p>
                         <p>
                             While you're in one, a banner says so on every view, and your own game waits and mines as if you
@@ -257,8 +274,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             stats or the leaderboard, but finishing Anomalies has achievements of its own.
                         </p>
                         <p>
-                            Finishing one gives the Cosmic Engine its parts the first time and whenever you beat your best
-                            time, and <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% of them otherwise (rounded down). These parts go in
+                            Finishing one gives the Engine being built its parts the first time (and again the first time
+                            for each new Engine) and whenever you beat your best time, and <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% of them otherwise (rounded down). These parts go in
                             even while the Engine is full and waiting for a lock, since some locks need Anomalies. You also get
                             a badge for each one in the Anomalies view, with your best time.
                         </p>
