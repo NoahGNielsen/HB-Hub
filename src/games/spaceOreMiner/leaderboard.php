@@ -4,7 +4,7 @@
 // comets), Dark Matter earned in this universe, Antimatter earned in this multiverse, Strange Matter ever earned, Warp
 // Jumps, clicks and achievements. Sorted by any column with ?sort=column&dir=asc|desc, which the headings link to.
 // The other tabs (?board=, LEADERBOARD_BOARDS): rising is the same list for the players who haven't learned the whole
-// skill tree yet (saveSkills), so the ones still on their way have a board of their own. engine and engineAll list who
+// skill tree yet (saveSkills), so the ones still on their way have a board of their own. starbound and starboundAll list who
 // has given the most Engine Parts to the Cosmic Engine, from HBHub-MinerContributions
 // (assets/php/games/spaceOreMiner/engine.php): to the one being built, and to every Engine ever, with how many came from
 // Strange Matter, ore, Engine Shifts and Anomalies. They're always by parts. anomalies has the fastest times for one
@@ -32,8 +32,8 @@ const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first, the
 const LEADERBOARD_BOARDS = [ // ?board= => the tab's text
     'players' => 'Players',
     'rising' => 'Rising',
-    'engine' => 'Starbound contributors',
-    'engineAll' => 'Starbound contributors, all time',
+    'starbound' => 'Starbound contributors',
+    'starboundAll' => 'Starbound contributors, all time',
     'anomalies' => 'Anomaly times',
     'weekly' => 'Weekly Anomaly',
 ];
@@ -116,13 +116,19 @@ function leaderboardPlayer(array $row, array $titles): string
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
+// The Starbound tabs were ?board=engine and engineAll before Project Starbound was renamed: old links go to the new ones
+$oldBoard = is_string($_GET['board'] ?? null) ? ['engine' => 'starbound', 'engineAll' => 'starboundAll'][$_GET['board']] ?? null : null;
+if ($oldBoard !== null) {
+    header('Location: /games/ore-mining-inc/leaderboard?board=' . $oldBoard, true, 301);
+    exit;
+}
 $board = is_string($_GET['board'] ?? null) && isset(LEADERBOARD_BOARDS[$_GET['board']]) ? $_GET['board'] : 'players';
 
 // The Engine tabs: everyone who has given parts, most first (a tie goes to who gave first). Banned and deleted
 // accounts are left out, like on the players' tab, though their parts still count in the Engine.
 $engineRows = [];
 $engineNumber = 0;
-if ($board === 'engine' || $board === 'engineAll') {
+if ($board === 'starbound' || $board === 'starboundAll') {
     $engine = hbHubMinerEngineRow($db, false);
     $engineNumber = (int) $engine['engineNumber'];
     $statement = $db->prepare('SELECT c.contributionUserId AS userId, u.userName, u.userAvatarAttachmentId, SUM(c.contributionParts) AS parts,
@@ -137,7 +143,7 @@ if ($board === 'engine' || $board === 'engineAll') {
         ORDER BY parts DESC, MIN(c.contributionId)
         LIMIT ' . LEADERBOARD_ROWS);
     $statement->execute([HBHUB_MINER_ENGINE_SOURCE_STRANGE, HBHUB_MINER_ENGINE_SOURCE_ORE, HBHUB_MINER_ENGINE_SOURCE_SHIFT, HBHUB_MINER_ENGINE_SOURCE_ANOMALY,
-        (int) ($board === 'engineAll'), (int) $engine['engineId'], LEADERBOARD_STATUS_BANNED]);
+        (int) ($board === 'starboundAll'), (int) $engine['engineId'], LEADERBOARD_STATUS_BANNED]);
     $engineRows = $statement->fetchAll();
 }
 
@@ -233,9 +239,9 @@ function leaderboardSortUrl(string $column, string $sort, string $dir, string $b
             <?php endforeach; ?>
         </nav>
 
-        <?php if ($board === 'engine' || $board === 'engineAll'): ?>
+        <?php if ($board === 'starbound' || $board === 'starboundAll'): ?>
         <p class="casino-intro">
-            Who has given the most Starbound Parts to <?= $board === 'engine' ? 'the ' . htmlspecialchars(HBHUB_MINER_ENGINES[$engineNumber]['name'] ?? 'Cosmic Engine') . ' (Build #' . $engineNumber . '), the one being built' : 'every build so far' ?>,
+            Who has given the most Starbound Parts to <?= $board === 'starbound' ? 'the ' . htmlspecialchars(HBHUB_MINER_ENGINES[$engineNumber]['name'] ?? 'Cosmic Engine') . ' (Build #' . $engineNumber . '), the one being built' : 'every build so far' ?>,
             and how many came from Strange Matter, ore, Starbound Shifts and Anomalies. It's updated every time their game saves.
         </p>
 
