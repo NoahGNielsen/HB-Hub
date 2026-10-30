@@ -144,6 +144,24 @@ const HBHUB_MINER_BUILDINGS = [
     'multiverse' => ['name' => 'Multiverse Drill', 'plural' => 'Multiverse Drills', 'icon' => 'multiverse', 'cost' => 2.6e16, 'rate' => 2.1e10,
         'text' => 'Drills into the universe next door and takes their ore too. They have a drill as well.',
         'upgrades' => ['Dimensional Bits', 'Parallel Shifts', 'Infinite Drill', 'Mirror Universe Miners', 'Quantum Foam Bits', 'The Everything Drill']],
+    // The five after the Multiverse Drill go up gentler: each mines about 3.7 times the one before instead of about 7,
+    // so the late game (where everyone has hundreds of every building) only gets a few hundred times faster with all
+    // of them, not thousands, and the Big Rip and Anomaly balance mostly holds
+    'timeQuarry' => ['name' => 'Time Quarry', 'plural' => 'Time Quarries', 'icon' => 'timeQuarry', 'cost' => 3.3e17, 'rate' => 7.8e10,
+        'text' => 'Mines yesterday\'s ore before anyone else gets to it. Tomorrow\'s too, when nobody\'s looking.',
+        'upgrades' => ['Sturdier Hourglasses', 'Leap Seconds', 'Paradox Insurance', 'Grandfather Clauses', 'Deja Vu Shifts', 'End of Time Shaft']],
+    'stringLoom' => ['name' => 'String Loom', 'plural' => 'String Looms', 'icon' => 'stringLoom', 'cost' => 4.2e18, 'rate' => 2.9e11,
+        'text' => 'Unpicks cosmic strings and knits them back up as ore. It\'s a very long scarf.',
+        'upgrades' => ['Finer Needles', 'Superstring Yarn', 'Eleven-Dimensional Patterns', 'Knitting Circles', 'Tangle-Free Spools', 'The Cosmic Jumper']],
+    'bigBangReactor' => ['name' => 'Big Bang Reactor', 'plural' => 'Big Bang Reactors', 'icon' => 'bigBangReactor', 'cost' => 5.4e19, 'rate' => 1.1e12,
+        'text' => 'Sets off a tiny Big Bang in a box and keeps all the ore that comes out. Mind your eyebrows.',
+        'upgrades' => ['Thicker Walls', 'Inflation Valves', 'Hotter Starts', 'Primordial Soup Kitchen', 'Chain Bangs', 'Bang Factory']],
+    'realityPrinter' => ['name' => 'Reality Printer', 'plural' => 'Reality Printers', 'icon' => 'realityPrinter', 'cost' => 7e20, 'rate' => 4e12,
+        'text' => 'Prints brand new universes made of nothing but ore. The ink costs more than the universe.',
+        'upgrades' => ['Ink Refills', 'Double-Sided Printing', 'Higher Resolution', 'Paper Jam Fixer', 'Universes in Colour', 'Print Shop of Everything']],
+    'infinityMine' => ['name' => 'Infinity Mine', 'plural' => 'Infinity Mines', 'icon' => 'infinityMine', 'cost' => 9e21, 'rate' => 1.5e13,
+        'text' => 'A mine with no bottom. Somebody still goes down to check every Friday, just in case.',
+        'upgrades' => ['Longer Ladders', 'Bottomless Buckets', 'Endless Rails', 'Infinite Shifts', 'Forever Lamps', 'Infinity Plus One']],
 ];
 const HBHUB_MINER_BUILDING_UPGRADE_AT = [10, 25, 50, 100, 150, 200]; // owned, for each building's six upgrades
 // What each costs, in how many of the building it is at the price the next one has when the upgrade shows up (rounded to
@@ -228,7 +246,17 @@ const HBHUB_MINER_OTHER_UPGRADES = [
     'oreLaw' => ['name' => 'Universal Ore Law', 'icon' => 'scales', 'cost' => 1e17, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
     'pickaxesEverywhere' => ['name' => 'Pickaxe Guys Everywhere', 'icon' => 'link', 'cost' => 1.3e17, 'type' => 'synergy', 'building' => 'multiverse', 'source' => 'pickaxe', 'per' => 0.01, 'every' => 10,
         'need' => ['owned' => ['multiverse' => 1, 'pickaxe' => 10]], 'text' => 'Multiverse Drills mine 1% more for every 10 Space Pickaxe Guys you own.'],
+    'timeTunnels' => ['name' => 'Time Tunnels', 'icon' => 'link', 'cost' => 1.65e18, 'type' => 'synergy', 'building' => 'timeQuarry', 'source' => 'wormhole', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['timeQuarry' => 1, 'wormhole' => 1]], 'text' => 'Time Quarries mine 1% more for every Wormhole Gate you own.'],
+    'nebulaThread' => ['name' => 'Nebula Thread', 'icon' => 'link', 'cost' => 2.1e19, 'type' => 'synergy', 'building' => 'stringLoom', 'source' => 'nebula', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['stringLoom' => 1, 'nebula' => 1]], 'text' => 'String Looms mine 1% more for every Nebula Harvester you own.'],
     'cosmicAccounting' => ['name' => 'Cosmic Accounting', 'icon' => 'abacus', 'cost' => 1e20, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+    'starSeeds' => ['name' => 'Star Seeds', 'icon' => 'link', 'cost' => 2.7e20, 'type' => 'synergy', 'building' => 'bigBangReactor', 'source' => 'forge', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['bigBangReactor' => 1, 'forge' => 1]], 'text' => 'Big Bang Reactors mine 1% more for every Star Forge you own.'],
+    'copiesOfCopies' => ['name' => 'Copies of Copies', 'icon' => 'link', 'cost' => 3.5e21, 'type' => 'synergy', 'building' => 'realityPrinter', 'source' => 'multiverse', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['realityPrinter' => 1, 'multiverse' => 1]], 'text' => 'Reality Printers mine 1% more for every Multiverse Drill you own.'],
+    'dronesAllTheWayDown' => ['name' => 'Drones All the Way Down', 'icon' => 'link', 'cost' => 4.5e22, 'type' => 'synergy', 'building' => 'infinityMine', 'source' => 'drone', 'per' => 0.01, 'every' => 10,
+        'need' => ['owned' => ['infinityMine' => 1, 'drone' => 10]], 'text' => 'Infinity Mines mine 1% more for every 10 Mining Drones you own.'],
     'bigOreTheory' => ['name' => 'Big Ore Theory', 'icon' => 'books', 'cost' => 1e23, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
 ];
 const HBHUB_MINER_CLICK_TYPES = ['click', 'clickPct', 'crit', 'auto']; // kept by Persistent Memory
@@ -453,6 +481,8 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'siphon1' => ['name' => 'Own a Black Hole', 'text' => 'Buy a Black Hole Siphon.', 'stat' => 'owned:siphon', 'at' => 1],
     'forge1' => ['name' => 'Star Power', 'text' => 'Buy a Star Forge.', 'stat' => 'owned:forge', 'at' => 1],
     'multiverse1' => ['name' => 'Next Door Neighbours', 'text' => 'Buy a Multiverse Drill.', 'stat' => 'owned:multiverse', 'at' => 1],
+    'timeQuarry1' => ['name' => 'Ahead of Time', 'text' => 'Buy a Time Quarry.', 'stat' => 'owned:timeQuarry', 'at' => 1],
+    'infinityMine1' => ['name' => 'To Infinity', 'text' => 'Buy an Infinity Mine.', 'stat' => 'owned:infinityMine', 'at' => 1],
     'all1' => ['name' => 'Full House', 'text' => 'Have one of every building.', 'stat' => 'ownedAll', 'at' => 1],
     'all25' => ['name' => 'Collector', 'text' => 'Have 25 of every building.', 'stat' => 'ownedAll', 'at' => 25],
     'buildings100' => ['name' => 'Industrial Revolution', 'text' => 'Have 100 buildings.', 'stat' => 'buildings', 'at' => 100],

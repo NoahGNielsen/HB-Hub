@@ -1543,6 +1543,88 @@
   to { background-position: 0 46px, 0 38px, 0 0; }
 }
 
+/* The five after the Multiverse Drill, two along the top and three along the bottom, out of the way of the rift's ends and the numbers:
+   a Time Quarry rocking back and forth like a pendulum, a String Loom whose shuttle bobs, a Big Bang Reactor that swells
+   and goes off in a flash every few seconds, a Reality Printer shaking as it prints, and an Infinity Mine with a slow
+   glow coming up out of it */
+.miner-sprite:is(.is-timeQuarry, .is-stringLoom, .is-bigBangReactor, .is-realityPrinter, .is-infinityMine) {
+  translate: -50% -50%;
+}
+
+.miner-sprite:is(.is-timeQuarry, .is-stringLoom, .is-bigBangReactor, .is-realityPrinter, .is-infinityMine) .miner-sprite-body {
+  font-size: 1.3em;
+}
+
+.miner-sprite.is-timeQuarry {
+  left: 30%;
+  top: 9%;
+}
+
+.miner-sprite.is-timeQuarry .miner-sprite-body {
+  transform-origin: 50% 0;
+  animation: miner-pendulum calc(2.4s / var(--work)) ease-in-out infinite alternate;
+}
+
+@keyframes miner-pendulum {
+  from { rotate: -12deg; }
+  to { rotate: 12deg; }
+}
+
+.miner-sprite.is-stringLoom {
+  left: 70%;
+  top: 9%;
+}
+
+.miner-sprite.is-stringLoom .miner-sprite-body {
+  filter: drop-shadow(0 0 0.1em rgba(255, 107, 181, 0.6));
+  animation: miner-bob calc(1.2s / var(--work)) ease-in-out infinite alternate;
+}
+
+.miner-sprite.is-bigBangReactor {
+  left: 27%;
+  top: 91%;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-body {
+  animation: miner-bang calc(4s / var(--work)) ease-in infinite;
+}
+
+@keyframes miner-bang {
+  0% { scale: 1; filter: none; }
+  80% { scale: 1.08; filter: drop-shadow(0 0 0.1em var(--miner-gold)); }
+  84% { scale: 1.2; filter: drop-shadow(0 0 0.5em var(--miner-gold)) brightness(1.6); }
+  100% { scale: 1; filter: none; }
+}
+
+.miner-sprite.is-realityPrinter {
+  left: 73%;
+  top: 91%;
+}
+
+.miner-sprite.is-realityPrinter .miner-sprite-body {
+  animation: miner-print calc(0.9s / var(--work)) steps(2) infinite;
+}
+
+@keyframes miner-print {
+  0% { translate: -0.03em 0; }
+  50% { translate: 0.03em -0.02em; }
+  100% { translate: -0.03em 0; }
+}
+
+.miner-sprite.is-infinityMine {
+  left: 17%;
+  top: 93%;
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-body {
+  animation: miner-infinity calc(5s / var(--work)) ease-in-out infinite alternate;
+}
+
+@keyframes miner-infinity {
+  from { filter: drop-shadow(0 0 0.05em rgba(139, 233, 255, 0.4)); }
+  to { filter: drop-shadow(0 -0.2em 0.3em rgba(157, 123, 255, 0.9)); }
+}
+
 /* A Supernova or a Diamond Rush: everyone works three times as fast */
 .miner-field.is-frenzy {
   --work: 3;

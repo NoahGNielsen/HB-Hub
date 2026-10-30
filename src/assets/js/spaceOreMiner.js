@@ -1085,7 +1085,8 @@
     // that falls out of it, which fill the space around the asteroid). Where the nth
     // one goes and how it moves is in spaceOreMiner.css (.miner-sprite.is-<building>.is-<n>; the Ore Freighters' ways are
     // picked by flyFreighter()). The Dyson Swarm's ring is
-    // two from the start: the half behind the asteroid and the half in front of it.
+    // two from the start: the half behind the asteroid and the half in front of it. The five after the Multiverse Drill
+    // are just their store icon, each moving its own way, along the top and bottom of the picture.
     const SCENE = {
         pickaxe: { at: [1, 5, 10, 25, 50, 100, 200], parts: { tool: 'pickaxe', body: 'sceneMiner' } },
         drone: { at: [1, 5, 15, 40, 100], parts: { body: 'drone' } },
@@ -1102,6 +1103,11 @@
         dyson: { at: [1, 1], parts: { body: '' } },
         wormhole: { at: [1], parts: { body: 'wormhole' } },
         multiverse: { at: [1], parts: { glow: '', flash: '', edge: '', body: '', ours: 'sceneMultiverseDrill', theirs: 'sceneMultiverseDrillMirror', spill: '' } },
+        timeQuarry: { at: [1], parts: { body: 'timeQuarry' } },
+        stringLoom: { at: [1], parts: { body: 'stringLoom' } },
+        bigBangReactor: { at: [1], parts: { body: 'bigBangReactor' } },
+        realityPrinter: { at: [1], parts: { body: 'realityPrinter' } },
+        infinityMine: { at: [1], parts: { body: 'infinityMine' } },
     };
     const SURFACE = ['pickaxe', 'rig', 'base'];
     // (how long it lasts, the ore a lucky one gave, its multiplier with Antimatter Comets)
@@ -2409,6 +2415,21 @@
         ['Multiverse Drill finds a universe where Pluto is the only planet. Pluto very smug.', (s) => s.buildings.multiverse > 0],
         ['You from another universe sends a postcard: "The ore is better here."', (s) => s.buildings.multiverse > 0],
         ['There are now more Multiverse Drills than universes. Physicists worried.', (s) => s.buildings.multiverse >= 50],
+        ['Time Quarry digs up next week\'s ore. Next week files a complaint.', (s) => s.buildings.timeQuarry > 0],
+        ['Time Quarry workers clock out before they clock in. Payroll gives up.', (s) => s.buildings.timeQuarry > 0],
+        ['Dinosaurs puzzled by tiny hole in the ground. Ore Mining Inc. says sorry, 66 million years late.', (s) => s.buildings.timeQuarry > 0],
+        ['String Loom drops a stitch. A small galaxy unravels.', (s) => s.buildings.stringLoom > 0],
+        ['Physicists finally prove string theory, then find out it was knitting all along.', (s) => s.buildings.stringLoom > 0],
+        ['Cosmic cat finds a String Loom. Ore production down 40% for the day.', (s) => s.buildings.stringLoom > 0],
+        ['Big Bang Reactor goes off. Lab coat now has a universe stuck to it.', (s) => s.buildings.bigBangReactor > 0],
+        ['Health and safety asks Big Bang Reactor staff to stop saying "hold my coffee" first.', (s) => s.buildings.bigBangReactor > 0],
+        ['Tiny universe inside a Big Bang Reactor starts its own ore company. Lawyers called.', (s) => s.buildings.bigBangReactor > 0],
+        ['Reality Printer out of ink. Universe comes out in black and white.', (s) => s.buildings.realityPrinter > 0],
+        ['Reality Printer jams. Somewhere, a planet is printed sideways.', (s) => s.buildings.realityPrinter > 0],
+        ['Reality Printer asks for a driver update. It\'s the size of a galaxy.', (s) => s.buildings.realityPrinter > 0],
+        ['Infinity Mine reaches a new depth record. Same as yesterday\'s, plus one.', (s) => s.buildings.infinityMine > 0],
+        ['Rock dropped into the Infinity Mine still hasn\'t landed. Bets taken.', (s) => s.buildings.infinityMine > 0],
+        ['Infinity Mine finds the bottom. Turns out it was a sticker that said "not the bottom".', (s) => s.buildings.infinityMine > 0],
         ['Asteroid now has more machines on it than rock.', (s) => owned(s) >= 500],
         ['Ore Mining Inc. runs out of names for its buildings. Starts calling them "Steve".', (s) => owned(s) >= 1000],
 
