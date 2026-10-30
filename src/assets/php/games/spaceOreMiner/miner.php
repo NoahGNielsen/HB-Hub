@@ -522,7 +522,8 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'tier3All' => ['name' => 'Singular', 'text' => 'Finish every Tier III Anomaly.', 'stat' => 'tier:3', 'at' => 4],
     'stack2' => ['name' => 'Double Trouble', 'text' => 'Finish a stack of 2 Anomalies.', 'stat' => 'stack', 'at' => 2],
     'stack4' => ['name' => 'Four of a Kind', 'text' => 'Finish a stack of 4 Anomalies.', 'stat' => 'stack', 'at' => 4],
-    'stack6' => ['name' => 'Stacked Deck', 'text' => 'Finish a stack of 6 Anomalies.', 'stat' => 'stack', 'at' => 6],
+    // (id from when it was 6: no stack of 6 can be done any more, see HBHUB_MINER_ANOMALY_CLASHES)
+    'stack6' => ['name' => 'Stacked Deck', 'text' => 'Finish a stack of 5 Anomalies.', 'stat' => 'stack', 'at' => 5],
     'weekly1' => ['name' => 'Weekly Worker', 'text' => 'Finish the weekly Anomaly.', 'stat' => 'weeklies', 'at' => 1],
     'lightHour' => ['name' => 'Faster Than Light', 'text' => 'Finish Speed of Light in under an hour.', 'stat' => 'lightHour', 'at' => 1],
     'engine1' => ['name' => 'Crew Member', 'text' => 'Give the Cosmic Engine an Engine Part.', 'stat' => 'engineGiven', 'at' => 1],
@@ -653,7 +654,8 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'lock' => ['type' => 'section', 'count' => 20, 'text' => '20 different players have given parts to the Ignition section'],
         'perk' => ['type' => 'cometWait', 'times' => 0.9, 'text' => 'The wait between comets is another 10% shorter.']],
     ['name' => 'Ignition Coils', 'section' => 'E', 'cost' => 87000,
-        'lock' => ['type' => 'stack', 'count' => 6, 'text' => 'Someone has finished a stack of 6 Anomalies'],
+        // (was 6 and Strike Plate's 7: the balance sim, 30 October 2026, never finished a stack of more than 5)
+        'lock' => ['type' => 'stack', 'count' => 5, 'text' => 'Someone has finished a stack of 5 Anomalies'],
         'perk' => ['type' => 'upgradeCost', 'times' => 0.9, 'text' => 'Ore upgrades cost 10% less.']],
     ['name' => 'Countdown Clock', 'section' => 'E', 'cost' => 100000,
         'lock' => ['type' => 'weekly', 'count' => 10, 'text' => '10 players have finished the weekly Anomaly in the same week'],
@@ -709,7 +711,7 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'lock' => ['type' => 'section', 'count' => 10, 'rising' => true, 'text' => '10 different players who haven\'t learned every skill yet have given parts to the Hammer section'],
         'perk' => ['type' => 'oreFloor', 'value' => 2, 'text' => 'A part given from ore is always worth at least half a part.']],
     ['name' => 'Strike Plate', 'section' => 'D', 'cost' => 60000,
-        'lock' => ['type' => 'stack', 'count' => 7, 'text' => 'Someone has finished a stack of 7 Anomalies'],
+        'lock' => ['type' => 'stack', 'count' => 5, 'text' => 'Someone has finished a stack of 5 Anomalies'],
         'perk' => ['type' => 'title', 'text' => 'Everyone who has given parts to the Starforge gets the title "Forgemaster" on the leaderboard.']],
     ['name' => 'Shockwave Dampers', 'section' => 'D', 'cost' => 70000,
         'lock' => ['type' => 'time', 'anomaly' => 'nakedSingularity', 'ms' => 108000000, 'count' => 1, 'text' => 'Someone has finished Naked Singularity in under 30 hours'],
@@ -795,7 +797,7 @@ const HBHUB_MINER_ANOMALIES = [
         'text' => 'At most 150 buildings at once, and every run starts with none.'],
     'oneTrack' => ['name' => 'One Track', 'icon' => 'link', 'tier' => 2, 'goal' => 1e17,
         'text' => 'One kind of building per run: the first one you buy is the only kind you can buy until the next Warp Jump. Every run starts with none, and Auto Buy leaves that first pick to you.'],
-    'unstableVacuum' => ['name' => 'Unstable Vacuum', 'icon' => 'blackHole', 'tier' => 2, 'goal' => 1e14,
+    'unstableVacuum' => ['name' => 'Unstable Vacuum', 'icon' => 'blackHole', 'tier' => 2, 'goal' => 1e14, 'alone' => true,
         'text' => 'Each Warp Jump destroys the building you have the most of, for the rest of the Anomaly.'],
     'speedOfLight' => ['name' => 'Speed of Light', 'icon' => 'warp', 'tier' => 2, 'goal' => 1e20,
         'text' => 'Reach the goal within 2 hours of starting, time away included, or the Anomaly is over.'],
@@ -814,6 +816,18 @@ const HBHUB_MINER_ANOMALY_REPEAT = 0.25; // of the parts, for finishing one agai
 // whole game kept in the save, so there's a cap.
 const HBHUB_MINER_ANOMALY_SAVED_MAX = 3;
 const HBHUB_MINER_ANOMALY_STACK_TIER = 2; // the highest tier that stacks
+// Stacks that can't be done, so they can't be started (hbHubMinerStackClash()), and the weekly Anomaly never is one:
+// the Unstable Vacuum with anything ('alone' in HBHUB_MINER_ANOMALIES: its ~20 Warp Jumps, one per kind of building,
+// reach its goal on their own and with Dead Hands, Inflation, Entropy or Speed of Light, but with the others they never
+// do, and when they do a stack of 5 took 20 minutes for ~1,950 parts), and these pairs, which in the balance sim got
+// nowhere near their goal in 40-60 hours (under 5% of it), or in Speed of Light's 2 hours, for any kind of player (every
+// pair simmed, 30 October 2026). Hard pairs that some players did finish (Speed of Light with Bare Metal, Dark Sky or
+// Minimalist) are left in; the weekly Anomaly never has Speed of Light anyway.
+const HBHUB_MINER_ANOMALY_CLASHES = [['darkSky', 'minimalist'], ['darkSky', 'oneTrack'], ['bareMetal', 'minimalist'], ['bareMetal', 'oneTrack'],
+    ['deadHands', 'oneTrack'], ['oneTrack', 'speedOfLight']];
+// The first week (hbHubMinerWeek(), Monday 2 November 2026) whose weekly Anomaly leaves those out: the weeks before
+// keep the one they had, so the week it changed in didn't get a different weekly halfway through
+const HBHUB_MINER_WEEKLY_CLASH_FROM = 2966;
 const HBHUB_MINER_ANOMALY_STACK = 1.5; // the parts are multiplied by this for each Anomaly in a stack after the first
 const HBHUB_MINER_ANOMALY_WEEKLY = 2; // the parts for the weekly Anomaly that week (and its Afterglow)
 // The Afterglow after finishing one: production times this, for 1 hour (Tier I), 3 (Tier II), 12 (Tier III) or 24 (The
@@ -1078,6 +1092,8 @@ function hbHubMinerConfig(): array
         'ignitionMs' => HBHUB_MINER_IGNITION_MS,
         'ignitionTimes' => HBHUB_MINER_IGNITION_TIMES,
         'anomalyStackTier' => HBHUB_MINER_ANOMALY_STACK_TIER,
+        'anomalyClashes' => HBHUB_MINER_ANOMALY_CLASHES,
+        'weeklyClashFrom' => HBHUB_MINER_WEEKLY_CLASH_FROM,
         'anomalyStack' => HBHUB_MINER_ANOMALY_STACK,
         'anomalyWeekly' => HBHUB_MINER_ANOMALY_WEEKLY,
         'afterglowTimes' => HBHUB_MINER_AFTERGLOW_TIMES,
@@ -2455,6 +2471,29 @@ function hbHubMinerAnomalyKey(array $mods): string
 }
 
 /**
+ * Whether a stack ($mods, more than one) can't be done: it has an Anomaly that only goes 'alone', or a pair in
+ * HBHUB_MINER_ANOMALY_CLASHES. Such a stack can't be started (hbHubMinerAnomalyStart()), though one already started or
+ * saved before that rule still counts.
+ */
+function hbHubMinerStackClash(array $mods): bool
+{
+    if (count($mods) < 2) {
+        return false;
+    }
+    foreach ($mods as $id) {
+        if (HBHUB_MINER_ANOMALIES[$id]['alone'] ?? false) {
+            return true;
+        }
+    }
+    foreach (HBHUB_MINER_ANOMALY_CLASHES as [$a, $b]) {
+        if (in_array($a, $mods, true) && in_array($b, $mods, true)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * The rules an Anomaly's game has (its 'mods'): each of $mods, and the ones in its 'rules' after it.
  *
  * @return list<string>
@@ -2529,7 +2568,8 @@ function hbHubMinerWeek(int $time): int
 
 /**
  * The weekly Anomaly for $week, the same for everyone: a stack of one of HBHUB_MINER_WEEKLY_SIZES, picked one by one
- * from the stackable Anomalies (apart from HBHUB_MINER_WEEKLY_LEFT_OUT) with luck that only depends on the week.
+ * from the stackable Anomalies (apart from HBHUB_MINER_WEEKLY_LEFT_OUT) with luck that only depends on the week. From
+ * HBHUB_MINER_WEEKLY_CLASH_FROM on, never a stack that can't be done (hbHubMinerStackClash()).
  *
  * @return list<string>
  */
@@ -2539,14 +2579,19 @@ function hbHubMinerWeeklyMods(int $week): array
     if (isset($cache[$week])) {
         return $cache[$week];
     }
+    $clashFree = $week >= HBHUB_MINER_WEEKLY_CLASH_FROM;
     $left = array_values(array_filter(array_keys(HBHUB_MINER_ANOMALIES), static fn (string $id): bool =>
-        HBHUB_MINER_ANOMALIES[$id]['tier'] <= HBHUB_MINER_ANOMALY_STACK_TIER && !in_array($id, HBHUB_MINER_WEEKLY_LEFT_OUT, true)));
+        HBHUB_MINER_ANOMALIES[$id]['tier'] <= HBHUB_MINER_ANOMALY_STACK_TIER && !in_array($id, HBHUB_MINER_WEEKLY_LEFT_OUT, true)
+        && !($clashFree && (HBHUB_MINER_ANOMALIES[$id]['alone'] ?? false))));
     $size = HBHUB_MINER_WEEKLY_SIZES[(int) floor(hbHubMinerRandom(0, $week * 10, HBHUB_MINER_SALT_WEEKLY) * count(HBHUB_MINER_WEEKLY_SIZES))];
     $picked = [];
-    for ($i = 0; $i < $size; $i++) {
+    for ($i = 0; $i < $size && $left !== []; $i++) {
         $index = (int) floor(hbHubMinerRandom(0, $week * 10 + $i + 1, HBHUB_MINER_SALT_WEEKLY) * count($left));
         $picked[] = $left[$index];
         array_splice($left, $index, 1);
+        if ($clashFree) { // what clashes with the one just picked can't be picked after it
+            $left = array_values(array_filter($left, static fn (string $id): bool => !hbHubMinerStackClash([$picked[$i], $id])));
+        }
     }
     // In the Anomalies' own order, as a key has them
     return $cache[$week] = array_values(array_intersect(array_keys(HBHUB_MINER_ANOMALIES), $picked));
@@ -2589,14 +2634,16 @@ function hbHubMinerGame(array $state): array
  * Goes into an Anomaly ($mods: the ids of HBHUB_MINER_ANOMALIES, in their order) at the game's time. Its game is a copy
  * of the player's, started over like a Big Rip that gives nothing (hbHubMinerNewMultiverse()), with its own luck; a
  * Tier III one ('fresh') also starts HBHUB_MINER_ANOMALY_FRESH over, so it's from nothing. Returns false when it can't
- * be done: in one already, an unknown one or stack, a tier isn't open yet, or it's saved (it's carried on with
- * hbHubMinerAnomalyResume() or thrown away first, so hours of it are never lost by a click).
+ * be done: in one already, an unknown one or stack, a stack that can't be done (hbHubMinerStackClash(), unless it's this
+ * week's weekly one), a tier isn't open yet, or it's saved (it's carried on with hbHubMinerAnomalyResume() or thrown
+ * away first, so hours of it are never lost by a click).
  */
 function hbHubMinerAnomalyStart(array &$state, mixed $mods): bool
 {
     if ($state['anomaly'] !== null || $state['mods'] !== [] || !is_array($mods) || !array_is_list($mods) || $mods === []
         || array_filter($mods, 'is_string') !== $mods || ($mods = hbHubMinerAnomalyMods(hbHubMinerAnomalyKey($mods))) === null
-        || isset($state['saved'][hbHubMinerAnomalyKey($mods)])) {
+        || isset($state['saved'][hbHubMinerAnomalyKey($mods)])
+        || (hbHubMinerStackClash($mods) && $mods !== hbHubMinerWeeklyMods(hbHubMinerWeek($state['tick'])))) { // (an older week's weekly could be one)
         return false;
     }
     foreach ($mods as $id) {

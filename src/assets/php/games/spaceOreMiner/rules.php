@@ -67,7 +67,8 @@
         Tier II opens with the Theory of Everything, and turns Autopilot and Auto Crunch off. Tier III opens then too, and
         starts you from nothing: no skills, no Strange Matter and no upgrades, with goals of their own (like a Big Rip, or
         ore in one run). Tier I and II Anomalies can be stacked, with all their rules at once, for their parts added up
-        times <?= HBHUB_MINER_ANOMALY_STACK ?> for each one after the first. Every week there's a weekly Anomaly, a stack
+        times <?= HBHUB_MINER_ANOMALY_STACK ?> for each one after the first (apart from Unstable Vacuum, which only goes on its
+        own, and a few pairs that can't be done together). Every week there's a weekly Anomaly, a stack
         that's the same for everyone and worth <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts that week. Finishing
         Anomalies also earns asteroid skins, which you pick in your stats.
     </li>

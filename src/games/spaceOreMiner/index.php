@@ -704,7 +704,8 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 <p class="miner-engine-small">
                     Play Tier I and II Anomalies together, with all their rules at once. The goal is the lowest of theirs,
                     and the parts are theirs added up, times <?= HBHUB_MINER_ANOMALY_STACK ?> for every one after the first. Their Afterglows
-                    are added up too.
+                    are added up too. Unstable Vacuum only goes on its own, and some pairs can't be done together, so those can't
+                    be picked (point at a greyed-out one to see why).
                 </p>
                 <div class="miner-stack-picks" data-miner-stack-picks></div>
                 <p class="miner-engine-small" data-miner-stack-text></p>

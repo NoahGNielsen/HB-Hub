@@ -725,6 +725,9 @@
         return mods;
     }
     const anomalyKey = (mods) => mods.join('+');
+    // Whether a stack can't be done: one that only goes alone, or a pair that clashes (hbHubMinerStackClash())
+    const stackClash = (mods) => mods.length > 1 && (mods.some((id) => ANOMALIES[id].alone)
+        || CONFIG.anomalyClashes.some(([a, b]) => mods.includes(a) && mods.includes(b)));
     // The rules an Anomaly's game has: each one, and its 'rules' (hbHubMinerAnomalyRules())
     const anomalyRules = (mods) => [...new Set(mods.flatMap((id) => [id, ...(ANOMALIES[id].rules ?? [])]))];
     const anomalyGoal = (mods) => Math.min(...mods.map((id) => ANOMALIES[id].goal));
@@ -746,10 +749,15 @@
     const weeklyCache = new Map();
     function weeklyMods(week) {
         if (weeklyCache.has(week)) return weeklyCache.get(week);
-        const left = ANOMALY_IDS.filter((id) => ANOMALIES[id].tier <= CONFIG.anomalyStackTier && !CONFIG.weeklyLeftOut.includes(id));
+        const clashFree = week >= CONFIG.weeklyClashFrom; // never a stack that can't be done, from then on
+        let left = ANOMALY_IDS.filter((id) => ANOMALIES[id].tier <= CONFIG.anomalyStackTier && !CONFIG.weeklyLeftOut.includes(id)
+            && !(clashFree && ANOMALIES[id].alone));
         const size = CONFIG.weeklySizes[Math.floor(random(0, week * 10, SALT_WEEKLY) * CONFIG.weeklySizes.length)];
         const picked = [];
-        for (let i = 0; i < size; i++) picked.push(left.splice(Math.floor(random(0, week * 10 + i + 1, SALT_WEEKLY) * left.length), 1)[0]);
+        for (let i = 0; i < size && left.length > 0; i++) {
+            picked.push(left.splice(Math.floor(random(0, week * 10 + i + 1, SALT_WEEKLY) * left.length), 1)[0]);
+            if (clashFree) left = left.filter((id) => !stackClash([picked[i], id]));
+        }
         const mods = ANOMALY_IDS.filter((id) => picked.includes(id));
         weeklyCache.set(week, mods);
         return mods;
@@ -771,6 +779,7 @@
         if (s.anomaly || s.mods.length > 0 || !Array.isArray(mods) || mods.length === 0 || !mods.every((id) => typeof id === 'string')) return false;
         mods = anomalyMods(anomalyKey(mods));
         if (!mods || !mods.every((id) => anomalyTierOpen(s, ANOMALIES[id].tier)) || s.saved?.[anomalyKey(mods)]) return false; // a saved one is carried on instead
+        if (stackClash(mods) && anomalyKey(mods) !== anomalyKey(weeklyMods(weekOf(s.tick)))) return false; // can't be done (an older week's weekly could be)
 
         let game = structuredClone({ ...s, anomaly: null, saved: {} });
         game.anomalies = {};
@@ -2440,7 +2449,12 @@
         if (iconName) item.append(iconBox('miner-toast-icon', iconName));
         item.append(element('span', 'miner-toast-text', text));
         toasts.append(item);
-        while (toasts.children.length > 4) toasts.firstElementChild.remove();
+        // At most 4: the oldest goes, but the big ones (is-welcome: an Anomaly finished, welcome back) only once there
+        // are no others to take down. Finishing an Anomaly with a Big Crunch brings the crunch's message and up to three
+        // achievements right after it, which pushed the finish message out before it was ever seen.
+        while (toasts.children.length > 4) {
+            ([...toasts.children].find((other) => other !== item && !other.classList.contains('is-welcome')) ?? toasts.firstElementChild).remove();
+        }
         setTimeout(() => {
             item.classList.add('is-leaving');
             setTimeout(() => item.remove(), 400);
@@ -4023,7 +4037,9 @@
         const anomaly = saveState.anomaly;
         if (!anomaly) return null;
         const key = anomalyKey(anomaly.mods);
-        return { key, record: saveState.anomalies[key] ?? null, allOre: saveState.allOre, started: anomaly.started };
+        // runOre, not allOre, for what the player's own game mines meanwhile: late in the game allOre is so much bigger
+        // than a run's ore that adding hours of it doesn't change the number at all (a float keeps ~16 digits)
+        return { key, record: saveState.anomalies[key] ?? null, runOre: saveState.runOre, started: anomaly.started };
     }
 
     // After anything that can take the player into or out of an Anomaly: state is the game being played again, and how
@@ -4042,7 +4058,7 @@
         if (!was || saveState.anomaly) return;
 
         const name = anomalyName(was.key);
-        const away = ' Your own game mined ' + format(Math.max(0, saveState.allOre - was.allOre)) + ' ore meanwhile.';
+        const away = ' Your own game mined ' + format(Math.max(0, saveState.runOre - was.runOre)) + ' ore meanwhile.';
         const record = saveState.anomalies[was.key];
         if (record && record.done > (was.record?.done ?? 0)) {
             const ms = saveState.tick - was.started;
@@ -4113,8 +4129,10 @@
     // The same for its Afterglow, as text ("an hour", "6 hours")
     const afterglowNow = (mods) => formatDuration(anomalyAfterglowMs(mods, anomalyKey(weeklyMods(weekOf(state.tick))) === anomalyKey(mods)));
 
-    // Whether the player can go into these Anomalies now: in none already, and every one's tier open
-    const canStart = (mods) => !saveState.anomaly && mods.length > 0 && mods.every((id) => anomalyTierOpen(saveState, ANOMALIES[id].tier));
+    // Whether the player can go into these Anomalies now: in none already, every one's tier open, and not a stack that
+    // can't be done (stackClash()), unless it's saved or this week's weekly one
+    const canStart = (mods) => !saveState.anomaly && mods.length > 0 && mods.every((id) => anomalyTierOpen(saveState, ANOMALIES[id].tier))
+        && (!stackClash(mods) || !!saveState.saved?.[anomalyKey(mods)] || anomalyKey(mods) === anomalyKey(weeklyMods(weekOf(state.tick))));
 
     // The Tool Racks' Again button: the last Anomaly or stack gone into (lastAnomaly), while the player could go in
     const againButton = root.querySelector('[data-miner-anomaly-again]');
@@ -4149,7 +4167,8 @@
         weeklyStart.disabled = !canStart(mods);
     }
 
-    // The stack builder: a switch for each stackable Anomaly, and the goal and parts of the ones picked
+    // The stack builder: a switch for each stackable Anomaly, and the goal and parts of the ones picked. One that only
+    // goes alone, or that can't be done together with one already picked (stackClash()), can't be picked.
     let stackPicked = [];
     function renderStack() {
         const ids = ANOMALY_IDS.filter((id) => ANOMALIES[id].tier <= CONFIG.anomalyStackTier);
@@ -4161,10 +4180,15 @@
                 return button;
             }));
         }
-        stackPicked = stackPicked.filter((id) => anomalyTierOpen(saveState, ANOMALIES[id].tier));
+        stackPicked = stackPicked.filter((id) => anomalyTierOpen(saveState, ANOMALIES[id].tier) && !ANOMALIES[id].alone);
         for (const button of stackPicks.children) {
-            button.setAttribute('aria-pressed', String(stackPicked.includes(button.dataset.stackPick)));
-            button.disabled = !anomalyTierOpen(saveState, ANOMALIES[button.dataset.stackPick].tier);
+            const id = button.dataset.stackPick;
+            const isPicked = stackPicked.includes(id);
+            const clashesWith = isPicked ? null : stackPicked.find((other) => stackClash([other, id])) ?? null;
+            button.setAttribute('aria-pressed', String(isPicked));
+            button.disabled = !anomalyTierOpen(saveState, ANOMALIES[id].tier) || !!ANOMALIES[id].alone || clashesWith !== null;
+            button.title = ANOMALIES[id].alone ? ANOMALIES[id].name + ' doesn\'t stack: it can only be played on its own.'
+                : clashesWith ? ANOMALIES[id].name + ' and ' + ANOMALIES[clashesWith].name + ' can\'t be done together.' : '';
         }
         const mods = ids.filter((id) => stackPicked.includes(id));
         const record = mods.length > 1 ? saveState.anomalies[anomalyKey(mods)] ?? null : null;
