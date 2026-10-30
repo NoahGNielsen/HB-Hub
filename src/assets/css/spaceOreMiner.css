@@ -3510,6 +3510,17 @@
   color: var(--view);
 }
 
+/* On a phone, its two buttons go under the text */
+@media (max-width: 560px) {
+  .miner-anomaly-banner {
+    flex-wrap: wrap;
+  }
+
+  .miner-anomaly-banner-text {
+    flex-basis: 70%;
+  }
+}
+
 .miner-anomaly-banner-box {
   display: grid;
   place-items: center;

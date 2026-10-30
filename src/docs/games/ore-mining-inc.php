@@ -270,7 +270,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         </p>
                         <p>
                             While you're in one, a banner says so on every view, and your own game waits and mines as if you
-                            were away. You can leave whenever you like, but that run is lost. Skills, Big Rips, donations and
+                            were away. You can leave whenever you like. With <strong>Save and leave</strong> you keep the run
+                            and carry on from the Anomalies view later (up to <?= HBHUB_MINER_ANOMALY_SAVED_MAX ?> saved at once,
+                            but not Speed of Light). A saved run's clock keeps going, and it mines as if you were away until you
+                            carry on. With plain <strong>Leave</strong>, that run is lost. Skills, Big Rips, donations and
                             Engine Shifts only work in your own game. What you do in an Anomaly doesn't count towards your
                             stats or the leaderboard, but finishing Anomalies has achievements of its own.
                         </p>

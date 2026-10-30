@@ -262,7 +262,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 players who haven't learned the whole skill tree (so it keeps how many skills you've learned).
                                 The save also keeps how far you are with the day's Engine Shifts, how many Engine Parts you've
                                 given from ore that day and in all, how many days you've done every Shift and how many weekly
-                                Anomalies you've finished, the Anomaly you're in (its own game, kept the same way), for each
+                                Anomalies you've finished, the Anomaly you're in and the ones you've saved to carry on later
+                                (each its own game, kept the same way, until you finish it, leave it or throw it away), for each
                                 Anomaly or stack of them you've finished how many times, your best time and the last Engine you
                                 finished it for, the last Anomaly you went into, when the Afterglow from finishing one runs out,
                                 which Shift you swapped that day, which

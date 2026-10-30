@@ -808,6 +808,9 @@ const HBHUB_MINER_ANOMALIES = [
         'text' => 'Dead Hands, Dark Sky, Inflation and Entropy all at once, from nothing. Every run starts with one Space Pickaxe Guy, and Entropy stops after halving production twice.'],
 ];
 const HBHUB_MINER_ANOMALY_REPEAT = 0.25; // of the parts, for finishing one again without beating the best time
+// How many Anomalies a player can save to carry on later (hbHubMinerAnomalySave()), at most one of each key. Each is a
+// whole game kept in the save, so there's a cap.
+const HBHUB_MINER_ANOMALY_SAVED_MAX = 3;
 const HBHUB_MINER_ANOMALY_STACK_TIER = 2; // the highest tier that stacks
 const HBHUB_MINER_ANOMALY_STACK = 1.5; // the parts are multiplied by this for each Anomaly in a stack after the first
 const HBHUB_MINER_ANOMALY_WEEKLY = 2; // the parts for the weekly Anomaly that week (and its Afterglow)
@@ -1060,6 +1063,7 @@ function hbHubMinerConfig(): array
         'anomalies' => HBHUB_MINER_ANOMALIES,
         'anomalyTiers' => HBHUB_MINER_ANOMALY_TIERS,
         'anomalyRepeat' => HBHUB_MINER_ANOMALY_REPEAT,
+        'anomalySavedMax' => HBHUB_MINER_ANOMALY_SAVED_MAX,
         'inflationGrowth' => HBHUB_MINER_INFLATION_GROWTH,
         'entropyMs' => HBHUB_MINER_ENTROPY_MS,
         'entropySteps' => HBHUB_MINER_ENTROPY_STEPS,
@@ -1180,7 +1184,8 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  *   only its time moves on; this game's 'tick' waits where it was, and catches up as time away when it's left
  *   (hbHubMinerAnomalyLeave()). anomalies: the ones finished, by key (hbHubMinerAnomalyKey()) => {done: how many times,
  *   best: the fastest, in ms, engine: the Engine it was last finished for, as the first time for each Engine pays in
- *   full}.
+ *   full}. saved: the Anomalies saved to carry on later (hbHubMinerAnomalySave()), by key => the same shape as anomaly,
+ *   at most HBHUB_MINER_ANOMALY_SAVED_MAX ({} in an Anomaly's game). Their games wait where they were saved.
  *   lastAnomaly: the key of the last one gone into, or null (the Again button). afterglow: when the Afterglow from
  *   finishing one runs out (Unix ms, 0 or in the past when there's none, always 0 in an Anomaly's game).
  * - mods: the Anomaly's ids in an Anomaly's own game (hbHubMinerMod()), with the ones in their 'rules' too, [] in the
@@ -1235,6 +1240,7 @@ function hbHubMinerNewState(int $now): array
         'shifts' => array_fill(0, HBHUB_MINER_SHIFT_COUNT, 0),
         'anomaly' => null,
         'anomalies' => [],
+        'saved' => [],
         'mods' => [],
         'destroyed' => [],
         'engineOreRest' => 0,
@@ -1305,17 +1311,15 @@ function hbHubMinerNormalize(array $saved, int $now): array
         }
     }
     $state['anomalies'] = $anomalies;
-    $anomaly = $state['anomaly'];
-    $state['anomaly'] = null;
-    if (is_array($anomaly) && is_array($anomaly['state'] ?? null) && is_array($anomaly['mods'] ?? null)
-        && ($mods = hbHubMinerAnomalyMods(implode('+', $anomaly['mods']))) !== null) {
-        $state['anomaly'] = [
-            'mods' => $mods,
-            'started' => (int) ($anomaly['started'] ?? $now),
-            'goal' => (float) ($anomaly['goal'] ?? hbHubMinerAnomalyGoal($mods)),
-            'state' => ['mods' => hbHubMinerAnomalyRules($mods)] + hbHubMinerNormalize(['anomaly' => null, 'anomalies' => []] + $anomaly['state'], $now),
-        ];
+    $state['anomaly'] = hbHubMinerNormalizeAnomaly($state['anomaly'], $now);
+    $saved = [];
+    foreach (is_array($state['saved']) ? $state['saved'] : [] as $key => $anomaly) {
+        $anomaly = hbHubMinerNormalizeAnomaly($anomaly, $now);
+        if ($anomaly !== null && hbHubMinerAnomalyKey($anomaly['mods']) === (string) $key && count($saved) < HBHUB_MINER_ANOMALY_SAVED_MAX) {
+            $saved[(string) $key] = $anomaly;
+        }
     }
+    $state['saved'] = $saved;
 
     foreach (['ore', 'runOre', 'universeOre', 'allOre', 'clickOre'] as $key) {
         $state[$key] = (float) $state[$key];
@@ -1324,8 +1328,27 @@ function hbHubMinerNormalize(array $saved, int $now): array
 }
 
 /**
- * The save as the page gets it (all of it: nothing in it is secret): the same, but buffs and anomalies stay JSON
- * objects when empty (an Anomaly's game too).
+ * An Anomaly from the database (the save's 'anomaly', or one of its 'saved'), with its game normalised like the
+ * player's (with no Anomalies of its own), or null when it isn't one.
+ */
+function hbHubMinerNormalizeAnomaly(mixed $anomaly, int $now): ?array
+{
+    if (!is_array($anomaly) || !is_array($anomaly['state'] ?? null) || !is_array($anomaly['mods'] ?? null)
+        || ($mods = hbHubMinerAnomalyMods(implode('+', $anomaly['mods']))) === null) {
+        return null;
+    }
+    return [
+        'mods' => $mods,
+        'started' => (int) ($anomaly['started'] ?? $now),
+        'goal' => (float) ($anomaly['goal'] ?? hbHubMinerAnomalyGoal($mods)),
+        'state' => ['mods' => hbHubMinerAnomalyRules($mods)]
+            + hbHubMinerNormalize(['anomaly' => null, 'anomalies' => [], 'saved' => []] + $anomaly['state'], $now),
+    ];
+}
+
+/**
+ * The save as the page gets it (all of it: nothing in it is secret): the same, but buffs, anomalies and saved stay
+ * JSON objects when empty (an Anomaly's game too).
  */
 function hbHubMinerView(array $state): array
 {
@@ -1334,6 +1357,10 @@ function hbHubMinerView(array $state): array
     if ($state['anomaly'] !== null) {
         $state['anomaly']['state'] = hbHubMinerView($state['anomaly']['state']);
     }
+    foreach ($state['saved'] as $key => $anomaly) {
+        $state['saved'][$key]['state'] = hbHubMinerView($anomaly['state']);
+    }
+    $state['saved'] = (object) $state['saved'];
     return $state;
 }
 
@@ -2560,12 +2587,14 @@ function hbHubMinerGame(array $state): array
  * Goes into an Anomaly ($mods: the ids of HBHUB_MINER_ANOMALIES, in their order) at the game's time. Its game is a copy
  * of the player's, started over like a Big Rip that gives nothing (hbHubMinerNewMultiverse()), with its own luck; a
  * Tier III one ('fresh') also starts HBHUB_MINER_ANOMALY_FRESH over, so it's from nothing. Returns false when it can't
- * be done: in one already, an unknown one or stack, or a tier isn't open yet.
+ * be done: in one already, an unknown one or stack, a tier isn't open yet, or it's saved (it's carried on with
+ * hbHubMinerAnomalyResume() or thrown away first, so hours of it are never lost by a click).
  */
 function hbHubMinerAnomalyStart(array &$state, mixed $mods): bool
 {
     if ($state['anomaly'] !== null || $state['mods'] !== [] || !is_array($mods) || !array_is_list($mods) || $mods === []
-        || array_filter($mods, 'is_string') !== $mods || ($mods = hbHubMinerAnomalyMods(hbHubMinerAnomalyKey($mods))) === null) {
+        || array_filter($mods, 'is_string') !== $mods || ($mods = hbHubMinerAnomalyMods(hbHubMinerAnomalyKey($mods))) === null
+        || isset($state['saved'][hbHubMinerAnomalyKey($mods)])) {
         return false;
     }
     foreach ($mods as $id) {
@@ -2577,6 +2606,7 @@ function hbHubMinerAnomalyStart(array &$state, mixed $mods): bool
     $game = $state;
     $game['anomaly'] = null;
     $game['anomalies'] = [];
+    $game['saved'] = [];
     $game['mods'] = hbHubMinerAnomalyRules($mods);
     $game['destroyed'] = [];
     $game['afterglow'] = 0; // the player's own game's, not this one's
@@ -2602,6 +2632,43 @@ function hbHubMinerAnomalyLeave(array &$state): float
     $to = $state['anomaly']['state']['tick'];
     $state['anomaly'] = null;
     return hbHubMinerAdvance($state, $to, $state['tick']);
+}
+
+/**
+ * Leaves the Anomaly the player is in like hbHubMinerAnomalyLeave(), but keeps it in 'saved' to carry on later
+ * (hbHubMinerAnomalyResume()). Its clock keeps running meanwhile (the time it took is from when it started, time saved
+ * included), so saving doesn't make a run any faster. Returns false when it can't: not in one, Speed of Light (its
+ * 2 hours run on, so it would be over anyway), or HBHUB_MINER_ANOMALY_SAVED_MAX saved already.
+ */
+function hbHubMinerAnomalySave(array &$state): bool
+{
+    $anomaly = $state['anomaly'];
+    if ($anomaly === null || in_array('speedOfLight', $anomaly['mods'], true) || count($state['saved']) >= HBHUB_MINER_ANOMALY_SAVED_MAX) {
+        return false;
+    }
+    $state['saved'][hbHubMinerAnomalyKey($anomaly['mods'])] = $anomaly;
+    hbHubMinerAnomalyLeave($state);
+    return true;
+}
+
+/**
+ * Goes back into a saved Anomaly ($key, a key of 'saved') at the player's game's time. Its game has waited where it was
+ * saved, and catches up to now as time away (with the Engine's perks as they are now), which can finish it (Iron
+ * Universe's goal grows with time). Returns false when it can't: in one already, or nothing saved under $key.
+ */
+function hbHubMinerAnomalyResume(array &$state, mixed $key, ?array &$given): bool
+{
+    if ($state['anomaly'] !== null || $state['mods'] !== [] || !is_string($key) || !isset($state['saved'][$key])) {
+        return false;
+    }
+    $anomaly = $state['saved'][$key];
+    unset($state['saved'][$key]);
+    $anomaly['state']['engineStage'] = $state['engineStage'];
+    $anomaly['state']['engineIgnited'] = $state['engineIgnited'];
+    $state['anomaly'] = $anomaly;
+    $state['lastAnomaly'] = $key;
+    hbHubMinerAdvanceGame($state, $state['tick'], $anomaly['state']['tick'], $given);
+    return true;
 }
 
 /**
@@ -2683,7 +2750,9 @@ function hbHubMinerAdvanceGame(array &$state, int $to, int $fullUntil = PHP_INT_
  *   (hbHubMinerOreDonationCost(), at most hbHubMinerOrePartsMax() a day) or HBHUB_MINER_ENGINE_STRANGE_PART
  *   Strange Matter each.
  * - ['type' => 'anomalyStart', 'mods' => [id, ...]] (hbHubMinerAnomalyStart(), more than one for a stack),
- *   ['type' => 'anomalyQuit'].
+ *   ['type' => 'anomalyQuit'] (the run is lost), ['type' => 'anomalySave'] (hbHubMinerAnomalySave(): left, but kept),
+ *   ['type' => 'anomalyResume', 'key' => key] (hbHubMinerAnomalyResume()), ['type' => 'anomalyDrop', 'key' => key]
+ *   (throws a saved one away, in an Anomaly too).
  * - ['type' => 'skin', 'id' => a key of HBHUB_MINER_SKINS the player has, or null for the asteroid's usual look].
  * - ['type' => 'backdrop', 'id' => a key of HBHUB_MINER_BACKDROPS, or null], ['type' => 'sparks',
  *   'on' => bool]: with their perks (hbHubMinerEnginePerk()). ['type' => 'shiftSwap', 'index' => n]:
@@ -2738,6 +2807,23 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
             return false;
         }
         hbHubMinerAnomalyLeave($state);
+        return true;
+    }
+
+    if ($type === 'anomalySave') {
+        return hbHubMinerAnomalySave($state);
+    }
+
+    if ($type === 'anomalyResume') {
+        return hbHubMinerAnomalyResume($state, $action['key'] ?? null, $given);
+    }
+
+    if ($type === 'anomalyDrop') {
+        $key = $action['key'] ?? null;
+        if (!is_string($key) || !isset($state['saved'][$key])) {
+            return false;
+        }
+        unset($state['saved'][$key]);
         return true;
     }
 

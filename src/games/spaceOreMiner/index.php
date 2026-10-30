@@ -125,13 +125,14 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
 
         <div class="miner-stage">
         <!-- Only while the player is in an Anomaly (renderAnomalyBanner() in spaceOreMiner.js): which, how long it's
-             been (or how long is left), the Antimatter towards its goal, and the way out -->
+             been (or how long is left), the Antimatter towards its goal, and the ways out (keeping the run, or not) -->
         <div class="miner-anomaly-banner" data-miner-anomaly-banner hidden>
             <span class="miner-anomaly-banner-icon" data-miner-anomaly-banner-icon aria-hidden="true"></span>
             <p class="miner-anomaly-banner-text">
                 <strong data-miner-anomaly-banner-name></strong>
                 <span data-miner-anomaly-banner-info></span>
             </p>
+            <button type="button" class="casino-btn casino-btn-primary" data-miner-anomaly-save>Save and leave</button>
             <button type="button" class="casino-btn" data-miner-anomaly-leave>Leave</button>
         </div>
 
@@ -672,14 +673,22 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 An Anomaly is a universe of its own with one rule changed. In Tiers I and II you go in with your skill tree
                 and your Strange Matter, but no Dark Matter or Antimatter, and finish it by earning its goal of Antimatter in
                 there. Tier III starts you from nothing: no skills, no Strange Matter and no upgrades. While you're in one,
-                your own game waits and mines as if you were away. You can leave whenever you like, but you'll start over
-                next time. Finishing one gives the Engine being built parts: all of them the first time for each Engine
+                your own game waits and mines as if you were away. You can leave whenever you like: with Save and leave,
+                you can carry on where you were later (up to <?= HBHUB_MINER_ANOMALY_SAVED_MAX ?> saved at once, not Speed of Light),
+                otherwise you'll start over next time. A saved run's clock keeps going, and it mines as if you were away until
+                you carry on. Finishing one gives the Engine being built parts: all of them the first time for each Engine
                 and whenever you beat your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise. Every time you finish one, your own
                 game also gets an Afterglow: it mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much for a while (an hour for Tier I, 3 for
                 Tier II, 12 for Tier III, 24 for The Gauntlet, and a stack's added up), on top of any Afterglow still running, up to
                 <?= HBHUB_MINER_AFTERGLOW_MAX_MS / 3600000 ?> hours ahead. What you do in there doesn't count
                 towards your stats or the leaderboard, but finishing them has achievements of its own.
             </p>
+            <!-- The Anomalies saved to carry on later, filled in by spaceOreMiner.js (renderSaved()); hidden when there are none -->
+            <section class="miner-anomaly-tier miner-anomaly-saved" aria-labelledby="miner-saved-title" data-miner-saved hidden>
+                <h3 class="miner-store-title" id="miner-saved-title">Saved Anomalies</h3>
+                <p class="miner-engine-small">Their clocks keep going while they're saved, and they mine as if you were away until you carry on.</p>
+                <ul class="miner-anomaly-list" data-miner-saved-list></ul>
+            </section>
             <!-- This week's Anomaly and the stack builder, filled in by spaceOreMiner.js (renderWeekly(), renderStack()) -->
             <section class="miner-anomaly-tier miner-anomaly-weekly" aria-labelledby="miner-weekly-title">
                 <h3 class="miner-store-title" id="miner-weekly-title">This week's Anomaly</h3>

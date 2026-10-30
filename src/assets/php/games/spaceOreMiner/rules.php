@@ -57,7 +57,8 @@
         After your first Big Rip, the Anomalies view opens: challenge runs in a universe of their own with one rule
         changed, like no comets or clicks that mine nothing. You keep your skills and Strange Matter, start without Dark
         Matter or Antimatter, and finish one by earning its goal of Antimatter. Meanwhile your own game mines as if you
-        were away, and you can leave whenever you like (but that run is lost). Finishing one gives the Engine being
+        were away, and you can leave whenever you like: Save and leave keeps the run to carry on later (its clock keeps
+        going), plain Leave loses it. Finishing one gives the Engine being
         built parts: all of them the first time for each Engine and for a new best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
         Every time you finish one, your own game also gets an Afterglow: it mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much
         for an hour (Tier I), 3 hours (Tier II), 12 hours (Tier III) or 24 hours (The Gauntlet).

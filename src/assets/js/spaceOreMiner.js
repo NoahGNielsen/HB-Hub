@@ -770,9 +770,9 @@
     function anomalyStart(s, mods) {
         if (s.anomaly || s.mods.length > 0 || !Array.isArray(mods) || mods.length === 0 || !mods.every((id) => typeof id === 'string')) return false;
         mods = anomalyMods(anomalyKey(mods));
-        if (!mods || !mods.every((id) => anomalyTierOpen(s, ANOMALIES[id].tier))) return false;
+        if (!mods || !mods.every((id) => anomalyTierOpen(s, ANOMALIES[id].tier)) || s.saved?.[anomalyKey(mods)]) return false; // a saved one is carried on instead
 
-        let game = structuredClone({ ...s, anomaly: null });
+        let game = structuredClone({ ...s, anomaly: null, saved: {} });
         game.anomalies = {};
         game.mods = anomalyRules(mods);
         game.destroyed = [];
@@ -793,6 +793,31 @@
         const to = s.anomaly.state.tick;
         s.anomaly = null;
         return advance(s, to, s.tick);
+    }
+
+    // Leaves it but keeps it in s.saved (by key) to carry on later; its clock keeps running meanwhile. Not Speed of
+    // Light, and at most anomalySavedMax (hbHubMinerAnomalySave())
+    function anomalySave(s) {
+        const anomaly = s.anomaly;
+        s.saved ??= {};
+        if (!anomaly || anomaly.mods.includes('speedOfLight') || Object.keys(s.saved).length >= CONFIG.anomalySavedMax) return false;
+        s.saved[anomalyKey(anomaly.mods)] = anomaly;
+        anomalyLeave(s);
+        return true;
+    }
+
+    // Goes back into a saved one: its game catches up to now as time away, with the Engine's perks as they are now,
+    // which can finish it (hbHubMinerAnomalyResume())
+    function anomalyResume(s, key, given) {
+        if (s.anomaly || s.mods.length > 0 || typeof key !== 'string' || !s.saved?.[key]) return false;
+        const anomaly = s.saved[key];
+        delete s.saved[key];
+        anomaly.state.engineStage = s.engineStage;
+        anomaly.state.engineIgnited = s.engineIgnited;
+        s.anomaly = anomaly;
+        s.lastAnomaly = key;
+        advanceGame(s, s.tick, anomaly.state.tick, given);
+        return true;
     }
 
     // Done once its goal is reached: its time goes in s.anomalies, its parts in given, the player leaves it, and their
@@ -852,6 +877,13 @@
             return true;
         }
         if (action.type === 'shiftSwap') return shiftSwap(s, action.index);
+        if (action.type === 'anomalySave') return anomalySave(s);
+        if (action.type === 'anomalyResume') return anomalyResume(s, action.key, given);
+        if (action.type === 'anomalyDrop') { // throws a saved one away, in an Anomaly too
+            if (typeof action.key !== 'string' || !s.saved?.[action.key]) return false;
+            delete s.saved[action.key];
+            return true;
+        }
         if (s.anomaly && action.type !== 'anomalyStart' && action.type !== 'anomalyQuit') {
             if (['skill', 'rip', 'donate'].includes(action.type)) return false;
             const result = apply(s.anomaly.state, action, null);
@@ -1290,7 +1322,7 @@
         const given = IS_GUEST ? null : [];
         const was = anomalyNow();
         const result = apply(saveState, action, given);
-        followGame(was, action.type === 'anomalyQuit');
+        followGame(was, action.type === 'anomalyQuit' ? 'quit' : action.type === 'anomalySave' ? 'saved' : null);
         announceGiven(given);
         if (!result) return false;
         if (!['click', 'buy', 'upgrade'].includes(action.type)) note('Did ' + action.type + (action.id ? ' ' + action.id : '')); // not the ones Auto Buy does all the time
@@ -3939,6 +3971,9 @@
     const anomalyBannerIcon = root.querySelector('[data-miner-anomaly-banner-icon]');
     const anomalyBannerName = root.querySelector('[data-miner-anomaly-banner-name]');
     const anomalyBannerInfo = root.querySelector('[data-miner-anomaly-banner-info]');
+    const anomalySaveButton = root.querySelector('[data-miner-anomaly-save]');
+    const savedBox = root.querySelector('[data-miner-saved]');
+    const savedList = root.querySelector('[data-miner-saved-list]');
     const anomalyDialog = root.querySelector('[data-miner-anomaly-dialog]');
     const anomalyDialogTitle = root.querySelector('[data-miner-anomaly-dialog-title]');
     const anomalyDialogText = root.querySelector('[data-miner-anomaly-dialog-text]');
@@ -3955,7 +3990,8 @@
 
     let anomaliesKey = '';
     let anomalyBannerKey = '';
-    let anomalyAsked = null; // what the dialog asks: the key of the Anomaly to go into, or 'leave'
+    // What the dialog asks: the key of the Anomaly to go into, 'leave', or 'resume:' / 'drop:' and the key of a saved one
+    let anomalyAsked = null;
 
     const anomalyName = (key) => (anomalyMods(key ?? '') ?? []).map((id) => ANOMALIES[id].name).join(' + ') || 'an Anomaly';
 
@@ -3979,8 +4015,9 @@
     }
 
     // After anything that can take the player into or out of an Anomaly: state is the game being played again, and how
-    // the run ended is told (finished, out of time, or left: isLeaving). was is anomalyNow() from before.
-    function followGame(was, isLeaving = false) {
+    // the run ended is told (finished, out of time, or left: leaving is 'quit', or 'saved' when it was kept). was is
+    // anomalyNow() from before.
+    function followGame(was, leaving = null) {
         const game = gameOf(saveState);
         if (game === state) return;
         state = game;
@@ -4006,7 +4043,9 @@
                 + (IS_GUEST || saveState.warps < 1 ? '' : ' +' + partsText(parts) + ' for the ' + engineNameOf(engineNumber(saveState)) + '.')
                 + ' Afterglow: your own game mines ' + CONFIG.afterglowTimes + ' times as much for the next ' + formatDuration(saveState.afterglow - saveState.tick) + '.'
                 + away, 'is-welcome', 12000);
-        } else if (isLeaving) {
+        } else if (leaving === 'saved') {
+            toast('warp', 'You saved ' + name + ' to carry on later, from the Anomalies menu. Its clock keeps going meanwhile.' + away, '', 8000);
+        } else if (leaving === 'quit') {
             toast('warp', 'You left ' + name + '.' + away, '', 7000);
         } else {
             toast('hourglass', 'Out of time: ' + name + ' is over.' + away, 'is-welcome', 9000);
@@ -4039,6 +4078,13 @@
             + (state.tick - anomaly.started <= record.best ? ' (still ahead)' : ' (behind it now)') : '';
         anomalyBannerInfo.textContent = time + ' · ' + format(state[stat]) + ' of ' + format(anomaly.goal) + ' ' + GOAL_STAT_TEXT[stat] + pace
             + (isNoAuto() ? ' · Autopilot and Auto Crunch are off in here' : '');
+        // Save and leave: not in Speed of Light (its time runs on), or with anomalySavedMax saved already (anomalySave())
+        const isLight = anomaly.mods.includes('speedOfLight');
+        const isFull = Object.keys(saveState.saved ?? {}).length >= CONFIG.anomalySavedMax;
+        anomalySaveButton.disabled = isLight || isFull;
+        anomalySaveButton.title = isLight ? 'Speed of Light can\'t be saved: its 2 hours run on either way.'
+            : isFull ? 'You have ' + CONFIG.anomalySavedMax + ' saved already: throw one away in the Anomalies menu first.'
+                : 'Go back to your own game, and carry on with this run later.';
     }
 
     // What an Anomaly's goal counts, in words (anomalyStat())
@@ -4126,9 +4172,10 @@
         const week = weekOf(state.tick);
         const key = JSON.stringify(saveState.anomalies) + '|' + (saveState.anomaly ? anomalyKey(saveState.anomaly.mods) : '')
             + '|' + Object.keys(ANOMALY_TIERS).map((tier) => anomalyTierOpen(saveState, Number(tier))).join() + '|' + week + '|' + saveState.engineStage
-            + '|' + stackPicked.join() + '|' + (saveState.lastAnomaly ?? '');
+            + '|' + stackPicked.join() + '|' + (saveState.lastAnomaly ?? '') + '|' + Object.keys(saveState.saved ?? {}).join();
         if (key === anomaliesKey) return;
         anomaliesKey = key;
+        renderSaved();
         renderWeekly();
         renderStack();
         renderAgain();
@@ -4155,7 +4202,8 @@
                     element('span', 'miner-anomaly-best', record ? 'Badge earned. Best time ' + formatClock(record.best) + ', finished '
                         + (record.done === 1 ? 'once' : record.done + ' times') + '.' + (newForEngine(record) ? ' Not finished for this Engine yet: full parts.' : '')
                         : 'Not finished yet.'));
-                const button = element('button', 'casino-btn' + (isIn ? '' : ' casino-btn-primary'), isIn ? 'You\'re in it' : record ? 'Go again' : 'Go in');
+                const button = element('button', 'casino-btn' + (isIn ? '' : ' casino-btn-primary'),
+                    isIn ? 'You\'re in it' : saveState.saved?.[id] ? 'Carry on' : record ? 'Go again' : 'Go in');
                 button.type = 'button';
                 button.dataset.anomalyStart = id;
                 button.disabled = !isOpen || saveState.anomaly !== null;
@@ -4170,12 +4218,59 @@
         }));
     }
 
-    // Asks before going into an Anomaly or stack (its key in the button's data-anomaly-start)
+    // The saved Anomalies (saveState.saved, see anomalySave()): each with how far it had got when it was saved, and
+    // buttons to carry on with it or throw it away
+    function renderSaved() {
+        const saved = Object.entries(saveState.saved ?? {});
+        savedBox.hidden = saved.length === 0;
+        savedList.replaceChildren(...saved.map(([key, anomaly]) => {
+            const stat = anomalyStat(anomaly.mods);
+            const item = element('li', 'miner-anomaly');
+            const main = element('div', 'miner-anomaly-main');
+            main.append(element('span', 'miner-anomaly-name', anomalyName(key)),
+                element('span', 'miner-anomaly-best', 'Saved at ' + formatClock(anomaly.state.tick - anomaly.started) + ' in, with '
+                    + format(anomaly.state[stat]) + ' of ' + format(anomaly.goal) + ' ' + GOAL_STAT_TEXT[stat] + '.'));
+            const resume = element('button', 'casino-btn casino-btn-primary', 'Carry on');
+            resume.type = 'button';
+            resume.dataset.anomalyStart = key;
+            resume.disabled = saveState.anomaly !== null;
+            const drop = element('button', 'casino-btn', 'Throw away');
+            drop.type = 'button';
+            drop.dataset.anomalyDrop = key;
+            item.append(iconBox('miner-anomaly-badge', ANOMALIES[anomaly.mods[0]].icon), main, resume, drop);
+            return item;
+        }));
+    }
+    savedList.addEventListener('click', (event) => {
+        const drop = event.target.closest('[data-anomaly-drop]');
+        if (drop) {
+            anomalyAsked = 'drop:' + drop.dataset.anomalyDrop;
+            anomalyDialogTitle.textContent = 'Throw away ' + anomalyName(drop.dataset.anomalyDrop) + '?';
+            anomalyDialogText.textContent = 'The saved run is lost for good: next time you go in, it starts over.';
+            anomalyDialogConfirm.textContent = 'Throw away';
+            anomalyDialog.showModal();
+            return;
+        }
+        askStart(event.target.closest('[data-anomaly-start]'));
+    });
+
+    // Asks before going into an Anomaly or stack (its key in the button's data-anomaly-start), or carrying on with it
+    // when it's saved
     function askStart(button) {
         if (!button || button.disabled) return;
         const key = button.dataset.anomalyStart;
         const mods = anomalyMods(key);
         if (!mods) return;
+        const saved = saveState.saved?.[key];
+        if (saved) {
+            anomalyAsked = 'resume:' + key;
+            anomalyDialogTitle.textContent = 'Carry on with ' + anomalyName(key) + '?';
+            anomalyDialogText.textContent = 'You saved it ' + formatClock(saved.state.tick - saved.started) + ' in. It has mined as if you were away since,'
+                + ' and its clock has kept going: it\'s at ' + formatClock(state.tick - saved.started) + ' now. Your own game waits and mines as if you were away until you\'re back.';
+            anomalyDialogConfirm.textContent = 'Carry on';
+            anomalyDialog.showModal();
+            return;
+        }
         const tiers = mods.map((id) => ANOMALY_TIERS[ANOMALIES[id].tier]);
         anomalyAsked = key;
         anomalyDialogTitle.textContent = 'Go into ' + anomalyName(key) + '?';
@@ -4201,21 +4296,31 @@
         if (!saveState?.anomaly) return;
         anomalyAsked = 'leave';
         anomalyDialogTitle.textContent = 'Leave ' + anomalyName(anomalyKey(saveState.anomaly.mods)) + '?';
-        anomalyDialogText.textContent = 'You\'ll go back to your own game, and this run is lost: next time you go in, it starts over.';
+        anomalyDialogText.textContent = 'You\'ll go back to your own game, and this run is lost: next time you go in, it starts over.'
+            + (anomalySaveButton.disabled ? '' : ' To carry on with it later, use Save and leave instead.');
         anomalyDialogConfirm.textContent = 'Leave';
         anomalyDialog.showModal();
+    });
+    anomalySaveButton.addEventListener('click', () => {
+        if (!saveState?.anomaly || anomalySaveButton.disabled || !act({ type: 'anomalySave' })) return;
+        renderAll();
+        saveSoon();
     });
     root.querySelector('[data-miner-anomaly-cancel]').addEventListener('click', () => anomalyDialog.close());
     anomalyDialogConfirm.addEventListener('click', () => {
         anomalyDialog.close();
         if (anomalyAsked === 'leave') {
             if (!act({ type: 'anomalyQuit' })) return;
+        } else if (anomalyAsked.startsWith('drop:')) {
+            if (!act({ type: 'anomalyDrop', key: anomalyAsked.slice(5) })) return;
         } else {
-            const mods = anomalyMods(anomalyAsked);
-            if (!act({ type: 'anomalyStart', mods })) return;
+            const isResume = anomalyAsked.startsWith('resume:');
+            const key = isResume ? anomalyAsked.slice(7) : anomalyAsked;
+            const mods = anomalyMods(key);
+            if (!act(isResume ? { type: 'anomalyResume', key } : { type: 'anomalyStart', mods })) return;
             sound('rip');
             shake('is-ripping');
-            toast(ANOMALIES[mods[0]].icon, 'Welcome to ' + anomalyName(anomalyAsked) + '. ' + mods.map((id) => ANOMALIES[id].text).join(' '), 'is-comet', 7000);
+            toast(ANOMALIES[mods[0]].icon, (isResume ? 'Back in ' : 'Welcome to ') + anomalyName(key) + '. ' + mods.map((id) => ANOMALIES[id].text).join(' '), 'is-comet', 7000);
             if (root.dataset.view !== 'ore') {
                 history.pushState(null, '', menu.querySelector('[data-miner-view-link="ore"]').href);
                 showView('ore');
