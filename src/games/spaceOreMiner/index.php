@@ -8,7 +8,7 @@
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
 // It has six views, picked in the menu down the right side (over the views on small screens; Engine and Anomalies in a
-// second group, once they've opened): Ore (the asteroid and the store, the default), Dark Matter
+// second group): Ore (the asteroid and the store, the default), Dark Matter
 // (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch), Strange Matter
 // (?view=strangeMatter, the Big Rip and the skill tree), Engine (?view=engine, the Cosmic Engine the whole site
 // builds together, see assets/php/games/spaceOreMiner/engine.php) and Anomalies (?view=anomalies, the challenge runs,
@@ -39,7 +39,7 @@ const MINER_VIEWS = [ // ?view= => [the menu's text, its address after the game'
     'engine' => ['Engine', '?view=engine'],
     'anomalies' => ['Anomalies', '?view=anomalies'],
 ];
-const MINER_LATER_VIEWS = ['engine' => true, 'anomalies' => true]; // in the second bar of the menu, hidden until they open
+const MINER_LATER_VIEWS = ['engine' => true, 'anomalies' => true]; // in the second group of the menu
 $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-inc/';
 ?>
@@ -104,14 +104,13 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
              the views, on small ones a bar over them -->
         <div class="miner-body">
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
-        <!-- Two groups: the matters first, and the Engine and Anomalies after them. Those two (and their group) stay
-             hidden until they open (renderMenu() in spaceOreMiner.js): the Engine after the first Warp Jump, the
-             Anomalies after the first Big Rip. -->
+        <!-- Two groups: the matters first, and the Engine and Anomalies after them. Those two are always there, and
+             their views say what's still locked (giving parts needs a Warp Jump, the Anomalies a Big Rip). -->
         <nav class="miner-menus" aria-label="Views" data-miner-menu>
             <?php foreach ([array_diff_key(MINER_VIEWS, MINER_LATER_VIEWS), array_intersect_key(MINER_VIEWS, MINER_LATER_VIEWS)] as $row => $rowViews): ?>
-                <div class="miner-menu<?= $row === 1 ? ' is-later' : '' ?>"<?= $row === 1 ? ' data-miner-menu-later hidden' : '' ?>>
+                <div class="miner-menu<?= $row === 1 ? ' is-later' : '' ?>">
                     <?php foreach ($rowViews as $view => [$text, $query]): ?>
-                        <a class="miner-menu-link is-<?= $view ?>" href="<?= htmlspecialchars($minerAddress . $query) ?>" data-miner-view-link="<?= $view ?>"<?= $view === $minerView ? ' aria-current="page"' : '' ?><?= $row === 1 ? ' hidden' : '' ?>>
+                        <a class="miner-menu-link is-<?= $view ?>" href="<?= htmlspecialchars($minerAddress . $query) ?>" data-miner-view-link="<?= $view ?>"<?= $view === $minerView ? ' aria-current="page"' : '' ?>>
                             <span class="miner-menu-text"><?= $text ?></span>
                             <?php if ($view !== 'ore'): ?>
                                 <span class="miner-menu-count" data-miner-menu-count="<?= $view ?>"></span>

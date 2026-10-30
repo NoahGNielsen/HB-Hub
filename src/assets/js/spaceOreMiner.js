@@ -1162,8 +1162,6 @@
     const statsPopup = root.querySelector('[data-miner-popup="stats"]');
     const views = Object.fromEntries([...root.querySelectorAll('[data-miner-view]')].map((node) => [node.dataset.minerView, node]));
     const menu = root.querySelector('[data-miner-menu]');
-    const laterMenu = menu.querySelector('[data-miner-menu-later]'); // the Engine and Anomalies, hidden until they open
-    const laterLinks = Object.fromEntries([...laterMenu.querySelectorAll('[data-miner-view-link]')].map((node) => [node.dataset.minerViewLink, node]));
     const menuCounts = Object.fromEntries([...root.querySelectorAll('[data-miner-menu-count]')].map((node) => [node.dataset.minerMenuCount, node]));
     const menuNews = Object.fromEntries([...root.querySelectorAll('[data-miner-menu-news]')].map((node) => [node.dataset.minerMenuNews, node]));
     const cometButton = root.querySelector('[data-miner-comet]');
@@ -1706,21 +1704,6 @@
         const finished = Object.keys(saveState.anomalies).length;
         menuCounts.anomalies.textContent = finished > 0 ? String(finished) : '';
         menuNews.anomalies.hidden = saveState.anomaly !== null || finished > 0 || !anomalyTierOpen(saveState, 1); // the first one to try
-        renderLaterViews();
-    }
-
-    // The second bar of the menu: the Engine once you've made a Warp Jump (when you can start giving it parts), the
-    // Anomalies once their first tier is open (the first Big Rip), and the bar itself once either is. Until then
-    // they're hidden, so a new player isn't shown things they can't use yet; a view opened by its address (or Back)
-    // before it's open goes back to Ore.
-    function renderLaterViews() {
-        const isOpen = { engine: saveState.warps >= 1, anomalies: saveState.anomaly !== null || anomalyTierOpen(saveState, 1) };
-        for (const [view, open] of Object.entries(isOpen)) laterLinks[view].hidden = !open;
-        laterMenu.hidden = !Object.values(isOpen).some(Boolean);
-        if (isOpen[root.dataset.view] === false) {
-            history.replaceState(null, '', menu.querySelector('[data-miner-view-link="ore"]').href);
-            showView('ore');
-        }
     }
 
     // The buildings shown: every one owned or nearly affordable, and the next one as a mystery
