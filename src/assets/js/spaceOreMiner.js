@@ -141,6 +141,8 @@
 
     // What Ignition does to production at the game's time (hbHubMinerIgnition())
     const ignition = (s) => (s.engineIgnited > 0 && s.tick >= s.engineIgnited && s.tick < s.engineIgnited + CONFIG.ignitionMs ? CONFIG.ignitionTimes : 1);
+    // What an Anomaly's Afterglow does to production at the game's time (hbHubMinerAfterglow())
+    const afterglow = (s) => (s.tick < (s.afterglow ?? 0) ? CONFIG.afterglowTimes : 1);
 
     // What a part given from ore is worth now, in quarter parts (hbHubMinerOreQuarters()), and how many can be given a day
     // (hbHubMinerOrePartsMax())
@@ -280,7 +282,7 @@
         if (hasDark(s, 'darkEngines')) global *= 1.5;
         if (hasAnti(s, 'annihilation')) global *= 2;
         global *= effects.production * (1 + effects.perSkill * s.skills.length) * (1 + effects.perWarp * s.flights)
-            * (1 + effects.perCrunch * s.crunches) * engineEffects(s).production * ignition(s);
+            * (1 + effects.perCrunch * s.crunches) * engineEffects(s).production * ignition(s) * afterglow(s);
         global *= entropy(s);
         const parts = {
             multipliers: Object.fromEntries(BUILDING_IDS.map((id) => [id, 1])),
@@ -466,6 +468,7 @@
             for (const edge of [s.engineIgnited, s.engineIgnited + CONFIG.ignitionMs]) { // Ignition starting or running out
                 if (s.engineIgnited > 0 && edge > s.tick && edge < next) next = edge;
             }
+            if (s.afterglow > s.tick && s.afterglow < next) next = s.afterglow; // the Afterglow running out
 
             const perSecond = rate(s, s.tick);
             const share = s.tick >= fullUntil ? engineEffects(s).offline * (hasDark(s, 'timeDilation') ? 2 : 1) * skillEffects(s).offline : 1;
@@ -731,6 +734,12 @@
         for (const id of mods) parts += ANOMALIES[id].parts ?? ANOMALY_TIERS[ANOMALIES[id].tier].parts;
         return Math.floor(parts * CONFIG.anomalyStack ** (mods.length - 1) * (isWeekly ? CONFIG.anomalyWeekly : 1) * engineEffects(s).anomalyParts);
     }
+    // How long the Afterglow from finishing one lasts, in ms (hbHubMinerAnomalyAfterglowMs())
+    function anomalyAfterglowMs(mods, isWeekly) {
+        let ms = 0;
+        for (const id of mods) ms += ANOMALIES[id].afterglow ?? ANOMALY_TIERS[ANOMALIES[id].tier].afterglow;
+        return ms * (isWeekly ? CONFIG.anomalyWeekly : 1);
+    }
 
     // The week a time is in, from Monday 00:00 UTC (hbHubMinerWeek()), and that week's Anomaly (hbHubMinerWeeklyMods())
     const weekOf = (time) => Math.floor((time + 3 * CONFIG.dayMs) / CONFIG.weekMs);
@@ -767,6 +776,7 @@
         game.anomalies = {};
         game.mods = anomalyRules(mods);
         game.destroyed = [];
+        game.afterglow = 0; // the player's own game's, not this one's
         game.engineOpen = false;
         game.seed = Math.floor(random(s.seed, s.tick, SALT_ANOMALY) * 0x7FFFFFFE) + 1;
         game.started = s.tick;
@@ -785,8 +795,8 @@
         return advance(s, to, s.tick);
     }
 
-    // Done once its goal is reached: its time goes in s.anomalies, its parts in given, and the player leaves it
-    // (hbHubMinerAnomalyCheck())
+    // Done once its goal is reached: its time goes in s.anomalies, its parts in given, the player leaves it, and their
+    // own game gets its Afterglow, added to any still running (hbHubMinerAnomalyCheck())
     function anomalyCheck(s, given) {
         const anomaly = s.anomaly;
         if (!anomaly || anomaly.state[anomalyStat(anomaly.mods)] < anomaly.goal) return;
@@ -803,6 +813,7 @@
         if (isWeekly) s.weeklies = (s.weeklies ?? 0) + 1;
         if (given !== null && s.warps >= 1) give(s, given, [CONFIG.sourceAnomaly, parts, key, ms, isWeekly ? week : null]);
         anomalyLeave(s);
+        s.afterglow = Math.min(Math.max(s.afterglow ?? 0, s.tick) + anomalyAfterglowMs(anomaly.mods, isWeekly), s.tick + CONFIG.afterglowMax);
     }
 
     // advance() for the game being played; Speed of Light is over at lightMs (hbHubMinerAdvanceGame())
@@ -1934,12 +1945,19 @@
     function renderBuffs() {
         field.classList.toggle('is-frenzy', buff(state, 'production', state.tick) > 1); // the picture's miners work faster
         const running = Object.values(state.buffs).filter((item) => item.until > state.tick);
-        buffList.replaceChildren(...running.map((item) => {
+        const rows = running.map((item) => {
             const row = element('li', 'miner-buff is-' + item.kind);
             row.append(element('span', 'miner-buff-name', BUFF_TEXT[item.kind] + ' ×' + format(item.multiplier)),
                 element('span', 'miner-buff-time', Math.ceil((item.until - state.tick) / 1000) + 's'));
             return row;
-        }));
+        });
+        if (afterglow(state) > 1) { // from finishing an Anomaly, hours long, so it's a clock instead of seconds
+            const row = element('li', 'miner-buff is-afterglow');
+            row.append(element('span', 'miner-buff-name', 'Afterglow: production ×' + format(CONFIG.afterglowTimes)),
+                element('span', 'miner-buff-time', formatClock(state.afterglow - state.tick)));
+            rows.push(row);
+        }
+        buffList.replaceChildren(...rows);
     }
 
     function renderComet() {
@@ -3816,7 +3834,9 @@
             sound('achievement');
             toast(ANOMALIES[anomalyMods(was.key)[0]].icon, name + ' finished in ' + formatClock(ms)
                 + (was.record === null ? ', for the first time!' : isBest ? ', a new best time!' : '.')
-                + (IS_GUEST || saveState.warps < 1 ? '' : ' +' + partsText(parts) + ' for the ' + engineNameOf(engineNumber(saveState)) + '.') + away, 'is-welcome', 10000);
+                + (IS_GUEST || saveState.warps < 1 ? '' : ' +' + partsText(parts) + ' for the ' + engineNameOf(engineNumber(saveState)) + '.')
+                + ' Afterglow: your own game mines ' + CONFIG.afterglowTimes + ' times as much for the next ' + formatDuration(saveState.afterglow - saveState.tick) + '.'
+                + away, 'is-welcome', 12000);
         } else if (isLeaving) {
             toast('warp', 'You left ' + name + '.' + away, '', 7000);
         } else {
@@ -3863,6 +3883,8 @@
     // The parts an Anomaly or stack is worth now: in full the first time and for a new best time, and twice as many as
     // the weekly one this week
     const partsNow = (mods) => anomalyParts(saveState, mods, anomalyKey(weeklyMods(weekOf(state.tick))) === anomalyKey(mods));
+    // The same for its Afterglow, as text ("an hour", "6 hours")
+    const afterglowNow = (mods) => formatDuration(anomalyAfterglowMs(mods, anomalyKey(weeklyMods(weekOf(state.tick))) === anomalyKey(mods)));
 
     // Whether the player can go into these Anomalies now: in none already, and every one's tier open
     const canStart = (mods) => !saveState.anomaly && mods.length > 0 && mods.every((id) => anomalyTierOpen(saveState, ANOMALIES[id].tier));
@@ -3893,7 +3915,7 @@
         const key = anomalyKey(mods);
         const record = saveState.anomalies[key] ?? null;
         weeklyText.textContent = anomalyName(key) + ': ' + mods.map((id) => ANOMALIES[id].text).join(' ') + ' Goal: ' + goalText(mods) + ', for '
-            + partsText(partsNow(mods)) + ' (' + CONFIG.anomalyWeekly + ' times as many as usual, this week only).';
+            + partsText(partsNow(mods)) + ' and ' + afterglowNow(mods) + ' of Afterglow (' + CONFIG.anomalyWeekly + ' times as much as usual, this week only).';
         weeklyBest.textContent = record ? 'Your best time at it: ' + formatClock(record.best) + '.' + (newForEngine(record) ? ' Not finished for this Engine yet.' : '')
             : 'You haven\'t finished it yet.';
         weeklyStart.dataset.anomalyStart = key;
@@ -3920,7 +3942,7 @@
         const mods = ids.filter((id) => stackPicked.includes(id));
         const record = mods.length > 1 ? saveState.anomalies[anomalyKey(mods)] ?? null : null;
         stackInfo.textContent = mods.length < 2 ? 'Pick at least two.'
-            : anomalyName(anomalyKey(mods)) + '. Goal: ' + goalText(mods) + ', for ' + partsText(partsNow(mods)) + '.'
+            : anomalyName(anomalyKey(mods)) + '. Goal: ' + goalText(mods) + ', for ' + partsText(partsNow(mods)) + ' and ' + afterglowNow(mods) + ' of Afterglow.'
                 + (record ? ' Your best time at it: ' + formatClock(record.best) + '.' : '');
         stackStart.dataset.anomalyStart = anomalyKey(mods);
         stackStart.disabled = mods.length < 2 || !canStart(mods);
@@ -3948,7 +3970,7 @@
             const box = element('section', 'miner-anomaly-tier' + (isOpen ? '' : ' is-locked'));
             box.append(element('h3', 'miner-store-title', 'Tier ' + TIER_NUMERALS[tierNumber] + ': ' + tier.name),
                 element('p', 'miner-engine-small', (tier.fresh ? 'These start you from nothing: no skills, no Strange Matter and no upgrades. They don\'t stack.'
-                    : partsText(tier.parts) + ' each.')
+                    : partsText(tier.parts) + ' and ' + formatDuration(tier.afterglow) + ' of Afterglow each.')
                     + (tier.noAuto ? ' Autopilot and Auto Crunch are off in these.' : '')
                     + (isOpen ? '' : ' ' + TIER_UNLOCK_TEXT[tier.unlock])));
             const list = element('ul', 'miner-anomaly-list');
@@ -3960,7 +3982,7 @@
                 const main = element('div', 'miner-anomaly-main');
                 main.append(element('span', 'miner-anomaly-name', anomaly.name),
                     element('span', 'miner-anomaly-text', anomaly.text),
-                    element('span', 'miner-anomaly-goal', 'Goal: ' + goalText([id]) + (tier.fresh ? '. ' + partsText(partsNow([id])) + '.' : '.')),
+                    element('span', 'miner-anomaly-goal', 'Goal: ' + goalText([id]) + (tier.fresh ? '. ' + partsText(partsNow([id])) + ' and ' + afterglowNow([id]) + ' of Afterglow.' : '.')),
                     element('span', 'miner-anomaly-best', record ? 'Badge earned. Best time ' + formatClock(record.best) + ', finished '
                         + (record.done === 1 ? 'once' : record.done + ' times') + '.' + (newForEngine(record) ? ' Not finished for this Engine yet: full parts.' : '')
                         : 'Not finished yet.'));

@@ -466,6 +466,12 @@
   background: color-mix(in srgb, var(--miner-diamond) 30%, var(--background));
 }
 
+/* The Afterglow from finishing an Anomaly: hours long, so it doesn't pulse like a comet's */
+.miner-buff.is-afterglow {
+  background: color-mix(in srgb, var(--miner-anomaly) 25%, var(--background));
+  animation: none;
+}
+
 .miner-buff-time {
   font-variant-numeric: tabular-nums;
   opacity: 0.8;

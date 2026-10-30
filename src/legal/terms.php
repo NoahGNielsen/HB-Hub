@@ -211,8 +211,8 @@ const HBHUB_TERMS_UPDATED = '30 October 2026';
                                 Shifts or finishing Anomalies) can't be taken back, don't move to the next Engine, and your name
                                 and how many you gave are shown to everyone with an account. Their perks are for every player
                                 and stay once the next Engine starts. Admins can
-                                change how many parts a stage needs, and the stages, perks and Anomalies (their rules, goals and
-                                parts) may change as the game is balanced, also for an Anomaly you're partway through. Parts
+                                change how many parts a stage needs, and the stages, perks and Anomalies (their rules, goals,
+                                parts and Afterglow) may change as the game is balanced, also for an Anomaly you're partway through. Parts
                                 given with a cheated save can be removed.
                             </li>
                             <li>

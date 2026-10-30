@@ -59,6 +59,8 @@
         Matter or Antimatter, and finish one by earning its goal of Antimatter. Meanwhile your own game mines as if you
         were away, and you can leave whenever you like (but that run is lost). Finishing one gives the Engine being
         built parts: all of them the first time for each Engine and for a new best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
+        Every time you finish one, your own game also gets an Afterglow: it mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much
+        for an hour (Tier I), 3 hours (Tier II), 12 hours (Tier III) or 24 hours (The Gauntlet).
         Tier II opens with the Theory of Everything, and turns Autopilot and Auto Crunch off. Tier III opens then too, and
         starts you from nothing: no skills, no Strange Matter and no upgrades, with goals of their own (like a Big Rip, or
         ore in one run). Tier I and II Anomalies can be stacked, with all their rules at once, for their parts added up

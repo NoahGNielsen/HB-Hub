@@ -141,7 +141,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 <h2 id="miner-ore-title" class="games-visually-hidden">Your asteroid</h2>
                 <p class="miner-ore"><span class="miner-ore-number" data-miner-ore>0</span> <span class="miner-ore-unit">ore</span></p>
                 <p class="miner-rate"><span data-miner-rate>0</span> ore per second</p>
-                <ul class="miner-buffs" data-miner-buffs aria-label="Comet effects"></ul>
+                <ul class="miner-buffs" data-miner-buffs aria-label="Comet effects and Afterglow"></ul>
 
                 <!-- The buildings you own show up in the picture: around the asteroid in data-miner-scene, and standing on
                      it in data-miner-surface (inside it, so they move with it) -->
@@ -520,7 +520,10 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 there. Tier III starts you from nothing: no skills, no Strange Matter and no upgrades. While you're in one,
                 your own game waits and mines as if you were away. You can leave whenever you like, but you'll start over
                 next time. Finishing one gives the Engine being built parts: all of them the first time for each Engine
-                and whenever you beat your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise. What you do in there doesn't count
+                and whenever you beat your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise. Every time you finish one, your own
+                game also gets an Afterglow: it mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much for a while (an hour for Tier I, 3 for
+                Tier II, 12 for Tier III, 24 for The Gauntlet, and a stack's added up), on top of any Afterglow still running, up to
+                <?= HBHUB_MINER_AFTERGLOW_MAX_MS / 3600000 ?> hours ahead. What you do in there doesn't count
                 towards your stats or the leaderboard, but finishing them has achievements of its own.
             </p>
             <!-- This week's Anomaly and the stack builder, filled in by spaceOreMiner.js (renderWeekly(), renderStack()) -->
@@ -537,7 +540,8 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 <h3 class="miner-store-title" id="miner-stack-title">Stack Anomalies</h3>
                 <p class="miner-engine-small">
                     Play Tier I and II Anomalies together, with all their rules at once. The goal is the lowest of theirs,
-                    and the parts are theirs added up, times <?= HBHUB_MINER_ANOMALY_STACK ?> for every one after the first.
+                    and the parts are theirs added up, times <?= HBHUB_MINER_ANOMALY_STACK ?> for every one after the first. Their Afterglows
+                    are added up too.
                 </p>
                 <div class="miner-stack-picks" data-miner-stack-picks></div>
                 <p class="miner-engine-small" data-miner-stack-text></p>

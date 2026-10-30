@@ -264,7 +264,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 given from ore that day and in all, how many days you've done every Shift and how many weekly
                                 Anomalies you've finished, the Anomaly you're in (its own game, kept the same way), for each
                                 Anomaly or stack of them you've finished how many times, your best time and the last Engine you
-                                finished it for, the last Anomaly you went into, which Shift you swapped that day, which
+                                finished it for, the last Anomaly you went into, when the Afterglow from finishing one runs out,
+                                which Shift you swapped that day, which
                                 Engines' last stages you helped fill, and the asteroid skin, background and click sparks you
                                 picked.
                             </li>

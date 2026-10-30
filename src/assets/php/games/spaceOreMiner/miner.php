@@ -759,7 +759,10 @@ const HBHUB_MINER_SHIFT_PARTS_ALL = 25;
 // HBHUB_MINER_ANOMALY_FRESH starts over too, so no skills, no Strange Matter bonus and no upgrades at all. It's finished
 // once its 'goal' is reached in it: Antimatter earned, or the 'stat' it names (runOre: ore mined in one run,
 // darkEarned: Dark Matter earned in a universe). It pays its 'parts' (or its tier's) to the Cosmic Engine the first
-// time, or for a new best time, and HBHUB_MINER_ANOMALY_REPEAT of them otherwise. Its 'tier' opens with 'unlock': rip
+// time, or for a new best time, and HBHUB_MINER_ANOMALY_REPEAT of them otherwise. Every time it's finished, the
+// player's own game also gets an Afterglow: HBHUB_MINER_AFTERGLOW_TIMES as much production for its 'afterglow' ms (or
+// its tier's), which pays back some of the time their own game spent mining as if they were away (hbHubMinerAfterglow()).
+// Its 'tier' opens with 'unlock': rip
 // (a Big Rip made) or theory (the Theory of Everything learned). Tier II ones also turn Autopilot and Auto Crunch off
 // ('noAuto'), which only the page has. 'rules' are the other Anomalies whose rules it has too (The Gauntlet). While the
 // player is in one, the Engine gets nothing else from them (no Shifts or donations), and their own game mines as if
@@ -771,9 +774,9 @@ const HBHUB_MINER_SHIFT_PARTS_ALL = 25;
 // after the first. The weekly Anomaly (hbHubMinerWeeklyMods()) is a stack picked from the week, the same for
 // everyone, worth HBHUB_MINER_ANOMALY_WEEKLY times as much that week.
 const HBHUB_MINER_ANOMALY_TIERS = [
-    1 => ['name' => 'Ripples', 'parts' => 25, 'unlock' => 'rip', 'noAuto' => false, 'fresh' => false],
-    2 => ['name' => 'Tears', 'parts' => 100, 'unlock' => 'theory', 'noAuto' => true, 'fresh' => false],
-    3 => ['name' => 'Singularities', 'parts' => 400, 'unlock' => 'theory', 'noAuto' => false, 'fresh' => true],
+    1 => ['name' => 'Ripples', 'parts' => 25, 'afterglow' => 3600000, 'unlock' => 'rip', 'noAuto' => false, 'fresh' => false],
+    2 => ['name' => 'Tears', 'parts' => 100, 'afterglow' => 10800000, 'unlock' => 'theory', 'noAuto' => true, 'fresh' => false],
+    3 => ['name' => 'Singularities', 'parts' => 400, 'afterglow' => 43200000, 'unlock' => 'theory', 'noAuto' => false, 'fresh' => true],
 ];
 const HBHUB_MINER_ANOMALIES = [
     'deadHands' => ['name' => 'Dead Hands', 'icon' => 'glove', 'tier' => 1, 'goal' => 3e21,
@@ -801,13 +804,17 @@ const HBHUB_MINER_ANOMALIES = [
     'handsOnly' => ['name' => 'Hands Only', 'icon' => 'neutronFist', 'tier' => 3, 'goal' => 1e6, 'stat' => 'darkEarned',
         'text' => 'Buildings mine nothing by themselves. Each click (and each auto-click) mines 20% of what they would in a second instead.'],
     'gauntlet' => ['name' => 'The Gauntlet', 'icon' => 'gauntlet', 'tier' => 3, 'goal' => 3, 'stat' => 'darkEarned', 'parts' => 3000,
-        'rules' => ['deadHands', 'darkSky', 'inflation', 'entropy'],
+        'afterglow' => 86400000, 'rules' => ['deadHands', 'darkSky', 'inflation', 'entropy'],
         'text' => 'Dead Hands, Dark Sky, Inflation and Entropy all at once, from nothing. Every run starts with one Space Pickaxe Guy, and Entropy stops after halving production twice.'],
 ];
 const HBHUB_MINER_ANOMALY_REPEAT = 0.25; // of the parts, for finishing one again without beating the best time
 const HBHUB_MINER_ANOMALY_STACK_TIER = 2; // the highest tier that stacks
 const HBHUB_MINER_ANOMALY_STACK = 1.5; // the parts are multiplied by this for each Anomaly in a stack after the first
-const HBHUB_MINER_ANOMALY_WEEKLY = 2; // the parts for the weekly Anomaly that week
+const HBHUB_MINER_ANOMALY_WEEKLY = 2; // the parts for the weekly Anomaly that week (and its Afterglow)
+// The Afterglow after finishing one: production times this, for 1 hour (Tier I), 3 (Tier II), 12 (Tier III) or 24 (The
+// Gauntlet), a stack's added up. Finishing another while one is running adds to it, up to this far ahead.
+const HBHUB_MINER_AFTERGLOW_TIMES = 2;
+const HBHUB_MINER_AFTERGLOW_MAX_MS = 172800000; // 48 hours
 const HBHUB_MINER_WEEK_MS = 604800000; // weeks start on Monday at 00:00 UTC (hbHubMinerWeek())
 const HBHUB_MINER_WEEKLY_SIZES = [2, 3]; // how many Anomalies the weekly one stacks, picked from
 const HBHUB_MINER_WEEKLY_LEFT_OUT = ['speedOfLight']; // never in it: with Unstable Vacuum it can't be done in its time
@@ -1067,6 +1074,8 @@ function hbHubMinerConfig(): array
         'anomalyStackTier' => HBHUB_MINER_ANOMALY_STACK_TIER,
         'anomalyStack' => HBHUB_MINER_ANOMALY_STACK,
         'anomalyWeekly' => HBHUB_MINER_ANOMALY_WEEKLY,
+        'afterglowTimes' => HBHUB_MINER_AFTERGLOW_TIMES,
+        'afterglowMax' => HBHUB_MINER_AFTERGLOW_MAX_MS,
         'weekMs' => HBHUB_MINER_WEEK_MS,
         'weeklySizes' => HBHUB_MINER_WEEKLY_SIZES,
         'weeklyLeftOut' => HBHUB_MINER_WEEKLY_LEFT_OUT,
@@ -1172,7 +1181,8 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  *   (hbHubMinerAnomalyLeave()). anomalies: the ones finished, by key (hbHubMinerAnomalyKey()) => {done: how many times,
  *   best: the fastest, in ms, engine: the Engine it was last finished for, as the first time for each Engine pays in
  *   full}.
- *   lastAnomaly: the key of the last one gone into, or null (the Again button).
+ *   lastAnomaly: the key of the last one gone into, or null (the Again button). afterglow: when the Afterglow from
+ *   finishing one runs out (Unix ms, 0 or in the past when there's none, always 0 in an Anomaly's game).
  * - mods: the Anomaly's ids in an Anomaly's own game (hbHubMinerMod()), with the ones in their 'rules' too, [] in the
  *   player's. destroyed: the buildings the Unstable Vacuum has destroyed in it.
  * - engineOreRest: quarter parts given from ore that don't make a whole part yet (HBHUB_MINER_ENGINE_ORE_SHARE).
@@ -1237,6 +1247,7 @@ function hbHubMinerNewState(int $now): array
         'skin' => null,
         'shiftSwap' => -1,
         'lastAnomaly' => null,
+        'afterglow' => 0,
         'backdrop' => null,
         'sparks' => true,
     ];
@@ -1268,7 +1279,7 @@ function hbHubMinerNormalize(array $saved, int $now): array
     $state['donatedToday'] = (int) $state['donatedToday'];
     $state['shifts'] = is_array($state['shifts']) && count($state['shifts']) === HBHUB_MINER_SHIFT_COUNT
         ? array_map('intval', array_values($state['shifts'])) : array_fill(0, HBHUB_MINER_SHIFT_COUNT, 0);
-    foreach (['engineOreRest', 'engineIgnited', 'engineGiven', 'shiftDays', 'weeklies'] as $key) {
+    foreach (['engineOreRest', 'engineIgnited', 'engineGiven', 'shiftDays', 'weeklies', 'afterglow'] as $key) {
         $state[$key] = max(0, (int) $state[$key]);
     }
     $state['engineOreRest'] %= HBHUB_MINER_ENGINE_ORE_QUARTERS;
@@ -1482,6 +1493,15 @@ function hbHubMinerIgnition(array $state): float
 {
     $ignited = $state['engineIgnited'];
     return $ignited > 0 && $state['tick'] >= $ignited && $state['tick'] < $ignited + HBHUB_MINER_IGNITION_MS ? HBHUB_MINER_IGNITION_TIMES : 1;
+}
+
+/**
+ * What an Anomaly's Afterglow does to production at the game's time: HBHUB_MINER_AFTERGLOW_TIMES until 'afterglow',
+ * 1 after it (and in an Anomaly's game, which never has one).
+ */
+function hbHubMinerAfterglow(array $state): float
+{
+    return $state['tick'] < $state['afterglow'] ? HBHUB_MINER_AFTERGLOW_TIMES : 1;
 }
 
 /**
@@ -1788,7 +1808,8 @@ function hbHubMinerBuildingRates(array $state): array
         $global *= 2;
     }
     $global *= $effects['production'] * (1 + $effects['perSkill'] * count($state['skills'])) * (1 + $effects['perWarp'] * $state['flights'])
-        * (1 + $effects['perCrunch'] * $state['crunches']) * hbHubMinerEngineEffects($state)['production'] * hbHubMinerIgnition($state);
+        * (1 + $effects['perCrunch'] * $state['crunches']) * hbHubMinerEngineEffects($state)['production'] * hbHubMinerIgnition($state)
+        * hbHubMinerAfterglow($state);
     $global *= hbHubMinerEntropy($state);
     foreach ($state['upgrades'] as $upgradeId) {
         $upgrade = $upgrades[$upgradeId];
@@ -1995,6 +2016,10 @@ function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX,
             if ($state['engineIgnited'] > 0 && $edge > $state['tick'] && $edge < $next) {
                 $next = $edge;
             }
+        }
+        // The Afterglow running out (hbHubMinerAfterglow())
+        if ($state['afterglow'] > $state['tick'] && $state['afterglow'] < $next) {
+            $next = $state['afterglow'];
         }
 
         $rate = hbHubMinerRate($state, $state['tick']);
@@ -2452,6 +2477,19 @@ function hbHubMinerAnomalyParts(array $state, array $mods, bool $isWeekly): int
 }
 
 /**
+ * How long the Afterglow (hbHubMinerAfterglow()) from finishing an Anomaly with these $mods lasts, in ms: each one's
+ * (or its tier's) added up, HBHUB_MINER_ANOMALY_WEEKLY times as long for the weekly one that week.
+ */
+function hbHubMinerAnomalyAfterglowMs(array $mods, bool $isWeekly): int
+{
+    $ms = 0;
+    foreach ($mods as $id) {
+        $ms += HBHUB_MINER_ANOMALIES[$id]['afterglow'] ?? HBHUB_MINER_ANOMALY_TIERS[HBHUB_MINER_ANOMALIES[$id]['tier']]['afterglow'];
+    }
+    return $ms * ($isWeekly ? HBHUB_MINER_ANOMALY_WEEKLY : 1);
+}
+
+/**
  * The week a time (Unix ms) is in: weeks since the one 1 January 1970 was in, each from Monday 00:00 UTC (that day was a
  * Thursday, so three days are added).
  */
@@ -2541,6 +2579,7 @@ function hbHubMinerAnomalyStart(array &$state, mixed $mods): bool
     $game['anomalies'] = [];
     $game['mods'] = hbHubMinerAnomalyRules($mods);
     $game['destroyed'] = [];
+    $game['afterglow'] = 0; // the player's own game's, not this one's
     $game['engineOpen'] = false; // nothing is given from in here, apart from finishing it
     $game['seed'] = (int) floor(hbHubMinerRandom($state['seed'], $state['tick'], HBHUB_MINER_SALT_ANOMALY) * 0x7FFFFFFE) + 1;
     $game['started'] = $state['tick'];
@@ -2569,7 +2608,9 @@ function hbHubMinerAnomalyLeave(array &$state): float
  * When the Anomaly the player is in has its goal: it's done, its time goes in 'anomalies' (and its parts in $given, as
  * [HBHUB_MINER_ENGINE_SOURCE_ANOMALY, parts, key, ms it took, the week when it's that week's weekly Anomaly or null],
  * see hbHubMinerApply(): all of them the first time for each Engine (hbHubMinerEngineNumber()) and for a new best
- * time, HBHUB_MINER_ANOMALY_REPEAT of them otherwise), and the player leaves it.
+ * time, HBHUB_MINER_ANOMALY_REPEAT of them otherwise), and the player leaves it. Their own game then gets its
+ * Afterglow (hbHubMinerAnomalyAfterglowMs()) from that time, added to any still running, up to
+ * HBHUB_MINER_AFTERGLOW_MAX_MS ahead.
  */
 function hbHubMinerAnomalyCheck(array &$state, ?array &$given): void
 {
@@ -2596,6 +2637,8 @@ function hbHubMinerAnomalyCheck(array &$state, ?array &$given): void
         hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_ANOMALY, $parts, $key, $ms, $isWeekly ? $week : null]);
     }
     hbHubMinerAnomalyLeave($state);
+    $state['afterglow'] = min(max($state['afterglow'], $state['tick']) + hbHubMinerAnomalyAfterglowMs($anomaly['mods'], $isWeekly),
+        $state['tick'] + HBHUB_MINER_AFTERGLOW_MAX_MS);
 }
 
 /**

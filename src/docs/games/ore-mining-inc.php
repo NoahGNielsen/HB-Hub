@@ -279,6 +279,15 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             even while the Engine is full and waiting for a lock, since some locks need Anomalies. You also get
                             a badge for each one in the Anomalies view, with your best time.
                         </p>
+                        <p>
+                            <strong>Afterglow:</strong> every time you finish one (not only the first time), your own game
+                            mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much for a while afterwards, to make up for the time
+                            it spent mining as if you were away: an hour for a Tier I Anomaly, 3 for Tier II, 12 for Tier III and
+                            24 for The Gauntlet. A stack's are added up, and the weekly Anomaly's lasts
+                            <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times as long that week. Finishing another while one is running
+                            adds to it, up to <?= HBHUB_MINER_AFTERGLOW_MAX_MS / 3600000 ?> hours ahead. It shows under your ore
+                            with the comet effects, and works with them and with Ignition.
+                        </p>
                         <?php foreach (HBHUB_MINER_ANOMALY_TIERS as $docsTier => $docsTierData): ?>
                             <h3>Tier <?= str_repeat('I', $docsTier) ?>: <?= htmlspecialchars($docsTierData['name']) ?></h3>
                             <p>
