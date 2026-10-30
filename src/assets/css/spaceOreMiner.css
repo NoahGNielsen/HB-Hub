@@ -70,7 +70,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The menu between the views: one bar, the open view lit up in its own colour */
+/* The menu between the views: a bar, the open view lit up in its own colour. The game has two (.miner-menus), the
+   matters on top and the Engine and Anomalies under them once they've opened; the leaderboard has one. */
 .miner-menu {
   margin: 8px 0 12px;
   padding: 4px;
@@ -78,6 +79,21 @@
   gap: 4px;
   border-radius: 14px;
   background: var(--secondary);
+}
+
+.miner-menus {
+  margin: 8px 0 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.miner-menus .miner-menu {
+  margin: 0;
+}
+
+.miner-menu[hidden],
+.miner-menu-link[hidden] {
+  display: none;
 }
 
 .miner-menu-link {

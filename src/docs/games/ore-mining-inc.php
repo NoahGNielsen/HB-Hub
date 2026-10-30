@@ -143,7 +143,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             A Warp Jump and a Big Rip only give what's more than you've had from them before, so each one has to beat
                             your best. The Antimatter view opens after your first Warp Jump, the Strange Matter view after your first
-                            Big Crunch. A dot in the menu shows when there's something to do in a view.
+                            Big Crunch. The Engine and Anomalies views have their own bar under the menu, which shows up once
+                            they've opened: the Engine after your first Warp Jump, the Anomalies after your first Big Rip. A dot
+                            in the menu shows when there's something to do in a view.
                         </p>
                     </section>
 
