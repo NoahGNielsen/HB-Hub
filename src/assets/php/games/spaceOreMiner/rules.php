@@ -63,7 +63,7 @@
         <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours.
     </li>
     <li>
-        After your first Big Rip, the Anomalies view opens: challenge runs in a universe of their own with one rule
+        Once you've earned <?= number_format(HBHUB_MINER_ANOMALY_STRANGE) ?> Strange Matter, the Anomalies view opens: challenge runs in a universe of their own with one rule
         changed, like no comets or clicks that mine nothing. You keep your skills and Strange Matter, start without Dark
         Matter or Antimatter, and finish one by earning its goal of Antimatter. Meanwhile your own game mines as if you
         were away, and you can leave whenever you like: Save and leave keeps the run to carry on later (its clock keeps

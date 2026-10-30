@@ -830,7 +830,7 @@
     // Whether the player's own game has opened Anomaly tier tier
     function anomalyTierOpen(s, tier) {
         const unlock = ANOMALY_TIERS[tier].unlock;
-        return unlock === 'rip' ? s.rips >= 1 : unlock === 'theory' ? hasSkill(s, 'theory') : false;
+        return unlock === 'strange' ? s.strangeEarned >= CONFIG.anomalyStrange : unlock === 'theory' ? hasSkill(s, 'theory') : false;
     }
 
     // The game being played: the Anomaly's while the player is in one (hbHubMinerGame())
@@ -4260,7 +4260,7 @@
     const stackInfo = root.querySelector('[data-miner-stack-text]');
     const stackStart = root.querySelector('[data-miner-stack-start]');
     const TIER_NUMERALS = { 1: 'I', 2: 'II', 3: 'III' };
-    const TIER_UNLOCK_TEXT = { rip: 'Opens with your first Big Rip.', theory: 'Opens once you\'ve learned the Theory of Everything.' };
+    const TIER_UNLOCK_TEXT = { strange: 'Opens once you\'ve earned ' + CONFIG.anomalyStrange + ' Strange Matter.', theory: 'Opens once you\'ve learned the Theory of Everything.' };
 
     let anomaliesKey = '';
     let anomalyBannerKey = '';
