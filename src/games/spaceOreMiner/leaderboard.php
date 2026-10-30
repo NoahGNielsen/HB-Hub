@@ -86,14 +86,15 @@ if ($board !== 'players') {
     $statement = $db->prepare('SELECT c.contributionUserId AS userId, u.userName, u.userAvatarAttachmentId, SUM(c.contributionParts) AS parts,
             SUM(IF(c.contributionSource = ?, c.contributionParts, 0)) AS fromStrange,
             SUM(IF(c.contributionSource = ?, c.contributionParts, 0)) AS fromOre,
-            SUM(IF(c.contributionSource = ?, c.contributionParts, 0)) AS fromShifts
+            SUM(IF(c.contributionSource = ?, c.contributionParts, 0)) AS fromShifts,
+            SUM(IF(c.contributionSource = ?, c.contributionParts, 0)) AS fromAnomalies
         FROM `HBHub-MinerContributions` c
         JOIN `HBHub-Users` u ON u.userId = c.contributionUserId
         WHERE (? OR c.contributionEngineId = ?) AND u.userStatus IS NOT NULL AND u.userStatus <> ?
         GROUP BY c.contributionUserId, u.userName, u.userAvatarAttachmentId
         ORDER BY parts DESC, MIN(c.contributionId)
         LIMIT ' . LEADERBOARD_ROWS);
-    $statement->execute([HBHUB_MINER_ENGINE_SOURCE_STRANGE, HBHUB_MINER_ENGINE_SOURCE_ORE, HBHUB_MINER_ENGINE_SOURCE_SHIFT,
+    $statement->execute([HBHUB_MINER_ENGINE_SOURCE_STRANGE, HBHUB_MINER_ENGINE_SOURCE_ORE, HBHUB_MINER_ENGINE_SOURCE_SHIFT, HBHUB_MINER_ENGINE_SOURCE_ANOMALY,
         (int) ($board === 'engineAll'), (int) $engine['engineId'], LEADERBOARD_STATUS_BANNED]);
     $engineRows = $statement->fetchAll();
 }
@@ -170,6 +171,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                                 <th scope="col">From Strange Matter</th>
                                 <th scope="col">From ore</th>
                                 <th scope="col">From Engine Shifts</th>
+                                <th scope="col">From Anomalies</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -195,6 +197,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                                     <td><?= number_format((int) $row['fromStrange']) ?></td>
                                     <td><?= number_format((int) $row['fromOre']) ?></td>
                                     <td><?= number_format((int) $row['fromShifts']) ?></td>
+                                    <td><?= number_format((int) $row['fromAnomalies']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

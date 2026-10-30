@@ -9,8 +9,9 @@
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
 // It has four views, picked in the menu under the title and the news ticker: Ore (the asteroid and the store, the default), Dark Matter
 // (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch), Strange Matter
-// (?view=strangeMatter, the Big Rip and the skill tree) and Engine (?view=engine, the Cosmic Engine the whole site
-// builds together, see assets/php/games/spaceOreMiner/engine.php). They're all on the page, and the
+// (?view=strangeMatter, the Big Rip and the skill tree), Engine (?view=engine, the Cosmic Engine the whole site
+// builds together, see assets/php/games/spaceOreMiner/engine.php) and Anomalies (?view=anomalies, the challenge runs,
+// HBHUB_MINER_ANOMALIES; while the player is in one, a banner over every view says so). They're all on the page, and the
 // script switches between them without loading it again (changing the address, so Back works), so the game keeps
 // running; ?view= only picks the one shown first. Stats, achievements and how to play are popups.
 // data-watchdog is the worker that notices when the page freezes (spaceOreMinerWatchdog.js). After a crash, the next
@@ -35,6 +36,7 @@ const MINER_VIEWS = [ // ?view= => [the menu's text, its address after the game'
     'antimatter' => ['Antimatter', '?view=antimatter'],
     'strangeMatter' => ['Strange Matter', '?view=strangeMatter'],
     'engine' => ['Engine', '?view=engine'],
+    'anomalies' => ['Anomalies', '?view=anomalies'],
 ];
 $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-inc/';
@@ -108,6 +110,17 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 </a>
             <?php endforeach; ?>
         </nav>
+
+        <!-- Only while the player is in an Anomaly (renderAnomalyBanner() in spaceOreMiner.js): which, how long it's
+             been (or how long is left), the Antimatter towards its goal, and the way out -->
+        <div class="miner-anomaly-banner" data-miner-anomaly-banner hidden>
+            <span class="miner-anomaly-banner-icon" data-miner-anomaly-banner-icon aria-hidden="true"></span>
+            <p class="miner-anomaly-banner-text">
+                <strong data-miner-anomaly-banner-name></strong>
+                <span data-miner-anomaly-banner-info></span>
+            </p>
+            <button type="button" class="casino-btn" data-miner-anomaly-leave>Leave</button>
+        </div>
 
         <!-- Ore: the asteroid stays put, the store next to it scrolls -->
         <div class="miner-view miner-layout" data-miner-view="ore"<?= $minerView !== 'ore' ? ' hidden' : '' ?>>
@@ -463,6 +476,33 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
             </div>
         </section>
 
+        <!-- Anomalies: the challenge runs, by tier (HBHUB_MINER_ANOMALY_TIERS), each with its rule, goal, parts, best time
+             and badge, and a button to go in. Filled in by spaceOreMiner.js (renderAnomalies()). -->
+        <section class="miner-view casino-card miner-prestige is-anomaly" aria-labelledby="miner-anomalies-title" data-miner-view="anomalies"<?= $minerView !== 'anomalies' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- A rip in space: two rings pulling the wrong way round a dark core -->
+                <div class="miner-prestige-art" aria-hidden="true">
+                    <span class="miner-art-ring is-1"></span>
+                    <span class="miner-art-ring is-2"></span>
+                    <span class="miner-art-core"></span>
+                </div>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-anomalies-title" class="miner-prestige-title">Anomalies</h2>
+                    <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-anomalies-count>0</span> finished</p>
+                    <p class="miner-prestige-hint" data-miner-anomalies-now></p>
+                </div>
+            </div>
+            <p class="casino-hint miner-prestige-about">
+                An Anomaly is a universe of its own with one rule changed. You go in with your skill tree and your Strange
+                Matter, but no Dark Matter or Antimatter, and finish it by earning its goal of Antimatter in there. While
+                you're in one, your own game waits and mines as if you were away. You can leave whenever you like, but
+                you'll start over next time. Finishing one gives the Cosmic Engine parts: all of them the first time and
+                whenever you beat your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise. What you do in there
+                doesn't count towards your stats, achievements or the leaderboard.
+            </p>
+            <div class="miner-anomaly-tiers" data-miner-anomaly-tiers></div>
+        </section>
+
         <button type="button" class="miner-comet" data-miner-comet hidden aria-label="Catch the Golden Comet"><span class="miner-comet-head"></span></button>
         <ol class="miner-toasts" data-miner-toasts aria-live="polite"></ol>
 
@@ -526,6 +566,15 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
             <div class="games-dialog-actions">
                 <button type="button" class="casino-btn" data-miner-rip-cancel>Not yet</button>
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-rip-confirm>Big Rip</button>
+            </div>
+        </dialog>
+
+        <dialog class="games-dialog miner-prestige-dialog is-anomaly" data-miner-anomaly-dialog aria-labelledby="miner-anomaly-dialog-title">
+            <h2 id="miner-anomaly-dialog-title" data-miner-anomaly-dialog-title></h2>
+            <p data-miner-anomaly-dialog-text></p>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn" data-miner-anomaly-cancel>Not yet</button>
+                <button type="button" class="casino-btn casino-btn-primary" data-miner-anomaly-confirm></button>
             </div>
         </dialog>
 

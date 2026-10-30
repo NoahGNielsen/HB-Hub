@@ -48,6 +48,14 @@
         different players who have helped, and only finish once it's met.
     </li>
     <li>
+        After your first Big Rip, the Anomalies view opens: challenge runs in a universe of their own with one rule
+        changed, like no comets or clicks that mine nothing. You keep your skills and Strange Matter, start without Dark
+        Matter or Antimatter, and finish one by earning its goal of Antimatter. Meanwhile your own game mines as if you
+        were away, and you can leave whenever you like (but that run is lost). Finishing one gives the Cosmic Engine
+        parts: all of them the first time and for a new best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
+        Tier II opens with the Theory of Everything, and turns Autopilot and Auto Crunch off.
+    </li>
+    <li>
         The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
         your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed (more once the Cosmic Engine
         has the stages for it). The daily limits and Engine Shifts start over at midnight UTC.

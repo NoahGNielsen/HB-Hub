@@ -1,6 +1,6 @@
-/* Ore Mining Inc. (games/spaceOreMiner/): the buttons and the menu at the top, the five views (Ore: the asteroid and
+/* Ore Mining Inc. (games/spaceOreMiner/): the buttons and the menu at the top, the six views (Ore: the asteroid and
    the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree;
-   Engine: the Cosmic Engine), the popups (stats, achievements, how to play), the comet flying across the screen and the
+   Engine: the Cosmic Engine; Anomalies: the challenge runs, with the banner over every view while in one), the popups (stats, achievements, how to play), the comet flying across the screen and the
    messages in the corner. Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. The leaderboard
    loads it too, for its tabs (.miner-menu). */
 .casino.miner {
@@ -10,6 +10,7 @@
   --miner-anti: #ff6bb5;
   --miner-strange: #5ef2a6;
   --miner-engine: #ffa94d;
+  --miner-anomaly: #ff5d73;
   --miner-gap: 16px;
   max-width: 1180px;
   margin: 0 auto;
@@ -107,6 +108,10 @@
 
 .miner-menu-link.is-strangeMatter {
   --miner-view-colour: var(--miner-strange);
+}
+
+.miner-menu-link.is-anomalies {
+  --miner-view-colour: var(--miner-anomaly);
 }
 
 .miner-menu-link.is-engine {
@@ -2468,6 +2473,186 @@
   opacity: 0.75;
 }
 
+/* Anomalies (.miner-prestige.is-anomaly): two rings pulling opposite ways round a dark core, a tear in space */
+.miner-prestige.is-anomaly {
+  --view: var(--miner-anomaly);
+  --view-2: #b98cff;
+}
+
+.miner-prestige.is-anomaly .miner-art-ring {
+  box-sizing: border-box;
+  border: 3px dashed color-mix(in srgb, var(--view) 70%, transparent);
+  animation: miner-spin calc(18s / var(--spin)) linear infinite;
+}
+
+.miner-prestige.is-anomaly .miner-art-ring.is-1 {
+  width: 100%;
+  height: 100%;
+  scale: 1 0.55;
+}
+
+.miner-prestige.is-anomaly .miner-art-ring.is-2 {
+  width: 70%;
+  height: 70%;
+  border-color: color-mix(in srgb, var(--view-2) 70%, transparent);
+  animation-direction: reverse;
+  scale: 0.55 1;
+}
+
+.miner-prestige.is-anomaly .miner-art-core {
+  width: 26%;
+  height: 26%;
+  background: radial-gradient(circle, #000 35%, var(--view-2) 70%, transparent);
+  box-shadow: 0 0 22px 4px color-mix(in srgb, var(--view) 60%, transparent);
+  animation: miner-throb calc(2.2s / var(--spin)) ease-in-out infinite alternate;
+}
+
+/* The tiers, one box each, with their Anomalies in rows: badge, what it is, and the button to go in */
+.miner-anomaly-tiers {
+  display: grid;
+  gap: 12px;
+}
+
+.miner-anomaly-tier {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 14px;
+  background: var(--background);
+}
+
+.miner-anomaly-tier .miner-store-title {
+  margin: 0;
+}
+
+.miner-anomaly-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.miner-anomaly {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 12px;
+}
+
+.miner-anomaly-tier.is-locked .miner-anomaly {
+  opacity: 0.55;
+}
+
+.miner-anomaly.is-now {
+  border-color: var(--view);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--view) 35%, transparent);
+}
+
+.miner-anomaly-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.miner-anomaly-name {
+  font-weight: 700;
+}
+
+.miner-anomaly-text,
+.miner-anomaly-goal,
+.miner-anomaly-best {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.miner-anomaly-best {
+  opacity: 0.75;
+}
+
+.miner-anomaly .casino-btn {
+  flex-shrink: 0;
+}
+
+/* The badge: grey until the Anomaly is finished, then lit in the view's colour */
+.miner-anomaly-badge {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--text) 18%, transparent);
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.miner-anomaly-badge .miner-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.miner-anomaly.is-done .miner-anomaly-badge {
+  border-color: var(--view);
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--view) 40%, transparent);
+  filter: none;
+  opacity: 1;
+}
+
+@media (max-width: 560px) {
+  .miner-anomaly {
+    flex-wrap: wrap;
+  }
+
+  .miner-anomaly .casino-btn {
+    width: 100%;
+  }
+}
+
+/* The banner over every view while in an Anomaly */
+.miner-anomaly-banner {
+  --view: var(--miner-anomaly);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 var(--miner-gap);
+  padding: 8px 12px;
+  border: 1px solid var(--view);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--view) 12%, var(--background));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--view) 30%, transparent);
+}
+
+.miner-anomaly-banner-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.miner-anomaly-banner-text strong {
+  color: var(--view);
+}
+
+.miner-anomaly-banner-box {
+  display: grid;
+  place-items: center;
+}
+
+.miner-anomaly-banner-box .miner-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* A building the Anomaly's rules don't allow right now */
+.miner-building.is-blocked {
+  opacity: 0.5;
+}
+
 .miner-prestige-main {
   width: 100%;
   min-width: 0;
@@ -3042,6 +3227,10 @@
 
 .miner-prestige-dialog.is-anti {
   --view: var(--miner-anti);
+}
+
+.miner-prestige-dialog.is-anomaly {
+  --view: var(--miner-anomaly);
 }
 
 .miner-prestige-dialog.is-strange {

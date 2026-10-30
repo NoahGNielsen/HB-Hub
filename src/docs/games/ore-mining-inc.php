@@ -2,7 +2,8 @@
 // Help docs: Ore Mining Inc. - getting started, every building (straight from HBHUB_MINER_BUILDINGS in
 // assets/php/games/spaceOreMiner/miner.php, so a new one or a new price shows up here by itself), the comets, the three
 // prestiges, the skill tree, the Cosmic Engine (its stages straight from HBHUB_MINER_ENGINE_STAGES, with their default
-// costs), saving and the game's own How to play (rules.php, included as the game shows it).
+// costs), the Anomalies (from HBHUB_MINER_ANOMALIES and HBHUB_MINER_ANOMALY_TIERS), saving and the game's own How to
+// play (rules.php, included as the game shows it).
 // How much Strange Matter a Big Rip gives is still being balanced, so it's only described, never given as numbers.
 // Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
@@ -184,7 +185,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             The parts go into one stage at a time. When a stage has all its parts, it's finished, and everyone who
                             plays gets its perk for good. Some stages have a lock too, which has to be met before they finish
                             however many parts they have: until then the parts wait there (or, for a lock that needs Anomalies, the
-                            Engine takes no more parts). The daily limits and Shifts start over at midnight UTC. The
+                            Engine only takes parts from Anomalies). Finishing <a href="#anomalies">Anomalies</a> gives parts
+                            too, and they're the biggest source of them. The daily limits and Shifts start over at midnight UTC. The
                             <a href="/games/ore-mining-inc/leaderboard?board=engine">leaderboard</a> shows who has given the most.
                             These are the stages so far (<?= HBHUB_MINER_ENGINE_STAGE_TOTAL ?> are planned):
                         </p>
@@ -206,6 +208,54 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             </table>
                         </div>
                         <p>The parts each stage needs can still change as the Engine is tuned.</p>
+                    </section>
+
+                    <section id="anomalies" aria-labelledby="docs-anomalies">
+                        <h2 id="docs-anomalies">Anomalies</h2>
+                        <p>
+                            The Anomalies view has challenge runs: universes of their own, each with one rule changed. You go in
+                            with your skill tree, your Strange Matter bonus and the counts that make you mine faster (Warp Jumps,
+                            Big Crunches, comets caught), but with no Dark Matter, Antimatter or ore. Antimatter Echo and Dark
+                            Echo keep their upgrades, like on a Big Rip. You finish an Anomaly by earning its goal of
+                            Antimatter in it.
+                        </p>
+                        <p>
+                            While you're in one, a banner says so on every view, and your own game waits and mines as if you
+                            were away. You can leave whenever you like, but that run is lost. Skills, Big Rips, donations and
+                            Engine Shifts only work in your own game. What you do in an Anomaly doesn't count towards your
+                            stats, achievements or the leaderboard.
+                        </p>
+                        <p>
+                            Finishing one gives the Cosmic Engine its tier's parts the first time and whenever you beat your best
+                            time, and <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% of them otherwise (rounded down). These parts go in
+                            even while the Engine is full and waiting for a lock, since some locks need Anomalies. You also get
+                            a badge for each one in the Anomalies view, with your best time.
+                        </p>
+                        <?php foreach (HBHUB_MINER_ANOMALY_TIERS as $docsTier => $docsTierData): ?>
+                            <h3>Tier <?= str_repeat('I', $docsTier) ?>: <?= htmlspecialchars($docsTierData['name']) ?></h3>
+                            <p>
+                                <?= $docsTierData['unlock'] === 'rip' ? 'Opens with your first Big Rip.' : 'Opens once you\'ve learned the Theory of Everything.' ?>
+                                <?= $docsTierData['parts'] ?> parts each.<?= $docsTierData['noAuto'] ? ' Autopilot and Auto Crunch are off in these.' : '' ?>
+                            </p>
+                            <div class="docs-table-wrap">
+                                <table class="docs-table">
+                                    <thead>
+                                        <tr><th scope="col">Anomaly</th><th scope="col">Rule</th><th scope="col">Goal (Antimatter)</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach (HBHUB_MINER_ANOMALIES as $docsAnomaly): ?>
+                                            <?php if ($docsAnomaly['tier'] !== $docsTier) continue; ?>
+                                            <tr>
+                                                <td><?= htmlspecialchars($docsAnomaly['name']) ?></td>
+                                                <td><?= htmlspecialchars($docsAnomaly['text']) ?></td>
+                                                <td><?= docsMinerNumber($docsAnomaly['goal']) ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endforeach; ?>
+                        <p>The goals can still change as the Anomalies are balanced.</p>
                     </section>
 
                     <section id="rules" aria-labelledby="docs-rules">

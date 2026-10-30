@@ -207,10 +207,18 @@ const HBHUB_TERMS_UPDATED = '30 October 2026';
                             </li>
                             <li>
                                 Ore Mining Inc.'s Cosmic Engine is built by everyone together. Engine Parts you give it (for ore,
-                                Strange Matter or Engine Shifts) can't be taken back, and your name and how many you gave are
-                                shown to everyone with an account. Its perks are for every player. Admins can change how many parts a
-                                stage needs, and the stages and perks may change as the game is balanced. Parts given with a
-                                cheated save can be removed.
+                                Strange Matter, Engine Shifts or finishing Anomalies) can't be taken back, and your name and how
+                                many you gave are shown to everyone with an account. Its perks are for every player. Admins can
+                                change how many parts a stage needs, and the stages, perks and Anomalies (their rules, goals and
+                                parts) may change as the game is balanced, also for an Anomaly you're partway through. Parts
+                                given with a cheated save can be removed.
+                            </li>
+                            <li>
+                                Ore Mining Inc.'s Anomalies are challenge runs inside your game. While you're in one, your own
+                                game mines as if you were away, and leaving one before it's finished loses that run. Where an
+                                Anomaly turns Autopilot and Auto Crunch off, using a script or anything else to do their job
+                                counts as cheating. What you do in an Anomaly doesn't count towards your stats, achievements or
+                                the leaderboard.
                             </li>
                             <li>
                                 The free games at <a href="/play">/play</a> can be played without an account, and these terms

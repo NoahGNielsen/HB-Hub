@@ -77,11 +77,14 @@ function hbHubMinerEngineAdopt(array &$state, array $engine, bool $canGive): voi
 {
     $state['engineStage'] = min((int) $engine['engineStage'], count(HBHUB_MINER_ENGINE_STAGES));
     $state['engineOpen'] = $canGive && hbHubMinerEngineOpen($engine);
+    if ($state['anomaly'] !== null) { // the perks work in there too, but nothing's given from it (see hbHubMinerAnomalyStart())
+        $state['anomaly']['state']['engineStage'] = $state['engineStage'];
+    }
 }
 
 /**
- * How far stage $index (0 for stage 1) is with its lock: ['have' => n, 'need' => n], or null when it has none.
- * Anomalies aren't in the game yet, so nobody has finished any.
+ * How far stage $index (0 for stage 1) is with its lock: ['have' => n, 'need' => n], or null when it has none. For an
+ * anomalies lock, have is how many of the tier's Anomalies someone has finished for this Engine.
  */
 function hbHubMinerEngineLock(PDO $db, array $engine, int $index): ?array
 {
@@ -94,25 +97,34 @@ function hbHubMinerEngineLock(PDO $db, array $engine, int $index): ?array
         $statement->execute([(int) $engine['engineId']]);
         return ['have' => (int) $statement->fetchColumn(), 'need' => $lock['count']];
     }
-    return ['have' => 0, 'need' => $lock['count']];
+    $ids = array_keys(array_filter(HBHUB_MINER_ANOMALIES, static fn (array $anomaly): bool => $anomaly['tier'] === $lock['tier']));
+    $statement = $db->prepare('SELECT COUNT(DISTINCT contributionAnomaly) FROM `HBHub-MinerContributions`
+        WHERE contributionEngineId = ? AND contributionSource = ? AND contributionAnomaly IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')');
+    $statement->execute([(int) $engine['engineId'], HBHUB_MINER_ENGINE_SOURCE_ANOMALY, ...$ids]);
+    return ['have' => (int) $statement->fetchColumn(), 'need' => $lock['count']];
 }
 
 /**
- * Puts what a save gave (hbHubMinerReplay()'s 'given', [source, parts] each) into the Engine, one row per source, and
- * finishes the stages that are done now. $engine must have been read with its row locked, inside a transaction.
+ * Puts what a save gave (hbHubMinerReplay()'s 'given', [source, parts] each, with the Anomaly's key third for
+ * Anomalies) into the Engine, one row per source (and Anomaly), and finishes the stages that are done now. Parts from
+ * Anomalies go in even while the Engine is waiting for an Anomaly lock (it's how the lock is met), and after the last
+ * stage there is so far, where they wait for the next. $engine must have been read with its row locked, inside a
+ * transaction.
  */
 function hbHubMinerEngineGive(PDO $db, array &$engine, int $userId, array $given): void
 {
-    $bySource = [];
-    foreach ($given as [$source, $parts]) {
-        $bySource[$source] = ($bySource[$source] ?? 0) + $parts;
+    $rows = [];
+    foreach ($given as $gift) {
+        $key = $gift[0] . '|' . ($gift[2] ?? '');
+        $rows[$key] ??= [$gift[0], 0, $gift[2] ?? null];
+        $rows[$key][1] += $gift[1];
     }
     $stage = min((int) $engine['engineStage'] + 1, count(HBHUB_MINER_ENGINE_STAGES));
     $insert = $db->prepare('INSERT INTO `HBHub-MinerContributions` (contributionEngineId, contributionUserId, contributionStage, contributionParts,
-            contributionSource, contributionTimestamp)
-        VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP())');
-    foreach ($bySource as $source => $parts) {
-        $insert->execute([(int) $engine['engineId'], $userId, $stage, $parts, $source]);
+            contributionSource, contributionAnomaly, contributionTimestamp)
+        VALUES (?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())');
+    foreach ($rows as [$source, $parts, $anomaly]) {
+        $insert->execute([(int) $engine['engineId'], $userId, $stage, $parts, $source, $anomaly]);
         $engine['engineStageParts'] = (int) $engine['engineStageParts'] + $parts;
         $engine['engineParts'] = (int) $engine['engineParts'] + $parts;
     }
@@ -214,7 +226,7 @@ function hbHubMinerEngineMs(string $timestamp): int
  * stage being built), total (parts ever), costs (each stage's, stage 1 first), finished ({stage: Unix ms}), open
  * (whether it takes parts) and lock (hbHubMinerEngineLock() for the stage being built). With $details also top (the
  * HBHUB_MINER_ENGINE_TOP who gave the most: [{name, parts, you}]), feed (the latest HBHUB_MINER_ENGINE_FEED: [{name,
- * parts, source, at}]) and mine (the parts $userId gave, 0 for a guest). Banned players' parts count, but they're
+ * parts, source, anomaly (its key, or null), at}]) and mine (the parts $userId gave, 0 for a guest). Banned players' parts count, but they're
  * not shown.
  */
 function hbHubMinerEngineSummary(PDO $db, array $engine, ?int $userId, bool $details): array
@@ -253,7 +265,7 @@ function hbHubMinerEngineSummary(PDO $db, array $engine, ?int $userId, bool $det
         'you' => (int) $row['contributionUserId'] === $userId,
     ], $statement->fetchAll());
 
-    $statement = $db->prepare('SELECT u.userName, c.contributionParts, c.contributionSource, c.contributionTimestamp
+    $statement = $db->prepare('SELECT u.userName, c.contributionParts, c.contributionSource, c.contributionAnomaly, c.contributionTimestamp
         FROM `HBHub-MinerContributions` c
         JOIN `HBHub-Users` u ON u.userId = c.contributionUserId
         WHERE c.contributionEngineId = ? AND (u.userStatus IS NULL OR u.userStatus <> ?)
@@ -264,6 +276,7 @@ function hbHubMinerEngineSummary(PDO $db, array $engine, ?int $userId, bool $det
         'name' => $row['userName'],
         'parts' => (int) $row['contributionParts'],
         'source' => (int) $row['contributionSource'],
+        'anomaly' => $row['contributionAnomaly'],
         'at' => hbHubMinerEngineMs($row['contributionTimestamp']),
     ], $statement->fetchAll());
 

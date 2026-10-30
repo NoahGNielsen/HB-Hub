@@ -1212,6 +1212,7 @@ ALTER TABLE `HBHub-WordleWords`
 ALTER TABLE `HBHub-MinerContributions`
   ADD PRIMARY KEY (`contributionId`),
   ADD KEY `engineUser` (`contributionEngineId`,`contributionUserId`,`contributionParts`),
+  ADD KEY `engineAnomaly` (`contributionEngineId`,`contributionAnomaly`),
   ADD KEY `userId` (`contributionUserId`);
 
 --

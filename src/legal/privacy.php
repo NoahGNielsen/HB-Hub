@@ -259,11 +259,14 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 a click looked like an auto-clicker's, and it isn't kept. Other people only see
                                 the totals on the Ore Mining Inc. leaderboard (ore mined, ore per second, Dark Matter, Antimatter,
                                 Strange Matter, Warp Jumps, clicks and achievements). The save also keeps how far you are with
-                                the day's Engine Shifts and how many Engine Parts you've given from ore that day.
+                                the day's Engine Shifts and how many Engine Parts you've given from ore that day, the Anomaly
+                                you're in (its own game, kept the same way) and, for each Anomaly you've finished, how many
+                                times and your best time.
                             </li>
                             <li>
                                 The Engine Parts you give to Ore Mining Inc.'s Cosmic Engine, which everyone builds together:
-                                how many, whether they came from ore, Strange Matter or an Engine Shift, which stage they went
+                                how many, whether they came from ore, Strange Matter, an Engine Shift or an Anomaly (and which
+                                one), which stage they went
                                 into, and when (one line per kind for each save). <strong>This is shown to everyone</strong>
                                 with an account: your name and the parts you gave in the Engine view's list of the latest parts and
                                 its top 10, and on the Ore Mining Inc. leaderboard's Engine tabs (with how many came from
