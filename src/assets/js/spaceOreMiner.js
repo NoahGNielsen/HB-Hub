@@ -2061,7 +2061,7 @@
         for (const [id, until] of Object.entries(state.boosts ?? {})) { // the Shard Shop's, a clock too
             if (until <= state.tick) continue;
             const row = element('li', 'miner-buff is-boost');
-            row.append(element('span', 'miner-buff-name', SHOP[id].name + ': ' + (SHOP[id].buff === 'click' ? 'clicks' : 'production') + ' ×' + format(SHOP[id].multiplier)),
+            row.append(element('span', 'miner-buff-name', SHOP[id].name + ': ' + (SHOP[id].buff === 'click' ? 'clicks' : 'production') + ' ×' + format(SHOP[id].multiplier, { decimals: true })),
                 element('span', 'miner-buff-time', formatClock(until - state.tick)));
             rows.push(row);
         }
@@ -2969,6 +2969,13 @@
 
     // ----- Clicking the asteroid: a floating number where it was clicked and bits of rock flying off
 
+    // The Shard Shop's click effects that change the bits (.miner-bit.is-<look> in spaceOreMiner.css): effect => look.
+    // Shockwave only adds a ring, and Supernova a gold ring as well as its stars.
+    const BIT_LOOKS = {
+        confetti: 'confetti', twinkle: 'twinkle', bubbles: 'bubbles', pixels: 'pixels', snowfall: 'snowfall',
+        embers: 'embers', coins: 'coins', supernova: 'twinkle',
+    };
+
     function burst(x, y, ore, isCrit) {
         // Plenty on screen already, or none to see (mined with Space from another view, where they'd never finish
         // animating and so never go away)
@@ -2980,19 +2987,22 @@
         field.append(number);
         if (reduceMotion.matches) return;
 
-        // The click effect bought in the Shard Shop: confetti or little stars instead of rock, or a ring going out
+        // The click effect bought in the Shard Shop: something else instead of rock (BIT_LOOKS), and/or a ring going out
         const effect = saveState.effect ?? null;
-        if (effect === 'shockwave') {
-            const ring = element('span', 'miner-ring' + (isCrit ? ' is-crit' : ''));
+        if (effect === 'shockwave' || effect === 'supernova') {
+            const ring = element('span', 'miner-ring' + (isCrit || effect === 'supernova' ? ' is-crit' : ''));
             ring.style.setProperty('--x', x + 'px');
             ring.style.setProperty('--y', y + 'px');
             ring.addEventListener('animationend', () => ring.remove());
             field.append(ring);
         }
-        for (let i = 0; i < (isCrit ? 10 : 5); i++) {
-            const bit = element('span', 'miner-bit' + (effect === 'confetti' || effect === 'twinkle' ? ' is-' + effect : ''));
-            if (effect === 'confetti') bit.style.setProperty('--hue', String(Math.floor(Math.random() * 360)));
-            const angle = Math.random() * Math.PI * 2;
+        const look = BIT_LOOKS[effect] ?? null;
+        for (let i = 0; i < (isCrit ? 10 : 5) * (effect === 'supernova' ? 2 : 1); i++) {
+            const bit = element('span', 'miner-bit' + (look !== null ? ' is-' + look : ''));
+            if (look === 'confetti' || look === 'pixels') bit.style.setProperty('--hue', String(Math.floor(Math.random() * 360)));
+            // Embers float up and snow drifts down; the rest fly off every way
+            const angle = look === 'embers' ? -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.9
+                : look === 'snowfall' ? Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.9 : Math.random() * Math.PI * 2;
             const distance = 40 + Math.random() * (isCrit ? 120 : 70);
             bit.style.setProperty('--x', x + 'px');
             bit.style.setProperty('--y', y + 'px');
@@ -3466,10 +3476,12 @@
             for (const [id, item] of Object.entries(SHOP)) {
                 const isKept = item.kind === 'skin' || item.kind === 'effect';
                 const row = element('li', 'miner-shop-item is-' + item.kind);
-                if (item.kind === 'skin') {
+                if (item.kind === 'skin') { // a little rock in its colours, on the same tile as the icons
+                    const tile = element('span', 'miner-shop-icon');
                     const swatch = element('span', 'miner-shop-swatch');
                     swatch.dataset.skin = id;
-                    row.append(swatch);
+                    tile.append(swatch);
+                    row.append(tile);
                 } else {
                     row.append(iconBox('miner-shop-icon', item.icon));
                 }
