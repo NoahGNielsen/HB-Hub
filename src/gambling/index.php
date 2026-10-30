@@ -1,8 +1,8 @@
 <?php
 // Casino home (the Gambling section), laid out like a casino floor: a felt header with the user's chips, their place on
 // the casino leaderboard and the daily chips; the 30-day calendar of daily chips as a row of chips; the three games
-// with what's going on at them right now (open tables and players for Blackjack and Baccarat, the user's last spins for
-// Roulette) and the user's own result in each; and the top of the casino leaderboard.
+// with what's going on at them right now (open tables and players for Blackjack and Baccarat, who's playing at the shared
+// Roulette table and the user's last spins there) and the user's own result in each; and the top of the casino leaderboard.
 // casino.js (loaded by navPanel.php along with the chip count in the top bar) keeps the chips, the daily chips, the
 // calendar and the countdown up to date. The rest is as it was when the page was made.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -11,7 +11,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/leaderboard.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/room.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/baccarat/room.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/roulette/roulette.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/roulette/table.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
 
@@ -69,6 +69,7 @@ $casinoTables = [
     ],
 ];
 $casinoSpins = hbHubRouletteHistory($db, $userId, CASINO_LAST_SPINS);
+$casinoRoulettePlaying = hbHubRoulettePlayingNow($db);
 
 /**
  * Seconds as "H:MM:SS", the same as casino.js shows the countdown.
@@ -358,13 +359,16 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                         <span class="casino-home-game-body">
                             <span class="casino-home-game-head">
                                 <span class="casino-home-game-name">Roulette</span>
-                                <span class="casino-home-game-tag">Solo</span>
+                                <span class="casino-home-game-tag">One table for everyone</span>
                             </span>
                             <span class="casino-home-game-text">Bet on a number, a color or anything in between on a single-zero wheel.</span>
                             <span class="casino-home-game-foot">
-                                <?php if ($casinoSpins === []): ?>
-                                    <span class="casino-home-game-live">Spin on your own, any time</span>
-                                <?php else: ?>
+                                <?php if ($casinoRoulettePlaying > 0): ?>
+                                    <span class="casino-home-game-live is-live"><?= $casinoRoulettePlaying ?> playing</span>
+                                <?php elseif ($casinoSpins === []): ?>
+                                    <span class="casino-home-game-live">Quiet right now. Place the first bet!</span>
+                                <?php endif; ?>
+                                <?php if ($casinoSpins !== []): ?>
                                     <span class="casino-home-spins">
                                         <span class="casino-sr-only">Your last spins: </span>
                                         <?php foreach ($casinoSpins as $casinoSpin): ?>

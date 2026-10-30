@@ -21,8 +21,9 @@ const DOCS_ROULETTE_BETS = [
 ];
 
 $docsPath = '/docs/casino/roulette';
-$docsIntro = 'European roulette with a single green zero. Put your chips anywhere on the table, spin, and see where
-    the ball lands. Play it on the <a href="/gambling/roulette/">Roulette</a> page, on your own and at your own pace.';
+$docsIntro = 'European roulette with a single green zero. Put your chips anywhere on the table and see where the ball
+    lands. Everyone on HB Hub plays at the same <a href="/gambling/roulette/">Roulette</a> table, so you see each
+    other\'s bets and one ball is spun for all of you.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">

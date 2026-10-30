@@ -232,6 +232,14 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 losses, win %, the biggest win, the chips you've won or lost in each game and in all of them
                                 together, and your chips right now.
                             </li>
+                            <li>
+                                Roulette is one table that everyone on HB Hub shares. While you have bets on the table,
+                                everyone who has the Roulette page open sees your name, your profile picture, every bet you've
+                                placed and whether you've pressed Ready. After the spin they see what you bet and what you won
+                                or lost on it, until the next round starts. Your bets are kept only until the wheel spins: then
+                                they become your spin in the rounds above (which also notes which round it was, so the spin can
+                                be shown to everyone who played it), and they go when your account is deleted.
+                            </li>
                             <li>Your Chess and Matador games: seats, moves, saves, results (including when you left a game before it was over, which counts as a loss) and the in-game chat.</li>
                             <li>
                                 Your UNO games: your seat, the cards in your hand and what you played, invites, and the

@@ -1,6 +1,8 @@
 <?php
-// Roulette: the wheel, the user's last spins and the table to bet on. roulette.js places the bets and spins them
-// through /gambling/roulette/spin, where the ball is decided (assets/php/casino/roulette/roulette.php).
+// Roulette: the wheel, the table's last numbers, who's playing and the table to bet on. The whole site shares this one
+// table (assets/php/casino/roulette/table.php): everyone sees everyone's bets, and one ball is spun for all of them.
+// roulette.js puts the user's bets on it and keeps the table up to date through /gambling/roulette/table, where the
+// ball is decided.
 // The table is drawn here, every bet a button with the bet's key (data-rl-bet) and the numbers it covers. Besides each
 // number's own button, a number has small buttons on its edges and corners for the bets it shares with the numbers
 // around it (a split to the next row, a corner and so on). Each one sits on the line it's named after in roulette.css,
@@ -10,10 +12,10 @@
 // It's also the guest Roulette at /play/roulette, for visitors without an account: guestGames/roulette/ sets
 // $guestGame and includes this page (see assets/php/guestGames/guestGames.php). Then it has the frontpage's top bar,
 // the guest bar (with the play chips, which start over every time) and the text for search engines, no leaderboard or
-// spins from before, and spins through /play/roulette/spin (data-api).
+// spins from before, and it's a table of the guest's own, spun through /play/roulette/spin (data-api) whenever they like.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/roulette/roulette.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/roulette/table.php';
 $guestGame ??= null;
 if ($guestGame === null) {
     hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
@@ -21,7 +23,8 @@ if ($guestGame === null) {
     $db = hbHubDatabase();
     $userId = (int) $hbHubUser['userId'];
     $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
-    $rouletteHistory = hbHubRouletteHistory($db, $userId);
+    // The table's last numbers, so the wheel starts where it last stopped. The rest comes with roulette.js's first poll.
+    $rouletteHistory = hbHubRouletteTableView($db, hbHubRouletteTable($db), $userId, hbHubRouletteNow())['recent'];
 } else {
     $navCasinoChips = HBHUB_GUEST_CASINO_CHIPS; // in the guest bar instead (guestGames/top.php)
     $rouletteHistory = [];
@@ -108,7 +111,7 @@ function rouletteWheelPockets(): string
         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <?php endif; ?>
     <main class="rl" data-roulette data-chips="<?= $navCasinoChips ?>" data-bet-step="<?= HBHUB_ROULETTE_BET_STEP ?>"
-          data-api="<?= $guestGame !== null ? '/play/roulette/spin' : '/gambling/roulette/spin' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
+          data-api="<?= $guestGame !== null ? '/play/roulette/spin' : '/gambling/roulette/table' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
         <?php if ($guestGame !== null): ?>
             <a class="casino-back" href="/">&larr; HB Hub</a>
         <?php else: ?>
@@ -117,7 +120,7 @@ function rouletteWheelPockets(): string
         <div class="rl-header">
             <div>
                 <h1 class="rl-title">Roulette</h1>
-                <p class="rl-meta">Single zero &middot; A number pays 35:1 &middot; Bets in steps of <?= HBHUB_ROULETTE_BET_STEP ?></p>
+                <p class="rl-meta"><?= $guestGame === null ? 'One table for all of HB Hub &middot; ' : '' ?>Single zero &middot; A number pays 35:1 &middot; Bets in steps of <?= HBHUB_ROULETTE_BET_STEP ?></p>
             </div>
             <?php if ($guestGame === null): ?>
                 <a class="casino-btn" href="/gambling/roulette/leaderboard">Leaderboard</a>
@@ -146,15 +149,23 @@ function rouletteWheelPockets(): string
             </div>
 
             <div class="rl-info">
-                <p class="rl-result" role="status" data-rl-result>Place your bets, then spin.</p>
+                <p class="rl-result" role="status" data-rl-result><?= $guestGame !== null ? 'Place your bets, then spin.' : 'Place your bets to start a round.' ?></p>
                 <p class="rl-detail" data-rl-detail></p>
-                <h2 class="rl-label">Your last spins</h2>
+                <?php if ($guestGame === null): ?>
+                    <div class="rl-clock" data-rl-clock hidden><span class="rl-clock-bar" data-rl-clock-bar></span></div>
+                <?php endif; ?>
+                <h2 class="rl-label"><?= $guestGame !== null ? 'Your last spins' : 'Last numbers' ?></h2>
                 <ol class="rl-history" data-rl-history>
                     <?php foreach ($rouletteHistory as $spin): ?>
-                        <li class="rl-history-item rl-<?= $spin['color'] ?>" title="<?= $spin['net'] >= 0 ? '+' : '−' ?><?= number_format(abs($spin['net'])) ?> chips"><?= $spin['number'] ?></li>
+                        <li class="rl-history-item rl-<?= $spin['color'] ?>"><?= $spin['number'] ?></li>
                     <?php endforeach; ?>
                 </ol>
                 <p class="rl-hint" data-rl-history-empty<?= $rouletteHistory !== [] ? ' hidden' : '' ?>>No spins yet.</p>
+                <?php if ($guestGame === null): ?>
+                    <h2 class="rl-label">Players</h2>
+                    <ul class="rl-players" data-rl-players></ul>
+                    <p class="rl-hint" data-rl-players-empty>Nobody has bets on the table yet. Everyone on HB Hub plays at this table.</p>
+                <?php endif; ?>
             </div>
         </section>
 
@@ -231,6 +242,9 @@ function rouletteWheelPockets(): string
                 <button type="button" class="casino-btn" data-rl-undo disabled>Undo</button>
                 <button type="button" class="casino-btn" data-rl-clear disabled>Clear</button>
                 <button type="button" class="casino-btn" data-rl-double disabled>&times;2</button>
+                <?php if ($guestGame === null): ?>
+                    <button type="button" class="casino-btn" data-rl-rebet title="Your last spin's bets back on the table" hidden>Same again</button>
+                <?php endif; ?>
                 <button type="button" class="casino-btn casino-btn-primary rl-spin" data-rl-spin title="Spin (Space)" aria-keyshortcuts="Space" disabled>Spin</button>
             </div>
             <p class="rl-hint" data-rl-broke hidden>

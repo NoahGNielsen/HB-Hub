@@ -704,18 +704,49 @@ CREATE TABLE `HBHub-MinerSaves` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-RouletteBets`
+--
+
+CREATE TABLE `HBHub-RouletteBets` (
+  `userId` int UNSIGNED NOT NULL,
+  `betRound` bigint UNSIGNED NOT NULL COMMENT 'tableRound in HBHub-RouletteTable the bets are on. Every row goes when that round is spun',
+  `betBets` json NOT NULL COMMENT 'Every bet and its chips, like {"17": 10, "red": 50}, the same as spinBets in HBHub-RouletteSpins',
+  `betWagered` bigint UNSIGNED NOT NULL COMMENT 'Every bet together. Not taken from the chips until the wheel spins',
+  `betReady` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 once the player pressed Ready: their bets can''t change anymore, and when everyone is ready the wheel spins',
+  `betTimestamp` datetime NOT NULL COMMENT 'UTC, when the bets last changed'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-RouletteSpins`
 --
 
 CREATE TABLE `HBHub-RouletteSpins` (
   `spinId` bigint UNSIGNED NOT NULL,
   `userId` int UNSIGNED NOT NULL,
+  `spinRound` bigint UNSIGNED DEFAULT NULL COMMENT 'tableRound in HBHub-RouletteTable, the same for everyone who bet on that spin. NULL for the solo spins from before the shared table',
   `spinNumber` tinyint UNSIGNED NOT NULL COMMENT '0-36, where the ball landed',
   `spinWagered` bigint UNSIGNED NOT NULL COMMENT 'Every bet on the spin together',
   `spinPayout` bigint UNSIGNED NOT NULL COMMENT 'What the winning bets paid back, the bets included, 0 when none won',
   `spinNet` bigint NOT NULL COMMENT 'Chips won (positive) or lost (negative) on the spin',
   `spinBets` json NOT NULL COMMENT 'Every bet and its chips, like {"17": 10, "0-1-2-3": 20, "red": 50} (src/assets/php/casino/roulette/roulette.php)',
   `spinTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-RouletteTable`
+--
+
+CREATE TABLE `HBHub-RouletteTable` (
+  `tableId` tinyint UNSIGNED NOT NULL COMMENT 'Always 1: the whole site shares one Roulette table. Made by the code the first time it''s needed',
+  `tableRound` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'The round being bet on, or the one that was just spun. Counts up',
+  `tableClosesAt` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in ms when betting on tableRound closes and the wheel spins. NULL while nobody has bets on it',
+  `tableNumber` tinyint UNSIGNED DEFAULT NULL COMMENT '0-36, where the ball landed in tableRound. NULL until it''s spun',
+  `tableSpunAt` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in ms when tableRound was spun',
+  `tableVersion` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Goes up with every change, so the table''s polls can tell nothing happened'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -1187,11 +1218,25 @@ ALTER TABLE `HBHub-MinerSaves`
   ADD KEY `oreAllTime` (`saveOreAllTime`);
 
 --
+-- Indexes for table `HBHub-RouletteBets`
+--
+ALTER TABLE `HBHub-RouletteBets`
+  ADD PRIMARY KEY (`userId`) COMMENT 'Bets on one round at a time',
+  ADD KEY `round` (`betRound`);
+
+--
 -- Indexes for table `HBHub-RouletteSpins`
 --
 ALTER TABLE `HBHub-RouletteSpins`
   ADD PRIMARY KEY (`spinId`),
-  ADD KEY `userTime` (`userId`,`spinTimestamp`);
+  ADD KEY `userTime` (`userId`,`spinTimestamp`),
+  ADD KEY `round` (`spinRound`);
+
+--
+-- Indexes for table `HBHub-RouletteTable`
+--
+ALTER TABLE `HBHub-RouletteTable`
+  ADD PRIMARY KEY (`tableId`);
 
 --
 -- Indexes for table `HBHub-Sessions`
@@ -1679,6 +1724,12 @@ ALTER TABLE `HBHub-MinerCrashReports`
 --
 ALTER TABLE `HBHub-MinerSaves`
   ADD CONSTRAINT `fk_minersaves_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-RouletteBets`
+--
+ALTER TABLE `HBHub-RouletteBets`
+  ADD CONSTRAINT `fk_roulettebets_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-RouletteSpins`

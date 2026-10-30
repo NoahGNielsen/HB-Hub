@@ -55,7 +55,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 <tbody>
                                     <tr><td><a href="/docs/casino/blackjack">Blackjack</a></td><td>Get closer to 21 than the dealer without going over.</td><td>Solo, or up to 5 at a table</td></tr>
                                     <tr><td><a href="/docs/casino/baccarat">Baccarat</a></td><td>Bet on which hand ends closest to 9.</td><td>Solo, or up to 6 at a table</td></tr>
-                                    <tr><td><a href="/docs/casino/roulette">Roulette</a></td><td>Bet on where the ball lands.</td><td>On your own</td></tr>
+                                    <tr><td><a href="/docs/casino/roulette">Roulette</a></td><td>Bet on where the ball lands.</td><td>One table for everyone</td></tr>
                                 </tbody>
                             </table>
                         </div>

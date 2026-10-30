@@ -1,7 +1,8 @@
 <?php
-// Roulette: a single-zero wheel (0-36), played alone against the house with the casino's chips. A spin is one request:
-// the bets go in, the ball lands and the winning bets are paid, all in one transaction (hbHubRouletteSpin()). Nothing
-// is kept between spins but the log in HBHub-RouletteSpins, so there's no table to sit at or leave.
+// Roulette: a single-zero wheel (0-36), played against the house with the casino's chips. These are the rules, the same
+// for the table the whole site shares (table.php, which spins one ball for everyone) and the guest Roulette at
+// /play/roulette (guestGames/roulette/spin.php, solo, with play chips). Every member's spin is logged in
+// HBHub-RouletteSpins, which the leaderboards and the user's last spins come from.
 //
 // A bet is a key for the numbers it covers (hbHubRouletteBets()): the number for a straight bet ("17"), the numbers
 // from low to high joined with "-" for a split, street, corner or line ("17-20", "0-1-2-3"), and a name for the outside
@@ -13,7 +14,7 @@ const HBHUB_ROULETTE_GAME = 'roulette'; // transactionGame in HBHub-CasinoTransa
 const HBHUB_ROULETTE_BET_STEP = 10; // every bet in steps of 10, like at the Blackjack tables
 const HBHUB_ROULETTE_MAX_BET = 1000000000000; // only so the sums can't overflow, the chips are what really limits it
 const HBHUB_ROULETTE_BETS_MAX_LENGTH = 8192; // the bets' JSON - every spot on the table at once fits easily
-const HBHUB_ROULETTE_HISTORY = 12; // the user's last spins shown above the table
+const HBHUB_ROULETTE_HISTORY = 12; // the user's last spins (the casino home shows fewer)
 const HBHUB_ROULETTE_RED = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
 // The numbers around the wheel clockwise, from 0
 const HBHUB_ROULETTE_WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20,
@@ -129,16 +130,17 @@ function hbHubRouletteCleanBets(mixed $json): ?array
 }
 
 /**
- * Spins the wheel for the bets and works out what they pay, without touching any chips: the part of a spin that's the
- * same for members (hbHubRouletteSpin()) and guests (/play/roulette, whose play chips are in a token instead).
+ * Works out what the bets pay when the ball lands on $number (spins the wheel for them when it's null), without
+ * touching any chips: the part of a spin that's the same for members (the shared table, hbHubRouletteTableSpin(), which
+ * spins once for everyone) and guests (/play/roulette, whose play chips are in a token instead).
  *
  * @param array<string, int> $bets from hbHubRouletteCleanBets()
  * @return array{number: int, color: string, wagered: int, payout: int, net: int, wins: array<string, int>}
  *         wins is every winning bet => what it paid back
  */
-function hbHubRouletteResolve(array $bets): array
+function hbHubRouletteResolve(array $bets, ?int $number = null): array
 {
-    $number = random_int(0, 36);
+    $number ??= random_int(0, 36);
     $wins = [];
     foreach ($bets as $bet => $amount) {
         if (in_array($number, hbHubRouletteBets()[$bet], true)) {
@@ -156,37 +158,6 @@ function hbHubRouletteResolve(array $bets): array
         'net' => $payout - $wagered,
         'wins' => $wins,
     ];
-}
-
-/**
- * Takes the bets from the user's chips, spins and pays the winning bets, all at once.
- * Returns null when the user doesn't have the chips for every bet (then nothing changes).
- *
- * @param array<string, int> $bets from hbHubRouletteCleanBets()
- * @return ?array{spinId: int, number: int, color: string, wagered: int, payout: int, net: int, chips: int, wins: array<string, int>}
- *         wins is every winning bet => what it paid back
- */
-function hbHubRouletteSpin(PDO $db, int $userId, array $bets): ?array
-{
-    $wagered = array_sum($bets);
-
-    return hbHubCasinoTransaction($db, function () use ($db, $userId, $bets, $wagered): ?array {
-        // Locked until the spin is paid, so two spins at once can't both spend the same chips
-        if (hbHubCasinoLockWallet($db, $userId)['chips'] < $wagered) {
-            return null;
-        }
-
-        $spin = hbHubRouletteResolve($bets);
-        $db->prepare('INSERT INTO `HBHub-RouletteSpins` (userId, spinNumber, spinWagered, spinPayout, spinNet, spinBets, spinTimestamp)
-            VALUES (?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())')
-            ->execute([$userId, $spin['number'], $wagered, $spin['payout'], $spin['net'], json_encode($bets, JSON_FORCE_OBJECT)]);
-        $spinId = (int) $db->lastInsertId();
-
-        hbHubCasinoChange($db, $userId, -$wagered, 'bet', HBHUB_ROULETTE_GAME, $spinId);
-        $chips = hbHubCasinoChange($db, $userId, $spin['payout'], 'payout', HBHUB_ROULETTE_GAME, $spinId);
-
-        return ['spinId' => $spinId] + $spin + ['chips' => $chips];
-    });
 }
 
 /**

@@ -1,10 +1,11 @@
 <?php
-// The guest Roulette's spins (/play/roulette/spin), for roulette.js on /play/roulette - the same as
-// gambling/roulette/spin for members, but with play chips that come and go in a sealed token, {chips}, kept only in
-// the page (see assets/php/guestGames/guestGames.php). Nothing is stored. POST only:
+// The guest Roulette's spins (/play/roulette/spin), for roulette.js on /play/roulette. Members all play at one shared
+// table (gambling/roulette/table); a guest has a table of their own instead, spun the moment they ask, with play chips
+// that come and go in a sealed token, {chips}, kept only in the page (see assets/php/guestGames/guestGames.php).
+// Nothing is stored. POST only:
 //   bets={"17": 10, "red": 50} and token (none on the page's first spin: a new stack of play chips).
-// Answers like the members' version (where the ball landed, what each winning bet paid and the chips after), plus
-// "token" for the next spin, and "notice" when the guest ran out and got a new stack (hbHubGuestCasinoRefill()).
+// Answers with where the ball landed, what each winning bet paid and the chips after, plus "token" for the next spin,
+// and "notice" when the guest ran out and got a new stack (hbHubGuestCasinoRefill()).
 // Errors: 400 {"error": "badBets"}, and {"error": "notEnoughChips", "chips": 1234} (with "token").
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
