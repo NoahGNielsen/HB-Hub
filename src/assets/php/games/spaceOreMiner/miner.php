@@ -265,7 +265,8 @@ const HBHUB_MINER_ETERNAL_TYPES = ['bulk', 'comet']; // kept by Eternal Blueprin
 
 // Bought with Dark Matter, kept until a Big Crunch (or after it too, with Dark Echo). Long-Range Hot Keys doesn't change
 // the game, only which buildings the 1-9 and 0 keys buy, and Auto Buy only buys in the page like a player would (its
-// purchases come here as normal buy and upgrade actions), so both are only in spaceOreMiner.js.
+// purchases come here as normal buy and upgrade actions), so both are only in spaceOreMiner.js. The one thing Auto Buy
+// changes here: its buys ('auto' => true) can be 10 or 100 at once without Bulk Buying (see hbHubMinerApply()).
 const HBHUB_MINER_DARK_UPGRADES = [
     'headStart' => ['name' => 'Head Start', 'icon' => 'headStart', 'cost' => 5, 'text' => 'Start every run with ' . HBHUB_MINER_HEAD_START . ' Mining Drones.'],
     'memory' => ['name' => 'Persistent Memory', 'icon' => 'chip', 'cost' => 40, 'text' => 'Keep your click upgrades when you Warp Jump.'],
@@ -2630,6 +2631,8 @@ function hbHubMinerAdvanceGame(array &$state, int $to, int $fullUntil = PHP_INT_
  *   hbHubMinerSync() for the limit.
  * - ['type' => 'buy', 'building' => id, 'amount' => 1, 10 or 100] (10 and 100 need Bulk Buying). With Max Buying any
  *   amount: the page works out how many the Max button can afford, and it's checked here like any other amount.
+ *   'auto' => true when Auto Buy bought it (left out otherwise): with the Auto Buy upgrade, 10 and 100 don't need Bulk
+ *   Buying, so it can buy a lot at once when there's a lot of ore (in Bare Metal too) instead of sending a buy for each.
  * - ['type' => 'upgrade', 'id' => id], ['type' => 'dark', 'id' => id] (a Dark Matter upgrade), ['type' => 'anti',
  *   'id' => id] (an Antimatter upgrade), ['type' => 'skill', 'id' => id] (learning a skill).
  * - ['type' => 'comet'], ['type' => 'warp'], ['type' => 'crunch'], ['type' => 'rip'].
@@ -2717,8 +2720,9 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
     if ($type === 'buy') {
         $buildingId = $action['building'] ?? null;
         $amount = (int) ($action['amount'] ?? 1);
+        $isAutoBuy = ($action['auto'] ?? false) === true && hbHubMinerHasDark($state, 'autoBuy');
         if (!is_string($buildingId) || !isset(HBHUB_MINER_BUILDINGS[$buildingId]) || $amount < 1
-            || ($amount > 1 && !hbHubMinerHas($state, 'bulk'))
+            || ($amount > 1 && !hbHubMinerHas($state, 'bulk') && !$isAutoBuy)
             || (!in_array($amount, [1, 10, 100], true) && !hbHubMinerHas($state, 'bulkMax')) || !hbHubMinerCanBuild($state, $buildingId, $amount)) {
             return false;
         }

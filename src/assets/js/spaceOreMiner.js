@@ -857,7 +857,8 @@
             }
             case 'buy': {
                 const { building, amount } = action;
-                if (!BUILDINGS[building] || !Number.isInteger(amount) || amount < 1 || (amount > 1 && !has(s, 'bulk'))
+                const isAutoBuy = action.auto === true && hasDark(s, 'autoBuy'); // Auto Buy's 10s and 100s don't need Bulk Buying
+                if (!BUILDINGS[building] || !Number.isInteger(amount) || amount < 1 || (amount > 1 && !has(s, 'bulk') && !isAutoBuy)
                     || (![1, 10, 100].includes(amount) && !has(s, 'bulkMax')) || !canBuild(s, building, amount)) return false;
                 const cost = buildingCost(s, building, amount);
                 if (!canAfford(s, cost)) return false;
@@ -3036,13 +3037,28 @@
     // a third of every second (30-40 ms, 10 times a second, in crash report #34, after a Warp Jump in a Bare Metal
     // Anomaly, where everything is bought one at a time)
     const AUTO_BUY_MS = 5;
+    // When there's a lot of ore, the building it picks is bought 100 or 10 at a time instead of one by one: the most of
+    // these that cost no more than AUTO_BUY_BATCH_SHARE of the ore there is. Buying them one at a time, it would have
+    // bought them within a moment anyway, but each was its own action for the server to replay (saves took seconds
+    // after a Warp Jump in Bare Metal, where there's no Bulk Buying). The server lets Auto Buy's buys ('auto': true)
+    // be 10 or 100 without Bulk Buying (apply()). It's still the best building for one; whatever's best after the
+    // batch is picked again the next time round.
+    const AUTO_BUY_BATCHES = [100, 10];
+    const AUTO_BUY_BATCH_SHARE = 0.1;
+
+    // How many of building id Auto Buy buys at once (see AUTO_BUY_BATCHES)
+    function autoBuyAmount(id) {
+        return AUTO_BUY_BATCHES.find((amount) => canBuild(state, id, amount) && buildingCost(state, id, amount) <= state.ore * AUTO_BUY_BATCH_SHARE) ?? 1;
+    }
 
     // What Auto Buy should do now: {type: 'buy', ...} or {type: 'upgrade', ...} (the action to take), or null to wait
     function autoBuyChoice() {
         const parts = rateParts(state);
         const before = rate(state, Infinity, parts);
         const building = bestBuilding(1, parts);
-        let best = building && building.gain > 0 ? { action: { type: 'buy', building: building.id, amount: 1 }, payback: building.cost / building.gain } : null;
+        let best = building && building.gain > 0
+            ? { action: { type: 'buy', building: building.id, amount: autoBuyAmount(building.id), auto: true }, payback: building.cost / building.gain }
+            : null;
         for (const id of availableUpgrades()) {
             const cost = upgradeCost(state, id);
             const gain = rate(state, Infinity, ratePartsWith(state, parts, id)) - before;
