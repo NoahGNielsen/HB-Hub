@@ -15,6 +15,12 @@
     </li>
     <li>Now and then a Golden Comet flies across the screen. Click it before it's gone for a big pile of ore, or seven times the production for a while.</li>
     <li>
+        About every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes while the game is open, a Star Shard flies past the other
+        way, for only <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds. Click it to keep it. Star Shards are kept for good,
+        and the Shard Shop (by the title) sells boosts, ore right away, a Comet Beacon that calls the next comet in,
+        asteroid skins and click effects for them. Boosts, ore and comets are for your own game, so not in an Anomaly.
+    </li>
+    <li>
         Later on, the Dark Matter view has the Warp Jump, which starts you over in a new galaxy for Dark Matter,
         the Antimatter view has the Big Crunch, which starts the whole universe over for Antimatter, and the
         Strange Matter view has the Big Rip, which starts the whole multiverse over for Strange Matter. The game

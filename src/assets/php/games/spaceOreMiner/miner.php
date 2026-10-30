@@ -94,6 +94,7 @@ const HBHUB_MINER_SALT_SHIFT = 6; // not the save's luck: the seed is 0, so ever
 const HBHUB_MINER_SALT_ANOMALY = 7; // an Anomaly's own seed, from the save's and when it started (hbHubMinerAnomalyStart())
 const HBHUB_MINER_SALT_WEEKLY = 8; // not the save's luck either: the week's Anomaly is the same for everyone (hbHubMinerWeeklyMods())
 const HBHUB_MINER_SALT_SHIFT_SPARE = 9; // the day's spare Shift, the same for everyone too (hbHubMinerShiftSpare())
+const HBHUB_MINER_SALT_SHARD = 10; // when in its slot each Star Shard flies past (hbHubMinerShardAt())
 
 // Every 'icon' below (and in the upgrades after it) is the name of a drawn icon in assets/images/spaceOreMiner/icons.svg.
 // The buildings, cheapest first. 'rate' is ore per second for each one before upgrades, 'upgrades' their six
@@ -498,6 +499,9 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'comet50' => ['name' => 'Halley\'s Hero', 'text' => 'Catch 50 comets.', 'stat' => 'comets', 'at' => 50],
     'comet100' => ['name' => 'Comet Collector', 'text' => 'Catch 100 comets.', 'stat' => 'comets', 'at' => 100],
     'diamond1' => ['name' => 'Shine Bright', 'text' => 'Catch a Diamond Comet.', 'stat' => 'diamonds', 'at' => 1],
+    'shard1' => ['name' => 'Shiny!', 'text' => 'Catch a Star Shard.', 'stat' => 'shardsCaught', 'at' => 1],
+    'shard25' => ['name' => 'Shard Collector', 'text' => 'Catch 25 Star Shards.', 'stat' => 'shardsCaught', 'at' => 25],
+    'shard100' => ['name' => 'Starlight Hoarder', 'text' => 'Catch 100 Star Shards.', 'stat' => 'shardsCaught', 'at' => 100],
     'warp1' => ['name' => 'Warp Speed', 'text' => 'Warp Jump to a new galaxy.', 'stat' => 'warps', 'at' => 1],
     'warp5' => ['name' => 'Frequent Flyer', 'text' => 'Warp Jump 5 times.', 'stat' => 'warps', 'at' => 5],
     'warp25' => ['name' => 'Galaxy Hopper', 'text' => 'Warp Jump 25 times.', 'stat' => 'warps', 'at' => 25],
@@ -841,8 +845,9 @@ const HBHUB_MINER_LIGHT_HOUR_MS = 3600000; // the Faster Than Light achievement
 
 // Asteroid skins: how the asteroid looks instead of its usual colours (spaceOreMiner.css, data-skin), picked in the
 // game's stats. 'unlock' is how it's earned: anomaly (that Anomaly finished, alone or in a stack), stage (that many of
-// the Engines' stages done, counted over all of them like engineStage, for everyone) or crew (gave parts to that
-// Engine's last stage before it was done, crews in the save). 'moving' ones are animated.
+// the Engines' stages done, counted over all of them like engineStage, for everyone), crew (gave parts to that
+// Engine's last stage before it was done, crews in the save) or shop (bought for Star Shards in the Shard Shop, the
+// item of the same id in HBHUB_MINER_SHOP). 'moving' ones are animated.
 const HBHUB_MINER_SKINS = [
     'entropy' => ['name' => 'Heat Death', 'unlock' => ['anomaly' => 'entropy'], 'moving' => false],
     'minimalist' => ['name' => 'Paper White', 'unlock' => ['anomaly' => 'minimalist'], 'moving' => false],
@@ -860,6 +865,54 @@ const HBHUB_MINER_SKINS = [
     'molten' => ['name' => 'Molten', 'unlock' => ['stage' => 38], 'moving' => true],
     'starforged' => ['name' => 'Starforged', 'unlock' => ['stage' => 44], 'moving' => true],
     'firstLight' => ['name' => 'First Light', 'unlock' => ['crew' => 2], 'moving' => true],
+    'frostbite' => ['name' => 'Frostbite', 'unlock' => ['shop' => true], 'moving' => false],
+    'bubblegum' => ['name' => 'Bubblegum', 'unlock' => ['shop' => true], 'moving' => false],
+    'gilded' => ['name' => 'Gilded', 'unlock' => ['shop' => true], 'moving' => false],
+    'prism' => ['name' => 'Prism', 'unlock' => ['shop' => true], 'moving' => true],
+];
+
+// ----- Star Shards: the rare currency. One flies past in every HBHUB_MINER_SHARD_SLOT_MS of time (slots counted from
+// 1970, so the clock is the same in the player's own game and an Anomaly's), at a time in it picked by the save's luck
+// (hbHubMinerShardAt()), and stays on screen for HBHUB_MINER_SHARD_STAY_MS. Clicking it gives one ('shard' in
+// hbHubMinerApply()). Each can only be caught once (shardSlot in the save), and only while the game is open:
+// hbHubMinerReplay() leaves out any caught in time away, so a script can't send the catches for a whole night at once.
+// They're the player's own, like the skin: Warp Jumps, Big Crunches and Big Rips don't touch them, and one caught in an
+// Anomaly goes to the player's own game. They're spent in the Shard Shop (HBHUB_MINER_SHOP, hbHubMinerShopBuy()).
+const HBHUB_MINER_SHARD_SLOT_MS = 900000; // 15 minutes
+const HBHUB_MINER_SHARD_STAY_MS = 10000;
+const HBHUB_MINER_SHOP_BOOST_MAX_MS = 86400000; // a boost bought again adds its time on, up to this far ahead
+const HBHUB_MINER_SHOP_ORE_MIN = 1000; // the least ore an ore item gives, so it's worth something before any buildings
+
+// The Shard Shop, in the order it shows, with 'cost' in Star Shards. What each 'kind' does:
+// - boost: 'buff' ('production' or 'click', like a comet's) times 'multiplier' for 'ms', in the player's own game
+//   (boosts in the save, see hbHubMinerBuff()). Works on top of the comets' effects, and keeps going through Warp Jumps,
+//   Big Crunches and Big Rips (it's bought with Star Shards, after all).
+// - ore: 'seconds' of the steady ore per second (hbHubMinerRate() without comets or boosts), right away, at least
+//   HBHUB_MINER_SHOP_ORE_MIN.
+// - comet: the next Golden Comet comes right now (its kind is still its own luck, so it can't be bought again for a
+//   better one).
+// - skin: the asteroid skin of the same id in HBHUB_MINER_SKINS (unlock 'shop'), kept for good ('bought' in the save).
+// - effect: a look for clicks on the asteroid (spaceOreMiner.js, burst()), kept for good ('bought') and picked in the
+//   shop ('effect' in the save).
+// Boosts, ore and comets are for the player's own game, so they can't be bought in an Anomaly; skins and effects can.
+const HBHUB_MINER_SHOP = [
+    'overdrive' => ['name' => 'Overdrive', 'icon' => 'darkEngine', 'kind' => 'boost', 'cost' => 5, 'buff' => 'production', 'multiplier' => 2, 'ms' => 3600000,
+        'text' => 'Everything mines twice as much for an hour.'],
+    'titanGrip' => ['name' => 'Titan Grip', 'icon' => 'plasmaGlove', 'kind' => 'boost', 'cost' => 3, 'buff' => 'click', 'multiplier' => 10, 'ms' => 1800000,
+        'text' => 'Clicks mine ten times as much for 30 minutes.'],
+    'cometBeacon' => ['name' => 'Comet Beacon', 'icon' => 'radar', 'kind' => 'comet', 'cost' => 2,
+        'text' => 'Calls the next Golden Comet in, right now.'],
+    'oreCrate' => ['name' => 'Ore Crate', 'icon' => 'crates', 'kind' => 'ore', 'cost' => 3, 'seconds' => 3600,
+        'text' => 'An hour of ore, right now.'],
+    'oreVault' => ['name' => 'Ore Vault', 'icon' => 'cartFull', 'kind' => 'ore', 'cost' => 15, 'seconds' => 28800,
+        'text' => 'Eight hours of ore, right now.'],
+    'frostbite' => ['name' => 'Frostbite', 'kind' => 'skin', 'cost' => 10, 'text' => 'Ice blue, with frost on top.'],
+    'bubblegum' => ['name' => 'Bubblegum', 'kind' => 'skin', 'cost' => 10, 'text' => 'Pink and sweet. Don\'t chew it.'],
+    'gilded' => ['name' => 'Gilded', 'kind' => 'skin', 'cost' => 20, 'text' => 'A solid gold asteroid. Well, gold-plated.'],
+    'prism' => ['name' => 'Prism', 'kind' => 'skin', 'cost' => 40, 'text' => 'Every colour of a Star Shard, slowly turning. Animated.'],
+    'confetti' => ['name' => 'Confetti', 'icon' => 'sparkles', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks throw confetti instead of rock.'],
+    'twinkle' => ['name' => 'Twinkle', 'icon' => 'sparkles', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks throw glittering little stars.'],
+    'shockwave' => ['name' => 'Shockwave', 'icon' => 'sparkles', 'kind' => 'effect', 'cost' => 15, 'text' => 'Every click sends a ring out from where it hit.'],
 ];
 
 // Backgrounds for the game (spaceOreMiner.css, data-backdrop on the page), picked in the stats once the Starforge's
@@ -1093,6 +1146,11 @@ function hbHubMinerConfig(): array
         'lightHourMs' => HBHUB_MINER_LIGHT_HOUR_MS,
         'skins' => HBHUB_MINER_SKINS,
         'backdrops' => HBHUB_MINER_BACKDROPS,
+        'shardSlotMs' => HBHUB_MINER_SHARD_SLOT_MS,
+        'shardStayMs' => HBHUB_MINER_SHARD_STAY_MS,
+        'shop' => HBHUB_MINER_SHOP,
+        'shopBoostMaxMs' => HBHUB_MINER_SHOP_BOOST_MAX_MS,
+        'shopOreMin' => HBHUB_MINER_SHOP_ORE_MIN,
     ];
 }
 
@@ -1200,6 +1258,10 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  *   achievements). skin: the asteroid skin picked (a key of HBHUB_MINER_SKINS), or null for its usual look.
  *   backdrop: the background picked (a key of HBHUB_MINER_BACKDROPS), or null. sparks: whether clicking throws sparks
  *   (once that perk is done).
+ * - shards: Star Shards to spend. shardsCaught: caught ever. shardSlot: the slot (time / HBHUB_MINER_SHARD_SLOT_MS) of
+ *   the last one caught, so each is only caught once (-1 before the first). boosts: the Shard Shop's boosts running,
+ *   id => until (Unix ms; [] in an Anomaly's game, where they don't work). bought: the Shard Shop's skins and effects
+ *   bought, in the order they were. effect: the click effect picked (one of bought), or null for the usual rock bits.
  */
 function hbHubMinerNewState(int $now): array
 {
@@ -1258,6 +1320,12 @@ function hbHubMinerNewState(int $now): array
         'afterglow' => 0,
         'backdrop' => null,
         'sparks' => true,
+        'shards' => 0,
+        'shardsCaught' => 0,
+        'shardSlot' => -1,
+        'boosts' => [],
+        'bought' => [],
+        'effect' => null,
     ];
     $state['comet']['at'] = $now + hbHubMinerCometWait($state, 0);
     return $state;
@@ -1287,7 +1355,7 @@ function hbHubMinerNormalize(array $saved, int $now): array
     $state['donatedToday'] = (int) $state['donatedToday'];
     $state['shifts'] = is_array($state['shifts']) && count($state['shifts']) === HBHUB_MINER_SHIFT_COUNT
         ? array_map('intval', array_values($state['shifts'])) : array_fill(0, HBHUB_MINER_SHIFT_COUNT, 0);
-    foreach (['engineOreRest', 'engineIgnited', 'engineGiven', 'shiftDays', 'weeklies', 'afterglow'] as $key) {
+    foreach (['engineOreRest', 'engineIgnited', 'engineGiven', 'shiftDays', 'weeklies', 'afterglow', 'shards', 'shardsCaught'] as $key) {
         $state[$key] = max(0, (int) $state[$key]);
     }
     $state['engineOreRest'] %= HBHUB_MINER_ENGINE_ORE_QUARTERS;
@@ -1301,6 +1369,18 @@ function hbHubMinerNormalize(array $saved, int $now): array
     $state['skin'] = is_string($state['skin']) && isset(HBHUB_MINER_SKINS[$state['skin']]) ? $state['skin'] : null;
     $state['backdrop'] = is_string($state['backdrop']) && isset(HBHUB_MINER_BACKDROPS[$state['backdrop']]) ? $state['backdrop'] : null;
     $state['sparks'] = (bool) $state['sparks'];
+    $state['shardSlot'] = max(-1, (int) $state['shardSlot']);
+    $boosts = [];
+    foreach (is_array($state['boosts']) ? $state['boosts'] : [] as $boostId => $until) {
+        if ((HBHUB_MINER_SHOP[$boostId]['kind'] ?? null) === 'boost') {
+            $boosts[(string) $boostId] = (int) $until;
+        }
+    }
+    $state['boosts'] = $boosts;
+    $state['bought'] = is_array($state['bought']) ? array_values(array_unique(array_filter($state['bought'], static fn (mixed $itemId): bool =>
+        is_string($itemId) && in_array(HBHUB_MINER_SHOP[$itemId]['kind'] ?? null, ['skin', 'effect'], true)))) : [];
+    $state['effect'] = is_string($state['effect']) && in_array($state['effect'], $state['bought'], true)
+        && HBHUB_MINER_SHOP[$state['effect']]['kind'] === 'effect' ? $state['effect'] : null;
     $state['shiftSwap'] = (int) $state['shiftSwap'] >= 0 && (int) $state['shiftSwap'] < HBHUB_MINER_SHIFT_COUNT ? (int) $state['shiftSwap'] : -1;
     $state['lastAnomaly'] = is_string($state['lastAnomaly']) && hbHubMinerAnomalyMods($state['lastAnomaly']) !== null ? $state['lastAnomaly'] : null;
     $state['mods'] = is_array($state['mods']) ? array_values(array_intersect($state['mods'], array_keys(HBHUB_MINER_ANOMALIES))) : [];
@@ -1349,12 +1429,13 @@ function hbHubMinerNormalizeAnomaly(mixed $anomaly, int $now): ?array
 }
 
 /**
- * The save as the page gets it (all of it: nothing in it is secret): the same, but buffs, anomalies and saved stay
- * JSON objects when empty (an Anomaly's game too).
+ * The save as the page gets it (all of it: nothing in it is secret): the same, but buffs, boosts, anomalies and saved
+ * stay JSON objects when empty (an Anomaly's game too).
  */
 function hbHubMinerView(array $state): array
 {
     $state['buffs'] = (object) $state['buffs'];
+    $state['boosts'] = (object) $state['boosts'];
     $state['anomalies'] = (object) $state['anomalies'];
     if ($state['anomaly'] !== null) {
         $state['anomaly']['state'] = hbHubMinerView($state['anomaly']['state']);
@@ -1864,8 +1945,8 @@ function hbHubMinerBuildingRates(array $state): array
 }
 
 /**
- * The comet effects' multiplier on 'production' or 'click' at $time: all the ones running on it multiplied together (1
- * when none is). $time PHP_INT_MAX leaves comets out.
+ * The comet effects' multiplier on 'production' or 'click' at $time: all the ones running on it multiplied together,
+ * with the Shard Shop's boosts (1 when none is). $time PHP_INT_MAX leaves comets and boosts out.
  */
 function hbHubMinerBuff(array $state, string $buff, int $time): float
 {
@@ -1873,6 +1954,11 @@ function hbHubMinerBuff(array $state, string $buff, int $time): float
     foreach ($state['buffs'] as $running) {
         if (HBHUB_MINER_COMETS[$running['kind']]['buff'] === $buff && $running['until'] > $time) {
             $multiplier *= $running['multiplier'];
+        }
+    }
+    foreach ($state['boosts'] as $boostId => $until) {
+        if (HBHUB_MINER_SHOP[$boostId]['buff'] === $buff && $until > $time) {
+            $multiplier *= HBHUB_MINER_SHOP[$boostId]['multiplier'];
         }
     }
     return $multiplier;
@@ -2017,12 +2103,17 @@ function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX,
 {
     $offlineOre = 0.0;
     while ($state['tick'] < $to && $state['runOre'] < $runOreGoal) {
-        // In pieces, so the rate is the same all through each: up to an effect running out, going away, or midnight
-        // (UTC, for the Shifts, which start over then)
+        // In pieces, so the rate is the same all through each: up to an effect or boost running out, going away, or
+        // midnight (UTC, for the Shifts, which start over then)
         $next = $to;
         foreach ($state['buffs'] as $buff) {
             if ($buff['until'] > $state['tick'] && $buff['until'] < $next) {
                 $next = $buff['until'];
+            }
+        }
+        foreach ($state['boosts'] as $until) {
+            if ($until > $state['tick'] && $until < $next) {
+                $next = $until;
             }
         }
         if ($fullUntil > $state['tick'] && $fullUntil < $next) {
@@ -2067,6 +2158,7 @@ function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX,
         hbHubMinerEarn($state, $ore);
         $state['tick'] = $next;
         $state['buffs'] = array_filter($state['buffs'], static fn (array $buff): bool => $buff['until'] > $next);
+        $state['boosts'] = array_filter($state['boosts'], static fn (int $until): bool => $until > $next);
     }
     hbHubMinerCometsPassed($state);
     return $offlineOre;
@@ -2277,6 +2369,70 @@ function hbHubMinerCatchComet(array &$state): ?string
     $state['comet']['n']++;
     $state['comet']['at'] = $time + hbHubMinerCometWait($state, $state['comet']['n']);
     return $kind;
+}
+
+/**
+ * When the Star Shard of $slot (a time / HBHUB_MINER_SHARD_SLOT_MS) shows up, in Unix ms: somewhere in its slot, by the
+ * save's luck, early enough that it's gone again before the next slot starts.
+ */
+function hbHubMinerShardAt(array $state, int $slot): int
+{
+    return $slot * HBHUB_MINER_SHARD_SLOT_MS + (int) floor(hbHubMinerRandom($state['seed'], $slot, HBHUB_MINER_SALT_SHARD)
+        * (HBHUB_MINER_SHARD_SLOT_MS - HBHUB_MINER_SHARD_STAY_MS));
+}
+
+/**
+ * Catches the Star Shard on screen at $time (the game being played's time: the player's own game's, or an Anomaly's),
+ * if there's one that hasn't been caught yet. Returns whether there was.
+ */
+function hbHubMinerCatchShard(array &$state, int $time): bool
+{
+    $slot = intdiv($time, HBHUB_MINER_SHARD_SLOT_MS);
+    $at = hbHubMinerShardAt($state, $slot);
+    if ($slot <= $state['shardSlot'] || $time < $at || $time > $at + HBHUB_MINER_SHARD_STAY_MS) {
+        return false;
+    }
+    $state['shardSlot'] = $slot;
+    $state['shards']++;
+    $state['shardsCaught']++;
+    return true;
+}
+
+/**
+ * Buys $itemId (a key of HBHUB_MINER_SHOP) for Star Shards, at the player's own game's time (see the kinds there).
+ * Returns false when it can't be: not enough Star Shards, a skin or effect bought already, a boost, ore or comet in
+ * an Anomaly, a boost that's as far ahead as it goes already, or a Comet Beacon with a comet on screen.
+ */
+function hbHubMinerShopBuy(array &$state, mixed $itemId): bool
+{
+    if (!is_string($itemId) || !isset(HBHUB_MINER_SHOP[$itemId])) {
+        return false;
+    }
+    $item = HBHUB_MINER_SHOP[$itemId];
+    $isKept = in_array($item['kind'], ['skin', 'effect'], true);
+    if ($state['shards'] < $item['cost'] || ($isKept ? in_array($itemId, $state['bought'], true) : $state['anomaly'] !== null)) {
+        return false;
+    }
+
+    $time = $state['tick'];
+    if ($item['kind'] === 'boost') {
+        $until = min(max($state['boosts'][$itemId] ?? 0, $time) + $item['ms'], $time + HBHUB_MINER_SHOP_BOOST_MAX_MS);
+        if ($until <= ($state['boosts'][$itemId] ?? 0)) {
+            return false;
+        }
+        $state['boosts'][$itemId] = $until;
+    } elseif ($item['kind'] === 'ore') {
+        hbHubMinerEarn($state, max(hbHubMinerRate($state, PHP_INT_MAX) * $item['seconds'], (float) HBHUB_MINER_SHOP_ORE_MIN));
+    } elseif ($item['kind'] === 'comet') {
+        if ($time >= $state['comet']['at'] && $time <= $state['comet']['at'] + hbHubMinerCometStay($state)) {
+            return false;
+        }
+        $state['comet']['at'] = $time;
+    } else {
+        $state['bought'][] = $itemId;
+    }
+    $state['shards'] -= $item['cost'];
+    return true;
 }
 
 /**
@@ -2612,6 +2768,7 @@ function hbHubMinerAnomalyStart(array &$state, mixed $mods): bool
     $game['mods'] = hbHubMinerAnomalyRules($mods);
     $game['destroyed'] = [];
     $game['afterglow'] = 0; // the player's own game's, not this one's
+    $game['boosts'] = []; // the same
     $game['engineOpen'] = false; // nothing is given from in here, apart from finishing it
     $game['seed'] = (int) floor(hbHubMinerRandom($state['seed'], $state['tick'], HBHUB_MINER_SALT_ANOMALY) * 0x7FFFFFFE) + 1;
     $game['started'] = $state['tick'];
@@ -2759,6 +2916,9 @@ function hbHubMinerAdvanceGame(array &$state, int $to, int $fullUntil = PHP_INT_
  * - ['type' => 'backdrop', 'id' => a key of HBHUB_MINER_BACKDROPS, or null], ['type' => 'sparks',
  *   'on' => bool]: with their perks (hbHubMinerEnginePerk()). ['type' => 'shiftSwap', 'index' => n]:
  *   hbHubMinerShiftSwap(). Like skin, these are the player's own game's, in an Anomaly too.
+ * - ['type' => 'shard'] (hbHubMinerCatchShard(), at the time of the game being played), ['type' => 'shopBuy', 'id' => a
+ *   key of HBHUB_MINER_SHOP] (hbHubMinerShopBuy()) and ['type' => 'effect', 'id' => a click effect bought, or null for
+ *   the usual rock bits]: the player's own game's too.
  * In an Anomaly, everything else is played in its game instead (apart from learning skills, Big Rips and donating,
  * which can't be done in there), and once its goal is reached it's done (hbHubMinerAnomalyCheck()).
  * What's given to the Engine (donations, finished Engine Shifts and Anomalies) goes in $given as [source, parts], and
@@ -2798,6 +2958,24 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
 
     if ($type === 'shiftSwap') {
         return hbHubMinerShiftSwap($state, $action['index'] ?? null);
+    }
+
+    if ($type === 'shard') {
+        return hbHubMinerCatchShard($state, hbHubMinerGame($state)['tick']);
+    }
+
+    if ($type === 'shopBuy') {
+        return hbHubMinerShopBuy($state, $action['id'] ?? null);
+    }
+
+    if ($type === 'effect') {
+        $effectId = $action['id'] ?? null;
+        if ($effectId !== null && (!is_string($effectId) || !in_array($effectId, $state['bought'], true)
+            || HBHUB_MINER_SHOP[$effectId]['kind'] !== 'effect')) {
+            return false;
+        }
+        $state['effect'] = $effectId;
+        return true;
     }
 
     if ($type === 'anomalyStart') {
@@ -2990,6 +3168,7 @@ function hbHubMinerSkinOpen(array $state, string $skinId): bool
         isset($unlock['anomaly']) => hbHubMinerAnomalyDone($state, $unlock['anomaly']),
         isset($unlock['stage']) => $state['engineStage'] >= $unlock['stage'],
         isset($unlock['crew']) => in_array($unlock['crew'], $state['crews'], true),
+        isset($unlock['shop']) => in_array($skinId, $state['bought'], true),
         default => false,
     };
 }
@@ -3024,7 +3203,7 @@ function hbHubMinerStat(array $state, string $stat): float
         'anomalies' => count($state['anomalies']),
         'stack' => hbHubMinerBiggestStack($state),
         'lightHour' => isset($state['anomalies']['speedOfLight']) && $state['anomalies']['speedOfLight']['best'] < HBHUB_MINER_LIGHT_HOUR_MS ? 1 : 0,
-        'engineGiven', 'shiftDays', 'weeklies' => (float) $state[$stat],
+        'engineGiven', 'shiftDays', 'weeklies', 'shardsCaught' => (float) $state[$stat],
         'rate' => hbHubMinerRate($state, PHP_INT_MAX),
         'upgrades' => count($state['upgrades']),
         'buildings' => array_sum($state['buildings']),
@@ -3170,6 +3349,10 @@ function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $
         }
         $at = is_numeric($action['at'] ?? null) ? (int) $action['at'] : $now;
         $offlineOre += hbHubMinerAdvanceGame($state, max(hbHubMinerGame($state)['tick'], min($at, $now)), $fullUntil, $given);
+        // A Star Shard only counts while playing (the page never gets past $fullUntil without saving first)
+        if (($action['type'] ?? null) === 'shard' && hbHubMinerGame($state)['tick'] > $fullUntil) {
+            continue;
+        }
         if (hbHubMinerApply($state, $action, $given)) {
             hbHubMinerCheckAchievements($state);
             if ($index < count($recovered)) {

@@ -1,6 +1,7 @@
 <?php
 // Help docs: Ore Mining Inc. - getting started, every building (straight from HBHUB_MINER_BUILDINGS in
-// assets/php/games/spaceOreMiner/miner.php, so a new one or a new price shows up here by itself), the comets, the three
+// assets/php/games/spaceOreMiner/miner.php, so a new one or a new price shows up here by itself), the comets, Star
+// Shards and the Shard Shop (from HBHUB_MINER_SHOP), the three
 // prestiges, the skill tree, the Cosmic Engines (each Engine's stages straight from HBHUB_MINER_ENGINE_STAGES and
 // HBHUB_MINER_ENGINES, with their default costs), the Anomalies (from HBHUB_MINER_ANOMALIES and HBHUB_MINER_ANOMALY_TIERS), saving and the game's own How to
 // play (rules.php, included as the game shows it).
@@ -104,6 +105,41 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             </table>
                         </div>
                         <p>Diamond Rush is rare. Different comets' effects stack: a Diamond Rush caught during a Supernova multiplies on top of it. Comet upgrades in the store make comets come more often, stay longer and give more.</p>
+                    </section>
+
+                    <section id="star-shards" aria-labelledby="docs-star-shards">
+                        <h2 id="docs-star-shards">Star Shards and the Shard Shop</h2>
+                        <p>
+                            About every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes, a glittering Star Shard flies across the
+                            screen the other way from the comets. It only stays <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds,
+                            so keep an eye out: click it to keep it. It only comes while the game is open, also in an Anomaly
+                            (it still goes to your own game), and Comet Catcher leaves it for you. Star Shards are yours for
+                            good: Warp Jumps, Big Crunches and Big Rips don't take them.
+                        </p>
+                        <p>Spend them in the Shard Shop, the button by the game's title:</p>
+                        <div class="docs-table-wrap">
+                            <table class="docs-table">
+                                <thead>
+                                    <tr><th scope="col">Item</th><th scope="col">Star Shards</th><th scope="col">What you get</th></tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach (HBHUB_MINER_SHOP as $docsItem): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($docsItem['name']) ?></td>
+                                            <td><?= $docsItem['cost'] ?></td>
+                                            <td><?= htmlspecialchars($docsItem['kind'] === 'skin' ? 'An asteroid skin: ' . $docsItem['text'] : ($docsItem['kind'] === 'effect' ? 'A click effect: ' . $docsItem['text'] : $docsItem['text'])) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p>
+                            Boosts work on top of the comets' effects and keep going through Warp Jumps; buying one again adds
+                            its time on, up to <?= HBHUB_MINER_SHOP_BOOST_MAX_MS / 3600000 ?> hours ahead. Ore is that many hours of
+                            what you mine a second right now. Boosts, ore and the Comet Beacon are for your own game, so they
+                            can't be bought in an Anomaly. Skins and click effects are kept for good, and you can switch them
+                            on and off in the shop (skins in your stats too).
+                        </p>
                     </section>
 
                     <section id="prestige" aria-labelledby="docs-prestige">
