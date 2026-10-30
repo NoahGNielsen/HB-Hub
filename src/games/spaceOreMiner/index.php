@@ -7,8 +7,8 @@
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
-// It has six views, picked in the menu under the title and the news ticker (Engine and Anomalies in a second bar, once
-// they've opened): Ore (the asteroid and the store, the default), Dark Matter
+// It has six views, picked in the menu down the right side (over the views on small screens; Engine and Anomalies in a
+// second group, once they've opened): Ore (the asteroid and the store, the default), Dark Matter
 // (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch), Strange Matter
 // (?view=strangeMatter, the Big Rip and the skill tree), Engine (?view=engine, the Cosmic Engine the whole site
 // builds together, see assets/php/games/spaceOreMiner/engine.php) and Anomalies (?view=anomalies, the challenge runs,
@@ -100,10 +100,13 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
 
         <p class="miner-ticker" data-miner-ticker><span class="miner-ticker-text" data-miner-ticker-text>Loading the news from space…</span></p>
 
+        <!-- The menu and the views together in miner-body: on wide screens the menu is a column down the right side of
+             the views, on small ones a bar over them -->
+        <div class="miner-body">
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
-        <!-- Two bars: the matters on top, and the Engine and Anomalies under them. Those two (and their bar) stay hidden
-             until they open (renderMenu() in spaceOreMiner.js): the Engine after the first Warp Jump, the Anomalies
-             after the first Big Rip. -->
+        <!-- Two groups: the matters first, and the Engine and Anomalies after them. Those two (and their group) stay
+             hidden until they open (renderMenu() in spaceOreMiner.js): the Engine after the first Warp Jump, the
+             Anomalies after the first Big Rip. -->
         <nav class="miner-menus" aria-label="Views" data-miner-menu>
             <?php foreach ([array_diff_key(MINER_VIEWS, MINER_LATER_VIEWS), array_intersect_key(MINER_VIEWS, MINER_LATER_VIEWS)] as $row => $rowViews): ?>
                 <div class="miner-menu<?= $row === 1 ? ' is-later' : '' ?>"<?= $row === 1 ? ' data-miner-menu-later hidden' : '' ?>>
@@ -120,6 +123,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
             <?php endforeach; ?>
         </nav>
 
+        <div class="miner-stage">
         <!-- Only while the player is in an Anomaly (renderAnomalyBanner() in spaceOreMiner.js): which, how long it's
              been (or how long is left), the Antimatter towards its goal, and the way out -->
         <div class="miner-anomaly-banner" data-miner-anomaly-banner hidden>
@@ -541,6 +545,8 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
             </section>
             <div class="miner-anomaly-tiers" data-miner-anomaly-tiers></div>
         </section>
+        </div><!-- .miner-stage -->
+        </div><!-- .miner-body -->
 
         <button type="button" class="miner-comet" data-miner-comet hidden aria-label="Catch the Golden Comet"><span class="miner-comet-head"></span></button>
         <ol class="miner-toasts" data-miner-toasts aria-live="polite"></ol>

@@ -1,4 +1,4 @@
-/* Ore Mining Inc. (games/spaceOreMiner/): the buttons and the menu at the top, the six views (Ore: the asteroid and
+/* Ore Mining Inc. (games/spaceOreMiner/): the buttons at the top, the menu down the right side, the six views (Ore: the asteroid and
    the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree;
    Engine: the Cosmic Engines; Anomalies: the challenge runs, with the banner over every view while in one), the popups (stats, achievements, how to play), the comet flying across the screen and the
    messages in the corner. Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. The leaderboard
@@ -39,8 +39,23 @@
   flex: none;
 }
 
+/* The top is kept small so the views get as much of the screen as they can: a smaller back link and title, and short
+   buttons */
+.miner > .casino-back {
+  margin-bottom: 2px;
+  font-size: 0.9rem;
+}
+
+.miner .casino-title-row {
+  margin-bottom: 0;
+}
+
+.miner .casino-title-row h1 {
+  font-size: 1.6rem;
+}
+
 .miner-title-icon {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
 }
 
 .miner-title-actions {
@@ -48,12 +63,13 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .miner-title-btn {
-  height: 46px;
-  padding: 0 14px;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 0.95rem;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -185,10 +201,81 @@
   to { box-shadow: 0 0 10px var(--miner-view-colour); }
 }
 
+/* The menu and the views (.miner-body, with the views and the Anomaly banner in .miner-stage). On small screens the
+   menu is the bars above the views; on wide ones it's a column down the right side, so the views get the whole
+   height under the title. */
+.miner-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.miner-stage {
+  min-width: 0;
+}
+
+@media (min-width: 861px) {
+  .casino.miner {
+    max-width: 1380px;
+  }
+
+  .miner-body {
+    margin-top: 10px;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--miner-gap);
+  }
+
+  .miner-stage {
+    flex: 1 1 0;
+  }
+
+  /* After the views, though it comes first in the page, and staying in sight while a long view scrolls */
+  .miner-body > .miner-menus {
+    order: 1;
+    width: 190px;
+    flex: none;
+    margin: 0;
+    align-content: start;
+    position: sticky;
+    top: calc(var(--nav-top-h, 0px) + var(--miner-gap));
+  }
+
+  .miner-menus .miner-menu {
+    flex-direction: column;
+  }
+
+  /* The name with the amount under it, so long numbers fit */
+  .miner-menus .miner-menu-link {
+    flex: none;
+    padding: 9px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+  }
+
+  .miner-menus .miner-menu-text,
+  .miner-menus .miner-menu-count {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .miner-menus .miner-menu-count {
+    font-size: 0.9rem;
+  }
+
+  .miner-menus .miner-menu-news {
+    top: 50%;
+    right: 12px;
+    margin-top: -4.5px;
+  }
+}
+
 /* The sound button: the speaker with waves when on, crossed out when off */
 .miner-sound {
-  width: 46px;
-  height: 46px;
+  width: 38px;
+  height: 38px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -196,8 +283,8 @@
 }
 
 .miner-sound-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -210,11 +297,12 @@
   display: none;
 }
 
-/* The news ticker, between the title and the menu */
+/* The news ticker, under the title */
 .miner-ticker {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   flex: none;
-  padding: 10px 16px;
+  padding: 6px 14px;
+  font-size: 0.95rem;
   overflow: hidden;
   border-radius: 12px;
   background: color-mix(in srgb, var(--accent) 10%, var(--secondary));
@@ -3582,9 +3670,25 @@
   from { opacity: 0; transform: translateY(16px); }
 }
 
-/* Everything above the Ore view keeps its size; the view gets the rest */
-.miner[data-view="ore"] > :not(.miner-layout) {
+/* Everything above the Ore view keeps its size; the view gets the rest (through .miner-body and .miner-stage, which
+   pass the height on) */
+.miner[data-view="ore"] > :not(.miner-body),
+.miner[data-view="ore"] .miner-body > .miner-menus,
+.miner[data-view="ore"] .miner-stage > :not(.miner-layout) {
   flex: none;
+}
+
+.miner[data-view="ore"] .miner-body {
+  flex: 1 1 0;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.miner[data-view="ore"] .miner-stage {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .miner[data-view="ore"] > .casino-back {
