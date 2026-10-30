@@ -100,7 +100,7 @@ const ADMIN_ENGINE_SOURCES = [ // contributionSource => what it's called here
                             <h2 id="admin-engine-heading">Ore Mining Inc. Cosmic Engine #<?= (int) $adminEngine['engineNumber'] ?></h2>
                             <p class="settings-intro">
                                 Started <?= adminTime($adminEngine['engineStartedTimestamp']) ?> (UTC).
-                                <?= $adminDone ?> of <?= HBHUB_MINER_ENGINE_STAGE_TOTAL ?> stages done (<?= count(HBHUB_MINER_ENGINE_STAGES) ?> are in the game so far).
+                                <?= $adminDone ?> of <?= HBHUB_MINER_ENGINE_STAGE_TOTAL ?> stages done.<?= $adminEngine['engineIgnitedTimestamp'] !== null ? ' Ignited ' . adminTime($adminEngine['engineIgnitedTimestamp']) . ' (UTC).' : '' ?>
                             </p>
                         </div>
                     </div>
@@ -112,6 +112,10 @@ const ADMIN_ENGINE_SOURCES = [ // contributionSource => what it's called here
                                 <?= number_format((int) $adminEngine['engineStageParts']) ?> of <?= number_format($adminCosts[$adminDone]) ?> parts
                                 <?php if ($adminLock !== null): ?>
                                     <br>Lock: <?= htmlspecialchars(HBHUB_MINER_ENGINE_STAGES[$adminDone]['lock']['text']) ?> (<?= $adminLock['have'] ?> / <?= $adminLock['need'] ?>)
+                                <?php endif; ?>
+                                <?php if ($adminEngine['engineCountdownTimestamp'] !== null): ?>
+                                    <br>Has to be full by <?= adminTime($adminEngine['engineCountdownTimestamp']) ?> (UTC), or <?= (1 - HBHUB_MINER_ENGINE_DRAIN) * 100 ?>% of its parts are lost
+                                    and it gets another <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days.
                                 <?php endif; ?>
                             </dd>
                         <?php endif; ?>

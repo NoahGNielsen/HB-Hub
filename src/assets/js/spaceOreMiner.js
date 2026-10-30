@@ -53,10 +53,13 @@
     const SALT_LUCKY = 5;
     const SALT_SHIFT = 6;
     const SALT_ANOMALY = 7;
+    const SALT_WEEKLY = 8;
     const ENGINE_STAGES = CONFIG.engineStages; // stage 1 first
     const SHIFTS = CONFIG.shifts;
     const ANOMALIES = CONFIG.anomalies;
+    const ANOMALY_IDS = Object.keys(ANOMALIES);
     const ANOMALY_TIERS = CONFIG.anomalyTiers; // by tier number
+    const SKINS = CONFIG.skins;
 
     // ----- The game: the same as miner.php. s is the save (hbHubMinerNewState() there has its shape).
 
@@ -125,6 +128,18 @@
         return effects;
     }
 
+    // What Ignition does to production at the game's time (hbHubMinerIgnition())
+    const ignition = (s) => (s.engineIgnited > 0 && s.tick >= s.engineIgnited && s.tick < s.engineIgnited + CONFIG.ignitionMs ? CONFIG.ignitionTimes : 1);
+
+    // What a part given from ore is worth now, in quarter parts (hbHubMinerOreQuarters())
+    const oreQuarters = (s) => CONFIG.engineOreShare[ENGINE_STAGES[Math.min(s.engineStage ?? 0, ENGINE_STAGES.length - 1)].section];
+
+    // Gives gift to the Engine: into given, and counted in engineGiven (hbHubMinerGive())
+    function give(s, given, gift) {
+        given.push(gift);
+        s.engineGiven = (s.engineGiven ?? 0) + gift[1];
+    }
+
     // Whether the player can give the Engine parts right now (hbHubMinerCanGive())
     const canGive = (s) => s.engineOpen === true && s.warps >= 1;
 
@@ -164,7 +179,8 @@
         s.shifts[index] = Math.min(goal, s.shifts[index] + amount);
         if (s.shifts[index] < goal) return;
         const done = tasks.filter((id, i) => s.shifts[i] >= SHIFTS[id].goal).length;
-        given.push([CONFIG.sourceShift, done === CONFIG.shiftCount
+        if (done === CONFIG.shiftCount) s.shiftDays = (s.shiftDays ?? 0) + 1;
+        give(s, given, [CONFIG.sourceShift, done === CONFIG.shiftCount
             ? CONFIG.shiftPartsAll * CONFIG.shiftCount - CONFIG.shiftParts * (CONFIG.shiftCount - 1) : CONFIG.shiftParts]);
     }
 
@@ -184,7 +200,7 @@
     const antiMultiplier = (s) => 1 + (CONFIG.antiBonus + skillEffects(s).antiBonus) * s.antimatterEarned;
     const strangeMultiplier = (s) => 1 + CONFIG.strangeBonus * s.strangeEarned;
     const cometPower = (s) => (hasAnti(s, 'antiComets') ? 2 : 1) * skillEffects(s).cometPower;
-    const upgradeCost = (s, id) => UPGRADES[id].cost * skillEffects(s).upgradeCost;
+    const upgradeCost = (s, id) => UPGRADES[id].cost * skillEffects(s).upgradeCost * engineEffects(s).upgradeCost;
 
     // How much more each of a building costs than the one before (hbHubMinerCostGrowth())
     const costGrowth = (s, id) => (mod(s, 'inflation') ? CONFIG.inflationGrowth : BUILDINGS[id].growth ?? CONFIG.costGrowth)
@@ -199,15 +215,20 @@
         return true;
     }
 
-    // What Entropy leaves of production: halved for every whole entropyMs of the run (hbHubMinerEntropy())
+    // How long a run goes before each halving in Entropy, longer in The Gauntlet (hbHubMinerEntropyMs())
+    const entropyMs = (s) => (mod(s, 'gauntlet') ? CONFIG.gauntletEntropyMs : CONFIG.entropyMs);
+    const entropySteps = (s) => (mod(s, 'gauntlet') ? CONFIG.gauntletEntropySteps : CONFIG.entropySteps); // the most halvings
+
+    // What Entropy leaves of production: halved for every whole entropyMs() of the run (hbHubMinerEntropy())
     function entropy(s) {
         if (!mod(s, 'entropy')) return 1;
-        return 0.5 ** Math.min(CONFIG.entropySteps, Math.floor(Math.max(0, s.tick - s.runStarted) / CONFIG.entropyMs));
+        return 0.5 ** Math.min(entropySteps(s), Math.floor(Math.max(0, s.tick - s.runStarted) / entropyMs(s)));
     }
 
     function buildingCost(s, id, amount) {
         const growth = costGrowth(s, id);
-        return Math.ceil(BUILDINGS[id].cost * skillEffects(s).cost * growth ** s.buildings[id] * (growth ** amount - 1) / (growth - 1));
+        return Math.ceil(BUILDINGS[id].cost * skillEffects(s).cost * engineEffects(s).cost
+            * growth ** s.buildings[id] * (growth ** amount - 1) / (growth - 1));
     }
 
     const canAfford = (s, cost) => cost <= s.ore * (1 + 1e-9) + 1e-9;
@@ -223,7 +244,7 @@
         if (hasDark(s, 'darkEngines')) global *= 1.5;
         if (hasAnti(s, 'annihilation')) global *= 2;
         global *= effects.production * (1 + effects.perSkill * s.skills.length) * (1 + effects.perWarp * s.flights)
-            * (1 + effects.perCrunch * s.crunches) * engineEffects(s).production;
+            * (1 + effects.perCrunch * s.crunches) * engineEffects(s).production * ignition(s);
         global *= entropy(s);
         const parts = {
             multipliers: Object.fromEntries(BUILDING_IDS.map((id) => [id, 1])),
@@ -335,9 +356,9 @@
         if (mod(s, 'deadHands')) return 0;
         const effects = skillEffects(s);
         const value = parts.click * effects.click;
-        const share = parts.clickShare + effects.clickShare;
+        const share = parts.clickShare + (effects.clickShare + (mod(s, 'handsOnly') ? CONFIG.handsShare : 0));
         const steady = share > 0 ? production(s, parts) * buff(s, 'production', time) : 0;
-        return (value + share * steady) * buff(s, 'click', time);
+        return (value + share * steady) * buff(s, 'click', time) * engineEffects(s).click;
     }
 
     // How many times a second the auto upgrades and skills click, together (hbHubMinerAutoClicks())
@@ -347,7 +368,7 @@
 
     // time Infinity: the steady rate, without comets. parts: rateParts(s), when it's already been worked out.
     function rate(s, time, parts = rateParts(s)) {
-        let total = production(s, parts) * buff(s, 'production', time);
+        let total = mod(s, 'handsOnly') ? 0 : production(s, parts) * buff(s, 'production', time); // only clicks mine in Hands Only
         const clicks = autoClicks(s, parts);
         if (clicks > 0) total += clicks * clickValue(s, time, parts);
         return total;
@@ -375,8 +396,9 @@
 
     function cometKind(s) {
         const n = s.comet.n;
-        const diamondChance = (has(s, 'luckyStars') ? CONFIG.diamondChance : 0) + skillEffects(s).diamond;
-        if (diamondChance > 0 && random(s.seed, n, SALT_DIAMOND) < diamondChance) return 'diamond';
+        let diamondChance = (has(s, 'luckyStars') ? CONFIG.diamondChance : 0) + skillEffects(s).diamond;
+        if (diamondChance > 0) diamondChance += engineEffects(s).diamond; // only adds to a chance there is
+        if (diamondChance > 0 &&random(s.seed, n, SALT_DIAMOND) < diamondChance) return 'diamond';
         const roll = random(s.seed, n, SALT_COMET_KIND);
         return roll < 0.45 ? 'frenzy' : (roll < 0.9 ? 'lucky' : 'storm');
     }
@@ -389,10 +411,10 @@
         }
     }
 
-    // given: see shift() (hbHubMinerAdvance())
-    function advance(s, to, fullUntil = Infinity, given = null) {
+    // given: see shift(). runOreGoal: stops at the first ms the ore this run reaches it (hbHubMinerAdvance())
+    function advance(s, to, fullUntil = Infinity, given = null, runOreGoal = Infinity) {
         let offlineOre = 0;
-        while (s.tick < to) {
+        while (s.tick < to && s.runOre < runOreGoal) {
             let next = to;
             for (const running of Object.values(s.buffs)) {
                 if (running.until > s.tick && running.until < next) next = running.until;
@@ -400,15 +422,23 @@
             if (fullUntil > s.tick && fullUntil < next) next = fullUntil;
             const midnight = (Math.floor(s.tick / CONFIG.dayMs) + 1) * CONFIG.dayMs;
             if (midnight < next) next = midnight;
-            const steps = Math.floor(Math.max(0, s.tick - s.runStarted) / CONFIG.entropyMs); // Entropy's next halving
-            if (mod(s, 'entropy') && steps < CONFIG.entropySteps) {
-                const halving = s.runStarted + (steps + 1) * CONFIG.entropyMs;
+            const steps = Math.floor(Math.max(0, s.tick - s.runStarted) / entropyMs(s)); // Entropy's next halving
+            if (mod(s, 'entropy') && steps < entropySteps(s)) {
+                const halving = s.runStarted + (steps + 1) * entropyMs(s);
                 if (halving < next) next = halving;
             }
+            for (const edge of [s.engineIgnited, s.engineIgnited + CONFIG.ignitionMs]) { // Ignition starting or running out
+                if (s.engineIgnited > 0 && edge > s.tick && edge < next) next = edge;
+            }
 
-            let ore = rate(s, s.tick) * (next - s.tick) / 1000;
+            const perSecond = rate(s, s.tick);
+            const share = s.tick >= fullUntil ? engineEffects(s).offline * (hasDark(s, 'timeDilation') ? 2 : 1) * skillEffects(s).offline : 1;
+            let ore = perSecond * (next - s.tick) / 1000 * share;
+            if (runOreGoal < Infinity && ore > 0 && s.runOre + ore >= runOreGoal) { // the goal is reached in this piece
+                next = Math.min(next, s.tick + Math.max(1, Math.ceil((runOreGoal - s.runOre) / ore * (next - s.tick))));
+                ore = perSecond * (next - s.tick) / 1000 * share;
+            }
             if (s.tick >= fullUntil) {
-                ore *= engineEffects(s).offline * (hasDark(s, 'timeDilation') ? 2 : 1) * skillEffects(s).offline;
                 offlineOre += ore;
             } else {
                 shift(s, 'playing', next - s.tick, given);
@@ -459,7 +489,8 @@
 
     function crunchGain(s) {
         const effects = skillEffects(s);
-        return s.darkEarned >= CONFIG.crunchDark * effects.crunchDark ? Math.floor(antiTotal(s.darkEarned) * effects.antiGain) : 0;
+        return s.darkEarned >= CONFIG.crunchDark * effects.crunchDark
+            ? Math.floor(antiTotal(s.darkEarned) * effects.antiGain * engineEffects(s).antiGain) : 0;
     }
 
     // One for every step the Antimatter earned in this multiverse has passed: strangeUnit times each of strangeSteps
@@ -543,7 +574,7 @@
             }
             s.buffs[kind] = { kind, multiplier: comet.multiplier * cometPower(s), until: time + cometLength(s, kind) };
         } else {
-            const production = sum(Object.values(buildingRates(s))) * buff(s, 'production', time);
+            const production = sum(Object.values(buildingRates(s))) * buff(s, 'production', time) * (mod(s, 'handsOnly') ? CONFIG.handsShare : 1);
             const [min, max] = CONFIG.luckySeconds;
             const seconds = min + random(s.seed, s.comet.n, SALT_LUCKY) * (max - min);
             ore = (production * seconds + 13)
@@ -564,6 +595,9 @@
         const start = Object.fromEntries(BUILDING_IDS.map((id) => [id, skillEffects(s).start[id] ?? 0]));
         if (hasDark(s, 'headStart')) start.drone = Math.max(start.drone, CONFIG.headStart);
         for (const id of s.destroyed) start[id] = 0;
+        if (mod(s, 'gauntlet')) { // clicks mine nothing there
+            for (const [id, count] of Object.entries(CONFIG.gauntletStart)) start[id] = Math.max(start[id], count);
+        }
         return start;
     }
 
@@ -581,7 +615,7 @@
 
     function warp(s) {
         const gain = warpGain(s);
-        if (gain < 1) return false;
+        if (gain < 1 || mod(s, 'ironUniverse')) return false;
 
         if (mod(s, 'unstableVacuum')) { // the building there's most of goes for good (hbHubMinerWarp())
             let most = null;
@@ -639,11 +673,45 @@
     // ----- Anomalies (hbHubMinerAnomaly*() in miner.php). s.anomaly is the one the player is in: {mods, started, goal,
     // state (its own game)}, and s.anomalies the ones finished, by key: {done, best}.
 
-    // The Anomalies in a key, or null when it isn't one (only one at a time for now)
-    const anomalyMods = (key) => (Object.hasOwn(ANOMALIES, key) ? [key] : null);
+    // The Anomalies in a key, or null when it isn't one: in their order, each once, and only stackable ones in a stack
+    // (hbHubMinerAnomalyMods())
+    function anomalyMods(key) {
+        const mods = key.split('+');
+        let last = -1;
+        for (const id of mods) {
+            const at = ANOMALY_IDS.indexOf(id);
+            if (at <= last || (mods.length > 1 && ANOMALIES[id].tier > CONFIG.anomalyStackTier)) return null;
+            last = at;
+        }
+        return mods;
+    }
     const anomalyKey = (mods) => mods.join('+');
-    const anomalyGoal = (mods) => Math.max(...mods.map((id) => ANOMALIES[id].goal));
-    const anomalyParts = (mods) => sum(mods.map((id) => ANOMALY_TIERS[ANOMALIES[id].tier].parts));
+    // The rules an Anomaly's game has: each one, and its 'rules' (hbHubMinerAnomalyRules())
+    const anomalyRules = (mods) => [...new Set(mods.flatMap((id) => [id, ...(ANOMALIES[id].rules ?? [])]))];
+    const anomalyGoal = (mods) => Math.min(...mods.map((id) => ANOMALIES[id].goal));
+    const anomalyStat = (mods) => ANOMALIES[mods[0]].stat ?? 'antimatterEarned';
+    function anomalyParts(s, mods, isWeekly) {
+        let parts = 0;
+        for (const id of mods) parts += ANOMALIES[id].parts ?? ANOMALY_TIERS[ANOMALIES[id].tier].parts;
+        return Math.floor(parts * CONFIG.anomalyStack ** (mods.length - 1) * (isWeekly ? CONFIG.anomalyWeekly : 1) * engineEffects(s).anomalyParts);
+    }
+
+    // The week a time is in, from Monday 00:00 UTC (hbHubMinerWeek()), and that week's Anomaly (hbHubMinerWeeklyMods())
+    const weekOf = (time) => Math.floor((time + 3 * CONFIG.dayMs) / CONFIG.weekMs);
+    const weeklyCache = new Map();
+    function weeklyMods(week) {
+        if (weeklyCache.has(week)) return weeklyCache.get(week);
+        const left = ANOMALY_IDS.filter((id) => ANOMALIES[id].tier <= CONFIG.anomalyStackTier && !CONFIG.weeklyLeftOut.includes(id));
+        const size = CONFIG.weeklySizes[Math.floor(random(0, week * 10, SALT_WEEKLY) * CONFIG.weeklySizes.length)];
+        const picked = [];
+        for (let i = 0; i < size; i++) picked.push(left.splice(Math.floor(random(0, week * 10 + i + 1, SALT_WEEKLY) * left.length), 1)[0]);
+        const mods = ANOMALY_IDS.filter((id) => picked.includes(id));
+        weeklyCache.set(week, mods);
+        return mods;
+    }
+
+    // Whether the player has finished an Anomaly, alone or in a stack (hbHubMinerAnomalyDone())
+    const anomalyDone = (s, id) => Object.keys(s.anomalies).some((key) => key.split('+').includes(id));
 
     // Whether the player's own game has opened Anomaly tier tier
     function anomalyTierOpen(s, tier) {
@@ -655,17 +723,18 @@
     const gameOf = (s) => s.anomaly?.state ?? s;
 
     function anomalyStart(s, mods) {
-        if (s.anomaly || s.mods.length > 0 || !Array.isArray(mods) || typeof mods[0] !== 'string') return false;
+        if (s.anomaly || s.mods.length > 0 || !Array.isArray(mods) || mods.length === 0 || !mods.every((id) => typeof id === 'string')) return false;
         mods = anomalyMods(anomalyKey(mods));
         if (!mods || !mods.every((id) => anomalyTierOpen(s, ANOMALIES[id].tier))) return false;
 
-        const game = structuredClone({ ...s, anomaly: null });
+        let game = structuredClone({ ...s, anomaly: null });
         game.anomalies = {};
-        game.mods = mods;
+        game.mods = anomalyRules(mods);
         game.destroyed = [];
         game.engineOpen = false;
         game.seed = Math.floor(random(s.seed, s.tick, SALT_ANOMALY) * 0x7FFFFFFE) + 1;
         game.started = s.tick;
+        if (ANOMALY_TIERS[ANOMALIES[mods[0]].tier].fresh) game = { ...game, ...structuredClone(CONFIG.anomalyFresh) }; // Tier III: from nothing
         newMultiverse(game);
         game.comet = { n: 0, at: game.tick + cometWait(game, 0) };
         s.anomaly = { mods, started: s.tick, goal: anomalyGoal(mods), state: game };
@@ -683,14 +752,17 @@
     // (hbHubMinerAnomalyCheck())
     function anomalyCheck(s, given) {
         const anomaly = s.anomaly;
-        if (!anomaly || anomaly.state.antimatterEarned < anomaly.goal) return;
+        if (!anomaly || anomaly.state[anomalyStat(anomaly.mods)] < anomaly.goal) return;
         const key = anomalyKey(anomaly.mods);
         const ms = anomaly.state.tick - anomaly.started;
+        const week = weekOf(anomaly.state.tick);
+        const isWeekly = anomalyKey(weeklyMods(week)) === key;
         const record = s.anomalies[key] ?? null;
-        let parts = anomalyParts(anomaly.mods);
+        let parts = anomalyParts(s, anomaly.mods, isWeekly);
         if (record !== null && ms >= record.best) parts = Math.floor(parts * CONFIG.anomalyRepeat);
         s.anomalies[key] = { done: (record?.done ?? 0) + 1, best: record !== null ? Math.min(record.best, ms) : ms };
-        if (given !== null && s.warps >= 1) given.push([CONFIG.sourceAnomaly, parts, key]);
+        if (isWeekly) s.weeklies = (s.weeklies ?? 0) + 1;
+        if (given !== null && s.warps >= 1) give(s, given, [CONFIG.sourceAnomaly, parts, key, ms, isWeekly ? week : null]);
         anomalyLeave(s);
     }
 
@@ -698,7 +770,12 @@
     function advanceGame(s, to, fullUntil = Infinity, given = null) {
         if (!s.anomaly) return advance(s, to, fullUntil, given);
         const limit = s.anomaly.mods.includes('speedOfLight') ? s.anomaly.started + CONFIG.lightMs : Infinity;
-        const offlineOre = advance(s.anomaly.state, Math.min(to, limit), fullUntil, null);
+        const runOreGoal = anomalyStat(s.anomaly.mods) === 'runOre' ? s.anomaly.goal : Infinity; // reached by time going by
+        const offlineOre = advance(s.anomaly.state, Math.min(to, limit), fullUntil, null, runOreGoal);
+        if (s.anomaly.state.runOre >= runOreGoal) {
+            anomalyCheck(s, given); // done, and back in the player's own game
+            return offlineOre + advance(s, to, fullUntil, given);
+        }
         if (to < limit) return offlineOre;
         anomalyLeave(s); // out of time
         return offlineOre + advance(s, to, fullUntil, given);
@@ -709,6 +786,11 @@
     // goes in given as [source, parts] (and the key, for an Anomaly) (null for guests, who can't give anything), see
     // hbHubMinerApply(). In an Anomaly, the action is played in its game.
     function apply(s, action, given = null) {
+        if (action.type === 'skin') { // the player's own, in an Anomaly too
+            if (action.id !== null && !skinOpen(s, action.id)) return false;
+            s.skin = action.id;
+            return true;
+        }
         if (s.anomaly && action.type !== 'anomalyStart' && action.type !== 'anomalyQuit') {
             if (['skill', 'rip', 'donate'].includes(action.type)) return false;
             const result = apply(s.anomaly.state, action, null);
@@ -783,13 +865,16 @@
                     if (s.donatedToday + parts > CONFIG.engineOreParts || !canAfford(s, oreDonationCost(s, parts))) return false;
                     s.ore = Math.max(0, s.ore - oreDonationCost(s, parts));
                     s.donatedToday += parts;
-                    given.push([CONFIG.sourceOre, parts]);
+                    // Worth less in the later sections; what doesn't make a whole part waits in engineOreRest
+                    const quarters = (s.engineOreRest ?? 0) + parts * oreQuarters(s);
+                    s.engineOreRest = quarters % CONFIG.engineOreQuarters;
+                    if (quarters >= CONFIG.engineOreQuarters) give(s, given, [CONFIG.sourceOre, Math.floor(quarters / CONFIG.engineOreQuarters)]);
                     return true;
                 }
                 if (action.what === 'strange') {
                     if (s.strange < parts * CONFIG.engineStrangePart) return false;
                     s.strange -= parts * CONFIG.engineStrangePart;
-                    given.push([CONFIG.sourceStrange, parts]);
+                    give(s, given, [CONFIG.sourceStrange, parts]);
                     return true;
                 }
                 return false;
@@ -809,8 +894,27 @@
         }
     }
 
+    // Whether the player has an asteroid skin (hbHubMinerSkinOpen())
+    function skinOpen(s, id) {
+        const unlock = SKINS[id]?.unlock;
+        if (!unlock) return false;
+        if (unlock.anomaly) return anomalyDone(s, unlock.anomaly);
+        if (unlock.stage) return (s.engineStage ?? 0) >= unlock.stage;
+        if (unlock.ignition) return s.ignitionCrew === true;
+        return false;
+    }
+
+    // The most Anomalies finished in one stack (hbHubMinerBiggestStack())
+    const biggestStack = (s) => Math.max(0, ...Object.keys(s.anomalies).map((key) => key.split('+').length));
+
     function stat(s, name) {
+        if (name.startsWith('anomaly:')) return anomalyDone(s, name.slice(8)) ? 1 : 0;
+        if (name.startsWith('tier:')) return ANOMALY_IDS.filter((id) => ANOMALIES[id].tier === Number(name.slice(5)) && anomalyDone(s, id)).length;
         switch (name) {
+            case 'anomalies': return Object.keys(s.anomalies).length;
+            case 'stack': return biggestStack(s);
+            case 'lightHour': return s.anomalies.speedOfLight && s.anomalies.speedOfLight.best < CONFIG.lightHourMs ? 1 : 0;
+            case 'engineGiven': case 'shiftDays': case 'weeklies': return s[name] ?? 0;
             case 'rate': return rate(s, Infinity);
             case 'upgrades': return s.upgrades.length;
             case 'buildings': return sum(Object.values(s.buildings));
@@ -1686,6 +1790,12 @@
     // The asteroid's look (STAGES). When it changes, is-changing fades the colours into the new ones with a flash (see
     // spaceOreMiner.css); not the first time, when the page opens on it, or it would fade in from grey rock every time.
     function renderStage() {
+        // The skin picked (data-skin, see renderSkins()) goes over the stage's colours, apart from the flash
+        const skin = saveState.skin ?? '';
+        if ((asteroid.dataset.skin ?? '') !== skin) {
+            if (skin === '') delete asteroid.dataset.skin;
+            else asteroid.dataset.skin = skin;
+        }
         const stage = String(STAGES.findLastIndex((at) => state.runOre >= at));
         if (asteroid.dataset.stage === stage) return;
         if (asteroid.dataset.stage !== undefined) {
@@ -2111,7 +2221,9 @@
             ] : []),
             ['Buildings', format(sum(Object.values(saveState.buildings)))],
             ['Upgrades', saveState.upgrades.length + ' / ' + Object.keys(UPGRADES).length],
-            ...(Object.keys(saveState.anomalies).length > 0 ? [['Anomalies finished', Object.keys(saveState.anomalies).length + ' / ' + Object.keys(ANOMALIES).length]] : []),
+            ...(Object.keys(saveState.anomalies).length > 0 ? [['Anomalies finished', ANOMALY_IDS.filter((id) => saveState.anomalies[id]).length + ' / ' + ANOMALY_IDS.length]] : []),
+            ...(Object.keys(saveState.anomalies).length > 0 ? [['Biggest stack finished', String(biggestStack(saveState))]] : []),
+            ...(saveState.engineGiven > 0 ? [['Engine Parts given', format(saveState.engineGiven)]] : []),
             ['Playing since', formatDate(saveState.started)],
             ['This run started', formatDate(saveState.runStarted)],
         ];
@@ -2120,7 +2232,38 @@
             row.append(element('dt', '', name), element('dd', '', value));
             return row;
         }));
+        renderSkins();
     }
+
+    // The asteroid skins (CONFIG.skins), in the stats popup: the usual look and each skin, the ones not earned yet
+    // saying how to get them. Picking one is an action like any other (apply()), so it's saved with the game.
+    const skinList = root.querySelector('[data-miner-skins]');
+    const SKIN_UNLOCK_TEXT = (unlock) => (unlock.anomaly ? 'Finish ' + ANOMALIES[unlock.anomaly].name + '.'
+        : unlock.stage ? 'Comes with the Cosmic Engine\'s ' + ENGINE_STAGES[unlock.stage - 1].name + '.' : 'For everyone who gives parts to Ignition.');
+
+    function renderSkins() {
+        const buttons = [[null, { name: 'Usual', unlock: null }], ...Object.entries(SKINS)].map(([id, skin]) => {
+            const isOpen = id === null || skinOpen(saveState, id);
+            const button = element('button', 'miner-skin', skin.name);
+            button.type = 'button';
+            button.dataset.skin = id ?? '';
+            button.setAttribute('aria-pressed', String((saveState.skin ?? null) === id));
+            button.disabled = !isOpen;
+            button.title = isOpen ? (skin.moving ? 'Animated' : '') : SKIN_UNLOCK_TEXT(skin.unlock);
+            return button;
+        });
+        skinList.replaceChildren(...buttons);
+    }
+
+    skinList.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-skin]');
+        if (!button || button.disabled) return;
+        if (!act({ type: 'skin', id: button.dataset.skin || null })) return;
+        sound('buy');
+        renderSkins();
+        renderStage();
+        saveSoon();
+    });
 
     // ----- Messages in the corner
 
@@ -2401,6 +2544,21 @@
         ['Cosmic Engine news: the Foundation Seal holds. Everything mines a bit more, out of pride.', (s) => s.engineStage >= 5],
         ['Cosmic Engine news: the Reactor Ring spins up. Warp Jumps feel a little darker already.', (s) => s.engineStage >= 6],
         ['Cosmic Engine news: Coolant Loops installed. The machines say it\'s nice and chilly in there.', (s) => s.engineStage >= 7],
+        ['Cosmic Engine news: Power Grid online. Someone already plugged a kettle into it.', (s) => s.engineStage >= 9],
+        ['Cosmic Engine news: Thruster Mounts bolted on. Big Crunches now feel slightly crunchier.', (s) => s.engineStage >= 11],
+        // The Exhaust Nozzle's perk: lines that only come once it's done
+        ['Cosmic Engine news: the Exhaust Nozzle works. Neighbouring galaxies complain about the noise.', (s) => s.engineStage >= 14],
+        ['Engine Crew union demands a second Exhaust Nozzle "for symmetry".', (s) => s.engineStage >= 14],
+        ['The Cosmic Engine burps. Three nebulas are now slightly warmer.', (s) => s.engineStage >= 14],
+        ['Tourists queue for selfies with the Cosmic Engine. It does not smile back.', (s) => s.engineStage >= 14],
+        ['Engine inspector finds a Space Pickaxe Guy asleep in the Plasma Chamber. He says it\'s "cosy".', (s) => s.engineStage >= 14],
+        ['Cosmic Engine news: the Star Charts are in. Nobody can fold them back up.', (s) => s.engineStage >= 16],
+        ['Cosmic Engine news: the Bridge has a captain\'s chair now. Everyone wants to sit in it.', (s) => s.engineStage >= 19],
+        ['Cosmic Engine news: the Countdown Clock is ticking. Very loudly. All night.', (s) => s.engineStage >= 23],
+        ['Cosmic Engine news: Launch Clamps fitted. The Engine is straining to go somewhere.', (s) => s.engineStage >= 24],
+        ['IGNITION! The Cosmic Engine roars to life. The universe will need a moment.', (s) => s.engineStage >= 25],
+        ['Scientists confirm: stacking Anomalies is "not recommended". Miners stack them anyway.', (s) => s.engineStage >= 14],
+        ['Survivor of The Gauntlet asked how it was. Just stares into the distance.', (s) => s.engineStage >= 14],
     ];
     let lastNews = -1;
 
@@ -2473,6 +2631,9 @@
         achievement: [[784, 0, 0.18, 'square', 0.07], [988, 0.12, 0.18, 'square', 0.07], [1175, 0.24, 0.4, 'square', 0.07]],
         warp: [[80, 0, 1.2, 'sawtooth', 0.1, 2400], [120, 0.1, 1.1, 'sine', 0.15, 3000]],
         rip: [[1600, 0, 0.9, 'sawtooth', 0.08, 50], [220, 0.05, 0.5, 'square', 0.05, 1800], [60, 0.4, 1.1, 'sine', 0.18, 30]],
+        // The Cosmic Engine (once the Exhaust Nozzle is done): a clunk and a hiss when it gets parts, a roar for a stage
+        engine: [[90, 0, 0.18, 'square', 0.08, 60], [140, 0.1, 0.25, 'triangle', 0.1, 70], [2400, 0.15, 0.3, 'sawtooth', 0.02, 1200]],
+        engineStage: [[55, 0, 1.6, 'sawtooth', 0.12, 220], [110, 0.2, 1.4, 'square', 0.06, 440], [880, 0.9, 0.6, 'sine', 0.1, 1760]],
     };
 
     function sound(name) {
@@ -3112,6 +3273,7 @@
                 toast('starForge', 'The Cosmic Engine\'s ' + name + ' is finished! ' + perk.text, 'is-welcome', 9000);
                 engineNews = 'Cosmic Engine news: the ' + name + ' is finished. ' + perk.text;
             }
+            if (engineEffectsOn('news')) sound('engineStage');
             renderTicker();
         }
         engine = engine && next.number === engine.number ? { ...engine, ...next } : next;
@@ -3121,10 +3283,14 @@
     // Whether the player can give parts from their own game right now: not from inside an Anomaly
     const canGiveNow = () => canGive(saveState) && !saveState.anomaly;
 
+    // Whether the perk of 'type' that isn't a number (news, skin, title, ...) is done, so everyone has it
+    const engineEffectsOn = (type) => ENGINE_STAGES.slice(0, saveState?.engineStage ?? 0).some((stage) => stage.perk.type === type);
+
     // What was just given (apply()'s given): a toast for each Shift done (donations and Anomalies have their own), and
     // the parts on the bar straight away, until the next save says how far the Engine really is
     function announceGiven(given) {
         if (!given || given.length === 0) return;
+        if (engineEffectsOn('news')) sound('engine'); // the Exhaust Nozzle's Engine sounds
         for (const [source, parts] of given) {
             if (engine) {
                 engine.parts += parts;
@@ -3149,19 +3315,28 @@
         const stage = ENGINE_STAGES[index];
         const cost = engine.costs[index];
         engineNumbers.number.textContent = '#' + engine.number;
-        engineNumbers.name.textContent = isAllDone ? 'More stages coming soon' : stage.name;
-        engineNumbers.stage.textContent = isAllDone ? ENGINE_STAGES.length + ' of ' + CONFIG.engineStageTotal + ' stages done'
+        engineNumbers.name.textContent = isAllDone ? 'Ignited!' : stage.name;
+        engineNumbers.stage.textContent = isAllDone ? 'All ' + ENGINE_STAGES.length + ' stages done. Engine #' + (engine.number + 1) + ' is coming.'
             : 'Stage ' + (done + 1) + ' of ' + CONFIG.engineStageTotal + ', ' + CONFIG.engineSections[stage.section];
         engineNumbers.parts.textContent = format(isAllDone ? cost : engine.parts);
         engineNumbers.cost.textContent = format(cost);
         engineNumbers.total.textContent = format(engine.total);
         setProgress(engineProgress, isAllDone ? 1 : engine.parts / cost);
-        engineLock.hidden = isAllDone || !stage.lock;
-        if (!engineLock.hidden) {
+        let lockText = '';
+        if (!isAllDone && stage.lock) {
             const lock = engine.lock ?? { have: 0, need: stage.lock.count };
-            engineLock.textContent = 'Lock: ' + stage.lock.text + ' (' + format(Math.min(lock.have, lock.need)) + ' / ' + format(lock.need) + ').'
+            lockText = 'Lock: ' + stage.lock.text + ' (' + format(Math.min(lock.have, lock.need)) + ' / ' + format(lock.need) + ').'
                 + (engine.parts >= cost ? ' The stage is full and finishes once this is met.' : '');
+        } else if (!isAllDone && engine.countdown > 0) { // Ignition (hbHubMinerEngineDrain())
+            lockText = 'Time left to fill it: ' + formatDuration(Math.max(0, engine.countdown - serverNow())) + '. If it isn\'t full by then, '
+                + (1 - CONFIG.engineDrain) * 100 + '% of its parts are lost and the time starts over.';
+        } else if (isAllDone && engine.ignited > 0) {
+            const left = engine.ignited + CONFIG.ignitionMs - serverNow();
+            lockText = left > 0 ? 'Everything mines ' + CONFIG.ignitionTimes + ' times as much for another ' + formatDuration(left) + '.'
+                : 'The Engine was ignited ' + formatDate(engine.ignited) + '.';
         }
+        engineLock.textContent = lockText;
+        engineLock.hidden = lockText === '';
         engineView.classList.toggle('is-ready', canGiveNow());
         renderEngineGive();
         renderShifts();
@@ -3174,7 +3349,7 @@
         if (IS_GUEST) note = 'Only players with an account can give the Engine parts. Sign up to help build it!';
         else if (saveState.warps < 1) note = 'Make your first Warp Jump to start giving the Engine parts.';
         else if (!saveState.engineOpen) {
-            note = engine.done >= ENGINE_STAGES.length ? 'Every stage there is so far is done. More are coming. Parts from Anomalies are kept for them.'
+            note = engine.done >= ENGINE_STAGES.length ? 'The Engine is ignited! Engine #' + (engine.number + 1) + ' is coming. Parts from Anomalies are kept for it.'
                 : 'The Engine is full and waiting for its lock, so it only takes parts from Anomalies until then.';
         } else if (saveState.anomaly) note = 'You\'re in an Anomaly: leave it, or finish it, to give parts from your own game.';
         engineGiveNote.textContent = note;
@@ -3185,7 +3360,9 @@
         const left = CONFIG.engineOreParts - donated;
         const oreCost = oreDonationCost({ donatedToday: donated }, 1);
         engineNumbers.oreCost.textContent = format(oreCost);
-        engineNumbers.oreLeft.textContent = left > 0 ? left + ' of ' + CONFIG.engineOreParts + ' left today' : 'No more today';
+        const share = oreQuarters(saveState) / CONFIG.engineOreQuarters; // less in the later sections
+        engineNumbers.oreLeft.textContent = (left > 0 ? left + ' of ' + CONFIG.engineOreParts + ' left today' : 'No more today')
+            + (share < 1 ? '. In this section a part from ore counts as ' + (share === 0.5 ? 'half' : 'a quarter') + ' a part.' : '');
         oreDonateButton.disabled = !isOpen || left < 1 || !canAfford(saveState, oreCost);
 
         const most = Math.floor(saveState.strange / CONFIG.engineStrangePart);
@@ -3255,8 +3432,6 @@
             if (stage.lock) item.append(element('p', 'miner-engine-stage-lock', 'Lock: ' + stage.lock.text + '.'));
             stages.push(item);
         });
-        stages.push(element('li', 'miner-engine-section is-later', 'Stages ' + (ENGINE_STAGES.length + 1) + ' to ' + CONFIG.engineStageTotal
-            + ' come with the hardest Anomalies.'));
         engineStageList.replaceChildren(...stages);
 
         engineNumbers.mine.hidden = IS_GUEST || engine.mine === undefined;
@@ -3287,9 +3462,11 @@
     oreDonateButton.addEventListener('click', () => {
         const donated = saveState.engineDay === today() ? saveState.donatedToday : 0;
         const cost = oreDonationCost({ donatedToday: donated }, 1);
+        const share = oreQuarters(saveState) / CONFIG.engineOreQuarters;
         if (!act({ type: 'donate', what: 'ore', parts: 1 })) return;
         sound('buy');
-        toast('orePile', 'You gave the Cosmic Engine 1 part for ' + format(cost) + ' ore. Thanks!');
+        toast('orePile', 'You gave the Cosmic Engine ' + (share === 1 ? '1 part' : share === 0.5 ? 'half a part' : 'a quarter of a part')
+            + ' for ' + format(cost) + ' ore. Thanks!');
         renderEngine(); // the parts are on the bar already, see announceGiven()
     });
     strangeDonateButton.addEventListener('click', () => {
@@ -3318,6 +3495,12 @@
     const anomalyDialogTitle = root.querySelector('[data-miner-anomaly-dialog-title]');
     const anomalyDialogText = root.querySelector('[data-miner-anomaly-dialog-text]');
     const anomalyDialogConfirm = root.querySelector('[data-miner-anomaly-confirm]');
+    const weeklyText = root.querySelector('[data-miner-weekly-text]');
+    const weeklyBest = root.querySelector('[data-miner-weekly-best]');
+    const weeklyStart = root.querySelector('[data-miner-weekly-start]');
+    const stackPicks = root.querySelector('[data-miner-stack-picks]');
+    const stackInfo = root.querySelector('[data-miner-stack-text]');
+    const stackStart = root.querySelector('[data-miner-stack-start]');
     const TIER_NUMERALS = { 1: 'I', 2: 'II', 3: 'III' };
     const TIER_UNLOCK_TEXT = { rip: 'Opens with your first Big Rip.', theory: 'Opens once you\'ve learned the Theory of Everything.' };
 
@@ -3366,7 +3549,7 @@
         if (record && record.done > (was.record?.done ?? 0)) {
             const ms = saveState.tick - was.started;
             const isBest = was.record === null || ms < was.record.best;
-            const full = anomalyParts(anomalyMods(was.key));
+            const full = anomalyParts(saveState, anomalyMods(was.key), anomalyKey(weeklyMods(weekOf(saveState.tick))) === was.key);
             const parts = isBest ? full : Math.floor(full * CONFIG.anomalyRepeat);
             sound('achievement');
             toast(ANOMALIES[anomalyMods(was.key)[0]].icon, name + ' finished in ' + formatClock(ms)
@@ -3398,27 +3581,86 @@
         const time = anomaly.mods.includes('speedOfLight')
             ? formatClock(Math.max(0, anomaly.started + CONFIG.lightMs - state.tick)) + ' left'
             : formatClock(state.tick - anomaly.started);
-        anomalyBannerInfo.textContent = time + ' · ' + format(state.antimatterEarned) + ' of ' + format(anomaly.goal) + ' Antimatter'
+        const stat = anomalyStat(anomaly.mods);
+        anomalyBannerInfo.textContent = time + ' · ' + format(state[stat]) + ' of ' + format(anomaly.goal) + ' ' + GOAL_STAT_TEXT[stat]
             + (isNoAuto() ? ' · Autopilot and Auto Crunch are off in here' : '');
+    }
+
+    // What an Anomaly's goal counts, in words (anomalyStat())
+    const GOAL_STAT_TEXT = { antimatterEarned: 'Antimatter', runOre: 'ore this run', darkEarned: 'Dark Matter' };
+    function goalText(mods) {
+        const goal = format(anomalyGoal(mods));
+        const stat = anomalyStat(mods);
+        return stat === 'runOre' ? 'mine ' + goal + ' ore in one run' : 'earn ' + goal + ' ' + GOAL_STAT_TEXT[stat] + ' in it';
+    }
+
+    // The parts an Anomaly or stack is worth now: in full the first time and for a new best time, and twice as many as
+    // the weekly one this week
+    const partsNow = (mods) => anomalyParts(saveState, mods, anomalyKey(weeklyMods(weekOf(state.tick))) === anomalyKey(mods));
+
+    // Whether the player can go into these Anomalies now: in none already, and every one's tier open
+    const canStart = (mods) => !saveState.anomaly && mods.length > 0 && mods.every((id) => anomalyTierOpen(saveState, ANOMALIES[id].tier));
+
+    // This week's Anomaly: what it is, its goal and parts, and the player's best time at it
+    function renderWeekly() {
+        const mods = weeklyMods(weekOf(state.tick));
+        const key = anomalyKey(mods);
+        const record = saveState.anomalies[key] ?? null;
+        weeklyText.textContent = anomalyName(key) + ': ' + mods.map((id) => ANOMALIES[id].text).join(' ') + ' Goal: ' + goalText(mods) + ', for '
+            + partsText(partsNow(mods)) + ' (' + CONFIG.anomalyWeekly + ' times as many as usual, this week only).';
+        weeklyBest.textContent = record ? 'Your best time at it: ' + formatClock(record.best) + '.' : 'You haven\'t finished it yet.';
+        weeklyStart.dataset.anomalyStart = key;
+        weeklyStart.disabled = !canStart(mods);
+    }
+
+    // The stack builder: a switch for each stackable Anomaly, and the goal and parts of the ones picked
+    let stackPicked = [];
+    function renderStack() {
+        const ids = ANOMALY_IDS.filter((id) => ANOMALIES[id].tier <= CONFIG.anomalyStackTier);
+        if (stackPicks.childElementCount === 0) {
+            stackPicks.replaceChildren(...ids.map((id) => {
+                const button = element('button', 'miner-stack-pick', ANOMALIES[id].name);
+                button.type = 'button';
+                button.dataset.stackPick = id;
+                return button;
+            }));
+        }
+        stackPicked = stackPicked.filter((id) => anomalyTierOpen(saveState, ANOMALIES[id].tier));
+        for (const button of stackPicks.children) {
+            button.setAttribute('aria-pressed', String(stackPicked.includes(button.dataset.stackPick)));
+            button.disabled = !anomalyTierOpen(saveState, ANOMALIES[button.dataset.stackPick].tier);
+        }
+        const mods = ids.filter((id) => stackPicked.includes(id));
+        const record = mods.length > 1 ? saveState.anomalies[anomalyKey(mods)] ?? null : null;
+        stackInfo.textContent = mods.length < 2 ? 'Pick at least two.'
+            : anomalyName(anomalyKey(mods)) + '. Goal: ' + goalText(mods) + ', for ' + partsText(partsNow(mods)) + '.'
+                + (record ? ' Your best time at it: ' + formatClock(record.best) + '.' : '');
+        stackStart.dataset.anomalyStart = anomalyKey(mods);
+        stackStart.disabled = mods.length < 2 || !canStart(mods);
     }
 
     // The Anomalies view: every Anomaly by tier, with its rule, goal, parts, best time and badge, built again only
     // when something in it changes
     function renderAnomalies() {
-        const finished = Object.keys(saveState.anomalies).length;
-        anomaliesCount.textContent = finished + ' of ' + Object.keys(ANOMALIES).length;
+        const finished = ANOMALY_IDS.filter((id) => saveState.anomalies[id]).length; // each on its own, not the stacks
+        anomaliesCount.textContent = finished + ' of ' + ANOMALY_IDS.length;
         anomaliesNow.textContent = saveState.anomaly ? 'You\'re in ' + anomalyName(anomalyKey(saveState.anomaly.mods)) + ' right now.' : '';
+        const week = weekOf(state.tick);
         const key = JSON.stringify(saveState.anomalies) + '|' + (saveState.anomaly ? anomalyKey(saveState.anomaly.mods) : '')
-            + '|' + Object.keys(ANOMALY_TIERS).map((tier) => anomalyTierOpen(saveState, Number(tier))).join();
+            + '|' + Object.keys(ANOMALY_TIERS).map((tier) => anomalyTierOpen(saveState, Number(tier))).join() + '|' + week + '|' + saveState.engineStage
+            + '|' + stackPicked.join();
         if (key === anomaliesKey) return;
         anomaliesKey = key;
+        renderWeekly();
+        renderStack();
 
         anomalyTierList.replaceChildren(...Object.entries(ANOMALY_TIERS).map(([tierText, tier]) => {
             const tierNumber = Number(tierText);
             const isOpen = anomalyTierOpen(saveState, tierNumber);
             const box = element('section', 'miner-anomaly-tier' + (isOpen ? '' : ' is-locked'));
             box.append(element('h3', 'miner-store-title', 'Tier ' + TIER_NUMERALS[tierNumber] + ': ' + tier.name),
-                element('p', 'miner-engine-small', partsText(tier.parts) + ' each.'
+                element('p', 'miner-engine-small', (tier.fresh ? 'These start you from nothing: no skills, no Strange Matter and no upgrades. They don\'t stack.'
+                    : partsText(tier.parts) + ' each.')
                     + (tier.noAuto ? ' Autopilot and Auto Crunch are off in these.' : '')
                     + (isOpen ? '' : ' ' + TIER_UNLOCK_TEXT[tier.unlock])));
             const list = element('ul', 'miner-anomaly-list');
@@ -3430,7 +3672,7 @@
                 const main = element('div', 'miner-anomaly-main');
                 main.append(element('span', 'miner-anomaly-name', anomaly.name),
                     element('span', 'miner-anomaly-text', anomaly.text),
-                    element('span', 'miner-anomaly-goal', 'Goal: earn ' + format(anomaly.goal) + ' Antimatter in it.'),
+                    element('span', 'miner-anomaly-goal', 'Goal: ' + goalText([id]) + (tier.fresh ? '. ' + partsText(partsNow([id])) + '.' : '.')),
                     element('span', 'miner-anomaly-best', record ? 'Badge earned. Best time ' + formatClock(record.best) + ', finished '
                         + (record.done === 1 ? 'once' : record.done + ' times') + '.' : 'Not finished yet.'));
                 const button = element('button', 'casino-btn' + (isIn ? '' : ' casino-btn-primary'), isIn ? 'You\'re in it' : record ? 'Go again' : 'Go in');
@@ -3448,20 +3690,32 @@
         }));
     }
 
-    anomalyTierList.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-anomaly-start]');
+    // Asks before going into an Anomaly or stack (its key in the button's data-anomaly-start)
+    function askStart(button) {
         if (!button || button.disabled) return;
-        const id = button.dataset.anomalyStart;
-        const anomaly = ANOMALIES[id];
-        const tier = ANOMALY_TIERS[anomaly.tier];
-        anomalyAsked = id;
-        anomalyDialogTitle.textContent = 'Go into ' + anomaly.name + '?';
-        anomalyDialogText.textContent = anomaly.text + ' Earn ' + format(anomaly.goal) + ' Antimatter in there to finish it. You start with your'
-            + ' skills and Strange Matter, but no Dark Matter or Antimatter'
-            + (tier.noAuto ? ', and Autopilot and Auto Crunch are off' : '') + '. Your own game waits and mines as if you were away until'
-            + ' you\'re back, and you can leave whenever you like.';
+        const key = button.dataset.anomalyStart;
+        const mods = anomalyMods(key);
+        if (!mods) return;
+        const tiers = mods.map((id) => ANOMALY_TIERS[ANOMALIES[id].tier]);
+        anomalyAsked = key;
+        anomalyDialogTitle.textContent = 'Go into ' + anomalyName(key) + '?';
+        anomalyDialogText.textContent = mods.map((id) => ANOMALIES[id].text).join(' ') + ' To finish it, ' + goalText(mods) + '. '
+            + (tiers[0].fresh ? 'You start from nothing: no skills, no Strange Matter and no upgrades'
+                : 'You start with your skills and Strange Matter, but no Dark Matter or Antimatter'
+                    + (tiers.some((tier) => tier.noAuto) ? ', and Autopilot and Auto Crunch are off' : ''))
+            + '. Your own game waits and mines as if you were away until you\'re back, and you can leave whenever you like.';
         anomalyDialogConfirm.textContent = 'Go in';
         anomalyDialog.showModal();
+    }
+    anomalyTierList.addEventListener('click', (event) => askStart(event.target.closest('[data-anomaly-start]')));
+    weeklyStart.addEventListener('click', () => askStart(weeklyStart));
+    stackStart.addEventListener('click', () => askStart(stackStart));
+    stackPicks.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-stack-pick]');
+        if (!button || button.disabled) return;
+        const id = button.dataset.stackPick;
+        stackPicked = stackPicked.includes(id) ? stackPicked.filter((other) => other !== id) : [...stackPicked, id];
+        renderStack();
     });
     root.querySelector('[data-miner-anomaly-leave]').addEventListener('click', () => {
         if (!saveState?.anomaly) return;
@@ -3477,10 +3731,11 @@
         if (anomalyAsked === 'leave') {
             if (!act({ type: 'anomalyQuit' })) return;
         } else {
-            if (!act({ type: 'anomalyStart', mods: [anomalyAsked] })) return;
+            const mods = anomalyMods(anomalyAsked);
+            if (!act({ type: 'anomalyStart', mods })) return;
             sound('rip');
             shake('is-ripping');
-            toast(ANOMALIES[anomalyAsked].icon, 'Welcome to ' + ANOMALIES[anomalyAsked].name + '. ' + ANOMALIES[anomalyAsked].text, 'is-comet', 7000);
+            toast(ANOMALIES[mods[0]].icon, 'Welcome to ' + anomalyName(anomalyAsked) + '. ' + mods.map((id) => ANOMALIES[id].text).join(' '), 'is-comet', 7000);
             if (root.dataset.view !== 'ore') {
                 history.pushState(null, '', menu.querySelector('[data-miner-view-link="ore"]').href);
                 showView('ore');

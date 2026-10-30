@@ -664,6 +664,21 @@ CREATE TABLE `HBHub-WordleWords` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-MinerAnomalyTimes`
+--
+
+CREATE TABLE `HBHub-MinerAnomalyTimes` (
+  `timeUserId` int UNSIGNED NOT NULL,
+  `timeAnomaly` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The Anomaly, or stack of them joined with +, as in contributionAnomaly',
+  `timeWeek` int UNSIGNED NOT NULL DEFAULT 0 COMMENT '0 for every run of it; otherwise the week (hbHubMinerWeek()) it was finished in as that week''s weekly Anomaly',
+  `timeBest` int UNSIGNED NOT NULL COMMENT 'The fastest run, in ms',
+  `timeDone` int UNSIGNED NOT NULL DEFAULT 1 COMMENT 'How many times it was finished',
+  `timeUpdatedTimestamp` datetime NOT NULL COMMENT 'UTC, the last time it was finished'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Ore Mining Inc.: best Anomaly times for the leaderboard and the weekly Anomaly (src/assets/php/games/spaceOreMiner/engine.php). Shown to everyone in the game''s leaderboard';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-MinerContributions`
 --
 
@@ -730,6 +745,7 @@ CREATE TABLE `HBHub-MinerSaves` (
   `saveWarps` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: Warp Jumps made',
   `saveClicks` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: clicks on the asteroid ever',
   `saveAchievements` smallint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard: achievements done',
+  `saveSkills` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'For the leaderboard''s Rising tab: skills learned in the skill tree',
   `saveStartTimestamp` datetime NOT NULL COMMENT 'UTC, the first save',
   `saveUpdatedTimestamp` datetime NOT NULL COMMENT 'UTC, the last save',
   `saveRateCount` smallint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Saves since saveRateTimestamp, so no more than HBHUB_MINER_SAVES_MAX are made in HBHUB_MINER_SAVES_SECONDS',
@@ -1205,6 +1221,13 @@ ALTER TABLE `HBHub-WordleGames`
 ALTER TABLE `HBHub-WordleWords`
   ADD PRIMARY KEY (`wordLanguage`,`wordDate`),
   ADD KEY `languageWord` (`wordLanguage`,`wordText`);
+
+--
+-- Indexes for table `HBHub-MinerAnomalyTimes`
+--
+ALTER TABLE `HBHub-MinerAnomalyTimes`
+  ADD PRIMARY KEY (`timeUserId`,`timeAnomaly`,`timeWeek`),
+  ADD KEY `weekAnomaly` (`timeWeek`,`timeAnomaly`,`timeBest`);
 
 --
 -- Indexes for table `HBHub-MinerContributions`
@@ -1730,6 +1753,12 @@ ALTER TABLE `HBHub-Notifications`
 --
 ALTER TABLE `HBHub-WordleGames`
   ADD CONSTRAINT `fk_wordlegames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-MinerAnomalyTimes`
+--
+ALTER TABLE `HBHub-MinerAnomalyTimes`
+  ADD CONSTRAINT `fk_mineranomalytimes_user` FOREIGN KEY (`timeUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-MinerContributions`

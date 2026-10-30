@@ -112,6 +112,7 @@ function hbHubDeleteAccount(PDO $db, int $userId): void
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-LoginDevices` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-MinerSaves` WHERE userId = ?')->execute([$userId]);
+        $db->prepare('DELETE FROM `HBHub-MinerAnomalyTimes` WHERE timeUserId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-MinerCrashReports` WHERE crashReportUserId = ?')->execute([$userId]);
         if ($avatarId !== null) {
             $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$avatarId]);

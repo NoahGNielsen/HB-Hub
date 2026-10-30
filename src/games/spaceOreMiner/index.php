@@ -502,13 +502,32 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 </div>
             </div>
             <p class="casino-hint miner-prestige-about">
-                An Anomaly is a universe of its own with one rule changed. You go in with your skill tree and your Strange
-                Matter, but no Dark Matter or Antimatter, and finish it by earning its goal of Antimatter in there. While
-                you're in one, your own game waits and mines as if you were away. You can leave whenever you like, but
-                you'll start over next time. Finishing one gives the Cosmic Engine parts: all of them the first time and
-                whenever you beat your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise. What you do in there
-                doesn't count towards your stats, achievements or the leaderboard.
+                An Anomaly is a universe of its own with one rule changed. In Tiers I and II you go in with your skill tree
+                and your Strange Matter, but no Dark Matter or Antimatter, and finish it by earning its goal of Antimatter in
+                there. Tier III starts you from nothing: no skills, no Strange Matter and no upgrades. While you're in one,
+                your own game waits and mines as if you were away. You can leave whenever you like, but you'll start over
+                next time. Finishing one gives the Cosmic Engine parts: all of them the first time and whenever you beat
+                your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise. What you do in there doesn't count
+                towards your stats or the leaderboard, but finishing them has achievements of its own.
             </p>
+            <!-- This week's Anomaly and the stack builder, filled in by spaceOreMiner.js (renderWeekly(), renderStack()) -->
+            <section class="miner-anomaly-tier miner-anomaly-weekly" aria-labelledby="miner-weekly-title">
+                <h3 class="miner-store-title" id="miner-weekly-title">This week's Anomaly</h3>
+                <p class="miner-engine-small" data-miner-weekly-text></p>
+                <p class="miner-engine-small" data-miner-weekly-best></p>
+                <button type="button" class="casino-btn casino-btn-primary" data-miner-weekly-start>Go in</button>
+                <a class="casino-btn" href="/games/ore-mining-inc/leaderboard?board=weekly">Fastest this week</a>
+            </section>
+            <section class="miner-anomaly-tier miner-anomaly-stack" aria-labelledby="miner-stack-title">
+                <h3 class="miner-store-title" id="miner-stack-title">Stack Anomalies</h3>
+                <p class="miner-engine-small">
+                    Play Tier I and II Anomalies together, with all their rules at once. The goal is the lowest of theirs,
+                    and the parts are theirs added up, times <?= HBHUB_MINER_ANOMALY_STACK ?> for every one after the first.
+                </p>
+                <div class="miner-stack-picks" data-miner-stack-picks></div>
+                <p class="miner-engine-small" data-miner-stack-text></p>
+                <button type="button" class="casino-btn casino-btn-primary" data-miner-stack-start disabled>Go in</button>
+            </section>
             <div class="miner-anomaly-tiers" data-miner-anomaly-tiers></div>
         </section>
 
@@ -523,6 +542,9 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                     <button type="button" class="miner-popup-close" data-miner-close aria-label="Close">&times;</button>
                 </div>
                 <dl class="miner-numbers" data-miner-stats></dl>
+                <!-- Asteroid skins (HBHUB_MINER_SKINS), filled in by spaceOreMiner.js (renderSkins()) -->
+                <h3 class="miner-store-title">Asteroid skin</h3>
+                <div class="miner-skins" data-miner-skins></div>
             </div>
         </dialog>
 

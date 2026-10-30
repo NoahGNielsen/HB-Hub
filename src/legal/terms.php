@@ -217,8 +217,10 @@ const HBHUB_TERMS_UPDATED = '30 October 2026';
                                 Ore Mining Inc.'s Anomalies are challenge runs inside your game. While you're in one, your own
                                 game mines as if you were away, and leaving one before it's finished loses that run. Where an
                                 Anomaly turns Autopilot and Auto Crunch off, using a script or anything else to do their job
-                                counts as cheating. What you do in an Anomaly doesn't count towards your stats, achievements or
-                                the leaderboard.
+                                counts as cheating. What you do in an Anomaly doesn't count towards your stats or the
+                                leaderboard, but your best times are shown on the leaderboard's Anomaly tabs, and best times or
+                                titles earned by cheating can be removed. The Cosmic Engine's last stage, Ignition, has to be
+                                filled in time or loses part of what's in it, and nobody can claim back what's lost that way.
                             </li>
                             <li>
                                 The free games at <a href="/play">/play</a> can be played without an account, and these terms

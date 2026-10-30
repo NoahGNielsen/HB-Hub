@@ -3805,3 +3805,132 @@
 @keyframes miner-fade {
   to { opacity: 0; }
 }
+
+/* ----- Cosmic Engine phase 3 (30 Oct 2026) */
+
+/* Asteroid skins (HBHUB_MINER_SKINS, picked in the stats popup): data-skin on the asteroid takes the place of the
+   stage's colours. Later in the file than the stages, so it wins. The moving ones fade their colours round in a loop
+   (they're registered colours, see @property above); with less motion they hold still on their first colours. */
+.miner-asteroid[data-skin="entropy"] { --rock-light: #ffd9a8; --rock: #a8613a; --rock-dark: #2b1408; --rock-glow: rgba(255, 140, 70, 0.25); }
+.miner-asteroid[data-skin="minimalist"] { --rock-light: #ffffff; --rock: #e3e3e3; --rock-dark: #9a9a9a; --rock-glow: rgba(255, 255, 255, 0.2); }
+.miner-asteroid[data-skin="oneTrack"] { --rock-light: #d4ffd8; --rock: #33b84a; --rock-dark: #0d3d18; --rock-glow: rgba(60, 220, 90, 0.3); }
+.miner-asteroid[data-skin="unstableVacuum"] { --rock-light: #e6d4ff; --rock: #6a2ad0; --rock-dark: #12052e; --rock-glow: rgba(140, 70, 255, 0.4); }
+.miner-asteroid[data-skin="speedOfLight"] { --rock-light: #ffd0c8; --rock: #e0303a; --rock-dark: #3d0410; --rock-glow: rgba(255, 50, 60, 0.4); }
+.miner-asteroid[data-skin="engineSteel"] { --rock-light: #eef3f7; --rock: #8b99a6; --rock-dark: #2a333c; --rock-glow: rgba(190, 215, 235, 0.25); }
+
+.miner-asteroid[data-skin="nakedSingularity"] { --rock-light: #8f7bff; --rock: #0b0618; --rock-dark: #000000; --rock-glow: rgba(255, 255, 255, 0.6); }
+.miner-asteroid[data-skin="ironUniverse"] { --rock-light: #ffe0b0; --rock: #8a4b2a; --rock-dark: #241008; --rock-glow: rgba(255, 120, 30, 0.4); }
+.miner-asteroid[data-skin="handsOnly"] { --rock-light: #fff3d6; --rock: #e8b88a; --rock-dark: #6b3f22; --rock-glow: rgba(255, 210, 150, 0.4); }
+.miner-asteroid[data-skin="gauntlet"] { --rock-light: #fff1a0; --rock: #ff7a1a; --rock-dark: #4a0a00; --rock-glow: rgba(255, 90, 0, 0.6); }
+.miner-asteroid[data-skin="engineCore"] { --rock-light: #e0ffff; --rock: #2fd4e8; --rock-dark: #0a2a4a; --rock-glow: rgba(60, 230, 255, 0.55); }
+.miner-asteroid[data-skin="ignition"] { --rock-light: #ffffff; --rock: #ffd23a; --rock-dark: #c0200a; --rock-glow: rgba(255, 200, 60, 0.7); }
+
+.miner-asteroid:is([data-skin="nakedSingularity"], [data-skin="ironUniverse"], [data-skin="handsOnly"], [data-skin="gauntlet"],
+  [data-skin="engineCore"], [data-skin="ignition"]) {
+  animation: var(--skin-animation);
+}
+
+.miner-asteroid:is([data-skin="nakedSingularity"], [data-skin="ironUniverse"], [data-skin="handsOnly"], [data-skin="gauntlet"],
+  [data-skin="engineCore"], [data-skin="ignition"]).is-hit {
+  animation: miner-hit 0.15s ease, var(--skin-animation);
+}
+
+.miner-asteroid:is([data-skin="nakedSingularity"], [data-skin="ironUniverse"], [data-skin="handsOnly"], [data-skin="gauntlet"],
+  [data-skin="engineCore"], [data-skin="ignition"]).is-hit-again {
+  animation: miner-hit-again 0.15s ease, var(--skin-animation);
+}
+
+.miner-asteroid[data-skin="nakedSingularity"] { --skin-animation: miner-skin-singularity 4s ease-in-out infinite alternate; }
+.miner-asteroid[data-skin="ironUniverse"] { --skin-animation: miner-skin-iron 3s ease-in-out infinite alternate; }
+.miner-asteroid[data-skin="handsOnly"] { --skin-animation: miner-skin-hands 5s ease-in-out infinite alternate; }
+.miner-asteroid[data-skin="gauntlet"] { --skin-animation: miner-skin-gauntlet 1.6s ease-in-out infinite alternate; }
+.miner-asteroid[data-skin="engineCore"] { --skin-animation: miner-skin-core 2.4s ease-in-out infinite alternate; }
+.miner-asteroid[data-skin="ignition"] { --skin-animation: miner-skin-ignition 1.2s ease-in-out infinite alternate; }
+
+/* A black hole whose light ring flares and dims */
+@keyframes miner-skin-singularity {
+  to { --rock-light: #ff9ad8; --rock-glow: rgba(140, 110, 255, 0.85); }
+}
+
+/* Iron glowing hotter, then cooling */
+@keyframes miner-skin-iron {
+  to { --rock-light: #fff6d0; --rock: #d0682a; --rock-glow: rgba(255, 160, 60, 0.7); }
+}
+
+/* Warm skin tones going pink, like a hand gripping */
+@keyframes miner-skin-hands {
+  to { --rock-light: #ffe0ec; --rock: #e88aa8; --rock-glow: rgba(255, 150, 190, 0.5); }
+}
+
+/* Fire, flickering fast */
+@keyframes miner-skin-gauntlet {
+  to { --rock-light: #ffffff; --rock: #ffb21a; --rock-dark: #8a1000; --rock-glow: rgba(255, 50, 0, 0.9); }
+}
+
+/* The Engine's core, pulsing cyan to violet */
+@keyframes miner-skin-core {
+  to { --rock-light: #f4e0ff; --rock: #9a5cff; --rock-dark: #1a0a4a; --rock-glow: rgba(160, 100, 255, 0.75); }
+}
+
+/* Ignition: white-hot yellow to rocket-flame red */
+@keyframes miner-skin-ignition {
+  to { --rock-light: #fff4c0; --rock: #ff5a1a; --rock-dark: #5a0a00; --rock-glow: rgba(255, 90, 20, 0.9); }
+}
+
+/* The skin picker in the stats popup */
+.miner-skins,
+.miner-stack-picks,
+.miner-board-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+
+.miner-skin,
+.miner-stack-pick {
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  border-radius: 999px;
+  background: var(--background);
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.miner-skin[aria-pressed="true"],
+.miner-stack-pick[aria-pressed="true"] {
+  border-color: var(--view, currentColor);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--view, currentColor) 35%, transparent);
+  font-weight: 700;
+}
+
+.miner-skin:disabled,
+.miner-stack-pick:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The weekly Anomaly and the stack builder, above the tiers */
+.miner-anomaly-weekly,
+.miner-anomaly-stack {
+  margin-bottom: 12px;
+}
+
+.miner-anomaly-weekly .casino-btn,
+.miner-anomaly-stack .casino-btn {
+  margin-top: 6px;
+}
+
+/* A player's title on the leaderboard, small under their name */
+.miner-board-title {
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .miner-asteroid[data-skin],
+  .miner-asteroid[data-skin]:is(.is-hit, .is-hit-again) {
+    animation: none;
+  }
+}

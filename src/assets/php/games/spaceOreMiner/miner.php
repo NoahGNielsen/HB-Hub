@@ -92,6 +92,7 @@ const HBHUB_MINER_SALT_DIAMOND = 4;
 const HBHUB_MINER_SALT_LUCKY = 5;
 const HBHUB_MINER_SALT_SHIFT = 6; // not the save's luck: the seed is 0, so everyone gets the same Shifts (hbHubMinerShiftTasks())
 const HBHUB_MINER_SALT_ANOMALY = 7; // an Anomaly's own seed, from the save's and when it started (hbHubMinerAnomalyStart())
+const HBHUB_MINER_SALT_WEEKLY = 8; // not the save's luck either: the week's Anomaly is the same for everyone (hbHubMinerWeeklyMods())
 
 // Every 'icon' below (and in the upgrades after it) is the name of a drawn icon in assets/images/spaceOreMiner/icons.svg.
 // The buildings, cheapest first. 'rate' is ore per second for each one before upgrades, 'upgrades' their six
@@ -478,6 +479,23 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'skill1' => ['name' => 'Strange Student', 'text' => 'Learn a skill in the skill tree.', 'stat' => 'skills', 'at' => 1],
     'skill25' => ['name' => 'Halfway Strange', 'text' => 'Learn 25 skills.', 'stat' => 'skills', 'at' => 25],
     'skillAll' => ['name' => 'Know-It-All', 'text' => 'Learn every skill in the skill tree.', 'stat' => 'allSkills', 'at' => 1],
+    // The endgame: Anomalies (alone or in a stack counts, see hbHubMinerAnomalyDone()) and the Cosmic Engine
+    'anomaly1' => ['name' => 'Something\'s Off', 'text' => 'Finish an Anomaly.', 'stat' => 'anomalies', 'at' => 1],
+    'tier1All' => ['name' => 'Ripple Effect', 'text' => 'Finish every Tier I Anomaly.', 'stat' => 'tier:1', 'at' => 4],
+    'tier2All' => ['name' => 'Torn to Pieces', 'text' => 'Finish every Tier II Anomaly.', 'stat' => 'tier:2', 'at' => 5],
+    'nakedSingularity' => ['name' => 'Nothing to Hide', 'text' => 'Finish Naked Singularity.', 'stat' => 'anomaly:nakedSingularity', 'at' => 1],
+    'ironUniverse' => ['name' => 'Iron Will', 'text' => 'Finish Iron Universe.', 'stat' => 'anomaly:ironUniverse', 'at' => 1],
+    'handsOnly' => ['name' => 'Hands Down', 'text' => 'Finish Hands Only.', 'stat' => 'anomaly:handsOnly', 'at' => 1],
+    'gauntlet' => ['name' => 'Gauntlet Runner', 'text' => 'Finish The Gauntlet.', 'stat' => 'anomaly:gauntlet', 'at' => 1],
+    'tier3All' => ['name' => 'Singular', 'text' => 'Finish every Tier III Anomaly.', 'stat' => 'tier:3', 'at' => 4],
+    'stack2' => ['name' => 'Double Trouble', 'text' => 'Finish a stack of 2 Anomalies.', 'stat' => 'stack', 'at' => 2],
+    'stack4' => ['name' => 'Four of a Kind', 'text' => 'Finish a stack of 4 Anomalies.', 'stat' => 'stack', 'at' => 4],
+    'stack6' => ['name' => 'Stacked Deck', 'text' => 'Finish a stack of 6 Anomalies.', 'stat' => 'stack', 'at' => 6],
+    'weekly1' => ['name' => 'Weekly Worker', 'text' => 'Finish the weekly Anomaly.', 'stat' => 'weeklies', 'at' => 1],
+    'lightHour' => ['name' => 'Faster Than Light', 'text' => 'Finish Speed of Light in under an hour.', 'stat' => 'lightHour', 'at' => 1],
+    'engine1' => ['name' => 'Crew Member', 'text' => 'Give the Cosmic Engine an Engine Part.', 'stat' => 'engineGiven', 'at' => 1],
+    'engine1000' => ['name' => 'Chief Engineer', 'text' => 'Give the Cosmic Engine 1,000 Engine Parts.', 'stat' => 'engineGiven', 'at' => 1000],
+    'shiftDay' => ['name' => 'Full Shift', 'text' => 'Do all of a day\'s Engine Shifts.', 'stat' => 'shiftDays', 'at' => 1],
 ];
 
 // ----- The Cosmic Engine. Anyone with a Warp Jump can give Engine Parts: ore from their run (HBHUB_MINER_ENGINE_ORE_PARTS
@@ -486,16 +504,25 @@ const HBHUB_MINER_ACHIEVEMENTS = [
 // (HBHUB_MINER_ENGINE_STRANGE_PART for a part, as many as they like: it costs nothing to production, as the bonus counts
 // Strange Matter earned, not what's left) and Engine Shifts. The parts go into the stage being built; once it has its
 // cost and its lock is met, it's done, and its perk works for everyone for good. Each stage's 'perk' is a 'type' (the
-// keys of HBHUB_MINER_ENGINE_NEUTRAL, plus badge and skin, which aren't rules) with 'value' (offline: the share mined
-// while away, the highest counts; cometStay: ms added) or 'times' (multiplied together). 'lock' is null, or:
-// - contributors: 'count' different players have given parts to this Engine. Parts keep coming while it waits, and go
-//   on to the next stages once it's met, as it needs more players, not fewer parts.
-// - anomalies: someone has finished each of the 'count' Anomalies of 'tier' (HBHUB_MINER_ANOMALIES). Once it's full,
-//   the stage waits and takes no more parts from ore, Strange Matter or Shifts (the Engine is "waiting", engineOpen in
-//   the save), so they don't pile up for the stages after it; parts from Anomalies always go in (they're what opens
-//   it), and what's over goes on to the next stage once it's done.
-// 'cost' is in parts, and the admin panel can change it (admin/engine.php, kept in engineStageCosts). There are
-// HBHUB_MINER_ENGINE_STAGE_TOTAL stages planned; the rest come with the Anomalies.
+// keys of HBHUB_MINER_ENGINE_NEUTRAL, plus badge, skin, news, title and ignition, which aren't numbers in the rules)
+// with 'value' (offline: the share mined while away, the highest counts; cometStay: ms added; diamond: added to the
+// Diamond Comet chance) or 'times' (multiplied together). 'lock' is null, or (engine.php checks them,
+// hbHubMinerEngineLock()):
+// - contributors: 'count' different players have given parts to this Engine. section: to this stage's section. Parts
+//   keep coming while either waits, and go on to the next stages once it's met, as it needs more players, not fewer
+//   parts.
+// - anomalies: someone has finished each of the 'count' Anomalies of 'tier' (HBHUB_MINER_ANOMALIES). players: 'count'
+//   different players have each finished all of 'anomalies'. each: each Anomaly of 'tier' has been finished by 'count'
+//   players. stack: someone has finished a stack of 'count' Anomalies. weekly: 'count' players finished the weekly
+//   Anomaly in the same week. An Anomaly finished in a stack counts as finished. Once one of these is full, the stage
+//   waits and takes no more parts from ore, Strange Matter or Shifts (the Engine is "waiting", engineOpen in the save),
+//   so they don't pile up for the stages after it; parts from Anomalies always go in (they're what opens it), and
+//   what's over goes on to the next stage once it's done.
+// 'cost' is in parts, and the admin panel can change it (admin/engine.php, kept in engineStageCosts). Ore counts less
+// in the later sections (HBHUB_MINER_ENGINE_ORE_SHARE). The last stage, Ignition, has to be full within
+// HBHUB_MINER_ENGINE_COUNTDOWN_MS of the one before it being done, or half its parts are lost and the time starts over
+// (engine.php, hbHubMinerEngineDrain()); once it's done, everything mines HBHUB_MINER_IGNITION_TIMES as much for
+// HBHUB_MINER_IGNITION_MS (hbHubMinerIgnition()).
 const HBHUB_MINER_ENGINE_SOURCE_ORE = 1; // contributionSource in HBHub-MinerContributions
 const HBHUB_MINER_ENGINE_SOURCE_STRANGE = 2;
 const HBHUB_MINER_ENGINE_SOURCE_SHIFT = 3;
@@ -506,6 +533,14 @@ const HBHUB_MINER_ENGINE_STRANGE_PART = 10; // Strange Matter for a part
 const HBHUB_MINER_ENGINE_STAGE_TOTAL = 25;
 const HBHUB_MINER_DAY_MS = 86400000; // the daily limit and the Shifts go by UTC days: Math.floor(tick / this)
 const HBHUB_MINER_ENGINE_SECTIONS = ['A' => 'Foundation', 'B' => 'Power', 'C' => 'Drive', 'D' => 'Navigation', 'E' => 'Ignition'];
+// What a part given from ore is worth in each section, in quarter parts: a whole one at first, half in Drive and a
+// quarter from Navigation on. What's left of a part is kept in the save (engineOreRest) until it makes a whole one.
+const HBHUB_MINER_ENGINE_ORE_SHARE = ['A' => 4, 'B' => 4, 'C' => 2, 'D' => 1, 'E' => 1];
+const HBHUB_MINER_ENGINE_ORE_QUARTERS = 4;
+const HBHUB_MINER_ENGINE_COUNTDOWN_MS = 604800000; // 7 days, to fill Ignition in
+const HBHUB_MINER_ENGINE_DRAIN = 0.5; // of Ignition's parts kept when its time runs out
+const HBHUB_MINER_IGNITION_MS = 259200000; // 72 hours of HBHUB_MINER_IGNITION_TIMES once the Engine is ignited
+const HBHUB_MINER_IGNITION_TIMES = 2;
 const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
     ['name' => 'Scaffolding', 'section' => 'A', 'cost' => 500, 'lock' => null,
         'perk' => ['type' => 'offline', 'value' => 0.075, 'text' => 'While you\'re away, your machines mine 7.5% of what they would, instead of 5%.']],
@@ -530,9 +565,49 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
     ['name' => 'Power Seal', 'section' => 'B', 'cost' => 12500,
         'lock' => ['type' => 'anomalies', 'tier' => 2, 'count' => 5, 'text' => 'Someone has finished each Tier II Anomaly'],
         'perk' => ['type' => 'production', 'times' => 1.1, 'text' => 'Everything mines 10% more.']],
+    ['name' => 'Thruster Mounts', 'section' => 'C', 'cost' => 15000, 'lock' => null,
+        'perk' => ['type' => 'antiGain', 'times' => 1.1, 'text' => 'Big Crunches give 10% more Antimatter.']],
+    ['name' => 'Fuel Injectors', 'section' => 'C', 'cost' => 18000, 'lock' => null,
+        'perk' => ['type' => 'cost', 'times' => 0.95, 'text' => 'Buildings cost 5% less.']],
+    ['name' => 'Plasma Chamber', 'section' => 'C', 'cost' => 22000,
+        'lock' => ['type' => 'players', 'anomalies' => ['speedOfLight'], 'count' => 5, 'text' => '5 different players have finished Speed of Light'],
+        'perk' => ['type' => 'diamond', 'value' => 0.005, 'text' => 'Diamond Comets come a little more often: 5.5% of comets instead of 5%.']],
+    ['name' => 'Exhaust Nozzle', 'section' => 'C', 'cost' => 26000, 'lock' => null,
+        'perk' => ['type' => 'news', 'text' => 'New lines in the news ticker, and the Engine makes sounds when it gets parts.']],
+    ['name' => 'Drive Seal', 'section' => 'C', 'cost' => 30000,
+        'lock' => ['type' => 'players', 'anomalies' => ['nakedSingularity'], 'count' => 1, 'text' => 'Someone has finished Naked Singularity'],
+        'perk' => ['type' => 'production', 'times' => 1.1, 'text' => 'Everything mines 10% more.']],
+    ['name' => 'Star Charts', 'section' => 'D', 'cost' => 35000, 'lock' => null,
+        'perk' => ['type' => 'offline', 'value' => 0.125, 'text' => 'While you\'re away, your machines mine 12.5% of what they would, instead of 10%.']],
+    ['name' => 'Gyroscopes', 'section' => 'D', 'cost' => 41000, 'lock' => null,
+        'perk' => ['type' => 'click', 'times' => 1.25, 'text' => 'Clicks mine 25% more.']],
+    ['name' => 'Navigation Computer', 'section' => 'D', 'cost' => 48000,
+        'lock' => ['type' => 'stack', 'count' => 4, 'text' => 'Someone has finished a stack of 4 Anomalies'],
+        'perk' => ['type' => 'anomalyParts', 'times' => 1.1, 'text' => 'Anomalies give 10% more Engine Parts.']],
+    ['name' => 'The Bridge', 'section' => 'D', 'cost' => 56000,
+        'lock' => ['type' => 'players', 'anomalies' => ['ironUniverse', 'handsOnly'], 'count' => 3, 'text' => '3 different players have finished both Iron Universe and Hands Only'],
+        'perk' => ['type' => 'skin', 'text' => 'The animated Engine Core asteroid skin, for everyone.']],
+    ['name' => 'Navigation Seal', 'section' => 'D', 'cost' => 65000,
+        'lock' => ['type' => 'players', 'anomalies' => ['gauntlet'], 'count' => 3, 'text' => '3 different players have finished The Gauntlet'],
+        'perk' => ['type' => 'production', 'times' => 1.15, 'text' => 'Everything mines 15% more.']],
+    ['name' => 'Spark Plugs', 'section' => 'E', 'cost' => 75000,
+        'lock' => ['type' => 'section', 'count' => 20, 'text' => '20 different players have given parts to the Ignition section'],
+        'perk' => ['type' => 'cometWait', 'times' => 0.9, 'text' => 'The wait between comets is another 10% shorter.']],
+    ['name' => 'Ignition Coils', 'section' => 'E', 'cost' => 87000,
+        'lock' => ['type' => 'stack', 'count' => 6, 'text' => 'Someone has finished a stack of 6 Anomalies'],
+        'perk' => ['type' => 'upgradeCost', 'times' => 0.9, 'text' => 'Ore upgrades cost 10% less.']],
+    ['name' => 'Countdown Clock', 'section' => 'E', 'cost' => 100000,
+        'lock' => ['type' => 'weekly', 'count' => 10, 'text' => '10 players have finished the weekly Anomaly in the same week'],
+        'perk' => ['type' => 'title', 'text' => 'Everyone who has given parts to the Engine gets the title "Engineer" on the leaderboard.']],
+    ['name' => 'Launch Clamps', 'section' => 'E', 'cost' => 115000,
+        'lock' => ['type' => 'each', 'tier' => 3, 'count' => 3, 'text' => 'Every Tier III Anomaly has been finished by at least 3 players'],
+        'perk' => ['type' => 'production', 'times' => 1.25, 'text' => 'Everything mines 25% more.']],
+    ['name' => 'IGNITION', 'section' => 'E', 'cost' => 150000, 'lock' => null,
+        'perk' => ['type' => 'ignition', 'text' => 'Everything mines twice as much for 72 hours, and everyone who gave parts to Ignition gets the Ignition badge and asteroid skin for good.']],
 ];
 // What the perks do with no stage done, which hbHubMinerEngineEffects() starts from
-const HBHUB_MINER_ENGINE_NEUTRAL = ['offline' => HBHUB_MINER_OFFLINE_RATE, 'cometStay' => 0, 'cometWait' => 1, 'cometLength' => 1, 'production' => 1, 'darkGain' => 1];
+const HBHUB_MINER_ENGINE_NEUTRAL = ['offline' => HBHUB_MINER_OFFLINE_RATE, 'cometStay' => 0, 'cometWait' => 1, 'cometLength' => 1, 'production' => 1, 'darkGain' => 1,
+    'antiGain' => 1, 'cost' => 1, 'diamond' => 0, 'click' => 1, 'anomalyParts' => 1, 'upgradeCost' => 1];
 
 // Engine Shifts: HBHUB_MINER_SHIFT_COUNT tasks a day, the same for everyone (hbHubMinerShiftTasks()), for anyone with a
 // Warp Jump while the Engine takes parts. Each is worth HBHUB_MINER_SHIFT_PARTS, or HBHUB_MINER_SHIFT_PARTS_ALL once all
@@ -553,16 +628,25 @@ const HBHUB_MINER_SHIFT_PARTS_ALL = 25;
 // ----- Anomalies: challenge runs, each a universe of its own inside the save with one rule changed. One starts like a
 // Big Rip that gives nothing (Dark Matter, Antimatter and their upgrades start over, apart from the ones Antimatter
 // Echo and Dark Echo keep), with the skill tree, the Strange Matter bonus and the counts that grow the production
-// (Warp Jumps, Big Crunches, comets) kept. It's finished once its 'goal' of Antimatter is earned in it, and pays
-// its tier's 'parts' to the Cosmic Engine the first time, or for a new best time, and HBHUB_MINER_ANOMALY_REPEAT of
-// them otherwise. Its 'tier' opens with 'unlock': rip (a Big Rip made) or theory (the Theory of Everything learned).
-// Tier II ones also turn Autopilot and Auto Crunch off ('noAuto'), which only the page has. While the player is in
-// one, the Engine gets nothing else from them (no Shifts or donations), and their own game mines as if they were away.
-// The rules each changes are in the functions that check hbHubMinerMod(); the goals were tuned with the balance sim
-// for a player with the whole skill tree: about 1-3 hours for Tier I and 3-8 for Tier II.
+// (Warp Jumps, Big Crunches, comets) kept. A Tier III one ('fresh') starts from nothing instead: everything in
+// HBHUB_MINER_ANOMALY_FRESH starts over too, so no skills, no Strange Matter bonus and no upgrades at all. It's finished
+// once its 'goal' is reached in it: Antimatter earned, or the 'stat' it names (runOre: ore mined in one run,
+// darkEarned: Dark Matter earned in a universe). It pays its 'parts' (or its tier's) to the Cosmic Engine the first
+// time, or for a new best time, and HBHUB_MINER_ANOMALY_REPEAT of them otherwise. Its 'tier' opens with 'unlock': rip
+// (a Big Rip made) or theory (the Theory of Everything learned). Tier II ones also turn Autopilot and Auto Crunch off
+// ('noAuto'), which only the page has. 'rules' are the other Anomalies whose rules it has too (The Gauntlet). While the
+// player is in one, the Engine gets nothing else from them (no Shifts or donations), and their own game mines as if
+// they were away. The rules each changes are in the functions that check hbHubMinerMod(); the goals were tuned with
+// the balance sim: about 1-3 hours for Tier I and 3-8 for Tier II with the whole skill tree, and 15 to 60 or more for
+// Tier III from nothing.
+// Stacks: up to every Anomaly of the tiers up to HBHUB_MINER_ANOMALY_STACK_TIER at once (hbHubMinerAnomalyMods()), with
+// all their rules, the lowest of their goals, and their parts together times HBHUB_MINER_ANOMALY_STACK for each one
+// after the first. The weekly Anomaly (hbHubMinerWeeklyMods()) is a stack picked from the week, the same for
+// everyone, worth HBHUB_MINER_ANOMALY_WEEKLY times as much that week.
 const HBHUB_MINER_ANOMALY_TIERS = [
-    1 => ['name' => 'Ripples', 'parts' => 25, 'unlock' => 'rip', 'noAuto' => false],
-    2 => ['name' => 'Tears', 'parts' => 100, 'unlock' => 'theory', 'noAuto' => true],
+    1 => ['name' => 'Ripples', 'parts' => 25, 'unlock' => 'rip', 'noAuto' => false, 'fresh' => false],
+    2 => ['name' => 'Tears', 'parts' => 100, 'unlock' => 'theory', 'noAuto' => true, 'fresh' => false],
+    3 => ['name' => 'Singularities', 'parts' => 400, 'unlock' => 'theory', 'noAuto' => false, 'fresh' => true],
 ];
 const HBHUB_MINER_ANOMALIES = [
     'deadHands' => ['name' => 'Dead Hands', 'icon' => 'glove', 'tier' => 1, 'goal' => 3e21,
@@ -583,8 +667,65 @@ const HBHUB_MINER_ANOMALIES = [
         'text' => 'Each Warp Jump destroys the building you have the most of, for the rest of the Anomaly.'],
     'speedOfLight' => ['name' => 'Speed of Light', 'icon' => 'warp', 'tier' => 2, 'goal' => 5e20,
         'text' => 'Reach the goal within 2 hours of starting, time away included, or the Anomaly is over.'],
+    'nakedSingularity' => ['name' => 'Naked Singularity', 'icon' => 'strangelet', 'tier' => 3, 'goal' => 1e5, 'parts' => 800,
+        'text' => 'No twist at all, just the whole game from nothing, past a Big Rip: earn ten times the Antimatter one needs.'],
+    'ironUniverse' => ['name' => 'Iron Universe', 'icon' => 'rig', 'tier' => 3, 'goal' => 1e21, 'stat' => 'runOre',
+        'text' => 'No Warp Jumps at all: mine everything in one run.'],
+    'handsOnly' => ['name' => 'Hands Only', 'icon' => 'neutronFist', 'tier' => 3, 'goal' => 1e6, 'stat' => 'darkEarned',
+        'text' => 'Buildings mine nothing by themselves. Each click (and each auto-click) mines 20% of what they would in a second instead.'],
+    'gauntlet' => ['name' => 'The Gauntlet', 'icon' => 'gauntlet', 'tier' => 3, 'goal' => 3, 'stat' => 'darkEarned', 'parts' => 3000,
+        'rules' => ['deadHands', 'darkSky', 'inflation', 'entropy'],
+        'text' => 'Dead Hands, Dark Sky, Inflation and Entropy all at once, from nothing. Every run starts with one Space Pickaxe Guy, and Entropy stops after halving production twice.'],
 ];
 const HBHUB_MINER_ANOMALY_REPEAT = 0.25; // of the parts, for finishing one again without beating the best time
+const HBHUB_MINER_ANOMALY_STACK_TIER = 2; // the highest tier that stacks
+const HBHUB_MINER_ANOMALY_STACK = 1.5; // the parts are multiplied by this for each Anomaly in a stack after the first
+const HBHUB_MINER_ANOMALY_WEEKLY = 2; // the parts for the weekly Anomaly that week
+const HBHUB_MINER_WEEK_MS = 604800000; // weeks start on Monday at 00:00 UTC (hbHubMinerWeek())
+const HBHUB_MINER_WEEKLY_SIZES = [2, 3]; // how many Anomalies the weekly one stacks, picked from
+const HBHUB_MINER_WEEKLY_LEFT_OUT = ['speedOfLight']; // never in it: with Unstable Vacuum it can't be done in its time
+// What starts over in a Tier III Anomaly on top of a Big Rip's (hbHubMinerNewMultiverse()), so it's from nothing
+const HBHUB_MINER_ANOMALY_FRESH = [
+    'skills' => [], 'strange' => 0, 'strangeEarned' => 0, 'rips' => 0, 'crunches' => 0, 'warps' => 0, 'flights' => 0,
+    'clicks' => 0, 'crits' => 0, 'comets' => 0, 'diamonds' => 0, 'antiUpgrades' => [], 'darkUpgrades' => [], 'allOre' => 0.0, 'clickOre' => 0.0,
+];
+const HBHUB_MINER_HANDS_SHARE = 0.2; // of the buildings' ore per second each click mines, in Hands Only
+// What every run starts with in The Gauntlet (building => how many), as clicks mine nothing there and a run could never
+// start, and how often its Entropy halves production instead of HBHUB_MINER_ENTROPY_MS: from nothing, a run takes far
+// longer than 5 minutes to reach a Warp Jump, and with halvings that often it never does (the balance sim)
+const HBHUB_MINER_GAUNTLET_START = ['pickaxe' => 1];
+const HBHUB_MINER_GAUNTLET_ENTROPY_MS = 300000;
+// The most halvings in The Gauntlet, where nothing else could ever make a run worth more than its start: production
+// goes down to 1 / 2^this and stays there until the next Warp Jump (instead of all the way to 0, HBHUB_MINER_ENTROPY_STEPS)
+const HBHUB_MINER_GAUNTLET_ENTROPY_STEPS = 2;
+const HBHUB_MINER_LIGHT_HOUR_MS = 3600000; // the Faster Than Light achievement
+
+// Asteroid skins: how the asteroid looks instead of its usual colours (spaceOreMiner.css, data-skin), picked in the
+// game's stats. 'unlock' is how it's earned: anomaly (that Anomaly finished, alone or in a stack), stage (that many of
+// the Engine's stages done, for everyone) or ignition (gave parts to the Ignition stage, ignitionCrew in the save).
+// 'moving' ones are animated.
+const HBHUB_MINER_SKINS = [
+    'entropy' => ['name' => 'Heat Death', 'unlock' => ['anomaly' => 'entropy'], 'moving' => false],
+    'minimalist' => ['name' => 'Paper White', 'unlock' => ['anomaly' => 'minimalist'], 'moving' => false],
+    'oneTrack' => ['name' => 'Signal Green', 'unlock' => ['anomaly' => 'oneTrack'], 'moving' => false],
+    'unstableVacuum' => ['name' => 'Void Violet', 'unlock' => ['anomaly' => 'unstableVacuum'], 'moving' => false],
+    'speedOfLight' => ['name' => 'Redshift', 'unlock' => ['anomaly' => 'speedOfLight'], 'moving' => false],
+    'nakedSingularity' => ['name' => 'Event Horizon', 'unlock' => ['anomaly' => 'nakedSingularity'], 'moving' => true],
+    'ironUniverse' => ['name' => 'Forged Iron', 'unlock' => ['anomaly' => 'ironUniverse'], 'moving' => true],
+    'handsOnly' => ['name' => 'Fingerprints', 'unlock' => ['anomaly' => 'handsOnly'], 'moving' => true],
+    'gauntlet' => ['name' => 'Gauntlet Fire', 'unlock' => ['anomaly' => 'gauntlet'], 'moving' => true],
+    'engineSteel' => ['name' => 'Engine Steel', 'unlock' => ['stage' => 9], 'moving' => false],
+    'engineCore' => ['name' => 'Engine Core', 'unlock' => ['stage' => 19], 'moving' => true],
+    'ignition' => ['name' => 'Ignition', 'unlock' => ['ignition' => true], 'moving' => true],
+];
+
+// Titles by players' names on the leaderboard, the first one a player has (games/spaceOreMiner/leaderboard.php): for
+// finishing an 'anomaly', or 'engineer' (gave parts to an Engine that has its title stage done)
+const HBHUB_MINER_TITLES = [
+    'gauntlet' => ['name' => 'Gauntlet Runner', 'anomaly' => 'gauntlet'],
+    'singularity' => ['name' => 'Singularity', 'anomaly' => 'nakedSingularity'],
+    'engineer' => ['name' => 'Engineer', 'engineer' => true],
+];
 const HBHUB_MINER_INFLATION_GROWTH = 1.35; // each building costs this much more than the one before, in Inflation
 const HBHUB_MINER_ENTROPY_MS = 300000; // production halves after each this long of a run, in Entropy
 const HBHUB_MINER_ENTROPY_STEPS = 1100; // after this many halvings it's 0 (a float can't be smaller), so no more pieces
@@ -776,6 +917,25 @@ function hbHubMinerConfig(): array
         'entropySteps' => HBHUB_MINER_ENTROPY_STEPS,
         'minimalistMax' => HBHUB_MINER_MINIMALIST_MAX,
         'lightMs' => HBHUB_MINER_LIGHT_MS,
+        'engineOreShare' => HBHUB_MINER_ENGINE_ORE_SHARE,
+        'engineOreQuarters' => HBHUB_MINER_ENGINE_ORE_QUARTERS,
+        'engineCountdownMs' => HBHUB_MINER_ENGINE_COUNTDOWN_MS,
+        'engineDrain' => HBHUB_MINER_ENGINE_DRAIN,
+        'ignitionMs' => HBHUB_MINER_IGNITION_MS,
+        'ignitionTimes' => HBHUB_MINER_IGNITION_TIMES,
+        'anomalyStackTier' => HBHUB_MINER_ANOMALY_STACK_TIER,
+        'anomalyStack' => HBHUB_MINER_ANOMALY_STACK,
+        'anomalyWeekly' => HBHUB_MINER_ANOMALY_WEEKLY,
+        'weekMs' => HBHUB_MINER_WEEK_MS,
+        'weeklySizes' => HBHUB_MINER_WEEKLY_SIZES,
+        'weeklyLeftOut' => HBHUB_MINER_WEEKLY_LEFT_OUT,
+        'anomalyFresh' => HBHUB_MINER_ANOMALY_FRESH,
+        'handsShare' => HBHUB_MINER_HANDS_SHARE,
+        'gauntletStart' => HBHUB_MINER_GAUNTLET_START,
+        'gauntletEntropyMs' => HBHUB_MINER_GAUNTLET_ENTROPY_MS,
+        'gauntletEntropySteps' => HBHUB_MINER_GAUNTLET_ENTROPY_STEPS,
+        'lightHourMs' => HBHUB_MINER_LIGHT_HOUR_MS,
+        'skins' => HBHUB_MINER_SKINS,
     ];
 }
 
@@ -866,8 +1026,13 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  *   only its time moves on; this game's 'tick' waits where it was, and catches up as time away when it's left
  *   (hbHubMinerAnomalyLeave()). anomalies: the ones finished, by key (hbHubMinerAnomalyKey()) => {done: how many times,
  *   best: the fastest, in ms}.
- * - mods: the Anomaly's ids in an Anomaly's own game (hbHubMinerMod()), [] in the player's. destroyed: the buildings the
- *   Unstable Vacuum has destroyed in it.
+ * - mods: the Anomaly's ids in an Anomaly's own game (hbHubMinerMod()), with the ones in their 'rules' too, [] in the
+ *   player's. destroyed: the buildings the Unstable Vacuum has destroyed in it.
+ * - engineOreRest: quarter parts given from ore that don't make a whole part yet (HBHUB_MINER_ENGINE_ORE_SHARE).
+ *   engineIgnited: when the Engine was ignited (Unix ms, 0 before), and ignitionCrew: whether the player gave parts to
+ *   its Ignition stage. Both are the server's to set, like engineStage.
+ * - engineGiven: parts given ever, shiftDays: days with every Shift done, weeklies: weekly Anomalies finished (for the
+ *   achievements). skin: the asteroid skin picked (a key of HBHUB_MINER_SKINS), or null for its usual look.
  */
 function hbHubMinerNewState(int $now): array
 {
@@ -912,6 +1077,13 @@ function hbHubMinerNewState(int $now): array
         'anomalies' => [],
         'mods' => [],
         'destroyed' => [],
+        'engineOreRest' => 0,
+        'engineIgnited' => 0,
+        'ignitionCrew' => false,
+        'engineGiven' => 0,
+        'shiftDays' => 0,
+        'weeklies' => 0,
+        'skin' => null,
     ];
     $state['comet']['at'] = $now + hbHubMinerCometWait($state, 0);
     return $state;
@@ -941,6 +1113,12 @@ function hbHubMinerNormalize(array $saved, int $now): array
     $state['donatedToday'] = (int) $state['donatedToday'];
     $state['shifts'] = is_array($state['shifts']) && count($state['shifts']) === HBHUB_MINER_SHIFT_COUNT
         ? array_map('intval', array_values($state['shifts'])) : array_fill(0, HBHUB_MINER_SHIFT_COUNT, 0);
+    foreach (['engineOreRest', 'engineIgnited', 'engineGiven', 'shiftDays', 'weeklies'] as $key) {
+        $state[$key] = max(0, (int) $state[$key]);
+    }
+    $state['engineOreRest'] %= HBHUB_MINER_ENGINE_ORE_QUARTERS;
+    $state['ignitionCrew'] = (bool) $state['ignitionCrew'];
+    $state['skin'] = is_string($state['skin']) && isset(HBHUB_MINER_SKINS[$state['skin']]) ? $state['skin'] : null;
     $state['mods'] = is_array($state['mods']) ? array_values(array_intersect($state['mods'], array_keys(HBHUB_MINER_ANOMALIES))) : [];
     $state['destroyed'] = is_array($state['destroyed']) ? array_values(array_intersect($state['destroyed'], array_keys(HBHUB_MINER_BUILDINGS))) : [];
     $anomalies = [];
@@ -958,7 +1136,7 @@ function hbHubMinerNormalize(array $saved, int $now): array
             'mods' => $mods,
             'started' => (int) ($anomaly['started'] ?? $now),
             'goal' => (float) ($anomaly['goal'] ?? hbHubMinerAnomalyGoal($mods)),
-            'state' => ['mods' => $mods] + hbHubMinerNormalize(['anomaly' => null, 'anomalies' => []] + $anomaly['state'], $now),
+            'state' => ['mods' => hbHubMinerAnomalyRules($mods)] + hbHubMinerNormalize(['anomaly' => null, 'anomalies' => []] + $anomaly['state'], $now),
         ];
     }
 
@@ -1100,6 +1278,34 @@ function hbHubMinerEngineEffects(array $state): array
 }
 
 /**
+ * What Ignition does to production at the game's time: HBHUB_MINER_IGNITION_TIMES for HBHUB_MINER_IGNITION_MS after the
+ * Engine was ignited ('engineIgnited'), 1 before and after.
+ */
+function hbHubMinerIgnition(array $state): float
+{
+    $ignited = $state['engineIgnited'];
+    return $ignited > 0 && $state['tick'] >= $ignited && $state['tick'] < $ignited + HBHUB_MINER_IGNITION_MS ? HBHUB_MINER_IGNITION_TIMES : 1;
+}
+
+/**
+ * What a part given from ore is worth now, in quarter parts: the share of the section the stage being built is in.
+ */
+function hbHubMinerOreQuarters(array $state): int
+{
+    $index = min((int) $state['engineStage'], count(HBHUB_MINER_ENGINE_STAGES) - 1);
+    return HBHUB_MINER_ENGINE_ORE_SHARE[HBHUB_MINER_ENGINE_STAGES[$index]['section']];
+}
+
+/**
+ * Gives $gift ([source, parts, ...], see hbHubMinerApply()) to the Engine: into $given, and counted in 'engineGiven'.
+ */
+function hbHubMinerGive(array &$state, array &$given, array $gift): void
+{
+    $given[] = $gift;
+    $state['engineGiven'] += $gift[1];
+}
+
+/**
  * Whether the player can give parts to the Engine right now: it's taking them, and they've made a Warp Jump.
  */
 function hbHubMinerCanGive(array $state): bool
@@ -1164,8 +1370,11 @@ function hbHubMinerShift(array &$state, string $task, int $amount, ?array &$give
     foreach (hbHubMinerShiftTasks($state['engineDay']) as $i => $id) {
         $done += $state['shifts'][$i] >= HBHUB_MINER_SHIFTS[$id]['goal'] ? 1 : 0;
     }
-    $given[] = [HBHUB_MINER_ENGINE_SOURCE_SHIFT, $done === HBHUB_MINER_SHIFT_COUNT
-        ? HBHUB_MINER_SHIFT_PARTS_ALL * HBHUB_MINER_SHIFT_COUNT - HBHUB_MINER_SHIFT_PARTS * (HBHUB_MINER_SHIFT_COUNT - 1) : HBHUB_MINER_SHIFT_PARTS];
+    if ($done === HBHUB_MINER_SHIFT_COUNT) {
+        $state['shiftDays']++;
+    }
+    hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_SHIFT, $done === HBHUB_MINER_SHIFT_COUNT
+        ? HBHUB_MINER_SHIFT_PARTS_ALL * HBHUB_MINER_SHIFT_COUNT - HBHUB_MINER_SHIFT_PARTS * (HBHUB_MINER_SHIFT_COUNT - 1) : HBHUB_MINER_SHIFT_PARTS]);
 }
 
 /**
@@ -1221,11 +1430,11 @@ function hbHubMinerCometPower(array $state): float
 }
 
 /**
- * What an ore upgrade costs: its price, less with Bargain Hunter.
+ * What an ore upgrade costs: its price, less with Bargain Hunter and the Engine's Ignition Coils.
  */
 function hbHubMinerUpgradeCost(array $state, string $upgradeId): float
 {
-    return hbHubMinerUpgrades()[$upgradeId]['cost'] * hbHubMinerSkillEffects($state)['upgradeCost'];
+    return hbHubMinerUpgrades()[$upgradeId]['cost'] * hbHubMinerSkillEffects($state)['upgradeCost'] * hbHubMinerEngineEffects($state)['upgradeCost'];
 }
 
 /**
@@ -1262,7 +1471,24 @@ function hbHubMinerCanBuild(array $state, string $buildingId, int $amount): bool
 }
 
 /**
- * What Entropy leaves of production: halved for every whole HBHUB_MINER_ENTROPY_MS of the run so far (1 outside it).
+ * How long a run goes before each halving in Entropy: HBHUB_MINER_ENTROPY_MS, or HBHUB_MINER_GAUNTLET_ENTROPY_MS in The
+ * Gauntlet.
+ */
+function hbHubMinerEntropyMs(array $state): int
+{
+    return hbHubMinerMod($state, 'gauntlet') ? HBHUB_MINER_GAUNTLET_ENTROPY_MS : HBHUB_MINER_ENTROPY_MS;
+}
+
+/**
+ * The most halvings Entropy makes in a run: HBHUB_MINER_ENTROPY_STEPS, or HBHUB_MINER_GAUNTLET_ENTROPY_STEPS in The Gauntlet.
+ */
+function hbHubMinerEntropySteps(array $state): int
+{
+    return hbHubMinerMod($state, 'gauntlet') ? HBHUB_MINER_GAUNTLET_ENTROPY_STEPS : HBHUB_MINER_ENTROPY_STEPS;
+}
+
+/**
+ * What Entropy leaves of production: halved for every whole hbHubMinerEntropyMs() of the run so far (1 outside it).
  * Powers of two, which a float holds exactly, so the script gets the same to the last digit.
  */
 function hbHubMinerEntropy(array $state): float
@@ -1270,7 +1496,7 @@ function hbHubMinerEntropy(array $state): float
     if (!hbHubMinerMod($state, 'entropy')) {
         return 1.0;
     }
-    return 0.5 ** min(HBHUB_MINER_ENTROPY_STEPS, intdiv((int) max(0, $state['tick'] - $state['runStarted']), HBHUB_MINER_ENTROPY_MS));
+    return 0.5 ** min(hbHubMinerEntropySteps($state), intdiv((int) max(0, $state['tick'] - $state['runStarted']), hbHubMinerEntropyMs($state)));
 }
 
 /**
@@ -1280,7 +1506,8 @@ function hbHubMinerEntropy(array $state): float
 function hbHubMinerBuildingCost(array $state, string $buildingId, int $amount): float
 {
     $growth = hbHubMinerCostGrowth($state, $buildingId);
-    return ceil(HBHUB_MINER_BUILDINGS[$buildingId]['cost'] * hbHubMinerSkillEffects($state)['cost'] * $growth ** $state['buildings'][$buildingId]
+    return ceil(HBHUB_MINER_BUILDINGS[$buildingId]['cost'] * hbHubMinerSkillEffects($state)['cost'] * hbHubMinerEngineEffects($state)['cost']
+        * $growth ** $state['buildings'][$buildingId]
         * ($growth ** $amount - 1) / ($growth - 1));
 }
 
@@ -1311,7 +1538,7 @@ function hbHubMinerBuildingRates(array $state): array
         $global *= 2;
     }
     $global *= $effects['production'] * (1 + $effects['perSkill'] * count($state['skills'])) * (1 + $effects['perWarp'] * $state['flights'])
-        * (1 + $effects['perCrunch'] * $state['crunches']) * hbHubMinerEngineEffects($state)['production'];
+        * (1 + $effects['perCrunch'] * $state['crunches']) * hbHubMinerEngineEffects($state)['production'] * hbHubMinerIgnition($state);
     $global *= hbHubMinerEntropy($state);
     foreach ($state['upgrades'] as $upgradeId) {
         $upgrade = $upgrades[$upgradeId];
@@ -1353,8 +1580,9 @@ function hbHubMinerBuff(array $state, string $buff, int $time): float
 
 /**
  * What one click mines at $time, before a critical click: 1 (3 with Dark Pickaxe), doubled by each click upgrade (and
- * times the click skills), plus the clickPct upgrades' (and skills') share of the buildings' production, all times a
- * Click Storm. Nothing at all in Dead Hands (auto-clickers' clicks included, see hbHubMinerRate()).
+ * times the click skills), plus the clickPct upgrades' (and skills') share of the buildings' production (and
+ * HBHUB_MINER_HANDS_SHARE more in Hands Only, where that's all they make), all times a Click Storm and the Engine's
+ * Gyroscopes. Nothing at all in Dead Hands (auto-clickers' clicks included, see hbHubMinerRate()).
  */
 function hbHubMinerClickValue(array $state, int $time): float
 {
@@ -1373,9 +1601,9 @@ function hbHubMinerClickValue(array $state, int $time): float
         }
     }
     $value *= $effects['click'];
-    $share += $effects['clickShare'];
+    $share += $effects['clickShare'] + (hbHubMinerMod($state, 'handsOnly') ? HBHUB_MINER_HANDS_SHARE : 0);
     $production = $share > 0 ? array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time) : 0;
-    return ($value + $share * $production) * hbHubMinerBuff($state, 'click', $time);
+    return ($value + $share * $production) * hbHubMinerBuff($state, 'click', $time) * hbHubMinerEngineEffects($state)['click'];
 }
 
 /**
@@ -1394,12 +1622,12 @@ function hbHubMinerAutoClicks(array $state): float
 }
 
 /**
- * All the ore per second at $time: the buildings (times a production comet) and the auto-clickers.
- * $time PHP_INT_MAX gives the steady rate, without comets, as the leaderboard shows it.
+ * All the ore per second at $time: the buildings (times a production comet, and not at all in Hands Only) and the
+ * auto-clickers. $time PHP_INT_MAX gives the steady rate, without comets, as the leaderboard shows it.
  */
 function hbHubMinerRate(array $state, int $time): float
 {
-    $rate = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
+    $rate = hbHubMinerMod($state, 'handsOnly') ? 0.0 : array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
     $autoClicks = hbHubMinerAutoClicks($state);
     if ($autoClicks > 0) {
         $rate += $autoClicks * hbHubMinerClickValue($state, $time);
@@ -1453,7 +1681,10 @@ function hbHubMinerCometKind(array $state): string
 {
     $n = $state['comet']['n'];
     $diamondChance = (hbHubMinerHas($state, 'luckyStars') ? HBHUB_MINER_DIAMOND_CHANCE : 0) + hbHubMinerSkillEffects($state)['diamond'];
-    if ($diamondChance > 0 && hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_DIAMOND) < $diamondChance) {
+    if ($diamondChance > 0) { // the Engine's Plasma Chamber only adds to a chance there is
+        $diamondChance += hbHubMinerEngineEffects($state)['diamond'];
+    }
+    if ($diamondChance > 0 &&hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_DIAMOND) < $diamondChance) {
         return 'diamond';
     }
     $roll = hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_COMET_KIND);
@@ -1478,12 +1709,14 @@ function hbHubMinerCometsPassed(array &$state): void
  * Moves the game on to $to (Unix ms): ore mined meanwhile, comet effects running out on time, and comets flying past.
  * Time after $fullUntil is time away, mined at HBHUB_MINER_OFFLINE_RATE (or the Engine's, doubled with Time Dilation,
  * times Time Loop). Time before it counts towards the "playing" Engine Shift ($given: see hbHubMinerShift()).
- * Returns the ore mined while away.
+ * $runOreGoal: stops early, at the first ms the ore mined this run reaches it (an Anomaly's goal that grows with time,
+ * see hbHubMinerAdvanceGame()); the rate is the same all through a piece, so that ms is worked out the same here and
+ * in the script. Returns the ore mined while away.
  */
-function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX, ?array &$given = null): float
+function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX, ?array &$given = null, float $runOreGoal = INF): float
 {
     $offlineOre = 0.0;
-    while ($state['tick'] < $to) {
+    while ($state['tick'] < $to && $state['runOre'] < $runOreGoal) {
         // In pieces, so the rate is the same all through each: up to an effect running out, going away, or midnight
         // (UTC, for the Shifts, which start over then)
         $next = $to;
@@ -1500,18 +1733,29 @@ function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX,
             $next = $midnight;
         }
         // Entropy's next halving (hbHubMinerEntropy())
-        $steps = intdiv((int) max(0, $state['tick'] - $state['runStarted']), HBHUB_MINER_ENTROPY_MS);
-        if (hbHubMinerMod($state, 'entropy') && $steps < HBHUB_MINER_ENTROPY_STEPS) {
-            $halving = $state['runStarted'] + ($steps + 1) * HBHUB_MINER_ENTROPY_MS;
+        $steps = intdiv((int) max(0, $state['tick'] - $state['runStarted']), hbHubMinerEntropyMs($state));
+        if (hbHubMinerMod($state, 'entropy') && $steps < hbHubMinerEntropySteps($state)) {
+            $halving = $state['runStarted'] + ($steps + 1) * hbHubMinerEntropyMs($state);
             if ($halving < $next) {
                 $next = $halving;
             }
         }
+        // Ignition starting or running out (hbHubMinerIgnition())
+        foreach ([$state['engineIgnited'], $state['engineIgnited'] + HBHUB_MINER_IGNITION_MS] as $edge) {
+            if ($state['engineIgnited'] > 0 && $edge > $state['tick'] && $edge < $next) {
+                $next = $edge;
+            }
+        }
 
-        $ore = hbHubMinerRate($state, $state['tick']) * ($next - $state['tick']) / 1000;
+        $rate = hbHubMinerRate($state, $state['tick']);
+        $share = $state['tick'] >= $fullUntil ? hbHubMinerEngineEffects($state)['offline'] * (hbHubMinerHasDark($state, 'timeDilation') ? 2 : 1)
+            * hbHubMinerSkillEffects($state)['offline'] : 1.0;
+        $ore = $rate * ($next - $state['tick']) / 1000 * $share;
+        if ($runOreGoal < INF && $ore > 0 && $state['runOre'] + $ore >= $runOreGoal) { // the goal is reached in this piece
+            $next = min($next, $state['tick'] + max(1, (int) ceil(($runOreGoal - $state['runOre']) / $ore * ($next - $state['tick']))));
+            $ore = $rate * ($next - $state['tick']) / 1000 * $share;
+        }
         if ($state['tick'] >= $fullUntil) {
-            $ore *= hbHubMinerEngineEffects($state)['offline'] * (hbHubMinerHasDark($state, 'timeDilation') ? 2 : 1)
-                * hbHubMinerSkillEffects($state)['offline'];
             $offlineOre += $ore;
         } else {
             hbHubMinerShift($state, 'playing', $next - $state['tick'], $given);
@@ -1620,7 +1864,7 @@ function hbHubMinerCrunchGain(array $state): float
 {
     $effects = hbHubMinerSkillEffects($state);
     return $state['darkEarned'] >= HBHUB_MINER_CRUNCH_DARK * $effects['crunchDark']
-        ? floor(hbHubMinerAntiTotal((float) $state['darkEarned']) * $effects['antiGain']) : 0;
+        ? floor(hbHubMinerAntiTotal((float) $state['darkEarned']) * $effects['antiGain'] * hbHubMinerEngineEffects($state)['antiGain']) : 0;
 }
 
 /**
@@ -1714,7 +1958,9 @@ function hbHubMinerCatchComet(array &$state): ?string
             'until' => $time + hbHubMinerCometLength($state, $kind),
         ];
     } else {
-        $production = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
+        // In Hands Only, a click's share of the buildings' production, which is all they make there
+        $production = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time)
+            * (hbHubMinerMod($state, 'handsOnly') ? HBHUB_MINER_HANDS_SHARE : 1);
         [$min, $max] = HBHUB_MINER_LUCKY_SECONDS;
         $seconds = $min + hbHubMinerRandom($state['seed'], $state['comet']['n'], HBHUB_MINER_SALT_LUCKY) * ($max - $min);
         hbHubMinerEarn($state, ($production * $seconds + 13)
@@ -1747,6 +1993,11 @@ function hbHubMinerStartBuildings(array $state): array
     foreach ($state['destroyed'] as $buildingId) {
         $start[$buildingId] = 0;
     }
+    if (hbHubMinerMod($state, 'gauntlet')) { // clicks mine nothing there, so without one a run could never start
+        foreach (HBHUB_MINER_GAUNTLET_START as $buildingId => $count) {
+            $start[$buildingId] = max($start[$buildingId], $count);
+        }
+    }
     return $start;
 }
 
@@ -1774,12 +2025,12 @@ function hbHubMinerNewRun(array &$state): void
 /**
  * Warp Jump: everything of this run starts over (hbHubMinerNewRun()), for the Dark Matter it's worth. In the Unstable
  * Vacuum, the building there's most of goes for good first (the dearer one when two are level). Returns false when it
- * can't be done yet.
+ * can't be done yet, and always in Iron Universe.
  */
 function hbHubMinerWarp(array &$state): bool
 {
     $gain = hbHubMinerWarpGain($state);
-    if ($gain < 1) {
+    if ($gain < 1 || hbHubMinerMod($state, 'ironUniverse')) {
         return false;
     }
 
@@ -1870,14 +2121,25 @@ function hbHubMinerNewMultiverse(array &$state): void
 // ----- Anomalies (HBHUB_MINER_ANOMALIES)
 
 /**
- * The Anomalies in a key of the save's 'anomalies' (their ids joined with +, in HBHUB_MINER_ANOMALIES's order), or
- * null when it isn't one. Only one at a time for now: stacks come later.
+ * The Anomalies in a key of the save's 'anomalies' (their ids joined with +, in HBHUB_MINER_ANOMALIES's order, each
+ * once), or null when it isn't one. More than one is a stack, which only Anomalies of the tiers up to
+ * HBHUB_MINER_ANOMALY_STACK_TIER can be in.
  *
  * @return ?list<string>
  */
 function hbHubMinerAnomalyMods(string $key): ?array
 {
-    return isset(HBHUB_MINER_ANOMALIES[$key]) ? [$key] : null;
+    $mods = explode('+', $key);
+    $order = array_keys(HBHUB_MINER_ANOMALIES);
+    $last = -1;
+    foreach ($mods as $id) {
+        $at = array_search($id, $order, true);
+        if ($at === false || $at <= $last || (count($mods) > 1 && HBHUB_MINER_ANOMALIES[$id]['tier'] > HBHUB_MINER_ANOMALY_STACK_TIER)) {
+            return null;
+        }
+        $last = $at;
+    }
+    return $mods;
 }
 
 /**
@@ -1889,19 +2151,101 @@ function hbHubMinerAnomalyKey(array $mods): string
 }
 
 /**
- * The Antimatter to earn in an Anomaly with these $mods: the biggest of their goals.
+ * The rules an Anomaly's game has (its 'mods'): each of $mods, and the ones in its 'rules' after it.
+ *
+ * @return list<string>
  */
-function hbHubMinerAnomalyGoal(array $mods): float
+function hbHubMinerAnomalyRules(array $mods): array
 {
-    return (float) max(array_map(static fn (string $id): float => HBHUB_MINER_ANOMALIES[$id]['goal'], $mods));
+    $rules = [];
+    foreach ($mods as $id) {
+        foreach ([$id, ...(HBHUB_MINER_ANOMALIES[$id]['rules'] ?? [])] as $rule) {
+            if (!in_array($rule, $rules, true)) {
+                $rules[] = $rule;
+            }
+        }
+    }
+    return $rules;
 }
 
 /**
- * The Engine Parts finishing an Anomaly is worth, before the first-time and best-time rules: its tier's.
+ * The goal of an Anomaly with these $mods: the lowest of their goals (with the highest, a stack with the Unstable
+ * Vacuum, which runs out of Warp Jumps around its own, could never be done).
  */
-function hbHubMinerAnomalyParts(array $mods): int
+function hbHubMinerAnomalyGoal(array $mods): float
 {
-    return array_sum(array_map(static fn (string $id): int => HBHUB_MINER_ANOMALY_TIERS[HBHUB_MINER_ANOMALIES[$id]['tier']]['parts'], $mods));
+    return (float) min(array_map(static fn (string $id): float => HBHUB_MINER_ANOMALIES[$id]['goal'], $mods));
+}
+
+/**
+ * What the goal counts, a number in the Anomaly's game: Antimatter earned, unless the Anomaly says otherwise ('stat').
+ * Only the Tier III ones do, and they don't stack, so it's the first one's.
+ */
+function hbHubMinerAnomalyStat(array $mods): string
+{
+    return HBHUB_MINER_ANOMALIES[$mods[0]]['stat'] ?? 'antimatterEarned';
+}
+
+/**
+ * The Engine Parts finishing an Anomaly with these $mods is worth, before the first-time and best-time rules: each
+ * one's (or its tier's) together, times HBHUB_MINER_ANOMALY_STACK for each after the first, HBHUB_MINER_ANOMALY_WEEKLY
+ * for the weekly one, and the Engine's Navigation Computer. In the player's game ($state, for the Engine's perks).
+ */
+function hbHubMinerAnomalyParts(array $state, array $mods, bool $isWeekly): int
+{
+    $parts = 0;
+    foreach ($mods as $id) {
+        $parts += HBHUB_MINER_ANOMALIES[$id]['parts'] ?? HBHUB_MINER_ANOMALY_TIERS[HBHUB_MINER_ANOMALIES[$id]['tier']]['parts'];
+    }
+    return (int) floor($parts * HBHUB_MINER_ANOMALY_STACK ** (count($mods) - 1) * ($isWeekly ? HBHUB_MINER_ANOMALY_WEEKLY : 1)
+        * hbHubMinerEngineEffects($state)['anomalyParts']);
+}
+
+/**
+ * The week a time (Unix ms) is in: weeks since the one 1 January 1970 was in, each from Monday 00:00 UTC (that day was a
+ * Thursday, so three days are added).
+ */
+function hbHubMinerWeek(int $time): int
+{
+    return (int) floor(($time + 3 * HBHUB_MINER_DAY_MS) / HBHUB_MINER_WEEK_MS);
+}
+
+/**
+ * The weekly Anomaly for $week, the same for everyone: a stack of one of HBHUB_MINER_WEEKLY_SIZES, picked one by one
+ * from the stackable Anomalies (apart from HBHUB_MINER_WEEKLY_LEFT_OUT) with luck that only depends on the week.
+ *
+ * @return list<string>
+ */
+function hbHubMinerWeeklyMods(int $week): array
+{
+    static $cache = [];
+    if (isset($cache[$week])) {
+        return $cache[$week];
+    }
+    $left = array_values(array_filter(array_keys(HBHUB_MINER_ANOMALIES), static fn (string $id): bool =>
+        HBHUB_MINER_ANOMALIES[$id]['tier'] <= HBHUB_MINER_ANOMALY_STACK_TIER && !in_array($id, HBHUB_MINER_WEEKLY_LEFT_OUT, true)));
+    $size = HBHUB_MINER_WEEKLY_SIZES[(int) floor(hbHubMinerRandom(0, $week * 10, HBHUB_MINER_SALT_WEEKLY) * count(HBHUB_MINER_WEEKLY_SIZES))];
+    $picked = [];
+    for ($i = 0; $i < $size; $i++) {
+        $index = (int) floor(hbHubMinerRandom(0, $week * 10 + $i + 1, HBHUB_MINER_SALT_WEEKLY) * count($left));
+        $picked[] = $left[$index];
+        array_splice($left, $index, 1);
+    }
+    // In the Anomalies' own order, as a key has them
+    return $cache[$week] = array_values(array_intersect(array_keys(HBHUB_MINER_ANOMALIES), $picked));
+}
+
+/**
+ * Whether the player has finished $anomalyId, alone or in a stack.
+ */
+function hbHubMinerAnomalyDone(array $state, string $anomalyId): bool
+{
+    foreach ($state['anomalies'] as $key => $record) {
+        if (in_array($anomalyId, explode('+', (string) $key), true)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -1925,14 +2269,15 @@ function hbHubMinerGame(array $state): array
 }
 
 /**
- * Goes into an Anomaly ($mods, one id of HBHUB_MINER_ANOMALIES for now) at the game's time. Its game is a copy of the
- * player's, started over like a Big Rip that gives nothing (hbHubMinerNewMultiverse()), with its own luck. Returns
- * false when it can't be done: in one already, an unknown one, or its tier isn't open yet.
+ * Goes into an Anomaly ($mods: the ids of HBHUB_MINER_ANOMALIES, in their order) at the game's time. Its game is a copy
+ * of the player's, started over like a Big Rip that gives nothing (hbHubMinerNewMultiverse()), with its own luck; a
+ * Tier III one ('fresh') also starts HBHUB_MINER_ANOMALY_FRESH over, so it's from nothing. Returns false when it can't
+ * be done: in one already, an unknown one or stack, or a tier isn't open yet.
  */
 function hbHubMinerAnomalyStart(array &$state, mixed $mods): bool
 {
-    if ($state['anomaly'] !== null || $state['mods'] !== [] || !is_array($mods) || !array_is_list($mods)
-        || !is_string($mods[0] ?? null) || ($mods = hbHubMinerAnomalyMods(hbHubMinerAnomalyKey($mods))) === null) {
+    if ($state['anomaly'] !== null || $state['mods'] !== [] || !is_array($mods) || !array_is_list($mods) || $mods === []
+        || array_filter($mods, 'is_string') !== $mods || ($mods = hbHubMinerAnomalyMods(hbHubMinerAnomalyKey($mods))) === null) {
         return false;
     }
     foreach ($mods as $id) {
@@ -1944,11 +2289,14 @@ function hbHubMinerAnomalyStart(array &$state, mixed $mods): bool
     $game = $state;
     $game['anomaly'] = null;
     $game['anomalies'] = [];
-    $game['mods'] = $mods;
+    $game['mods'] = hbHubMinerAnomalyRules($mods);
     $game['destroyed'] = [];
     $game['engineOpen'] = false; // nothing is given from in here, apart from finishing it
     $game['seed'] = (int) floor(hbHubMinerRandom($state['seed'], $state['tick'], HBHUB_MINER_SALT_ANOMALY) * 0x7FFFFFFE) + 1;
     $game['started'] = $state['tick'];
+    if (HBHUB_MINER_ANOMALY_TIERS[HBHUB_MINER_ANOMALIES[$mods[0]]['tier']]['fresh']) {
+        $game = array_replace($game, HBHUB_MINER_ANOMALY_FRESH);
+    }
     hbHubMinerNewMultiverse($game);
     $game['comet'] = ['n' => 0, 'at' => $game['tick'] + hbHubMinerCometWait($game, 0)];
     $state['anomaly'] = ['mods' => $mods, 'started' => $state['tick'], 'goal' => hbHubMinerAnomalyGoal($mods), 'state' => $game];
@@ -1968,25 +2316,31 @@ function hbHubMinerAnomalyLeave(array &$state): float
 
 /**
  * When the Anomaly the player is in has its goal: it's done, its time goes in 'anomalies' (and its parts in $given, as
- * [HBHUB_MINER_ENGINE_SOURCE_ANOMALY, parts, key], see hbHubMinerApply(): all of them the first time and for a new
- * best time, HBHUB_MINER_ANOMALY_REPEAT of them otherwise), and the player leaves it.
+ * [HBHUB_MINER_ENGINE_SOURCE_ANOMALY, parts, key, ms it took, the week when it's that week's weekly Anomaly or null],
+ * see hbHubMinerApply(): all of them the first time and for a new best time, HBHUB_MINER_ANOMALY_REPEAT of them
+ * otherwise), and the player leaves it.
  */
 function hbHubMinerAnomalyCheck(array &$state, ?array &$given): void
 {
     $anomaly = $state['anomaly'];
-    if ($anomaly === null || $anomaly['state']['antimatterEarned'] < $anomaly['goal']) {
+    if ($anomaly === null || $anomaly['state'][hbHubMinerAnomalyStat($anomaly['mods'])] < $anomaly['goal']) {
         return;
     }
     $key = hbHubMinerAnomalyKey($anomaly['mods']);
     $ms = $anomaly['state']['tick'] - $anomaly['started'];
+    $week = hbHubMinerWeek($anomaly['state']['tick']);
+    $isWeekly = hbHubMinerAnomalyKey(hbHubMinerWeeklyMods($week)) === $key;
     $record = $state['anomalies'][$key] ?? null;
-    $parts = hbHubMinerAnomalyParts($anomaly['mods']);
+    $parts = hbHubMinerAnomalyParts($state, $anomaly['mods'], $isWeekly);
     if ($record !== null && $ms >= $record['best']) {
         $parts = (int) floor($parts * HBHUB_MINER_ANOMALY_REPEAT);
     }
     $state['anomalies'][$key] = ['done' => ($record['done'] ?? 0) + 1, 'best' => $record !== null ? min($record['best'], $ms) : $ms];
+    if ($isWeekly) {
+        $state['weeklies']++;
+    }
     if ($given !== null && $state['warps'] >= 1) {
-        $given[] = [HBHUB_MINER_ENGINE_SOURCE_ANOMALY, $parts, $key];
+        hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_ANOMALY, $parts, $key, $ms, $isWeekly ? $week : null]);
     }
     hbHubMinerAnomalyLeave($state);
 }
@@ -1994,7 +2348,9 @@ function hbHubMinerAnomalyCheck(array &$state, ?array &$given): void
 /**
  * hbHubMinerAdvance() for the game being played: an Anomaly's, while the player is in one (and nothing counts towards
  * Shifts in there), otherwise their own. In Speed of Light, the Anomaly is over at HBHUB_MINER_LIGHT_MS from its
- * start, and the player's own game carries on from then.
+ * start, and the player's own game carries on from then. A goal of ore this run (Iron Universe) is checked on the way,
+ * as it's reached by time going by rather than by something the player does, and the player's own game carries on
+ * from the ms it was.
  */
 function hbHubMinerAdvanceGame(array &$state, int $to, int $fullUntil = PHP_INT_MAX, ?array &$given = null): float
 {
@@ -2002,8 +2358,13 @@ function hbHubMinerAdvanceGame(array &$state, int $to, int $fullUntil = PHP_INT_
         return hbHubMinerAdvance($state, $to, $fullUntil, $given);
     }
     $limit = in_array('speedOfLight', $state['anomaly']['mods'], true) ? $state['anomaly']['started'] + HBHUB_MINER_LIGHT_MS : PHP_INT_MAX;
+    $runOreGoal = hbHubMinerAnomalyStat($state['anomaly']['mods']) === 'runOre' ? $state['anomaly']['goal'] : INF;
     $nothing = null;
-    $offlineOre = hbHubMinerAdvance($state['anomaly']['state'], min($to, $limit), $fullUntil, $nothing);
+    $offlineOre = hbHubMinerAdvance($state['anomaly']['state'], min($to, $limit), $fullUntil, $nothing, $runOreGoal);
+    if ($state['anomaly']['state']['runOre'] >= $runOreGoal) {
+        hbHubMinerAnomalyCheck($state, $given); // done, and back in the player's own game
+        return $offlineOre + hbHubMinerAdvance($state, $to, $fullUntil, $given);
+    }
     if ($to < $limit) {
         return $offlineOre;
     }
@@ -2023,16 +2384,27 @@ function hbHubMinerAdvanceGame(array &$state, int $to, int $fullUntil = PHP_INT_
  * - ['type' => 'donate', 'what' => 'ore' or 'strange', 'parts' => n]: gives n parts to the Cosmic Engine, for ore
  *   (hbHubMinerOreDonationCost(), at most HBHUB_MINER_ENGINE_ORE_PARTS a day) or HBHUB_MINER_ENGINE_STRANGE_PART
  *   Strange Matter each.
- * - ['type' => 'anomalyStart', 'mods' => [id]] (hbHubMinerAnomalyStart()), ['type' => 'anomalyQuit'].
+ * - ['type' => 'anomalyStart', 'mods' => [id, ...]] (hbHubMinerAnomalyStart(), more than one for a stack),
+ *   ['type' => 'anomalyQuit'].
+ * - ['type' => 'skin', 'id' => a key of HBHUB_MINER_SKINS the player has, or null for the asteroid's usual look].
  * In an Anomaly, everything else is played in its game instead (apart from learning skills, Big Rips and donating,
  * which can't be done in there), and once its goal is reached it's done (hbHubMinerAnomalyCheck()).
  * What's given to the Engine (donations, finished Engine Shifts and Anomalies) goes in $given as [source, parts], and
- * for an Anomaly its key third, for hbHubMinerSync() to put in. $given is null when the player can't give anything
- * (guests): then donating doesn't count.
+ * for an Anomaly its key, time and week after that, for hbHubMinerSync() to put in. $given is null when the player
+ * can't give anything (guests): then donating doesn't count.
  */
 function hbHubMinerApply(array &$state, array $action, ?array &$given = null): bool
 {
     $type = $action['type'] ?? null;
+
+    if ($type === 'skin') {
+        $skinId = $action['id'] ?? null;
+        if ($skinId !== null && (!is_string($skinId) || !hbHubMinerSkinOpen($state, $skinId))) {
+            return false;
+        }
+        $state['skin'] = $skinId;
+        return true;
+    }
 
     if ($type === 'anomalyStart') {
         return hbHubMinerAnomalyStart($state, $action['mods'] ?? null);
@@ -2165,7 +2537,12 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
             }
             $state['ore'] = max(0.0, $state['ore'] - hbHubMinerOreDonationCost($state, $parts));
             $state['donatedToday'] += $parts;
-            $given[] = [HBHUB_MINER_ENGINE_SOURCE_ORE, $parts];
+            // Worth less in the later sections: what doesn't make a whole part waits in engineOreRest for the next
+            $quarters = $state['engineOreRest'] + $parts * hbHubMinerOreQuarters($state);
+            $state['engineOreRest'] = $quarters % HBHUB_MINER_ENGINE_ORE_QUARTERS;
+            if ($quarters >= HBHUB_MINER_ENGINE_ORE_QUARTERS) {
+                hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_ORE, intdiv($quarters, HBHUB_MINER_ENGINE_ORE_QUARTERS)]);
+            }
             return true;
         }
         if (($action['what'] ?? null) === 'strange') {
@@ -2173,7 +2550,7 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
                 return false;
             }
             $state['strange'] -= $parts * HBHUB_MINER_ENGINE_STRANGE_PART;
-            $given[] = [HBHUB_MINER_ENGINE_SOURCE_STRANGE, $parts];
+            hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_STRANGE, $parts]);
             return true;
         }
         return false;
@@ -2191,11 +2568,51 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
 }
 
 /**
- * A number an achievement checks (its 'stat'). owned:<building> is how many of it there are.
+ * Whether the player has the asteroid skin $skinId (a key of HBHUB_MINER_SKINS, see its 'unlock').
+ */
+function hbHubMinerSkinOpen(array $state, string $skinId): bool
+{
+    $unlock = HBHUB_MINER_SKINS[$skinId]['unlock'] ?? null;
+    return match (true) {
+        $unlock === null => false,
+        isset($unlock['anomaly']) => hbHubMinerAnomalyDone($state, $unlock['anomaly']),
+        isset($unlock['stage']) => $state['engineStage'] >= $unlock['stage'],
+        isset($unlock['ignition']) => $state['ignitionCrew'],
+        default => false,
+    };
+}
+
+/**
+ * The most Anomalies finished in one stack (1 for one on its own, 0 for none).
+ */
+function hbHubMinerBiggestStack(array $state): int
+{
+    $biggest = 0;
+    foreach ($state['anomalies'] as $key => $record) {
+        $biggest = max($biggest, count(explode('+', (string) $key)));
+    }
+    return $biggest;
+}
+
+/**
+ * A number an achievement checks (its 'stat'). owned:<building> is how many of it there are, anomaly:<id> whether that
+ * Anomaly is finished (alone or in a stack), tier:<n> how many of that tier's are.
  */
 function hbHubMinerStat(array $state, string $stat): float
 {
+    if (str_starts_with($stat, 'anomaly:')) {
+        return hbHubMinerAnomalyDone($state, substr($stat, 8)) ? 1 : 0;
+    }
+    if (str_starts_with($stat, 'tier:')) {
+        $tier = (int) substr($stat, 5);
+        return count(array_filter(array_keys(HBHUB_MINER_ANOMALIES), static fn (string $id): bool =>
+            HBHUB_MINER_ANOMALIES[$id]['tier'] === $tier && hbHubMinerAnomalyDone($state, $id)));
+    }
     return match ($stat) {
+        'anomalies' => count($state['anomalies']),
+        'stack' => hbHubMinerBiggestStack($state),
+        'lightHour' => isset($state['anomalies']['speedOfLight']) && $state['anomalies']['speedOfLight']['best'] < HBHUB_MINER_LIGHT_HOUR_MS ? 1 : 0,
+        'engineGiven', 'shiftDays', 'weeklies' => (float) $state[$stat],
         'rate' => hbHubMinerRate($state, PHP_INT_MAX),
         'upgrades' => count($state['upgrades']),
         'buildings' => array_sum($state['buildings']),
@@ -2275,18 +2692,25 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         // The parts given go into the Engine, locked so two saves can't both finish the same stage (always after the
         // save's row, so they can't wait on each other), and the save gets the perks of every stage done so far
         $engine = hbHubMinerEngineRow($db, $replay['given'] !== []);
+        if (hbHubMinerEngineDrainDue($engine)) { // Ignition's time ran out: this save drains it, with the row locked
+            $engine = hbHubMinerEngineRow($db, true);
+            if (hbHubMinerEngineDrainDue($engine)) {
+                hbHubMinerEngineDrain($db, $engine);
+            }
+        }
         if ($replay['given'] !== []) {
             hbHubMinerEngineGive($db, $engine, $userId, $replay['given']);
+            hbHubMinerAnomalyTimesSave($db, $userId, $replay['given']);
         }
-        hbHubMinerEngineAdopt($state, $engine, true);
+        hbHubMinerEngineAdopt($state, $engine, true, $db, $userId);
 
         $db->prepare('UPDATE `HBHub-MinerSaves` SET saveState = ?, saveTab = ?, saveOreAllTime = ?, saveOrePerSecond = ?,
-                saveDarkMatter = ?, saveAntimatter = ?, saveStrangeMatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?,
+                saveDarkMatter = ?, saveAntimatter = ?, saveStrangeMatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?, saveSkills = ?,
                 saveUpdatedTimestamp = UTC_TIMESTAMP(), saveRateCount = ?, saveRateTimestamp = IF(?, saveRateTimestamp, UTC_TIMESTAMP())
             WHERE userId = ?')
             ->execute([hbHubMinerEncode($state), $tab, $state['allOre'], hbHubMinerRate($state, PHP_INT_MAX), $state['darkEarned'],
                 $state['antimatterEarned'], $state['strangeEarned'], $state['warps'], $state['clicks'], count($state['achievements']),
-                $inRateWindow ? (int) $row['saveRateCount'] + 1 : 1, (int) $inRateWindow, $userId]);
+                count($state['skills']), $inRateWindow ? (int) $row['saveRateCount'] + 1 : 1, (int) $inRateWindow, $userId]);
         $db->commit();
     } catch (Throwable $e) {
         if ($db->inTransaction()) {
@@ -2311,7 +2735,7 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
  * Engine (guests can't). Returns 'offline' (null, or ['ms' => away for, 'ore' => mined meanwhile]), 'recovered' (how
  * many of $recovered counted) and 'given' (what was given to the Engine, [source, parts] each, see hbHubMinerApply()).
  *
- * @return array{offline: ?array{ms: int, ore: float}, recovered: int, given: list<array{0: int, 1: int, 2?: string}>}
+ * @return array{offline: ?array{ms: int, ore: float}, recovered: int, given: list<array{0: int, 1: int, 2?: string, 3?: int, 4?: ?int}>}
  */
 function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $now, bool $canGive = false): array
 {

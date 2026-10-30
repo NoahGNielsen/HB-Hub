@@ -258,10 +258,21 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 between clicks and where the pointer is, but that stays in your browser: all it sends is whether
                                 a click looked like an auto-clicker's, and it isn't kept. Other people only see
                                 the totals on the Ore Mining Inc. leaderboard (ore mined, ore per second, Dark Matter, Antimatter,
-                                Strange Matter, Warp Jumps, clicks and achievements). The save also keeps how far you are with
-                                the day's Engine Shifts and how many Engine Parts you've given from ore that day, the Anomaly
-                                you're in (its own game, kept the same way) and, for each Anomaly you've finished, how many
-                                times and your best time.
+                                Strange Matter, Warp Jumps, clicks and achievements), and on its Rising tab, which only lists
+                                players who haven't learned the whole skill tree (so it keeps how many skills you've learned).
+                                The save also keeps how far you are with the day's Engine Shifts, how many Engine Parts you've
+                                given from ore that day and in all, how many days you've done every Shift and how many weekly
+                                Anomalies you've finished, the Anomaly you're in (its own game, kept the same way), for each
+                                Anomaly or stack of them you've finished how many times and your best time, and the asteroid
+                                skin you picked.
+                            </li>
+                            <li>
+                                Your best time for each Ore Mining Inc. Anomaly (or stack of them) you finish, how many times
+                                you've finished it and when you last did, and the same for each week's weekly Anomaly you finish
+                                in its week. <strong>This is shown to everyone</strong> with an account on the Ore Mining Inc.
+                                leaderboard's Anomaly tabs, and it's what gives the leaderboard titles shown under your name
+                                there ("Gauntlet Runner", "Singularity", or "Engineer" for giving parts to the Cosmic Engine
+                                once its Countdown Clock is built). It's kept until you delete your account.
                             </li>
                             <li>
                                 The Engine Parts you give to Ore Mining Inc.'s Cosmic Engine, which everyone builds together:
@@ -271,8 +282,10 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 with an account: your name and the parts you gave in the Engine view's list of the latest parts and
                                 its top 10, and on the Ore Mining Inc. leaderboard's Engine tabs (with how many came from
                                 each). If you've given parts once the Engine's Crew Deck is built, your profile shows an
-                                Engine Crew badge. When a stage of the Engine is finished, everyone who has made a Warp Jump
-                                gets a notification about it (it doesn't say who helped).
+                                Engine Crew badge, and if you gave parts to its last stage, Ignition, before it was finished, an
+                                Ignition badge too. The Engine's locks count how many different players gave parts or finished
+                                certain Anomalies, but without showing who. When a stage of the Engine is finished, everyone
+                                who has made a Warp Jump gets a notification about it (it doesn't say who helped).
                             </li>
                             <li>
                                 Ore Mining Inc. crash reports, only if you agree to send one. While the game is open, it notes
@@ -365,7 +378,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <section id="see" aria-labelledby="privacy-see">
                         <h2 id="privacy-see">4. Who can see what</h2>
                         <ul>
-                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, when you were last online and when you joined, and your spot on the leaderboards, and the Engine Parts you've given to Ore Mining Inc.'s Cosmic Engine (with an Engine Crew badge on your profile once its Crew Deck is built). People playing without an account see how far the Engine is, but not who gave what.</li>
+                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, when you were last online and when you joined, and your spot on the leaderboards, and the Engine Parts you've given to Ore Mining Inc.'s Cosmic Engine (with an Engine Crew badge on your profile once its Crew Deck is built, and an Ignition badge if you helped fill its last stage), your Ore Mining Inc. Anomaly best times and your leaderboard title there. People playing without an account see how far the Engine is, but not who gave what.</li>
                             <li><strong>Everyone in your class's group chat</strong> (everyone on HB Hub who started HTX the same year in the same field) can see that you're in it, and the messages you send there. You're put in it automatically when you sign up or change your class, and taken out of your old class's chat when you change it. Nobody is a group admin there, so only site admins can remove anyone or delete messages in it.</li>
                             <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group. When they remove a site admin, the site admin can undo it from their notification: they're put back in the group as they were, and the notice about it in the chat is deleted.</li>
                             <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>

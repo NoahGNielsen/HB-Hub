@@ -175,7 +175,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             your first Warp Jump, you can help in three ways:
                         </p>
                         <ul>
-                            <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day. The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much.</li>
+                            <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day. The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much. From the Drive section (stage 11) a part from ore counts as half a part, and from the Navigation section (stage 16) as a quarter.</li>
                             <li><strong>Strange Matter</strong>: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> for a part, as many as you like. It doesn't make you mine slower, as the Strange Matter bonus counts all you've ever earned, not what you have left.</li>
                             <li>
                                 <strong>Engine Shifts</strong>: <?= HBHUB_MINER_SHIFT_COUNT ?> small tasks a day, the same for everyone (like
@@ -190,7 +190,15 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             Engine only takes parts from Anomalies). Finishing <a href="#anomalies">Anomalies</a> gives parts
                             too, and they're the biggest source of them. The daily limits and Shifts start over at midnight UTC. The
                             <a href="/games/ore-mining-inc/leaderboard?board=engine">leaderboard</a> shows who has given the most.
-                            These are the stages so far (<?= HBHUB_MINER_ENGINE_STAGE_TOTAL ?> are planned):
+                        </p>
+                        <p>
+                            The last stage, Ignition, has a countdown: it has to be full within
+                            <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days of the stage before it being
+                            finished. If it isn't, <?= (1 - HBHUB_MINER_ENGINE_DRAIN) * 100 ?>% of its parts are lost and it
+                            gets another <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days. Once it's full,
+                            everything mines <?= HBHUB_MINER_IGNITION_TIMES ?> times as much for
+                            <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours, and everyone who gave parts to Ignition gets the
+                            Ignition badge on their profile and the Ignition asteroid skin. These are the stages:
                         </p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
@@ -215,20 +223,41 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="anomalies" aria-labelledby="docs-anomalies">
                         <h2 id="docs-anomalies">Anomalies</h2>
                         <p>
-                            The Anomalies view has challenge runs: universes of their own, each with one rule changed. You go in
-                            with your skill tree, your Strange Matter bonus and the counts that make you mine faster (Warp Jumps,
-                            Big Crunches, comets caught), but with no Dark Matter, Antimatter or ore. Antimatter Echo and Dark
-                            Echo keep their upgrades, like on a Big Rip. You finish an Anomaly by earning its goal of
-                            Antimatter in it.
+                            The Anomalies view has challenge runs: universes of their own, each with one rule changed. In Tiers
+                            I and II you go in with your skill tree, your Strange Matter bonus and the counts that make you mine
+                            faster (Warp Jumps, Big Crunches, comets caught), but with no Dark Matter, Antimatter or ore.
+                            Antimatter Echo and Dark Echo keep their upgrades, like on a Big Rip. You finish one by earning its
+                            goal of Antimatter in it. Tier III starts you from nothing instead: no skills, no Strange Matter
+                            bonus, no upgrades and none of those counts, and each has a goal of its own. The Cosmic Engine's perks
+                            work in every Anomaly.
+                        </p>
+                        <p>
+                            <strong>Stacks:</strong> any Tier I and Tier II Anomalies can be played together, with all their rules
+                            at once, from the stack builder in the Anomalies view. A stack's goal is the lowest of its Anomalies'
+                            goals, and it's worth their parts added up, times <?= HBHUB_MINER_ANOMALY_STACK ?> for each Anomaly
+                            after the first. A stack has its own best time.
+                        </p>
+                        <p>
+                            <strong>The weekly Anomaly</strong> is a stack of <?= implode(' or ', HBHUB_MINER_WEEKLY_SIZES) ?>
+                            picked for everyone each week (weeks start on Monday at 00:00 UTC). Finishing it that week is worth
+                            <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts, and the
+                            <a href="/games/ore-mining-inc/leaderboard?board=weekly">leaderboard</a> lists the fastest times each
+                            week.
+                        </p>
+                        <p>
+                            <strong>Rewards for you:</strong> a badge and best time for each Anomaly, achievements, asteroid skins
+                            (a colour for each Tier II Anomaly, an animated one for each Tier III, and more from the Cosmic
+                            Engine), picked in your stats, and the leaderboard titles "Singularity" (Naked Singularity) and
+                            "Gauntlet Runner" (The Gauntlet).
                         </p>
                         <p>
                             While you're in one, a banner says so on every view, and your own game waits and mines as if you
                             were away. You can leave whenever you like, but that run is lost. Skills, Big Rips, donations and
                             Engine Shifts only work in your own game. What you do in an Anomaly doesn't count towards your
-                            stats, achievements or the leaderboard.
+                            stats or the leaderboard, but finishing Anomalies has achievements of its own.
                         </p>
                         <p>
-                            Finishing one gives the Cosmic Engine its tier's parts the first time and whenever you beat your best
+                            Finishing one gives the Cosmic Engine its parts the first time and whenever you beat your best
                             time, and <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% of them otherwise (rounded down). These parts go in
                             even while the Engine is full and waiting for a lock, since some locks need Anomalies. You also get
                             a badge for each one in the Anomalies view, with your best time.
@@ -237,12 +266,12 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <h3>Tier <?= str_repeat('I', $docsTier) ?>: <?= htmlspecialchars($docsTierData['name']) ?></h3>
                             <p>
                                 <?= $docsTierData['unlock'] === 'rip' ? 'Opens with your first Big Rip.' : 'Opens once you\'ve learned the Theory of Everything.' ?>
-                                <?= $docsTierData['parts'] ?> parts each.<?= $docsTierData['noAuto'] ? ' Autopilot and Auto Crunch are off in these.' : '' ?>
+                                <?= $docsTierData['fresh'] ? 'From nothing, and they don\'t stack.' : $docsTierData['parts'] . ' parts each.' ?><?= $docsTierData['noAuto'] ? ' Autopilot and Auto Crunch are off in these.' : '' ?>
                             </p>
                             <div class="docs-table-wrap">
                                 <table class="docs-table">
                                     <thead>
-                                        <tr><th scope="col">Anomaly</th><th scope="col">Rule</th><th scope="col">Goal (Antimatter)</th></tr>
+                                        <tr><th scope="col">Anomaly</th><th scope="col">Rule</th><th scope="col">Goal</th><?= $docsTierData['fresh'] ? '<th scope="col">Parts</th>' : '' ?></tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach (HBHUB_MINER_ANOMALIES as $docsAnomaly): ?>
@@ -250,7 +279,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                             <tr>
                                                 <td><?= htmlspecialchars($docsAnomaly['name']) ?></td>
                                                 <td><?= htmlspecialchars($docsAnomaly['text']) ?></td>
-                                                <td><?= docsMinerNumber($docsAnomaly['goal']) ?></td>
+                                                <td><?= docsMinerNumber($docsAnomaly['goal']) ?> <?= ['runOre' => 'ore in one run', 'darkEarned' => 'Dark Matter'][$docsAnomaly['stat'] ?? ''] ?? 'Antimatter' ?></td>
+                                                <?php if ($docsTierData['fresh']): ?>
+                                                    <td><?= number_format($docsAnomaly['parts'] ?? $docsTierData['parts']) ?></td>
+                                                <?php endif; ?>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>

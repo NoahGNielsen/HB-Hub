@@ -88,6 +88,7 @@ $profileHasStatus = hbHubProfileHasStatus($profileStatus);
 [$profileStatusEmoji, $profileStatusText, $profileStatusClearAfter] = $profileStatusForm ?? [$profileStatus['emoji'], $profileStatus['text'], null];
 $profileGradient = hbHubProfileBannerGradient($profileSettings);
 $profileEngineCrew = hbHubMinerEngineCrew(hbHubDatabase(), (int) $profile['userId']);
+$profileIgnitionCrew = $profileEngineCrew && hbHubMinerEngineIgnitionCrew(hbHubDatabase(), (int) $profile['userId']);
 
 $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvatarAttachmentId'] !== null ? (int) $profile['userAvatarAttachmentId'] : null);
 $profileBannerSrc = $profile['bannerId'] !== null ? hbHubProfileBannerUrl((int) $profile['userId'], (int) $profile['bannerId']) : null;
@@ -205,6 +206,9 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
                         <?php endif; ?>
                         <?php if ($profileEngineCrew): ?>
                             <li class="profile-badge" title="Helped build Ore Mining Inc.'s Cosmic Engine"><span aria-hidden="true">⚙️</span>Engine Crew</li>
+                        <?php endif; ?>
+                        <?php if ($profileIgnitionCrew): ?>
+                            <li class="profile-badge" title="Helped fill the Cosmic Engine's Ignition stage in Ore Mining Inc."><span aria-hidden="true">🚀</span>Ignition</li>
                         <?php endif; ?>
                     </ul>
                 <?php endif; ?>

@@ -4,15 +4,20 @@
 //
 // - HBHub-MinerEngines: one row per Engine (only #1 for now, made by hbHubMinerEngineRow() the first time it's needed):
 //   how many stages are done (engineStage), the parts in the stage being built (engineStageParts), all parts ever given
-//   (engineParts), the admin's own stage costs (engineStageCosts, JSON {stage: cost}, see hbHubMinerEngineCosts()) and
-//   when each stage was done (engineStageFinished, JSON {stage: 'Y-m-d H:i:s' UTC}).
+//   (engineParts), the admin's own stage costs (engineStageCosts, JSON {stage: cost}, see hbHubMinerEngineCosts()),
+//   when each stage was done (engineStageFinished, JSON {stage: 'Y-m-d H:i:s' UTC}), when the last stage (Ignition)
+//   has to be full by (engineCountdownTimestamp) and when it was (engineIgnitedTimestamp).
 // - HBHub-MinerContributions: who gave how many parts, from what (HBHUB_MINER_ENGINE_SOURCE_*), into which stage and
 //   when: one row per source per save. Shown to everyone in the game's Engine view and on the leaderboard.
+// - HBHub-MinerAnomalyTimes: each player's best time for each Anomaly (or stack) they've finished, and for each week's
+//   weekly Anomaly they finished that week (hbHubMinerAnomalyTimesSave()), for the leaderboard's Anomaly tabs and the
+//   weekly lock. The save has the player's own best times too ('anomalies'); this is so they can be listed together.
 //
 // hbHubMinerSync() (miner.php) puts in what a save gave with hbHubMinerEngineGive(), with the Engine's row locked, and
 // a stage is done as soon as it has its parts and its lock is met (hbHubMinerEngineFinish()), which notifies everyone
-// who plays (miner.engineStage, notificationTypes/miner.php). The admin panel changes the costs
-// (hbHubMinerEngineSetCosts(), admin/engine.php).
+// who plays (miner.engineStage, notificationTypes/miner.php). Ignition's countdown has no timer: the first save after
+// it runs out drains it (hbHubMinerEngineDrain()). The admin panel changes the costs (hbHubMinerEngineSetCosts(),
+// admin/engine.php).
 require_once __DIR__ . '/../../database.php';
 
 const HBHUB_MINER_ENGINE_TOP = 10; // contributors in the Engine view
@@ -26,7 +31,7 @@ const HBHUB_MINER_ENGINE_STATUS_BANNED = 4; // userStatus in HBHub-Users
 function hbHubMinerEngineRow(PDO $db, bool $lock): array
 {
     $sql = 'SELECT engineId, engineNumber, engineStage, engineStageParts, engineParts, engineStageCosts, engineStageFinished,
-            engineStartedTimestamp
+            engineStartedTimestamp, engineCountdownTimestamp, engineIgnitedTimestamp
         FROM `HBHub-MinerEngines` ORDER BY engineId DESC LIMIT 1' . ($lock ? ' FOR UPDATE' : '');
     $engine = $db->query($sql)->fetch();
     if ($engine === false) {
@@ -66,25 +71,58 @@ function hbHubMinerEngineOpen(array $engine): bool
         return false;
     }
     $lock = HBHUB_MINER_ENGINE_STAGES[$done]['lock'];
-    return $lock === null || $lock['type'] === 'contributors' || (int) $engine['engineStageParts'] < hbHubMinerEngineCosts($engine)[$done];
+    return $lock === null || in_array($lock['type'], ['contributors', 'section'], true)
+        || (int) $engine['engineStageParts'] < hbHubMinerEngineCosts($engine)[$done];
 }
 
 /**
- * Gives the save what the Engine is now: its stages done (the perks) and whether it takes parts. $canGive is false for
- * guests, who can't.
+ * A UTC database time as Unix ms, or 0 for none.
  */
-function hbHubMinerEngineAdopt(array &$state, array $engine, bool $canGive): void
+function hbHubMinerEngineMsOrZero(?string $timestamp): int
+{
+    return $timestamp !== null ? hbHubMinerEngineMs($timestamp) : 0;
+}
+
+/**
+ * Gives the save what the Engine is now: its stages done (the perks), whether it takes parts, when it was ignited and
+ * whether $userId gave parts to its Ignition (looked up once, after it's ignited, until it's true). $canGive is false
+ * for guests, who can't give anything, and have no $userId.
+ */
+function hbHubMinerEngineAdopt(array &$state, array $engine, bool $canGive, ?PDO $db = null, ?int $userId = null): void
 {
     $state['engineStage'] = min((int) $engine['engineStage'], count(HBHUB_MINER_ENGINE_STAGES));
     $state['engineOpen'] = $canGive && hbHubMinerEngineOpen($engine);
+    $state['engineIgnited'] = hbHubMinerEngineMsOrZero($engine['engineIgnitedTimestamp']);
+    if ($state['engineIgnited'] > 0 && !$state['ignitionCrew'] && $db !== null && $userId !== null) {
+        // Before it was ignited: Anomaly parts given after it go in as stage 25 too, waiting for Engine #2
+        $statement = $db->prepare('SELECT 1 FROM `HBHub-MinerContributions`
+            WHERE contributionEngineId = ? AND contributionUserId = ? AND contributionStage = ? AND contributionTimestamp <= ? LIMIT 1');
+        $statement->execute([(int) $engine['engineId'], $userId, count(HBHUB_MINER_ENGINE_STAGES), $engine['engineIgnitedTimestamp']]);
+        $state['ignitionCrew'] = $statement->fetchColumn() !== false;
+    }
     if ($state['anomaly'] !== null) { // the perks work in there too, but nothing's given from it (see hbHubMinerAnomalyStart())
         $state['anomaly']['state']['engineStage'] = $state['engineStage'];
+        $state['anomaly']['state']['engineIgnited'] = $state['engineIgnited'];
     }
 }
 
 /**
- * How far stage $index (0 for stage 1) is with its lock: ['have' => n, 'need' => n], or null when it has none. For an
- * anomalies lock, have is how many of the tier's Anomalies someone has finished for this Engine.
+ * The players who have finished $anomalyId for this Engine, alone or in a stack: their user ids.
+ *
+ * @return list<int>
+ */
+function hbHubMinerEngineFinishers(PDO $db, array $engine, string $anomalyId): array
+{
+    $statement = $db->prepare('SELECT DISTINCT contributionUserId FROM `HBHub-MinerContributions`
+        WHERE contributionEngineId = ? AND contributionSource = ? AND FIND_IN_SET(?, REPLACE(contributionAnomaly, \'+\', \',\')) > 0');
+    $statement->execute([(int) $engine['engineId'], HBHUB_MINER_ENGINE_SOURCE_ANOMALY, $anomalyId]);
+    return array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
+}
+
+/**
+ * How far stage $index (0 for stage 1) is with its lock: ['have' => n, 'need' => n], or null when it has none (see
+ * HBHUB_MINER_ENGINE_STAGES for what each kind counts). For an each lock, have is the fewest players any of the tier's
+ * Anomalies has; for a weekly one, the most players who finished the weekly Anomaly in one week since the Engine began.
  */
 function hbHubMinerEngineLock(PDO $db, array $engine, int $index): ?array
 {
@@ -92,16 +130,98 @@ function hbHubMinerEngineLock(PDO $db, array $engine, int $index): ?array
     if ($lock === null) {
         return null;
     }
-    if ($lock['type'] === 'contributors') {
-        $statement = $db->prepare('SELECT COUNT(DISTINCT contributionUserId) FROM `HBHub-MinerContributions` WHERE contributionEngineId = ?');
-        $statement->execute([(int) $engine['engineId']]);
-        return ['have' => (int) $statement->fetchColumn(), 'need' => $lock['count']];
+    $engineId = (int) $engine['engineId'];
+    $tierIds = isset($lock['tier'])
+        ? array_keys(array_filter(HBHUB_MINER_ANOMALIES, static fn (array $anomaly): bool => $anomaly['tier'] === $lock['tier'])) : [];
+    switch ($lock['type']) {
+        case 'contributors':
+        case 'section':
+            // section: the stages of this stage's section, by the stage that was being built when the parts went in
+            $stages = $lock['type'] === 'section' ? array_keys(array_filter(HBHUB_MINER_ENGINE_STAGES,
+                static fn (array $stage): bool => $stage['section'] === HBHUB_MINER_ENGINE_STAGES[$index]['section'])) : [];
+            $statement = $db->prepare('SELECT COUNT(DISTINCT contributionUserId) FROM `HBHub-MinerContributions` WHERE contributionEngineId = ?'
+                . ($stages !== [] ? ' AND contributionStage BETWEEN ? AND ?' : ''));
+            $statement->execute($stages !== [] ? [$engineId, min($stages) + 1, max($stages) + 1] : [$engineId]);
+            $have = (int) $statement->fetchColumn();
+            break;
+        case 'anomalies':
+            $have = count(array_filter($tierIds, static fn (string $id): bool => hbHubMinerEngineFinishers($db, $engine, $id) !== []));
+            break;
+        case 'players': // who has finished every one of them
+            $players = null;
+            foreach ($lock['anomalies'] as $id) {
+                $finishers = hbHubMinerEngineFinishers($db, $engine, $id);
+                $players = $players === null ? $finishers : array_values(array_intersect($players, $finishers));
+            }
+            $have = count($players ?? []);
+            break;
+        case 'each':
+            $have = min(array_map(static fn (string $id): int => count(hbHubMinerEngineFinishers($db, $engine, $id)), $tierIds));
+            break;
+        case 'stack':
+            $statement = $db->prepare('SELECT COALESCE(MAX(LENGTH(contributionAnomaly) - LENGTH(REPLACE(contributionAnomaly, \'+\', \'\')) + 1), 0)
+                FROM `HBHub-MinerContributions` WHERE contributionEngineId = ? AND contributionSource = ?');
+            $statement->execute([$engineId, HBHUB_MINER_ENGINE_SOURCE_ANOMALY]);
+            $have = (int) $statement->fetchColumn();
+            break;
+        case 'weekly':
+            $statement = $db->prepare('SELECT COALESCE(MAX(players), 0) FROM (SELECT COUNT(*) AS players FROM `HBHub-MinerAnomalyTimes`
+                WHERE timeWeek >= ? GROUP BY timeWeek) weeks');
+            $statement->execute([max(1, hbHubMinerWeek(hbHubMinerEngineMs($engine['engineStartedTimestamp'])))]);
+            $have = (int) $statement->fetchColumn();
+            break;
+        default:
+            $have = 0;
     }
-    $ids = array_keys(array_filter(HBHUB_MINER_ANOMALIES, static fn (array $anomaly): bool => $anomaly['tier'] === $lock['tier']));
-    $statement = $db->prepare('SELECT COUNT(DISTINCT contributionAnomaly) FROM `HBHub-MinerContributions`
-        WHERE contributionEngineId = ? AND contributionSource = ? AND contributionAnomaly IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')');
-    $statement->execute([(int) $engine['engineId'], HBHUB_MINER_ENGINE_SOURCE_ANOMALY, ...$ids]);
-    return ['have' => (int) $statement->fetchColumn(), 'need' => $lock['count']];
+    return ['have' => $have, 'need' => $lock['count']];
+}
+
+/**
+ * Whether Ignition's time has run out (the stage before it done, it not yet full, the countdown passed).
+ */
+function hbHubMinerEngineDrainDue(array $engine): bool
+{
+    return (int) $engine['engineStage'] === count(HBHUB_MINER_ENGINE_STAGES) - 1 && $engine['engineCountdownTimestamp'] !== null
+        && hbHubMinerEngineMs($engine['engineCountdownTimestamp']) <= hbHubMinerNow();
+}
+
+/**
+ * Ignition's time ran out: HBHUB_MINER_ENGINE_DRAIN of its parts are kept and it gets another
+ * HBHUB_MINER_ENGINE_COUNTDOWN_MS, once for each time that's passed since. Done on the first save after (there's no
+ * timer on shared hosting). $engine must have been read with its row locked, inside a transaction.
+ */
+function hbHubMinerEngineDrain(PDO $db, array &$engine): void
+{
+    $deadline = hbHubMinerEngineMs($engine['engineCountdownTimestamp']);
+    $parts = (int) $engine['engineStageParts'];
+    while ($deadline <= hbHubMinerNow()) {
+        $parts = (int) floor($parts * HBHUB_MINER_ENGINE_DRAIN);
+        $deadline += HBHUB_MINER_ENGINE_COUNTDOWN_MS;
+    }
+    $engine['engineStageParts'] = $parts;
+    $engine['engineCountdownTimestamp'] = gmdate('Y-m-d H:i:s', intdiv($deadline, 1000));
+    $db->prepare('UPDATE `HBHub-MinerEngines` SET engineStageParts = ?, engineCountdownTimestamp = ? WHERE engineId = ?')
+        ->execute([$parts, $engine['engineCountdownTimestamp'], (int) $engine['engineId']]);
+}
+
+/**
+ * Puts the Anomalies a save finished (hbHubMinerReplay()'s 'given' rows from Anomalies, which have the key, the ms it
+ * took and the week when it was the weekly one) in HBHub-MinerAnomalyTimes: the best time and how many times for each
+ * (timeWeek 0), and again for the week when it was that week's weekly Anomaly.
+ */
+function hbHubMinerAnomalyTimesSave(PDO $db, int $userId, array $given): void
+{
+    $insert = $db->prepare('INSERT INTO `HBHub-MinerAnomalyTimes` (timeUserId, timeAnomaly, timeWeek, timeBest, timeDone, timeUpdatedTimestamp)
+        VALUES (?, ?, ?, ?, 1, UTC_TIMESTAMP())
+        ON DUPLICATE KEY UPDATE timeBest = LEAST(timeBest, VALUES(timeBest)), timeDone = timeDone + 1, timeUpdatedTimestamp = UTC_TIMESTAMP()');
+    foreach ($given as $gift) {
+        if ($gift[0] !== HBHUB_MINER_ENGINE_SOURCE_ANOMALY || !isset($gift[3])) {
+            continue;
+        }
+        foreach (array_unique([0, (int) ($gift[4] ?? 0)]) as $week) {
+            $insert->execute([$userId, $gift[2], $week, (int) $gift[3]]);
+        }
+    }
 }
 
 /**
@@ -133,8 +253,9 @@ function hbHubMinerEngineGive(PDO $db, array &$engine, int $userId, array $given
 
 /**
  * Finishes every stage in a row that has its parts and its lock met (what's over goes on to the next one), notifies
- * everyone who plays about each, and writes the Engine back. Returns the stages finished. $engine must have been read
- * with its row locked, inside a transaction.
+ * everyone who plays about each, and writes the Engine back. The stage before Ignition starts its countdown, and
+ * Ignition itself ignites the Engine. Returns the stages finished. $engine must have been read with its row locked,
+ * inside a transaction.
  *
  * @return list<int>
  */
@@ -152,13 +273,21 @@ function hbHubMinerEngineFinish(PDO $db, array &$engine): array
         $engine['engineStage'] = $done + 1;
         $times[$done + 1] = gmdate('Y-m-d H:i:s');
         $finished[] = $done + 1;
+        if ($done + 1 === count(HBHUB_MINER_ENGINE_STAGES) - 1) {
+            $engine['engineCountdownTimestamp'] = gmdate('Y-m-d H:i:s', intdiv(hbHubMinerNow() + HBHUB_MINER_ENGINE_COUNTDOWN_MS, 1000));
+        } elseif ($done + 1 === count(HBHUB_MINER_ENGINE_STAGES)) {
+            $engine['engineCountdownTimestamp'] = null;
+            $engine['engineIgnitedTimestamp'] = gmdate('Y-m-d H:i:s');
+        }
         hbHubMinerEngineAnnounce($db, $engine, $done + 1);
     }
     $engine['engineStageFinished'] = $times !== [] ? json_encode($times, JSON_FORCE_OBJECT) : null;
 
-    $db->prepare('UPDATE `HBHub-MinerEngines` SET engineStage = ?, engineStageParts = ?, engineParts = ?, engineStageFinished = ? WHERE engineId = ?')
+    $db->prepare('UPDATE `HBHub-MinerEngines` SET engineStage = ?, engineStageParts = ?, engineParts = ?, engineStageFinished = ?,
+            engineCountdownTimestamp = ?, engineIgnitedTimestamp = ?
+        WHERE engineId = ?')
         ->execute([(int) $engine['engineStage'], (int) $engine['engineStageParts'], (int) $engine['engineParts'],
-            $engine['engineStageFinished'], (int) $engine['engineId']]);
+            $engine['engineStageFinished'], $engine['engineCountdownTimestamp'], $engine['engineIgnitedTimestamp'], (int) $engine['engineId']]);
     return $finished;
 }
 
@@ -224,7 +353,8 @@ function hbHubMinerEngineMs(string $timestamp): int
 /**
  * The Engine for the page (the save's answer, spaceOreMiner.js's Engine view): number, done (stages), parts (in the
  * stage being built), total (parts ever), costs (each stage's, stage 1 first), finished ({stage: Unix ms}), open
- * (whether it takes parts) and lock (hbHubMinerEngineLock() for the stage being built). With $details also top (the
+ * (whether it takes parts), lock (hbHubMinerEngineLock() for the stage being built), countdown (when Ignition has to
+ * be full by, Unix ms, or 0) and ignited (when it was, or 0). With $details also top (the
  * HBHUB_MINER_ENGINE_TOP who gave the most: [{name, parts, you}]), feed (the latest HBHUB_MINER_ENGINE_FEED: [{name,
  * parts, source, anomaly (its key, or null), at}]) and mine (the parts $userId gave, 0 for a guest). Banned players' parts count, but they're
  * not shown.
@@ -245,6 +375,8 @@ function hbHubMinerEngineSummary(PDO $db, array $engine, ?int $userId, bool $det
         'finished' => (object) $finished,
         'open' => hbHubMinerEngineOpen($engine),
         'lock' => $done < count(HBHUB_MINER_ENGINE_STAGES) ? hbHubMinerEngineLock($db, $engine, $done) : null,
+        'countdown' => hbHubMinerEngineMsOrZero($engine['engineCountdownTimestamp']),
+        'ignited' => hbHubMinerEngineMsOrZero($engine['engineIgnitedTimestamp']),
     ];
     if (!$details) {
         return $summary;
@@ -309,4 +441,57 @@ function hbHubMinerEngineCrew(PDO $db, int $userId): bool
         WHERE c.contributionUserId = ? AND e.engineStage >= ? LIMIT 1');
     $statement->execute([$userId, $badgeStage]);
     return $statement->fetchColumn() !== false;
+}
+
+/**
+ * Whether $userId has the Ignition badge: they gave parts to the Ignition stage of an Engine before it was ignited.
+ */
+function hbHubMinerEngineIgnitionCrew(PDO $db, int $userId): bool
+{
+    $statement = $db->prepare('SELECT 1 FROM `HBHub-MinerContributions` c
+        JOIN `HBHub-MinerEngines` e ON e.engineId = c.contributionEngineId
+        WHERE c.contributionUserId = ? AND c.contributionStage = ? AND e.engineIgnitedTimestamp IS NOT NULL
+            AND c.contributionTimestamp <= e.engineIgnitedTimestamp
+        LIMIT 1');
+    $statement->execute([$userId, count(HBHUB_MINER_ENGINE_STAGES)]);
+    return $statement->fetchColumn() !== false;
+}
+
+/**
+ * The leaderboard titles of $userIds (HBHUB_MINER_TITLES): user id => the name of the first one each has, for the
+ * ones who have one. An Anomaly's counts once it's finished alone or in a stack (HBHub-MinerAnomalyTimes); Engineer
+ * once they've given parts to an Engine with its title stage done.
+ *
+ * @param list<int> $userIds
+ * @return array<int, string>
+ */
+function hbHubMinerTitles(PDO $db, array $userIds): array
+{
+    if ($userIds === []) {
+        return [];
+    }
+    $in = implode(', ', array_fill(0, count($userIds), '?'));
+    $has = [];
+    foreach (HBHUB_MINER_TITLES as $titleId => $title) {
+        if (isset($title['anomaly'])) {
+            $statement = $db->prepare('SELECT DISTINCT timeUserId FROM `HBHub-MinerAnomalyTimes`
+                WHERE timeWeek = 0 AND FIND_IN_SET(?, REPLACE(timeAnomaly, \'+\', \',\')) > 0 AND timeUserId IN (' . $in . ')');
+            $statement->execute([$title['anomaly'], ...$userIds]);
+        } else {
+            $titleStage = 0;
+            foreach (HBHUB_MINER_ENGINE_STAGES as $index => $stage) {
+                if ($stage['perk']['type'] === 'title') {
+                    $titleStage = $index + 1;
+                }
+            }
+            $statement = $db->prepare('SELECT DISTINCT c.contributionUserId FROM `HBHub-MinerContributions` c
+                JOIN `HBHub-MinerEngines` e ON e.engineId = c.contributionEngineId
+                WHERE e.engineStage >= ? AND c.contributionUserId IN (' . $in . ')');
+            $statement->execute([$titleStage, ...$userIds]);
+        }
+        foreach ($statement->fetchAll(PDO::FETCH_COLUMN) as $userId) {
+            $has[(int) $userId] ??= $title['name'];
+        }
+    }
+    return $has;
 }
