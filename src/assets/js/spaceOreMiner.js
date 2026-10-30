@@ -2740,7 +2740,10 @@
         // no storage (a private window): the sound is just on
     }
     let audio = null;
-    let lastClickSound = 0;
+    // The sounds an auto-clicker (or a hot key held down) can play dozens of times a second: [the group, the least ms
+    // between two of the group], so they don't pile up into hundreds of tones at once. A click and a crit share theirs.
+    const SOUND_GAPS = { click: ['click', 35], crit: ['click', 35], buy: ['buy', 60] };
+    const lastSoundAt = {}; // group => performance.now() of the last one played
 
     function wakeAudio() {
         try {
@@ -2788,10 +2791,11 @@
 
     function sound(name) {
         if (!isSoundOn) return;
-        if (name === 'click' || name === 'crit') {
+        const gap = SOUND_GAPS[name];
+        if (gap) {
             const now = performance.now();
-            if (now - lastClickSound < 35) return;
-            lastClickSound = now;
+            if (now - (lastSoundAt[gap[0]] ?? 0) < gap[1]) return;
+            lastSoundAt[gap[0]] = now;
         }
         wakeAudio();
         if (audio === null) return;
@@ -3027,6 +3031,11 @@
     // click on the store would, so the server checks every purchase as usual.
     const AUTO_BUY_EXTRA_SECONDS = 60;
     const AUTO_BUY_PER_TICK = 15; // at most, so a full wallet after a Warp Jump doesn't send hundreds of actions at once
+    // And for no longer than this a tick (it always buys at least one). A fast computer buys all 15 well within it; a
+    // slower or busier one buys fewer each time and catches up over the next ticks, instead of Auto Buy alone taking
+    // a third of every second (30-40 ms, 10 times a second, in crash report #34, after a Warp Jump in a Bare Metal
+    // Anomaly, where everything is bought one at a time)
+    const AUTO_BUY_MS = 5;
 
     // What Auto Buy should do now: {type: 'buy', ...} or {type: 'upgrade', ...} (the action to take), or null to wait
     function autoBuyChoice() {
@@ -3058,7 +3067,8 @@
         if (!isAutoBuying || !hasDark(state, 'autoBuy')) return;
         catchUp();
         const bought = []; // the upgrades bought this time, for the message
-        for (let i = 0; i < AUTO_BUY_PER_TICK; i++) {
+        const until = performance.now() + AUTO_BUY_MS;
+        for (let i = 0; i < AUTO_BUY_PER_TICK && (i === 0 || performance.now() < until); i++) {
             const action = autoBuyChoice();
             if (!action || !act(action)) break;
             if (action.type === 'upgrade') bought.push(action.id);
@@ -3073,12 +3083,27 @@
             : toast('autoBuy', 'Auto Buy bought ' + autoBuyToastCount + ' upgrades');
     }
 
+    // A building bought from the store (a click, or its hot key) redraws the store on the next frame instead of straight
+    // away. With an auto-clicker on a building, or a hot key held down, that's dozens of buys a second, and redrawing
+    // the whole store for each one was more than a slower computer could keep up with: the clicks queued up faster than
+    // they were handled until the page, and the computer with it, ground to a halt (crash report #34). One redraw a
+    // frame looks the same.
+    let storeFrame = 0;
+
+    function renderStoreSoon() {
+        if (storeFrame !== 0) return;
+        storeFrame = requestAnimationFrame(() => {
+            storeFrame = 0;
+            renderStore();
+        });
+    }
+
     buildingList.addEventListener('click', (event) => {
         const button = event.target.closest('[data-building]');
         if (!button) return;
         if (act({ type: 'buy', building: button.dataset.building, amount: storeAmount(button.dataset.building) })) {
             sound('buy');
-            renderStore();
+            renderStoreSoon();
         }
     });
 
