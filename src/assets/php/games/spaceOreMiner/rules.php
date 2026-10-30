@@ -17,7 +17,7 @@
     <li>
         About every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes while the game is open, a Star Shard flies past the other
         way, for only <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds. Click it to keep it. Star Shards are kept for good,
-        and the Shard Shop (by the title) sells boosts, ore right away, a Comet Beacon that calls the next comet in,
+        and the Shard Shop view sells boosts, ore right away, a Comet Beacon that calls the next comet in,
         asteroid skins and click effects for them. Boosts, ore and comets are for your own game, so not in an Anomaly.
     </li>
     <li>

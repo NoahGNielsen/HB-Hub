@@ -7,14 +7,15 @@
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
-// It has six views, picked in the menu down the right side (over the views on small screens; Engine and Anomalies in a
-// second group): Ore (the asteroid and the store, the default), Dark Matter
+// It has seven views, picked in the menu down the right side (over the views on small screens; Engine, Anomalies and
+// the Shard Shop in a second group): Ore (the asteroid and the store, the default), Dark Matter
 // (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch), Strange Matter
 // (?view=strangeMatter, the Big Rip and the skill tree), Engine (?view=engine, the Cosmic Engine the whole site
-// builds together, see assets/php/games/spaceOreMiner/engine.php) and Anomalies (?view=anomalies, the challenge runs,
-// HBHUB_MINER_ANOMALIES; while the player is in one, a banner over every view says so). They're all on the page, and the
-// script switches between them without loading it again (changing the address, so Back works), so the game keeps
-// running; ?view= only picks the one shown first. The Shard Shop, stats, achievements and how to play are popups.
+// builds together, see assets/php/games/spaceOreMiner/engine.php), Anomalies (?view=anomalies, the challenge runs,
+// HBHUB_MINER_ANOMALIES; while the player is in one, a banner over every view says so) and the Shard Shop (?view=shop,
+// spending Star Shards, HBHUB_MINER_SHOP). They're all on the page, and the script switches between them without
+// loading it again (changing the address, so Back works), so the game keeps running; ?view= only picks the one shown
+// first. Stats, achievements and how to play are popups.
 // data-watchdog is the worker that notices when the page freezes (spaceOreMinerWatchdog.js). After a crash, the next
 // time the game is opened, the script asks in data-miner-crash-dialog whether it may send a crash report.
 //
@@ -38,8 +39,9 @@ const MINER_VIEWS = [ // ?view= => [the menu's text (HTML), its address after th
     'strangeMatter' => ['Strange Matter', '?view=strangeMatter'],
     'engine' => ['<span class="miner-menu-long">Project </span>Starbound', '?view=engine'], // just "Starbound" in the bar on small screens
     'anomalies' => ['Anomalies', '?view=anomalies'],
+    'shop' => ['Shard Shop', '?view=shop'],
 ];
-const MINER_LATER_VIEWS = ['engine' => true, 'anomalies' => true]; // in the second group of the menu
+const MINER_LATER_VIEWS = ['engine' => true, 'anomalies' => true, 'shop' => true]; // in the second group of the menu
 $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-inc/';
 ?>
@@ -86,10 +88,6 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 <?php if ($guestGame === null): ?>
                     <a class="casino-btn miner-title-btn" href="/games/ore-mining-inc/leaderboard"><?= hbHubMinerIcon('podium', 'miner-title-icon') ?> <span class="miner-title-label">Leaderboard</span></a>
                 <?php endif; ?>
-                <button type="button" class="casino-btn miner-title-btn" data-miner-open="shop" aria-haspopup="dialog">
-                    <?= hbHubMinerIcon('shard', 'miner-title-icon') ?> <span class="miner-title-label">Shard Shop</span>
-                    <span class="miner-title-count is-shards" data-miner-shard-count>0</span>
-                </button>
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="stats" aria-haspopup="dialog"><?= hbHubMinerIcon('stats', 'miner-title-icon') ?> <span class="miner-title-label">Stats</span></button>
                 <button type="button" class="casino-btn miner-title-btn" data-miner-open="achievements" aria-haspopup="dialog">
                     <?= hbHubMinerIcon('trophy', 'miner-title-icon') ?> <span class="miner-title-label">Achievements</span>
@@ -108,8 +106,9 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
              the views, on small ones a bar over them -->
         <div class="miner-body">
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
-        <!-- Two groups: the matters first, and the Engine and Anomalies after them. Those two are always there, and
-             their views say what's still locked (giving parts needs a Warp Jump, the Anomalies a Big Rip). -->
+        <!-- Two groups: the matters first, and the Engine, Anomalies and Shard Shop after them. Those three are always
+             there, and their views say what's still locked (giving parts needs a Warp Jump, the Anomalies a Big Rip,
+             and shopping a Star Shard). -->
         <nav class="miner-menus" aria-label="Views" data-miner-menu>
             <?php foreach ([array_diff_key(MINER_VIEWS, MINER_LATER_VIEWS), array_intersect_key(MINER_VIEWS, MINER_LATER_VIEWS)] as $row => $rowViews): ?>
                 <div class="miner-menu<?= $row === 1 ? ' is-later' : '' ?>">
@@ -716,6 +715,41 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
             </section>
             <div class="miner-anomaly-tiers" data-miner-anomaly-tiers></div>
         </section>
+
+        <!-- The Shard Shop (HBHUB_MINER_SHOP): on top a big Star Shard and how many you have, then a list per section,
+             filled in by spaceOreMiner.js (renderShop()) -->
+        <section class="miner-view casino-card miner-prestige is-shop" aria-labelledby="miner-shop-title" data-miner-view="shop"<?= $minerView !== 'shop' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- A Star Shard glittering in a ring of its own light -->
+                <div class="miner-prestige-art" aria-hidden="true">
+                    <span class="miner-art-ring is-1"></span>
+                    <span class="miner-art-ring is-2"></span>
+                    <span class="miner-art-core"></span>
+                </div>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-shop-title" class="miner-prestige-title">Shard Shop</h2>
+                    <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-shard-count>0</span> <span data-miner-shard-word>Star Shards</span></p>
+                    <p class="miner-prestige-hint">
+                        A Star Shard flies past about every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes while the game is open, the
+                        other way from the comets, and only stays <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds. Click it to keep it.
+                    </p>
+                    <p class="miner-prestige-hint miner-shop-note" data-miner-shop-note hidden>
+                        You're in an Anomaly: boosts, ore and comets are for your own game, so they wait until you're back.
+                    </p>
+                </div>
+            </div>
+            <p class="casino-hint miner-prestige-about">
+                Star Shards are yours for good: Warp Jumps, Big Crunches and Big Rips don't take them, and neither do Anomalies.
+            </p>
+            <h3 class="miner-store-title">Boosts</h3>
+            <ul class="miner-shop-list" data-miner-shop-list="boost"></ul>
+            <h3 class="miner-store-title">Ore</h3>
+            <ul class="miner-shop-list" data-miner-shop-list="ore"></ul>
+            <h3 class="miner-store-title">Asteroid skins</h3>
+            <ul class="miner-shop-list" data-miner-shop-list="skin"></ul>
+            <h3 class="miner-store-title">Click effects</h3>
+            <ul class="miner-shop-list" data-miner-shop-list="effect"></ul>
+        </section>
         </div><!-- .miner-stage -->
         </div><!-- .miner-body -->
 
@@ -743,33 +777,6 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                         <input type="checkbox" data-miner-sparks> Sparks when clicking the asteroid
                     </label>
                 </div>
-            </div>
-        </dialog>
-
-        <!-- The Shard Shop (HBHUB_MINER_SHOP): a list per section, filled in by spaceOreMiner.js (renderShop()) -->
-        <dialog class="games-dialog miner-popup miner-shop" data-miner-popup="shop" aria-labelledby="miner-shop-title">
-            <div class="miner-popup-body">
-                <div class="miner-popup-head">
-                    <h2 id="miner-shop-title">Shard Shop</h2>
-                    <p class="miner-shop-wallet"><?= hbHubMinerIcon('shard') ?> <span data-miner-shard-count>0</span> <span data-miner-shard-word>Star Shards</span></p>
-                    <button type="button" class="miner-popup-close" data-miner-close aria-label="Close">&times;</button>
-                </div>
-                <p class="miner-engine-small">
-                    A Star Shard flies past about every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes while the game is open, the
-                    other way from the comets, and only stays <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds. Click it to keep it.
-                    Star Shards are yours for good: Warp Jumps, Big Crunches and Big Rips don't take them.
-                </p>
-                <p class="miner-engine-small miner-shop-note" data-miner-shop-note hidden>
-                    You're in an Anomaly: boosts, ore and comets are for your own game, so they wait until you're back.
-                </p>
-                <h3 class="miner-store-title">Boosts</h3>
-                <ul class="miner-shop-list" data-miner-shop-list="boost"></ul>
-                <h3 class="miner-store-title">Ore</h3>
-                <ul class="miner-shop-list" data-miner-shop-list="ore"></ul>
-                <h3 class="miner-store-title">Asteroid skins</h3>
-                <ul class="miner-shop-list" data-miner-shop-list="skin"></ul>
-                <h3 class="miner-store-title">Click effects</h3>
-                <ul class="miner-shop-list" data-miner-shop-list="effect"></ul>
             </div>
         </dialog>
 
