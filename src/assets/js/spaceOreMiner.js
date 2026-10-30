@@ -2446,6 +2446,7 @@
     // saying how to get them. Picking one is an action like any other (apply()), so it's saved with the game.
     const skinList = root.querySelector('[data-miner-skins]');
     const SKIN_UNLOCK_TEXT = (unlock) => (unlock.anomaly ? 'Finish ' + ANOMALIES[unlock.anomaly].name + '.'
+        : unlock.shop ? 'Buy it in the Shard Shop.'
         : unlock.stage ? 'Comes with the ' + engineNameOf(Math.ceil(unlock.stage / CONFIG.engineStageTotal)) + '\'s ' + ENGINE_STAGES[unlock.stage - 1].name + '.'
             : 'For everyone who gives parts to the ' + engineNameOf(unlock.crew) + '\'s last stage, ' + ENGINE_STAGES[unlock.crew * CONFIG.engineStageTotal - 1].name + '.');
 
