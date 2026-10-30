@@ -840,8 +840,8 @@ const HBHUB_MINER_SHIFT_PARTS_ALL = 25;
 // time, or for a new best time, and HBHUB_MINER_ANOMALY_REPEAT of them otherwise. Every time it's finished, the
 // player's own game also gets an Afterglow: HBHUB_MINER_AFTERGLOW_TIMES as much production for its 'afterglow' ms (or
 // its tier's), which pays back some of the time their own game spent mining as if they were away (hbHubMinerAfterglow()).
-// Its 'tier' opens with 'unlock': rip
-// (a Big Rip made) or theory (the Theory of Everything learned). Tier II ones also turn Autopilot and Auto Crunch off
+// Its 'tier' opens with 'unlock': strange
+// (HBHUB_MINER_ANOMALY_STRANGE Strange Matter earned) or theory (the Theory of Everything learned). Tier II ones also turn Autopilot and Auto Crunch off
 // ('noAuto'), which only the page has. 'rules' are the other Anomalies whose rules it has too (The Gauntlet). While the
 // player is in one, the Engine gets nothing else from them (no Shifts or donations), and their own game mines as if
 // they were away. The rules each changes are in the functions that check hbHubMinerMod(); the goals were tuned with
@@ -854,7 +854,7 @@ const HBHUB_MINER_SHIFT_PARTS_ALL = 25;
 // after the first. The weekly Anomaly (hbHubMinerWeeklyMods()) is a stack picked from the week, the same for
 // everyone, worth HBHUB_MINER_ANOMALY_WEEKLY times as much that week.
 const HBHUB_MINER_ANOMALY_TIERS = [
-    1 => ['name' => 'Ripples', 'parts' => 25, 'afterglow' => 3600000, 'unlock' => 'rip', 'noAuto' => false, 'fresh' => false],
+    1 => ['name' => 'Ripples', 'parts' => 25, 'afterglow' => 3600000, 'unlock' => 'strange', 'noAuto' => false, 'fresh' => false],
     2 => ['name' => 'Tears', 'parts' => 100, 'afterglow' => 10800000, 'unlock' => 'theory', 'noAuto' => true, 'fresh' => false],
     3 => ['name' => 'Singularities', 'parts' => 400, 'afterglow' => 43200000, 'unlock' => 'theory', 'noAuto' => false, 'fresh' => true],
 ];
@@ -887,6 +887,7 @@ const HBHUB_MINER_ANOMALIES = [
         'afterglow' => 86400000, 'rules' => ['deadHands', 'darkSky', 'inflation', 'entropy'],
         'text' => 'Dead Hands, Dark Sky, Inflation and Entropy all at once, from nothing. Every run starts with one Space Pickaxe Guy, and Entropy stops after halving production twice.'],
 ];
+const HBHUB_MINER_ANOMALY_STRANGE = 250; // Strange Matter earned before Tier I opens (the Theory of Everything alone costs more)
 const HBHUB_MINER_ANOMALY_REPEAT = 0.25; // of the parts, for finishing one again without beating the best time
 // How many Anomalies a player can save to carry on later (hbHubMinerAnomalySave()), at most one of each key. Each is a
 // whole game kept in the save, so there's a cap.
@@ -1242,6 +1243,7 @@ function hbHubMinerConfig(): array
         'sourceAnomaly' => HBHUB_MINER_ENGINE_SOURCE_ANOMALY,
         'anomalies' => HBHUB_MINER_ANOMALIES,
         'anomalyTiers' => HBHUB_MINER_ANOMALY_TIERS,
+        'anomalyStrange' => HBHUB_MINER_ANOMALY_STRANGE,
         'anomalyRepeat' => HBHUB_MINER_ANOMALY_REPEAT,
         'anomalySavedMax' => HBHUB_MINER_ANOMALY_SAVED_MAX,
         'inflationGrowth' => HBHUB_MINER_INFLATION_GROWTH,
@@ -2884,7 +2886,7 @@ function hbHubMinerAnomalyDone(array $state, string $anomalyId): bool
 function hbHubMinerAnomalyTierOpen(array $state, int $tier): bool
 {
     return match (HBHUB_MINER_ANOMALY_TIERS[$tier]['unlock']) {
-        'rip' => $state['rips'] >= 1,
+        'strange' => $state['strangeEarned'] >= HBHUB_MINER_ANOMALY_STRANGE,
         'theory' => hbHubMinerHasSkill($state, 'theory'),
         default => false,
     };

@@ -114,7 +114,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
         <!-- Three groups: the matters first, Project Starbound and Anomalies next, and the Shard Shop (with Skins, a
              button that doesn't go anywhere yet) last. They're always there, and their views say what's still locked
-             (giving parts needs a Warp Jump, the Anomalies a Big Rip, and shopping a Star Shard). -->
+             (Project Starbound and the Anomalies need 250 Strange Matter earned, and shopping a Star Shard). -->
         <nav class="miner-menus" aria-label="Views" data-miner-menu>
             <?php foreach ([0, 1, 2] as $row): ?>
                 <?php $rowViews = array_filter(MINER_VIEWS, fn($view) => (MINER_LATER_VIEWS[$view] ?? 0) === $row, ARRAY_FILTER_USE_KEY); ?>
@@ -599,7 +599,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                          progress show, with this in place of the rest (data-miner-engine-section, renderEngineLocked()) -->
                     <p class="miner-locked" data-miner-engine-locked hidden>
                         <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
-                        Earn <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter to join Project Starbound and give it parts.
+                        Earn <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter to join Project Starbound.
                     </p>
                 </div>
             </div>

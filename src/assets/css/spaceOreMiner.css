@@ -3475,6 +3475,20 @@
   flex-shrink: 0;
 }
 
+/* "Go again" on a finished Anomaly: dimmed (not as far as a disabled button) so the unfinished ones stand out, and
+   lit up again when hovered or focused */
+.miner-anomaly .casino-btn.is-again:not(:disabled) {
+  opacity: 0.6;
+  filter: saturate(0.35);
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.miner-anomaly .casino-btn.is-again:not(:disabled):hover,
+.miner-anomaly .casino-btn.is-again:not(:disabled):focus-visible {
+  opacity: 1;
+  filter: brightness(1.08);
+}
+
 /* The badge: grey until the Anomaly is finished, then lit in the view's colour */
 .miner-anomaly-badge {
   flex-shrink: 0;

@@ -830,7 +830,7 @@
     // Whether the player's own game has opened Anomaly tier tier
     function anomalyTierOpen(s, tier) {
         const unlock = ANOMALY_TIERS[tier].unlock;
-        return unlock === 'rip' ? s.rips >= 1 : unlock === 'theory' ? hasSkill(s, 'theory') : false;
+        return unlock === 'strange' ? s.strangeEarned >= CONFIG.anomalyStrange : unlock === 'theory' ? hasSkill(s, 'theory') : false;
     }
 
     // The game being played: the Anomaly's while the player is in one (hbHubMinerGame())
@@ -4272,7 +4272,7 @@
     const stackInfo = root.querySelector('[data-miner-stack-text]');
     const stackStart = root.querySelector('[data-miner-stack-start]');
     const TIER_NUMERALS = { 1: 'I', 2: 'II', 3: 'III' };
-    const TIER_UNLOCK_TEXT = { rip: 'Opens with your first Big Rip.', theory: 'Opens once you\'ve learned the Theory of Everything.' };
+    const TIER_UNLOCK_TEXT = { strange: 'Opens once you\'ve earned ' + CONFIG.anomalyStrange + ' Strange Matter.', theory: 'Opens once you\'ve learned the Theory of Everything.' };
 
     let anomaliesKey = '';
     let anomalyBannerKey = '';
@@ -4498,8 +4498,10 @@
                     element('span', 'miner-anomaly-best', record ? 'Badge earned. Best time ' + formatClock(record.best) + ', finished '
                         + (record.done === 1 ? 'once' : record.done + ' times') + '.' + (newForEngine(record) ? ' Not finished for this build yet: full parts.' : '')
                         : 'Not finished yet.'));
-                const button = element('button', 'casino-btn' + (isIn ? '' : ' casino-btn-primary'),
-                    isIn ? 'You\'re in it' : saveState.saved?.[id] ? 'Carry on' : record ? 'Go again' : 'Go in');
+                // "Go again" (finished, not saved) is dimmed and only lights up on hover, see .is-again in the CSS
+                const isAgain = !isIn && !saveState.saved?.[id] && record !== null;
+                const button = element('button', 'casino-btn' + (isIn ? '' : ' casino-btn-primary') + (isAgain ? ' is-again' : ''),
+                    isIn ? 'You\'re in it' : saveState.saved?.[id] ? 'Carry on' : isAgain ? 'Go again' : 'Go in');
                 button.type = 'button';
                 button.dataset.anomalyStart = id;
                 button.disabled = !isOpen || saveState.anomaly !== null;
