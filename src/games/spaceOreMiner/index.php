@@ -7,8 +7,8 @@
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
-// It has seven views, picked in the menu down the right side (over the views on small screens; Engine, Anomalies and
-// the Shard Shop in a second group): Ore (the asteroid and the store, the default), Dark Matter
+// It has seven views, picked in the menu down the right side (over the views on small screens; Project Starbound and
+// Anomalies in a second group, the Shard Shop and a Skins button that doesn't work yet in a third): Ore (the asteroid and the store, the default), Dark Matter
 // (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch), Strange Matter
 // (?view=strangeMatter, the Big Rip and the skill tree), Project Starbound (?view=starbound, the Engine the whole site
 // builds together, see assets/php/games/spaceOreMiner/engine.php), Anomalies (?view=anomalies, the challenge runs,
@@ -41,7 +41,8 @@ const MINER_VIEWS = [ // ?view= => [the menu's text (HTML), its address after th
     'anomalies' => ['Anomalies', '?view=anomalies'],
     'shop' => ['Shard Shop', '?view=shop'],
 ];
-const MINER_LATER_VIEWS = ['starbound' => true, 'anomalies' => true, 'shop' => true]; // in the second group of the menu
+// The groups of the menu after the first: view => its group (1 the second, 2 the third)
+const MINER_LATER_VIEWS = ['starbound' => 1, 'anomalies' => 1, 'shop' => 2];
 $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-inc/';
 // Project Starbound's view was ?view=engine before it was renamed: old links and bookmarks go to the new one
 if (($_GET['view'] ?? null) === 'engine') {
@@ -111,12 +112,13 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
              the views, on small ones a bar over them -->
         <div class="miner-body">
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
-        <!-- Two groups: the matters first, and the Engine, Anomalies and Shard Shop after them. Those three are always
-             there, and their views say what's still locked (giving parts needs a Warp Jump, the Anomalies a Big Rip,
-             and shopping a Star Shard). -->
+        <!-- Three groups: the matters first, Project Starbound and Anomalies next, and the Shard Shop (with Skins, a
+             button that doesn't go anywhere yet) last. They're always there, and their views say what's still locked
+             (giving parts needs a Warp Jump, the Anomalies a Big Rip, and shopping a Star Shard). -->
         <nav class="miner-menus" aria-label="Views" data-miner-menu>
-            <?php foreach ([array_diff_key(MINER_VIEWS, MINER_LATER_VIEWS), array_intersect_key(MINER_VIEWS, MINER_LATER_VIEWS)] as $row => $rowViews): ?>
-                <div class="miner-menu<?= $row === 1 ? ' is-later' : '' ?>">
+            <?php foreach ([0, 1, 2] as $row): ?>
+                <?php $rowViews = array_filter(MINER_VIEWS, fn($view) => (MINER_LATER_VIEWS[$view] ?? 0) === $row, ARRAY_FILTER_USE_KEY); ?>
+                <div class="miner-menu<?= $row > 0 ? ' is-later' : '' ?>">
                     <?php foreach ($rowViews as $view => [$text, $query]): ?>
                         <a class="miner-menu-link is-<?= $view ?>" href="<?= htmlspecialchars($minerAddress . $query) ?>" data-miner-view-link="<?= $view ?>"<?= $view === $minerView ? ' aria-current="page"' : '' ?>>
                             <span class="miner-menu-text"><?= $text ?></span>
@@ -126,6 +128,13 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                             <?php endif; ?>
                         </a>
                     <?php endforeach; ?>
+                    <?php if ($row === 2): ?>
+                        <!-- Skins: only the button so far, the view comes later -->
+                        <button type="button" class="miner-menu-link is-skins" disabled title="Coming soon">
+                            <span class="miner-menu-text">Skins</span>
+                            <span class="miner-menu-count">Soon</span>
+                        </button>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         </nav>

@@ -88,8 +88,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The menu between the views: a bar, the open view lit up in its own colour. The game has two (.miner-menus), the
-   matters on top and the Engine and Anomalies under them; the leaderboard has one. */
+/* The menu between the views: a bar, the open view lit up in its own colour. The game has three (.miner-menus), the
+   matters on top, Project Starbound and Anomalies under them, and the Shard Shop and Skins under those; the
+   leaderboard has one. */
 .miner-menu {
   margin: 8px 0 12px;
   padding: 4px;
@@ -151,7 +152,22 @@
   --miner-view-colour: var(--miner-shard);
 }
 
-.miner-menu-link:hover {
+/* Skins: a button for now, not a link, and greyed out until its view is made */
+.miner-menu-link.is-skins {
+  --miner-view-colour: var(--miner-shard);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  text-align: inherit;
+}
+
+.miner-menu-link:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.miner-menu-link:not(:disabled):hover {
   background: color-mix(in srgb, var(--text) 6%, transparent);
   opacity: 1;
 }

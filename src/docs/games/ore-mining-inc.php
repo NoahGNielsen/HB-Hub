@@ -179,7 +179,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             A Warp Jump and a Big Rip only give what's more than you've had from them before, so each one has to beat
                             your best. The Antimatter view opens after your first Warp Jump, the Strange Matter view after your first
-                            Big Crunch. Project Starbound and Anomalies views have their own bar under the menu: you can give Project Starbound
+                            Big Crunch. Project Starbound and Anomalies have their own bar under the menu, and the Shard Shop another under that: you can give Project Starbound
                             parts after your first Warp Jump, and start Anomalies after your first Big Rip. A dot in the menu
                             shows when there's something to do in a view.
                         </p>
