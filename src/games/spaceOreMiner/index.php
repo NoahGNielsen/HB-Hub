@@ -599,7 +599,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                          progress show, with this in place of the rest (data-miner-engine-section, renderEngineLocked()) -->
                     <p class="miner-locked" data-miner-engine-locked hidden>
                         <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
-                        Earn <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter to join Project Starbound and give it parts.
+                        Earn <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter to join Project Starbound.
                     </p>
                 </div>
             </div>
