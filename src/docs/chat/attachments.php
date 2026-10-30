@@ -40,7 +40,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         </p>
                         <p>
                             To see a file's name, type, size, who sent it and when it expires, right-click it and pick
-                            <strong>File info</strong>. For a picture, that opens the picture viewer with its info showing.
+                            <strong>File info</strong>.
                         </p>
                     </section>
 

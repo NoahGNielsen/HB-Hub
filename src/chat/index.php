@@ -3137,8 +3137,8 @@ if ($isPoll) {
             </form>
         </dialog>
 
-        <!-- File info (message menu) for a video or another file: chat.js fills it in from the attachment's data-attachment-*,
-             like the picture viewer's Info. A picture's File info opens the picture viewer with Info open instead. -->
+        <!-- File info (message menu) for a picture, video or another file: chat.js fills it in from the attachment's
+             data-attachment-*, like the picture viewer's Info. -->
         <dialog class="chat-dialog chat-file-info" aria-labelledby="chat-file-info-title">
             <div class="chat-requests-body">
                 <header class="chat-new-header">

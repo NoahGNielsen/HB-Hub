@@ -2113,18 +2113,20 @@ chatPart((signal) => {
         open(source);
     });
 
-    // File info in the message menu: a picture opens here with Info open, anything else gets the File info popup
+    // The size in pixels of a picture or video in a message, once it's loaded (a video's first frame), or null
+    function mediaSize(attachment) {
+        const media = attachment.querySelector('.chat-attachment-image, video');
+        const [width, height] = media instanceof HTMLImageElement ? [media.naturalWidth, media.naturalHeight]
+            : media instanceof HTMLVideoElement ? [media.videoWidth, media.videoHeight]
+            : media instanceof HTMLCanvasElement ? [media.width, media.height] // a JPEG XL one drawn by the part above
+            : [0, 0];
+        return width > 0 ? `${width} × ${height} px` : null;
+    }
+
+    // File info in the message menu: the File info popup, the same for pictures, videos and other files
     messages.addEventListener('chat:file-info', (event) => {
         const { item, attachment } = event.detail;
-        const source = attachment.querySelector('.chat-attachment-image');
-        if (source && !(source instanceof HTMLImageElement && source.complete && source.naturalWidth === 0)) {
-            isInfoOpen = true;
-            open(source);
-            return;
-        }
-        // A video's size is known once its first frame has loaded
-        const video = attachment.querySelector('video');
-        fillInfo(fileInfoList, infoRows(attachment, item, video?.videoWidth ? `${video.videoWidth} × ${video.videoHeight} px` : null));
+        fillInfo(fileInfoList, infoRows(attachment, item, mediaSize(attachment)));
         fileInfoDownload.href = attachment.dataset.attachmentDownload;
         fileInfoDownload.download = attachment.dataset.attachmentName;
         fileInfoDialog.showModal();
