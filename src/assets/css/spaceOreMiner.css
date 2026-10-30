@@ -1637,66 +1637,279 @@
   to { background-position: 0 46px, 0 38px, 0 0; }
 }
 
-/* The five after the Multiverse Drill, two along the top and three along the bottom, out of the way of the rift's ends and the numbers:
-   a Time Quarry rocking back and forth like a pendulum, a String Loom whose shuttle bobs, a Big Bang Reactor that swells
-   and goes off in a flash every few seconds, a Reality Printer shaking as it prints, and an Infinity Mine with a slow
-   glow coming up out of it */
+/* The five after the Multiverse Drill, out at the edges of the picture and away from the asteroid and everything else
+   (two along the top, one on the right and two along the bottom), each drawn in pieces like the Star Forge: the body
+   sizes the sprite and the rest lie over it, in the order they're in SCENE. In % of a piece is in the 32 by 32 of the
+   icons, so 50% 25% is (16, 8) there. */
 .miner-sprite:is(.is-timeQuarry, .is-stringLoom, .is-bigBangReactor, .is-realityPrinter, .is-infinityMine) {
   translate: -50% -50%;
+  font-size: calc(var(--sprite) * 1.75);
 }
 
-.miner-sprite:is(.is-timeQuarry, .is-stringLoom, .is-bigBangReactor, .is-realityPrinter, .is-infinityMine) .miner-sprite-body {
-  font-size: 1.3em;
+.miner-sprite:is(.is-timeQuarry, .is-stringLoom, .is-bigBangReactor, .is-realityPrinter, .is-infinityMine) > * {
+  position: absolute;
+  inset: 0;
 }
 
+.miner-sprite:is(.is-timeQuarry, .is-stringLoom, .is-bigBangReactor, .is-realityPrinter, .is-infinityMine) > .miner-sprite-body {
+  position: relative;
+}
+
+/* Time Quarry: an hourglass in front of a clock running backwards. The sand runs out of the top into the bottom, and
+   when it's all through the hourglass turns over and it starts again (the full bottom, turned over, is exactly the
+   full top, so it can jump back to the start there). The pieces that turn over turn round the middle; the sand inside
+   them shrinks (or grows) on its own svg, so it can do that round the neck (or the bottom). */
 .miner-sprite.is-timeQuarry {
-  left: 30%;
-  top: 9%;
+  left: 40%;
+  top: 8%;
+  --cycle: calc(5s / var(--work));
 }
 
-.miner-sprite.is-timeQuarry .miner-sprite-body {
-  transform-origin: 50% 0;
-  animation: miner-pendulum calc(2.4s / var(--work)) ease-in-out infinite alternate;
+.miner-sprite.is-timeQuarry .miner-sprite-dial {
+  animation: miner-quarry-glow 3s ease-in-out infinite alternate;
 }
 
-@keyframes miner-pendulum {
-  from { rotate: -12deg; }
-  to { rotate: 12deg; }
+.miner-sprite.is-timeQuarry .miner-sprite-hour {
+  animation: miner-spin calc(30s / var(--work)) linear infinite reverse;
 }
 
+.miner-sprite.is-timeQuarry .miner-sprite-minute {
+  animation: miner-spin calc(2.5s / var(--work)) linear infinite reverse;
+}
+
+.miner-sprite.is-timeQuarry :is(.miner-sprite-top, .miner-sprite-bottom, .miner-sprite-stream, .miner-sprite-body) {
+  animation: miner-quarry-turn var(--cycle) ease-in-out infinite;
+}
+
+.miner-sprite.is-timeQuarry .miner-sprite-top .miner-icon {
+  transform-origin: 50% 46.25%; /* the neck, (16, 14.8) */
+  animation: miner-quarry-drain var(--cycle) linear infinite;
+}
+
+.miner-sprite.is-timeQuarry .miner-sprite-bottom .miner-icon {
+  transform-origin: 50% 79.4%; /* the bottom, (16, 25.4) */
+  animation: miner-quarry-fill var(--cycle) linear infinite;
+}
+
+/* The sand falling through the neck, from (16, 15) down to the bottom */
+.miner-sprite.is-timeQuarry .miner-sprite-stream::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 0.03em;
+  height: 33%;
+  margin-left: -0.015em;
+  background: repeating-linear-gradient(#ffd95e 0 0.03em, transparent 0.03em 0.06em) 0 0 / 100% 0.06em;
+  animation: miner-quarry-stream var(--cycle) linear infinite, miner-quarry-fall calc(0.3s / var(--work)) linear infinite;
+}
+
+@keyframes miner-quarry-glow {
+  from { filter: drop-shadow(0 0 0.04em rgba(157, 123, 255, 0.5)); }
+  to { filter: drop-shadow(0 0 0.22em rgba(157, 123, 255, 0.9)); }
+}
+
+@keyframes miner-quarry-turn {
+  0%, 82% { rotate: 0deg; }
+  100% { rotate: 180deg; }
+}
+
+@keyframes miner-quarry-drain {
+  0% { scale: 1; }
+  78%, 100% { scale: 0; }
+}
+
+@keyframes miner-quarry-fill {
+  0% { scale: 0.4 0; }
+  78%, 100% { scale: 1; }
+}
+
+@keyframes miner-quarry-stream {
+  0%, 76% { opacity: 1; }
+  80%, 100% { opacity: 0; }
+}
+
+@keyframes miner-quarry-fall {
+  to { background-position: 0 0.06em; }
+}
+
+/* String Loom: its strings twang (flicking between bent one way and the other), and the shuttle shoots across and back,
+   leaving a gold thread behind it each way (::before going right, ::after coming back) that's pushed down into the
+   cloth. */
 .miner-sprite.is-stringLoom {
-  left: 70%;
-  top: 9%;
+  left: 76%;
+  top: 8%;
+  --cycle: calc(2s / var(--work));
+  filter: drop-shadow(0 0 0.1em rgba(255, 107, 181, 0.5));
 }
 
-.miner-sprite.is-stringLoom .miner-sprite-body {
-  filter: drop-shadow(0 0 0.1em rgba(255, 107, 181, 0.6));
-  animation: miner-bob calc(1.2s / var(--work)) ease-in-out infinite alternate;
+.miner-sprite.is-stringLoom .miner-sprite-strings {
+  animation: miner-loom-twang calc(0.14s / var(--work)) linear infinite alternate;
 }
 
+.miner-sprite.is-stringLoom .miner-sprite-bent {
+  animation: miner-loom-twang calc(0.14s / var(--work)) linear infinite alternate-reverse;
+}
+
+.miner-sprite.is-stringLoom .miner-sprite-shuttle {
+  animation: miner-loom-shuttle var(--cycle) ease-in-out infinite;
+}
+
+/* Across the strings at the shuttle's height (15.2), from x 7 to 25 */
+.miner-sprite.is-stringLoom .miner-sprite-thread::before,
+.miner-sprite.is-stringLoom .miner-sprite-thread::after {
+  content: "";
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  top: 47.5%;
+  height: 0.025em;
+  background: var(--miner-gold);
+  box-shadow: 0 0 0.05em var(--miner-gold);
+  transform-origin: 0 50%;
+  animation: miner-loom-thread var(--cycle) ease-in-out infinite;
+}
+
+.miner-sprite.is-stringLoom .miner-sprite-thread::after {
+  background: var(--miner-anti);
+  box-shadow: 0 0 0.05em var(--miner-anti);
+  transform-origin: 100% 50%;
+  animation-delay: calc(var(--cycle) / -2);
+}
+
+@keyframes miner-loom-twang {
+  from { opacity: 1; }
+  to { opacity: 0.15; }
+}
+
+@keyframes miner-loom-shuttle {
+  0% { translate: -0.19em 0; rotate: 0deg; }
+  40%, 50% { translate: 0.19em 0; rotate: 6deg; }
+  90%, 100% { translate: -0.19em 0; rotate: -6deg; }
+}
+
+/* Following the shuttle across (it goes the same way, 0 to 40%), then pushed down into the cloth */
+@keyframes miner-loom-thread {
+  0% { opacity: 1; scale: 0 1; translate: 0 0; }
+  40% { opacity: 1; scale: 1 1; translate: 0 0; }
+  50%, 100% { opacity: 0; scale: 1 1; translate: 0 0.18em; }
+}
+
+/* Big Bang Reactor: a little universe in a window, two rings spinning round it. It gathers itself up, brighter and
+   brighter, and goes bang (at 78% of --cycle): the whole thing shakes, a flash and a shock wave go out of it and bits of
+   new galaxy fly off in every direction (::after of .miner-sprite-blast, the bits being its shadows). Then it's back
+   to a tiny dot to start again. */
 .miner-sprite.is-bigBangReactor {
-  left: 27%;
-  top: 91%;
+  left: 5%;
+  top: 94%;
+  --cycle: calc(4s / var(--work));
 }
 
 .miner-sprite.is-bigBangReactor .miner-sprite-body {
-  animation: miner-bang calc(4s / var(--work)) ease-in infinite;
+  animation: miner-bang-shake var(--cycle) linear infinite;
 }
 
-@keyframes miner-bang {
-  0% { scale: 1; filter: none; }
-  80% { scale: 1.08; filter: drop-shadow(0 0 0.1em var(--miner-gold)); }
-  84% { scale: 1.2; filter: drop-shadow(0 0 0.5em var(--miner-gold)) brightness(1.6); }
-  100% { scale: 1; filter: none; }
+.miner-sprite.is-bigBangReactor :is(.miner-sprite-core, .miner-sprite-ring, .miner-sprite-ring2) {
+  transform-origin: 50% 43.75%; /* the middle of the window, (16, 14) */
 }
 
+.miner-sprite.is-bigBangReactor .miner-sprite-core {
+  animation: miner-bang-core var(--cycle) ease-in infinite;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-ring {
+  animation: miner-spin calc(2.4s / var(--work)) linear infinite;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-ring2 {
+  animation: miner-spin calc(3.4s / var(--work)) linear infinite reverse;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-blast {
+  inset: 43.75% auto auto 50%;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-blast::before,
+.miner-sprite.is-bigBangReactor .miner-sprite-blast::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+/* The flash and the shock wave round it */
+.miner-sprite.is-bigBangReactor .miner-sprite-blast::before {
+  width: 1em;
+  height: 1em;
+  margin: -0.5em 0 0 -0.5em;
+  border: 0.05em solid #fff6c2;
+  background: radial-gradient(circle closest-side, rgba(255, 255, 255, 0.9), rgba(255, 217, 94, 0.5) 45%, transparent);
+  box-shadow: 0 0 0.25em var(--miner-gold);
+  animation: miner-bang-wave var(--cycle) ease-out infinite;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-blast::after {
+  width: 0.06em;
+  height: 0.06em;
+  margin: -0.03em 0 0 -0.03em;
+  background: #ffd95e;
+  box-shadow: 0.3em 0.02em #ff6bb5, -0.26em 0.16em #8be9ff, 0.12em -0.3em #7cf04a, -0.18em -0.26em #fff,
+    0.22em 0.24em #9d7bff, -0.32em -0.04em #ff8a3d, 0.04em 0.33em #fff, -0.06em -0.34em #ffd95e;
+  animation: miner-bang-bits var(--cycle) ease-out infinite;
+}
+
+@keyframes miner-bang-shake {
+  0%, 76%, 90%, 100% { translate: 0 0; }
+  78% { translate: -0.04em 0.015em; }
+  80% { translate: 0.035em -0.015em; }
+  82% { translate: -0.025em 0; }
+  85% { translate: 0.015em 0.01em; }
+}
+
+@keyframes miner-bang-core {
+  0% { scale: 0.35; filter: brightness(0.9); }
+  74% { scale: 1; filter: brightness(1.3) drop-shadow(0 0 0.08em #ffd95e); }
+  78% { scale: 1.3; filter: brightness(2.4) drop-shadow(0 0 0.3em #fff6c2); }
+  90% { scale: 0.3; filter: brightness(1); }
+  100% { scale: 0.35; filter: brightness(0.9); }
+}
+
+@keyframes miner-bang-wave {
+  0%, 76% { opacity: 0; scale: 0.2; }
+  79% { opacity: 1; scale: 0.5; }
+  96%, 100% { opacity: 0; scale: 1.9; }
+}
+
+@keyframes miner-bang-bits {
+  0%, 77% { opacity: 0; scale: 0.1; rotate: 0deg; }
+  80% { opacity: 1; }
+  100% { opacity: 0; scale: 2.2; rotate: 70deg; }
+}
+
+/* Reality Printer: the print head whizzes back and forth and the whole printer shakes while a sheet comes out of the
+   slot a line at a time (it starts up behind the printer, out of sight). On it is a planet, which then comes up off
+   the page for real, spinning off into space, and the sheet drops away. */
 .miner-sprite.is-realityPrinter {
-  left: 73%;
-  top: 91%;
+  left: 94%;
+  top: 30%;
+  --cycle: calc(3.6s / var(--work));
 }
 
 .miner-sprite.is-realityPrinter .miner-sprite-body {
   animation: miner-print calc(0.9s / var(--work)) steps(2) infinite;
+}
+
+.miner-sprite.is-realityPrinter .miner-sprite-head {
+  animation: miner-print-head calc(0.45s / var(--work)) ease-in-out infinite alternate;
+}
+
+.miner-sprite.is-realityPrinter .miner-sprite-sheet {
+  animation: miner-print-sheet var(--cycle) linear infinite;
+}
+
+.miner-sprite.is-realityPrinter .miner-sprite-planet {
+  transform-origin: 50% 76%; /* the planet, (16, 24.4) */
+  animation: miner-print-planet var(--cycle) ease-out infinite;
 }
 
 @keyframes miner-print {
@@ -1705,18 +1918,99 @@
   100% { translate: -0.03em 0; }
 }
 
+/* Along the window in the front, from x 6 to 19 */
+@keyframes miner-print-head {
+  from { translate: -0.15em 0; }
+  to { translate: 0.15em 0; }
+}
+
+@keyframes miner-print-sheet {
+  0%, 8% { opacity: 1; translate: 0 -0.36em; animation-timing-function: steps(6, end); }
+  56% { opacity: 1; translate: 0 0; animation-timing-function: linear; }
+  76% { opacity: 1; translate: 0 0; }
+  92% { opacity: 0; translate: 0 0.14em; }
+  93%, 100% { opacity: 0; translate: 0 -0.36em; }
+}
+
+@keyframes miner-print-planet {
+  0%, 58% { opacity: 0; translate: 0 0; scale: 1; rotate: 0deg; }
+  62% { opacity: 1; translate: 0 -0.04em; scale: 1.15; }
+  90% { opacity: 1; translate: -0.5em -0.3em; scale: 1.35; rotate: -25deg; }
+  100% { opacity: 0; translate: -0.65em -0.4em; scale: 0.7; rotate: -35deg; }
+}
+
+/* Infinity Mine: a way into a tunnel that never ends, rings of light coming up out of the deep (::before and ::after,
+   half a trip apart) under a glowing sign that keeps turning over, and carts of ore rolling in along the rails and
+   getting smaller and smaller down it. The tunnel is cut to the shape of the hole in the entrance (x 7.5 to 24.5, y 7.5
+   to 31, round at the top), the deepest point where the rails meet (16, 21). */
 .miner-sprite.is-infinityMine {
-  left: 17%;
+  left: 60%;
   top: 93%;
+  --cycle: calc(3s / var(--work));
 }
 
 .miner-sprite.is-infinityMine .miner-sprite-body {
   animation: miner-infinity calc(5s / var(--work)) ease-in-out infinite alternate;
 }
 
+.miner-sprite.is-infinityMine .miner-sprite-tunnel {
+  overflow: hidden;
+  clip-path: inset(23.4% 23.4% 3% round 50% 50% 0 0 / 26% 26% 0 0);
+  background: radial-gradient(circle at 50% 66%, #fff 0 0.02em, #8be9ff 0.05em, #5f45c9 0.12em, #1c0f40 0.3em, #0a0518 0.5em);
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-tunnel::before,
+.miner-sprite.is-infinityMine .miner-sprite-tunnel::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 66%;
+  width: 0.7em;
+  height: 0.7em;
+  margin: -0.35em 0 0 -0.35em;
+  box-sizing: border-box;
+  border: 0.035em solid #8be9ff;
+  border-radius: 50%;
+  animation: miner-infinity-ring calc(1.6s / var(--work)) ease-in infinite;
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-tunnel::after {
+  border-color: var(--miner-dark);
+  animation-delay: calc(-0.8s / var(--work));
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-sign {
+  transform-origin: 50% 16.25%; /* the middle of the sign, (16, 5.2) */
+  animation: miner-infinity-sign calc(3s / var(--work)) ease-in-out infinite;
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-cart {
+  transform-origin: 50% 81%; /* the middle of the cart, (16, 26) */
+  animation: miner-infinity-cart var(--cycle) ease-in infinite;
+}
+
 @keyframes miner-infinity {
   from { filter: drop-shadow(0 0 0.05em rgba(139, 233, 255, 0.4)); }
   to { filter: drop-shadow(0 -0.2em 0.3em rgba(157, 123, 255, 0.9)); }
+}
+
+@keyframes miner-infinity-ring {
+  from { opacity: 0; scale: 0; }
+  25% { opacity: 1; }
+  to { opacity: 0.3; scale: 1.5; }
+}
+
+@keyframes miner-infinity-sign {
+  0%, 100% { scale: 1 1; filter: drop-shadow(0 0 0.04em #ffd95e); }
+  50% { scale: -1 1; filter: drop-shadow(0 0 0.18em #ffd95e); }
+}
+
+/* From the front, down the rails to where they meet (5 lower in the icon) */
+@keyframes miner-infinity-cart {
+  0% { opacity: 0; translate: 0 0.05em; scale: 1; }
+  12% { opacity: 1; translate: 0 0; scale: 1; }
+  80% { opacity: 0.6; translate: 0 -0.16em; scale: 0.15; }
+  86%, 100% { opacity: 0; translate: 0 -0.17em; scale: 0.05; }
 }
 
 /* A Supernova or a Diamond Rush: everyone works three times as fast */
