@@ -159,7 +159,7 @@
     }
 
     // Whether the player can give the Engine parts right now (hbHubMinerCanGive())
-    const canGive = (s) => s.engineOpen === true && s.warps >= 1;
+    const canGive = (s) => s.engineOpen === true && s.warps >= 1 && s.strangeEarned >= CONFIG.engineStrange;
 
     // The daily counts start over on a new UTC day (hbHubMinerEngineDay())
     function engineDay(s) {
@@ -3773,6 +3773,8 @@
     const engineNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-engine]')].map((node) => [node.dataset.minerEngine, node]));
     const engineProgress = root.querySelector('[data-miner-engine-progress]');
     const engineLock = root.querySelector('[data-miner-engine-lock]');
+    const engineSections = root.querySelectorAll('[data-miner-engine-section]'); // the about text and every card under the rocket
+    const engineLocked = root.querySelector('[data-miner-engine-locked]');
     const engineGiveNote = root.querySelector('[data-miner-engine-give-note]');
     const oreDonateButton = root.querySelector('[data-miner-donate="ore"]');
     const strangeDonateButton = root.querySelector('[data-miner-donate="strange"]');
@@ -3870,6 +3872,10 @@
     const today = () => Math.floor(state.tick / CONFIG.dayMs);
 
     function renderEngine() {
+        // Locked until CONFIG.engineStrange Strange Matter has been earned: only the rocket and its progress show then
+        const isLocked = (saveState?.strangeEarned ?? 0) < CONFIG.engineStrange;
+        engineSections.forEach((section) => { section.hidden = isLocked; });
+        engineLocked.hidden = !isLocked;
         if (!engine) return;
         const done = engine.done;
         const stages = engineStagesOf(engine.number);
@@ -3908,6 +3914,7 @@
         engineLock.textContent = lockText;
         engineLock.hidden = lockText === '';
         engineView.classList.toggle('is-ready', canGiveNow());
+        if (isLocked) return;
         renderEngineGive();
         renderShifts();
         renderEngineLists();
@@ -3917,7 +3924,6 @@
     function renderEngineGive() {
         let note = '';
         if (IS_GUEST) note = 'Only players with an account can give Project Starbound parts. Sign up to help build it!';
-        else if (saveState.warps < 1) note = 'Make your first Warp Jump to start giving Project Starbound parts.';
         else if (!saveState.engineOpen) {
             note = engine.done >= engineStagesOf(engine.number).length ? 'The ' + engineNameOf(engine.number) + ' is done! Build #' + (engine.number + 1)
                 + ' is coming. Parts from Anomalies are kept for it.'

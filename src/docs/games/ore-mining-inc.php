@@ -179,8 +179,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             A Warp Jump and a Big Rip only give what's more than you've had from them before, so each one has to beat
                             your best. The Antimatter view opens after your first Warp Jump, the Strange Matter view after your first
-                            Big Crunch. Project Starbound and Anomalies have their own bar under the menu, and the Shard Shop another under that: you can give Project Starbound
-                            parts after your first Warp Jump, and start Anomalies after your first Big Rip. A dot in the menu
+                            Big Crunch. Project Starbound and Anomalies have their own bar under the menu, and the Shard Shop another under that: the Project Starbound view opens
+                            once you've earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter (before that it only shows the rocket and how far it is), and start Anomalies after your first Big Rip. A dot in the menu
                             shows when there's something to do in a view.
                         </p>
                     </section>
@@ -209,7 +209,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             The Project Starbound view has a machine everyone on HB Hub builds together, out of Starbound Parts, drawn as a rocket
                             on its launch pad: each stage done adds a part to it, the one being built fills up as parts come in, and
-                            you can point at a part to see its stage. Once you've made your first Warp Jump, you can help in three ways:
+                            you can point at a part to see its stage. Once you've earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter (until then the view only shows the
+                            rocket and how far it is), you can help in three ways:
                         </p>
                         <ul>
                             <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day (one more once the Starforge's Air Intakes are done). The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much. From each build's third section (stage 11) a part from ore counts as half a part, and from its fourth (stage 16) as a quarter, or half again once the Starforge's Piston Arms are done.</li>

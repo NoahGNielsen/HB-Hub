@@ -595,18 +595,24 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         </p>
                     </div>
                     <p class="miner-prestige-hint" data-miner-engine-lock hidden></p>
+                    <!-- Until the player has earned HBHUB_MINER_ENGINE_STRANGE Strange Matter only the rocket and its
+                         progress show, with this in place of the rest (data-miner-engine-section, renderEngineLocked()) -->
+                    <p class="miner-locked" data-miner-engine-locked hidden>
+                        <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
+                        Earn <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter to join Project Starbound and give it parts.
+                    </p>
                 </div>
             </div>
-            <p class="casino-hint miner-prestige-about">
+            <p class="casino-hint miner-prestige-about" data-miner-engine-section hidden>
                 Everyone on HB Hub builds Project Starbound together, one stage at a time, out of Starbound Parts. Each stage
                 finished gives everyone who plays its perk, for good. Some stages have a lock as well, which has to be met
                 before they finish, however many parts they have. Once a build is done, the next one starts, with locks
-                that count again from nothing. Anyone who has made a Warp Jump can give parts. The rocket shows how far
+                that count again from nothing. Anyone who has earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter can give parts. The rocket shows how far
                 it is: each stage done adds its part, and the one being built fills up as parts come in. Point at a
                 part to see its stage.
             </p>
 
-            <div class="miner-engine-grid">
+            <div class="miner-engine-grid" data-miner-engine-section hidden>
                 <section class="miner-engine-card" aria-labelledby="miner-engine-give-title">
                     <h3 class="miner-store-title" id="miner-engine-give-title">Give parts</h3>
                     <p class="miner-engine-note" data-miner-engine-give-note hidden></p>

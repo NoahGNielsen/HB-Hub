@@ -657,6 +657,7 @@ const HBHUB_MINER_ENGINE_SOURCE_ANOMALY = 4; // with the Anomaly in contribution
 const HBHUB_MINER_ENGINE_ORE_PART = 1e13; // ore for the day's first part from ore
 const HBHUB_MINER_ENGINE_ORE_PARTS = 5; // parts from ore a day
 const HBHUB_MINER_ENGINE_STRANGE_PART = 10; // Strange Matter for a part
+const HBHUB_MINER_ENGINE_STRANGE = 250; // Strange Matter earned before a player can give parts (the view is locked until then)
 const HBHUB_MINER_ENGINE_STAGE_TOTAL = 25; // stages in each build
 const HBHUB_MINER_DAY_MS = 86400000; // the daily limit and the Shifts go by UTC days: Math.floor(tick / this)
 // The Engines, by engineNumber in HBHub-MinerEngines: what each is called (with 'the' in front in sentences), its
@@ -1191,6 +1192,7 @@ function hbHubMinerConfig(): array
         'engineOrePart' => HBHUB_MINER_ENGINE_ORE_PART,
         'engineOreParts' => HBHUB_MINER_ENGINE_ORE_PARTS,
         'engineStrangePart' => HBHUB_MINER_ENGINE_STRANGE_PART,
+        'engineStrange' => HBHUB_MINER_ENGINE_STRANGE,
         'dayMs' => HBHUB_MINER_DAY_MS,
         'shifts' => HBHUB_MINER_SHIFTS,
         'shiftCount' => HBHUB_MINER_SHIFT_COUNT,
@@ -1729,11 +1731,12 @@ function hbHubMinerGive(array &$state, array &$given, array $gift): void
 }
 
 /**
- * Whether the player can give parts to the Engine right now: it's taking them, and they've made a Warp Jump.
+ * Whether the player can give parts to the Engine right now: it's taking them, they've made a Warp Jump, and they've
+ * earned HBHUB_MINER_ENGINE_STRANGE Strange Matter (spending it doesn't count against them).
  */
 function hbHubMinerCanGive(array $state): bool
 {
-    return $state['engineOpen'] && $state['warps'] >= 1;
+    return $state['engineOpen'] && $state['warps'] >= 1 && $state['strangeEarned'] >= HBHUB_MINER_ENGINE_STRANGE;
 }
 
 /**

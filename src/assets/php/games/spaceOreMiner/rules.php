@@ -47,7 +47,8 @@
     </li>
     <li>
         the Project Starbound view has the Cosmic Engine, which everyone on HB Hub builds together, one stage at a time, out of
-        Starbound Parts. Once you've made a Warp Jump you can give it parts: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day
+        Starbound Parts. Once you've earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter you can give it parts
+        (until then the view only shows how far it is): up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day
         for ore (the first for <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?>, each next one that day ten
         times as much), as many as you like for <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> Strange Matter each (it doesn't
         make you mine slower, as the Strange Matter bonus counts all you've earned), and by working the day's
