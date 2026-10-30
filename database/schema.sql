@@ -449,6 +449,7 @@ CREATE TABLE `HBHub-Feedback` (
   `feedbackUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who sent it, NULL once that account is gone',
   `feedbackContent` varchar(2000) NOT NULL COMMENT 'As it was typed',
   `feedbackPage` varchar(255) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The path of the page it was sent from (no query), NULL when not known',
+  `feedbackFromDev` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 when it was sent from the dev site (dev branch), 0 from the live one',
   `feedbackDoneByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The site admin who marked it as done',
   `feedbackDoneTimestamp` datetime DEFAULT NULL COMMENT 'NULL while it is new',
   `feedbackCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP

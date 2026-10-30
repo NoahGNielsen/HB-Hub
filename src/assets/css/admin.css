@@ -486,6 +486,15 @@
   margin-left: auto;
 }
 
+/* Sent from the dev site: its own colour, and it takes the push to the right instead of New/Done next to it */
+.admin-feedback-head .admin-feedback-dev {
+  background: color-mix(in srgb, var(--accent) 25%, var(--background));
+}
+
+.admin-feedback-head .admin-feedback-dev + .settings-status {
+  margin-left: 0;
+}
+
 .admin-feedback-text {
   margin: 0;
   line-height: 1.5;
