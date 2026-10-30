@@ -26,9 +26,9 @@
 // admin/engine.php).
 require_once __DIR__ . '/../../database.php';
 
-const HBHUB_MINER_ENGINE_TOP = 10; // contributors in the Engine view
-const HBHUB_MINER_ENGINE_FEED = 15; // the latest parts given, in the Engine view
-const HBHUB_MINER_ENGINE_HALL_TOP = 3; // who gave the most to each finished Engine, in the Hall of Engines
+const HBHUB_MINER_ENGINE_TOP = 10; // contributors in the Project Starbound view
+const HBHUB_MINER_ENGINE_FEED = 15; // the latest parts given, in the Project Starbound view
+const HBHUB_MINER_ENGINE_HALL_TOP = 3; // who gave the most to each finished build, in the Starbound Hall
 const HBHUB_MINER_ENGINE_COST_MAX = 10000000; // the most the admin panel lets a stage cost
 const HBHUB_MINER_ENGINE_STATUS_BANNED = 4; // userStatus in HBHub-Users
 const HBHUB_MINER_MEDALS = 3; // places with a weekly Anomaly medal: gold, silver, bronze

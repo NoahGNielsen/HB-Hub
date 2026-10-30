@@ -260,11 +260,11 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 the totals on the Ore Mining Inc. leaderboard (ore mined, ore per second, Dark Matter, Antimatter,
                                 Strange Matter, Warp Jumps, clicks and achievements), and on its Rising tab, which only lists
                                 players who haven't learned the whole skill tree (so it keeps how many skills you've learned).
-                                The save also keeps how far you are with the day's Engine Shifts, how many Engine Parts you've
+                                The save also keeps how far you are with the day's Starbound Shifts, how many Starbound Parts you've
                                 given from ore that day and in all, how many days you've done every Shift and how many weekly
                                 Anomalies you've finished, the Anomaly you're in and the ones you've saved to carry on later
                                 (each its own game, kept the same way, until you finish it, leave it or throw it away), for each
-                                Anomaly or stack of them you've finished how many times, your best time and the last Engine you
+                                Anomaly or stack of them you've finished how many times, your best time and the last build you
                                 finished it for, the last Anomaly you went into, when the Afterglow from finishing one runs out,
                                 which Shift you swapped that day, which
                                 Engines' last stages you helped fill, and the asteroid skin, background and click sparks you
@@ -282,20 +282,20 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 account.
                             </li>
                             <li>
-                                The Engine Parts you give to Ore Mining Inc.'s Cosmic Engines (the Cosmic Engine, then the
+                                The Starbound Parts you give to Ore Mining Inc.'s Project Starbound (the Cosmic Engine, then the
                                 Starforge), which everyone builds together: how many, whether they came from ore, Strange
-                                Matter, an Engine Shift or an Anomaly (and which one, and how long it took you), which Engine
+                                Matter, a Starbound Shift or an Anomaly (and which one, and how long it took you), which Engine
                                 and stage they went into, and when (one line per kind for each save). <strong>This is shown to everyone</strong>
-                                with an account: your name and the parts you gave in the Engine view's list of the latest parts and
-                                its top 10, and on the Ore Mining Inc. leaderboard's Engine tabs (with how many came from
-                                each). If you've given parts to an Engine once its badge stage is built (the Cosmic Engine's
+                                with an account: your name and the parts you gave in the Project Starbound view's list of the latest parts and
+                                its top 10, and on the Ore Mining Inc. leaderboard's Project Starbound tabs (with how many came from
+                                each). If you've given parts to a build once its badge stage is built (the Cosmic Engine's
                                 Crew Deck, the Starforge's Forge Floor), your profile shows its badge (Engine Crew, Forge Crew),
                                 and if you gave parts to its last stage before it was finished, that stage's badge too
-                                (Ignition, First Light). Once the Starforge's Alloy Bins are built, the Engine view's Hall of
-                                Engines shows the names of the 3 players who gave the most to each finished Engine. The Engines'
+                                (Ignition, First Light). Once the Starforge's Alloy Bins are built, the Project Starbound view's Hall of
+                                Engines shows the names of the 3 players who gave the most to each finished build. The builds'
                                 locks count how many different players gave parts or finished certain Anomalies (some only in
                                 under a certain time, or only players who haven't learned the whole skill tree), but without
-                                showing who. When a stage of the Engine is finished, everyone
+                                showing who. When a stage of Project Starbound is finished, everyone
                                 who has made a Warp Jump gets a notification about it (it doesn't say who helped).
                             </li>
                             <li>
@@ -389,7 +389,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <section id="see" aria-labelledby="privacy-see">
                         <h2 id="privacy-see">4. Who can see what</h2>
                         <ul>
-                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, your Discord username if you've linked Discord (unless you've turned that off in your settings), when you were last online and when you joined, and your spot on the leaderboards, and the Engine Parts you've given to Ore Mining Inc.'s Cosmic Engines (with a badge on your profile for each Engine you helped build once its badge stage is built, and one for each Engine's last stage you helped fill), your Ore Mining Inc. Anomaly best times, your weekly Anomaly medals and your leaderboard title there. People playing without an account see how far the Engine is, but not who gave what.</li>
+                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, your Discord username if you've linked Discord (unless you've turned that off in your settings), when you were last online and when you joined, and your spot on the leaderboards, and the Starbound Parts you've given to Ore Mining Inc.'s Project Starbound (with a badge on your profile for each build you helped build once its badge stage is built, and one for each build's last stage you helped fill), your Ore Mining Inc. Anomaly best times, your weekly Anomaly medals and your leaderboard title there. People playing without an account see how far Project Starbound is, but not who gave what.</li>
                             <li><strong>Everyone in your class's group chat</strong> (everyone on HB Hub who started HTX the same year in the same field) can see that you're in it, and the messages you send there. You're put in it automatically when you sign up or change your class, and taken out of your old class's chat when you change it. Nobody is a group admin there, so only site admins can remove anyone or delete messages in it.</li>
                             <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group. When they remove a site admin, the site admin can undo it from their notification: they're put back in the group as they were, and the notice about it in the chat is deleted.</li>
                             <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
@@ -503,8 +503,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             What stays is what other people need for their chats and games to make sense: the messages you sent
                             and your reactions to messages (shown as from "Deleted User"), your game results and chip history,
-                            the Engine Parts you gave to Ore Mining Inc.'s Cosmic Engines (which everyone built together, shown
-                            as from "Deleted User" in the game's list of the latest parts, its top 10 and its Hall of Engines), and any feedback you sent. None of it is connected to your
+                            the Starbound Parts you gave to Ore Mining Inc.'s Project Starbound (which everyone built together, shown
+                            as from "Deleted User" in the game's list of the latest parts, its top 10 and its Starbound Hall), and any feedback you sent. None of it is connected to your
                             name any more.
                         </p>
                         <p>

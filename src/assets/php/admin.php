@@ -133,7 +133,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
         'banned' => ['Banned pictures', '/admin/banned'],
         'feedback' => ['Feedback', '/admin/feedback'],
         'crashes' => ['Crash reports', '/admin/crashes'],
-        'engine' => ['Cosmic Engine', '/admin/engine'],
+        'engine' => ['Project Starbound', '/admin/engine'],
         'log' => ['Admin log', '/admin/log'],
     ];
 

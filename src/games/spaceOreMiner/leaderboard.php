@@ -32,8 +32,8 @@ const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first, the
 const LEADERBOARD_BOARDS = [ // ?board= => the tab's text
     'players' => 'Players',
     'rising' => 'Rising',
-    'engine' => 'Engine contributors',
-    'engineAll' => 'Engine contributors, all time',
+    'engine' => 'Starbound contributors',
+    'engineAll' => 'Starbound contributors, all time',
     'anomalies' => 'Anomaly times',
     'weekly' => 'Weekly Anomaly',
 ];
@@ -235,13 +235,13 @@ function leaderboardSortUrl(string $column, string $sort, string $dir, string $b
 
         <?php if ($board === 'engine' || $board === 'engineAll'): ?>
         <p class="casino-intro">
-            Who has given the most Engine Parts to <?= $board === 'engine' ? 'the ' . htmlspecialchars(HBHUB_MINER_ENGINES[$engineNumber]['name'] ?? 'Cosmic Engine') . ' (Engine #' . $engineNumber . '), the one being built' : 'every Engine so far' ?>,
-            and how many came from Strange Matter, ore, Engine Shifts and Anomalies. It's updated every time their game saves.
+            Who has given the most Starbound Parts to <?= $board === 'engine' ? 'the ' . htmlspecialchars(HBHUB_MINER_ENGINES[$engineNumber]['name'] ?? 'Cosmic Engine') . ' (Build #' . $engineNumber . '), the one being built' : 'every build so far' ?>,
+            and how many came from Strange Matter, ore, Starbound Shifts and Anomalies. It's updated every time their game saves.
         </p>
 
-        <section class="casino-card casino-board" aria-label="Engine contributors">
+        <section class="casino-card casino-board" aria-label="Project Starbound contributors">
             <?php if ($engineRows === []): ?>
-                <p class="casino-hint">Nobody has given the Engine any parts yet. <a href="/games/ore-mining-inc/?view=engine">Be the first!</a></p>
+                <p class="casino-hint">Nobody has given Project Starbound any parts yet. <a href="/games/ore-mining-inc/?view=engine">Be the first!</a></p>
             <?php else: ?>
                 <div class="casino-table-wrap">
                     <table class="casino-table">
@@ -249,10 +249,10 @@ function leaderboardSortUrl(string $column, string $sort, string $dir, string $b
                             <tr>
                                 <th scope="col"><span class="casino-rank">#</span></th>
                                 <th scope="col">Player</th>
-                                <th scope="col" aria-sort="descending">Engine Parts</th>
+                                <th scope="col" aria-sort="descending">Starbound Parts</th>
                                 <th scope="col">From Strange Matter</th>
                                 <th scope="col">From ore</th>
-                                <th scope="col">From Engine Shifts</th>
+                                <th scope="col">From Starbound Shifts</th>
                                 <th scope="col">From Anomalies</th>
                             </tr>
                         </thead>
@@ -279,7 +279,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir, string $b
                 The fastest time each player has finished an Anomaly (or a stack of them) in, from going in to reaching its
                 goal, time away included. Pick one:
             <?php else: ?>
-                The weekly Anomaly is a stack picked for everyone each week (from Monday 00:00 UTC), worth twice the Engine Parts
+                The weekly Anomaly is a stack picked for everyone each week (from Monday 00:00 UTC), worth twice the Starbound Parts
                 that week. <?= $week === $thisWeek ? 'This week' : 'That week' ?> it's <strong><?= htmlspecialchars(leaderboardAnomalyName($anomalyKey)) ?></strong>.
                 The fastest times finished in the week:
             <?php endif; ?>

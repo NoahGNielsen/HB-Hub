@@ -167,6 +167,11 @@
   white-space: nowrap;
 }
 
+/* "Project " in front of Starbound, only where the menu is a column with room for it (below) */
+.miner-menu-long {
+  display: none;
+}
+
 .miner-menu-count {
   color: var(--miner-view-colour);
   font-variant-numeric: tabular-nums;
@@ -237,6 +242,10 @@
 
   .miner-menus .miner-menu {
     flex-direction: column;
+  }
+
+  .miner-menu-long {
+    display: inline;
   }
 
   /* The name with the amount under it, so long numbers fit */

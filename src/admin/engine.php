@@ -74,7 +74,7 @@ $adminWeek = (int) $statement->fetchColumn();
 const ADMIN_ENGINE_SOURCES = [ // contributionSource => what it's called here
     HBHUB_MINER_ENGINE_SOURCE_STRANGE => 'Strange Matter',
     HBHUB_MINER_ENGINE_SOURCE_ORE => 'Ore',
-    HBHUB_MINER_ENGINE_SOURCE_SHIFT => 'Engine Shifts',
+    HBHUB_MINER_ENGINE_SOURCE_SHIFT => 'Starbound Shifts',
     HBHUB_MINER_ENGINE_SOURCE_ANOMALY => 'Anomalies',
 ];
 ?>
@@ -85,7 +85,7 @@ const ADMIN_ENGINE_SOURCES = [ // contributionSource => what it's called here
     <link rel="stylesheet" href="/assets/css/settings.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/settings.css') ?>">
     <link rel="stylesheet" href="/assets/css/admin.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/admin.css') ?>">
     <script src="/assets/js/admin.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/admin.js') ?>" defer></script>
-    <title>Cosmic Engine - Admin panel - HB Hub</title>
+    <title>Project Starbound - Admin panel - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
@@ -100,7 +100,7 @@ const ADMIN_ENGINE_SOURCES = [ // contributionSource => what it's called here
                 <section class="settings-card" id="engine" aria-labelledby="admin-engine-heading">
                     <div class="settings-card-head">
                         <div>
-                            <h2 id="admin-engine-heading">Ore Mining Inc. <?= htmlspecialchars($adminEngineName) ?> (Engine #<?= (int) $adminEngine['engineNumber'] ?>)</h2>
+                            <h2 id="admin-engine-heading">Ore Mining Inc. <?= htmlspecialchars($adminEngineName) ?> (Build #<?= (int) $adminEngine['engineNumber'] ?>)</h2>
                             <p class="settings-intro">
                                 Started <?= adminTime($adminEngine['engineStartedTimestamp']) ?> (UTC).
                                 <?= $adminDone ?> of <?= HBHUB_MINER_ENGINE_STAGE_TOTAL ?> stages done.<?= $adminEngine['engineIgnitedTimestamp'] !== null ? ' Ignited ' . adminTime($adminEngine['engineIgnitedTimestamp']) . ' (UTC).' : '' ?>
@@ -136,7 +136,7 @@ const ADMIN_ENGINE_SOURCES = [ // contributionSource => what it's called here
                         <div>
                             <h2 id="admin-costs-heading">Stage costs</h2>
                             <p class="settings-intro">
-                                In Engine Parts. Lowering the stage being built to its parts or less finishes it straight away, if its lock is met,
+                                In Starbound Parts. Lowering the stage being built to its parts or less finishes it straight away, if its lock is met,
                                 and tells everyone who plays. A done stage's cost changes nothing any more.
                             </p>
                         </div>

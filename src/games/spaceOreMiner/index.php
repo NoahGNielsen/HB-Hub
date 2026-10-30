@@ -31,12 +31,12 @@ if ($guestGame === null) {
     hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 }
 
-const MINER_VIEWS = [ // ?view= => [the menu's text, its address after the game's own]
+const MINER_VIEWS = [ // ?view= => [the menu's text (HTML), its address after the game's own]
     'ore' => ['Ore', ''],
     'darkMatter' => ['Dark Matter', '?view=darkMatter'],
     'antimatter' => ['Antimatter', '?view=antimatter'],
     'strangeMatter' => ['Strange Matter', '?view=strangeMatter'],
-    'engine' => ['Engine', '?view=engine'],
+    'engine' => ['<span class="miner-menu-long">Project </span>Starbound', '?view=engine'], // just "Starbound" in the bar on small screens
     'anomalies' => ['Anomalies', '?view=anomalies'],
 ];
 const MINER_LATER_VIEWS = ['engine' => true, 'anomalies' => true]; // in the second group of the menu
@@ -401,19 +401,19 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
         </section>
 
         <!-- Engine: the Cosmic Engine the whole site builds together, built like the other views. On top the Engine
-             drawn as a rocket being built, the stage being built, its parts and its lock; under it what you can give, today's Engine Shifts, every stage with
+             drawn as a rocket being built, the stage being built, its parts and its lock; under it what you can give, today's Starbound Shifts, every stage with
              its perk, and who gave the most and last. All filled in by spaceOreMiner.js (renderEngine()) from every
              save's answer. -->
         <section class="miner-view casino-card miner-prestige is-engine" aria-labelledby="miner-engine-title" data-miner-view="engine" data-miner-engine-view<?= $minerView !== 'engine' ? ' hidden' : '' ?>>
             <div class="miner-prestige-hero">
                 <!-- The Engine as a rocket on its launch pad, one part for each stage (renderRocket() in spaceOreMiner.js).
-                     Parts of stages done are in the Engine's paint (data-engine), the stage being built fills up from the
+                     Parts of stages done are in Project Starbound's paint (data-engine), the stage being built fills up from the
                      bottom as parts come in (a copy of it in data-miner-rocket-fill, clipped at the line, with the welder
                      on the line and the crane's hook at its top), and the rest are blueprint outlines. data-miner-rocket-part
-                     is the stage in the Engine counting from 0, data-box its x1 y1 x2 y2 here. They're drawn back to front,
-                     so not in stage order. Engines done before this one fly in the sky (data-miner-rocket-fleet). -->
+                     is the stage in Project Starbound counting from 0, data-box its x1 y1 x2 y2 here. They're drawn back to front,
+                     so not in stage order. Builds done before this one fly in the sky (data-miner-rocket-fleet). -->
                 <div class="miner-rocket-art">
-                    <svg class="miner-rocket" viewBox="0 0 240 320" role="img" aria-label="The Engine, drawn as a rocket being built" data-miner-rocket>
+                    <svg class="miner-rocket" viewBox="0 0 240 320" role="img" aria-label="Project Starbound, drawn as a rocket being built" data-miner-rocket>
                         <defs>
                             <!-- The hull's shine, round like a can: dark at the edges, light in the middle -->
                             <linearGradient id="miner-rocket-shine">
@@ -564,7 +564,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                     </svg>
                 </div>
                 <div class="miner-prestige-main">
-                    <h2 id="miner-engine-title" class="miner-prestige-title"><span data-miner-engine="title">Cosmic Engine</span> <span data-miner-engine="number"></span></h2>
+                    <h2 id="miner-engine-title" class="miner-prestige-title"><span data-miner-engine="title">Project Starbound</span> <span data-miner-engine="number"></span></h2>
                     <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-engine="name">Loading…</span></p>
                     <p class="miner-prestige-bonus" data-miner-engine="stage"></p>
                     <!-- One pip a stage, the same as the rocket (only for the mouse: the Stages list below says it all) -->
@@ -573,7 +573,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                         <div class="miner-progress-bar" role="progressbar" aria-labelledby="miner-engine-progress-label"
                              aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-miner-engine-progress><span class="miner-progress-fill"></span></div>
                         <p class="miner-progress-label" id="miner-engine-progress-label">
-                            <span data-miner-engine="parts">0</span> of <span data-miner-engine="cost">0</span> Engine Parts
+                            <span data-miner-engine="parts">0</span> of <span data-miner-engine="cost">0</span> Starbound Parts
                             (<span data-miner-engine="total">0</span> given in all)
                         </p>
                     </div>
@@ -581,9 +581,9 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 </div>
             </div>
             <p class="casino-hint miner-prestige-about">
-                Everyone on HB Hub builds the Engines together, one stage at a time, out of Engine Parts. Each stage
+                Everyone on HB Hub builds Project Starbound together, one stage at a time, out of Starbound Parts. Each stage
                 finished gives everyone who plays its perk, for good. Some stages have a lock as well, which has to be met
-                before they finish, however many parts they have. Once an Engine is done, the next one starts, with locks
+                before they finish, however many parts they have. Once a build is done, the next one starts, with locks
                 that count again from nothing. Anyone who has made a Warp Jump can give parts. The rocket shows how far
                 it is: each stage done adds its part, and the one being built fills up as parts come in. Point at a
                 part to see its stage.
@@ -619,7 +619,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 </section>
 
                 <section class="miner-engine-card" aria-labelledby="miner-shifts-title">
-                    <h3 class="miner-store-title" id="miner-shifts-title">Today's Engine Shifts</h3>
+                    <h3 class="miner-store-title" id="miner-shifts-title">Today's Starbound Shifts</h3>
                     <ul class="miner-shifts" data-miner-shifts></ul>
                     <p class="miner-engine-small" data-miner-shifts-note></p>
                 </section>
@@ -639,7 +639,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
 
                 <!-- Every Engine done so far, once the Starforge's Alloy Bins are (the hall perk, renderEngineHall()) -->
                 <section class="miner-engine-card is-wide" aria-labelledby="miner-engine-hall-title" data-miner-engine-hall hidden>
-                    <h3 class="miner-store-title" id="miner-engine-hall-title">Hall of Engines</h3>
+                    <h3 class="miner-store-title" id="miner-engine-hall-title">Starbound Hall</h3>
                     <ul class="miner-engine-list" data-miner-engine-hall-list></ul>
                 </section>
 
@@ -675,7 +675,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 your own game waits and mines as if you were away. You can leave whenever you like: with Save and leave,
                 you can carry on where you were later (up to <?= HBHUB_MINER_ANOMALY_SAVED_MAX ?> saved at once, not Speed of Light),
                 otherwise you'll start over next time. A saved run's clock keeps going, and it mines as if you were away until
-                you carry on. Finishing one gives the Engine being built parts: all of them the first time for each Engine
+                you carry on. Finishing one gives Project Starbound being built parts: all of them the first time for each build
                 and whenever you beat your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise. Every time you finish one, your own
                 game also gets an Afterglow: it mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much for a while (an hour for Tier I, 3 for
                 Tier II, 12 for Tier III, 24 for The Gauntlet, and a stack's added up), on top of any Afterglow still running, up to
