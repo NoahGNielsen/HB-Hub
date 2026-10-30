@@ -768,7 +768,9 @@ const HBHUB_MINER_SHIFT_PARTS_ALL = 25;
 // player is in one, the Engine gets nothing else from them (no Shifts or donations), and their own game mines as if
 // they were away. The rules each changes are in the functions that check hbHubMinerMod(); the goals were tuned with
 // the balance sim: about 1-3 hours for Tier I and 3-8 for Tier II with the whole skill tree, and 15 to 60 or more for
-// Tier III from nothing.
+// Tier III from nothing (retuned 30 October 2026: Dead Hands, Dark Sky, Bare Metal and One Track down, Minimalist up,
+// Speed of Light down so a player who isn't clicking flat out makes it in the 2 hours. Unstable Vacuum isn't about
+// time: a player runs out of buildings to lose at about 5e14-2e16 Antimatter however long they take).
 // Stacks: up to every Anomaly of the tiers up to HBHUB_MINER_ANOMALY_STACK_TIER at once (hbHubMinerAnomalyMods()), with
 // all their rules, the lowest of their goals, and their parts together times HBHUB_MINER_ANOMALY_STACK for each one
 // after the first. The weekly Anomaly (hbHubMinerWeeklyMods()) is a stack picked from the week, the same for
@@ -779,23 +781,23 @@ const HBHUB_MINER_ANOMALY_TIERS = [
     3 => ['name' => 'Singularities', 'parts' => 400, 'afterglow' => 43200000, 'unlock' => 'theory', 'noAuto' => false, 'fresh' => true],
 ];
 const HBHUB_MINER_ANOMALIES = [
-    'deadHands' => ['name' => 'Dead Hands', 'icon' => 'glove', 'tier' => 1, 'goal' => 3e21,
+    'deadHands' => ['name' => 'Dead Hands', 'icon' => 'glove', 'tier' => 1, 'goal' => 3e20,
         'text' => 'Clicks mine nothing, and neither do auto-clickers.'],
-    'darkSky' => ['name' => 'Dark Sky', 'icon' => 'comet', 'tier' => 1, 'goal' => 7e19,
+    'darkSky' => ['name' => 'Dark Sky', 'icon' => 'comet', 'tier' => 1, 'goal' => 3e18,
         'text' => 'No comets come.'],
     'inflation' => ['name' => 'Inflation', 'icon' => 'scales', 'tier' => 1, 'goal' => 2e21,
         'text' => 'Each building costs 35% more than the one before, instead of 15% (12% for Space Pickaxe Guys).'],
-    'bareMetal' => ['name' => 'Bare Metal', 'icon' => 'pickaxe', 'tier' => 1, 'goal' => 3e17,
+    'bareMetal' => ['name' => 'Bare Metal', 'icon' => 'pickaxe', 'tier' => 1, 'goal' => 1e17,
         'text' => 'No ore upgrades at all (so no bulk buying either): only buildings.'],
     'entropy' => ['name' => 'Entropy', 'icon' => 'hourglass', 'tier' => 2, 'goal' => 5e22,
         'text' => 'Production halves every 5 minutes of a run. A Warp Jump starts the clock over.'],
-    'minimalist' => ['name' => 'Minimalist', 'icon' => 'clipboard', 'tier' => 2, 'goal' => 2e16,
+    'minimalist' => ['name' => 'Minimalist', 'icon' => 'clipboard', 'tier' => 2, 'goal' => 2e17,
         'text' => 'At most 150 buildings at once, and every run starts with none.'],
-    'oneTrack' => ['name' => 'One Track', 'icon' => 'link', 'tier' => 2, 'goal' => 5e18,
-        'text' => 'One kind of building per run: the first one you buy is the only kind you can buy until the next Warp Jump. Every run starts with none.'],
+    'oneTrack' => ['name' => 'One Track', 'icon' => 'link', 'tier' => 2, 'goal' => 1e17,
+        'text' => 'One kind of building per run: the first one you buy is the only kind you can buy until the next Warp Jump. Every run starts with none, and Auto Buy leaves that first pick to you.'],
     'unstableVacuum' => ['name' => 'Unstable Vacuum', 'icon' => 'blackHole', 'tier' => 2, 'goal' => 1e14,
         'text' => 'Each Warp Jump destroys the building you have the most of, for the rest of the Anomaly.'],
-    'speedOfLight' => ['name' => 'Speed of Light', 'icon' => 'warp', 'tier' => 2, 'goal' => 5e20,
+    'speedOfLight' => ['name' => 'Speed of Light', 'icon' => 'warp', 'tier' => 2, 'goal' => 1e20,
         'text' => 'Reach the goal within 2 hours of starting, time away included, or the Anomaly is over.'],
     'nakedSingularity' => ['name' => 'Naked Singularity', 'icon' => 'strangelet', 'tier' => 3, 'goal' => 1e5, 'parts' => 800,
         'text' => 'No twist at all, just the whole game from nothing, past a Big Rip: earn ten times the Antimatter one needs.'],

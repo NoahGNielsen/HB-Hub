@@ -3058,7 +3058,7 @@
     // amount can be 'max' too (storeAmount()). parts: rateParts(state), when it's already been worked out; each building
     // is tried on top of it.
     function bestBuilding(amount, parts = rateParts(state)) {
-        const before = rate(state, Infinity, parts);
+        const before = weighRate(state, parts);
         const synergies = rateSynergies(state);
         let best = null;
         for (const id of visibleBuildings().shown) {
@@ -3067,10 +3067,20 @@
             if (!canAfford(state, cost) || !canBuild(state, id, count)) continue;
             const after ={ ...state, buildings: { ...state.buildings, [id]: state.buildings[id] + count } };
             const counted = synergies.get(id);
-            const gain = rate(after, Infinity, counted ? ratePartsRecounted(after, parts, counted) : parts) - before;
+            const gain = weighRate(after, counted ? ratePartsRecounted(after, parts, counted) : parts) - before;
             if (!best || gain / cost > best.gain / best.cost) best = { id, cost, gain };
         }
         return best;
+    }
+
+    // The ore per second the B key and Auto Buy weigh their choices by: the steady rate, and in Hands Only, where the
+    // buildings only mine through clicks, HANDS_WEIGH_CLICKS of the player's own clicks a second on top. Without an
+    // auto-clicker the steady rate there is 0, so nothing ever added to it and Auto Buy bought nothing at all, not even
+    // the 100-ore click upgrade (the balance sim, 30 October 2026).
+    const HANDS_WEIGH_CLICKS = 1;
+    function weighRate(s, parts) {
+        const steady = rate(s, Infinity, parts);
+        return mod(s, 'handsOnly') ? steady + HANDS_WEIGH_CLICKS * clickValue(s, Infinity, parts) : steady;
     }
 
     // ----- Auto Buy (the Dark Matter upgrade): while it's switched on, 10 times a second it buys whatever pays for
@@ -3105,14 +3115,16 @@
     // What Auto Buy should do now: {type: 'buy', ...} or {type: 'upgrade', ...} (the action to take), or null to wait
     function autoBuyChoice() {
         const parts = rateParts(state);
-        const before = rate(state, Infinity, parts);
-        const building = bestBuilding(1, parts);
+        const before = weighRate(state, parts);
+        // In One Track a run's first building is the only kind it can have, so Auto Buy leaves that pick to the player:
+        // it would always take the one that pays back soonest (Mining Drones), which never reaches the goal
+        const building = mod(state, 'oneTrack') && BUILDING_IDS.every((id) => state.buildings[id] === 0) ? null : bestBuilding(1, parts);
         let best = building && building.gain > 0
             ? { action: { type: 'buy', building: building.id, amount: autoBuyAmount(building.id), auto: true }, payback: building.cost / building.gain }
             : null;
         for (const id of availableUpgrades()) {
             const cost = upgradeCost(state, id);
-            const gain = rate(state, Infinity, ratePartsWith(state, parts, id)) - before;
+            const gain = weighRate(state, ratePartsWith(state, parts, id)) - before;
             if (gain <= 0) {
                 if (canAfford(state, cost) && cost <= before * AUTO_BUY_EXTRA_SECONDS) return { type: 'upgrade', id };
                 continue;

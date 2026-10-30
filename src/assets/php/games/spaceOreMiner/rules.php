@@ -31,7 +31,9 @@
         With the Auto Buy Dark Matter upgrade, a switch in the store buys for you while the game is open: the
         building <kbd>B</kbd> would pick or an upgrade, whichever pays back its price soonest. When an upgrade
         is worth waiting for, it saves up for it instead of spending the ore on buildings. When you have a lot
-        of ore, it buys that building 10 or 100 at a time, even without Bulk Buying.
+        of ore, it buys that building 10 or 100 at a time, even without Bulk Buying. In the Hands Only Anomaly
+        it counts a click a second of your own, so it still buys before you have an auto-clicker, and in One
+        Track it leaves each run's first building (the only kind that run can have) for you to pick.
     </li>
     <li>
         With the Comet Catcher Antimatter upgrade, every Golden Comet is caught for you a moment after it shows up,
