@@ -670,7 +670,7 @@ CREATE TABLE `HBHub-WordleWords` (
 
 CREATE TABLE `HBHub-MinerAnomalyTimes` (
   `timeUserId` int UNSIGNED NOT NULL,
-  `timeAnomaly` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The Anomaly, or stack of them joined with +, as in contributionAnomaly',
+  `timeAnomaly` varchar(128) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The Anomaly, or stack of them joined with +, as in contributionAnomaly (the longest stack key is 93)',
   `timeWeek` int UNSIGNED NOT NULL DEFAULT 0 COMMENT '0 for every run of it; otherwise the week (hbHubMinerWeek()) it was finished in as that week''s weekly Anomaly',
   `timeBest` int UNSIGNED NOT NULL COMMENT 'The fastest run, in ms',
   `timeDone` int UNSIGNED NOT NULL DEFAULT 1 COMMENT 'How many times it was finished',
@@ -690,7 +690,7 @@ CREATE TABLE `HBHub-MinerContributions` (
   `contributionStage` tinyint UNSIGNED NOT NULL COMMENT 'The stage being built when it was given (1 for the first)',
   `contributionParts` int UNSIGNED NOT NULL COMMENT 'Engine Parts given',
   `contributionSource` tinyint UNSIGNED NOT NULL COMMENT '1 Ore\r\n2 Strange Matter\r\n3 Engine Shifts\r\n4 Anomalies (HBHUB_MINER_ENGINE_SOURCE_*)',
-  `contributionAnomaly` varchar(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The Anomaly (or stack of them) it was for, with contributionSource 4',
+  `contributionAnomaly` varchar(128) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The Anomaly (or stack of them, the longest key 93 characters) it was for, with contributionSource 4',
   `contributionMs` int UNSIGNED DEFAULT NULL COMMENT 'How long the Anomaly took, in ms (the fastest, if the save had more than one), with contributionSource 4. For the time locks',
   `contributionTimestamp` datetime NOT NULL COMMENT 'UTC'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Ore Mining Inc.: Engine Parts given to the Cosmic Engine, one row per kind per save (src/assets/php/games/spaceOreMiner/engine.php). Shown to everyone in the game and on its leaderboard';

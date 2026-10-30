@@ -97,73 +97,144 @@ const HBHUB_MINER_SALT_SHIFT_SPARE = 9; // the day's spare Shift, the same for e
 const HBHUB_MINER_SALT_SHARD = 10; // when in its slot each Star Shard flies past (hbHubMinerShardAt())
 
 // Every 'icon' below (and in the upgrades after it) is the name of a drawn icon in assets/images/spaceOreMiner/icons.svg.
+// Every upgrade's 'text' says what it does first, then a joke.
 // The buildings, cheapest first. 'rate' is ore per second for each one before upgrades, 'upgrades' their six
-// upgrades (see HBHUB_MINER_BUILDING_UPGRADE_AT), and 'growth', when it's there, how much more each one costs than the
+// upgrades (see HBHUB_MINER_BUILDING_UPGRADE_AT), 'jokes' a funny line for each of those (put after what it does, see
+// hbHubMinerUpgrades()), and 'growth', when it's there, how much more each one costs than the
 // one before instead of HBHUB_MINER_COST_GROWTH (Space Pickaxe Guys go up slower, so having lots of them stays cheap)
 const HBHUB_MINER_BUILDINGS = [
     'pickaxe' => ['name' => 'Space Pickaxe Guy', 'plural' => 'Space Pickaxe Guys', 'icon' => 'pickaxeGuy', 'cost' => 15, 'rate' => 0.1, 'growth' => 1.12,
         'text' => 'Swings a pickaxe at the rock. In zero gravity, that\'s harder than it sounds.',
-        'upgrades' => ['Energy Drinks', 'Hard Hats', 'Union Contract', 'Jetpack Commute', 'Diamond Pickaxes', 'Employee of the Month']],
+        'upgrades' => ['Energy Drinks', 'Hard Hats', 'Union Contract', 'Jetpack Commute', 'Diamond Pickaxes', 'Employee of the Month'],
+        'jokes' => ['Nobody has blinked since Tuesday.', 'Mostly for the asteroids that hit back.',
+            'Comes with a dental plan and one free spacesuit a year.', 'Traffic is terrible at the speed of sound.',
+            'They keep mining the handles by mistake.', 'Every one of them, every month. HR has given up.']],
     'drone' => ['name' => 'Mining Drone', 'plural' => 'Mining Drones', 'icon' => 'drone', 'cost' => 100, 'rate' => 1,
         'text' => 'A little robot that nibbles ore off the asteroid all day long.',
-        'upgrades' => ['Longer Batteries', 'Drone Swarm AI', 'Self-Repair Nanites', 'Magnetic Grabbers', 'Hive Mind', 'Drone Factories']],
+        'upgrades' => ['Longer Batteries', 'Drone Swarm AI', 'Self-Repair Nanites', 'Magnetic Grabbers', 'Hive Mind', 'Drone Factories'],
+        'jokes' => ['Now they only nap twice a day.', 'It has opinions about your music.',
+            'Tiny robots fixing slightly bigger robots.', 'Mind your fillings.',
+            'They all agree you should buy more drones.', 'Drones making drones. What could go wrong?']],
     'laser' => ['name' => 'Laser Drill', 'plural' => 'Laser Drills', 'icon' => 'laserDrill', 'cost' => 1100, 'rate' => 8,
         'text' => 'Melts through rock like butter. Don\'t look straight into it.',
-        'upgrades' => ['Focused Lens', 'Overclocked Lasers', 'Diamond Tips', 'Mirror Arrays', 'Gamma Beams', 'Planet-Sized Lens']],
+        'upgrades' => ['Focused Lens', 'Overclocked Lasers', 'Diamond Tips', 'Mirror Arrays', 'Gamma Beams', 'Planet-Sized Lens'],
+        'jokes' => ['Somebody finally wiped the fingerprints off.', 'The warranty is void, and so is the asteroid.',
+            'Diamonds cutting rocks to find more diamonds.',
+            'Bounce the beam around a bit. Try not to hit the break room.',
+            'Turns rocks into gravel and the crew slightly green.',
+            'You can see it from three galaxies away. They have complained.']],
     'rig' => ['name' => 'Mining Rig', 'plural' => 'Mining Rigs', 'icon' => 'rig', 'cost' => 12000, 'rate' => 47,
         'text' => 'A walking factory bolted onto the rock.',
-        'upgrades' => ['Heavy Treads', 'Double Shifts', 'Autonomous Rigs', 'Bigger Buckets', 'Rig Convoys', 'Mega Rigs']],
+        'upgrades' => ['Heavy Treads', 'Double Shifts', 'Autonomous Rigs', 'Bigger Buckets', 'Rig Convoys', 'Mega Rigs'],
+        'jokes' => ['Leaves tracks you can see from orbit.', 'The rigs never get tired. The drivers do.',
+            'No drivers needed. The drivers have been told.', 'The bucket is now bigger than the rig.',
+            'They honk at each other the whole way.', 'Parking is now a real problem.']],
     'base' => ['name' => 'Asteroid Base', 'plural' => 'Asteroid Bases', 'icon' => 'base', 'cost' => 130000, 'rate' => 260,
         'text' => 'A whole crew living on site. Shifts never end in space.',
-        'upgrades' => ['Hydroponics', 'Ore Refinery', 'Artificial Gravity', 'Space Cafeteria', 'Crew Quarters', 'Base Network']],
+        'upgrades' => ['Hydroponics', 'Ore Refinery', 'Artificial Gravity', 'Space Cafeteria', 'Crew Quarters', 'Base Network'],
+        'jokes' => ['Space lettuce. Nobody eats it, but it looks nice.', 'Shinier ore sells better.',
+            'The coffee stays in the cup now.', 'Tuesday is freeze-dried taco day.',
+            'A bed each, and a window full of asteroid.', 'Every base has the Wi-Fi password now.']],
     'freighter' => ['name' => 'Ore Freighter', 'plural' => 'Ore Freighters', 'icon' => 'freighter', 'cost' => 1.4e6, 'rate' => 1400,
         'text' => 'Hauls in ore from asteroids you haven\'t even seen yet.',
-        'upgrades' => ['Bigger Cargo Holds', 'Hyperspace Lanes', 'Fleet Command', 'Tractor Beams', 'Cargo Drones', 'Armada']],
+        'upgrades' => ['Bigger Cargo Holds', 'Hyperspace Lanes', 'Fleet Command', 'Tractor Beams', 'Cargo Drones', 'Armada'],
+        'jokes' => ['Somebody finally threw out the old sofa.', 'No speed cameras out there. Yet.',
+            'Someone in a very big hat tells them where to go.',
+            'Pulls in the ore and, now and then, a confused tourist.', 'Little boxes carrying slightly smaller boxes.',
+            'Other mining companies are starting to get nervous.']],
     'station' => ['name' => 'Space Station', 'plural' => 'Space Stations', 'icon' => 'station', 'cost' => 2e7, 'rate' => 7800,
         'text' => 'Runs mining all over the solar system from orbit.',
-        'upgrades' => ['Solar Arrays', 'Fusion Core', 'Ring Habitat', 'Docking Ring', 'Orbital Elevator', 'Station Cities']],
+        'upgrades' => ['Solar Arrays', 'Fusion Core', 'Ring Habitat', 'Docking Ring', 'Orbital Elevator', 'Station Cities'],
+        'jokes' => ['The Sun has not sent a bill yet.', 'Runs on the same stuff as a star, just smaller.',
+            'It spins, so everyone walks on the walls.', 'Parking in space is easier than it looks. Barely.',
+            'The music is just as bad as on Earth.', 'They have their own mayors now, and their own traffic jams.']],
     'excavator' => ['name' => 'Moon Excavator', 'plural' => 'Moon Excavators', 'icon' => 'moonExcavator', 'cost' => 3.3e8, 'rate' => 44000,
         'text' => 'Digs up whole moons. The moons have stopped complaining.',
-        'upgrades' => ['Moon Treads', 'Crater Scoops', 'Core Tap', 'Lunar Conveyors', 'Moon Magnets', 'Moon Factory']],
+        'upgrades' => ['Moon Treads', 'Crater Scoops', 'Core Tap', 'Lunar Conveyors', 'Moon Magnets', 'Moon Factory'],
+        'jokes' => ['Built for low gravity and high hopes.', 'The Moon had holes in it anyway.',
+            'The Moon is made of cheese after all. Ore-flavoured cheese.',
+            'The longest conveyor belt ever made, and it still squeaks.', 'The tides on Earth have noticed.',
+            'Moons go in, ore comes out, and a few craters are left over.']],
     'cracker' => ['name' => 'Planet Cracker', 'plural' => 'Planet Crackers', 'icon' => 'planetCracker', 'cost' => 5.1e9, 'rate' => 260000,
         'text' => 'Cracks planets open like eggs to get at the ore inside.',
-        'upgrades' => ['Seismic Charges', 'Tectonic Splitter', 'Planet Shredder', 'Core Drills', 'Magma Pumps', 'Planet Juicer']],
+        'upgrades' => ['Seismic Charges', 'Tectonic Splitter', 'Planet Shredder', 'Core Drills', 'Magma Pumps', 'Planet Juicer'],
+        'jokes' => ['The planet felt that one.', 'Continents are more of a suggestion now.',
+            'Planets in, confetti out.', 'Right down to the soft, gooey middle.', 'Hot, spicy ore.',
+            'Freshly squeezed, with bits.']],
     'siphon' => ['name' => 'Black Hole Siphon', 'plural' => 'Black Hole Siphons', 'icon' => 'blackHole', 'cost' => 7.5e10, 'rate' => 1.6e6,
         'text' => 'Pulls ore out of a black hole. Nobody knows how. Nobody asks.',
-        'upgrades' => ['Event Horizon Net', 'Hawking Pump', 'Singularity Engine', 'Spaghetti Filters', 'Gravity Lens', 'Pocket Black Holes']],
+        'upgrades' => ['Event Horizon Net', 'Hawking Pump', 'Singularity Engine', 'Spaghetti Filters', 'Gravity Lens', 'Pocket Black Holes'],
+        'jokes' => ['Catches the ore just before it is gone for good.',
+            'Black holes leak a little. Now it all leaks into buckets.', 'Infinite density, very little paperwork.',
+            'Everything that falls in comes out as noodles. This sorts them.',
+            'Bends the light so you can see the ore round the back.',
+            'Do not keep one in the same pocket as your keys.']],
     'forge' => ['name' => 'Star Forge', 'plural' => 'Star Forges', 'icon' => 'starForge', 'cost' => 1e12, 'rate' => 1e7,
         'text' => 'Squeezes stars until ore comes out. The stars are fine, mostly.',
-        'upgrades' => ['Stellar Bellows', 'Fusion Hammers', 'Neutron Anvil', 'Star Tongs', 'Supernova Furnace', 'Galactic Smithy']],
+        'upgrades' => ['Stellar Bellows', 'Fusion Hammers', 'Neutron Anvil', 'Star Tongs', 'Supernova Furnace', 'Galactic Smithy'],
+        'jokes' => ['Huff, puff, and the star gets hotter.', 'Every swing is a small sunrise.',
+            'A teaspoon of it weighs a billion tonnes. Do not drop it.', 'Oven gloves were not enough.',
+            'Set a timer, or the whole sector goes.', 'Now taking orders from three galaxies.']],
     'nebula' => ['name' => 'Nebula Harvester', 'plural' => 'Nebula Harvesters', 'icon' => 'nebula', 'cost' => 1.4e13, 'rate' => 6.5e7,
         'text' => 'Sweeps up whole nebulas with a really, really big net.',
-        'upgrades' => ['Finer Nets', 'Gas Compressors', 'Cosmic Vacuum', 'Nebula Maps', 'Stardust Filters', 'Cloud Factory']],
+        'upgrades' => ['Finer Nets', 'Gas Compressors', 'Cosmic Vacuum', 'Nebula Maps', 'Stardust Filters', 'Cloud Factory'],
+        'jokes' => ['Fewer holes, more ore.', 'Squashes clouds into rocks. The clouds are not happy.',
+            'Space is already a vacuum. This one is just better at it.', 'Turns out the pretty bits are the ore.',
+            'Keeps the glitter out of the gears.', 'Makes new nebulas, so there is always something left to harvest.']],
     'dyson' => ['name' => 'Dyson Swarm', 'plural' => 'Dyson Swarms', 'icon' => 'dysonSwarm', 'cost' => 1.7e14, 'rate' => 4.3e8,
         'text' => 'A billion mirrors around a star, all of them pointed at the ore.',
-        'upgrades' => ['Mirror Polish', 'Swarm Logic', 'Full Sphere', 'Shell Layers', 'Photon Collectors', 'Star Lifting']],
+        'upgrades' => ['Mirror Polish', 'Swarm Logic', 'Full Sphere', 'Shell Layers', 'Photon Collectors', 'Star Lifting'],
+        'jokes' => ['A billion mirrors, one cloth.', 'The mirrors have stopped bumping into each other.',
+            'The star is now fully gift wrapped.', 'Like an onion, but with sunlight.',
+            'Every bit of sunlight goes in the jar.',
+            'Lifts bits of the star straight off the top. It does not seem to mind.']],
     'wormhole' => ['name' => 'Wormhole Gate', 'plural' => 'Wormhole Gates', 'icon' => 'wormhole', 'cost' => 2.1e15, 'rate' => 2.9e9,
         'text' => 'Opens a door to a part of space that\'s nothing but ore. Mind the gap.',
-        'upgrades' => ['Stable Throats', 'Exotic Matter Struts', 'Wormhole Network', 'Toll Booths', 'Time Shortcuts', 'Pocket Dimensions']],
+        'upgrades' => ['Stable Throats', 'Exotic Matter Struts', 'Wormhole Network', 'Toll Booths', 'Time Shortcuts', 'Pocket Dimensions'],
+        'jokes' => ['The wormhole no longer coughs the ore back up.', 'Holds the door open from the inside.',
+            'Any gate to any gate. There are still delays.', 'The ore pays to come through. Nobody knows with what.',
+            'The ore gets here before you send for it.', 'A whole extra dimension, folded up in a drawer.']],
     'multiverse' => ['name' => 'Multiverse Drill', 'plural' => 'Multiverse Drills', 'icon' => 'multiverse', 'cost' => 2.6e16, 'rate' => 2.1e10,
         'text' => 'Drills into the universe next door and takes their ore too. They have a drill as well.',
-        'upgrades' => ['Dimensional Bits', 'Parallel Shifts', 'Infinite Drill', 'Mirror Universe Miners', 'Quantum Foam Bits', 'The Everything Drill']],
+        'upgrades' => ['Dimensional Bits', 'Parallel Shifts', 'Infinite Drill', 'Mirror Universe Miners', 'Quantum Foam Bits', 'The Everything Drill'],
+        'jokes' => ['Drill bits that are sharp in more than three directions.', 'Your other selves are working too.',
+            'The tip is somewhere else entirely.', 'They look just like you, but with little beards.',
+            'Each bit is both blunt and sharp until you look at it.',
+            'It drills through everything, including the instructions.']],
     // The five after the Multiverse Drill go up gentler: each mines about 3.7 times the one before instead of about 7,
     // so the late game (where everyone has hundreds of every building) only gets a few hundred times faster with all
     // of them, not thousands, and the Big Rip and Anomaly balance mostly holds
     'timeQuarry' => ['name' => 'Time Quarry', 'plural' => 'Time Quarries', 'icon' => 'timeQuarry', 'cost' => 3.3e17, 'rate' => 7.8e10,
         'text' => 'Mines yesterday\'s ore before anyone else gets to it. Tomorrow\'s too, when nobody\'s looking.',
-        'upgrades' => ['Sturdier Hourglasses', 'Leap Seconds', 'Paradox Insurance', 'Grandfather Clauses', 'Deja Vu Shifts', 'End of Time Shaft']],
+        'upgrades' => ['Sturdier Hourglasses', 'Leap Seconds', 'Paradox Insurance', 'Grandfather Clauses', 'Deja Vu Shifts', 'End of Time Shaft'],
+        'jokes' => ['They no longer break when you turn them over.', 'One extra second of mining, every now and then.',
+            'Covers you for meeting yourself at the coffee machine.',
+            'The ore was already ours before the rules changed.', 'The shift you are about to work again. Again.',
+            'Dug all the way to the end. It is quieter than you would think.']],
     'stringLoom' => ['name' => 'Loom of Time', 'plural' => 'Looms of Time', 'icon' => 'stringLoom', 'cost' => 4.2e18, 'rate' => 2.9e11,
-        'text' => 'Unpicks cosmic strings and knits them back up as ore. It\'s a very long scarf.',
-        'upgrades' => ['Finer Needles', 'Superstring Yarn', 'Eleven-Dimensional Patterns', 'Knitting Circles', 'Tangle-Free Spools', 'The Cosmic Jumper']],
+        'text' => 'Weaves the threads of time into ore. Last Tuesday came out a bit thin.',
+        'upgrades' => ['Second-Hand Thread', 'Spools of Centuries', 'Unpicked Mondays', 'Leftover Weekends', 'A Stitch in Time', 'The Fabric of Time'],
+        'jokes' => ['Ticks along nicely.', 'Each spool holds about a hundred years. The 1800s are a bit lumpy.',
+            'Nobody has missed them.', 'Sewn into the cloth. They still feel too short.',
+            'Saves nine. Mines a lot more than that.', 'Machine washable at 30 degrees, before it was made.']],
     'bigBangReactor' => ['name' => 'Big Bang Reactor', 'plural' => 'Big Bang Reactors', 'icon' => 'bigBangReactor', 'cost' => 5.4e19, 'rate' => 1.1e12,
         'text' => 'Sets off a tiny Big Bang in a box and keeps all the ore that comes out. Mind your eyebrows.',
-        'upgrades' => ['Thicker Walls', 'Inflation Valves', 'Hotter Starts', 'Primordial Soup Kitchen', 'Chain Bangs', 'Bang Factory']],
+        'upgrades' => ['Thicker Walls', 'Inflation Valves', 'Hotter Starts', 'Primordial Soup Kitchen', 'Chain Bangs', 'Bang Factory'],
+        'jokes' => ['Keeps the universe in and the eyebrows on.', 'Lets the universe out slowly, like a balloon.',
+            'A few billion degrees more, just to be sure.', 'The soup of the day is the first day.',
+            'One bang sets off the next. Earplugs provided.', 'Bangs made to order, while you wait.']],
     'realityPrinter' => ['name' => 'Reality Printer', 'plural' => 'Reality Printers', 'icon' => 'realityPrinter', 'cost' => 7e20, 'rate' => 4e12,
         'text' => 'Prints brand new universes made of nothing but ore. The ink costs more than the universe.',
-        'upgrades' => ['Ink Refills', 'Double-Sided Printing', 'Higher Resolution', 'Paper Jam Fixer', 'Universes in Colour', 'Print Shop of Everything']],
+        'upgrades' => ['Ink Refills', 'Double-Sided Printing', 'Higher Resolution', 'Paper Jam Fixer', 'Universes in Colour', 'Print Shop of Everything'],
+        'jokes' => ['Still costs more than the universe.', 'Two universes on every sheet.',
+            'You can see the ore in every atom now.', 'No more half-printed galaxies stuck in the tray.',
+            'Black and white was getting boring.', 'Opens early, closes never.']],
     'infinityMine' => ['name' => 'Infinity Mine', 'plural' => 'Infinity Mines', 'icon' => 'infinityMine', 'cost' => 9e21, 'rate' => 1.5e13,
         'text' => 'A mine with no bottom. Somebody still goes down to check every Friday, just in case.',
-        'upgrades' => ['Longer Ladders', 'Bottomless Buckets', 'Endless Rails', 'Infinite Shifts', 'Forever Lamps', 'Infinity Plus One']],
+        'upgrades' => ['Longer Ladders', 'Bottomless Buckets', 'Endless Rails', 'Infinite Shifts', 'Forever Lamps', 'Infinity Plus One'],
+        'jokes' => ['Still not long enough. Never will be.', 'For a bottomless mine. It only makes sense.',
+            'The mine carts have stopped asking how much further.', 'The Friday check never ends now.',
+            'The bulbs outlast the stars.', 'Mathematicians say this is not allowed. The ore disagrees.']],
 ];
 const HBHUB_MINER_BUILDING_UPGRADE_AT = [10, 25, 50, 100, 150, 200]; // owned, for each building's six upgrades
 // What each costs, in how many of the building it is at the price the next one has when the upgrade shows up (rounded to
@@ -184,82 +255,82 @@ const HBHUB_MINER_BUILDING_UPGRADE_COST = [2.5, 3, 5, 8, 8, 8];
 // 'need' is when it shows up in the store: ore (mined this run), owned (building => how many), comets (caught ever) and
 // upgrades (the ids of upgrades that must be bought first). Without one, it's ore mined this run of half its cost.
 const HBHUB_MINER_OTHER_UPGRADES = [
-    'titanium' => ['name' => 'Titanium Pickaxe', 'icon' => 'pickaxe', 'cost' => 100, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'gloves' => ['name' => 'Reinforced Gloves', 'icon' => 'glove', 'cost' => 500, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'plasma' => ['name' => 'Plasma Gloves', 'icon' => 'plasmaGlove', 'cost' => 5000, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
+    'titanium' => ['name' => 'Titanium Pickaxe', 'icon' => 'pickaxe', 'cost' => 100, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much. Lighter, sharper, shinier.'],
+    'gloves' => ['name' => 'Reinforced Gloves', 'icon' => 'glove', 'cost' => 500, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much. Fewer blisters, more ore.'],
+    'plasma' => ['name' => 'Plasma Gloves', 'icon' => 'plasmaGlove', 'cost' => 5000, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much. Hot to the touch. Very hot.'],
     'quickKeys' => ['name' => 'Hot Key Panel', 'icon' => 'keyboard', 'cost' => 5000, 'type' => 'keys',
-        'text' => 'Unlocks the hot keys that buy: U for the cheapest upgrade, B for the best building and 1-9 and 0 for the buildings in the store.'],
-    'fuel' => ['name' => 'Better Fuel', 'icon' => 'fuelCan', 'cost' => 10000, 'type' => 'global', 'value' => 0.1, 'text' => 'All buildings mine 10% more.'],
+        'text' => 'Unlocks the hot keys that buy: U for the cheapest upgrade, B for the best building and 1-9 and 0 for the buildings in the store. For when moving the mouse is too much work.'],
+    'fuel' => ['name' => 'Better Fuel', 'icon' => 'fuelCan', 'cost' => 10000, 'type' => 'global', 'value' => 0.1, 'text' => 'All buildings mine 10% more. Smells like money.'],
     'buddySystem' => ['name' => 'Buddy System', 'icon' => 'buddies', 'cost' => 2000, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.005,
-        'need' => ['owned' => ['pickaxe' => 10]], 'text' => 'Each Space Pickaxe Guy mines 0.005 more ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 10]], 'text' => 'Each Space Pickaxe Guy mines 0.005 more ore per second for every other building you own. Nobody mines alone, and nobody gets lost in space.'],
     'shiftBosses' => ['name' => 'Shift Bosses', 'icon' => 'clipboard', 'cost' => 2e5, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.02,
-        'need' => ['owned' => ['pickaxe' => 25]], 'text' => 'Each Space Pickaxe Guy mines another 0.02 ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 25]], 'text' => 'Each Space Pickaxe Guy mines another 0.02 ore per second for every other building you own. Somebody has to hold the clipboard.'],
     'pickaxeAcademy' => ['name' => 'Pickaxe Academy', 'icon' => 'gradCap', 'cost' => 2e7, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.05,
-        'need' => ['owned' => ['pickaxe' => 50]], 'text' => 'Each Space Pickaxe Guy mines another 0.05 ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 50]], 'text' => 'Each Space Pickaxe Guy mines another 0.05 ore per second for every other building you own. Four years of swinging, with a test at the end.'],
     'pickaxeGuild' => ['name' => 'Pickaxe Guild', 'icon' => 'crossedPickaxes', 'cost' => 2e9, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.5,
-        'need' => ['owned' => ['pickaxe' => 75]], 'text' => 'Each Space Pickaxe Guy mines another 0.5 ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 75]], 'text' => 'Each Space Pickaxe Guy mines another 0.5 ore per second for every other building you own. Secret handshake included.'],
     'pickaxeClones' => ['name' => 'Pickaxe Guy Clones', 'icon' => 'dna', 'cost' => 2e11, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 5,
-        'need' => ['owned' => ['pickaxe' => 100]], 'text' => 'Each Space Pickaxe Guy mines another 5 ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 100]], 'text' => 'Each Space Pickaxe Guy mines another 5 ore per second for every other building you own. They argue about which one is the real one.'],
     'pickaxeLegends' => ['name' => 'Living Legends', 'icon' => 'medal', 'cost' => 2e13, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 50,
-        'need' => ['owned' => ['pickaxe' => 150]], 'text' => 'Each Space Pickaxe Guy mines another 50 ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 150]], 'text' => 'Each Space Pickaxe Guy mines another 50 ore per second for every other building you own. Kids have posters of them on their walls.'],
     'pickaxeGalaxy' => ['name' => 'Galaxy of Pickaxes', 'icon' => 'galaxy', 'cost' => 2e15, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 500,
-        'need' => ['owned' => ['pickaxe' => 200]], 'text' => 'Each Space Pickaxe Guy mines another 500 ore per second for every other building you own.'],
-    'autoAim' => ['name' => 'Auto-Aim Laser', 'icon' => 'target', 'cost' => 50000, 'type' => 'clickPct', 'value' => 0.01, 'text' => 'Each click also mines 1% of your ore per second.'],
-    'bulk' => ['name' => 'Bulk Buying', 'icon' => 'crates', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time. Press A to switch between them.'],
+        'need' => ['owned' => ['pickaxe' => 200]], 'text' => 'Each Space Pickaxe Guy mines another 500 ore per second for every other building you own. A whole galaxy of them, and they all still say hi to each other.'],
+    'autoAim' => ['name' => 'Auto-Aim Laser', 'icon' => 'target', 'cost' => 50000, 'type' => 'clickPct', 'value' => 0.01, 'text' => 'Each click also mines 1% of your ore per second. It never misses. You still might.'],
+    'bulk' => ['name' => 'Bulk Buying', 'icon' => 'crates', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time. Press A to switch between them. Why buy one when you can buy a hundred?'],
     'bulkMax' => ['name' => 'Max Buying', 'icon' => 'cartFull', 'cost' => 5e6, 'type' => 'bulk', 'need' => ['ore' => 2.5e6, 'upgrades' => ['bulk']],
-        'text' => 'Unlocks the Max button next to ×100, to buy as many of a building as you can afford at once.'],
-    'quantum' => ['name' => 'Quantum Hammer', 'icon' => 'quantumHammer', 'cost' => 500000, 'type' => 'clickPct', 'value' => 0.02, 'text' => 'Each click mines another 2% of your ore per second.'],
-    'cometKey' => ['name' => 'Comet Hot Key', 'icon' => 'keyC', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1, 'upgrades' => ['quickKeys']], 'text' => 'Press C to catch a comet, without having to hit it.'],
-    'radar' => ['name' => 'Comet Radar', 'icon' => 'radar', 'cost' => 777777, 'type' => 'comet', 'effect' => 'often', 'need' => ['comets' => 3], 'text' => 'Comets show up twice as often.'],
-    'zeroG' => ['name' => 'Zero-G Logistics', 'icon' => 'zeroG', 'cost' => 1e6, 'type' => 'global', 'value' => 0.25, 'text' => 'All buildings mine 25% more.'],
+        'text' => 'Unlocks the Max button next to ×100, to buy as many of a building as you can afford at once. Your wallet has been warned.'],
+    'quantum' => ['name' => 'Quantum Hammer', 'icon' => 'quantumHammer', 'cost' => 500000, 'type' => 'clickPct', 'value' => 0.02, 'text' => 'Each click mines another 2% of your ore per second. It hits the asteroid and misses it at the same time.'],
+    'cometKey' => ['name' => 'Comet Hot Key', 'icon' => 'keyC', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1, 'upgrades' => ['quickKeys']], 'text' => 'Press C to catch a comet, without having to hit it. C is for comet.'],
+    'radar' => ['name' => 'Comet Radar', 'icon' => 'radar', 'cost' => 777777, 'type' => 'comet', 'effect' => 'often', 'need' => ['comets' => 3], 'text' => 'Comets show up twice as often. Beep. Beep. Comet.'],
+    'zeroG' => ['name' => 'Zero-G Logistics', 'icon' => 'zeroG', 'cost' => 1e6, 'type' => 'global', 'value' => 0.25, 'text' => 'All buildings mine 25% more. Things float where they need to go. Mostly.'],
     'dockingBays' => ['name' => 'Drone Docking Bays', 'icon' => 'link', 'cost' => 1.3e6, 'type' => 'synergy', 'building' => 'drone', 'source' => 'base', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['drone' => 1, 'base' => 1]], 'text' => 'Mining Drones mine 1% more for every Asteroid Base you own.'],
-    'crit' => ['name' => 'Critical Strike Module', 'icon' => 'crit', 'cost' => 2e6, 'type' => 'crit', 'text' => 'Clicks have a 5% chance to mine 10 times as much.'],
-    'magnet' => ['name' => 'Comet Magnet', 'icon' => 'magnet', 'cost' => 7.77e6, 'type' => 'comet', 'effect' => 'longer', 'need' => ['comets' => 7], 'text' => 'Comets stay on screen twice as long.'],
-    'mapping' => ['name' => 'Asteroid Mapping', 'icon' => 'map', 'cost' => 1e7, 'type' => 'global', 'value' => 0.5, 'text' => 'All buildings mine 50% more.'],
+        'need' => ['owned' => ['drone' => 1, 'base' => 1]], 'text' => 'Mining Drones mine 1% more for every Asteroid Base you own. Somewhere for the drones to charge up and gossip.'],
+    'crit' => ['name' => 'Critical Strike Module', 'icon' => 'crit', 'cost' => 2e6, 'type' => 'crit', 'text' => 'Clicks have a 5% chance to mine 10 times as much. Right where it hurts the rock.'],
+    'magnet' => ['name' => 'Comet Magnet', 'icon' => 'magnet', 'cost' => 7.77e6, 'type' => 'comet', 'effect' => 'longer', 'need' => ['comets' => 7], 'text' => 'Comets stay on screen twice as long. Comets find you very attractive.'],
+    'mapping' => ['name' => 'Asteroid Mapping', 'icon' => 'map', 'cost' => 1e7, 'type' => 'global', 'value' => 0.5, 'text' => 'All buildings mine 50% more. X marks the ore.'],
     'guidedFreighters' => ['name' => 'Laser-Guided Freighters', 'icon' => 'link', 'cost' => 1.4e7, 'type' => 'synergy', 'building' => 'freighter', 'source' => 'laser', 'per' => 0.02, 'every' => 1,
-        'need' => ['owned' => ['freighter' => 1, 'laser' => 1]], 'text' => 'Ore Freighters mine 2% more for every Laser Drill you own.'],
-    'gauntlet' => ['name' => 'Gravity Gauntlet', 'icon' => 'gauntlet', 'cost' => 2.5e7, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'tail' => ['name' => 'Tail Collector', 'icon' => 'cometTail', 'cost' => 7.77e7, 'type' => 'comet', 'effect' => 'tail', 'need' => ['comets' => 15], 'text' => 'Comet effects last twice as long.'],
+        'need' => ['owned' => ['freighter' => 1, 'laser' => 1]], 'text' => 'Ore Freighters mine 2% more for every Laser Drill you own. They follow the red dot, like cats.'],
+    'gauntlet' => ['name' => 'Gravity Gauntlet', 'icon' => 'gauntlet', 'cost' => 2.5e7, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much. Every punch has its own gravity.'],
+    'tail' => ['name' => 'Tail Collector', 'icon' => 'cometTail', 'cost' => 7.77e7, 'type' => 'comet', 'effect' => 'tail', 'need' => ['comets' => 15], 'text' => 'Comet effects last twice as long. The tail is where the good stuff is.'],
     'hangars' => ['name' => 'Station Hangars', 'icon' => 'link', 'cost' => 2e8, 'type' => 'synergy', 'building' => 'station', 'source' => 'drone', 'per' => 0.05, 'every' => 10,
-        'need' => ['owned' => ['station' => 1, 'drone' => 10]], 'text' => 'Space Stations mine 5% more for every 10 Mining Drones you own.'],
-    'supernova' => ['name' => 'Supernova Punch', 'icon' => 'supernovaFist', 'cost' => 5e8, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second.'],
-    'autoClicker' => ['name' => 'Auto-Clicker Bot', 'icon' => 'robot', 'cost' => 1e9, 'type' => 'auto', 'value' => 2, 'text' => 'Clicks the asteroid 2 times a second for you.'],
-    'warpTech' => ['name' => 'Warp Drive Tech', 'icon' => 'warp', 'cost' => 1e9, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+        'need' => ['owned' => ['station' => 1, 'drone' => 10]], 'text' => 'Space Stations mine 5% more for every 10 Mining Drones you own. Where drones park when they are not working. They are always working.'],
+    'supernova' => ['name' => 'Supernova Punch', 'icon' => 'supernovaFist', 'cost' => 5e8, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second. A whole exploding star, in one fist.'],
+    'autoClicker' => ['name' => 'Auto-Clicker Bot', 'icon' => 'robot', 'cost' => 1e9, 'type' => 'auto', 'value' => 2, 'text' => 'Clicks the asteroid 2 times a second for you. Keeps clicking while you go get a snack.'],
+    'warpTech' => ['name' => 'Warp Drive Tech', 'icon' => 'warp', 'cost' => 1e9, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. Faster than light, and faster than your boss.'],
     'outposts' => ['name' => 'Moon Outposts', 'icon' => 'link', 'cost' => 3.3e9, 'type' => 'synergy', 'building' => 'base', 'source' => 'excavator', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['base' => 1, 'excavator' => 1]], 'text' => 'Asteroid Bases mine 1% more for every Moon Excavator you own.'],
-    'luckyStars' => ['name' => 'Lucky Stars', 'icon' => 'diamond', 'cost' => 7.77e9, 'type' => 'comet', 'effect' => 'diamond', 'need' => ['comets' => 27], 'text' => 'Now and then a Diamond Comet shows up instead: 777 times the production for 7 seconds.'],
+        'need' => ['owned' => ['base' => 1, 'excavator' => 1]], 'text' => 'Asteroid Bases mine 1% more for every Moon Excavator you own. The bases had a view of the Moon. Now they have bits of it.'],
+    'luckyStars' => ['name' => 'Lucky Stars', 'icon' => 'diamond', 'cost' => 7.77e9, 'type' => 'comet', 'effect' => 'diamond', 'need' => ['comets' => 27], 'text' => 'Now and then a Diamond Comet shows up instead: 777 times the production for 7 seconds. Make a wish. It is probably diamonds.'],
     'slingshot' => ['name' => 'Gravity Slingshot', 'icon' => 'link', 'cost' => 7.5e11, 'type' => 'synergy', 'building' => 'cracker', 'source' => 'siphon', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['cracker' => 1, 'siphon' => 1]], 'text' => 'Planet Crackers mine 1% more for every Black Hole Siphon you own.'],
-    'monopoly' => ['name' => 'Galactic Monopoly', 'icon' => 'crown', 'cost' => 1e12, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
-    'neutronGloves' => ['name' => 'Neutron Star Gloves', 'icon' => 'neutronFist', 'cost' => 1e10, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'botSwarm' => ['name' => 'Auto-Clicker Swarm', 'icon' => 'robots', 'cost' => 5e12, 'type' => 'auto', 'value' => 3, 'text' => 'Clicks the asteroid another 3 times a second for you.'],
+        'need' => ['owned' => ['cracker' => 1, 'siphon' => 1]], 'text' => 'Planet Crackers mine 1% more for every Black Hole Siphon you own. Throw the black hole at the planet. Science!'],
+    'monopoly' => ['name' => 'Galactic Monopoly', 'icon' => 'crown', 'cost' => 1e12, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. Every other ore company is now just a logo on your wall.'],
+    'neutronGloves' => ['name' => 'Neutron Star Gloves', 'icon' => 'neutronFist', 'cost' => 1e10, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much. Heavier than they look, and they look very heavy.'],
+    'botSwarm' => ['name' => 'Auto-Clicker Swarm', 'icon' => 'robots', 'cost' => 5e12, 'type' => 'auto', 'value' => 3, 'text' => 'Clicks the asteroid another 3 times a second for you. The asteroid has started to flinch.'],
     'orbitalForges' => ['name' => 'Orbital Forges', 'icon' => 'link', 'cost' => 5e12, 'type' => 'synergy', 'building' => 'forge', 'source' => 'station', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['forge' => 1, 'station' => 1]], 'text' => 'Star Forges mine 1% more for every Space Station you own.'],
-    'stardust' => ['name' => 'Stardust Trail', 'icon' => 'sparkles', 'cost' => 7.77e12, 'type' => 'comet', 'effect' => 'lucky', 'need' => ['comets' => 50], 'text' => 'Lucky comets give twice as much ore.'],
-    'bigBangPunch' => ['name' => 'Big Bang Punch', 'icon' => 'bigBang', 'cost' => 1e13, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second.'],
+        'need' => ['owned' => ['forge' => 1, 'station' => 1]], 'text' => 'Star Forges mine 1% more for every Space Station you own. Forging in orbit keeps the smoke off the planets.'],
+    'stardust' => ['name' => 'Stardust Trail', 'icon' => 'sparkles', 'cost' => 7.77e12, 'type' => 'comet', 'effect' => 'lucky', 'need' => ['comets' => 50], 'text' => 'Lucky comets give twice as much ore. It sparkles, and it pays.'],
+    'bigBangPunch' => ['name' => 'Big Bang Punch', 'icon' => 'bigBang', 'cost' => 1e13, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second. Every click starts a small universe.'],
     'nebulaScoops' => ['name' => 'Nebula Scoops', 'icon' => 'link', 'cost' => 7e13, 'type' => 'synergy', 'building' => 'nebula', 'source' => 'freighter', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['nebula' => 1, 'freighter' => 1]], 'text' => 'Nebula Harvesters mine 1% more for every Ore Freighter you own.'],
-    'starCharts' => ['name' => 'Star Charts', 'icon' => 'starChart', 'cost' => 1e14, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+        'need' => ['owned' => ['nebula' => 1, 'freighter' => 1]], 'text' => 'Nebula Harvesters mine 1% more for every Ore Freighter you own. The freighters bring the clouds home, the harvesters do the rest.'],
+    'starCharts' => ['name' => 'Star Charts', 'icon' => 'starChart', 'cost' => 1e14, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. Now you know where all the ore is. And where the toilets are.'],
     'shatteredPlanets' => ['name' => 'Shattered Planets', 'icon' => 'link', 'cost' => 8.5e14, 'type' => 'synergy', 'building' => 'dyson', 'source' => 'cracker', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['dyson' => 1, 'cracker' => 1]], 'text' => 'Dyson Swarms mine 1% more for every Planet Cracker you own.'],
+        'need' => ['owned' => ['dyson' => 1, 'cracker' => 1]], 'text' => 'Dyson Swarms mine 1% more for every Planet Cracker you own. The bits make great mirrors.'],
     'blackHoleBridges' => ['name' => 'Black Hole Bridges', 'icon' => 'link', 'cost' => 1e16, 'type' => 'synergy', 'building' => 'wormhole', 'source' => 'siphon', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['wormhole' => 1, 'siphon' => 1]], 'text' => 'Wormhole Gates mine 1% more for every Black Hole Siphon you own.'],
-    'oreLaw' => ['name' => 'Universal Ore Law', 'icon' => 'scales', 'cost' => 1e17, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+        'need' => ['owned' => ['wormhole' => 1, 'siphon' => 1]], 'text' => 'Wormhole Gates mine 1% more for every Black Hole Siphon you own. Shortcuts through places nothing comes back from. Mind your step.'],
+    'oreLaw' => ['name' => 'Universal Ore Law', 'icon' => 'scales', 'cost' => 1e17, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. It is the law. Ore must be mined.'],
     'pickaxesEverywhere' => ['name' => 'Pickaxe Guys Everywhere', 'icon' => 'link', 'cost' => 1.3e17, 'type' => 'synergy', 'building' => 'multiverse', 'source' => 'pickaxe', 'per' => 0.01, 'every' => 10,
-        'need' => ['owned' => ['multiverse' => 1, 'pickaxe' => 10]], 'text' => 'Multiverse Drills mine 1% more for every 10 Space Pickaxe Guys you own.'],
+        'need' => ['owned' => ['multiverse' => 1, 'pickaxe' => 10]], 'text' => 'Multiverse Drills mine 1% more for every 10 Space Pickaxe Guys you own. In every universe, there is a guy with a pickaxe.'],
     'timeTunnels' => ['name' => 'Time Tunnels', 'icon' => 'link', 'cost' => 1.65e18, 'type' => 'synergy', 'building' => 'timeQuarry', 'source' => 'wormhole', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['timeQuarry' => 1, 'wormhole' => 1]], 'text' => 'Time Quarries mine 1% more for every Wormhole Gate you own.'],
+        'need' => ['owned' => ['timeQuarry' => 1, 'wormhole' => 1]], 'text' => 'Time Quarries mine 1% more for every Wormhole Gate you own. Holes through space, and through Tuesday.'],
     'nebulaThread' => ['name' => 'Nebula Thread', 'icon' => 'link', 'cost' => 2.1e19, 'type' => 'synergy', 'building' => 'stringLoom', 'source' => 'nebula', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['stringLoom' => 1, 'nebula' => 1]], 'text' => 'Looms of Time mine 1% more for every Nebula Harvester you own.'],
-    'cosmicAccounting' => ['name' => 'Cosmic Accounting', 'icon' => 'abacus', 'cost' => 1e20, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+        'need' => ['owned' => ['stringLoom' => 1, 'nebula' => 1]], 'text' => 'Looms of Time mine 1% more for every Nebula Harvester you own. The softest thread in the universe, and a bit sparkly.'],
+    'cosmicAccounting' => ['name' => 'Cosmic Accounting', 'icon' => 'abacus', 'cost' => 1e20, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. The numbers add up. They are very big numbers.'],
     'starSeeds' => ['name' => 'Star Seeds', 'icon' => 'link', 'cost' => 2.7e20, 'type' => 'synergy', 'building' => 'bigBangReactor', 'source' => 'forge', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['bigBangReactor' => 1, 'forge' => 1]], 'text' => 'Big Bang Reactors mine 1% more for every Star Forge you own.'],
+        'need' => ['owned' => ['bigBangReactor' => 1, 'forge' => 1]], 'text' => 'Big Bang Reactors mine 1% more for every Star Forge you own. Plant a star, grow a universe.'],
     'copiesOfCopies' => ['name' => 'Copies of Copies', 'icon' => 'link', 'cost' => 3.5e21, 'type' => 'synergy', 'building' => 'realityPrinter', 'source' => 'multiverse', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['realityPrinter' => 1, 'multiverse' => 1]], 'text' => 'Reality Printers mine 1% more for every Multiverse Drill you own.'],
+        'need' => ['owned' => ['realityPrinter' => 1, 'multiverse' => 1]], 'text' => 'Reality Printers mine 1% more for every Multiverse Drill you own. They only get a little blurrier each time.'],
     'dronesAllTheWayDown' => ['name' => 'Drones All the Way Down', 'icon' => 'link', 'cost' => 4.5e22, 'type' => 'synergy', 'building' => 'infinityMine', 'source' => 'drone', 'per' => 0.01, 'every' => 10,
-        'need' => ['owned' => ['infinityMine' => 1, 'drone' => 10]], 'text' => 'Infinity Mines mine 1% more for every 10 Mining Drones you own.'],
-    'bigOreTheory' => ['name' => 'Big Ore Theory', 'icon' => 'books', 'cost' => 1e23, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+        'need' => ['owned' => ['infinityMine' => 1, 'drone' => 10]], 'text' => 'Infinity Mines mine 1% more for every 10 Mining Drones you own. Nobody has found the last drone. Nobody has found the bottom either.'],
+    'bigOreTheory' => ['name' => 'Big Ore Theory', 'icon' => 'books', 'cost' => 1e23, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. Checked and approved by a very big rock.'],
 ];
 const HBHUB_MINER_CLICK_TYPES = ['click', 'clickPct', 'crit', 'auto']; // kept by Persistent Memory
 const HBHUB_MINER_ETERNAL_TYPES = ['bulk', 'comet']; // kept by Eternal Blueprints
@@ -269,28 +340,28 @@ const HBHUB_MINER_ETERNAL_TYPES = ['bulk', 'comet']; // kept by Eternal Blueprin
 // purchases come here as normal buy and upgrade actions), so both are only in spaceOreMiner.js. The one thing Auto Buy
 // changes here: its buys ('auto' => true) can be 10 or 100 at once without Bulk Buying (see hbHubMinerApply()).
 const HBHUB_MINER_DARK_UPGRADES = [
-    'headStart' => ['name' => 'Head Start', 'icon' => 'headStart', 'cost' => 5, 'text' => 'Start every run with ' . HBHUB_MINER_HEAD_START . ' Mining Drones.'],
-    'memory' => ['name' => 'Persistent Memory', 'icon' => 'chip', 'cost' => 40, 'text' => 'Keep your click upgrades when you Warp Jump.'],
-    'darkEngines' => ['name' => 'Dark Engines', 'icon' => 'darkEngine', 'cost' => 100, 'text' => 'All buildings mine 50% more.'],
-    'timeDilation' => ['name' => 'Time Dilation', 'icon' => 'hourglass', 'cost' => 250, 'text' => 'Earn twice as much while you\'re away.'],
-    'darkPickaxe' => ['name' => 'Dark Pickaxe', 'icon' => 'darkPickaxe', 'cost' => 15, 'text' => 'Clicks mine ' . HBHUB_MINER_DARK_PICKAXE . ' times as much.'],
-    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => 'hotKeys', 'cost' => 2, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 and 0 keys buy your last ten buildings instead of your first ten.'],
-    'autoBuy' => ['name' => 'Auto Buy', 'icon' => 'autoBuy', 'cost' => 30, 'text' => 'Adds a switch to the store that buys buildings and upgrades for you, whatever pays for itself soonest, and saves up for an upgrade when it\'s worth the wait.'],
-    'physics' => ['name' => 'Cheaper Physics', 'icon' => 'chartDown', 'cost' => 750, 'text' => 'Each building costs 14% more than the one before instead of 15% (11% instead of 12% for Space Pickaxe Guys).'],
+    'headStart' => ['name' => 'Head Start', 'icon' => 'headStart', 'cost' => 5, 'text' => 'Start every run with ' . HBHUB_MINER_HEAD_START . ' Mining Drones. They were already waiting for you in the new galaxy.'],
+    'memory' => ['name' => 'Persistent Memory', 'icon' => 'chip', 'cost' => 40, 'text' => 'Keep your click upgrades when you Warp Jump. Your hands remember, even if the universe does not.'],
+    'darkEngines' => ['name' => 'Dark Engines', 'icon' => 'darkEngine', 'cost' => 100, 'text' => 'All buildings mine 50% more. Nobody can see them working. They are working.'],
+    'timeDilation' => ['name' => 'Time Dilation', 'icon' => 'hourglass', 'cost' => 250, 'text' => 'Earn twice as much while you\'re away. Five minutes for you, a lot longer for the drills.'],
+    'darkPickaxe' => ['name' => 'Dark Pickaxe', 'icon' => 'darkPickaxe', 'cost' => 15, 'text' => 'Clicks mine ' . HBHUB_MINER_DARK_PICKAXE . ' times as much. Nobody can see it, but the rock can feel it.'],
+    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => 'hotKeys', 'cost' => 2, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 and 0 keys buy your last ten buildings instead of your first ten. For when your first ten buildings are old news.'],
+    'autoBuy' => ['name' => 'Auto Buy', 'icon' => 'autoBuy', 'cost' => 30, 'text' => 'Adds a switch to the store that buys buildings and upgrades for you, whatever pays for itself soonest, and saves up for an upgrade when it\'s worth the wait. Shopping, without having to look.'],
+    'physics' => ['name' => 'Cheaper Physics', 'icon' => 'chartDown', 'cost' => 750, 'text' => 'Each building costs 14% more than the one before instead of 15% (11% instead of 12% for Space Pickaxe Guys). Somebody found the receipt for the universe.'],
     'reactor' => ['name' => 'Dark Matter Reactor', 'icon' => 'radiation', 'cost' => 2500, 'text' => 'Every Dark Matter you\'ve earned makes everything mine '
-        . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%.'],
+        . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%. Do not ask what is in it. Nobody can see it anyway.'],
 ];
 
 // Bought with Antimatter, kept forever. Comet Catcher, like Auto Buy, only catches in the page like a player would (its
 // catches come here as normal comet actions), so it's only in spaceOreMiner.js.
 const HBHUB_MINER_ANTI_UPGRADES = [
-    'echo' => ['name' => 'Dark Echo', 'icon' => 'cycle', 'cost' => 1, 'text' => 'Keep your Dark Matter upgrades when you Big Crunch.'],
-    'converter' => ['name' => 'Matter Converter', 'icon' => 'flask', 'cost' => 3, 'text' => 'Warp Jumps give twice as much Dark Matter.'],
-    'leftovers' => ['name' => 'Big Bang Leftovers', 'icon' => 'orePile', 'cost' => 5, 'text' => 'Start every run with 10 million ore.'],
-    'eternal' => ['name' => 'Eternal Blueprints', 'icon' => 'blueprint', 'cost' => 10, 'text' => 'Keep Bulk Buying, Max Buying and your comet upgrades when you Warp Jump.'],
-    'cometCatcher' => ['name' => 'Comet Catcher', 'icon' => 'cometCatcher', 'cost' => 15, 'text' => 'Catches every Golden Comet for you while the game is open. Diamond Comets are still yours to catch.'],
-    'annihilation' => ['name' => 'Annihilation Engines', 'icon' => 'annihilation', 'cost' => 25, 'text' => 'All buildings mine twice as much.'],
-    'antiComets' => ['name' => 'Antimatter Comets', 'icon' => 'antiComet', 'cost' => 50, 'text' => 'Comet effects are twice as strong.'],
+    'echo' => ['name' => 'Dark Echo', 'icon' => 'cycle', 'cost' => 1, 'text' => 'Keep your Dark Matter upgrades when you Big Crunch. The universe ends. Your shopping list does not.'],
+    'converter' => ['name' => 'Matter Converter', 'icon' => 'flask', 'cost' => 3, 'text' => 'Warp Jumps give twice as much Dark Matter. Put matter in, get more matter out. Physics is confused.'],
+    'leftovers' => ['name' => 'Big Bang Leftovers', 'icon' => 'orePile', 'cost' => 5, 'text' => 'Start every run with 10 million ore. Somebody forgot to clean up after the last universe.'],
+    'eternal' => ['name' => 'Eternal Blueprints', 'icon' => 'blueprint', 'cost' => 10, 'text' => 'Keep Bulk Buying, Max Buying and your comet upgrades when you Warp Jump. Printed on paper that outlives the universe.'],
+    'cometCatcher' => ['name' => 'Comet Catcher', 'icon' => 'cometCatcher', 'cost' => 15, 'text' => 'Catches every Golden Comet for you while the game is open. Diamond Comets are still yours to catch. Golden ones only. It knows its place.'],
+    'annihilation' => ['name' => 'Annihilation Engines', 'icon' => 'annihilation', 'cost' => 25, 'text' => 'All buildings mine twice as much. Matter meets antimatter, and the bill is paid in ore.'],
+    'antiComets' => ['name' => 'Antimatter Comets', 'icon' => 'antiComet', 'cost' => 50, 'text' => 'Comet effects are twice as strong. The same comets, just the other way round.'],
 ];
 
 // The skill tree, bought with Strange Matter and kept forever. A skill can be learned once every skill in its 'after' is
@@ -526,7 +597,8 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'tier3All' => ['name' => 'Singular', 'text' => 'Finish every Tier III Anomaly.', 'stat' => 'tier:3', 'at' => 4],
     'stack2' => ['name' => 'Double Trouble', 'text' => 'Finish a stack of 2 Anomalies.', 'stat' => 'stack', 'at' => 2],
     'stack4' => ['name' => 'Four of a Kind', 'text' => 'Finish a stack of 4 Anomalies.', 'stat' => 'stack', 'at' => 4],
-    'stack6' => ['name' => 'Stacked Deck', 'text' => 'Finish a stack of 6 Anomalies.', 'stat' => 'stack', 'at' => 6],
+    // (id from when it was 6: no stack of 6 can be done any more, see HBHUB_MINER_ANOMALY_CLASHES)
+    'stack6' => ['name' => 'Stacked Deck', 'text' => 'Finish a stack of 5 Anomalies.', 'stat' => 'stack', 'at' => 5],
     'weekly1' => ['name' => 'Weekly Worker', 'text' => 'Finish the weekly Anomaly.', 'stat' => 'weeklies', 'at' => 1],
     'lightHour' => ['name' => 'Faster Than Light', 'text' => 'Finish Speed of Light in under an hour.', 'stat' => 'lightHour', 'at' => 1],
     'engine1' => ['name' => 'Crew Member', 'text' => 'Give the Cosmic Engine an Engine Part.', 'stat' => 'engineGiven', 'at' => 1],
@@ -657,7 +729,8 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'lock' => ['type' => 'section', 'count' => 20, 'text' => '20 different players have given parts to the Ignition section'],
         'perk' => ['type' => 'cometWait', 'times' => 0.9, 'text' => 'The wait between comets is another 10% shorter.']],
     ['name' => 'Ignition Coils', 'section' => 'E', 'cost' => 87000,
-        'lock' => ['type' => 'stack', 'count' => 6, 'text' => 'Someone has finished a stack of 6 Anomalies'],
+        // (was 6 and Strike Plate's 7: the balance sim, 30 October 2026, never finished a stack of more than 5)
+        'lock' => ['type' => 'stack', 'count' => 5, 'text' => 'Someone has finished a stack of 5 Anomalies'],
         'perk' => ['type' => 'upgradeCost', 'times' => 0.9, 'text' => 'Ore upgrades cost 10% less.']],
     ['name' => 'Countdown Clock', 'section' => 'E', 'cost' => 100000,
         'lock' => ['type' => 'weekly', 'count' => 10, 'text' => '10 players have finished the weekly Anomaly in the same week'],
@@ -713,7 +786,7 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'lock' => ['type' => 'section', 'count' => 10, 'rising' => true, 'text' => '10 different players who haven\'t learned every skill yet have given parts to the Hammer section'],
         'perk' => ['type' => 'oreFloor', 'value' => 2, 'text' => 'A part given from ore is always worth at least half a part.']],
     ['name' => 'Strike Plate', 'section' => 'D', 'cost' => 60000,
-        'lock' => ['type' => 'stack', 'count' => 7, 'text' => 'Someone has finished a stack of 7 Anomalies'],
+        'lock' => ['type' => 'stack', 'count' => 5, 'text' => 'Someone has finished a stack of 5 Anomalies'],
         'perk' => ['type' => 'title', 'text' => 'Everyone who has given parts to the Starforge gets the title "Forgemaster" on the leaderboard.']],
     ['name' => 'Shockwave Dampers', 'section' => 'D', 'cost' => 70000,
         'lock' => ['type' => 'time', 'anomaly' => 'nakedSingularity', 'ms' => 108000000, 'count' => 1, 'text' => 'Someone has finished Naked Singularity in under 30 hours'],
@@ -799,7 +872,7 @@ const HBHUB_MINER_ANOMALIES = [
         'text' => 'At most 150 buildings at once, and every run starts with none.'],
     'oneTrack' => ['name' => 'One Track', 'icon' => 'link', 'tier' => 2, 'goal' => 1e17,
         'text' => 'One kind of building per run: the first one you buy is the only kind you can buy until the next Warp Jump. Every run starts with none, and Auto Buy leaves that first pick to you.'],
-    'unstableVacuum' => ['name' => 'Unstable Vacuum', 'icon' => 'blackHole', 'tier' => 2, 'goal' => 1e14,
+    'unstableVacuum' => ['name' => 'Unstable Vacuum', 'icon' => 'blackHole', 'tier' => 2, 'goal' => 1e14, 'alone' => true,
         'text' => 'Each Warp Jump destroys the building you have the most of, for the rest of the Anomaly.'],
     'speedOfLight' => ['name' => 'Speed of Light', 'icon' => 'warp', 'tier' => 2, 'goal' => 1e20,
         'text' => 'Reach the goal within 2 hours of starting, time away included, or the Anomaly is over.'],
@@ -818,6 +891,18 @@ const HBHUB_MINER_ANOMALY_REPEAT = 0.25; // of the parts, for finishing one agai
 // whole game kept in the save, so there's a cap.
 const HBHUB_MINER_ANOMALY_SAVED_MAX = 3;
 const HBHUB_MINER_ANOMALY_STACK_TIER = 2; // the highest tier that stacks
+// Stacks that can't be done, so they can't be started (hbHubMinerStackClash()), and the weekly Anomaly never is one:
+// the Unstable Vacuum with anything ('alone' in HBHUB_MINER_ANOMALIES: its ~20 Warp Jumps, one per kind of building,
+// reach its goal on their own and with Dead Hands, Inflation, Entropy or Speed of Light, but with the others they never
+// do, and when they do a stack of 5 took 20 minutes for ~1,950 parts), and these pairs, which in the balance sim got
+// nowhere near their goal in 40-60 hours (under 5% of it), or in Speed of Light's 2 hours, for any kind of player (every
+// pair simmed, 30 October 2026). Hard pairs that some players did finish (Speed of Light with Bare Metal, Dark Sky or
+// Minimalist) are left in; the weekly Anomaly never has Speed of Light anyway.
+const HBHUB_MINER_ANOMALY_CLASHES = [['darkSky', 'minimalist'], ['darkSky', 'oneTrack'], ['bareMetal', 'minimalist'], ['bareMetal', 'oneTrack'],
+    ['deadHands', 'oneTrack'], ['oneTrack', 'speedOfLight']];
+// The first week (hbHubMinerWeek(), Monday 2 November 2026) whose weekly Anomaly leaves those out: the weeks before
+// keep the one they had, so the week it changed in didn't get a different weekly halfway through
+const HBHUB_MINER_WEEKLY_CLASH_FROM = 2966;
 const HBHUB_MINER_ANOMALY_STACK = 1.5; // the parts are multiplied by this for each Anomaly in a stack after the first
 const HBHUB_MINER_ANOMALY_WEEKLY = 2; // the parts for the weekly Anomaly that week (and its Afterglow)
 // The Afterglow after finishing one: production times this, for 1 hour (Tier I), 3 (Tier II), 12 (Tier III) or 24 (The
@@ -961,7 +1046,7 @@ function hbHubMinerUpgrades(): array
                 'type' => 'building',
                 'building' => $buildingId,
                 'need' => ['owned' => [$buildingId => HBHUB_MINER_BUILDING_UPGRADE_AT[$index]]],
-                'text' => $building['plural'] . ' mine twice as much.',
+                'text' => $building['plural'] . ' mine twice as much. ' . $building['jokes'][$index],
             ];
         }
     }
@@ -1131,6 +1216,8 @@ function hbHubMinerConfig(): array
         'ignitionMs' => HBHUB_MINER_IGNITION_MS,
         'ignitionTimes' => HBHUB_MINER_IGNITION_TIMES,
         'anomalyStackTier' => HBHUB_MINER_ANOMALY_STACK_TIER,
+        'anomalyClashes' => HBHUB_MINER_ANOMALY_CLASHES,
+        'weeklyClashFrom' => HBHUB_MINER_WEEKLY_CLASH_FROM,
         'anomalyStack' => HBHUB_MINER_ANOMALY_STACK,
         'anomalyWeekly' => HBHUB_MINER_ANOMALY_WEEKLY,
         'afterglowTimes' => HBHUB_MINER_AFTERGLOW_TIMES,
@@ -2611,6 +2698,29 @@ function hbHubMinerAnomalyKey(array $mods): string
 }
 
 /**
+ * Whether a stack ($mods, more than one) can't be done: it has an Anomaly that only goes 'alone', or a pair in
+ * HBHUB_MINER_ANOMALY_CLASHES. Such a stack can't be started (hbHubMinerAnomalyStart()), though one already started or
+ * saved before that rule still counts.
+ */
+function hbHubMinerStackClash(array $mods): bool
+{
+    if (count($mods) < 2) {
+        return false;
+    }
+    foreach ($mods as $id) {
+        if (HBHUB_MINER_ANOMALIES[$id]['alone'] ?? false) {
+            return true;
+        }
+    }
+    foreach (HBHUB_MINER_ANOMALY_CLASHES as [$a, $b]) {
+        if (in_array($a, $mods, true) && in_array($b, $mods, true)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * The rules an Anomaly's game has (its 'mods'): each of $mods, and the ones in its 'rules' after it.
  *
  * @return list<string>
@@ -2685,7 +2795,8 @@ function hbHubMinerWeek(int $time): int
 
 /**
  * The weekly Anomaly for $week, the same for everyone: a stack of one of HBHUB_MINER_WEEKLY_SIZES, picked one by one
- * from the stackable Anomalies (apart from HBHUB_MINER_WEEKLY_LEFT_OUT) with luck that only depends on the week.
+ * from the stackable Anomalies (apart from HBHUB_MINER_WEEKLY_LEFT_OUT) with luck that only depends on the week. From
+ * HBHUB_MINER_WEEKLY_CLASH_FROM on, never a stack that can't be done (hbHubMinerStackClash()).
  *
  * @return list<string>
  */
@@ -2695,14 +2806,19 @@ function hbHubMinerWeeklyMods(int $week): array
     if (isset($cache[$week])) {
         return $cache[$week];
     }
+    $clashFree = $week >= HBHUB_MINER_WEEKLY_CLASH_FROM;
     $left = array_values(array_filter(array_keys(HBHUB_MINER_ANOMALIES), static fn (string $id): bool =>
-        HBHUB_MINER_ANOMALIES[$id]['tier'] <= HBHUB_MINER_ANOMALY_STACK_TIER && !in_array($id, HBHUB_MINER_WEEKLY_LEFT_OUT, true)));
+        HBHUB_MINER_ANOMALIES[$id]['tier'] <= HBHUB_MINER_ANOMALY_STACK_TIER && !in_array($id, HBHUB_MINER_WEEKLY_LEFT_OUT, true)
+        && !($clashFree && (HBHUB_MINER_ANOMALIES[$id]['alone'] ?? false))));
     $size = HBHUB_MINER_WEEKLY_SIZES[(int) floor(hbHubMinerRandom(0, $week * 10, HBHUB_MINER_SALT_WEEKLY) * count(HBHUB_MINER_WEEKLY_SIZES))];
     $picked = [];
-    for ($i = 0; $i < $size; $i++) {
+    for ($i = 0; $i < $size && $left !== []; $i++) {
         $index = (int) floor(hbHubMinerRandom(0, $week * 10 + $i + 1, HBHUB_MINER_SALT_WEEKLY) * count($left));
         $picked[] = $left[$index];
         array_splice($left, $index, 1);
+        if ($clashFree) { // what clashes with the one just picked can't be picked after it
+            $left = array_values(array_filter($left, static fn (string $id): bool => !hbHubMinerStackClash([$picked[$i], $id])));
+        }
     }
     // In the Anomalies' own order, as a key has them
     return $cache[$week] = array_values(array_intersect(array_keys(HBHUB_MINER_ANOMALIES), $picked));
@@ -2745,14 +2861,16 @@ function hbHubMinerGame(array $state): array
  * Goes into an Anomaly ($mods: the ids of HBHUB_MINER_ANOMALIES, in their order) at the game's time. Its game is a copy
  * of the player's, started over like a Big Rip that gives nothing (hbHubMinerNewMultiverse()), with its own luck; a
  * Tier III one ('fresh') also starts HBHUB_MINER_ANOMALY_FRESH over, so it's from nothing. Returns false when it can't
- * be done: in one already, an unknown one or stack, a tier isn't open yet, or it's saved (it's carried on with
- * hbHubMinerAnomalyResume() or thrown away first, so hours of it are never lost by a click).
+ * be done: in one already, an unknown one or stack, a stack that can't be done (hbHubMinerStackClash(), unless it's this
+ * week's weekly one), a tier isn't open yet, or it's saved (it's carried on with hbHubMinerAnomalyResume() or thrown
+ * away first, so hours of it are never lost by a click).
  */
 function hbHubMinerAnomalyStart(array &$state, mixed $mods): bool
 {
     if ($state['anomaly'] !== null || $state['mods'] !== [] || !is_array($mods) || !array_is_list($mods) || $mods === []
         || array_filter($mods, 'is_string') !== $mods || ($mods = hbHubMinerAnomalyMods(hbHubMinerAnomalyKey($mods))) === null
-        || isset($state['saved'][hbHubMinerAnomalyKey($mods)])) {
+        || isset($state['saved'][hbHubMinerAnomalyKey($mods)])
+        || (hbHubMinerStackClash($mods) && $mods !== hbHubMinerWeeklyMods(hbHubMinerWeek($state['tick'])))) { // (an older week's weekly could be one)
         return false;
     }
     foreach ($mods as $id) {

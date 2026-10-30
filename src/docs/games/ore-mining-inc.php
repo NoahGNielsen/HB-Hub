@@ -288,11 +288,13 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <strong>Stacks:</strong> any Tier I and Tier II Anomalies can be played together, with all their rules
                             at once, from the stack builder in the Anomalies view. A stack's goal is the lowest of its Anomalies'
                             goals, and it's worth their parts added up, times <?= HBHUB_MINER_ANOMALY_STACK ?> for each Anomaly
-                            after the first. A stack has its own best time.
+                            after the first. A stack has its own best time. Unstable Vacuum doesn't stack (its Warp Jumps run out
+                            before most stacks' goals), and a few pairs can't be picked together because they can't be done:
+                            <?= implode(', ', array_map(static fn (array $pair): string => HBHUB_MINER_ANOMALIES[$pair[0]]['name'] . ' with ' . HBHUB_MINER_ANOMALIES[$pair[1]]['name'], HBHUB_MINER_ANOMALY_CLASHES)) ?>.
                         </p>
                         <p>
                             <strong>The weekly Anomaly</strong> is a stack of <?= implode(' or ', HBHUB_MINER_WEEKLY_SIZES) ?>
-                            picked for everyone each week (weeks start on Monday at 00:00 UTC). Finishing it that week is worth
+                            picked for everyone each week (weeks start on Monday at 00:00 UTC), never one that can't be done. Finishing it that week is worth
                             <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts, and the
                             <a href="/games/ore-mining-inc/leaderboard?board=weekly">leaderboard</a> lists the fastest times each
                             week.
