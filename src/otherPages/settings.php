@@ -14,8 +14,8 @@
 // Security
 // - Password (#password): a new one, after entering the current one. Logs out every other session.
 // - Two-factor login (#totp): a code from an authenticator app when logging in (assets/php/totp.php)
-// - Discord login (#discord): linking a Discord account to log in with (assets/php/discord.php), or unlinking it.
-//   Only there when Discord login is set up.
+// - Discord login (#discord): linking a Discord account to log in with (assets/php/discord.php), or unlinking it,
+//   and whether its username is shown on the profile (profileShowDiscord). Only there when Discord login is set up.
 // - Logged in devices (#devices): every session (HBHub-Sessions) with its browser and system and when it was last used,
 //   a button to log out each of the others, and one to log out everywhere (this device too)
 // Account
@@ -106,6 +106,7 @@ $settingsTotpSetupSecret = !$settingsTotpIsOn && ($_GET['totp'] ?? null) === 'se
 // Log in with Discord (assets/php/discord.php): the card is only there when it's set up
 $settingsDiscord = hbHubDiscordClient($siteConfig);
 $settingsDiscordName = $settingsUser['userDiscordName']; // the linked account's Discord username, NULL when none is
+$settingsDiscordOnProfile = hbHubDiscordShowsOnProfile($savedSettings);
 
 /**
  * Saves the changed profile, and the new picture when there is one. Locked while that happens,
@@ -463,6 +464,15 @@ if ($settingsAction === 'discordLink' && $settingsDiscord !== null) {
 if ($settingsAction === 'discordUnlink') {
     $db->prepare('UPDATE `HBHub-Users` SET userDiscordId = NULL, userDiscordName = NULL WHERE userId = ?')->execute([$userId]);
     settingsRedirect('discordUnlinked', 'discord');
+}
+
+if ($settingsAction === 'discordProfile') {
+    $discordOnProfile = ($_POST['profileShowDiscord'] ?? null) === '1';
+    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($discordOnProfile): array {
+        $settings['profileShowDiscord'] = $discordOnProfile;
+        return $settings;
+    });
+    settingsRedirect('settings', 'discord');
 }
 
 if ($settingsAction === 'notifications') {
@@ -1069,6 +1079,22 @@ function settingsTime(?string $timestamp): string
                     </div>
 
                     <?php if ($settingsDiscordName !== null): ?>
+                        <form action="/settings#discord" method="post">
+                            <input type="hidden" name="action" value="discordProfile">
+                            <div class="settings-field">
+                                <label class="settings-checkbox">
+                                    <input type="checkbox" class="settings-switch" name="profileShowDiscord" value="1"<?= $settingsDiscordOnProfile ? ' checked' : '' ?>
+                                           aria-describedby="settings-discord-profile-hint">
+                                    <span>Show my Discord username on my profile</span>
+                                </label>
+                                <p class="settings-hint" id="settings-discord-profile-hint">
+                                    Everyone logged in to HB Hub can see it there. It's checked with Discord every night, so a new Discord username shows up by itself.
+                                </p>
+                            </div>
+                            <div class="settings-actions">
+                                <button type="submit" class="settings-btn settings-btn-primary">Save</button>
+                            </div>
+                        </form>
                         <form class="settings-item" action="/settings#discord" method="post" data-confirm="Unlink your Discord account? You can only log in with your password after this.">
                             <input type="hidden" name="action" value="discordUnlink">
                             <div class="settings-item-text">
@@ -1082,7 +1108,7 @@ function settingsTime(?string $timestamp): string
                             <input type="hidden" name="action" value="discordLink">
                             <div class="settings-item-text">
                                 <span class="settings-label">Link Discord</span>
-                                <p class="settings-hint">Discord asks you to allow HB Hub to see your Discord username. Nothing else is shared.</p>
+                                <p class="settings-hint">Discord asks you to allow HB Hub to see your Discord username. Nothing else is shared. Your Discord username is shown on your profile, which you can turn off here once it's linked.</p>
                             </div>
                             <button type="submit" class="settings-btn settings-btn-discord"><?= hbHubDiscordLogo() ?>Log in with Discord</button>
                         </form>

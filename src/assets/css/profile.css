@@ -327,6 +327,14 @@ a.profile-status:focus-visible {
   color: #fff;
 }
 
+/* Their Discord username, with Discord's logo in its blurple (the badge's text stays the normal color) */
+.profile-badge.is-discord .discord-logo {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: #5865f2;
+}
+
 /* The shield icon is black */
 .profile-badge img {
   width: 15px;

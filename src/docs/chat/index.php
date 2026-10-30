@@ -59,6 +59,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 </thead>
                                 <tbody>
                                     <tr><td>Reactions</td><td>The emoji along the top are the ones you've used most lately. Press one to react with it, or <strong>+</strong> for all the others. Press a reaction under a message to add yours or take it away, and point at it to see who reacted.</td></tr>
+                                    <tr><td>File info</td><td>On a file, picture or video: its name, type, size, who sent it and when it expires. See <a href="/docs/chat/attachments">Files and pictures</a>.</td></tr>
                                     <tr><td>Reply</td><td>Quotes the message above yours. Click a quote to jump back to the message it answers. <kbd>Esc</kbd> cancels the reply.</td></tr>
                                     <tr><td>Edit message</td><td>Your own messages only. The message shows that it was edited.</td></tr>
                                     <tr><td>Pin message</td><td>Pins it to the chat for everyone in it, see <a href="#pins">Pinned messages</a>. A pinned message gets <strong>Unpin message</strong> instead, if you can unpin it.</td></tr>

@@ -45,4 +45,5 @@ return [
 
     'discord_client_id' => 'your_discord_client_id', // Default: none, Discord login is off | The Client ID from the app's OAuth2 page at https://discord.com/developers/applications. Its redirect has to be https://<your site>/discord
     'discord_client_secret' => 'your_discord_client_secret', // Default: none, Discord login is off | The Client Secret from the same page. Keep it secret: anyone with it can pretend to be the app
+    'discord_bot_token' => 'your_discord_bot_token', // Default: none, linked Discord usernames are only updated when they log in with Discord | The token from the same app's Bot page (Reset Token). The nightly job uses it to look up linked accounts' current usernames; the bot doesn't need to be in any server. Keep it secret
 ];

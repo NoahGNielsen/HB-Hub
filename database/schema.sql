@@ -887,7 +887,7 @@ CREATE TABLE `HBHub-Users` (
   `userTotpSecret` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Base32 TOTP secret, NULL when 2FA is off',
   `userTotpLastStep` int UNSIGNED DEFAULT NULL COMMENT 'Time step of the last accepted 2FA code, so a code only works once',
   `userDiscordId` varchar(20) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The linked Discord account''s id, for logging in with Discord. NULL when none is linked',
-  `userDiscordName` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'The linked Discord account''s username when it was linked, shown in the settings. NULL when none is linked',
+  `userDiscordName` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'The linked Discord account''s username, shown in the settings and on the profile (unless profileShowDiscord is off). Updated on every Discord login and by the nightly job. NULL when none is linked',
   `userFailedLoginCount` smallint UNSIGNED DEFAULT '0' COMMENT 'NULL for a deleted account',
   `userStatus` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Normal\r\n2 Normal (unlocked or unbanned by a site admin, not logged in since)\r\n3 Account Locked\r\n4 Banned\r\nNULL for a deleted account',
   `userRole` tinyint UNSIGNED DEFAULT '1' COMMENT '1 Normal User\r\n2 Admin\r\nNULL for a deleted account',

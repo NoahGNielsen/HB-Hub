@@ -16,6 +16,11 @@
 //    send you their own code and get their Discord linked to your account).
 // 3. hbHubDiscordFetchUser() swaps the code for a token on the server, asks Discord who it belongs to and revokes the
 //    token again straight away. The token never reaches the browser and is never stored.
+//
+// The username is shown on the profile too, unless profileShowDiscord in userSettings is turned off in the settings
+// (hbHubDiscordShowsOnProfile()). Discord usernames can be changed, so it's kept up to date: every Discord login saves
+// the one Discord just gave, and the nightly job (cron/nightly.php) asks Discord for every linked account's current one
+// with the app's bot token (discord_bot_token, hbHubDiscordRefreshNames()). Without a bot token that part is skipped.
 
 const HBHUB_DISCORD_API = 'https://discord.com/api/v10';
 const HBHUB_DISCORD_AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
@@ -25,6 +30,7 @@ const HBHUB_DISCORD_MODES = ['login', 'link', 'onboarding']; // onboarding is si
 const HBHUB_DISCORD_SIGNUP_COOKIE = 'hbHubDiscordSignup';
 const HBHUB_DISCORD_SIGNUP_MINUTES = 30; // how long there is to finish signing up after coming back from Discord
 const HBHUB_DISCORD_AVATAR_SIZE = 256; // pixels, the size of the Discord picture onboarding starts with
+const HBHUB_DISCORD_REFRESH_PAUSE_MS = 250; // between the nightly job's lookups, to stay well under Discord's rate limits
 
 /**
  * Discord's logo (the "Clyde" face) as inline SVG, for the start of a "Log in with Discord" button. It's drawn in
@@ -145,7 +151,7 @@ function hbHubDiscordFetchUser(array $client, mixed $code): ?array
         return null;
     }
 
-    $user = hbHubDiscordRequest('/users/@me', null, $accessToken);
+    $user = hbHubDiscordRequest('/users/@me', null, 'Bearer ' . $accessToken);
     hbHubDiscordRequest('/oauth2/token/revoke', $credentials + ['token' => $accessToken, 'token_type_hint' => 'access_token']);
 
     $id = $user['id'] ?? null;
@@ -259,10 +265,62 @@ function hbHubDiscordAvatarFetch(array $discordUser): ?string
 }
 
 /**
- * One request to Discord's API: a form POST when $form is given, otherwise a GET with $accessToken.
+ * Whether $settings (userSettings) has the Discord username shown on the profile. On unless it's been turned off, so
+ * accounts from before the setting show it too.
+ */
+function hbHubDiscordShowsOnProfile(array $settings): bool
+{
+    return ($settings['profileShowDiscord'] ?? true) !== false;
+}
+
+/**
+ * The app's bot token (from the Bot page in Discord's developer portal), or null when there's none. Only the nightly
+ * job uses it, to look up linked accounts' usernames: the bot never joins a server or posts anything.
+ */
+function hbHubDiscordBotToken(array $siteConfig): ?string
+{
+    $token = is_string($siteConfig['discord_bot_token'] ?? null) ? trim($siteConfig['discord_bot_token']) : '';
+    return $token === '' || $token === 'your_discord_bot_token' ? null : $token;
+}
+
+/**
+ * Asks Discord for the current username of every linked account and saves the ones that changed. Used by the nightly
+ * job. An account Discord doesn't answer for (it's down, rate limited, or the token is wrong) keeps the name it has.
+ *
+ * @return array{checked: int, changed: int, failed: int}
+ */
+function hbHubDiscordRefreshNames(PDO $db, string $botToken): array
+{
+    $linked = $db->query('SELECT userId, userDiscordId, userDiscordName FROM `HBHub-Users` WHERE userDiscordId IS NOT NULL')->fetchAll();
+    // Only while it's still linked to the same Discord account, in case it was unlinked or relinked meanwhile
+    $update = $db->prepare('UPDATE `HBHub-Users` SET userDiscordName = ? WHERE userId = ? AND userDiscordId = ?');
+    $result = ['checked' => 0, 'changed' => 0, 'failed' => 0];
+
+    foreach ($linked as $index => $row) {
+        if ($index > 0) {
+            usleep(HBHUB_DISCORD_REFRESH_PAUSE_MS * 1000);
+        }
+        $user = hbHubDiscordRequest('/users/' . $row['userDiscordId'], null, 'Bot ' . $botToken);
+        if (!is_string($user['username'] ?? null) || trim($user['username']) === '') {
+            $result['failed']++;
+            continue;
+        }
+        $result['checked']++;
+        $name = mb_substr($user['username'], 0, 32);
+        if ($name !== $row['userDiscordName']) {
+            $update->execute([$name, (int) $row['userId'], $row['userDiscordId']]);
+            $result['changed'] += $update->rowCount();
+        }
+    }
+    return $result;
+}
+
+/**
+ * One request to Discord's API: a form POST when $form is given, otherwise a GET, with $authorization as the
+ * Authorization header ("Bearer <access token>" or "Bot <bot token>") when given.
  * Returns the JSON answer, or null when it wasn't a 200 (logged).
  */
-function hbHubDiscordRequest(string $path, ?array $form, ?string $accessToken = null): ?array
+function hbHubDiscordRequest(string $path, ?array $form, ?string $authorization = null): ?array
 {
     $curl = curl_init(HBHUB_DISCORD_API . $path);
     $options = [
@@ -271,7 +329,7 @@ function hbHubDiscordRequest(string $path, ?array $form, ?string $accessToken = 
         CURLOPT_TIMEOUT => 10,
         // Discord's firewall turns away requests without one
         CURLOPT_USERAGENT => 'HB Hub (https://hbhub.noahgajnielsen.dk)',
-        CURLOPT_HTTPHEADER => ['Accept: application/json', ...($accessToken !== null ? ['Authorization: Bearer ' . $accessToken] : [])],
+        CURLOPT_HTTPHEADER => ['Accept: application/json', ...($authorization !== null ? ['Authorization: ' . $authorization] : [])],
     ];
     if ($form !== null) {
         $options[CURLOPT_POST] = true;

@@ -31,11 +31,16 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         </ul>
                         <p>
                             They wait as small preview tiles above the message box, so you can take one out again or write a message
-                            to go with them. Then send as normal. Several pictures in one message show as a gallery.
+                            to go with them. Then send as normal. Pictures and videos show on their own in the chat, like a GIF,
+                            and several pictures in one message show as a gallery.
                         </p>
                         <p>
                             Videos (MP4, MOV, WebM and MKV) get a player right in the chat, so they can be watched without downloading
-                            them. If your browser can't play one, it shows the video's name instead, which downloads it.
+                            them. If your browser can't play one, it shows a card with the video's name instead, which downloads it.
+                        </p>
+                        <p>
+                            To see a file's name, type, size, who sent it and when it expires, right-click it and pick
+                            <strong>File info</strong>.
                         </p>
                     </section>
 

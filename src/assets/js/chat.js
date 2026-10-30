@@ -867,7 +867,8 @@ chatPart((signal) => {
 // Right-click menus, used by the chat menu and the message menu.
 // Right-clicking an item in `list` (or the menu key / Shift+F10 on it) opens `menu` where the pointer is.
 // Arrow keys, Home and End move through the menu. Escape and Tab close it, back on the item it was opened on.
-// onOpen(item) hides the menu items that don't apply, and skip(event, item) can leave the browser's own menu be.
+// onOpen(item, event) hides the menu items that don't apply (event.target is what was right-clicked), and
+// skip(event, item) can leave the browser's own menu be.
 // A smaller menu inside it (like Mute chat's) handles its own keys.
 // Items side by side in a row (data-menu-row, like the message menu's reactions) are one stop for the up and down keys,
 // and the left and right keys move along the row.
@@ -886,9 +887,9 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false,
         return row ? menuItemList.find((other) => row.contains(other)) : menuItem;
     }
 
-    function open(item, x, y) {
+    function open(item, x, y, event) {
         current = item;
-        onOpen(item);
+        onOpen(item, event);
 
         // Where it was opened, but never past the edge of the window
         menu.hidden = false;
@@ -911,9 +912,9 @@ function contextMenu({ menu, list, items, focusItem, onOpen, skip = () => false,
         // Opened from the keyboard there's no pointer position, so it goes under the item instead
         if (event.clientX === 0 && event.clientY === 0) {
             const rect = item.getBoundingClientRect();
-            open(item, rect.left + 16, rect.bottom);
+            open(item, rect.left + 16, rect.bottom, event);
         } else {
-            open(item, event.clientX, event.clientY);
+            open(item, event.clientX, event.clientY, event);
         }
     });
 
@@ -1373,6 +1374,8 @@ chatPart(() => {
 // Message menu: right-click a message in the open chat (or use the menu key / Shift+F10 on it) to react to it, reply to
 // it, pin it, or mark the chat unread from it on. Your own messages can also be edited or deleted,
 // and group admins can delete anyone's (shown as deleted by a group admin).
+// File info shows an attachment's name, size and so on (chat:file-info, the picture viewer part below): the one
+// right-clicked, or the message's only one.
 // Pinned messages get Unpin message instead, when the Pinned messages popup's list says the user can (data-pin-unpinnable:
 // their own pin, a group admin, or a DM). Pinning isn't there while muted, like reactions.
 // Along the top are the emoji used most recently (chatQuickReactions()) and + for all of them, which the reactions part
@@ -1403,6 +1406,7 @@ chatPart((signal) => {
     const reactionRow = menu.querySelector('[data-menu-reactions].chat-menu-reactions');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let message = null; // the message the menu was opened on
+    let attachment = null; // the attachment File info is for: the one right-clicked, or else the message's only one
 
     // The reaction row, made again on every open, as the recently used emoji and the message's reactions change
     function fillReactions(item) {
@@ -1485,8 +1489,13 @@ chatPart((signal) => {
             return event.target.closest('[data-chat-link]') !== null
                 || (selection !== null && !selection.isCollapsed && item.contains(selection.anchorNode));
         },
-        onOpen(item) {
+        onOpen(item, event) {
             message = item;
+            // A video's file card (shown when it can't play) is in the video's figure, which has the same data
+            const attachments = [...item.querySelectorAll('[data-attachments] .chat-attachment[data-attachment-name]:not(.chat-attachment .chat-attachment)')];
+            attachment = event.target.closest('.chat-attachment[data-attachment-name]')
+                ?? (attachments.length === 1 ? attachments[0] : null);
+            menu.querySelector('[data-menu-action="fileInfo"]').hidden = attachment === null;
             const isDeleted = item.hasAttribute('data-message-deleted');
             const isOwn = item.hasAttribute('data-message-own') && !isDeleted;
             const canDelete = isOwn || (isGroupAdmin && !isDeleted);
@@ -1573,6 +1582,10 @@ chatPart((signal) => {
     }
 
     const actions = {
+        // The picture viewer part below shows it
+        fileInfo(item) {
+            messages.dispatchEvent(new CustomEvent('chat:file-info', { detail: { item, attachment } }));
+        },
         reply: startReply,
         edit: openEdit,
         delete: openDelete,
@@ -1911,7 +1924,11 @@ chatPart((signal) => {
     const TYPES = {
         'image/png': 'PNG', 'image/jpeg': 'JPEG', 'image/gif': 'GIF', 'image/webp': 'WebP',
         'image/avif': 'AVIF', 'image/bmp': 'BMP', 'image/jxl': 'JPEG XL',
+        'video/mp4': 'MP4', 'video/webm': 'WebM', 'video/quicktime': 'QuickTime', 'video/ogg': 'Ogg',
     };
+    const fileInfoDialog = document.querySelector('.chat-file-info');
+    const fileInfoList = fileInfoDialog.querySelector('[data-file-info-list]');
+    const fileInfoDownload = fileInfoDialog.querySelector('[data-file-info-download]');
     const name = dialog.querySelector('[data-viewer-name]');
     const stage = dialog.querySelector('[data-viewer-stage]');
     const info = dialog.querySelector('[data-viewer-info]');
@@ -1939,24 +1956,35 @@ chatPart((signal) => {
         return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} • ${pad(date.getHours())}.${pad(date.getMinutes())}`;
     }
 
-    function renderInfo() {
-        const type = shown.figure.dataset.attachmentType;
-        const rows = [
-            ['Name', name.textContent],
+    /**
+     * What Info and File info list about an attachment (its element with the data-attachment-* on it) in a message (item).
+     * dimensions is its size in pixels, or null to leave it out.
+     */
+    function infoRows(attachment, item, dimensions) {
+        const type = attachment.dataset.attachmentType;
+        return [
+            ['Name', attachment.dataset.attachmentName],
             ['Type', TYPES[type] ? `${TYPES[type]} (${type})` : type],
-            ['Dimensions', size ? `${size.width} × ${size.height} px` : '…'],
-            ['File size', shown.figure.dataset.attachmentSize],
-            ['Sent by', shown.item.dataset.messageSender],
-            ['Sent', dateTime(Number(shown.item.dataset.messageTime))],
-            ['Expires', dateTime(Number(shown.figure.dataset.attachmentExpires))],
+            ...(dimensions === null ? [] : [['Dimensions', dimensions]]),
+            ['File size', attachment.dataset.attachmentSize],
+            ['Sent by', item.dataset.messageSender],
+            ['Sent', dateTime(Number(item.dataset.messageTime))],
+            ['Expires', dateTime(Number(attachment.dataset.attachmentExpires))],
         ];
-        info.replaceChildren(...rows.flatMap(([term, value]) => {
+    }
+
+    function fillInfo(list, rows) {
+        list.replaceChildren(...rows.flatMap(([term, value]) => {
             const dt = document.createElement('dt');
             dt.textContent = term;
             const dd = document.createElement('dd');
             dd.textContent = value;
             return [dt, dd];
         }));
+    }
+
+    function renderInfo() {
+        fillInfo(info, infoRows(shown.figure, shown.item, size ? `${size.width} × ${size.height} px` : '…'));
         info.hidden = !isInfoOpen;
         infoButton.setAttribute('aria-expanded', String(isInfoOpen));
     }
@@ -2083,6 +2111,32 @@ chatPart((signal) => {
         if (!source || !source.closest('[data-message-id]')) return;
         if (source instanceof HTMLImageElement && source.complete && source.naturalWidth === 0) return; // broken
         open(source);
+    });
+
+    // The size in pixels of a picture or video in a message, once it's loaded (a video's first frame), or null
+    function mediaSize(attachment) {
+        const media = attachment.querySelector('.chat-attachment-image, video');
+        const [width, height] = media instanceof HTMLImageElement ? [media.naturalWidth, media.naturalHeight]
+            : media instanceof HTMLVideoElement ? [media.videoWidth, media.videoHeight]
+            : media instanceof HTMLCanvasElement ? [media.width, media.height] // a JPEG XL one drawn by the part above
+            : [0, 0];
+        return width > 0 ? `${width} × ${height} px` : null;
+    }
+
+    // File info in the message menu: the File info popup, the same for pictures, videos and other files
+    messages.addEventListener('chat:file-info', (event) => {
+        const { item, attachment } = event.detail;
+        fillInfo(fileInfoList, infoRows(attachment, item, mediaSize(attachment)));
+        fileInfoDownload.href = attachment.dataset.attachmentDownload;
+        fileInfoDownload.download = attachment.dataset.attachmentName;
+        fileInfoDialog.showModal();
+    });
+
+    fileInfoDialog.querySelectorAll('[data-dialog-close]').forEach((button) => {
+        button.addEventListener('click', () => fileInfoDialog.close());
+    });
+    fileInfoDialog.addEventListener('click', (event) => {
+        if (event.target === fileInfoDialog) fileInfoDialog.close();
     });
 
     zoomOutButton.addEventListener('click', () => zoomTo(step - 1));
@@ -2250,7 +2304,7 @@ chatPart((signal) => {
     let isUploading = false; // only while the files are on their way, when they can't be taken back any more
     let uploadText = ''; // "Sending… 40%"
     let sendToken = 0; // which Send is going on, so one called off by taking a file out stops where it is
-    let sending = null; // the faded message shown while it's being sent: { item, meta, sizes: [{ job, size }] }
+    let sending = null; // the faded message shown while it's being sent: { item, meta }
 
     // The + tile at the end of the row, for adding more
     const addTile = document.createElement('li');
@@ -2654,10 +2708,9 @@ chatPart((signal) => {
     function fileCard(job) {
         const card = element('div', 'chat-attachment is-file');
         const text = element('span', 'chat-attachment-text');
-        const size = element('span', 'chat-attachment-size');
-        text.append(element('span', 'chat-attachment-name', job.name), size);
+        text.append(element('span', 'chat-attachment-name', job.name));
         card.append(extensionBadge(job), text);
-        return { card, size };
+        return card;
     }
 
     // A picture like the server's, the one from the user's device
@@ -2667,11 +2720,8 @@ chatPart((signal) => {
         image.alt = job.name;
         image.height = 200;
         image.src = job.url;
-        const caption = element('figcaption', 'chat-attachment-caption');
-        const size = element('span', 'chat-attachment-size');
-        caption.append(element('span', 'chat-attachment-download', job.name), size);
-        figure.append(image, caption);
-        return { figure, size };
+        figure.append(image);
+        return figure;
     }
 
     // The message as it'll look, faded at the bottom of the chat until the page reloads with the real one: the pictures
@@ -2682,26 +2732,19 @@ chatPart((signal) => {
         item.setAttribute('data-message-sending', '');
         const bubble = element('div', 'chat-message-bubble has-attachment');
         const box = element('div', 'chat-attachments');
-        const sizes = [];
         const pictures = jobs.filter((job) => job.url && !job.previewFailed);
         const files = jobs.filter((job) => !pictures.includes(job));
 
         if (pictures.length === 1) {
-            const { figure, size } = pictureFigure(pictures[0]);
-            box.append(figure);
-            sizes.push({ job: pictures[0], size });
+            box.append(pictureFigure(pictures[0]));
         } else if (pictures.length > 1) {
             const gallery = element('div', `chat-attachment-gallery is-cols-${[2, 4].includes(pictures.length) ? 2 : 3}`);
-            pictures.forEach((job) => gallery.append(pictureFigure(job).figure));
+            pictures.forEach((job) => gallery.append(pictureFigure(job)));
             box.append(gallery);
         }
         if (files.length > 0) {
             const cards = element('div', 'chat-attachment-files');
-            files.forEach((job) => {
-                const { card, size } = fileCard(job);
-                cards.append(card);
-                sizes.push({ job, size });
-            });
+            files.forEach((job) => cards.append(fileCard(job)));
             box.append(cards);
         }
         bubble.append(box);
@@ -2714,15 +2757,7 @@ chatPart((signal) => {
         if (empty) empty.hidden = true;
         messages.append(item);
         messages.scrollTop = messages.scrollHeight;
-        sending = { item, meta, sizes };
-        sendingSizes();
-    }
-
-    // How big they are: a picture's size changes once it's converted
-    function sendingSizes() {
-        sending?.sizes.forEach(({ job, size }) => {
-            size.textContent = sizeLabel(toSend(job).size);
-        });
+        sending = { item, meta };
     }
 
     // Taken away again when they weren't sent after all (an error, not enough tickets, or a file taken out while waiting)
@@ -2788,7 +2823,6 @@ chatPart((signal) => {
             convertNext();
             while (converting) await converting.promise;
             if (!isCurrent()) return;
-            sendingSizes();
             const totalBytes = jobs.reduce((sum, job) => sum + toSend(job).size, 0);
             if (jobs.some((job) => problem(job) !== null) || totalBytes > maxBytes) return; // the tray says what's wrong
 

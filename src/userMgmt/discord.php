@@ -91,7 +91,7 @@ if ($discordMode === 'login' || $discordMode === 'onboarding') {
         discordRedirect(discordBackTo($discordMode === 'login' ? '/login' : '/onboarding', $discordReturnPath, 'failed'));
     }
     require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginCheckDB.php';
-    $discordLoginError = loginDiscord($discordUser['id'], $discordNeedsTotp);
+    $discordLoginError = loginDiscord($discordUser['id'], $discordUser['name'], $discordNeedsTotp);
     if ($discordMode === 'onboarding' && $discordLoginError === 'notLinked') {
         // Not on HB Hub yet: back to onboarding, which fills in the form from it and links it once the account is made
         hbHubDiscordSignupSet($discordClient, $discordUser);

@@ -2144,14 +2144,14 @@ function chatAttachmentsGoneHtml(int $deleted, int $expired): string
 /**
  * A message's attachments, above its text (data-attachments): first its pictures, then its videos, then its other
  * files, then one line for the ones whose file is gone (deleted or expired).
- * One picture is shown 200px tall with its name below (which downloads it). Several go in a gallery
- * (chat-attachment-gallery) of square tiles, two or three to a row, without names - the picture viewer shows each one's.
- * Each video gets the browser's own player, one under the other, with its name below like a single picture. When the
- * browser can't play it, chat.js marks it is-unplayable and it's just the name to download.
- * Any other file is a card with its extension on a little document, which downloads it.
+ * They show without a name or size, like a GIF: one picture is shown 200px tall, and several go in a gallery
+ * (chat-attachment-gallery) of square tiles, two or three to a row. Each video gets the browser's own player, one under
+ * the other. When the browser can't play it, chat.js marks it is-unplayable and its file card shows instead.
+ * Any other file is a card with its extension on a little document and its name, which downloads it.
  * A JPEG XL picture has data-attachment-jxl, so chat.js can draw it itself in browsers that can't show JPEG XL.
- * Clicking a picture opens it in the picture viewer (chat.js), which goes through the message's pictures, and whose
- * Info shows each one's data-attachment-name, -size, -type and when it expires (data-attachment-expires, Unix seconds).
+ * Clicking a picture opens it in the picture viewer (chat.js), which goes through the message's pictures. Its Info, and
+ * File info in the message menu for any attachment, show its data-attachment-name, -size, -type and when it expires
+ * (data-attachment-expires, Unix seconds).
  * chat.js builds the same for the message shown while it's being sent (showSending()).
  *
  * @param list<array> $attachments from chatAttachments()
@@ -2176,36 +2176,33 @@ function chatAttachmentsHtml(array $attachments): string
         $url = '/chat/attachment?id=' . (int) $attachment['attachmentId'];
         $downloadUrl = $url . '&amp;download=1';
         $name = htmlspecialchars($attachment['attachmentName']);
-        $size = hbHubChatAttachmentSizeLabel((int) $attachment['attachmentSize']);
+        // What File info (chat.js) shows, on every kind of attachment
+        $data = ' data-attachment-name="' . $name . '" data-attachment-size="' . hbHubChatAttachmentSizeLabel((int) $attachment['attachmentSize']) . '"'
+            . ' data-attachment-download="' . $downloadUrl . '" data-attachment-type="' . htmlspecialchars($attachment['attachmentType']) . '"'
+            . ' data-attachment-expires="' . (int) strtotime($attachment['attachmentExpiresTimestamp']) . '"';
+        $fileCard = '<a class="chat-attachment is-file" href="' . $downloadUrl . '" download="' . $name . '" title="Download ' . $name . '"' . $data . '>'
+            . '<span class="chat-attachment-ext" aria-hidden="true">' . chatAttachmentExtension($attachment['attachmentName']) . '</span>'
+            . '<span class="chat-attachment-text"><span class="chat-attachment-name">' . $name . '</span></span>'
+            . '<span class="chat-attachment-save" aria-hidden="true"></span>'
+            . '</a>';
         if (in_array($attachment['attachmentType'], HBHUB_CHAT_ATTACHMENT_IMAGE_TYPES, true)) {
-            $pictures[] = '<figure class="chat-attachment is-image" data-attachment-name="' . $name . '" data-attachment-size="' . $size . '"'
-                . ' data-attachment-download="' . $downloadUrl . '" data-attachment-type="' . htmlspecialchars($attachment['attachmentType']) . '"'
-                . ' data-attachment-expires="' . (int) strtotime($attachment['attachmentExpiresTimestamp']) . '">'
+            $pictures[] = '<figure class="chat-attachment is-image"' . $data . '>'
                 . '<img class="chat-attachment-image" src="' . $url . '" alt="' . $name . '" title="' . $name . '" height="200" loading="lazy"'
                 . ($attachment['attachmentType'] === 'image/jxl' ? ' data-attachment-jxl' : '') . '>'
-                . '<figcaption class="chat-attachment-caption">'
-                . '<a class="chat-attachment-download" href="' . $downloadUrl . '" download="' . $name . '" title="Download">' . $name . '</a>'
-                . '<span class="chat-attachment-size">' . $size . '</span></figcaption>'
                 . '</figure>';
             continue;
         }
         if (in_array($attachment['attachmentType'], HBHUB_CHAT_ATTACHMENT_VIDEO_TYPES, true)) {
-            // Only how long it is and its first frame are loaded until someone presses play
-            $videos[] = '<figure class="chat-attachment is-video" data-attachment-name="' . $name . '">'
+            // Only how long it is and its first frame are loaded until someone presses play.
+            // The file card under it is hidden until chat.js finds the browser can't play it (is-unplayable).
+            $videos[] = '<figure class="chat-attachment is-video"' . $data . '>'
                 . '<video class="chat-attachment-video" src="' . $url . '" controls preload="metadata" playsinline'
                 . ' title="' . $name . '" aria-label="' . $name . '"></video>'
-                . '<figcaption class="chat-attachment-caption">'
-                . '<a class="chat-attachment-download" href="' . $downloadUrl . '" download="' . $name . '" title="Download">' . $name . '</a>'
-                . '<span class="chat-attachment-size">' . $size . '</span></figcaption>'
+                . $fileCard
                 . '</figure>';
             continue;
         }
-        $files[] = '<a class="chat-attachment is-file" href="' . $downloadUrl . '" download="' . $name . '" title="Download ' . $name . '">'
-            . '<span class="chat-attachment-ext" aria-hidden="true">' . chatAttachmentExtension($attachment['attachmentName']) . '</span>'
-            . '<span class="chat-attachment-text"><span class="chat-attachment-name">' . $name . '</span>'
-            . '<span class="chat-attachment-size">' . $size . '</span></span>'
-            . '<span class="chat-attachment-save" aria-hidden="true"></span>'
-            . '</a>';
+        $files[] = $fileCard;
     }
 
     $html = '';
@@ -2720,10 +2717,12 @@ if ($isPoll) {
                  Along the top, the emoji the user reacted or typed with most recently to react with (chat.js fills them in),
                  and + for all of them. Edit is only for your own messages, Delete for your own (and everyone's for group
                  admins), and a deleted message can only be marked unread. Pin message for anyone, Unpin message for whoever
-                 pinned it, group admins and either person in a DM. -->
+                 pinned it, group admins and either person in a DM. File info is there when right-clicking an attachment,
+                 or on a message with just one. -->
             <div class="chat-menu" role="menu" aria-label="Message options" hidden data-message-menu>
                 <div class="chat-menu-reactions" role="group" aria-label="React" data-menu-row data-menu-reactions></div>
                 <hr class="chat-menu-divider" data-menu-reactions>
+                <button type="button" role="menuitem" data-menu-action="fileInfo">File info</button>
                 <button type="button" role="menuitem" data-menu-action="reply">Reply</button>
                 <button type="button" role="menuitem" data-menu-action="edit">Edit message</button>
                 <button type="button" role="menuitem" data-menu-action="pin">Pin message</button>
@@ -3136,6 +3135,24 @@ if ($isPoll) {
                     <button type="submit" class="chat-new-btn is-danger" data-confirm-submit></button>
                 </footer>
             </form>
+        </dialog>
+
+        <!-- File info (message menu) for a picture, video or another file: chat.js fills it in from the attachment's
+             data-attachment-*, like the picture viewer's Info. -->
+        <dialog class="chat-dialog chat-file-info" aria-labelledby="chat-file-info-title">
+            <div class="chat-requests-body">
+                <header class="chat-new-header">
+                    <h2 id="chat-file-info-title">File info</h2>
+                    <button type="button" class="chat-new-close" aria-label="Close" data-dialog-close>&times;</button>
+                </header>
+
+                <dl class="chat-info-list" data-file-info-list></dl>
+
+                <footer class="chat-new-footer chat-dialog-footer">
+                    <a class="chat-btn" href="#" download data-file-info-download>Download</a>
+                    <button type="button" class="chat-btn" data-dialog-close>Close</button>
+                </footer>
+            </div>
         </dialog>
 
         <!-- Chat info: chat.js fills it in from /chat/info (chat/info.php) -->
