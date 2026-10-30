@@ -4,7 +4,8 @@
 //
 // The feedback users have sent from the Feedback button in the side bar (otherPages/feedback.php,
 // assets/php/feedback.php): new ones first, then the ones marked as done, each newest first, ADMIN_FEEDBACK_SHOWN at a
-// time (?page=). Each shows who sent it, when, the page they were on and what they wrote.
+// time (?page=). Each shows who sent it, when, the page they were on, a Dev mark when it was sent from the dev site, and
+// what they wrote.
 // Forms (action=, feedback=id): done marks it as done, new marks it as new again, delete removes it for good, and
 // reply (with reply=the message) marks it as done and sends the user a notification with the message
 // (hbHubFeedbackReply()). Only reply sends one. Its button needs admin.js, which asks for the message in its popup.
@@ -54,7 +55,7 @@ $adminTotal = (int) $db->query('SELECT COUNT(*) FROM `HBHub-Feedback`')->fetchCo
 $adminPages = max(1, intdiv($adminTotal + ADMIN_FEEDBACK_SHOWN - 1, ADMIN_FEEDBACK_SHOWN));
 $adminPage = min($adminPage, $adminPages);
 $adminFeedback = $db->query('SELECT f.feedbackId, f.feedbackUserId, u.userName, u.userAvatarAttachmentId, f.feedbackContent,
-        f.feedbackPage, f.feedbackCreatedTimestamp, f.feedbackDoneTimestamp, f.feedbackDoneByUserId, du.userName AS doneByName
+        f.feedbackPage, f.feedbackFromDev, f.feedbackCreatedTimestamp, f.feedbackDoneTimestamp, f.feedbackDoneByUserId, du.userName AS doneByName
     FROM `HBHub-Feedback` f
     LEFT JOIN `HBHub-Users` u ON u.userId = f.feedbackUserId
     LEFT JOIN `HBHub-Users` du ON du.userId = f.feedbackDoneByUserId
@@ -118,6 +119,9 @@ $adminFormAction = '/admin/feedback' . ($adminPage > 1 ? '?page=' . $adminPage :
                                         <span class="admin-small"><?= adminTime($feedback['feedbackCreatedTimestamp']) ?></span>
                                         <?php if ($feedback['feedbackPage'] !== null): ?>
                                             <span class="admin-small">from <a class="admin-link admin-mono" href="<?= htmlspecialchars($feedback['feedbackPage']) ?>"><?= htmlspecialchars($feedback['feedbackPage']) ?></a></span>
+                                        <?php endif; ?>
+                                        <?php if ((int) $feedback['feedbackFromDev'] === 1): ?>
+                                            <span class="settings-status admin-feedback-dev" title="Sent from the dev site, not the live one">Dev</span>
                                         <?php endif; ?>
                                         <span class="settings-status<?= $feedbackDone ? '' : ' is-on' ?>"><?= $feedbackDone ? 'Done' : 'New' ?></span>
                                     </div>

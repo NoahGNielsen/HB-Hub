@@ -6,12 +6,23 @@
 // The reply is kept in that notification and as the reason in the admin log (admin/feedback.php), not with the feedback.
 //
 // Each one is a row in HBHub-Feedback: who sent it, what they wrote, the path of the page they were on when they
-// pressed the button (only the path, never the query, so no chat ids or search words), when, and who marked it done.
+// pressed the button (only the path, never the query, so no chat ids or search words), whether it was sent from the dev
+// site, when, and who marked it done.
 
 const HBHUB_FEEDBACK_MAX = 2000; // characters, the length of feedbackContent
 const HBHUB_FEEDBACK_PER_HOUR = 5; // per user, so the button can't be used to spam the admins
 const HBHUB_FEEDBACK_PAGE = '/feedback';
 const HBHUB_FEEDBACK_REPLY_MAX = 500; // characters, the message an admin sends with Reply, and mark completed
+const HBHUB_FEEDBACK_DEV_FOLDER = 'dev_public'; // the web root the dev branch is uploaded to (.github/workflows/ftp-upload.yml)
+
+/**
+ * Whether this request is on the dev site: the dev branch is uploaded to its own web root folder on the same server and
+ * shares the database with the live site, so feedback from both lands in the same list.
+ */
+function hbHubFeedbackIsDev(): bool
+{
+    return basename(rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? ''), '/')) === HBHUB_FEEDBACK_DEV_FOLDER;
+}
 
 /**
  * The address the Feedback button was pressed on (?from=, path and query), to send the user back to: a page on this
@@ -62,12 +73,12 @@ function hbHubFeedbackLeft(PDO $db, int $userId): int
 
 /**
  * Saves a user's feedback. $content is already checked (not empty, at most HBHUB_FEEDBACK_MAX characters) and
- * $page comes from hbHubFeedbackPage().
+ * $page comes from hbHubFeedbackPage(). It's marked as from the dev site when it was sent there (hbHubFeedbackIsDev()).
  */
 function hbHubFeedbackSend(PDO $db, int $userId, string $content, ?string $page): void
 {
-    $db->prepare('INSERT INTO `HBHub-Feedback` (feedbackUserId, feedbackContent, feedbackPage) VALUES (?, ?, ?)')
-        ->execute([$userId, $content, $page]);
+    $db->prepare('INSERT INTO `HBHub-Feedback` (feedbackUserId, feedbackContent, feedbackPage, feedbackFromDev) VALUES (?, ?, ?, ?)')
+        ->execute([$userId, $content, $page, (int) hbHubFeedbackIsDev()]);
 }
 
 /**
