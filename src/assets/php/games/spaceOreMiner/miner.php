@@ -152,7 +152,7 @@ const HBHUB_MINER_BUILDINGS = [
         'text' => 'Mines yesterday\'s ore before anyone else gets to it. Tomorrow\'s too, when nobody\'s looking.',
         'upgrades' => ['Sturdier Hourglasses', 'Leap Seconds', 'Paradox Insurance', 'Grandfather Clauses', 'Deja Vu Shifts', 'End of Time Shaft']],
     'stringLoom' => ['name' => 'Loom of Time', 'plural' => 'Looms of Time', 'icon' => 'stringLoom', 'cost' => 4.2e18, 'rate' => 2.9e11,
-        'text' => 'Unpicks cosmic strings and knits them back up as ore. It\'s a very long scarf.',
+        'text' => 'Weaves the threads of time into ore. Last Tuesday came out a bit thin.',
         'upgrades' => ['Finer Needles', 'Superstring Yarn', 'Eleven-Dimensional Patterns', 'Knitting Circles', 'Tangle-Free Spools', 'The Cosmic Jumper']],
     'bigBangReactor' => ['name' => 'Big Bang Reactor', 'plural' => 'Big Bang Reactors', 'icon' => 'bigBangReactor', 'cost' => 5.4e19, 'rate' => 1.1e12,
         'text' => 'Sets off a tiny Big Bang in a box and keeps all the ore that comes out. Mind your eyebrows.',
