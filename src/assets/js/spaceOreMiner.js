@@ -4486,8 +4486,10 @@
                     element('span', 'miner-anomaly-best', record ? 'Badge earned. Best time ' + formatClock(record.best) + ', finished '
                         + (record.done === 1 ? 'once' : record.done + ' times') + '.' + (newForEngine(record) ? ' Not finished for this build yet: full parts.' : '')
                         : 'Not finished yet.'));
-                const button = element('button', 'casino-btn' + (isIn ? '' : ' casino-btn-primary'),
-                    isIn ? 'You\'re in it' : saveState.saved?.[id] ? 'Carry on' : record ? 'Go again' : 'Go in');
+                // "Go again" (finished, not saved) is dimmed and only lights up on hover, see .is-again in the CSS
+                const isAgain = !isIn && !saveState.saved?.[id] && record !== null;
+                const button = element('button', 'casino-btn' + (isIn ? '' : ' casino-btn-primary') + (isAgain ? ' is-again' : ''),
+                    isIn ? 'You\'re in it' : saveState.saved?.[id] ? 'Carry on' : isAgain ? 'Go again' : 'Go in');
                 button.type = 'button';
                 button.dataset.anomalyStart = id;
                 button.disabled = !isOpen || saveState.anomaly !== null;
