@@ -412,7 +412,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
              drawn as a rocket being built, the stage being built, its parts and its lock; under it what you can give, today's Starbound Shifts, every stage with
              its perk, and who gave the most and last. All filled in by spaceOreMiner.js (renderEngine()) from every
              save's answer. -->
-        <section class="miner-view casino-card miner-prestige is-engine" aria-labelledby="miner-engine-title" data-miner-view="engine" data-miner-engine-view<?= $minerView !== 'engine' ? ' hidden' : '' ?>>
+        <section class="miner-view casino-card miner-prestige is-engine" aria-labelledby="miner-engine-title" data-miner-view="starbound" data-miner-engine-view<?= $minerView !== 'starbound' ? ' hidden' : '' ?>>
             <div class="miner-prestige-hero">
                 <!-- The Engine as a rocket on its launch pad, one part for each stage (renderRocket() in spaceOreMiner.js).
                      Parts of stages done are in Project Starbound's paint (data-engine), the stage being built fills up from the
@@ -636,7 +636,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <h3 class="miner-store-title" id="miner-engine-top-title">Top contributors</h3>
                     <ol class="miner-engine-list" data-miner-engine-top></ol>
                     <?php if ($guestGame === null): ?>
-                        <p class="miner-engine-small"><a href="/games/ore-mining-inc/leaderboard?board=engine">Everyone who has given parts</a></p>
+                        <p class="miner-engine-small"><a href="/games/ore-mining-inc/leaderboard?board=starbound">Everyone who has given parts</a></p>
                     <?php endif; ?>
                 </section>
 

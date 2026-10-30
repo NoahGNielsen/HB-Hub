@@ -226,7 +226,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             however many parts they have: until then the parts wait there (or, for a lock that needs Anomalies, the
                             build only takes parts from Anomalies). Finishing <a href="#anomalies">Anomalies</a> gives parts
                             too, and they're the biggest source of them. The daily limits and Shifts start over at midnight UTC. The
-                            <a href="/games/ore-mining-inc/leaderboard?board=engine">leaderboard</a> shows who has given the most.
+                            <a href="/games/ore-mining-inc/leaderboard?board=starbound">leaderboard</a> shows who has given the most.
                         </p>
                         <p>
                             The last stage, Ignition, has a countdown: it has to be full within
