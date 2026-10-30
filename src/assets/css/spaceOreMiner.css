@@ -1662,7 +1662,7 @@
 .miner-sprite.is-timeQuarry {
   left: 40%;
   top: 8%;
-  --cycle: calc(7.5s / var(--work));
+  --cycle: calc(5s / var(--work));
 }
 
 .miner-sprite.is-timeQuarry .miner-sprite-dial {
@@ -1670,11 +1670,11 @@
 }
 
 .miner-sprite.is-timeQuarry .miner-sprite-hour {
-  animation: miner-spin calc(45s / var(--work)) linear infinite reverse;
+  animation: miner-spin calc(30s / var(--work)) linear infinite reverse;
 }
 
 .miner-sprite.is-timeQuarry .miner-sprite-minute {
-  animation: miner-spin calc(3.75s / var(--work)) linear infinite reverse;
+  animation: miner-spin calc(2.5s / var(--work)) linear infinite reverse;
 }
 
 .miner-sprite.is-timeQuarry :is(.miner-sprite-top, .miner-sprite-bottom, .miner-sprite-stream, .miner-sprite-body) {
@@ -1701,7 +1701,7 @@
   height: 33%;
   margin-left: -0.015em;
   background: repeating-linear-gradient(#ffd95e 0 0.03em, transparent 0.03em 0.06em) 0 0 / 100% 0.06em;
-  animation: miner-quarry-stream var(--cycle) linear infinite, miner-quarry-fall calc(0.45s / var(--work)) linear infinite;
+  animation: miner-quarry-stream var(--cycle) linear infinite, miner-quarry-fall calc(0.3s / var(--work)) linear infinite;
 }
 
 @keyframes miner-quarry-glow {
@@ -1739,16 +1739,16 @@
 .miner-sprite.is-stringLoom {
   left: 76%;
   top: 8%;
-  --cycle: calc(3s / var(--work));
+  --cycle: calc(2s / var(--work));
   filter: drop-shadow(0 0 0.1em rgba(255, 107, 181, 0.5));
 }
 
 .miner-sprite.is-stringLoom .miner-sprite-strings {
-  animation: miner-loom-twang calc(0.21s / var(--work)) linear infinite alternate;
+  animation: miner-loom-twang calc(0.14s / var(--work)) linear infinite alternate;
 }
 
 .miner-sprite.is-stringLoom .miner-sprite-bent {
-  animation: miner-loom-twang calc(0.21s / var(--work)) linear infinite alternate-reverse;
+  animation: miner-loom-twang calc(0.14s / var(--work)) linear infinite alternate-reverse;
 }
 
 .miner-sprite.is-stringLoom .miner-sprite-shuttle {
@@ -1802,7 +1802,7 @@
 .miner-sprite.is-bigBangReactor {
   left: 5%;
   top: 94%;
-  --cycle: calc(6s / var(--work));
+  --cycle: calc(4s / var(--work));
 }
 
 .miner-sprite.is-bigBangReactor .miner-sprite-body {
@@ -1818,11 +1818,11 @@
 }
 
 .miner-sprite.is-bigBangReactor .miner-sprite-ring {
-  animation: miner-spin calc(3.6s / var(--work)) linear infinite;
+  animation: miner-spin calc(2.4s / var(--work)) linear infinite;
 }
 
 .miner-sprite.is-bigBangReactor .miner-sprite-ring2 {
-  animation: miner-spin calc(5.1s / var(--work)) linear infinite reverse;
+  animation: miner-spin calc(3.4s / var(--work)) linear infinite reverse;
 }
 
 .miner-sprite.is-bigBangReactor .miner-sprite-blast {
@@ -1892,15 +1892,15 @@
 .miner-sprite.is-realityPrinter {
   left: 94%;
   top: 30%;
-  --cycle: calc(5.4s / var(--work));
+  --cycle: calc(3.6s / var(--work));
 }
 
 .miner-sprite.is-realityPrinter .miner-sprite-body {
-  animation: miner-print calc(1.35s / var(--work)) steps(2) infinite;
+  animation: miner-print calc(0.9s / var(--work)) steps(2) infinite;
 }
 
 .miner-sprite.is-realityPrinter .miner-sprite-head {
-  animation: miner-print-head calc(0.675s / var(--work)) ease-in-out infinite alternate;
+  animation: miner-print-head calc(0.45s / var(--work)) ease-in-out infinite alternate;
 }
 
 .miner-sprite.is-realityPrinter .miner-sprite-sheet {
@@ -1946,11 +1946,11 @@
 .miner-sprite.is-infinityMine {
   left: 60%;
   top: 93%;
-  --cycle: calc(4.5s / var(--work));
+  --cycle: calc(3s / var(--work));
 }
 
 .miner-sprite.is-infinityMine .miner-sprite-body {
-  animation: miner-infinity calc(7.5s / var(--work)) ease-in-out infinite alternate;
+  animation: miner-infinity calc(5s / var(--work)) ease-in-out infinite alternate;
 }
 
 .miner-sprite.is-infinityMine .miner-sprite-tunnel {
@@ -1971,17 +1971,17 @@
   box-sizing: border-box;
   border: 0.035em solid #8be9ff;
   border-radius: 50%;
-  animation: miner-infinity-ring calc(2.4s / var(--work)) ease-in infinite;
+  animation: miner-infinity-ring calc(1.6s / var(--work)) ease-in infinite;
 }
 
 .miner-sprite.is-infinityMine .miner-sprite-tunnel::after {
   border-color: var(--miner-dark);
-  animation-delay: calc(-1.2s / var(--work));
+  animation-delay: calc(-0.8s / var(--work));
 }
 
 .miner-sprite.is-infinityMine .miner-sprite-sign {
   transform-origin: 50% 16.25%; /* the middle of the sign, (16, 5.2) */
-  animation: miner-infinity-sign calc(4.5s / var(--work)) ease-in-out infinite;
+  animation: miner-infinity-sign calc(3s / var(--work)) ease-in-out infinite;
 }
 
 .miner-sprite.is-infinityMine .miner-sprite-cart {
