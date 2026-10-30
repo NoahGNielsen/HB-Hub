@@ -1176,7 +1176,7 @@
     // the drawn icons (see iconBox(); the same as in the store, or a scene* piece of one) or nothing (drawn in CSS: the
     // laser beam, the rocks the Moon Excavator dumps, the Black Hole Siphon's pull and the ore going up it, the embers
     // out of the Star Forge's chimney, the nebula, the Dyson Swarm, the multiverse rift with its flash and the ore
-    // that falls out of it, which fill the space around the asteroid, the Time Quarry's falling sand, the String Loom's
+    // that falls out of it, which fill the space around the asteroid, the Time Quarry's falling sand, the Reality Weaver's
     // thread, the Big Bang Reactor's bang and the Infinity Mine's tunnel). Where the nth
     // one goes and how it moves is in spaceOreMiner.css (.miner-sprite.is-<building>.is-<n>; the Ore Freighters' ways are
     // picked by flyFreighter()). The Dyson Swarm's ring is
@@ -2578,9 +2578,9 @@
         ['Time Quarry digs up next week\'s ore. Next week files a complaint.', (s) => s.buildings.timeQuarry > 0],
         ['Time Quarry workers clock out before they clock in. Payroll gives up.', (s) => s.buildings.timeQuarry > 0],
         ['Dinosaurs puzzled by tiny hole in the ground. Ore Mining Inc. says sorry, 66 million years late.', (s) => s.buildings.timeQuarry > 0],
-        ['String Loom drops a stitch. A small galaxy unravels.', (s) => s.buildings.stringLoom > 0],
+        ['Reality Weaver drops a stitch. A small galaxy unravels.', (s) => s.buildings.stringLoom > 0],
         ['Physicists finally prove string theory, then find out it was knitting all along.', (s) => s.buildings.stringLoom > 0],
-        ['Cosmic cat finds a String Loom. Ore production down 40% for the day.', (s) => s.buildings.stringLoom > 0],
+        ['Cosmic cat finds a Reality Weaver. Ore production down 40% for the day.', (s) => s.buildings.stringLoom > 0],
         ['Big Bang Reactor goes off. Lab coat now has a universe stuck to it.', (s) => s.buildings.bigBangReactor > 0],
         ['Health and safety asks Big Bang Reactor staff to stop saying "hold my coffee" first.', (s) => s.buildings.bigBangReactor > 0],
         ['Tiny universe inside a Big Bang Reactor starts its own ore company. Lawyers called.', (s) => s.buildings.bigBangReactor > 0],
