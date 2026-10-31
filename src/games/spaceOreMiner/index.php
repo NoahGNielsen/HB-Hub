@@ -602,7 +602,14 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                             </g>
                             <g class="miner-rocket-part" data-miner-rocket-part="15" data-box="95 106 145 142">
                                 <rect class="is-hull" x="95" y="106" width="50" height="36"></rect>
-                                <path class="is-trim" d="M127 115 L129.5 121.5 L136 122 L131 126 L132.5 132.5 L127 129 L121.5 132.5 L123 126 L118 122 L124.5 121.5 Z"></path>
+                                <!-- The Star Charts: a round chart window across from the Navigation Computer, a constellation on it -->
+                                <circle class="is-screen is-chart" cx="132.5" cy="117.5" r="7.5"></circle>
+                                <path class="is-stars" d="M128.5 120 L130.5 115.5 L134 117.5 L136.5 113.5 M134 117.5 L135.5 121"></path>
+                                <path class="is-glow" d="M130.5 113.3 L131.1 114.9 L132.7 115.5 L131.1 116.1 L130.5 117.7 L129.9 116.1 L128.3 115.5 L129.9 114.9 Z"></path>
+                                <circle class="is-glow" cx="128.5" cy="120" r="0.8"></circle>
+                                <circle class="is-glow" cx="134" cy="117.5" r="0.8"></circle>
+                                <circle class="is-glow" cx="136.5" cy="113.5" r="0.8"></circle>
+                                <circle class="is-glow" cx="135.5" cy="121" r="0.8"></circle>
                             </g>
                             <g class="miner-rocket-part" data-miner-rocket-part="18" data-box="95 30 145 106">
                                 <path class="is-line" d="M120 42 V30"></path>

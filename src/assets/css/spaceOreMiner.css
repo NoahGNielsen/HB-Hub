@@ -2817,6 +2817,18 @@
   stroke: var(--rk-metal);
 }
 
+/* The Star Charts' window has a gold rim, and its constellation is drawn in faint lines between the stars */
+.miner-rocket .is-chart {
+  stroke: var(--rk-trim);
+  stroke-width: 1.2;
+}
+
+.miner-rocket .is-stars {
+  stroke: var(--rk-glow);
+  stroke-width: 0.6;
+  opacity: 0.7;
+}
+
 .miner-rocket .is-glow {
   fill: var(--rk-glow);
   stroke: none;
@@ -2831,7 +2843,7 @@
 .miner-rocket .is-lamp.is-2 { animation-delay: -0.5s; }
 .miner-rocket .is-lamp.is-3 { animation-delay: -0.9s; }
 
-.miner-rocket :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-ring) {
+.miner-rocket :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-ring, .is-stars) {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2908,7 +2920,7 @@
   animation: none;
 }
 
-.miner-rocket .miner-rocket-part:not(.is-done) > :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-ring) {
+.miner-rocket .miner-rocket-part:not(.is-done) > :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-ring, .is-stars) {
   fill: none;
 }
 
