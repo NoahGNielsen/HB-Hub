@@ -2076,6 +2076,12 @@
                 element('span', 'miner-buff-time', formatClock(state.afterglow - state.tick)));
             rows.push(row);
         }
+        if (ignition(state) > 1) { // Project Starbound's launch, 72 hours of it, so a clock too
+            const row = element('li', 'miner-buff is-ignition');
+            row.append(element('span', 'miner-buff-name', 'Project Starbound: production ×' + format(CONFIG.ignitionTimes)),
+                element('span', 'miner-buff-time', formatClock(state.engineIgnited + CONFIG.ignitionMs - state.tick)));
+            rows.push(row);
+        }
         buffList.replaceChildren(...rows);
     }
 

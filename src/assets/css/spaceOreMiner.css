@@ -487,6 +487,12 @@
   animation: none;
 }
 
+/* Project Starbound's launch (Ignition, First Light): three days long, so it doesn't pulse either */
+.miner-buff.is-ignition {
+  background: color-mix(in srgb, var(--miner-engine) 25%, var(--background));
+  animation: none;
+}
+
 .miner-buff-time {
   font-variant-numeric: tabular-nums;
   opacity: 0.8;
