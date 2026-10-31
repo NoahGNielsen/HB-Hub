@@ -138,7 +138,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             its time on, up to <?= HBHUB_MINER_SHOP_BOOST_MAX_MS / 3600000 ?> hours ahead. Ore is that many hours of
                             what you mine a second right now. Boosts, ore and the Comet Beacon are for your own game, so they
                             can't be bought in an Anomaly. Skins and click effects are kept for good, and you can switch them
-                            on and off in the shop (skins in your stats too).
+                            on and off in the shop, or in the Skins view, which has every skin and how to get the ones you don't have yet.
                         </p>
                     </section>
 
@@ -179,7 +179,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             A Warp Jump and a Big Rip only give what's more than you've had from them before, so each one has to beat
                             your best. The Antimatter view opens after your first Warp Jump, the Strange Matter view after your first
-                            Big Crunch. Project Starbound and Anomalies have their own bar under the menu, and the Shard Shop another under that: the Project Starbound view opens
+                            Big Crunch. Project Starbound and Anomalies have their own bar under the menu, and the Shard Shop and Skins another under that: the Project Starbound view opens
                             once you've earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter (before that it only shows the rocket and how far it is), and you can start Anomalies once you've earned <?= number_format(HBHUB_MINER_ANOMALY_STRANGE) ?> Strange Matter too. A dot in the menu
                             shows when there's something to do in a view.
                         </p>
@@ -303,7 +303,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             <strong>Rewards for you:</strong> a badge and best time for each Anomaly, achievements, asteroid skins
                             (a colour for each Tier II Anomaly, an animated one for each Tier III, and more from the Cosmic
-                            Engine), picked in your stats, and the leaderboard titles "Singularity" (Naked Singularity) and
+                            Engine), picked in the Skins view, and the leaderboard titles "Singularity" (Naked Singularity) and
                             "Gauntlet Runner" (The Gauntlet). Those come before the builds' titles, "Forgemaster" and
                             "Engineer".
                         </p>

@@ -780,9 +780,9 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'perk' => ['type' => 'hall', 'text' => 'The Starbound Hall: every finished build, when it was done and who built it, in the Project Starbound view.']],
     ['name' => 'Crucible Seal', 'section' => 'C', 'cost' => 37500,
         'lock' => ['type' => 'players', 'anomalies' => ['nakedSingularity', 'ironUniverse'], 'count' => 3, 'text' => '3 different players have finished both Naked Singularity and Iron Universe'],
-        'perk' => ['type' => 'sparks', 'text' => 'Clicking the asteroid throws sparks (they can be turned off in the stats).']],
+        'perk' => ['type' => 'sparks', 'text' => 'Clicking the asteroid throws sparks (they can be turned off in the Skins view).']],
     ['name' => 'Hammer Head', 'section' => 'D', 'cost' => 43750, 'lock' => null,
-        'perk' => ['type' => 'backdrops', 'text' => 'Backgrounds for the game to pick from in the stats.']],
+        'perk' => ['type' => 'backdrops', 'text' => 'Backgrounds for the game to pick from in the Skins view.']],
     ['name' => 'Piston Arms', 'section' => 'D', 'cost' => 51250,
         'lock' => ['type' => 'section', 'count' => 10, 'rising' => true, 'text' => '10 different players who haven\'t learned every skill yet have given parts to the Hammer section'],
         'perk' => ['type' => 'oreFloor', 'value' => 2, 'text' => 'A part given from ore is always worth at least half a part.']],
@@ -931,7 +931,7 @@ const HBHUB_MINER_GAUNTLET_ENTROPY_STEPS = 2;
 const HBHUB_MINER_LIGHT_HOUR_MS = 3600000; // the Faster Than Light achievement
 
 // Asteroid skins: how the asteroid looks instead of its usual colours (spaceOreMiner.css, data-skin), picked in the
-// game's stats. 'unlock' is how it's earned: anomaly (that Anomaly finished, alone or in a stack), stage (that many of
+// game's Skins view. 'unlock' is how it's earned: anomaly (that Anomaly finished, alone or in a stack), stage (that many of
 // the Engines' stages done, counted over all of them like engineStage, for everyone), crew (gave parts to that
 // Engine's last stage before it was done, crews in the save) or shop (bought for Star Shards in the Shard Shop, the
 // item of the same id in HBHUB_MINER_SHOP). 'moving' ones are animated.
@@ -1040,7 +1040,7 @@ const HBHUB_MINER_SHOP = [
     'supernova' => ['name' => 'Supernova', 'icon' => 'fxSupernova', 'kind' => 'effect', 'cost' => 25, 'text' => 'A golden ring and a shower of stars on every click.'],
 ];
 
-// Backgrounds for the game (spaceOreMiner.css, data-backdrop on the page), picked in the stats once the Starforge's
+// Backgrounds for the game (spaceOreMiner.css, data-backdrop on the page), picked in the Skins view once the Starforge's
 // backdrops perk is done (hbHubMinerEnginePerk())
 const HBHUB_MINER_BACKDROPS = [
     'nebula' => ['name' => 'Nebula'],

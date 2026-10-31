@@ -77,7 +77,7 @@
         times <?= HBHUB_MINER_ANOMALY_STACK ?> for each one after the first (apart from Unstable Vacuum, which only goes on its
         own, and a few pairs that can't be done together). Every week there's a weekly Anomaly, a stack
         that's the same for everyone and worth <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts that week. Finishing
-        Anomalies also earns asteroid skins, which you pick in your stats.
+        Anomalies also earns asteroid skins, which you pick in the Skins view.
     </li>
     <li>
         The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,

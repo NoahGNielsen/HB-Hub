@@ -7,13 +7,14 @@
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
-// It has seven views, picked in the menu down the right side (over the views on small screens; Project Starbound and
-// Anomalies in a second group, the Shard Shop and a Skins button that doesn't work yet in a third): Ore (the asteroid and the store, the default), Dark Matter
+// It has eight views, picked in the menu down the right side (over the views on small screens; Project Starbound and
+// Anomalies in a second group, the Shard Shop and Skins in a third): Ore (the asteroid and the store, the default), Dark Matter
 // (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch), Strange Matter
 // (?view=strangeMatter, the Big Rip and the skill tree), Project Starbound (?view=starbound, the Engine the whole site
 // builds together, see assets/php/games/spaceOreMiner/engine.php), Anomalies (?view=anomalies, the challenge runs,
-// HBHUB_MINER_ANOMALIES; while the player is in one, a banner over every view says so) and the Shard Shop (?view=shop,
-// spending Star Shards, HBHUB_MINER_SHOP). They're all on the page, and the script switches between them without
+// HBHUB_MINER_ANOMALIES; while the player is in one, a banner over every view says so), the Shard Shop (?view=shop,
+// spending Star Shards, HBHUB_MINER_SHOP) and Skins (?view=skins, picking the asteroid skin, click effect, background
+// and sparks). They're all on the page, and the script switches between them without
 // loading it again (changing the address, so Back works), so the game keeps running; ?view= only picks the one shown
 // first. Stats, achievements and how to play are popups.
 // data-watchdog is the worker that notices when the page freezes (spaceOreMinerWatchdog.js). After a crash, the next
@@ -40,9 +41,10 @@ const MINER_VIEWS = [ // ?view= => [the menu's text (HTML), its address after th
     'starbound' => ['<span class="miner-menu-long">Project </span>Starbound', '?view=starbound'], // just "Starbound" in the bar on small screens
     'anomalies' => ['Anomalies', '?view=anomalies'],
     'shop' => ['Shard Shop', '?view=shop'],
+    'skins' => ['Skins', '?view=skins'],
 ];
 // The groups of the menu after the first: view => its group (1 the second, 2 the third)
-const MINER_LATER_VIEWS = ['starbound' => 1, 'anomalies' => 1, 'shop' => 2];
+const MINER_LATER_VIEWS = ['starbound' => 1, 'anomalies' => 1, 'shop' => 2, 'skins' => 2];
 $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-inc/';
 // Project Starbound's view was ?view=engine before it was renamed: old links and bookmarks go to the new one
 if (($_GET['view'] ?? null) === 'engine') {
@@ -112,8 +114,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
              the views, on small ones a bar over them -->
         <div class="miner-body">
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
-        <!-- Three groups: the matters first, Project Starbound and Anomalies next, and the Shard Shop (with Skins, a
-             button that doesn't go anywhere yet) last. They're always there, and their views say what's still locked
+        <!-- Three groups: the matters first, Project Starbound and Anomalies next, and the Shard Shop and Skins last.
+             They're always there, and their views say what's still locked
              (Project Starbound and the Anomalies need 250 Strange Matter earned, and shopping a Star Shard). -->
         <nav class="miner-menus" aria-label="Views" data-miner-menu>
             <?php foreach ([0, 1, 2] as $row): ?>
@@ -128,13 +130,6 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                             <?php endif; ?>
                         </a>
                     <?php endforeach; ?>
-                    <?php if ($row === 2): ?>
-                        <!-- Skins: only the button so far, the view comes later -->
-                        <button type="button" class="miner-menu-link is-skins" disabled title="Coming soon">
-                            <span class="miner-menu-text">Skins</span>
-                            <span class="miner-menu-count">Soon</span>
-                        </button>
-                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         </nav>
@@ -800,11 +795,15 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
              and badge, and a button to go in. Filled in by spaceOreMiner.js (renderAnomalies()). -->
         <section class="miner-view casino-card miner-prestige is-anomaly" aria-labelledby="miner-anomalies-title" data-miner-view="anomalies"<?= $minerView !== 'anomalies' ? ' hidden' : '' ?>>
             <div class="miner-prestige-hero">
-                <!-- A rip in space: two rings pulling the wrong way round a dark core -->
+                <!-- A tear in space with another universe swirling on the other side, the light bending round it and
+                     bits of ours being pulled in -->
                 <div class="miner-prestige-art" aria-hidden="true">
                     <span class="miner-art-ring is-1"></span>
-                    <span class="miner-art-ring is-2"></span>
-                    <span class="miner-art-core"></span>
+                    <span class="miner-art-bit is-1"></span>
+                    <span class="miner-art-bit is-2"></span>
+                    <span class="miner-art-bit is-3"></span>
+                    <span class="miner-art-bit is-4"></span>
+                    <span class="miner-art-tear"><span class="miner-art-tear-inside"></span></span>
                 </div>
                 <div class="miner-prestige-main">
                     <h2 id="miner-anomalies-title" class="miner-prestige-title">Anomalies</h2>
@@ -942,6 +941,42 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
             <h3 class="miner-store-title">Click effects</h3>
             <ul class="miner-shop-list" data-miner-shop-list="effect"></ul>
         </section>
+
+        <!-- Skins: how the game looks, all in one place, filled in by spaceOreMiner.js (renderSkins()). On top the
+             asteroid wearing the skin picked, then the asteroid skins (HBHUB_MINER_SKINS, the ones not earned yet saying
+             how to get them), the click effects (bought in the Shard Shop) with the sparks switch, and the backgrounds
+             (HBHUB_MINER_BACKDROPS). The sparks and backgrounds only show once the Starforge's perks are done. -->
+        <section class="miner-view casino-card miner-prestige is-skins" aria-labelledby="miner-skins-title" data-miner-view="skins"<?= $minerView !== 'skins' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- The asteroid in the skin it's wearing, in a ring of its glow -->
+                <div class="miner-prestige-art" aria-hidden="true">
+                    <span class="miner-art-ring is-1"></span>
+                    <span class="miner-shop-swatch miner-skins-preview" data-miner-skins-preview></span>
+                </div>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-skins-title" class="miner-prestige-title">Skins</h2>
+                    <p class="miner-prestige-balance">
+                        <span class="miner-prestige-amount" data-miner-skins-count>0</span> of <?= count(HBHUB_MINER_SKINS) ?> asteroid skins
+                    </p>
+                    <p class="miner-prestige-hint" data-miner-skins-wearing></p>
+                    <p class="miner-prestige-hint">
+                        Skins come from finishing Anomalies, from Project Starbound and from the Shard Shop. They're yours for
+                        good, in Anomalies too, and changing them is free.
+                    </p>
+                </div>
+            </div>
+            <h3 class="miner-store-title miner-shop-first-title">Asteroid skins</h3>
+            <ul class="miner-shop-list" data-miner-skins-list="skin"></ul>
+            <h3 class="miner-store-title">Click effects</h3>
+            <ul class="miner-shop-list" data-miner-skins-list="effect"></ul>
+            <label class="miner-sparks-switch" data-miner-sparks-box hidden>
+                <input type="checkbox" data-miner-sparks> Sparks when clicking the asteroid
+            </label>
+            <div data-miner-backdrops-box hidden>
+                <h3 class="miner-store-title">Background</h3>
+                <ul class="miner-shop-list" data-miner-skins-list="backdrop"></ul>
+            </div>
+        </section>
         </div><!-- .miner-stage -->
         </div><!-- .miner-body -->
 
@@ -958,17 +993,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <button type="button" class="miner-popup-close" data-miner-close aria-label="Close">&times;</button>
                 </div>
                 <dl class="miner-numbers" data-miner-stats></dl>
-                <!-- Asteroid skins (HBHUB_MINER_SKINS), filled in by spaceOreMiner.js (renderSkins()) -->
-                <h3 class="miner-store-title">Asteroid skin</h3>
-                <div class="miner-skins" data-miner-skins></div>
-                <!-- With the Starforge's perks (renderLooks()): backgrounds (HBHUB_MINER_BACKDROPS) and the sparks switch -->
-                <div data-miner-looks hidden>
-                    <h3 class="miner-store-title">Background</h3>
-                    <div class="miner-skins" data-miner-backdrops></div>
-                    <label class="miner-sparks-switch" data-miner-sparks-box hidden>
-                        <input type="checkbox" data-miner-sparks> Sparks when clicking the asteroid
-                    </label>
-                </div>
+                <p class="miner-engine-small">Your asteroid skin, click effect and background are in the Skins view.</p>
             </div>
         </dialog>
 

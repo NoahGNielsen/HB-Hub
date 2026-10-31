@@ -10,12 +10,13 @@
 // when it's closed. The server answers with the save as it worked it out, and the game carries on from that, with
 // whatever was done while the save was on its way done again on top.
 // Times are the server's Unix ms (the difference to this computer's clock is measured on every save).
-// The page has seven views (Ore, Dark Matter, Antimatter, Strange Matter, Engine, Anomalies, Shard Shop, in data-miner-view): the menu's links switch
+// The page has eight views (Ore, Dark Matter, Antimatter, Strange Matter, Engine, Anomalies, Shard Shop, Skins, in data-miner-view): the menu's links switch
 // between them here, with history.pushState, so the game keeps running instead of the page loading again. The Strange
 // Matter view has the skill tree, drawn here from the skills (see renderTree()). The Engine view is the Engine
 // the whole site is building together (see "The Cosmic Engine"): every save's answer says how far it is. The Anomalies view has
 // the challenge runs (see "Anomalies"): while the player is in one, its game is the one played (state), inside the
-// save (saveState), and a banner over every view says so. The Shard Shop view spends Star Shards (see "Star Shards").
+// save (saveState), and a banner over every view says so. The Shard Shop view spends Star Shards (see "Star Shards"),
+// and the Skins view picks how the game looks (see "The Skins view").
 // Stats, achievements and how to play are popups (data-miner-popup), opened by the buttons by the title (data-miner-open).
 // What hasn't been saved yet is also kept in the browser, so a page that crashes or freezes doesn't lose it: the next
 // one sends it with its first save. A watchdog worker (data-watchdog, spaceOreMinerWatchdog.js) notices when the page
@@ -1722,6 +1723,10 @@
         step('tick: Anomalies');
         renderAnomalyBanner();
         if (root.dataset.view === 'anomalies') renderAnomalies();
+        if (root.dataset.view === 'skins') {
+            step('tick: Skins');
+            renderSkins(); // a skin can come from an Anomaly finished or a stage done
+        }
         step('tick: menu');
         renderMenu();
         step(null);
@@ -1755,6 +1760,7 @@
         renderShard();
         renderShardCount();
         if (!shopView.hidden) renderShop();
+        if (!skinsView.hidden) renderSkins();
         renderWarp();
         renderCrunch();
         renderRip();
@@ -1786,6 +1792,8 @@
         const finished = Object.keys(saveState.anomalies).length;
         menuCounts.anomalies.textContent = finished > 0 ? String(finished) : '';
         menuNews.anomalies.hidden = saveState.anomaly !== null || finished > 0 || !anomalyTierOpen(saveState, 1); // the first one to try
+        const skins = skinsOwned();
+        menuCounts.skins.textContent = skins > 0 ? String(skins) : '';
     }
 
     // The buildings shown: every one owned or nearly affordable, and the next one as a mystery
@@ -2439,79 +2447,136 @@
             row.append(element('dt', '', name), element('dd', '', value));
             return row;
         }));
-        renderSkins();
     }
 
-    // The asteroid skins (CONFIG.skins), in the stats popup: the usual look and each skin, the ones not earned yet
-    // saying how to get them. Picking one is an action like any other (apply()), so it's saved with the game.
-    const skinList = root.querySelector('[data-miner-skins]');
-    const SKIN_UNLOCK_TEXT = (unlock) => (unlock.anomaly ? 'Finish ' + ANOMALIES[unlock.anomaly].name + '.'
-        : unlock.shop ? 'Buy it in the Shard Shop.'
-        : unlock.stage ? 'Comes with the ' + engineNameOf(Math.ceil(unlock.stage / CONFIG.engineStageTotal)) + '\'s ' + ENGINE_STAGES[unlock.stage - 1].name + '.'
-            : 'For everyone who gives parts to the ' + engineNameOf(unlock.crew) + '\'s last stage, ' + ENGINE_STAGES[unlock.crew * CONFIG.engineStageTotal - 1].name + '.');
-
-    function renderSkins() {
-        const buttons = [[null, { name: 'Usual', unlock: null }], ...Object.entries(SKINS)].map(([id, skin]) => {
-            const isOpen = id === null || skinOpen(saveState, id);
-            const button = element('button', 'miner-skin', skin.name);
-            button.type = 'button';
-            button.dataset.skin = id ?? '';
-            button.setAttribute('aria-pressed', String((saveState.skin ?? null) === id));
-            button.disabled = !isOpen;
-            button.title = isOpen ? (skin.moving ? 'Animated' : '') : SKIN_UNLOCK_TEXT(skin.unlock);
-            return button;
-        });
-        skinList.replaceChildren(...buttons);
-        renderLooks();
-    }
-
-    // The backgrounds (CONFIG.backdrops, with the Hammer Head's perk) and the sparks switch (with the Crucible Seal's),
-    // in the stats popup under the skins. Both are actions, saved with the game like the skin.
-    const looksBox = root.querySelector('[data-miner-looks]');
-    const backdropList = root.querySelector('[data-miner-backdrops]');
+    // ----- The Skins view: how the game looks, all in one place. The asteroid skin (CONFIG.skins), the click effect
+    // (the Shard Shop's effects) and, with the Starforge's perks, the sparks switch (the Crucible Seal's) and the
+    // background (CONFIG.backdrops, the Hammer Head's). Each list starts with the usual look, and its cards are built like
+    // the Shard Shop's; the ones not had yet say how to get them (the Shard Shop's with a button that goes there).
+    // Picking one is an action like any other (apply()), so it's saved with the game.
+    const skinsView = views.skins;
+    const skinsPreview = root.querySelector('[data-miner-skins-preview]');
+    const skinsCount = root.querySelector('[data-miner-skins-count]');
+    const skinsWearing = root.querySelector('[data-miner-skins-wearing]');
+    const skinsLists = Object.fromEntries([...root.querySelectorAll('[data-miner-skins-list]')].map((node) => [node.dataset.minerSkinsList, node]));
+    const backdropsBox = root.querySelector('[data-miner-backdrops-box]');
     const sparksBox = root.querySelector('[data-miner-sparks-box]');
     const sparksSwitch = root.querySelector('[data-miner-sparks]');
+    const EFFECT_IDS = Object.keys(SHOP).filter((id) => SHOP[id].kind === 'effect');
+    // Where a skin comes from: how to get it (not had yet), or where it came from (had). The Shard Shop's say what they
+    // look like instead, with their price while they're still in the shop.
+    const SKIN_UNLOCK_TEXT = (unlock) => (unlock.anomaly ? 'Finish ' + ANOMALIES[unlock.anomaly].name + '.'
+        : unlock.stage ? 'Comes with the ' + engineNameOf(Math.ceil(unlock.stage / CONFIG.engineStageTotal)) + '\'s ' + ENGINE_STAGES[unlock.stage - 1].name + '.'
+            : 'For everyone who gives parts to the ' + engineNameOf(unlock.crew) + '\'s last stage, ' + ENGINE_STAGES[unlock.crew * CONFIG.engineStageTotal - 1].name + '.');
+    const SKIN_FROM_TEXT = (unlock) => (unlock.anomaly ? 'For finishing ' + ANOMALIES[unlock.anomaly].name + '.'
+        : unlock.stage ? 'From the ' + engineNameOf(Math.ceil(unlock.stage / CONFIG.engineStageTotal)) + '\'s ' + ENGINE_STAGES[unlock.stage - 1].name + '.'
+            : 'For giving parts to the ' + engineNameOf(unlock.crew) + '\'s last stage.');
+    const shopPriceText = (id) => SHOP[id].text + ' ' + SHOP[id].cost + ' Star Shards in the Shard Shop.';
+    const skinsOwned = () => Object.keys(SKINS).filter((id) => skinOpen(saveState, id)).length;
+    let skinsKey = '';
 
-    function renderLooks() {
-        const hasBackdrops = engineEffectsOn('backdrops');
-        const hasSparks = engineEffectsOn('sparks');
-        looksBox.hidden = !hasBackdrops && !hasSparks;
-        backdropList.hidden = !hasBackdrops;
-        looksBox.querySelector('h3').hidden = !hasBackdrops;
-        if (hasBackdrops) {
-            backdropList.replaceChildren(...[[null, { name: 'Usual' }], ...Object.entries(BACKDROPS)].map(([id, backdrop]) => {
-                const button = element('button', 'miner-skin', backdrop.name);
-                button.type = 'button';
-                button.dataset.backdrop = id ?? '';
-                button.setAttribute('aria-pressed', String((saveState.backdrop ?? null) === id));
-                return button;
-            }));
-        }
-        sparksBox.hidden = !hasSparks;
-        sparksSwitch.checked = saveState.sparks !== false;
+    // A little rock in a skin's colours (none for the usual grey), on the same tile as the icons
+    function skinTile(id) {
+        const tile = element('span', 'miner-shop-icon');
+        const swatch = element('span', 'miner-shop-swatch');
+        if (id !== null) swatch.dataset.skin = id;
+        tile.append(swatch);
+        return tile;
     }
 
-    backdropList.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-backdrop]');
-        if (!button || !act({ type: 'backdrop', id: button.dataset.backdrop || null })) return;
+    // A card: the tile, the name and text, and a button to pick it (kind is the action: skin, effect or backdrop). One
+    // not had yet gets a button to the Shard Shop if it's sold there, or a greyed-out one if not.
+    function skinsCard(kind, id, name, text, tile, isOpen, isOn) {
+        const row = element('li', 'miner-shop-item is-' + kind + (isOpen ? '' : ' is-locked'));
+        const info = element('div', 'miner-shop-info');
+        info.append(element('span', 'miner-shop-name', name), element('span', 'miner-shop-text', text));
+        const button = element('button', 'casino-btn miner-shop-btn');
+        button.type = 'button';
+        if (isOpen) {
+            button.dataset.skinsPick = kind;
+            button.dataset.skinsId = id ?? '';
+            button.textContent = kind === 'skin' ? (isOn ? 'Wearing' : 'Wear') : (isOn ? 'In use' : 'Use');
+            button.setAttribute('aria-label', button.textContent + ': ' + name);
+            button.setAttribute('aria-pressed', String(isOn));
+        } else if (id !== null && SHOP[id]) {
+            button.dataset.skinsShop = '';
+            button.append(iconBox('miner-shop-cost-icon', 'shard'), document.createTextNode('Shop'));
+            button.setAttribute('aria-label', 'Get ' + name + ' in the Shard Shop');
+        } else {
+            button.textContent = 'Locked';
+            button.disabled = true;
+        }
+        row.append(tile, info, button);
+        return row;
+    }
+
+    // Built again only when something on it changes (so a button doesn't lose its focus every second)
+    function renderSkins() {
+        const hasBackdrops = engineEffectsOn('backdrops');
+        const hasSparks = engineEffectsOn('sparks');
+        const bought = saveState.bought ?? [];
+        const skin = saveState.skin ?? null;
+        const effect = saveState.effect ?? null;
+        const backdrop = saveState.backdrop ?? null;
+        sparksBox.hidden = !hasSparks;
+        sparksSwitch.checked = saveState.sparks !== false;
+        const open = Object.keys(SKINS).filter((id) => skinOpen(saveState, id));
+        const key = [open.join(), bought.join(), skin, effect, backdrop, hasBackdrops].join('|');
+        if (key === skinsKey) return;
+        skinsKey = key;
+
+        if (skin === null) delete skinsPreview.dataset.skin;
+        else skinsPreview.dataset.skin = skin;
+        skinsCount.textContent = String(open.length);
+        skinsWearing.textContent = skin === null ? 'Your asteroid has its usual colours, which change as you mine more.'
+            : 'Your asteroid is wearing ' + SKINS[skin].name + '.';
+
+        skinsLists.skin.replaceChildren(
+            skinsCard('skin', null, 'Usual', 'The asteroid\'s own colours, changing as you mine more.', skinTile(null), true, skin === null),
+            ...Object.entries(SKINS).map(([id, item]) => {
+                const isOpen = open.includes(id);
+                const text = item.unlock.shop ? (isOpen ? SHOP[id].text : shopPriceText(id))
+                    : (isOpen ? SKIN_FROM_TEXT(item.unlock) : SKIN_UNLOCK_TEXT(item.unlock)) + (item.moving ? ' Animated.' : '');
+                return skinsCard('skin', id, item.name, text, skinTile(id), isOpen, skin === id);
+            }));
+        skinsLists.effect.replaceChildren(
+            skinsCard('effect', null, 'Rock', 'Bits of rock fly off where you click.', skinTile(null), true, effect === null),
+            ...EFFECT_IDS.map((id) => {
+                const isOpen = bought.includes(id);
+                return skinsCard('effect', id, SHOP[id].name, isOpen ? SHOP[id].text : shopPriceText(id), iconBox('miner-shop-icon', SHOP[id].icon), isOpen, effect === id);
+            }));
+        backdropsBox.hidden = !hasBackdrops;
+        if (hasBackdrops) {
+            skinsLists.backdrop.replaceChildren(...[[null, { name: 'Usual' }], ...Object.entries(BACKDROPS)].map(([id, item]) => {
+                const tile = element('span', 'miner-shop-icon miner-skins-backdrop');
+                if (id !== null) tile.dataset.backdrop = id;
+                return skinsCard('backdrop', id, item.name, id === null ? 'The site\'s own dark background.' : 'Soft light behind the whole game.', tile, true, backdrop === id);
+            }));
+        }
+    }
+
+    skinsView.addEventListener('click', (event) => {
+        if (event.target.closest('[data-skins-shop]')) {
+            history.pushState(null, '', menu.querySelector('[data-miner-view-link="shop"]').href);
+            showView('shop');
+            return;
+        }
+        const button = event.target.closest('[data-skins-pick]');
+        if (!button || button.getAttribute('aria-pressed') === 'true') return;
+        const kind = button.dataset.skinsPick;
+        const id = button.dataset.skinsId;
+        if (!act({ type: kind, id: id || null })) return;
         sound('buy');
-        renderLooks();
+        renderSkins();
         renderStage();
+        renderComet(); // a comet in the skin's colours, with the Slag Channels' perk
         saveSoon();
+        // The cards were built again, so the focus goes back to the one picked
+        skinsView.querySelector('[data-skins-pick="' + kind + '"][data-skins-id="' + id + '"]')?.focus();
     });
     sparksSwitch.addEventListener('change', () => {
         if (act({ type: 'sparks', on: sparksSwitch.checked })) saveSoon();
-        renderLooks();
-    });
-
-    skinList.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-skin]');
-        if (!button || button.disabled) return;
-        if (!act({ type: 'skin', id: button.dataset.skin || null })) return;
-        sound('buy');
         renderSkins();
-        renderStage();
-        saveSoon();
     });
 
     // ----- Messages in the corner
@@ -4753,6 +4818,7 @@
             saveSoon(); // for the top contributors and the latest parts given, which only come while it's open
         }
         if (view === 'shop' && isPlaying) renderShop();
+        if (view === 'skins' && isPlaying) renderSkins();
     }
 
     menu.addEventListener('click', (event) => {
