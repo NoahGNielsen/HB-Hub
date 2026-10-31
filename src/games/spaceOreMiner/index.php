@@ -730,63 +730,135 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 </li>
             </ul>
 
+            <!-- Under the facts: the Supply Bay across the top (giving parts from ore or Strange Matter, side by side),
+                 then today's Shifts, the top contributors and the latest parts next to each other, the Hall, and the
+                 stages last, a folding block per section. Each box has its icon on a tile in its head, like the Shard
+                 Shop's items. -->
             <div class="miner-engine-grid" data-miner-engine-section hidden>
-                <section class="miner-engine-card" aria-labelledby="miner-engine-give-title">
-                    <h3 class="miner-store-title" id="miner-engine-give-title">Give parts</h3>
+                <section class="miner-engine-card is-wide is-give" aria-labelledby="miner-engine-give-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('crates', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-engine-give-title">Supply Bay</h3>
+                            <p class="miner-engine-sub">Send parts to the launch pad. They go on the stage being built straight away.</p>
+                        </div>
+                        <p class="miner-engine-chip" data-miner-engine="mine" hidden></p>
+                    </div>
                     <p class="miner-engine-note" data-miner-engine-give-note hidden></p>
-                    <div class="miner-engine-give">
-                        <button type="button" class="miner-prestige-btn" data-miner-donate="ore" disabled>
-                            <span class="miner-prestige-btn-text">Give 1 part</span>
-                            <span class="miner-prestige-btn-gain">for <span data-miner-engine="oreCost"></span> ore</span>
-                        </button>
-                        <p class="miner-engine-small" data-miner-engine="oreLeft"></p>
+                    <div class="miner-engine-gives">
+                        <!-- From ore: one at a time, each dearer than the one before, with a dot for each of today's parts
+                             (data-miner-engine-slots, filled in for the ones given) -->
+                        <div class="miner-engine-give is-ore">
+                            <div class="miner-engine-give-head">
+                                <?= hbHubMinerIcon('orePile', 'miner-engine-give-icon') ?>
+                                <div>
+                                    <p class="miner-engine-give-name">From ore</p>
+                                    <p class="miner-engine-give-price"><span data-miner-engine="oreCost">0</span> ore for the next part</p>
+                                </div>
+                            </div>
+                            <div class="miner-engine-slots">
+                                <ol class="miner-engine-slot-list" aria-hidden="true" data-miner-engine-slots></ol>
+                                <span class="miner-engine-slot-text" data-miner-engine="oreLeft"></span>
+                            </div>
+                            <button type="button" class="miner-prestige-btn miner-engine-give-btn" data-miner-donate="ore" disabled>
+                                <span class="miner-prestige-btn-text">Give 1 part</span>
+                                <span class="miner-prestige-btn-gain">for <span data-miner-engine="oreCostButton"></span> ore</span>
+                            </button>
+                            <p class="miner-engine-small" data-miner-engine="oreShare" hidden></p>
+                            <p class="miner-engine-small">
+                                The first of the day costs <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore and each next one ten
+                                times as much, <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day at most (more with some perks).
+                            </p>
+                        </div>
+                        <!-- From Strange Matter: as many as you like, picked with the - and + buttons, the box or Max -->
+                        <div class="miner-engine-give is-strange">
+                            <div class="miner-engine-give-head">
+                                <?= hbHubMinerIcon('strangelet', 'miner-engine-give-icon') ?>
+                                <div>
+                                    <p class="miner-engine-give-name">From Strange Matter</p>
+                                    <p class="miner-engine-give-price"><?= HBHUB_MINER_ENGINE_STRANGE_PART ?> Strange Matter a part, <span data-miner-engine="strangeHave">0</span> to spend</p>
+                                </div>
+                            </div>
+                            <div class="miner-engine-stepper">
+                                <button type="button" class="miner-engine-step" aria-label="One part fewer" data-miner-donate-step="-1">&minus;</button>
+                                <label class="miner-engine-count">
+                                    <span class="games-visually-hidden">Parts from Strange Matter</span>
+                                    <input type="number" min="1" step="1" value="1" inputmode="numeric" data-miner-donate-count>
+                                </label>
+                                <button type="button" class="miner-engine-step" aria-label="One part more" data-miner-donate-step="1">+</button>
+                                <button type="button" class="miner-engine-step is-max" data-miner-donate-max>Max</button>
+                            </div>
+                            <button type="button" class="miner-prestige-btn miner-engine-give-btn" data-miner-donate="strange" disabled>
+                                <span class="miner-prestige-btn-text" data-miner-engine="strangeParts">Give 1 part</span>
+                                <span class="miner-prestige-btn-gain">for <span data-miner-engine="strangeCost"></span> Strange Matter</span>
+                            </button>
+                            <p class="miner-engine-small">Giving it doesn't make you mine slower: the bonus counts all you've earned.</p>
+                        </div>
                     </div>
-                    <div class="miner-engine-give">
-                        <label class="miner-engine-count">
-                            <span>Parts from Strange Matter</span>
-                            <input type="number" min="1" step="1" value="1" inputmode="numeric" data-miner-donate-count>
-                        </label>
-                        <button type="button" class="miner-prestige-btn" data-miner-donate="strange" disabled>
-                            <span class="miner-prestige-btn-text">Give</span>
-                            <span class="miner-prestige-btn-gain">for <span data-miner-engine="strangeCost"></span> Strange Matter</span>
-                        </button>
-                        <p class="miner-engine-small">You have <span data-miner-engine="strangeHave">0</span> Strange Matter to spend. Giving it doesn't make you mine slower: the bonus counts all you've earned.</p>
-                    </div>
-                    <p class="miner-engine-small">
-                        Parts from ore: the first of the day costs <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore and each next one ten times
-                        as much, <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day at most (more with some perks). Parts from Strange Matter: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> each, as many as you like.
-                    </p>
-                    <p class="miner-engine-small" data-miner-engine="mine" hidden></p>
                 </section>
 
-                <section class="miner-engine-card" aria-labelledby="miner-shifts-title">
-                    <h3 class="miner-store-title" id="miner-shifts-title">Today's Starbound Shifts</h3>
+                <section class="miner-engine-card is-shifts" aria-labelledby="miner-shifts-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('clipboard', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-shifts-title">Today's Shifts</h3>
+                            <p class="miner-engine-sub" data-miner-shifts-reset></p>
+                        </div>
+                        <p class="miner-engine-chip" data-miner-shifts-done></p>
+                    </div>
                     <ul class="miner-shifts" data-miner-shifts></ul>
                     <p class="miner-engine-small" data-miner-shifts-note></p>
                 </section>
 
-                <section class="miner-engine-card" aria-labelledby="miner-engine-top-title">
-                    <h3 class="miner-store-title" id="miner-engine-top-title">Top contributors</h3>
+                <section class="miner-engine-card is-top" aria-labelledby="miner-engine-top-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('podium', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-engine-top-title">Top contributors</h3>
+                            <p class="miner-engine-sub">To this build</p>
+                        </div>
+                    </div>
                     <ol class="miner-engine-list" data-miner-engine-top></ol>
                     <?php if ($guestGame === null): ?>
-                        <p class="miner-engine-small"><a href="/games/ore-mining-inc/leaderboard?board=starbound">Everyone who has given parts</a></p>
+                        <a class="miner-engine-more" href="/games/ore-mining-inc/leaderboard?board=starbound">Everyone who has given parts &rarr;</a>
                     <?php endif; ?>
                 </section>
 
-                <section class="miner-engine-card" aria-labelledby="miner-engine-feed-title">
-                    <h3 class="miner-store-title" id="miner-engine-feed-title">Latest parts</h3>
-                    <ul class="miner-engine-list" data-miner-engine-feed></ul>
+                <section class="miner-engine-card is-feed" aria-labelledby="miner-engine-feed-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('radar', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-engine-feed-title">Latest parts</h3>
+                            <p class="miner-engine-sub">Coming in to the launch pad</p>
+                        </div>
+                    </div>
+                    <ul class="miner-engine-list miner-engine-feed" data-miner-engine-feed></ul>
                 </section>
 
                 <!-- Every Engine done so far, once the Starforge's Alloy Bins are (the hall perk, renderEngineHall()) -->
                 <section class="miner-engine-card is-wide" aria-labelledby="miner-engine-hall-title" data-miner-engine-hall hidden>
-                    <h3 class="miner-store-title" id="miner-engine-hall-title">Starbound Hall</h3>
-                    <ul class="miner-engine-list" data-miner-engine-hall-list></ul>
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('trophy', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-engine-hall-title">Starbound Hall</h3>
+                            <p class="miner-engine-sub">Every build finished so far</p>
+                        </div>
+                    </div>
+                    <ul class="miner-engine-hall" data-miner-engine-hall-list></ul>
                 </section>
 
-                <section class="miner-engine-card is-wide" aria-labelledby="miner-engine-stages-title">
-                    <h3 class="miner-store-title" id="miner-engine-stages-title">Stages</h3>
-                    <ol class="miner-engine-stages" data-miner-engine-stages></ol>
+                <!-- A folding block per section (renderEngineStages()): the one being built open, the rest folded with how
+                     far along they are on the outside -->
+                <section class="miner-engine-card is-wide is-stages" aria-labelledby="miner-engine-stages-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('blueprint', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-engine-stages-title">Stages</h3>
+                            <p class="miner-engine-sub">Every stage of this build and the perk it gives everyone</p>
+                        </div>
+                        <p class="miner-engine-chip" data-miner-engine-stages-done></p>
+                    </div>
+                    <div class="miner-engine-stages" data-miner-engine-stages></div>
                 </section>
             </div>
         </section>

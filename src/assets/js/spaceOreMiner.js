@@ -3856,14 +3856,23 @@
     const oreDonateButton = root.querySelector('[data-miner-donate="ore"]');
     const strangeDonateButton = root.querySelector('[data-miner-donate="strange"]');
     const strangeDonateCount = root.querySelector('[data-miner-donate-count]');
+    const strangeSteps = root.querySelectorAll('[data-miner-donate-step]'); // - and + next to the box
+    const strangeMaxButton = root.querySelector('[data-miner-donate-max]');
+    const engineSlots = root.querySelector('[data-miner-engine-slots]'); // a dot for each of today's parts from ore
     const shiftList = root.querySelector('[data-miner-shifts]');
     const shiftNote = root.querySelector('[data-miner-shifts-note]');
+    const shiftReset = root.querySelector('[data-miner-shifts-reset]');
+    const shiftDone = root.querySelector('[data-miner-shifts-done]');
     const engineStageList = root.querySelector('[data-miner-engine-stages]');
+    const engineStagesDone = root.querySelector('[data-miner-engine-stages-done]');
     const engineTop = root.querySelector('[data-miner-engine-top]');
     const engineFeed = root.querySelector('[data-miner-engine-feed]');
     const engineHall = root.querySelector('[data-miner-engine-hall]');
     const engineHallList = root.querySelector('[data-miner-engine-hall-list]');
     const SOURCE_TEXT = { [CONFIG.sourceOre]: 'ore', [CONFIG.sourceStrange]: 'Strange Matter', [CONFIG.sourceShift]: 'a Starbound Shift' };
+    // The icons next to the parts in Latest parts (an Anomaly's is its own), and next to each Shift
+    const SOURCE_ICONS = { [CONFIG.sourceOre]: 'orePile', [CONFIG.sourceStrange]: 'strangelet', [CONFIG.sourceShift]: 'clipboard' };
+    const SHIFT_ICONS = { comets: 'comet', warps: 'warp', buildings: 'crates', upgrades: 'chip', clicks: 'glove', playing: 'hourglass' };
 
     let engine = null;
     let engineListsKey = '';
@@ -4014,17 +4023,30 @@
         const most = orePartsMax(saveState);
         const left = most - donated;
         const oreCost = oreDonationCost({ donatedToday: donated }, 1);
-        engineNumbers.oreCost.textContent = format(oreCost);
+        engineNumbers.oreCost.textContent = left > 0 ? format(oreCost) : '-';
+        engineNumbers.oreCostButton.textContent = format(oreCost);
+        engineNumbers.oreLeft.textContent = left > 0 ? left + ' of ' + most + ' left today' : 'All ' + most + ' given today';
+        // A dot for each of today's parts from ore, lit for the ones given
+        if (engineSlots.childElementCount !== most || engineSlots.dataset.given !== String(donated)) {
+            engineSlots.dataset.given = String(donated);
+            engineSlots.replaceChildren(...Array.from({ length: most }, (_, i) => element('li', 'miner-engine-slot' + (i < donated ? ' is-given' : ''))));
+        }
         const share = oreQuarters(saveState) / CONFIG.engineOreQuarters; // less in the later sections
-        engineNumbers.oreLeft.textContent = (left > 0 ? left + ' of ' + most + ' left today' : 'No more today')
-            + (share < 1 ? '. In this section a part from ore counts as ' + (share === 0.5 ? 'half' : 'a quarter') + ' a part.' : '');
+        engineNumbers.oreShare.textContent = 'In this section a part from ore counts as ' + (share === 0.5 ? 'half' : 'a quarter') + ' a part.';
+        engineNumbers.oreShare.hidden = share >= 1;
         oreDonateButton.disabled = !isOpen || left < 1 || !canAfford(saveState, oreCost);
 
         const strangeMost = Math.floor(saveState.strange / CONFIG.engineStrangePart);
+        const count = strangeCount();
         strangeDonateCount.max = String(Math.max(1, strangeMost));
-        engineNumbers.strangeCost.textContent = format(strangeCount() * CONFIG.engineStrangePart);
+        engineNumbers.strangeParts.textContent = 'Give ' + partsText(count);
+        engineNumbers.strangeCost.textContent = format(count * CONFIG.engineStrangePart);
         engineNumbers.strangeHave.textContent = format(saveState.strange);
         strangeDonateButton.disabled = !isOpen || strangeMost < 1;
+        strangeSteps.forEach((button) => {
+            button.disabled = !isOpen || strangeMost < 1 || (Number(button.dataset.minerDonateStep) < 0 ? count <= 1 : count >= strangeMost);
+        });
+        strangeMaxButton.disabled = !isOpen || strangeMost < 1 || count >= strangeMost;
     }
 
     // How many parts of Strange Matter the box asks for: at least 1, at most what there is
@@ -4041,9 +4063,12 @@
         const key = tasks.join() + '|' + progress.join() + '|' + canGiveNow() + '|' + canSwap;
         if (key === shiftsKey) return;
         shiftsKey = key;
+        let done = 0;
         shiftList.replaceChildren(...tasks.map((id, i) => {
             const goal = SHIFTS[id].goal;
-            const item = element('li', 'miner-shift' + (progress[i] >= goal ? ' is-done' : ''));
+            const isDone = progress[i] >= goal;
+            if (isDone) done++;
+            const item = element('li', 'miner-shift' + (isDone ? ' is-done' : ''));
             const bar = element('div', 'miner-progress-bar');
             bar.setAttribute('role', 'progressbar');
             bar.setAttribute('aria-label', SHIFTS[id].text);
@@ -4051,12 +4076,12 @@
             bar.setAttribute('aria-valuemax', '100');
             bar.append(element('span', 'miner-progress-fill'));
             setProgress(bar, progress[i] / goal);
-            const count = id === 'playing' ? Math.floor(progress[i] / 60000) + ' / ' + Math.floor(goal / 60000) + ' minutes'
+            const count = id === 'playing' ? Math.floor(progress[i] / 60000) + ' / ' + Math.floor(goal / 60000) + ' min'
                 : format(progress[i]) + ' / ' + format(goal);
-            item.append(element('span', 'miner-shift-name', SHIFTS[id].text), bar,
-                element('span', 'miner-shift-count', progress[i] >= goal ? 'Done' : count));
-            if (canSwap && progress[i] < goal) {
-                const swap = element('button', 'casino-btn miner-shift-swap', 'Swap');
+            item.append(iconBox('miner-shift-icon', SHIFT_ICONS[id] ?? 'clipboard'), element('span', 'miner-shift-name', SHIFTS[id].text),
+                element('span', 'miner-shift-count', isDone ? 'Done' : count), bar);
+            if (canSwap && !isDone) {
+                const swap = element('button', 'miner-shift-swap', 'Swap');
                 swap.type = 'button';
                 swap.title = 'Swap this Shift for another one (once a day). It starts from nothing.';
                 swap.dataset.minerShiftSwap = String(i);
@@ -4064,46 +4089,24 @@
             }
             return item;
         }));
+        shiftDone.textContent = done + ' / ' + tasks.length + ' done';
+        shiftDone.classList.toggle('is-lit', done === tasks.length);
         const midnight = new Date((today() + 1) * CONFIG.dayMs).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        shiftReset.textContent = 'New Shifts at ' + midnight;
         shiftNote.textContent = (canGiveNow() ? '' : IS_GUEST || saveState.warps < 1 ? 'Shifts start after your first Warp Jump. '
             : saveState.anomaly ? 'Shifts only count in your own game, not in an Anomaly. ' : 'Shifts are paused while Project Starbound waits for its lock. ')
-            + 'Each Shift gives ' + CONFIG.shiftParts + ' parts, or ' + CONFIG.shiftPartsAll + ' each once all ' + CONFIG.shiftCount
-            + ' are done. New Shifts at ' + midnight + '.';
+            + 'Each Shift gives ' + CONFIG.shiftParts + ' parts, or ' + CONFIG.shiftPartsAll + ' each once all ' + CONFIG.shiftCount + ' are done.';
     }
 
-    // Every stage there is so far, the top contributors and the latest parts given, built again only when they change
+    // The stages, the top contributors and the latest parts given, built again only when they change
     function renderEngineLists() {
-        const key = engine.number + '|' + engine.done + '|' + engine.costs.join() + '|'
-            + (engine.top ? engine.feed.length + ':' + (engine.feed[0]?.at ?? 0) + ':' + engine.mine + ':' + (engine.hall?.length ?? 0) : '');
+        renderEngineStages();
+        const key = engine.number + '|' + (engine.top ? engine.feed.length + ':' + (engine.feed[0]?.at ?? 0) + ':' + engine.mine + ':' + (engine.hall?.length ?? 0) : '');
         if (key === engineListsKey) return;
         engineListsKey = key;
 
-        let section = null;
-        const stages = [];
-        engineStagesOf(engine.number).forEach((stage, index) => {
-            if (stage.section !== section) {
-                section = stage.section;
-                stages.push(element('li', 'miner-engine-section', section + '. ' + ENGINES[engine.number].sections[section]));
-            }
-            const isDone = index < engine.done;
-            const item = element('li', 'miner-engine-stage' + (isDone ? ' is-done' : index === engine.done ? ' is-now' : ''));
-            item.dataset.minerEngineStageIndex = String(index); // for the rocket's parts (pickRocket())
-            const head = element('div', 'miner-engine-stage-head');
-            const finishedAt = engine.finished[index + 1];
-            head.append(
-                element('span', 'miner-engine-stage-number', String(index + 1)),
-                element('span', 'miner-engine-stage-name', stage.name),
-                element('span', 'miner-engine-stage-cost', isDone ? 'Done' + (finishedAt ? ' ' + formatDate(finishedAt) : '') : partsText(engine.costs[index])),
-            );
-            item.append(head, element('p', 'miner-engine-stage-perk', stage.perk.text));
-            if (stage.lock) item.append(element('p', 'miner-engine-stage-lock', 'Lock: ' + stage.lock.text + '.'));
-            stages.push(item);
-        });
-        engineStageList.replaceChildren(...stages);
-        pickRocket(rocketPicked);
-
         engineNumbers.mine.hidden = IS_GUEST || engine.mine === undefined;
-        engineNumbers.mine.textContent = 'You\'ve given ' + partsText(engine.mine ?? 0) + ' to this build.';
+        engineNumbers.mine.textContent = 'You\'ve given ' + partsText(engine.mine ?? 0);
         renderEngineHall();
         if (!engine.top) { // guests never get them: players' names are only for members
             const text = IS_GUEST ? 'Sign up or log in to see who\'s building Project Starbound.' : 'Loading…';
@@ -4111,21 +4114,88 @@
             engineFeed.replaceChildren(element('li', 'miner-engine-empty', text));
             return;
         }
+        // Medals for the first three, and a bar under each for how much that is next to the one who gave the most
+        const most = Math.max(1, engine.top[0]?.parts ?? 1);
         engineTop.replaceChildren(...(engine.top.length === 0 ? [element('li', 'miner-engine-empty', 'Nobody has given parts yet. Be the first!')]
             : engine.top.map((row, index) => {
-                const item = element('li', 'miner-engine-row' + (row.you ? ' is-you' : ''));
-                item.append(element('span', 'miner-engine-rank', String(index + 1)), element('span', 'miner-engine-who', row.name),
-                    element('span', 'miner-engine-parts', partsText(row.parts)));
+                const item = element('li', 'miner-engine-row' + (index < 3 ? ' is-medal is-' + (index + 1) : '') + (row.you ? ' is-you' : ''));
+                const who = element('span', 'miner-engine-who', row.name);
+                if (row.you) who.append(element('span', 'miner-engine-you', 'You'));
+                const share = element('span', 'miner-engine-share');
+                share.style.setProperty('--share', Math.max(2, Math.round(row.parts / most * 100)) + '%');
+                item.append(element('span', 'miner-engine-rank', String(index + 1)), who, element('span', 'miner-engine-parts', format(row.parts)), share);
                 return item;
             })));
         engineFeed.replaceChildren(...(engine.feed.length === 0 ? [element('li', 'miner-engine-empty', 'Nothing yet.')]
             : engine.feed.map((row) => {
-                const item = element('li', 'miner-engine-row');
-                item.append(element('span', 'miner-engine-who', row.name),
-                    element('span', 'miner-engine-what', 'gave ' + partsText(row.parts) + ' from ' + (row.source === CONFIG.sourceAnomaly ? anomalyName(row.anomaly) : SOURCE_TEXT[row.source] ?? 'somewhere')),
-                    element('span', 'miner-engine-when', formatDuration(Math.max(0, serverNow() - row.at)) + ' ago'));
+                const isAnomaly = row.source === CONFIG.sourceAnomaly;
+                const iconName = isAnomaly ? ANOMALIES[anomalyMods(row.anomaly ?? '')?.[0]]?.icon ?? 'question' : SOURCE_ICONS[row.source] ?? 'blueprint';
+                const item = element('li', 'miner-engine-feed-row' + (isAnomaly ? ' is-anomaly' : ''));
+                const text = element('div', 'miner-engine-feed-text');
+                const top = element('p', 'miner-engine-feed-top');
+                top.append(element('span', 'miner-engine-who', row.name), element('span', 'miner-engine-gain', '+' + partsText(row.parts)));
+                text.append(top, element('p', 'miner-engine-what', 'from ' + (isAnomaly ? anomalyName(row.anomaly) : SOURCE_TEXT[row.source] ?? 'somewhere')
+                    + ' · ' + formatDuration(Math.max(0, serverNow() - row.at)) + ' ago'));
+                item.append(iconBox('miner-engine-feed-icon', iconName), text);
                 return item;
             })));
+    }
+
+    // Every stage of the Engine being built, a folding block per section: the one being built open, done and later ones
+    // folded (with how many of their stages are done on the outside), unless the player opened or folded it themself
+    // (stagesFolded, kept until the next build). Built again only when a stage is done.
+    let stagesKey = '';
+    const stagesFolded = {}; // section => true (folded) or false (open), from the player's own clicks
+    function renderEngineStages() {
+        const key = engine.number + '|' + engine.done + '|' + engine.costs.join();
+        if (key === stagesKey) return;
+        if (stagesKey.split('|')[0] !== String(engine.number)) Object.keys(stagesFolded).forEach((section) => delete stagesFolded[section]);
+        stagesKey = key;
+
+        const stages = engineStagesOf(engine.number);
+        const sections = [];
+        stages.forEach((stage, index) => {
+            if (sections.at(-1)?.section !== stage.section) sections.push({ section: stage.section, from: index, stages: [] });
+            sections.at(-1).stages.push(stage);
+        });
+        engineStagesDone.textContent = Math.min(engine.done, stages.length) + ' / ' + stages.length + ' built';
+        engineStageList.replaceChildren(...sections.map(({ section, from, stages: own }) => {
+            const doneHere = Math.max(0, Math.min(own.length, engine.done - from));
+            const isNow = engine.done >= from && engine.done < from + own.length;
+            const part = element('details', 'miner-engine-part' + (doneHere === own.length ? ' is-done' : isNow ? ' is-now' : ''));
+            part.dataset.minerEngineSection = section;
+            part.open = stagesFolded[section] !== undefined ? !stagesFolded[section] : isNow;
+            const head = element('summary', 'miner-engine-part-head');
+            const bar = element('span', 'miner-engine-part-bar');
+            bar.style.setProperty('--progress', Math.round(doneHere / own.length * 100) + '%');
+            head.append(element('span', 'miner-engine-part-letter', section), element('span', 'miner-engine-part-name', ENGINES[engine.number].sections[section]),
+                bar, element('span', 'miner-engine-part-count', doneHere === own.length ? 'Done' : doneHere + ' / ' + own.length));
+            const list = element('ol', 'miner-engine-stage-list');
+            list.start = from + 1;
+            list.append(...own.map((stage, i) => {
+                const index = from + i;
+                const isDone = index < engine.done;
+                const item = element('li', 'miner-engine-stage' + (isDone ? ' is-done' : index === engine.done ? ' is-now' : ''));
+                item.dataset.minerEngineStageIndex = String(index); // for the rocket's parts (pickRocket())
+                const finishedAt = engine.finished[index + 1];
+                const body = element('div', 'miner-engine-stage-body');
+                const title = element('p', 'miner-engine-stage-head');
+                title.append(element('span', 'miner-engine-stage-name', stage.name),
+                    element('span', 'miner-engine-stage-cost', isDone ? (finishedAt ? 'Done ' + formatDate(finishedAt) : 'Done')
+                        : index === engine.done ? 'Being built · ' + partsText(engine.costs[index]) : partsText(engine.costs[index])));
+                body.append(title, element('p', 'miner-engine-stage-perk', stage.perk.text));
+                if (stage.lock) {
+                    const lock = element('p', 'miner-engine-stage-lock');
+                    lock.append(iconBox('miner-engine-stage-lock-icon', 'lock'), document.createTextNode('Lock: ' + stage.lock.text + '.'));
+                    body.append(lock);
+                }
+                item.append(element('span', 'miner-engine-stage-number', String(index + 1)), body);
+                return item;
+            }));
+            part.append(head, list);
+            return part;
+        }));
+        pickRocket(rocketPicked);
     }
 
     // The Hall of Engines (the hall perk): every Engine done so far, with when, how many parts from how many players, and
@@ -4135,10 +4205,15 @@
         if (engineHall.hidden) return;
         engineHallList.replaceChildren(...engine.hall.map((row) => {
             const item = element('li', 'miner-engine-hall-row');
-            item.append(element('strong', 'miner-engine-who', 'Build #' + row.number + ', the ' + engineNameOf(row.number)),
-                element('span', 'miner-engine-what', 'Done ' + formatDate(row.ignited) + ' with ' + partsText(row.parts) + ' from '
-                    + format(row.players) + (row.players === 1 ? ' player' : ' players') + '.'
-                    + (row.top.length > 0 ? ' Built most by ' + row.top.join(', ') + '.' : '')));
+            const text = element('div', 'miner-engine-hall-text');
+            text.append(element('p', 'miner-engine-hall-name', 'The ' + engineNameOf(row.number)),
+                element('p', 'miner-engine-what', 'Build #' + row.number + ' · done ' + formatDate(row.ignited)));
+            const stats = element('p', 'miner-engine-hall-stats');
+            stats.append(element('span', 'miner-engine-chip', partsText(row.parts)),
+                element('span', 'miner-engine-chip', format(row.players) + (row.players === 1 ? ' player' : ' players')));
+            text.append(stats);
+            if (row.top.length > 0) text.append(element('p', 'miner-engine-what', 'Built most by ' + row.top.join(', ')));
+            item.append(element('span', 'miner-engine-hall-number', '#' + row.number), text);
             return item;
         }));
     }
@@ -4258,6 +4333,10 @@
         engineStageList.querySelectorAll('[data-miner-engine-stage-index]').forEach((item) => {
             item.classList.toggle('is-picked', Number(item.dataset.minerEngineStageIndex) === index);
         });
+        // A folded section lights up too, so it's clear where the part is
+        engineStageList.querySelectorAll('[data-miner-engine-section]').forEach((part) => {
+            part.classList.toggle('is-picked', part.querySelector('.miner-engine-stage.is-picked') !== null);
+        });
     }
 
     // The stage of a part, pip or Stages list item (or -1)
@@ -4271,11 +4350,16 @@
         if (index !== rocketPicked) pickRocket(index);
     });
     engineView.addEventListener('pointerleave', () => pickRocket(-1));
-    // A part or pip clicked: its stage in the list, which flashes
+    // A part or pip clicked: its stage in the list (its section unfolded), which flashes
     engineView.addEventListener('click', (event) => {
         if (!event.target.closest('[data-miner-rocket-part], [data-miner-rocket-pip]')) return;
         const item = engineStageList.querySelector('[data-miner-engine-stage-index="' + rocketIndexOf(event.target) + '"]');
         if (!item) return;
+        const part = item.closest('details');
+        if (part && !part.open) {
+            part.open = true;
+            stagesFolded[part.dataset.minerEngineSection] = false;
+        }
         item.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'center' });
         item.classList.remove('is-flash');
         void item.offsetWidth; // so the animation starts over
@@ -4309,6 +4393,22 @@
     });
     strangeDonateCount.addEventListener('input', () => {
         if (saveState) renderEngineGive();
+    });
+    // - and + next to the box, and Max for all the Strange Matter there is
+    strangeSteps.forEach((button) => button.addEventListener('click', () => {
+        if (!saveState) return;
+        strangeDonateCount.value = String(Math.max(1, strangeCount() + Number(button.dataset.minerDonateStep)));
+        renderEngineGive();
+    }));
+    strangeMaxButton.addEventListener('click', () => {
+        if (!saveState) return;
+        strangeDonateCount.value = String(Math.max(1, Math.floor(saveState.strange / CONFIG.engineStrangePart)));
+        renderEngineGive();
+    });
+    // A section opened or folded by the player stays that way while the list is built again
+    engineStageList.addEventListener('click', (event) => {
+        const head = event.target.closest('.miner-engine-part-head');
+        if (head) stagesFolded[head.parentElement.dataset.minerEngineSection] = head.parentElement.open; // open now, so folded next
     });
 
     // ----- Anomalies (the Anomalies view, and the banner over every view while the player is in one). The rules are in
