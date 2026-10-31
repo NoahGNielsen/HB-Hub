@@ -2843,7 +2843,7 @@
 .miner-rocket .is-lamp.is-2 { animation-delay: -0.5s; }
 .miner-rocket .is-lamp.is-3 { animation-delay: -0.9s; }
 
-.miner-rocket :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-ring, .is-stars) {
+.miner-rocket :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-stars) {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2866,19 +2866,12 @@
   stroke-width: 3;
 }
 
-/* Power running down the Power Grid's wires, and the Gyroscopes' ring turning */
+/* Power running down the Power Grid's wires */
 .miner-rocket .is-wire {
   stroke: var(--rk-glow);
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
   animation: miner-rocket-march 0.8s linear infinite;
-}
-
-.miner-rocket .is-ring {
-  stroke: var(--rk-trim);
-  stroke-width: 1.5;
-  stroke-dasharray: 14 6;
-  animation: miner-rocket-march 1.2s linear infinite;
 }
 
 .miner-rocket .is-coil {
@@ -2920,7 +2913,7 @@
   animation: none;
 }
 
-.miner-rocket .miner-rocket-part:not(.is-done) > :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-ring, .is-stars) {
+.miner-rocket .miner-rocket-part:not(.is-done) > :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-stars) {
   fill: none;
 }
 

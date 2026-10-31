@@ -582,9 +582,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                                 <path class="is-metal" d="M109 264 H131 L140 284 H100 Z"></path>
                                 <path class="is-line" d="M105 274 H135"></path>
                             </g>
-                            <g class="miner-rocket-part" data-miner-rocket-part="20" data-box="84 264 156 277">
-                                <path class="is-spark" d="M98 265 L90 268 L95 271 L86 276 M142 265 L150 268 L145 271 L154 276"></path>
-                            </g>
+                            <!-- Stages 16 and 20 draw nothing on the rocket, their groups only give the welder a spot to work on -->
+                            <g class="miner-rocket-part" data-miner-rocket-part="20" data-box="84 264 156 277"></g>
                             <g class="miner-rocket-part" data-miner-rocket-part="1" data-box="95 214 145 250">
                                 <rect class="is-hull" x="95" y="214" width="50" height="36"></rect>
                                 <rect class="is-metal" x="110" y="220" width="20" height="18" rx="2"></rect>
@@ -628,9 +627,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                                 <circle class="is-lamp is-2" cx="107.5" cy="117.5" r="1.5"></circle>
                                 <circle class="is-lamp is-3" cx="111" cy="117.5" r="1.5"></circle>
                             </g>
-                            <g class="miner-rocket-part" data-miner-rocket-part="16" data-box="86 117 154 131">
-                                <ellipse class="is-ring" cx="120" cy="124" rx="34" ry="7"></ellipse>
-                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="16" data-box="86 117 154 131"></g>
                             <g class="miner-rocket-part" data-miner-rocket-part="14" data-box="93 246 147 254">
                                 <rect class="is-trim" x="93" y="246" width="54" height="8" rx="2"></rect>
                             </g>
