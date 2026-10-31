@@ -1670,82 +1670,64 @@
   position: relative;
 }
 
-/* Time Quarry: an hourglass in front of a clock running backwards. The sand runs out of the top into the bottom, and
-   when it's all through the hourglass turns over and it starts again (the full bottom, turned over, is exactly the
-   full top, so it can jump back to the start there). The pieces that turn over turn round the middle; the sand inside
-   them shrinks (or grows) on its own svg, so it can do that round the neck (or the bottom). */
+/* Time Quarry: a quarry dug down through the layers of time, with an ammonite in the oldest one that turns slowly
+   backwards. A pickaxe hits the bottom of the pit twice (with sparks), a crystal of next week's ore pops out of it and
+   floats up out of the top, and the sparkle over the pit flashes as it goes. Each pickaxe hit is at 10% and 30% of the
+   cycle, which is when the sparks show. */
 .miner-sprite.is-timeQuarry {
   left: 40%;
   top: 8%;
-  --cycle: calc(5s / var(--work));
+  --cycle: calc(4s / var(--work));
+  filter: drop-shadow(0 0 0.1em rgba(157, 123, 255, 0.5));
 }
 
-.miner-sprite.is-timeQuarry .miner-sprite-dial {
-  animation: miner-quarry-glow 3s ease-in-out infinite alternate;
+.miner-sprite.is-timeQuarry .miner-sprite-fossil .miner-icon {
+  transform-origin: 50% 80%; /* the middle of the spiral, (16, 25.6) */
+  animation: miner-spin calc(20s / var(--work)) linear infinite reverse;
 }
 
-.miner-sprite.is-timeQuarry .miner-sprite-hour {
-  animation: miner-spin calc(30s / var(--work)) linear infinite reverse;
+.miner-sprite.is-timeQuarry .miner-sprite-crystal .miner-icon {
+  transform-origin: 50% 62.5%; /* the bottom of the pit, (16, 20) */
+  animation: miner-quarry-crystal var(--cycle) ease-in-out infinite;
 }
 
-.miner-sprite.is-timeQuarry .miner-sprite-minute {
-  animation: miner-spin calc(2.5s / var(--work)) linear infinite reverse;
+.miner-sprite.is-timeQuarry .miner-sprite-pick .miner-icon {
+  transform-origin: 78.1% 40.6%; /* the end of the handle, (25, 13) */
+  animation: miner-quarry-pick var(--cycle) ease-in infinite;
 }
 
-.miner-sprite.is-timeQuarry :is(.miner-sprite-top, .miner-sprite-bottom, .miner-sprite-stream, .miner-sprite-body) {
-  animation: miner-quarry-turn var(--cycle) ease-in-out infinite;
+.miner-sprite.is-timeQuarry .miner-sprite-sparks {
+  animation: miner-quarry-sparks var(--cycle) linear infinite;
 }
 
-.miner-sprite.is-timeQuarry .miner-sprite-top .miner-icon {
-  transform-origin: 50% 46.25%; /* the neck, (16, 14.8) */
-  animation: miner-quarry-drain var(--cycle) linear infinite;
+.miner-sprite.is-timeQuarry .miner-sprite-shine .miner-icon {
+  transform-origin: 50% 25%; /* the big sparkle, (16, 8) */
+  animation: miner-quarry-shine var(--cycle) ease-in-out infinite;
 }
 
-.miner-sprite.is-timeQuarry .miner-sprite-bottom .miner-icon {
-  transform-origin: 50% 79.4%; /* the bottom, (16, 25.4) */
-  animation: miner-quarry-fill var(--cycle) linear infinite;
+/* Up, down onto the bottom of the pit, up, down again, and up out of the way while the crystal comes out */
+@keyframes miner-quarry-pick {
+  0%, 20%, 40%, 100% { rotate: 40deg; }
+  10%, 30% { rotate: 0deg; }
 }
 
-/* The sand falling through the neck, from (16, 15) down to the bottom */
-.miner-sprite.is-timeQuarry .miner-sprite-stream::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  width: 0.03em;
-  height: 33%;
-  margin-left: -0.015em;
-  background: repeating-linear-gradient(#ffd95e 0 0.03em, transparent 0.03em 0.06em) 0 0 / 100% 0.06em;
-  animation: miner-quarry-stream var(--cycle) linear infinite, miner-quarry-fall calc(0.3s / var(--work)) linear infinite;
+@keyframes miner-quarry-sparks {
+  0%, 9%, 16%, 29%, 36%, 100% { opacity: 0; }
+  10%, 30% { opacity: 1; }
 }
 
-@keyframes miner-quarry-glow {
-  from { filter: drop-shadow(0 0 0.04em rgba(157, 123, 255, 0.5)); }
-  to { filter: drop-shadow(0 0 0.22em rgba(157, 123, 255, 0.9)); }
+/* Out of the ground after the second hit, then up out of the pit and gone over the top */
+@keyframes miner-quarry-crystal {
+  0%, 32% { scale: 0; translate: 0 0; opacity: 1; }
+  42% { scale: 1.2; translate: 0 0; }
+  50% { scale: 1; translate: 0 0; }
+  86% { scale: 1; translate: 0 -0.4em; opacity: 1; }
+  96%, 100% { scale: 1.4; translate: 0 -0.5em; opacity: 0; }
 }
 
-@keyframes miner-quarry-turn {
-  0%, 82% { rotate: 0deg; }
-  100% { rotate: 180deg; }
-}
-
-@keyframes miner-quarry-drain {
-  0% { scale: 1; }
-  78%, 100% { scale: 0; }
-}
-
-@keyframes miner-quarry-fill {
-  0% { scale: 0.4 0; }
-  78%, 100% { scale: 1; }
-}
-
-@keyframes miner-quarry-stream {
-  0%, 76% { opacity: 1; }
-  80%, 100% { opacity: 0; }
-}
-
-@keyframes miner-quarry-fall {
-  to { background-position: 0 0.06em; }
+@keyframes miner-quarry-shine {
+  0%, 78%, 100% { scale: 0.6; opacity: 0.35; rotate: 0deg; }
+  90% { scale: 1.25; opacity: 1; rotate: 45deg; }
 }
 
 /* Loom of Time: its strings twang (flicking between bent one way and the other), and the shuttle shoots across and back,

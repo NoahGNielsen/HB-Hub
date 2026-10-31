@@ -1254,7 +1254,7 @@
     // the drawn icons (see iconBox(); the same as in the store, or a scene* piece of one) or nothing (drawn in CSS: the
     // laser beam, the rocks the Moon Excavator dumps, the Black Hole Siphon's pull and the ore going up it, the embers
     // out of the Star Forge's chimney, the nebula, the Dyson Swarm, the multiverse rift with its flash and the ore
-    // that falls out of it, which fill the space around the asteroid, the Time Quarry's falling sand, the Loom of Time's
+    // that falls out of it, which fill the space around the asteroid, the Loom of Time's
     // thread, the Big Bang Reactor's bang and the Infinity Mine's tunnel). Where the nth
     // one goes and how it moves is in spaceOreMiner.css (.miner-sprite.is-<building>.is-<n>; the Ore Freighters' ways are
     // picked by flyFreighter()). The Dyson Swarm's ring is
@@ -1276,7 +1276,7 @@
         dyson: { at: [1, 1], parts: { body: '' } },
         wormhole: { at: [1], parts: { body: 'wormhole' } },
         multiverse: { at: [1], parts: { glow: '', flash: '', edge: '', body: '', ours: 'sceneMultiverseDrill', theirs: 'sceneMultiverseDrillMirror', spill: '' } },
-        timeQuarry: { at: [1], parts: { dial: 'sceneTimeDial', hour: 'sceneTimeHour', minute: 'sceneTimeMinute', top: 'sceneTimeSandTop', bottom: 'sceneTimeSandBottom', stream: '', body: 'sceneTimeGlass' } },
+        timeQuarry: { at: [1], parts: { body: 'sceneQuarryRock', fossil: 'sceneQuarryFossil', pick: 'sceneQuarryPick', sparks: 'sceneQuarrySparks', crystal: 'sceneQuarryCrystal', shine: 'sceneQuarryShine' } },
         stringLoom: { at: [1], parts: { body: 'sceneLoomFrame', strings: 'sceneLoomStrings', bent: 'sceneLoomStringsBent', thread: '', shuttle: 'sceneLoomShuttle' } },
         bigBangReactor: { at: [1], parts: { body: 'sceneReactorBody', core: 'sceneReactorCore', ring: 'sceneReactorRing', ring2: 'sceneReactorRingPink', blast: '' } },
         realityPrinter: { at: [1], parts: { sheet: 'sceneRealitySheet', body: 'scenePrinter', head: 'sceneRealityHead', planet: 'sceneRealityPlanet' } },
