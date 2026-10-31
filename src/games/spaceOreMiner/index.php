@@ -795,15 +795,17 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
              and badge, and a button to go in. Filled in by spaceOreMiner.js (renderAnomalies()). -->
         <section class="miner-view casino-card miner-prestige is-anomaly" aria-labelledby="miner-anomalies-title" data-miner-view="anomalies"<?= $minerView !== 'anomalies' ? ' hidden' : '' ?>>
             <div class="miner-prestige-hero">
-                <!-- A tear in space with another universe swirling on the other side, the light bending round it and
-                     bits of ours being pulled in -->
+                <!-- A little universe with one rule changed: a galaxy in an orb, cut into bands that jerk out of line
+                     every few seconds, a broken ring round it and dead pixels blinking on -->
                 <div class="miner-prestige-art" aria-hidden="true">
                     <span class="miner-art-ring is-1"></span>
                     <span class="miner-art-bit is-1"></span>
                     <span class="miner-art-bit is-2"></span>
                     <span class="miner-art-bit is-3"></span>
                     <span class="miner-art-bit is-4"></span>
-                    <span class="miner-art-tear"><span class="miner-art-tear-inside"></span></span>
+                    <?php for ($slice = 1; $slice <= 5; $slice++): ?>
+                        <span class="miner-art-slice is-<?= $slice ?>"></span>
+                    <?php endfor; ?>
                 </div>
                 <div class="miner-prestige-main">
                     <h2 id="miner-anomalies-title" class="miner-prestige-title">Anomalies</h2>
