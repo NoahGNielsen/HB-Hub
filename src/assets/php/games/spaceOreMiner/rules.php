@@ -57,7 +57,7 @@
         Every stage finished gives everyone who plays its perk for good. Some stages have a lock too, like a number of
         different players who have helped, and only finish once it's met. Parts from ore count half from stage 11 and a
         quarter from stage 16. Once a build is done the next one starts, with new stages and locks that count from
-        nothing again; Build #2 is the Starforge. A build's last stage has to be filled within
+        nothing again; Build #2 is the Starforge, and there are <?= count(HBHUB_MINER_ENGINES) ?> builds in all. A build's last stage has to be filled within
         <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days of the one before it, or half its parts are
         lost and the time starts over; once it's full, everything mines <?= HBHUB_MINER_IGNITION_TIMES ?> times as much for
         <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours.

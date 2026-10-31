@@ -57,7 +57,7 @@
     const SALT_WEEKLY = 8;
     const SALT_SHIFT_SPARE = 9;
     const SALT_SHARD = 10;
-    const ENGINE_STAGES = CONFIG.engineStages; // stage 1 first
+    const ENGINE_STAGES = allEngineStages(); // stage 1 first, every build's
     const SHIFTS = CONFIG.shifts;
     const ANOMALIES = CONFIG.anomalies;
     const ANOMALY_IDS = Object.keys(ANOMALIES);
@@ -116,6 +116,37 @@
         }
         skillCache.set(s.skills, { count: s.skills.length, effects });
         return effects;
+    }
+
+    // Every stage of every Engine, stage 1 of Engine #1 first (hbHubMinerEngineStageList()): the ones written out by
+    // hand (CONFIG.engineStages), then those of each build from #3 on, made from one plan (buildStages())
+    function allEngineStages() {
+        const base = CONFIG.engineStages.slice(0, CONFIG.engineStageTotal).map((stage) => stage.cost);
+        const made = Object.keys(CONFIG.engines).map(Number).filter((number) => CONFIG.engines[number].parts)
+            .sort((a, b) => a - b).flatMap((number) => buildStages(number, base));
+        return [...CONFIG.engineStages, ...made];
+    }
+
+    // The 25 stages of build number (Build #3 on) from CONFIG.buildStages, as hbHubMinerBuildStages() makes them: its
+    // parts, a seal for each section and its finale last, costs from Build #1's (base) and the texts filled in
+    function buildStages(number, base) {
+        const build = CONFIG.engines[number];
+        const percent = CONFIG.buildCostFirst + CONFIG.buildCostStep * (number - 3);
+        return CONFIG.buildStages.map((plan, index) => {
+            const section = 'ABCDE'[Math.floor(index / 5)];
+            const fill = (text) => text.replaceAll('{name}', build.name).replaceAll('{section}', build.sections[section])
+                .replaceAll('{finale}', build.finale).replaceAll('{crew}', build.crew?.name ?? '');
+            const { crewText, ...perk } = plan.perk;
+            perk.text = fill(crewText !== undefined && build.crew ? crewText : perk.text);
+            return {
+                name: index === 24 ? build.finale
+                    : index % 5 === 4 ? build.sections[section] + ' Seal' : build.parts[Math.floor(index / 5) * 4 + index % 5],
+                section,
+                cost: Math.floor(base[index] * percent / 100),
+                lock: plan.lock === null ? null : { ...plan.lock, text: fill(plan.lock.text) },
+                perk,
+            };
+        });
     }
 
     // What the perks of every Engine's stages done so far do together (hbHubMinerEngineEffects()), by how many
@@ -2913,6 +2944,17 @@
         ['FIRST LIGHT! The Starforge strikes its first star. Astronomers have to update every chart.', (s) => s.engineStage >= 50],
         ['A Forgemaster was asked what they forge. "Stars," they said, and went back to work.', (s) => s.engineStage >= 26],
         ['The Starforge\'s anvil rings again. Somewhere, a comet flinches.', (s) => s.engineStage >= 26],
+        // Build #3 on (HBHUB_MINER_BUILDS): each one's own line once its first stage is done, and its finale once it's
+        // all done, only while it's the build being built or one of the 2 before it, so old builds don't crowd the ticker
+        ...Object.keys(ENGINES).map(Number).filter((number) => ENGINES[number].news).flatMap((number) => {
+            const start = (number - 1) * CONFIG.engineStageTotal;
+            const isRecent = (s) => engineNumber(s) - number <= 2;
+            return [
+                [ENGINES[number].news, (s) => s.engineStage > start && isRecent(s)],
+                [ENGINES[number].finale + '! The ' + ENGINES[number].name + ' is done. On to the next build.',
+                    (s) => s.engineStage >= start + CONFIG.engineStageTotal && isRecent(s)],
+            ];
+        }),
     ];
     let lastNews = -1;
 
@@ -4255,6 +4297,7 @@
         if (key !== rocketKey) {
             rocketKey = key;
             rocket.dataset.engine = String(number);
+            paintRocket(rocket, number);
             rocket.classList.toggle('is-launching', isLaunching);
             rocket.classList.toggle('is-built', now < 0 && !isLaunching);
             rocket.classList.toggle('is-building', now >= 0 && !isLocked);
@@ -4309,13 +4352,34 @@
         rocket.classList.toggle('is-urgent', isUrgent);
     }
 
-    // The Engines done before this one (count of them), as little rockets flying off in the sky, each in its paint
+    // The paint of a build from #3 on (its hue in HBHUB_MINER_BUILDS) on node, as the --rk-* colours; the first two
+    // have theirs in spaceOreMiner.css (data-engine), so they get none here
+    function paintRocket(node, number) {
+        const hue = ENGINES[number]?.hue;
+        const paint = hue === undefined ? {} : {
+            hull: 'hsl(' + hue + ' 18% 82%)', light: 'hsl(' + hue + ' 30% 96%)', shade: 'hsl(' + hue + ' 16% 38%)',
+            'hull-2': 'hsl(' + hue + ' 72% 52%)', trim: 'hsl(' + ((hue + 40) % 360) + ' 85% 66%)', glass: 'hsl(' + ((hue + 180) % 360) + ' 75% 72%)',
+            glow: 'hsl(' + hue + ' 90% 76%)', pipe: 'hsl(' + hue + ' 80% 62%)',
+        };
+        ['hull', 'light', 'shade', 'hull-2', 'trim', 'glass', 'glow', 'pipe'].forEach((name) => {
+            if (paint[name]) node.style.setProperty('--rk-' + name, paint[name]);
+            else node.style.removeProperty('--rk-' + name);
+        });
+    }
+
+    // The Engines done before this one (count of them), as little rockets flying off in the sky, each in its paint:
+    // only the last ROCKET_FLEET_MOST, so a hundred builds don't fill the sky
+    const ROCKET_FLEET_MOST = 6;
     function renderRocketFleet(count) {
-        if (rocketFleet.childElementCount === count) return;
-        rocketFleet.replaceChildren(...Array.from({ length: count }, (_, index) => {
+        const first = Math.max(0, count - ROCKET_FLEET_MOST);
+        if (rocketFleet.dataset.count === String(count)) return;
+        rocketFleet.dataset.count = String(count);
+        rocketFleet.replaceChildren(...Array.from({ length: count - first }, (_, place) => {
+            const index = first + place;
             const mini = svgElement('g', 'miner-rocket-mini');
             mini.dataset.engine = String(index + 1);
-            mini.setAttribute('transform', 'translate(' + (186 - (index % 3) * 16) + ' ' + (48 + index * 24) + ') rotate(24)');
+            paintRocket(mini, index + 1);
+            mini.setAttribute('transform', 'translate(' + (186 - (place % 3) * 16) + ' ' + (48 + place * 24) + ') rotate(24)');
             const title = svgElement('title');
             title.textContent = 'Build #' + (index + 1) + ', the ' + engineNameOf(index + 1) + ': done';
             const body = svgElement('g', 'miner-rocket-mini-body');

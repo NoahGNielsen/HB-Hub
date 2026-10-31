@@ -36,6 +36,7 @@
 // Used by games/spaceOreMiner/ (the page), games/spaceOreMiner/save (the JSON the page saves to) and its leaderboard.
 require_once __DIR__ . '/../../database.php';
 require_once __DIR__ . '/engine.php';
+require_once __DIR__ . '/starbound.php';
 
 const HBHUB_MINER_SAVE_SECONDS = 30; // how often the page saves while it's open
 const HBHUB_MINER_ONLINE_MS = 90000; // a gap between saves up to this long counts as playing, the rest as away
@@ -639,7 +640,8 @@ const HBHUB_MINER_ACHIEVEMENTS = [
 //
 // There's more than one Engine (HBHUB_MINER_ENGINES): once one is ignited, the next starts straight away (engine.php,
 // hbHubMinerEngineFinish()), with its own name and sections. Every Engine has HBHUB_MINER_ENGINE_STAGE_TOTAL stages,
-// and HBHUB_MINER_ENGINE_STAGES has all of them in a row (Engine #1's first, then #2's, see hbHubMinerEngineStages()),
+// and hbHubMinerEngineStageList() has all of them in a row (Engine #1's first, then #2's, both written out in
+// HBHUB_MINER_ENGINE_STAGES, then those of Build #3 on, made in starbound.php; see hbHubMinerEngineStages()),
 // so a save's engineStage counts the stages done of every Engine so far, and the perks of all of them work together.
 // The Engines after the first have perks that are mostly for looks or ease, and only a little more production, so
 // power doesn't keep stacking up. Perk types that aren't numbers in the rules (the script and pages use them):
@@ -647,7 +649,8 @@ const HBHUB_MINER_ACHIEVEMENTS = [
 // 'sounds' for the parts: engine or forge), title, ignition, hall (finished Engines in the Engine view), again (a
 // button to go into the last Anomaly again), cometBell (a sound and a glow when a comet comes), weeklyPreview (next
 // week's weekly Anomaly), cometTrail (comets take the skin's colour), sparks (clicking throws sparks), backdrops
-// (HBHUB_MINER_BACKDROPS), medals (weekly Anomaly medals on profiles) and pace (the best time in the Anomaly banner).
+// (HBHUB_MINER_BACKDROPS), medals (weekly Anomaly medals on profiles), pace (the best time in the Anomaly banner) and
+// none (nothing, for the stages of Build #3 on that only take the build further).
 // Ones that are: shiftSwap (Shifts that can be swapped a day, hbHubMinerShiftSwap()), oreParts (more parts from ore a
 // day) and oreFloor (the fewest quarter parts a part from ore is worth).
 const HBHUB_MINER_ENGINE_SOURCE_ORE = 1; // contributionSource in HBHub-MinerContributions
@@ -662,13 +665,14 @@ const HBHUB_MINER_ENGINE_STAGE_TOTAL = 25; // stages in each build
 const HBHUB_MINER_DAY_MS = 86400000; // the daily limit and the Shifts go by UTC days: Math.floor(tick / this)
 // The Engines, by engineNumber in HBHub-MinerEngines: what each is called (with 'the' in front in sentences), its
 // sections (each stage's 'section') and the badge for whoever gave parts to its last stage before it was done ('crew',
-// see hbHubMinerEngineCrews()). One that isn't here yet never starts: the last one waits, done, until it's added.
+// see hbHubMinerEngineCrews(); from Build #3 on only every 10th has one). One that isn't here never starts: the last
+// one waits, done, until another is added.
 const HBHUB_MINER_ENGINES = [
     1 => ['name' => 'Cosmic Engine', 'sections' => ['A' => 'Foundation', 'B' => 'Power', 'C' => 'Drive', 'D' => 'Navigation', 'E' => 'Ignition'],
         'crew' => ['name' => 'Ignition', 'icon' => '🚀']],
     2 => ['name' => 'Starforge', 'sections' => ['A' => 'Anvil', 'B' => 'Bellows', 'C' => 'Crucible', 'D' => 'Hammer', 'E' => 'Quench'],
         'crew' => ['name' => 'First Light', 'icon' => '🌟']],
-];
+] + HBHUB_MINER_BUILDS; // Build #3 to #100 (starbound.php), whose stages are made from one plan
 // What a part given from ore is worth in each section, in quarter parts: a whole one at first, half in Drive and a
 // quarter from Navigation on. What's left of a part is kept in the save (engineOreRest) until it makes a whole one.
 const HBHUB_MINER_ENGINE_ORE_SHARE = ['A' => 4, 'B' => 4, 'C' => 2, 'D' => 1, 'E' => 1];
@@ -1224,8 +1228,11 @@ function hbHubMinerConfig(): array
         'luckySeconds' => HBHUB_MINER_LUCKY_SECONDS,
         'headStart' => HBHUB_MINER_HEAD_START,
         'buildingUpgradeAt' => HBHUB_MINER_BUILDING_UPGRADE_AT,
-        'engineStages' => HBHUB_MINER_ENGINE_STAGES,
+        'engineStages' => HBHUB_MINER_ENGINE_STAGES, // the script adds Build #3's on (allEngineStages() there)
         'engines' => HBHUB_MINER_ENGINES,
+        'buildStages' => HBHUB_MINER_BUILD_STAGES,
+        'buildCostFirst' => HBHUB_MINER_BUILD_COST_FIRST,
+        'buildCostStep' => HBHUB_MINER_BUILD_COST_STEP,
         'engineNeutral' => HBHUB_MINER_ENGINE_NEUTRAL,
         'engineStageTotal' => HBHUB_MINER_ENGINE_STAGE_TOTAL,
         'engineOrePart' => HBHUB_MINER_ENGINE_ORE_PART,
@@ -1478,7 +1485,7 @@ function hbHubMinerNormalize(array $saved, int $now): array
     $state['antiUpgrades'] = array_values(array_intersect($state['antiUpgrades'], array_keys(HBHUB_MINER_ANTI_UPGRADES)));
     $state['skills'] = array_values(array_intersect($state['skills'], array_keys(HBHUB_MINER_SKILLS)));
     unset($state['steady'], $state['fast']); // the old auto-clicker checks'
-    $state['engineStage'] = max(0, min((int) $state['engineStage'], count(HBHUB_MINER_ENGINE_STAGES)));
+    $state['engineStage'] = max(0, min((int) $state['engineStage'], count(hbHubMinerEngineStageList())));
     $state['engineOpen'] = (bool) $state['engineOpen'];
     $state['engineDay'] = (int) $state['engineDay'];
     $state['donatedToday'] = (int) $state['donatedToday'];
@@ -1674,13 +1681,13 @@ function hbHubMinerSkillEffects(array $state): array
 function hbHubMinerEngineEffects(array $state): array
 {
     static $cache = [];
-    $done = min((int) $state['engineStage'], count(HBHUB_MINER_ENGINE_STAGES));
+    $done = min((int) $state['engineStage'], count(hbHubMinerEngineStageList()));
     if (isset($cache[$done])) {
         return $cache[$done];
     }
 
     $effects = HBHUB_MINER_ENGINE_NEUTRAL;
-    foreach (array_slice(HBHUB_MINER_ENGINE_STAGES, 0, $done) as $stage) {
+    foreach (array_slice(hbHubMinerEngineStageList(), 0, $done) as $stage) {
         $perk = $stage['perk'];
         if ($perk['type'] === 'offline') {
             $effects['offline'] = max($effects['offline'], $perk['value']);
@@ -1694,12 +1701,30 @@ function hbHubMinerEngineEffects(array $state): array
 }
 
 /**
- * The stages of Engine $number (HBHUB_MINER_ENGINES), stage 1 first: its part of HBHUB_MINER_ENGINE_STAGES, [] for one
+ * Every stage of every Engine in HBHUB_MINER_ENGINES, stage 1 of Engine #1 first: HBHUB_MINER_ENGINE_STAGES (the ones
+ * written out by hand), then the stages of each build in HBHUB_MINER_BUILDS (hbHubMinerBuildStages() in starbound.php).
+ * allEngineStages() in the script makes the same list.
+ */
+function hbHubMinerEngineStageList(): array
+{
+    static $stages = null;
+    if ($stages === null) {
+        $stages = HBHUB_MINER_ENGINE_STAGES;
+        $base = array_column(array_slice(HBHUB_MINER_ENGINE_STAGES, 0, HBHUB_MINER_ENGINE_STAGE_TOTAL), 'cost');
+        foreach (array_keys(HBHUB_MINER_BUILDS) as $number) {
+            array_push($stages, ...hbHubMinerBuildStages($number, $base));
+        }
+    }
+    return $stages;
+}
+
+/**
+ * The stages of Engine $number (HBHUB_MINER_ENGINES), stage 1 first: its part of hbHubMinerEngineStageList(), [] for one
  * that isn't there yet.
  */
 function hbHubMinerEngineStages(int $number): array
 {
-    return array_slice(HBHUB_MINER_ENGINE_STAGES, ($number - 1) * HBHUB_MINER_ENGINE_STAGE_TOTAL, HBHUB_MINER_ENGINE_STAGE_TOTAL);
+    return array_slice(hbHubMinerEngineStageList(), ($number - 1) * HBHUB_MINER_ENGINE_STAGE_TOTAL, HBHUB_MINER_ENGINE_STAGE_TOTAL);
 }
 
 /**
@@ -1716,7 +1741,7 @@ function hbHubMinerEngineNumber(array $state): int
  */
 function hbHubMinerEnginePerk(array $state, string $type): bool
 {
-    foreach (array_slice(HBHUB_MINER_ENGINE_STAGES, 0, (int) $state['engineStage']) as $stage) {
+    foreach (array_slice(hbHubMinerEngineStageList(), 0, (int) $state['engineStage']) as $stage) {
         if ($stage['perk']['type'] === $type) {
             return true;
         }
@@ -1749,8 +1774,8 @@ function hbHubMinerAfterglow(array $state): float
  */
 function hbHubMinerOreQuarters(array $state): int
 {
-    $index = min((int) $state['engineStage'], count(HBHUB_MINER_ENGINE_STAGES) - 1);
-    return max(HBHUB_MINER_ENGINE_ORE_SHARE[HBHUB_MINER_ENGINE_STAGES[$index]['section']], (int) hbHubMinerEngineEffects($state)['oreFloor']);
+    $index = min((int) $state['engineStage'], count(hbHubMinerEngineStageList()) - 1);
+    return max(HBHUB_MINER_ENGINE_ORE_SHARE[hbHubMinerEngineStageList()[$index]['section']], (int) hbHubMinerEngineEffects($state)['oreFloor']);
 }
 
 /**

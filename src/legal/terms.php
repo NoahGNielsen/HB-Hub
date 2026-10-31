@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '30 October 2026';
+const HBHUB_TERMS_UPDATED = '1 November 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -213,7 +213,7 @@ const HBHUB_TERMS_UPDATED = '30 October 2026';
                             </li>
                             <li>
                                 Ore Mining Inc.'s Project Starbound is built by everyone together, one build after the other (the
-                                Cosmic Engine, then the Starforge). Starbound Parts you give them (for ore, Strange Matter, Engine
+                                Cosmic Engine, then the Starforge, then up to 98 more). Starbound Parts you give them (for ore, Strange Matter, Engine
                                 Shifts or finishing Anomalies) can't be taken back, don't move to the next build, and your name
                                 and how many you gave are shown to everyone with an account. Their perks are for every player
                                 and stay once the next build starts. Admins can
@@ -228,7 +228,7 @@ const HBHUB_TERMS_UPDATED = '30 October 2026';
                                 counts as cheating. What you do in an Anomaly doesn't count towards your stats or the
                                 leaderboard, but your best times are shown on the leaderboard's Anomaly tabs, and best times or
                                 titles, medals or locks met by cheating can be removed. Each build's last stage (Ignition,
-                                First Light) has to be filled in time or loses part of what's in it, and nobody can claim back
+                                First Light, ...) has to be filled in time or loses part of what's in it, and nobody can claim back
                                 what's lost that way.
                             </li>
                             <li>

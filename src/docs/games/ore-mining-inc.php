@@ -2,8 +2,8 @@
 // Help docs: Ore Mining Inc. - getting started, every building (straight from HBHUB_MINER_BUILDINGS in
 // assets/php/games/spaceOreMiner/miner.php, so a new one or a new price shows up here by itself), the comets, Star
 // Shards and the Shard Shop (from HBHUB_MINER_SHOP), the three
-// prestiges, the skill tree, the Cosmic Engines (each Engine's stages straight from HBHUB_MINER_ENGINE_STAGES and
-// HBHUB_MINER_ENGINES, with their default costs), the Anomalies (from HBHUB_MINER_ANOMALIES and HBHUB_MINER_ANOMALY_TIERS), saving and the game's own How to
+// prestiges, the skill tree, the Cosmic Engines (the first two builds' stages straight from HBHUB_MINER_ENGINE_STAGES
+// and HBHUB_MINER_ENGINES, with their default costs, and a table of the builds after them from HBHUB_MINER_BUILDS), the Anomalies (from HBHUB_MINER_ANOMALIES and HBHUB_MINER_ANOMALY_TIERS), saving and the game's own How to
 // play (rules.php, included as the game shows it).
 // How much Strange Matter a Big Rip gives is still being balanced, so it's only described, never given as numbers.
 // Open to everyone. Built by assets/php/docs/top.php and bottom.php.
@@ -248,9 +248,20 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             game easier to play, and only 3 &times; 5% more production, so the game doesn't keep getting
                             faster. Its last stage, First Light, works like Ignition, with a First Light badge and skin. Once
                             the Starforge's Alloy Bins are done, the Project Starbound view has a Starbound Hall with every build done so
-                            far. These are the stages:
+                            far.
                         </p>
-                        <?php foreach (HBHUB_MINER_ENGINES as $docsEngineNumber => $docsEngine): ?>
+                        <p>
+                            There are <?= count(HBHUB_MINER_ENGINES) ?> builds in all. From Build #3 on, every build has its own
+                            name, sections and stage names but the same plan: stage 1 adds news lines about it, each section ends in a
+                            seal, the seals of its 2nd and 4th sections make everything mine 1% more, and its last stage works like
+                            Ignition (<?= HBHUB_MINER_IGNITION_TIMES ?> times as much for <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours).
+                            Every other stage only takes the build further. The seals have locks: 8 different players giving parts,
+                            6 players giving parts to the 2nd section, a stack of 3 Anomalies, and every Tier I Anomaly finished for
+                            that build. Each build costs a bit more than the one before. Only every 10th build gives a badge, to
+                            whoever gave parts to its last stage.
+                        </p>
+                        <p>These are the stages of the first two builds:</p>
+                        <?php foreach (array_slice(HBHUB_MINER_ENGINES, 0, 2, true) as $docsEngineNumber => $docsEngine): ?>
                             <h3>Build #<?= $docsEngineNumber ?>: the <?= htmlspecialchars($docsEngine['name']) ?></h3>
                             <div class="docs-table-wrap">
                                 <table class="docs-table">
@@ -273,6 +284,25 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 </table>
                             </div>
                         <?php endforeach; ?>
+                        <h3>Build #3 to #<?= array_key_last(HBHUB_MINER_ENGINES) ?></h3>
+                        <div class="docs-table-wrap">
+                            <table class="docs-table">
+                                <thead>
+                                    <tr><th scope="col">Build</th><th scope="col">Sections</th><th scope="col">Last stage</th><th scope="col">Parts</th><th scope="col">Badge</th></tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach (HBHUB_MINER_BUILDS as $docsEngineNumber => $docsEngine): ?>
+                                        <tr>
+                                            <td>#<?= $docsEngineNumber ?>. The <?= htmlspecialchars($docsEngine['name']) ?></td>
+                                            <td><?= htmlspecialchars(implode(', ', $docsEngine['sections'])) ?></td>
+                                            <td><?= htmlspecialchars($docsEngine['finale']) ?></td>
+                                            <td><?= number_format(array_sum(array_column(hbHubMinerEngineStages($docsEngineNumber), 'cost'))) ?></td>
+                                            <td><?= isset($docsEngine['crew']) ? htmlspecialchars($docsEngine['crew']['icon'] . ' ' . $docsEngine['crew']['name']) : '' ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                         <p>The parts each stage needs can still change as Project Starbound is tuned.</p>
                     </section>
 

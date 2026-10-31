@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '30 October 2026';
+const HBHUB_PRIVACY_UPDATED = '1 November 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -285,7 +285,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             </li>
                             <li>
                                 The Starbound Parts you give to Ore Mining Inc.'s Project Starbound (the Cosmic Engine, then the
-                                Starforge), which everyone builds together: how many, whether they came from ore, Strange
+                                Starforge, then the builds after it), which everyone builds together: how many, whether they came from ore, Strange
                                 Matter, a Starbound Shift or an Anomaly (and which one, and how long it took you), which Engine
                                 and stage they went into, and when (one line per kind for each save). <strong>This is shown to everyone</strong>
                                 with an account: your name and the parts you gave in the Project Starbound view's list of the latest parts and
@@ -293,7 +293,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 each). If you've given parts to a build once its badge stage is built (the Cosmic Engine's
                                 Crew Deck, the Starforge's Forge Floor), your profile shows its badge (Engine Crew, Forge Crew),
                                 and if you gave parts to its last stage before it was finished, that stage's badge too
-                                (Ignition, First Light). Once the Starforge's Alloy Bins are built, the Project Starbound view's Hall of
+                                (Ignition, First Light, and from Build #3 on only for every 10th build, like Lamplighter). Once the Starforge's Alloy Bins are built, the Project Starbound view's Hall of
                                 Engines shows the names of the 3 players who gave the most to each finished build. The builds'
                                 locks count how many different players gave parts or finished certain Anomalies (some only in
                                 under a certain time, or only players who haven't learned the whole skill tree), but without

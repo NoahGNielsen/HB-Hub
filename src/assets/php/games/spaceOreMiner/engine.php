@@ -140,7 +140,7 @@ function hbHubMinerEngineMsOrZero(?string $timestamp): int
  */
 function hbHubMinerEngineAdopt(array &$state, array $engine, bool $canGive, ?PDO $db = null, ?int $userId = null): void
 {
-    $state['engineStage'] = min(hbHubMinerEngineDoneAll($engine), count(HBHUB_MINER_ENGINE_STAGES));
+    $state['engineStage'] = min(hbHubMinerEngineDoneAll($engine), count(hbHubMinerEngineStageList()));
     $state['engineOpen'] = $canGive && hbHubMinerEngineOpen($engine);
     $state['engineIgnited'] = hbHubMinerEngineMsOrZero($engine['lastIgnitedTimestamp']);
     $lastIgnited = (int) ($engine['lastIgnitedNumber'] ?? 0);
