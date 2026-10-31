@@ -4095,74 +4095,342 @@
   83% { opacity: 0; }
 }
 
-/* The tiers, one box each, with their Anomalies in rows: badge, what it is, and the button to go in */
+/* Under the facts, built from Project Starbound's boxes (.miner-engine-card, its head, chip and note): two to a row, so
+   this week's Anomaly and the stack builder sit side by side, and the saved ones and each tier across the whole width */
+.miner-anomaly-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .miner-anomaly-tiers {
+  grid-column: 1 / -1;
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
-.miner-anomaly-tier {
-  min-width: 0;
-  padding: 16px;
-  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
-  border-radius: 14px;
-  background: var(--background);
+.miner-anomaly-weekly,
+.miner-anomaly-stack {
+  display: flex;
+  flex-direction: column;
 }
 
-.miner-anomaly-tier .miner-store-title {
+/* The bottom of the weekly and stack boxes: the button, and the small print under it pushed to the bottom so both
+   boxes' buttons line up */
+.miner-anomaly-actions {
+  margin-top: auto;
+  padding-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.miner-anomaly-actions .miner-engine-more {
+  margin-top: 0;
+}
+
+/* The hero's row of every badge, small, lit once finished (the big ones are on the cards) */
+.miner-anomaly-badges {
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+}
+
+.miner-anomaly-badges .miner-anomaly-badge {
+  width: 30px;
+  height: 30px;
+  border-width: 1.5px;
+}
+
+.miner-anomaly-badges .miner-anomaly-badge .miner-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.miner-anomaly-badges .is-done .miner-anomaly-badge {
+  border-color: var(--view);
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--view) 40%, transparent);
+  filter: none;
+  opacity: 1;
+}
+
+/* An Anomaly's rule, a row each with its icon (the weekly one's) */
+.miner-anomaly-rules {
   margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.miner-anomaly-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.miner-anomaly-rule-icon,
+.miner-stack-pick-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  color: var(--view);
+}
+
+.miner-anomaly-rule-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.miner-anomaly-rule-icon .miner-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.miner-anomaly-rule-name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.miner-anomaly-rule-text {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.8;
+}
+
+/* The numbers (anomalyStats()): goal, parts, Afterglow and best time, a little tile each, four to a row while they fit */
+.miner-anomaly-stats {
+  margin: 14px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 92px), 1fr));
+  gap: 6px;
+}
+
+.miner-anomaly-stat {
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.miner-anomaly-stat dt {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.miner-anomaly-stat dd {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* The stack builder's picks: a tile each with the Anomaly's icon, lit in the view's colour while picked */
+.miner-stack-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+  gap: 6px;
+}
+
+.miner-stack-pick {
+  min-width: 0;
+  padding: 6px 10px 6px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+  color: inherit;
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.miner-stack-pick-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.miner-stack-pick-icon .miner-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.miner-stack-pick-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.miner-stack-pick:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--view) 50%, transparent);
+}
+
+.miner-stack-pick:focus-visible {
+  outline: 2px solid var(--view);
+  outline-offset: 1px;
+}
+
+.miner-stack-pick[aria-pressed="true"] {
+  border-color: var(--view);
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--view) 30%, transparent);
+  font-weight: 700;
+}
+
+.miner-stack-pick[aria-pressed="true"] .miner-stack-pick-icon {
+  background: var(--view);
+  color: var(--on-view);
+}
+
+.miner-stack-pick:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.miner-anomaly-stack .miner-engine-note {
+  margin: 14px 0 0;
+}
+
+/* A tier's box: its numeral on a tile in the head, then its Anomalies as cards, as many to a row as fit. Locked, the
+   cards are dimmed under a padlock note. */
+.miner-anomaly-numeral {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--view) 28%, transparent), color-mix(in srgb, var(--view) 8%, transparent) 70%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--view) 40%, transparent);
+  color: var(--view);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.miner-anomaly-lock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.miner-anomaly-lock-icon {
+  display: grid;
+  flex: none;
+}
+
+.miner-anomaly-lock-icon .miner-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .miner-anomaly-list {
-  margin: 12px 0 0;
+  margin: 0;
   padding: 0;
-  list-style: none;
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  list-style: none;
 }
 
+/* An Anomaly's card: badge and name on top, its rule, its numbers, and the button at the bottom (pushed down so the
+   buttons in a row line up) */
 .miner-anomaly {
+  min-width: 0;
+  padding: 14px;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  flex-direction: column;
   border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
-  border-radius: 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+}
+
+.miner-anomaly.is-done {
+  border-color: color-mix(in srgb, var(--view) 30%, transparent);
+  background: radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--view) 10%, transparent), transparent 60%),
+    color-mix(in srgb, var(--text) 2%, transparent);
+}
+
+.miner-anomaly.is-now,
+.miner-anomaly.is-saved {
+  border-color: var(--view);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--view) 30%, transparent);
 }
 
 .miner-anomaly-tier.is-locked .miner-anomaly {
   opacity: 0.55;
 }
 
-.miner-anomaly.is-now {
-  border-color: var(--view);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--view) 35%, transparent);
+.miner-anomaly-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.miner-anomaly-main {
-  flex: 1;
+.miner-anomaly-head {
   min-width: 0;
-  display: grid;
-  gap: 2px;
 }
 
 .miner-anomaly-name {
+  margin: 0;
+  font-weight: 800;
+}
+
+.miner-anomaly-state {
+  margin: 1px 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+.miner-anomaly.is-done .miner-anomaly-state,
+.miner-anomaly.is-now .miner-anomaly-state,
+.miner-anomaly.is-saved .miner-anomaly-state {
+  color: var(--view);
+  opacity: 1;
+}
+
+.miner-anomaly-text {
+  margin: 10px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  opacity: 0.85;
+}
+
+.miner-anomaly .miner-anomaly-stats {
+  margin-top: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.miner-anomaly-new {
+  margin: 8px 0 0;
+  color: var(--view);
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
-.miner-anomaly-text,
-.miner-anomaly-goal,
-.miner-anomaly-best {
-  font-size: 0.9rem;
-  line-height: 1.4;
+.miner-anomaly > .casino-btn {
+  margin-top: auto;
+  width: 100%;
 }
 
-.miner-anomaly-best {
-  opacity: 0.75;
-}
-
-.miner-anomaly .casino-btn {
-  flex-shrink: 0;
+/* The space over the button (its margin-top: auto only pushes it down) */
+.miner-anomaly > :nth-last-child(2) {
+  margin-bottom: 14px;
 }
 
 /* "Go again" on a finished Anomaly: dimmed (not as far as a disabled button) so the unfinished ones stand out, and
@@ -4186,6 +4454,7 @@
   height: 44px;
   display: grid;
   place-items: center;
+  box-sizing: border-box;
   border-radius: 50%;
   border: 2px solid color-mix(in srgb, var(--text) 18%, transparent);
   filter: grayscale(1);
@@ -4197,7 +4466,8 @@
   height: 26px;
 }
 
-.miner-anomaly.is-done .miner-anomaly-badge {
+.miner-anomaly.is-done .miner-anomaly-badge,
+.miner-anomaly-saved .miner-anomaly-badge {
   border-color: var(--view);
   background: color-mix(in srgb, var(--view) 14%, transparent);
   box-shadow: 0 0 12px color-mix(in srgb, var(--view) 40%, transparent);
@@ -4205,13 +4475,69 @@
   opacity: 1;
 }
 
+/* A saved Anomaly: badge, name, a bar of how far towards its goal and the numbers, and its two buttons */
+.miner-anomaly-saved-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.miner-anomaly-saved {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid color-mix(in srgb, var(--view) 30%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+}
+
+.miner-anomaly-saved-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.miner-anomaly-saved-main .miner-anomaly-state {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-anomaly-saved-buttons {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+
+/* Smaller screens: one box to a row, and a saved Anomaly's buttons under it */
+@media (max-width: 760px) {
+  .miner-anomaly-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 560px) {
-  .miner-anomaly {
+  .miner-anomaly-saved {
     flex-wrap: wrap;
   }
 
-  .miner-anomaly .casino-btn {
+  .miner-anomaly-saved-main {
+    flex-basis: calc(100% - 58px);
+  }
+
+  .miner-anomaly-saved-buttons {
     width: 100%;
+  }
+
+  .miner-anomaly-saved-buttons .casino-btn {
+    flex: 1;
+  }
+
+  .miner-prestige.is-anomaly .miner-anomaly-badges {
+    justify-content: center;
   }
 }
 
@@ -5544,46 +5870,12 @@
   to { --rock-light: #fff4c0; --rock: #ff5a1a; --rock-dark: #5a0a00; --rock-glow: rgba(255, 90, 20, 0.9); }
 }
 
-/* Pill buttons: the stack builder's picks and the leaderboard's tabs */
-.miner-stack-picks,
+/* Pill buttons: the leaderboard's tabs */
 .miner-board-picks {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin: 8px 0 12px;
-}
-
-.miner-stack-pick {
-  padding: 6px 10px;
-  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
-  border-radius: 999px;
-  background: var(--background);
-  color: inherit;
-  font: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-.miner-stack-pick[aria-pressed="true"] {
-  border-color: var(--view, currentColor);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--view, currentColor) 35%, transparent);
-  font-weight: 700;
-}
-
-.miner-stack-pick:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* The weekly Anomaly and the stack builder, above the tiers */
-.miner-anomaly-weekly,
-.miner-anomaly-stack {
-  margin-bottom: 12px;
-}
-
-.miner-anomaly-weekly .casino-btn,
-.miner-anomaly-stack .casino-btn {
-  margin-top: 6px;
 }
 
 /* A player's title on the leaderboard, small under their name */

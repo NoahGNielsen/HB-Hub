@@ -4426,12 +4426,18 @@
     const anomalyDialogTitle = root.querySelector('[data-miner-anomaly-dialog-title]');
     const anomalyDialogText = root.querySelector('[data-miner-anomaly-dialog-text]');
     const anomalyDialogConfirm = root.querySelector('[data-miner-anomaly-confirm]');
-    const weeklyText = root.querySelector('[data-miner-weekly-text]');
+    const anomaliesBadges = root.querySelector('[data-miner-anomalies-badges]');
+    const savedCount = root.querySelector('[data-miner-saved-count]');
+    const weeklyName = root.querySelector('[data-miner-weekly-name]');
+    const weeklyRules = root.querySelector('[data-miner-weekly-mods]');
+    const weeklyStats = root.querySelector('[data-miner-weekly-stats]');
     const weeklyBest = root.querySelector('[data-miner-weekly-best]');
     const weeklyStart = root.querySelector('[data-miner-weekly-start]');
     const weeklyNext = root.querySelector('[data-miner-weekly-next]');
     const stackPicks = root.querySelector('[data-miner-stack-picks]');
+    const stackCount = root.querySelector('[data-miner-stack-count]');
     const stackInfo = root.querySelector('[data-miner-stack-text]');
+    const stackStats = root.querySelector('[data-miner-stack-stats]');
     const stackStart = root.querySelector('[data-miner-stack-start]');
     const TIER_NUMERALS = { 1: 'I', 2: 'II', 3: 'III' };
     const TIER_UNLOCK_TEXT = { strange: 'Opens once you\'ve earned ' + CONFIG.anomalyStrange + ' Strange Matter.', theory: 'Opens once you\'ve learned the Theory of Everything.' };
@@ -4551,6 +4557,32 @@
     // The same for its Afterglow, as text ("an hour", "6 hours")
     const afterglowNow = (mods) => formatDuration(anomalyAfterglowMs(mods, anomalyKey(weeklyMods(weekOf(state.tick))) === anomalyKey(mods)));
 
+    // An Anomaly's or stack's numbers as tiles in a <dl> (.miner-anomaly-stats): the goal, the parts and Afterglow it's
+    // worth now, and the best time at it (record, from saveState.anomalies, or null)
+    function anomalyStats(list, mods, record) {
+        const stat = anomalyStat(mods);
+        list.replaceChildren(...[
+            ['Goal', format(anomalyGoal(mods)) + ' ' + (stat === 'runOre' ? 'ore in a run' : GOAL_STAT_TEXT[stat])],
+            ['Parts', format(partsNow(mods))],
+            ['Afterglow', afterglowNow(mods)],
+            ['Best time', record ? formatClock(record.best) : '-'],
+        ].map(([name, value]) => {
+            const tile = element('div', 'miner-anomaly-stat');
+            tile.append(element('dt', '', name), element('dd', '', value));
+            return tile;
+        }));
+        return list;
+    }
+
+    // A row per Anomaly in mods with its badge, name and rule (the weekly one's, and Go in's dialog says the same)
+    const anomalyRuleRows = (mods) => mods.map((id) => {
+        const item = element('li', 'miner-anomaly-rule');
+        const text = element('div');
+        text.append(element('p', 'miner-anomaly-rule-name', ANOMALIES[id].name), element('p', 'miner-anomaly-rule-text', ANOMALIES[id].text));
+        item.append(iconBox('miner-anomaly-rule-icon', ANOMALIES[id].icon), text);
+        return item;
+    });
+
     // Whether the player can go into these Anomalies now: in none already, every one's tier open, and not a stack that
     // can't be done (stackClash()), unless it's saved or this week's weekly one
     const canStart = (mods) => !saveState.anomaly && mods.length > 0 && mods.every((id) => anomalyTierOpen(saveState, ANOMALIES[id].tier))
@@ -4572,8 +4604,8 @@
     // Whether an Anomaly or stack hasn't been finished for the Engine being built yet, so it pays in full again
     const newForEngine = (record) => record !== null && (record.engine ?? 1) < engineNumber(saveState);
 
-    // This week's Anomaly: what it is, its goal and parts, and the player's best time at it, and next week's with the
-    // Heat Shields' perk
+    // This week's Anomaly: a row per Anomaly in it with its rule, its numbers and the player's best time at it, and
+    // next week's with the Heat Shields' perk
     function renderWeekly() {
         const nextMods = weeklyMods(weekOf(state.tick) + 1);
         weeklyNext.hidden = !engineEffectsOn('weeklyPreview');
@@ -4581,24 +4613,26 @@
         const mods = weeklyMods(weekOf(state.tick));
         const key = anomalyKey(mods);
         const record = saveState.anomalies[key] ?? null;
-        weeklyText.textContent = anomalyName(key) + ': ' + mods.map((id) => ANOMALIES[id].text).join(' ') + ' Goal: ' + goalText(mods) + ', for '
-            + partsText(partsNow(mods)) + ' and ' + afterglowNow(mods) + ' of Afterglow (' + CONFIG.anomalyWeekly + ' times as much as usual, this week only).';
-        weeklyBest.textContent = record ? 'Your best time at it: ' + formatClock(record.best) + '.' + (newForEngine(record) ? ' Not finished for this build yet.' : '')
-            : 'You haven\'t finished it yet.';
+        weeklyName.textContent = anomalyName(key);
+        weeklyRules.replaceChildren(...anomalyRuleRows(mods));
+        anomalyStats(weeklyStats, mods, record);
+        weeklyBest.textContent = record ? 'Finished ' + (record.done === 1 ? 'once' : record.done + ' times') + '.'
+            + (newForEngine(record) ? ' Not finished for this build yet: full parts.' : '') : 'You haven\'t finished it yet.';
         weeklyStart.dataset.anomalyStart = key;
         weeklyStart.disabled = !canStart(mods);
     }
 
-    // The stack builder: a switch for each stackable Anomaly, and the goal and parts of the ones picked. One that only
-    // goes alone, or that can't be done together with one already picked (stackClash()), can't be picked.
+    // The stack builder: a tile for each stackable Anomaly, and the numbers of the ones picked. One that only goes
+    // alone, or that can't be done together with one already picked (stackClash()), can't be picked.
     let stackPicked = [];
     function renderStack() {
         const ids = ANOMALY_IDS.filter((id) => ANOMALIES[id].tier <= CONFIG.anomalyStackTier);
         if (stackPicks.childElementCount === 0) {
             stackPicks.replaceChildren(...ids.map((id) => {
-                const button = element('button', 'miner-stack-pick', ANOMALIES[id].name);
+                const button = element('button', 'miner-stack-pick');
                 button.type = 'button';
                 button.dataset.stackPick = id;
+                button.append(iconBox('miner-stack-pick-icon', ANOMALIES[id].icon), element('span', 'miner-stack-pick-name', ANOMALIES[id].name));
                 return button;
             }));
         }
@@ -4614,20 +4648,25 @@
         }
         const mods = ids.filter((id) => stackPicked.includes(id));
         const record = mods.length > 1 ? saveState.anomalies[anomalyKey(mods)] ?? null : null;
-        stackInfo.textContent = mods.length < 2 ? 'Pick at least two.'
-            : anomalyName(anomalyKey(mods)) + '. Goal: ' + goalText(mods) + ', for ' + partsText(partsNow(mods)) + ' and ' + afterglowNow(mods) + ' of Afterglow.'
-                + (record ? ' Your best time at it: ' + formatClock(record.best) + '.' : '');
+        stackCount.textContent = mods.length > 0 ? mods.length + ' picked' : '';
+        stackCount.classList.toggle('is-lit', mods.length > 1);
+        stackInfo.hidden = mods.length > 1;
+        stackInfo.textContent = mods.length === 0 ? 'Pick at least two.' : 'Pick at least one more.';
+        stackStats.hidden = mods.length < 2;
+        if (mods.length > 1) anomalyStats(stackStats, mods, record);
+        stackStart.textContent = mods.length > 1 ? 'Go into ' + anomalyName(anomalyKey(mods)) : 'Go in';
         stackStart.dataset.anomalyStart = anomalyKey(mods);
         stackStart.disabled = mods.length < 2 || !canStart(mods);
     }
 
-    // The Anomalies view: every Anomaly by tier, with its rule, goal, parts, best time and badge, built again only
-    // when something in it changes
+    // The Anomalies view: the badges in the hero, and a box per tier with its Anomalies as cards (badge, name, how it
+    // stands, its rule, its numbers and the button to go in), built again only when something in it changes
     function renderAnomalies() {
         // Locked until CONFIG.anomalyStrange Strange Matter has been earned: only the hero and a padlock note show then
         const isLocked = (saveState?.strangeEarned ?? 0) < CONFIG.anomalyStrange;
         anomaliesOpen.hidden = isLocked;
         anomaliesLocked.hidden = !isLocked;
+        anomaliesBadges.hidden = isLocked;
         const finished = ANOMALY_IDS.filter((id) => saveState.anomalies[id]).length; // each on its own, not the stacks
         anomaliesCount.textContent = finished + ' of ' + ANOMALY_IDS.length;
         anomaliesNow.textContent = saveState.anomaly ? 'You\'re in ' + anomalyName(anomalyKey(saveState.anomaly.mods)) + ' right now.' : '';
@@ -4642,58 +4681,85 @@
         renderStack();
         renderAgain();
 
+        anomaliesBadges.replaceChildren(...ANOMALY_IDS.map((id) => {
+            const isDone = Boolean(saveState.anomalies[id]);
+            const badge = iconBox('miner-anomaly-badge', ANOMALIES[id].icon);
+            badge.title = ANOMALIES[id].name + (isDone ? '' : ': not finished yet');
+            const item = element('li', isDone ? 'is-done' : '');
+            item.append(badge, element('span', 'games-visually-hidden', ANOMALIES[id].name + (isDone ? ', finished' : ', not finished yet')));
+            return item;
+        }));
+
         anomalyTierList.replaceChildren(...Object.entries(ANOMALY_TIERS).map(([tierText, tier]) => {
             const tierNumber = Number(tierText);
             const isOpen = anomalyTierOpen(saveState, tierNumber);
-            const box = element('section', 'miner-anomaly-tier' + (isOpen ? '' : ' is-locked'));
-            box.append(element('h3', 'miner-store-title', 'Tier ' + TIER_NUMERALS[tierNumber] + ': ' + tier.name),
-                element('p', 'miner-engine-small', (tier.fresh ? 'These start you from nothing: no skills, no Strange Matter and no upgrades. They don\'t stack.'
-                    : partsText(tier.parts) + ' and ' + formatDuration(tier.afterglow) + ' of Afterglow each.')
-                    + (tier.noAuto ? ' Autopilot and Auto Crunch are off in these.' : '')
-                    + (isOpen ? '' : ' ' + TIER_UNLOCK_TEXT[tier.unlock])));
+            const ids = ANOMALY_IDS.filter((id) => ANOMALIES[id].tier === tierNumber);
+            const doneHere = ids.filter((id) => saveState.anomalies[id]).length;
+            const box = element('section', 'miner-engine-card is-wide miner-anomaly-tier' + (isOpen ? '' : ' is-locked'));
+            const head = element('div', 'miner-engine-head');
+            const headText = element('div', 'miner-engine-head-text');
+            headText.append(element('h3', 'miner-store-title', 'Tier ' + TIER_NUMERALS[tierNumber] + ': ' + tier.name),
+                element('p', 'miner-engine-sub', (tier.fresh ? 'From nothing: no skills, no Strange Matter and no upgrades. They don\'t stack.'
+                    : 'With your skills and Strange Matter, but no Dark Matter or Antimatter.')
+                    + (tier.noAuto ? ' Autopilot and Auto Crunch are off in these.' : '')));
+            const chip = element('p', 'miner-engine-chip' + (doneHere === ids.length ? ' is-lit' : ''), doneHere + ' / ' + ids.length + ' finished');
+            head.append(element('span', 'miner-anomaly-numeral', TIER_NUMERALS[tierNumber]), headText, chip);
+            box.append(head);
+            if (!isOpen) {
+                const note = element('p', 'miner-engine-note miner-anomaly-lock');
+                note.append(iconBox('miner-anomaly-lock-icon', 'lock'), document.createTextNode(TIER_UNLOCK_TEXT[tier.unlock]));
+                box.append(note);
+            }
             const list = element('ul', 'miner-anomaly-list');
-            for (const [id, anomaly] of Object.entries(ANOMALIES)) {
-                if (anomaly.tier !== tierNumber) continue;
+            list.append(...ids.map((id) => {
+                const anomaly = ANOMALIES[id];
                 const record = saveState.anomalies[id] ?? null;
                 const isIn = saveState.anomaly !== null && anomalyKey(saveState.anomaly.mods) === id;
-                const item = element('li', 'miner-anomaly' + (record ? ' is-done' : '') + (isIn ? ' is-now' : ''));
-                const main = element('div', 'miner-anomaly-main');
-                main.append(element('span', 'miner-anomaly-name', anomaly.name),
-                    element('span', 'miner-anomaly-text', anomaly.text),
-                    element('span', 'miner-anomaly-goal', 'Goal: ' + goalText([id]) + (tier.fresh ? '. ' + partsText(partsNow([id])) + ' and ' + afterglowNow([id]) + ' of Afterglow.' : '.')),
-                    element('span', 'miner-anomaly-best', record ? 'Badge earned. Best time ' + formatClock(record.best) + ', finished '
-                        + (record.done === 1 ? 'once' : record.done + ' times') + '.' + (newForEngine(record) ? ' Not finished for this build yet: full parts.' : '')
-                        : 'Not finished yet.'));
+                const isSaved = Boolean(saveState.saved?.[id]);
+                const item = element('li', 'miner-anomaly' + (record ? ' is-done' : '') + (isIn ? ' is-now' : '') + (isSaved ? ' is-saved' : ''));
+                // The top: the badge (its icon, lit once it's finished), the name and how it stands
+                const top = element('div', 'miner-anomaly-top');
+                const badge = iconBox('miner-anomaly-badge', anomaly.icon);
+                badge.title = record ? anomaly.name + ' badge' : 'Finish it for its badge';
+                const name = element('div', 'miner-anomaly-head');
+                name.append(element('p', 'miner-anomaly-name', anomaly.name),
+                    element('p', 'miner-anomaly-state', isIn ? 'You\'re in it' : isSaved ? 'Saved' : record
+                        ? 'Finished ' + (record.done === 1 ? 'once' : record.done + ' times') : 'Not finished yet'));
+                top.append(badge, name);
+                item.append(top, element('p', 'miner-anomaly-text', anomaly.text), anomalyStats(element('dl', 'miner-anomaly-stats'), [id], record));
+                if (newForEngine(record)) item.append(element('p', 'miner-anomaly-new', 'Not finished for this build yet: full parts.'));
                 // "Go again" (finished, not saved) is dimmed and only lights up on hover, see .is-again in the CSS
-                const isAgain = !isIn && !saveState.saved?.[id] && record !== null;
+                const isAgain = !isIn && !isSaved && record !== null;
                 const button = element('button', 'casino-btn' + (isIn ? '' : ' casino-btn-primary') + (isAgain ? ' is-again' : ''),
-                    isIn ? 'You\'re in it' : saveState.saved?.[id] ? 'Carry on' : isAgain ? 'Go again' : 'Go in');
+                    isIn ? 'You\'re in it' : isSaved ? 'Carry on' : isAgain ? 'Go again' : 'Go in');
                 button.type = 'button';
                 button.dataset.anomalyStart = id;
                 button.disabled = !isOpen || saveState.anomaly !== null;
-                // The badge: the Anomaly's icon, lit once it's finished
-                const badge = iconBox('miner-anomaly-badge', anomaly.icon);
-                badge.title = record ? anomaly.name + ' badge' : 'Finish it for its badge';
-                item.append(badge, main, button);
-                list.append(item);
-            }
+                item.append(button);
+                return item;
+            }));
             box.append(list);
             return box;
         }));
     }
 
-    // The saved Anomalies (saveState.saved, see anomalySave()): each with how far it had got when it was saved, and
-    // buttons to carry on with it or throw it away
+    // The saved Anomalies (saveState.saved, see anomalySave()): each with a bar of how far it had got towards its goal
+    // when it was saved, and buttons to carry on with it or throw it away
     function renderSaved() {
         const saved = Object.entries(saveState.saved ?? {});
         savedBox.hidden = saved.length === 0;
+        savedCount.textContent = saved.length + ' / ' + CONFIG.anomalySavedMax;
+        savedCount.classList.toggle('is-lit', saved.length >= CONFIG.anomalySavedMax);
         savedList.replaceChildren(...saved.map(([key, anomaly]) => {
             const stat = anomalyStat(anomaly.mods);
-            const item = element('li', 'miner-anomaly');
-            const main = element('div', 'miner-anomaly-main');
-            main.append(element('span', 'miner-anomaly-name', anomalyName(key)),
-                element('span', 'miner-anomaly-best', 'Saved at ' + formatClock(anomaly.state.tick - anomaly.started) + ' in, with '
-                    + format(anomaly.state[stat]) + ' of ' + format(anomaly.goal) + ' ' + GOAL_STAT_TEXT[stat] + '.'));
+            const have = anomaly.state[stat];
+            const item = element('li', 'miner-anomaly-saved');
+            const main = element('div', 'miner-anomaly-saved-main');
+            const bar = element('span', 'miner-engine-part-bar');
+            bar.style.setProperty('--progress', Math.round(Math.min(1, have / anomaly.goal) * 100) + '%');
+            main.append(element('p', 'miner-anomaly-name', anomalyName(key)), bar,
+                element('p', 'miner-anomaly-state', 'Saved ' + formatClock(anomaly.state.tick - anomaly.started) + ' in, with '
+                    + format(have) + ' of ' + format(anomaly.goal) + ' ' + GOAL_STAT_TEXT[stat]));
             const resume = element('button', 'casino-btn casino-btn-primary', 'Carry on');
             resume.type = 'button';
             resume.dataset.anomalyStart = key;
@@ -4701,7 +4767,9 @@
             const drop = element('button', 'casino-btn', 'Throw away');
             drop.type = 'button';
             drop.dataset.anomalyDrop = key;
-            item.append(iconBox('miner-anomaly-badge', ANOMALIES[anomaly.mods[0]].icon), main, resume, drop);
+            const buttons = element('div', 'miner-anomaly-saved-buttons');
+            buttons.append(resume, drop);
+            item.append(iconBox('miner-anomaly-badge', ANOMALIES[anomaly.mods[0]].icon), main, buttons);
             return item;
         }));
     }

@@ -885,6 +885,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <div class="miner-prestige-main">
                     <h2 id="miner-anomalies-title" class="miner-prestige-title">Anomalies</h2>
                     <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-anomalies-count>0</span> finished</p>
+                    <!-- Every Anomaly's badge in a row, lit once it's finished (renderAnomalies()) -->
+                    <ul class="miner-anomaly-badges" aria-label="Badges" data-miner-anomalies-badges></ul>
                     <p class="miner-prestige-hint" data-miner-anomalies-now></p>
                     <!-- With the Tool Racks perk: the last Anomaly or stack gone into, again (renderAgain()) -->
                     <button type="button" class="casino-btn casino-btn-primary" data-miner-anomaly-again hidden>Again</button>
@@ -943,35 +945,75 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     </div>
                 </li>
             </ul>
-            <!-- The Anomalies saved to carry on later, filled in by spaceOreMiner.js (renderSaved()); hidden when there are none -->
-            <section class="miner-anomaly-tier miner-anomaly-saved" aria-labelledby="miner-saved-title" data-miner-saved hidden>
-                <h3 class="miner-store-title" id="miner-saved-title">Saved Anomalies</h3>
-                <p class="miner-engine-small">Their clocks keep going while they're saved, and they mine as if you were away until you carry on.</p>
-                <ul class="miner-anomaly-list" data-miner-saved-list></ul>
-            </section>
-            <!-- This week's Anomaly and the stack builder, filled in by spaceOreMiner.js (renderWeekly(), renderStack()) -->
-            <section class="miner-anomaly-tier miner-anomaly-weekly" aria-labelledby="miner-weekly-title">
-                <h3 class="miner-store-title" id="miner-weekly-title">This week's Anomaly</h3>
-                <p class="miner-engine-small" data-miner-weekly-text></p>
-                <p class="miner-engine-small" data-miner-weekly-best></p>
-                <button type="button" class="casino-btn casino-btn-primary" data-miner-weekly-start>Go in</button>
-                <a class="casino-btn" href="/games/ore-mining-inc/leaderboard?board=weekly">Fastest this week</a>
-                <!-- With the Heat Shields perk -->
-                <p class="miner-engine-small" data-miner-weekly-next hidden></p>
-            </section>
-            <section class="miner-anomaly-tier miner-anomaly-stack" aria-labelledby="miner-stack-title">
-                <h3 class="miner-store-title" id="miner-stack-title">Stack Anomalies</h3>
-                <p class="miner-engine-small">
-                    Play Tier I and II Anomalies together, with all their rules at once. The goal is the lowest of theirs,
-                    and the parts are theirs added up, times <?= HBHUB_MINER_ANOMALY_STACK ?> for every one after the first. Their Afterglows
-                    are added up too. Unstable Vacuum only goes on its own, and some pairs can't be done together, so those can't
-                    be picked (point at a greyed-out one to see why).
-                </p>
-                <div class="miner-stack-picks" data-miner-stack-picks></div>
-                <p class="miner-engine-small" data-miner-stack-text></p>
-                <button type="button" class="casino-btn casino-btn-primary" data-miner-stack-start disabled>Go in</button>
-            </section>
-            <div class="miner-anomaly-tiers" data-miner-anomaly-tiers></div>
+            <!-- Under the facts, built like Project Starbound's boxes (.miner-engine-card): the saved Anomalies across the
+                 top (only when there are any), this week's Anomaly and the stack builder side by side, then a box per
+                 tier with its Anomalies as cards. The goal, parts, Afterglow and best time are tiles of their own
+                 (anomalyStats() in spaceOreMiner.js). -->
+            <div class="miner-engine-grid miner-anomaly-grid">
+                <!-- The Anomalies saved to carry on later (renderSaved()) -->
+                <section class="miner-engine-card is-wide" aria-labelledby="miner-saved-title" data-miner-saved hidden>
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('hourglass', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-saved-title">Saved Anomalies</h3>
+                            <p class="miner-engine-sub">Their clocks keep going while they're saved, and they mine as if you were away until you carry on.</p>
+                        </div>
+                        <p class="miner-engine-chip" data-miner-saved-count></p>
+                    </div>
+                    <ul class="miner-anomaly-saved-list" data-miner-saved-list></ul>
+                </section>
+
+                <!-- This week's Anomaly (renderWeekly()): a row per Anomaly in it with its rule, then its numbers -->
+                <section class="miner-engine-card miner-anomaly-weekly" aria-labelledby="miner-weekly-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('starChart', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-weekly-title">This week's Anomaly</h3>
+                            <p class="miner-engine-sub" data-miner-weekly-name></p>
+                        </div>
+                        <p class="miner-engine-chip is-lit">&times;<?= HBHUB_MINER_ANOMALY_WEEKLY ?></p>
+                    </div>
+                    <ul class="miner-anomaly-rules" data-miner-weekly-mods></ul>
+                    <dl class="miner-anomaly-stats" data-miner-weekly-stats></dl>
+                    <p class="miner-engine-small" data-miner-weekly-best></p>
+                    <div class="miner-anomaly-actions">
+                        <button type="button" class="casino-btn casino-btn-primary" data-miner-weekly-start>Go in</button>
+                        <a class="miner-engine-more" href="/games/ore-mining-inc/leaderboard?board=weekly">Fastest this week &rarr;</a>
+                    </div>
+                    <p class="miner-engine-small">
+                        The same for everyone, and worth <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts and Afterglow, this week only.
+                    </p>
+                    <!-- With the Heat Shields perk -->
+                    <p class="miner-engine-small" data-miner-weekly-next hidden></p>
+                </section>
+
+                <!-- The stack builder (renderStack()): a tile to pick for each Anomaly that stacks, and the numbers of the
+                     ones picked -->
+                <section class="miner-engine-card miner-anomaly-stack" aria-labelledby="miner-stack-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('books', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-stack-title">Stack Anomalies</h3>
+                            <p class="miner-engine-sub">Tier I and II together, with all their rules at once</p>
+                        </div>
+                        <p class="miner-engine-chip" data-miner-stack-count></p>
+                    </div>
+                    <div class="miner-stack-picks" data-miner-stack-picks></div>
+                    <p class="miner-engine-note" data-miner-stack-text></p>
+                    <dl class="miner-anomaly-stats" data-miner-stack-stats hidden></dl>
+                    <div class="miner-anomaly-actions">
+                        <button type="button" class="casino-btn casino-btn-primary" data-miner-stack-start disabled>Go in</button>
+                    </div>
+                    <p class="miner-engine-small">
+                        The goal is the lowest of theirs, and the parts are theirs added up, times <?= HBHUB_MINER_ANOMALY_STACK ?> for
+                        every one after the first. Their Afterglows are added up too. Unstable Vacuum only goes on its own, and
+                        some pairs can't be done together, so those can't be picked (point at a greyed-out one to see why).
+                    </p>
+                </section>
+
+                <!-- A box per tier (renderAnomalies()) -->
+                <div class="miner-anomaly-tiers" data-miner-anomaly-tiers></div>
+            </div>
             </div>
         </section>
 
