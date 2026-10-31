@@ -1790,10 +1790,7 @@
         menuNews.strangeMatter.hidden = saveState.anomaly !== null || (ripGain(state) < 1
             && !Object.entries(SKILLS).some(([id, skill]) => skillOpen(state, id) && state.strange >= skill.cost));
         const finished = Object.keys(saveState.anomalies).length;
-        menuCounts.anomalies.textContent = finished > 0 ? String(finished) : '';
         menuNews.anomalies.hidden = saveState.anomaly !== null || finished > 0 || !anomalyTierOpen(saveState, 1); // the first one to try
-        const skins = skinsOwned();
-        menuCounts.skins.textContent = skins > 0 ? String(skins) : '';
     }
 
     // The buildings shown: every one owned or nearly affordable, and the next one as a mystery
@@ -2472,7 +2469,6 @@
         : unlock.stage ? 'From the ' + engineNameOf(Math.ceil(unlock.stage / CONFIG.engineStageTotal)) + '\'s ' + ENGINE_STAGES[unlock.stage - 1].name + '.'
             : 'For giving parts to the ' + engineNameOf(unlock.crew) + '\'s last stage.');
     const shopPriceText = (id) => SHOP[id].text + ' ' + SHOP[id].cost + ' Star Shards in the Shard Shop.';
-    const skinsOwned = () => Object.keys(SKINS).filter((id) => skinOpen(saveState, id)).length;
     let skinsKey = '';
 
     // A little rock in a skin's colours (none for the usual grey), on the same tile as the icons
@@ -3499,7 +3495,6 @@
     function renderShardCount() {
         const shards = saveState.shards ?? 0;
         for (const node of shardCounts) node.textContent = String(shards);
-        menuCounts.shop.textContent = String(shards);
         shardWord.textContent = shards === 1 ? 'Star Shard' : 'Star Shards';
     }
 

@@ -125,7 +125,9 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         <a class="miner-menu-link is-<?= $view ?>" href="<?= htmlspecialchars($minerAddress . $query) ?>" data-miner-view-link="<?= $view ?>"<?= $view === $minerView ? ' aria-current="page"' : '' ?>>
                             <span class="miner-menu-text"><?= $text ?></span>
                             <?php if ($view !== 'ore'): ?>
-                                <span class="miner-menu-count" data-miner-menu-count="<?= $view ?>"></span>
+                                <?php if ($row === 0): ?><!-- only the matters show how much there is -->
+                                    <span class="miner-menu-count" data-miner-menu-count="<?= $view ?>"></span>
+                                <?php endif; ?>
                                 <span class="miner-menu-news" data-miner-menu-news="<?= $view ?>" hidden><span class="games-visually-hidden">(something to do here)</span></span>
                             <?php endif; ?>
                         </a>
