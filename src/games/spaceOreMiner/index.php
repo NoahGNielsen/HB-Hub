@@ -693,8 +693,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                          everything under the hero (data-miner-anomalies-open, renderAnomalies()) -->
                     <p class="miner-locked" data-miner-anomalies-locked hidden>
                         <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
-                        Your Big Rips left ripples in the multiverse, and through them are universes where the rules
-                        are wrong. They're too unstable to step into yet: earn <?= number_format(HBHUB_MINER_ANOMALY_STRANGE) ?> Strange Matter to hold one open.
+                        Somewhere out there are universes where the rules are wrong, but they're far too unstable to
+                        step into. Earn <?= number_format(HBHUB_MINER_ANOMALY_STRANGE) ?> Strange Matter to hold one open.
                     </p>
                 </div>
             </div>
