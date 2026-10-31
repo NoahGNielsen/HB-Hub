@@ -264,11 +264,34 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <p class="miner-prestige-hint" data-miner-warp-hint></p>
                 </div>
             </div>
-            <p class="casino-hint miner-prestige-about">
-                A Warp Jump starts you over in a new galaxy with no ore, buildings or upgrades, but you get Dark Matter for all
-                the ore you've ever mined. Every Dark Matter you've earned makes everything mine <?= HBHUB_MINER_DARK_BONUS * 100 ?>%
-                faster until the next Big Crunch, even after you spend it on the upgrades below.
-            </p>
+            <!-- What a Warp Jump does, a card a point, between the jump and what it buys. The Antimatter, Strange Matter,
+                 Engine and Anomalies views have the same (.miner-prestige-facts). -->
+            <ul class="miner-prestige-facts" aria-label="How Warp Jumps work">
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('galaxy', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">A new galaxy</p>
+                        <p class="miner-prestige-fact-text">A Warp Jump starts you over with no ore, buildings or upgrades.</p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('warp', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Dark Matter for every ore</p>
+                        <p class="miner-prestige-fact-text">You get Dark Matter for all the ore you've ever mined, not just this run.</p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('darkEngine', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">+<?= HBHUB_MINER_DARK_BONUS * 100 ?>% each</p>
+                        <p class="miner-prestige-fact-text">
+                            Every Dark Matter you've earned makes everything mine faster until the next Big Crunch, even after
+                            you spend it on the upgrades below.
+                        </p>
+                    </div>
+                </li>
+            </ul>
             <div class="miner-store-head miner-prestige-store-head">
                 <h3 class="miner-store-title">Dark Matter upgrades</h3>
                 <p class="miner-prestige-owned" data-miner-dark-owned></p>
@@ -324,13 +347,44 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 </div>
             </div>
             <div data-miner-crunch-section hidden>
-                <p class="casino-hint miner-prestige-about">
-                    A Big Crunch collapses the whole universe and starts it over. Your Dark Matter and its upgrades go too, but
-                    you get Antimatter for the Dark Matter you earned. Every Antimatter you've earned makes everything mine
-                    <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% faster, and Warp Jumps give more Dark Matter too: the square root of how
-                    much faster it mines (twice the Dark Matter when it's four times as fast), until a Big Rip tears the
-                    multiverse apart.
-                </p>
+                <ul class="miner-prestige-facts" aria-label="How Big Crunches work">
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('bigCrunch', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">The universe collapses</p>
+                            <p class="miner-prestige-fact-text">
+                                A Big Crunch starts it all over: your Dark Matter and its upgrades go too.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('annihilation', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">Antimatter for Dark Matter</p>
+                            <p class="miner-prestige-fact-text">You get Antimatter for the Dark Matter you earned.</p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('antiComet', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">+<?= HBHUB_MINER_ANTI_BONUS * 100 ?>% each</p>
+                            <p class="miner-prestige-fact-text">
+                                Every Antimatter you've earned makes everything mine faster, until a Big Rip tears the
+                                multiverse apart.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('warp', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">Bigger Warp Jumps</p>
+                            <p class="miner-prestige-fact-text">
+                                Warp Jumps give more Dark Matter too: the square root of how much faster it mines (twice the
+                                Dark Matter when it's four times as fast).
+                            </p>
+                        </div>
+                    </li>
+                </ul>
                 <div class="miner-store-head miner-prestige-store-head">
                     <h3 class="miner-store-title">Antimatter upgrades</h3>
                     <p class="miner-prestige-owned" data-miner-anti-owned></p>
@@ -378,18 +432,53 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 </div>
             </div>
             <div data-miner-rip-section hidden>
-                <p class="casino-hint miner-prestige-about">
-                    A Big Rip tears the whole multiverse apart and starts it over. Your Antimatter and its upgrades go too, and
-                    everything a Big Crunch takes, but you get Strange Matter for the Antimatter you earned:
-                    <?= hbHubMinerStrangeTotal(HBHUB_MINER_RIP_ANTI) ?> for <?= number_format(HBHUB_MINER_RIP_ANTI) ?>, and
-                    <?= count(HBHUB_MINER_STRANGE_STEPS) ?> more for every ten times as much. Like a Warp Jump, it only gives
-                    what that's more than all the Strange Matter you've earned before, so each rip has to beat your best
-                    multiverse. Every Strange Matter you've earned
-                    makes everything mine <?= HBHUB_MINER_STRANGE_BONUS * 100 ?>% faster for good, and you spend it on skills in
-                    the tree below, which you keep for good too. A skill can be learned once every skill linked to the left of it is.
-                </p>
+                <ul class="miner-prestige-facts" aria-label="How Big Rips work">
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('bigRip', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">The multiverse tears</p>
+                            <p class="miner-prestige-fact-text">
+                                A Big Rip starts it all over: your Antimatter and its upgrades go too, and everything a Big
+                                Crunch takes.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('strangelet', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">Strange Matter for Antimatter</p>
+                            <p class="miner-prestige-fact-text">
+                                <?= hbHubMinerStrangeTotal(HBHUB_MINER_RIP_ANTI) ?> for <?= number_format(HBHUB_MINER_RIP_ANTI) ?>
+                                Antimatter earned, and <?= count(HBHUB_MINER_STRANGE_STEPS) ?> more for every ten times as much.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('trophy', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">Beat your best</p>
+                            <p class="miner-prestige-fact-text">
+                                Like a Warp Jump, it only gives what that's more than all the Strange Matter you've earned
+                                before, so each rip has to beat your best multiverse.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('strangeStar', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">+<?= HBHUB_MINER_STRANGE_BONUS * 100 ?>% each, for good</p>
+                            <p class="miner-prestige-fact-text">
+                                Every Strange Matter you've earned makes everything mine faster, and the skills you spend it on
+                                below are yours for good too.
+                            </p>
+                        </div>
+                    </li>
+                </ul>
                 <div class="miner-store-head miner-prestige-store-head">
-                    <h3 class="miner-store-title">Skill tree</h3>
+                    <div>
+                        <h3 class="miner-store-title">Skill tree</h3>
+                        <p class="miner-prestige-store-note">A skill can be learned once every skill linked to the left of it is.</p>
+                    </div>
                     <p class="miner-prestige-owned" data-miner-skills-owned></p>
                 </div>
                 <div class="miner-tree-wrap" data-miner-tree-wrap>
@@ -606,14 +695,45 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     </p>
                 </div>
             </div>
-            <p class="casino-hint miner-prestige-about" data-miner-engine-section hidden>
-                Everyone on HB Hub builds Project Starbound together, one stage at a time, out of Starbound Parts. Each stage
-                finished gives everyone who plays its perk, for good. Some stages have a lock as well, which has to be met
-                before they finish, however many parts they have. Once a build is done, the next one starts, with locks
-                that count again from nothing. Anyone who has earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter can give parts. The rocket shows how far
-                it is: each stage done adds its part, and the one being built fills up as parts come in. Point at a
-                part to see its stage.
-            </p>
+            <ul class="miner-prestige-facts" aria-label="How Project Starbound works" data-miner-engine-section hidden>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('buddies', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Built by everyone</p>
+                        <p class="miner-prestige-fact-text">
+                            Everyone on HB Hub builds it together, one stage at a time, out of Starbound Parts. Anyone who has
+                            earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter can give parts.
+                        </p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('sparkles', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Perks for all</p>
+                        <p class="miner-prestige-fact-text">Each stage finished gives everyone who plays its perk, for good.</p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('lock', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Locked stages</p>
+                        <p class="miner-prestige-fact-text">
+                            Some stages have a lock that has to be met before they finish, however many parts they have. Once a
+                            build is done the next one starts, with locks that count again from nothing.
+                        </p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('blueprint', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Watch it grow</p>
+                        <p class="miner-prestige-fact-text">
+                            Each stage done adds its part to the rocket, and the one being built fills up as parts come in.
+                            Point at a part to see its stage.
+                        </p>
+                    </div>
+                </li>
+            </ul>
 
             <div class="miner-engine-grid" data-miner-engine-section hidden>
                 <section class="miner-engine-card" aria-labelledby="miner-engine-give-title">
@@ -702,20 +822,62 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 </div>
             </div>
             <div data-miner-anomalies-open>
-            <p class="casino-hint miner-prestige-about">
-                An Anomaly is a universe of its own with one rule changed. In Tiers I and II you go in with your skill tree
-                and your Strange Matter, but no Dark Matter or Antimatter, and finish it by earning its goal of Antimatter in
-                there. Tier III starts you from nothing: no skills, no Strange Matter and no upgrades. While you're in one,
-                your own game waits and mines as if you were away. You can leave whenever you like: with Save and leave,
-                you can carry on where you were later (up to <?= HBHUB_MINER_ANOMALY_SAVED_MAX ?> saved at once, not Speed of Light),
-                otherwise you'll start over next time. A saved run's clock keeps going, and it mines as if you were away until
-                you carry on. Finishing one gives Project Starbound being built parts: all of them the first time for each build
-                and whenever you beat your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise. Every time you finish one, your own
-                game also gets an Afterglow: it mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much for a while (an hour for Tier I, 3 for
-                Tier II, 12 for Tier III, 24 for The Gauntlet, and a stack's added up), on top of any Afterglow still running, up to
-                <?= HBHUB_MINER_AFTERGLOW_MAX_MS / 3600000 ?> hours ahead. What you do in there doesn't count
-                towards your stats or the leaderboard, but finishing them has achievements of its own.
-            </p>
+            <ul class="miner-prestige-facts" aria-label="How Anomalies work">
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('question', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">One rule changed</p>
+                        <p class="miner-prestige-fact-text">
+                            An Anomaly is a universe of its own. In Tiers I and II you go in with your skill tree and your
+                            Strange Matter, but no Dark Matter or Antimatter, and finish it by earning its goal of Antimatter in
+                            there. Tier III starts you from nothing: no skills, no Strange Matter and no upgrades.
+                        </p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('hourglass', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Leave when you like</p>
+                        <p class="miner-prestige-fact-text">
+                            While you're in one, your own game waits and mines as if you were away. With Save and leave you can
+                            carry on later (up to <?= HBHUB_MINER_ANOMALY_SAVED_MAX ?> saved at once, not Speed of Light),
+                            otherwise you'll start over next time.
+                        </p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('blueprint', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Parts for Project Starbound</p>
+                        <p class="miner-prestige-fact-text">
+                            Finishing one gives the build all its parts the first time for each build and whenever you beat
+                            your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
+                        </p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('cometTail', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Afterglow</p>
+                        <p class="miner-prestige-fact-text">
+                            Each one finished makes your own game mine <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much for a
+                            while: an hour for Tier I, 3 for Tier II, 12 for Tier III, 24 for The Gauntlet, and a stack's
+                            added up. It goes on top of any Afterglow still running, up to
+                            <?= HBHUB_MINER_AFTERGLOW_MAX_MS / 3600000 ?> hours ahead.
+                        </p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('trophy', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">A world apart</p>
+                        <p class="miner-prestige-fact-text">
+                            What you do in there doesn't count towards your stats or the leaderboard, but finishing them has
+                            achievements of its own.
+                        </p>
+                    </div>
+                </li>
+            </ul>
             <!-- The Anomalies saved to carry on later, filled in by spaceOreMiner.js (renderSaved()); hidden when there are none -->
             <section class="miner-anomaly-tier miner-anomaly-saved" aria-labelledby="miner-saved-title" data-miner-saved hidden>
                 <h3 class="miner-store-title" id="miner-saved-title">Saved Anomalies</h3>
@@ -764,16 +926,14 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <p class="miner-prestige-hint">
                         A Star Shard flies past about every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes while the game is open, the
                         other way from the comets, and only stays <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds. Click it to keep it.
+                        They're yours for good: Warp Jumps, Big Crunches and Big Rips don't take them, and neither do Anomalies.
                     </p>
                     <p class="miner-prestige-hint miner-shop-note" data-miner-shop-note hidden>
                         You're in an Anomaly: boosts, ore and comets are for your own game, so they wait until you're back.
                     </p>
                 </div>
             </div>
-            <p class="casino-hint miner-prestige-about">
-                Star Shards are yours for good: Warp Jumps, Big Crunches and Big Rips don't take them, and neither do Anomalies.
-            </p>
-            <h3 class="miner-store-title">Boosts</h3>
+            <h3 class="miner-store-title miner-shop-first-title">Boosts</h3>
             <ul class="miner-shop-list" data-miner-shop-list="boost"></ul>
             <h3 class="miner-store-title">Ore</h3>
             <ul class="miner-shop-list" data-miner-shop-list="ore"></ul>

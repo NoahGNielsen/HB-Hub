@@ -3785,7 +3785,7 @@
     const engineNumbers = Object.fromEntries([...root.querySelectorAll('[data-miner-engine]')].map((node) => [node.dataset.minerEngine, node]));
     const engineProgress = root.querySelector('[data-miner-engine-progress]');
     const engineLock = root.querySelector('[data-miner-engine-lock]');
-    const engineSections = root.querySelectorAll('[data-miner-engine-section]'); // the about text and every card under the rocket
+    const engineSections = root.querySelectorAll('[data-miner-engine-section]'); // the fact cards and every card under the rocket
     const engineLocked = root.querySelector('[data-miner-engine-locked]');
     const engineGiveNote = root.querySelector('[data-miner-engine-give-note]');
     const oreDonateButton = root.querySelector('[data-miner-donate="ore"]');

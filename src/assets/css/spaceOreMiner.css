@@ -3787,8 +3787,60 @@
   font-size: 2rem;
 }
 
-.miner-prestige-about {
-  margin: 20px 4px 24px;
+/* What the view's reset does, a small card a point under the hero (index.php): the view's icon in its colour on the
+   left, a short title and a line or two of text on the right. As many to a row as fit. */
+.miner-prestige-facts {
+  margin: 14px 0 24px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  list-style: none;
+}
+
+.miner-prestige-fact {
+  min-width: 0;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--view) 25%, transparent);
+  border-left: 3px solid var(--view);
+  border-radius: 12px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--view) 10%, transparent), transparent 70%), var(--background);
+}
+
+.miner-prestige-fact-icon {
+  margin-top: 2px;
+  color: var(--view);
+  font-size: 1.6rem;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--view) 50%, transparent));
+}
+
+.miner-prestige-fact-title {
+  margin: 0;
+  color: var(--view);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.miner-prestige-fact-text {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.8;
+}
+
+/* A line of how-to under a store's title (the skill tree's) */
+.miner-prestige-store-note {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+/* The shop has no fact cards, so its first list gets the room under the hero they'd have had */
+.miner-shop-first-title {
+  margin-top: 24px;
 }
 
 .miner-prestige-owned {
