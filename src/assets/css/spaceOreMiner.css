@@ -3787,40 +3787,40 @@
   font-size: 2rem;
 }
 
-/* What the view's reset does, a small card a point under the hero (index.php): the view's icon in its colour on the
-   left, a short title and a line or two of text on the right. As many to a row as fit. */
+/* What the view's reset does, a point each under the hero (index.php): the view's icon on the left, a short title and
+   a line or two of text on the right. As many to a row as fit. No box, background or rounded corners on purpose, so it
+   reads as text that belongs to the page rather than something to click; a faint line on each point's left keeps them
+   apart. */
 .miner-prestige-facts {
-  margin: 14px 0 24px;
+  margin: 18px 4px 28px;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-  gap: 10px;
+  gap: 16px 24px;
   list-style: none;
 }
 
 .miner-prestige-fact {
   min-width: 0;
-  padding: 12px 14px;
+  padding: 2px 0 2px 14px;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  border: 1px solid color-mix(in srgb, var(--view) 25%, transparent);
-  border-left: 3px solid var(--view);
-  border-radius: 12px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--view) 10%, transparent), transparent 70%), var(--background);
+  gap: 10px;
+  border-left: 1px solid color-mix(in srgb, var(--view) 35%, transparent);
 }
 
 .miner-prestige-fact-icon {
-  margin-top: 2px;
+  margin-top: 1px;
+  flex: none;
   color: var(--view);
-  font-size: 1.6rem;
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--view) 50%, transparent));
+  font-size: 1.15rem;
 }
 
 .miner-prestige-fact-title {
   margin: 0;
   color: var(--view);
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
@@ -3838,7 +3838,7 @@
   opacity: 0.75;
 }
 
-/* The shop has no fact cards, so its first list gets the room under the hero they'd have had */
+/* The shop has no facts, so its first list gets the room under the hero they'd have had */
 .miner-shop-first-title {
   margin-top: 24px;
 }

@@ -264,7 +264,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <p class="miner-prestige-hint" data-miner-warp-hint></p>
                 </div>
             </div>
-            <!-- What a Warp Jump does, a card a point, between the jump and what it buys. The Antimatter, Strange Matter,
+            <!-- What a Warp Jump does, a point at a time, between the jump and what it buys. The Antimatter, Strange Matter,
                  Engine and Anomalies views have the same (.miner-prestige-facts). -->
             <ul class="miner-prestige-facts" aria-label="How Warp Jumps work">
                 <li class="miner-prestige-fact">
