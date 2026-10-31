@@ -689,8 +689,15 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <p class="miner-prestige-hint" data-miner-anomalies-now></p>
                     <!-- With the Tool Racks perk: the last Anomaly or stack gone into, again (renderAgain()) -->
                     <button type="button" class="casino-btn casino-btn-primary" data-miner-anomaly-again hidden>Again</button>
+                    <!-- Until the player has earned HBHUB_MINER_ANOMALY_STRANGE Strange Matter, this shows in place of
+                         everything under the hero (data-miner-anomalies-open, renderAnomalies()) -->
+                    <p class="miner-locked" data-miner-anomalies-locked hidden>
+                        <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
+                        Earn <?= number_format(HBHUB_MINER_ANOMALY_STRANGE) ?> Strange Matter to open the Anomalies.
+                    </p>
                 </div>
             </div>
+            <div data-miner-anomalies-open>
             <p class="casino-hint miner-prestige-about">
                 An Anomaly is a universe of its own with one rule changed. In Tiers I and II you go in with your skill tree
                 and your Strange Matter, but no Dark Matter or Antimatter, and finish it by earning its goal of Antimatter in
@@ -734,6 +741,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-stack-start disabled>Go in</button>
             </section>
             <div class="miner-anomaly-tiers" data-miner-anomaly-tiers></div>
+            </div>
         </section>
 
         <!-- The Shard Shop (HBHUB_MINER_SHOP): on top a big Star Shard and how many you have, then a list per section,

@@ -4253,6 +4253,8 @@
     const anomalyTierList = root.querySelector('[data-miner-anomaly-tiers]');
     const anomaliesCount = root.querySelector('[data-miner-anomalies-count]');
     const anomaliesNow = root.querySelector('[data-miner-anomalies-now]');
+    const anomaliesOpen = root.querySelector('[data-miner-anomalies-open]'); // everything under the hero
+    const anomaliesLocked = root.querySelector('[data-miner-anomalies-locked]');
     const anomalyBanner = root.querySelector('[data-miner-anomaly-banner]');
     const anomalyBannerIcon = root.querySelector('[data-miner-anomaly-banner-icon]');
     const anomalyBannerName = root.querySelector('[data-miner-anomaly-banner-name]');
@@ -4462,6 +4464,10 @@
     // The Anomalies view: every Anomaly by tier, with its rule, goal, parts, best time and badge, built again only
     // when something in it changes
     function renderAnomalies() {
+        // Locked until CONFIG.anomalyStrange Strange Matter has been earned: only the hero and a padlock note show then
+        const isLocked = (saveState?.strangeEarned ?? 0) < CONFIG.anomalyStrange;
+        anomaliesOpen.hidden = isLocked;
+        anomaliesLocked.hidden = !isLocked;
         const finished = ANOMALY_IDS.filter((id) => saveState.anomalies[id]).length; // each on its own, not the stacks
         anomaliesCount.textContent = finished + ' of ' + ANOMALY_IDS.length;
         anomaliesNow.textContent = saveState.anomaly ? 'You\'re in ' + anomalyName(anomalyKey(saveState.anomaly.mods)) + ' right now.' : '';
