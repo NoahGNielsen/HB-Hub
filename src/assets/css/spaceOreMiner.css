@@ -504,19 +504,22 @@
 
 /* The asteroid. Its colours change with data-stage (0 grey rock, 1 iron, 2 gold, 3 crystal, 4 alien core, 5 molten,
    6 amethyst, 7 neutron star, 8 black hole core, 9 nebula heart). The space
-   around it takes what's left of the card's height. The variables size the buildings in the picture (see "The
-   buildings in the picture" below), and get smaller with the asteroid on small screens. */
+   around it takes all that's left of the card's height. The variables size the buildings in the picture (see "The
+   buildings in the picture" below). On big screens they grow with the picture (it's a size container, and cq units in
+   them are worked out where they're used, inside it), but not so much the drones and the Dyson Swarm stick out of its
+   sides; the buildings out in space are placed by % of the picture, so they spread out into a tall one by themselves.
+   On small screens they're set sizes, smaller with the asteroid. */
 .miner-field {
-  --rock-r: 110px; /* half the asteroid's width */
-  --sprite: 1.5rem; /* the size of a building's icon */
-  --gap: 18px; /* how far out the drones and lasers are, in steps */
+  --rock-r: clamp(110px, min(24cqh, 25cqw), 170px); /* half the asteroid's width */
+  --sprite: calc(var(--rock-r) * 0.218); /* the size of a building's icon: 1.5rem at the smallest */
+  --gap: calc(var(--rock-r) * 0.164); /* how far out the drones and lasers are, in steps: 18px at the smallest */
   --work: 1; /* how fast the miners in the picture work: 3 during a Supernova or a Diamond Rush */
   position: relative;
   isolation: isolate;
+  container-type: size;
   flex: 1 1 260px;
   width: 100%;
   min-height: 200px;
-  max-height: 360px;
   display: grid;
   place-items: center;
   user-select: none;
@@ -557,8 +560,8 @@
   --rock-glow: transparent;
   position: relative;
   z-index: 1; /* between what's behind it and what's in front of it in the picture */
-  width: 220px;
-  height: 210px;
+  width: calc(var(--rock-r) * 2);
+  height: calc(var(--rock-r) * 1.91);
   padding: 0;
   border: none;
   border-radius: 46% 54% 50% 50% / 52% 45% 55% 48%;
@@ -744,8 +747,8 @@
 .miner-orbit {
   position: absolute;
   z-index: 2;
-  width: 290px;
-  height: 290px;
+  width: calc(var(--rock-r) * 2.64);
+  height: calc(var(--rock-r) * 2.64);
   border-radius: 50%;
   pointer-events: none;
   animation: miner-orbit 7s linear infinite;
@@ -1495,7 +1498,7 @@
   left: 50%;
   top: 50%;
   width: calc(var(--rock-r) * 0.6);
-  height: 86%; /* leaves room for the drills over the ends */
+  height: min(86%, calc(var(--rock-r) * 2.9)); /* leaves room for the drills over the ends, and doesn't stretch up a tall picture */
   translate: -50% -50%;
   rotate: 24deg;
   z-index: -1;

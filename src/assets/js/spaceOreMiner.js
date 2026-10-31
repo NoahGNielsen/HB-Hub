@@ -2043,7 +2043,7 @@
         const ay = fromY / 100 * height - height / 2;
         const along = Math.min(1, Math.max(0, -(ax * dx + ay * dy) / (dx * dx + dy * dy)));
         const closest = Math.hypot(ax + dx * along, ay + dy * along);
-        const rockR = parseFloat(getComputedStyle(field).getPropertyValue('--rock-r')) || 110;
+        const rockR = asteroid.offsetWidth / 2 || 110; // --rock-r is a sum on big screens, so it's measured instead
 
         sprite.style.setProperty('--from-x', fromX + '%');
         sprite.style.setProperty('--to-x', toX + '%');
