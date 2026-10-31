@@ -1276,7 +1276,7 @@
         dyson: { at: [1, 1], parts: { body: '' } },
         wormhole: { at: [1], parts: { body: 'wormhole' } },
         multiverse: { at: [1], parts: { glow: '', flash: '', edge: '', body: '', ours: 'sceneMultiverseDrill', theirs: 'sceneMultiverseDrillMirror', spill: '' } },
-        timeQuarry: { at: [1], parts: { body: 'sceneQuarryRock', fossil: 'sceneQuarryFossil', pick: 'sceneQuarryPick', sparks: 'sceneQuarrySparks', crystal: 'sceneQuarryCrystal', shine: 'sceneQuarryShine' } },
+        timeQuarry: { at: [1], parts: { body: 'sceneQuarryRock', rift: 'sceneQuarryRift', gold: 'sceneQuarryOreGold', crystal: 'sceneQuarryOreCrystal', gem: 'sceneQuarryOreGem' } },
         stringLoom: { at: [1], parts: { body: 'sceneLoomFrame', strings: 'sceneLoomStrings', bent: 'sceneLoomStringsBent', thread: '', shuttle: 'sceneLoomShuttle' } },
         bigBangReactor: { at: [1], parts: { body: 'sceneReactorBody', core: 'sceneReactorCore', ring: 'sceneReactorRing', ring2: 'sceneReactorRingPink', blast: '' } },
         realityPrinter: { at: [1], parts: { sheet: 'sceneRealitySheet', body: 'scenePrinter', head: 'sceneRealityHead', planet: 'sceneRealityPlanet' } },
