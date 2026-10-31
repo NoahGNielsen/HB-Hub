@@ -836,17 +836,6 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     </div>
                 </li>
                 <li class="miner-prestige-fact">
-                    <?= hbHubMinerIcon('hourglass', 'miner-prestige-fact-icon') ?>
-                    <div>
-                        <p class="miner-prestige-fact-title">Leave when you like</p>
-                        <p class="miner-prestige-fact-text">
-                            While you're in one, your own game waits and mines as if you were away. With Save and leave you can
-                            carry on later (up to <?= HBHUB_MINER_ANOMALY_SAVED_MAX ?> saved at once, not Speed of Light),
-                            otherwise you'll start over next time.
-                        </p>
-                    </div>
-                </li>
-                <li class="miner-prestige-fact">
                     <?= hbHubMinerIcon('blueprint', 'miner-prestige-fact-icon') ?>
                     <div>
                         <p class="miner-prestige-fact-title">Parts for Project Starbound</p>
