@@ -292,7 +292,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-anti>0</span> Antimatter</p>
                     <p class="miner-locked" data-miner-crunch-locked>
                         <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
-                        Something even bigger than a Warp Jump is out there. Do your first Warp Jump to find out what.
+                        Every universe collapses in the end, and what's left when it does is worth more than any ore.
+                        Do your first Warp Jump to see it coming.
                     </p>
                     <div data-miner-crunch-section hidden>
                         <p class="miner-prestige-bonus"><strong data-miner-crunch="bonus">+0%</strong> production and Dark Matter from your Antimatter</p>
@@ -356,7 +357,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-strange>0</span> Strange Matter</p>
                     <p class="miner-locked" data-miner-rip-locked>
                         <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
-                        Something even stranger than a Big Crunch is out there. Do your first Big Crunch to find out what.
+                        Even a collapsing universe leaves the multiverse around it in one piece, but it doesn't have to.
+                        Do your first Big Crunch to find out how to tear it apart.
                     </p>
                     <div data-miner-rip-section hidden>
                         <p class="miner-prestige-bonus"><strong data-miner-rip="bonus">+0%</strong> production from the Strange Matter you've earned</p>
@@ -599,7 +601,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                          progress show, with this in place of the rest (data-miner-engine-section, renderEngineLocked()) -->
                     <p class="miner-locked" data-miner-engine-locked hidden>
                         <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
-                        Earn <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter to join Project Starbound.
+                        Out on the launch pad, every miner on HB Hub is building something together, part by part. Only
+                        a proven crew gets to help: earn <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter to join them.
                     </p>
                 </div>
             </div>
