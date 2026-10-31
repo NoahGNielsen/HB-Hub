@@ -726,7 +726,8 @@ CREATE TABLE `HBHub-MinerEngines` (
   `engineStageFinished` json DEFAULT NULL COMMENT 'When each stage was done, {"stage": "Y-m-d H:i:s"} in UTC',
   `engineCountdownTimestamp` datetime DEFAULT NULL COMMENT 'UTC, when the last stage (Ignition) has to be full by',
   `engineStartedTimestamp` datetime NOT NULL COMMENT 'UTC',
-  `engineIgnitedTimestamp` datetime DEFAULT NULL COMMENT 'UTC, when it was finished'
+  `engineIgnitedTimestamp` datetime DEFAULT NULL COMMENT 'UTC, when it was finished',
+  `engineLockCheckedTimestamp` datetime DEFAULT NULL COMMENT 'UTC, when the lock of a full stage was last checked without a gift (hbHubMinerEngineRecheck())'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Ore Mining Inc.: the Cosmic Engine the whole site builds together, the newest row being built (src/assets/php/games/spaceOreMiner/engine.php)';
 
 -- --------------------------------------------------------

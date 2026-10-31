@@ -3453,6 +3453,11 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         if ($replay['given'] !== []) {
             hbHubMinerEngineGive($db, $engine, $userId, $replay['given']);
             hbHubMinerAnomalyTimesSave($db, $userId, $replay['given']);
+        } elseif (hbHubMinerEngineRecheckDue($engine)) { // a full stage nobody can give to: is its lock met by now?
+            $engine = hbHubMinerEngineRow($db, true);
+            if (hbHubMinerEngineRecheckDue($engine)) {
+                hbHubMinerEngineRecheck($db, $engine);
+            }
         }
         hbHubMinerEngineAdopt($state, $engine, true, $db, $userId);
 

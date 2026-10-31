@@ -9,8 +9,9 @@
 //   engineStage counts every Engine's, see hbHubMinerEngineAdopt()), the parts in the stage being built
 //   (engineStageParts), all parts ever given (engineParts), the admin's own stage costs (engineStageCosts, JSON
 //   {stage: cost}, see hbHubMinerEngineCosts()), when each stage was done (engineStageFinished, JSON
-//   {stage: 'Y-m-d H:i:s' UTC}), when the last stage has to be full by (engineCountdownTimestamp) and when it was
-//   (engineIgnitedTimestamp).
+//   {stage: 'Y-m-d H:i:s' UTC}), when the last stage has to be full by (engineCountdownTimestamp), when it was
+//   (engineIgnitedTimestamp) and when a full stage's lock was last checked on a save that gave nothing
+//   (engineLockCheckedTimestamp, hbHubMinerEngineRecheck()).
 // - HBHub-MinerContributions: who gave how many parts, from what (HBHUB_MINER_ENGINE_SOURCE_*), into which Engine and
 //   stage and when, and for an Anomaly how long it took (contributionMs, for the time locks): one row per source per
 //   save. Shown to everyone in the game's Engine view and on the leaderboard.
@@ -21,9 +22,11 @@
 //
 // hbHubMinerSync() (miner.php) puts in what a save gave with hbHubMinerEngineGive(), with the Engine's row locked, and
 // a stage is done as soon as it has its parts and its lock is met (hbHubMinerEngineFinish()), which notifies everyone
-// who plays (miner.engineStage, notificationTypes/miner.php). The last stage's countdown has no timer: the first save
-// after it runs out drains it (hbHubMinerEngineDrain()). The admin panel changes the costs (hbHubMinerEngineSetCosts(),
-// admin/engine.php).
+// who plays (miner.engineStage, notificationTypes/miner.php). A full stage whose lock gets met some other way (a weekly
+// lock through HBHub-MinerAnomalyTimes, rows changed by hand, a lower cost) is picked up by the next save that gives
+// nothing, at most every HBHUB_MINER_ENGINE_RECHECK_SECONDS (hbHubMinerEngineRecheck()). The last stage's countdown
+// has no timer: the first save after it runs out drains it (hbHubMinerEngineDrain()). The admin panel changes the
+// costs (hbHubMinerEngineSetCosts(), admin/engine.php).
 require_once __DIR__ . '/../../database.php';
 
 const HBHUB_MINER_ENGINE_TOP = 10; // contributors in the Project Starbound view
@@ -32,6 +35,7 @@ const HBHUB_MINER_ENGINE_HALL_TOP = 3; // who gave the most to each finished bui
 const HBHUB_MINER_ENGINE_COST_MAX = 10000000; // the most the admin panel lets a stage cost
 const HBHUB_MINER_ENGINE_STATUS_BANNED = 4; // userStatus in HBHub-Users
 const HBHUB_MINER_MEDALS = 3; // places with a weekly Anomaly medal: gold, silver, bronze
+const HBHUB_MINER_ENGINE_RECHECK_SECONDS = 30; // how often a full stage's lock is checked again without a gift (engineLockCheckedTimestamp)
 
 /**
  * The Engine being built (the newest row), made if there isn't one yet. $lock: FOR UPDATE, to change it. It also has
@@ -40,7 +44,7 @@ const HBHUB_MINER_MEDALS = 3; // places with a weekly Anomaly medal: gold, silve
 function hbHubMinerEngineRow(PDO $db, bool $lock): array
 {
     $sql = 'SELECT engineId, engineNumber, engineStage, engineStageParts, engineParts, engineStageCosts, engineStageFinished,
-            engineStartedTimestamp, engineCountdownTimestamp, engineIgnitedTimestamp,
+            engineStartedTimestamp, engineCountdownTimestamp, engineIgnitedTimestamp, engineLockCheckedTimestamp,
             (SELECT MAX(i.engineNumber) FROM `HBHub-MinerEngines` i WHERE i.engineIgnitedTimestamp IS NOT NULL) AS lastIgnitedNumber,
             (SELECT MAX(i.engineIgnitedTimestamp) FROM `HBHub-MinerEngines` i) AS lastIgnitedTimestamp
         FROM `HBHub-MinerEngines` ORDER BY engineId DESC LIMIT 1' . ($lock ? ' FOR UPDATE' : '');
@@ -104,8 +108,9 @@ function hbHubMinerEngineCosts(array $engine): array
 
 /**
  * Whether the Engine takes parts: not when every stage is done, nor while a full stage waits for a lock that isn't a
- * number of contributors (see HBHUB_MINER_ENGINE_STAGES). A full stage whose lock is met is never left waiting, as
- * hbHubMinerEngineFinish() finishes it straight away.
+ * number of contributors (see HBHUB_MINER_ENGINE_STAGES). A full stage whose lock is met through a gift is finished
+ * straight away (hbHubMinerEngineFinish()); one whose lock is met some other way waits until the next
+ * hbHubMinerEngineRecheck().
  */
 function hbHubMinerEngineOpen(array $engine): bool
 {
@@ -283,6 +288,36 @@ function hbHubMinerEngineDrain(PDO $db, array &$engine): void
     $engine['engineCountdownTimestamp'] = gmdate('Y-m-d H:i:s', intdiv($deadline, 1000));
     $db->prepare('UPDATE `HBHub-MinerEngines` SET engineStageParts = ?, engineCountdownTimestamp = ? WHERE engineId = ?')
         ->execute([$parts, $engine['engineCountdownTimestamp'], (int) $engine['engineId']]);
+}
+
+/**
+ * Whether the stage being built is full (it only waits for its lock, or for nothing) and its lock hasn't been checked
+ * for HBHUB_MINER_ENGINE_RECHECK_SECONDS. Just the row's own columns, so it costs nothing to ask on every save.
+ */
+function hbHubMinerEngineRecheckDue(array $engine): bool
+{
+    $done = (int) $engine['engineStage'];
+    if ($done >= count(hbHubMinerEngineStagesOf($engine)) || (int) $engine['engineStageParts'] < hbHubMinerEngineCosts($engine)[$done]) {
+        return false;
+    }
+    $checked = $engine['engineLockCheckedTimestamp'] ?? null;
+    return $checked === null || hbHubMinerEngineMs($checked) + HBHUB_MINER_ENGINE_RECHECK_SECONDS * 1000 <= hbHubMinerNow();
+}
+
+/**
+ * Checks a full stage's lock again on a save that gave nothing, as otherwise only a gift does (hbHubMinerEngineGive()),
+ * and a full stage with its lock met some other way would wait for good, with the give buttons off. Remembers when
+ * (engineLockCheckedTimestamp), so it's done at most every HBHUB_MINER_ENGINE_RECHECK_SECONDS however many play, and
+ * finishes the stage the usual way if the lock is met (hbHubMinerEngineFinish(): the notifications, countdown, ignition
+ * and next Engine). $engine must have been read with its row locked, inside a transaction, and
+ * hbHubMinerEngineRecheckDue() asked again after, so two saves can't both do it.
+ */
+function hbHubMinerEngineRecheck(PDO $db, array &$engine): void
+{
+    $engine['engineLockCheckedTimestamp'] = gmdate('Y-m-d H:i:s', intdiv(hbHubMinerNow(), 1000));
+    $db->prepare('UPDATE `HBHub-MinerEngines` SET engineLockCheckedTimestamp = ? WHERE engineId = ?')
+        ->execute([$engine['engineLockCheckedTimestamp'], (int) $engine['engineId']]);
+    hbHubMinerEngineFinish($db, $engine);
 }
 
 /**

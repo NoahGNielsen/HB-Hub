@@ -225,7 +225,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             The parts go into one stage at a time. When a stage has all its parts, it's finished, and everyone who
                             plays gets its perk for good. Some stages have a lock too, which has to be met before they finish
                             however many parts they have: until then the parts wait there (or, for a lock that needs Anomalies, the
-                            build only takes parts from Anomalies). Finishing <a href="#anomalies">Anomalies</a> gives parts
+                            build only takes parts from Anomalies). A full stage finishes as soon as its lock is met, even if
+                            nobody gives another part: it's checked again within half a minute while someone plays.
+                            Finishing <a href="#anomalies">Anomalies</a> gives parts
                             too, and they're the biggest source of them. The daily limits and Shifts start over at midnight UTC. The
                             <a href="/games/ore-mining-inc/leaderboard?board=starbound">leaderboard</a> shows who has given the most.
                         </p>
