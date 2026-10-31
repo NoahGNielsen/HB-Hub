@@ -3377,6 +3377,13 @@
     miner-ring-skip var(--glitch) steps(1, end) infinite;
 }
 
+/* The orb's glow, in one piece behind the bands (cut up with them, their edges showed as lines through it) */
+.miner-prestige.is-anomaly .miner-art-core {
+  width: 62%;
+  height: 62%;
+  box-shadow: 0 0 24px 4px color-mix(in srgb, var(--view) 70%, transparent);
+}
+
 .miner-prestige.is-anomaly .miner-art-slice {
   position: relative;
   width: 62%;
@@ -3384,7 +3391,6 @@
   background: radial-gradient(circle at 50% 50%, #12002a 40%, #07001a 70%);
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--view) 75%, #fff),
-    0 0 24px 4px color-mix(in srgb, var(--view) 70%, transparent),
     inset 0 0 22px color-mix(in srgb, var(--view-2) 55%, transparent);
   clip-path: inset(var(--top) -30% var(--bottom) -30%);
   overflow: hidden;

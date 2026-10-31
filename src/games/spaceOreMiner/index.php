@@ -803,6 +803,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <span class="miner-art-bit is-2"></span>
                     <span class="miner-art-bit is-3"></span>
                     <span class="miner-art-bit is-4"></span>
+                    <span class="miner-art-core"></span>
                     <?php for ($slice = 1; $slice <= 5; $slice++): ?>
                         <span class="miner-art-slice is-<?= $slice ?>"></span>
                     <?php endfor; ?>
