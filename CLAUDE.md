@@ -1,10 +1,10 @@
-Last updated 22/10-26
+Last updated 01/11-26
 # CLAUDE.md
 
 ## Rules (from the project owner)
 
 - **Every change to `database/schema.sql` also goes in its own `.sql` file in `database/migrations/`.** Name it after the
-  date and what changed, e.g. `01-01-1970 - Added a new colum with titles.sql` (DD-MM-YYYY). It must hold only the
+  date and what changed, e.g. `26-11-01 - Added a new colum with titles.sql` (YY-MM-DD). It must hold only the
   statements needed to bring an existing database up to date (`ALTER TABLE ...` etc.). `schema.sql` itself always holds
   the full, current schema.
 - **You HAVE to update the legal pages in `src/legal/` whenever a change touches what they describe.** This is not
