@@ -273,7 +273,8 @@
     }
 
     const darkBonus = (s) => (hasDark(s, 'reactor') ? CONFIG.darkBonusReactor : CONFIG.darkBonus) + skillEffects(s).darkBonus;
-    const antiMultiplier = (s) => 1 + (CONFIG.antiBonus + skillEffects(s).antiBonus) * s.antimatterEarned;
+    const antiBonus = (s) => (hasAnti(s, 'antiReactor') ? CONFIG.antiBonusReactor : CONFIG.antiBonus) + skillEffects(s).antiBonus;
+    const antiMultiplier = (s) => 1 + antiBonus(s) * s.antimatterEarned;
     const strangeMultiplier = (s) => 1 + CONFIG.strangeBonus * s.strangeEarned;
     const cometPower = (s) => (hasAnti(s, 'antiComets') ? 2 : 1) * skillEffects(s).cometPower;
     const upgradeCost = (s, id) => UPGRADES[id].cost * skillEffects(s).upgradeCost * engineEffects(s).upgradeCost;
@@ -304,7 +305,7 @@
     function buildingCost(s, id, amount) {
         const growth = costGrowth(s, id);
         return Math.ceil(BUILDINGS[id].cost * skillEffects(s).cost * engineEffects(s).cost
-            * growth ** s.buildings[id] * (growth ** amount - 1) / (growth - 1));
+            * (hasAnti(s, 'negativePrices') ? CONFIG.negativePrices : 1) * growth ** s.buildings[id] * (growth ** amount - 1) / (growth - 1));
     }
 
     const canAfford = (s, cost) => cost <= s.ore * (1 + 1e-9) + 1e-9;
@@ -318,6 +319,7 @@
         const effects = skillEffects(s);
         let global = (1 + darkBonus(s) * s.darkEarned) * antiMultiplier(s) * strangeMultiplier(s);
         if (hasDark(s, 'darkEngines')) global *= 1.5;
+        if (hasDark(s, 'darkTurbines')) global *= 2;
         if (hasAnti(s, 'annihilation')) global *= 2;
         global *= effects.production * (1 + effects.perSkill * s.skills.length) * (1 + effects.perWarp * s.flights)
             * (1 + effects.perCrunch * s.crunches) * engineEffects(s).production * ignition(s) * afterglow(s);
@@ -334,17 +336,18 @@
         return parts;
     }
 
-    // What a building or synergy upgrade multiplies its building's ore per second by
+    // What a building or synergy upgrade multiplies its building's ore per second by (synergies twice as much with
+    // Dark Tethers)
     function upgradeMultiplier(s, upgrade, effects) {
         return upgrade.type === 'building' ? 2 * effects.buildingUpgrade
-            : 1 + upgrade.per * Math.floor(s.buildings[upgrade.source] / upgrade.every);
+            : 1 + upgrade.per * (hasDark(s, 'darkTethers') ? 2 : 1) * Math.floor(s.buildings[upgrade.source] / upgrade.every);
     }
 
     function addRatePart(s, parts, upgrade, effects) {
         if (upgrade.type === 'building' || upgrade.type === 'synergy') {
             parts.multipliers[upgrade.building] *= upgradeMultiplier(s, upgrade, effects);
         } else if (upgrade.type === 'crew') {
-            parts.crew[upgrade.building] += upgrade.value * effects.crew;
+            parts.crew[upgrade.building] += upgrade.value * effects.crew * (hasDark(s, 'shadowCrews') ? 2 : 1);
         } else if (upgrade.type === 'global') {
             parts.global *= 1 + upgrade.value;
         } else if (upgrade.type === 'click') {
@@ -436,14 +439,16 @@
         if (mod(s, 'deadHands')) return 0;
         const effects = skillEffects(s);
         const value = parts.click * effects.click;
-        const share = parts.clickShare + (effects.clickShare + (mod(s, 'handsOnly') ? CONFIG.handsShare : 0));
+        const share = parts.clickShare + (effects.clickShare + (mod(s, 'handsOnly') ? CONFIG.handsShare : 0)
+            + (hasAnti(s, 'antiKnuckles') ? CONFIG.antiClickShare : 0));
         const steady = share > 0 ? production(s, parts) * buff(s, 'production', time) : 0;
         return (value + share * steady) * buff(s, 'click', time) * engineEffects(s).click;
     }
 
-    // How many times a second the auto upgrades and skills click, together (hbHubMinerAutoClicks())
+    // How many times a second the auto upgrades (twice as often with Dark Clockwork) and skills click, together
+    // (hbHubMinerAutoClicks())
     function autoClicks(s, parts = rateParts(s)) {
-        return parts.clicks + skillEffects(s).auto;
+        return parts.clicks * (hasDark(s, 'darkClockwork') ? 2 : 1) + skillEffects(s).auto;
     }
 
     // time Infinity: the steady rate, without comets. parts: rateParts(s), when it's already been worked out.
@@ -577,7 +582,8 @@
     function crunchGain(s) {
         const effects = skillEffects(s);
         return s.darkEarned >= CONFIG.crunchDark * effects.crunchDark
-            ? Math.floor(antiTotal(s.darkEarned) * effects.antiGain * engineEffects(s).antiGain) : 0;
+            ? Math.floor(antiTotal(s.darkEarned) * effects.antiGain * engineEffects(s).antiGain
+                * (hasAnti(s, 'mirrorUniverse') ? 2 : 1)) : 0;
     }
 
     // One for every step the Antimatter earned in this multiverse has passed: strangeUnit times each of strangeSteps
@@ -3788,7 +3794,7 @@
     crunchButton.addEventListener('click', () => {
         const gain = crunchGain(state);
         if (gain < 1) return;
-        const percent = format((CONFIG.antiBonus + skillEffects(state).antiBonus) * 100 * gain);
+        const percent = format(antiBonus(state) * 100 * gain);
         crunchDialogText.textContent = 'You\'ll get ' + format(gain) + ' Antimatter, which makes everything mine '
             + percent + '% faster and Warp Jumps give ' + percent
             + '% more Dark Matter, until the next Big Rip. Your ore, buildings, upgrades and Dark Matter start over'

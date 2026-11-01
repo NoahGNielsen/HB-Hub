@@ -59,6 +59,7 @@ const HBHUB_MINER_DARK_BONUS_REACTOR = 0.075; // with Dark Matter Reactor
 const HBHUB_MINER_CRUNCH_DARK = 2000; // Dark Matter to earn in a universe before a Big Crunch
 const HBHUB_MINER_ANTI_UNIT = 100; // Dark Matter for the first Antimatter, see hbHubMinerAntiTotal()
 const HBHUB_MINER_ANTI_BONUS = 0.1; // production per Antimatter earned in this multiverse (and the square root of it to Dark Matter)
+const HBHUB_MINER_ANTI_BONUS_REACTOR = 0.15; // with Antimatter Reactor
 const HBHUB_MINER_RIP_ANTI = 10000; // Antimatter to earn in a multiverse before a Big Rip
 const HBHUB_MINER_STRANGE_UNIT = 1000; // Antimatter for the first Strange Matter, see hbHubMinerStrangeTotal()
 const HBHUB_MINER_STRANGE_STEPS = [1, 1.12, 1.25, 1.4, 1.6, 1.8, 2, 2.24, 2.5, 2.8, 3.15, 3.55, 4, 4.5, 5, 5.6, 6.3, 7.1, 8, 9]; // a Strange Matter at each of these times a power of ten (times the unit), 20 for every ten times as much
@@ -71,6 +72,8 @@ const HBHUB_MINER_CRIT_CHANCE = 0.05;
 const HBHUB_MINER_CRIT_MULTIPLIER = 10;
 const HBHUB_MINER_HEAD_START = 10; // Mining Drones with Head Start
 const HBHUB_MINER_DARK_PICKAXE = 3; // clicks mine this many times as much with Dark Pickaxe
+const HBHUB_MINER_ANTI_CLICK_SHARE = 0.05; // of the ore per second each click also mines with Antimatter Knuckles
+const HBHUB_MINER_NEGATIVE_PRICES = 0.75; // buildings cost this much of their price with Negative Prices
 const HBHUB_MINER_TAB_PATTERN = '/^[0-9a-f]{32}$/';
 
 // What a comet does when it's caught: production or clicks times 'multiplier' for 'ms' (doubled with Tail Collector),
@@ -351,6 +354,10 @@ const HBHUB_MINER_DARK_UPGRADES = [
     'physics' => ['name' => 'Cheaper Physics', 'icon' => 'chartDown', 'cost' => 750, 'text' => 'Each building costs 14% more than the one before instead of 15% (11% instead of 12% for Space Pickaxe Guys). Somebody found the receipt for the universe.'],
     'reactor' => ['name' => 'Dark Matter Reactor', 'icon' => 'radiation', 'cost' => 2500, 'text' => 'Every Dark Matter you\'ve earned makes everything mine '
         . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%. Do not ask what is in it. Nobody can see it anyway.'],
+    'darkClockwork' => ['name' => 'Dark Clockwork', 'icon' => 'robot', 'cost' => 150, 'text' => 'The Auto-Clicker Bot and Swarm click twice as often. Wound up with a key nobody can see.'],
+    'shadowCrews' => ['name' => 'Shadow Crews', 'icon' => 'buddies', 'cost' => 500, 'text' => 'The crew upgrades (Buddy System and the rest) are twice as strong. A second Space Pickaxe Guy behind every Space Pickaxe Guy. He doesn\'t talk much.'],
+    'darkTethers' => ['name' => 'Dark Tethers', 'icon' => 'link', 'cost' => 1000, 'text' => 'The upgrades that link two buildings are twice as strong. Invisible string, and a lot of it.'],
+    'darkTurbines' => ['name' => 'Dark Turbines', 'icon' => 'darkEngine', 'cost' => 10000, 'text' => 'All buildings mine twice as much. The Dark Engines got a bigger brother. Nobody has seen him either.'],
 ];
 
 // Bought with Antimatter, kept forever. Comet Catcher, like Auto Buy, only catches in the page like a player would (its
@@ -363,6 +370,13 @@ const HBHUB_MINER_ANTI_UPGRADES = [
     'cometCatcher' => ['name' => 'Comet Catcher', 'icon' => 'cometCatcher', 'cost' => 15, 'text' => 'Catches every Golden Comet for you while the game is open. Diamond Comets are still yours to catch. Golden ones only. It knows its place.'],
     'annihilation' => ['name' => 'Annihilation Engines', 'icon' => 'annihilation', 'cost' => 25, 'text' => 'All buildings mine twice as much. Matter meets antimatter, and the bill is paid in ore.'],
     'antiComets' => ['name' => 'Antimatter Comets', 'icon' => 'antiComet', 'cost' => 50, 'text' => 'Comet effects are twice as strong. The same comets, just the other way round.'],
+    'antiKnuckles' => ['name' => 'Antimatter Knuckles', 'icon' => 'neutronFist', 'cost' => 75, 'text' => 'Each click also mines another '
+        . HBHUB_MINER_ANTI_CLICK_SHARE * 100 . '% of your ore per second. Do not high-five anyone made of matter.'],
+    'negativePrices' => ['name' => 'Negative Prices', 'icon' => 'chartDown', 'cost' => 100, 'text' => 'Buildings cost '
+        . (1 - HBHUB_MINER_NEGATIVE_PRICES) * 100 . '% less. In the antiverse, the shop pays you a little bit to take them away.'],
+    'antiReactor' => ['name' => 'Antimatter Reactor', 'icon' => 'bigCrunch', 'cost' => 500, 'text' => 'Every Antimatter you\'ve earned adds '
+        . HBHUB_MINER_ANTI_BONUS_REACTOR * 100 . '% to production, instead of ' . HBHUB_MINER_ANTI_BONUS * 100 . '% (and so more Dark Matter from Warp Jumps). It runs backwards. So does the warning label.'],
+    'mirrorUniverse' => ['name' => 'Mirror Universe', 'icon' => 'galaxy', 'cost' => 1000, 'text' => 'Big Crunches give twice as much Antimatter. Every universe you crunch has a twin, and the twin crunches too.'],
 ];
 
 // The skill tree, bought with Strange Matter and kept forever. A skill can be learned once every skill in its 'after' is
@@ -1271,6 +1285,9 @@ function hbHubMinerConfig(): array
         'crunchDark' => HBHUB_MINER_CRUNCH_DARK,
         'antiUnit' => HBHUB_MINER_ANTI_UNIT,
         'antiBonus' => HBHUB_MINER_ANTI_BONUS,
+        'antiBonusReactor' => HBHUB_MINER_ANTI_BONUS_REACTOR,
+        'antiClickShare' => HBHUB_MINER_ANTI_CLICK_SHARE,
+        'negativePrices' => HBHUB_MINER_NEGATIVE_PRICES,
         'ripAnti' => HBHUB_MINER_RIP_ANTI,
         'strangeUnit' => HBHUB_MINER_STRANGE_UNIT,
         'strangeSteps' => HBHUB_MINER_STRANGE_STEPS,
@@ -2011,12 +2028,21 @@ function hbHubMinerDarkBonus(array $state): float
 }
 
 /**
- * What Antimatter does to production: 1 + HBHUB_MINER_ANTI_BONUS (and Dense Antimatter) for each one earned in this
- * multiverse. A Warp Jump gets the square root of it (hbHubMinerWarpGain()).
+ * The production each Antimatter earned adds (0.1 = +10%, more with Antimatter Reactor and Dense Antimatter).
+ */
+function hbHubMinerAntiBonus(array $state): float
+{
+    return (hbHubMinerHasAnti($state, 'antiReactor') ? HBHUB_MINER_ANTI_BONUS_REACTOR : HBHUB_MINER_ANTI_BONUS)
+        + hbHubMinerSkillEffects($state)['antiBonus'];
+}
+
+/**
+ * What Antimatter does to production: 1 + hbHubMinerAntiBonus() for each one earned in this multiverse. A Warp Jump
+ * gets the square root of it (hbHubMinerWarpGain()).
  */
 function hbHubMinerAntiMultiplier(array $state): float
 {
-    return 1 + (HBHUB_MINER_ANTI_BONUS + hbHubMinerSkillEffects($state)['antiBonus']) * $state['antimatterEarned'];
+    return 1 + hbHubMinerAntiBonus($state) * $state['antimatterEarned'];
 }
 
 /**
@@ -2107,13 +2133,13 @@ function hbHubMinerEntropy(array $state): float
 
 /**
  * What the next $amount of a building cost together, rounded up: each costs hbHubMinerCostGrowth() times the one before,
- * and all of them less with the discount skills.
+ * and all of them less with the discount skills and Negative Prices.
  */
 function hbHubMinerBuildingCost(array $state, string $buildingId, int $amount): float
 {
     $growth = hbHubMinerCostGrowth($state, $buildingId);
     return ceil(HBHUB_MINER_BUILDINGS[$buildingId]['cost'] * hbHubMinerSkillEffects($state)['cost'] * hbHubMinerEngineEffects($state)['cost']
-        * $growth ** $state['buildings'][$buildingId]
+        * (hbHubMinerHasAnti($state, 'negativePrices') ? HBHUB_MINER_NEGATIVE_PRICES : 1) * $growth ** $state['buildings'][$buildingId]
         * ($growth ** $amount - 1) / ($growth - 1));
 }
 
@@ -2140,6 +2166,9 @@ function hbHubMinerBuildingRates(array $state): array
     if (hbHubMinerHasDark($state, 'darkEngines')) {
         $global *= 1.5;
     }
+    if (hbHubMinerHasDark($state, 'darkTurbines')) {
+        $global *= 2;
+    }
     if (hbHubMinerHasAnti($state, 'annihilation')) {
         $global *= 2;
     }
@@ -2147,14 +2176,16 @@ function hbHubMinerBuildingRates(array $state): array
         * (1 + $effects['perCrunch'] * $state['crunches']) * hbHubMinerEngineEffects($state)['production'] * hbHubMinerIgnition($state)
         * hbHubMinerAfterglow($state);
     $global *= hbHubMinerEntropy($state);
+    $synergyPower = hbHubMinerHasDark($state, 'darkTethers') ? 2 : 1;
+    $crewPower = hbHubMinerHasDark($state, 'shadowCrews') ? 2 : 1;
     foreach ($state['upgrades'] as $upgradeId) {
         $upgrade = $upgrades[$upgradeId];
         if ($upgrade['type'] === 'building') {
             $multipliers[$upgrade['building']] *= 2 * $effects['buildingUpgrade'];
         } elseif ($upgrade['type'] === 'synergy') {
-            $multipliers[$upgrade['building']] *= 1 + $upgrade['per'] * floor($state['buildings'][$upgrade['source']] / $upgrade['every']);
+            $multipliers[$upgrade['building']] *= 1 + $upgrade['per'] * $synergyPower * floor($state['buildings'][$upgrade['source']] / $upgrade['every']);
         } elseif ($upgrade['type'] === 'crew') {
-            $crew[$upgrade['building']] += $upgrade['value'] * $effects['crew'];
+            $crew[$upgrade['building']] += $upgrade['value'] * $effects['crew'] * $crewPower;
         } elseif ($upgrade['type'] === 'global') {
             $global *= 1 + $upgrade['value'];
         }
@@ -2213,7 +2244,8 @@ function hbHubMinerClickValue(array $state, int $time): float
         }
     }
     $value *= $effects['click'];
-    $share += $effects['clickShare'] + (hbHubMinerMod($state, 'handsOnly') ? HBHUB_MINER_HANDS_SHARE : 0);
+    $share += $effects['clickShare'] + (hbHubMinerMod($state, 'handsOnly') ? HBHUB_MINER_HANDS_SHARE : 0)
+        + (hbHubMinerHasAnti($state, 'antiKnuckles') ? HBHUB_MINER_ANTI_CLICK_SHARE : 0);
     $production = $share > 0 ? array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time) : 0;
     return ($value + $share * $production) * hbHubMinerBuff($state, 'click', $time) * hbHubMinerEngineEffects($state)['click'];
 }
@@ -2230,7 +2262,7 @@ function hbHubMinerAutoClicks(array $state): float
             $clicks += $upgrades[$upgradeId]['value'];
         }
     }
-    return $clicks + hbHubMinerSkillEffects($state)['auto'];
+    return $clicks * (hbHubMinerHasDark($state, 'darkClockwork') ? 2 : 1) + hbHubMinerSkillEffects($state)['auto'];
 }
 
 /**
@@ -2480,13 +2512,14 @@ function hbHubMinerAntiTotal(float $darkEarned): float
 /**
  * The Antimatter a Big Crunch would give now, or 0 when it can't be done yet (HBHUB_MINER_CRUNCH_DARK not earned in
  * this universe, less with Shallow Universe). Dark Matter starts over with every crunch, so each one gives what all of
- * it is worth, times the Antimatter skills.
+ * it is worth, times the Antimatter skills (and twice that with Mirror Universe).
  */
 function hbHubMinerCrunchGain(array $state): float
 {
     $effects = hbHubMinerSkillEffects($state);
     return $state['darkEarned'] >= HBHUB_MINER_CRUNCH_DARK * $effects['crunchDark']
-        ? floor(hbHubMinerAntiTotal((float) $state['darkEarned']) * $effects['antiGain'] * hbHubMinerEngineEffects($state)['antiGain']) : 0;
+        ? floor(hbHubMinerAntiTotal((float) $state['darkEarned']) * $effects['antiGain'] * hbHubMinerEngineEffects($state)['antiGain']
+            * (hbHubMinerHasAnti($state, 'mirrorUniverse') ? 2 : 1)) : 0;
 }
 
 /**
