@@ -433,9 +433,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         <div>
                             <p class="miner-prestige-fact-title">Strange Matter for Antimatter</p>
                             <p class="miner-prestige-fact-text">
-                                Earn <?= number_format(HBHUB_MINER_RIP_ANTI) ?> Antimatter in one multiverse for
-                                <?= hbHubMinerStrangeTotal(HBHUB_MINER_RIP_ANTI) ?> Strange Matter, then
-                                <?= count(HBHUB_MINER_STRANGE_STEPS) ?> more each time that grows tenfold. Physicists hate
+                                Nobody knows exactly how much Strange Matter is worth, but Physicists hate
                                 this exchange rate.
                             </p>
                         </div>
