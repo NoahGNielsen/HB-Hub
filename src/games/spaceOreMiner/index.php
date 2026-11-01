@@ -423,8 +423,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         <div>
                             <p class="miner-prestige-fact-title">The multiverse tears</p>
                             <p class="miner-prestige-fact-text">
-                                A Big Rip resets everything a Big Crunch does, and takes your Antimatter and its upgrades
-                                with it.
+                                A Big Rip tears reality like wet paper. Everything a Big Crunch takes is gone, and so are
+                                your Antimatter and its upgrades. Try not to get attached.
                             </p>
                         </div>
                     </li>
@@ -435,7 +435,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                             <p class="miner-prestige-fact-text">
                                 Earn <?= number_format(HBHUB_MINER_RIP_ANTI) ?> Antimatter in one multiverse for
                                 <?= hbHubMinerStrangeTotal(HBHUB_MINER_RIP_ANTI) ?> Strange Matter, then
-                                <?= count(HBHUB_MINER_STRANGE_STEPS) ?> more each time that grows tenfold.
+                                <?= count(HBHUB_MINER_STRANGE_STEPS) ?> more each time that grows tenfold. Physicists hate
+                                this exchange rate.
                             </p>
                         </div>
                     </li>
@@ -445,7 +446,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                             <p class="miner-prestige-fact-title">Beat your best</p>
                             <p class="miner-prestige-fact-text">
                                 Just like a Warp Jump, you only get what's above all the Strange Matter you've ever earned,
-                                so each rip has to beat your best multiverse.
+                                so each rip has to beat your best multiverse. Your past self set the bar, and your past self
+                                was showing off.
                             </p>
                         </div>
                     </li>
@@ -455,7 +457,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                             <p class="miner-prestige-fact-title">+<?= HBHUB_MINER_STRANGE_BONUS * 100 ?>% each, for good</p>
                             <p class="miner-prestige-fact-text">
                                 Every Strange Matter you've ever earned speeds up all your mining, even after you spend it.
-                                The skills you buy with it below are permanent too.
+                                The accountants have stopped asking. The skills you buy with it below are permanent too.
                             </p>
                         </div>
                     </li>
