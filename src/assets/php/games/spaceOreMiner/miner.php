@@ -225,7 +225,7 @@ const HBHUB_MINER_BUILDINGS = [
             'A few billion degrees more, just to be sure.', 'The soup of the day is the first day.',
             'One bang sets off the next. Earplugs provided.', 'Bangs made to order, while you wait.']],
     'realityPrinter' => ['name' => 'Reality Printer', 'plural' => 'Reality Printers', 'icon' => 'realityPrinter', 'cost' => 7e20, 'rate' => 4e12,
-        'text' => 'Prints brand new universes made of nothing but ore. The ink costs more than the universe.',
+        'text' => 'Prints brand new universes made of nothing but ore. However, the ink costs more than the universe.',
         'upgrades' => ['Ink Refills', 'Double-Sided Printing', 'Higher Resolution', 'Paper Jam Fixer', 'Universes in Colour', 'Print Shop of Everything'],
         'jokes' => ['Still costs more than the universe.', 'Two universes on every sheet.',
             'You can see the ore in every atom now.', 'No more half-printed galaxies stuck in the tray.',
