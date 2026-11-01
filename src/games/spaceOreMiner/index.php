@@ -1031,9 +1031,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <h2 id="miner-shop-title" class="miner-prestige-title">Shard Shop</h2>
                     <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-shard-count>0</span> <span data-miner-shard-word>Star Shards</span></p>
                     <p class="miner-prestige-hint">
-                        A Star Shard flies past about every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes while the game is open, the
-                        other way from the comets, and only stays <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds. Click it to keep it.
-                        They're yours for good: Warp Jumps, Big Crunches and Big Rips don't take them, and neither do Anomalies.
+                        Now and then a Star Shard zooms past, late for something important. Grab it quick and it's yours
+                        forever. Not even the end of the universe can take it back.
                     </p>
                     <p class="miner-prestige-hint miner-shop-note" data-miner-shop-note hidden>
                         You're in an Anomaly: boosts, ore and comets are for your own game, so they wait until you're back.
