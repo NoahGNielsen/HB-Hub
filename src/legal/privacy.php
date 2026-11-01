@@ -360,6 +360,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             the reply as a notification under the bell (it says "An admin", not which one). The reply is kept in
                             that notification, like your other notifications, and in the admin log below.
                         </p>
+                        <h3>Announcements</h3>
+                        <p>
+                            Site admins can send an announcement to everyone, which every account that isn't banned or deleted
+                            gets as a notification under the bell (it says "the admins", not which one). It's kept in your
+                            notifications like any other, with whether you've seen it. The announcement itself is kept with which
+                            admin sent it, when, how many got it and, worked out from the notifications, how many have seen it
+                            (not who). Only site admins can see that. When an admin takes it back, it's deleted, and so is
+                            everyone's notification of it.
+                        </p>
                         <h3>Admin log</h3>
                         <p>
                             Everything a site admin does in the admin panel is written to an admin log: which admin it was, when,

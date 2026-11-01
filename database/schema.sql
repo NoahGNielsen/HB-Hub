@@ -41,6 +41,21 @@ CREATE TABLE `HBHub-AdminLog` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-Announcements`
+--
+
+CREATE TABLE `HBHub-Announcements` (
+  `announcementId` int UNSIGNED NOT NULL,
+  `announcementByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The site admin who sent it, NULL once that account is gone',
+  `announcementText` varchar(500) NOT NULL COMMENT 'What it says, on one line',
+  `announcementLink` varchar(255) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'A path on the site the notification links to, like /games/, NULL for none',
+  `announcementRecipients` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'How many users got it',
+  `announcementCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Notifications site admins sent to every user from the admin panel (src/assets/php/announcements.php). Deleted when taken back';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Attachments`
 --
 
@@ -957,6 +972,13 @@ ALTER TABLE `HBHub-AdminLog`
   ADD KEY `time` (`adminLogTimestamp`);
 
 --
+-- Indexes for table `HBHub-Announcements`
+--
+ALTER TABLE `HBHub-Announcements`
+  ADD PRIMARY KEY (`announcementId`),
+  ADD KEY `fk_announcements_by` (`announcementByUserId`);
+
+--
 -- Indexes for table `HBHub-Attachments`
 --
 ALTER TABLE `HBHub-Attachments`
@@ -1385,6 +1407,12 @@ ALTER TABLE `HBHub-AdminLog`
   MODIFY `adminLogId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `HBHub-Announcements`
+--
+ALTER TABLE `HBHub-Announcements`
+  MODIFY `announcementId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-Attachments`
 --
 ALTER TABLE `HBHub-Attachments`
@@ -1569,6 +1597,12 @@ ALTER TABLE `HBHub-AdminLog`
   ADD CONSTRAINT `fk_adminlog_by` FOREIGN KEY (`adminLogByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_adminlog_chat` FOREIGN KEY (`adminLogChatId`) REFERENCES `HBHub-Chats` (`chatId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_adminlog_user` FOREIGN KEY (`adminLogUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-Announcements`
+--
+ALTER TABLE `HBHub-Announcements`
+  ADD CONSTRAINT `fk_announcements_by` FOREIGN KEY (`announcementByUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `HBHub-BaccaratInvites`

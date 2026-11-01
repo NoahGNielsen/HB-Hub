@@ -26,6 +26,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td>Casino</td><td>Invites to a Blackjack or Baccarat table.</td></tr>
                                     <tr><td>Games</td><td>Invites to Matador, Chess and UNO, @mentions in their game chats, a seat given to you in a Matador game, and a saved Matador game being continued.</td></tr>
                                     <tr><td>Feedback</td><td>An admin marking your <a href="/docs/feedback">feedback</a> as done, with their answer.</td></tr>
+                                    <tr><td>Admins</td><td>Announcements the site admins send to everyone, like news about the site. Some link to the page they're about.</td></tr>
                                 </tbody>
                             </table>
                         </div>

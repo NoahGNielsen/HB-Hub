@@ -112,9 +112,9 @@ function adminPersonUserIds(PDO $db, int $userId): array
 
 /**
  * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), People (admin/people.php), Banned
- * pictures (admin/banned.php), Feedback (admin/feedback.php), Crash reports (admin/crashes.php), Cosmic Engine
+ * pictures (admin/banned.php), Feedback (admin/feedback.php), Announcements (admin/announcements.php), Crash reports (admin/crashes.php), Cosmic Engine
  * (admin/engine.php) and Admin log (admin/log.php), each with how many there are in all, or for Feedback how many are
- * new and for the Cosmic Engine how many stages of the one being built are done. $active is 'users', 'chats', 'people', 'banned', 'feedback',
+ * new and for the Cosmic Engine how many stages of the one being built are done. $active is 'users', 'chats', 'people', 'banned', 'feedback', 'announcements',
  * 'crashes', 'engine' or 'log'.
  */
 function adminListsMenuHtml(PDO $db, string $active): string
@@ -122,6 +122,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
     $totals = $db->query('SELECT (SELECT COUNT(*) FROM `HBHub-Users`) AS users, (SELECT COUNT(*) FROM `HBHub-Chats`) AS chats,
         (SELECT COUNT(*) FROM `HBHub-BannedAvatars`) AS banned,
         (SELECT COUNT(*) FROM `HBHub-Feedback` WHERE feedbackDoneTimestamp IS NULL) AS feedback,
+        (SELECT COUNT(*) FROM `HBHub-Announcements`) AS announcements,
         (SELECT COUNT(*) FROM `HBHub-MinerCrashReports`) AS crashes,
         (SELECT COALESCE((SELECT engineStage FROM `HBHub-MinerEngines` ORDER BY engineId DESC LIMIT 1), 0)) AS engine,
         (SELECT COUNT(*) FROM `HBHub-AdminLog`) AS log')->fetch();
@@ -132,6 +133,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
         'people' => ['People', '/admin/people'],
         'banned' => ['Banned pictures', '/admin/banned'],
         'feedback' => ['Feedback', '/admin/feedback'],
+        'announcements' => ['Announcements', '/admin/announcements'],
         'crashes' => ['Crash reports', '/admin/crashes'],
         'engine' => ['Project Starbound', '/admin/engine'],
         'log' => ['Admin log', '/admin/log'],

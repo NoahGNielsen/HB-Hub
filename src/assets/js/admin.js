@@ -1,4 +1,4 @@
-// Admin panel (admin/user.php, admin/person.php, admin/chat.php, admin/banned.php and admin/feedback.php): before any of its forms is sent,
+// Admin panel (admin/user.php, admin/person.php, admin/chat.php, admin/banned.php, admin/feedback.php and admin/announcements.php): before any of its forms is sent,
 // a popup asks "are you sure?" (the button's or the form's data-confirm, like "Ban Name?", or the button's own text) and lets the admin type
 // a reason, which is sent along as the form's `reason` field and kept in the admin log with the action (adminLog.php).
 // When the form bans a user's banner picture (admin/user.php, data-banner-check), a PNG check copy of it goes along too.
