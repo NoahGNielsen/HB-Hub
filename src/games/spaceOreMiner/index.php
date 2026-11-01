@@ -283,8 +283,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <div>
                         <p class="miner-prestige-fact-title">+<?= HBHUB_MINER_DARK_BONUS * 100 ?>% each</p>
                         <p class="miner-prestige-fact-text">
-                            Every Dark Matter you've earned makes everything mine faster until the next Big Crunch, even after
-                            you spend it on the upgrades below.
+                            Each Dark Matter you've earned speeds up all mining until the next Big Crunch, even once it's spent.
                         </p>
                     </div>
                 </li>
