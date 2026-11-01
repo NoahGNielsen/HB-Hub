@@ -5,9 +5,11 @@
 //   time in Unix ms; see hbHubMinerApply() and hbHubMinerSync() in assets/php/games/spaceOreMiner/miner.php), and on
 //   the first save, recovered (the same kind of list: what a page of the game that crashed or was closed never got to
 //   save; only what's newer than the save counts), and guest (the token of a game played as a guest at
-//   /play/ore-mining-inc, which the page finds in the browser after logging in or signing up from there).
+//   /play/ore-mining-inc, which the page finds in the browser after logging in or signing up from there), and
+//   engine=1 while the Engine view is open (for its top contributors and latest parts given).
 // Plays the actions on the saved game and answers with {"state": the save, "now": the server's time in Unix ms,
-// "offline": null or {"ms": time away, "ore": mined meanwhile}, "recovered": how many recovered actions counted}, and
+// "offline": null or {"ms": time away, "ore": mined meanwhile}, "recovered": how many recovered actions counted,
+// "engine": the Cosmic Engine (hbHubMinerEngineSummary() in assets/php/games/spaceOreMiner/engine.php)}, and
 // with a guest token, "guest": "imported" when the guest game became the save (the user had none yet), or "kept"
 // when they already had one, which is never written over (hbHubMinerSync() in miner.php).
 // Anything that couldn't have happened just doesn't count, the page carries on from the save it gets back. Errors:
@@ -41,7 +43,7 @@ if (($_POST['action'] ?? null) !== 'sync' || !is_string($tab) || !preg_match(HBH
 $claim = ($_POST['claim'] ?? null) === '1';
 $guestState = $claim ? hbHubGuestOpen('miner', $_POST['guest'] ?? null)['state'] ?? null : null;
 $result = hbHubMinerSync(hbHubDatabase(), (int) $hbHubUser['userId'], $tab, $claim, $actions, $recovered,
-    is_array($guestState) ? $guestState : null);
+    is_array($guestState) ? $guestState : null, ($_POST['engine'] ?? null) === '1');
 if ($result === 'otherTab') {
     http_response_code(409);
     echo json_encode(['error' => 'otherTab']);

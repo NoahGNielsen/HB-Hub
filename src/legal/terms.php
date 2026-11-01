@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '30 October 2026';
+const HBHUB_TERMS_UPDATED = '1 November 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -204,6 +204,32 @@ const HBHUB_TERMS_UPDATED = '30 October 2026';
                                 or take it off the leaderboard. If the game crashes or is closed before it's saved, what you
                                 did just before is kept in your browser and saved (and checked the same way) the next time you
                                 open the game in that browser, but that isn't a promise: progress that's never saved can be lost.
+                            </li>
+                            <li>
+                                Ore Mining Inc.'s Star Shards are only caught in the game, while it's open, and only spent in its
+                                Shard Shop. Like chips, they're not money: they can't be bought, sold, swapped or given to
+                                someone else, and what's in the shop (its items and prices) may change as the game is balanced.
+                                A script or macro that catches them for you counts as cheating, like an auto-clicker.
+                            </li>
+                            <li>
+                                Ore Mining Inc.'s Project Starbound is built by everyone together, one build after the other (the
+                                Cosmic Engine, then the Starforge, then up to 98 more). Starbound Parts you give them (for ore, Strange Matter, Engine
+                                Shifts or finishing Anomalies) can't be taken back, don't move to the next build, and your name
+                                and how many you gave are shown to everyone with an account. Their perks are for every player
+                                and stay once the next build starts. Admins can
+                                change how many parts a stage needs, and the stages, perks and Anomalies (their rules, goals,
+                                parts and Afterglow) may change as the game is balanced, also for an Anomaly you're partway through. Parts
+                                given with a cheated save can be removed.
+                            </li>
+                            <li>
+                                Ore Mining Inc.'s Anomalies are challenge runs inside your game. While you're in one, your own
+                                game mines as if you were away, and leaving one before it's finished loses that run. Where an
+                                Anomaly turns Autopilot and Auto Crunch off, using a script or anything else to do their job
+                                counts as cheating. What you do in an Anomaly doesn't count towards your stats or the
+                                leaderboard, but your best times are shown on the leaderboard's Anomaly tabs, and best times or
+                                titles, medals or locks met by cheating can be removed. Each build's last stage (Ignition,
+                                First Light, ...) has to be filled in time or loses part of what's in it, and nobody can claim back
+                                what's lost that way.
                             </li>
                             <li>
                                 The free games at <a href="/play">/play</a> can be played without an account, and these terms

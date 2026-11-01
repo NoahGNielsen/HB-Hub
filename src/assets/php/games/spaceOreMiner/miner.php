@@ -24,8 +24,19 @@
 //
 // Time is Unix milliseconds throughout. A gap between two saves of up to HBHUB_MINER_ONLINE_MS counts as playing;
 // anything after that is time away, which mines at HBHUB_MINER_OFFLINE_RATE.
+//
+// The Cosmic Engine (HBHUB_MINER_ENGINE_STAGES) is the one thing in the game that isn't the player's own: a machine the
+// whole site builds together out of Engine Parts, which players give from their game (the 'donate' action, and the
+// daily Engine Shifts, HBHUB_MINER_SHIFTS). The rules for giving them are here like the rest; where they go (the
+// HBHub-MinerEngines and HBHub-MinerContributions tables) is in engine.php, which hbHubMinerSync() calls.
+//
+// Anomalies (HBHUB_MINER_ANOMALIES) are challenge runs: a universe of their own with a twist in the rules, kept inside
+// the save ('anomaly', see hbHubMinerNewState()). While the player is in one, everything they do happens in there, and
+// their own game waits and mines as if they were away; finishing one gives the Engine parts.
 // Used by games/spaceOreMiner/ (the page), games/spaceOreMiner/save (the JSON the page saves to) and its leaderboard.
 require_once __DIR__ . '/../../database.php';
+require_once __DIR__ . '/engine.php';
+require_once __DIR__ . '/starbound.php';
 
 const HBHUB_MINER_SAVE_SECONDS = 30; // how often the page saves while it's open
 const HBHUB_MINER_ONLINE_MS = 90000; // a gap between saves up to this long counts as playing, the rest as away
@@ -48,6 +59,7 @@ const HBHUB_MINER_DARK_BONUS_REACTOR = 0.075; // with Dark Matter Reactor
 const HBHUB_MINER_CRUNCH_DARK = 2000; // Dark Matter to earn in a universe before a Big Crunch
 const HBHUB_MINER_ANTI_UNIT = 100; // Dark Matter for the first Antimatter, see hbHubMinerAntiTotal()
 const HBHUB_MINER_ANTI_BONUS = 0.1; // production per Antimatter earned in this multiverse (and the square root of it to Dark Matter)
+const HBHUB_MINER_ANTI_BONUS_REACTOR = 0.15; // with Antimatter Reactor
 const HBHUB_MINER_RIP_ANTI = 10000; // Antimatter to earn in a multiverse before a Big Rip
 const HBHUB_MINER_STRANGE_UNIT = 1000; // Antimatter for the first Strange Matter, see hbHubMinerStrangeTotal()
 const HBHUB_MINER_STRANGE_STEPS = [1, 1.12, 1.25, 1.4, 1.6, 1.8, 2, 2.24, 2.5, 2.8, 3.15, 3.55, 4, 4.5, 5, 5.6, 6.3, 7.1, 8, 9]; // a Strange Matter at each of these times a power of ten (times the unit), 20 for every ten times as much
@@ -60,6 +72,8 @@ const HBHUB_MINER_CRIT_CHANCE = 0.05;
 const HBHUB_MINER_CRIT_MULTIPLIER = 10;
 const HBHUB_MINER_HEAD_START = 10; // Mining Drones with Head Start
 const HBHUB_MINER_DARK_PICKAXE = 3; // clicks mine this many times as much with Dark Pickaxe
+const HBHUB_MINER_ANTI_CLICK_SHARE = 0.05; // of the ore per second each click also mines with Antimatter Knuckles
+const HBHUB_MINER_NEGATIVE_PRICES = 0.75; // buildings cost this much of their price with Negative Prices
 const HBHUB_MINER_TAB_PATTERN = '/^[0-9a-f]{32}$/';
 
 // What a comet does when it's caught: production or clicks times 'multiplier' for 'ms' (doubled with Tail Collector),
@@ -80,57 +94,151 @@ const HBHUB_MINER_SALT_COMET_WAIT = 2;
 const HBHUB_MINER_SALT_COMET_KIND = 3;
 const HBHUB_MINER_SALT_DIAMOND = 4;
 const HBHUB_MINER_SALT_LUCKY = 5;
+const HBHUB_MINER_SALT_SHIFT = 6; // not the save's luck: the seed is 0, so everyone gets the same Shifts (hbHubMinerShiftTasks())
+const HBHUB_MINER_SALT_ANOMALY = 7; // an Anomaly's own seed, from the save's and when it started (hbHubMinerAnomalyStart())
+const HBHUB_MINER_SALT_WEEKLY = 8; // not the save's luck either: the week's Anomaly is the same for everyone (hbHubMinerWeeklyMods())
+const HBHUB_MINER_SALT_SHIFT_SPARE = 9; // the day's spare Shift, the same for everyone too (hbHubMinerShiftSpare())
+const HBHUB_MINER_SALT_SHARD = 10; // when in its slot each Star Shard flies past (hbHubMinerShardAt())
 
 // Every 'icon' below (and in the upgrades after it) is the name of a drawn icon in assets/images/spaceOreMiner/icons.svg.
+// Every upgrade's 'text' says what it does first, then a joke.
 // The buildings, cheapest first. 'rate' is ore per second for each one before upgrades, 'upgrades' their six
-// upgrades (see HBHUB_MINER_BUILDING_UPGRADE_AT), and 'growth', when it's there, how much more each one costs than the
+// upgrades (see HBHUB_MINER_BUILDING_UPGRADE_AT), 'jokes' a funny line for each of those (put after what it does, see
+// hbHubMinerUpgrades()), and 'growth', when it's there, how much more each one costs than the
 // one before instead of HBHUB_MINER_COST_GROWTH (Space Pickaxe Guys go up slower, so having lots of them stays cheap)
 const HBHUB_MINER_BUILDINGS = [
     'pickaxe' => ['name' => 'Space Pickaxe Guy', 'plural' => 'Space Pickaxe Guys', 'icon' => 'pickaxeGuy', 'cost' => 15, 'rate' => 0.1, 'growth' => 1.12,
         'text' => 'Swings a pickaxe at the rock. In zero gravity, that\'s harder than it sounds.',
-        'upgrades' => ['Energy Drinks', 'Hard Hats', 'Union Contract', 'Jetpack Commute', 'Diamond Pickaxes', 'Employee of the Month']],
+        'upgrades' => ['Energy Drinks', 'Hard Hats', 'Union Contract', 'Jetpack Commute', 'Diamond Pickaxes', 'Employee of the Month'],
+        'jokes' => ['Nobody has blinked since Tuesday.', 'Mostly for the asteroids that hit back.',
+            'Comes with a dental plan and one free spacesuit a year.', 'Traffic is terrible at the speed of sound.',
+            'They keep mining the handles by mistake.', 'Every one of them, every month. HR has given up.']],
     'drone' => ['name' => 'Mining Drone', 'plural' => 'Mining Drones', 'icon' => 'drone', 'cost' => 100, 'rate' => 1,
         'text' => 'A little robot that nibbles ore off the asteroid all day long.',
-        'upgrades' => ['Longer Batteries', 'Drone Swarm AI', 'Self-Repair Nanites', 'Magnetic Grabbers', 'Hive Mind', 'Drone Factories']],
+        'upgrades' => ['Longer Batteries', 'Drone Swarm AI', 'Self-Repair Nanites', 'Magnetic Grabbers', 'Hive Mind', 'Drone Factories'],
+        'jokes' => ['Now they only nap twice a day.', 'It has opinions about your music.',
+            'Tiny robots fixing slightly bigger robots.', 'Mind your fillings.',
+            'They all agree you should buy more drones.', 'Drones making drones. What could go wrong?']],
     'laser' => ['name' => 'Laser Drill', 'plural' => 'Laser Drills', 'icon' => 'laserDrill', 'cost' => 1100, 'rate' => 8,
         'text' => 'Melts through rock like butter. Don\'t look straight into it.',
-        'upgrades' => ['Focused Lens', 'Overclocked Lasers', 'Diamond Tips', 'Mirror Arrays', 'Gamma Beams', 'Planet-Sized Lens']],
+        'upgrades' => ['Focused Lens', 'Overclocked Lasers', 'Diamond Tips', 'Mirror Arrays', 'Gamma Beams', 'Planet-Sized Lens'],
+        'jokes' => ['Somebody finally wiped the fingerprints off.', 'The warranty is void, and so is the asteroid.',
+            'Diamonds cutting rocks to find more diamonds.',
+            'Bounce the beam around a bit. Try not to hit the break room.',
+            'Turns rocks into gravel and the crew slightly green.',
+            'You can see it from three galaxies away. They have complained.']],
     'rig' => ['name' => 'Mining Rig', 'plural' => 'Mining Rigs', 'icon' => 'rig', 'cost' => 12000, 'rate' => 47,
         'text' => 'A walking factory bolted onto the rock.',
-        'upgrades' => ['Heavy Treads', 'Double Shifts', 'Autonomous Rigs', 'Bigger Buckets', 'Rig Convoys', 'Mega Rigs']],
+        'upgrades' => ['Heavy Treads', 'Double Shifts', 'Autonomous Rigs', 'Bigger Buckets', 'Rig Convoys', 'Mega Rigs'],
+        'jokes' => ['Leaves tracks you can see from orbit.', 'The rigs never get tired. The drivers do.',
+            'No drivers needed. The drivers have been told.', 'The bucket is now bigger than the rig.',
+            'They honk at each other the whole way.', 'Parking is now a real problem.']],
     'base' => ['name' => 'Asteroid Base', 'plural' => 'Asteroid Bases', 'icon' => 'base', 'cost' => 130000, 'rate' => 260,
         'text' => 'A whole crew living on site. Shifts never end in space.',
-        'upgrades' => ['Hydroponics', 'Ore Refinery', 'Artificial Gravity', 'Space Cafeteria', 'Crew Quarters', 'Base Network']],
+        'upgrades' => ['Hydroponics', 'Ore Refinery', 'Artificial Gravity', 'Space Cafeteria', 'Crew Quarters', 'Base Network'],
+        'jokes' => ['Space lettuce. Nobody eats it, but it looks nice.', 'Shinier ore sells better.',
+            'The coffee stays in the cup now.', 'Tuesday is freeze-dried taco day.',
+            'A bed each, and a window full of asteroid.', 'Every base has the Wi-Fi password now.']],
     'freighter' => ['name' => 'Ore Freighter', 'plural' => 'Ore Freighters', 'icon' => 'freighter', 'cost' => 1.4e6, 'rate' => 1400,
         'text' => 'Hauls in ore from asteroids you haven\'t even seen yet.',
-        'upgrades' => ['Bigger Cargo Holds', 'Hyperspace Lanes', 'Fleet Command', 'Tractor Beams', 'Cargo Drones', 'Armada']],
+        'upgrades' => ['Bigger Cargo Holds', 'Hyperspace Lanes', 'Fleet Command', 'Tractor Beams', 'Cargo Drones', 'Armada'],
+        'jokes' => ['Somebody finally threw out the old sofa.', 'No speed cameras out there. Yet.',
+            'Someone in a very big hat tells them where to go.',
+            'Pulls in the ore and, now and then, a confused tourist.', 'Little boxes carrying slightly smaller boxes.',
+            'Other mining companies are starting to get nervous.']],
     'station' => ['name' => 'Space Station', 'plural' => 'Space Stations', 'icon' => 'station', 'cost' => 2e7, 'rate' => 7800,
         'text' => 'Runs mining all over the solar system from orbit.',
-        'upgrades' => ['Solar Arrays', 'Fusion Core', 'Ring Habitat', 'Docking Ring', 'Orbital Elevator', 'Station Cities']],
+        'upgrades' => ['Solar Arrays', 'Fusion Core', 'Ring Habitat', 'Docking Ring', 'Orbital Elevator', 'Station Cities'],
+        'jokes' => ['The Sun has not sent a bill yet.', 'Runs on the same stuff as a star, just smaller.',
+            'It spins, so everyone walks on the walls.', 'Parking in space is easier than it looks. Barely.',
+            'The music is just as bad as on Earth.', 'They have their own mayors now, and their own traffic jams.']],
     'excavator' => ['name' => 'Moon Excavator', 'plural' => 'Moon Excavators', 'icon' => 'moonExcavator', 'cost' => 3.3e8, 'rate' => 44000,
         'text' => 'Digs up whole moons. The moons have stopped complaining.',
-        'upgrades' => ['Moon Treads', 'Crater Scoops', 'Core Tap', 'Lunar Conveyors', 'Moon Magnets', 'Moon Factory']],
+        'upgrades' => ['Moon Treads', 'Crater Scoops', 'Core Tap', 'Lunar Conveyors', 'Moon Magnets', 'Moon Factory'],
+        'jokes' => ['Built for low gravity and high hopes.', 'The Moon had holes in it anyway.',
+            'The Moon is made of cheese after all. Ore-flavoured cheese.',
+            'The longest conveyor belt ever made, and it still squeaks.', 'The tides on Earth have noticed.',
+            'Moons go in, ore comes out, and a few craters are left over.']],
     'cracker' => ['name' => 'Planet Cracker', 'plural' => 'Planet Crackers', 'icon' => 'planetCracker', 'cost' => 5.1e9, 'rate' => 260000,
         'text' => 'Cracks planets open like eggs to get at the ore inside.',
-        'upgrades' => ['Seismic Charges', 'Tectonic Splitter', 'Planet Shredder', 'Core Drills', 'Magma Pumps', 'Planet Juicer']],
+        'upgrades' => ['Seismic Charges', 'Tectonic Splitter', 'Planet Shredder', 'Core Drills', 'Magma Pumps', 'Planet Juicer'],
+        'jokes' => ['The planet felt that one.', 'Continents are more of a suggestion now.',
+            'Planets in, confetti out.', 'Right down to the soft, gooey middle.', 'Hot, spicy ore.',
+            'Freshly squeezed, with bits.']],
     'siphon' => ['name' => 'Black Hole Siphon', 'plural' => 'Black Hole Siphons', 'icon' => 'blackHole', 'cost' => 7.5e10, 'rate' => 1.6e6,
         'text' => 'Pulls ore out of a black hole. Nobody knows how. Nobody asks.',
-        'upgrades' => ['Event Horizon Net', 'Hawking Pump', 'Singularity Engine', 'Spaghetti Filters', 'Gravity Lens', 'Pocket Black Holes']],
+        'upgrades' => ['Event Horizon Net', 'Hawking Pump', 'Singularity Engine', 'Spaghetti Filters', 'Gravity Lens', 'Pocket Black Holes'],
+        'jokes' => ['Catches the ore just before it is gone for good.',
+            'Black holes leak a little. Now it all leaks into buckets.', 'Infinite density, very little paperwork.',
+            'Everything that falls in comes out as noodles. This sorts them.',
+            'Bends the light so you can see the ore round the back.',
+            'Do not keep one in the same pocket as your keys.']],
     'forge' => ['name' => 'Star Forge', 'plural' => 'Star Forges', 'icon' => 'starForge', 'cost' => 1e12, 'rate' => 1e7,
         'text' => 'Squeezes stars until ore comes out. The stars are fine, mostly.',
-        'upgrades' => ['Stellar Bellows', 'Fusion Hammers', 'Neutron Anvil', 'Star Tongs', 'Supernova Furnace', 'Galactic Smithy']],
+        'upgrades' => ['Stellar Bellows', 'Fusion Hammers', 'Neutron Anvil', 'Star Tongs', 'Supernova Furnace', 'Galactic Smithy'],
+        'jokes' => ['Huff, puff, and the star gets hotter.', 'Every swing is a small sunrise.',
+            'A teaspoon of it weighs a billion tonnes. Do not drop it.', 'Oven gloves were not enough.',
+            'Set a timer, or the whole sector goes.', 'Now taking orders from three galaxies.']],
     'nebula' => ['name' => 'Nebula Harvester', 'plural' => 'Nebula Harvesters', 'icon' => 'nebula', 'cost' => 1.4e13, 'rate' => 6.5e7,
         'text' => 'Sweeps up whole nebulas with a really, really big net.',
-        'upgrades' => ['Finer Nets', 'Gas Compressors', 'Cosmic Vacuum', 'Nebula Maps', 'Stardust Filters', 'Cloud Factory']],
+        'upgrades' => ['Finer Nets', 'Gas Compressors', 'Cosmic Vacuum', 'Nebula Maps', 'Stardust Filters', 'Cloud Factory'],
+        'jokes' => ['Fewer holes, more ore.', 'Squashes clouds into rocks. The clouds are not happy.',
+            'Space is already a vacuum. This one is just better at it.', 'Turns out the pretty bits are the ore.',
+            'Keeps the glitter out of the gears.', 'Makes new nebulas, so there is always something left to harvest.']],
     'dyson' => ['name' => 'Dyson Swarm', 'plural' => 'Dyson Swarms', 'icon' => 'dysonSwarm', 'cost' => 1.7e14, 'rate' => 4.3e8,
         'text' => 'A billion mirrors around a star, all of them pointed at the ore.',
-        'upgrades' => ['Mirror Polish', 'Swarm Logic', 'Full Sphere', 'Shell Layers', 'Photon Collectors', 'Star Lifting']],
+        'upgrades' => ['Mirror Polish', 'Swarm Logic', 'Full Sphere', 'Shell Layers', 'Photon Collectors', 'Star Lifting'],
+        'jokes' => ['A billion mirrors, one cloth.', 'The mirrors have stopped bumping into each other.',
+            'The star is now fully gift wrapped.', 'Like an onion, but with sunlight.',
+            'Every bit of sunlight goes in the jar.',
+            'Lifts bits of the star straight off the top. It does not seem to mind.']],
     'wormhole' => ['name' => 'Wormhole Gate', 'plural' => 'Wormhole Gates', 'icon' => 'wormhole', 'cost' => 2.1e15, 'rate' => 2.9e9,
         'text' => 'Opens a door to a part of space that\'s nothing but ore. Mind the gap.',
-        'upgrades' => ['Stable Throats', 'Exotic Matter Struts', 'Wormhole Network', 'Toll Booths', 'Time Shortcuts', 'Pocket Dimensions']],
+        'upgrades' => ['Stable Throats', 'Exotic Matter Struts', 'Wormhole Network', 'Toll Booths', 'Time Shortcuts', 'Pocket Dimensions'],
+        'jokes' => ['The wormhole no longer coughs the ore back up.', 'Holds the door open from the inside.',
+            'Any gate to any gate. There are still delays.', 'The ore pays to come through. Nobody knows with what.',
+            'The ore gets here before you send for it.', 'A whole extra dimension, folded up in a drawer.']],
     'multiverse' => ['name' => 'Multiverse Drill', 'plural' => 'Multiverse Drills', 'icon' => 'multiverse', 'cost' => 2.6e16, 'rate' => 2.1e10,
         'text' => 'Drills into the universe next door and takes their ore too. They have a drill as well.',
-        'upgrades' => ['Dimensional Bits', 'Parallel Shifts', 'Infinite Drill', 'Mirror Universe Miners', 'Quantum Foam Bits', 'The Everything Drill']],
+        'upgrades' => ['Dimensional Bits', 'Parallel Shifts', 'Infinite Drill', 'Mirror Universe Miners', 'Quantum Foam Bits', 'The Everything Drill'],
+        'jokes' => ['Drill bits that are sharp in more than three directions.', 'Your other selves are working too.',
+            'The tip is somewhere else entirely.', 'They look just like you, but with little beards.',
+            'Each bit is both blunt and sharp until you look at it.',
+            'It drills through everything, including the instructions.']],
+    // The five after the Multiverse Drill go up gentler: each mines about 3.7 times the one before instead of about 7,
+    // so the late game (where everyone has hundreds of every building) only gets a few hundred times faster with all
+    // of them, not thousands, and the Big Rip and Anomaly balance mostly holds
+    'timeQuarry' => ['name' => 'Time Quarry', 'plural' => 'Time Quarries', 'icon' => 'timeQuarry', 'cost' => 3.3e17, 'rate' => 7.8e10,
+        'text' => 'Mines yesterday\'s ore before anyone else gets to it. Tomorrow\'s too, when nobody\'s looking.',
+        'upgrades' => ['Sturdier Hourglasses', 'Leap Seconds', 'Paradox Insurance', 'Grandfather Clauses', 'Deja Vu Shifts', 'End of Time Shaft'],
+        'jokes' => ['They no longer break when you turn them over.', 'One extra second of mining, every now and then.',
+            'Covers you for meeting yourself at the coffee machine.',
+            'The ore was already ours before the rules changed.', 'The shift you are about to work again. Again.',
+            'Dug all the way to the end. It is quieter than you would think.']],
+    'stringLoom' => ['name' => 'Loom of Time', 'plural' => 'Looms of Time', 'icon' => 'stringLoom', 'cost' => 4.2e18, 'rate' => 2.9e11,
+        'text' => 'Weaves the threads of time into ore. Last Tuesday came out a bit thin.',
+        'upgrades' => ['Second-Hand Thread', 'Spools of Centuries', 'Unpicked Mondays', 'Leftover Weekends', 'A Stitch in Time', 'The Fabric of Time'],
+        'jokes' => ['Ticks along nicely.', 'Each spool holds about a hundred years. The 1800s are a bit lumpy.',
+            'Nobody has missed them.', 'Sewn into the cloth. They still feel too short.',
+            'Saves nine. Mines a lot more than that.', 'Machine washable at 30 degrees, before it was made.']],
+    'bigBangReactor' => ['name' => 'Big Bang Reactor', 'plural' => 'Big Bang Reactors', 'icon' => 'bigBangReactor', 'cost' => 5.4e19, 'rate' => 1.1e12,
+        'text' => 'Sets off a tiny Big Bang in a box and keeps all the ore that comes out. Mind your eyebrows.',
+        'upgrades' => ['Thicker Walls', 'Inflation Valves', 'Hotter Starts', 'Primordial Soup Kitchen', 'Chain Bangs', 'Bang Factory'],
+        'jokes' => ['Keeps the universe in and the eyebrows on.', 'Lets the universe out slowly, like a balloon.',
+            'A few billion degrees more, just to be sure.', 'The soup of the day is the first day.',
+            'One bang sets off the next. Earplugs provided.', 'Bangs made to order, while you wait.']],
+    'realityPrinter' => ['name' => 'Reality Printer', 'plural' => 'Reality Printers', 'icon' => 'realityPrinter', 'cost' => 7e20, 'rate' => 4e12,
+        'text' => 'Prints brand new universes made of nothing but ore. However, the ink costs more than the universe.',
+        'upgrades' => ['Ink Refills', 'Double-Sided Printing', 'Higher Resolution', 'Paper Jam Fixer', 'Universes in Colour', 'Print Shop of Everything'],
+        'jokes' => ['Still costs more than the universe.', 'Two universes on every sheet.',
+            'You can see the ore in every atom now.', 'No more half-printed galaxies stuck in the tray.',
+            'Black and white was getting boring.', 'Opens early, closes never.']],
+    'infinityMine' => ['name' => 'Infinity Mine', 'plural' => 'Infinity Mines', 'icon' => 'infinityMine', 'cost' => 9e21, 'rate' => 1.5e13,
+        'text' => 'A mine with no bottom. Somebody still goes down to check every Friday, just in case.',
+        'upgrades' => ['Longer Ladders', 'Bottomless Buckets', 'Endless Rails', 'Infinite Shifts', 'Forever Lamps', 'Infinity Plus One'],
+        'jokes' => ['Still not long enough. Never will be.', 'For a bottomless mine. It only makes sense.',
+            'The mine carts have stopped asking how much further.', 'The Friday check never ends now.',
+            'The bulbs outlast the stars.', 'Mathematicians say this is not allowed. The ore disagrees.']],
 ];
 const HBHUB_MINER_BUILDING_UPGRADE_AT = [10, 25, 50, 100, 150, 200]; // owned, for each building's six upgrades
 // What each costs, in how many of the building it is at the price the next one has when the upgrade shows up (rounded to
@@ -151,102 +259,124 @@ const HBHUB_MINER_BUILDING_UPGRADE_COST = [2.5, 3, 5, 8, 8, 8];
 // 'need' is when it shows up in the store: ore (mined this run), owned (building => how many), comets (caught ever) and
 // upgrades (the ids of upgrades that must be bought first). Without one, it's ore mined this run of half its cost.
 const HBHUB_MINER_OTHER_UPGRADES = [
-    'titanium' => ['name' => 'Titanium Pickaxe', 'icon' => 'pickaxe', 'cost' => 100, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'gloves' => ['name' => 'Reinforced Gloves', 'icon' => 'glove', 'cost' => 500, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'plasma' => ['name' => 'Plasma Gloves', 'icon' => 'plasmaGlove', 'cost' => 5000, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
+    'titanium' => ['name' => 'Titanium Pickaxe', 'icon' => 'pickaxe', 'cost' => 100, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much. Lighter, sharper, shinier.'],
+    'gloves' => ['name' => 'Reinforced Gloves', 'icon' => 'glove', 'cost' => 500, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much. Fewer blisters, more ore.'],
+    'plasma' => ['name' => 'Plasma Gloves', 'icon' => 'plasmaGlove', 'cost' => 5000, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much. Hot to the touch. Very hot.'],
     'quickKeys' => ['name' => 'Hot Key Panel', 'icon' => 'keyboard', 'cost' => 5000, 'type' => 'keys',
-        'text' => 'Unlocks the hot keys that buy: U for the cheapest upgrade, B for the best building and 1-9 and 0 for the buildings in the store.'],
-    'fuel' => ['name' => 'Better Fuel', 'icon' => 'fuelCan', 'cost' => 10000, 'type' => 'global', 'value' => 0.1, 'text' => 'All buildings mine 10% more.'],
+        'text' => 'Unlocks the hot keys that buy: U for the cheapest upgrade, B for the best building and 1-9 and 0 for the buildings in the store. For when moving the mouse is too much work.'],
+    'fuel' => ['name' => 'Better Fuel', 'icon' => 'fuelCan', 'cost' => 10000, 'type' => 'global', 'value' => 0.1, 'text' => 'All buildings mine 10% more. Smells like money.'],
     'buddySystem' => ['name' => 'Buddy System', 'icon' => 'buddies', 'cost' => 2000, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.005,
-        'need' => ['owned' => ['pickaxe' => 10]], 'text' => 'Each Space Pickaxe Guy mines 0.005 more ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 10]], 'text' => 'Each Space Pickaxe Guy mines 0.005 more ore per second for every other building you own. Nobody mines alone, and nobody gets lost in space.'],
     'shiftBosses' => ['name' => 'Shift Bosses', 'icon' => 'clipboard', 'cost' => 2e5, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.02,
-        'need' => ['owned' => ['pickaxe' => 25]], 'text' => 'Each Space Pickaxe Guy mines another 0.02 ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 25]], 'text' => 'Each Space Pickaxe Guy mines another 0.02 ore per second for every other building you own. Somebody has to hold the clipboard.'],
     'pickaxeAcademy' => ['name' => 'Pickaxe Academy', 'icon' => 'gradCap', 'cost' => 2e7, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.05,
-        'need' => ['owned' => ['pickaxe' => 50]], 'text' => 'Each Space Pickaxe Guy mines another 0.05 ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 50]], 'text' => 'Each Space Pickaxe Guy mines another 0.05 ore per second for every other building you own. Four years of swinging, with a test at the end.'],
     'pickaxeGuild' => ['name' => 'Pickaxe Guild', 'icon' => 'crossedPickaxes', 'cost' => 2e9, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 0.5,
-        'need' => ['owned' => ['pickaxe' => 75]], 'text' => 'Each Space Pickaxe Guy mines another 0.5 ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 75]], 'text' => 'Each Space Pickaxe Guy mines another 0.5 ore per second for every other building you own. Secret handshake included.'],
     'pickaxeClones' => ['name' => 'Pickaxe Guy Clones', 'icon' => 'dna', 'cost' => 2e11, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 5,
-        'need' => ['owned' => ['pickaxe' => 100]], 'text' => 'Each Space Pickaxe Guy mines another 5 ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 100]], 'text' => 'Each Space Pickaxe Guy mines another 5 ore per second for every other building you own. They argue about which one is the real one.'],
     'pickaxeLegends' => ['name' => 'Living Legends', 'icon' => 'medal', 'cost' => 2e13, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 50,
-        'need' => ['owned' => ['pickaxe' => 150]], 'text' => 'Each Space Pickaxe Guy mines another 50 ore per second for every other building you own.'],
+        'need' => ['owned' => ['pickaxe' => 150]], 'text' => 'Each Space Pickaxe Guy mines another 50 ore per second for every other building you own. Kids have posters of them on their walls.'],
     'pickaxeGalaxy' => ['name' => 'Galaxy of Pickaxes', 'icon' => 'galaxy', 'cost' => 2e15, 'type' => 'crew', 'building' => 'pickaxe', 'value' => 500,
-        'need' => ['owned' => ['pickaxe' => 200]], 'text' => 'Each Space Pickaxe Guy mines another 500 ore per second for every other building you own.'],
-    'autoAim' => ['name' => 'Auto-Aim Laser', 'icon' => 'target', 'cost' => 50000, 'type' => 'clickPct', 'value' => 0.01, 'text' => 'Each click also mines 1% of your ore per second.'],
-    'bulk' => ['name' => 'Bulk Buying', 'icon' => 'crates', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time. Press A to switch between them.'],
+        'need' => ['owned' => ['pickaxe' => 200]], 'text' => 'Each Space Pickaxe Guy mines another 500 ore per second for every other building you own. A whole galaxy of them, and they all still say hi to each other.'],
+    'autoAim' => ['name' => 'Auto-Aim Laser', 'icon' => 'target', 'cost' => 50000, 'type' => 'clickPct', 'value' => 0.01, 'text' => 'Each click also mines 1% of your ore per second. It never misses. You still might.'],
+    'bulk' => ['name' => 'Bulk Buying', 'icon' => 'crates', 'cost' => 50000, 'type' => 'bulk', 'text' => 'Unlocks the ×10 and ×100 buttons, to buy buildings ten or a hundred at a time. Press A to switch between them. Why buy one when you can buy a hundred?'],
     'bulkMax' => ['name' => 'Max Buying', 'icon' => 'cartFull', 'cost' => 5e6, 'type' => 'bulk', 'need' => ['ore' => 2.5e6, 'upgrades' => ['bulk']],
-        'text' => 'Unlocks the Max button next to ×100, to buy as many of a building as you can afford at once.'],
-    'quantum' => ['name' => 'Quantum Hammer', 'icon' => 'quantumHammer', 'cost' => 500000, 'type' => 'clickPct', 'value' => 0.02, 'text' => 'Each click mines another 2% of your ore per second.'],
-    'cometKey' => ['name' => 'Comet Hot Key', 'icon' => 'keyC', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1, 'upgrades' => ['quickKeys']], 'text' => 'Press C to catch a comet, without having to hit it.'],
-    'radar' => ['name' => 'Comet Radar', 'icon' => 'radar', 'cost' => 777777, 'type' => 'comet', 'effect' => 'often', 'need' => ['comets' => 3], 'text' => 'Comets show up twice as often.'],
-    'zeroG' => ['name' => 'Zero-G Logistics', 'icon' => 'zeroG', 'cost' => 1e6, 'type' => 'global', 'value' => 0.25, 'text' => 'All buildings mine 25% more.'],
+        'text' => 'Unlocks the Max button next to ×100, to buy as many of a building as you can afford at once. Your wallet has been warned.'],
+    'quantum' => ['name' => 'Quantum Hammer', 'icon' => 'quantumHammer', 'cost' => 500000, 'type' => 'clickPct', 'value' => 0.02, 'text' => 'Each click mines another 2% of your ore per second. It hits the asteroid and misses it at the same time.'],
+    'cometKey' => ['name' => 'Comet Hot Key', 'icon' => 'keyC', 'cost' => 333333, 'type' => 'comet', 'effect' => 'key', 'need' => ['comets' => 1, 'upgrades' => ['quickKeys']], 'text' => 'Press C to catch a comet, without having to hit it. C is for comet.'],
+    'radar' => ['name' => 'Comet Radar', 'icon' => 'radar', 'cost' => 777777, 'type' => 'comet', 'effect' => 'often', 'need' => ['comets' => 3], 'text' => 'Comets show up twice as often. Beep. Beep. Comet.'],
+    'zeroG' => ['name' => 'Zero-G Logistics', 'icon' => 'zeroG', 'cost' => 1e6, 'type' => 'global', 'value' => 0.25, 'text' => 'All buildings mine 25% more. Things float where they need to go. Mostly.'],
     'dockingBays' => ['name' => 'Drone Docking Bays', 'icon' => 'link', 'cost' => 1.3e6, 'type' => 'synergy', 'building' => 'drone', 'source' => 'base', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['drone' => 1, 'base' => 1]], 'text' => 'Mining Drones mine 1% more for every Asteroid Base you own.'],
-    'crit' => ['name' => 'Critical Strike Module', 'icon' => 'crit', 'cost' => 2e6, 'type' => 'crit', 'text' => 'Clicks have a 5% chance to mine 10 times as much.'],
-    'magnet' => ['name' => 'Comet Magnet', 'icon' => 'magnet', 'cost' => 7.77e6, 'type' => 'comet', 'effect' => 'longer', 'need' => ['comets' => 7], 'text' => 'Comets stay on screen twice as long.'],
-    'mapping' => ['name' => 'Asteroid Mapping', 'icon' => 'map', 'cost' => 1e7, 'type' => 'global', 'value' => 0.5, 'text' => 'All buildings mine 50% more.'],
+        'need' => ['owned' => ['drone' => 1, 'base' => 1]], 'text' => 'Mining Drones mine 1% more for every Asteroid Base you own. Somewhere for the drones to charge up and gossip.'],
+    'crit' => ['name' => 'Critical Strike Module', 'icon' => 'crit', 'cost' => 2e6, 'type' => 'crit', 'text' => 'Clicks have a 5% chance to mine 10 times as much. Right where it hurts the rock.'],
+    'magnet' => ['name' => 'Comet Magnet', 'icon' => 'magnet', 'cost' => 7.77e6, 'type' => 'comet', 'effect' => 'longer', 'need' => ['comets' => 7], 'text' => 'Comets stay on screen twice as long. Comets find you very attractive.'],
+    'mapping' => ['name' => 'Asteroid Mapping', 'icon' => 'map', 'cost' => 1e7, 'type' => 'global', 'value' => 0.5, 'text' => 'All buildings mine 50% more. X marks the ore.'],
     'guidedFreighters' => ['name' => 'Laser-Guided Freighters', 'icon' => 'link', 'cost' => 1.4e7, 'type' => 'synergy', 'building' => 'freighter', 'source' => 'laser', 'per' => 0.02, 'every' => 1,
-        'need' => ['owned' => ['freighter' => 1, 'laser' => 1]], 'text' => 'Ore Freighters mine 2% more for every Laser Drill you own.'],
-    'gauntlet' => ['name' => 'Gravity Gauntlet', 'icon' => 'gauntlet', 'cost' => 2.5e7, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'tail' => ['name' => 'Tail Collector', 'icon' => 'cometTail', 'cost' => 7.77e7, 'type' => 'comet', 'effect' => 'tail', 'need' => ['comets' => 15], 'text' => 'Comet effects last twice as long.'],
+        'need' => ['owned' => ['freighter' => 1, 'laser' => 1]], 'text' => 'Ore Freighters mine 2% more for every Laser Drill you own. They follow the red dot, like cats.'],
+    'gauntlet' => ['name' => 'Gravity Gauntlet', 'icon' => 'gauntlet', 'cost' => 2.5e7, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much. Every punch has its own gravity.'],
+    'tail' => ['name' => 'Tail Collector', 'icon' => 'cometTail', 'cost' => 7.77e7, 'type' => 'comet', 'effect' => 'tail', 'need' => ['comets' => 15], 'text' => 'Comet effects last twice as long. The tail is where the good stuff is.'],
     'hangars' => ['name' => 'Station Hangars', 'icon' => 'link', 'cost' => 2e8, 'type' => 'synergy', 'building' => 'station', 'source' => 'drone', 'per' => 0.05, 'every' => 10,
-        'need' => ['owned' => ['station' => 1, 'drone' => 10]], 'text' => 'Space Stations mine 5% more for every 10 Mining Drones you own.'],
-    'supernova' => ['name' => 'Supernova Punch', 'icon' => 'supernovaFist', 'cost' => 5e8, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second.'],
-    'autoClicker' => ['name' => 'Auto-Clicker Bot', 'icon' => 'robot', 'cost' => 1e9, 'type' => 'auto', 'value' => 2, 'text' => 'Clicks the asteroid 2 times a second for you.'],
-    'warpTech' => ['name' => 'Warp Drive Tech', 'icon' => 'warp', 'cost' => 1e9, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+        'need' => ['owned' => ['station' => 1, 'drone' => 10]], 'text' => 'Space Stations mine 5% more for every 10 Mining Drones you own. Where drones park when they are not working. They are always working.'],
+    'supernova' => ['name' => 'Supernova Punch', 'icon' => 'supernovaFist', 'cost' => 5e8, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second. A whole exploding star, in one fist.'],
+    'autoClicker' => ['name' => 'Auto-Clicker Bot', 'icon' => 'robot', 'cost' => 1e9, 'type' => 'auto', 'value' => 2, 'text' => 'Clicks the asteroid 2 times a second for you. Keeps clicking while you go get a snack.'],
+    'warpTech' => ['name' => 'Warp Drive Tech', 'icon' => 'warp', 'cost' => 1e9, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. Faster than light, and faster than your boss.'],
     'outposts' => ['name' => 'Moon Outposts', 'icon' => 'link', 'cost' => 3.3e9, 'type' => 'synergy', 'building' => 'base', 'source' => 'excavator', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['base' => 1, 'excavator' => 1]], 'text' => 'Asteroid Bases mine 1% more for every Moon Excavator you own.'],
-    'luckyStars' => ['name' => 'Lucky Stars', 'icon' => 'diamond', 'cost' => 7.77e9, 'type' => 'comet', 'effect' => 'diamond', 'need' => ['comets' => 27], 'text' => 'Now and then a Diamond Comet shows up instead: 777 times the production for 7 seconds.'],
+        'need' => ['owned' => ['base' => 1, 'excavator' => 1]], 'text' => 'Asteroid Bases mine 1% more for every Moon Excavator you own. The bases had a view of the Moon. Now they have bits of it.'],
+    'luckyStars' => ['name' => 'Lucky Stars', 'icon' => 'diamond', 'cost' => 7.77e9, 'type' => 'comet', 'effect' => 'diamond', 'need' => ['comets' => 27], 'text' => 'Now and then a Diamond Comet shows up instead: 777 times the production for 7 seconds. Make a wish. It is probably diamonds.'],
     'slingshot' => ['name' => 'Gravity Slingshot', 'icon' => 'link', 'cost' => 7.5e11, 'type' => 'synergy', 'building' => 'cracker', 'source' => 'siphon', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['cracker' => 1, 'siphon' => 1]], 'text' => 'Planet Crackers mine 1% more for every Black Hole Siphon you own.'],
-    'monopoly' => ['name' => 'Galactic Monopoly', 'icon' => 'crown', 'cost' => 1e12, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
-    'neutronGloves' => ['name' => 'Neutron Star Gloves', 'icon' => 'neutronFist', 'cost' => 1e10, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much.'],
-    'botSwarm' => ['name' => 'Auto-Clicker Swarm', 'icon' => 'robots', 'cost' => 5e12, 'type' => 'auto', 'value' => 3, 'text' => 'Clicks the asteroid another 3 times a second for you.'],
+        'need' => ['owned' => ['cracker' => 1, 'siphon' => 1]], 'text' => 'Planet Crackers mine 1% more for every Black Hole Siphon you own. Throw the black hole at the planet. Science!'],
+    'monopoly' => ['name' => 'Galactic Monopoly', 'icon' => 'crown', 'cost' => 1e12, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. Every other ore company is now just a logo on your wall.'],
+    'neutronGloves' => ['name' => 'Neutron Star Gloves', 'icon' => 'neutronFist', 'cost' => 1e10, 'type' => 'click', 'value' => 2, 'text' => 'Clicks mine twice as much. Heavier than they look, and they look very heavy.'],
+    'botSwarm' => ['name' => 'Auto-Clicker Swarm', 'icon' => 'robots', 'cost' => 5e12, 'type' => 'auto', 'value' => 3, 'text' => 'Clicks the asteroid another 3 times a second for you. The asteroid has started to flinch.'],
     'orbitalForges' => ['name' => 'Orbital Forges', 'icon' => 'link', 'cost' => 5e12, 'type' => 'synergy', 'building' => 'forge', 'source' => 'station', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['forge' => 1, 'station' => 1]], 'text' => 'Star Forges mine 1% more for every Space Station you own.'],
-    'stardust' => ['name' => 'Stardust Trail', 'icon' => 'sparkles', 'cost' => 7.77e12, 'type' => 'comet', 'effect' => 'lucky', 'need' => ['comets' => 50], 'text' => 'Lucky comets give twice as much ore.'],
-    'bigBangPunch' => ['name' => 'Big Bang Punch', 'icon' => 'bigBang', 'cost' => 1e13, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second.'],
+        'need' => ['owned' => ['forge' => 1, 'station' => 1]], 'text' => 'Star Forges mine 1% more for every Space Station you own. Forging in orbit keeps the smoke off the planets.'],
+    'stardust' => ['name' => 'Stardust Trail', 'icon' => 'sparkles', 'cost' => 7.77e12, 'type' => 'comet', 'effect' => 'lucky', 'need' => ['comets' => 50], 'text' => 'Lucky comets give twice as much ore. It sparkles, and it pays.'],
+    'bigBangPunch' => ['name' => 'Big Bang Punch', 'icon' => 'bigBang', 'cost' => 1e13, 'type' => 'clickPct', 'value' => 0.03, 'text' => 'Each click mines another 3% of your ore per second. Every click starts a small universe.'],
     'nebulaScoops' => ['name' => 'Nebula Scoops', 'icon' => 'link', 'cost' => 7e13, 'type' => 'synergy', 'building' => 'nebula', 'source' => 'freighter', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['nebula' => 1, 'freighter' => 1]], 'text' => 'Nebula Harvesters mine 1% more for every Ore Freighter you own.'],
-    'starCharts' => ['name' => 'Star Charts', 'icon' => 'starChart', 'cost' => 1e14, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+        'need' => ['owned' => ['nebula' => 1, 'freighter' => 1]], 'text' => 'Nebula Harvesters mine 1% more for every Ore Freighter you own. The freighters bring the clouds home, the harvesters do the rest.'],
+    'starCharts' => ['name' => 'Star Charts', 'icon' => 'starChart', 'cost' => 1e14, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. Now you know where all the ore is. And where the toilets are.'],
     'shatteredPlanets' => ['name' => 'Shattered Planets', 'icon' => 'link', 'cost' => 8.5e14, 'type' => 'synergy', 'building' => 'dyson', 'source' => 'cracker', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['dyson' => 1, 'cracker' => 1]], 'text' => 'Dyson Swarms mine 1% more for every Planet Cracker you own.'],
+        'need' => ['owned' => ['dyson' => 1, 'cracker' => 1]], 'text' => 'Dyson Swarms mine 1% more for every Planet Cracker you own. The bits make great mirrors.'],
     'blackHoleBridges' => ['name' => 'Black Hole Bridges', 'icon' => 'link', 'cost' => 1e16, 'type' => 'synergy', 'building' => 'wormhole', 'source' => 'siphon', 'per' => 0.01, 'every' => 1,
-        'need' => ['owned' => ['wormhole' => 1, 'siphon' => 1]], 'text' => 'Wormhole Gates mine 1% more for every Black Hole Siphon you own.'],
-    'oreLaw' => ['name' => 'Universal Ore Law', 'icon' => 'scales', 'cost' => 1e17, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+        'need' => ['owned' => ['wormhole' => 1, 'siphon' => 1]], 'text' => 'Wormhole Gates mine 1% more for every Black Hole Siphon you own. Shortcuts through places nothing comes back from. Mind your step.'],
+    'oreLaw' => ['name' => 'Universal Ore Law', 'icon' => 'scales', 'cost' => 1e17, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. It is the law. Ore must be mined.'],
     'pickaxesEverywhere' => ['name' => 'Pickaxe Guys Everywhere', 'icon' => 'link', 'cost' => 1.3e17, 'type' => 'synergy', 'building' => 'multiverse', 'source' => 'pickaxe', 'per' => 0.01, 'every' => 10,
-        'need' => ['owned' => ['multiverse' => 1, 'pickaxe' => 10]], 'text' => 'Multiverse Drills mine 1% more for every 10 Space Pickaxe Guys you own.'],
-    'cosmicAccounting' => ['name' => 'Cosmic Accounting', 'icon' => 'abacus', 'cost' => 1e20, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
-    'bigOreTheory' => ['name' => 'Big Ore Theory', 'icon' => 'books', 'cost' => 1e23, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much.'],
+        'need' => ['owned' => ['multiverse' => 1, 'pickaxe' => 10]], 'text' => 'Multiverse Drills mine 1% more for every 10 Space Pickaxe Guys you own. In every universe, there is a guy with a pickaxe.'],
+    'timeTunnels' => ['name' => 'Time Tunnels', 'icon' => 'link', 'cost' => 1.65e18, 'type' => 'synergy', 'building' => 'timeQuarry', 'source' => 'wormhole', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['timeQuarry' => 1, 'wormhole' => 1]], 'text' => 'Time Quarries mine 1% more for every Wormhole Gate you own. Holes through space, and through Tuesday.'],
+    'nebulaThread' => ['name' => 'Nebula Thread', 'icon' => 'link', 'cost' => 2.1e19, 'type' => 'synergy', 'building' => 'stringLoom', 'source' => 'nebula', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['stringLoom' => 1, 'nebula' => 1]], 'text' => 'Looms of Time mine 1% more for every Nebula Harvester you own. The softest thread in the universe, and a bit sparkly.'],
+    'cosmicAccounting' => ['name' => 'Cosmic Accounting', 'icon' => 'abacus', 'cost' => 1e20, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. The numbers add up. They are very big numbers.'],
+    'starSeeds' => ['name' => 'Star Seeds', 'icon' => 'link', 'cost' => 2.7e20, 'type' => 'synergy', 'building' => 'bigBangReactor', 'source' => 'forge', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['bigBangReactor' => 1, 'forge' => 1]], 'text' => 'Big Bang Reactors mine 1% more for every Star Forge you own. Plant a star, grow a universe.'],
+    'copiesOfCopies' => ['name' => 'Copies of Copies', 'icon' => 'link', 'cost' => 3.5e21, 'type' => 'synergy', 'building' => 'realityPrinter', 'source' => 'multiverse', 'per' => 0.01, 'every' => 1,
+        'need' => ['owned' => ['realityPrinter' => 1, 'multiverse' => 1]], 'text' => 'Reality Printers mine 1% more for every Multiverse Drill you own. They only get a little blurrier each time.'],
+    'dronesAllTheWayDown' => ['name' => 'Drones All the Way Down', 'icon' => 'link', 'cost' => 4.5e22, 'type' => 'synergy', 'building' => 'infinityMine', 'source' => 'drone', 'per' => 0.01, 'every' => 10,
+        'need' => ['owned' => ['infinityMine' => 1, 'drone' => 10]], 'text' => 'Infinity Mines mine 1% more for every 10 Mining Drones you own. Nobody has found the last drone. Nobody has found the bottom either.'],
+    'bigOreTheory' => ['name' => 'Big Ore Theory', 'icon' => 'books', 'cost' => 1e23, 'type' => 'global', 'value' => 1, 'text' => 'All buildings mine twice as much. Checked and approved by a very big rock.'],
 ];
 const HBHUB_MINER_CLICK_TYPES = ['click', 'clickPct', 'crit', 'auto']; // kept by Persistent Memory
 const HBHUB_MINER_ETERNAL_TYPES = ['bulk', 'comet']; // kept by Eternal Blueprints
 
 // Bought with Dark Matter, kept until a Big Crunch (or after it too, with Dark Echo). Long-Range Hot Keys doesn't change
 // the game, only which buildings the 1-9 and 0 keys buy, and Auto Buy only buys in the page like a player would (its
-// purchases come here as normal buy and upgrade actions), so both are only in spaceOreMiner.js.
+// purchases come here as normal buy and upgrade actions), so both are only in spaceOreMiner.js. The one thing Auto Buy
+// changes here: its buys ('auto' => true) can be 10 or 100 at once without Bulk Buying (see hbHubMinerApply()).
 const HBHUB_MINER_DARK_UPGRADES = [
-    'headStart' => ['name' => 'Head Start', 'icon' => 'headStart', 'cost' => 5, 'text' => 'Start every run with ' . HBHUB_MINER_HEAD_START . ' Mining Drones.'],
-    'memory' => ['name' => 'Persistent Memory', 'icon' => 'chip', 'cost' => 40, 'text' => 'Keep your click upgrades when you Warp Jump.'],
-    'darkEngines' => ['name' => 'Dark Engines', 'icon' => 'darkEngine', 'cost' => 100, 'text' => 'All buildings mine 50% more.'],
-    'timeDilation' => ['name' => 'Time Dilation', 'icon' => 'hourglass', 'cost' => 250, 'text' => 'Earn twice as much while you\'re away.'],
-    'darkPickaxe' => ['name' => 'Dark Pickaxe', 'icon' => 'darkPickaxe', 'cost' => 15, 'text' => 'Clicks mine ' . HBHUB_MINER_DARK_PICKAXE . ' times as much.'],
-    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => 'hotKeys', 'cost' => 2, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 and 0 keys buy your last ten buildings instead of your first ten.'],
-    'autoBuy' => ['name' => 'Auto Buy', 'icon' => 'autoBuy', 'cost' => 30, 'text' => 'Adds a switch to the store that buys buildings and upgrades for you, whatever pays for itself soonest, and saves up for an upgrade when it\'s worth the wait.'],
-    'physics' => ['name' => 'Cheaper Physics', 'icon' => 'chartDown', 'cost' => 750, 'text' => 'Each building costs 14% more than the one before instead of 15% (11% instead of 12% for Space Pickaxe Guys).'],
+    'headStart' => ['name' => 'Head Start', 'icon' => 'headStart', 'cost' => 5, 'text' => 'Start every run with ' . HBHUB_MINER_HEAD_START . ' Mining Drones. They were already waiting for you in the new galaxy.'],
+    'memory' => ['name' => 'Persistent Memory', 'icon' => 'chip', 'cost' => 40, 'text' => 'Keep your click upgrades when you Warp Jump. Your hands remember, even if the universe does not.'],
+    'darkEngines' => ['name' => 'Dark Engines', 'icon' => 'darkEngine', 'cost' => 100, 'text' => 'All buildings mine 50% more. Nobody can see them working. They are working.'],
+    'timeDilation' => ['name' => 'Time Dilation', 'icon' => 'hourglass', 'cost' => 250, 'text' => 'Earn twice as much while you\'re away. Five minutes for you, a lot longer for the drills.'],
+    'darkPickaxe' => ['name' => 'Dark Pickaxe', 'icon' => 'darkPickaxe', 'cost' => 15, 'text' => 'Clicks mine ' . HBHUB_MINER_DARK_PICKAXE . ' times as much. Nobody can see it, but the rock can feel it.'],
+    'lateKeys' => ['name' => 'Long-Range Hot Keys', 'icon' => 'hotKeys', 'cost' => 2, 'text' => 'Adds a switch to the store (or press K) that makes the 1-9 and 0 keys buy your last ten buildings instead of your first ten. For when your first ten buildings are old news.'],
+    'autoBuy' => ['name' => 'Auto Buy', 'icon' => 'autoBuy', 'cost' => 30, 'text' => 'Adds a switch to the store that buys buildings and upgrades for you, whatever pays for itself soonest, and saves up for an upgrade when it\'s worth the wait. Shopping, without having to look.'],
+    'physics' => ['name' => 'Cheaper Physics', 'icon' => 'chartDown', 'cost' => 750, 'text' => 'Each building costs 14% more than the one before instead of 15% (11% instead of 12% for Space Pickaxe Guys). Somebody found the receipt for the universe.'],
     'reactor' => ['name' => 'Dark Matter Reactor', 'icon' => 'radiation', 'cost' => 2500, 'text' => 'Every Dark Matter you\'ve earned makes everything mine '
-        . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%.'],
+        . HBHUB_MINER_DARK_BONUS_REACTOR * 100 . '% faster, instead of ' . HBHUB_MINER_DARK_BONUS * 100 . '%. Do not ask what is in it. Nobody can see it anyway.'],
+    'darkClockwork' => ['name' => 'Dark Clockwork', 'icon' => 'robot', 'cost' => 150, 'text' => 'The Auto-Clicker Bot and Swarm click twice as often. Wound up with a key nobody can see.'],
+    'shadowCrews' => ['name' => 'Shadow Crews', 'icon' => 'buddies', 'cost' => 500, 'text' => 'The crew upgrades (Buddy System and the rest) are twice as strong. A second Space Pickaxe Guy behind every Space Pickaxe Guy. He doesn\'t talk much.'],
+    'darkTethers' => ['name' => 'Dark Tethers', 'icon' => 'link', 'cost' => 1000, 'text' => 'The upgrades that link two buildings are twice as strong. Invisible string, and a lot of it.'],
+    'darkTurbines' => ['name' => 'Dark Turbines', 'icon' => 'darkEngine', 'cost' => 10000, 'text' => 'All buildings mine twice as much. The Dark Engines got a bigger brother. Nobody has seen him either.'],
 ];
 
 // Bought with Antimatter, kept forever. Comet Catcher, like Auto Buy, only catches in the page like a player would (its
 // catches come here as normal comet actions), so it's only in spaceOreMiner.js.
 const HBHUB_MINER_ANTI_UPGRADES = [
-    'echo' => ['name' => 'Dark Echo', 'icon' => 'cycle', 'cost' => 1, 'text' => 'Keep your Dark Matter upgrades when you Big Crunch.'],
-    'converter' => ['name' => 'Matter Converter', 'icon' => 'flask', 'cost' => 3, 'text' => 'Warp Jumps give twice as much Dark Matter.'],
-    'leftovers' => ['name' => 'Big Bang Leftovers', 'icon' => 'orePile', 'cost' => 5, 'text' => 'Start every run with 10 million ore.'],
-    'eternal' => ['name' => 'Eternal Blueprints', 'icon' => 'blueprint', 'cost' => 10, 'text' => 'Keep Bulk Buying, Max Buying and your comet upgrades when you Warp Jump.'],
-    'cometCatcher' => ['name' => 'Comet Catcher', 'icon' => 'cometCatcher', 'cost' => 15, 'text' => 'Catches every Golden Comet for you while the game is open. Diamond Comets are still yours to catch.'],
-    'annihilation' => ['name' => 'Annihilation Engines', 'icon' => 'annihilation', 'cost' => 25, 'text' => 'All buildings mine twice as much.'],
-    'antiComets' => ['name' => 'Antimatter Comets', 'icon' => 'antiComet', 'cost' => 50, 'text' => 'Comet effects are twice as strong.'],
+    'echo' => ['name' => 'Dark Echo', 'icon' => 'cycle', 'cost' => 1, 'text' => 'Keep your Dark Matter upgrades when you Big Crunch. The universe ends. Your shopping list does not.'],
+    'converter' => ['name' => 'Matter Converter', 'icon' => 'flask', 'cost' => 3, 'text' => 'Warp Jumps give twice as much Dark Matter. Put matter in, get more matter out. Physics is confused.'],
+    'leftovers' => ['name' => 'Big Bang Leftovers', 'icon' => 'orePile', 'cost' => 5, 'text' => 'Start every run with 10 million ore. Somebody forgot to clean up after the last universe.'],
+    'eternal' => ['name' => 'Eternal Blueprints', 'icon' => 'blueprint', 'cost' => 10, 'text' => 'Keep Bulk Buying, Max Buying and your comet upgrades when you Warp Jump. Printed on paper that outlives the universe.'],
+    'cometCatcher' => ['name' => 'Comet Catcher', 'icon' => 'cometCatcher', 'cost' => 15, 'text' => 'Catches every Golden Comet for you while the game is open. Diamond Comets are still yours to catch. Golden ones only. It knows its place.'],
+    'annihilation' => ['name' => 'Annihilation Engines', 'icon' => 'annihilation', 'cost' => 25, 'text' => 'All buildings mine twice as much. Matter meets antimatter, and the bill is paid in ore.'],
+    'antiComets' => ['name' => 'Antimatter Comets', 'icon' => 'antiComet', 'cost' => 50, 'text' => 'Comet effects are twice as strong. The same comets, just the other way round.'],
+    'antiKnuckles' => ['name' => 'Antimatter Knuckles', 'icon' => 'neutronFist', 'cost' => 75, 'text' => 'Each click also mines another '
+        . HBHUB_MINER_ANTI_CLICK_SHARE * 100 . '% of your ore per second. Do not high-five anyone made of matter.'],
+    'negativePrices' => ['name' => 'Negative Prices', 'icon' => 'chartDown', 'cost' => 100, 'text' => 'Buildings cost '
+        . (1 - HBHUB_MINER_NEGATIVE_PRICES) * 100 . '% less. In the antiverse, the shop pays you a little bit to take them away.'],
+    'antiReactor' => ['name' => 'Antimatter Reactor', 'icon' => 'bigCrunch', 'cost' => 500, 'text' => 'Every Antimatter you\'ve earned adds '
+        . HBHUB_MINER_ANTI_BONUS_REACTOR * 100 . '% to production, instead of ' . HBHUB_MINER_ANTI_BONUS * 100 . '% (and so more Dark Matter from Warp Jumps). It runs backwards. So does the warning label.'],
+    'mirrorUniverse' => ['name' => 'Mirror Universe', 'icon' => 'galaxy', 'cost' => 1000, 'text' => 'Big Crunches give twice as much Antimatter. Every universe you crunch has a twin, and the twin crunches too.'],
 ];
 
 // The skill tree, bought with Strange Matter and kept forever. A skill can be learned once every skill in its 'after' is
@@ -440,6 +570,8 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'siphon1' => ['name' => 'Own a Black Hole', 'text' => 'Buy a Black Hole Siphon.', 'stat' => 'owned:siphon', 'at' => 1],
     'forge1' => ['name' => 'Star Power', 'text' => 'Buy a Star Forge.', 'stat' => 'owned:forge', 'at' => 1],
     'multiverse1' => ['name' => 'Next Door Neighbours', 'text' => 'Buy a Multiverse Drill.', 'stat' => 'owned:multiverse', 'at' => 1],
+    'timeQuarry1' => ['name' => 'Ahead of Time', 'text' => 'Buy a Time Quarry.', 'stat' => 'owned:timeQuarry', 'at' => 1],
+    'infinityMine1' => ['name' => 'To Infinity', 'text' => 'Buy an Infinity Mine.', 'stat' => 'owned:infinityMine', 'at' => 1],
     'all1' => ['name' => 'Full House', 'text' => 'Have one of every building.', 'stat' => 'ownedAll', 'at' => 1],
     'all25' => ['name' => 'Collector', 'text' => 'Have 25 of every building.', 'stat' => 'ownedAll', 'at' => 25],
     'buildings100' => ['name' => 'Industrial Revolution', 'text' => 'Have 100 buildings.', 'stat' => 'buildings', 'at' => 100],
@@ -453,6 +585,9 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'comet50' => ['name' => 'Halley\'s Hero', 'text' => 'Catch 50 comets.', 'stat' => 'comets', 'at' => 50],
     'comet100' => ['name' => 'Comet Collector', 'text' => 'Catch 100 comets.', 'stat' => 'comets', 'at' => 100],
     'diamond1' => ['name' => 'Shine Bright', 'text' => 'Catch a Diamond Comet.', 'stat' => 'diamonds', 'at' => 1],
+    'shard1' => ['name' => 'Shiny!', 'text' => 'Catch a Star Shard.', 'stat' => 'shardsCaught', 'at' => 1],
+    'shard25' => ['name' => 'Shard Collector', 'text' => 'Catch 25 Star Shards.', 'stat' => 'shardsCaught', 'at' => 25],
+    'shard100' => ['name' => 'Starlight Hoarder', 'text' => 'Catch 100 Star Shards.', 'stat' => 'shardsCaught', 'at' => 100],
     'warp1' => ['name' => 'Warp Speed', 'text' => 'Warp Jump to a new galaxy.', 'stat' => 'warps', 'at' => 1],
     'warp5' => ['name' => 'Frequent Flyer', 'text' => 'Warp Jump 5 times.', 'stat' => 'warps', 'at' => 5],
     'warp25' => ['name' => 'Galaxy Hopper', 'text' => 'Warp Jump 25 times.', 'stat' => 'warps', 'at' => 25],
@@ -466,7 +601,542 @@ const HBHUB_MINER_ACHIEVEMENTS = [
     'skill1' => ['name' => 'Strange Student', 'text' => 'Learn a skill in the skill tree.', 'stat' => 'skills', 'at' => 1],
     'skill25' => ['name' => 'Halfway Strange', 'text' => 'Learn 25 skills.', 'stat' => 'skills', 'at' => 25],
     'skillAll' => ['name' => 'Know-It-All', 'text' => 'Learn every skill in the skill tree.', 'stat' => 'allSkills', 'at' => 1],
+    // The endgame: Anomalies (alone or in a stack counts, see hbHubMinerAnomalyDone()) and the Cosmic Engine
+    'anomaly1' => ['name' => 'Something\'s Off', 'text' => 'Finish an Anomaly.', 'stat' => 'anomalies', 'at' => 1],
+    'tier1All' => ['name' => 'Ripple Effect', 'text' => 'Finish every Tier I Anomaly.', 'stat' => 'tier:1', 'at' => 4],
+    'tier2All' => ['name' => 'Torn to Pieces', 'text' => 'Finish every Tier II Anomaly.', 'stat' => 'tier:2', 'at' => 5],
+    'nakedSingularity' => ['name' => 'Nothing to Hide', 'text' => 'Finish Naked Singularity.', 'stat' => 'anomaly:nakedSingularity', 'at' => 1],
+    'ironUniverse' => ['name' => 'Iron Will', 'text' => 'Finish Iron Universe.', 'stat' => 'anomaly:ironUniverse', 'at' => 1],
+    'handsOnly' => ['name' => 'Hands Down', 'text' => 'Finish Hands Only.', 'stat' => 'anomaly:handsOnly', 'at' => 1],
+    'gauntlet' => ['name' => 'Gauntlet Runner', 'text' => 'Finish The Gauntlet.', 'stat' => 'anomaly:gauntlet', 'at' => 1],
+    'tier3All' => ['name' => 'Singular', 'text' => 'Finish every Tier III Anomaly.', 'stat' => 'tier:3', 'at' => 4],
+    'stack2' => ['name' => 'Double Trouble', 'text' => 'Finish a stack of 2 Anomalies.', 'stat' => 'stack', 'at' => 2],
+    'stack4' => ['name' => 'Four of a Kind', 'text' => 'Finish a stack of 4 Anomalies.', 'stat' => 'stack', 'at' => 4],
+    // (id from when it was 6: no stack of 6 can be done any more, see HBHUB_MINER_ANOMALY_CLASHES)
+    'stack6' => ['name' => 'Stacked Deck', 'text' => 'Finish a stack of 5 Anomalies.', 'stat' => 'stack', 'at' => 5],
+    'weekly1' => ['name' => 'Weekly Worker', 'text' => 'Finish the weekly Anomaly.', 'stat' => 'weeklies', 'at' => 1],
+    'lightHour' => ['name' => 'Faster Than Light', 'text' => 'Finish Speed of Light in under an hour.', 'stat' => 'lightHour', 'at' => 1],
+    'engine1' => ['name' => 'Crew Member', 'text' => 'Give a Starbound Part.', 'stat' => 'engineGiven', 'at' => 1],
+    'engine1000' => ['name' => 'Chief Engineer', 'text' => 'Give 1,000 Starbound Parts.', 'stat' => 'engineGiven', 'at' => 1000],
+    'shiftDay' => ['name' => 'Full Shift', 'text' => 'Do all of a day\'s Starbound Shifts.', 'stat' => 'shiftDays', 'at' => 1],
 ];
+
+// ----- The Cosmic Engine. Anyone with a Warp Jump can give Engine Parts: ore from their run (HBHUB_MINER_ENGINE_ORE_PARTS
+// a day at most, the first for HBHUB_MINER_ENGINE_ORE_PART and each next one that day ten times the one before, so
+// giving ore is a small daily thing however much a player has), unspent Strange Matter
+// (HBHUB_MINER_ENGINE_STRANGE_PART for a part, as many as they like: it costs nothing to production, as the bonus counts
+// Strange Matter earned, not what's left) and Engine Shifts. The parts go into the stage being built; once it has its
+// cost and its lock is met, it's done, and its perk works for everyone for good. Each stage's 'perk' is a 'type' (the
+// keys of HBHUB_MINER_ENGINE_NEUTRAL, plus badge, skin, news, title and ignition, which aren't numbers in the rules)
+// with 'value' (offline: the share mined while away, the highest counts; cometStay: ms added; diamond: added to the
+// Diamond Comet chance) or 'times' (multiplied together). 'lock' is null, or (engine.php checks them,
+// hbHubMinerEngineLock()):
+// - contributors: 'count' different players have given parts to this Engine. section: to this stage's section. Parts
+//   keep coming while either waits, and go on to the next stages once it's met, as it needs more players, not fewer
+//   parts. With
+//   'rising': only players who haven't learned every skill yet count (saveSkills).
+// - source: 'count' different players have each given 'parts' parts from 'source' (HBHUB_MINER_ENGINE_SOURCE_*) to this
+//   stage's section. Parts keep coming while it waits, like the two above.
+// - anomalies: someone has finished each of the 'count' Anomalies of 'tier' (HBHUB_MINER_ANOMALIES). players: 'count'
+//   different players have each finished all of 'anomalies'. each: each Anomaly of 'tier' has been finished by 'count'
+//   players. stack: someone has finished a stack of 'count' Anomalies. weekly: 'count' players finished the weekly
+//   Anomaly in the same week. time: 'count' players have finished 'anomaly' on its own in under 'ms'. An Anomaly
+//   finished in a stack counts as finished (not for time). Once one of these is full, the stage
+//   waits and takes no more parts from ore, Strange Matter or Shifts (the Engine is "waiting", engineOpen in the save),
+//   so they don't pile up for the stages after it; parts from Anomalies always go in (they're what opens it), and
+//   what's over goes on to the next stage once it's done.
+// Every lock only counts what was done for the Engine being built, so each Engine has to earn them again.
+// 'cost' is in parts, and the admin panel can change it (admin/engine.php, kept in engineStageCosts). Ore counts less
+// in the later sections (HBHUB_MINER_ENGINE_ORE_SHARE). The last stage, Ignition, has to be full within
+// HBHUB_MINER_ENGINE_COUNTDOWN_MS of the one before it being done, or half its parts are lost and the time starts over
+// (engine.php, hbHubMinerEngineDrain()); once it's done, everything mines HBHUB_MINER_IGNITION_TIMES as much for
+// HBHUB_MINER_IGNITION_MS (hbHubMinerIgnition()).
+//
+// There's more than one Engine (HBHUB_MINER_ENGINES): once one is ignited, the next starts straight away (engine.php,
+// hbHubMinerEngineFinish()), with its own name and sections. Every Engine has HBHUB_MINER_ENGINE_STAGE_TOTAL stages,
+// and hbHubMinerEngineStageList() has all of them in a row (Engine #1's first, then #2's, both written out in
+// HBHUB_MINER_ENGINE_STAGES, then those of Build #3 on, made in starbound.php; see hbHubMinerEngineStages()),
+// so a save's engineStage counts the stages done of every Engine so far, and the perks of all of them work together.
+// The Engines after the first have perks that are mostly for looks or ease, and only a little more production, so
+// power doesn't keep stacking up. Perk types that aren't numbers in the rules (the script and pages use them):
+// badge (the profile badge 'badge' with 'icon' for who gave parts to that Engine), skin, news (ticker lines, and
+// 'sounds' for the parts: engine or forge), title, ignition, hall (finished Engines in the Engine view), again (a
+// button to go into the last Anomaly again), cometBell (a sound and a glow when a comet comes), weeklyPreview (next
+// week's weekly Anomaly), cometTrail (comets take the skin's colour), sparks (clicking throws sparks), backdrops
+// (HBHUB_MINER_BACKDROPS), medals (weekly Anomaly medals on profiles), pace (the best time in the Anomaly banner) and
+// none (nothing, for the stages of Build #3 on that only take the build further).
+// Ones that are: shiftSwap (Shifts that can be swapped a day, hbHubMinerShiftSwap()), oreParts (more parts from ore a
+// day) and oreFloor (the fewest quarter parts a part from ore is worth).
+const HBHUB_MINER_ENGINE_SOURCE_ORE = 1; // contributionSource in HBHub-MinerContributions
+const HBHUB_MINER_ENGINE_SOURCE_STRANGE = 2;
+const HBHUB_MINER_ENGINE_SOURCE_SHIFT = 3;
+const HBHUB_MINER_ENGINE_SOURCE_ANOMALY = 4; // with the Anomaly in contributionAnomaly
+const HBHUB_MINER_ENGINE_ORE_PART = 1e13; // ore for the day's first part from ore
+const HBHUB_MINER_ENGINE_ORE_PARTS = 5; // parts from ore a day
+const HBHUB_MINER_ENGINE_STRANGE_PART = 10; // Strange Matter for a part
+const HBHUB_MINER_ENGINE_STRANGE = 250; // Strange Matter earned before a player can give parts (the view is locked until then)
+const HBHUB_MINER_ENGINE_STAGE_TOTAL = 25; // stages in each build
+const HBHUB_MINER_DAY_MS = 86400000; // the daily limit and the Shifts go by UTC days: Math.floor(tick / this)
+// The Engines, by engineNumber in HBHub-MinerEngines: what each is called (with 'the' in front in sentences), its
+// sections (each stage's 'section') and the badge for whoever gave parts to its last stage before it was done ('crew',
+// see hbHubMinerEngineCrews(); from Build #3 on only every 10th has one). One that isn't here never starts: the last
+// one waits, done, until another is added.
+const HBHUB_MINER_ENGINES = [
+    1 => ['name' => 'Cosmic Engine', 'sections' => ['A' => 'Foundation', 'B' => 'Power', 'C' => 'Drive', 'D' => 'Navigation', 'E' => 'Ignition'],
+        'crew' => ['name' => 'Ignition', 'icon' => '🚀']],
+    2 => ['name' => 'Starforge', 'sections' => ['A' => 'Anvil', 'B' => 'Bellows', 'C' => 'Crucible', 'D' => 'Hammer', 'E' => 'Quench'],
+        'crew' => ['name' => 'First Light', 'icon' => '🌟']],
+] + HBHUB_MINER_BUILDS; // Build #3 to #100 (starbound.php), whose stages are made from one plan
+// What a part given from ore is worth in each section, in quarter parts: a whole one at first, half in Drive and a
+// quarter from Navigation on. What's left of a part is kept in the save (engineOreRest) until it makes a whole one.
+const HBHUB_MINER_ENGINE_ORE_SHARE = ['A' => 4, 'B' => 4, 'C' => 2, 'D' => 1, 'E' => 1];
+const HBHUB_MINER_ENGINE_ORE_QUARTERS = 4;
+const HBHUB_MINER_ENGINE_COUNTDOWN_MS = 604800000; // 7 days, to fill Ignition in
+const HBHUB_MINER_ENGINE_DRAIN = 0.5; // of Ignition's parts kept when its time runs out
+const HBHUB_MINER_IGNITION_MS = 259200000; // 72 hours of HBHUB_MINER_IGNITION_TIMES once Project Starbound is ignited
+const HBHUB_MINER_IGNITION_TIMES = 67;
+const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
+    ['name' => 'Scaffolding', 'section' => 'A', 'cost' => 500, 'lock' => null,
+        'perk' => ['type' => 'offline', 'value' => 0.075, 'text' => 'While you\'re away, your machines mine 7.5% of what they would, instead of 5%.']],
+    ['name' => 'Cargo Bay', 'section' => 'A', 'cost' => 1000, 'lock' => null,
+        'perk' => ['type' => 'cometStay', 'value' => 2000, 'text' => 'Comets stay on screen 2 seconds longer.']],
+    ['name' => 'Fuel Lines', 'section' => 'A', 'cost' => 1750, 'lock' => null,
+        'perk' => ['type' => 'cometWait', 'times' => 0.9, 'text' => 'The wait between comets is 10% shorter.']],
+    ['name' => 'Crew Deck', 'section' => 'A', 'cost' => 2500, 'lock' => null,
+        'perk' => ['type' => 'badge', 'badge' => 'Engine Crew', 'icon' => '⚙️', 'text' => 'Everyone who has given parts to Project Starbound gets the Engine Crew badge on their profile.']],
+    ['name' => 'Foundation Seal', 'section' => 'A', 'cost' => 3500,
+        'lock' => ['type' => 'contributors', 'count' => 10, 'text' => '10 different players have given parts'],
+        'perk' => ['type' => 'production', 'times' => 1.05, 'text' => 'Everything mines 5% more.']],
+    ['name' => 'Reactor Ring', 'section' => 'B', 'cost' => 5000, 'lock' => null,
+        'perk' => ['type' => 'darkGain', 'times' => 1.1, 'text' => 'Warp Jumps give 10% more Dark Matter.']],
+    ['name' => 'Coolant Loops', 'section' => 'B', 'cost' => 6500, 'lock' => null,
+        'perk' => ['type' => 'offline', 'value' => 0.1, 'text' => 'While you\'re away, your machines mine 10% of what they would, instead of 7.5%.']],
+    ['name' => 'Capacitor Banks', 'section' => 'B', 'cost' => 8000,
+        'lock' => ['type' => 'anomalies', 'tier' => 1, 'count' => 4, 'text' => 'Someone has finished each Tier I Anomaly'],
+        'perk' => ['type' => 'cometLength', 'times' => 1.1, 'text' => 'Golden Comet effects last 10% longer.']],
+    ['name' => 'Power Grid', 'section' => 'B', 'cost' => 10000, 'lock' => null,
+        'perk' => ['type' => 'skin', 'text' => 'The Engine Steel asteroid skin, for everyone.']],
+    ['name' => 'Power Seal', 'section' => 'B', 'cost' => 12500,
+        'lock' => ['type' => 'anomalies', 'tier' => 2, 'count' => 5, 'text' => 'Someone has finished each Tier II Anomaly'],
+        'perk' => ['type' => 'production', 'times' => 1.1, 'text' => 'Everything mines 10% more.']],
+    ['name' => 'Thruster Mounts', 'section' => 'C', 'cost' => 15000, 'lock' => null,
+        'perk' => ['type' => 'antiGain', 'times' => 1.1, 'text' => 'Big Crunches give 10% more Antimatter.']],
+    ['name' => 'Fuel Injectors', 'section' => 'C', 'cost' => 18000, 'lock' => null,
+        'perk' => ['type' => 'cost', 'times' => 0.95, 'text' => 'Buildings cost 5% less.']],
+    ['name' => 'Plasma Chamber', 'section' => 'C', 'cost' => 22000,
+        'lock' => ['type' => 'players', 'anomalies' => ['speedOfLight'], 'count' => 5, 'text' => '5 different players have finished Speed of Light'],
+        'perk' => ['type' => 'diamond', 'value' => 0.005, 'text' => 'Diamond Comets come a little more often: 5.5% of comets instead of 5%.']],
+    ['name' => 'Exhaust Nozzle', 'section' => 'C', 'cost' => 26000, 'lock' => null,
+        'perk' => ['type' => 'news', 'sounds' => 'engine', 'text' => 'New lines in the news ticker, and Project Starbound makes sounds when it gets parts.']],
+    ['name' => 'Drive Seal', 'section' => 'C', 'cost' => 30000,
+        'lock' => ['type' => 'players', 'anomalies' => ['nakedSingularity'], 'count' => 1, 'text' => 'Someone has finished Naked Singularity'],
+        'perk' => ['type' => 'production', 'times' => 1.1, 'text' => 'Everything mines 10% more.']],
+    ['name' => 'Star Charts', 'section' => 'D', 'cost' => 35000, 'lock' => null,
+        'perk' => ['type' => 'offline', 'value' => 0.125, 'text' => 'While you\'re away, your machines mine 12.5% of what they would, instead of 10%.']],
+    ['name' => 'Gyroscopes', 'section' => 'D', 'cost' => 41000, 'lock' => null,
+        'perk' => ['type' => 'click', 'times' => 1.25, 'text' => 'Clicks mine 25% more.']],
+    ['name' => 'Navigation Computer', 'section' => 'D', 'cost' => 48000,
+        'lock' => ['type' => 'stack', 'count' => 4, 'text' => 'Someone has finished a stack of 4 Anomalies'],
+        'perk' => ['type' => 'anomalyParts', 'times' => 1.1, 'text' => 'Anomalies give 10% more Starbound Parts.']],
+    ['name' => 'The Bridge', 'section' => 'D', 'cost' => 56000,
+        'lock' => ['type' => 'players', 'anomalies' => ['ironUniverse', 'handsOnly'], 'count' => 3, 'text' => '3 different players have finished both Iron Universe and Hands Only'],
+        'perk' => ['type' => 'skin', 'text' => 'The animated Engine Core asteroid skin, for everyone.']],
+    ['name' => 'Navigation Seal', 'section' => 'D', 'cost' => 65000,
+        'lock' => ['type' => 'players', 'anomalies' => ['gauntlet'], 'count' => 3, 'text' => '3 different players have finished The Gauntlet'],
+        'perk' => ['type' => 'production', 'times' => 1.15, 'text' => 'Everything mines 15% more.']],
+    ['name' => 'Spark Plugs', 'section' => 'E', 'cost' => 75000,
+        'lock' => ['type' => 'section', 'count' => 20, 'text' => '20 different players have given parts to the Ignition section'],
+        'perk' => ['type' => 'cometWait', 'times' => 0.9, 'text' => 'The wait between comets is another 10% shorter.']],
+    ['name' => 'Ignition Coils', 'section' => 'E', 'cost' => 87000,
+        // (was 6 and Strike Plate's 7: the balance sim, 30 October 2026, never finished a stack of more than 5)
+        'lock' => ['type' => 'stack', 'count' => 5, 'text' => 'Someone has finished a stack of 5 Anomalies'],
+        'perk' => ['type' => 'upgradeCost', 'times' => 0.9, 'text' => 'Ore upgrades cost 10% less.']],
+    ['name' => 'Countdown Clock', 'section' => 'E', 'cost' => 100000,
+        'lock' => ['type' => 'weekly', 'count' => 10, 'text' => '10 players have finished the weekly Anomaly in the same week'],
+        'perk' => ['type' => 'title', 'text' => 'Everyone who has given parts to Project Starbound gets the title "Engineer" on the leaderboard.']],
+    ['name' => 'Launch Clamps', 'section' => 'E', 'cost' => 115000,
+        'lock' => ['type' => 'each', 'tier' => 3, 'count' => 3, 'text' => 'Every Tier III Anomaly has been finished by at least 3 players'],
+        'perk' => ['type' => 'production', 'times' => 1.25, 'text' => 'Everything mines 25% more.']],
+    ['name' => 'IGNITION', 'section' => 'E', 'cost' => 150000, 'lock' => null,
+        'perk' => ['type' => 'ignition', 'text' => 'Everything mines 67 times as much for 72 hours, and everyone who gave parts to Ignition gets the Ignition badge and asteroid skin for good.']],
+
+    // Engine #2, the Starforge: a forge for making stars. Its costs are Engine #1's times 1.25 (a first guess, as
+    // Engine #1 had less than a day of real data when they were set: tune them in the admin panel).
+    ['name' => 'Bedrock', 'section' => 'A', 'cost' => 625, 'lock' => null,
+        'perk' => ['type' => 'news', 'sounds' => 'forge', 'text' => 'New lines in the news ticker, and the Starforge rings like an anvil when it gets parts.']],
+    ['name' => 'Anvil Plate', 'section' => 'A', 'cost' => 1250, 'lock' => null,
+        'perk' => ['type' => 'cometStay', 'value' => 2000, 'text' => 'Comets stay on screen another 2 seconds longer.']],
+    ['name' => 'Tool Racks', 'section' => 'A', 'cost' => 2200, 'lock' => null,
+        'perk' => ['type' => 'again', 'text' => 'An "Again" button in the Anomalies, to go into the last Anomaly or stack you played in one click.']],
+    ['name' => 'Forge Floor', 'section' => 'A', 'cost' => 3100, 'lock' => null,
+        'perk' => ['type' => 'badge', 'badge' => 'Forge Crew', 'icon' => '🔨', 'text' => 'Everyone who has given parts to the Starforge gets the Forge Crew badge on their profile.']],
+    ['name' => 'Anvil Seal', 'section' => 'A', 'cost' => 4400,
+        'lock' => ['type' => 'contributors', 'count' => 15, 'text' => '15 different players have given parts'],
+        'perk' => ['type' => 'cometBell', 'text' => 'A bell rings and the edge of the screen glows when a comet comes.']],
+    ['name' => 'Air Intakes', 'section' => 'B', 'cost' => 6250, 'lock' => null,
+        'perk' => ['type' => 'oreParts', 'value' => 1, 'text' => 'You can give one more part from ore a day.']],
+    ['name' => 'Bellows', 'section' => 'B', 'cost' => 8100, 'lock' => null,
+        'perk' => ['type' => 'offline', 'value' => 0.15, 'text' => 'While you\'re away, your machines mine 15% of what they would, instead of 12.5%.']],
+    ['name' => 'Draft Vents', 'section' => 'B', 'cost' => 10000,
+        'lock' => ['type' => 'each', 'tier' => 1, 'count' => 3, 'text' => 'Every Tier I Anomaly has been finished by at least 3 players'],
+        'perk' => ['type' => 'skin', 'text' => 'The Ember asteroid skin, for everyone.']],
+    ['name' => 'Heat Shields', 'section' => 'B', 'cost' => 12500, 'lock' => null,
+        'perk' => ['type' => 'weeklyPreview', 'text' => 'The Anomalies show next week\'s weekly Anomaly too.']],
+    ['name' => 'Bellows Seal', 'section' => 'B', 'cost' => 15600,
+        'lock' => ['type' => 'each', 'tier' => 2, 'count' => 2, 'text' => 'Every Tier II Anomaly has been finished by at least 2 players'],
+        'perk' => ['type' => 'production', 'times' => 1.05, 'text' => 'Everything mines 5% more.']],
+    ['name' => 'Crucible Shell', 'section' => 'C', 'cost' => 18750, 'lock' => null,
+        'perk' => ['type' => 'shiftSwap', 'value' => 1, 'text' => 'Once a day, you can swap one of your Starbound Shifts that isn\'t done for another.']],
+    ['name' => 'Slag Channels', 'section' => 'C', 'cost' => 22500,
+        'lock' => ['type' => 'source', 'source' => HBHUB_MINER_ENGINE_SOURCE_SHIFT, 'parts' => 75, 'count' => 10,
+            'text' => '10 different players have each given 75 parts from Starbound Shifts to the Crucible section'],
+        'perk' => ['type' => 'cometTrail', 'text' => 'Golden Comets take the colour of your asteroid skin.']],
+    ['name' => 'Pour Spout', 'section' => 'C', 'cost' => 27500,
+        'lock' => ['type' => 'time', 'anomaly' => 'speedOfLight', 'ms' => 3600000, 'count' => 1, 'text' => 'Someone has finished Speed of Light on its own in under an hour'],
+        'perk' => ['type' => 'skin', 'text' => 'The animated Molten asteroid skin, for everyone.']],
+    ['name' => 'Alloy Bins', 'section' => 'C', 'cost' => 32500, 'lock' => null,
+        'perk' => ['type' => 'hall', 'text' => 'The Starbound Hall: every finished build, when it was done and who built it, in the Project Starbound view.']],
+    ['name' => 'Crucible Seal', 'section' => 'C', 'cost' => 37500,
+        'lock' => ['type' => 'players', 'anomalies' => ['nakedSingularity', 'ironUniverse'], 'count' => 3, 'text' => '3 different players have finished both Naked Singularity and Iron Universe'],
+        'perk' => ['type' => 'sparks', 'text' => 'Clicking the asteroid throws sparks (they can be turned off in the Skins view).']],
+    ['name' => 'Hammer Head', 'section' => 'D', 'cost' => 43750, 'lock' => null,
+        'perk' => ['type' => 'backdrops', 'text' => 'Backgrounds for the game to pick from in the Skins view.']],
+    ['name' => 'Piston Arms', 'section' => 'D', 'cost' => 51250,
+        'lock' => ['type' => 'section', 'count' => 10, 'rising' => true, 'text' => '10 different players who haven\'t learned every skill yet have given parts to the Hammer section'],
+        'perk' => ['type' => 'oreFloor', 'value' => 2, 'text' => 'A part given from ore is always worth at least half a part.']],
+    ['name' => 'Strike Plate', 'section' => 'D', 'cost' => 60000,
+        'lock' => ['type' => 'stack', 'count' => 5, 'text' => 'Someone has finished a stack of 5 Anomalies'],
+        'perk' => ['type' => 'title', 'text' => 'Everyone who has given parts to the Starforge gets the title "Forgemaster" on the leaderboard.']],
+    ['name' => 'Shockwave Dampers', 'section' => 'D', 'cost' => 70000,
+        'lock' => ['type' => 'time', 'anomaly' => 'nakedSingularity', 'ms' => 108000000, 'count' => 1, 'text' => 'Someone has finished Naked Singularity in under 30 hours'],
+        'perk' => ['type' => 'skin', 'text' => 'The animated Starforged asteroid skin, for everyone.']],
+    ['name' => 'Hammer Seal', 'section' => 'D', 'cost' => 81250,
+        'lock' => ['type' => 'players', 'anomalies' => ['gauntlet'], 'count' => 5, 'text' => '5 different players have finished The Gauntlet'],
+        'perk' => ['type' => 'production', 'times' => 1.05, 'text' => 'Everything mines 5% more.']],
+    ['name' => 'Quench Tanks', 'section' => 'E', 'cost' => 93750,
+        'lock' => ['type' => 'section', 'count' => 25, 'text' => '25 different players have given parts to the Quench section'],
+        'perk' => ['type' => 'cometLength', 'times' => 1.1, 'text' => 'Golden Comet effects last another 10% longer.']],
+    ['name' => 'Cooling Fins', 'section' => 'E', 'cost' => 108750,
+        'lock' => ['type' => 'weekly', 'count' => 15, 'text' => '15 players have finished the weekly Anomaly in the same week'],
+        'perk' => ['type' => 'medals', 'text' => 'The 3 fastest at each week\'s weekly Anomaly get gold, silver and bronze medals on their profile.']],
+    ['name' => 'Tempering Ring', 'section' => 'E', 'cost' => 125000,
+        'lock' => ['type' => 'time', 'anomaly' => 'gauntlet', 'ms' => 172800000, 'count' => 1, 'text' => 'Someone has finished The Gauntlet in under 48 hours'],
+        'perk' => ['type' => 'pace', 'text' => 'In an Anomaly, the banner shows your best time to beat and whether you\'re ahead of it.']],
+    ['name' => 'Master Mould', 'section' => 'E', 'cost' => 143750,
+        'lock' => ['type' => 'each', 'tier' => 3, 'count' => 5, 'text' => 'Every Tier III Anomaly has been finished by at least 5 players'],
+        'perk' => ['type' => 'production', 'times' => 1.05, 'text' => 'Everything mines 5% more.']],
+    ['name' => 'FIRST LIGHT', 'section' => 'E', 'cost' => 187500, 'lock' => null,
+        'perk' => ['type' => 'ignition', 'text' => 'The Starforge lights its first star: everything mines 67 times as much for 72 hours, and everyone who gave parts to First Light gets the First Light badge and asteroid skin for good.']],
+];
+// What the perks do with no stage done, which hbHubMinerEngineEffects() starts from
+const HBHUB_MINER_ENGINE_NEUTRAL = ['offline' => HBHUB_MINER_OFFLINE_RATE, 'cometStay' => 0, 'cometWait' => 1, 'cometLength' => 1, 'production' => 1, 'darkGain' => 1,
+    'antiGain' => 1, 'cost' => 1, 'diamond' => 0, 'click' => 1, 'anomalyParts' => 1, 'upgradeCost' => 1, 'oreParts' => 0, 'oreFloor' => 0, 'shiftSwap' => 0];
+
+// Engine Shifts: HBHUB_MINER_SHIFT_COUNT tasks a day, the same for everyone (hbHubMinerShiftTasks()), for anyone with a
+// Warp Jump while the Engine takes parts. Each is worth HBHUB_MINER_SHIFT_PARTS (HBHUB_MINER_SHIFT_PARTS_HARD for a
+// 'hard' one), and the last of the day's to be done also brings HBHUB_MINER_SHIFT_BONUS. 'count' is what it counts
+// (what hbHubMinerShift() is called with) and 'goal' how many of it:
+// - clicks, crits (critical clicks) and stormClicks (clicks while a Click Storm runs).
+// - comets (any comet caught), comets:<kind> (a key of HBHUB_MINER_COMETS).
+// - warps, fastWarps and quickWarps (Warp Jumps less than HBHUB_MINER_SHIFT_FAST_MS or HBHUB_MINER_SHIFT_QUICK_MS into
+//   the run), crunches and rips.
+// - buildings (bought, any kind), buildings:<id> (a key of HBHUB_MINER_BUILDINGS) and upgrades (ore upgrades bought).
+// - playing: ms of playing with the game open (not time away).
+// - shards (Star Shards caught), oreParts and strangeParts (parts given from ore or Strange Matter).
+// The players who get Shifts have earned HBHUB_MINER_ENGINE_STRANGE Strange Matter, so they all have Big Crunches and
+// Big Rips; the hard ones take hours, or a lot of the game. Nothing counts that some players can't do any more (Dark
+// Matter upgrades, say, which Dark Echo keeps for good). 'icon' is a drawn icon, like the upgrades' ones.
+const HBHUB_MINER_SHIFTS = [
+    'comets' => ['count' => 'comets', 'goal' => 5, 'icon' => 'comet', 'text' => 'Catch 5 comets'],
+    'cometsMore' => ['count' => 'comets', 'goal' => 15, 'icon' => 'comet', 'text' => 'Catch 15 comets'],
+    'cometsHard' => ['count' => 'comets', 'goal' => 60, 'icon' => 'comet', 'hard' => true, 'text' => 'Catch 60 comets'],
+    'supernovas' => ['count' => 'comets:frenzy', 'goal' => 3, 'icon' => 'supernovaFist', 'text' => 'Catch 3 Supernova comets'],
+    'luckyComets' => ['count' => 'comets:lucky', 'goal' => 3, 'icon' => 'sparkles', 'text' => 'Catch 3 Lucky comets'],
+    'clickStorms' => ['count' => 'comets:storm', 'goal' => 3, 'icon' => 'cometTail', 'text' => 'Catch 3 Click Storm comets'],
+    'diamondComet' => ['count' => 'comets:diamond', 'goal' => 1, 'icon' => 'diamond', 'hard' => true, 'text' => 'Catch a Diamond Comet'],
+    'clicks' => ['count' => 'clicks', 'goal' => 2000, 'icon' => 'glove', 'text' => 'Click the asteroid 2,000 times'],
+    'clicksMore' => ['count' => 'clicks', 'goal' => 5000, 'icon' => 'glove', 'text' => 'Click the asteroid 5,000 times'],
+    'clicksHard' => ['count' => 'clicks', 'goal' => 25000, 'icon' => 'glove', 'hard' => true, 'text' => 'Click the asteroid 25,000 times'],
+    'crits' => ['count' => 'crits', 'goal' => 100, 'icon' => 'crit', 'text' => 'Land 100 critical clicks'],
+    'critsHard' => ['count' => 'crits', 'goal' => 1000, 'icon' => 'crit', 'hard' => true, 'text' => 'Land 1,000 critical clicks'],
+    'stormClicks' => ['count' => 'stormClicks', 'goal' => 300, 'icon' => 'gauntlet', 'text' => 'Click 300 times during Click Storms'],
+    'stormClicksHard' => ['count' => 'stormClicks', 'goal' => 2500, 'icon' => 'gauntlet', 'hard' => true, 'text' => 'Click 2,500 times during Click Storms'],
+    'warps' => ['count' => 'warps', 'goal' => 2, 'icon' => 'warp', 'text' => 'Make 2 Warp Jumps'],
+    'warpsMore' => ['count' => 'warps', 'goal' => 5, 'icon' => 'warp', 'text' => 'Make 5 Warp Jumps'],
+    'warpsHard' => ['count' => 'warps', 'goal' => 20, 'icon' => 'warp', 'hard' => true, 'text' => 'Make 20 Warp Jumps'],
+    'fastWarps' => ['count' => 'fastWarps', 'goal' => 3, 'icon' => 'autoWarp', 'text' => 'Make 3 Warp Jumps less than 5 minutes into a run'],
+    'quickWarps' => ['count' => 'quickWarps', 'goal' => 5, 'icon' => 'autoWarp', 'hard' => true, 'text' => 'Make 5 Warp Jumps less than a minute into a run'],
+    'crunch' => ['count' => 'crunches', 'goal' => 1, 'icon' => 'bigCrunch', 'text' => 'Do a Big Crunch'],
+    'crunchesHard' => ['count' => 'crunches', 'goal' => 5, 'icon' => 'bigCrunch', 'hard' => true, 'text' => 'Do 5 Big Crunches'],
+    'rip' => ['count' => 'rips', 'goal' => 1, 'icon' => 'bigRip', 'hard' => true, 'text' => 'Do a Big Rip'],
+    'buildings' => ['count' => 'buildings', 'goal' => 100, 'icon' => 'crates', 'text' => 'Buy 100 buildings'],
+    'buildingsMore' => ['count' => 'buildings', 'goal' => 500, 'icon' => 'crates', 'text' => 'Buy 500 buildings'],
+    'buildingsHard' => ['count' => 'buildings', 'goal' => 3000, 'icon' => 'crates', 'hard' => true, 'text' => 'Buy 3,000 buildings'],
+    'pickaxes' => ['count' => 'buildings:pickaxe', 'goal' => 100, 'icon' => 'pickaxeGuy', 'text' => 'Hire 100 Space Pickaxe Guys'],
+    'drones' => ['count' => 'buildings:drone', 'goal' => 100, 'icon' => 'drone', 'text' => 'Buy 100 Mining Drones'],
+    'rigs' => ['count' => 'buildings:rig', 'goal' => 50, 'icon' => 'rig', 'text' => 'Buy 50 Mining Rigs'],
+    'bases' => ['count' => 'buildings:base', 'goal' => 50, 'icon' => 'base', 'text' => 'Build 50 Asteroid Bases'],
+    'freighters' => ['count' => 'buildings:freighter', 'goal' => 50, 'icon' => 'freighter', 'text' => 'Buy 50 Ore Freighters'],
+    'stations' => ['count' => 'buildings:station', 'goal' => 50, 'icon' => 'station', 'text' => 'Build 50 Space Stations'],
+    'crackers' => ['count' => 'buildings:cracker', 'goal' => 40, 'icon' => 'planetCracker', 'text' => 'Buy 40 Planet Crackers'],
+    'siphons' => ['count' => 'buildings:siphon', 'goal' => 30, 'icon' => 'blackHole', 'text' => 'Buy 30 Black Hole Siphons'],
+    'forges' => ['count' => 'buildings:forge', 'goal' => 30, 'icon' => 'starForge', 'text' => 'Build 30 Star Forges'],
+    'dysons' => ['count' => 'buildings:dyson', 'goal' => 25, 'icon' => 'dysonSwarm', 'text' => 'Buy 25 Dyson Swarms'],
+    'wormholes' => ['count' => 'buildings:wormhole', 'goal' => 20, 'icon' => 'wormhole', 'text' => 'Open 20 Wormhole Gates'],
+    'multiverseDrills' => ['count' => 'buildings:multiverse', 'goal' => 20, 'icon' => 'multiverse', 'text' => 'Buy 20 Multiverse Drills'],
+    'timeQuarries' => ['count' => 'buildings:timeQuarry', 'goal' => 15, 'icon' => 'timeQuarry', 'hard' => true, 'text' => 'Dig 15 Time Quarries'],
+    'bigBangReactors' => ['count' => 'buildings:bigBangReactor', 'goal' => 10, 'icon' => 'bigBangReactor', 'hard' => true, 'text' => 'Build 10 Big Bang Reactors'],
+    'infinityMine' => ['count' => 'buildings:infinityMine', 'goal' => 1, 'icon' => 'infinityMine', 'hard' => true, 'text' => 'Build an Infinity Mine'],
+    'upgrades' => ['count' => 'upgrades', 'goal' => 15, 'icon' => 'chip', 'text' => 'Buy 15 upgrades'],
+    'upgradesMore' => ['count' => 'upgrades', 'goal' => 50, 'icon' => 'chip', 'text' => 'Buy 50 upgrades'],
+    'upgradesHard' => ['count' => 'upgrades', 'goal' => 200, 'icon' => 'chip', 'hard' => true, 'text' => 'Buy 200 upgrades'],
+    'playing' => ['count' => 'playing', 'goal' => 1800000, 'icon' => 'hourglass', 'text' => 'Mine for 30 minutes with the game open'],
+    'playingMore' => ['count' => 'playing', 'goal' => 3600000, 'icon' => 'hourglass', 'text' => 'Mine for an hour with the game open'],
+    'playingHard' => ['count' => 'playing', 'goal' => 10800000, 'icon' => 'hourglass', 'hard' => true, 'text' => 'Mine for 3 hours with the game open'],
+    'shards' => ['count' => 'shards', 'goal' => 2, 'icon' => 'shard', 'text' => 'Catch 2 Star Shards'],
+    'shardsHard' => ['count' => 'shards', 'goal' => 6, 'icon' => 'shard', 'hard' => true, 'text' => 'Catch 6 Star Shards'],
+    'oreParts' => ['count' => 'oreParts', 'goal' => 5, 'icon' => 'orePile', 'text' => 'Give 5 parts from ore'],
+    'strangeParts' => ['count' => 'strangeParts', 'goal' => 10, 'icon' => 'strangelet', 'text' => 'Give 10 parts from Strange Matter'],
+];
+const HBHUB_MINER_SHIFT_COUNT = 3;
+const HBHUB_MINER_SHIFT_PARTS = 10;
+const HBHUB_MINER_SHIFT_PARTS_HARD = 30;
+const HBHUB_MINER_SHIFT_BONUS = 45; // for doing all of the day's (so 25 each when none of them is hard)
+const HBHUB_MINER_SHIFT_FAST_MS = 300000; // fastWarps: a Warp Jump less than 5 minutes into the run
+const HBHUB_MINER_SHIFT_QUICK_MS = 60000; // quickWarps: less than a minute
+
+// ----- Anomalies: challenge runs, each a universe of its own inside the save with one rule changed. One starts like a
+// Big Rip that gives nothing (Dark Matter, Antimatter and their upgrades start over, apart from the ones Antimatter
+// Echo and Dark Echo keep), with the skill tree, the Strange Matter bonus and the counts that grow the production
+// (Warp Jumps, Big Crunches, comets) kept. A Tier III one ('fresh') starts from nothing instead: everything in
+// HBHUB_MINER_ANOMALY_FRESH starts over too, so no skills, no Strange Matter bonus and no upgrades at all. It's finished
+// once its 'goal' is reached in it: Antimatter earned, or the 'stat' it names (runOre: ore mined in one run,
+// darkEarned: Dark Matter earned in a universe). It pays its 'parts' (or its tier's) to the Cosmic Engine the first
+// time, or for a new best time, and HBHUB_MINER_ANOMALY_REPEAT of them otherwise. Every time it's finished, the
+// player's own game also gets an Afterglow: HBHUB_MINER_AFTERGLOW_TIMES as much production for its 'afterglow' ms (or
+// its tier's), which pays back some of the time their own game spent mining as if they were away (hbHubMinerAfterglow()).
+// Its 'tier' opens with 'unlock': strange
+// (HBHUB_MINER_ANOMALY_STRANGE Strange Matter earned) or theory (the Theory of Everything learned). Tier II ones also turn Autopilot and Auto Crunch off
+// ('noAuto'), which only the page has. 'rules' are the other Anomalies whose rules it has too (The Gauntlet). While the
+// player is in one, the Engine gets nothing else from them (no Shifts or donations), and their own game mines as if
+// they were away. The rules each changes are in the functions that check hbHubMinerMod(); the goals were tuned with
+// the balance sim: about 1-3 hours for Tier I and 3-8 for Tier II with the whole skill tree, and 15 to 60 or more for
+// Tier III from nothing (retuned 30 October 2026: Dead Hands, Dark Sky, Bare Metal and One Track down, Minimalist up,
+// Speed of Light down so a player who isn't clicking flat out makes it in the 2 hours. Unstable Vacuum isn't about
+// time: a player runs out of buildings to lose at about 5e14-2e16 Antimatter however long they take).
+// Stacks: up to every Anomaly of the tiers up to HBHUB_MINER_ANOMALY_STACK_TIER at once (hbHubMinerAnomalyMods()), with
+// all their rules, the lowest of their goals, and their parts together times HBHUB_MINER_ANOMALY_STACK for each one
+// after the first. The weekly Anomaly (hbHubMinerWeeklyMods()) is a stack picked from the week, the same for
+// everyone, worth HBHUB_MINER_ANOMALY_WEEKLY times as much that week.
+const HBHUB_MINER_ANOMALY_TIERS = [
+    1 => ['name' => 'Ripples', 'parts' => 25, 'afterglow' => 3600000, 'unlock' => 'strange', 'noAuto' => false, 'fresh' => false],
+    2 => ['name' => 'Tears', 'parts' => 100, 'afterglow' => 10800000, 'unlock' => 'theory', 'noAuto' => true, 'fresh' => false],
+    3 => ['name' => 'Singularities', 'parts' => 400, 'afterglow' => 43200000, 'unlock' => 'theory', 'noAuto' => false, 'fresh' => true],
+];
+const HBHUB_MINER_ANOMALIES = [
+    'deadHands' => ['name' => 'Dead Hands', 'icon' => 'glove', 'tier' => 1, 'goal' => 3e20,
+        'text' => 'Clicks mine nothing, and neither do auto-clickers.'],
+    'darkSky' => ['name' => 'Dark Sky', 'icon' => 'comet', 'tier' => 1, 'goal' => 3e18,
+        'text' => 'No comets come.'],
+    'inflation' => ['name' => 'Inflation', 'icon' => 'scales', 'tier' => 1, 'goal' => 2e21,
+        'text' => 'Each building costs 35% more than the one before, instead of 15% (12% for Space Pickaxe Guys).'],
+    'bareMetal' => ['name' => 'Bare Metal', 'icon' => 'pickaxe', 'tier' => 1, 'goal' => 1e17,
+        'text' => 'No ore upgrades at all (so no bulk buying either): only buildings.'],
+    'entropy' => ['name' => 'Entropy', 'icon' => 'hourglass', 'tier' => 2, 'goal' => 5e22,
+        'text' => 'Production halves every 5 minutes of a run. A Warp Jump starts the clock over.'],
+    'minimalist' => ['name' => 'Minimalist', 'icon' => 'clipboard', 'tier' => 2, 'goal' => 2e17,
+        'text' => 'At most 150 buildings at once, and every run starts with none.'],
+    'oneTrack' => ['name' => 'One Track', 'icon' => 'link', 'tier' => 2, 'goal' => 1e17,
+        'text' => 'One kind of building per run: the first one you buy is the only kind you can buy until the next Warp Jump. Every run starts with none, and Auto Buy leaves that first pick to you.'],
+    'unstableVacuum' => ['name' => 'Unstable Vacuum', 'icon' => 'blackHole', 'tier' => 2, 'goal' => 1e14, 'alone' => true,
+        'text' => 'Each Warp Jump destroys the building you have the most of, for the rest of the Anomaly.'],
+    'speedOfLight' => ['name' => 'Speed of Light', 'icon' => 'warp', 'tier' => 2, 'goal' => 1e20,
+        'text' => 'Reach the goal within 2 hours of starting, time away included, or the Anomaly is over.'],
+    'nakedSingularity' => ['name' => 'Naked Singularity', 'icon' => 'strangelet', 'tier' => 3, 'goal' => 1e5, 'parts' => 800,
+        'text' => 'No twist at all, just the whole game from nothing, past a Big Rip: earn ten times the Antimatter one needs.'],
+    'ironUniverse' => ['name' => 'Iron Universe', 'icon' => 'rig', 'tier' => 3, 'goal' => 1e21, 'stat' => 'runOre',
+        'text' => 'No Warp Jumps at all: mine everything in one run.'],
+    'handsOnly' => ['name' => 'Hands Only', 'icon' => 'neutronFist', 'tier' => 3, 'goal' => 1e6, 'stat' => 'darkEarned',
+        'text' => 'Buildings mine nothing by themselves. Each click (and each auto-click) mines 20% of what they would in a second instead.'],
+    'gauntlet' => ['name' => 'The Gauntlet', 'icon' => 'gauntlet', 'tier' => 3, 'goal' => 3, 'stat' => 'darkEarned', 'parts' => 3000,
+        'afterglow' => 86400000, 'rules' => ['deadHands', 'darkSky', 'inflation', 'entropy'],
+        'text' => 'Dead Hands, Dark Sky, Inflation and Entropy all at once, from nothing. Every run starts with one Space Pickaxe Guy, and Entropy stops after halving production twice.'],
+];
+const HBHUB_MINER_ANOMALY_STRANGE = 250; // Strange Matter earned before Tier I opens (the Theory of Everything alone costs more)
+const HBHUB_MINER_ANOMALY_REPEAT = 0.25; // of the parts, for finishing one again without beating the best time
+// How many Anomalies a player can save to carry on later (hbHubMinerAnomalySave()), at most one of each key. Each is a
+// whole game kept in the save, so there's a cap.
+const HBHUB_MINER_ANOMALY_SAVED_MAX = 3;
+const HBHUB_MINER_ANOMALY_STACK_TIER = 2; // the highest tier that stacks
+// Stacks that can't be done, so they can't be started (hbHubMinerStackClash()), and the weekly Anomaly never is one:
+// the Unstable Vacuum with anything ('alone' in HBHUB_MINER_ANOMALIES: its ~20 Warp Jumps, one per kind of building,
+// reach its goal on their own and with Dead Hands, Inflation, Entropy or Speed of Light, but with the others they never
+// do, and when they do a stack of 5 took 20 minutes for ~1,950 parts), and these pairs, which in the balance sim got
+// nowhere near their goal in 40-60 hours (under 5% of it), or in Speed of Light's 2 hours, for any kind of player (every
+// pair simmed, 30 October 2026). Hard pairs that some players did finish (Speed of Light with Bare Metal, Dark Sky or
+// Minimalist) are left in; the weekly Anomaly never has Speed of Light anyway.
+const HBHUB_MINER_ANOMALY_CLASHES = [['darkSky', 'minimalist'], ['darkSky', 'oneTrack'], ['bareMetal', 'minimalist'], ['bareMetal', 'oneTrack'],
+    ['deadHands', 'oneTrack'], ['oneTrack', 'speedOfLight']];
+// The first week (hbHubMinerWeek(), Monday 2 November 2026) whose weekly Anomaly leaves those out: the weeks before
+// keep the one they had, so the week it changed in didn't get a different weekly halfway through
+const HBHUB_MINER_WEEKLY_CLASH_FROM = 2966;
+const HBHUB_MINER_ANOMALY_STACK = 1.5; // the parts are multiplied by this for each Anomaly in a stack after the first
+const HBHUB_MINER_ANOMALY_WEEKLY = 2; // the parts for the weekly Anomaly that week (and its Afterglow)
+// The Afterglow after finishing one: production times this, for 1 hour (Tier I), 3 (Tier II), 12 (Tier III) or 24 (The
+// Gauntlet), a stack's added up. Finishing another while one is running adds to it, up to this far ahead.
+const HBHUB_MINER_AFTERGLOW_TIMES = 12;
+const HBHUB_MINER_AFTERGLOW_MAX_MS = 172800000; // 48 hours
+const HBHUB_MINER_WEEK_MS = 604800000; // weeks start on Monday at 00:00 UTC (hbHubMinerWeek())
+const HBHUB_MINER_WEEKLY_SIZES = [2, 3]; // how many Anomalies the weekly one stacks, picked from
+const HBHUB_MINER_WEEKLY_LEFT_OUT = ['speedOfLight']; // never in it: with Unstable Vacuum it can't be done in its time
+// What starts over in a Tier III Anomaly on top of a Big Rip's (hbHubMinerNewMultiverse()), so it's from nothing
+const HBHUB_MINER_ANOMALY_FRESH = [
+    'skills' => [], 'strange' => 0, 'strangeEarned' => 0, 'rips' => 0, 'crunches' => 0, 'warps' => 0, 'flights' => 0,
+    'clicks' => 0, 'crits' => 0, 'comets' => 0, 'diamonds' => 0, 'antiUpgrades' => [], 'darkUpgrades' => [], 'allOre' => 0.0, 'clickOre' => 0.0,
+];
+const HBHUB_MINER_HANDS_SHARE = 0.2; // of the buildings' ore per second each click mines, in Hands Only
+// What every run starts with in The Gauntlet (building => how many), as clicks mine nothing there and a run could never
+// start, and how often its Entropy halves production instead of HBHUB_MINER_ENTROPY_MS: from nothing, a run takes far
+// longer than 5 minutes to reach a Warp Jump, and with halvings that often it never does (the balance sim)
+const HBHUB_MINER_GAUNTLET_START = ['pickaxe' => 1];
+const HBHUB_MINER_GAUNTLET_ENTROPY_MS = 300000;
+// The most halvings in The Gauntlet, where nothing else could ever make a run worth more than its start: production
+// goes down to 1 / 2^this and stays there until the next Warp Jump (instead of all the way to 0, HBHUB_MINER_ENTROPY_STEPS)
+const HBHUB_MINER_GAUNTLET_ENTROPY_STEPS = 2;
+const HBHUB_MINER_LIGHT_HOUR_MS = 3600000; // the Faster Than Light achievement
+
+// Asteroid skins: how the asteroid looks instead of its usual colours (spaceOreMiner.css, data-skin), picked in the
+// game's Skins view. 'unlock' is how it's earned: anomaly (that Anomaly finished, alone or in a stack), stage (that many of
+// the Engines' stages done, counted over all of them like engineStage, for everyone), crew (gave parts to that
+// Engine's last stage before it was done, crews in the save) or shop (bought for Star Shards in the Shard Shop, the
+// item of the same id in HBHUB_MINER_SHOP). 'moving' ones are animated.
+const HBHUB_MINER_SKINS = [
+    'entropy' => ['name' => 'Heat Death', 'unlock' => ['anomaly' => 'entropy'], 'moving' => false],
+    'minimalist' => ['name' => 'Paper White', 'unlock' => ['anomaly' => 'minimalist'], 'moving' => false],
+    'oneTrack' => ['name' => 'Signal Green', 'unlock' => ['anomaly' => 'oneTrack'], 'moving' => false],
+    'unstableVacuum' => ['name' => 'Void Violet', 'unlock' => ['anomaly' => 'unstableVacuum'], 'moving' => false],
+    'speedOfLight' => ['name' => 'Redshift', 'unlock' => ['anomaly' => 'speedOfLight'], 'moving' => false],
+    'nakedSingularity' => ['name' => 'Event Horizon', 'unlock' => ['anomaly' => 'nakedSingularity'], 'moving' => true],
+    'ironUniverse' => ['name' => 'Forged Iron', 'unlock' => ['anomaly' => 'ironUniverse'], 'moving' => true],
+    'handsOnly' => ['name' => 'Fingerprints', 'unlock' => ['anomaly' => 'handsOnly'], 'moving' => true],
+    'gauntlet' => ['name' => 'Gauntlet Fire', 'unlock' => ['anomaly' => 'gauntlet'], 'moving' => true],
+    'engineSteel' => ['name' => 'Engine Steel', 'unlock' => ['stage' => 9], 'moving' => false],
+    'engineCore' => ['name' => 'Engine Core', 'unlock' => ['stage' => 19], 'moving' => true],
+    'ignition' => ['name' => 'Ignition', 'unlock' => ['crew' => 1], 'moving' => true],
+    'ember' => ['name' => 'Ember', 'unlock' => ['stage' => 33], 'moving' => false],
+    'molten' => ['name' => 'Molten', 'unlock' => ['stage' => 38], 'moving' => true],
+    'starforged' => ['name' => 'Starforged', 'unlock' => ['stage' => 44], 'moving' => true],
+    'firstLight' => ['name' => 'First Light', 'unlock' => ['crew' => 2], 'moving' => true],
+    'frostbite' => ['name' => 'Frostbite', 'unlock' => ['shop' => true], 'moving' => false],
+    'bubblegum' => ['name' => 'Bubblegum', 'unlock' => ['shop' => true], 'moving' => false],
+    'gilded' => ['name' => 'Gilded', 'unlock' => ['shop' => true], 'moving' => false],
+    'prism' => ['name' => 'Prism', 'unlock' => ['shop' => true], 'moving' => true],
+    'mintChip' => ['name' => 'Mint Chip', 'unlock' => ['shop' => true], 'moving' => false],
+    'sunset' => ['name' => 'Sunset', 'unlock' => ['shop' => true], 'moving' => false],
+    'toxic' => ['name' => 'Toxic', 'unlock' => ['shop' => true], 'moving' => false],
+    'obsidian' => ['name' => 'Obsidian', 'unlock' => ['shop' => true], 'moving' => false],
+    'roseGold' => ['name' => 'Rose Gold', 'unlock' => ['shop' => true], 'moving' => false],
+    'lavaLamp' => ['name' => 'Lava Lamp', 'unlock' => ['shop' => true], 'moving' => true],
+    'northernLights' => ['name' => 'Northern Lights', 'unlock' => ['shop' => true], 'moving' => true],
+    'pocketGalaxy' => ['name' => 'Pocket Galaxy', 'unlock' => ['shop' => true], 'moving' => true],
+    'disco' => ['name' => 'Disco', 'unlock' => ['shop' => true], 'moving' => true],
+];
+
+// ----- Star Shards: the rare currency. One flies past in every HBHUB_MINER_SHARD_SLOT_MS of time (slots counted from
+// 1970, so the clock is the same in the player's own game and an Anomaly's), at a time in it picked by the save's luck
+// (hbHubMinerShardAt()), and stays on screen for HBHUB_MINER_SHARD_STAY_MS. Clicking it gives one ('shard' in
+// hbHubMinerApply()). Each can only be caught once (shardSlot in the save), and only while the game is open:
+// hbHubMinerReplay() leaves out any caught in time away, so a script can't send the catches for a whole night at once.
+// They're the player's own, like the skin: Warp Jumps, Big Crunches and Big Rips don't touch them, and one caught in an
+// Anomaly goes to the player's own game. They're spent in the Shard Shop (HBHUB_MINER_SHOP, hbHubMinerShopBuy()).
+const HBHUB_MINER_SHARD_SLOT_MS = 900000; // 15 minutes
+const HBHUB_MINER_SHARD_STAY_MS = 10000;
+const HBHUB_MINER_SHOP_BOOST_MAX_MS = 86400000; // a boost bought again adds its time on, up to this far ahead
+const HBHUB_MINER_SHOP_ORE_MIN = 1000; // the least ore an ore item gives, so it's worth something before any buildings
+
+// The Shard Shop, in the order it shows, with 'cost' in Star Shards. What each 'kind' does:
+// - boost: 'buff' ('production' or 'click', like a comet's) times 'multiplier' for 'ms', in the player's own game
+//   (boosts in the save, see hbHubMinerBuff()). Works on top of the comets' effects, and keeps going through Warp Jumps,
+//   Big Crunches and Big Rips (it's bought with Star Shards, after all).
+// - ore: 'seconds' of the steady ore per second (hbHubMinerRate() without comets or boosts), right away, at least
+//   HBHUB_MINER_SHOP_ORE_MIN.
+// - comet: the next Golden Comet comes right now (its kind is still its own luck, so it can't be bought again for a
+//   better one).
+// - skin: the asteroid skin of the same id in HBHUB_MINER_SKINS (unlock 'shop'), kept for good ('bought' in the save).
+// - effect: a look for clicks on the asteroid (spaceOreMiner.js, burst()), kept for good ('bought') and picked in the
+//   shop ('effect' in the save).
+// Boosts, ore and comets are for the player's own game, so they can't be bought in an Anomaly; skins and effects can.
+// Each item but the skins has an icon of its own in icons.svg (the shop* and fx* ones); skins show as a little rock in
+// their colours instead.
+const HBHUB_MINER_SHOP = [
+    'overdrive' => ['name' => 'Overdrive', 'icon' => 'shopOverdrive', 'kind' => 'boost', 'cost' => 5, 'buff' => 'production', 'multiplier' => 2, 'ms' => 3600000,
+        'text' => 'Everything mines twice as much for an hour.'],
+    'hyperdrive' => ['name' => 'Hyperdrive', 'icon' => 'shopHyperdrive', 'kind' => 'boost', 'cost' => 4, 'buff' => 'production', 'multiplier' => 5, 'ms' => 600000,
+        'text' => 'Everything mines five times as much for 10 minutes. Hold on to something.'],
+    'longHaul' => ['name' => 'Long Haul', 'icon' => 'shopLongHaul', 'kind' => 'boost', 'cost' => 10, 'buff' => 'production', 'multiplier' => 1.5, 'ms' => 28800000,
+        'text' => 'Everything mines 50% more for 8 hours. A whole school day of it.'],
+    'titanGrip' => ['name' => 'Titan Grip', 'icon' => 'shopTitanGrip', 'kind' => 'boost', 'cost' => 3, 'buff' => 'click', 'multiplier' => 10, 'ms' => 1800000,
+        'text' => 'Clicks mine ten times as much for 30 minutes.'],
+    'fusionFist' => ['name' => 'Fusion Fist', 'icon' => 'shopFusionFist', 'kind' => 'boost', 'cost' => 4, 'buff' => 'click', 'multiplier' => 100, 'ms' => 300000,
+        'text' => 'Clicks mine a hundred times as much for 5 minutes. Click fast.'],
+    'cometBeacon' => ['name' => 'Comet Beacon', 'icon' => 'shopBeacon', 'kind' => 'comet', 'cost' => 2,
+        'text' => 'Calls the next Golden Comet in, right now.'],
+    'oreSack' => ['name' => 'Ore Sack', 'icon' => 'shopOreSack', 'kind' => 'ore', 'cost' => 1, 'seconds' => 600,
+        'text' => 'Ten minutes of ore, right now.'],
+    'oreCrate' => ['name' => 'Ore Crate', 'icon' => 'shopOreCrate', 'kind' => 'ore', 'cost' => 3, 'seconds' => 3600,
+        'text' => 'An hour of ore, right now.'],
+    'oreCart' => ['name' => 'Ore Cart', 'icon' => 'shopOreCart', 'kind' => 'ore', 'cost' => 7, 'seconds' => 10800,
+        'text' => 'Three hours of ore, right now.'],
+    'oreVault' => ['name' => 'Ore Vault', 'icon' => 'shopOreVault', 'kind' => 'ore', 'cost' => 15, 'seconds' => 28800,
+        'text' => 'Eight hours of ore, right now.'],
+    'oreMountain' => ['name' => 'Ore Mountain', 'icon' => 'shopOreMountain', 'kind' => 'ore', 'cost' => 35, 'seconds' => 86400,
+        'text' => 'A whole day of ore, right now. Someone has to carry it.'],
+    'frostbite' => ['name' => 'Frostbite', 'kind' => 'skin', 'cost' => 10, 'text' => 'Ice blue, with frost on top.'],
+    'bubblegum' => ['name' => 'Bubblegum', 'kind' => 'skin', 'cost' => 10, 'text' => 'Pink and sweet. Don\'t chew it.'],
+    'mintChip' => ['name' => 'Mint Chip', 'kind' => 'skin', 'cost' => 10, 'text' => 'Mint green with dark chips. Still not ice cream.'],
+    'sunset' => ['name' => 'Sunset', 'kind' => 'skin', 'cost' => 15, 'text' => 'Orange going purple, like the end of a long shift.'],
+    'toxic' => ['name' => 'Toxic', 'kind' => 'skin', 'cost' => 15, 'text' => 'Glowing green. Please wear gloves.'],
+    'gilded' => ['name' => 'Gilded', 'kind' => 'skin', 'cost' => 20, 'text' => 'A solid gold asteroid. Well, gold-plated.'],
+    'obsidian' => ['name' => 'Obsidian', 'kind' => 'skin', 'cost' => 20, 'text' => 'Black volcanic glass with a cold blue shine.'],
+    'roseGold' => ['name' => 'Rose Gold', 'kind' => 'skin', 'cost' => 25, 'text' => 'Gold, but make it pink.'],
+    'lavaLamp' => ['name' => 'Lava Lamp', 'kind' => 'skin', 'cost' => 30, 'text' => 'Orange, pink and purple, slowly oozing into each other. Animated.'],
+    'prism' => ['name' => 'Prism', 'kind' => 'skin', 'cost' => 40, 'text' => 'Every colour of a Star Shard, slowly turning. Animated.'],
+    'northernLights' => ['name' => 'Northern Lights', 'kind' => 'skin', 'cost' => 40, 'text' => 'Green, teal and violet waving over the rock. Animated.'],
+    'pocketGalaxy' => ['name' => 'Pocket Galaxy', 'kind' => 'skin', 'cost' => 50, 'text' => 'Deep space blue with a glow that breathes. Animated.'],
+    'disco' => ['name' => 'Disco', 'kind' => 'skin', 'cost' => 60, 'text' => 'Every colour there is, and fast. The asteroid has rhythm now. Animated.'],
+    'confetti' => ['name' => 'Confetti', 'icon' => 'fxConfetti', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks throw confetti instead of rock.'],
+    'twinkle' => ['name' => 'Twinkle', 'icon' => 'fxTwinkle', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks throw glittering little stars.'],
+    'bubbles' => ['name' => 'Bubbles', 'icon' => 'fxBubbles', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks blow bubbles. Nobody knows how, in space.'],
+    'pixels' => ['name' => 'Pixel Burst', 'icon' => 'fxPixels', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks break off in chunky, colourful pixels.'],
+    'snowfall' => ['name' => 'Snowfall', 'icon' => 'fxSnow', 'kind' => 'effect', 'cost' => 10, 'text' => 'Clicks shake snow off the asteroid, drifting down.'],
+    'embers' => ['name' => 'Embers', 'icon' => 'fxEmbers', 'kind' => 'effect', 'cost' => 12, 'text' => 'Clicks send glowing embers floating up.'],
+    'coins' => ['name' => 'Jackpot', 'icon' => 'fxCoins', 'kind' => 'effect', 'cost' => 12, 'text' => 'Clicks spill spinning gold coins. They\'re not real coins.'],
+    'shockwave' => ['name' => 'Shockwave', 'icon' => 'fxShockwave', 'kind' => 'effect', 'cost' => 15, 'text' => 'Every click sends a ring out from where it hit.'],
+    'supernova' => ['name' => 'Supernova', 'icon' => 'fxSupernova', 'kind' => 'effect', 'cost' => 25, 'text' => 'A golden ring and a shower of stars on every click.'],
+];
+
+// Backgrounds for the game (spaceOreMiner.css, data-backdrop on the page), picked in the Skins view once the Starforge's
+// backdrops perk is done (hbHubMinerEnginePerk())
+const HBHUB_MINER_BACKDROPS = [
+    'nebula' => ['name' => 'Nebula'],
+    'deepField' => ['name' => 'Deep Field'],
+    'forgeGlow' => ['name' => 'Forge Glow'],
+    'aurora' => ['name' => 'Aurora'],
+];
+
+// Titles by players' names on the leaderboard, the first one a player has (games/spaceOreMiner/leaderboard.php): for
+// finishing an 'anomaly', or for giving parts to 'engine' (by its number) once its title stage is done
+const HBHUB_MINER_TITLES = [
+    'gauntlet' => ['name' => 'Gauntlet Runner', 'anomaly' => 'gauntlet'],
+    'singularity' => ['name' => 'Singularity', 'anomaly' => 'nakedSingularity'],
+    'forgemaster' => ['name' => 'Forgemaster', 'engine' => 2],
+    'engineer' => ['name' => 'Engineer', 'engine' => 1],
+];
+const HBHUB_MINER_INFLATION_GROWTH = 1.35; // each building costs this much more than the one before, in Inflation
+const HBHUB_MINER_ENTROPY_MS = 300000; // production halves after each this long of a run, in Entropy
+const HBHUB_MINER_ENTROPY_STEPS = 1100; // after this many halvings it's 0 (a float can't be smaller), so no more pieces
+const HBHUB_MINER_MINIMALIST_MAX = 150; // buildings at once, in Minimalist
+const HBHUB_MINER_LIGHT_MS = 7200000; // to reach the goal in, in Speed of Light
 
 /**
  * Every upgrade bought with ore, by id: the buildings' own six each (type 'building', ids like drone1 to drone6),
@@ -491,7 +1161,7 @@ function hbHubMinerUpgrades(): array
                 'type' => 'building',
                 'building' => $buildingId,
                 'need' => ['owned' => [$buildingId => HBHUB_MINER_BUILDING_UPGRADE_AT[$index]]],
-                'text' => $building['plural'] . ' mine twice as much.',
+                'text' => $building['plural'] . ' mine twice as much. ' . $building['jokes'][$index],
             ];
         }
     }
@@ -615,6 +1285,9 @@ function hbHubMinerConfig(): array
         'crunchDark' => HBHUB_MINER_CRUNCH_DARK,
         'antiUnit' => HBHUB_MINER_ANTI_UNIT,
         'antiBonus' => HBHUB_MINER_ANTI_BONUS,
+        'antiBonusReactor' => HBHUB_MINER_ANTI_BONUS_REACTOR,
+        'antiClickShare' => HBHUB_MINER_ANTI_CLICK_SHARE,
+        'negativePrices' => HBHUB_MINER_NEGATIVE_PRICES,
         'ripAnti' => HBHUB_MINER_RIP_ANTI,
         'strangeUnit' => HBHUB_MINER_STRANGE_UNIT,
         'strangeSteps' => HBHUB_MINER_STRANGE_STEPS,
@@ -629,6 +1302,68 @@ function hbHubMinerConfig(): array
         'luckySeconds' => HBHUB_MINER_LUCKY_SECONDS,
         'headStart' => HBHUB_MINER_HEAD_START,
         'buildingUpgradeAt' => HBHUB_MINER_BUILDING_UPGRADE_AT,
+        'engineStages' => HBHUB_MINER_ENGINE_STAGES, // the script adds Build #3's on (allEngineStages() there)
+        'engines' => HBHUB_MINER_ENGINES,
+        'buildStages' => HBHUB_MINER_BUILD_STAGES,
+        'buildCostFirst' => HBHUB_MINER_BUILD_COST_FIRST,
+        'buildCostStep' => HBHUB_MINER_BUILD_COST_STEP,
+        'engineNeutral' => HBHUB_MINER_ENGINE_NEUTRAL,
+        'engineStageTotal' => HBHUB_MINER_ENGINE_STAGE_TOTAL,
+        'engineOrePart' => HBHUB_MINER_ENGINE_ORE_PART,
+        'engineOreParts' => HBHUB_MINER_ENGINE_ORE_PARTS,
+        'engineStrangePart' => HBHUB_MINER_ENGINE_STRANGE_PART,
+        'engineStrange' => HBHUB_MINER_ENGINE_STRANGE,
+        'dayMs' => HBHUB_MINER_DAY_MS,
+        'shifts' => HBHUB_MINER_SHIFTS,
+        'shiftCount' => HBHUB_MINER_SHIFT_COUNT,
+        'shiftParts' => HBHUB_MINER_SHIFT_PARTS,
+        'shiftPartsHard' => HBHUB_MINER_SHIFT_PARTS_HARD,
+        'shiftBonus' => HBHUB_MINER_SHIFT_BONUS,
+        'shiftFastMs' => HBHUB_MINER_SHIFT_FAST_MS,
+        'shiftQuickMs' => HBHUB_MINER_SHIFT_QUICK_MS,
+        'sourceShift' => HBHUB_MINER_ENGINE_SOURCE_SHIFT,
+        'sourceOre' => HBHUB_MINER_ENGINE_SOURCE_ORE,
+        'sourceStrange' => HBHUB_MINER_ENGINE_SOURCE_STRANGE,
+        'sourceAnomaly' => HBHUB_MINER_ENGINE_SOURCE_ANOMALY,
+        'anomalies' => HBHUB_MINER_ANOMALIES,
+        'anomalyTiers' => HBHUB_MINER_ANOMALY_TIERS,
+        'anomalyStrange' => HBHUB_MINER_ANOMALY_STRANGE,
+        'anomalyRepeat' => HBHUB_MINER_ANOMALY_REPEAT,
+        'anomalySavedMax' => HBHUB_MINER_ANOMALY_SAVED_MAX,
+        'inflationGrowth' => HBHUB_MINER_INFLATION_GROWTH,
+        'entropyMs' => HBHUB_MINER_ENTROPY_MS,
+        'entropySteps' => HBHUB_MINER_ENTROPY_STEPS,
+        'minimalistMax' => HBHUB_MINER_MINIMALIST_MAX,
+        'lightMs' => HBHUB_MINER_LIGHT_MS,
+        'engineOreShare' => HBHUB_MINER_ENGINE_ORE_SHARE,
+        'engineOreQuarters' => HBHUB_MINER_ENGINE_ORE_QUARTERS,
+        'engineCountdownMs' => HBHUB_MINER_ENGINE_COUNTDOWN_MS,
+        'engineDrain' => HBHUB_MINER_ENGINE_DRAIN,
+        'ignitionMs' => HBHUB_MINER_IGNITION_MS,
+        'ignitionTimes' => HBHUB_MINER_IGNITION_TIMES,
+        'anomalyStackTier' => HBHUB_MINER_ANOMALY_STACK_TIER,
+        'anomalyClashes' => HBHUB_MINER_ANOMALY_CLASHES,
+        'weeklyClashFrom' => HBHUB_MINER_WEEKLY_CLASH_FROM,
+        'anomalyStack' => HBHUB_MINER_ANOMALY_STACK,
+        'anomalyWeekly' => HBHUB_MINER_ANOMALY_WEEKLY,
+        'afterglowTimes' => HBHUB_MINER_AFTERGLOW_TIMES,
+        'afterglowMax' => HBHUB_MINER_AFTERGLOW_MAX_MS,
+        'weekMs' => HBHUB_MINER_WEEK_MS,
+        'weeklySizes' => HBHUB_MINER_WEEKLY_SIZES,
+        'weeklyLeftOut' => HBHUB_MINER_WEEKLY_LEFT_OUT,
+        'anomalyFresh' => HBHUB_MINER_ANOMALY_FRESH,
+        'handsShare' => HBHUB_MINER_HANDS_SHARE,
+        'gauntletStart' => HBHUB_MINER_GAUNTLET_START,
+        'gauntletEntropyMs' => HBHUB_MINER_GAUNTLET_ENTROPY_MS,
+        'gauntletEntropySteps' => HBHUB_MINER_GAUNTLET_ENTROPY_STEPS,
+        'lightHourMs' => HBHUB_MINER_LIGHT_HOUR_MS,
+        'skins' => HBHUB_MINER_SKINS,
+        'backdrops' => HBHUB_MINER_BACKDROPS,
+        'shardSlotMs' => HBHUB_MINER_SHARD_SLOT_MS,
+        'shardStayMs' => HBHUB_MINER_SHARD_STAY_MS,
+        'shop' => HBHUB_MINER_SHOP,
+        'shopBoostMaxMs' => HBHUB_MINER_SHOP_BOOST_MAX_MS,
+        'shopOreMin' => HBHUB_MINER_SHOP_ORE_MIN,
     ];
 }
 
@@ -707,6 +1442,39 @@ function hbHubMinerRandom(int $seed, int $counter, int $salt): float
  * - buffs: the comet effects running: the comet's kind => {kind, multiplier, until}. (Older saves keyed them by
  *   'production' or 'click' instead, so nothing goes by the key: see hbHubMinerBuff().)
  * - achievements: the ids done. tick: how far the game has run. started, runStarted: when the save and this run began.
+ * - engineStage: how many of the Engines' stages are done, every Engine so far counted (an Engine has
+ *   HBHUB_MINER_ENGINE_STAGE_TOTAL), so which perks work (hbHubMinerEngineEffects()) and which Engine is being built
+ *   (hbHubMinerEngineNumber()).
+ *   engineOpen: whether the Engine takes parts right now (false for guests, and while a stage waits for an Anomaly
+ *   lock). Both are the server's to set, after each save (hbHubMinerEngineAdopt()), so the replay of the next one and
+ *   the script use the same numbers.
+ * - engineDay: the UTC day (tick / HBHUB_MINER_DAY_MS) the next two are for, which start over on the next one.
+ *   donatedToday: parts given from ore that day. shifts: how far each of the day's Engine Shifts is. shiftSwap: the
+ *   Shift swapped for the spare one that day (hbHubMinerShiftSwap()), or -1.
+ * - anomaly: null, or the Anomaly the player is in: mods (the HBHUB_MINER_ANOMALIES ids whose rules it has), started
+ *   (Unix ms), goal (the Antimatter to earn in it, kept from when it started) and state (its own game, a save of this
+ *   same shape, with no anomaly of its own). While it's there, every action is played in it (hbHubMinerApply()) and
+ *   only its time moves on; this game's 'tick' waits where it was, and catches up as time away when it's left
+ *   (hbHubMinerAnomalyLeave()). anomalies: the ones finished, by key (hbHubMinerAnomalyKey()) => {done: how many times,
+ *   best: the fastest, in ms, engine: the Engine it was last finished for, as the first time for each Engine pays in
+ *   full}. saved: the Anomalies saved to carry on later (hbHubMinerAnomalySave()), by key => the same shape as anomaly,
+ *   at most HBHUB_MINER_ANOMALY_SAVED_MAX ({} in an Anomaly's game). Their games wait where they were saved.
+ *   lastAnomaly: the key of the last one gone into, or null (the Again button). afterglow: when the Afterglow from
+ *   finishing one runs out (Unix ms, 0 or in the past when there's none, always 0 in an Anomaly's game).
+ * - mods: the Anomaly's ids in an Anomaly's own game (hbHubMinerMod()), with the ones in their 'rules' too, [] in the
+ *   player's. destroyed: the buildings the Unstable Vacuum has destroyed in it.
+ * - engineOreRest: quarter parts given from ore that don't make a whole part yet (HBHUB_MINER_ENGINE_ORE_SHARE).
+ *   engineIgnited: when the last Engine done was ignited (Unix ms, 0 before), crews: the Engines (by number) whose last
+ *   stage the player gave parts to before it was done, and crewsChecked: the last Engine done that crews was looked up
+ *   for. All three are the server's to set, like engineStage (hbHubMinerEngineAdopt()).
+ * - engineGiven: parts given ever, shiftDays: days with every Shift done, weeklies: weekly Anomalies finished (for the
+ *   achievements). skin: the asteroid skin picked (a key of HBHUB_MINER_SKINS), or null for its usual look.
+ *   backdrop: the background picked (a key of HBHUB_MINER_BACKDROPS), or null. sparks: whether clicking throws sparks
+ *   (once that perk is done).
+ * - shards: Star Shards to spend. shardsCaught: caught ever. shardSlot: the slot (time / HBHUB_MINER_SHARD_SLOT_MS) of
+ *   the last one caught, so each is only caught once (-1 before the first). boosts: the Shard Shop's boosts running,
+ *   id => until (Unix ms; [] in an Anomaly's game, where they don't work). bought: the Shard Shop's skins and effects
+ *   bought, in the order they were. effect: the click effect picked (one of bought), or null for the usual rock bits.
  */
 function hbHubMinerNewState(int $now): array
 {
@@ -742,6 +1510,35 @@ function hbHubMinerNewState(int $now): array
         'comet' => ['n' => 0, 'at' => $now],
         'buffs' => [],
         'achievements' => [],
+        'engineStage' => 0,
+        'engineOpen' => false,
+        'engineDay' => 0,
+        'donatedToday' => 0,
+        'shifts' => array_fill(0, HBHUB_MINER_SHIFT_COUNT, 0),
+        'anomaly' => null,
+        'anomalies' => [],
+        'saved' => [],
+        'mods' => [],
+        'destroyed' => [],
+        'engineOreRest' => 0,
+        'engineIgnited' => 0,
+        'crews' => [],
+        'crewsChecked' => 0,
+        'engineGiven' => 0,
+        'shiftDays' => 0,
+        'weeklies' => 0,
+        'skin' => null,
+        'shiftSwap' => -1,
+        'lastAnomaly' => null,
+        'afterglow' => 0,
+        'backdrop' => null,
+        'sparks' => true,
+        'shards' => 0,
+        'shardsCaught' => 0,
+        'shardSlot' => -1,
+        'boosts' => [],
+        'bought' => [],
+        'effect' => null,
     ];
     $state['comet']['at'] = $now + hbHubMinerCometWait($state, 0);
     return $state;
@@ -765,6 +1562,59 @@ function hbHubMinerNormalize(array $saved, int $now): array
     $state['antiUpgrades'] = array_values(array_intersect($state['antiUpgrades'], array_keys(HBHUB_MINER_ANTI_UPGRADES)));
     $state['skills'] = array_values(array_intersect($state['skills'], array_keys(HBHUB_MINER_SKILLS)));
     unset($state['steady'], $state['fast']); // the old auto-clicker checks'
+    $state['engineStage'] = max(0, min((int) $state['engineStage'], count(hbHubMinerEngineStageList())));
+    $state['engineOpen'] = (bool) $state['engineOpen'];
+    $state['engineDay'] = (int) $state['engineDay'];
+    $state['donatedToday'] = (int) $state['donatedToday'];
+    $state['shifts'] = is_array($state['shifts']) && count($state['shifts']) === HBHUB_MINER_SHIFT_COUNT
+        ? array_map('intval', array_values($state['shifts'])) : array_fill(0, HBHUB_MINER_SHIFT_COUNT, 0);
+    foreach (['engineOreRest', 'engineIgnited', 'engineGiven', 'shiftDays', 'weeklies', 'afterglow', 'shards', 'shardsCaught'] as $key) {
+        $state[$key] = max(0, (int) $state[$key]);
+    }
+    $state['engineOreRest'] %= HBHUB_MINER_ENGINE_ORE_QUARTERS;
+    // Saves from before Engine #2 had ignitionCrew instead: whether they were the crew of Engine #1's Ignition
+    if ($state['ignitionCrew'] ?? false) {
+        $state['crews'] = [1];
+    }
+    unset($state['ignitionCrew']);
+    $state['crews'] = is_array($state['crews']) ? array_values(array_unique(array_map('intval', $state['crews']))) : [];
+    $state['crewsChecked'] = max(0, (int) $state['crewsChecked']);
+    $state['skin'] = is_string($state['skin']) && isset(HBHUB_MINER_SKINS[$state['skin']]) ? $state['skin'] : null;
+    $state['backdrop'] = is_string($state['backdrop']) && isset(HBHUB_MINER_BACKDROPS[$state['backdrop']]) ? $state['backdrop'] : null;
+    $state['sparks'] = (bool) $state['sparks'];
+    $state['shardSlot'] = max(-1, (int) $state['shardSlot']);
+    $boosts = [];
+    foreach (is_array($state['boosts']) ? $state['boosts'] : [] as $boostId => $until) {
+        if ((HBHUB_MINER_SHOP[$boostId]['kind'] ?? null) === 'boost') {
+            $boosts[(string) $boostId] = (int) $until;
+        }
+    }
+    $state['boosts'] = $boosts;
+    $state['bought'] = is_array($state['bought']) ? array_values(array_unique(array_filter($state['bought'], static fn (mixed $itemId): bool =>
+        is_string($itemId) && in_array(HBHUB_MINER_SHOP[$itemId]['kind'] ?? null, ['skin', 'effect'], true)))) : [];
+    $state['effect'] = is_string($state['effect']) && in_array($state['effect'], $state['bought'], true)
+        && HBHUB_MINER_SHOP[$state['effect']]['kind'] === 'effect' ? $state['effect'] : null;
+    $state['shiftSwap'] = (int) $state['shiftSwap'] >= 0 && (int) $state['shiftSwap'] < HBHUB_MINER_SHIFT_COUNT ? (int) $state['shiftSwap'] : -1;
+    $state['lastAnomaly'] = is_string($state['lastAnomaly']) && hbHubMinerAnomalyMods($state['lastAnomaly']) !== null ? $state['lastAnomaly'] : null;
+    $state['mods'] = is_array($state['mods']) ? array_values(array_intersect($state['mods'], array_keys(HBHUB_MINER_ANOMALIES))) : [];
+    $state['destroyed'] = is_array($state['destroyed']) ? array_values(array_intersect($state['destroyed'], array_keys(HBHUB_MINER_BUILDINGS))) : [];
+    $anomalies = [];
+    foreach (is_array($state['anomalies']) ? $state['anomalies'] : [] as $key => $record) {
+        if (is_array($record) && hbHubMinerAnomalyMods((string) $key) !== null) {
+            $anomalies[(string) $key] = ['done' => (int) ($record['done'] ?? 0), 'best' => (int) ($record['best'] ?? 0),
+                'engine' => max(1, (int) ($record['engine'] ?? 1))]; // the ones from before Build #2 were for Build #1
+        }
+    }
+    $state['anomalies'] = $anomalies;
+    $state['anomaly'] = hbHubMinerNormalizeAnomaly($state['anomaly'], $now);
+    $saved = [];
+    foreach (is_array($state['saved']) ? $state['saved'] : [] as $key => $anomaly) {
+        $anomaly = hbHubMinerNormalizeAnomaly($anomaly, $now);
+        if ($anomaly !== null && hbHubMinerAnomalyKey($anomaly['mods']) === (string) $key && count($saved) < HBHUB_MINER_ANOMALY_SAVED_MAX) {
+            $saved[(string) $key] = $anomaly;
+        }
+    }
+    $state['saved'] = $saved;
 
     foreach (['ore', 'runOre', 'universeOre', 'allOre', 'clickOre'] as $key) {
         $state[$key] = (float) $state[$key];
@@ -773,11 +1623,40 @@ function hbHubMinerNormalize(array $saved, int $now): array
 }
 
 /**
- * The save as the page gets it (all of it: nothing in it is secret): the same, but buffs stays a JSON object when empty.
+ * An Anomaly from the database (the save's 'anomaly', or one of its 'saved'), with its game normalised like the
+ * player's (with no Anomalies of its own), or null when it isn't one.
+ */
+function hbHubMinerNormalizeAnomaly(mixed $anomaly, int $now): ?array
+{
+    if (!is_array($anomaly) || !is_array($anomaly['state'] ?? null) || !is_array($anomaly['mods'] ?? null)
+        || ($mods = hbHubMinerAnomalyMods(implode('+', $anomaly['mods']))) === null) {
+        return null;
+    }
+    return [
+        'mods' => $mods,
+        'started' => (int) ($anomaly['started'] ?? $now),
+        'goal' => (float) ($anomaly['goal'] ?? hbHubMinerAnomalyGoal($mods)),
+        'state' => ['mods' => hbHubMinerAnomalyRules($mods)]
+            + hbHubMinerNormalize(['anomaly' => null, 'anomalies' => [], 'saved' => []] + $anomaly['state'], $now),
+    ];
+}
+
+/**
+ * The save as the page gets it (all of it: nothing in it is secret): the same, but buffs, boosts, anomalies and saved
+ * stay JSON objects when empty (an Anomaly's game too).
  */
 function hbHubMinerView(array $state): array
 {
     $state['buffs'] = (object) $state['buffs'];
+    $state['boosts'] = (object) $state['boosts'];
+    $state['anomalies'] = (object) $state['anomalies'];
+    if ($state['anomaly'] !== null) {
+        $state['anomaly']['state'] = hbHubMinerView($state['anomaly']['state']);
+    }
+    foreach ($state['saved'] as $key => $anomaly) {
+        $state['saved'][$key]['state'] = hbHubMinerView($anomaly['state']);
+    }
+    $state['saved'] = (object) $state['saved'];
     return $state;
 }
 
@@ -807,6 +1686,14 @@ function hbHubMinerHasAnti(array $state, string $upgradeId): bool
 function hbHubMinerHasSkill(array $state, string $skillId): bool
 {
     return in_array($skillId, $state['skills'], true);
+}
+
+/**
+ * Whether the game is an Anomaly's with the rules of $anomalyId (a key of HBHUB_MINER_ANOMALIES).
+ */
+function hbHubMinerMod(array $state, string $anomalyId): bool
+{
+    return in_array($anomalyId, $state['mods'], true);
 }
 
 /**
@@ -865,6 +1752,273 @@ function hbHubMinerSkillEffects(array $state): array
 }
 
 /**
+ * What the perks of the Cosmic Engine's stages done so far do together ('engineStage' in the save), with the keys of
+ * HBHUB_MINER_ENGINE_NEUTRAL: the highest 'offline', each 'value' added and each 'times' multiplied, in stage order.
+ */
+function hbHubMinerEngineEffects(array $state): array
+{
+    static $cache = [];
+    $done = min((int) $state['engineStage'], count(hbHubMinerEngineStageList()));
+    if (isset($cache[$done])) {
+        return $cache[$done];
+    }
+
+    $effects = HBHUB_MINER_ENGINE_NEUTRAL;
+    foreach (array_slice(hbHubMinerEngineStageList(), 0, $done) as $stage) {
+        $perk = $stage['perk'];
+        if ($perk['type'] === 'offline') {
+            $effects['offline'] = max($effects['offline'], $perk['value']);
+        } elseif (isset($perk['times'])) {
+            $effects[$perk['type']] *= $perk['times'];
+        } elseif (isset($perk['value'])) {
+            $effects[$perk['type']] += $perk['value'];
+        }
+    }
+    return $cache[$done] = $effects;
+}
+
+/**
+ * Every stage of every Engine in HBHUB_MINER_ENGINES, stage 1 of Engine #1 first: HBHUB_MINER_ENGINE_STAGES (the ones
+ * written out by hand), then the stages of each build in HBHUB_MINER_BUILDS (hbHubMinerBuildStages() in starbound.php).
+ * allEngineStages() in the script makes the same list.
+ */
+function hbHubMinerEngineStageList(): array
+{
+    static $stages = null;
+    if ($stages === null) {
+        $stages = HBHUB_MINER_ENGINE_STAGES;
+        $base = array_column(array_slice(HBHUB_MINER_ENGINE_STAGES, 0, HBHUB_MINER_ENGINE_STAGE_TOTAL), 'cost');
+        foreach (array_keys(HBHUB_MINER_BUILDS) as $number) {
+            array_push($stages, ...hbHubMinerBuildStages($number, $base));
+        }
+    }
+    return $stages;
+}
+
+/**
+ * The stages of Engine $number (HBHUB_MINER_ENGINES), stage 1 first: its part of hbHubMinerEngineStageList(), [] for one
+ * that isn't there yet.
+ */
+function hbHubMinerEngineStages(int $number): array
+{
+    return array_slice(hbHubMinerEngineStageList(), ($number - 1) * HBHUB_MINER_ENGINE_STAGE_TOTAL, HBHUB_MINER_ENGINE_STAGE_TOTAL);
+}
+
+/**
+ * The number of the Engine being built, from the save's engineStage (once one is done, the next is: one that isn't in
+ * HBHUB_MINER_ENGINES yet just has no stages).
+ */
+function hbHubMinerEngineNumber(array $state): int
+{
+    return intdiv((int) $state['engineStage'], HBHUB_MINER_ENGINE_STAGE_TOTAL) + 1;
+}
+
+/**
+ * Whether a stage with a perk of $type is done (for the ones that aren't numbers, like backdrops or sparks).
+ */
+function hbHubMinerEnginePerk(array $state, string $type): bool
+{
+    foreach (array_slice(hbHubMinerEngineStageList(), 0, (int) $state['engineStage']) as $stage) {
+        if ($stage['perk']['type'] === $type) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * What Ignition does to production at the game's time: HBHUB_MINER_IGNITION_TIMES for HBHUB_MINER_IGNITION_MS after the
+ * Engine was ignited ('engineIgnited'), 1 before and after.
+ */
+function hbHubMinerIgnition(array $state): float
+{
+    $ignited = $state['engineIgnited'];
+    return $ignited > 0 && $state['tick'] >= $ignited && $state['tick'] < $ignited + HBHUB_MINER_IGNITION_MS ? HBHUB_MINER_IGNITION_TIMES : 1;
+}
+
+/**
+ * What an Anomaly's Afterglow does to production at the game's time: HBHUB_MINER_AFTERGLOW_TIMES until 'afterglow',
+ * 1 after it (and in an Anomaly's game, which never has one).
+ */
+function hbHubMinerAfterglow(array $state): float
+{
+    return $state['tick'] < $state['afterglow'] ? HBHUB_MINER_AFTERGLOW_TIMES : 1;
+}
+
+/**
+ * What a part given from ore is worth now, in quarter parts: the share of the section the stage being built is in,
+ * and never less than the oreFloor perk.
+ */
+function hbHubMinerOreQuarters(array $state): int
+{
+    $index = min((int) $state['engineStage'], count(hbHubMinerEngineStageList()) - 1);
+    return max(HBHUB_MINER_ENGINE_ORE_SHARE[hbHubMinerEngineStageList()[$index]['section']], (int) hbHubMinerEngineEffects($state)['oreFloor']);
+}
+
+/**
+ * How many parts from ore can be given a day: HBHUB_MINER_ENGINE_ORE_PARTS and the oreParts perks.
+ */
+function hbHubMinerOrePartsMax(array $state): int
+{
+    return HBHUB_MINER_ENGINE_ORE_PARTS + (int) hbHubMinerEngineEffects($state)['oreParts'];
+}
+
+/**
+ * Gives $gift ([source, parts, ...], see hbHubMinerApply()) to the Engine: into $given, and counted in 'engineGiven'.
+ */
+function hbHubMinerGive(array &$state, array &$given, array $gift): void
+{
+    $given[] = $gift;
+    $state['engineGiven'] += $gift[1];
+}
+
+/**
+ * Whether the player can give parts to the Engine right now: it's taking them, they've made a Warp Jump, and they've
+ * earned HBHUB_MINER_ENGINE_STRANGE Strange Matter (spending it doesn't count against them).
+ */
+function hbHubMinerCanGive(array $state): bool
+{
+    return $state['engineOpen'] && $state['warps'] >= 1 && $state['strangeEarned'] >= HBHUB_MINER_ENGINE_STRANGE;
+}
+
+/**
+ * Starts the daily counts (donatedToday, shifts) over when the game's time is on a new UTC day.
+ */
+function hbHubMinerEngineDay(array &$state): void
+{
+    $day = (int) floor($state['tick'] / HBHUB_MINER_DAY_MS);
+    if ($day !== $state['engineDay']) {
+        $state['engineDay'] = $day;
+        $state['donatedToday'] = 0;
+        $state['shifts'] = array_fill(0, HBHUB_MINER_SHIFT_COUNT, 0);
+        $state['shiftSwap'] = -1;
+    }
+}
+
+/**
+ * The day's Engine Shifts (keys of HBHUB_MINER_SHIFTS), the same for everyone: picked one by one from the ones left,
+ * with luck that only depends on the day.
+ */
+function hbHubMinerShiftTasks(int $day): array
+{
+    static $cache = [];
+    if (isset($cache[$day])) {
+        return $cache[$day];
+    }
+    $left = array_keys(HBHUB_MINER_SHIFTS);
+    $tasks = [];
+    for ($i = 0; $i < HBHUB_MINER_SHIFT_COUNT; $i++) {
+        $index = (int) floor(hbHubMinerRandom(0, $day * HBHUB_MINER_SHIFT_COUNT + $i, HBHUB_MINER_SALT_SHIFT) * count($left));
+        $tasks[] = $left[$index];
+        array_splice($left, $index, 1);
+    }
+    return $cache[$day] = $tasks;
+}
+
+/**
+ * The day's spare Shift, that one of the day's can be swapped for (hbHubMinerShiftSwap()): one of the ones left, the
+ * same for everyone.
+ */
+function hbHubMinerShiftSpare(int $day): string
+{
+    $left = array_values(array_diff(array_keys(HBHUB_MINER_SHIFTS), hbHubMinerShiftTasks($day)));
+    return $left[(int) floor(hbHubMinerRandom(0, $day, HBHUB_MINER_SALT_SHIFT_SPARE) * count($left))];
+}
+
+/**
+ * The player's Shifts today: the day's, with the one they swapped (shiftSwap) as the spare one instead. Call
+ * hbHubMinerEngineDay() first.
+ */
+function hbHubMinerPlayerShifts(array $state): array
+{
+    $tasks = hbHubMinerShiftTasks($state['engineDay']);
+    if ($state['shiftSwap'] >= 0) {
+        $tasks[$state['shiftSwap']] = hbHubMinerShiftSpare($state['engineDay']);
+    }
+    return $tasks;
+}
+
+/**
+ * Swaps today's Shift $index for the spare one (with the shiftSwap perk, once a day, and only one that isn't done):
+ * it starts from nothing. Returns false when it can't.
+ */
+function hbHubMinerShiftSwap(array &$state, mixed $index): bool
+{
+    if (!is_int($index) || $index < 0 || $index >= HBHUB_MINER_SHIFT_COUNT || !hbHubMinerCanGive($state)
+        || hbHubMinerEngineEffects($state)['shiftSwap'] < 1) {
+        return false;
+    }
+    hbHubMinerEngineDay($state);
+    $task = hbHubMinerPlayerShifts($state)[$index];
+    if ($state['shiftSwap'] >= 0 || $state['shifts'][$index] >= HBHUB_MINER_SHIFTS[$task]['goal']) {
+        return false;
+    }
+    $state['shiftSwap'] = $index;
+    $state['shifts'][$index] = 0;
+    return true;
+}
+
+/**
+ * Counts $amount of $count (a Shift's 'count', see HBHUB_MINER_SHIFTS) towards each of the player's Shifts today
+ * that counts it (hbHubMinerPlayerShifts()). A Shift that's just been done goes in $given as
+ * [HBHUB_MINER_ENGINE_SOURCE_SHIFT, parts], with HBHUB_MINER_SHIFT_BONUS on top for the last of the day's. $given is
+ * null when the player can't give parts at all (guests), and then nothing is counted either.
+ */
+function hbHubMinerShift(array &$state, string $count, int $amount, ?array &$given): void
+{
+    if ($given === null || !hbHubMinerCanGive($state)) {
+        return;
+    }
+    hbHubMinerEngineDay($state);
+    $tasks = hbHubMinerPlayerShifts($state);
+    foreach ($tasks as $index => $task) {
+        $goal = HBHUB_MINER_SHIFTS[$task]['goal'];
+        if (HBHUB_MINER_SHIFTS[$task]['count'] !== $count || $state['shifts'][$index] >= $goal) {
+            continue;
+        }
+        $state['shifts'][$index] = min($goal, $state['shifts'][$index] + $amount);
+        if ($state['shifts'][$index] < $goal) {
+            continue;
+        }
+        $done = 0;
+        foreach ($tasks as $i => $id) {
+            $done += $state['shifts'][$i] >= HBHUB_MINER_SHIFTS[$id]['goal'] ? 1 : 0;
+        }
+        if ($done === HBHUB_MINER_SHIFT_COUNT) {
+            $state['shiftDays']++;
+        }
+        hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_SHIFT, hbHubMinerShiftParts($task)
+            + ($done === HBHUB_MINER_SHIFT_COUNT ? HBHUB_MINER_SHIFT_BONUS : 0)]);
+    }
+}
+
+/**
+ * The parts Shift $task is worth, without the bonus for doing all of the day's.
+ */
+function hbHubMinerShiftParts(string $task): int
+{
+    return (HBHUB_MINER_SHIFTS[$task]['hard'] ?? false) ? HBHUB_MINER_SHIFT_PARTS_HARD : HBHUB_MINER_SHIFT_PARTS;
+}
+
+/**
+ * The ore the next $parts parts from ore cost together today: the day's first HBHUB_MINER_ENGINE_ORE_PART, each next
+ * one ten times the one before. Multiplied up, so the script gets exactly the same.
+ */
+function hbHubMinerOreDonationCost(array $state, int $parts): float
+{
+    $part = HBHUB_MINER_ENGINE_ORE_PART;
+    for ($i = 0; $i < $state['donatedToday']; $i++) {
+        $part *= 10;
+    }
+    $cost = 0.0;
+    for ($i = 0; $i < $parts; $i++) {
+        $cost += $part;
+        $part *= 10;
+    }
+    return $cost;
+}
+
+/**
  * The production each Dark Matter earned adds (0.05 = +5%).
  */
 function hbHubMinerDarkBonus(array $state): float
@@ -874,12 +2028,21 @@ function hbHubMinerDarkBonus(array $state): float
 }
 
 /**
- * What Antimatter does to production: 1 + HBHUB_MINER_ANTI_BONUS (and Dense Antimatter) for each one earned in this
- * multiverse. A Warp Jump gets the square root of it (hbHubMinerWarpGain()).
+ * The production each Antimatter earned adds (0.1 = +10%, more with Antimatter Reactor and Dense Antimatter).
+ */
+function hbHubMinerAntiBonus(array $state): float
+{
+    return (hbHubMinerHasAnti($state, 'antiReactor') ? HBHUB_MINER_ANTI_BONUS_REACTOR : HBHUB_MINER_ANTI_BONUS)
+        + hbHubMinerSkillEffects($state)['antiBonus'];
+}
+
+/**
+ * What Antimatter does to production: 1 + hbHubMinerAntiBonus() for each one earned in this multiverse. A Warp Jump
+ * gets the square root of it (hbHubMinerWarpGain()).
  */
 function hbHubMinerAntiMultiplier(array $state): float
 {
-    return 1 + (HBHUB_MINER_ANTI_BONUS + hbHubMinerSkillEffects($state)['antiBonus']) * $state['antimatterEarned'];
+    return 1 + hbHubMinerAntiBonus($state) * $state['antimatterEarned'];
 }
 
 /**
@@ -899,31 +2062,84 @@ function hbHubMinerCometPower(array $state): float
 }
 
 /**
- * What an ore upgrade costs: its price, less with Bargain Hunter.
+ * What an ore upgrade costs: its price, less with Bargain Hunter and the Engine's Ignition Coils.
  */
 function hbHubMinerUpgradeCost(array $state, string $upgradeId): float
 {
-    return hbHubMinerUpgrades()[$upgradeId]['cost'] * hbHubMinerSkillEffects($state)['upgradeCost'];
+    return hbHubMinerUpgrades()[$upgradeId]['cost'] * hbHubMinerSkillEffects($state)['upgradeCost'] * hbHubMinerEngineEffects($state)['upgradeCost'];
 }
 
 /**
- * How much more each of a building costs than the one before: its own 'growth', or HBHUB_MINER_COST_GROWTH, less
- * HBHUB_MINER_COST_GROWTH_PHYSICS with Cheaper Physics.
+ * How much more each of a building costs than the one before: its own 'growth', or HBHUB_MINER_COST_GROWTH (for
+ * every building HBHUB_MINER_INFLATION_GROWTH in Inflation), less HBHUB_MINER_COST_GROWTH_PHYSICS with Cheaper Physics.
  */
 function hbHubMinerCostGrowth(array $state, string $buildingId): float
 {
-    return (HBHUB_MINER_BUILDINGS[$buildingId]['growth'] ?? HBHUB_MINER_COST_GROWTH)
+    return (hbHubMinerMod($state, 'inflation') ? HBHUB_MINER_INFLATION_GROWTH : HBHUB_MINER_BUILDINGS[$buildingId]['growth'] ?? HBHUB_MINER_COST_GROWTH)
         - (hbHubMinerHasDark($state, 'physics') ? HBHUB_MINER_COST_GROWTH_PHYSICS : 0);
 }
 
 /**
+ * Whether $amount more of a building can be bought, ore aside: not one the Unstable Vacuum destroyed, not past
+ * HBHUB_MINER_MINIMALIST_MAX in all in Minimalist, and in One Track only the kind the run already has (every run
+ * starts with none there, see hbHubMinerStartBuildings(), so that's the one bought first).
+ */
+function hbHubMinerCanBuild(array $state, string $buildingId, int $amount): bool
+{
+    if (in_array($buildingId, $state['destroyed'], true)) {
+        return false;
+    }
+    if (hbHubMinerMod($state, 'minimalist') && array_sum($state['buildings']) + $amount > HBHUB_MINER_MINIMALIST_MAX) {
+        return false;
+    }
+    if (hbHubMinerMod($state, 'oneTrack')) {
+        foreach ($state['buildings'] as $id => $count) {
+            if ($id !== $buildingId && $count > 0) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+/**
+ * How long a run goes before each halving in Entropy: HBHUB_MINER_ENTROPY_MS, or HBHUB_MINER_GAUNTLET_ENTROPY_MS in The
+ * Gauntlet.
+ */
+function hbHubMinerEntropyMs(array $state): int
+{
+    return hbHubMinerMod($state, 'gauntlet') ? HBHUB_MINER_GAUNTLET_ENTROPY_MS : HBHUB_MINER_ENTROPY_MS;
+}
+
+/**
+ * The most halvings Entropy makes in a run: HBHUB_MINER_ENTROPY_STEPS, or HBHUB_MINER_GAUNTLET_ENTROPY_STEPS in The Gauntlet.
+ */
+function hbHubMinerEntropySteps(array $state): int
+{
+    return hbHubMinerMod($state, 'gauntlet') ? HBHUB_MINER_GAUNTLET_ENTROPY_STEPS : HBHUB_MINER_ENTROPY_STEPS;
+}
+
+/**
+ * What Entropy leaves of production: halved for every whole hbHubMinerEntropyMs() of the run so far (1 outside it).
+ * Powers of two, which a float holds exactly, so the script gets the same to the last digit.
+ */
+function hbHubMinerEntropy(array $state): float
+{
+    if (!hbHubMinerMod($state, 'entropy')) {
+        return 1.0;
+    }
+    return 0.5 ** min(hbHubMinerEntropySteps($state), intdiv((int) max(0, $state['tick'] - $state['runStarted']), hbHubMinerEntropyMs($state)));
+}
+
+/**
  * What the next $amount of a building cost together, rounded up: each costs hbHubMinerCostGrowth() times the one before,
- * and all of them less with the discount skills.
+ * and all of them less with the discount skills and Negative Prices.
  */
 function hbHubMinerBuildingCost(array $state, string $buildingId, int $amount): float
 {
     $growth = hbHubMinerCostGrowth($state, $buildingId);
-    return ceil(HBHUB_MINER_BUILDINGS[$buildingId]['cost'] * hbHubMinerSkillEffects($state)['cost'] * $growth ** $state['buildings'][$buildingId]
+    return ceil(HBHUB_MINER_BUILDINGS[$buildingId]['cost'] * hbHubMinerSkillEffects($state)['cost'] * hbHubMinerEngineEffects($state)['cost']
+        * (hbHubMinerHasAnti($state, 'negativePrices') ? HBHUB_MINER_NEGATIVE_PRICES : 1) * $growth ** $state['buildings'][$buildingId]
         * ($growth ** $amount - 1) / ($growth - 1));
 }
 
@@ -950,19 +2166,26 @@ function hbHubMinerBuildingRates(array $state): array
     if (hbHubMinerHasDark($state, 'darkEngines')) {
         $global *= 1.5;
     }
+    if (hbHubMinerHasDark($state, 'darkTurbines')) {
+        $global *= 2;
+    }
     if (hbHubMinerHasAnti($state, 'annihilation')) {
         $global *= 2;
     }
     $global *= $effects['production'] * (1 + $effects['perSkill'] * count($state['skills'])) * (1 + $effects['perWarp'] * $state['flights'])
-        * (1 + $effects['perCrunch'] * $state['crunches']);
+        * (1 + $effects['perCrunch'] * $state['crunches']) * hbHubMinerEngineEffects($state)['production'] * hbHubMinerIgnition($state)
+        * hbHubMinerAfterglow($state);
+    $global *= hbHubMinerEntropy($state);
+    $synergyPower = hbHubMinerHasDark($state, 'darkTethers') ? 2 : 1;
+    $crewPower = hbHubMinerHasDark($state, 'shadowCrews') ? 2 : 1;
     foreach ($state['upgrades'] as $upgradeId) {
         $upgrade = $upgrades[$upgradeId];
         if ($upgrade['type'] === 'building') {
             $multipliers[$upgrade['building']] *= 2 * $effects['buildingUpgrade'];
         } elseif ($upgrade['type'] === 'synergy') {
-            $multipliers[$upgrade['building']] *= 1 + $upgrade['per'] * floor($state['buildings'][$upgrade['source']] / $upgrade['every']);
+            $multipliers[$upgrade['building']] *= 1 + $upgrade['per'] * $synergyPower * floor($state['buildings'][$upgrade['source']] / $upgrade['every']);
         } elseif ($upgrade['type'] === 'crew') {
-            $crew[$upgrade['building']] += $upgrade['value'] * $effects['crew'];
+            $crew[$upgrade['building']] += $upgrade['value'] * $effects['crew'] * $crewPower;
         } elseif ($upgrade['type'] === 'global') {
             $global *= 1 + $upgrade['value'];
         }
@@ -979,8 +2202,8 @@ function hbHubMinerBuildingRates(array $state): array
 }
 
 /**
- * The comet effects' multiplier on 'production' or 'click' at $time: all the ones running on it multiplied together (1
- * when none is). $time PHP_INT_MAX leaves comets out.
+ * The comet effects' multiplier on 'production' or 'click' at $time: all the ones running on it multiplied together,
+ * with the Shard Shop's boosts (1 when none is). $time PHP_INT_MAX leaves comets and boosts out.
  */
 function hbHubMinerBuff(array $state, string $buff, int $time): float
 {
@@ -990,16 +2213,25 @@ function hbHubMinerBuff(array $state, string $buff, int $time): float
             $multiplier *= $running['multiplier'];
         }
     }
+    foreach ($state['boosts'] as $boostId => $until) {
+        if (HBHUB_MINER_SHOP[$boostId]['buff'] === $buff && $until > $time) {
+            $multiplier *= HBHUB_MINER_SHOP[$boostId]['multiplier'];
+        }
+    }
     return $multiplier;
 }
 
 /**
  * What one click mines at $time, before a critical click: 1 (3 with Dark Pickaxe), doubled by each click upgrade (and
- * times the click skills), plus the clickPct upgrades' (and skills') share of the buildings' production, all times a
- * Click Storm.
+ * times the click skills), plus the clickPct upgrades' (and skills') share of the buildings' production (and
+ * HBHUB_MINER_HANDS_SHARE more in Hands Only, where that's all they make), all times a Click Storm and the Engine's
+ * Gyroscopes. Nothing at all in Dead Hands (auto-clickers' clicks included, see hbHubMinerRate()).
  */
 function hbHubMinerClickValue(array $state, int $time): float
 {
+    if (hbHubMinerMod($state, 'deadHands')) {
+        return 0.0;
+    }
     $upgrades = hbHubMinerUpgrades();
     $effects = hbHubMinerSkillEffects($state);
     $value = hbHubMinerHasDark($state, 'darkPickaxe') ? (float) HBHUB_MINER_DARK_PICKAXE : 1.0;
@@ -1012,9 +2244,10 @@ function hbHubMinerClickValue(array $state, int $time): float
         }
     }
     $value *= $effects['click'];
-    $share += $effects['clickShare'];
+    $share += $effects['clickShare'] + (hbHubMinerMod($state, 'handsOnly') ? HBHUB_MINER_HANDS_SHARE : 0)
+        + (hbHubMinerHasAnti($state, 'antiKnuckles') ? HBHUB_MINER_ANTI_CLICK_SHARE : 0);
     $production = $share > 0 ? array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time) : 0;
-    return ($value + $share * $production) * hbHubMinerBuff($state, 'click', $time);
+    return ($value + $share * $production) * hbHubMinerBuff($state, 'click', $time) * hbHubMinerEngineEffects($state)['click'];
 }
 
 /**
@@ -1029,16 +2262,16 @@ function hbHubMinerAutoClicks(array $state): float
             $clicks += $upgrades[$upgradeId]['value'];
         }
     }
-    return $clicks + hbHubMinerSkillEffects($state)['auto'];
+    return $clicks * (hbHubMinerHasDark($state, 'darkClockwork') ? 2 : 1) + hbHubMinerSkillEffects($state)['auto'];
 }
 
 /**
- * All the ore per second at $time: the buildings (times a production comet) and the auto-clickers.
- * $time PHP_INT_MAX gives the steady rate, without comets, as the leaderboard shows it.
+ * All the ore per second at $time: the buildings (times a production comet, and not at all in Hands Only) and the
+ * auto-clickers. $time PHP_INT_MAX gives the steady rate, without comets, as the leaderboard shows it.
  */
 function hbHubMinerRate(array $state, int $time): float
 {
-    $rate = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
+    $rate = hbHubMinerMod($state, 'handsOnly') ? 0.0 : array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
     $autoClicks = hbHubMinerAutoClicks($state);
     if ($autoClicks > 0) {
         $rate += $autoClicks * hbHubMinerClickValue($state, $time);
@@ -1061,21 +2294,27 @@ function hbHubMinerCometWait(array $state, int $n): int
 {
     [$min, $max] = HBHUB_MINER_COMET_WAIT_MS;
     $wait = $min + hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_COMET_WAIT) * ($max - $min);
-    return (int) floor((hbHubMinerHas($state, 'radar') ? $wait / 2 : $wait) * hbHubMinerSkillEffects($state)['cometWait']);
-}
-
-function hbHubMinerCometStay(array $state): int
-{
-    return (int) floor((hbHubMinerHas($state, 'magnet') ? HBHUB_MINER_COMET_STAY_MS * 2 : HBHUB_MINER_COMET_STAY_MS)
-        * hbHubMinerSkillEffects($state)['cometStay']);
+    return (int) floor((hbHubMinerHas($state, 'radar') ? $wait / 2 : $wait) * hbHubMinerSkillEffects($state)['cometWait']
+        * hbHubMinerEngineEffects($state)['cometWait']);
 }
 
 /**
- * How long a comet's effect lasts, in ms: its own 'ms', doubled with Tail Collector, times the comet skills.
+ * How long a comet stays on screen, in ms: doubled with Comet Magnet, times the skills, plus the Engine's.
+ */
+function hbHubMinerCometStay(array $state): int
+{
+    return (int) floor((hbHubMinerHas($state, 'magnet') ? HBHUB_MINER_COMET_STAY_MS * 2 : HBHUB_MINER_COMET_STAY_MS)
+        * hbHubMinerSkillEffects($state)['cometStay']) + hbHubMinerEngineEffects($state)['cometStay'];
+}
+
+/**
+ * How long a comet's effect lasts, in ms: its own 'ms', doubled with Tail Collector, times the comet skills, and for
+ * the Golden ones (not Diamond Comets) times the Engine's.
  */
 function hbHubMinerCometLength(array $state, string $kind): int
 {
-    return (int) floor(HBHUB_MINER_COMETS[$kind]['ms'] * (hbHubMinerHas($state, 'tail') ? 2 : 1) * hbHubMinerSkillEffects($state)['cometLength']);
+    return (int) floor(HBHUB_MINER_COMETS[$kind]['ms'] * (hbHubMinerHas($state, 'tail') ? 2 : 1) * hbHubMinerSkillEffects($state)['cometLength']
+        * ($kind === 'diamond' ? 1 : hbHubMinerEngineEffects($state)['cometLength']));
 }
 
 /**
@@ -1086,7 +2325,10 @@ function hbHubMinerCometKind(array $state): string
 {
     $n = $state['comet']['n'];
     $diamondChance = (hbHubMinerHas($state, 'luckyStars') ? HBHUB_MINER_DIAMOND_CHANCE : 0) + hbHubMinerSkillEffects($state)['diamond'];
-    if ($diamondChance > 0 && hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_DIAMOND) < $diamondChance) {
+    if ($diamondChance > 0) { // Project Starbound's Plasma Chamber only adds to a chance there is
+        $diamondChance += hbHubMinerEngineEffects($state)['diamond'];
+    }
+    if ($diamondChance > 0 &&hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_DIAMOND) < $diamondChance) {
         return 'diamond';
     }
     $roll = hbHubMinerRandom($state['seed'], $n, HBHUB_MINER_SALT_COMET_KIND);
@@ -1109,32 +2351,72 @@ function hbHubMinerCometsPassed(array &$state): void
 
 /**
  * Moves the game on to $to (Unix ms): ore mined meanwhile, comet effects running out on time, and comets flying past.
- * Time after $fullUntil is time away, mined at HBHUB_MINER_OFFLINE_RATE (doubled with Time Dilation, times Time Loop).
- * Returns the ore mined while away.
+ * Time after $fullUntil is time away, mined at HBHUB_MINER_OFFLINE_RATE (or the Engine's, doubled with Time Dilation,
+ * times Time Loop). Time before it counts towards the "playing" Engine Shift ($given: see hbHubMinerShift()).
+ * $runOreGoal: stops early, at the first ms the ore mined this run reaches it (an Anomaly's goal that grows with time,
+ * see hbHubMinerAdvanceGame()); the rate is the same all through a piece, so that ms is worked out the same here and
+ * in the script. Returns the ore mined while away.
  */
-function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX): float
+function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX, ?array &$given = null, float $runOreGoal = INF): float
 {
     $offlineOre = 0.0;
-    while ($state['tick'] < $to) {
-        // In pieces, so the rate is the same all through each: up to an effect running out, or going away
+    while ($state['tick'] < $to && $state['runOre'] < $runOreGoal) {
+        // In pieces, so the rate is the same all through each: up to an effect or boost running out, going away, or
+        // midnight (UTC, for the Shifts, which start over then)
         $next = $to;
         foreach ($state['buffs'] as $buff) {
             if ($buff['until'] > $state['tick'] && $buff['until'] < $next) {
                 $next = $buff['until'];
             }
         }
+        foreach ($state['boosts'] as $until) {
+            if ($until > $state['tick'] && $until < $next) {
+                $next = $until;
+            }
+        }
         if ($fullUntil > $state['tick'] && $fullUntil < $next) {
             $next = $fullUntil;
         }
+        $midnight = (int) ((floor($state['tick'] / HBHUB_MINER_DAY_MS) + 1) * HBHUB_MINER_DAY_MS);
+        if ($midnight < $next) {
+            $next = $midnight;
+        }
+        // Entropy's next halving (hbHubMinerEntropy())
+        $steps = intdiv((int) max(0, $state['tick'] - $state['runStarted']), hbHubMinerEntropyMs($state));
+        if (hbHubMinerMod($state, 'entropy') && $steps < hbHubMinerEntropySteps($state)) {
+            $halving = $state['runStarted'] + ($steps + 1) * hbHubMinerEntropyMs($state);
+            if ($halving < $next) {
+                $next = $halving;
+            }
+        }
+        // Ignition starting or running out (hbHubMinerIgnition())
+        foreach ([$state['engineIgnited'], $state['engineIgnited'] + HBHUB_MINER_IGNITION_MS] as $edge) {
+            if ($state['engineIgnited'] > 0 && $edge > $state['tick'] && $edge < $next) {
+                $next = $edge;
+            }
+        }
+        // The Afterglow running out (hbHubMinerAfterglow())
+        if ($state['afterglow'] > $state['tick'] && $state['afterglow'] < $next) {
+            $next = $state['afterglow'];
+        }
 
-        $ore = hbHubMinerRate($state, $state['tick']) * ($next - $state['tick']) / 1000;
+        $rate = hbHubMinerRate($state, $state['tick']);
+        $share = $state['tick'] >= $fullUntil ? hbHubMinerEngineEffects($state)['offline'] * (hbHubMinerHasDark($state, 'timeDilation') ? 2 : 1)
+            * hbHubMinerSkillEffects($state)['offline'] : 1.0;
+        $ore = $rate * ($next - $state['tick']) / 1000 * $share;
+        if ($runOreGoal < INF && $ore > 0 && $state['runOre'] + $ore >= $runOreGoal) { // the goal is reached in this piece
+            $next = min($next, $state['tick'] + max(1, (int) ceil(($runOreGoal - $state['runOre']) / $ore * ($next - $state['tick']))));
+            $ore = $rate * ($next - $state['tick']) / 1000 * $share;
+        }
         if ($state['tick'] >= $fullUntil) {
-            $ore *= HBHUB_MINER_OFFLINE_RATE * (hbHubMinerHasDark($state, 'timeDilation') ? 2 : 1) * hbHubMinerSkillEffects($state)['offline'];
             $offlineOre += $ore;
+        } else {
+            hbHubMinerShift($state, 'playing', $next - $state['tick'], $given);
         }
         hbHubMinerEarn($state, $ore);
         $state['tick'] = $next;
         $state['buffs'] = array_filter($state['buffs'], static fn (array $buff): bool => $buff['until'] > $next);
+        $state['boosts'] = array_filter($state['boosts'], static fn (int $until): bool => $until > $next);
     }
     hbHubMinerCometsPassed($state);
     return $offlineOre;
@@ -1142,10 +2424,13 @@ function hbHubMinerAdvance(array &$state, int $to, int $fullUntil = PHP_INT_MAX)
 
 /**
  * Whether an upgrade shows up in the store (bought or not): its need (ore this run, buildings owned, comets caught,
- * upgrades bought).
+ * upgrades bought). None ever does in Bare Metal.
  */
 function hbHubMinerUpgradeUnlocked(array $state, array $upgrade): bool
 {
+    if (hbHubMinerMod($state, 'bareMetal')) {
+        return false;
+    }
     $need = $upgrade['need'];
     if (isset($need['ore']) && $state['runOre'] < $need['ore']) {
         return false;
@@ -1202,7 +2487,7 @@ function hbHubMinerWarpGain(array $state): float
         return 0;
     }
     $total = floor(hbHubMinerDarkTotal($state['universeOre']) * sqrt(hbHubMinerAntiMultiplier($state))
-        * (hbHubMinerHasAnti($state, 'converter') ? 2 : 1) * hbHubMinerSkillEffects($state)['darkGain']);
+        * (hbHubMinerHasAnti($state, 'converter') ? 2 : 1) * hbHubMinerSkillEffects($state)['darkGain'] * hbHubMinerEngineEffects($state)['darkGain']);
     return max(0, $total - $state['darkEarned']);
 }
 
@@ -1227,13 +2512,14 @@ function hbHubMinerAntiTotal(float $darkEarned): float
 /**
  * The Antimatter a Big Crunch would give now, or 0 when it can't be done yet (HBHUB_MINER_CRUNCH_DARK not earned in
  * this universe, less with Shallow Universe). Dark Matter starts over with every crunch, so each one gives what all of
- * it is worth, times the Antimatter skills.
+ * it is worth, times the Antimatter skills (and twice that with Mirror Universe).
  */
 function hbHubMinerCrunchGain(array $state): float
 {
     $effects = hbHubMinerSkillEffects($state);
     return $state['darkEarned'] >= HBHUB_MINER_CRUNCH_DARK * $effects['crunchDark']
-        ? floor(hbHubMinerAntiTotal((float) $state['darkEarned']) * $effects['antiGain']) : 0;
+        ? floor(hbHubMinerAntiTotal((float) $state['darkEarned']) * $effects['antiGain'] * hbHubMinerEngineEffects($state)['antiGain']
+            * (hbHubMinerHasAnti($state, 'mirrorUniverse') ? 2 : 1)) : 0;
 }
 
 /**
@@ -1305,12 +2591,13 @@ function hbHubMinerClick(array &$state, int $count, bool $auto = false): float
 }
 
 /**
- * Catches the comet at the game's time, if it's on screen. Returns its kind, or null when there wasn't one.
+ * Catches the comet at the game's time, if it's on screen. Returns its kind, or null when there wasn't one (never
+ * one in Dark Sky).
  */
 function hbHubMinerCatchComet(array &$state): ?string
 {
     $time = $state['tick'];
-    if ($time < $state['comet']['at'] || $time > $state['comet']['at'] + hbHubMinerCometStay($state)) {
+    if (hbHubMinerMod($state, 'darkSky') || $time < $state['comet']['at'] || $time > $state['comet']['at'] + hbHubMinerCometStay($state)) {
         return null;
     }
 
@@ -1326,7 +2613,9 @@ function hbHubMinerCatchComet(array &$state): ?string
             'until' => $time + hbHubMinerCometLength($state, $kind),
         ];
     } else {
-        $production = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time);
+        // In Hands Only, a click's share of the buildings' production, which is all they make there
+        $production = array_sum(hbHubMinerBuildingRates($state)) * hbHubMinerBuff($state, 'production', $time)
+            * (hbHubMinerMod($state, 'handsOnly') ? HBHUB_MINER_HANDS_SHARE : 1);
         [$min, $max] = HBHUB_MINER_LUCKY_SECONDS;
         $seconds = $min + hbHubMinerRandom($state['seed'], $state['comet']['n'], HBHUB_MINER_SALT_LUCKY) * ($max - $min);
         hbHubMinerEarn($state, ($production * $seconds + 13)
@@ -1342,10 +2631,100 @@ function hbHubMinerCatchComet(array &$state): ?string
 }
 
 /**
+ * When the Star Shard of $slot (a time / HBHUB_MINER_SHARD_SLOT_MS) shows up, in Unix ms: somewhere in its slot, by the
+ * save's luck, early enough that it's gone again before the next slot starts.
+ */
+function hbHubMinerShardAt(array $state, int $slot): int
+{
+    return $slot * HBHUB_MINER_SHARD_SLOT_MS + (int) floor(hbHubMinerRandom($state['seed'], $slot, HBHUB_MINER_SALT_SHARD)
+        * (HBHUB_MINER_SHARD_SLOT_MS - HBHUB_MINER_SHARD_STAY_MS));
+}
+
+/**
+ * Catches the Star Shard on screen at $time (the game being played's time: the player's own game's, or an Anomaly's),
+ * if there's one that hasn't been caught yet. Returns whether there was.
+ */
+function hbHubMinerCatchShard(array &$state, int $time): bool
+{
+    $slot = intdiv($time, HBHUB_MINER_SHARD_SLOT_MS);
+    $at = hbHubMinerShardAt($state, $slot);
+    if ($slot <= $state['shardSlot'] || $time < $at || $time > $at + HBHUB_MINER_SHARD_STAY_MS) {
+        return false;
+    }
+    $state['shardSlot'] = $slot;
+    $state['shards']++;
+    $state['shardsCaught']++;
+    return true;
+}
+
+/**
+ * Buys $itemId (a key of HBHUB_MINER_SHOP) for Star Shards, at the player's own game's time (see the kinds there).
+ * Returns false when it can't be: not enough Star Shards, a skin or effect bought already, a boost, ore or comet in
+ * an Anomaly, a boost that's as far ahead as it goes already, or a Comet Beacon with a comet on screen.
+ */
+function hbHubMinerShopBuy(array &$state, mixed $itemId): bool
+{
+    if (!is_string($itemId) || !isset(HBHUB_MINER_SHOP[$itemId])) {
+        return false;
+    }
+    $item = HBHUB_MINER_SHOP[$itemId];
+    $isKept = in_array($item['kind'], ['skin', 'effect'], true);
+    if ($state['shards'] < $item['cost'] || ($isKept ? in_array($itemId, $state['bought'], true) : $state['anomaly'] !== null)) {
+        return false;
+    }
+
+    $time = $state['tick'];
+    if ($item['kind'] === 'boost') {
+        $until = min(max($state['boosts'][$itemId] ?? 0, $time) + $item['ms'], $time + HBHUB_MINER_SHOP_BOOST_MAX_MS);
+        if ($until <= ($state['boosts'][$itemId] ?? 0)) {
+            return false;
+        }
+        $state['boosts'][$itemId] = $until;
+    } elseif ($item['kind'] === 'ore') {
+        hbHubMinerEarn($state, max(hbHubMinerRate($state, PHP_INT_MAX) * $item['seconds'], (float) HBHUB_MINER_SHOP_ORE_MIN));
+    } elseif ($item['kind'] === 'comet') {
+        if ($time >= $state['comet']['at'] && $time <= $state['comet']['at'] + hbHubMinerCometStay($state)) {
+            return false;
+        }
+        $state['comet']['at'] = $time;
+    } else {
+        $state['bought'][] = $itemId;
+    }
+    $state['shards'] -= $item['cost'];
+    return true;
+}
+
+/**
+ * The buildings a run starts with (id => how many, every building): the start skills', and Head Start's drones. None
+ * in Minimalist and One Track, where they'd be past the limit or more than one kind, and none of the ones the Unstable
+ * Vacuum destroyed.
+ */
+function hbHubMinerStartBuildings(array $state): array
+{
+    $start = array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 0);
+    if (hbHubMinerMod($state, 'minimalist') || hbHubMinerMod($state, 'oneTrack')) {
+        return $start;
+    }
+    $start = array_replace($start, hbHubMinerSkillEffects($state)['start']);
+    if (hbHubMinerHasDark($state, 'headStart')) {
+        $start['drone'] = max($start['drone'], HBHUB_MINER_HEAD_START);
+    }
+    foreach ($state['destroyed'] as $buildingId) {
+        $start[$buildingId] = 0;
+    }
+    if (hbHubMinerMod($state, 'gauntlet')) { // clicks mine nothing there, so without one a run could never start
+        foreach (HBHUB_MINER_GAUNTLET_START as $buildingId => $count) {
+            $start[$buildingId] = max($start[$buildingId], $count);
+        }
+    }
+    return $start;
+}
+
+/**
  * Starts a new run, for a Warp Jump, Big Crunch or Big Rip: ore, buildings and upgrades start over, apart from the click
  * upgrades with Persistent Memory, Bulk Buying, Max Buying and the comet upgrades with Eternal Blueprints, the upgrades the keep
  * skills keep, the drones from Head Start, the buildings from the start skills and the ore from Big Bang Leftovers or
- * Strange Leftovers.
+ * Strange Leftovers. In Bare Metal no upgrade is kept.
  */
 function hbHubMinerNewRun(array &$state): void
 {
@@ -1353,12 +2732,9 @@ function hbHubMinerNewRun(array &$state): void
     $effects = hbHubMinerSkillEffects($state);
     $kept = array_merge(hbHubMinerHasDark($state, 'memory') ? HBHUB_MINER_CLICK_TYPES : [],
         hbHubMinerHasAnti($state, 'eternal') ? HBHUB_MINER_ETERNAL_TYPES : [], $effects['keep']);
-    $state['upgrades'] = array_values(array_filter($state['upgrades'], static fn (string $id): bool =>
+    $state['upgrades'] = hbHubMinerMod($state, 'bareMetal') ? [] : array_values(array_filter($state['upgrades'], static fn (string $id): bool =>
         in_array($upgrades[$id]['type'], $kept, true)));
-    $state['buildings'] = array_replace(array_fill_keys(array_keys(HBHUB_MINER_BUILDINGS), 0), $effects['start']);
-    if (hbHubMinerHasDark($state, 'headStart')) {
-        $state['buildings']['drone'] = max($state['buildings']['drone'], HBHUB_MINER_HEAD_START);
-    }
+    $state['buildings'] = hbHubMinerStartBuildings($state);
     $state['ore'] = (float) max(hbHubMinerHasAnti($state, 'leftovers') ? HBHUB_MINER_LEFTOVER_ORE : 0, $effects['startOre']);
     $state['runOre'] = 0.0;
     $state['buffs'] = [];
@@ -1366,16 +2742,28 @@ function hbHubMinerNewRun(array &$state): void
 }
 
 /**
- * Warp Jump: everything of this run starts over (hbHubMinerNewRun()), for the Dark Matter it's worth. Returns false
- * when it can't be done yet.
+ * Warp Jump: everything of this run starts over (hbHubMinerNewRun()), for the Dark Matter it's worth. In the Unstable
+ * Vacuum, the building there's most of goes for good first (the dearer one when two are level). Returns false when it
+ * can't be done yet, and always in Iron Universe.
  */
 function hbHubMinerWarp(array &$state): bool
 {
     $gain = hbHubMinerWarpGain($state);
-    if ($gain < 1) {
+    if ($gain < 1 || hbHubMinerMod($state, 'ironUniverse')) {
         return false;
     }
 
+    if (hbHubMinerMod($state, 'unstableVacuum')) {
+        $most = null;
+        foreach ($state['buildings'] as $buildingId => $count) {
+            if ($count > 0 && ($most === null || $count >= $state['buildings'][$most])) {
+                $most = $buildingId;
+            }
+        }
+        if ($most !== null) {
+            $state['destroyed'][] = $most;
+        }
+    }
     hbHubMinerNewRun($state);
     if ($gain >= $state['darkEarned']) {
         $state['flights']++; // Frequent Flyer Miles only counts these (see hbHubMinerNewState())
@@ -1422,6 +2810,19 @@ function hbHubMinerRip(array &$state): bool
         return false;
     }
 
+    $state['strange'] += $gain;
+    $state['strangeEarned'] += $gain;
+    $state['rips']++;
+    hbHubMinerNewMultiverse($state);
+    return true;
+}
+
+/**
+ * What a Big Rip starts over (an Anomaly starts the same way): Antimatter and its upgrades (unless Antimatter Echo
+ * keeps them), Dark Matter and its upgrades (unless Dark Echo does), the universe and the run.
+ */
+function hbHubMinerNewMultiverse(array &$state): void
+{
     if (!hbHubMinerSkillEffects($state)['keepAnti']) {
         $state['antiUpgrades'] = [];
     }
@@ -1433,11 +2834,354 @@ function hbHubMinerRip(array &$state): bool
     $state['dark'] = 0;
     $state['darkEarned'] = 0;
     $state['universeOre'] = 0.0;
-    $state['strange'] += $gain;
-    $state['strangeEarned'] += $gain;
-    $state['rips']++;
     hbHubMinerNewRun($state);
+}
+
+// ----- Anomalies (HBHUB_MINER_ANOMALIES)
+
+/**
+ * The Anomalies in a key of the save's 'anomalies' (their ids joined with +, in HBHUB_MINER_ANOMALIES's order, each
+ * once), or null when it isn't one. More than one is a stack, which only Anomalies of the tiers up to
+ * HBHUB_MINER_ANOMALY_STACK_TIER can be in.
+ *
+ * @return ?list<string>
+ */
+function hbHubMinerAnomalyMods(string $key): ?array
+{
+    $mods = explode('+', $key);
+    $order = array_keys(HBHUB_MINER_ANOMALIES);
+    $last = -1;
+    foreach ($mods as $id) {
+        $at = array_search($id, $order, true);
+        if ($at === false || $at <= $last || (count($mods) > 1 && HBHUB_MINER_ANOMALIES[$id]['tier'] > HBHUB_MINER_ANOMALY_STACK_TIER)) {
+            return null;
+        }
+        $last = $at;
+    }
+    return $mods;
+}
+
+/**
+ * The key an Anomaly's record goes under in 'anomalies' and the Engine (contributionAnomaly).
+ */
+function hbHubMinerAnomalyKey(array $mods): string
+{
+    return implode('+', $mods);
+}
+
+/**
+ * Whether a stack ($mods, more than one) can't be done: it has an Anomaly that only goes 'alone', or a pair in
+ * HBHUB_MINER_ANOMALY_CLASHES. Such a stack can't be started (hbHubMinerAnomalyStart()), though one already started or
+ * saved before that rule still counts.
+ */
+function hbHubMinerStackClash(array $mods): bool
+{
+    if (count($mods) < 2) {
+        return false;
+    }
+    foreach ($mods as $id) {
+        if (HBHUB_MINER_ANOMALIES[$id]['alone'] ?? false) {
+            return true;
+        }
+    }
+    foreach (HBHUB_MINER_ANOMALY_CLASHES as [$a, $b]) {
+        if (in_array($a, $mods, true) && in_array($b, $mods, true)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * The rules an Anomaly's game has (its 'mods'): each of $mods, and the ones in its 'rules' after it.
+ *
+ * @return list<string>
+ */
+function hbHubMinerAnomalyRules(array $mods): array
+{
+    $rules = [];
+    foreach ($mods as $id) {
+        foreach ([$id, ...(HBHUB_MINER_ANOMALIES[$id]['rules'] ?? [])] as $rule) {
+            if (!in_array($rule, $rules, true)) {
+                $rules[] = $rule;
+            }
+        }
+    }
+    return $rules;
+}
+
+/**
+ * The goal of an Anomaly with these $mods: the lowest of their goals (with the highest, a stack with the Unstable
+ * Vacuum, which runs out of Warp Jumps around its own, could never be done).
+ */
+function hbHubMinerAnomalyGoal(array $mods): float
+{
+    return (float) min(array_map(static fn (string $id): float => HBHUB_MINER_ANOMALIES[$id]['goal'], $mods));
+}
+
+/**
+ * What the goal counts, a number in the Anomaly's game: Antimatter earned, unless the Anomaly says otherwise ('stat').
+ * Only the Tier III ones do, and they don't stack, so it's the first one's.
+ */
+function hbHubMinerAnomalyStat(array $mods): string
+{
+    return HBHUB_MINER_ANOMALIES[$mods[0]]['stat'] ?? 'antimatterEarned';
+}
+
+/**
+ * The Engine Parts finishing an Anomaly with these $mods is worth, before the first-time and best-time rules: each
+ * one's (or its tier's) together, times HBHUB_MINER_ANOMALY_STACK for each after the first, HBHUB_MINER_ANOMALY_WEEKLY
+ * for the weekly one, and the Engine's Navigation Computer. In the player's game ($state, for the Engine's perks).
+ */
+function hbHubMinerAnomalyParts(array $state, array $mods, bool $isWeekly): int
+{
+    $parts = 0;
+    foreach ($mods as $id) {
+        $parts += HBHUB_MINER_ANOMALIES[$id]['parts'] ?? HBHUB_MINER_ANOMALY_TIERS[HBHUB_MINER_ANOMALIES[$id]['tier']]['parts'];
+    }
+    return (int) floor($parts * HBHUB_MINER_ANOMALY_STACK ** (count($mods) - 1) * ($isWeekly ? HBHUB_MINER_ANOMALY_WEEKLY : 1)
+        * hbHubMinerEngineEffects($state)['anomalyParts']);
+}
+
+/**
+ * How long the Afterglow (hbHubMinerAfterglow()) from finishing an Anomaly with these $mods lasts, in ms: each one's
+ * (or its tier's) added up, HBHUB_MINER_ANOMALY_WEEKLY times as long for the weekly one that week.
+ */
+function hbHubMinerAnomalyAfterglowMs(array $mods, bool $isWeekly): int
+{
+    $ms = 0;
+    foreach ($mods as $id) {
+        $ms += HBHUB_MINER_ANOMALIES[$id]['afterglow'] ?? HBHUB_MINER_ANOMALY_TIERS[HBHUB_MINER_ANOMALIES[$id]['tier']]['afterglow'];
+    }
+    return $ms * ($isWeekly ? HBHUB_MINER_ANOMALY_WEEKLY : 1);
+}
+
+/**
+ * The week a time (Unix ms) is in: weeks since the one 1 January 1970 was in, each from Monday 00:00 UTC (that day was a
+ * Thursday, so three days are added).
+ */
+function hbHubMinerWeek(int $time): int
+{
+    return (int) floor(($time + 3 * HBHUB_MINER_DAY_MS) / HBHUB_MINER_WEEK_MS);
+}
+
+/**
+ * The weekly Anomaly for $week, the same for everyone: a stack of one of HBHUB_MINER_WEEKLY_SIZES, picked one by one
+ * from the stackable Anomalies (apart from HBHUB_MINER_WEEKLY_LEFT_OUT) with luck that only depends on the week. From
+ * HBHUB_MINER_WEEKLY_CLASH_FROM on, never a stack that can't be done (hbHubMinerStackClash()).
+ *
+ * @return list<string>
+ */
+function hbHubMinerWeeklyMods(int $week): array
+{
+    static $cache = [];
+    if (isset($cache[$week])) {
+        return $cache[$week];
+    }
+    $clashFree = $week >= HBHUB_MINER_WEEKLY_CLASH_FROM;
+    $left = array_values(array_filter(array_keys(HBHUB_MINER_ANOMALIES), static fn (string $id): bool =>
+        HBHUB_MINER_ANOMALIES[$id]['tier'] <= HBHUB_MINER_ANOMALY_STACK_TIER && !in_array($id, HBHUB_MINER_WEEKLY_LEFT_OUT, true)
+        && !($clashFree && (HBHUB_MINER_ANOMALIES[$id]['alone'] ?? false))));
+    $size = HBHUB_MINER_WEEKLY_SIZES[(int) floor(hbHubMinerRandom(0, $week * 10, HBHUB_MINER_SALT_WEEKLY) * count(HBHUB_MINER_WEEKLY_SIZES))];
+    $picked = [];
+    for ($i = 0; $i < $size && $left !== []; $i++) {
+        $index = (int) floor(hbHubMinerRandom(0, $week * 10 + $i + 1, HBHUB_MINER_SALT_WEEKLY) * count($left));
+        $picked[] = $left[$index];
+        array_splice($left, $index, 1);
+        if ($clashFree) { // what clashes with the one just picked can't be picked after it
+            $left = array_values(array_filter($left, static fn (string $id): bool => !hbHubMinerStackClash([$picked[$i], $id])));
+        }
+    }
+    // In the Anomalies' own order, as a key has them
+    return $cache[$week] = array_values(array_intersect(array_keys(HBHUB_MINER_ANOMALIES), $picked));
+}
+
+/**
+ * Whether the player has finished $anomalyId, alone or in a stack.
+ */
+function hbHubMinerAnomalyDone(array $state, string $anomalyId): bool
+{
+    foreach ($state['anomalies'] as $key => $record) {
+        if (in_array($anomalyId, explode('+', (string) $key), true)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Whether the player's game ($state, not an Anomaly's) has opened Anomaly tier $tier.
+ */
+function hbHubMinerAnomalyTierOpen(array $state, int $tier): bool
+{
+    return match (HBHUB_MINER_ANOMALY_TIERS[$tier]['unlock']) {
+        'strange' => $state['strangeEarned'] >= HBHUB_MINER_ANOMALY_STRANGE,
+        'theory' => hbHubMinerHasSkill($state, 'theory'),
+        default => false,
+    };
+}
+
+/**
+ * The game being played: the Anomaly's, while the player is in one, otherwise their own.
+ */
+function hbHubMinerGame(array $state): array
+{
+    return $state['anomaly']['state'] ?? $state;
+}
+
+/**
+ * Goes into an Anomaly ($mods: the ids of HBHUB_MINER_ANOMALIES, in their order) at the game's time. Its game is a copy
+ * of the player's, started over like a Big Rip that gives nothing (hbHubMinerNewMultiverse()), with its own luck; a
+ * Tier III one ('fresh') also starts HBHUB_MINER_ANOMALY_FRESH over, so it's from nothing. Returns false when it can't
+ * be done: in one already, an unknown one or stack, a stack that can't be done (hbHubMinerStackClash(), unless it's this
+ * week's weekly one), a tier isn't open yet, or it's saved (it's carried on with hbHubMinerAnomalyResume() or thrown
+ * away first, so hours of it are never lost by a click).
+ */
+function hbHubMinerAnomalyStart(array &$state, mixed $mods): bool
+{
+    if ($state['anomaly'] !== null || $state['mods'] !== [] || !is_array($mods) || !array_is_list($mods) || $mods === []
+        || array_filter($mods, 'is_string') !== $mods || ($mods = hbHubMinerAnomalyMods(hbHubMinerAnomalyKey($mods))) === null
+        || isset($state['saved'][hbHubMinerAnomalyKey($mods)])
+        || (hbHubMinerStackClash($mods) && $mods !== hbHubMinerWeeklyMods(hbHubMinerWeek($state['tick'])))) { // (an older week's weekly could be one)
+        return false;
+    }
+    foreach ($mods as $id) {
+        if (!hbHubMinerAnomalyTierOpen($state, HBHUB_MINER_ANOMALIES[$id]['tier'])) {
+            return false;
+        }
+    }
+
+    $game = $state;
+    $game['anomaly'] = null;
+    $game['anomalies'] = [];
+    $game['saved'] = [];
+    $game['mods'] = hbHubMinerAnomalyRules($mods);
+    $game['destroyed'] = [];
+    $game['afterglow'] = 0; // the player's own game's, not this one's
+    $game['boosts'] = []; // the same
+    $game['engineOpen'] = false; // nothing is given from in here, apart from finishing it
+    $game['seed'] = (int) floor(hbHubMinerRandom($state['seed'], $state['tick'], HBHUB_MINER_SALT_ANOMALY) * 0x7FFFFFFE) + 1;
+    $game['started'] = $state['tick'];
+    if (HBHUB_MINER_ANOMALY_TIERS[HBHUB_MINER_ANOMALIES[$mods[0]]['tier']]['fresh']) {
+        $game = array_replace($game, HBHUB_MINER_ANOMALY_FRESH);
+    }
+    hbHubMinerNewMultiverse($game);
+    $game['comet'] = ['n' => 0, 'at' => $game['tick'] + hbHubMinerCometWait($game, 0)];
+    $state['anomaly'] = ['mods' => $mods, 'started' => $state['tick'], 'goal' => hbHubMinerAnomalyGoal($mods), 'state' => $game];
+    $state['lastAnomaly'] = hbHubMinerAnomalyKey($mods);
     return true;
+}
+
+/**
+ * Leaves the Anomaly the player is in, at its game's time: the player's own game catches up to then, all of it as
+ * time away (hbHubMinerAdvance()). Returns the ore it mined meanwhile.
+ */
+function hbHubMinerAnomalyLeave(array &$state): float
+{
+    $to = $state['anomaly']['state']['tick'];
+    $state['anomaly'] = null;
+    return hbHubMinerAdvance($state, $to, $state['tick']);
+}
+
+/**
+ * Leaves the Anomaly the player is in like hbHubMinerAnomalyLeave(), but keeps it in 'saved' to carry on later
+ * (hbHubMinerAnomalyResume()). Its clock keeps running meanwhile (the time it took is from when it started, time saved
+ * included), so saving doesn't make a run any faster. Returns false when it can't: not in one, Speed of Light (its
+ * 2 hours run on, so it would be over anyway), or HBHUB_MINER_ANOMALY_SAVED_MAX saved already.
+ */
+function hbHubMinerAnomalySave(array &$state): bool
+{
+    $anomaly = $state['anomaly'];
+    if ($anomaly === null || in_array('speedOfLight', $anomaly['mods'], true) || count($state['saved']) >= HBHUB_MINER_ANOMALY_SAVED_MAX) {
+        return false;
+    }
+    $state['saved'][hbHubMinerAnomalyKey($anomaly['mods'])] = $anomaly;
+    hbHubMinerAnomalyLeave($state);
+    return true;
+}
+
+/**
+ * Goes back into a saved Anomaly ($key, a key of 'saved') at the player's game's time. Its game has waited where it was
+ * saved, and catches up to now as time away (with the Engine's perks as they are now), which can finish it (Iron
+ * Universe's goal grows with time). Returns false when it can't: in one already, or nothing saved under $key.
+ */
+function hbHubMinerAnomalyResume(array &$state, mixed $key, ?array &$given): bool
+{
+    if ($state['anomaly'] !== null || $state['mods'] !== [] || !is_string($key) || !isset($state['saved'][$key])) {
+        return false;
+    }
+    $anomaly = $state['saved'][$key];
+    unset($state['saved'][$key]);
+    $anomaly['state']['engineStage'] = $state['engineStage'];
+    $anomaly['state']['engineIgnited'] = $state['engineIgnited'];
+    $state['anomaly'] = $anomaly;
+    $state['lastAnomaly'] = $key;
+    hbHubMinerAdvanceGame($state, $state['tick'], $anomaly['state']['tick'], $given);
+    return true;
+}
+
+/**
+ * When the Anomaly the player is in has its goal: it's done, its time goes in 'anomalies' (and its parts in $given, as
+ * [HBHUB_MINER_ENGINE_SOURCE_ANOMALY, parts, key, ms it took, the week when it's that week's weekly Anomaly or null],
+ * see hbHubMinerApply(): all of them the first time for each Engine (hbHubMinerEngineNumber()) and for a new best
+ * time, HBHUB_MINER_ANOMALY_REPEAT of them otherwise), and the player leaves it. Their own game then gets its
+ * Afterglow (hbHubMinerAnomalyAfterglowMs()) from that time, added to any still running, up to
+ * HBHUB_MINER_AFTERGLOW_MAX_MS ahead.
+ */
+function hbHubMinerAnomalyCheck(array &$state, ?array &$given): void
+{
+    $anomaly = $state['anomaly'];
+    if ($anomaly === null || $anomaly['state'][hbHubMinerAnomalyStat($anomaly['mods'])] < $anomaly['goal']) {
+        return;
+    }
+    $key = hbHubMinerAnomalyKey($anomaly['mods']);
+    $ms = $anomaly['state']['tick'] - $anomaly['started'];
+    $week = hbHubMinerWeek($anomaly['state']['tick']);
+    $isWeekly = hbHubMinerAnomalyKey(hbHubMinerWeeklyMods($week)) === $key;
+    $record = $state['anomalies'][$key] ?? null;
+    $parts = hbHubMinerAnomalyParts($state, $anomaly['mods'], $isWeekly);
+    $engineNumber = hbHubMinerEngineNumber($state);
+    if ($record !== null && $record['engine'] >= $engineNumber && $ms >= $record['best']) {
+        $parts = (int) floor($parts * HBHUB_MINER_ANOMALY_REPEAT);
+    }
+    $state['anomalies'][$key] = ['done' => ($record['done'] ?? 0) + 1, 'best' => $record !== null ? min($record['best'], $ms) : $ms,
+        'engine' => $engineNumber];
+    if ($isWeekly) {
+        $state['weeklies']++;
+    }
+    if ($given !== null && $state['warps'] >= 1) {
+        hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_ANOMALY, $parts, $key, $ms, $isWeekly ? $week : null]);
+    }
+    hbHubMinerAnomalyLeave($state);
+    $state['afterglow'] = min(max($state['afterglow'], $state['tick']) + hbHubMinerAnomalyAfterglowMs($anomaly['mods'], $isWeekly),
+        $state['tick'] + HBHUB_MINER_AFTERGLOW_MAX_MS);
+}
+
+/**
+ * hbHubMinerAdvance() for the game being played: an Anomaly's, while the player is in one (and nothing counts towards
+ * Shifts in there), otherwise their own. In Speed of Light, the Anomaly is over at HBHUB_MINER_LIGHT_MS from its
+ * start, and the player's own game carries on from then. A goal of ore this run (Iron Universe) is checked on the way,
+ * as it's reached by time going by rather than by something the player does, and the player's own game carries on
+ * from the ms it was.
+ */
+function hbHubMinerAdvanceGame(array &$state, int $to, int $fullUntil = PHP_INT_MAX, ?array &$given = null): float
+{
+    if ($state['anomaly'] === null) {
+        return hbHubMinerAdvance($state, $to, $fullUntil, $given);
+    }
+    $limit = in_array('speedOfLight', $state['anomaly']['mods'], true) ? $state['anomaly']['started'] + HBHUB_MINER_LIGHT_MS : PHP_INT_MAX;
+    $runOreGoal = hbHubMinerAnomalyStat($state['anomaly']['mods']) === 'runOre' ? $state['anomaly']['goal'] : INF;
+    $nothing = null;
+    $offlineOre = hbHubMinerAdvance($state['anomaly']['state'], min($to, $limit), $fullUntil, $nothing, $runOreGoal);
+    if ($state['anomaly']['state']['runOre'] >= $runOreGoal) {
+        hbHubMinerAnomalyCheck($state, $given); // done, and back in the player's own game
+        return $offlineOre + hbHubMinerAdvance($state, $to, $fullUntil, $given);
+    }
+    if ($to < $limit) {
+        return $offlineOre;
+    }
+    hbHubMinerAnomalyLeave($state); // out of time
+    return $offlineOre + hbHubMinerAdvance($state, $to, $fullUntil, $given);
 }
 
 /**
@@ -1446,29 +3190,154 @@ function hbHubMinerRip(array &$state): bool
  *   hbHubMinerSync() for the limit.
  * - ['type' => 'buy', 'building' => id, 'amount' => 1, 10 or 100] (10 and 100 need Bulk Buying). With Max Buying any
  *   amount: the page works out how many the Max button can afford, and it's checked here like any other amount.
+ *   'auto' => true when Auto Buy bought it (left out otherwise): with the Auto Buy upgrade, 10 and 100 don't need Bulk
+ *   Buying, so it can buy a lot at once when there's a lot of ore (in Bare Metal too) instead of sending a buy for each.
  * - ['type' => 'upgrade', 'id' => id], ['type' => 'dark', 'id' => id] (a Dark Matter upgrade), ['type' => 'anti',
  *   'id' => id] (an Antimatter upgrade), ['type' => 'skill', 'id' => id] (learning a skill).
  * - ['type' => 'comet'], ['type' => 'warp'], ['type' => 'crunch'], ['type' => 'rip'].
+ * - ['type' => 'donate', 'what' => 'ore' or 'strange', 'parts' => n]: gives n parts to the Cosmic Engine, for ore
+ *   (hbHubMinerOreDonationCost(), at most hbHubMinerOrePartsMax() a day) or HBHUB_MINER_ENGINE_STRANGE_PART
+ *   Strange Matter each.
+ * - ['type' => 'anomalyStart', 'mods' => [id, ...]] (hbHubMinerAnomalyStart(), more than one for a stack),
+ *   ['type' => 'anomalyQuit'] (the run is lost), ['type' => 'anomalySave'] (hbHubMinerAnomalySave(): left, but kept),
+ *   ['type' => 'anomalyResume', 'key' => key] (hbHubMinerAnomalyResume()), ['type' => 'anomalyDrop', 'key' => key]
+ *   (throws a saved one away, in an Anomaly too).
+ * - ['type' => 'skin', 'id' => a key of HBHUB_MINER_SKINS the player has, or null for the asteroid's usual look].
+ * - ['type' => 'backdrop', 'id' => a key of HBHUB_MINER_BACKDROPS, or null], ['type' => 'sparks',
+ *   'on' => bool]: with their perks (hbHubMinerEnginePerk()). ['type' => 'shiftSwap', 'index' => n]:
+ *   hbHubMinerShiftSwap(). Like skin, these are the player's own game's, in an Anomaly too.
+ * - ['type' => 'shard'] (hbHubMinerCatchShard(), at the time of the game being played), ['type' => 'shopBuy', 'id' => a
+ *   key of HBHUB_MINER_SHOP] (hbHubMinerShopBuy()) and ['type' => 'effect', 'id' => a click effect bought, or null for
+ *   the usual rock bits]: the player's own game's too.
+ * In an Anomaly, everything else is played in its game instead (apart from learning skills, Big Rips and donating,
+ * which can't be done in there), and once its goal is reached it's done (hbHubMinerAnomalyCheck()).
+ * What's given to the Engine (donations, finished Engine Shifts and Anomalies) goes in $given as [source, parts], and
+ * for an Anomaly its key, time and week after that, for hbHubMinerSync() to put in. $given is null when the player
+ * can't give anything (guests): then donating doesn't count.
  */
-function hbHubMinerApply(array &$state, array $action): bool
+function hbHubMinerApply(array &$state, array $action, ?array &$given = null): bool
 {
     $type = $action['type'] ?? null;
+
+    if ($type === 'skin') {
+        $skinId = $action['id'] ?? null;
+        if ($skinId !== null && (!is_string($skinId) || !hbHubMinerSkinOpen($state, $skinId))) {
+            return false;
+        }
+        $state['skin'] = $skinId;
+        return true;
+    }
+
+    if ($type === 'backdrop') {
+        $backdropId = $action['id'] ?? null;
+        if (!hbHubMinerEnginePerk($state, 'backdrops')
+            || ($backdropId !== null && (!is_string($backdropId) || !isset(HBHUB_MINER_BACKDROPS[$backdropId])))) {
+            return false;
+        }
+        $state['backdrop'] = $backdropId;
+        return true;
+    }
+
+    if ($type === 'sparks') {
+        if (!hbHubMinerEnginePerk($state, 'sparks') || !is_bool($action['on'] ?? null)) {
+            return false;
+        }
+        $state['sparks'] = $action['on'];
+        return true;
+    }
+
+    if ($type === 'shiftSwap') {
+        return hbHubMinerShiftSwap($state, $action['index'] ?? null);
+    }
+
+    if ($type === 'shard') {
+        if (!hbHubMinerCatchShard($state, hbHubMinerGame($state)['tick'])) {
+            return false;
+        }
+        if ($state['anomaly'] === null) { // Shifts only count in the player's own game
+            hbHubMinerShift($state, 'shards', 1, $given);
+        }
+        return true;
+    }
+
+    if ($type === 'shopBuy') {
+        return hbHubMinerShopBuy($state, $action['id'] ?? null);
+    }
+
+    if ($type === 'effect') {
+        $effectId = $action['id'] ?? null;
+        if ($effectId !== null && (!is_string($effectId) || !in_array($effectId, $state['bought'], true)
+            || HBHUB_MINER_SHOP[$effectId]['kind'] !== 'effect')) {
+            return false;
+        }
+        $state['effect'] = $effectId;
+        return true;
+    }
+
+    if ($type === 'anomalyStart') {
+        return hbHubMinerAnomalyStart($state, $action['mods'] ?? null);
+    }
+
+    if ($type === 'anomalyQuit') {
+        if ($state['anomaly'] === null) {
+            return false;
+        }
+        hbHubMinerAnomalyLeave($state);
+        return true;
+    }
+
+    if ($type === 'anomalySave') {
+        return hbHubMinerAnomalySave($state);
+    }
+
+    if ($type === 'anomalyResume') {
+        return hbHubMinerAnomalyResume($state, $action['key'] ?? null, $given);
+    }
+
+    if ($type === 'anomalyDrop') {
+        $key = $action['key'] ?? null;
+        if (!is_string($key) || !isset($state['saved'][$key])) {
+            return false;
+        }
+        unset($state['saved'][$key]);
+        return true;
+    }
+
+    if ($state['anomaly'] !== null) {
+        $nothing = null;
+        if (in_array($type, ['skill', 'rip', 'donate'], true) || !hbHubMinerApply($state['anomaly']['state'], $action, $nothing)) {
+            return false;
+        }
+        hbHubMinerAnomalyCheck($state, $given);
+        return true;
+    }
 
     if ($type === 'click') {
         $count = (int) ($action['count'] ?? 0);
         if ($count < 1) {
             return false;
         }
+        $crits = $state['crits'];
+        $isStorm = false;
+        foreach ($state['buffs'] as $buff) {
+            $isStorm = $isStorm || ($buff['kind'] === 'storm' && $buff['until'] > $state['tick']);
+        }
         hbHubMinerClick($state, $count, ($action['auto'] ?? false) === true);
+        hbHubMinerShift($state, 'clicks', $count, $given);
+        hbHubMinerShift($state, 'crits', (int) ($state['crits'] - $crits), $given);
+        if ($isStorm) {
+            hbHubMinerShift($state, 'stormClicks', $count, $given);
+        }
         return true;
     }
 
     if ($type === 'buy') {
         $buildingId = $action['building'] ?? null;
         $amount = (int) ($action['amount'] ?? 1);
+        $isAutoBuy = ($action['auto'] ?? false) === true && hbHubMinerHasDark($state, 'autoBuy');
         if (!is_string($buildingId) || !isset(HBHUB_MINER_BUILDINGS[$buildingId]) || $amount < 1
-            || ($amount > 1 && !hbHubMinerHas($state, 'bulk'))
-            || (!in_array($amount, [1, 10, 100], true) && !hbHubMinerHas($state, 'bulkMax'))) {
+            || ($amount > 1 && !hbHubMinerHas($state, 'bulk') && !$isAutoBuy)
+            || (!in_array($amount, [1, 10, 100], true) && !hbHubMinerHas($state, 'bulkMax')) || !hbHubMinerCanBuild($state, $buildingId, $amount)) {
             return false;
         }
         $cost = hbHubMinerBuildingCost($state, $buildingId, $amount);
@@ -1477,6 +3346,8 @@ function hbHubMinerApply(array &$state, array $action): bool
         }
         $state['ore'] = max(0.0, $state['ore'] - $cost);
         $state['buildings'][$buildingId] += $amount;
+        hbHubMinerShift($state, 'buildings', $amount, $given);
+        hbHubMinerShift($state, 'buildings:' . $buildingId, $amount, $given);
         return true;
     }
 
@@ -1489,6 +3360,7 @@ function hbHubMinerApply(array &$state, array $action): bool
         }
         $state['ore'] = max(0.0, $state['ore'] - hbHubMinerUpgradeCost($state, $upgradeId));
         $state['upgrades'][] = $upgradeId;
+        hbHubMinerShift($state, 'upgrades', 1, $given);
         return true;
     }
 
@@ -1501,7 +3373,7 @@ function hbHubMinerApply(array &$state, array $action): bool
         $state['dark'] -= HBHUB_MINER_DARK_UPGRADES[$upgradeId]['cost'];
         $state['darkUpgrades'][] = $upgradeId;
         if ($upgradeId === 'headStart') { // works right away, so it's not wasted on the run it's bought in
-            $state['buildings']['drone'] = max($state['buildings']['drone'], HBHUB_MINER_HEAD_START);
+            $state['buildings']['drone'] = max($state['buildings']['drone'], hbHubMinerStartBuildings($state)['drone']);
         }
         return true;
     }
@@ -1533,30 +3405,130 @@ function hbHubMinerApply(array &$state, array $action): bool
     }
 
     if ($type === 'comet') {
-        return hbHubMinerCatchComet($state) !== null;
+        $kind = hbHubMinerCatchComet($state);
+        if ($kind === null) {
+            return false;
+        }
+        hbHubMinerShift($state, 'comets', 1, $given);
+        hbHubMinerShift($state, 'comets:' . $kind, 1, $given);
+        return true;
     }
 
     if ($type === 'warp') {
-        return hbHubMinerWarp($state);
+        $runMs = $state['tick'] - $state['runStarted']; // before the Warp Jump starts a new run
+        if (!hbHubMinerWarp($state)) {
+            return false;
+        }
+        hbHubMinerShift($state, 'warps', 1, $given);
+        if ($runMs < HBHUB_MINER_SHIFT_FAST_MS) {
+            hbHubMinerShift($state, 'fastWarps', 1, $given);
+        }
+        if ($runMs < HBHUB_MINER_SHIFT_QUICK_MS) {
+            hbHubMinerShift($state, 'quickWarps', 1, $given);
+        }
+        return true;
+    }
+
+    if ($type === 'donate') {
+        $parts = $action['parts'] ?? null;
+        if ($given === null || !hbHubMinerCanGive($state) || !is_int($parts) || $parts < 1) {
+            return false;
+        }
+        hbHubMinerEngineDay($state);
+        if (($action['what'] ?? null) === 'ore') {
+            if ($state['donatedToday'] + $parts > hbHubMinerOrePartsMax($state)
+                || !hbHubMinerCanAfford($state, hbHubMinerOreDonationCost($state, $parts))) {
+                return false;
+            }
+            $state['ore'] = max(0.0, $state['ore'] - hbHubMinerOreDonationCost($state, $parts));
+            $state['donatedToday'] += $parts;
+            // Worth less in the later sections: what doesn't make a whole part waits in engineOreRest for the next
+            $quarters = $state['engineOreRest'] + $parts * hbHubMinerOreQuarters($state);
+            $state['engineOreRest'] = $quarters % HBHUB_MINER_ENGINE_ORE_QUARTERS;
+            if ($quarters >= HBHUB_MINER_ENGINE_ORE_QUARTERS) {
+                hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_ORE, intdiv($quarters, HBHUB_MINER_ENGINE_ORE_QUARTERS)]);
+            }
+            hbHubMinerShift($state, 'oreParts', $parts, $given);
+            return true;
+        }
+        if (($action['what'] ?? null) === 'strange') {
+            if ($state['strange'] < $parts * HBHUB_MINER_ENGINE_STRANGE_PART) {
+                return false;
+            }
+            $state['strange'] -= $parts * HBHUB_MINER_ENGINE_STRANGE_PART;
+            hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_STRANGE, $parts]);
+            hbHubMinerShift($state, 'strangeParts', $parts, $given);
+            return true;
+        }
+        return false;
     }
 
     if ($type === 'crunch') {
-        return hbHubMinerCrunch($state);
+        if (!hbHubMinerCrunch($state)) {
+            return false;
+        }
+        hbHubMinerShift($state, 'crunches', 1, $given);
+        return true;
     }
 
     if ($type === 'rip') {
-        return hbHubMinerRip($state);
+        if (!hbHubMinerRip($state)) {
+            return false;
+        }
+        hbHubMinerShift($state, 'rips', 1, $given);
+        return true;
     }
 
     return false;
 }
 
 /**
- * A number an achievement checks (its 'stat'). owned:<building> is how many of it there are.
+ * Whether the player has the asteroid skin $skinId (a key of HBHUB_MINER_SKINS, see its 'unlock').
+ */
+function hbHubMinerSkinOpen(array $state, string $skinId): bool
+{
+    $unlock = HBHUB_MINER_SKINS[$skinId]['unlock'] ?? null;
+    return match (true) {
+        $unlock === null => false,
+        isset($unlock['anomaly']) => hbHubMinerAnomalyDone($state, $unlock['anomaly']),
+        isset($unlock['stage']) => $state['engineStage'] >= $unlock['stage'],
+        isset($unlock['crew']) => in_array($unlock['crew'], $state['crews'], true),
+        isset($unlock['shop']) => in_array($skinId, $state['bought'], true),
+        default => false,
+    };
+}
+
+/**
+ * The most Anomalies finished in one stack (1 for one on its own, 0 for none).
+ */
+function hbHubMinerBiggestStack(array $state): int
+{
+    $biggest = 0;
+    foreach ($state['anomalies'] as $key => $record) {
+        $biggest = max($biggest, count(explode('+', (string) $key)));
+    }
+    return $biggest;
+}
+
+/**
+ * A number an achievement checks (its 'stat'). owned:<building> is how many of it there are, anomaly:<id> whether that
+ * Anomaly is finished (alone or in a stack), tier:<n> how many of that tier's are.
  */
 function hbHubMinerStat(array $state, string $stat): float
 {
+    if (str_starts_with($stat, 'anomaly:')) {
+        return hbHubMinerAnomalyDone($state, substr($stat, 8)) ? 1 : 0;
+    }
+    if (str_starts_with($stat, 'tier:')) {
+        $tier = (int) substr($stat, 5);
+        return count(array_filter(array_keys(HBHUB_MINER_ANOMALIES), static fn (string $id): bool =>
+            HBHUB_MINER_ANOMALIES[$id]['tier'] === $tier && hbHubMinerAnomalyDone($state, $id)));
+    }
     return match ($stat) {
+        'anomalies' => count($state['anomalies']),
+        'stack' => hbHubMinerBiggestStack($state),
+        'lightHour' => isset($state['anomalies']['speedOfLight']) && $state['anomalies']['speedOfLight']['best'] < HBHUB_MINER_LIGHT_HOUR_MS ? 1 : 0,
+        'engineGiven', 'shiftDays', 'weeklies', 'shardsCaught' => (float) $state[$stat],
         'rate' => hbHubMinerRate($state, PHP_INT_MAX),
         'upgrades' => count($state['upgrades']),
         'buildings' => array_sum($state['buildings']),
@@ -1598,8 +3570,11 @@ function hbHubMinerCheckAchievements(array &$state): void
  * $guestState: a game played as a guest at /play/ore-mining-inc (opened from its token by the caller), to bring over
  * to the account after logging in or signing up from there. It only becomes the save when the user has none yet, so
  * it never writes over one; the answer's 'guest' then says 'imported', or 'kept' when the user's own save was kept.
+ * The parts the player gave the Cosmic Engine in these actions go in with the save, and the answer's 'engine' is how
+ * far it is (hbHubMinerEngineSummary(), with the top contributors and the latest parts given when $engineDetails).
  */
-function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $actions, array $recovered = [], ?array $guestState = null): array|string
+function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $actions, array $recovered = [], ?array $guestState = null,
+    bool $engineDetails = false): array|string
 {
     $db->beginTransaction();
     try {
@@ -1628,15 +3603,35 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         }
 
         $state = hbHubMinerNormalize(json_decode($row['saveState'], true, 64, JSON_THROW_ON_ERROR), $now);
-        $replay = hbHubMinerReplay($state, $actions, $recovered, $now);
+        $replay = hbHubMinerReplay($state, $actions, $recovered, $now, true);
+
+        // The parts given go into the Engine, locked so two saves can't both finish the same stage (always after the
+        // save's row, so they can't wait on each other), and the save gets the perks of every stage done so far
+        $engine = hbHubMinerEngineRow($db, $replay['given'] !== []);
+        if (hbHubMinerEngineDrainDue($engine)) { // Ignition's time ran out: this save drains it, with the row locked
+            $engine = hbHubMinerEngineRow($db, true);
+            if (hbHubMinerEngineDrainDue($engine)) {
+                hbHubMinerEngineDrain($db, $engine);
+            }
+        }
+        if ($replay['given'] !== []) {
+            hbHubMinerEngineGive($db, $engine, $userId, $replay['given']);
+            hbHubMinerAnomalyTimesSave($db, $userId, $replay['given']);
+        } elseif (hbHubMinerEngineRecheckDue($engine)) { // a full stage nobody can give to: is its lock met by now?
+            $engine = hbHubMinerEngineRow($db, true);
+            if (hbHubMinerEngineRecheckDue($engine)) {
+                hbHubMinerEngineRecheck($db, $engine);
+            }
+        }
+        hbHubMinerEngineAdopt($state, $engine, true, $db, $userId);
 
         $db->prepare('UPDATE `HBHub-MinerSaves` SET saveState = ?, saveTab = ?, saveOreAllTime = ?, saveOrePerSecond = ?,
-                saveDarkMatter = ?, saveAntimatter = ?, saveStrangeMatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?,
+                saveDarkMatter = ?, saveAntimatter = ?, saveStrangeMatter = ?, saveWarps = ?, saveClicks = ?, saveAchievements = ?, saveSkills = ?,
                 saveUpdatedTimestamp = UTC_TIMESTAMP(), saveRateCount = ?, saveRateTimestamp = IF(?, saveRateTimestamp, UTC_TIMESTAMP())
             WHERE userId = ?')
             ->execute([hbHubMinerEncode($state), $tab, $state['allOre'], hbHubMinerRate($state, PHP_INT_MAX), $state['darkEarned'],
                 $state['antimatterEarned'], $state['strangeEarned'], $state['warps'], $state['clicks'], count($state['achievements']),
-                $inRateWindow ? (int) $row['saveRateCount'] + 1 : 1, (int) $inRateWindow, $userId]);
+                count($state['skills']), $inRateWindow ? (int) $row['saveRateCount'] + 1 : 1, (int) $inRateWindow, $userId]);
         $db->commit();
     } catch (Throwable $e) {
         if ($db->inTransaction()) {
@@ -1650,20 +3645,23 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         'now' => $now,
         'offline' => $replay['offline'],
         'recovered' => $replay['recovered'],
+        'engine' => hbHubMinerEngineSummary($db, $engine, $userId, $engineDetails),
     ] + ($guestResult !== null ? ['guest' => $guestResult] : []);
 }
 
 /**
  * Plays what the player did since the last save on the game, up to $now: the part of hbHubMinerSync() that doesn't
  * touch the database, also used for guests (/play/ore-mining-inc, whose game is a token in their browser instead of a
- * row). $actions and $recovered are as hbHubMinerSync() takes them. Returns 'offline' (null, or ['ms' => away for,
- * 'ore' => mined meanwhile]) and 'recovered' (how many of $recovered counted).
+ * row). $actions and $recovered are as hbHubMinerSync() takes them. $canGive: a member, who can give parts to the
+ * Engine (guests can't). Returns 'offline' (null, or ['ms' => away for, 'ore' => mined meanwhile]), 'recovered' (how
+ * many of $recovered counted) and 'given' (what was given to the Engine, [source, parts] each, see hbHubMinerApply()).
  *
- * @return array{offline: ?array{ms: int, ore: float}, recovered: int}
+ * @return array{offline: ?array{ms: int, ore: float}, recovered: int, given: list<array{0: int, 1: int, 2?: string, 3?: int, 4?: ?int}>}
  */
-function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $now): array
+function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $now, bool $canGive = false): array
 {
-    $since = min($state['tick'], $now);
+    $given = $canGive ? [] : null;
+    $since = min(hbHubMinerGame($state)['tick'], $now); // in an Anomaly, its game's time is the one that moves
     $fullUntil = $since + HBHUB_MINER_ONLINE_MS;
     $clicksLeft = (int) floor(($now - $since) / 1000 * HBHUB_MINER_CLICKS_PER_SECOND) + HBHUB_MINER_CLICKS_PER_SECOND;
     $offlineOre = 0.0;
@@ -1680,19 +3678,24 @@ function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $
             $clicksLeft -= max(0, $action['count']);
         }
         $at = is_numeric($action['at'] ?? null) ? (int) $action['at'] : $now;
-        $offlineOre += hbHubMinerAdvance($state, max($state['tick'], min($at, $now)), $fullUntil);
-        if (hbHubMinerApply($state, $action)) {
+        $offlineOre += hbHubMinerAdvanceGame($state, max(hbHubMinerGame($state)['tick'], min($at, $now)), $fullUntil, $given);
+        // A Star Shard only counts while playing (the page never gets past $fullUntil without saving first)
+        if (($action['type'] ?? null) === 'shard' && hbHubMinerGame($state)['tick'] > $fullUntil) {
+            continue;
+        }
+        if (hbHubMinerApply($state, $action, $given)) {
             hbHubMinerCheckAchievements($state);
             if ($index < count($recovered)) {
                 $recoveredCount++;
             }
         }
     }
-    $offlineOre += hbHubMinerAdvance($state, $now, $fullUntil);
-    hbHubMinerCheckAchievements($state);
+    $offlineOre += hbHubMinerAdvanceGame($state, $now, $fullUntil, $given);
+    hbHubMinerCheckAchievements($state); // the player's own game only: what's done in an Anomaly stays in there
 
     return [
         'offline' => $offlineOre > 0 ? ['ms' => $now - $since, 'ore' => $offlineOre] : null,
         'recovered' => $recoveredCount,
+        'given' => $given ?? [],
     ];
 }

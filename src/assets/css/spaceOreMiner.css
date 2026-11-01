@@ -1,13 +1,18 @@
-/* Ore Mining Inc. (games/spaceOreMiner/): the buttons and the menu at the top, the four views (Ore: the asteroid and
-   the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree),
-   the popups (stats, achievements, how to play), the comet flying across the screen and the messages in the corner.
-   Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. */
+/* Ore Mining Inc. (games/spaceOreMiner/): the buttons at the top, the menu down the right side, the seven views (Ore: the asteroid and
+   the store; Dark Matter: the Warp Jump; Antimatter: the Big Crunch; Strange Matter: the Big Rip and the skill tree;
+   Engine: the Cosmic Engines; Anomalies: the challenge runs, with the banner over every view while in one; Shard Shop: spending
+   Star Shards), the popups (stats, achievements, how to play), the comet and the Star Shard flying across the
+   screen and the messages in the corner. Loaded after casino.css and games.css; spaceOreMiner.js fills it all in. The leaderboard
+   loads it too, for its tabs (.miner-menu). */
 .casino.miner {
   --miner-gold: #f5c542;
   --miner-diamond: #8be9ff;
   --miner-dark: #9d7bff;
   --miner-anti: #ff6bb5;
   --miner-strange: #5ef2a6;
+  --miner-engine: #ffa94d;
+  --miner-anomaly: #ff5d73;
+  --miner-shard: #ff9ee6; /* Star Shards, with --miner-diamond for their shimmer */
   --miner-gap: 16px;
   max-width: 1180px;
   margin: 0 auto;
@@ -36,8 +41,23 @@
   flex: none;
 }
 
+/* The top is kept small so the views get as much of the screen as they can: a smaller back link and title, and short
+   buttons */
+.miner > .casino-back {
+  margin-bottom: 2px;
+  font-size: 0.9rem;
+}
+
+.miner .casino-title-row {
+  margin-bottom: 0;
+}
+
+.miner .casino-title-row h1 {
+  font-size: 1.6rem;
+}
+
 .miner-title-icon {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
 }
 
 .miner-title-actions {
@@ -45,12 +65,13 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .miner-title-btn {
-  height: 46px;
-  padding: 0 14px;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 0.95rem;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -67,7 +88,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The menu between the views: one bar, the open view lit up in its own colour */
+/* The menu between the views: a bar, the open view lit up in its own colour. The game has three (.miner-menus), the
+   matters on top, Project Starbound and Anomalies under them, and the Shard Shop and Skins under those; the
+   leaderboard has one. */
 .miner-menu {
   margin: 8px 0 12px;
   padding: 4px;
@@ -75,6 +98,16 @@
   gap: 4px;
   border-radius: 14px;
   background: var(--secondary);
+}
+
+.miner-menus {
+  margin: 8px 0 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.miner-menus .miner-menu {
+  margin: 0;
 }
 
 .miner-menu-link {
@@ -107,6 +140,22 @@
   --miner-view-colour: var(--miner-strange);
 }
 
+.miner-menu-link.is-anomalies {
+  --miner-view-colour: var(--miner-anomaly);
+}
+
+.miner-menu-link.is-starbound {
+  --miner-view-colour: var(--miner-engine);
+}
+
+.miner-menu-link.is-shop {
+  --miner-view-colour: var(--miner-shard);
+}
+
+.miner-menu-link.is-skins {
+  --miner-view-colour: var(--miner-diamond);
+}
+
 .miner-menu-link:hover {
   background: color-mix(in srgb, var(--text) 6%, transparent);
   opacity: 1;
@@ -127,6 +176,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* "Project " in front of Starbound, only where the menu is a column with room for it (below) */
+.miner-menu-long {
+  display: none;
 }
 
 .miner-menu-count {
@@ -158,10 +212,85 @@
   to { box-shadow: 0 0 10px var(--miner-view-colour); }
 }
 
+/* The menu and the views (.miner-body, with the views and the Anomaly banner in .miner-stage). On small screens the
+   menu is the bars above the views; on wide ones it's a column down the right side, so the views get the whole
+   height under the title. */
+.miner-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.miner-stage {
+  min-width: 0;
+}
+
+@media (min-width: 861px) {
+  .casino.miner {
+    max-width: 1380px;
+  }
+
+  .miner-body {
+    margin-top: 10px;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--miner-gap);
+  }
+
+  .miner-stage {
+    flex: 1 1 0;
+  }
+
+  /* After the views, though it comes first in the page, and staying in sight while a long view scrolls */
+  .miner-body > .miner-menus {
+    order: 1;
+    width: 190px;
+    flex: none;
+    margin: 0;
+    align-content: start;
+    position: sticky;
+    top: calc(var(--nav-top-h, 0px) + var(--miner-gap));
+  }
+
+  .miner-menus .miner-menu {
+    flex-direction: column;
+  }
+
+  .miner-menu-long {
+    display: inline;
+  }
+
+  /* The name with the amount under it, so long numbers fit */
+  .miner-menus .miner-menu-link {
+    flex: none;
+    padding: 9px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+  }
+
+  .miner-menus .miner-menu-text,
+  .miner-menus .miner-menu-count {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .miner-menus .miner-menu-count {
+    font-size: 0.9rem;
+  }
+
+  .miner-menus .miner-menu-news {
+    top: 50%;
+    right: 12px;
+    margin-top: -4.5px;
+  }
+}
+
 /* The sound button: the speaker with waves when on, crossed out when off */
 .miner-sound {
-  width: 46px;
-  height: 46px;
+  width: 38px;
+  height: 38px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -169,8 +298,8 @@
 }
 
 .miner-sound-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -183,11 +312,12 @@
   display: none;
 }
 
-/* The news ticker, between the title and the menu */
+/* The news ticker, under the title */
 .miner-ticker {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   flex: none;
-  padding: 10px 16px;
+  padding: 6px 14px;
+  font-size: 0.95rem;
   overflow: hidden;
   border-radius: 12px;
   background: color-mix(in srgb, var(--accent) 10%, var(--secondary));
@@ -351,6 +481,18 @@
   background: color-mix(in srgb, var(--miner-diamond) 30%, var(--background));
 }
 
+/* The Afterglow from finishing an Anomaly: hours long, so it doesn't pulse like a comet's */
+.miner-buff.is-afterglow {
+  background: color-mix(in srgb, var(--miner-anomaly) 25%, var(--background));
+  animation: none;
+}
+
+/* Project Starbound's launch (Ignition, First Light): three days long, so it doesn't pulse either */
+.miner-buff.is-ignition {
+  background: color-mix(in srgb, var(--miner-engine) 25%, var(--background));
+  animation: none;
+}
+
 .miner-buff-time {
   font-variant-numeric: tabular-nums;
   opacity: 0.8;
@@ -362,19 +504,22 @@
 
 /* The asteroid. Its colours change with data-stage (0 grey rock, 1 iron, 2 gold, 3 crystal, 4 alien core, 5 molten,
    6 amethyst, 7 neutron star, 8 black hole core, 9 nebula heart). The space
-   around it takes what's left of the card's height. The variables size the buildings in the picture (see "The
-   buildings in the picture" below), and get smaller with the asteroid on small screens. */
+   around it takes all that's left of the card's height. The variables size the buildings in the picture (see "The
+   buildings in the picture" below). On big screens they grow with the picture (it's a size container, and cq units in
+   them are worked out where they're used, inside it), but not so much the drones and the Dyson Swarm stick out of its
+   sides; the buildings out in space are placed by % of the picture, so they spread out into a tall one by themselves.
+   On small screens they're set sizes, smaller with the asteroid. */
 .miner-field {
-  --rock-r: 110px; /* half the asteroid's width */
-  --sprite: 1.5rem; /* the size of a building's icon */
-  --gap: 18px; /* how far out the drones and lasers are, in steps */
+  --rock-r: clamp(110px, min(24cqh, 25cqw), 170px); /* half the asteroid's width */
+  --sprite: calc(var(--rock-r) * 0.218); /* the size of a building's icon: 1.5rem at the smallest */
+  --gap: calc(var(--rock-r) * 0.164); /* how far out the drones and lasers are, in steps: 18px at the smallest */
   --work: 1; /* how fast the miners in the picture work: 3 during a Supernova or a Diamond Rush */
   position: relative;
   isolation: isolate;
+  container-type: size;
   flex: 1 1 260px;
   width: 100%;
   min-height: 200px;
-  max-height: 360px;
   display: grid;
   place-items: center;
   user-select: none;
@@ -415,8 +560,8 @@
   --rock-glow: transparent;
   position: relative;
   z-index: 1; /* between what's behind it and what's in front of it in the picture */
-  width: 220px;
-  height: 210px;
+  width: calc(var(--rock-r) * 2);
+  height: calc(var(--rock-r) * 1.91);
   padding: 0;
   border: none;
   border-radius: 46% 54% 50% 50% / 52% 45% 55% 48%;
@@ -602,8 +747,8 @@
 .miner-orbit {
   position: absolute;
   z-index: 2;
-  width: 290px;
-  height: 290px;
+  width: calc(var(--rock-r) * 2.64);
+  height: calc(var(--rock-r) * 2.64);
   border-radius: 50%;
   pointer-events: none;
   animation: miner-orbit 7s linear infinite;
@@ -1353,7 +1498,7 @@
   left: 50%;
   top: 50%;
   width: calc(var(--rock-r) * 0.6);
-  height: 86%; /* leaves room for the drills over the ends */
+  height: min(86%, calc(var(--rock-r) * 2.9)); /* leaves room for the drills over the ends, and doesn't stretch up a tall picture */
   translate: -50% -50%;
   rotate: 24deg;
   z-index: -1;
@@ -1514,6 +1659,374 @@
 /* Two tiles' heights down each, so it loops without a jump */
 @keyframes miner-rift-stars {
   to { background-position: 0 46px, 0 38px, 0 0; }
+}
+
+/* The five after the Multiverse Drill, out at the edges of the picture and away from the asteroid and everything else
+   (two along the top, one on the right and two along the bottom), each drawn in pieces like the Star Forge: the body
+   sizes the sprite and the rest lie over it, in the order they're in SCENE. In % of a piece is in the 32 by 32 of the
+   icons, so 50% 25% is (16, 8) there. */
+.miner-sprite:is(.is-timeQuarry, .is-stringLoom, .is-bigBangReactor, .is-realityPrinter, .is-infinityMine) {
+  translate: -50% -50%;
+  font-size: calc(var(--sprite) * 1.75);
+}
+
+.miner-sprite:is(.is-timeQuarry, .is-stringLoom, .is-bigBangReactor, .is-realityPrinter, .is-infinityMine) > * {
+  position: absolute;
+  inset: 0;
+}
+
+.miner-sprite:is(.is-timeQuarry, .is-stringLoom, .is-bigBangReactor, .is-realityPrinter, .is-infinityMine) > .miner-sprite-body {
+  position: relative;
+}
+
+/* Time Quarry: a quarry dug down through the layers of time, with an ammonite in the oldest one. Over it a rift to
+   next week opens, three bits of ore fall out of it one after another into the pit (gold, a crystal, then a gem on
+   top), the rift closes, and the pile fades away as it's taken off to be sold. Each bit is drawn where it lands and
+   falls from the rift to there. */
+.miner-sprite.is-timeQuarry {
+  left: 40%;
+  top: 8%;
+  --cycle: calc(5s / var(--work));
+  filter: drop-shadow(0 0 0.1em rgba(157, 123, 255, 0.5));
+}
+
+.miner-sprite.is-timeQuarry .miner-sprite-rift .miner-icon {
+  transform-origin: 50% 8.75%; /* the middle of the rift, (16, 2.8) */
+  animation: miner-quarry-rift var(--cycle) ease-in-out infinite;
+}
+
+.miner-sprite.is-timeQuarry :is(.miner-sprite-gold, .miner-sprite-crystal, .miner-sprite-gem) .miner-icon {
+  animation: var(--drop) var(--cycle) linear infinite;
+}
+
+.miner-sprite.is-timeQuarry .miner-sprite-gold .miner-icon {
+  transform-origin: 43.75% 57.8%; /* (14, 18.5) */
+  --drop: miner-quarry-gold;
+}
+
+.miner-sprite.is-timeQuarry .miner-sprite-crystal .miner-icon {
+  transform-origin: 56.25% 56.9%; /* (18, 18.2) */
+  --drop: miner-quarry-crystal;
+}
+
+.miner-sprite.is-timeQuarry .miner-sprite-gem .miner-icon {
+  transform-origin: 50% 50.6%; /* (16, 16.2) */
+  --drop: miner-quarry-gem;
+}
+
+@keyframes miner-quarry-rift {
+  0% { scale: 0 0.2; opacity: 0; }
+  10% { scale: 1.1 1.2; opacity: 1; }
+  14%, 66% { scale: 1; opacity: 1; }
+  74%, 100% { scale: 0 0.2; opacity: 0; }
+}
+
+/* Out of the rift small, down into the pit getting faster, a little bounce, then there until the pile goes */
+@keyframes miner-quarry-gold {
+  0%, 17% { opacity: 0; translate: 0 -0.46em; scale: 0.4; }
+  18% { opacity: 1; translate: 0 -0.46em; scale: 0.4; animation-timing-function: ease-in; }
+  30% { translate: 0 0; scale: 1; animation-timing-function: ease-out; }
+  33% { translate: 0 -0.03em; animation-timing-function: ease-in; }
+  36%, 82% { opacity: 1; translate: 0 0; scale: 1; }
+  92%, 100% { opacity: 0; translate: 0 0; scale: 1; }
+}
+
+@keyframes miner-quarry-crystal {
+  0%, 31% { opacity: 0; translate: 0 -0.45em; scale: 0.4; }
+  32% { opacity: 1; translate: 0 -0.45em; scale: 0.4; animation-timing-function: ease-in; }
+  44% { translate: 0 0; scale: 1; animation-timing-function: ease-out; }
+  47% { translate: 0 -0.03em; animation-timing-function: ease-in; }
+  50%, 82% { opacity: 1; translate: 0 0; scale: 1; }
+  92%, 100% { opacity: 0; translate: 0 0; scale: 1; }
+}
+
+@keyframes miner-quarry-gem {
+  0%, 45% { opacity: 0; translate: 0 -0.39em; scale: 0.4; }
+  46% { opacity: 1; translate: 0 -0.39em; scale: 0.4; animation-timing-function: ease-in; }
+  56% { translate: 0 0; scale: 1; animation-timing-function: ease-out; }
+  59% { translate: 0 -0.03em; animation-timing-function: ease-in; }
+  62%, 82% { opacity: 1; translate: 0 0; scale: 1; }
+  92%, 100% { opacity: 0; translate: 0 0; scale: 1; }
+}
+
+/* Loom of Time: its strings twang (flicking between bent one way and the other), and the shuttle shoots across and back,
+   leaving a gold thread behind it each way (::before going right, ::after coming back) that's pushed down into the
+   cloth. */
+.miner-sprite.is-stringLoom {
+  left: 76%;
+  top: 8%;
+  --cycle: calc(2s / var(--work));
+  filter: drop-shadow(0 0 0.1em rgba(255, 107, 181, 0.5));
+}
+
+.miner-sprite.is-stringLoom .miner-sprite-strings {
+  animation: miner-loom-twang calc(0.14s / var(--work)) linear infinite alternate;
+}
+
+.miner-sprite.is-stringLoom .miner-sprite-bent {
+  animation: miner-loom-twang calc(0.14s / var(--work)) linear infinite alternate-reverse;
+}
+
+.miner-sprite.is-stringLoom .miner-sprite-shuttle {
+  animation: miner-loom-shuttle var(--cycle) ease-in-out infinite;
+}
+
+/* Across the strings at the shuttle's height (15.2), from x 7 to 25 */
+.miner-sprite.is-stringLoom .miner-sprite-thread::before,
+.miner-sprite.is-stringLoom .miner-sprite-thread::after {
+  content: "";
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  top: 47.5%;
+  height: 0.025em;
+  background: var(--miner-gold);
+  box-shadow: 0 0 0.05em var(--miner-gold);
+  transform-origin: 0 50%;
+  animation: miner-loom-thread var(--cycle) ease-in-out infinite;
+}
+
+.miner-sprite.is-stringLoom .miner-sprite-thread::after {
+  background: var(--miner-anti);
+  box-shadow: 0 0 0.05em var(--miner-anti);
+  transform-origin: 100% 50%;
+  animation-delay: calc(var(--cycle) / -2);
+}
+
+@keyframes miner-loom-twang {
+  from { opacity: 1; }
+  to { opacity: 0.15; }
+}
+
+@keyframes miner-loom-shuttle {
+  0% { translate: -0.19em 0; rotate: 0deg; }
+  40%, 50% { translate: 0.19em 0; rotate: 6deg; }
+  90%, 100% { translate: -0.19em 0; rotate: -6deg; }
+}
+
+/* Following the shuttle across (it goes the same way, 0 to 40%), then pushed down into the cloth */
+@keyframes miner-loom-thread {
+  0% { opacity: 1; scale: 0 1; translate: 0 0; }
+  40% { opacity: 1; scale: 1 1; translate: 0 0; }
+  50%, 100% { opacity: 0; scale: 1 1; translate: 0 0.18em; }
+}
+
+/* Big Bang Reactor: a little universe in a window, two rings spinning round it. It gathers itself up, brighter and
+   brighter, and goes bang (at 78% of --cycle): the whole thing shakes, a flash and a shock wave go out of it and bits of
+   new galaxy fly off in every direction (::after of .miner-sprite-blast, the bits being its shadows). Then it's back
+   to a tiny dot to start again. */
+.miner-sprite.is-bigBangReactor {
+  left: 5%;
+  top: 94%;
+  --cycle: calc(4s / var(--work));
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-body {
+  animation: miner-bang-shake var(--cycle) linear infinite;
+}
+
+.miner-sprite.is-bigBangReactor :is(.miner-sprite-core, .miner-sprite-ring, .miner-sprite-ring2) {
+  transform-origin: 50% 43.75%; /* the middle of the window, (16, 14) */
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-core {
+  animation: miner-bang-core var(--cycle) ease-in infinite;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-ring {
+  animation: miner-spin calc(2.4s / var(--work)) linear infinite;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-ring2 {
+  animation: miner-spin calc(3.4s / var(--work)) linear infinite reverse;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-blast {
+  inset: 43.75% auto auto 50%;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-blast::before,
+.miner-sprite.is-bigBangReactor .miner-sprite-blast::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+/* The flash and the shock wave round it */
+.miner-sprite.is-bigBangReactor .miner-sprite-blast::before {
+  width: 1em;
+  height: 1em;
+  margin: -0.5em 0 0 -0.5em;
+  border: 0.05em solid #fff6c2;
+  background: radial-gradient(circle closest-side, rgba(255, 255, 255, 0.9), rgba(255, 217, 94, 0.5) 45%, transparent);
+  box-shadow: 0 0 0.25em var(--miner-gold);
+  animation: miner-bang-wave var(--cycle) ease-out infinite;
+}
+
+.miner-sprite.is-bigBangReactor .miner-sprite-blast::after {
+  width: 0.06em;
+  height: 0.06em;
+  margin: -0.03em 0 0 -0.03em;
+  background: #ffd95e;
+  box-shadow: 0.3em 0.02em #ff6bb5, -0.26em 0.16em #8be9ff, 0.12em -0.3em #7cf04a, -0.18em -0.26em #fff,
+    0.22em 0.24em #9d7bff, -0.32em -0.04em #ff8a3d, 0.04em 0.33em #fff, -0.06em -0.34em #ffd95e;
+  animation: miner-bang-bits var(--cycle) ease-out infinite;
+}
+
+@keyframes miner-bang-shake {
+  0%, 76%, 90%, 100% { translate: 0 0; }
+  78% { translate: -0.04em 0.015em; }
+  80% { translate: 0.035em -0.015em; }
+  82% { translate: -0.025em 0; }
+  85% { translate: 0.015em 0.01em; }
+}
+
+@keyframes miner-bang-core {
+  0% { scale: 0.35; filter: brightness(0.9); }
+  74% { scale: 1; filter: brightness(1.3) drop-shadow(0 0 0.08em #ffd95e); }
+  78% { scale: 1.3; filter: brightness(2.4) drop-shadow(0 0 0.3em #fff6c2); }
+  90% { scale: 0.3; filter: brightness(1); }
+  100% { scale: 0.35; filter: brightness(0.9); }
+}
+
+@keyframes miner-bang-wave {
+  0%, 76% { opacity: 0; scale: 0.2; }
+  79% { opacity: 1; scale: 0.5; }
+  96%, 100% { opacity: 0; scale: 1.9; }
+}
+
+@keyframes miner-bang-bits {
+  0%, 77% { opacity: 0; scale: 0.1; rotate: 0deg; }
+  80% { opacity: 1; }
+  100% { opacity: 0; scale: 2.2; rotate: 70deg; }
+}
+
+/* Reality Printer: the print head whizzes back and forth and the whole printer shakes while a sheet comes out of the
+   slot a line at a time (it starts up behind the printer, out of sight). On it is a planet, which then comes up off
+   the page for real, spinning off into space, and the sheet drops away. */
+.miner-sprite.is-realityPrinter {
+  left: 94%;
+  top: 30%;
+  --cycle: calc(3.6s / var(--work));
+}
+
+.miner-sprite.is-realityPrinter .miner-sprite-body {
+  animation: miner-print calc(0.9s / var(--work)) steps(2) infinite;
+}
+
+.miner-sprite.is-realityPrinter .miner-sprite-head {
+  animation: miner-print-head calc(0.45s / var(--work)) ease-in-out infinite alternate;
+}
+
+.miner-sprite.is-realityPrinter .miner-sprite-sheet {
+  animation: miner-print-sheet var(--cycle) linear infinite;
+}
+
+.miner-sprite.is-realityPrinter .miner-sprite-planet {
+  transform-origin: 50% 76%; /* the planet, (16, 24.4) */
+  animation: miner-print-planet var(--cycle) ease-out infinite;
+}
+
+@keyframes miner-print {
+  0% { translate: -0.03em 0; }
+  50% { translate: 0.03em -0.02em; }
+  100% { translate: -0.03em 0; }
+}
+
+/* Along the window in the front, from x 6 to 19 */
+@keyframes miner-print-head {
+  from { translate: -0.15em 0; }
+  to { translate: 0.15em 0; }
+}
+
+@keyframes miner-print-sheet {
+  0%, 8% { opacity: 1; translate: 0 -0.36em; animation-timing-function: steps(6, end); }
+  56% { opacity: 1; translate: 0 0; animation-timing-function: linear; }
+  76% { opacity: 1; translate: 0 0; }
+  92% { opacity: 0; translate: 0 0.14em; }
+  93%, 100% { opacity: 0; translate: 0 -0.36em; }
+}
+
+@keyframes miner-print-planet {
+  0%, 58% { opacity: 0; translate: 0 0; scale: 1; rotate: 0deg; }
+  62% { opacity: 1; translate: 0 -0.04em; scale: 1.15; }
+  90% { opacity: 1; translate: -0.5em -0.3em; scale: 1.35; rotate: -25deg; }
+  100% { opacity: 0; translate: -0.65em -0.4em; scale: 0.7; rotate: -35deg; }
+}
+
+/* Infinity Mine: a way into a tunnel that never ends, rings of light coming up out of the deep (::before and ::after,
+   half a trip apart) under a glowing sign that keeps turning over, and carts of ore rolling in along the rails and
+   getting smaller and smaller down it. The tunnel is cut to the shape of the hole in the entrance (x 7.5 to 24.5, y 7.5
+   to 31, round at the top), the deepest point where the rails meet (16, 21). */
+.miner-sprite.is-infinityMine {
+  left: 60%;
+  top: 93%;
+  --cycle: calc(3s / var(--work));
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-body {
+  animation: miner-infinity calc(5s / var(--work)) ease-in-out infinite alternate;
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-tunnel {
+  overflow: hidden;
+  clip-path: inset(23.4% 23.4% 3% round 50% 50% 0 0 / 26% 26% 0 0);
+  background: radial-gradient(circle at 50% 66%, #fff 0 0.02em, #8be9ff 0.05em, #5f45c9 0.12em, #1c0f40 0.3em, #0a0518 0.5em);
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-tunnel::before,
+.miner-sprite.is-infinityMine .miner-sprite-tunnel::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 66%;
+  width: 0.7em;
+  height: 0.7em;
+  margin: -0.35em 0 0 -0.35em;
+  box-sizing: border-box;
+  border: 0.035em solid #8be9ff;
+  border-radius: 50%;
+  animation: miner-infinity-ring calc(1.6s / var(--work)) ease-in infinite;
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-tunnel::after {
+  border-color: var(--miner-dark);
+  animation-delay: calc(-0.8s / var(--work));
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-sign {
+  transform-origin: 50% 16.25%; /* the middle of the sign, (16, 5.2) */
+  animation: miner-infinity-sign calc(3s / var(--work)) ease-in-out infinite;
+}
+
+.miner-sprite.is-infinityMine .miner-sprite-cart {
+  transform-origin: 50% 81%; /* the middle of the cart, (16, 26) */
+  animation: miner-infinity-cart var(--cycle) ease-in infinite;
+}
+
+@keyframes miner-infinity {
+  from { filter: drop-shadow(0 0 0.05em rgba(139, 233, 255, 0.4)); }
+  to { filter: drop-shadow(0 -0.2em 0.3em rgba(157, 123, 255, 0.9)); }
+}
+
+@keyframes miner-infinity-ring {
+  from { opacity: 0; scale: 0; }
+  25% { opacity: 1; }
+  to { opacity: 0.3; scale: 1.5; }
+}
+
+@keyframes miner-infinity-sign {
+  0%, 100% { scale: 1 1; filter: drop-shadow(0 0 0.04em #ffd95e); }
+  50% { scale: -1 1; filter: drop-shadow(0 0 0.18em #ffd95e); }
+}
+
+/* From the front, down the rails to where they meet (5 lower in the icon) */
+@keyframes miner-infinity-cart {
+  0% { opacity: 0; translate: 0 0.05em; scale: 1; }
+  12% { opacity: 1; translate: 0 0; scale: 1; }
+  80% { opacity: 0.6; translate: 0 -0.16em; scale: 0.15; }
+  86%, 100% { opacity: 0; translate: 0 -0.17em; scale: 0.05; }
 }
 
 /* A Supernova or a Diamond Rush: everyone works three times as fast */
@@ -2204,11 +2717,1908 @@
   opacity: 0.35;
 }
 
-.miner-prestige.is-locked .miner-prestige-art > * {
+.miner-prestige.is-locked .miner-prestige-art > *,
+.miner-prestige.is-locked .miner-art-slice::before {
   animation-play-state: paused;
 }
 
 /* The jump's side: its name, what you have and what it does for you, the bar towards the next jump and its button */
+/* The Engine (.miner-prestige.is-engine): the Engine drawn as a rocket on its launch pad (.miner-rocket, filled in by
+   renderRocket() in spaceOreMiner.js), one part for each stage. A part is a .miner-rocket-part: blueprint outlines
+   until its stage is done (is-done), marching ants while it's the one being built (is-now), whose filled-in copy in
+   .miner-rocket-fill rises as parts come in. The rocket as a whole is is-building (the welder and crane at work),
+   is-locked (a padlock instead), is-built (every stage done, the flame burning on the pad) or is-launching (lifting
+   off, 6 s, as long as ROCKET_LAUNCH_MS). Each Engine has its own paint (data-engine, the --rk-* colours). */
+.miner-prestige.is-engine {
+  --view: var(--miner-engine);
+  --view-2: #ffe08a;
+}
+
+.miner-prestige.is-engine .miner-prestige-hero {
+  grid-template-columns: 250px minmax(0, 1fr);
+}
+
+.miner-rocket-art {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+}
+
+/* Engine #1, the Cosmic Engine: white hull, orange fins, gold seals. The little rockets of Engines done before keep
+   their own paint (.miner-rocket-mini). */
+.miner-rocket,
+.miner-rocket-mini {
+  --rk-hull: #e7ebf2;
+  --rk-light: #ffffff;
+  --rk-shade: #8792a6;
+  --rk-hull-2: var(--miner-engine);
+  --rk-trim: var(--miner-gold);
+  --rk-metal: #6b7486;
+  --rk-glass: var(--miner-diamond);
+  --rk-glow: #ffe08a;
+  --rk-pipe: #4dabf7;
+  --rk-blue: #6ec1ff; /* the blueprint's lines */
+}
+
+/* Engine #2, the Starforge: dark iron and embers */
+.miner-rocket[data-engine="2"],
+.miner-rocket-mini[data-engine="2"] {
+  --rk-hull: #545a68;
+  --rk-light: #9aa2b4;
+  --rk-shade: #23262e;
+  --rk-hull-2: #e8590c;
+  --rk-trim: #ffb347;
+  --rk-glass: #ffd36b;
+  --rk-glow: #ff8a3d;
+  --rk-pipe: #ff6b3d;
+}
+
+.miner-rocket {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--view) 20%, transparent), transparent 60%);
+}
+
+.miner-rocket stop.is-hull { stop-color: var(--rk-hull); }
+.miner-rocket stop.is-light { stop-color: var(--rk-light); }
+.miner-rocket stop.is-shade { stop-color: var(--rk-shade); }
+
+.miner-rocket-ground {
+  fill: color-mix(in srgb, var(--text) 8%, var(--background));
+}
+
+.miner-rocket-pad {
+  fill: #3a404c;
+  stroke: #5b6475;
+}
+
+.miner-rocket-crane .is-line {
+  stroke: color-mix(in srgb, var(--text) 25%, transparent);
+  stroke-width: 1.5;
+}
+
+.miner-rocket-trolley {
+  fill: var(--miner-gold);
+}
+
+.miner-rocket-cable {
+  stroke: color-mix(in srgb, var(--text) 45%, transparent);
+  stroke-width: 1;
+  display: none;
+}
+
+/* A part once its stage is done (and the filled-in copy of the one being built): painted */
+.miner-rocket :is(.is-hull, .is-hull-2, .is-trim, .is-metal, .is-glass, .is-screen) {
+  stroke: var(--rk-shade);
+  stroke-width: 0.8;
+}
+
+.miner-rocket .is-hull { fill: url(#miner-rocket-shine); }
+.miner-rocket .is-hull-2 { fill: var(--rk-hull-2); }
+.miner-rocket .is-trim { fill: var(--rk-trim); }
+.miner-rocket .is-metal { fill: var(--rk-metal); }
+.miner-rocket .is-glass { fill: var(--rk-glass); }
+
+.miner-rocket .is-screen {
+  fill: #0b1620;
+  stroke: var(--rk-metal);
+}
+
+/* The Star Charts' window has a gold rim, and its constellation is drawn in faint lines between the stars */
+.miner-rocket .is-chart {
+  stroke: var(--rk-trim);
+  stroke-width: 1.2;
+}
+
+.miner-rocket .is-stars {
+  stroke: var(--rk-glow);
+  stroke-width: 0.6;
+  opacity: 0.7;
+}
+
+.miner-rocket .is-glow {
+  fill: var(--rk-glow);
+  stroke: none;
+  animation: miner-rocket-glow 1.6s ease-in-out infinite alternate;
+}
+
+.miner-rocket .is-lamp {
+  fill: var(--miner-strange);
+  animation: miner-rocket-blink 1.4s steps(1) infinite;
+}
+
+.miner-rocket .is-lamp.is-2 { animation-delay: -0.5s; }
+.miner-rocket .is-lamp.is-3 { animation-delay: -0.9s; }
+
+.miner-rocket :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-stars) {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.miner-rocket .is-line {
+  stroke: var(--rk-metal);
+  stroke-width: 2;
+}
+
+.miner-rocket .is-line.is-thick { stroke-width: 4; }
+
+.miner-rocket .is-pipe {
+  stroke: var(--rk-pipe);
+  stroke-width: 3;
+}
+
+.miner-rocket .is-hose {
+  stroke: var(--rk-hull-2);
+  stroke-width: 3;
+}
+
+/* Power running down the Power Grid's wires */
+.miner-rocket .is-wire {
+  stroke: var(--rk-glow);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  animation: miner-rocket-march 0.8s linear infinite;
+}
+
+.miner-rocket .is-coil {
+  stroke: #d08a4a;
+  stroke-width: 1.5;
+}
+
+.miner-rocket .is-spark {
+  stroke: #fff6b0;
+  stroke-width: 1.5;
+  animation: miner-rocket-blink 0.5s steps(1) infinite;
+}
+
+.miner-rocket .is-flame,
+.miner-rocket .is-flame-core {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: miner-rocket-flame 0.15s ease-in-out infinite alternate;
+}
+
+.miner-rocket .is-flame { fill: var(--miner-engine); }
+.miner-rocket .is-flame-core { fill: #fff3bf; }
+
+.miner-rocket-clock {
+  fill: #ff6b6b;
+  font: 800 11px ui-monospace, Consolas, monospace;
+}
+
+.miner-rocket.is-urgent .miner-rocket-clock {
+  animation: miner-rocket-blink 1s steps(1) infinite;
+}
+
+/* The parts not done yet: blueprint outlines, the one being built with marching ants */
+.miner-rocket .miner-rocket-part:not(.is-done) > * {
+  fill: color-mix(in srgb, var(--rk-blue) 7%, transparent);
+  stroke: color-mix(in srgb, var(--rk-blue) 40%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+  animation: none;
+}
+
+.miner-rocket .miner-rocket-part:not(.is-done) > :is(.is-line, .is-pipe, .is-hose, .is-wire, .is-coil, .is-spark, .is-stars) {
+  fill: none;
+}
+
+.miner-rocket .miner-rocket-part:not(.is-done) > text {
+  display: none;
+}
+
+.miner-rocket .miner-rocket-part.is-now > * {
+  stroke: var(--rk-blue);
+  animation: miner-rocket-march 1s linear infinite;
+}
+
+.miner-rocket-part {
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.miner-rocket-part.is-picked {
+  filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px var(--view));
+}
+
+.miner-rocket-fill,
+.miner-rocket-welder,
+.miner-rocket-padlock,
+.miner-rocket-smoke {
+  pointer-events: none;
+}
+
+/* The welder on the fill's line and the crane's hook while a stage is being built */
+.miner-rocket-welder {
+  display: none;
+}
+
+.miner-rocket.is-building :is(.miner-rocket-welder, .miner-rocket-cable),
+.miner-rocket.is-locked .miner-rocket-cable {
+  display: inline;
+}
+
+.miner-rocket-welder .is-ball {
+  fill: #fffbe6;
+  filter: drop-shadow(0 0 3px #8be9ff) drop-shadow(0 0 6px #4dabf7);
+  animation: miner-rocket-weld 0.3s steps(2) infinite;
+}
+
+/* The padlock on a full stage waiting for its lock */
+.miner-rocket-padlock {
+  display: none;
+}
+
+.miner-rocket.is-locked .miner-rocket-padlock {
+  display: inline;
+}
+
+.miner-rocket-padlock rect {
+  fill: var(--miner-gold);
+  stroke: #6b4e00;
+}
+
+.miner-rocket-padlock .is-shackle {
+  fill: none;
+  stroke: #c9ced8;
+  stroke-width: 3;
+}
+
+.miner-rocket-padlock .is-hole {
+  fill: #6b4e00;
+}
+
+.miner-rocket-padlock > * {
+  animation: miner-rocket-glow 1.2s ease-in-out infinite alternate;
+}
+
+/* Every stage done: the flame burns on the pad with smoke round it, until the next Engine starts. Lifting off: the
+   rocket shakes, the clamps and fuel lines let go and up it goes. */
+.miner-rocket-smoke {
+  display: none;
+  fill: color-mix(in srgb, #c9ced8 55%, transparent);
+}
+
+.miner-rocket:is(.is-built, .is-launching) .miner-rocket-smoke {
+  display: inline;
+}
+
+.miner-rocket-smoke circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: miner-rocket-smoke 2.4s ease-in-out infinite alternate;
+}
+
+.miner-rocket-smoke circle:nth-child(2n) {
+  animation-delay: -1.2s;
+}
+
+.miner-rocket.is-launching .miner-rocket-ship {
+  animation: miner-rocket-launch 6s ease-in forwards;
+}
+
+.miner-rocket.is-launching :is(.is-clamps, .is-hoses) {
+  animation: miner-rocket-let-go 1s 1.2s ease-out forwards;
+}
+
+/* The Engines done before, flying off in the sky */
+.miner-rocket-mini .is-hull { fill: var(--rk-hull); }
+.miner-rocket-mini .is-hull-2 { fill: var(--rk-hull-2); }
+
+.miner-rocket-mini-body {
+  animation: miner-rocket-float 3s ease-in-out infinite alternate;
+}
+
+.miner-rocket-mini:nth-child(2n) .miner-rocket-mini-body {
+  animation-delay: -1.5s;
+}
+
+@keyframes miner-rocket-march {
+  to { stroke-dashoffset: -10; }
+}
+
+@keyframes miner-rocket-glow {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+@keyframes miner-rocket-blink {
+  50% { opacity: 0.25; }
+}
+
+@keyframes miner-rocket-weld {
+  50% { opacity: 0.5; }
+}
+
+@keyframes miner-rocket-flame {
+  from { transform: scale(1, 0.85); }
+  to { transform: scale(0.92, 1.08); }
+}
+
+@keyframes miner-rocket-smoke {
+  from { transform: scale(0.85); }
+  to { transform: scale(1.15); }
+}
+
+@keyframes miner-rocket-launch {
+  0%, 30% { transform: translate(0, 0); }
+  5%, 15%, 25% { transform: translate(-1px, 0); }
+  10%, 20% { transform: translate(1px, 0); }
+  100% { transform: translate(0, -440px); }
+}
+
+@keyframes miner-rocket-let-go {
+  to { opacity: 0; transform: translate(-30px, 0); }
+}
+
+@keyframes miner-rocket-float {
+  from { transform: translate(0, 0); }
+  to { transform: translate(2px, -3px); }
+}
+
+/* Under the stage's name: one pip a stage, a gap between the sections, the one being built filling up (--progress,
+   from renderRocket()) */
+.miner-rocket-track {
+  margin: 10px 0 12px;
+  padding: 0;
+  display: flex;
+  gap: 3px;
+  list-style: none;
+}
+
+.miner-rocket-pip {
+  flex: 1;
+  height: 8px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  cursor: pointer;
+}
+
+.miner-rocket-pip.is-section {
+  margin-left: 6px;
+}
+
+.miner-rocket-pip.is-done {
+  background: var(--view);
+}
+
+.miner-rocket-pip.is-now {
+  background: linear-gradient(to right, var(--view) var(--progress, 0%), color-mix(in srgb, var(--view) 22%, transparent) 0);
+  box-shadow: 0 0 6px var(--view);
+}
+
+.miner-rocket-pip.is-picked {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+@media (max-width: 860px) {
+  .miner-prestige.is-engine .miner-prestige-hero {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+}
+
+/* Phones: the rocket on top, the stage under it */
+@media (max-width: 560px) {
+  .miner-prestige.is-engine .miner-prestige-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .miner-rocket-art {
+    width: min(220px, 100%);
+    margin-inline: auto;
+  }
+}
+
+/* Less motion: everything holds still, and a done Engine doesn't lift off (renderRocket() skips it too) */
+@media (prefers-reduced-motion: reduce) {
+  .miner-rocket *,
+  .miner-rocket-pip {
+    animation: none !important;
+  }
+}
+
+/* Under the top: the Supply Bay across the whole width, today's Shifts, the top contributors and the latest parts next
+   to each other, the Hall, and the stages across the bottom. Every box is built the same way: a head with the box's
+   icon on a tile in the view's colour (like the Shard Shop's items), its title and a line under it, and a chip on the
+   right with its number (parts given, Shifts done, stages built). */
+.miner-engine-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.miner-engine-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--view) 14%, transparent);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--view) 6%, transparent), transparent 120px),
+    var(--background);
+}
+
+.miner-engine-card.is-wide {
+  grid-column: 1 / -1;
+}
+
+.miner-engine-head {
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.miner-engine-head-icon,
+.miner-engine-give-icon,
+.miner-engine-feed-icon,
+.miner-shift-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--view) 28%, transparent), color-mix(in srgb, var(--view) 8%, transparent) 70%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--view) 40%, transparent);
+}
+
+/* The icons from index.php are the <svg> itself, so they're padded into a tile; the ones from spaceOreMiner.js
+   (iconBox()) are a span around it */
+.miner-engine-head-icon {
+  width: 44px;
+  height: 44px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.miner-engine-head-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.miner-engine-card .miner-store-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.miner-engine-sub {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.miner-engine-sub:empty {
+  display: none;
+}
+
+/* A little pill with a number in it, in the view's colour; is-lit once it's all done */
+.miner-engine-chip {
+  margin: 0;
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  color: var(--view);
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.miner-engine-chip:empty {
+  display: none;
+}
+
+.miner-engine-chip.is-lit {
+  background: var(--view);
+  color: var(--on-view);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--view) 50%, transparent);
+}
+
+/* Why nothing can be given right now (a guest, in an Anomaly, waiting on a lock) */
+.miner-engine-note {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--view);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--view) 10%, transparent);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+/* A line of small print (the Anomalies and Shard Shop use it too) */
+.miner-engine-small {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.75;
+}
+
+.miner-engine-card .miner-engine-small {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.miner-engine-more {
+  margin-top: 12px;
+  display: inline-block;
+  color: var(--view);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.miner-engine-more:hover {
+  text-decoration: underline;
+}
+
+/* The Supply Bay: ore and Strange Matter side by side, each in a tile of its own colour with its button at the bottom */
+.miner-engine-gives {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+}
+
+.miner-engine-give {
+  --view: var(--miner-engine);
+  --view-2: #ffe08a;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--view) 22%, transparent);
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--view) 12%, transparent), transparent 60%),
+    color-mix(in srgb, var(--text) 3%, transparent);
+}
+
+.miner-engine-give.is-strange {
+  --view: var(--miner-strange);
+  --view-2: #d6ff5c;
+}
+
+.miner-engine-give .miner-engine-small {
+  margin: 0;
+}
+
+.miner-engine-give-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.miner-engine-give-icon {
+  width: 52px;
+  height: 52px;
+  padding: 9px;
+  box-sizing: border-box;
+}
+
+.miner-engine-give-name {
+  margin: 0;
+  font-weight: 800;
+}
+
+.miner-engine-give-price {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.miner-engine-give-price span {
+  color: var(--view);
+  font-weight: 700;
+}
+
+.miner-engine-give-btn {
+  width: 100%;
+  padding: 10px 18px;
+}
+
+.miner-engine-give-btn .miner-prestige-btn-text {
+  font-size: 1.05rem;
+}
+
+/* Today's parts from ore: a dot each, lit for the ones given */
+.miner-engine-slots {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+}
+
+.miner-engine-slot-list {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+}
+
+.miner-engine-slot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--view) 45%, transparent);
+}
+
+.miner-engine-slot.is-given {
+  background: var(--view);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--view) 60%, transparent);
+}
+
+.miner-engine-slot-text {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+/* How many parts from Strange Matter: - and + round the box, and Max */
+.miner-engine-stepper {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  min-height: 34px;
+}
+
+.miner-engine-count {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.miner-engine-count input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--view) 30%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.miner-engine-count input::-webkit-inner-spin-button,
+.miner-engine-count input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.miner-engine-count input:focus-visible {
+  outline: 2px solid var(--view);
+  outline-offset: 1px;
+}
+
+.miner-engine-step {
+  min-width: 38px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--view) 30%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--view) 10%, transparent);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.miner-engine-step.is-max {
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+.miner-engine-step:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--view) 22%, transparent);
+}
+
+.miner-engine-step:focus-visible {
+  outline: 2px solid var(--view);
+  outline-offset: 1px;
+}
+
+.miner-engine-step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Today's Shifts: the task's icon, what to do and how far, with its bar under them */
+.miner-shifts,
+.miner-engine-list,
+.miner-engine-hall {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.miner-shift {
+  padding: 10px 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  font-size: 0.92rem;
+}
+
+.miner-shift:first-child {
+  padding-top: 0;
+}
+
+.miner-shift:last-child {
+  border-bottom: none;
+}
+
+.miner-shift-icon {
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 1.25rem;
+}
+
+.miner-shift-name {
+  line-height: 1.3;
+}
+
+/* "Hard · 30 parts" after a hard Shift's name */
+.miner-shift-hard {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--view) 18%, transparent);
+  color: var(--view);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
+.miner-shift .miner-progress-bar {
+  grid-column: 2 / -1;
+  height: 6px;
+}
+
+.miner-shift-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+.miner-shift.is-done .miner-shift-icon {
+  background: var(--view);
+  color: var(--on-view);
+}
+
+.miner-shift.is-done .miner-shift-name {
+  opacity: 0.7;
+}
+
+.miner-shift.is-done .miner-shift-count {
+  color: var(--view);
+  opacity: 1;
+}
+
+/* A Shift's Swap button (the Crucible Shell's perk), under its bar */
+.miner-shift-swap {
+  grid-column: 2 / -1;
+  justify-self: start;
+  padding: 3px 12px;
+  border: 1px solid color-mix(in srgb, var(--view) 40%, transparent);
+  border-radius: 999px;
+  background: none;
+  color: var(--view);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.miner-shift-swap:hover {
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+}
+
+/* Top contributors: a rank (gold, silver and bronze medals for the first three), the name and the parts, and a thin bar
+   under them for how much that is next to the most (--share) */
+.miner-engine-row {
+  padding: 8px 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 0.92rem;
+}
+
+.miner-engine-row.is-you {
+  margin-inline: -8px;
+  padding-inline: 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--view) 10%, transparent);
+}
+
+.miner-engine-rank {
+  --medal: color-mix(in srgb, var(--text) 40%, transparent);
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--medal);
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-engine-row.is-medal .miner-engine-rank {
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--medal) 70%, #fff), var(--medal) 60%);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--medal) 45%, transparent);
+  color: #1b1405;
+}
+
+.miner-engine-row.is-1 .miner-engine-rank { --medal: var(--miner-gold); }
+.miner-engine-row.is-2 .miner-engine-rank { --medal: #c9d1dc; }
+.miner-engine-row.is-3 .miner-engine-rank { --medal: #d68a4f; }
+
+.miner-engine-who {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.miner-engine-you {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--view);
+  color: var(--on-view);
+  font-size: 0.7rem;
+  font-weight: 800;
+  vertical-align: 1px;
+}
+
+.miner-engine-parts {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-engine-share {
+  grid-column: 2 / -1;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--view) var(--share, 0%), color-mix(in srgb, var(--text) 8%, transparent) 0);
+}
+
+.miner-engine-empty {
+  padding: 8px 0;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+/* Latest parts: where they came from as an icon, who and how many, and from what and when under it */
+.miner-engine-feed {
+  max-height: 420px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.miner-engine-feed-row {
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.miner-engine-feed-row:last-child {
+  border-bottom: none;
+}
+
+.miner-engine-feed-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 1.25rem;
+}
+
+.miner-engine-feed-row.is-anomaly .miner-engine-feed-icon {
+  --view: var(--miner-anomaly);
+}
+
+.miner-engine-feed-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.miner-engine-feed-top {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 8px;
+  font-size: 0.92rem;
+}
+
+.miner-engine-gain {
+  color: var(--view);
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-engine-what {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+/* The Starbound Hall: a card for each build done, its number on a medal */
+.miner-engine-hall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 10px;
+}
+
+.miner-engine-hall-row {
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--miner-gold) 25%, transparent);
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--miner-gold) 10%, transparent), transparent 60%);
+}
+
+.miner-engine-hall-number {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--miner-gold) 70%, #fff), var(--miner-gold) 60%);
+  color: #1b1405;
+  font-weight: 800;
+}
+
+.miner-engine-hall-text {
+  min-width: 0;
+}
+
+.miner-engine-hall-name {
+  margin: 0;
+  font-weight: 800;
+}
+
+.miner-engine-hall-stats {
+  margin: 6px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* The stages: a folding block per section, with its letter, name, a bar of its stages done and the count on the
+   outside. Inside, a row per stage: its number (filled in once done, glowing while it's the one being built), name,
+   what it costs or when it was done, its perk and its lock. */
+.miner-engine-stages {
+  display: grid;
+  gap: 8px;
+}
+
+.miner-engine-part {
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+}
+
+.miner-engine-part.is-now {
+  border-color: color-mix(in srgb, var(--view) 55%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--view) 18%, transparent);
+}
+
+.miner-engine-part.is-picked {
+  border-color: var(--view);
+}
+
+.miner-engine-part-head {
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(60px, 160px) auto auto;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.miner-engine-part-head::-webkit-details-marker {
+  display: none;
+}
+
+/* The arrow on the right, turned down while it's open */
+.miner-engine-part-head::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  opacity: 0.5;
+  transition: transform 0.2s;
+}
+
+.miner-engine-part[open] > .miner-engine-part-head::after {
+  transform: rotate(45deg);
+}
+
+.miner-engine-part-head:focus-visible {
+  outline: 2px solid var(--view);
+  outline-offset: -2px;
+  border-radius: 12px;
+}
+
+.miner-engine-part-letter {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  color: var(--view);
+  font-weight: 800;
+}
+
+.miner-engine-part.is-done .miner-engine-part-letter {
+  background: var(--view);
+  color: var(--on-view);
+}
+
+.miner-engine-part-name {
+  font-weight: 700;
+}
+
+.miner-engine-part-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--view) var(--progress, 0%), color-mix(in srgb, var(--text) 10%, transparent) 0);
+}
+
+.miner-engine-part-count {
+  min-width: 3.5em;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  opacity: 0.75;
+}
+
+.miner-engine-part.is-done .miner-engine-part-count {
+  color: var(--view);
+  opacity: 1;
+}
+
+.miner-engine-stage-list {
+  margin: 0;
+  padding: 0 14px 12px;
+  list-style: none;
+}
+
+.miner-engine-stage {
+  padding: 10px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+}
+
+.miner-engine-stage-number {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 25%, transparent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.miner-engine-stage.is-done .miner-engine-stage-number {
+  background: color-mix(in srgb, var(--view) 85%, transparent);
+  box-shadow: none;
+  color: var(--on-view);
+  opacity: 1;
+}
+
+.miner-engine-stage.is-now .miner-engine-stage-number {
+  box-shadow: inset 0 0 0 2px var(--view), 0 0 12px color-mix(in srgb, var(--view) 60%, transparent);
+  color: var(--view);
+  opacity: 1;
+}
+
+.miner-engine-stage-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.miner-engine-stage-head {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 10px;
+}
+
+.miner-engine-stage-name {
+  font-weight: 700;
+}
+
+.miner-engine-stage.is-now .miner-engine-stage-name {
+  color: var(--view);
+}
+
+.miner-engine-stage-cost {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.miner-engine-stage-perk,
+.miner-engine-stage-lock {
+  margin: 3px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+/* Stages not yet reached are a little faded */
+.miner-engine-stage:not(.is-done, .is-now) .miner-engine-stage-perk {
+  opacity: 0.75;
+}
+
+.miner-engine-stage-lock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.miner-engine-stage-lock-icon {
+  font-size: 0.95rem;
+}
+
+/* Its part pointed at on the rocket (or the stage itself pointed at), and flashing once its part was clicked */
+.miner-engine-stage.is-picked {
+  margin-inline: -8px;
+  padding-inline: 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--view) 10%, transparent);
+}
+
+.miner-engine-stage.is-flash {
+  animation: miner-rocket-flash 1.2s ease-out;
+}
+
+@keyframes miner-rocket-flash {
+  from { box-shadow: 0 0 0 3px var(--view), 0 0 18px var(--view); }
+}
+
+/* Smaller screens: two boxes to a row, the Shifts across the top of them; then one */
+@media (max-width: 1000px) {
+  .miner-engine-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .miner-engine-card.is-shifts {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .miner-engine-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .miner-engine-card {
+    padding: 14px;
+  }
+
+  .miner-engine-part-head {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    gap: 10px;
+  }
+
+  .miner-engine-part-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+/* Anomalies (.miner-prestige.is-anomaly): a little universe with one rule changed, glitching. A glowing orb with a
+   galaxy turning inside it, cut into five bands (.miner-art-slice) that line up into one orb, until every few seconds
+   reality skips: the bands jerk sideways, each its own way, with red and blue ghosts split off them, the broken ring
+   round it (.miner-art-ring) jumps, and dead pixels (.miner-art-bit) flicker on round it. Then it all snaps back. Each
+   band is the whole orb clipped down to its strip (--top and --bottom, how much is cut off above and below), so lined
+   up they make one picture, and they all share one clock (--glitch) so they skip together. */
+.miner-prestige.is-anomaly {
+  --view: var(--miner-anomaly);
+  --view-2: #b98cff;
+  --ghost: #4de3ff; /* the blue half of the split */
+  --glitch: calc(4s / var(--spin));
+}
+
+/* The ring: a broken circle of dashes turning slowly, knocked off centre when reality skips */
+.miner-prestige.is-anomaly .miner-art-ring.is-1 {
+  width: 94%;
+  height: 94%;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--view) 70%, transparent) 0 30deg, transparent 0 40deg, color-mix(in srgb, var(--view-2) 60%, transparent) 0 52deg, transparent 0 72deg);
+  mask: radial-gradient(closest-side, transparent 88%, #000 90%, #000 97%, transparent 99%);
+  animation:
+    miner-spin calc(30s / var(--spin)) linear infinite,
+    miner-ring-skip var(--glitch) steps(1, end) infinite;
+}
+
+/* The orb's glow, in one piece behind the bands (cut up with them, their edges showed as lines through it) */
+.miner-prestige.is-anomaly .miner-art-core {
+  width: 62%;
+  height: 62%;
+  box-shadow: 0 0 24px 4px color-mix(in srgb, var(--view) 70%, transparent);
+}
+
+.miner-prestige.is-anomaly .miner-art-slice {
+  position: relative;
+  width: 62%;
+  height: 62%;
+  background: radial-gradient(circle at 50% 50%, #12002a 40%, #07001a 70%);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--view) 75%, #fff),
+    inset 0 0 22px color-mix(in srgb, var(--view-2) 55%, transparent);
+  clip-path: inset(var(--top) -30% var(--bottom) -30%);
+  overflow: hidden;
+  animation: miner-glitch var(--glitch) steps(1, end) infinite;
+}
+
+/* The galaxy inside: a bright core, arms in the orb's colours and a few stars, all turning */
+.miner-prestige.is-anomaly .miner-art-slice::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 22% 38%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 74% 30%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 66% 76%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 30% 72%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 82% 56%, #fff 50%, transparent 51%),
+    radial-gradient(circle, #fff 0 4%, color-mix(in srgb, var(--view-2) 75%, #fff) 9%, transparent 24%),
+    radial-gradient(ellipse 46% 16% at 50% 50%, color-mix(in srgb, var(--view) 80%, transparent), transparent),
+    conic-gradient(from 30deg, transparent, color-mix(in srgb, var(--view) 65%, transparent) 10%, transparent 25%, transparent 50%, color-mix(in srgb, var(--view-2) 65%, transparent) 60%, transparent 75%);
+  mask: radial-gradient(closest-side, #000 55%, transparent);
+  animation: miner-spin calc(14s / var(--spin)) linear infinite;
+}
+
+/* The five bands, uneven on purpose. --shift is how far each one jumps (in its own widths, so it scales). */
+.miner-prestige.is-anomaly .miner-art-slice.is-1 {
+  --top: -30%;
+  --bottom: 70%;
+  --shift: 9%;
+}
+
+.miner-prestige.is-anomaly .miner-art-slice.is-2 {
+  --top: 30%;
+  --bottom: 58%;
+  --shift: -14%;
+}
+
+.miner-prestige.is-anomaly .miner-art-slice.is-3 {
+  --top: 42%;
+  --bottom: 36%;
+  --shift: 5%;
+}
+
+.miner-prestige.is-anomaly .miner-art-slice.is-4 {
+  --top: 64%;
+  --bottom: 26%;
+  --shift: 18%;
+}
+
+.miner-prestige.is-anomaly .miner-art-slice.is-5 {
+  --top: 74%;
+  --bottom: -30%;
+  --shift: -7%;
+}
+
+/* Dead pixels: little squares that blink on round the orb while it skips. --at is where each sits, in its own widths. */
+.miner-prestige.is-anomaly .miner-art-bit {
+  width: 5%;
+  aspect-ratio: 1;
+  border-radius: 0;
+  background: var(--view);
+  box-shadow: 0 0 6px var(--view);
+  translate: var(--at);
+  opacity: 0;
+  animation: miner-dead-pixel var(--glitch) steps(1, end) infinite;
+}
+
+.miner-prestige.is-anomaly .miner-art-bit.is-1 {
+  --at: -760% -520%;
+}
+
+.miner-prestige.is-anomaly .miner-art-bit.is-2 {
+  --at: 1150% -380%;
+  width: 3.5%;
+  background: var(--ghost);
+  box-shadow: 0 0 6px var(--ghost);
+  animation-delay: calc(-0.08s / var(--spin));
+}
+
+.miner-prestige.is-anomaly .miner-art-bit.is-3 {
+  --at: 600% 640%;
+  background: #fff;
+  animation-delay: calc(-0.16s / var(--spin));
+}
+
+.miner-prestige.is-anomaly .miner-art-bit.is-4 {
+  --at: -1200% 420%;
+  width: 3.5%;
+  background: var(--view-2);
+  box-shadow: 0 0 6px var(--view-2);
+  animation-delay: calc(-0.04s / var(--spin));
+}
+
+/* The skip: still for most of the clock, then a few hard jumps (steps(1) holds each one) and back */
+@keyframes miner-glitch {
+  0%, 92% { translate: 0; filter: none; }
+  80% { translate: var(--shift) 0; filter: drop-shadow(-4px 0 0 color-mix(in srgb, var(--view) 85%, transparent)) drop-shadow(4px 0 0 color-mix(in srgb, var(--ghost) 85%, transparent)); }
+  84% { translate: calc(var(--shift) * -0.6) 0; filter: drop-shadow(3px 0 0 color-mix(in srgb, var(--view) 85%, transparent)) drop-shadow(-3px 0 0 color-mix(in srgb, var(--ghost) 85%, transparent)); }
+  88% { translate: calc(var(--shift) * 0.3) 0; filter: drop-shadow(-2px 0 0 color-mix(in srgb, var(--view) 85%, transparent)) drop-shadow(2px 0 0 color-mix(in srgb, var(--ghost) 85%, transparent)); }
+}
+
+@keyframes miner-ring-skip {
+  0%, 92% { translate: 0; scale: 1; }
+  80% { translate: -3% 1%; scale: 1.04 0.97; }
+  86% { translate: 2% -1%; scale: 0.98 1.03; }
+}
+
+@keyframes miner-dead-pixel {
+  0%, 92% { opacity: 0; }
+  80%, 86% { opacity: 1; }
+  83% { opacity: 0; }
+}
+
+/* Under the facts, built from Project Starbound's boxes (.miner-engine-card, its head, chip and note): two to a row, so
+   this week's Anomaly and the stack builder sit side by side, and the saved ones and each tier across the whole width */
+.miner-anomaly-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.miner-anomaly-tiers {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 14px;
+}
+
+.miner-anomaly-weekly,
+.miner-anomaly-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The bottom of the weekly and stack boxes: the button, and the small print under it pushed to the bottom so both
+   boxes' buttons line up */
+.miner-anomaly-actions {
+  margin-top: auto;
+  padding-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.miner-anomaly-actions .miner-engine-more {
+  margin-top: 0;
+}
+
+/* The hero's row of every badge, small, lit once finished (the big ones are on the cards) */
+.miner-anomaly-badges {
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+}
+
+.miner-anomaly-badges .miner-anomaly-badge {
+  width: 30px;
+  height: 30px;
+  border-width: 1.5px;
+}
+
+.miner-anomaly-badges .miner-anomaly-badge .miner-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.miner-anomaly-badges .is-done .miner-anomaly-badge {
+  border-color: var(--view);
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--view) 40%, transparent);
+  filter: none;
+  opacity: 1;
+}
+
+/* An Anomaly's rule, a row each with its icon (the weekly one's) */
+.miner-anomaly-rules {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.miner-anomaly-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.miner-anomaly-rule-icon,
+.miner-stack-pick-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  color: var(--view);
+}
+
+.miner-anomaly-rule-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.miner-anomaly-rule-icon .miner-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.miner-anomaly-rule-name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.miner-anomaly-rule-text {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.8;
+}
+
+/* The numbers (anomalyStats()): goal, parts, Afterglow and best time, a little tile each, four to a row while they fit */
+.miner-anomaly-stats {
+  margin: 14px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 92px), 1fr));
+  gap: 6px;
+}
+
+.miner-anomaly-stat {
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+.miner-anomaly-stat dt {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.miner-anomaly-stat dd {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* The stack builder's picks: a tile each with the Anomaly's icon, lit in the view's colour while picked */
+.miner-stack-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+  gap: 6px;
+}
+
+.miner-stack-pick {
+  min-width: 0;
+  padding: 6px 10px 6px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+  color: inherit;
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.miner-stack-pick-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.miner-stack-pick-icon .miner-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.miner-stack-pick-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.miner-stack-pick:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--view) 50%, transparent);
+}
+
+.miner-stack-pick:focus-visible {
+  outline: 2px solid var(--view);
+  outline-offset: 1px;
+}
+
+.miner-stack-pick[aria-pressed="true"] {
+  border-color: var(--view);
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--view) 30%, transparent);
+  font-weight: 700;
+}
+
+.miner-stack-pick[aria-pressed="true"] .miner-stack-pick-icon {
+  background: var(--view);
+  color: var(--on-view);
+}
+
+.miner-stack-pick:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.miner-anomaly-stack .miner-engine-note {
+  margin: 14px 0 0;
+}
+
+/* A tier's box: its numeral on a tile in the head, then its Anomalies as cards, as many to a row as fit. Locked, the
+   cards are dimmed under a padlock note. */
+.miner-anomaly-numeral {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--view) 28%, transparent), color-mix(in srgb, var(--view) 8%, transparent) 70%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--view) 40%, transparent);
+  color: var(--view);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.miner-anomaly-lock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.miner-anomaly-lock-icon {
+  display: grid;
+  flex: none;
+}
+
+.miner-anomaly-lock-icon .miner-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.miner-anomaly-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  list-style: none;
+}
+
+/* An Anomaly's card: badge and name on top, its rule, its numbers, and the button at the bottom (pushed down so the
+   buttons in a row line up) */
+.miner-anomaly {
+  min-width: 0;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+}
+
+.miner-anomaly.is-done {
+  border-color: color-mix(in srgb, var(--view) 30%, transparent);
+  background: radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--view) 10%, transparent), transparent 60%),
+    color-mix(in srgb, var(--text) 2%, transparent);
+}
+
+.miner-anomaly.is-now,
+.miner-anomaly.is-saved {
+  border-color: var(--view);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--view) 30%, transparent);
+}
+
+.miner-anomaly-tier.is-locked .miner-anomaly {
+  opacity: 0.55;
+}
+
+.miner-anomaly-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.miner-anomaly-head {
+  min-width: 0;
+}
+
+.miner-anomaly-name {
+  margin: 0;
+  font-weight: 800;
+}
+
+.miner-anomaly-state {
+  margin: 1px 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+.miner-anomaly.is-done .miner-anomaly-state,
+.miner-anomaly.is-now .miner-anomaly-state,
+.miner-anomaly.is-saved .miner-anomaly-state {
+  color: var(--view);
+  opacity: 1;
+}
+
+.miner-anomaly-text {
+  margin: 10px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  opacity: 0.85;
+}
+
+.miner-anomaly .miner-anomaly-stats {
+  margin-top: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.miner-anomaly-new {
+  margin: 8px 0 0;
+  color: var(--view);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.miner-anomaly > .casino-btn {
+  margin-top: auto;
+  width: 100%;
+}
+
+/* The space over the button (its margin-top: auto only pushes it down) */
+.miner-anomaly > :nth-last-child(2) {
+  margin-bottom: 14px;
+}
+
+/* "Go again" on a finished Anomaly: dimmed (not as far as a disabled button) so the unfinished ones stand out, and
+   lit up again when hovered or focused */
+.miner-anomaly .casino-btn.is-again:not(:disabled) {
+  opacity: 0.6;
+  filter: saturate(0.35);
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.miner-anomaly .casino-btn.is-again:not(:disabled):hover,
+.miner-anomaly .casino-btn.is-again:not(:disabled):focus-visible {
+  opacity: 1;
+  filter: brightness(1.08);
+}
+
+/* The badge: grey until the Anomaly is finished, then lit in the view's colour */
+.miner-anomaly-badge {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--text) 18%, transparent);
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.miner-anomaly-badge .miner-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.miner-anomaly.is-done .miner-anomaly-badge,
+.miner-anomaly-saved .miner-anomaly-badge {
+  border-color: var(--view);
+  background: color-mix(in srgb, var(--view) 14%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--view) 40%, transparent);
+  filter: none;
+  opacity: 1;
+}
+
+/* A saved Anomaly: badge, name, a bar of how far towards its goal and the numbers, and its two buttons */
+.miner-anomaly-saved-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.miner-anomaly-saved {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid color-mix(in srgb, var(--view) 30%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+}
+
+.miner-anomaly-saved-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.miner-anomaly-saved-main .miner-anomaly-state {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-anomaly-saved-buttons {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+
+/* Smaller screens: one box to a row, and a saved Anomaly's buttons under it */
+@media (max-width: 760px) {
+  .miner-anomaly-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .miner-anomaly-saved {
+    flex-wrap: wrap;
+  }
+
+  .miner-anomaly-saved-main {
+    flex-basis: calc(100% - 58px);
+  }
+
+  .miner-anomaly-saved-buttons {
+    width: 100%;
+  }
+
+  .miner-anomaly-saved-buttons .casino-btn {
+    flex: 1;
+  }
+
+  .miner-prestige.is-anomaly .miner-anomaly-badges {
+    justify-content: center;
+  }
+}
+
+/* The banner over every view while in an Anomaly */
+.miner-anomaly-banner {
+  --view: var(--miner-anomaly);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 var(--miner-gap);
+  padding: 8px 12px;
+  border: 1px solid var(--view);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--view) 12%, var(--background));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--view) 30%, transparent);
+}
+
+.miner-anomaly-banner-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.miner-anomaly-banner-text strong {
+  color: var(--view);
+}
+
+/* On a phone, its two buttons go under the text */
+@media (max-width: 560px) {
+  .miner-anomaly-banner {
+    flex-wrap: wrap;
+  }
+
+  .miner-anomaly-banner-text {
+    flex-basis: 70%;
+  }
+}
+
+.miner-anomaly-banner-box {
+  display: grid;
+  place-items: center;
+}
+
+.miner-anomaly-banner-box .miner-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* A building the Anomaly's rules don't allow right now */
+.miner-building.is-blocked {
+  opacity: 0.5;
+}
+
 .miner-prestige-main {
   width: 100%;
   min-width: 0;
@@ -2420,8 +4830,60 @@
   font-size: 2rem;
 }
 
-.miner-prestige-about {
-  margin: 20px 4px 24px;
+/* What the view's reset does, a point each under the hero (index.php): the view's icon on the left, a short title and
+   a line or two of text on the right. As many to a row as fit. No box, background or rounded corners on purpose, so it
+   reads as text that belongs to the page rather than something to click; a faint line on each point's left keeps them
+   apart. */
+.miner-prestige-facts {
+  margin: 18px 4px 28px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px 24px;
+  list-style: none;
+}
+
+.miner-prestige-fact {
+  min-width: 0;
+  padding: 2px 0 2px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-left: 1px solid color-mix(in srgb, var(--view) 35%, transparent);
+}
+
+.miner-prestige-fact-icon {
+  margin-top: 1px;
+  flex: none;
+  color: var(--view);
+  font-size: 1.15rem;
+}
+
+.miner-prestige-fact-title {
+  margin: 0;
+  color: var(--view);
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.miner-prestige-fact-text {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.8;
+}
+
+/* A line of how-to under a store's title (the skill tree's) */
+.miner-prestige-store-note {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+/* The shop has no facts, so its first list gets the room under the hero they'd have had */
+.miner-shop-first-title {
+  margin-top: 24px;
 }
 
 .miner-prestige-owned {
@@ -2785,6 +5247,10 @@
   --view: var(--miner-anti);
 }
 
+.miner-prestige-dialog.is-anomaly {
+  --view: var(--miner-anomaly);
+}
+
 .miner-prestige-dialog.is-strange {
   --view: var(--miner-strange);
 }
@@ -3036,9 +5502,25 @@
   from { opacity: 0; transform: translateY(16px); }
 }
 
-/* Everything above the Ore view keeps its size; the view gets the rest */
-.miner[data-view="ore"] > :not(.miner-layout) {
+/* Everything above the Ore view keeps its size; the view gets the rest (through .miner-body and .miner-stage, which
+   pass the height on) */
+.miner[data-view="ore"] > :not(.miner-body),
+.miner[data-view="ore"] .miner-body > .miner-menus,
+.miner[data-view="ore"] .miner-stage > :not(.miner-layout) {
   flex: none;
+}
+
+.miner[data-view="ore"] .miner-body {
+  flex: 1 1 0;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.miner[data-view="ore"] .miner-stage {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .miner[data-view="ore"] > .casino-back {
@@ -3291,9 +5773,10 @@
     animation-play-state: paused !important; /* over the animation shorthands, which are more specific */
   }
 
-  /* The Dark Matter, Antimatter and Strange Matter pictures stop the same way, spread out by their delays */
+  /* The Dark Matter, Antimatter, Strange Matter and Anomalies pictures stop the same way, spread out by their delays */
   .miner-prestige-art > *,
-  .miner-art-quark {
+  .miner-art-quark,
+  .miner-art-slice::before {
     animation-play-state: paused !important;
   }
 
@@ -3340,4 +5823,679 @@
 
 @keyframes miner-fade {
   to { opacity: 0; }
+}
+
+/* ----- Cosmic Engine phase 3 (30 Oct 2026) */
+
+/* Asteroid skins (HBHUB_MINER_SKINS, picked in the Skins view): data-skin on the asteroid takes the place of the
+   stage's colours. Later in the file than the stages, so it wins. The same colours go on the little rocks in the Shard
+   Shop and the Skins view (.miner-shop-swatch). The moving ones fade their colours round in a loop (they're registered
+   colours, see @property above); with less motion they hold still on their first colours. */
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="entropy"] { --rock-light: #ffd9a8; --rock: #a8613a; --rock-dark: #2b1408; --rock-glow: rgba(255, 140, 70, 0.25); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="minimalist"] { --rock-light: #ffffff; --rock: #e3e3e3; --rock-dark: #9a9a9a; --rock-glow: rgba(255, 255, 255, 0.2); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="oneTrack"] { --rock-light: #d4ffd8; --rock: #33b84a; --rock-dark: #0d3d18; --rock-glow: rgba(60, 220, 90, 0.3); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="unstableVacuum"] { --rock-light: #e6d4ff; --rock: #6a2ad0; --rock-dark: #12052e; --rock-glow: rgba(140, 70, 255, 0.4); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="speedOfLight"] { --rock-light: #ffd0c8; --rock: #e0303a; --rock-dark: #3d0410; --rock-glow: rgba(255, 50, 60, 0.4); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="engineSteel"] { --rock-light: #eef3f7; --rock: #8b99a6; --rock-dark: #2a333c; --rock-glow: rgba(190, 215, 235, 0.25); }
+
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="nakedSingularity"] { --rock-light: #8f7bff; --rock: #0b0618; --rock-dark: #000000; --rock-glow: rgba(255, 255, 255, 0.6); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="ironUniverse"] { --rock-light: #ffe0b0; --rock: #8a4b2a; --rock-dark: #241008; --rock-glow: rgba(255, 120, 30, 0.4); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="handsOnly"] { --rock-light: #fff3d6; --rock: #e8b88a; --rock-dark: #6b3f22; --rock-glow: rgba(255, 210, 150, 0.4); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="gauntlet"] { --rock-light: #fff1a0; --rock: #ff7a1a; --rock-dark: #4a0a00; --rock-glow: rgba(255, 90, 0, 0.6); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="engineCore"] { --rock-light: #e0ffff; --rock: #2fd4e8; --rock-dark: #0a2a4a; --rock-glow: rgba(60, 230, 255, 0.55); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="ignition"] { --rock-light: #ffffff; --rock: #ffd23a; --rock-dark: #c0200a; --rock-glow: rgba(255, 200, 60, 0.7); }
+
+:is(.miner-asteroid, .miner-shop-swatch):is([data-skin="nakedSingularity"], [data-skin="ironUniverse"], [data-skin="handsOnly"], [data-skin="gauntlet"],
+  [data-skin="engineCore"], [data-skin="ignition"], [data-skin="molten"], [data-skin="starforged"], [data-skin="firstLight"]) {
+  animation: var(--skin-animation);
+}
+
+.miner-asteroid:is([data-skin="nakedSingularity"], [data-skin="ironUniverse"], [data-skin="handsOnly"], [data-skin="gauntlet"],
+  [data-skin="engineCore"], [data-skin="ignition"], [data-skin="molten"], [data-skin="starforged"], [data-skin="firstLight"]).is-hit {
+  animation: miner-hit 0.15s ease, var(--skin-animation);
+}
+
+.miner-asteroid:is([data-skin="nakedSingularity"], [data-skin="ironUniverse"], [data-skin="handsOnly"], [data-skin="gauntlet"],
+  [data-skin="engineCore"], [data-skin="ignition"], [data-skin="molten"], [data-skin="starforged"], [data-skin="firstLight"]).is-hit-again {
+  animation: miner-hit-again 0.15s ease, var(--skin-animation);
+}
+
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="nakedSingularity"] { --skin-animation: miner-skin-singularity 4s ease-in-out infinite alternate; }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="ironUniverse"] { --skin-animation: miner-skin-iron 3s ease-in-out infinite alternate; }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="handsOnly"] { --skin-animation: miner-skin-hands 5s ease-in-out infinite alternate; }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="gauntlet"] { --skin-animation: miner-skin-gauntlet 1.6s ease-in-out infinite alternate; }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="engineCore"] { --skin-animation: miner-skin-core 2.4s ease-in-out infinite alternate; }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="ignition"] { --skin-animation: miner-skin-ignition 1.2s ease-in-out infinite alternate; }
+
+/* A black hole whose light ring flares and dims */
+@keyframes miner-skin-singularity {
+  to { --rock-light: #ff9ad8; --rock-glow: rgba(140, 110, 255, 0.85); }
+}
+
+/* Iron glowing hotter, then cooling */
+@keyframes miner-skin-iron {
+  to { --rock-light: #fff6d0; --rock: #d0682a; --rock-glow: rgba(255, 160, 60, 0.7); }
+}
+
+/* Warm skin tones going pink, like a hand gripping */
+@keyframes miner-skin-hands {
+  to { --rock-light: #ffe0ec; --rock: #e88aa8; --rock-glow: rgba(255, 150, 190, 0.5); }
+}
+
+/* Fire, flickering fast */
+@keyframes miner-skin-gauntlet {
+  to { --rock-light: #ffffff; --rock: #ffb21a; --rock-dark: #8a1000; --rock-glow: rgba(255, 50, 0, 0.9); }
+}
+
+/* The Engine's core, pulsing cyan to violet */
+@keyframes miner-skin-core {
+  to { --rock-light: #f4e0ff; --rock: #9a5cff; --rock-dark: #1a0a4a; --rock-glow: rgba(160, 100, 255, 0.75); }
+}
+
+/* Ignition: white-hot yellow to rocket-flame red */
+@keyframes miner-skin-ignition {
+  to { --rock-light: #fff4c0; --rock: #ff5a1a; --rock-dark: #5a0a00; --rock-glow: rgba(255, 90, 20, 0.9); }
+}
+
+/* Pill buttons: the leaderboard's tabs */
+.miner-board-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+
+/* A player's title on the leaderboard, small under their name */
+.miner-board-title {
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .miner-asteroid[data-skin],
+  .miner-asteroid[data-skin]:is(.is-hit, .is-hit-again) {
+    animation: none;
+  }
+}
+
+/* ----- Engine #2, the Starforge (30 Oct 2026) */
+
+/* Its skins: Ember (Draft Vents) holds still; Molten (Pour Spout), Starforged (Shockwave Dampers) and First Light
+   (for whoever gave parts to its last stage) move, like the ones above */
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="ember"] { --rock-light: #ffd2a0; --rock: #c2410c; --rock-dark: #3a0d02; --rock-glow: rgba(255, 110, 30, 0.45); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="molten"] { --rock-light: #ffe08a; --rock: #e8590c; --rock-dark: #4a0800; --rock-glow: rgba(255, 120, 0, 0.6); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="starforged"] { --rock-light: #dbe8ff; --rock: #2b4bbf; --rock-dark: #050a2a; --rock-glow: rgba(120, 160, 255, 0.6); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="firstLight"] { --rock-light: #ffffff; --rock: #ffe8a8; --rock-dark: #8a5a10; --rock-glow: rgba(255, 240, 190, 0.8); }
+
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="molten"] { --skin-animation: miner-skin-molten 2s ease-in-out infinite alternate; }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="starforged"] { --skin-animation: miner-skin-starforged 3.2s ease-in-out infinite alternate; }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="firstLight"] { --skin-animation: miner-skin-first-light 2.8s ease-in-out infinite alternate; }
+
+/* Molten metal, cooling to dark red and heating up again */
+@keyframes miner-skin-molten {
+  to { --rock-light: #ff9a5a; --rock: #8a1a04; --rock-dark: #1a0200; --rock-glow: rgba(255, 60, 0, 0.35); }
+}
+
+/* A blue star being hammered white */
+@keyframes miner-skin-starforged {
+  to { --rock-light: #ffffff; --rock: #8fb0ff; --rock-dark: #1a2a6a; --rock-glow: rgba(220, 235, 255, 0.85); }
+}
+
+/* Dawn: gold to the pale blue of a new star */
+@keyframes miner-skin-first-light {
+  to { --rock-light: #f0faff; --rock: #a8d8ff; --rock-dark: #2a4a8a; --rock-glow: rgba(190, 230, 255, 0.9); }
+}
+
+/* The Slag Channels' perk: a Golden Comet in the colours of the skin picked (data-skin on the comet, set by
+   renderComet()), with the skin's own colour where the gold was */
+.miner-comet[data-skin="entropy"] { --miner-gold: #ff8c46; }
+.miner-comet[data-skin="minimalist"] { --miner-gold: #f2f2f2; }
+.miner-comet[data-skin="oneTrack"] { --miner-gold: #3cdc5a; }
+.miner-comet[data-skin="unstableVacuum"] { --miner-gold: #9a5cff; }
+.miner-comet[data-skin="speedOfLight"] { --miner-gold: #ff3a46; }
+.miner-comet[data-skin="engineSteel"] { --miner-gold: #bed7eb; }
+.miner-comet[data-skin="nakedSingularity"] { --miner-gold: #8f7bff; }
+.miner-comet[data-skin="ironUniverse"] { --miner-gold: #ff7a1e; }
+.miner-comet[data-skin="handsOnly"] { --miner-gold: #ffd296; }
+.miner-comet[data-skin="gauntlet"] { --miner-gold: #ff5a00; }
+.miner-comet[data-skin="engineCore"] { --miner-gold: #3ce6ff; }
+.miner-comet[data-skin="ignition"] { --miner-gold: #ffc83c; }
+.miner-comet[data-skin="ember"] { --miner-gold: #ff6e1e; }
+.miner-comet[data-skin="molten"] { --miner-gold: #ff7800; }
+.miner-comet[data-skin="starforged"] { --miner-gold: #78a0ff; }
+.miner-comet[data-skin="firstLight"] { --miner-gold: #fff0be; }
+
+/* The Anvil Seal's perk: the edges of the screen glow for a moment when a comet comes (is-comet-bell on the page) */
+.miner.is-comet-bell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  pointer-events: none;
+  box-shadow: inset 0 0 90px color-mix(in srgb, var(--miner-gold) 55%, transparent);
+  animation: miner-comet-bell 1.6s ease-out forwards;
+}
+
+@keyframes miner-comet-bell {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* The Crucible Seal's perk: sparks flying up off a click */
+.miner-spark {
+  position: absolute;
+  z-index: 3;
+  left: var(--x);
+  top: var(--y);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff3c4;
+  box-shadow: 0 0 6px 2px #ff9a2a;
+  pointer-events: none;
+  animation: miner-spark 0.6s ease-out forwards;
+}
+
+@keyframes miner-spark {
+  to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.4); }
+}
+
+/* The Hammer Head's perk: backgrounds for the game (data-backdrop on the page, HBHUB_MINER_BACKDROPS), soft light
+   over the site's own dark background, behind everything. The same light goes on their tiles in the Skins view
+   (.miner-skins-backdrop). */
+body:has(.miner[data-backdrop]) {
+  background-attachment: fixed;
+}
+
+body:has(.miner[data-backdrop="nebula"]),
+.miner-skins-backdrop[data-backdrop="nebula"] {
+  background: radial-gradient(ellipse at 20% 30%, rgba(157, 123, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse at 80% 70%, rgba(255, 107, 181, 0.14), transparent 55%), var(--background);
+}
+
+body:has(.miner[data-backdrop="deepField"]),
+.miner-skins-backdrop[data-backdrop="deepField"] {
+  background: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.5) 0 1px, transparent 2px),
+    radial-gradient(circle at 70% 40%, rgba(255, 255, 255, 0.4) 0 1px, transparent 2px),
+    radial-gradient(circle at 40% 80%, rgba(180, 200, 255, 0.45) 0 1px, transparent 2px),
+    radial-gradient(ellipse at 50% 50%, rgba(40, 60, 120, 0.25), transparent 70%), var(--background);
+  background-size: 180px 180px, 240px 240px, 300px 300px, auto, auto;
+}
+
+body:has(.miner[data-backdrop="forgeGlow"]),
+.miner-skins-backdrop[data-backdrop="forgeGlow"] {
+  background: radial-gradient(ellipse at 50% 110%, rgba(255, 110, 30, 0.22), transparent 60%), var(--background);
+}
+
+body:has(.miner[data-backdrop="aurora"]),
+.miner-skins-backdrop[data-backdrop="aurora"] {
+  background: linear-gradient(160deg, rgba(94, 242, 166, 0.12), transparent 40%),
+    linear-gradient(200deg, rgba(139, 233, 255, 0.12), transparent 45%), var(--background);
+}
+
+/* The sparks switch in the Skins view */
+.miner-sparks-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 12px;
+  font-size: 0.9rem;
+}
+
+[data-miner-anomaly-again] {
+  margin-top: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .miner.is-comet-bell::after {
+    animation-duration: 0.01s;
+  }
+}
+
+/* ----- Star Shards and the Shard Shop (30 Oct 2026) */
+
+/* The Star Shard: a little crystal flying across the whole screen from right to left in the time it stays (the comets
+   go the other way), spinning and glittering. The glow is a drop-shadow on the button, as the clip-path that cuts the
+   crystal out would cut a box-shadow off too. */
+.miner-shard {
+  position: fixed;
+  top: var(--shard-from);
+  left: 0;
+  z-index: 50;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  filter: drop-shadow(0 0 8px var(--miner-shard)) drop-shadow(0 0 18px var(--miner-diamond));
+  cursor: pointer;
+}
+
+.miner-shard.is-flying {
+  animation: miner-shard var(--shard-ms) linear var(--shard-delay) forwards;
+}
+
+.miner-shard:focus-visible {
+  outline: 3px solid var(--accent);
+}
+
+.miner-shard-gem {
+  position: absolute;
+  inset: 8px 14px;
+  clip-path: polygon(50% 0, 100% 38%, 50% 100%, 0 38%);
+  background: linear-gradient(135deg, #fff 10%, var(--miner-shard) 45%, var(--miner-diamond) 80%, #fff);
+  background-size: 200% 200%;
+  animation: miner-shard-shine 0.9s ease-in-out infinite alternate;
+}
+
+/* Its trail of sparkles, behind it on the right (where it came from) */
+.miner-shard::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 55%;
+  width: 110px;
+  height: 10px;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 1.5px, transparent 2.5px) 0 50% / 16px 10px repeat-x,
+    linear-gradient(to right, color-mix(in srgb, var(--miner-shard) 70%, transparent), transparent);
+  filter: blur(0.5px);
+}
+
+@keyframes miner-shard {
+  from { transform: translate(105vw, 0) rotate(0deg); }
+  to { transform: translate(-15vw, calc(var(--shard-to) - var(--shard-from))) rotate(-25deg); }
+}
+
+@keyframes miner-shard-shine {
+  from { background-position: 0 0; scale: 1; }
+  to { background-position: 100% 100%; scale: 1.12; }
+}
+
+.miner-toast.is-shard {
+  border-left-color: var(--miner-shard);
+}
+
+/* The Shard Shop's boosts, with the comet effects: hours long like the Afterglow, so they don't pulse */
+.miner-buff.is-boost {
+  background: color-mix(in srgb, var(--miner-shard) 25%, var(--background));
+  animation: none;
+}
+
+/* The Shard Shop view (.miner-prestige.is-shop), built like the matters' views: on top a big Star Shard glittering in a
+   turning ring, with a soft glow pulsing behind it */
+.miner-prestige.is-shop {
+  --view: var(--miner-shard);
+  --view-2: var(--miner-diamond);
+}
+
+.miner-prestige.is-shop .miner-art-ring.is-1 {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px dashed color-mix(in srgb, var(--view) 50%, transparent);
+  animation: miner-spin calc(30s / var(--spin)) linear infinite;
+}
+
+.miner-prestige.is-shop .miner-art-ring.is-2 {
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--view) 40%, transparent), color-mix(in srgb, var(--view-2) 15%, transparent) 45%, transparent 70%);
+  animation: miner-throb calc(2.4s / var(--spin)) ease-in-out infinite alternate;
+}
+
+/* The crystal itself, cut out like the flying one (.miner-shard-gem) */
+.miner-prestige.is-shop .miner-art-core {
+  width: 42%;
+  height: 58%;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 100% 38%, 50% 100%, 0 38%);
+  background: linear-gradient(135deg, #fff 10%, var(--view) 45%, var(--view-2) 80%, #fff);
+  background-size: 200% 200%;
+  animation: miner-shard-shine 1.6s ease-in-out infinite alternate;
+}
+
+/* The shop: a card per item, in a list per section */
+.miner-shop-note {
+  color: var(--miner-anomaly);
+}
+
+.miner-shop-list {
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 8px;
+  list-style: none;
+}
+
+.miner-shop-item {
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-radius: 12px;
+  background: var(--background);
+}
+
+/* Each item's icon (or skin's rock) on a tile tinted by its section: boosts orange, the Comet Beacon gold, ore crate
+   brown, skins Star Shard pink and click effects cyan */
+.miner-shop-item {
+  --shop-tint: var(--miner-shard);
+}
+
+.miner-shop-item.is-boost { --shop-tint: #ff8a3d; }
+.miner-shop-item.is-comet { --shop-tint: var(--miner-gold); }
+.miner-shop-item.is-ore { --shop-tint: #d39556; }
+.miner-shop-item.is-effect { --shop-tint: var(--miner-diamond); }
+
+.miner-shop-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--shop-tint) 28%, transparent), color-mix(in srgb, var(--shop-tint) 8%, transparent) 70%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--shop-tint) 40%, transparent);
+  font-size: 2.1rem;
+}
+
+.miner-shop-info {
+  display: grid;
+  gap: 2px;
+}
+
+.miner-shop-name {
+  font-weight: 700;
+}
+
+.miner-shop-text,
+.miner-shop-live {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.miner-shop-live:empty {
+  display: none;
+}
+
+.miner-shop-btn {
+  min-width: 72px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.miner-shop-btn[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--miner-shard);
+}
+
+/* A skin's colours, as a little lumpy rock with a couple of craters (the same colours as .miner-asteroid[data-skin]
+   below) */
+.miner-shop-swatch {
+  width: 36px;
+  height: 34px;
+  border-radius: 46% 54% 48% 52% / 52% 44% 56% 48%;
+  background:
+    radial-gradient(circle at 66% 60%, color-mix(in srgb, var(--rock-dark) 75%, transparent) 0 11%, transparent 13%),
+    radial-gradient(circle at 36% 72%, color-mix(in srgb, var(--rock-dark) 60%, transparent) 0 7%, transparent 9%),
+    radial-gradient(circle at 60% 26%, color-mix(in srgb, var(--rock-dark) 45%, transparent) 0 6%, transparent 8%),
+    radial-gradient(circle at 35% 30%, var(--rock-light), var(--rock) 55%, var(--rock-dark));
+  box-shadow: 0 0 12px var(--rock-glow);
+}
+
+/* Its skins. Prism moves, fading through a Star Shard's colours like the moving skins above. */
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="frostbite"] { --rock-light: #ffffff; --rock: #7cc8f0; --rock-dark: #123a5a; --rock-glow: rgba(160, 220, 255, 0.45); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="bubblegum"] { --rock-light: #ffe6f4; --rock: #ff8cc8; --rock-dark: #7a1f52; --rock-glow: rgba(255, 140, 200, 0.45); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="gilded"] { --rock-light: #fff6c8; --rock: #e0a920; --rock-dark: #5a3a00; --rock-glow: rgba(255, 210, 80, 0.6); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="prism"] { --rock-light: #ffffff; --rock: #ff9ee6; --rock-dark: #3a1a6a; --rock-glow: rgba(255, 158, 230, 0.6); }
+
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="prism"] {
+  --skin-animation: miner-skin-prism 6s linear infinite;
+  animation: var(--skin-animation);
+}
+
+.miner-asteroid[data-skin="prism"].is-hit {
+  animation: miner-hit 0.15s ease, var(--skin-animation);
+}
+
+.miner-asteroid[data-skin="prism"].is-hit-again {
+  animation: miner-hit-again 0.15s ease, var(--skin-animation);
+}
+
+/* Pink, to ice blue, to gold and back */
+@keyframes miner-skin-prism {
+  33% { --rock: #8be9ff; --rock-dark: #0a3a5a; --rock-glow: rgba(139, 233, 255, 0.6); }
+  66% { --rock: #ffe08a; --rock-dark: #5a3a0a; --rock-glow: rgba(255, 224, 138, 0.6); }
+}
+
+/* The rest of the shop's skins (30 Oct 2026). Lava Lamp, Northern Lights, Pocket Galaxy and Disco move, like Prism. */
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="mintChip"] { --rock-light: #f0fff8; --rock: #6fe0b0; --rock-dark: #3a2418; --rock-glow: rgba(110, 224, 176, 0.4); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="sunset"] { --rock-light: #ffe1a8; --rock: #ff7a59; --rock-dark: #4a0f3a; --rock-glow: rgba(255, 122, 89, 0.45); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="toxic"] { --rock-light: #f4ffb0; --rock: #9be22b; --rock-dark: #1f3a05; --rock-glow: rgba(170, 255, 40, 0.6); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="obsidian"] { --rock-light: #9aa6c8; --rock: #1c1f2e; --rock-dark: #050508; --rock-glow: rgba(140, 160, 220, 0.35); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="roseGold"] { --rock-light: #fff0e8; --rock: #e8a090; --rock-dark: #6a2e28; --rock-glow: rgba(255, 180, 160, 0.5); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="lavaLamp"] { --rock-light: #ffd08a; --rock: #ff6a3d; --rock-dark: #4a0a3a; --rock-glow: rgba(255, 106, 61, 0.55); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="northernLights"] { --rock-light: #d8ffe8; --rock: #3ddc97; --rock-dark: #0a1a3a; --rock-glow: rgba(61, 220, 151, 0.55); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="pocketGalaxy"] { --rock-light: #c9b8ff; --rock: #2a1f7a; --rock-dark: #05031a; --rock-glow: rgba(160, 120, 255, 0.5); }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="disco"] { --rock-light: #ffffff; --rock: #ff3ea5; --rock-dark: #2a0a4a; --rock-glow: rgba(255, 62, 165, 0.7); }
+
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="lavaLamp"] { --skin-animation: miner-skin-lava 7s ease-in-out infinite alternate; }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="northernLights"] { --skin-animation: miner-skin-northern 5s ease-in-out infinite alternate; }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="pocketGalaxy"] { --skin-animation: miner-skin-galaxy 4s ease-in-out infinite alternate; }
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="disco"] { --skin-animation: miner-skin-disco 1.6s steps(1) infinite; }
+
+:is(.miner-asteroid, .miner-shop-swatch):is([data-skin="lavaLamp"], [data-skin="northernLights"], [data-skin="pocketGalaxy"], [data-skin="disco"]) {
+  animation: var(--skin-animation);
+}
+
+.miner-asteroid:is([data-skin="lavaLamp"], [data-skin="northernLights"], [data-skin="pocketGalaxy"], [data-skin="disco"]).is-hit {
+  animation: miner-hit 0.15s ease, var(--skin-animation);
+}
+
+.miner-asteroid:is([data-skin="lavaLamp"], [data-skin="northernLights"], [data-skin="pocketGalaxy"], [data-skin="disco"]).is-hit-again {
+  animation: miner-hit-again 0.15s ease, var(--skin-animation);
+}
+
+/* Orange, to pink, to purple */
+@keyframes miner-skin-lava {
+  50% { --rock-light: #ffb3d9; --rock: #e83e8c; --rock-glow: rgba(232, 62, 140, 0.55); }
+  100% { --rock-light: #e0b3ff; --rock: #8a3ee8; --rock-glow: rgba(138, 62, 232, 0.55); }
+}
+
+/* Green, to teal, to violet */
+@keyframes miner-skin-northern {
+  50% { --rock-light: #d0fbff; --rock: #2ec4d6; --rock-glow: rgba(46, 196, 214, 0.55); }
+  100% { --rock-light: #f0d8ff; --rock: #9a5cff; --rock-glow: rgba(154, 92, 255, 0.55); }
+}
+
+/* The glow breathing in and out, going pink at the top */
+@keyframes miner-skin-galaxy {
+  to { --rock-light: #ffd6f5; --rock: #4a2a9a; --rock-glow: rgba(255, 120, 220, 0.75); }
+}
+
+/* A new colour every beat */
+@keyframes miner-skin-disco {
+  0% { --rock: #ff3ea5; --rock-glow: rgba(255, 62, 165, 0.7); }
+  25% { --rock: #3ec8ff; --rock-glow: rgba(62, 200, 255, 0.7); }
+  50% { --rock: #ffd23e; --rock-glow: rgba(255, 210, 62, 0.7); }
+  75% { --rock: #5cff7a; --rock-glow: rgba(92, 255, 122, 0.7); }
+}
+
+/* The Slag Channels' perk: Golden Comets in their colours too */
+.miner-comet[data-skin="frostbite"] { --miner-gold: #a0dcff; }
+.miner-comet[data-skin="bubblegum"] { --miner-gold: #ff8cc8; }
+.miner-comet[data-skin="gilded"] { --miner-gold: #ffd250; }
+.miner-comet[data-skin="prism"] { --miner-gold: #ff9ee6; }
+.miner-comet[data-skin="mintChip"] { --miner-gold: #6fe0b0; }
+.miner-comet[data-skin="sunset"] { --miner-gold: #ff7a59; }
+.miner-comet[data-skin="toxic"] { --miner-gold: #aaff28; }
+.miner-comet[data-skin="obsidian"] { --miner-gold: #8ca0dc; }
+.miner-comet[data-skin="roseGold"] { --miner-gold: #ffb4a0; }
+.miner-comet[data-skin="lavaLamp"] { --miner-gold: #ff6a3d; }
+.miner-comet[data-skin="northernLights"] { --miner-gold: #3ddc97; }
+.miner-comet[data-skin="pocketGalaxy"] { --miner-gold: #a078ff; }
+.miner-comet[data-skin="disco"] { --miner-gold: #ff3ea5; }
+
+/* The click effects (burst() in spaceOreMiner.js): confetti and little stars instead of rock bits, or a ring going out
+   from where the click hit */
+.miner-bit.is-confetti {
+  height: calc(var(--size) * 0.55);
+  border-radius: 1px;
+  background: hsl(var(--hue) 90% 62%);
+}
+
+.miner-bit.is-twinkle {
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  width: calc(var(--size) * 1.6);
+  height: calc(var(--size) * 1.6);
+  background: linear-gradient(135deg, #fff, var(--miner-diamond));
+}
+
+/* Bubbles: see-through rings with a shine, drifting off slower */
+.miner-bit.is-bubbles {
+  width: calc(var(--size) * 1.8);
+  height: calc(var(--size) * 1.8);
+  border: 1.5px solid rgba(170, 235, 255, 0.85);
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.9) 0 15%, rgba(139, 233, 255, 0.15) 22%, transparent 70%);
+  animation-name: miner-bit-flat;
+  animation-duration: 1.1s;
+}
+
+/* Pixels: square, in bright colours, moving in steps like an old game */
+.miner-bit.is-pixels {
+  width: calc(var(--size) * 1.2);
+  height: calc(var(--size) * 1.2);
+  border-radius: 0;
+  background: hsl(var(--hue) 95% 60%);
+  animation-name: miner-bit-flat;
+  animation-timing-function: steps(6);
+}
+
+/* Snow: soft white flakes, drifting down slowly (burst() points them down) */
+.miner-bit.is-snowfall {
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(200, 235, 255, 0.9);
+  animation-duration: 1.6s;
+  animation-timing-function: ease-in-out;
+}
+
+/* Embers: glowing orange, floating up (burst() points them up) */
+.miner-bit.is-embers {
+  width: calc(var(--size) * 0.7);
+  height: calc(var(--size) * 0.7);
+  border-radius: 50%;
+  background: #ffc04a;
+  box-shadow: 0 0 6px #ff6a00, 0 0 12px rgba(255, 90, 0, 0.6);
+  animation-name: miner-bit-flat;
+  animation-duration: 1.2s;
+}
+
+/* Coins: gold, flipping as they're thrown up and fall */
+.miner-bit.is-coins {
+  width: calc(var(--size) * 1.5);
+  height: calc(var(--size) * 1.5);
+  border: 1.5px solid #b8860b;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: radial-gradient(circle at 40% 35%, #fff3b0, #ffd95e 45%, #e0a920);
+  animation-name: miner-bit-coin;
+  animation-duration: 0.9s;
+  animation-timing-function: linear;
+}
+
+@keyframes miner-bit-flat {
+  to { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+}
+
+@keyframes miner-bit-coin {
+  45% { opacity: 1; transform: translate(calc(var(--dx) * 0.55), calc(var(--dy) * 0.4 - 40px)) rotateY(360deg); }
+  to { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 30px)) rotateY(900deg); }
+}
+
+.miner-ring {
+  position: absolute;
+  z-index: 3;
+  left: var(--x);
+  top: var(--y);
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 2px solid var(--miner-shard);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: miner-ring 0.5s ease-out forwards;
+}
+
+.miner-ring.is-crit {
+  border-color: var(--miner-gold);
+  border-width: 3px;
+}
+
+@keyframes miner-ring {
+  to { opacity: 0; transform: scale(6); }
+}
+
+/* ----- The Skins view (31 Oct 2026): built like the Shard Shop, in cyan. On top the asteroid wearing its skin (a big
+   .miner-shop-swatch) in a slowly turning ring, then a card per look, like the shop's. */
+.miner-prestige.is-skins {
+  --view: var(--miner-diamond);
+  --view-2: var(--miner-shard);
+}
+
+.miner-prestige.is-skins .miner-art-ring.is-1 {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px dashed color-mix(in srgb, var(--view) 45%, transparent);
+  animation: miner-spin 40s linear infinite;
+}
+
+.miner-prestige-art > .miner-skins-preview {
+  width: 66%;
+  height: 62%;
+  border-radius: 46% 54% 48% 52% / 52% 44% 56% 48%;
+  box-shadow: 0 0 48px 6px var(--rock-glow);
+}
+
+.miner-shop-item.is-backdrop { --shop-tint: var(--miner-diamond); }
+
+/* Not had yet: the tile and name faded, the text saying how to get it still easy to read */
+.miner-shop-item.is-locked :is(.miner-shop-icon, .miner-shop-name) {
+  opacity: 0.45;
+}
+
+/* A background's tile: the light it puts behind the game (the rules with the backgrounds above), or just the site's
+   own for the usual one */
+.miner-skins-backdrop:not([data-backdrop]) {
+  background: var(--background);
+}
+
+.miner-prestige.is-skins .miner-shop-btn[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--view);
+}
+
+/* Less motion: the shard waits in one place, like the comet, and Prism holds still on its first colours */
+@media (prefers-reduced-motion: reduce) {
+  .miner-shard {
+    left: var(--shard-left);
+  }
+
+  .miner-shard.is-flying,
+  .miner-shard-gem,
+  .miner-prestige.is-shop .miner-art-ring.is-1,
+  .miner-prestige.is-shop .miner-art-ring.is-2,
+  .miner-prestige.is-shop .miner-art-core,
+  .miner-prestige.is-skins .miner-art-ring.is-1,
+  .miner-shop-swatch[data-skin],
+  .miner-asteroid:is([data-skin="prism"], [data-skin="lavaLamp"], [data-skin="northernLights"], [data-skin="pocketGalaxy"], [data-skin="disco"]),
+  .miner-asteroid:is([data-skin="prism"], [data-skin="lavaLamp"], [data-skin="northernLights"], [data-skin="pocketGalaxy"], [data-skin="disco"]):is(.is-hit, .is-hit-again) {
+    animation: none;
+  }
 }

@@ -4,8 +4,9 @@
 // A card with the banner along the top (a picture, or the colors they picked: assets/php/profile.php), the profile
 // picture over its bottom edge with a dot for online (hover it for how long they've been offline), their status next to
 // it, and on the right a Message button (someone else) or the settings cog (your own). Under it the name, badges
-// (Site admin, class, education, their linked Discord username unless they turned it off: assets/php/discord.php), the
-// bio and when they joined. Everything on it is changed in settings (otherPages/settings.php).
+// (Site admin, class, education, Engine Crew for giving parts to Ore Mining Inc.'s Cosmic Engine once its Crew Deck is
+// built, and their linked Discord username unless they turned it off: assets/php/discord.php), the bio and when they
+// joined. Everything on it is changed in settings (otherPages/settings.php).
 // On your own profile the status can be clicked to change it in a popup (or, without a status, a greyed out "Click here
 // to add a status!" only you see). The popup is a form POSTed back here with action=status (and clear=1 for Clear
 // status), which saves only the status and comes back with a toast. Without JS the status links to settings instead.
@@ -16,6 +17,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/schoolClass.php'; // "2.X", "Graduate (X)" or "Not HTX"
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/profile.php'; // banner, status and education badge
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php'; // the Engine badges and weekly medals (engine.php)
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/discord.php'; // the Discord badge
 
 const PROFILE_ROLE_ADMIN = 2; // userRole in HBHub-Users
@@ -89,6 +91,11 @@ $profileHasStatus = hbHubProfileHasStatus($profileStatus);
 // The popup's fields: what was typed in after an error, otherwise the status you have now
 [$profileStatusEmoji, $profileStatusText, $profileStatusClearAfter] = $profileStatusForm ?? [$profileStatus['emoji'], $profileStatus['text'], null];
 $profileGradient = hbHubProfileBannerGradient($profileSettings);
+// Ore Mining Inc.: a badge for each Engine they helped build and each last stage they helped fill, and their weekly
+// Anomaly medals once the Starforge gives them out
+$profileEngineBadges = hbHubMinerEngineBadges(hbHubDatabase(), (int) $profile['userId']);
+$profileMedals = hbHubMinerWeeklyMedals(hbHubDatabase(), (int) $profile['userId']);
+const PROFILE_MEDALS = [1 => ['🥇', 'Gold', 'fastest'], 2 => ['🥈', 'Silver', '2nd fastest'], 3 => ['🥉', 'Bronze', '3rd fastest']];
 
 $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvatarAttachmentId'] !== null ? (int) $profile['userAvatarAttachmentId'] : null);
 $profileBannerSrc = $profile['bannerId'] !== null ? hbHubProfileBannerUrl((int) $profile['userId'], (int) $profile['bannerId']) : null;
@@ -193,7 +200,7 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
 
                 <h1 class="profile-name" id="profile-name"><?= htmlspecialchars($profile['userName']) ?></h1>
 
-                <?php if ($profileIsAdmin || $profileClass !== null || $profileEducation !== null || $profileDiscord !== null): ?>
+                <?php if ($profileIsAdmin || $profileClass !== null || $profileEducation !== null || $profileEngineBadges !== [] || $profileMedals !== [] || $profileDiscord !== null): ?>
                     <ul class="profile-badges" aria-label="Badges">
                         <?php if ($profileIsAdmin): ?>
                             <li class="profile-badge is-admin"><img src="/assets/images/icons/admin.svg" alt="">Site admin</li>
@@ -204,6 +211,12 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
                         <?php if ($profileEducation !== null): ?>
                             <li class="profile-badge" title="Education"><span aria-hidden="true"><?= $profileEducation[1] ?></span><?= htmlspecialchars($profileEducation[2]) ?></li>
                         <?php endif; ?>
+                        <?php foreach ($profileEngineBadges as [$badgeIcon, $badgeName, $badgeTitle]): ?>
+                            <li class="profile-badge" title="<?= htmlspecialchars($badgeTitle) ?>"><span aria-hidden="true"><?= $badgeIcon ?></span><?= htmlspecialchars($badgeName) ?></li>
+                        <?php endforeach; ?>
+                        <?php foreach ($profileMedals as $place => $times): ?>
+                            <li class="profile-badge" title="<?= $times ?> <?= $times === 1 ? 'week' : 'weeks' ?> the <?= PROFILE_MEDALS[$place][2] ?> at Ore Mining Inc.'s weekly Anomaly"><span aria-hidden="true"><?= PROFILE_MEDALS[$place][0] ?></span><?= PROFILE_MEDALS[$place][1] ?><?= $times > 1 ? ' ×' . $times : '' ?></li>
+                        <?php endforeach; ?>
                         <?php if ($profileDiscord !== null): ?>
                             <li class="profile-badge is-discord" title="Discord"><?= hbHubDiscordLogo() ?><span class="profile-visually-hidden">Discord: </span><?= htmlspecialchars($profileDiscord) ?></li>
                         <?php endif; ?>

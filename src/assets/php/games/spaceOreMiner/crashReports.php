@@ -19,7 +19,7 @@ require_once __DIR__ . '/../../database.php';
 
 const HBHUB_MINER_CRASH_KINDS = [
     'hang' => 'Froze', // the page stopped answering (the watchdog worker saw it), whether it came back or not
-    'closed' => 'Closed', // the page went away while it was being looked at, without saying goodbye (killed, crashed, or the computer turned off)
+    'closed' => 'Crashed', // not "Closed", which read like someone had closed the report. The page went away while it was being looked at, without saying goodbye (killed, crashed, or the computer turned off)
 ];
 const HBHUB_MINER_CRASH_MAX_BYTES = 200000; // of JSON, a report with a big save and a full trail is about 20 KB
 const HBHUB_MINER_CRASH_PER_DAY = 20; // per user, so the endpoint can't be used to fill the database

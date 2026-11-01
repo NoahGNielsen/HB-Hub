@@ -7,11 +7,16 @@
 // (claiming the game for this tab, with the random id in data-tab), runs the game, fills everything in, and saves
 // every 30 seconds. data-config has the game's data and numbers (hbHubMinerConfig()), so the script plays by the same
 // rules as the server, and data-icons is where the game's drawn icons are (assets/images/spaceOreMiner/icons.svg).
-// It has four views, picked in the menu under the title and the news ticker: Ore (the asteroid and the store, the default), Dark Matter
-// (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch) and Strange Matter
-// (?view=strangeMatter, the Big Rip and the skill tree). They're all on the page, and the
-// script switches between them without loading it again (changing the address, so Back works), so the game keeps
-// running; ?view= only picks the one shown first. Stats, achievements and how to play are popups.
+// It has eight views, picked in the menu down the right side (over the views on small screens; Project Starbound and
+// Anomalies in a second group, the Shard Shop and Skins in a third): Ore (the asteroid and the store, the default), Dark Matter
+// (?view=darkMatter, the Warp Jump), Antimatter (?view=antimatter, the Big Crunch), Strange Matter
+// (?view=strangeMatter, the Big Rip and the skill tree), Project Starbound (?view=starbound, the Engine the whole site
+// builds together, see assets/php/games/spaceOreMiner/engine.php), Anomalies (?view=anomalies, the challenge runs,
+// HBHUB_MINER_ANOMALIES; while the player is in one, a banner over every view says so), the Shard Shop (?view=shop,
+// spending Star Shards, HBHUB_MINER_SHOP) and Skins (?view=skins, picking the asteroid skin, click effect, background
+// and sparks). They're all on the page, and the script switches between them without
+// loading it again (changing the address, so Back works), so the game keeps running; ?view= only picks the one shown
+// first. Stats, achievements and how to play are popups.
 // data-watchdog is the worker that notices when the page freezes (spaceOreMinerWatchdog.js). After a crash, the next
 // time the game is opened, the script asks in data-miner-crash-dialog whether it may send a crash report.
 //
@@ -28,14 +33,25 @@ if ($guestGame === null) {
     hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 }
 
-const MINER_VIEWS = [ // ?view= => [the menu's text, its address after the game's own]
+const MINER_VIEWS = [ // ?view= => [the menu's text (HTML), its address after the game's own]
     'ore' => ['Ore', ''],
     'darkMatter' => ['Dark Matter', '?view=darkMatter'],
     'antimatter' => ['Antimatter', '?view=antimatter'],
     'strangeMatter' => ['Strange Matter', '?view=strangeMatter'],
+    'starbound' => ['<span class="miner-menu-long">Project </span>Starbound', '?view=starbound'], // just "Starbound" in the bar on small screens
+    'anomalies' => ['Anomalies', '?view=anomalies'],
+    'shop' => ['Shard Shop', '?view=shop'],
+    'skins' => ['Skins', '?view=skins'],
 ];
-$minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
+// The groups of the menu after the first: view => its group (1 the second, 2 the third)
+const MINER_LATER_VIEWS = ['starbound' => 1, 'anomalies' => 1, 'shop' => 2, 'skins' => 2];
 $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-inc/';
+// Project Starbound's view was ?view=engine before it was renamed: old links and bookmarks go to the new one
+if (($_GET['view'] ?? null) === 'engine') {
+    header('Location: ' . $minerAddress . '?view=starbound', true, 301);
+    exit;
+}
+$minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -94,18 +110,44 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
 
         <p class="miner-ticker" data-miner-ticker><span class="miner-ticker-text" data-miner-ticker-text>Loading the news from space…</span></p>
 
+        <!-- The menu and the views together in miner-body: on wide screens the menu is a column down the right side of
+             the views, on small ones a bar over them -->
+        <div class="miner-body">
         <!-- The views. Plain links, which spaceOreMiner.js takes over so the page isn't loaded again. -->
-        <nav class="miner-menu" aria-label="Views" data-miner-menu>
-            <?php foreach (MINER_VIEWS as $view => [$text, $query]): ?>
-                <a class="miner-menu-link is-<?= $view ?>" href="<?= htmlspecialchars($minerAddress . $query) ?>" data-miner-view-link="<?= $view ?>"<?= $view === $minerView ? ' aria-current="page"' : '' ?>>
-                    <span class="miner-menu-text"><?= $text ?></span>
-                    <?php if ($view !== 'ore'): ?>
-                        <span class="miner-menu-count" data-miner-menu-count="<?= $view ?>"></span>
-                        <span class="miner-menu-news" data-miner-menu-news="<?= $view ?>" hidden><span class="games-visually-hidden">(something to do here)</span></span>
-                    <?php endif; ?>
-                </a>
+        <!-- Three groups: the matters first, Project Starbound and Anomalies next, and the Shard Shop and Skins last.
+             They're always there, and their views say what's still locked
+             (Project Starbound and the Anomalies need 250 Strange Matter earned, and shopping a Star Shard). -->
+        <nav class="miner-menus" aria-label="Views" data-miner-menu>
+            <?php foreach ([0, 1, 2] as $row): ?>
+                <?php $rowViews = array_filter(MINER_VIEWS, fn($view) => (MINER_LATER_VIEWS[$view] ?? 0) === $row, ARRAY_FILTER_USE_KEY); ?>
+                <div class="miner-menu<?= $row > 0 ? ' is-later' : '' ?>">
+                    <?php foreach ($rowViews as $view => [$text, $query]): ?>
+                        <a class="miner-menu-link is-<?= $view ?>" href="<?= htmlspecialchars($minerAddress . $query) ?>" data-miner-view-link="<?= $view ?>"<?= $view === $minerView ? ' aria-current="page"' : '' ?>>
+                            <span class="miner-menu-text"><?= $text ?></span>
+                            <?php if ($view !== 'ore'): ?>
+                                <?php if ($row === 0): ?><!-- only the matters show how much there is -->
+                                    <span class="miner-menu-count" data-miner-menu-count="<?= $view ?>"></span>
+                                <?php endif; ?>
+                                <span class="miner-menu-news" data-miner-menu-news="<?= $view ?>" hidden><span class="games-visually-hidden">(something to do here)</span></span>
+                            <?php endif; ?>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
             <?php endforeach; ?>
         </nav>
+
+        <div class="miner-stage">
+        <!-- Only while the player is in an Anomaly (renderAnomalyBanner() in spaceOreMiner.js): which, how long it's
+             been (or how long is left), the Antimatter towards its goal, and the ways out (keeping the run, or not) -->
+        <div class="miner-anomaly-banner" data-miner-anomaly-banner hidden>
+            <span class="miner-anomaly-banner-icon" data-miner-anomaly-banner-icon aria-hidden="true"></span>
+            <p class="miner-anomaly-banner-text">
+                <strong data-miner-anomaly-banner-name></strong>
+                <span data-miner-anomaly-banner-info></span>
+            </p>
+            <button type="button" class="casino-btn casino-btn-primary" data-miner-anomaly-save>Save and leave</button>
+            <button type="button" class="casino-btn" data-miner-anomaly-leave>Leave</button>
+        </div>
 
         <!-- Ore: the asteroid stays put, the store next to it scrolls -->
         <div class="miner-view miner-layout" data-miner-view="ore"<?= $minerView !== 'ore' ? ' hidden' : '' ?>>
@@ -113,7 +155,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 <h2 id="miner-ore-title" class="games-visually-hidden">Your asteroid</h2>
                 <p class="miner-ore"><span class="miner-ore-number" data-miner-ore>0</span> <span class="miner-ore-unit">ore</span></p>
                 <p class="miner-rate"><span data-miner-rate>0</span> ore per second</p>
-                <ul class="miner-buffs" data-miner-buffs aria-label="Comet effects"></ul>
+                <ul class="miner-buffs" data-miner-buffs aria-label="Comet effects and Afterglow"></ul>
 
                 <!-- The buildings you own show up in the picture: around the asteroid in data-miner-scene, and standing on
                      it in data-miner-surface (inside it, so they move with it) -->
@@ -219,11 +261,33 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                     <p class="miner-prestige-hint" data-miner-warp-hint></p>
                 </div>
             </div>
-            <p class="casino-hint miner-prestige-about">
-                A Warp Jump starts you over in a new galaxy with no ore, buildings or upgrades, but you get Dark Matter for all
-                the ore you've ever mined. Every Dark Matter you've earned makes everything mine <?= HBHUB_MINER_DARK_BONUS * 100 ?>%
-                faster until the next Big Crunch, even after you spend it on the upgrades below.
-            </p>
+            <!-- What a Warp Jump does, a point at a time, between the jump and what it buys. The Antimatter, Strange Matter,
+                 Engine and Anomalies views have the same (.miner-prestige-facts). -->
+            <ul class="miner-prestige-facts" aria-label="How Warp Jumps work">
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('galaxy', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">A new galaxy</p>
+                        <p class="miner-prestige-fact-text">A Warp Jump starts you over with no ore, buildings or upgrades.</p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('warp', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Dark Matter for every ore</p>
+                        <p class="miner-prestige-fact-text">You get Dark Matter for all the ore you've ever mined, not just this run.</p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('darkEngine', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">+<?= HBHUB_MINER_DARK_BONUS * 100 ?>% each</p>
+                        <p class="miner-prestige-fact-text">
+                            Each Dark Matter you've earned speeds up all mining until the next Big Crunch, even once it's spent.
+                        </p>
+                    </div>
+                </li>
+            </ul>
             <div class="miner-store-head miner-prestige-store-head">
                 <h3 class="miner-store-title">Dark Matter upgrades</h3>
                 <p class="miner-prestige-owned" data-miner-dark-owned></p>
@@ -247,7 +311,8 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                     <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-anti>0</span> Antimatter</p>
                     <p class="miner-locked" data-miner-crunch-locked>
                         <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
-                        Something even bigger than a Warp Jump is out there. Do your first Warp Jump to find out what.
+                        Every universe collapses in the end, and what's left when it does is worth more than any ore.
+                        Do your first Warp Jump to see it coming.
                     </p>
                     <div data-miner-crunch-section hidden>
                         <p class="miner-prestige-bonus"><strong data-miner-crunch="bonus">+0%</strong> production and Dark Matter from your Antimatter</p>
@@ -278,13 +343,33 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 </div>
             </div>
             <div data-miner-crunch-section hidden>
-                <p class="casino-hint miner-prestige-about">
-                    A Big Crunch collapses the whole universe and starts it over. Your Dark Matter and its upgrades go too, but
-                    you get Antimatter for the Dark Matter you earned. Every Antimatter you've earned makes everything mine
-                    <?= HBHUB_MINER_ANTI_BONUS * 100 ?>% faster, and Warp Jumps give more Dark Matter too: the square root of how
-                    much faster it mines (twice the Dark Matter when it's four times as fast), until a Big Rip tears the
-                    multiverse apart.
-                </p>
+                <ul class="miner-prestige-facts" aria-label="How Big Crunches work">
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('bigCrunch', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">The universe collapses</p>
+                            <p class="miner-prestige-fact-text">
+                                A Big Crunch starts it all over: your Dark Matter and its upgrades go too.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('annihilation', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">Antimatter for Dark Matter</p>
+                            <p class="miner-prestige-fact-text">You get Antimatter for the Dark Matter you earned.</p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('antiComet', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">+<?= HBHUB_MINER_ANTI_BONUS * 100 ?>% each</p>
+                            <p class="miner-prestige-fact-text">
+                                Every Antimatter you've earned makes everything mine faster.
+                            </p>
+                        </div>
+                    </li>
+                </ul>
                 <div class="miner-store-head miner-prestige-store-head">
                     <h3 class="miner-store-title">Antimatter upgrades</h3>
                     <p class="miner-prestige-owned" data-miner-anti-owned></p>
@@ -311,7 +396,8 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                     <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-strange>0</span> Strange Matter</p>
                     <p class="miner-locked" data-miner-rip-locked>
                         <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
-                        Something even stranger than a Big Crunch is out there. Do your first Big Crunch to find out what.
+                        Even a collapsing universe leaves the multiverse around it in one piece, but it doesn't have to.
+                        Do your first Big Crunch to find out how to tear it apart.
                     </p>
                     <div data-miner-rip-section hidden>
                         <p class="miner-prestige-bonus"><strong data-miner-rip="bonus">+0%</strong> production from the Strange Matter you've earned</p>
@@ -331,18 +417,54 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                 </div>
             </div>
             <div data-miner-rip-section hidden>
-                <p class="casino-hint miner-prestige-about">
-                    A Big Rip tears the whole multiverse apart and starts it over. Your Antimatter and its upgrades go too, and
-                    everything a Big Crunch takes, but you get Strange Matter for the Antimatter you earned:
-                    <?= hbHubMinerStrangeTotal(HBHUB_MINER_RIP_ANTI) ?> for <?= number_format(HBHUB_MINER_RIP_ANTI) ?>, and
-                    <?= count(HBHUB_MINER_STRANGE_STEPS) ?> more for every ten times as much. Like a Warp Jump, it only gives
-                    what that's more than all the Strange Matter you've earned before, so each rip has to beat your best
-                    multiverse. Every Strange Matter you've earned
-                    makes everything mine <?= HBHUB_MINER_STRANGE_BONUS * 100 ?>% faster for good, and you spend it on skills in
-                    the tree below, which you keep for good too. A skill can be learned once every skill linked to the left of it is.
-                </p>
+                <ul class="miner-prestige-facts" aria-label="How Big Rips work">
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('bigRip', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">The multiverse tears</p>
+                            <p class="miner-prestige-fact-text">
+                                A Big Rip tears reality like wet paper. Everything a Big Crunch takes is gone, and so are
+                                your Antimatter and its upgrades. Try not to get attached.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('strangelet', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">Strange Matter for Antimatter</p>
+                            <p class="miner-prestige-fact-text">
+                                Nobody knows exactly how much Strange Matter is worth, but Physicists hate
+                                this exchange rate.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('trophy', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">Beat your best</p>
+                            <p class="miner-prestige-fact-text">
+                                Just like a Warp Jump, you only get what's above all the Strange Matter you've ever earned,
+                                so each rip has to beat your best multiverse. Your past self set the bar, and your past self
+                                was showing off.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="miner-prestige-fact">
+                        <?= hbHubMinerIcon('strangeStar', 'miner-prestige-fact-icon') ?>
+                        <div>
+                            <p class="miner-prestige-fact-title">+<?= HBHUB_MINER_STRANGE_BONUS * 100 ?>% each, for good</p>
+                            <p class="miner-prestige-fact-text">
+                                Every Strange Matter you've ever earned speeds up all your mining, even after you spend it.
+                                The accountants have stopped asking. The skills you buy with it below are permanent too.
+                            </p>
+                        </div>
+                    </li>
+                </ul>
                 <div class="miner-store-head miner-prestige-store-head">
-                    <h3 class="miner-store-title">Skill tree</h3>
+                    <div>
+                        <h3 class="miner-store-title">Skill tree</h3>
+                        <p class="miner-prestige-store-note">A skill can be learned once every skill linked to the left of it is.</p>
+                    </div>
                     <p class="miner-prestige-owned" data-miner-skills-owned></p>
                 </div>
                 <div class="miner-tree-wrap" data-miner-tree-wrap>
@@ -372,7 +494,581 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
             </div>
         </section>
 
+        <!-- Engine: the Cosmic Engine the whole site builds together, built like the other views. On top the Engine
+             drawn as a rocket being built, the stage being built, its parts and its lock; under it what you can give, today's Starbound Shifts, every stage with
+             its perk, and who gave the most and last. All filled in by spaceOreMiner.js (renderEngine()) from every
+             save's answer. -->
+        <section class="miner-view casino-card miner-prestige is-engine" aria-labelledby="miner-engine-title" data-miner-view="starbound" data-miner-engine-view<?= $minerView !== 'starbound' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- The Engine as a rocket on its launch pad, one part for each stage (renderRocket() in spaceOreMiner.js).
+                     Parts of stages done are in Project Starbound's paint (data-engine), the stage being built fills up from the
+                     bottom as parts come in (a copy of it in data-miner-rocket-fill, clipped at the line, with the welder
+                     on the line and the crane's hook at its top), and the rest are blueprint outlines. data-miner-rocket-part
+                     is the stage in Project Starbound counting from 0, data-box its x1 y1 x2 y2 here. They're drawn back to front,
+                     so not in stage order. Builds done before this one fly in the sky (data-miner-rocket-fleet). -->
+                <div class="miner-rocket-art">
+                    <svg class="miner-rocket" viewBox="0 0 240 320" role="img" aria-label="Project Starbound, drawn as a rocket being built" data-miner-rocket>
+                        <defs>
+                            <!-- The hull's shine, round like a can: dark at the edges, light in the middle -->
+                            <linearGradient id="miner-rocket-shine">
+                                <stop offset="0" class="is-shade"></stop>
+                                <stop offset="0.35" class="is-hull"></stop>
+                                <stop offset="0.5" class="is-light"></stop>
+                                <stop offset="0.65" class="is-hull"></stop>
+                                <stop offset="1" class="is-shade"></stop>
+                            </linearGradient>
+                            <clipPath id="miner-rocket-clip"><rect x="0" y="320" width="240" height="0" data-miner-rocket-clip></rect></clipPath>
+                        </defs>
+                        <g data-miner-rocket-fleet></g>
+
+                        <!-- The crane on the right, its trolley over the part being built -->
+                        <g class="miner-rocket-crane">
+                            <path class="is-line" d="M214 296 V12 M20 12 H232 M214 30 L232 12 M214 30 L196 12 M214 60 H220 M214 120 H220 M214 180 H220 M214 240 H220"></path>
+                            <line class="miner-rocket-cable" x1="120" y1="14" x2="120" y2="40" data-miner-rocket-cable></line>
+                            <rect class="miner-rocket-trolley" x="114" y="9" width="12" height="6" rx="1" data-miner-rocket-trolley></rect>
+                        </g>
+                        <rect class="miner-rocket-ground" x="0" y="296" width="240" height="24"></rect>
+                        <path class="miner-rocket-pad" d="M66 284 H174 L180 296 H60 Z"></path>
+
+                        <!-- The tower: Scaffolding and the Countdown Clock on top -->
+                        <g class="miner-rocket-part" data-miner-rocket-part="0" data-box="26 56 62 296">
+                            <path class="is-line" d="M32 296 V60 M56 296 V60 M32 272 H56 M32 224 H56 M32 176 H56 M32 128 H56 M32 80 H56 M32 296 L56 272 L32 248 L56 224 L32 200 L56 176 L32 152 L56 128 L32 104 L56 80"></path>
+                            <rect class="is-metal" x="26" y="56" width="36" height="5" rx="1"></rect>
+                        </g>
+                        <g class="miner-rocket-part" data-miner-rocket-part="22" data-box="14 30 74 56">
+                            <path class="is-line" d="M36 52 V56 M52 52 V56"></path>
+                            <rect class="is-screen" x="14" y="30" width="60" height="22" rx="3"></rect>
+                            <text class="miner-rocket-clock" x="44" y="45" text-anchor="middle" data-miner-rocket-clock>T-25</text>
+                        </g>
+
+                        <!-- The rocket itself, which lifts off once it's done -->
+                        <g class="miner-rocket-ship">
+                            <g class="miner-rocket-part" data-miner-rocket-part="24" data-box="100 284 140 318">
+                                <path class="is-flame" d="M100 284 Q102 304 120 318 Q138 304 140 284 Z"></path>
+                                <path class="is-flame-core" d="M108 284 Q110 298 120 307 Q130 298 132 284 Z"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="10" data-box="74 216 166 280">
+                                <path class="is-hull-2" d="M95 216 L74 262 L74 280 L95 258 Z M145 216 L166 262 L166 280 L145 258 Z"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="7" data-box="84 150 156 194">
+                                <rect class="is-hull-2" x="84" y="150" width="11" height="44" rx="4"></rect>
+                                <rect class="is-hull-2" x="145" y="150" width="11" height="44" rx="4"></rect>
+                                <circle class="is-lamp" cx="89.5" cy="188" r="2"></circle>
+                                <circle class="is-lamp is-2" cx="150.5" cy="188" r="2"></circle>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="21" data-box="84 167 156 183">
+                                <path class="is-coil" d="M86 168 l7 3 l-7 3 l7 3 l-7 3 l7 3 M147 168 l7 3 l-7 3 l7 3 l-7 3 l7 3"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="11" data-box="96 252 144 266">
+                                <rect class="is-metal" x="97" y="252" width="4" height="14" rx="1"></rect>
+                                <rect class="is-metal" x="139" y="252" width="4" height="14" rx="1"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="12" data-box="103 254 137 264">
+                                <rect class="is-metal" x="103" y="254" width="34" height="10" rx="3"></rect>
+                                <rect class="is-glow" x="108" y="257" width="24" height="4" rx="2"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="13" data-box="100 264 140 284">
+                                <path class="is-metal" d="M109 264 H131 L140 284 H100 Z"></path>
+                                <path class="is-line" d="M105 274 H135"></path>
+                            </g>
+                            <!-- Stages 16 and 20 draw nothing on the rocket, their groups only give the welder a spot to work on -->
+                            <g class="miner-rocket-part" data-miner-rocket-part="20" data-box="84 264 156 277"></g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="1" data-box="95 214 145 250">
+                                <rect class="is-hull" x="95" y="214" width="50" height="36"></rect>
+                                <rect class="is-metal" x="110" y="220" width="20" height="18" rx="2"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="3" data-box="95 178 145 214">
+                                <rect class="is-hull" x="95" y="178" width="50" height="36"></rect>
+                                <circle class="is-glass" cx="110" cy="196" r="4"></circle>
+                                <circle class="is-glass" cx="120" cy="196" r="4"></circle>
+                                <circle class="is-glass" cx="130" cy="196" r="4"></circle>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="5" data-box="95 142 145 178">
+                                <rect class="is-hull" x="95" y="142" width="50" height="36"></rect>
+                                <circle class="is-metal" cx="120" cy="160" r="11"></circle>
+                                <circle class="is-glow" cx="120" cy="160" r="6"></circle>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="15" data-box="95 106 145 142">
+                                <rect class="is-hull" x="95" y="106" width="50" height="36"></rect>
+                                <!-- The Star Charts: a round chart window across from the Navigation Computer, a constellation on it -->
+                                <circle class="is-screen is-chart" cx="132.5" cy="117.5" r="7.5"></circle>
+                                <path class="is-stars" d="M128.5 120 L130.5 115.5 L134 117.5 L136.5 113.5 M134 117.5 L135.5 121"></path>
+                                <path class="is-glow" d="M130.5 113.3 L131.1 114.9 L132.7 115.5 L131.1 116.1 L130.5 117.7 L129.9 116.1 L128.3 115.5 L129.9 114.9 Z"></path>
+                                <circle class="is-glow" cx="128.5" cy="120" r="0.8"></circle>
+                                <circle class="is-glow" cx="134" cy="117.5" r="0.8"></circle>
+                                <circle class="is-glow" cx="136.5" cy="113.5" r="0.8"></circle>
+                                <circle class="is-glow" cx="135.5" cy="121" r="0.8"></circle>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="18" data-box="95 30 145 106">
+                                <path class="is-line" d="M120 42 V30"></path>
+                                <path class="is-hull" d="M95 106 C95 76 106 56 120 40 C134 56 145 76 145 106 Z"></path>
+                                <ellipse class="is-glass" cx="120" cy="82" rx="8" ry="10"></ellipse>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="6" data-box="101 146 139 246">
+                                <path class="is-pipe" d="M103 148 V238 Q103 244 109 244 H131 Q137 244 137 238 V148"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="8" data-box="84 155 156 164">
+                                <path class="is-wire" d="M86 157 H110 M86 162 H110 M130 157 H154 M130 162 H154"></path>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="17" data-box="100 111 115 124">
+                                <rect class="is-screen" x="100" y="111" width="15" height="13" rx="2"></rect>
+                                <circle class="is-lamp" cx="104" cy="117.5" r="1.5"></circle>
+                                <circle class="is-lamp is-2" cx="107.5" cy="117.5" r="1.5"></circle>
+                                <circle class="is-lamp is-3" cx="111" cy="117.5" r="1.5"></circle>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="16" data-box="86 117 154 131"></g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="14" data-box="93 246 147 254">
+                                <rect class="is-trim" x="93" y="246" width="54" height="8" rx="2"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="4" data-box="93 210 147 218">
+                                <rect class="is-trim" x="93" y="210" width="54" height="8" rx="2"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="9" data-box="93 174 147 182">
+                                <rect class="is-trim" x="93" y="174" width="54" height="8" rx="2"></rect>
+                            </g>
+                            <g class="miner-rocket-part" data-miner-rocket-part="19" data-box="93 138 147 146">
+                                <rect class="is-trim" x="93" y="138" width="54" height="8" rx="2"></rect>
+                            </g>
+                        </g>
+
+                        <!-- From the tower to the rocket: the Fuel Lines and the Launch Clamps, let go at lift-off -->
+                        <g class="miner-rocket-part is-hoses" data-miner-rocket-part="2" data-box="56 194 95 240">
+                            <path class="is-hose" d="M56 232 Q76 242 95 232 M56 194 Q76 204 95 194"></path>
+                        </g>
+                        <g class="miner-rocket-part is-clamps" data-miner-rocket-part="23" data-box="56 114 97 210">
+                            <path class="is-line is-thick" d="M56 120 H92 M56 204 H92"></path>
+                            <rect class="is-hull-2" x="90" y="114" width="7" height="12" rx="1"></rect>
+                            <rect class="is-hull-2" x="90" y="198" width="7" height="12" rx="1"></rect>
+                        </g>
+
+                        <!-- The stage being built: its filled-in part, the welder on the line, or a padlock while it waits on its lock -->
+                        <g class="miner-rocket-fill" clip-path="url(#miner-rocket-clip)" data-miner-rocket-fill></g>
+                        <g class="miner-rocket-welder" data-miner-rocket-welder>
+                            <circle class="is-ball" r="4"></circle>
+                            <path class="is-spark" d="M0 0 L-7 -5 M0 0 L7 -6 M0 0 L-5 6 M0 0 L6 5"></path>
+                        </g>
+                        <g class="miner-rocket-padlock" data-miner-rocket-padlock>
+                            <path class="is-shackle" d="M-6 -2 V-7 A6 6 0 0 1 6 -7 V-2"></path>
+                            <rect x="-9" y="-2" width="18" height="14" rx="3"></rect>
+                            <circle class="is-hole" cx="0" cy="5" r="2"></circle>
+                        </g>
+                        <g class="miner-rocket-smoke">
+                            <circle cx="66" cy="300" r="10"></circle>
+                            <circle cx="174" cy="300" r="10"></circle>
+                            <circle cx="88" cy="296" r="14"></circle>
+                            <circle cx="152" cy="296" r="14"></circle>
+                            <circle cx="120" cy="302" r="16"></circle>
+                        </g>
+                    </svg>
+                </div>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-engine-title" class="miner-prestige-title"><span data-miner-engine="title">Project Starbound</span> <span data-miner-engine="number"></span></h2>
+                    <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-engine="name">Loading…</span></p>
+                    <p class="miner-prestige-bonus" data-miner-engine="stage"></p>
+                    <!-- One pip a stage, the same as the rocket (only for the mouse: the Stages list below says it all) -->
+                    <ol class="miner-rocket-track" aria-hidden="true" data-miner-rocket-track></ol>
+                    <div class="miner-progress">
+                        <div class="miner-progress-bar" role="progressbar" aria-labelledby="miner-engine-progress-label"
+                             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-miner-engine-progress><span class="miner-progress-fill"></span></div>
+                        <p class="miner-progress-label" id="miner-engine-progress-label">
+                            <span data-miner-engine="parts">0</span> of <span data-miner-engine="cost">0</span> Starbound Parts
+                            (<span data-miner-engine="total">0</span> given in all)
+                        </p>
+                    </div>
+                    <p class="miner-prestige-hint" data-miner-engine-lock hidden></p>
+                    <!-- Until the player has earned HBHUB_MINER_ENGINE_STRANGE Strange Matter only the rocket and its
+                         progress show, with this in place of the rest (data-miner-engine-section, renderEngineLocked()) -->
+                    <p class="miner-locked" data-miner-engine-locked hidden>
+                        <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
+                        Out on the launch pad, every miner on HB Hub is building something together, part by part. Only
+                        a proven crew gets to help: earn <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter to join them.
+                    </p>
+                </div>
+            </div>
+            <ul class="miner-prestige-facts" aria-label="How Project Starbound works" data-miner-engine-section hidden>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('buddies', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Built by everyone</p>
+                        <p class="miner-prestige-fact-text">
+                            Everyone builds it together, one stage at a time, out of Rocket Parts. Anyone who has
+                            earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter can give parts.
+                        </p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('sparkles', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Perks for all</p>
+                        <p class="miner-prestige-fact-text">Each stage finished gives everyone who plays its perk, for good.</p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('blueprint', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Watch it grow</p>
+                        <p class="miner-prestige-fact-text">
+                            Each stage done adds its part to the rocket, and the one being built fills up as parts come in.
+                            Point at a part to see its stage.
+                        </p>
+                    </div>
+                </li>
+            </ul>
+
+            <!-- Under the facts: the Supply Bay across the top (giving parts from ore or Strange Matter, side by side),
+                 then today's Shifts, the top contributors and the latest parts next to each other, the Hall, and the
+                 stages last, a folding block per section. Each box has its icon on a tile in its head, like the Shard
+                 Shop's items. -->
+            <div class="miner-engine-grid" data-miner-engine-section hidden>
+                <section class="miner-engine-card is-wide is-give" aria-labelledby="miner-engine-give-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('crates', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-engine-give-title">Supply Bay</h3>
+                            <p class="miner-engine-sub">Send parts to the launch pad. They go on the stage being built straight away.</p>
+                        </div>
+                        <p class="miner-engine-chip" data-miner-engine="mine" hidden></p>
+                    </div>
+                    <p class="miner-engine-note" data-miner-engine-give-note hidden></p>
+                    <div class="miner-engine-gives">
+                        <!-- From ore: one at a time, each dearer than the one before, with a dot for each of today's parts
+                             (data-miner-engine-slots, filled in for the ones given) -->
+                        <div class="miner-engine-give is-ore">
+                            <div class="miner-engine-give-head">
+                                <?= hbHubMinerIcon('orePile', 'miner-engine-give-icon') ?>
+                                <div>
+                                    <p class="miner-engine-give-name">From ore</p>
+                                    <p class="miner-engine-give-price"><span data-miner-engine="oreCost">0</span> ore for the next part</p>
+                                </div>
+                            </div>
+                            <div class="miner-engine-slots">
+                                <ol class="miner-engine-slot-list" aria-hidden="true" data-miner-engine-slots></ol>
+                                <span class="miner-engine-slot-text" data-miner-engine="oreLeft"></span>
+                            </div>
+                            <button type="button" class="miner-prestige-btn miner-engine-give-btn" data-miner-donate="ore" disabled>
+                                <span class="miner-prestige-btn-text">Give 1 part</span>
+                                <span class="miner-prestige-btn-gain">for <span data-miner-engine="oreCostButton"></span> ore</span>
+                            </button>
+                            <p class="miner-engine-small" data-miner-engine="oreShare" hidden></p>
+                            <p class="miner-engine-small">
+                                The first of the day costs <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore and each next one ten
+                                times as much, <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day at most (more with some perks).
+                            </p>
+                        </div>
+                        <!-- From Strange Matter: as many as you like, picked with the - and + buttons, the box or Max -->
+                        <div class="miner-engine-give is-strange">
+                            <div class="miner-engine-give-head">
+                                <?= hbHubMinerIcon('strangelet', 'miner-engine-give-icon') ?>
+                                <div>
+                                    <p class="miner-engine-give-name">From Strange Matter</p>
+                                    <p class="miner-engine-give-price"><?= HBHUB_MINER_ENGINE_STRANGE_PART ?> Strange Matter a part, <span data-miner-engine="strangeHave">0</span> to spend</p>
+                                </div>
+                            </div>
+                            <div class="miner-engine-stepper">
+                                <button type="button" class="miner-engine-step" aria-label="One part fewer" data-miner-donate-step="-1">&minus;</button>
+                                <label class="miner-engine-count">
+                                    <span class="games-visually-hidden">Parts from Strange Matter</span>
+                                    <input type="number" min="1" step="1" value="1" inputmode="numeric" data-miner-donate-count>
+                                </label>
+                                <button type="button" class="miner-engine-step" aria-label="One part more" data-miner-donate-step="1">+</button>
+                                <button type="button" class="miner-engine-step is-max" data-miner-donate-max>Max</button>
+                            </div>
+                            <button type="button" class="miner-prestige-btn miner-engine-give-btn" data-miner-donate="strange" disabled>
+                                <span class="miner-prestige-btn-text" data-miner-engine="strangeParts">Give 1 part</span>
+                                <span class="miner-prestige-btn-gain">for <span data-miner-engine="strangeCost"></span> Strange Matter</span>
+                            </button>
+                            <p class="miner-engine-small">Giving it doesn't make you mine slower: the bonus counts all you've earned.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="miner-engine-card is-shifts" aria-labelledby="miner-shifts-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('clipboard', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-shifts-title">Today's Shifts</h3>
+                            <p class="miner-engine-sub" data-miner-shifts-reset></p>
+                        </div>
+                        <p class="miner-engine-chip" data-miner-shifts-done></p>
+                    </div>
+                    <ul class="miner-shifts" data-miner-shifts></ul>
+                    <p class="miner-engine-small" data-miner-shifts-note></p>
+                </section>
+
+                <section class="miner-engine-card is-top" aria-labelledby="miner-engine-top-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('podium', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-engine-top-title">Top contributors</h3>
+                            <p class="miner-engine-sub">To this build</p>
+                        </div>
+                    </div>
+                    <ol class="miner-engine-list" data-miner-engine-top></ol>
+                    <?php if ($guestGame === null): ?>
+                        <a class="miner-engine-more" href="/games/ore-mining-inc/leaderboard?board=starbound">Everyone who has given parts &rarr;</a>
+                    <?php endif; ?>
+                </section>
+
+                <section class="miner-engine-card is-feed" aria-labelledby="miner-engine-feed-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('radar', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-engine-feed-title">Latest parts</h3>
+                            <p class="miner-engine-sub">Coming in to the launch pad</p>
+                        </div>
+                    </div>
+                    <ul class="miner-engine-list miner-engine-feed" data-miner-engine-feed></ul>
+                </section>
+
+                <!-- Every Engine done so far, once the Starforge's Alloy Bins are (the hall perk, renderEngineHall()) -->
+                <section class="miner-engine-card is-wide" aria-labelledby="miner-engine-hall-title" data-miner-engine-hall hidden>
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('trophy', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-engine-hall-title">Starbound Hall</h3>
+                            <p class="miner-engine-sub">Every build finished so far</p>
+                        </div>
+                    </div>
+                    <ul class="miner-engine-hall" data-miner-engine-hall-list></ul>
+                </section>
+
+                <!-- A folding block per section (renderEngineStages()): the one being built open, the rest folded with how
+                     far along they are on the outside -->
+                <section class="miner-engine-card is-wide is-stages" aria-labelledby="miner-engine-stages-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('blueprint', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-engine-stages-title">Stages</h3>
+                            <p class="miner-engine-sub">Every stage of this build and the perk it gives everyone</p>
+                        </div>
+                        <p class="miner-engine-chip" data-miner-engine-stages-done></p>
+                    </div>
+                    <div class="miner-engine-stages" data-miner-engine-stages></div>
+                </section>
+            </div>
+        </section>
+
+        <!-- Anomalies: the challenge runs, by tier (HBHUB_MINER_ANOMALY_TIERS), each with its rule, goal, parts, best time
+             and badge, and a button to go in. Filled in by spaceOreMiner.js (renderAnomalies()). -->
+        <section class="miner-view casino-card miner-prestige is-anomaly" aria-labelledby="miner-anomalies-title" data-miner-view="anomalies"<?= $minerView !== 'anomalies' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- A little universe with one rule changed: a galaxy in an orb, cut into bands that jerk out of line
+                     every few seconds, a broken ring round it and dead pixels blinking on -->
+                <div class="miner-prestige-art" aria-hidden="true">
+                    <span class="miner-art-ring is-1"></span>
+                    <span class="miner-art-bit is-1"></span>
+                    <span class="miner-art-bit is-2"></span>
+                    <span class="miner-art-bit is-3"></span>
+                    <span class="miner-art-bit is-4"></span>
+                    <span class="miner-art-core"></span>
+                    <?php for ($slice = 1; $slice <= 5; $slice++): ?>
+                        <span class="miner-art-slice is-<?= $slice ?>"></span>
+                    <?php endfor; ?>
+                </div>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-anomalies-title" class="miner-prestige-title">Anomalies</h2>
+                    <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-anomalies-count>0</span> finished</p>
+                    <!-- Every Anomaly's badge in a row, lit once it's finished (renderAnomalies()) -->
+                    <ul class="miner-anomaly-badges" aria-label="Badges" data-miner-anomalies-badges></ul>
+                    <p class="miner-prestige-hint" data-miner-anomalies-now></p>
+                    <!-- With the Tool Racks perk: the last Anomaly or stack gone into, again (renderAgain()) -->
+                    <button type="button" class="casino-btn casino-btn-primary" data-miner-anomaly-again hidden>Again</button>
+                    <!-- Until the player has earned HBHUB_MINER_ANOMALY_STRANGE Strange Matter, this shows in place of
+                         everything under the hero (data-miner-anomalies-open, renderAnomalies()) -->
+                    <p class="miner-locked" data-miner-anomalies-locked hidden>
+                        <?= hbHubMinerIcon('lock', 'miner-locked-icon') ?>
+                        Somewhere out there are universes where the rules are wrong, but they're far too unstable to
+                        step into. Earn <?= number_format(HBHUB_MINER_ANOMALY_STRANGE) ?> Strange Matter to hold one open.
+                    </p>
+                </div>
+            </div>
+            <div data-miner-anomalies-open>
+            <ul class="miner-prestige-facts" aria-label="How Anomalies work">
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('question', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">One rule changed</p>
+                        <p class="miner-prestige-fact-text">
+                            Earn its goal of Antimatter to finish it. Tiers I and II keep your skill tree and Strange Matter;
+                            Tier III starts you from nothing.
+                        </p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('blueprint', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Parts for Project Starbound</p>
+                        <p class="miner-prestige-fact-text">
+                            All its parts the first time each build and on a new best time,
+                            <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
+                        </p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('cometTail', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">Afterglow</p>
+                        <p class="miner-prestige-fact-text">
+                            Your own game mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?>× as much for 1 h (Tier I), 3 h (II),
+                            12 h (III) or 24 h (The Gauntlet), stacks added up. Adds onto any still running, up to
+                            <?= HBHUB_MINER_AFTERGLOW_MAX_MS / 3600000 ?> h ahead.
+                        </p>
+                    </div>
+                </li>
+                <li class="miner-prestige-fact">
+                    <?= hbHubMinerIcon('trophy', 'miner-prestige-fact-icon') ?>
+                    <div>
+                        <p class="miner-prestige-fact-title">A world apart</p>
+                        <p class="miner-prestige-fact-text">
+                            Doesn't count towards your stats or the leaderboard, but has achievements of its own.
+                        </p>
+                    </div>
+                </li>
+            </ul>
+            <!-- Under the facts, built like Project Starbound's boxes (.miner-engine-card): the saved Anomalies across the
+                 top (only when there are any), this week's Anomaly and the stack builder side by side, then a box per
+                 tier with its Anomalies as cards. The goal, parts, Afterglow and best time are tiles of their own
+                 (anomalyStats() in spaceOreMiner.js). -->
+            <div class="miner-engine-grid miner-anomaly-grid">
+                <!-- The Anomalies saved to carry on later (renderSaved()) -->
+                <section class="miner-engine-card is-wide" aria-labelledby="miner-saved-title" data-miner-saved hidden>
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('hourglass', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-saved-title">Saved Anomalies</h3>
+                            <p class="miner-engine-sub">Their clocks keep going while they're saved, and they mine as if you were away until you carry on.</p>
+                        </div>
+                        <p class="miner-engine-chip" data-miner-saved-count></p>
+                    </div>
+                    <ul class="miner-anomaly-saved-list" data-miner-saved-list></ul>
+                </section>
+
+                <!-- This week's Anomaly (renderWeekly()): a row per Anomaly in it with its rule, then its numbers -->
+                <section class="miner-engine-card miner-anomaly-weekly" aria-labelledby="miner-weekly-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('starChart', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-weekly-title">This week's Anomaly</h3>
+                            <p class="miner-engine-sub" data-miner-weekly-name></p>
+                        </div>
+                        <p class="miner-engine-chip is-lit">&times;<?= HBHUB_MINER_ANOMALY_WEEKLY ?></p>
+                    </div>
+                    <ul class="miner-anomaly-rules" data-miner-weekly-mods></ul>
+                    <dl class="miner-anomaly-stats" data-miner-weekly-stats></dl>
+                    <p class="miner-engine-small" data-miner-weekly-best></p>
+                    <div class="miner-anomaly-actions">
+                        <button type="button" class="casino-btn casino-btn-primary" data-miner-weekly-start>Go in</button>
+                        <a class="miner-engine-more" href="/games/ore-mining-inc/leaderboard?board=weekly">Fastest this week &rarr;</a>
+                    </div>
+                    <p class="miner-engine-small">
+                        Worth <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts and Afterglow.
+                    </p>
+                    <!-- With the Heat Shields perk -->
+                    <p class="miner-engine-small" data-miner-weekly-next hidden></p>
+                </section>
+
+                <!-- The stack builder (renderStack()): a tile to pick for each Anomaly that stacks, and the numbers of the
+                     ones picked -->
+                <section class="miner-engine-card miner-anomaly-stack" aria-labelledby="miner-stack-title">
+                    <div class="miner-engine-head">
+                        <?= hbHubMinerIcon('books', 'miner-engine-head-icon') ?>
+                        <div class="miner-engine-head-text">
+                            <h3 class="miner-store-title" id="miner-stack-title">Stack Anomalies</h3>
+                            <p class="miner-engine-sub">Tier I and II together, with all their rules at once</p>
+                        </div>
+                        <p class="miner-engine-chip" data-miner-stack-count></p>
+                    </div>
+                    <div class="miner-stack-picks" data-miner-stack-picks></div>
+                    <p class="miner-engine-note" data-miner-stack-text></p>
+                    <dl class="miner-anomaly-stats" data-miner-stack-stats hidden></dl>
+                    <div class="miner-anomaly-actions">
+                        <button type="button" class="casino-btn casino-btn-primary" data-miner-stack-start disabled>Go in</button>
+                    </div>
+                    <p class="miner-engine-small">
+                        Goal: the lowest of theirs. Parts and Afterglows: theirs added up, parts &times;<?= HBHUB_MINER_ANOMALY_STACK ?>
+                        for each one after the first. Unstable Vacuum goes alone, and greyed-out ones don't mix (point at one to see why).
+                    </p>
+                </section>
+
+                <!-- A box per tier (renderAnomalies()) -->
+                <div class="miner-anomaly-tiers" data-miner-anomaly-tiers></div>
+            </div>
+            </div>
+        </section>
+
+        <!-- The Shard Shop (HBHUB_MINER_SHOP): on top a big Star Shard and how many you have, then a list per section,
+             filled in by spaceOreMiner.js (renderShop()) -->
+        <section class="miner-view casino-card miner-prestige is-shop" aria-labelledby="miner-shop-title" data-miner-view="shop"<?= $minerView !== 'shop' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- A Star Shard glittering in a ring of its own light -->
+                <div class="miner-prestige-art" aria-hidden="true">
+                    <span class="miner-art-ring is-1"></span>
+                    <span class="miner-art-ring is-2"></span>
+                    <span class="miner-art-core"></span>
+                </div>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-shop-title" class="miner-prestige-title">Shard Shop</h2>
+                    <p class="miner-prestige-balance"><span class="miner-prestige-amount" data-miner-shard-count>0</span> <span data-miner-shard-word>Star Shards</span></p>
+                    <p class="miner-prestige-hint">
+                        Now and then a Star Shard zooms past, late for something important. Grab it quick and it's yours
+                        forever. Not even the end of the universe can take it back.
+                    </p>
+                    <p class="miner-prestige-hint miner-shop-note" data-miner-shop-note hidden>
+                        You're in an Anomaly: boosts, ore and comets are for your own game, so they wait until you're back.
+                    </p>
+                </div>
+            </div>
+            <h3 class="miner-store-title miner-shop-first-title">Boosts</h3>
+            <ul class="miner-shop-list" data-miner-shop-list="boost"></ul>
+            <h3 class="miner-store-title">Ore</h3>
+            <ul class="miner-shop-list" data-miner-shop-list="ore"></ul>
+            <h3 class="miner-store-title">Asteroid skins</h3>
+            <ul class="miner-shop-list" data-miner-shop-list="skin"></ul>
+            <h3 class="miner-store-title">Click effects</h3>
+            <ul class="miner-shop-list" data-miner-shop-list="effect"></ul>
+        </section>
+
+        <!-- Skins: how the game looks, all in one place, filled in by spaceOreMiner.js (renderSkins()). On top the
+             asteroid wearing the skin picked, then the asteroid skins (HBHUB_MINER_SKINS, the ones not earned yet saying
+             how to get them), the click effects (bought in the Shard Shop) with the sparks switch, and the backgrounds
+             (HBHUB_MINER_BACKDROPS). The sparks and backgrounds only show once the Starforge's perks are done. -->
+        <section class="miner-view casino-card miner-prestige is-skins" aria-labelledby="miner-skins-title" data-miner-view="skins"<?= $minerView !== 'skins' ? ' hidden' : '' ?>>
+            <div class="miner-prestige-hero">
+                <!-- The asteroid in the skin it's wearing, in a ring of its glow -->
+                <div class="miner-prestige-art" aria-hidden="true">
+                    <span class="miner-art-ring is-1"></span>
+                    <span class="miner-shop-swatch miner-skins-preview" data-miner-skins-preview></span>
+                </div>
+                <div class="miner-prestige-main">
+                    <h2 id="miner-skins-title" class="miner-prestige-title">Skins</h2>
+                    <p class="miner-prestige-balance">
+                        <span class="miner-prestige-amount" data-miner-skins-count>0</span> of <?= count(HBHUB_MINER_SKINS) ?> asteroid skins
+                    </p>
+                    <p class="miner-prestige-hint" data-miner-skins-wearing></p>
+                    <p class="miner-prestige-hint">
+                        Skins come from finishing Anomalies, from Project Starbound and from the Shard Shop. They're yours for
+                        good, in Anomalies too, and changing them is free.
+                    </p>
+                </div>
+            </div>
+            <h3 class="miner-store-title miner-shop-first-title">Asteroid skins</h3>
+            <ul class="miner-shop-list" data-miner-skins-list="skin"></ul>
+            <h3 class="miner-store-title">Click effects</h3>
+            <ul class="miner-shop-list" data-miner-skins-list="effect"></ul>
+            <label class="miner-sparks-switch" data-miner-sparks-box hidden>
+                <input type="checkbox" data-miner-sparks> Sparks when clicking the asteroid
+            </label>
+            <div data-miner-backdrops-box hidden>
+                <h3 class="miner-store-title">Background</h3>
+                <ul class="miner-shop-list" data-miner-skins-list="backdrop"></ul>
+            </div>
+        </section>
+        </div><!-- .miner-stage -->
+        </div><!-- .miner-body -->
+
         <button type="button" class="miner-comet" data-miner-comet hidden aria-label="Catch the Golden Comet"><span class="miner-comet-head"></span></button>
+        <!-- A Star Shard, flying the other way (HBHUB_MINER_SHARD_SLOT_MS in miner.php: one every 15 minutes or so) -->
+        <button type="button" class="miner-shard" data-miner-shard hidden aria-label="Catch the Star Shard"><span class="miner-shard-gem"></span></button>
         <ol class="miner-toasts" data-miner-toasts aria-live="polite"></ol>
 
         <!-- The popups from the buttons by the title. Clicking outside one closes it. -->
@@ -383,6 +1079,7 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
                     <button type="button" class="miner-popup-close" data-miner-close aria-label="Close">&times;</button>
                 </div>
                 <dl class="miner-numbers" data-miner-stats></dl>
+                <p class="miner-engine-small">Your asteroid skin, click effect and background are in the Skins view.</p>
             </div>
         </dialog>
 
@@ -435,6 +1132,15 @@ $minerAddress = $guestGame !== null ? $guestGame['path'] : '/games/ore-mining-in
             <div class="games-dialog-actions">
                 <button type="button" class="casino-btn" data-miner-rip-cancel>Not yet</button>
                 <button type="button" class="casino-btn casino-btn-primary" data-miner-rip-confirm>Big Rip</button>
+            </div>
+        </dialog>
+
+        <dialog class="games-dialog miner-prestige-dialog is-anomaly" data-miner-anomaly-dialog aria-labelledby="miner-anomaly-dialog-title">
+            <h2 id="miner-anomaly-dialog-title" data-miner-anomaly-dialog-title></h2>
+            <p data-miner-anomaly-dialog-text></p>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn" data-miner-anomaly-cancel>Not yet</button>
+                <button type="button" class="casino-btn casino-btn-primary" data-miner-anomaly-confirm></button>
             </div>
         </dialog>
 

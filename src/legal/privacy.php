@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '30 October 2026';
+const HBHUB_PRIVACY_UPDATED = '1 November 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -257,7 +257,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             </li>
                             <li>
                                 Your Ore Mining Inc. save: your ore, buildings, upgrades, Dark Matter, Antimatter, Strange Matter, the skills you've learned, achievements, how many
-                                times you've clicked and caught comets, when you started and last saved, how many saves came
+                                times you've clicked and caught comets, your Star Shards (how many you have and have caught,
+                                and what you bought with them in the Shard Shop: boosts running, skins and click effects, and
+                                the click effect you picked), when you started and last saved, how many saves came
                                 in the last few seconds (so nobody can flood the server with them), and a random id for
                                 the browser tab you're playing in (so the game only runs in one tab at a time). Your game sends
                                 what you did since the last save every 30 seconds, with the time of each purchase and how many
@@ -266,7 +268,45 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 between clicks and where the pointer is, but that stays in your browser: all it sends is whether
                                 a click looked like an auto-clicker's, and it isn't kept. Other people only see
                                 the totals on the Ore Mining Inc. leaderboard (ore mined, ore per second, Dark Matter, Antimatter,
-                                Strange Matter, Warp Jumps, clicks and achievements).
+                                Strange Matter, Warp Jumps, clicks and achievements), and on its Rising tab, which only lists
+                                players who haven't learned the whole skill tree (so it keeps how many skills you've learned).
+                                The save also keeps how far you are with the day's Starbound Shifts, how many Starbound Parts you've
+                                given from ore that day and in all, how many days you've done every Shift and how many weekly
+                                Anomalies you've finished, the Anomaly you're in and the ones you've saved to carry on later
+                                (each its own game, kept the same way, until you finish it, leave it or throw it away), for each
+                                Anomaly or stack of them you've finished how many times, your best time and the last build you
+                                finished it for, the last Anomaly you went into, when the Afterglow from finishing one runs out,
+                                which Shift you swapped that day, which
+                                Engines' last stages you helped fill, and the asteroid skin, background and click sparks you
+                                picked.
+                            </li>
+                            <li>
+                                Your best time for each Ore Mining Inc. Anomaly (or stack of them) you finish, how many times
+                                you've finished it and when you last did, and the same for each week's weekly Anomaly you finish
+                                in its week. <strong>This is shown to everyone</strong> with an account on the Ore Mining Inc.
+                                leaderboard's Anomaly tabs, and it's what gives the leaderboard titles shown under your name
+                                there ("Gauntlet Runner", "Singularity", or "Forgemaster" and "Engineer" for giving parts to
+                                the Starforge or the Cosmic Engine once the stage with that title is built). Once the
+                                Starforge's Cooling Fins are built, the weeks you were among the 3 fastest at the weekly Anomaly
+                                also show as gold, silver and bronze medals on your profile. It's kept until you delete your
+                                account.
+                            </li>
+                            <li>
+                                The Starbound Parts you give to Ore Mining Inc.'s Project Starbound (the Cosmic Engine, then the
+                                Starforge, then the builds after it), which everyone builds together: how many, whether they came from ore, Strange
+                                Matter, a Starbound Shift or an Anomaly (and which one, and how long it took you), which Engine
+                                and stage they went into, and when (one line per kind for each save). <strong>This is shown to everyone</strong>
+                                with an account: your name and the parts you gave in the Project Starbound view's list of the latest parts and
+                                its top 10, and on the Ore Mining Inc. leaderboard's Project Starbound tabs (with how many came from
+                                each). If you've given parts to a build once its badge stage is built (the Cosmic Engine's
+                                Crew Deck, the Starforge's Forge Floor), your profile shows its badge (Engine Crew, Forge Crew),
+                                and if you gave parts to its last stage before it was finished, that stage's badge too
+                                (Ignition, First Light, and from Build #3 on only for every 10th build, like Lamplighter). Once the Starforge's Alloy Bins are built, the Project Starbound view's Hall of
+                                Engines shows the names of the 3 players who gave the most to each finished build. The builds'
+                                locks count how many different players gave parts or finished certain Anomalies (some only in
+                                under a certain time, or only players who haven't learned the whole skill tree), but without
+                                showing who. When a stage of Project Starbound is finished, everyone
+                                who has made a Warp Jump gets a notification about it (it doesn't say who helped).
                             </li>
                             <li>
                                 Ore Mining Inc. crash reports, only if you agree to send one. While the game is open, it notes
@@ -359,7 +399,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     <section id="see" aria-labelledby="privacy-see">
                         <h2 id="privacy-see">4. Who can see what</h2>
                         <ul>
-                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, your Discord username if you've linked Discord (unless you've turned that off in your settings), when you were last online and when you joined, and your spot on the leaderboards.</li>
+                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, your Discord username if you've linked Discord (unless you've turned that off in your settings), when you were last online and when you joined, and your spot on the leaderboards, and the Starbound Parts you've given to Ore Mining Inc.'s Project Starbound (with a badge on your profile for each build you helped build once its badge stage is built, and one for each build's last stage you helped fill), your Ore Mining Inc. Anomaly best times, your weekly Anomaly medals and your leaderboard title there. People playing without an account see how far Project Starbound is, but not who gave what.</li>
                             <li><strong>Everyone in your class's group chat</strong> (everyone on HB Hub who started HTX the same year in the same field) can see that you're in it, and the messages you send there. You're put in it automatically when you sign up or change your class, and taken out of your old class's chat when you change it. Nobody is a group admin there, so only site admins can remove anyone or delete messages in it.</li>
                             <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group. When they remove a site admin, the site admin can undo it from their notification: they're put back in the group as they were, and the notice about it in the chat is deleted.</li>
                             <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
@@ -472,7 +512,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <p>
                             What stays is what other people need for their chats and games to make sense: the messages you sent
-                            and your reactions to messages (shown as from "Deleted User"), your game results and chip history, and any feedback you sent. None of it is connected to your
+                            and your reactions to messages (shown as from "Deleted User"), your game results and chip history,
+                            the Starbound Parts you gave to Ore Mining Inc.'s Project Starbound (which everyone built together, shown
+                            as from "Deleted User" in the game's list of the latest parts, its top 10 and its Starbound Hall), and any feedback you sent. None of it is connected to your
                             name any more.
                         </p>
                         <p>

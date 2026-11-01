@@ -15,6 +15,12 @@
     </li>
     <li>Now and then a Golden Comet flies across the screen. Click it before it's gone for a big pile of ore, or seven times the production for a while.</li>
     <li>
+        About every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes while the game is open, a Star Shard flies past the other
+        way, for only <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds. Click it to keep it. Star Shards are kept for good,
+        and the Shard Shop view sells boosts, ore right away, a Comet Beacon that calls the next comet in,
+        asteroid skins and click effects for them. Boosts, ore and comets are for your own game, so not in an Anomaly.
+    </li>
+    <li>
         Later on, the Dark Matter view has the Warp Jump, which starts you over in a new galaxy for Dark Matter,
         the Antimatter view has the Big Crunch, which starts the whole universe over for Antimatter, and the
         Strange Matter view has the Big Rip, which starts the whole multiverse over for Strange Matter. The game
@@ -30,15 +36,54 @@
     <li>
         With the Auto Buy Dark Matter upgrade, a switch in the store buys for you while the game is open: the
         building <kbd>B</kbd> would pick or an upgrade, whichever pays back its price soonest. When an upgrade
-        is worth waiting for, it saves up for it instead of spending the ore on buildings.
+        is worth waiting for, it saves up for it instead of spending the ore on buildings. When you have a lot
+        of ore, it buys that building 10 or 100 at a time, even without Bulk Buying. In the Hands Only Anomaly
+        it counts a click a second of your own, so it still buys before you have an auto-clicker, and in One
+        Track it leaves each run's first building (the only kind that run can have) for you to pick.
     </li>
     <li>
         With the Comet Catcher Antimatter upgrade, every Golden Comet is caught for you a moment after it shows up,
         while the game is open. Diamond Comets are left for you to catch yourself.
     </li>
     <li>
+        the Project Starbound view has the Cosmic Engine, which everyone on HB Hub builds together, one stage at a time, out of
+        Starbound Parts. Once you've earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter you can give it parts
+        (until then the view only shows how far it is): up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day
+        for ore (the first for <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?>, each next one that day ten
+        times as much), as many as you like for <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> Strange Matter each (it doesn't
+        make you mine slower, as the Strange Matter bonus counts all you've earned), and by working the day's
+        <?= HBHUB_MINER_SHIFT_COUNT ?> Starbound Shifts, tasks picked from <?= count(HBHUB_MINER_SHIFTS) ?> that are the
+        same for everyone and give <?= HBHUB_MINER_SHIFT_PARTS ?> parts each (<?= HBHUB_MINER_SHIFT_PARTS_HARD ?> for a hard
+        one), plus <?= HBHUB_MINER_SHIFT_BONUS ?> more once all of them are done.
+        Every stage finished gives everyone who plays its perk for good. Some stages have a lock too, like a number of
+        different players who have helped, and only finish once it's met. Parts from ore count half from stage 11 and a
+        quarter from stage 16. Once a build is done the next one starts, with new stages and locks that count from
+        nothing again; Build #2 is the Starforge, and there are <?= count(HBHUB_MINER_ENGINES) ?> builds in all. A build's last stage has to be filled within
+        <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days of the one before it, or half its parts are
+        lost and the time starts over; once it's full, everything mines <?= HBHUB_MINER_IGNITION_TIMES ?> times as much for
+        <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours.
+    </li>
+    <li>
+        Once you've earned <?= number_format(HBHUB_MINER_ANOMALY_STRANGE) ?> Strange Matter, the Anomalies view opens: challenge runs in a universe of their own with one rule
+        changed, like no comets or clicks that mine nothing. You keep your skills and Strange Matter, start without Dark
+        Matter or Antimatter, and finish one by earning its goal of Antimatter. Meanwhile your own game mines as if you
+        were away, and you can leave whenever you like: Save and leave keeps the run to carry on later (its clock keeps
+        going), plain Leave loses it. Finishing one gives Project Starbound being
+        built parts: all of them the first time for each build and for a new best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
+        Every time you finish one, your own game also gets an Afterglow: it mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much
+        for an hour (Tier I), 3 hours (Tier II), 12 hours (Tier III) or 24 hours (The Gauntlet).
+        Tier II opens with the Theory of Everything, and turns Autopilot and Auto Crunch off. Tier III opens then too, and
+        starts you from nothing: no skills, no Strange Matter and no upgrades, with goals of their own (like a Big Rip, or
+        ore in one run). Tier I and II Anomalies can be stacked, with all their rules at once, for their parts added up
+        times <?= HBHUB_MINER_ANOMALY_STACK ?> for each one after the first (apart from Unstable Vacuum, which only goes on its
+        own, and a few pairs that can't be done together). Every week there's a weekly Anomaly, a stack
+        that's the same for everyone and worth <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts that week. Finishing
+        Anomalies also earns asteroid skins, which you pick in the Skins view.
+    </li>
+    <li>
         The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
-        your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed.
+        your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed (more once the Cosmic Engine
+        has the stages for it). The daily limits and Starbound Shifts start over at midnight UTC.
     </li>
     <li class="miner-hot-keys" id="hot-keys"><!-- the Hot Key Panel's popup in the game links here -->
         Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade). Once you have
