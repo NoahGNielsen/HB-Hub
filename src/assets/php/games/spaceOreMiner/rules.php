@@ -52,8 +52,9 @@
         for ore (the first for <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?>, each next one that day ten
         times as much), as many as you like for <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> Strange Matter each (it doesn't
         make you mine slower, as the Strange Matter bonus counts all you've earned), and by working the day's
-        <?= HBHUB_MINER_SHIFT_COUNT ?> Starbound Shifts, small tasks that are the same for everyone and give
-        <?= HBHUB_MINER_SHIFT_PARTS ?> parts each, or <?= HBHUB_MINER_SHIFT_PARTS_ALL ?> each once all of them are done.
+        <?= HBHUB_MINER_SHIFT_COUNT ?> Starbound Shifts, tasks picked from <?= count(HBHUB_MINER_SHIFTS) ?> that are the
+        same for everyone and give <?= HBHUB_MINER_SHIFT_PARTS ?> parts each (<?= HBHUB_MINER_SHIFT_PARTS_HARD ?> for a hard
+        one), plus <?= HBHUB_MINER_SHIFT_BONUS ?> more once all of them are done.
         Every stage finished gives everyone who plays its perk for good. Some stages have a lock too, like a number of
         different players who have helped, and only finish once it's met. Parts from ore count half from stage 11 and a
         quarter from stage 16. Once a build is done the next one starts, with new stages and locks that count from

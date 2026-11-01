@@ -216,9 +216,12 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day (one more once the Starforge's Air Intakes are done). The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much. From each build's third section (stage 11) a part from ore counts as half a part, and from its fourth (stage 16) as a quarter, or half again once the Starforge's Piston Arms are done.</li>
                             <li><strong>Strange Matter</strong>: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> for a part, as many as you like. It doesn't make you mine slower, as the Strange Matter bonus counts all you've ever earned, not what you have left.</li>
                             <li>
-                                <strong>Starbound Shifts</strong>: <?= HBHUB_MINER_SHIFT_COUNT ?> small tasks a day, the same for everyone (like
+                                <strong>Starbound Shifts</strong>: <?= HBHUB_MINER_SHIFT_COUNT ?> tasks a day, picked from
+                                <?= count(HBHUB_MINER_SHIFTS) ?> and the same for everyone (like
                                 <?= strtolower(HBHUB_MINER_SHIFTS['comets']['text']) ?> or <?= strtolower(HBHUB_MINER_SHIFTS['buildings']['text']) ?>),
-                                worth <?= HBHUB_MINER_SHIFT_PARTS ?> parts each, or <?= HBHUB_MINER_SHIFT_PARTS_ALL ?> each once all of them are done.
+                                worth <?= HBHUB_MINER_SHIFT_PARTS ?> parts each, plus <?= HBHUB_MINER_SHIFT_BONUS ?> once all of them are done.
+                                Some are hard (like <?= strtolower(HBHUB_MINER_SHIFTS['rip']['text']) ?> or
+                                <?= strtolower(HBHUB_MINER_SHIFTS['playingHard']['text']) ?>) and worth <?= HBHUB_MINER_SHIFT_PARTS_HARD ?> parts.
                             </li>
                         </ul>
                         <p>

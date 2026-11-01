@@ -3494,6 +3494,19 @@
   line-height: 1.3;
 }
 
+/* "Hard · 30 parts" after a hard Shift's name */
+.miner-shift-hard {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--view) 18%, transparent);
+  color: var(--view);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
 .miner-shift .miner-progress-bar {
   grid-column: 2 / -1;
   height: 6px;

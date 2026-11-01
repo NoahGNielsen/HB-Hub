@@ -819,20 +819,77 @@ const HBHUB_MINER_ENGINE_NEUTRAL = ['offline' => HBHUB_MINER_OFFLINE_RATE, 'come
     'antiGain' => 1, 'cost' => 1, 'diamond' => 0, 'click' => 1, 'anomalyParts' => 1, 'upgradeCost' => 1, 'oreParts' => 0, 'oreFloor' => 0, 'shiftSwap' => 0];
 
 // Engine Shifts: HBHUB_MINER_SHIFT_COUNT tasks a day, the same for everyone (hbHubMinerShiftTasks()), for anyone with a
-// Warp Jump while the Engine takes parts. Each is worth HBHUB_MINER_SHIFT_PARTS, or HBHUB_MINER_SHIFT_PARTS_ALL once all
-// of them are done (the last one pays the difference). 'goal' is in what each counts: comets caught, Warp Jumps,
-// buildings and ore upgrades bought, clicks, and ms of playing with the game open (not time away).
+// Warp Jump while the Engine takes parts. Each is worth HBHUB_MINER_SHIFT_PARTS (HBHUB_MINER_SHIFT_PARTS_HARD for a
+// 'hard' one), and the last of the day's to be done also brings HBHUB_MINER_SHIFT_BONUS. 'count' is what it counts
+// (what hbHubMinerShift() is called with) and 'goal' how many of it:
+// - clicks, crits (critical clicks) and stormClicks (clicks while a Click Storm runs).
+// - comets (any comet caught), comets:<kind> (a key of HBHUB_MINER_COMETS).
+// - warps, fastWarps and quickWarps (Warp Jumps less than HBHUB_MINER_SHIFT_FAST_MS or HBHUB_MINER_SHIFT_QUICK_MS into
+//   the run), crunches and rips.
+// - buildings (bought, any kind), buildings:<id> (a key of HBHUB_MINER_BUILDINGS) and upgrades (ore upgrades bought).
+// - playing: ms of playing with the game open (not time away).
+// - shards (Star Shards caught), oreParts and strangeParts (parts given from ore or Strange Matter).
+// The players who get Shifts have earned HBHUB_MINER_ENGINE_STRANGE Strange Matter, so they all have Big Crunches and
+// Big Rips; the hard ones take hours, or a lot of the game. Nothing counts that some players can't do any more (Dark
+// Matter upgrades, say, which Dark Echo keeps for good). 'icon' is a drawn icon, like the upgrades' ones.
 const HBHUB_MINER_SHIFTS = [
-    'comets' => ['goal' => 5, 'text' => 'Catch 5 comets'],
-    'warps' => ['goal' => 2, 'text' => 'Make 2 Warp Jumps'],
-    'buildings' => ['goal' => 100, 'text' => 'Buy 100 buildings'],
-    'upgrades' => ['goal' => 15, 'text' => 'Buy 15 upgrades'],
-    'clicks' => ['goal' => 2000, 'text' => 'Click the asteroid 2,000 times'],
-    'playing' => ['goal' => 1800000, 'text' => 'Mine for 30 minutes with the game open'],
+    'comets' => ['count' => 'comets', 'goal' => 5, 'icon' => 'comet', 'text' => 'Catch 5 comets'],
+    'cometsMore' => ['count' => 'comets', 'goal' => 15, 'icon' => 'comet', 'text' => 'Catch 15 comets'],
+    'cometsHard' => ['count' => 'comets', 'goal' => 60, 'icon' => 'comet', 'hard' => true, 'text' => 'Catch 60 comets'],
+    'supernovas' => ['count' => 'comets:frenzy', 'goal' => 3, 'icon' => 'supernovaFist', 'text' => 'Catch 3 Supernova comets'],
+    'luckyComets' => ['count' => 'comets:lucky', 'goal' => 3, 'icon' => 'sparkles', 'text' => 'Catch 3 Lucky comets'],
+    'clickStorms' => ['count' => 'comets:storm', 'goal' => 3, 'icon' => 'cometTail', 'text' => 'Catch 3 Click Storm comets'],
+    'diamondComet' => ['count' => 'comets:diamond', 'goal' => 1, 'icon' => 'diamond', 'hard' => true, 'text' => 'Catch a Diamond Comet'],
+    'clicks' => ['count' => 'clicks', 'goal' => 2000, 'icon' => 'glove', 'text' => 'Click the asteroid 2,000 times'],
+    'clicksMore' => ['count' => 'clicks', 'goal' => 5000, 'icon' => 'glove', 'text' => 'Click the asteroid 5,000 times'],
+    'clicksHard' => ['count' => 'clicks', 'goal' => 25000, 'icon' => 'glove', 'hard' => true, 'text' => 'Click the asteroid 25,000 times'],
+    'crits' => ['count' => 'crits', 'goal' => 100, 'icon' => 'crit', 'text' => 'Land 100 critical clicks'],
+    'critsHard' => ['count' => 'crits', 'goal' => 1000, 'icon' => 'crit', 'hard' => true, 'text' => 'Land 1,000 critical clicks'],
+    'stormClicks' => ['count' => 'stormClicks', 'goal' => 300, 'icon' => 'gauntlet', 'text' => 'Click 300 times during Click Storms'],
+    'stormClicksHard' => ['count' => 'stormClicks', 'goal' => 2500, 'icon' => 'gauntlet', 'hard' => true, 'text' => 'Click 2,500 times during Click Storms'],
+    'warps' => ['count' => 'warps', 'goal' => 2, 'icon' => 'warp', 'text' => 'Make 2 Warp Jumps'],
+    'warpsMore' => ['count' => 'warps', 'goal' => 5, 'icon' => 'warp', 'text' => 'Make 5 Warp Jumps'],
+    'warpsHard' => ['count' => 'warps', 'goal' => 20, 'icon' => 'warp', 'hard' => true, 'text' => 'Make 20 Warp Jumps'],
+    'fastWarps' => ['count' => 'fastWarps', 'goal' => 3, 'icon' => 'autoWarp', 'text' => 'Make 3 Warp Jumps less than 5 minutes into a run'],
+    'quickWarps' => ['count' => 'quickWarps', 'goal' => 5, 'icon' => 'autoWarp', 'hard' => true, 'text' => 'Make 5 Warp Jumps less than a minute into a run'],
+    'crunch' => ['count' => 'crunches', 'goal' => 1, 'icon' => 'bigCrunch', 'text' => 'Do a Big Crunch'],
+    'crunchesHard' => ['count' => 'crunches', 'goal' => 5, 'icon' => 'bigCrunch', 'hard' => true, 'text' => 'Do 5 Big Crunches'],
+    'rip' => ['count' => 'rips', 'goal' => 1, 'icon' => 'bigRip', 'hard' => true, 'text' => 'Do a Big Rip'],
+    'buildings' => ['count' => 'buildings', 'goal' => 100, 'icon' => 'crates', 'text' => 'Buy 100 buildings'],
+    'buildingsMore' => ['count' => 'buildings', 'goal' => 500, 'icon' => 'crates', 'text' => 'Buy 500 buildings'],
+    'buildingsHard' => ['count' => 'buildings', 'goal' => 3000, 'icon' => 'crates', 'hard' => true, 'text' => 'Buy 3,000 buildings'],
+    'pickaxes' => ['count' => 'buildings:pickaxe', 'goal' => 100, 'icon' => 'pickaxeGuy', 'text' => 'Hire 100 Space Pickaxe Guys'],
+    'drones' => ['count' => 'buildings:drone', 'goal' => 100, 'icon' => 'drone', 'text' => 'Buy 100 Mining Drones'],
+    'rigs' => ['count' => 'buildings:rig', 'goal' => 50, 'icon' => 'rig', 'text' => 'Buy 50 Mining Rigs'],
+    'bases' => ['count' => 'buildings:base', 'goal' => 50, 'icon' => 'base', 'text' => 'Build 50 Asteroid Bases'],
+    'freighters' => ['count' => 'buildings:freighter', 'goal' => 50, 'icon' => 'freighter', 'text' => 'Buy 50 Ore Freighters'],
+    'stations' => ['count' => 'buildings:station', 'goal' => 50, 'icon' => 'station', 'text' => 'Build 50 Space Stations'],
+    'crackers' => ['count' => 'buildings:cracker', 'goal' => 40, 'icon' => 'planetCracker', 'text' => 'Buy 40 Planet Crackers'],
+    'siphons' => ['count' => 'buildings:siphon', 'goal' => 30, 'icon' => 'blackHole', 'text' => 'Buy 30 Black Hole Siphons'],
+    'forges' => ['count' => 'buildings:forge', 'goal' => 30, 'icon' => 'starForge', 'text' => 'Build 30 Star Forges'],
+    'dysons' => ['count' => 'buildings:dyson', 'goal' => 25, 'icon' => 'dysonSwarm', 'text' => 'Buy 25 Dyson Swarms'],
+    'wormholes' => ['count' => 'buildings:wormhole', 'goal' => 20, 'icon' => 'wormhole', 'text' => 'Open 20 Wormhole Gates'],
+    'multiverseDrills' => ['count' => 'buildings:multiverse', 'goal' => 20, 'icon' => 'multiverse', 'text' => 'Buy 20 Multiverse Drills'],
+    'timeQuarries' => ['count' => 'buildings:timeQuarry', 'goal' => 15, 'icon' => 'timeQuarry', 'hard' => true, 'text' => 'Dig 15 Time Quarries'],
+    'bigBangReactors' => ['count' => 'buildings:bigBangReactor', 'goal' => 10, 'icon' => 'bigBangReactor', 'hard' => true, 'text' => 'Build 10 Big Bang Reactors'],
+    'infinityMine' => ['count' => 'buildings:infinityMine', 'goal' => 1, 'icon' => 'infinityMine', 'hard' => true, 'text' => 'Build an Infinity Mine'],
+    'upgrades' => ['count' => 'upgrades', 'goal' => 15, 'icon' => 'chip', 'text' => 'Buy 15 upgrades'],
+    'upgradesMore' => ['count' => 'upgrades', 'goal' => 50, 'icon' => 'chip', 'text' => 'Buy 50 upgrades'],
+    'upgradesHard' => ['count' => 'upgrades', 'goal' => 200, 'icon' => 'chip', 'hard' => true, 'text' => 'Buy 200 upgrades'],
+    'playing' => ['count' => 'playing', 'goal' => 1800000, 'icon' => 'hourglass', 'text' => 'Mine for 30 minutes with the game open'],
+    'playingMore' => ['count' => 'playing', 'goal' => 3600000, 'icon' => 'hourglass', 'text' => 'Mine for an hour with the game open'],
+    'playingHard' => ['count' => 'playing', 'goal' => 10800000, 'icon' => 'hourglass', 'hard' => true, 'text' => 'Mine for 3 hours with the game open'],
+    'shards' => ['count' => 'shards', 'goal' => 2, 'icon' => 'shard', 'text' => 'Catch 2 Star Shards'],
+    'shardsHard' => ['count' => 'shards', 'goal' => 6, 'icon' => 'shard', 'hard' => true, 'text' => 'Catch 6 Star Shards'],
+    'oreParts' => ['count' => 'oreParts', 'goal' => 5, 'icon' => 'orePile', 'text' => 'Give 5 parts from ore'],
+    'strangeParts' => ['count' => 'strangeParts', 'goal' => 10, 'icon' => 'strangelet', 'text' => 'Give 10 parts from Strange Matter'],
 ];
 const HBHUB_MINER_SHIFT_COUNT = 3;
 const HBHUB_MINER_SHIFT_PARTS = 10;
-const HBHUB_MINER_SHIFT_PARTS_ALL = 25;
+const HBHUB_MINER_SHIFT_PARTS_HARD = 30;
+const HBHUB_MINER_SHIFT_BONUS = 45; // for doing all of the day's (so 25 each when none of them is hard)
+const HBHUB_MINER_SHIFT_FAST_MS = 300000; // fastWarps: a Warp Jump less than 5 minutes into the run
+const HBHUB_MINER_SHIFT_QUICK_MS = 60000; // quickWarps: less than a minute
 
 // ----- Anomalies: challenge runs, each a universe of its own inside the save with one rule changed. One starts like a
 // Big Rip that gives nothing (Dark Matter, Antimatter and their upgrades start over, apart from the ones Antimatter
@@ -1243,7 +1300,10 @@ function hbHubMinerConfig(): array
         'shifts' => HBHUB_MINER_SHIFTS,
         'shiftCount' => HBHUB_MINER_SHIFT_COUNT,
         'shiftParts' => HBHUB_MINER_SHIFT_PARTS,
-        'shiftPartsAll' => HBHUB_MINER_SHIFT_PARTS_ALL,
+        'shiftPartsHard' => HBHUB_MINER_SHIFT_PARTS_HARD,
+        'shiftBonus' => HBHUB_MINER_SHIFT_BONUS,
+        'shiftFastMs' => HBHUB_MINER_SHIFT_FAST_MS,
+        'shiftQuickMs' => HBHUB_MINER_SHIFT_QUICK_MS,
         'sourceShift' => HBHUB_MINER_ENGINE_SOURCE_SHIFT,
         'sourceOre' => HBHUB_MINER_ENGINE_SOURCE_ORE,
         'sourceStrange' => HBHUB_MINER_ENGINE_SOURCE_STRANGE,
@@ -1882,34 +1942,45 @@ function hbHubMinerShiftSwap(array &$state, mixed $index): bool
 }
 
 /**
- * Counts $amount towards today's Shift $task, if it's one of the player's (hbHubMinerPlayerShifts()). A Shift
- * that's just been done goes in $given as [HBHUB_MINER_ENGINE_SOURCE_SHIFT, parts]. $given is null when the player
- * can't give parts at all (guests), and then nothing is counted either.
+ * Counts $amount of $count (a Shift's 'count', see HBHUB_MINER_SHIFTS) towards each of the player's Shifts today
+ * that counts it (hbHubMinerPlayerShifts()). A Shift that's just been done goes in $given as
+ * [HBHUB_MINER_ENGINE_SOURCE_SHIFT, parts], with HBHUB_MINER_SHIFT_BONUS on top for the last of the day's. $given is
+ * null when the player can't give parts at all (guests), and then nothing is counted either.
  */
-function hbHubMinerShift(array &$state, string $task, int $amount, ?array &$given): void
+function hbHubMinerShift(array &$state, string $count, int $amount, ?array &$given): void
 {
     if ($given === null || !hbHubMinerCanGive($state)) {
         return;
     }
     hbHubMinerEngineDay($state);
-    $index = array_search($task, hbHubMinerPlayerShifts($state), true);
-    $goal = HBHUB_MINER_SHIFTS[$task]['goal'];
-    if ($index === false || $state['shifts'][$index] >= $goal) {
-        return;
+    $tasks = hbHubMinerPlayerShifts($state);
+    foreach ($tasks as $index => $task) {
+        $goal = HBHUB_MINER_SHIFTS[$task]['goal'];
+        if (HBHUB_MINER_SHIFTS[$task]['count'] !== $count || $state['shifts'][$index] >= $goal) {
+            continue;
+        }
+        $state['shifts'][$index] = min($goal, $state['shifts'][$index] + $amount);
+        if ($state['shifts'][$index] < $goal) {
+            continue;
+        }
+        $done = 0;
+        foreach ($tasks as $i => $id) {
+            $done += $state['shifts'][$i] >= HBHUB_MINER_SHIFTS[$id]['goal'] ? 1 : 0;
+        }
+        if ($done === HBHUB_MINER_SHIFT_COUNT) {
+            $state['shiftDays']++;
+        }
+        hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_SHIFT, hbHubMinerShiftParts($task)
+            + ($done === HBHUB_MINER_SHIFT_COUNT ? HBHUB_MINER_SHIFT_BONUS : 0)]);
     }
-    $state['shifts'][$index] = min($goal, $state['shifts'][$index] + $amount);
-    if ($state['shifts'][$index] < $goal) {
-        return;
-    }
-    $done = 0;
-    foreach (hbHubMinerPlayerShifts($state) as $i => $id) {
-        $done += $state['shifts'][$i] >= HBHUB_MINER_SHIFTS[$id]['goal'] ? 1 : 0;
-    }
-    if ($done === HBHUB_MINER_SHIFT_COUNT) {
-        $state['shiftDays']++;
-    }
-    hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_SHIFT, $done === HBHUB_MINER_SHIFT_COUNT
-        ? HBHUB_MINER_SHIFT_PARTS_ALL * HBHUB_MINER_SHIFT_COUNT - HBHUB_MINER_SHIFT_PARTS * (HBHUB_MINER_SHIFT_COUNT - 1) : HBHUB_MINER_SHIFT_PARTS]);
+}
+
+/**
+ * The parts Shift $task is worth, without the bonus for doing all of the day's.
+ */
+function hbHubMinerShiftParts(string $task): int
+{
+    return (HBHUB_MINER_SHIFTS[$task]['hard'] ?? false) ? HBHUB_MINER_SHIFT_PARTS_HARD : HBHUB_MINER_SHIFT_PARTS;
 }
 
 /**
@@ -3147,7 +3218,13 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
     }
 
     if ($type === 'shard') {
-        return hbHubMinerCatchShard($state, hbHubMinerGame($state)['tick']);
+        if (!hbHubMinerCatchShard($state, hbHubMinerGame($state)['tick'])) {
+            return false;
+        }
+        if ($state['anomaly'] === null) { // Shifts only count in the player's own game
+            hbHubMinerShift($state, 'shards', 1, $given);
+        }
+        return true;
     }
 
     if ($type === 'shopBuy') {
@@ -3207,8 +3284,17 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
         if ($count < 1) {
             return false;
         }
+        $crits = $state['crits'];
+        $isStorm = false;
+        foreach ($state['buffs'] as $buff) {
+            $isStorm = $isStorm || ($buff['kind'] === 'storm' && $buff['until'] > $state['tick']);
+        }
         hbHubMinerClick($state, $count, ($action['auto'] ?? false) === true);
         hbHubMinerShift($state, 'clicks', $count, $given);
+        hbHubMinerShift($state, 'crits', (int) ($state['crits'] - $crits), $given);
+        if ($isStorm) {
+            hbHubMinerShift($state, 'stormClicks', $count, $given);
+        }
         return true;
     }
 
@@ -3228,6 +3314,7 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
         $state['ore'] = max(0.0, $state['ore'] - $cost);
         $state['buildings'][$buildingId] += $amount;
         hbHubMinerShift($state, 'buildings', $amount, $given);
+        hbHubMinerShift($state, 'buildings:' . $buildingId, $amount, $given);
         return true;
     }
 
@@ -3285,18 +3372,27 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
     }
 
     if ($type === 'comet') {
-        if (hbHubMinerCatchComet($state) === null) {
+        $kind = hbHubMinerCatchComet($state);
+        if ($kind === null) {
             return false;
         }
         hbHubMinerShift($state, 'comets', 1, $given);
+        hbHubMinerShift($state, 'comets:' . $kind, 1, $given);
         return true;
     }
 
     if ($type === 'warp') {
+        $runMs = $state['tick'] - $state['runStarted']; // before the Warp Jump starts a new run
         if (!hbHubMinerWarp($state)) {
             return false;
         }
         hbHubMinerShift($state, 'warps', 1, $given);
+        if ($runMs < HBHUB_MINER_SHIFT_FAST_MS) {
+            hbHubMinerShift($state, 'fastWarps', 1, $given);
+        }
+        if ($runMs < HBHUB_MINER_SHIFT_QUICK_MS) {
+            hbHubMinerShift($state, 'quickWarps', 1, $given);
+        }
         return true;
     }
 
@@ -3319,6 +3415,7 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
             if ($quarters >= HBHUB_MINER_ENGINE_ORE_QUARTERS) {
                 hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_ORE, intdiv($quarters, HBHUB_MINER_ENGINE_ORE_QUARTERS)]);
             }
+            hbHubMinerShift($state, 'oreParts', $parts, $given);
             return true;
         }
         if (($action['what'] ?? null) === 'strange') {
@@ -3327,17 +3424,26 @@ function hbHubMinerApply(array &$state, array $action, ?array &$given = null): b
             }
             $state['strange'] -= $parts * HBHUB_MINER_ENGINE_STRANGE_PART;
             hbHubMinerGive($state, $given, [HBHUB_MINER_ENGINE_SOURCE_STRANGE, $parts]);
+            hbHubMinerShift($state, 'strangeParts', $parts, $given);
             return true;
         }
         return false;
     }
 
     if ($type === 'crunch') {
-        return hbHubMinerCrunch($state);
+        if (!hbHubMinerCrunch($state)) {
+            return false;
+        }
+        hbHubMinerShift($state, 'crunches', 1, $given);
+        return true;
     }
 
     if ($type === 'rip') {
-        return hbHubMinerRip($state);
+        if (!hbHubMinerRip($state)) {
+            return false;
+        }
+        hbHubMinerShift($state, 'rips', 1, $given);
+        return true;
     }
 
     return false;

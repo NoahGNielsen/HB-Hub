@@ -239,22 +239,26 @@
         return true;
     }
 
-    // Counts amount towards today's Shift task, and puts a Shift just done in given (hbHubMinerShift()). given is null
-    // for guests, who can't give parts, and then nothing is counted.
-    function shift(s, task, amount, given) {
+    // Counts amount of count (a Shift's 'count') towards each of today's Shifts that counts it, and puts a Shift just
+    // done in given, with the bonus on the last of the day's (hbHubMinerShift()). given is null for guests, who can't
+    // give parts, and then nothing is counted.
+    function shift(s, count, amount, given) {
         if (given === null || !canGive(s)) return;
         engineDay(s);
         const tasks = playerShifts(s);
-        const index = tasks.indexOf(task);
-        const goal = SHIFTS[task].goal;
-        if (index < 0 || s.shifts[index] >= goal) return;
-        s.shifts[index] = Math.min(goal, s.shifts[index] + amount);
-        if (s.shifts[index] < goal) return;
-        const done = tasks.filter((id, i) => s.shifts[i] >= SHIFTS[id].goal).length;
-        if (done === CONFIG.shiftCount) s.shiftDays = (s.shiftDays ?? 0) + 1;
-        give(s, given, [CONFIG.sourceShift, done === CONFIG.shiftCount
-            ? CONFIG.shiftPartsAll * CONFIG.shiftCount - CONFIG.shiftParts * (CONFIG.shiftCount - 1) : CONFIG.shiftParts]);
+        tasks.forEach((task, index) => {
+            const goal = SHIFTS[task].goal;
+            if (SHIFTS[task].count !== count || s.shifts[index] >= goal) return;
+            s.shifts[index] = Math.min(goal, s.shifts[index] + amount);
+            if (s.shifts[index] < goal) return;
+            const done = tasks.filter((id, i) => s.shifts[i] >= SHIFTS[id].goal).length;
+            if (done === CONFIG.shiftCount) s.shiftDays = (s.shiftDays ?? 0) + 1;
+            give(s, given, [CONFIG.sourceShift, shiftParts(task) + (done === CONFIG.shiftCount ? CONFIG.shiftBonus : 0)]);
+        });
     }
+
+    // The parts a Shift is worth, without the bonus (hbHubMinerShiftParts())
+    const shiftParts = (task) => (SHIFTS[task].hard ? CONFIG.shiftPartsHard : CONFIG.shiftParts);
 
     // The ore the next parts parts from ore cost together today (hbHubMinerOreDonationCost())
     function oreDonationCost(s, parts) {
@@ -980,7 +984,11 @@
             return true;
         }
         if (action.type === 'shiftSwap') return shiftSwap(s, action.index);
-        if (action.type === 'shard') return catchShard(s, gameOf(s).tick); // these three are the player's own too
+        if (action.type === 'shard') { // these three are the player's own too
+            if (!catchShard(s, gameOf(s).tick)) return false;
+            if (!s.anomaly) shift(s, 'shards', 1, given); // Shifts only count in the player's own game
+            return true;
+        }
         if (action.type === 'shopBuy') return shopBuy(s, action.id);
         if (action.type === 'effect') {
             if (action.id !== null && (!(s.bought ?? []).includes(action.id) || SHOP[action.id].kind !== 'effect')) return false;
@@ -1004,8 +1012,11 @@
         switch (action.type) {
             case 'click': {
                 if (!(action.count >= 1)) return false;
+                const isStorm = Object.values(s.buffs).some((running) => running.kind === 'storm' && running.until > s.tick);
                 const result = click(s, action.count, action.auto === true);
                 shift(s, 'clicks', action.count, given);
+                shift(s, 'crits', result.crits, given);
+                if (isStorm) shift(s, 'stormClicks', action.count, given);
                 return result;
             }
             case 'buy': {
@@ -1018,6 +1029,7 @@
                 s.ore = Math.max(0, s.ore - cost);
                 s.buildings[building] += amount;
                 shift(s, 'buildings', amount, given);
+                shift(s, 'buildings:' + building, amount, given);
                 return true;
             }
             case 'upgrade': {
@@ -1053,12 +1065,20 @@
             }
             case 'comet': {
                 const result = catchComet(s);
-                if (result) shift(s, 'comets', 1, given);
+                if (result) {
+                    shift(s, 'comets', 1, given);
+                    shift(s, 'comets:' + result.kind, 1, given);
+                }
                 return result;
             }
             case 'warp': {
+                const runMs = s.tick - s.runStarted; // before the Warp Jump starts a new run
                 const result = warp(s);
-                if (result) shift(s, 'warps', 1, given);
+                if (result) {
+                    shift(s, 'warps', 1, given);
+                    if (runMs < CONFIG.shiftFastMs) shift(s, 'fastWarps', 1, given);
+                    if (runMs < CONFIG.shiftQuickMs) shift(s, 'quickWarps', 1, given);
+                }
                 return result;
             }
             case 'donate': {
@@ -1073,20 +1093,28 @@
                     const quarters = (s.engineOreRest ?? 0) + parts * oreQuarters(s);
                     s.engineOreRest = quarters % CONFIG.engineOreQuarters;
                     if (quarters >= CONFIG.engineOreQuarters) give(s, given, [CONFIG.sourceOre, Math.floor(quarters / CONFIG.engineOreQuarters)]);
+                    shift(s, 'oreParts', parts, given);
                     return true;
                 }
                 if (action.what === 'strange') {
                     if (s.strange < parts * CONFIG.engineStrangePart) return false;
                     s.strange -= parts * CONFIG.engineStrangePart;
                     give(s, given, [CONFIG.sourceStrange, parts]);
+                    shift(s, 'strangeParts', parts, given);
                     return true;
                 }
                 return false;
             }
-            case 'crunch':
-                return crunch(s);
-            case 'rip':
-                return rip(s);
+            case 'crunch': {
+                const result = crunch(s);
+                if (result) shift(s, 'crunches', 1, given);
+                return result;
+            }
+            case 'rip': {
+                const result = rip(s);
+                if (result) shift(s, 'rips', 1, given);
+                return result;
+            }
             case 'anomalyStart':
                 return anomalyStart(s, action.mods);
             case 'anomalyQuit':
@@ -3960,9 +3988,8 @@
     const engineHall = root.querySelector('[data-miner-engine-hall]');
     const engineHallList = root.querySelector('[data-miner-engine-hall-list]');
     const SOURCE_TEXT = { [CONFIG.sourceOre]: 'ore', [CONFIG.sourceStrange]: 'Strange Matter', [CONFIG.sourceShift]: 'a Starbound Shift' };
-    // The icons next to the parts in Latest parts (an Anomaly's is its own), and next to each Shift
+    // The icons next to the parts in Latest parts (an Anomaly's is its own; each Shift has its own 'icon')
     const SOURCE_ICONS = { [CONFIG.sourceOre]: 'orePile', [CONFIG.sourceStrange]: 'strangelet', [CONFIG.sourceShift]: 'clipboard' };
-    const SHIFT_ICONS = { comets: 'comet', warps: 'warp', buildings: 'crates', upgrades: 'chip', clicks: 'glove', playing: 'hourglass' };
 
     let engine = null;
     let engineListsKey = '';
@@ -4166,9 +4193,12 @@
             bar.setAttribute('aria-valuemax', '100');
             bar.append(element('span', 'miner-progress-fill'));
             setProgress(bar, progress[i] / goal);
-            const count = id === 'playing' ? Math.floor(progress[i] / 60000) + ' / ' + Math.floor(goal / 60000) + ' min'
+            const count = SHIFTS[id].count === 'playing' ? Math.floor(progress[i] / 60000) + ' / ' + Math.floor(goal / 60000) + ' min'
                 : format(progress[i]) + ' / ' + format(goal);
-            item.append(iconBox('miner-shift-icon', SHIFT_ICONS[id] ?? 'clipboard'), element('span', 'miner-shift-name', SHIFTS[id].text),
+            // A hard one says so after its name, with what it's worth
+            const name = element('span', 'miner-shift-name', SHIFTS[id].text);
+            if (SHIFTS[id].hard) name.append(' ', element('span', 'miner-shift-hard', 'Hard · ' + CONFIG.shiftPartsHard + ' parts'));
+            item.append(iconBox('miner-shift-icon', SHIFTS[id].icon ?? 'clipboard'), name,
                 element('span', 'miner-shift-count', isDone ? 'Done' : count), bar);
             if (canSwap && !isDone) {
                 const swap = element('button', 'miner-shift-swap', 'Swap');
@@ -4185,7 +4215,8 @@
         shiftReset.textContent = 'New Shifts at ' + midnight;
         shiftNote.textContent = (canGiveNow() ? '' : IS_GUEST || saveState.warps < 1 ? 'Shifts start after your first Warp Jump. '
             : saveState.anomaly ? 'Shifts only count in your own game, not in an Anomaly. ' : 'Shifts are paused while Project Starbound waits for its lock. ')
-            + 'Each Shift gives ' + CONFIG.shiftParts + ' parts, or ' + CONFIG.shiftPartsAll + ' each once all ' + CONFIG.shiftCount + ' are done.';
+            + 'Each Shift gives ' + CONFIG.shiftParts + ' parts (hard ones ' + CONFIG.shiftPartsHard + '), and doing all '
+            + CONFIG.shiftCount + ' gives ' + CONFIG.shiftBonus + ' more.';
     }
 
     // The stages, the top contributors and the latest parts given, built again only when they change
