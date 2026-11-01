@@ -910,9 +910,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <div>
                         <p class="miner-prestige-fact-title">One rule changed</p>
                         <p class="miner-prestige-fact-text">
-                            An Anomaly is a universe of its own. In Tiers I and II you go in with your skill tree and your
-                            Strange Matter, but no Dark Matter or Antimatter, and finish it by earning its goal of Antimatter in
-                            there. Tier III starts you from nothing: no skills, no Strange Matter and no upgrades.
+                            Earn its goal of Antimatter to finish it. Tiers I and II keep your skill tree and Strange Matter;
+                            Tier III starts you from nothing.
                         </p>
                     </div>
                 </li>
@@ -921,8 +920,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <div>
                         <p class="miner-prestige-fact-title">Parts for Project Starbound</p>
                         <p class="miner-prestige-fact-text">
-                            Finishing one gives the build all its parts the first time for each build and whenever you beat
-                            your best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
+                            All its parts the first time each build and on a new best time,
+                            <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
                         </p>
                     </div>
                 </li>
@@ -931,10 +930,9 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <div>
                         <p class="miner-prestige-fact-title">Afterglow</p>
                         <p class="miner-prestige-fact-text">
-                            Each one finished makes your own game mine <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much for a
-                            while: an hour for Tier I, 3 for Tier II, 12 for Tier III, 24 for The Gauntlet, and a stack's
-                            added up. It goes on top of any Afterglow still running, up to
-                            <?= HBHUB_MINER_AFTERGLOW_MAX_MS / 3600000 ?> hours ahead.
+                            Your own game mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?>× as much for 1 h (Tier I), 3 h (II),
+                            12 h (III) or 24 h (The Gauntlet), stacks added up. Adds onto any still running, up to
+                            <?= HBHUB_MINER_AFTERGLOW_MAX_MS / 3600000 ?> h ahead.
                         </p>
                     </div>
                 </li>
@@ -943,8 +941,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <div>
                         <p class="miner-prestige-fact-title">A world apart</p>
                         <p class="miner-prestige-fact-text">
-                            What you do in there doesn't count towards your stats or the leaderboard, but finishing them has
-                            achievements of its own.
+                            Doesn't count towards your stats or the leaderboard, but has achievements of its own.
                         </p>
                     </div>
                 </li>
