@@ -365,18 +365,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         <div>
                             <p class="miner-prestige-fact-title">+<?= HBHUB_MINER_ANTI_BONUS * 100 ?>% each</p>
                             <p class="miner-prestige-fact-text">
-                                Every Antimatter you've earned makes everything mine faster, until a Big Rip tears the
-                                multiverse apart.
-                            </p>
-                        </div>
-                    </li>
-                    <li class="miner-prestige-fact">
-                        <?= hbHubMinerIcon('warp', 'miner-prestige-fact-icon') ?>
-                        <div>
-                            <p class="miner-prestige-fact-title">Bigger Warp Jumps</p>
-                            <p class="miner-prestige-fact-text">
-                                Warp Jumps give more Dark Matter too: the square root of how much faster it mines (twice the
-                                Dark Matter when it's four times as fast).
+                                Every Antimatter you've earned makes everything mine faster.
                             </p>
                         </div>
                     </li>
@@ -701,7 +690,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <div>
                         <p class="miner-prestige-fact-title">Built by everyone</p>
                         <p class="miner-prestige-fact-text">
-                            Everyone on HB Hub builds it together, one stage at a time, out of Starbound Parts. Anyone who has
+                            Everyone builds it together, one stage at a time, out of Rocket Parts. Anyone who has
                             earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter can give parts.
                         </p>
                     </div>
@@ -711,16 +700,6 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <div>
                         <p class="miner-prestige-fact-title">Perks for all</p>
                         <p class="miner-prestige-fact-text">Each stage finished gives everyone who plays its perk, for good.</p>
-                    </div>
-                </li>
-                <li class="miner-prestige-fact">
-                    <?= hbHubMinerIcon('lock', 'miner-prestige-fact-icon') ?>
-                    <div>
-                        <p class="miner-prestige-fact-title">Locked stages</p>
-                        <p class="miner-prestige-fact-text">
-                            Some stages have a lock that has to be met before they finish, however many parts they have. Once a
-                            build is done the next one starts, with locks that count again from nothing.
-                        </p>
                     </div>
                 </li>
                 <li class="miner-prestige-fact">
@@ -981,7 +960,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         <a class="miner-engine-more" href="/games/ore-mining-inc/leaderboard?board=weekly">Fastest this week &rarr;</a>
                     </div>
                     <p class="miner-engine-small">
-                        The same for everyone, and worth <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts and Afterglow, this week only.
+                        Worth <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts and Afterglow.
                     </p>
                     <!-- With the Heat Shields perk -->
                     <p class="miner-engine-small" data-miner-weekly-next hidden></p>
