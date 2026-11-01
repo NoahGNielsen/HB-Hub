@@ -948,7 +948,7 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                     <div class="miner-engine-head">
                         <?= hbHubMinerIcon('starChart', 'miner-engine-head-icon') ?>
                         <div class="miner-engine-head-text">
-                            <h3 class="miner-store-title" id="miner-weekly-title">This week's Anomaly</h3>
+                            <h3 class="miner-store-title" id="miner-weekly-title">This week's Anomaly Stack</h3>
                             <p class="miner-engine-sub" data-miner-weekly-name></p>
                         </div>
                         <p class="miner-engine-chip is-lit">&times;<?= HBHUB_MINER_ANOMALY_WEEKLY ?></p>
