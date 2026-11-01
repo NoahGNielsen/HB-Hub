@@ -1006,9 +1006,8 @@ $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']
                         <button type="button" class="casino-btn casino-btn-primary" data-miner-stack-start disabled>Go in</button>
                     </div>
                     <p class="miner-engine-small">
-                        The goal is the lowest of theirs, and the parts are theirs added up, times <?= HBHUB_MINER_ANOMALY_STACK ?> for
-                        every one after the first. Their Afterglows are added up too. Unstable Vacuum only goes on its own, and
-                        some pairs can't be done together, so those can't be picked (point at a greyed-out one to see why).
+                        Goal: the lowest of theirs. Parts and Afterglows: theirs added up, parts &times;<?= HBHUB_MINER_ANOMALY_STACK ?>
+                        for each one after the first. Unstable Vacuum goes alone, and greyed-out ones don't mix (point at one to see why).
                     </p>
                 </section>
 
