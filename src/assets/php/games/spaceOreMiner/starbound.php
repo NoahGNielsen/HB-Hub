@@ -53,8 +53,8 @@ const HBHUB_MINER_BUILD_STAGES = [
     ['lock' => null, 'perk' => ['type' => 'none', 'text' => 'One stage closer to {finale}.']],
     ['lock' => null, 'perk' => ['type' => 'none', 'text' => 'One stage closer to {finale}.']],
     ['lock' => null, 'perk' => ['type' => 'none', 'text' => 'One stage closer to {finale}.']],
-    ['lock' => null, 'perk' => ['type' => 'ignition', 'text' => 'The {name} is done: everything mines twice as much for 72 hours.',
-        'crewText' => 'The {name} is done: everything mines twice as much for 72 hours, and everyone who gave parts to {finale} gets the {crew} badge for good.']],
+    ['lock' => null, 'perk' => ['type' => 'ignition', 'text' => 'The {name} is done: everything mines 67 times as much for 72 hours.',
+        'crewText' => 'The {name} is done: everything mines 67 times as much for 72 hours, and everyone who gave parts to {finale} gets the {crew} badge for good.']],
 ];
 
 const HBHUB_MINER_BUILDS = [

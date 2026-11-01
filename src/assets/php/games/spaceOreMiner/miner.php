@@ -680,7 +680,7 @@ const HBHUB_MINER_ENGINE_ORE_QUARTERS = 4;
 const HBHUB_MINER_ENGINE_COUNTDOWN_MS = 604800000; // 7 days, to fill Ignition in
 const HBHUB_MINER_ENGINE_DRAIN = 0.5; // of Ignition's parts kept when its time runs out
 const HBHUB_MINER_IGNITION_MS = 259200000; // 72 hours of HBHUB_MINER_IGNITION_TIMES once Project Starbound is ignited
-const HBHUB_MINER_IGNITION_TIMES = 2;
+const HBHUB_MINER_IGNITION_TIMES = 67;
 const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
     ['name' => 'Scaffolding', 'section' => 'A', 'cost' => 500, 'lock' => null,
         'perk' => ['type' => 'offline', 'value' => 0.075, 'text' => 'While you\'re away, your machines mine 7.5% of what they would, instead of 5%.']],
@@ -744,7 +744,7 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'lock' => ['type' => 'each', 'tier' => 3, 'count' => 3, 'text' => 'Every Tier III Anomaly has been finished by at least 3 players'],
         'perk' => ['type' => 'production', 'times' => 1.25, 'text' => 'Everything mines 25% more.']],
     ['name' => 'IGNITION', 'section' => 'E', 'cost' => 150000, 'lock' => null,
-        'perk' => ['type' => 'ignition', 'text' => 'Everything mines twice as much for 72 hours, and everyone who gave parts to Ignition gets the Ignition badge and asteroid skin for good.']],
+        'perk' => ['type' => 'ignition', 'text' => 'Everything mines 67 times as much for 72 hours, and everyone who gave parts to Ignition gets the Ignition badge and asteroid skin for good.']],
 
     // Engine #2, the Starforge: a forge for making stars. Its costs are Engine #1's times 1.25 (a first guess, as
     // Engine #1 had less than a day of real data when they were set: tune them in the admin panel).
@@ -812,7 +812,7 @@ const HBHUB_MINER_ENGINE_STAGES = [ // stage 1 first
         'lock' => ['type' => 'each', 'tier' => 3, 'count' => 5, 'text' => 'Every Tier III Anomaly has been finished by at least 5 players'],
         'perk' => ['type' => 'production', 'times' => 1.05, 'text' => 'Everything mines 5% more.']],
     ['name' => 'FIRST LIGHT', 'section' => 'E', 'cost' => 187500, 'lock' => null,
-        'perk' => ['type' => 'ignition', 'text' => 'The Starforge lights its first star: everything mines twice as much for 72 hours, and everyone who gave parts to First Light gets the First Light badge and asteroid skin for good.']],
+        'perk' => ['type' => 'ignition', 'text' => 'The Starforge lights its first star: everything mines 67 times as much for 72 hours, and everyone who gave parts to First Light gets the First Light badge and asteroid skin for good.']],
 ];
 // What the perks do with no stage done, which hbHubMinerEngineEffects() starts from
 const HBHUB_MINER_ENGINE_NEUTRAL = ['offline' => HBHUB_MINER_OFFLINE_RATE, 'cometStay' => 0, 'cometWait' => 1, 'cometLength' => 1, 'production' => 1, 'darkGain' => 1,
@@ -913,7 +913,7 @@ const HBHUB_MINER_ANOMALY_STACK = 1.5; // the parts are multiplied by this for e
 const HBHUB_MINER_ANOMALY_WEEKLY = 2; // the parts for the weekly Anomaly that week (and its Afterglow)
 // The Afterglow after finishing one: production times this, for 1 hour (Tier I), 3 (Tier II), 12 (Tier III) or 24 (The
 // Gauntlet), a stack's added up. Finishing another while one is running adds to it, up to this far ahead.
-const HBHUB_MINER_AFTERGLOW_TIMES = 2;
+const HBHUB_MINER_AFTERGLOW_TIMES = 12;
 const HBHUB_MINER_AFTERGLOW_MAX_MS = 172800000; // 48 hours
 const HBHUB_MINER_WEEK_MS = 604800000; // weeks start on Monday at 00:00 UTC (hbHubMinerWeek())
 const HBHUB_MINER_WEEKLY_SIZES = [2, 3]; // how many Anomalies the weekly one stacks, picked from
