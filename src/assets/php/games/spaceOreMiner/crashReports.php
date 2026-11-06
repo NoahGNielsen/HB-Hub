@@ -113,7 +113,7 @@ function hbHubMinerCrashSweep(PDO $db): int
 
 /**
  * The same for the browser's notes. Its own function so that the reports above keep working on a database that hasn't
- * had HBHub-MinerBrowserCrashes added yet (dev and main share one, and migrations are run by hand).
+ * had HBHub-MinerBrowserCrashes added yet (migrations are run by hand).
  */
 function hbHubMinerBrowserCrashSweep(PDO $db): int
 {

@@ -1,6 +1,6 @@
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
 name: 🚀 Deploy website on push
 permissions:
   contents: read
@@ -20,8 +20,7 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         protocol: ftps
         local-dir: src/
-        # main is the live site; dev goes to its own folder so it can be tried out first
-        server-dir: ${{ github.ref_name == 'main' && 'hbhub/' || 'dev_public/' }}
+        server-dir: hbhub/
         # The default exclude (**/.git*/**) would also skip src/assets/php/.github/, which has the README shield counters
         exclude: |
           **/.git/**
@@ -35,8 +34,6 @@ jobs:
   indexnow:
     name: 📣 IndexNow
     needs: web-deploy
-    # Only the live site gets announced, not dev
-    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     env:
       INDEXNOW_KEY: e261927fab224f5187d022aac6fbdfcb
