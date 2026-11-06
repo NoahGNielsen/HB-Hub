@@ -412,7 +412,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             If the game crashes or freezes before it's saved, what you did just before is kept in your browser
                             and saved the next time you open the game there. After a crash, the game asks whether it may send a
                             crash report, so the problem can be found and fixed. It's only sent if you say yes, and you can see
-                            what's in it first (more in the <a href="/legal/privacy#what">privacy policy</a>).
+                            what's in it first. Some browsers also send a short note by themselves if the game's tab runs out
+                            of memory or stops responding, which doesn't say who you are (more in the
+                            <a href="/legal/privacy#what">privacy policy</a>).
                         </p>
                         <p>
                             The server plays every click and purchase again to check it, so the

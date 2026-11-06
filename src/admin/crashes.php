@@ -12,12 +12,15 @@
 // (admin.js) copies all of that as text (adminCrashCopyText()), to paste somewhere else.
 // Form (action=delete, crash=id) removes one for good, and goes in the admin log (assets/php/adminLog.php). They also
 // go by themselves after HBHUB_MINER_CRASH_KEEP_DAYS.
+// Under them are the browser's own notes about crashes (games/spaceOreMiner/browserCrash.php): when, why and which
+// browser. They aren't tied to anyone, so the time is what links one to a report above.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/crashReports.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 
 const ADMIN_CRASHES_SHOWN = 20; // per page, as each one can be long
+const ADMIN_BROWSER_CRASHES_SHOWN = 20; // the newest, in one short list
 
 adminOnly($hbHubUser);
 
@@ -47,6 +50,10 @@ $adminCrashes = $db->query('SELECT c.crashReportId, c.crashReportUserId, u.userN
     LEFT JOIN `HBHub-Users` u ON u.userId = c.crashReportUserId
     ORDER BY c.crashReportId DESC
     LIMIT ' . ADMIN_CRASHES_SHOWN . ' OFFSET ' . (($adminPage - 1) * ADMIN_CRASHES_SHOWN))->fetchAll();
+$adminBrowserCrashes = $db->query('SELECT browserCrashReason, browserCrashUserAgent, browserCrashHappenedTimestamp
+    FROM `HBHub-MinerBrowserCrashes`
+    ORDER BY browserCrashId DESC
+    LIMIT ' . ADMIN_BROWSER_CRASHES_SHOWN)->fetchAll();
 $adminFormAction = '/admin/crashes' . ($adminPage > 1 ? '?page=' . $adminPage : '') . '#list';
 
 /**
@@ -347,6 +354,33 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
                                 <a class="settings-btn" href="/admin/crashes?page=<?= $adminPage + 1 ?>#list" rel="next">Next</a>
                             <?php endif; ?>
                         </nav>
+                    <?php endif; ?>
+                </section>
+
+                <section class="settings-card" aria-labelledby="admin-browser-crashes-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="admin-browser-crashes-heading">What browsers said</h2>
+                            <p class="settings-intro">
+                                Chrome's own notes when the game's tab ran out of memory or stopped responding, kept for
+                                <?= HBHUB_MINER_CRASH_KEEP_DAYS ?> days. They don't say who it was. Other crashes and computers
+                                turning off send nothing, so a report above with no note here could still be either.
+                            </p>
+                        </div>
+                    </div>
+
+                    <?php if ($adminBrowserCrashes === []): ?>
+                        <p class="settings-hint">No notes from browsers.</p>
+                    <?php else: ?>
+                        <ul class="admin-feedback-list">
+                            <?php foreach ($adminBrowserCrashes as $browserCrash): ?>
+                                <li>
+                                    <strong><?= htmlspecialchars(HBHUB_MINER_BROWSER_CRASH_REASONS[$browserCrash['browserCrashReason']] ?? $browserCrash['browserCrashReason']) ?></strong>,
+                                    <?= date('d/m/Y H:i:s', strtotime($browserCrash['browserCrashHappenedTimestamp'])) ?>
+                                    <p class="settings-hint"><?= htmlspecialchars($browserCrash['browserCrashUserAgent'] ?? 'Unknown browser') ?></p>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
                     <?php endif; ?>
                 </section>
             </div>

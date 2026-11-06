@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '1 November 2026';
+const HBHUB_PRIVACY_UPDATED = '6 November 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -326,6 +326,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 happened in it too (up to 4 of them). If you say no, nothing is sent
                                 and it's deleted from your browser.
                             </li>
+                            <li>
+                                A short note from your browser if Ore Mining Inc. crashes. If you're logged in and your browser
+                                does this (Chrome and some others built on it), the game's page asks it to tell HB Hub when the
+                                game's tab runs out of memory or stops responding. Your browser sends this by itself, without
+                                asking you, so unlike the crash reports above it isn't tied to you. We keep only the reason, when
+                                it happened and your browser's user agent (which says which browser and system you use). We don't
+                                keep your account, your IP address or your save with it, and if your browser sends your login
+                                cookie along, it isn't read. Site admins can see these notes.
+                            </li>
                         </ul>
                         <p>
                             Chips are virtual. HB Hub never asks for, or stores, any payment details. If you buy extra chips
@@ -396,7 +405,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li><strong>To run the site</strong>: your account, messages and games are the site. Without them there's nothing to show you.</li>
                             <li><strong>To keep it safe</strong>: IP addresses, failed logins and the device cookie stop people from breaking into accounts, spamming sign-ups and dodging bans. The banned pictures list stops a banned person from coming back with a copy of their old profile.</li>
                             <li><strong>To keep it friendly</strong>: messages are kept so admins can act on bullying or abuse.</li>
-                            <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want. Ore Mining Inc. crash reports, which are only sent if you agree, help find out why the game crashed.</li>
+                            <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want. Ore Mining Inc. crash reports, which are only sent if you agree, and the short notes browsers send about crashes, which aren't tied to you, help find out why the game crashed.</li>
                         </ul>
                         <p>
                             Under the GDPR, this is "necessary to provide the service you signed up for" and HB Hub's
@@ -511,8 +520,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             with "Deleted User".
                         </p>
                         <p>
-                            Ore Mining Inc. crash reports are kept for 90 days, and then deleted by themselves (at the latest
-                            the night after). Site admins can delete them sooner.
+                            Ore Mining Inc. crash reports and the browser notes about crashes are kept for 90 days, and then
+                            deleted by themselves (at the latest the night after). Site admins can delete crash reports sooner.
                         </p>
                         <p>
                             The free games you play without an account are only kept in your browser, so HB Hub has nothing to

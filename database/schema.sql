@@ -713,6 +713,20 @@ CREATE TABLE `HBHub-MinerContributions` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-MinerBrowserCrashes`
+--
+
+CREATE TABLE `HBHub-MinerBrowserCrashes` (
+  `browserCrashId` int UNSIGNED NOT NULL,
+  `browserCrashReason` varchar(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'oom, unresponsive or unknown, HBHUB_MINER_BROWSER_CRASH_REASONS',
+  `browserCrashUserAgent` varchar(255) DEFAULT NULL COMMENT 'The browser''s user agent, as it wrote it in the report',
+  `browserCrashHappenedTimestamp` datetime NOT NULL COMMENT 'When the tab died, by the report''s age',
+  `browserCrashCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When it got here. Deleted after HBHUB_MINER_CRASH_KEEP_DAYS'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Ore Mining Inc. tabs the browser itself said crashed. Not tied to anyone on purpose, see src/games/spaceOreMiner/browserCrash.php';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-MinerCrashReports`
 --
 
@@ -1302,6 +1316,13 @@ ALTER TABLE `HBHub-MinerEngines`
   ADD UNIQUE KEY `engineNumber` (`engineNumber`);
 
 --
+-- Indexes for table `HBHub-MinerBrowserCrashes`
+--
+ALTER TABLE `HBHub-MinerBrowserCrashes`
+  ADD PRIMARY KEY (`browserCrashId`),
+  ADD KEY `createdTimestamp` (`browserCrashCreatedTimestamp`);
+
+--
 -- Indexes for table `HBHub-MinerCrashReports`
 --
 ALTER TABLE `HBHub-MinerCrashReports`
@@ -1543,6 +1564,12 @@ ALTER TABLE `HBHub-MinerContributions`
 --
 ALTER TABLE `HBHub-MinerEngines`
   MODIFY `engineId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-MinerBrowserCrashes`
+--
+ALTER TABLE `HBHub-MinerBrowserCrashes`
+  MODIFY `browserCrashId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `HBHub-MinerCrashReports`

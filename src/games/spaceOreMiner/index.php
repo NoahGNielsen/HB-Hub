@@ -52,6 +52,11 @@ if (($_GET['view'] ?? null) === 'engine') {
     exit;
 }
 $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
+// Asks Chrome to tell us if this tab runs out of memory or stops responding, see games/spaceOreMiner/browserCrash.php.
+// Not for guests: the privacy page says their games have no crash reports.
+if ($guestGame === null) {
+    header('Reporting-Endpoints: crash-reporting="https://' . $_SERVER['HTTP_HOST'] . '/games/ore-mining-inc/browserCrash"');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
