@@ -1754,6 +1754,9 @@
         requestAnimationFrame(frame);
         step(null);
         runLateTimers();
+        // What the browser does next is draw the page, which no other step times. See drawingDone.
+        step('drawing');
+        drawingDone.port2.postMessage(0);
     }
 
     // The slower parts, a few times a second. Each part tells the watchdog what it's doing, so a freeze in one of them
@@ -5273,6 +5276,17 @@
     let stepStartedAt = performance.now();
     let stepTimes = new Map();
 
+    // Times the browser's own work on a frame (styles, layout, painting on this thread), which crash report #36 couldn't
+    // see: 35 fps with hardly any time in the game's own steps. frame() starts the 'drawing' step and posts a message
+    // here, and a message can't be handled until the frame is drawn, so that's when it ends. Anything that gets a turn
+    // first ends it early (it's then a different step), so it's a little under the real time, never over. In a sample,
+    // a lot of drawing means this thread is what's slow, and low fps with little drawing means the graphics card or
+    // the browser holding the page back.
+    const drawingDone = new MessageChannel();
+    drawingDone.port1.onmessage = () => {
+        if (stepName === 'drawing') step(null);
+    };
+
     // Returns the step it was doing before, for the ones that go on with it afterwards
     function step(name) {
         const was = stepName;
@@ -5316,8 +5330,8 @@
     const SAMPLE_STEPS = 5; // the slowest steps in each sample
     // Every SAMPLE_MS: {at (Unix ms), memory (MB used by scripts, null where the browser doesn't say), elements (on the
     // page), animations (running on it), fps and lowestFps (frames a second: on average, and in its slowest second, while
-    // the page was shown and playing; null when it wasn't), slowest (the SAMPLE_STEPS steps that took longest at once:
-    // [name, longest ms, ms in all, times])}
+    // the page was shown and playing; null when it wasn't), drawing (ms in all the browser spent drawing, see
+    // drawingDone), slowest (the SAMPLE_STEPS steps that took longest at once: [name, longest ms, ms in all, times])}
     const samples = [];
     let lastBeatAt = Date.now();
     let wasVisible = !document.hidden;
@@ -5375,6 +5389,7 @@
                 animations: document.getAnimations?.().length ?? null,
                 fps: sampleSeconds > 0 ? Math.round(sampleFrames / sampleSeconds) : null,
                 lowestFps,
+                drawing: Math.round(stepTimes.get('drawing')?.total ?? 0),
                 slowest: [...stepTimes].sort(([, a], [, b]) => b.max - a.max).slice(0, SAMPLE_STEPS)
                     .map(([name, time]) => [name, Math.round(time.max * 10) / 10, Math.round(time.total), time.count]),
             });

@@ -4,14 +4,14 @@
 // page names this address in its Reporting-Endpoints header (games/spaceOreMiner/index.php, accounts only), and the
 // browser POSTs here by itself, later on, with no page and no script involved: the page is gone by then.
 //
-// It's on purpose that this doesn't load session.php, unlike every other endpoint. The browser sends this site's cookies
-// along, and nobody was asked about this report, so it mustn't know who it's about: the privacy page promises that
-// reports tied to a player are only sent if they say yes. So it's also open to anyone, which is why only a few fixed
-// fields are kept and there's a limit a day for all reports together (see hbHubMinerBrowserCrashSave()).
+// It's on purpose that this doesn't load session.php, unlike every other endpoint. The browser may send this site's
+// cookies along, and nobody was asked about this report, so it mustn't know who it's about: the privacy page promises
+// that reports tied to a player are only sent if they say yes. So it's also open to anyone, which is why only a few
+// fixed fields are kept and there's a limit a day for all reports together (see hbHubMinerBrowserCrashSave()).
 //
 // The body (Content-Type: application/reports+json) is a JSON list of reports: {type, age (ms since it happened), url,
-// user_agent, body: {reason}}. Browsers only send these when the reason is 'oom' or 'unresponsive', so a tab that crashed
-// any other way sends nothing, and neither does a computer that turned off.
+// user_agent, body: {reason}}. The reason is 'oom' or 'unresponsive', or left out when the browser doesn't know it (kept
+// as 'unknown'). Not every crash sends one, and a computer that turned off never does, so no note proves nothing.
 // Answers 204, also for reports it ignored or over the limit (an error would make the browser try again later). Errors:
 // - 400 {"error": "badRequest"}: not a JSON list of the right type, or too big. A form on another site can't send this
 //   type without asking first, so that also keeps other sites from sending reports through a visitor's browser.

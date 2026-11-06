@@ -50,10 +50,14 @@ $adminCrashes = $db->query('SELECT c.crashReportId, c.crashReportUserId, u.userN
     LEFT JOIN `HBHub-Users` u ON u.userId = c.crashReportUserId
     ORDER BY c.crashReportId DESC
     LIMIT ' . ADMIN_CRASHES_SHOWN . ' OFFSET ' . (($adminPage - 1) * ADMIN_CRASHES_SHOWN))->fetchAll();
-$adminBrowserCrashes = $db->query('SELECT browserCrashReason, browserCrashUserAgent, browserCrashHappenedTimestamp
-    FROM `HBHub-MinerBrowserCrashes`
-    ORDER BY browserCrashId DESC
-    LIMIT ' . ADMIN_BROWSER_CRASHES_SHOWN)->fetchAll();
+try {
+    $adminBrowserCrashes = $db->query('SELECT browserCrashReason, browserCrashUserAgent, browserCrashHappenedTimestamp
+        FROM `HBHub-MinerBrowserCrashes`
+        ORDER BY browserCrashId DESC
+        LIMIT ' . ADMIN_BROWSER_CRASHES_SHOWN)->fetchAll();
+} catch (PDOException) {
+    $adminBrowserCrashes = []; // the migration that adds the table hasn't been run yet: the reports above still show
+}
 $adminFormAction = '/admin/crashes' . ($adminPage > 1 ? '?page=' . $adminPage : '') . '#list';
 
 /**
@@ -194,6 +198,9 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
     $parts[] = (int) ($sample['elements'] ?? 0) . ' elements';
     if (is_numeric($sample['animations'] ?? null)) {
         $parts[] = (int) $sample['animations'] . ' animations';
+    }
+    if (is_numeric($sample['drawing'] ?? null)) {
+        $parts[] = adminCrashLength($sample['drawing']) . ' drawing';
     }
     if (is_numeric($sample['fps'] ?? null)) {
         $parts[] = (int) $sample['fps'] . ' fps' . (is_numeric($sample['lowestFps'] ?? null) ? ' (lowest ' . (int) $sample['lowestFps'] . ')' : '');
@@ -362,9 +369,9 @@ function adminCrashSample(mixed $sample, string $sentOn): ?string
                         <div>
                             <h2 id="admin-browser-crashes-heading">What browsers said</h2>
                             <p class="settings-intro">
-                                Chrome's own notes when the game's tab ran out of memory or stopped responding, kept for
-                                <?= HBHUB_MINER_CRASH_KEEP_DAYS ?> days. They don't say who it was. Other crashes and computers
-                                turning off send nothing, so a report above with no note here could still be either.
+                                Chrome's own notes when the game's tab crashed, kept for <?= HBHUB_MINER_CRASH_KEEP_DAYS ?> days.
+                                They don't say who it was. Not every crash sends one and a computer turning off never does, so
+                                a report above with no note here could still be either.
                             </p>
                         </div>
                     </div>

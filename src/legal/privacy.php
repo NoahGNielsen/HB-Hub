@@ -329,7 +329,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>
                                 A short note from your browser if Ore Mining Inc. crashes. If you're logged in and your browser
                                 does this (Chrome and some others built on it), the game's page asks it to tell HB Hub when the
-                                game's tab runs out of memory or stops responding. Your browser sends this by itself, without
+                                game's tab crashes, for example by running out of memory. Your browser sends this by itself, without
                                 asking you, so unlike the crash reports above it isn't tied to you. We keep only the reason, when
                                 it happened and your browser's user agent (which says which browser and system you use). We don't
                                 keep your account, your IP address or your save with it, and if your browser sends your login

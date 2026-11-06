@@ -10,7 +10,7 @@
 // steps it did just before, see spaceOreMinerWatchdog.js), page (when it was opened and last heard from, the view, the
 // screen, cores, memory and graphics card, the auto switches), trail (the last things that happened: saves, errors, slow
 // frames, freezes, frame rate drops, as [Unix ms, text]), samples (every 30 seconds: memory used, elements and
-// animations on the page, frame rate and the slowest steps), state (the save as the page had it), pending (how many
+// animations on the page, frame rate, time spent drawing and the slowest steps), state (the save as the page had it), pending (how many
 // actions weren't saved), earlier (when the page found more than one crash: the older ones, newest first, as {kind,
 // page, hang}, so one yes is one report)}.
 // Nothing in it is checked here beyond being a JSON object of at most HBHUB_MINER_CRASH_MAX_BYTES: it's only ever read
@@ -88,7 +88,7 @@ function hbHubMinerBrowserCrashSave(PDO $db, mixed $report): void
     $db->prepare('INSERT INTO `HBHub-MinerBrowserCrashes` (browserCrashReason, browserCrashUserAgent, browserCrashHappenedTimestamp)
         VALUES (?, ?, NOW() - INTERVAL ? SECOND)')
         ->execute([$reason, $userAgent, min($age, HBHUB_MINER_CRASH_KEEP_DAYS * 86400)]);
-    hbHubMinerCrashSweep($db);
+    hbHubMinerBrowserCrashSweep($db);
 }
 
 /**
@@ -102,13 +102,21 @@ function hbHubMinerCrashDelete(PDO $db, int $crashReportId): bool
 }
 
 /**
- * Deletes the reports and the browser's notes older than HBHUB_MINER_CRASH_KEEP_DAYS: after each new one, and in the
- * nightly clean-up (cron/nightly.php). Returns how many went.
+ * Deletes the reports older than HBHUB_MINER_CRASH_KEEP_DAYS: after each new one, and in the nightly clean-up
+ * (cron/nightly.php). Returns how many went.
  */
 function hbHubMinerCrashSweep(PDO $db): int
 {
     return $db->exec('DELETE FROM `HBHub-MinerCrashReports`
-        WHERE crashReportCreatedTimestamp < NOW() - INTERVAL ' . HBHUB_MINER_CRASH_KEEP_DAYS . ' DAY')
-        + $db->exec('DELETE FROM `HBHub-MinerBrowserCrashes`
+        WHERE crashReportCreatedTimestamp < NOW() - INTERVAL ' . HBHUB_MINER_CRASH_KEEP_DAYS . ' DAY');
+}
+
+/**
+ * The same for the browser's notes. Its own function so that the reports above keep working on a database that hasn't
+ * had HBHub-MinerBrowserCrashes added yet (dev and main share one, and migrations are run by hand).
+ */
+function hbHubMinerBrowserCrashSweep(PDO $db): int
+{
+    return $db->exec('DELETE FROM `HBHub-MinerBrowserCrashes`
         WHERE browserCrashCreatedTimestamp < NOW() - INTERVAL ' . HBHUB_MINER_CRASH_KEEP_DAYS . ' DAY');
 }

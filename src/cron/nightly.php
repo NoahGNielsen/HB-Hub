@@ -6,7 +6,7 @@
 //   - casino tables and game rooms nobody has open anymore (a batch of each, like a lobby visit)
 //   - GIF searches cached longer than 15 minutes
 //   - admin log rows older than a year (assets/php/adminLog.php)
-//   - Ore Mining Inc. crash reports older than 90 days (assets/php/games/spaceOreMiner/crashReports.php)
+//   - Ore Mining Inc. crash reports and browser crash notes older than 90 days (assets/php/games/spaceOreMiner/crashReports.php)
 //   - linked Discord accounts' usernames, asked from Discord again in case they changed them (assets/php/discord.php).
 //     Skipped without discord_bot_token in hbHubSiteConfig.php.
 // Each job runs on its own, so one failing doesn't stop the rest. It prints one line per job, and errors go to
@@ -97,6 +97,10 @@ hbHubCronRun('Admin log', static function () use ($db): string {
 
 hbHubCronRun('Miner crash reports', static function () use ($db): string {
     return hbHubMinerCrashSweep($db) . ' old reports removed';
+});
+
+hbHubCronRun('Miner browser crash notes', static function () use ($db): string {
+    return hbHubMinerBrowserCrashSweep($db) . ' old notes removed';
 });
 
 hbHubCronRun('Discord names', static function () use ($db, $siteConfig): string {
