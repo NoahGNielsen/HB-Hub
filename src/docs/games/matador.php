@@ -1,6 +1,6 @@
 <?php
 // Help docs: Matador - what's on the board, a turn, the game's own rules (assets/php/games/matador/rules.php,
-// included as the game shows them, with room.php's money and constants), the Danish words, the room settings and
+// included as the game shows them, with room.php's money and constants), the Danish words, the room settings (with the edition) and
 // saving a game (save.php). Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -62,6 +62,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-settings">Room settings</h2>
                         <p>Before the game starts, the host can change a few house rules in the room's settings:</p>
                         <ul>
+                            <li><strong>Edition</strong>: which board and Prøv lykken cards the game is played with. Classic is the original Danish board (the default), and HTX is the school's own, which for now is the same as Classic.</li>
                             <li><strong>Dice</strong>: one die (a 6 rolls again), or two (doubles roll again).</li>
                             <li><strong>Parkering's account</strong>: taxes and Prøv lykken payments go to whoever lands on Parkering (on by default), or to the bank.</li>
                             <li><strong>Rent in jail</strong>: whether you still get rent while you're in jail, don't, or it goes to the bank.</li>

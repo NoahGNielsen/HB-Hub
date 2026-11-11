@@ -607,11 +607,13 @@ function hbHubMatadorStart(PDO $db, array &$room, int $userId): ?string
 }
 
 /**
- * The host changes the room's settings (game.php's hbHubMatadorSettings(), as sent: dice, jailRent, parkingPot and
- * building, game.php's HBHUB_MATADOR_BUILDING_CHOICES), before the game starts. A saved game keeps the ones it was
+ * The host changes the room's settings (game.php's hbHubMatadorSettings(), as sent: edition, dice, jailRent, parkingPot
+ * and building, game.php's HBHUB_MATADOR_BUILDING_CHOICES), before the game starts. A new edition means a new board,
+ * so matadorGame.js loads the page again for everyone when it changes. A saved game keeps the ones it was
  * started with. Returns null when they're changed, otherwise why not.
  */
-function hbHubMatadorChangeSettings(array &$room, int $userId, mixed $dice, mixed $jailRent, mixed $parkingPot, mixed $building): ?string
+function hbHubMatadorChangeSettings(array &$room, int $userId, mixed $edition, mixed $dice, mixed $jailRent,
+    mixed $parkingPot, mixed $building): ?string
 {
     $state = &$room['state'];
     if ($room['roomHostUserId'] !== $userId) {
@@ -620,7 +622,7 @@ function hbHubMatadorChangeSettings(array &$room, int $userId, mixed $dice, mixe
     if ($state['phase'] !== 'lobby') {
         return 'The settings can only be changed before the game starts.';
     }
-    $settings = hbHubMatadorCleanSettings($dice, $jailRent, $parkingPot, $building);
+    $settings = hbHubMatadorCleanSettings($edition, $dice, $jailRent, $parkingPot, $building);
     if ($settings === null) {
         return 'Choose the settings.';
     }

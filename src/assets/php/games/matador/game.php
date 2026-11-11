@@ -6,7 +6,8 @@
 // roll (as many as come, never jail for it). A property that isn't bought stays with the bank - there are no auctions.
 // Getting out of jail is paying 1,000 kr, a "benådet" card, or rolling a 6 (3 tries, then the bail has to be paid).
 // Building, selling and mortgaging can only be done in your own turn (trading at any time).
-// The host can change some of this in the room's settings before the game starts (hbHubMatadorSettings()): two dice,
+// The host can change some of this in the room's settings before the game starts (hbHubMatadorSettings()): the edition
+// (which board and Prøv lykken cards, board.php's HBHUB_MATADOR_EDITIONS: Classic by default, or HTX), two dice,
 // where doubles take the place of the 6, whether rent is paid to a player who's in jail, and Parkering's account
 // (parkingPot, on by default): the taxes and what the Prøv lykken cards make you pay go into it instead of to the bank,
 // and whoever lands on Parkering gets all of it. And buildAnyStreet (off by default): houses and hotels can be built
@@ -17,9 +18,9 @@
 //
 // The state:
 //   phase       'lobby' (waiting for players), 'resume' (a saved game waiting for its players), 'playing' or 'ended'
-//   settings    the room's settings: dice (1 or 2), jailRent ('yes', 'no' or 'bank'), parkingPot, buildAnyStreet and
-//               buildUnevenly (true or false). Missing in games from before them, so always read through
-//               hbHubMatadorSettings()
+//   settings    the room's settings: edition (a key of HBHUB_MATADOR_EDITIONS), dice (1 or 2), jailRent ('yes', 'no'
+//               or 'bank'), parkingPot, buildAnyStreet and buildUnevenly (true or false). Missing in games from before
+//               them (edition too: those are Classic), so always read through hbHubMatadorSettings()
 //   pot         the money in Parkering's account (with the parkingPot setting). Missing in games from before it
 //   players     in turn order: seat (1-4, the seat in HBHub-MatadorSeats), userId (who plays it, null while it's
 //               empty), originalUserId (who it's kept for when they leave), reservedFor (who the host gave it to),
@@ -63,39 +64,46 @@ const HBHUB_MATADOR_BUILDING_CHOICES = [ // the building choice in the room's se
     'uneven' => [false, true],
     'any' => [true, false],
 ];
-const HBHUB_MATADOR_DEFAULT_SETTINGS = ['dice' => 1, 'jailRent' => 'yes', 'parkingPot' => true, 'buildAnyStreet' => false,
-    'buildUnevenly' => false];
+const HBHUB_MATADOR_DEFAULT_SETTINGS = ['edition' => HBHUB_MATADOR_DEFAULT_EDITION, 'dice' => 1, 'jailRent' => 'yes',
+    'parkingPot' => true, 'buildAnyStreet' => false, 'buildUnevenly' => false];
 
 /**
- * The room's settings, with the defaults for anything a game from before them doesn't have.
+ * The room's settings, with the defaults for anything a game from before them doesn't have (and for an edition that
+ * isn't there anymore, the same one hbHubMatadorEdition() plays it with).
  *
- * @return array{dice: int, jailRent: string, parkingPot: bool, buildAnyStreet: bool, buildUnevenly: bool}
+ * @return array{edition: string, dice: int, jailRent: string, parkingPot: bool, buildAnyStreet: bool, buildUnevenly: bool}
  */
 function hbHubMatadorSettings(array $state): array
 {
-    return ($state['settings'] ?? []) + HBHUB_MATADOR_DEFAULT_SETTINGS;
+    $settings = ($state['settings'] ?? []) + HBHUB_MATADOR_DEFAULT_SETTINGS;
+    if (!isset(HBHUB_MATADOR_EDITIONS[$settings['edition']])) {
+        $settings['edition'] = HBHUB_MATADOR_DEFAULT_EDITION;
+    }
+    return $settings;
 }
 
 /**
- * The settings as sent from the room's settings (dice: "1" or "2", jailRent: one of the choices, parkingPot: "on" or
- * "off", building: one of HBHUB_MATADOR_BUILDING_CHOICES), or null when they can't be.
+ * The settings as sent from the room's settings (edition: a key of HBHUB_MATADOR_EDITIONS, dice: "1" or "2", jailRent:
+ * one of the choices, parkingPot: "on" or "off", building: one of HBHUB_MATADOR_BUILDING_CHOICES), or null when they
+ * can't be.
  *
- * @return ?array{dice: int, jailRent: string, parkingPot: bool, buildAnyStreet: bool, buildUnevenly: bool}
+ * @return ?array{edition: string, dice: int, jailRent: string, parkingPot: bool, buildAnyStreet: bool, buildUnevenly: bool}
  */
-function hbHubMatadorCleanSettings(mixed $dice, mixed $jailRent, mixed $parkingPot, mixed $building): ?array
+function hbHubMatadorCleanSettings(mixed $edition, mixed $dice, mixed $jailRent, mixed $parkingPot, mixed $building): ?array
 {
     $dice = is_string($dice) && ctype_digit($dice) && strlen($dice) === 1 ? (int) $dice : null;
-    if (!in_array($dice, HBHUB_MATADOR_DICE_CHOICES, true) || !is_string($jailRent) || !isset(HBHUB_MATADOR_JAIL_RENT_CHOICES[$jailRent])
+    if (!is_string($edition) || !isset(HBHUB_MATADOR_EDITIONS[$edition])
+        || !in_array($dice, HBHUB_MATADOR_DICE_CHOICES, true) || !is_string($jailRent) || !isset(HBHUB_MATADOR_JAIL_RENT_CHOICES[$jailRent])
         || !in_array($parkingPot, ['on', 'off'], true) || !is_string($building) || !isset(HBHUB_MATADOR_BUILDING_CHOICES[$building])) {
         return null;
     }
     [$anyStreet, $unevenly] = HBHUB_MATADOR_BUILDING_CHOICES[$building];
-    return ['dice' => $dice, 'jailRent' => $jailRent, 'parkingPot' => $parkingPot === 'on', 'buildAnyStreet' => $anyStreet,
-        'buildUnevenly' => $unevenly];
+    return ['edition' => $edition, 'dice' => $dice, 'jailRent' => $jailRent, 'parkingPot' => $parkingPot === 'on',
+        'buildAnyStreet' => $anyStreet, 'buildUnevenly' => $unevenly];
 }
 
 /**
- * The settings in a few words, for the log: "2 dice, no rent in jail, no Parkering account, build on any street".
+ * The settings in a few words, for the log: "HTX edition, 2 dice, no rent in jail, no Parkering account, build on any street".
  */
 function hbHubMatadorSettingsText(array $settings): string
 {
@@ -104,7 +112,8 @@ function hbHubMatadorSettingsText(array $settings): string
         'no' => 'no rent in jail',
         'bank' => 'rent in jail goes to the bank',
     };
-    return ($settings['dice'] === 1 ? '1 die' : $settings['dice'] . ' dice') . ', ' . $rent
+    return HBHUB_MATADOR_EDITIONS[$settings['edition']]['name'] . ' edition, '
+        . ($settings['dice'] === 1 ? '1 die' : $settings['dice'] . ' dice') . ', ' . $rent
         . ', ' . ($settings['parkingPot'] ? 'taxes and fines go to Parkering' : 'no Parkering account')
         . ', ' . match (true) {
             $settings['buildAnyStreet'] => 'build on any street',
@@ -177,12 +186,12 @@ function hbHubMatadorBegin(array &$state): void
 {
     $state['players'] = hbHubMatadorShuffle($state['players']);
     $state['fields'] = [];
-    foreach (array_keys(HBHUB_MATADOR_FIELDS) as $field) {
-        if (hbHubMatadorIsProperty($field)) {
+    foreach (array_keys(hbHubMatadorFields($state)) as $field) {
+        if (hbHubMatadorIsProperty($state, $field)) {
             $state['fields'][$field] = ['owner' => null, 'houses' => 0, 'mortgaged' => false];
         }
     }
-    $state['deck'] = hbHubMatadorShuffle(array_keys(HBHUB_MATADOR_CARDS));
+    $state['deck'] = hbHubMatadorShuffle(array_keys(hbHubMatadorCards($state)));
     $state['pot'] = 0;
     $state['phase'] = 'playing';
     $state['round'] = 1;
@@ -238,9 +247,9 @@ function hbHubMatadorName(array $state, int $seat): string
     return hbHubMatadorPlayerOf($state, $seat)['name'] ?? 'Someone';
 }
 
-function hbHubMatadorFieldName(int $field): string
+function hbHubMatadorFieldName(array $state, int $field): string
 {
-    return HBHUB_MATADOR_FIELDS[$field]['name'];
+    return hbHubMatadorFields($state)[$field]['name'];
 }
 
 /**
@@ -283,8 +292,8 @@ function hbHubMatadorWorth(array $state, int $seat): int
         if ($property['owner'] !== $seat) {
             continue;
         }
-        $info = HBHUB_MATADOR_FIELDS[$field];
-        $worth += $property['mortgaged'] ? hbHubMatadorMortgageValue($field) : $info['price'];
+        $info = hbHubMatadorFields($state)[$field];
+        $worth += $property['mortgaged'] ? hbHubMatadorMortgageValue($state, $field) : $info['price'];
         $worth += $property['houses'] * ($info['house'] ?? 0);
     }
     return $worth;
@@ -295,7 +304,7 @@ function hbHubMatadorWorth(array $state, int $seat): int
  */
 function hbHubMatadorOwnsGroup(array $state, int $seat, int|string $group): bool
 {
-    foreach (hbHubMatadorGroupFields($group) as $field) {
+    foreach (hbHubMatadorGroupFields($state, $group) as $field) {
         if ($state['fields'][$field]['owner'] !== $seat) {
             return false;
         }
@@ -311,7 +320,7 @@ function hbHubMatadorOwnsGroup(array $state, int $seat, int|string $group): bool
  */
 function hbHubMatadorOwnedInGroup(array $state, int $seat, int|string $group): array
 {
-    return array_values(array_filter(hbHubMatadorGroupFields($group),
+    return array_values(array_filter(hbHubMatadorGroupFields($state, $group),
         static fn (int $field): bool => $state['fields'][$field]['owner'] === $seat));
 }
 
@@ -336,7 +345,7 @@ function hbHubMatadorGroupHasBuildings(array $state, int $seat, int|string $grou
  */
 function hbHubMatadorRent(array $state, int $field, int $roll, int $multiplier = 1): int
 {
-    $info = HBHUB_MATADOR_FIELDS[$field];
+    $info = hbHubMatadorFields($state)[$field];
     $property = $state['fields'][$field];
     $owner = $property['owner'];
 
@@ -348,7 +357,7 @@ function hbHubMatadorRent(array $state, int $field, int $roll, int $multiplier =
         return $info['rent'][0] * $double * $multiplier;
     }
 
-    $owned = count(array_filter(hbHubMatadorGroupFields($info['group']),
+    $owned = count(array_filter(hbHubMatadorGroupFields($state, $info['group']),
         static fn (int $other): bool => $state['fields'][$other]['owner'] === $owner));
     return match ($info['type']) {
         'ferry' => HBHUB_MATADOR_FERRY_RENT[$owned - 1] * $multiplier,
@@ -432,10 +441,10 @@ function hbHubMatadorMoveTo(array &$state, int $seat, int $field, int $multiplie
 function hbHubMatadorLand(array &$state, int $seat, int $multiplier = 1): void
 {
     $field = $state['players'][hbHubMatadorIndex($state, $seat)]['position'];
-    $info = HBHUB_MATADOR_FIELDS[$field];
+    $info = hbHubMatadorFields($state)[$field];
     $name = hbHubMatadorName($state, $seat);
 
-    if (hbHubMatadorIsProperty($field)) {
+    if (hbHubMatadorIsProperty($state, $field)) {
         $property = $state['fields'][$field];
         if ($property['owner'] === null) {
             $state['pending'] = ['type' => 'buy', 'field' => $field];
@@ -518,10 +527,10 @@ function hbHubMatadorDrawCard(array &$state, int $seat): void
 {
     $card = array_shift($state['deck']);
     $state['lastCard'] = ['seat' => $seat, 'card' => $card, 'n' => ($state['lastCard']['n'] ?? 0) + 1];
-    [$do, $value, $perHotel] = array_pad(HBHUB_MATADOR_CARDS[$card]['do'], 3, 0); // $value: a field, steps or an amount
+    [$do, $value, $perHotel] = array_pad(hbHubMatadorCards($state)[$card]['do'], 3, 0); // $value: a field, steps or an amount
     $i = hbHubMatadorIndex($state, $seat);
     $name = hbHubMatadorName($state, $seat);
-    hbHubMatadorLog($state, $name . ' drew Prøv lykken: "' . HBHUB_MATADOR_CARDS[$card]['text'] . '"');
+    hbHubMatadorLog($state, $name . ' drew Prøv lykken: "' . hbHubMatadorCards($state)[$card]['text'] . '"');
 
     if ($do === 'jailCard') {
         $state['players'][$i]['cards'][] = $card; // kept until it's used
@@ -539,7 +548,7 @@ function hbHubMatadorDrawCard(array &$state, int $seat): void
             break;
         case 'nearestFerry':
             $position = $state['players'][$i]['position'];
-            $ferries = hbHubMatadorGroupFields('ferry');
+            $ferries = hbHubMatadorGroupFields($state, 'ferry');
             $next = array_values(array_filter($ferries, static fn (int $ferry): bool => $ferry > $position))[0] ?? $ferries[0];
             hbHubMatadorMoveTo($state, $seat, $next, 2);
             break;
@@ -614,8 +623,8 @@ function hbHubMatadorRaise(array &$state, int $seat, int $amount): void
             if ($property['houses'] > 0 && ($built === null || $property['houses'] > $state['fields'][$built]['houses'])) {
                 $built = $field;
             }
-            $canMortgage = !$property['mortgaged'] && !hbHubMatadorGroupHasBuildings($state, $seat, HBHUB_MATADOR_FIELDS[$field]['group']);
-            if ($canMortgage && ($mortgage === null || HBHUB_MATADOR_FIELDS[$field]['price'] < HBHUB_MATADOR_FIELDS[$mortgage]['price'])) {
+            $canMortgage = !$property['mortgaged'] && !hbHubMatadorGroupHasBuildings($state, $seat, hbHubMatadorFields($state)[$field]['group']);
+            if ($canMortgage && ($mortgage === null || hbHubMatadorFields($state)[$field]['price'] < hbHubMatadorFields($state)[$mortgage]['price'])) {
                 $mortgage = $field;
             }
         }
@@ -647,7 +656,7 @@ function hbHubMatadorBankrupt(array &$state, int $seat, ?int $to): void
         if ($property['owner'] !== $seat) {
             continue;
         }
-        $state['players'][$i]['cash'] += $property['houses'] * intdiv(HBHUB_MATADOR_FIELDS[$field]['house'] ?? 0, 2);
+        $state['players'][$i]['cash'] += $property['houses'] * intdiv(hbHubMatadorFields($state)[$field]['house'] ?? 0, 2);
         $property['houses'] = 0;
         if ($creditor !== null) {
             $property['owner'] = $to;
@@ -824,7 +833,7 @@ function hbHubMatadorAdvance(array &$state): void
             }
             $state['pending'] = null;
             match ($pending['type']) {
-                'buy' => hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' didn\'t buy ' . hbHubMatadorFieldName($pending['field'])
+                'buy' => hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' didn\'t buy ' . hbHubMatadorFieldName($state, $pending['field'])
                     . '. It stays with the bank.'),
                 'tax' => hbHubMatadorPayBank($state, $seat, min(HBHUB_MATADOR_TAX_FIXED, hbHubMatadorPercentTax($state, $seat)), 'Indkomstskat'),
                 'debt' => hbHubMatadorRaiseAndPay($state, $seat, $pending),
@@ -919,7 +928,7 @@ function hbHubMatadorRoll(array &$state, int $seat): ?string
     } else {
         $state['turn']['next'] = $isLucky ? 'roll' : 'end';
         $target = ($state['players'][$i]['position'] + $value) % HBHUB_MATADOR_FIELD_COUNT;
-        hbHubMatadorLog($state, $name . ' rolled ' . $rolled . ' and moves to ' . hbHubMatadorFieldName($target) . '.');
+        hbHubMatadorLog($state, $name . ' rolled ' . $rolled . ' and moves to ' . hbHubMatadorFieldName($state, $target) . '.');
         hbHubMatadorMoveBy($state, $seat, $value);
     }
 
@@ -948,7 +957,7 @@ function hbHubMatadorBuy(array &$state, int $seat): ?string
         return $problem;
     }
     $field = $state['pending']['field'];
-    $price = HBHUB_MATADOR_FIELDS[$field]['price'];
+    $price = hbHubMatadorFields($state)[$field]['price'];
     if ($state['players'][hbHubMatadorIndex($state, $seat)]['cash'] < $price) {
         return 'You don\'t have ' . hbHubMatadorKr($price) . '. Mortgage or sell something first, or leave it with the bank.';
     }
@@ -956,7 +965,7 @@ function hbHubMatadorBuy(array &$state, int $seat): ?string
     hbHubMatadorTransfer($state, $seat, null, $price);
     $state['fields'][$field]['owner'] = $seat;
     $state['pending'] = null;
-    hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' bought ' . hbHubMatadorFieldName($field) . ' for ' . hbHubMatadorKr($price) . '.');
+    hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' bought ' . hbHubMatadorFieldName($state, $field) . ' for ' . hbHubMatadorKr($price) . '.');
     hbHubMatadorSettle($state);
     return null;
 }
@@ -967,7 +976,7 @@ function hbHubMatadorDecline(array &$state, int $seat): ?string
     if ($problem !== null) {
         return $problem;
     }
-    hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' didn\'t buy ' . hbHubMatadorFieldName($state['pending']['field'])
+    hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' didn\'t buy ' . hbHubMatadorFieldName($state, $state['pending']['field'])
         . '. It stays with the bank.');
     $state['pending'] = null;
     hbHubMatadorSettle($state);
@@ -1106,7 +1115,7 @@ function hbHubMatadorPropertyProblem(array $state, int $seat, mixed $field): ?st
         return 'That isn\'t a property.';
     }
     if ($state['fields'][$field]['owner'] !== $seat) {
-        return hbHubMatadorFieldName($field) . ' isn\'t yours.';
+        return hbHubMatadorFieldName($state, $field) . ' isn\'t yours.';
     }
     return null;
 }
@@ -1117,7 +1126,7 @@ function hbHubMatadorBuild(array &$state, int $seat, mixed $field): ?string
     if ($problem !== null) {
         return $problem;
     }
-    $info = HBHUB_MATADOR_FIELDS[$field];
+    $info = hbHubMatadorFields($state)[$field];
     if ($info['type'] !== 'street') {
         return 'You can only build on streets.';
     }
@@ -1168,7 +1177,7 @@ function hbHubMatadorSell(array &$state, int $seat, mixed $field): ?string
     if ($problem !== null) {
         return $problem;
     }
-    $info = HBHUB_MATADOR_FIELDS[$field];
+    $info = hbHubMatadorFields($state)[$field];
     $houses = $state['fields'][$field]['houses'];
     if ($houses === 0) {
         return 'There\'s nothing built on ' . $info['name'] . '.';
@@ -1198,16 +1207,16 @@ function hbHubMatadorMortgage(array &$state, int $seat, mixed $field): ?string
         return $problem;
     }
     if ($state['fields'][$field]['mortgaged']) {
-        return hbHubMatadorFieldName($field) . ' is already mortgaged.';
+        return hbHubMatadorFieldName($state, $field) . ' is already mortgaged.';
     }
-    if (hbHubMatadorGroupHasBuildings($state, $seat, HBHUB_MATADOR_FIELDS[$field]['group'])) {
+    if (hbHubMatadorGroupHasBuildings($state, $seat, hbHubMatadorFields($state)[$field]['group'])) {
         return 'Sell the houses in the group first.';
     }
 
-    $value = hbHubMatadorMortgageValue($field);
+    $value = hbHubMatadorMortgageValue($state, $field);
     $state['fields'][$field]['mortgaged'] = true;
     $state['players'][hbHubMatadorIndex($state, $seat)]['cash'] += $value;
-    hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' mortgaged ' . hbHubMatadorFieldName($field) . ' for ' . hbHubMatadorKr($value) . '.');
+    hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' mortgaged ' . hbHubMatadorFieldName($state, $field) . ' for ' . hbHubMatadorKr($value) . '.');
     return null;
 }
 
@@ -1218,16 +1227,16 @@ function hbHubMatadorUnmortgage(array &$state, int $seat, mixed $field): ?string
         return $problem;
     }
     if (!$state['fields'][$field]['mortgaged']) {
-        return hbHubMatadorFieldName($field) . ' isn\'t mortgaged.';
+        return hbHubMatadorFieldName($state, $field) . ' isn\'t mortgaged.';
     }
-    $cost = hbHubMatadorMortgageValue($field) + hbHubMatadorInterest($field);
+    $cost = hbHubMatadorMortgageValue($state, $field) + hbHubMatadorInterest($state, $field);
     if ($state['players'][hbHubMatadorIndex($state, $seat)]['cash'] < $cost) {
         return 'You don\'t have ' . hbHubMatadorKr($cost) . '.';
     }
 
     hbHubMatadorTransfer($state, $seat, null, $cost);
     $state['fields'][$field]['mortgaged'] = false;
-    hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' paid back the mortgage on ' . hbHubMatadorFieldName($field)
+    hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . ' paid back the mortgage on ' . hbHubMatadorFieldName($state, $field)
         . ' (' . hbHubMatadorKr($cost) . ').');
     return null;
 }
@@ -1236,6 +1245,7 @@ function hbHubMatadorUnmortgage(array &$state, int $seat, mixed $field): ?string
 
 /**
  * What one side of a trade gives, as sent: fields as "1,3,5", cash and cards as numbers. Null when it can't be one.
+ * The fields only have to be on the board here: hbHubMatadorTradeProblem() checks they're properties the player owns.
  *
  * @return ?array{fields: list<int>, cash: int, cards: int}
  */
@@ -1244,7 +1254,7 @@ function hbHubMatadorTradeSide(mixed $fields, mixed $cash, mixed $cards): ?array
     $fields = is_string($fields) && $fields !== '' ? explode(',', $fields) : [];
     $list = [];
     foreach ($fields as $field) {
-        if (!ctype_digit($field) || !hbHubMatadorIsProperty((int) $field)) {
+        if (!ctype_digit($field) || (int) $field >= HBHUB_MATADOR_FIELD_COUNT) {
             return null;
         }
         $list[] = (int) $field;
@@ -1277,13 +1287,13 @@ function hbHubMatadorTradeProblem(array $state, array $trade, bool $accepting = 
     foreach ([[$from, $trade['give'], $to], [$to, $trade['get'], $from]] as [$player, $side, $other]) {
         foreach ($side['fields'] as $field) {
             if (($state['fields'][$field]['owner'] ?? null) !== $player['seat']) {
-                return $player['name'] . ' doesn\'t own ' . hbHubMatadorFieldName($field) . ' (anymore).';
+                return $player['name'] . ' doesn\'t own ' . hbHubMatadorFieldName($state, $field) . ' (anymore).';
             }
-            if (hbHubMatadorGroupHasBuildings($state, $player['seat'], HBHUB_MATADOR_FIELDS[$field]['group'])) {
-                return 'Houses and hotels in the group of ' . hbHubMatadorFieldName($field) . ' have to be sold before it can be traded.';
+            if (hbHubMatadorGroupHasBuildings($state, $player['seat'], hbHubMatadorFields($state)[$field]['group'])) {
+                return 'Houses and hotels in the group of ' . hbHubMatadorFieldName($state, $field) . ' have to be sold before it can be traded.';
             }
             if ($state['fields'][$field]['mortgaged']) {
-                $interest[$other['seat']] += hbHubMatadorInterest($field);
+                $interest[$other['seat']] += hbHubMatadorInterest($state, $field);
             }
         }
         if ($side['cash'] > $player['cash']) {
@@ -1454,7 +1464,7 @@ function hbHubMatadorTrade(array &$state, array $trade): void
         foreach ($side['fields'] as $field) {
             $state['fields'][$field]['owner'] = $taker;
             if ($state['fields'][$field]['mortgaged']) {
-                hbHubMatadorTransfer($state, $taker, null, hbHubMatadorInterest($field));
+                hbHubMatadorTransfer($state, $taker, null, hbHubMatadorInterest($state, $field));
             }
         }
         hbHubMatadorTransfer($state, $giver, $taker, $side['cash']);
@@ -1469,7 +1479,7 @@ function hbHubMatadorTrade(array &$state, array $trade): void
 
 function hbHubMatadorTradeText(array $state, array $side): string
 {
-    $parts = array_map('hbHubMatadorFieldName', $side['fields']);
+    $parts = array_map(static fn (int $field): string => hbHubMatadorFieldName($state, $field), $side['fields']);
     if ($side['cash'] > 0) {
         $parts[] = hbHubMatadorKr($side['cash']);
     }
@@ -1562,7 +1572,7 @@ function hbHubMatadorView(array $state, array $people, array $away, int $userId,
                 : null,
         ], $state['trades']),
         'lastRoll' => $state['lastRoll'],
-        'lastCard' => $card !== null && empty($card['over']) ? ['seat' => $card['seat'], 'text' => HBHUB_MATADOR_CARDS[$card['card']]['text'], 'n' => $card['n']] : null,
+        'lastCard' => $card !== null && empty($card['over']) ? ['seat' => $card['seat'], 'text' => hbHubMatadorCards($state)[$card['card']]['text'], 'n' => $card['n']] : null,
         'log' => $state['log'],
         'winner' => $state['winner'],
         'unsaved' => $state['unsaved'],

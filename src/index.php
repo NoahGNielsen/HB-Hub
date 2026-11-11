@@ -40,10 +40,10 @@ function homeKroner(int $amount): string
 // the site uses, as they're only shown at 18 px. (The rest are 192 x 192, down from Flaticon's 512 x 512, as nothing
 // shows them bigger than 56 px: still sharp on a 3x phone screen, at a third of the bytes.)
 
-// Title deeds shown in the Games section, straight from the board
+// Title deeds shown in the Games section, straight from the classic board
 $homeDeeds = [];
 foreach ([1, 21, 39] as $homeField) {
-    $homeDeeds[] = HBHUB_MATADOR_FIELDS[$homeField];
+    $homeDeeds[] = hbHubMatadorEdition(HBHUB_MATADOR_DEFAULT_EDITION)['fields'][$homeField];
 }
 
 // The chessboard in the Games section: Scholar's mate (1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6?? 4. Qxf7#), a8 first like

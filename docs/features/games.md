@@ -5,6 +5,7 @@
 | | |
 |---|---|
 | **Matador** | The Danish Monopoly for 2-4 players. Games can be public, joined with a 6-character code, or invite-only |
+| **Editions** | The host picks the board and Prøv lykken cards in the room's settings before the game starts: Classic (the original Danish board, the default) or HTX (the school's own, for now a copy of Classic). Each edition is a file in `src/assets/php/games/matador/editions/` |
 | **House rules** | One dice (a 6 gives another roll), no auctions: a property nobody buys stays with the bank. Get out of jail by paying, using a "benådet" card or rolling a 6. Taxes and Prøv lykken payments go into Parkering's account, and whoever lands on Parkering gets it (a room setting, on by default). The host can also let players build houses and hotels on any street they own, without the whole colour, or build with the whole colour but not evenly (both off by default) |
 | **Full game** | Houses and hotels, mortgages, Prøv lykken cards, the income tax choice, and trading properties, money and cards with the other players at any time |
 | **Turn timer** | 30 seconds to act, reset by every move. Run out and your turn is passed on. The timer pauses while you owe money, and the host can pause the whole game |

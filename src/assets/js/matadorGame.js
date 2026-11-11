@@ -20,8 +20,9 @@
 // The host can pause the game (the button in the header, game.paused). Nothing can be done in it then but the chat,
 // so the moves, trades, building and keyboard shortcuts are left out until it goes on.
 //
-// The room's settings (game.settings: dice, jailRent, parkingPot, buildAnyStreet and buildUnevenly) are shown in their
-// dialog, where the host changes them before the game starts. With buildAnyStreet, the Build button works on a street
+// The room's settings (game.settings: edition, dice, jailRent, parkingPot, buildAnyStreet and buildUnevenly) are shown in their
+// dialog, where the host changes them before the game starts. The edition decides the board, which the page draws
+// (data-edition), so the page is loaded again when the host picks another one. With buildAnyStreet, the Build button works on a street
 // without the rest of its colour. buildUnevenly (houses don't have to go up evenly) only changes what the server
 // allows, so it's only in the dialog here. With parkingPot, what's in Parkering's account (game.pot) is shown on its field. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
 // on (after asking) and Backspace leaves it with the bank, and Enter ends the turn.
@@ -163,6 +164,10 @@
         revision = dataRevision;
         shownChatCount = dataChat;
         game = data.game;
+        if (game.settings.edition !== root.dataset.edition) {
+            location.reload(); // the host picked another edition: the page draws its board
+            return;
+        }
         turnEndsAt = game.timeLeft !== null ? performance.now() + game.timeLeft : null;
         hasAskedAtTurnEnd = false;
         tradeEndsAt = Object.fromEntries(game.trades.filter((trade) => trade.timeLeft !== null)
@@ -1287,7 +1292,10 @@
     const settingsSave = find('[data-mt-settings-save]');
     const canChangeSettings = () => game.isHost && game.phase === 'lobby';
     const JAIL_RENT_TEXT = { yes: 'rent is paid in jail', no: 'no rent in jail', bank: 'rent in jail goes to the bank' };
-    const settingsText = () => (game.settings.dice === 2 ? '2 dice' : '1 die') + ', ' + JAIL_RENT_TEXT[game.settings.jailRent]
+    const EDITION_NAMES = Object.fromEntries([...settingsForm.elements.edition].map((input) =>
+        [input.value, input.closest('label').querySelector('strong').textContent.replace(' (default)', '')]));
+    const settingsText = () => EDITION_NAMES[game.settings.edition] + ' edition, '
+        + (game.settings.dice === 2 ? '2 dice' : '1 die') + ', ' + JAIL_RENT_TEXT[game.settings.jailRent]
         + ', ' + (game.settings.parkingPot ? 'taxes and fines go to Parkering' : 'no Parkering account')
         + ', ' + (game.settings.buildAnyStreet ? 'build on any street'
             : game.settings.buildUnevenly ? 'build with the whole group, not evenly' : 'build only with the whole group');
@@ -1298,6 +1306,7 @@
     // The choices are only filled in from the game when it opens, or while it can't be changed (so a poll doesn't
     // undo what the host has just clicked)
     function fillSettings() {
+        settingsForm.elements.edition.value = game.settings.edition;
         settingsForm.elements.dice.value = String(game.settings.dice);
         settingsForm.elements.jailRent.value = game.settings.jailRent;
         settingsForm.elements.parkingPot.value = game.settings.parkingPot ? 'on' : 'off';
@@ -1328,6 +1337,7 @@
     settingsForm.addEventListener('submit', async (event) => {
         event.preventDefault(); // it's closed once it's saved, not straight away
         const data = await act('settings', {
+            edition: settingsForm.elements.edition.value,
             dice: settingsForm.elements.dice.value,
             jailRent: settingsForm.elements.jailRent.value,
             parkingPot: settingsForm.elements.parkingPot.value,

@@ -1,8 +1,15 @@
 <?php
 // The rules of Matador as played here, shown on the Matador page and in the game. game.php and room.php play by them,
-// so change both together.
+// so change both together. The amounts that differ between editions (board.php) are the game's own edition's in a
+// game ($room), and Classic's everywhere else.
+$rulesFields = hbHubMatadorFields(is_array($room['state'] ?? null) ? $room['state'] : []);
+$rulesExtraTax = array_values(array_filter($rulesFields, static fn (array $info): bool => $info['type'] === 'extraTax'))[0]['amount'] ?? 0;
 ?>
 <ul class="casino-rule-list">
+    <li>
+        The host picks the edition in the room's settings before the game starts: Classic, the original Danish
+        board, or HTX, the school's own (for now the same as Classic).
+    </li>
     <li>
         Everyone starts with <?= hbHubMatadorKr(HBHUB_MATADOR_START_CASH) ?> on START. The turn order is drawn when the game starts.
         You get <?= hbHubMatadorKr(HBHUB_MATADOR_START_PAY) ?> every time you pass or land on START.
@@ -31,7 +38,7 @@
     </li>
     <li>
         Indkomstskat: pay <?= hbHubMatadorKr(HBHUB_MATADOR_TAX_FIXED) ?> or <?= HBHUB_MATADOR_TAX_PERCENT ?> % of everything you're worth,
-        chosen before it's worked out. Ekstraordinær statsskat is <?= hbHubMatadorKr(HBHUB_MATADOR_FIELDS[38]['amount']) ?>.
+        chosen before it's worked out. Ekstraordinær statsskat is <?= hbHubMatadorKr($rulesExtraTax) ?>.
         These taxes, and what the Prøv lykken cards make you pay, go into Parkering's account: land on Parkering and you
         get everything in it. The host can turn this off in the room's settings, and then the money goes to the bank and
         Parkering is a free rest.

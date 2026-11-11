@@ -79,6 +79,9 @@ function gameFieldArt(string $type): string
 }
 
 $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
+// The board is drawn for the game's edition (board.php). When the host picks another one, matadorGame.js sees it's not
+// data-edition anymore and loads the page again.
+$gameEdition = hbHubMatadorSettings($room['state'])['edition'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -95,14 +98,14 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="mt" data-matador data-room="<?= $room['roomId'] ?>" data-turn-seconds="<?= HBHUB_MATADOR_TURN_SECONDS ?>"
-          data-trade-seconds="<?= HBHUB_MATADOR_TRADE_SECONDS ?>">
+          data-trade-seconds="<?= HBHUB_MATADOR_TRADE_SECONDS ?>" data-edition="<?= htmlspecialchars($gameEdition) ?>">
         <!-- The board on the left; the game's name and buttons, then the panels and the rules, on the right -->
         <div class="mt-layout">
             <div class="mt-header">
                 <div class="mt-heading">
                     <h1 class="mt-title"><?= htmlspecialchars($room['roomName']) ?></h1>
                     <p class="mt-meta">
-                        <?= $gameTypeName ?> &middot; <span data-mt-player-count>1</span>/<?= HBHUB_MATADOR_MAX_PLAYERS ?> players
+                        <?= $gameTypeName ?> &middot; <?= htmlspecialchars(HBHUB_MATADOR_EDITIONS[$gameEdition]['name']) ?> edition &middot; <span data-mt-player-count>1</span>/<?= HBHUB_MATADOR_MAX_PLAYERS ?> players
                         <span data-mt-round></span>
                         <span data-mt-saved></span>
                     </p>
@@ -165,7 +168,7 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
             <div class="mt-board-area">
                 <div class="mt-board-wrap" data-board-zoom="hbHubMatadorZoom" data-mt-board-frame>
                     <section class="mt-board" aria-label="The board" data-mt-board>
-                        <?php foreach (HBHUB_MATADOR_FIELDS as $field => $info):
+                        <?php foreach (hbHubMatadorFields($room['state']) as $field => $info):
                             [$row, $column, $side] = gameFieldPlace($field);
                             $isCorner = in_array($field, [0, 10, 20, 30], true);
                             $classes = 'mt-field mt-r-' . $row . ' mt-c-' . $column . ' mt-side-' . $side . ' mt-type-' . $info['type']
@@ -357,6 +360,18 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
             <form method="dialog" data-mt-settings-form>
                 <h2 id="mt-settings-title">Room settings</h2>
                 <p class="mt-hint" data-mt-settings-text></p>
+                <fieldset class="casino-choices" data-mt-settings-fields>
+                    <legend class="casino-label">Edition</legend>
+                    <?php foreach (HBHUB_MATADOR_EDITIONS as $value => $edition): ?>
+                        <label class="casino-choice">
+                            <input type="radio" name="edition" value="<?= htmlspecialchars($value) ?>">
+                            <span>
+                                <strong><?= htmlspecialchars($edition['name']) ?><?= $value === HBHUB_MATADOR_DEFAULT_EDITION ? ' (default)' : '' ?></strong>
+                                <span class="casino-hint"><?= htmlspecialchars($edition['about']) ?></span>
+                            </span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
                 <fieldset class="casino-choices" data-mt-settings-fields>
                     <legend class="casino-label">Dice</legend>
                     <?php foreach ([
