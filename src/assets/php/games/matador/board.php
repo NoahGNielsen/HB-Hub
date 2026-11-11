@@ -31,7 +31,7 @@ const HBHUB_MATADOR_LEGAT_LIMIT = 15000; // only for players worth at most this
 // what the room's settings call it, and a line about it
 const HBHUB_MATADOR_EDITIONS = [
     'classic' => ['name' => 'Classic', 'about' => 'The original Danish board, with the streets of Copenhagen.'],
-    'htx' => ['name' => 'HTX', 'about' => 'HTX\'s own board. For now it\'s the same as Classic.'],
+    'htx' => ['name' => 'HTX', 'about' => 'HTX\'s own board and cards - BETA!'],
 ];
 const HBHUB_MATADOR_DEFAULT_EDITION = 'classic';
 
