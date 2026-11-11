@@ -67,7 +67,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             Pick a chip, then tap a spot to put it there (right-click a spot to take one off), and press
                             <strong>Place bets</strong>. &times;2 doubles everything you've put down. You can bet
                             on Player or Banker (not both), and on Tie and the pairs as well. Your bets together have to be at least
-                            the table's minimum, in steps of <?= HBHUB_BACCARAT_BET_STEP ?>.
+                            the table's minimum, in steps of <?= HBHUB_BACCARAT_BET_STEP ?>. With fewer than <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips
+                            left, pick the <strong>All in</strong> chip and tap a spot to put every chip you have on it.
                         </p>
                     </section>
 

@@ -32,7 +32,9 @@ if ($isPost) {
         echo json_encode(['error' => 'unknownAction']);
         exit;
     }
-    $bets = in_array($_POST['bets'] ?? null, ['{}', '[]'], true) ? [] : hbHubRouletteCleanBets($_POST['bets'] ?? null);
+    // With the chips, so a member with fewer than 10 can go all in with them
+    $bets = in_array($_POST['bets'] ?? null, ['{}', '[]'], true) ? []
+        : hbHubRouletteCleanBets($_POST['bets'] ?? null, hbHubCasinoWallet($db, $userId)['chips']);
     if ($bets === null) {
         http_response_code(400);
         echo json_encode(['error' => 'badBets']);

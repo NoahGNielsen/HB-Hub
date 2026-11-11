@@ -11,7 +11,11 @@
     <li>Double down on your first two cards: double your bet and get exactly one more card. You can double after splitting too.</li>
     <li>Split two cards of the same value (like a king and a queen) into two hands, up to 3 hands. Split aces get one card each, and 21 after a split pays 1:1.</li>
     <li>Insurance: when the dealer shows an ace you can bet half your bet that the dealer has blackjack. It pays 2:1, and is settled separately from your hand.</li>
-    <li>Bets go in steps of 10. You have <?= HBHUB_BLACKJACK_TURN_MS / 1000 ?> seconds for each move. When the time runs out, your hand stands.</li>
+    <li>
+        Bets go in steps of 10. Members with fewer than <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips can go <strong>all in</strong>
+        instead: bet every chip they have, at any table. A blackjack on an odd bet pays 3:2 rounded down.
+    </li>
+    <li>You have <?= HBHUB_BLACKJACK_TURN_MS / 1000 ?> seconds for each move. When the time runs out, your hand stands.</li>
     <li>
         Up to <?= HBHUB_BLACKJACK_SEATS ?> players at a table, each playing against the dealer, not each other. Players take turns from seat 1.
         Betting closes <?= HBHUB_BLACKJACK_BETTING_MS / 1000 ?> seconds after the first bet, or as soon as everyone has bet.

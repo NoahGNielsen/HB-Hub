@@ -566,6 +566,7 @@
 .bj-chip-100 { --chip-color: #2f3a4a; }
 .bj-chip-500 { --chip-color: #8e44ad; }
 .bj-chip-1000 { --chip-color: #f2711c; }
+.bj-chip-all-in { --chip-color: #c0392b; font-size: 0.7rem; line-height: 1; } /* the last few chips, all at once */
 
 .bj-chip:hover:not(:disabled) {
   transform: translateY(-2px);

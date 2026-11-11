@@ -104,10 +104,12 @@ function hbHubRouletteColor(int $number): string
 /**
  * The bets sent by roulette.js, as JSON like {"17": 10, "red": 50}. Returns them as bet => chips, or null when
  * there's none, or any of them isn't a bet there is or isn't a whole number of chips in steps of 10.
+ * With the user's $chips, a single bet of all of them is fine too when that's an all in (hbHubCasinoIsAllIn()): the
+ * last few chips, on one spot. The spin checks the chips again (hbHubRouletteTableSpin()).
  *
  * @return ?array<string, int>
  */
-function hbHubRouletteCleanBets(mixed $json): ?array
+function hbHubRouletteCleanBets(mixed $json, ?int $chips = null): ?array
 {
     if (!is_string($json) || strlen($json) > HBHUB_ROULETTE_BETS_MAX_LENGTH) {
         return null;
@@ -120,8 +122,9 @@ function hbHubRouletteCleanBets(mixed $json): ?array
     $bets = [];
     foreach ($decoded as $bet => $amount) {
         $bet = (string) $bet; // straight bets come out of json_decode() as int keys
-        if (!isset(hbHubRouletteBets()[$bet]) || !is_int($amount) || $amount < HBHUB_ROULETTE_BET_STEP
-            || $amount > HBHUB_ROULETTE_MAX_BET || $amount % HBHUB_ROULETTE_BET_STEP !== 0) {
+        $isAllIn = $chips !== null && count($decoded) === 1 && is_int($amount) && hbHubCasinoIsAllIn($amount, $chips);
+        if (!isset(hbHubRouletteBets()[$bet]) || !is_int($amount) || (!$isAllIn && ($amount < HBHUB_ROULETTE_BET_STEP
+            || $amount > HBHUB_ROULETTE_MAX_BET || $amount % HBHUB_ROULETTE_BET_STEP !== 0))) {
             return null;
         }
         $bets[$bet] = $amount;

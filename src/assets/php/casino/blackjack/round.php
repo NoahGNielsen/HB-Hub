@@ -153,12 +153,16 @@ function hbHubBlackjackBet(PDO $db, array &$room, array $seats, int $userId, mix
     if (hbHubBlackjackBetIndex($state, $userId) !== null) {
         return 'You\'ve already bet on the next hand.';
     }
-    if (!is_string($amount) || !ctype_digit($amount) || strlen($amount) > HBHUB_BLACKJACK_BET_MAX_DIGITS
-        || (int) $amount < $minBet || (int) $amount % HBHUB_BLACKJACK_BET_STEP !== 0) {
+    if (!is_string($amount) || !ctype_digit($amount) || strlen($amount) > HBHUB_BLACKJACK_BET_MAX_DIGITS) {
         return 'Bets go in steps of ' . HBHUB_BLACKJACK_BET_STEP . ', from ' . number_format($minBet) . ' chips at this table.';
     }
     $amount = (int) $amount;
-    if (hbHubCasinoWallet($db, $userId)['chips'] < $amount) {
+    $chips = hbHubCasinoWallet($db, $userId)['chips'];
+    // Going all in with the last few chips skips the minimum and the steps. An odd bet's 3:2 rounds down (a blackjack on 7 wins 10).
+    if (!hbHubCasinoIsAllIn($amount, $chips) && ($amount < $minBet || $amount % HBHUB_BLACKJACK_BET_STEP !== 0)) {
+        return 'Bets go in steps of ' . HBHUB_BLACKJACK_BET_STEP . ', from ' . number_format($minBet) . ' chips at this table.';
+    }
+    if ($chips < $amount) {
         return 'You don\'t have enough chips for that bet.';
     }
 

@@ -146,7 +146,8 @@ function hbHubBaccaratBet(PDO $db, array &$room, array $seats, int $userId, mixe
         return 'Baccarat needs at least ' . HBHUB_BACCARAT_MIN_PLAYERS . ' players at the table. Share the code or invite someone.';
     }
 
-    $spots = hbHubBaccaratCleanBets($bets);
+    $chips = hbHubCasinoWallet($db, $userId)['chips'];
+    $spots = hbHubBaccaratCleanBets($bets, $chips);
     if ($spots === null) {
         return 'Bets go in steps of ' . HBHUB_BACCARAT_BET_STEP . '.';
     }
@@ -154,10 +155,10 @@ function hbHubBaccaratBet(PDO $db, array &$room, array $seats, int $userId, mixe
         return 'Bet on Player or Banker, not both.';
     }
     $total = array_sum($spots);
-    if ($total < $minBet) {
+    if ($total < $minBet && !hbHubCasinoIsAllIn($total, $chips)) { // going all in with the last few chips skips the minimum
         return 'Your bets together have to be at least ' . number_format($minBet) . ' chips at this table.';
     }
-    if (hbHubCasinoWallet($db, $userId)['chips'] < $total) {
+    if ($chips < $total) {
         return 'You don\'t have enough chips for those bets.';
     }
 
@@ -181,11 +182,22 @@ function hbHubBaccaratBet(PDO $db, array &$room, array $seats, int $userId, mixe
 /**
  * The bets as sent ({spot: chips}), with only the spots there are and the ones with chips on them, in the order of
  * HBHUB_BACCARAT_SPOTS. Null when anything in it isn't a bet (an unknown spot, or chips not in steps of 10).
+ * With the user's $chips, one spot with all of them on it is fine too when that's an all in (hbHubCasinoIsAllIn()).
  *
  * @return ?array<string, int>
  */
-function hbHubBaccaratCleanBets(mixed $bets): ?array
+function hbHubBaccaratCleanBets(mixed $bets, ?int $chips = null): ?array
 {
+    if ($chips !== null && is_array($bets)) {
+        $sent = array_filter($bets, static fn (mixed $amount): bool => $amount !== '0' && $amount !== '');
+        $spot = array_key_first($sent);
+        if (count($sent) === 1 && in_array((string) $spot, HBHUB_BACCARAT_SPOTS, true) && is_string($sent[$spot])
+            && ctype_digit($sent[$spot]) && strlen($sent[$spot]) <= HBHUB_BACCARAT_BET_MAX_DIGITS
+            && hbHubCasinoIsAllIn((int) $sent[$spot], $chips)) {
+            return [(string) $spot => (int) $sent[$spot]];
+        }
+    }
+
     if (!is_array($bets) || array_diff(array_map('strval', array_keys($bets)), HBHUB_BACCARAT_SPOTS) !== []) {
         return null;
     }

@@ -30,6 +30,9 @@ const HBHUB_CASINO_DAILY_DAYS = 30; // how many days the calendar has, count(HBH
 const HBHUB_CASINO_TIME_ZONE = 'Europe/Copenhagen';
 const HBHUB_CASINO_DAY_START = 3; // 3 AM, when a new casino day starts
 const HBHUB_CASINO_CHIPS_PER_KRONE = 100; // what 1 kr buys, when someone buys extra chips from the owner (gambling/buy-chips.php)
+// With fewer chips than this, a member can go all in: bet every chip they have on one thing, at any table, whatever its
+// minimum bet and the steps of 10 (hbHubCasinoIsAllIn()). Otherwise those last few chips could never be played.
+const HBHUB_CASINO_ALL_IN_BELOW = 10;
 
 // transactionReason of the casino's own changes. Games use their own (like "bet" and "payout"), with transactionGame set.
 const HBHUB_CASINO_REASON_START = 'start';
@@ -162,6 +165,16 @@ function hbHubCasinoStatus(PDO $db, int $userId, ?int $now = null): array
             'seconds' => $isReady ? 0 : max(1, hbHubCasinoNextDay($now) - $now),
         ],
     ];
+}
+
+/**
+ * Whether a bet of $amount is an all in: every one of the $chips the user has, when that's fewer than
+ * HBHUB_CASINO_ALL_IN_BELOW. The games let such a bet through without their minimum and steps. The wallet still has
+ * the last word when the chips are taken (hbHubCasinoChange()), so chips spent elsewhere in between can't be bet twice.
+ */
+function hbHubCasinoIsAllIn(int $amount, int $chips): bool
+{
+    return $amount > 0 && $amount === $chips && $chips < HBHUB_CASINO_ALL_IN_BELOW;
 }
 
 /**

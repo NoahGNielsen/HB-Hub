@@ -52,6 +52,9 @@
     const doubleButton = find('[data-bj-bet-double]');
     const placeButton = find('[data-bj-bet-place]');
     const brokeHint = find('[data-bj-broke]');
+    // Members with fewer chips than this (HBHUB_CASINO_ALL_IN_BELOW) can bet all of them, whatever the table's minimum
+    const allInButton = find('[data-bj-all-in]');
+    const ALL_IN_BELOW = allInButton ? Number(allInButton.dataset.bjAllIn) : 0;
     const placedText = find('[data-bj-placed]');
     const placedHint = find('[data-bj-placed-hint]');
     const takeBackButton = find('[data-bj-bet-take-back]');
@@ -451,6 +454,9 @@
         return Math.floor((chips ?? 0) / BET_STEP) * BET_STEP;
     }
 
+    // Whether the player can go all in: some chips, but fewer than the smallest bet
+    const canGoAllIn = () => allInButton !== null && chips > 0 && chips < ALL_IN_BELOW;
+
     function renderControls() {
         const you = table.you;
         let panel = 'wait';
@@ -464,15 +470,21 @@
         document.title = (panel === 'moves' || panel === 'insurance' ? 'Your turn - ' : '') + baseTitle;
 
         if (panel === 'bet') {
-            pendingBet = Math.min(pendingBet, maxBet());
+            const canAllIn = canGoAllIn();
+            const isAllIn = canAllIn && pendingBet === chips;
+            if (!isAllIn) pendingBet = Math.min(pendingBet, maxBet());
             pendingText.textContent = formatChips(pendingBet);
             chipButtons.forEach((button) => (button.disabled = isBusy || pendingBet + Number(button.dataset.bjChip) > maxBet()));
+            if (allInButton) {
+                allInButton.hidden = !canAllIn;
+                allInButton.disabled = isBusy || isAllIn;
+            }
             clearButton.disabled = isBusy || pendingBet === 0;
             halfButton.disabled = isBusy || pendingBet <= minBet;
             doubleButton.disabled = isBusy || pendingBet === 0 || pendingBet * 2 > maxBet();
-            placeButton.disabled = isBusy || pendingBet < minBet || pendingBet > maxBet();
-            placeButton.textContent = table.phase === 'results' ? 'Bet on the next hand' : 'Place bet';
-            brokeHint.hidden = maxBet() >= minBet;
+            placeButton.disabled = isBusy || (!isAllIn && (pendingBet < minBet || pendingBet > maxBet()));
+            placeButton.textContent = isAllIn ? 'Go all in' : table.phase === 'results' ? 'Bet on the next hand' : 'Place bet';
+            brokeHint.hidden = maxBet() >= minBet || canAllIn;
         } else if (panel === 'placed') {
             placedText.textContent = formatChips(you.nextBet);
             placedHint.textContent = table.phase === 'results'
@@ -529,6 +541,10 @@
         pendingBet = Math.min(pendingBet + Number(button.dataset.bjChip), maxBet());
         renderControls();
     }));
+    allInButton?.addEventListener('click', () => {
+        pendingBet = chips; // every chip there is (only shown with fewer than 10)
+        renderControls();
+    });
     clearButton.addEventListener('click', () => {
         pendingBet = 0;
         renderControls();

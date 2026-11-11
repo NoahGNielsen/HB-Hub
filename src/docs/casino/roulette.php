@@ -36,7 +36,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="play" aria-labelledby="docs-play">
                         <h2 id="docs-play">How to play</h2>
                         <ol class="docs-steps">
-                            <li>Pick a chip and click the table where you want to bet. Click again to add more, and right-click a bet to take a chip off. <strong>Undo</strong> takes back the last chip, <strong>Clear</strong> all of them.</li>
+                            <li>Pick a chip and click the table where you want to bet. Click again to add more, and right-click a bet to take a chip off. <strong>Undo</strong> takes back the last chip, <strong>Clear</strong> all of them. With fewer than <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips left, the <strong>All in</strong> chip puts every chip you have on the bet you click.</li>
                             <li>Press <strong>Spin</strong>. The wheel turns and the ball lands on a number.</li>
                             <li>Winning bets are paid, losing ones are taken. Your bets stay on the table, so you can spin again straight away, or change them first.</li>
                         </ol>

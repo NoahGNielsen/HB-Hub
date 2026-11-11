@@ -553,6 +553,7 @@
 .rl-chip-100 { --chip-color: #2f3a4a; }
 .rl-chip-500 { --chip-color: #8e44ad; }
 .rl-chip-1000 { --chip-color: #f2711c; }
+.rl-chip-all-in { --chip-color: #c0392b; font-size: 0.7rem; line-height: 1; } /* the last few chips, all at once */
 
 .rl-bet-line {
   margin: 0;

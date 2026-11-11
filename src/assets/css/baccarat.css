@@ -758,6 +758,7 @@
 .bac-chip-100 { --chip-color: #2f3a4a; }
 .bac-chip-500 { --chip-color: #8e44ad; }
 .bac-chip-1000 { --chip-color: #f2711c; }
+.bac-chip-all-in { --chip-color: #c0392b; font-size: 0.7rem; line-height: 1; } /* the last few chips, all at once */
 
 /* The chip a tap puts down is lifted, with a ring round it */
 .bac-chip[aria-pressed="true"] {

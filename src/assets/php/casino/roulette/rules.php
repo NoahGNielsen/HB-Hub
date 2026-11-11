@@ -12,7 +12,10 @@ require_once __DIR__ . '/table.php';
         a dozen or column 2:1, and red, black, odd, even, 1-18 and 19-36 1:1.
     </li>
     <li>When the ball lands on 0, every bet outside the numbers (dozens, columns, red, black and so on) loses.</li>
-    <li>Bets go in steps of <?= HBHUB_ROULETTE_BET_STEP ?>.</li>
+    <li>
+        Bets go in steps of <?= HBHUB_ROULETTE_BET_STEP ?>. Members with fewer than <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips
+        can go <strong>all in</strong> instead: every chip they have on one bet.
+    </li>
     <li>
         Members all play at one table: everyone sees everyone's bets, and one ball is spun for all of them. The first bet
         on the table starts a <?= intdiv(HBHUB_ROULETTE_BET_MS, 1000) ?>-second clock, and anyone can put bets on or take

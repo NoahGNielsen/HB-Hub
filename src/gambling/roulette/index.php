@@ -236,6 +236,10 @@ function rouletteWheelPockets(): string
                     <button type="button" class="rl-chip rl-chip-<?= $chip ?>" data-rl-chip="<?= $chip ?>"
                             aria-pressed="<?= $index === 0 ? 'true' : 'false' ?>" aria-label="Bet <?= $chip ?> at a time"><?= $chip >= 1000 ? ($chip / 1000) . 'K' : $chip ?></button>
                 <?php endforeach; ?>
+                <?php if ($guestGame === null): // only with fewer than 10 chips (roulette.js). Guests get a new stack instead ?>
+                    <button type="button" class="rl-chip rl-chip-all-in" data-rl-all-in="<?= HBHUB_CASINO_ALL_IN_BELOW ?>"
+                            aria-pressed="false" aria-label="All in: bet all your chips on one spot" hidden>All in</button>
+                <?php endif; ?>
             </div>
             <p class="rl-bet-line">Total bet: <strong class="rl-bet-amount" data-rl-total>0</strong></p>
             <div class="rl-actions">

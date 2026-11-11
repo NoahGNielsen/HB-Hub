@@ -128,6 +128,10 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
                     <?php foreach ($tableChips as $chip): ?>
                         <button type="button" class="bj-chip bj-chip-<?= $chip ?>" data-bj-chip="<?= $chip ?>" aria-label="Add <?= $chip ?>"><?= $chip >= 1000 ? ($chip / 1000) . 'K' : $chip ?></button>
                     <?php endforeach; ?>
+                    <?php if ($guestGame === null): // only with fewer than 10 chips (blackjackTable.js). Guests get a new stack instead ?>
+                        <button type="button" class="bj-chip bj-chip-all-in" data-bj-all-in="<?= HBHUB_CASINO_ALL_IN_BELOW ?>"
+                                aria-label="All in: bet all your chips" hidden>All in</button>
+                    <?php endif; ?>
                 </div>
                 <div class="bj-panel-actions">
                     <button type="button" class="casino-btn" data-bj-bet-clear>Clear</button>

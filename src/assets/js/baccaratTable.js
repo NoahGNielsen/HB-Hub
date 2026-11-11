@@ -65,6 +65,10 @@
     const doubleButton = find('[data-bac-bet-double]');
     const placeButton = find('[data-bac-bet-place]');
     const brokeHint = find('[data-bac-broke]');
+    // Members with fewer chips than this (HBHUB_CASINO_ALL_IN_BELOW) get the All in chip instead of the others: a tap on
+    // a spot puts every chip they have on it, whatever the table's minimum
+    const allInButton = find('[data-bac-all-in]');
+    const ALL_IN_BELOW = allInButton ? Number(allInButton.dataset.bacAllIn) : 0;
     const placedText = find('[data-bac-placed]');
     const placedList = find('[data-bac-placed-list]');
     const placedHint = find('[data-bac-placed-hint]');
@@ -86,6 +90,7 @@
     let chips = null;
     let pending = noBets(); // the bets being made up. Kept for the next hand, so the same bets are one click.
     let chip = chipButtons.some((button) => Number(button.dataset.bacChip) === minBet) ? minBet : BET_STEP; // the chip a tap puts down
+    let isAllIn = false; // the All in chip is what a tap puts down (always, while it's shown: no other chip fits)
     let isBusy = false; // something the player did is on its way
     let isPolling = false;
     let pollTimer = null;
@@ -489,7 +494,8 @@
         document.title = (panel === 'bet' && table.phase === 'betting' ? 'Bets open - ' : '') + baseTitle;
 
         if (panel === 'bet') {
-            if (sum(pending) > maxBet()) pending = noBets(); // spent elsewhere since
+            isAllIn = allInButton !== null && chips > 0 && chips < ALL_IN_BELOW;
+            if (sum(pending) > (isAllIn ? chips : maxBet()) || (isAllIn && sum(pending) !== chips)) pending = noBets(); // spent elsewhere since
             const total = sum(pending);
             pendingText.textContent = formatChips(total);
             for (const button of spotButtons) {
@@ -499,20 +505,25 @@
                 button.classList.toggle('has-chips', amount > 0);
                 button.classList.toggle('is-blocked', OTHER_SIDE[spot] !== undefined && pending[OTHER_SIDE[spot]] > 0);
                 // A spot with chips on stays enabled when there's no room for another, so they can still be right-clicked off
-                button.disabled = isBusy || (total + chip > maxBet() && amount === 0);
+                button.disabled = isBusy || (!isAllIn && total + chip > maxBet() && amount === 0);
                 button.setAttribute('aria-label', SPOT_NAMES[spot] + ', pays ' + button.dataset.bacPays
                     + (amount > 0 ? ', ' + formatChips(amount) + ' on it' : ''));
             }
             for (const button of chipButtons) {
                 const value = Number(button.dataset.bacChip);
-                button.setAttribute('aria-pressed', String(value === chip));
+                button.setAttribute('aria-pressed', String(value === chip && !isAllIn));
                 button.disabled = isBusy || value > maxBet();
+            }
+            if (allInButton) {
+                allInButton.hidden = !isAllIn;
+                allInButton.setAttribute('aria-pressed', String(isAllIn));
+                allInButton.disabled = isBusy;
             }
             clearButton.disabled = isBusy || total === 0;
             doubleButton.disabled = isBusy || total === 0 || total * 2 > maxBet();
-            placeButton.disabled = isBusy || total < minBet || total > maxBet();
-            placeButton.textContent = table.phase === 'results' ? 'Bet on the next hand' : 'Place bets';
-            brokeHint.hidden = maxBet() >= minBet;
+            placeButton.disabled = isBusy || (isAllIn ? total !== chips : total < minBet || total > maxBet());
+            placeButton.textContent = isAllIn ? 'Go all in' : table.phase === 'results' ? 'Bet on the next hand' : 'Place bets';
+            brokeHint.hidden = maxBet() >= minBet || isAllIn;
         } else if (panel === 'placed') {
             placedText.textContent = formatChips(sum(you.nextBets));
             placedList.replaceChildren(...betList(you.nextBets, null).children);
@@ -559,6 +570,13 @@
     }));
     spotButtons.forEach((button) => button.addEventListener('click', () => {
         const spot = button.dataset.bacSpot;
+        if (isAllIn) { // every chip on this spot, and nothing anywhere else
+            showMessage('');
+            pending = noBets();
+            pending[spot] = chips;
+            renderControls();
+            return;
+        }
         const other = OTHER_SIDE[spot];
         if (other !== undefined && pending[other] > 0) {
             showMessage('Bet on Player or Banker, not both. Clear your bets to switch.');
@@ -575,7 +593,7 @@
         const spot = button.dataset.bacSpot;
         if (isBusy || pending[spot] === 0) return;
         showMessage('');
-        pending[spot] = Math.max(0, pending[spot] - chip);
+        pending[spot] = isAllIn ? 0 : Math.max(0, pending[spot] - chip); // an all in comes off all at once
         renderControls();
     }));
     clearButton.addEventListener('click', () => {

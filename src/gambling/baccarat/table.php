@@ -155,6 +155,10 @@ $tableSpots = [ // the betting board, in the order it's laid out: [name, what it
                         <button type="button" class="bac-chip bac-chip-<?= $chip ?>" data-bac-chip="<?= $chip ?>" aria-pressed="false"
                                 aria-label="<?= $chip ?> chip"><?= $chip >= 1000 ? ($chip / 1000) . 'K' : $chip ?></button>
                     <?php endforeach; ?>
+                    <?php if ($guestGame === null): // only with fewer than 10 chips (baccaratTable.js). Guests get a new stack instead ?>
+                        <button type="button" class="bac-chip bac-chip-all-in" data-bac-all-in="<?= HBHUB_CASINO_ALL_IN_BELOW ?>" aria-pressed="false"
+                                aria-label="All in: put all your chips on one spot" hidden>All in</button>
+                    <?php endif; ?>
                 </div>
                 <div class="bac-panel-actions">
                     <button type="button" class="casino-btn" data-bac-bet-clear>Clear</button>

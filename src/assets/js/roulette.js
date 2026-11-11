@@ -59,6 +59,10 @@
     const rebetButton = find('[data-rl-rebet]');
     const spinButton = find('[data-rl-spin]');
     const brokeHint = find('[data-rl-broke]');
+    // Members with fewer chips than this (HBHUB_CASINO_ALL_IN_BELOW) get the All in chip: a click on a spot puts every
+    // chip they have on it, instead of everything else, as the smallest chip is more than they have
+    const allInButton = find('[data-rl-all-in]');
+    const ALL_IN_BELOW = allInButton ? Number(allInButton.dataset.rlAllIn) : 0;
     const navChips = document.querySelector('[data-casino-chips]'); // kept up to date by casino.js
 
     const spots = [...board.querySelectorAll('[data-rl-bet]')];
@@ -68,6 +72,8 @@
 
     let chips = Number(root.dataset.chips);
     let chip = Number(chipButtons[0].dataset.rlChip); // the chip a click puts on the table
+    let isAllIn = false; // the All in chip is picked instead
+    let couldGoAllIn = false; // the All in chip was shown last time the board was drawn
     let bets = new Map(); // the user's bets: bet => chips on it
     let undoStack = []; // the bets before each change
     let lastBets = new Map(); // the bets of the user's last spin, for Same again / Space on an empty table
@@ -120,8 +126,27 @@
         message.textContent = text;
     }
 
+    // Whether the user can go all in: some chips, but fewer than the smallest bet
+    function canGoAllIn() {
+        const have = walletChips();
+        return allInButton !== null && have > 0 && have < ALL_IN_BELOW;
+    }
+
+    // Picks the chip a click on the table puts down: one of the chips, or All in
+    function pickChip(button) {
+        isAllIn = button === allInButton;
+        if (!isAllIn) chip = Number(button.dataset.rlChip);
+        [...chipButtons, allInButton].forEach((other) => other?.setAttribute('aria-pressed', String(other === button)));
+    }
+
+    // Bets with chips not in steps of 10 were an all in, which can only be made again with exactly those chips
+    const isAllInBets = (map) => [...map.values()].some((amount) => amount % BET_STEP !== 0);
+
     function tooMany(amount) {
         const have = walletChips();
+        if (canGoAllIn()) {
+            return 'You have ' + formatChips(have) + (have === 1 ? ' chip' : ' chips') + ' left. Pick All in to bet them on one spot.';
+        }
         return have < BET_STEP
             ? 'You\'re out of chips.'
             : 'That would be ' + formatChips(amount) + ' chips on the table, and you have ' + formatChips(have) + '.';
@@ -216,10 +241,18 @@
             const othersBetting = table?.players.some((player) => !player.me) ?? false;
             spinButton.textContent = isReady ? 'Ready ✓' : othersBetting ? 'Ready' : 'Spin';
             spinButton.title = (othersBetting ? 'Done betting: spins when everyone is' : 'Spin') + ' (Space)';
-            rebetButton.hidden = bets.size > 0 || lastBets.size === 0;
+            rebetButton.hidden = bets.size > 0 || lastBets.size === 0 || isAllInBets(lastBets);
             rebetButton.disabled = locked;
         }
-        brokeHint.hidden = isSpinning || bets.size > 0 || walletChips() >= BET_STEP;
+        // The All in chip comes and goes with the chips, and is picked by itself when it comes (no other chip fits)
+        const canAllIn = canGoAllIn();
+        if (allInButton) {
+            allInButton.hidden = !canAllIn;
+            if (canAllIn && !couldGoAllIn) pickChip(allInButton);
+            if (!canAllIn && isAllIn) pickChip(chipButtons[0]);
+        }
+        couldGoAllIn = canAllIn;
+        brokeHint.hidden = isSpinning || bets.size > 0 || walletChips() >= BET_STEP || canAllIn;
         shownPhase = phase();
     }
 
@@ -246,6 +279,10 @@
     }
 
     function addBet(bet, amount) {
+        if (isAllIn && canGoAllIn()) {
+            setBets(new Map([[bet, walletChips()]])); // every chip on this spot, and nothing anywhere else
+            return;
+        }
         if (total() + amount > walletChips()) {
             showMessage(tooMany(total() + amount));
             return;
@@ -663,7 +700,7 @@
         const spot = event.target.closest('[data-rl-bet]');
         if (!spot) return;
         event.preventDefault();
-        if (!spot.disabled) takeOff(spot.dataset.rlBet, chip);
+        if (!spot.disabled) takeOff(spot.dataset.rlBet, isAllIn ? Infinity : chip); // an all in comes off all at once
     });
 
     board.addEventListener('pointerover', (event) => highlight(event.target.closest('[data-rl-bet]')));
@@ -671,12 +708,7 @@
     board.addEventListener('focusin', (event) => highlight(event.target.closest('[data-rl-bet]')));
     board.addEventListener('focusout', () => highlight(null));
 
-    chipButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-            chip = Number(button.dataset.rlChip);
-            chipButtons.forEach((other) => other.setAttribute('aria-pressed', String(other === button)));
-        });
-    });
+    [...chipButtons, allInButton].forEach((button) => button?.addEventListener('click', () => pickChip(button)));
 
     undoButton.addEventListener('click', () => {
         if (isLocked() || undoStack.length === 0) return;
@@ -699,6 +731,7 @@
     // The user's last spin's bets back on the table. Returns whether they fit in the chips.
     function putBackLastBets() {
         const lastTotal = [...lastBets.values()].reduce((sum, amount) => sum + amount, 0);
+        if (isAllInBets(lastBets)) return false; // an all in, with chips that are gone or doubled by now
         if (lastTotal > walletChips()) {
             showMessage(tooMany(lastTotal));
             return false;
@@ -751,6 +784,11 @@
         playersList.addEventListener('pointerleave', () => focusPlayer(null));
         playersList.addEventListener('focusin', (event) => focusPlayer(event.target.closest('[data-rl-player]')));
         playersList.addEventListener('focusout', () => focusPlayer(null));
+
+        // The chips changed (a spin paid, daily chips collected): the All in chip may come or go. After casino.js has
+        // put the new count in the top bar, which walletChips() reads
+        document.addEventListener('casino:wallet', () => setTimeout(draw));
+        document.addEventListener('nav:update', () => setTimeout(draw));
 
         setInterval(tick, TICK_MS);
         document.addEventListener('visibilitychange', () => {

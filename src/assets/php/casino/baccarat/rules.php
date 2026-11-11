@@ -25,6 +25,10 @@
         <?= HBHUB_BACCARAT_BET_STEP ?>, and together have to be at least the table's minimum bet.
     </li>
     <li>
+        Members with fewer than <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips can go <strong>all in</strong> instead: every chip they
+        have on one spot, at any table.
+    </li>
+    <li>
         Played with <?= HBHUB_BACCARAT_DECKS ?> decks. Once 75% of the shoe has been dealt, all of them are shuffled into a
         new shoe before the next hand, and the table tells everyone.
     </li>
