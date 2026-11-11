@@ -9,6 +9,11 @@
         and a new one when it's over.
     </li>
     <li>
+        Someone won? The others play on for 2nd, 3rd and so on, until only one of them has cards left (unless the host
+        has set the game to end at the first win). Once you're out of cards you watch, and leaving doesn't count as a
+        loss.
+    </li>
+    <li>
         On your turn, play a card with the same colour, number or symbol as the top card, or a wild card. A Wild lets you
         pick the colour to play on. A Wild Draw Four does too, and the next player draws 4 cards and misses their turn.
         It can be played at any time.

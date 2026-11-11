@@ -12,18 +12,25 @@
 // left in wins. The host can change some of it in the room's settings while no game is being played
 // (hbHubUnoSettings()): the time for a turn, stacking (a Draw Two can be answered with a Draw Two and a Wild Draw Four
 // with a Wild Draw Four, passing them all on to the next player), mixing them while stacking (a Wild Draw Four on a
-// Draw Two and a Draw Two on a Wild Draw Four) and drawing until there's a card that can be played.
+// Draw Two and a Draw Two on a Wild Draw Four), drawing until there's a card that can be played, and playing on once
+// someone has won: the first one out of cards still wins (and scores), but the others go on for 2nd, 3rd and so on
+// until only one of them has cards left (hbHubUnoGoOut()).
 //
 // The state:
 //   phase: "lobby" (waiting for players, or for the host to start, hbHubUnoStart()), "playing" or "ended" (the players
 //     are still there, new ones can join, and the host can start a new game)
-//   settings: the room's settings, {turnSeconds, stacking, stackMixing, drawUntil}. Always read through hbHubUnoSettings()
+//   settings: the room's settings, {turnSeconds, stacking, stackMixing, drawUntil, playOn}. Always read through
+//     hbHubUnoSettings()
 //   players: who sits in the room, [{seat: 1-6, userId, name}], in seat order
 //   games: how many games have been started in the room
 //   note: something to tell the players left waiting (like "Alice left."), or null
 //   game: the game being played, or the last one, or null:
 //     players: everyone dealt in, in seat order (the order of play): {seat, userId, name, hand: [cards], out: they left,
-//       excused: they left while the host had paused the game, so it doesn't count for them (missing until they leave)}
+//       excused: they left while the host had paused the game, so it doesn't count for them (missing until they leave),
+//       place: 1 for the winner, 2 for the next one out of cards and so on (with playOn the last one left gets one too),
+//       null while they're still playing (missing in games started before there was playing on)}
+//     winner: the seat of the first one out of cards while the others play on, or null (missing in older games)
+//     winnerPoints: what they scored, worked out when they went out
 //     deck: the draw pile, its top card last. Never sent to anyone
 //     discard: the cards played, the top card last
 //     colour: the colour to play on (for a wild card, the one its player chose)
@@ -55,7 +62,7 @@ const HBHUB_UNO_LOG_KEPT = 30;
 const HBHUB_UNO_COLOURS = ['r', 'y', 'g', 'b'];
 const HBHUB_UNO_COLOUR_NAMES = ['r' => 'red', 'y' => 'yellow', 'g' => 'green', 'b' => 'blue'];
 const HBHUB_UNO_TURN_CHOICES = [15, 30, 60]; // the turnSeconds setting
-const HBHUB_UNO_DEFAULT_SETTINGS = ['turnSeconds' => 30, 'stacking' => true, 'stackMixing' => true, 'drawUntil' => false];
+const HBHUB_UNO_DEFAULT_SETTINGS = ['turnSeconds' => 30, 'stacking' => true, 'stackMixing' => true, 'drawUntil' => false, 'playOn' => true];
 
 function hbHubUnoNowMs(): int
 {
@@ -85,7 +92,7 @@ function hbHubUnoNewPlayer(int $seat, int $userId, string $name): array
 /**
  * The room's settings, with the defaults for anything that's missing.
  *
- * @return array{turnSeconds: int, stacking: bool, stackMixing: bool, drawUntil: bool}
+ * @return array{turnSeconds: int, stacking: bool, stackMixing: bool, drawUntil: bool, playOn: bool}
  */
 function hbHubUnoSettings(array $state): array
 {
@@ -94,31 +101,45 @@ function hbHubUnoSettings(array $state): array
 
 /**
  * The settings as sent from the game's settings (turnSeconds: one of HBHUB_UNO_TURN_CHOICES, stacking: "off", "same"
- * (only the same kind of draw card) or "mixed" (any draw card on any), drawUntil: "on" or "off"), or null when they
- * can't be. Stacking is one choice in the settings but kept as two: stacking and stackMixing.
+ * (only the same kind of draw card) or "mixed" (any draw card on any), drawUntil and playOn: "on" or "off"), or null
+ * when they can't be. Stacking is one choice in the settings but kept as two: stacking and stackMixing.
  *
- * @return ?array{turnSeconds: int, stacking: bool, stackMixing: bool, drawUntil: bool}
+ * @return ?array{turnSeconds: int, stacking: bool, stackMixing: bool, drawUntil: bool, playOn: bool}
  */
-function hbHubUnoCleanSettings(mixed $turnSeconds, mixed $stacking, mixed $drawUntil): ?array
+function hbHubUnoCleanSettings(mixed $turnSeconds, mixed $stacking, mixed $drawUntil, mixed $playOn): ?array
 {
     $turnSeconds = is_string($turnSeconds) && ctype_digit($turnSeconds) && strlen($turnSeconds) <= 3 ? (int) $turnSeconds : null;
     if (!in_array($turnSeconds, HBHUB_UNO_TURN_CHOICES, true) || !in_array($stacking, ['off', 'same', 'mixed'], true)
-        || !in_array($drawUntil, ['on', 'off'], true)) {
+        || !in_array($drawUntil, ['on', 'off'], true) || !in_array($playOn, ['on', 'off'], true)) {
         return null;
     }
     return ['turnSeconds' => $turnSeconds, 'stacking' => $stacking !== 'off', 'stackMixing' => $stacking === 'mixed',
-        'drawUntil' => $drawUntil === 'on'];
+        'drawUntil' => $drawUntil === 'on', 'playOn' => $playOn === 'on'];
 }
 
 /**
- * The settings in a few words, for the lobby and the game: "30 seconds a turn, stacking, draw one card"
- * ("stacking the same card" when Draw Twos and Wild Draw Fours can't be mixed).
+ * The settings in a few words, for the lobby and the game: "30 seconds a turn, stacking, draw one card, play on after
+ * a win" ("stacking the same card" when Draw Twos and Wild Draw Fours can't be mixed, "ends at a win" without playOn).
  */
 function hbHubUnoSettingsText(array $settings): string
 {
     return $settings['turnSeconds'] . ' seconds a turn, '
         . ($settings['stacking'] ? ($settings['stackMixing'] ? 'stacking' : 'stacking the same card') : 'no stacking')
-        . ', ' . ($settings['drawUntil'] ? 'draw until you can play' : 'draw one card');
+        . ', ' . ($settings['drawUntil'] ? 'draw until you can play' : 'draw one card')
+        . ', ' . ($settings['playOn'] ? 'play on after a win' : 'ends at a win');
+}
+
+/**
+ * "1st", "2nd", "3rd", "4th"... for the places (at most 6, so no 11th-13th to worry about).
+ */
+function hbHubUnoOrdinal(int $place): string
+{
+    return $place . match ($place) {
+        1 => 'st',
+        2 => 'nd',
+        3 => 'rd',
+        default => 'th',
+    };
 }
 
 /**
@@ -241,11 +262,41 @@ function hbHubUnoName(array $game, int $seat): string
 }
 
 /**
- * The players still in the game (who haven't left it), in seat order.
+ * Whether the player is still playing: they haven't left, and haven't got rid of all their cards (a place, playOn).
+ */
+function hbHubUnoInPlay(array $player): bool
+{
+    return !$player['out'] && ($player['place'] ?? null) === null;
+}
+
+/**
+ * The players still playing (hbHubUnoInPlay()), in seat order.
  */
 function hbHubUnoActive(array $game): array
 {
-    return array_values(array_filter($game['players'], static fn (array $player): bool => !$player['out']));
+    return array_values(array_filter($game['players'], 'hbHubUnoInPlay'));
+}
+
+/**
+ * How many players have a place already (are out of cards).
+ */
+function hbHubUnoPlaced(array $game): int
+{
+    return count(array_filter($game['players'], static fn (array $player): bool => ($player['place'] ?? null) !== null));
+}
+
+/**
+ * The value of all the cards in everyone's hands (hbHubUnoCardPoints()): what the one who just went out scores.
+ */
+function hbHubUnoHandPoints(array $game): int
+{
+    $points = 0;
+    foreach ($game['players'] as $player) {
+        foreach ($player['hand'] as $card) {
+            $points += hbHubUnoCardPoints($card);
+        }
+    }
+    return $points;
 }
 
 function hbHubUnoLog(array &$game, string $text): void
@@ -280,6 +331,7 @@ function hbHubUnoBegin(array &$state, int $now): void
             'name' => $player['name'],
             'hand' => array_splice($deck, -HBHUB_UNO_HAND),
             'out' => false,
+            'place' => null,
         ];
     }
 
@@ -304,6 +356,8 @@ function hbHubUnoBegin(array &$state, int $now): void
         'penalty' => 0,
         'uno' => null,
         'pausedSince' => null,
+        'winner' => null,
+        'winnerPoints' => 0,
         'result' => null,
         'recorded' => false,
         'turns' => 0,
@@ -400,7 +454,7 @@ function hbHubUnoGive(array &$game, int $seat, int $count): array
 }
 
 /**
- * The next player still in the game after the seat, the way play goes round the table.
+ * The next player still playing after the seat (hbHubUnoInPlay()), the way play goes round the table.
  */
 function hbHubUnoNextSeat(array $game, int $seat): int
 {
@@ -408,7 +462,7 @@ function hbHubUnoNextSeat(array $game, int $seat): int
     $i = hbHubUnoIndex($game, $seat) ?? 0;
     for ($step = 1; $step <= $count; $step++) {
         $next = $game['players'][(($i + $step * $game['direction']) % $count + $count) % $count];
-        if (!$next['out']) {
+        if (hbHubUnoInPlay($next)) {
             return $next['seat'];
         }
     }
@@ -519,19 +573,20 @@ function hbHubUnoPlayCard(array &$state, int $seat, mixed $cards, mixed $colour,
         }
     }
 
-    // Each Skip skips one more player, but never round the table back past whoever played them
+    // Each Skip skips one more player, but never round the table back past whoever played them. When it was their last
+    // card and the others play on, they're out of the round, so it stops at the last of the others instead.
     $skip = 0;
     $value = hbHubUnoValue($card);
-    $mostSkipped = count(hbHubUnoActive($game)) - 1;
+    $mostSkipped = count(hbHubUnoActive($game)) - 1 - ($left === 0 ? 1 : 0);
     if ($value === 'R') {
         if ($count % 2 === 1) {
             $game['direction'] = -$game['direction'];
         }
-        if ($mostSkipped === 1) {
+        if ($mostSkipped === 1 && $left > 0) {
             $skip = 1; // with two players a Reverse works like a Skip
         }
     } elseif ($value === 'S') {
-        $skip = min($count, $mostSkipped);
+        $skip = max(0, min($count, $mostSkipped));
     } elseif ($value === 'D' || $value === 'F') {
         $cards = ($value === 'D' ? 2 : 4) * $count;
         if ($settings['stacking'] && $left > 0) {
@@ -548,11 +603,41 @@ function hbHubUnoPlayCard(array &$state, int $seat, mixed $cards, mixed $colour,
 
     unset($game);
     if ($left === 0) {
-        hbHubUnoEnd($state, $seat, 'out');
+        hbHubUnoGoOut($state, $seat, $skip, $now);
     } else {
         hbHubUnoPassTurn($state, $skip, $now);
     }
     return null;
+}
+
+/**
+ * The seat's player has played their last card, and gets the next place. The first one out wins and scores the cards
+ * left in everyone else's hands. Without the playOn setting that ends the game; with it the others play on (the turn
+ * goes on past $skip players, hbHubUnoPassTurn()) until only one of them has cards left.
+ */
+function hbHubUnoGoOut(array &$state, int $seat, int $skip, int $now): void
+{
+    $game = &$state['game'];
+    $i = hbHubUnoIndex($game, $seat);
+    $place = hbHubUnoPlaced($game) + 1;
+    $game['players'][$i]['place'] = $place;
+    $name = $game['players'][$i]['name'];
+    $isOver = !hbHubUnoSettings($state)['playOn'] || count(hbHubUnoActive($game)) <= 1;
+
+    if ($place === 1 && !$isOver) {
+        $game['winner'] = $seat;
+        $game['winnerPoints'] = hbHubUnoHandPoints($game);
+        hbHubUnoLog($game, $name . ' played their last card and won, with ' . $game['winnerPoints'] . ' points! The others play on for 2nd place.');
+    } elseif ($place > 1) {
+        hbHubUnoLog($game, $name . ' is out of cards, in ' . hbHubUnoOrdinal($place) . ' place.');
+    }
+    unset($game);
+
+    if ($isOver) {
+        hbHubUnoEnd($state, $seat, 'out');
+    } else {
+        hbHubUnoPassTurn($state, $skip, $now);
+    }
 }
 
 /**
@@ -671,25 +756,41 @@ function hbHubUnoCatch(array &$state, int $seat): ?string
 }
 
 /**
- * Ends the game. $winner is the seat that won (or null), and scores the cards left in everyone else's hands.
+ * Ends the game. $winner is the seat that won (or null), and scores the cards left in everyone else's hands. When
+ * someone already went out while the others played on (playOn), they're the winner whatever $winner says, with the
+ * points they had then, and the one still playing (if anyone) gets the last place.
  */
 function hbHubUnoEnd(array &$state, ?int $winner, string $reason): void
 {
     $game = &$state['game'];
-    $points = 0;
-    if ($winner !== null) {
-        foreach ($game['players'] as $player) {
-            foreach ($player['hand'] as $card) {
-                $points += hbHubUnoCardPoints($card);
+    $wonBefore = $game['winner'] ?? null;
+    if ($wonBefore !== null) {
+        $last = null;
+        foreach ($game['players'] as &$player) {
+            if (hbHubUnoInPlay($player)) {
+                $player['place'] = hbHubUnoPlaced($game) + 1;
+                $last = $player['name'];
             }
         }
+        unset($player);
+        $points = $game['winnerPoints'];
+        $game['result'] = ['winner' => $wonBefore, 'reason' => 'out', 'points' => $points];
+    } else {
+        $points = $winner !== null ? hbHubUnoHandPoints($game) : 0;
+        $game['result'] = ['winner' => $winner, 'reason' => $reason, 'points' => $points];
     }
-    $game['result'] = ['winner' => $winner, 'reason' => $reason, 'points' => $points];
     $game['turn']['drawn'] = null;
     $game['penalty'] = 0;
     $game['uno'] = null;
     $game['pausedSince'] = null;
     $state['phase'] = 'ended';
+
+    if ($wonBefore !== null) {
+        hbHubUnoLog($game, ($reason === 'stopped' ? 'The game was stopped, as everyone had gone. '
+            : ($last !== null ? $last . ' is last. ' : '') . 'The game is over. ')
+            . hbHubUnoName($game, $wonBefore) . ' won, with ' . $points . ' points!');
+        return;
+    }
     hbHubUnoLog($game, match ($reason) {
         'out' => hbHubUnoName($game, (int) $winner) . ' played their last card and won, with ' . $points . ' points!',
         'left' => hbHubUnoName($game, (int) $winner) . ' won, as everyone else left.',
@@ -733,7 +834,9 @@ function hbHubUnoAdvance(array &$state, int $now): void
 
 /**
  * Takes the user out of the game being played (room.php, when they leave the room or have been gone too long): their
- * cards are shuffled back into the draw pile, and the turn goes on when it was theirs. The last player left in wins.
+ * cards are shuffled back into the draw pile, and the turn goes on when it was theirs. The last player left in wins
+ * (or, when someone already went out and the others played on, comes last). Someone who's already out of cards (a
+ * place) keeps it: they're only watching, so leaving doesn't change anything.
  */
 function hbHubUnoDropPlayer(array &$state, int $userId, bool $isGone, int $now): void
 {
@@ -743,6 +846,10 @@ function hbHubUnoDropPlayer(array &$state, int $userId, bool $isGone, int $now):
     }
     $game = &$state['game'];
     $i = hbHubUnoIndex($game, $seat);
+    if (($game['players'][$i]['place'] ?? null) !== null) {
+        hbHubUnoLog($game, $game['players'][$i]['name'] . ' left.');
+        return;
+    }
     $game['deck'] = hbHubUnoShuffle([...$game['deck'], ...$game['players'][$i]['hand']]);
     $game['players'][$i]['hand'] = [];
     $game['players'][$i]['out'] = true;
@@ -765,13 +872,13 @@ function hbHubUnoDropPlayer(array &$state, int $userId, bool $isGone, int $now):
 
 /**
  * Stops the game being played, as everyone has gone (room.php): they've all left it, so it's a loss for each of them,
- * unless the host had paused it.
+ * unless the host had paused it. Anyone already out of cards (playOn) keeps their place, and a winner stays the winner.
  */
 function hbHubUnoStop(array &$state): void
 {
     $game = &$state['game'];
     foreach ($game['players'] as &$player) {
-        if (!$player['out']) {
+        if (hbHubUnoInPlay($player)) {
             $player['out'] = true;
             $player['excused'] = $game['pausedSince'] !== null;
         }
@@ -812,7 +919,7 @@ function hbHubUnoPause(array &$state, bool $isHost, bool $pause, int $now): ?str
  * The host changes the room's settings (as sent, hbHubUnoCleanSettings()) while no game is being played. Returns null
  * when they're changed, otherwise why not.
  */
-function hbHubUnoChangeSettings(array &$state, bool $isHost, mixed $turnSeconds, mixed $stacking, mixed $drawUntil): ?string
+function hbHubUnoChangeSettings(array &$state, bool $isHost, mixed $turnSeconds, mixed $stacking, mixed $drawUntil, mixed $playOn): ?string
 {
     if (!$isHost) {
         return 'Only the host can change the settings.';
@@ -820,7 +927,7 @@ function hbHubUnoChangeSettings(array &$state, bool $isHost, mixed $turnSeconds,
     if ($state['phase'] === 'playing') {
         return 'The settings can\'t be changed while a game is being played.';
     }
-    $settings = hbHubUnoCleanSettings($turnSeconds, $stacking, $drawUntil);
+    $settings = hbHubUnoCleanSettings($turnSeconds, $stacking, $drawUntil, $playOn);
     if ($settings === null) {
         return 'Choose the settings.';
     }
@@ -882,6 +989,7 @@ function hbHubUnoView(array $state, array $people, array $seats, int $userId, ?i
         'players' => array_map(static fn (array $player): array => ['seat' => $player['seat']] + $person($player['userId'], $player['name']) + [
             'cards' => count($player['hand']),
             'out' => $player['out'],
+            'place' => $player['place'] ?? null,
             'saidUno' => count($player['hand']) === 1 && $game['uno'] !== $player['seat'],
             'hand' => $state['phase'] === 'ended' ? $player['hand'] : null,
         ], $game['players']),

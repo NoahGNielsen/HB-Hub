@@ -62,6 +62,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td>Time for a turn</td><td><?= implode(', ', array_slice(HBHUB_UNO_TURN_CHOICES, 0, -1)) ?> or <?= HBHUB_UNO_TURN_CHOICES[count(HBHUB_UNO_TURN_CHOICES) - 1] ?> seconds</td></tr>
                                     <tr><td>Stacking</td><td>Off, same card only (answer a Draw Two with a Draw Two, or a Wild Draw Four with a Wild Draw Four, to pass them all on), or any draw card (a Wild Draw Four can also go on a Draw Two, and the other way round; the default)</td></tr>
                                     <tr><td>Draw until you can play</td><td>Keep drawing until you get a card that fits, instead of just one (off by default)</td></tr>
+                                    <tr><td>When someone wins</td><td>Play on (the others go on for 2nd, 3rd and so on until one is left; the default), or end the game at the first win</td></tr>
                                 </tbody>
                             </table>
                         </div>

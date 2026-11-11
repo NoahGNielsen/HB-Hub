@@ -207,6 +207,18 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
                         </label>
                     <?php endforeach; ?>
                 </fieldset>
+                <fieldset class="casino-choices" data-uno-settings-fields>
+                    <legend class="casino-label">When someone wins</legend>
+                    <?php foreach ([
+                        'on' => ['Play on (default)', 'The first one out of cards wins, and the others play on for 2nd, 3rd and so on until one is left.'],
+                        'off' => ['End the game', 'The game is over as soon as someone is out of cards.'],
+                    ] as $value => [$label, $hint]): ?>
+                        <label class="casino-choice">
+                            <input type="radio" name="playOn" value="<?= $value ?>">
+                            <span><strong><?= $label ?></strong> <span class="casino-hint"><?= $hint ?></span></span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
                 <p class="uno-message" role="alert" data-uno-settings-message></p>
                 <div class="games-dialog-actions">
                     <button type="button" class="casino-btn" data-uno-settings-close>Close</button>

@@ -16,6 +16,9 @@
 // after, until someone catches them (game.game.uno is the seat that can be caught). Everyone else gets a Catch button
 // while someone can be caught.
 //
+// Play on (the playOn setting): once someone is out of cards they have a place (game.game.players[].place, 1 won), their
+// hand goes away, and they watch while the others play on for the next places.
+//
 // The game's settings (game.settings) are shown in their dialog, where the host changes them while no game is being
 // played. A ping is played when it becomes the player's turn, and for the host when someone joins, unless they turned
 // the sound off (remembered in this browser).
@@ -100,6 +103,9 @@
         const player = playerAt(seat);
         return player === null ? 'Someone' : player.isYou ? 'You' : player.name;
     };
+    // The player's place once they're out of cards (1 won; with play on, 2nd, 3rd...), null while they still play
+    const myPlace = () => (state()?.you != null ? playerAt(state().you)?.place ?? null : null);
+    const ordinal = (place) => place + ({ 1: 'st', 2: 'nd', 3: 'rd' }[place] ?? 'th');
     const isWild = (card) => card === 'W' || card === 'F';
     const valueOf = (card) => (isWild(card) ? card : card.slice(1));
 
@@ -261,7 +267,7 @@
         playerList.replaceChildren(...[...people, ...newcomers].map((player) => {
             const item = document.createElement('li');
             const isTurn = isPlaying() && current.turn.seat === player.seat && !player.out && !player.isNew;
-            const isWinner = game.phase === 'ended' && current?.result?.winner === player.seat && !player.isNew;
+            const isWinner = !player.isNew && (player.place === 1 || (game.phase === 'ended' && current?.result?.winner === player.seat));
             item.className = 'uno-player' + (isTurn ? ' is-turn' : '') + (player.isYou ? ' is-you' : '')
                 + (player.out || !player.here ? ' is-gone' : '') + (isWinner ? ' is-winner' : '');
 
@@ -290,12 +296,13 @@
             else if (!player.here) notes.push('Left');
             else if (player.away) notes.push('Away');
             if (isWinner) notes.push('Won!');
+            else if (player.place && !player.isNew) notes.push(ordinal(player.place) + ' place');
             if (player.isNew) notes.push('Joined');
             status.textContent = notes.join(' · ');
             text.append(name, status);
             item.append(avatar, text);
 
-            if (player.cards !== null && !player.out) {
+            if (player.cards !== null && !player.out && !player.place) {
                 const count = document.createElement('span');
                 count.className = 'uno-player-cards';
                 count.setAttribute('aria-label', player.cards === 1 ? '1 card' : player.cards + ' cards');
@@ -427,7 +434,7 @@
         pickedIn = pickingIn;
         const pickedValue = picked.length > 0 ? valueOf(cards[picked[0]]) : null;
 
-        handBar.hidden = hand.hidden = game.phase !== 'playing' || current?.you == null;
+        handBar.hidden = hand.hidden = game.phase !== 'playing' || current?.you == null || myPlace() !== null;
         handTitle.textContent = 'Your cards (' + cards.length + ')';
         hand.classList.toggle('is-my-turn', isMyTurn());
         hand.style.setProperty('--uno-hand-count', String(cards.length));
@@ -630,6 +637,7 @@
             const lines = [resultText(current.result)];
             if (game.note) lines.push(game.note);
             const list = [scores()];
+            if (placedCount() > 1) list.unshift(paragraph(places()));
             if (game.seated.length < game.minPlayers) {
                 list.push(paragraph('Waiting for someone to join for a new game.'), joinText);
             } else if (!isHost) {
@@ -646,6 +654,15 @@
             : isMyTurn() ? (current.penalty > 0 ? 'Your turn. Stack or draw ' + current.penalty + ' cards!' : 'Your turn!')
             : 'Waiting for ' + nameAt(current.turn.seat) + '.';
         if (you === null) status = 'You\'re watching: you left this game. ' + status;
+        const place = myPlace();
+        if (place !== null) {
+            status = (place === 1 ? 'You won!' : 'You came ' + ordinal(place) + '.') + ' ' + status;
+            list.push(paragraph('You\'re out of cards. The others play on for the places, and you can watch (and catch them '
+                + 'not saying UNO), or leave without it counting as a loss.'));
+        } else {
+            const winner = current.players.find((player) => player.place === 1);
+            if (winner && you !== null) list.push(paragraph(winner.name + ' won. Play on for ' + ordinal(placedCount() + 1) + ' place!'));
+        }
 
         if (isPaused()) {
             list.push(paragraph(isHost ? 'You paused the game. Nobody can play until you go on.' : 'The host paused the game. Nobody can play until they go on.'));
@@ -677,6 +694,8 @@
         return [status, list];
     }
 
+    const placedCount = () => state()?.players.filter((player) => player.place).length ?? 0;
+
     function resultText(result) {
         if (result === null) return '';
         if (result.reason === 'stopped') return 'The game was stopped, as everyone had gone.';
@@ -684,6 +703,12 @@
         const won = winner?.isYou ? 'You won' : (winner?.name ?? 'Someone') + ' won';
         if (result.reason === 'left') return won + ', as everyone else left.';
         return won + (result.points > 0 ? ' with ' + result.points + (result.points === 1 ? ' point!' : ' points!') : '!');
+    }
+
+    // When the others played on after the win: "1st Alice, 2nd you, 3rd Bob"
+    function places() {
+        return state().players.filter((player) => player.place).sort((a, b) => a.place - b.place)
+            .map((player) => ordinal(player.place) + ' ' + (player.isYou ? 'you' : player.name)).join(', ');
     }
 
     // Once the game is over: the cards everyone was left with
@@ -880,6 +905,7 @@
         settingsForm.elements.turnSeconds.value = String(game.settings.turnSeconds);
         settingsForm.elements.stacking.value = !game.settings.stacking ? 'off' : game.settings.stackMixing ? 'mixed' : 'same';
         settingsForm.elements.drawUntil.value = game.settings.drawUntil ? 'on' : 'off';
+        settingsForm.elements.playOn.value = game.settings.playOn ? 'on' : 'off';
     }
 
     function renderSettings() {
@@ -910,6 +936,7 @@
             turnSeconds: settingsForm.elements.turnSeconds.value,
             stacking: settingsForm.elements.stacking.value,
             drawUntil: settingsForm.elements.drawUntil.value,
+            playOn: settingsForm.elements.playOn.value,
         }, settingsMessage);
         if (data && !data.error) settingsDialog.close();
     });
@@ -1021,10 +1048,11 @@
         setTimeout(() => (codeCopied.textContent = ''), 2000);
     });
 
-    // ----- Leaving: a game being played counts as a loss, unless the host has paused it
+    // ----- Leaving: a game being played counts as a loss, unless the host has paused it or the player is already out
+    // of cards (play on)
 
     leaveButton.addEventListener('click', async () => {
-        if (isPlaying() && state().you !== null
+        if (isPlaying() && state().you !== null && myPlace() === null
             && !await confirmDialog('Leave the game?', isPaused()
                 ? 'The game is paused, so leaving doesn\'t count as a loss. The others play on without you.'
                 : 'It\'s being played, so leaving counts as a loss. The others play on without you.', 'Leave')) {
