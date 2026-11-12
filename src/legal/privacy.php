@@ -257,6 +257,14 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 guesses and streaks), never your guesses.
                             </li>
                             <li>
+                                Your Minesweeper games: for each game, the size, whether you won, lost or left it, how long a
+                                win took, and when you started and finished. While a game is being played, it also has which
+                                squares you've opened (and where the mines are); that's deleted when the game is over. Your
+                                flags stay in your browser. The games make up your spot on the Minesweeper leaderboards,
+                                where other people only see the totals (best and average time, wins, games played and win %).
+                                They're kept until your account is deleted.
+                            </li>
+                            <li>
                                 Your Ore Mining Inc. save: your ore, buildings, upgrades, Dark Matter, Antimatter, Strange Matter, the skills you've learned, achievements, how many
                                 times you've clicked and caught comets, your Star Shards (how many you have and have caught,
                                 and what you bought with them in the Shard Shop: boosts running, skins and click effects, and
@@ -517,7 +525,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
                             That right away removes your name, profile picture, banner, bio, status, education badge, year, class, settings, password, two-factor
-                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, and the files you attached in chats. Your name is replaced
+                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, your Minesweeper games, and the files you attached in chats. Your name is replaced
                             with "Deleted User".
                         </p>
                         <p>

@@ -1,8 +1,10 @@
 <?php
-// Minesweeper: the classic, Windows 95 look and all. This is a normal Games page (side bar, back link, title and the
-// rules under it, from assets/php/games/minesweeper/rules.php), with the game itself in a frame: frame.php, Nick Arocho's Minesweeper (see the credits). The frame is
-// made as tall as the game by assets/js/minesweeper.js, so it never needs its own scroll bar. Nothing is saved or
-// sent anywhere, so there are no stats or leaderboard.
+// Minesweeper: the classic, Windows 95 look and all. This is a normal Games page (side bar, back link, title, a
+// Leaderboard button and the rules under it, from assets/php/games/minesweeper/rules.php), with the game itself in a
+// frame: frame.php, Nick Arocho's Minesweeper (see the credits), whose mines are on the server for the leaderboard
+// (assets/php/games/minesweeper/minesweeper.php). The frame is made as tall as the game by assets/js/minesweeper.js,
+// so it never needs its own scroll bar, and the same script fills in the line above it (data-minesweeper-result) with
+// how a game went: the time and your best after a win, or what went wrong.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
@@ -24,10 +26,14 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
         <a class="casino-back" href="/games/">&larr; Games</a>
         <div class="casino-title-row">
             <h1>Minesweeper</h1>
+            <a class="casino-btn" href="/games/minesweeper/leaderboard" data-minesweeper-leaderboard>Leaderboard</a>
         </div>
         <p class="casino-intro">
-            Open every square that doesn't hide a mine. The numbers tell you how many mines are next to a square.
+            Open every square that doesn't hide a mine. The numbers tell you how many mines are next to a square. Win
+            fast for a spot on the leaderboard.
         </p>
+
+        <p class="minesweeper-result" data-minesweeper-result aria-live="polite" hidden></p>
 
         <iframe class="minesweeper-frame" src="/games/minesweeper/frame" title="Minesweeper" data-minesweeper-frame></iframe>
 

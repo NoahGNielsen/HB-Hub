@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '11 November 2026';
+const HBHUB_TERMS_UPDATED = '12 November 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -195,6 +195,10 @@ const HBHUB_TERMS_UPDATED = '11 November 2026';
                                 Wordle has one English and one Danish word a day, and you get one go at each. A word you start
                                 but don't guess by midnight (Danish time) counts as missed, and ends your streak. Don't spoil
                                 the day's word for others, for example in a group chat, before the day is over.
+                            </li>
+                            <li>
+                                Minesweeper times on the leaderboard are timed by HB Hub's server. A game you leave or start
+                                over counts as played but not won. No bots or scripts that solve the board for you.
                             </li>
                             <li>
                                 Ore Mining Inc. saves on HB Hub's server and checks what you do there, so only things that

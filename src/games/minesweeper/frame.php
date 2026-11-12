@@ -6,7 +6,9 @@
 // - the unused jQuery from code.jquery.com is left out (the CSP wouldn't load it anyway), and the bar at the bottom has
 //   no Start button: its picture was the Windows logo
 // - the hint also says a right click flags a cell (main.js)
-// Nothing is saved: a game lives in the frame and is gone when it's closed.
+// - the mines are on the server, for the leaderboard: main.js sends every square opened to games/minesweeper/move
+// Only the squares opened, the result and the time are kept (assets/php/games/minesweeper/minesweeper.php). A game
+// closed halfway can't be picked up again: it counts as left once another one is started.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet

@@ -1,5 +1,6 @@
-/* Minesweeper's page (games/minesweeper/): loaded after casino.css and games.css. Only the frame the game is in
-   (frame.php) is new here; the game's own look is assets/minesweeper/css/main.css, inside the frame. */
+/* Minesweeper's page (games/minesweeper/): loaded after casino.css and games.css. Only the frame the game is in and the
+   line above it with how the last game went are new here (frame.php); the game's own look is
+   assets/minesweeper/css/main.css, inside the frame. */
 
 /* The frame: as wide as the page and, once assets/js/minesweeper.js has measured the game, exactly as tall as it. The
    height here is only for before then (and without JavaScript): enough for the Medium board it starts with. */
@@ -11,4 +12,22 @@
   border: 0;
   border-radius: var(--radius);
   background: #0d8584; /* the game's teal desktop, so there's no flash of white while it loads */
+}
+
+/* How the last game went, above the frame (assets/js/minesweeper.js fills it in): green for a win, red when the
+   server couldn't open a square. Hidden until there's something to say. */
+.minesweeper-result {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--casino-up) 14%, var(--secondary));
+  font-weight: 600;
+}
+
+.minesweeper-result.is-error {
+  background: color-mix(in srgb, var(--casino-down) 14%, var(--secondary));
+}
+
+.minesweeper-result a {
+  color: inherit;
 }

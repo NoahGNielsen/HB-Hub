@@ -16,6 +16,7 @@ const HBHUB_PROFILE_BACK_PAGES = [
     '/games/chess/leaderboard' => 'Chess leaderboard',
     '/games/uno/leaderboard' => 'UNO leaderboard',
     '/games/wordle/leaderboard' => 'Wordle leaderboard',
+    '/games/minesweeper/leaderboard' => 'Minesweeper leaderboard',
     '/games/ore-mining-inc/leaderboard' => 'Ore Mining Inc. leaderboard',
 ];
 
@@ -30,8 +31,8 @@ function hbHubProfileUrl(int $userId, ?string $from = null): string
 
 /**
  * The profile's back link from its ?from= as [address, text], or null when there's none or it isn't one of
- * HBHUB_PROFILE_BACK_PAGES. Of the query only the leaderboards' own sort, dir and lang are kept, so it goes back to
- * the same sorting (and Wordle language).
+ * HBHUB_PROFILE_BACK_PAGES. Of the query only the leaderboards' own sort, dir, lang and size are kept, so it goes back to
+ * the same sorting (and Wordle language or Minesweeper difficulty).
  */
 function hbHubProfileBackLink(mixed $from): ?array
 {
@@ -49,7 +50,7 @@ function hbHubProfileBackLink(mixed $from): ?array
     }
     parse_str((string) parse_url($from, PHP_URL_QUERY), $query);
     $keep = [];
-    foreach (['lang', 'sort', 'dir'] as $key) {
+    foreach (['lang', 'size', 'sort', 'dir'] as $key) {
         if (is_string($query[$key] ?? null) && preg_match('/^[A-Za-z]{1,32}$/', $query[$key])) {
             $keep[$key] = $query[$key];
         }

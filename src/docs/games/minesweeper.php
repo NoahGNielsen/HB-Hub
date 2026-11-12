@@ -1,6 +1,6 @@
 <?php
 // Help docs: Minesweeper - the rules (assets/php/games/minesweeper/rules.php, included as the game shows them), what the
-// numbers mean, and a few tips. Open to everyone. Built by assets/php/docs/top.php and bottom.php.
+// numbers mean, a few tips and the leaderboard. Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
@@ -28,20 +28,24 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 around them.
                             </li>
                             <li>
-                                The mines are placed before your first click, so that one can be a mine too. Bad luck: click the
-                                face and go again.
-                            </li>
-                            <li>
                                 Hard is 30 squares wide. On a phone, the board scrolls sideways.
                             </li>
                         </ul>
                     </section>
 
                     <section id="saving" aria-labelledby="docs-saving">
-                        <h2 id="docs-saving">Saving and scores</h2>
+                        <h2 id="docs-saving">Leaderboard</h2>
                         <p>
-                            Minesweeper doesn't save anything: there are no stats or leaderboard, and a game is gone when you
-                            close the page. It's a copy of Nick Arocho's Minesweeper (see the <a href="/legal/credits#code">credits</a>).
+                            There's a <a href="/games/minesweeper/leaderboard">Minesweeper leaderboard</a> for each size, of
+                            everyone who has won there: their best and average time, wins, games played and win % (shown
+                            from 5 games). After a win, the page above the board shows your time and your best.
                         </p>
+                        <p>
+                            The mines are kept on HB Hub's server, not in your browser, and your time is timed there, from
+                            your first click to the one that wins. So the time includes how long each click takes to reach
+                            the server, and peeking at the page's code doesn't give away the mines. A game can't be picked up
+                            again after you close the page: it counts as played, but not won.
+                        </p>
+                        <p>It's a copy of Nick Arocho's Minesweeper (see the <a href="/legal/credits#code">credits</a>).</p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

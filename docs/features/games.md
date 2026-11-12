@@ -42,7 +42,7 @@
 
 | | |
 |---|---|
-| **Minesweeper** | The classic in its Windows 95 look, at `/games/minesweeper/`: Easy (9×9, 10 mines), Medium (16×16, 40) and Hard (30×30, 160). Shift + click or a right click (a long press on most phones) flags a square. It's [Nick Arocho's Minesweeper](https://github.com/nickarocho/minesweeper) (`src/assets/minesweeper/`, credited on the credits page) in a frame (`games/minesweeper/frame.php`) on a normal Games page, with a few small fixes. Nothing is saved: no stats or leaderboard |
+| **Minesweeper** | The classic in its Windows 95 look, at `/games/minesweeper/`: Easy (9×9, 10 mines), Medium (16×16, 40) and Hard (30×30, 160). Shift + click or a right click (a long press on most phones) flags a square. It's [Nick Arocho's Minesweeper](https://github.com/nickarocho/minesweeper) (`src/assets/minesweeper/`, credited on the credits page) in a frame (`games/minesweeper/frame.php`) on a normal Games page, with a few small fixes. The mines are on the server (`assets/php/games/minesweeper/minesweeper.php`, `HBHub-MinesweeperGames`): every square opened is sent to `games/minesweeper/move`, so the browser never knows where they are, and the first click is never a mine. A leaderboard for each size at `/games/minesweeper/leaderboard` has the best and average time (timed by the server, first click to last), wins, games played and win % |
 
 ## Ore Mining Inc.
 

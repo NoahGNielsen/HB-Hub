@@ -1,13 +1,18 @@
-// Minesweeper's game: builds the board (a table) for the difficulty picked in the bar at the bottom, places the mines,
-// and handles clicks: a click reveals a cell, Shift + click or a right click flags it (a long press does that on most
-// phones). Hit a mine and every mine shows; open every cell without one and you win. The state is just the globals below
-// (board is rows of Cells, from cell.js), nothing is saved or sent anywhere.
+// Minesweeper's game: builds the board (a table) for the difficulty picked in the bar at the bottom, and handles
+// clicks: a click reveals a cell, Shift + click or a right click flags it (a long press does that on most phones). Hit
+// a mine and every mine shows; open every cell without one and you win. The state is just the globals below (board is
+// rows of Cells, from cell.js).
 // Copied from Nick Arocho's Minesweeper, https://github.com/nickarocho/minesweeper, for the frame on games/minesweeper/
 // (frame.php). Changed for HB Hub:
 // - the pictures are linked from /assets/minesweeper/images/, and the Read Me/Source Code links open safely in a new tab
 // - a click on a difficulty button's picture (not just its text) picks it too, instead of breaking the board
 // - a right click flags a cell too, a flag can be taken off again when the mine counter is at 0, and a click doesn't
 //   open a flagged cell
+// - for the leaderboard, the mines are on HB Hub's server (assets/php/games/minesweeper/minesweeper.php), not here:
+//   every cell clicked open is sent to /games/minesweeper/move (the first one starts the game there and places the
+//   mines, never on or next to it), which answers with the cells that opened and their numbers, and the whole board
+//   once the game is over. Clicks are sent one after the other (queue), so fast clicking works. Flags stay here.
+//   The page around the frame (assets/js/minesweeper.js) hears how it went from the minesweeper:* events below.
 /*----- constants -----*/
 var bombImage = '<img src="/assets/minesweeper/images/bomb.png" alt="Mine">';
 var flagImage = '<img src="/assets/minesweeper/images/flag.png" alt="Flag">';
@@ -39,6 +44,10 @@ var hitBomb;
 var elapsedTime;
 var timerId;
 var winner;
+var gameId; // HB Hub: the server's id for the game, null until the first answer
+var queue; // HB Hub: the clicks waiting for the server, one after the other
+var round = 0; // HB Hub: goes up with every new board, so an answer for the board before is ignored
+var stopped; // HB Hub: the server said the game is over (another tab started one), so nothing more opens
 
 /*----- cached element references -----*/
 var boardEl = document.getElementById('board');
@@ -57,11 +66,10 @@ document.getElementById('size-btns').addEventListener('click', function(e) {
 // Shift + click, in the click listener). A flag can only go on while the counter is above 0, but always comes off again,
 // and Shift + click never opens the cell (in the original, it did when the counter was at 0).
 function clickCell(e, flagging) {
-  if (winner || hitBomb) return;
+  if (winner || hitBomb || stopped) return;
   var clickedEl;
   clickedEl = e.target.tagName.toLowerCase() === 'img' ? e.target.parentElement : e.target;
   if (clickedEl.classList.contains('game-cell')) {
-    if (!timerId) setTimer();
     var row = parseInt(clickedEl.dataset.row);
     var col = parseInt(clickedEl.dataset.col);
     var cell = board[row][col];
@@ -69,17 +77,88 @@ function clickCell(e, flagging) {
       if (!cell.revealed && (cell.flagged || bombCount > 0)) {
         bombCount += cell.flag() ? -1 : 1;
       }
-    } else if (!cell.flagged) { // HB Hub: a flagged cell has to be unflagged before it can be opened
-      hitBomb = cell.reveal();
-      if (hitBomb) {
-        revealAll();
-        clearInterval(timerId);
-        clickedEl.style.backgroundColor = 'red';
-      }
+    } else if (!cell.flagged && !cell.revealed) { // HB Hub: a flagged cell has to be unflagged before it can be opened
+      if (!timerId) setTimer(); // HB Hub: the clock starts with the first cell opened, like the server's
+      openCell(row, col, clickedEl);
     }
-    winner = getWinner();
     render();
   }
+}
+
+// HB Hub: tells the page around the frame (assets/js/minesweeper.js) something, as a minesweeper:<name> event.
+function tellPage(name, detail) {
+  try {
+    window.parent.document.dispatchEvent(new CustomEvent('minesweeper:' + name, { detail: detail }));
+  } catch (e) {
+    // the frame opened on its own, or the page around it isn't HB Hub's: nobody to tell
+  }
+}
+
+// HB Hub: sends a cell to the server to open it, after the clicks before it have their answers (the first one gives
+// the game's id). The answer's cells are opened here; a cell the server opened under a flag loses the flag.
+function openCell(row, col, clickedEl) {
+  var thisRound = round;
+  queue = queue.then(function() {
+    if (thisRound !== round || winner || hitBomb || stopped) return;
+    var body = new URLSearchParams({ action: 'open', row: row, col: col });
+    if (gameId) {
+      body.set('game', gameId);
+    } else {
+      body.set('size', size);
+    }
+    return fetch('/games/minesweeper/move', { method: 'POST', headers: { Accept: 'application/json' }, body: body })
+      .then(function(response) {
+        return response.json().then(function(data) {
+          if (thisRound !== round) return;
+          if (!response.ok) {
+            clearInterval(timerId);
+            stopped = data.error === 'gameOver'; // over on the server: nothing more can be opened
+            tellPage('error', { error: data.error || 'failed' });
+            return;
+          }
+          applyAnswer(data, clickedEl);
+        });
+      })
+      .catch(function() {
+        if (thisRound === round) tellPage('error', { error: 'offline' });
+      });
+  });
+}
+
+// HB Hub: puts what the server answered on the board (see move.php for its shape).
+function applyAnswer(data, clickedEl) {
+  gameId = data.game;
+  var over = data.result !== 0;
+  data.cells.forEach(function(entry) {
+    var cell = board[entry[0]][entry[1]];
+    if (entry[2] === -1) {
+      cell.bomb = true;
+      if (data.result === 1 && !cell.flagged) { // won: every mine gets a flag, like in Windows
+        cell.flagged = true;
+        bombCount -= 1;
+      }
+    } else {
+      cell.adjBombs = entry[2];
+      if (cell.flagged && (!over || data.result === 1)) { // a wrong flag stays for a loss, to show it was wrong
+        cell.flagged = false;
+        bombCount += 1;
+      }
+    }
+    cell.revealed = true;
+  });
+  if (data.result === 2) {
+    hitBomb = true;
+    clearInterval(timerId);
+    clickedEl.style.backgroundColor = 'red';
+    tellPage('lost', {});
+  } else if (data.result === 1) {
+    winner = true;
+    clearInterval(timerId);
+    elapsedTime = Math.floor(data.ms / 1000);
+    document.getElementById('timer').innerText = elapsedTime.toString().padStart(3, '0');
+    tellPage('won', { size: size, ms: data.ms, best: data.best, isBest: data.isBest });
+  }
+  render();
 }
 
 boardEl.addEventListener('click', function(e) {
@@ -105,14 +184,6 @@ function setTimer () {
     elapsedTime += 1;
     document.getElementById('timer').innerText = elapsedTime.toString().padStart(3, '0');
   }, 1000);
-};
-
-function revealAll() {
-  board.forEach(function(rowArr) {
-    rowArr.forEach(function(cell) {
-      cell.reveal();
-    });
-  });
 };
 
 function buildTable() {
@@ -157,15 +228,13 @@ function buildArrays() {
   return arr;
 };
 
+// HB Hub: the cells start without mines or numbers: the server has them, and sends each cell's as it opens (the
+// original placed the mines here, with addBombs(), and counted them with getBombCount()).
 function buildCells(){
   board.forEach(function(rowArr, rowIdx) {
     rowArr.forEach(function(slot, colIdx) {
       board[rowIdx][colIdx] = new Cell(rowIdx, colIdx, board);
     });
-  });
-  addBombs();
-  runCodeForAllCells(function(cell){
-    cell.calcAdjBombs();
   });
 };
 
@@ -173,45 +242,17 @@ function init() {
   buildTable();
   board = buildArrays();
   buildCells();
-  bombCount = getBombCount();
+  bombCount = sizeLookup[`${size}`].totalBombs;
   elapsedTime = 0;
   clearInterval(timerId);
   timerId = null;
   hitBomb = false;
   winner = false;
-};
-
-function getBombCount() {
-  var count = 0;
-  board.forEach(function(row){
-    count += row.filter(function(cell) {
-      return cell.bomb;
-    }).length
-  });
-  return count;
-};
-
-function addBombs() {
-  var currentTotalBombs = sizeLookup[`${size}`].totalBombs;
-  while (currentTotalBombs !== 0) {
-    var row = Math.floor(Math.random() * size);
-    var col = Math.floor(Math.random() * size);
-    var currentCell = board[row][col]
-    if (!currentCell.bomb){
-      currentCell.bomb = true
-      currentTotalBombs -= 1
-    }
-  }
-};
-
-function getWinner() {
-  for (var row = 0; row<board.length; row++) {
-    for (var col = 0; col<board[0].length; col++) {
-      var cell = board[row][col];
-      if (!cell.revealed && !cell.bomb) return false;
-    }
-  } 
-  return true;
+  stopped = false;
+  gameId = null;
+  queue = Promise.resolve();
+  round += 1;
+  tellPage('new', { size: size });
 };
 
 function render() {

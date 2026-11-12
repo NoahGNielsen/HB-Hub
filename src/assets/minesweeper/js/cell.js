@@ -3,6 +3,7 @@
 // Copied unchanged (apart from this comment) from Nick Arocho's Minesweeper, https://github.com/nickarocho/minesweeper,
 // and only loaded by the game in its frame (games/minesweeper/frame.php), before main.js, which uses it. The two files
 // share the page's globals (board, hitBomb) the way they do in the original, which is fine as the frame has nothing else.
+// On HB Hub, reveal() and calcAdjBombs() aren't used any more: the server knows the mines and says what opens (main.js).
 class  Cell {
     constructor(row, col, board) {
         this.row = row;

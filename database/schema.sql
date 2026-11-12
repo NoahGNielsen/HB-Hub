@@ -680,6 +680,23 @@ CREATE TABLE `HBHub-WordleWords` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-MinesweeperGames`
+--
+
+CREATE TABLE `HBHub-MinesweeperGames` (
+  `gameId` bigint UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `gameSize` tinyint UNSIGNED NOT NULL COMMENT 'Squares on each side: 9 Easy (10 mines), 16 Medium (40), 30 Hard (160)',
+  `gameCells` varchar(900) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing, one character per square, row by row: 0 hidden, 1 opened, 2 mine. Empty once the game is over',
+  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing\r\n1 Won\r\n2 Lost (opened a mine)\r\n3 Left (started another game first)',
+  `gameMs` int UNSIGNED DEFAULT NULL COMMENT 'How long a won game took, in ms, from the first click to the one that won. NULL for the rest',
+  `gameStartTimestamp` datetime(3) NOT NULL COMMENT 'UTC, the first click',
+  `gameEndTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when it was won, lost or left, NULL while playing'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Minesweeper: every game played, for the leaderboard (src/assets/php/games/minesweeper/minesweeper.php). Others only see the totals on the leaderboard';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-MinerAnomalyTimes`
 --
 
@@ -1310,6 +1327,14 @@ ALTER TABLE `HBHub-WordleWords`
   ADD KEY `languageWord` (`wordLanguage`,`wordText`);
 
 --
+-- Indexes for table `HBHub-MinesweeperGames`
+--
+ALTER TABLE `HBHub-MinesweeperGames`
+  ADD PRIMARY KEY (`gameId`),
+  ADD KEY `userResult` (`userId`,`gameResult`),
+  ADD KEY `sizeUser` (`gameSize`,`userId`,`gameResult`,`gameMs`);
+
+--
 -- Indexes for table `HBHub-MinerAnomalyTimes`
 --
 ALTER TABLE `HBHub-MinerAnomalyTimes`
@@ -1584,6 +1609,12 @@ ALTER TABLE `HBHub-Messages`
 --
 ALTER TABLE `HBHub-MinerContributions`
   MODIFY `contributionId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-MinesweeperGames`
+--
+ALTER TABLE `HBHub-MinesweeperGames`
+  MODIFY `gameId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `HBHub-MinerEngines`
@@ -1894,6 +1925,12 @@ ALTER TABLE `HBHub-Notifications`
 --
 ALTER TABLE `HBHub-WordleGames`
   ADD CONSTRAINT `fk_wordlegames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-MinesweeperGames`
+--
+ALTER TABLE `HBHub-MinesweeperGames`
+  ADD CONSTRAINT `fk_minesweepergames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-MinerAnomalyTimes`

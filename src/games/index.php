@@ -133,7 +133,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                                 <rect x="43" y="32" width="15" height="4" rx="1"/>
                             </svg>
                         </span>
-                        <span class="casino-game-text">The classic, Windows 95 look and all. Clear the board without opening a mine, on Easy, Medium or Hard.</span>
+                        <span class="casino-game-text">The classic, Windows 95 look and all. Clear the board without opening a mine, on Easy, Medium or Hard, and race for the fastest time on the leaderboards.</span>
                     </a>
                 </li>
                 <li>
