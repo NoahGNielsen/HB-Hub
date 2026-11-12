@@ -28,6 +28,8 @@ HB-Hub/
 ├── database/            Database schema, update scripts and default values
 │                        (defaultUserSettings.json and defaultChatSettings.json are the
 │                        defaults for the settings columns on users and chats)
+├── tools/               Scripts for testing by hand, never uploaded (slotsEffectsTest.js:
+│                        paste into the console on /gambling/slots to see the win effects)
 └── .github/workflows/   Deploying, and updating the README badges every hour
 ```
 
