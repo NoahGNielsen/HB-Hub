@@ -49,6 +49,20 @@ Licensed under the Apache License 2.0, see src/assets/js/vendor/jxl/LICENSE-jSqu
 libjxl: Copyright (c) the JPEG XL Project Authors.
 Licensed under the BSD 3-Clause license, see src/assets/js/vendor/jxl/LICENSE-libjxl.txt
 
+src/assets/js/vendor/mediabunny/ is Mediabunny
+(https://github.com/Vanilagy/mediabunny). It reads videos attached in the chat
+and, with the browser's own codecs, turns them into WebM with VP9 before
+they're sent.
+
+Copyright (c) 2026-present, Vanilagy and contributors.
+Licensed under the Mozilla Public License 2.0, see src/assets/js/vendor/mediabunny/LICENSE-mediabunny.txt
+
+src/assets/minesweeper/ (code, pictures and fonts) is Minesweeper by Nick Arocho
+(https://github.com/nickarocho/minesweeper), the Minesweeper game in the Games
+section, with some changes for HB Hub: a few small fixes, and the mines are
+kept on HB Hub's server, for the leaderboard. No license is stated.
+HB Hub isn't associated with Microsoft. Windows is a trademark of Microsoft Corporation.
+
 Third-party lists
 -----------------
 Most of the domains in src/assets/urlBlacklist.txt come from these lists (the
@@ -61,4 +75,45 @@ URL shorteners       url-shorteners by Peter Dave Hello
 Crypto scam sites    CryptoScamDB blacklist by CryptoScamDB
                      https://github.com/CryptoScamDB/blacklist
                      Turned from its YAML into a plain list of domains.
+
+Third-party dictionaries
+------------------------
+The words Wordle accepts as guesses (src/assets/php/games/wordle/words/) come
+from these dictionaries. The daily words are picked from them by hand.
+
+English              ENABLE (Enhanced North American Benchmark Lexicon)
+                     https://github.com/dolph/dictionary
+                     Public domain. Its five-letter words.
+Danish               Stavekontrolden by Foreningen for frit tilgængelige sprogværktøjer,
+                     based on data from Det Danske Sprog- og Litteraturselskab
+                     https://www.stavekontrolden.dk
+                     Licensed under GPL 2.0, LGPL 2.1 and MPL 1.1. Every form of its
+                     five-letter words.
+
+HB Hub's Wordle is a copy of Wordle by Josh Wardle. "Wordle" is a trademark of
+The New York Times Company, which has nothing to do with HB Hub.
+
+Third-party fonts
+-----------------
+All fonts are kept on HB Hub's own server.
+
+Raleway              By Matt McInerney, Pablo Impallari and Rodrigo Fuenzalida
+                     https://github.com/impallari/Raleway
+                     src/assets/fonts/raleway-*.woff2
+                     Licensed under the SIL Open Font License 1.1, see src/assets/fonts/OFL-Raleway.txt
+Noto Sans Symbols 2  By the Noto Project Authors, for Google (only its 12 chess letters)
+                     https://github.com/notofonts/symbols
+                     src/assets/fonts/noto-sans-symbols-2-chess.woff2
+                     Licensed under the SIL Open Font License 1.1, see src/assets/fonts/OFL-NotoSansSymbols2.txt
+Press Start          By codeman38, with letters from old Namco arcade games
+                     https://www.zone38.net/font/
+                     src/assets/minesweeper/css/prstart.ttf (came with Minesweeper's code)
+Digital Dismay       By NALGames
+                     src/assets/minesweeper/css/digital-dismay.otf (came with Minesweeper's code)
+
+Trademarks
+----------
+The small logo on the Log in with Discord buttons is Discord's own. Discord and
+its logo are trademarks of Discord Inc., which has nothing to do with HB Hub
+beyond letting you log in with it.
 
