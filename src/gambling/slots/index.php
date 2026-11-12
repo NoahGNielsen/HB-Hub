@@ -7,7 +7,8 @@
 // (data-reels, data-symbols, data-lines), so it can roll the reels round the real strips to where the server says they
 // stop. The paylines are drawn over the reels as an SVG, one path each, and their numbers are down both sides.
 // The bet and the Spin button are on the machine itself, under the reels, so the whole thing fits on the screen
-// without scrolling (slots.css sizes the reels to the window's height).
+// without scrolling (slots.css sizes the reels to the window's height). A banner over the machine, a flash and a canvas
+// over the page are there for slots.js's win effects.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/slots.php';
@@ -152,6 +153,13 @@ function slotsHistoryLabel(array $spin): string
                 </div>
                 <button type="button" class="casino-btn casino-btn-primary sl-spin" data-sl-spin title="Spin (Space)" aria-keyshortcuts="Space">Spin</button>
             </div>
+
+            <!-- Over the machine on a big win: "Big win!", "Mega win!" or "Jackpot!" and the win counting up (slots.js) -->
+            <div class="sl-banner" data-sl-banner aria-hidden="true" hidden>
+                <span class="sl-banner-rays"></span>
+                <span class="sl-banner-title" data-sl-banner-title></span>
+                <span class="sl-banner-amount" data-sl-banner-amount></span>
+            </div>
         </section>
 
         <section class="sl-side casino-card" aria-labelledby="sl-history-title">
@@ -172,6 +180,10 @@ function slotsHistoryLabel(array $spin): string
             <summary>Rules and pay table</summary>
             <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/rules.php'; ?>
         </details>
+
+        <!-- The win effects over the whole page (slots.js): a flash, and the coins, confetti, sparkles and fireworks -->
+        <div class="sl-flash" data-sl-flash aria-hidden="true"></div>
+        <canvas class="sl-fx" data-sl-fx aria-hidden="true"></canvas>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="/assets/js/slots.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/slots.js') ?>" defer></script>

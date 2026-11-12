@@ -2,7 +2,8 @@
    the three reels in a window with the paylines drawn over them, their numbers down both sides, and the result
    under it, then the deck with the bet and the Spin button. Each reel shows three symbols of --sl-cell high, which
    shrinks with the window's height so the whole machine, deck and all, fits without scrolling; slots.js measures it,
-   and rolls a reel by filling its strip with more and sliding it down. */
+   and rolls a reel by filling its strip with more and sliding it down. A win lights it all up by how big it is (the
+   "Win effects" part, by data-sl-tier), with a banner over the machine for a big one. */
 .sl {
   --casino-up: #2fa36b;
   --casino-down: #d64545;
@@ -63,6 +64,7 @@
 
 /* The cabinet */
 .sl-machine {
+  position: relative;
   padding: 0 20px 16px;
   box-sizing: border-box;
   border-radius: 28px 28px 20px 20px;
@@ -229,12 +231,26 @@
   paint-order: stroke fill;
 }
 
+/* A winning symbol pops in, glows gold behind and keeps bouncing */
 .sl-symbol.is-win {
-  animation: sl-win 0.7s ease-in-out infinite alternate;
+  background: radial-gradient(circle, color-mix(in srgb, var(--sl-gold) 55%, transparent), transparent 70%);
+  animation: sl-cell-glow 0.6s ease-in-out infinite alternate;
+}
+
+.sl-symbol.is-win .sl-symbol-face {
+  animation: sl-win-pop 0.5s cubic-bezier(0.2, 1.8, 0.4, 1), sl-win 0.7s 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes sl-cell-glow {
+  to { background-color: color-mix(in srgb, var(--sl-gold) 30%, transparent); }
+}
+
+@keyframes sl-win-pop {
+  from { transform: scale(0.4) rotate(-20deg); }
 }
 
 @keyframes sl-win {
-  to { transform: scale(1.14); }
+  to { transform: scale(1.18) rotate(4deg); filter: drop-shadow(0 0 8px var(--sl-gold)); }
 }
 
 /* The paylines over the reels: faint while they're not part of anything, bright on a win */
@@ -261,6 +277,11 @@
 .sl-line.is-win {
   opacity: 0.9;
   filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.6));
+  animation: sl-line-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes sl-line-pulse {
+  to { opacity: 1; stroke-width: 7; filter: drop-shadow(0 0 6px #fff); }
 }
 
 .sl-line-1.is-win { stroke: #4fc3f7; }
@@ -460,6 +481,227 @@
   box-shadow: 0 2px 0 #a3470f;
 }
 
+/* ----- Win effects (slots.js sets data-sl-tier to small, win, big, mega or jackpot on .sl until the next spin) */
+
+/* The window round the reels glows on any win */
+.sl[data-sl-tier] .sl-window {
+  animation: sl-window-glow 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes sl-window-glow {
+  to {
+    box-shadow: inset 0 0 0 3px #fff3b0, inset 0 6px 18px rgba(0, 0, 0, 0.6),
+      0 0 26px 4px color-mix(in srgb, var(--sl-gold) 75%, transparent);
+  }
+}
+
+/* The marquee flickers white and the bulbs chase faster */
+.sl.is-winning .sl-marquee-text {
+  animation: sl-marquee-flash 0.4s step-end infinite;
+}
+
+@keyframes sl-marquee-flash {
+  50% { color: #fff; text-shadow: 0 0 12px #fff, 0 0 28px var(--sl-gold); }
+}
+
+.sl[data-sl-tier="big"] .sl-marquee-lights,
+.sl[data-sl-tier="mega"] .sl-marquee-lights,
+.sl[data-sl-tier="jackpot"] .sl-marquee-lights {
+  animation-duration: 0.15s;
+}
+
+/* A gold ring of light round the whole cabinet on a big win, going through every colour on a mega win or jackpot.
+   On ::after, as the cabinet's own animation is the shake */
+.sl-machine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 0 3px var(--sl-gold), 0 0 40px 8px color-mix(in srgb, var(--sl-gold) 75%, transparent);
+}
+
+.sl[data-sl-tier="big"] .sl-machine::after {
+  animation: sl-cabinet-glow 0.35s ease-in-out infinite alternate;
+}
+
+.sl[data-sl-tier="mega"] .sl-machine::after,
+.sl[data-sl-tier="jackpot"] .sl-machine::after {
+  animation: sl-cabinet-glow 0.35s ease-in-out infinite alternate, sl-hue 1.2s linear infinite;
+}
+
+@keyframes sl-cabinet-glow {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
+
+@keyframes sl-hue {
+  to { filter: hue-rotate(360deg); }
+}
+
+.sl-machine.is-shaking {
+  animation: sl-shake 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes sl-shake {
+  10%, 90% { translate: -2px 0; rotate: -0.3deg; }
+  20%, 80% { translate: 4px -1px; rotate: 0.4deg; }
+  30%, 50%, 70% { translate: -8px 2px; rotate: -0.8deg; }
+  40%, 60% { translate: 8px -2px; rotate: 0.8deg; }
+}
+
+/* "+chips" floating up out of the reels on a win */
+.sl-float {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  pointer-events: none;
+  color: var(--sl-gold);
+  font-size: clamp(1.6rem, calc(var(--sl-cell) * 0.5), 3rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-shadow: 0 3px 0 #5a1a00, 0 0 16px rgba(255, 210, 63, 0.9);
+  animation: sl-float 1.6s ease-out forwards;
+}
+
+@keyframes sl-float {
+  from { transform: translate(-50%, -30%) scale(0.5); opacity: 0; }
+  20% { transform: translate(-50%, -60%) scale(1.25); opacity: 1; }
+  70% { opacity: 1; }
+  to { transform: translate(-50%, -170%) scale(1); opacity: 0; }
+}
+
+/* The banner over the machine on a big win: turning rays of light behind the words slamming in, and the win
+   counting up under them. Clicks go through it to the machine */
+.sl-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(42, 7, 12, 0.3), rgba(10, 2, 4, 0.75) 75%);
+  animation: sl-banner-in 0.3s ease-out;
+}
+
+@keyframes sl-banner-in {
+  from { opacity: 0; }
+}
+
+.sl-banner-rays {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 250%;
+  aspect-ratio: 1;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--sl-gold) 50%, transparent) 0deg 10deg, transparent 10deg 20deg);
+  -webkit-mask-image: radial-gradient(circle, #000 5%, transparent 55%);
+  mask-image: radial-gradient(circle, #000 5%, transparent 55%);
+  transform: translate(-50%, -50%);
+  animation: sl-rays 8s linear infinite;
+}
+
+@keyframes sl-rays {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Rays in four colours for a mega win or jackpot (each 11.25deg, so they go round in four even sets) */
+.sl[data-sl-tier="mega"] .sl-banner-rays,
+.sl[data-sl-tier="jackpot"] .sl-banner-rays {
+  background: repeating-conic-gradient(
+    rgba(255, 79, 109, 0.55) 0deg 11.25deg, transparent 11.25deg 22.5deg,
+    rgba(79, 195, 247, 0.55) 22.5deg 33.75deg, transparent 33.75deg 45deg,
+    rgba(129, 227, 107, 0.55) 45deg 56.25deg, transparent 56.25deg 67.5deg,
+    rgba(232, 185, 49, 0.6) 67.5deg 78.75deg, transparent 78.75deg 90deg);
+  animation-duration: 4s;
+}
+
+.sl-banner-title {
+  position: relative;
+  padding: 0 0.15em;
+  background: linear-gradient(180deg, #fff8d6 10%, #ffd23f 45%, #d08a00 55%, #ffe680 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(2.4rem, 9vw, 4.2rem);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  text-transform: uppercase;
+  white-space: nowrap;
+  filter: drop-shadow(0 4px 0 #7a2a00) drop-shadow(0 0 18px rgba(255, 200, 40, 0.8));
+  animation: sl-slam 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) both, sl-banner-pulse 0.8s 0.6s ease-in-out infinite alternate;
+}
+
+/* A jackpot's words run through the rainbow */
+.sl[data-sl-tier="jackpot"] .sl-banner-title {
+  background-image: linear-gradient(90deg, #ff4f6d, #ffb340, #ffe94f, #81e36b, #4fc3f7, #b388ff, #ff4f6d);
+  background-size: 200% 100%;
+  animation: sl-slam 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) both, sl-banner-pulse 0.8s 0.6s ease-in-out infinite alternate,
+    sl-rainbow 1.5s linear infinite;
+}
+
+@keyframes sl-slam {
+  from { transform: scale(3) rotate(-10deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes sl-banner-pulse {
+  to { transform: scale(1.08) rotate(-2deg); }
+}
+
+@keyframes sl-rainbow {
+  to { background-position: 200% 0; }
+}
+
+.sl-banner-amount {
+  position: relative;
+  color: #fff;
+  font-size: clamp(1.6rem, 6vw, 2.6rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 3px 0 #000, 0 0 18px var(--sl-gold);
+  animation: sl-slam 0.5s 0.25s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+/* A flash of light over the whole page on a mega win or jackpot */
+.sl-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle, #fff, rgba(255, 220, 120, 0.6) 40%, transparent 75%);
+}
+
+.sl-flash.is-on {
+  animation: sl-flash 0.9s ease-out;
+}
+
+@keyframes sl-flash {
+  10% { opacity: 0.85; }
+  to { opacity: 0; }
+}
+
+/* The canvas the coins, confetti, sparkles and fireworks are drawn on, over everything */
+.sl-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 /* The user's last spins, beside the machine */
 .sl-side {
   padding: 20px;
@@ -648,7 +890,24 @@
   .sl.is-spinning .sl-marquee-lights,
   .sl.is-winning .sl-marquee-lights,
   .sl-symbol.is-win,
-  .sl-win.is-big {
+  .sl-symbol.is-win .sl-symbol-face,
+  .sl-line.is-win,
+  .sl-win.is-big,
+  .sl.is-winning .sl-marquee-text,
+  .sl[data-sl-tier] .sl-window,
+  .sl[data-sl-tier] .sl-machine::after,
+  .sl-banner,
+  .sl-banner-rays,
+  .sl-banner-title,
+  .sl[data-sl-tier="jackpot"] .sl-banner-title,
+  .sl-banner-amount {
     animation: none;
+  }
+
+  /* Still lit, just not moving */
+  .sl[data-sl-tier="big"] .sl-machine::after,
+  .sl[data-sl-tier="mega"] .sl-machine::after,
+  .sl[data-sl-tier="jackpot"] .sl-machine::after {
+    opacity: 1;
   }
 }

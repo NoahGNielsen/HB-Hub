@@ -7,6 +7,8 @@
 // The bet is picked with the quick bets or - and + (in steps of 10); with fewer than 10 chips the All in chip bets all
 // of them. Space spins too. Every spin has an id of its own (request), so one sent twice only counts once.
 // The chips in the top bar (casino.js) only change when the reels have stopped, so they don't give the result away.
+// A win sets things off, more the bigger it is (see "Win effects" further down): sparkles, coins, a banner over the
+// machine, coin and confetti rain, fireworks. Coins and the like are drawn on a canvas over the page (data-sl-fx).
 (() => {
     const root = document.querySelector('[data-slots]');
     if (!root) return;
@@ -21,6 +23,7 @@
     const REEL_MS = [1100, 1500, 1900]; // how long each reel rolls, so they stop one after another from the left
     const REEL_TURNS = [2, 3, 4]; // whole turns of its strip each one rolls first
     const BIG_WIN = 10; // a win of this many times the bet or more is a big one
+    const MEGA_WIN = 30; // and this many times a mega one (three 7s on a line is always a jackpot, 60 times)
     const HISTORY_MAX = 10;
     const ERRORS = {
         blocked: 'Gambling is blocked in your settings right now.',
@@ -264,6 +267,7 @@
         isSpinning = true;
         showMessage('');
         showLines([]);
+        clearEffects();
         winText.hidden = true;
         winText.classList.remove('is-big');
         root.classList.remove('is-winning');
@@ -297,10 +301,10 @@
             const lineCount = result.lines.length;
             resultText.textContent = (lineCount === 1 ? '1 winning line' : lineCount + ' winning lines')
                 + (result.net < 0 ? ', but less than the bet back.' : result.net === 0 ? ': the bet back.' : '!');
-            winText.textContent = 'Won ' + formatChips(result.payout);
             winText.hidden = false;
             winText.classList.toggle('is-big', times >= BIG_WIN);
             root.classList.toggle('is-winning', result.net > 0);
+            celebrate(result);
         } else {
             resultText.textContent = 'No win this time.';
         }
@@ -309,6 +313,297 @@
         isSpinning = false;
         draw();
     }
+
+    // ----- Win effects. How big a win is decides how much goes off (winTier()):
+    //   small    the bet back or less: the winning symbols and lines light up and throw off sparkles
+    //   win      more than the bet back: coins burst out of the winning symbols, the win counts up, "+chips" floats up
+    //   big      BIG_WIN times the bet: a "Big win!" banner over the machine, the machine shakes, coins rain down the page
+    //   mega     MEGA_WIN times the bet: "Mega win!", more coin rain, confetti, fireworks and a flash
+    //   jackpot  three 7s on a line: all of that, longer, with rainbow lights
+    // The tier goes on the page as data-sl-tier, which slots.css lights the machine by. Coins, confetti, sparkles and
+    // fireworks are particles drawn on one canvas over the whole page, and only while there are any to draw. With
+    // reduced motion it's only the lights and the banner, with nothing moving. The next spin puts it all away.
+    const machine = find('.sl-machine');
+    const windowBox = find('.sl-window');
+    const banner = find('[data-sl-banner]');
+    const bannerTitle = find('[data-sl-banner-title]');
+    const bannerAmount = find('[data-sl-banner-amount]');
+    const flash = find('[data-sl-flash]');
+    const canvas = find('[data-sl-fx]');
+    const context = canvas.getContext('2d');
+    const BANNERS = { big: ['Big win!', 3500], mega: ['Mega win!', 5000], jackpot: ['Jackpot!', 6500] }; // [text, ms shown]
+    const COUNT_MS = { small: 0, win: 900, big: 2000, mega: 3000, jackpot: 3500 }; // how long the win counts up
+    const CONFETTI = ['#e8b931', '#ff4f6d', '#4fc3f7', '#81e36b', '#ff7ab8', '#b388ff', '#ffffff'];
+    const MAX_PARTICLES = 700; // so a phone doesn't choke on a jackpot
+    let particles = []; // { kind: coin|confetti|spark|ember, x, y, vx, vy (px, px a second), rotation, spin, size, age, life (s), ... }
+    let frame = 0; // the animation frame drawing them, 0 when there are none
+    let lastTime = 0;
+    let canvasWidth = 0;
+    let canvasHeight = 0;
+    let counting = 0; // the count-up's animation frame
+    let fxTimers = []; // the effects' timeouts and intervals, cleared by the next spin (they share one list of ids)
+
+    const randomBetween = (low, high) => low + Math.random() * (high - low);
+    const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
+    function winTier(result) {
+        const times = result.payout / result.bet;
+        const isSevens = result.lines.some((line) => LINES[line.line].every((row, reel) => result.window[row][reel] === 'seven'));
+        if (isSevens) return 'jackpot';
+        if (times >= MEGA_WIN) return 'mega';
+        if (times >= BIG_WIN) return 'big';
+        return result.net > 0 ? 'win' : 'small';
+    }
+
+    function sizeCanvas() {
+        const ratio = window.devicePixelRatio || 1;
+        canvasWidth = canvas.clientWidth;
+        canvasHeight = canvas.clientHeight;
+        canvas.width = Math.round(canvasWidth * ratio);
+        canvas.height = Math.round(canvasHeight * ratio);
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    function addParticle(particle) {
+        if (particles.length >= MAX_PARTICLES) return;
+        particles.push({ rotation: Math.random() * Math.PI * 2, spin: 0, gravity: 900, drag: 0, age: 0, ...particle });
+        if (!frame) {
+            lastTime = performance.now();
+            frame = requestAnimationFrame(tick);
+        }
+    }
+
+    // Moves every particle on by the time since the last frame, draws the ones still going, and stops when they're gone
+    function tick(now) {
+        const seconds = Math.min(0.05, Math.max(0, now - lastTime) / 1000); // no big jump after the tab was hidden
+        lastTime = now;
+        context.clearRect(0, 0, canvasWidth, canvasHeight);
+        particles = particles.filter((particle) => {
+            particle.age += seconds;
+            if (particle.age >= particle.life || particle.y > canvasHeight + 40) return false;
+            const slow = Math.max(0, 1 - particle.drag * seconds);
+            particle.vx *= slow;
+            particle.vy = particle.vy * slow + particle.gravity * seconds;
+            particle.x += particle.vx * seconds;
+            particle.y += particle.vy * seconds;
+            particle.rotation += particle.spin * seconds;
+            drawParticle(particle, Math.min(1, (particle.life - particle.age) * 3)); // fades out in its last third of a second
+            return true;
+        });
+        frame = particles.length ? requestAnimationFrame(tick) : 0;
+    }
+
+    function ellipse(x, y, width, height) {
+        context.beginPath();
+        context.ellipse(x, y, width, height, 0, 0, Math.PI * 2);
+        context.fill();
+    }
+
+    function drawParticle(particle, alpha) {
+        const size = particle.size;
+        context.save();
+        context.globalAlpha = alpha;
+        context.translate(particle.x, particle.y);
+        if (particle.kind === 'coin') {
+            // A gold coin flipping over: as wide as the cosine of how far round it is, and a shade darker on its back
+            const turn = Math.cos(particle.rotation);
+            const width = Math.max(1, size * Math.abs(turn));
+            context.fillStyle = '#9a6b06';
+            ellipse(0, 0, width, size);
+            context.fillStyle = turn < 0 ? '#e0a91f' : '#ffd23f';
+            ellipse(0, 0, width * 0.8, size * 0.8);
+            context.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ellipse(-width * 0.25, -size * 0.3, width * 0.2, size * 0.18);
+        } else if (particle.kind === 'confetti') {
+            // A strip of paper turning in the air
+            context.rotate(particle.rotation);
+            context.scale(1, Math.cos(particle.age * particle.flip));
+            context.fillStyle = particle.color;
+            context.fillRect(-size / 2, -size / 4, size, size / 2);
+        } else if (particle.kind === 'spark') {
+            // A four-pointed twinkle
+            const waist = size * 0.25;
+            context.globalCompositeOperation = 'lighter';
+            context.rotate(particle.rotation);
+            context.fillStyle = particle.color;
+            context.beginPath();
+            context.moveTo(0, -size);
+            context.lineTo(waist, -waist);
+            context.lineTo(size, 0);
+            context.lineTo(waist, waist);
+            context.lineTo(0, size);
+            context.lineTo(-waist, waist);
+            context.lineTo(-size, 0);
+            context.lineTo(-waist, -waist);
+            context.closePath();
+            context.fill();
+        } else {
+            // A firework's ember
+            context.globalCompositeOperation = 'lighter';
+            context.fillStyle = particle.color;
+            ellipse(0, 0, size, size);
+        }
+        context.restore();
+    }
+
+    // Twinkles all over $element
+    function sparkles(element, count) {
+        const box = element.getBoundingClientRect();
+        for (let i = 0; i < count; i++) {
+            addParticle({
+                kind: 'spark', x: box.left + Math.random() * box.width, y: box.top + Math.random() * box.height,
+                vx: randomBetween(-60, 60), vy: randomBetween(-120, -20), gravity: 60, drag: 1,
+                size: randomBetween(3, 9), spin: randomBetween(-3, 3), life: randomBetween(0.5, 1.2),
+                color: Math.random() < 0.5 ? '#fff6c2' : '#e8b931',
+            });
+        }
+    }
+
+    // Coins thrown up and out of the middle of $element, $power times as hard as normal
+    function coinBurst(element, count, power) {
+        const box = element.getBoundingClientRect();
+        for (let i = 0; i < count; i++) {
+            const angle = randomBetween(-Math.PI * 0.85, -Math.PI * 0.15);
+            const speed = randomBetween(250, 550) * power;
+            addParticle({
+                kind: 'coin', x: box.left + box.width / 2, y: box.top + box.height / 2,
+                vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                size: randomBetween(8, 14), spin: randomBetween(6, 14), life: randomBetween(1.4, 2.4),
+            });
+        }
+    }
+
+    // Coins or confetti falling from the top of the page for $ms, about $perSecond of them a second
+    function rain(kind, ms, perSecond) {
+        const end = performance.now() + ms;
+        const timer = setInterval(() => {
+            if (performance.now() > end) {
+                clearInterval(timer);
+                return;
+            }
+            for (let left = perSecond / 20; left > 0; left--) {
+                if (left < 1 && Math.random() > left) break;
+                const x = Math.random() * canvasWidth;
+                if (kind === 'coin') {
+                    addParticle({ kind, x, y: -20, vx: randomBetween(-40, 40), vy: randomBetween(50, 250), gravity: 700,
+                        size: randomBetween(8, 14), spin: randomBetween(6, 14), life: 4 });
+                } else {
+                    addParticle({ kind, x, y: -20, vx: randomBetween(-80, 80), vy: randomBetween(40, 160), gravity: 250,
+                        drag: 1.2, size: randomBetween(8, 13), spin: randomBetween(-6, 6), flip: randomBetween(4, 10),
+                        color: pick(CONFETTI), life: 6 });
+                }
+            }
+        }, 50);
+        fxTimers.push(timer);
+    }
+
+    // $count fireworks going off over the top half of the page, spread over $ms
+    function fireworks(count, ms) {
+        for (let i = 0; i < count; i++) {
+            fxTimers.push(setTimeout(() => {
+                const x = randomBetween(0.15, 0.85) * canvasWidth;
+                const y = randomBetween(0.12, 0.45) * canvasHeight;
+                const color = pick(CONFETTI);
+                for (let ember = 0; ember < 50; ember++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = randomBetween(120, 360);
+                    addParticle({ kind: 'ember', x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                        gravity: 160, drag: 1.4, size: randomBetween(1.8, 3.5), life: randomBetween(0.9, 1.6),
+                        color: Math.random() < 0.25 ? '#ffffff' : color });
+                }
+            }, (i / count) * ms + Math.random() * 300));
+        }
+    }
+
+    // Counts the win shown up from 0 to $to over $ms, fast at first and slowing down at the end
+    function countUp(to, ms, show) {
+        cancelAnimationFrame(counting);
+        counting = 0;
+        if (!ms) {
+            show(to);
+            return;
+        }
+        const start = performance.now();
+        const step = (now) => {
+            const done = Math.min(1, Math.max(0, now - start) / ms);
+            show(Math.round(to * (1 - (1 - done) ** 3)));
+            counting = done < 1 ? requestAnimationFrame(step) : 0;
+        };
+        step(start);
+    }
+
+    // Plays $element's CSS animation for $className (taking it off first, so it plays again), and takes it off after $ms
+    function playClass(element, className, ms) {
+        element.classList.remove(className);
+        element.getBoundingClientRect();
+        element.classList.add(className);
+        fxTimers.push(setTimeout(() => element.classList.remove(className), ms));
+    }
+
+    // "+chips" rising out of the reels
+    function floatText(text) {
+        const float = document.createElement('span');
+        float.className = 'sl-float';
+        float.setAttribute('aria-hidden', 'true');
+        float.textContent = text;
+        float.addEventListener('animationend', () => float.remove());
+        windowBox.append(float);
+    }
+
+    function celebrate(result) {
+        const tier = winTier(result);
+        root.dataset.slTier = tier;
+        countUp(result.payout, IS_REDUCED_MOTION ? 0 : COUNT_MS[tier], (amount) => {
+            winText.textContent = 'Won ' + formatChips(amount);
+            bannerAmount.textContent = formatChips(amount);
+        });
+        if (BANNERS[tier]) {
+            bannerTitle.textContent = BANNERS[tier][0];
+            banner.hidden = false;
+            fxTimers.push(setTimeout(() => { banner.hidden = true; }, BANNERS[tier][1]));
+        }
+        if (IS_REDUCED_MOTION) return;
+
+        sizeCanvas(); // the window may have changed size since the last win
+        const cells = [...root.querySelectorAll('.sl-symbol.is-win')];
+        cells.forEach((cell) => sparkles(cell, tier === 'small' ? 6 : 12));
+        if (tier === 'small') return;
+        cells.forEach((cell) => coinBurst(cell, tier === 'win' ? 6 : 14, tier === 'win' ? 0.8 : 1.2));
+        if (tier === 'win') {
+            floatText('+' + formatChips(result.net));
+            return;
+        }
+        playClass(machine, 'is-shaking', 700);
+        rain('coin', tier === 'big' ? 2500 : 4500, tier === 'big' ? 40 : 80);
+        if (tier === 'big') return;
+        playClass(flash, 'is-on', 1000);
+        rain('confetti', tier === 'jackpot' ? 6000 : 4500, 60);
+        fireworks(tier === 'jackpot' ? 12 : 5, tier === 'jackpot' ? 5000 : 3000);
+        // A second shake and flash on a jackpot, as the fireworks get going
+        if (tier === 'jackpot') {
+            fxTimers.push(setTimeout(() => {
+                playClass(machine, 'is-shaking', 700);
+                playClass(flash, 'is-on', 1000);
+            }, 1200));
+        }
+    }
+
+    // Puts away the last win's effects when the next spin starts. Particles still in the air just fall off the page
+    function clearEffects() {
+        fxTimers.forEach((timer) => clearTimeout(timer));
+        fxTimers = [];
+        cancelAnimationFrame(counting);
+        counting = 0;
+        delete root.dataset.slTier;
+        banner.hidden = true;
+        machine.classList.remove('is-shaking');
+        flash.classList.remove('is-on');
+        windowBox.querySelectorAll('.sl-float').forEach((float) => float.remove());
+    }
+
+    window.addEventListener('resize', () => {
+        if (frame) sizeCanvas();
+    });
 
     chipButtons.forEach((button) => button.addEventListener('click', () => pickBet(Number(button.dataset.slChip))));
     allInButton.addEventListener('click', () => {

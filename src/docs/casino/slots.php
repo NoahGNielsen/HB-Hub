@@ -25,7 +25,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <ol class="docs-steps">
                             <li>Pick a bet with the chips on the machine, under the reels, or move it up and down with <strong>&minus;</strong> and <strong>+</strong>. With fewer than <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips left, the <strong>All in</strong> chip bets every chip you have.</li>
                             <li>Press <strong>Spin</strong> (or <kbd>Space</kbd>). The bet is taken, and the reels roll and stop one after another from the left.</li>
-                            <li>Every winning line lights up and is paid. Your bet stays the same, so you can spin again straight away.</li>
+                            <li>Every winning line lights up and is paid, and the bigger the win, the bigger the show: coins, a Big win or Mega win banner, and fireworks for three 7s. Your bet stays the same, so you can spin again straight away (which also clears the show).</li>
                         </ol>
                         <p>Your last spins are listed next to the machine, with what each one won or lost.</p>
                     </section>
