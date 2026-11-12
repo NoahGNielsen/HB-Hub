@@ -69,7 +69,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div>
                     <dt>Code libraries</dt>
-                    <dd>3</dd>
+                    <dd>4</dd>
                 </div>
                 <div>
                     <dt>Blacklists</dt>
@@ -81,7 +81,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div>
                     <dt>Fonts</dt>
-                    <dd>2</dd>
+                    <dd>4</dd>
                 </div>
             </dl>
         </section>
@@ -158,7 +158,24 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <p class="credits-license">Mozilla Public License 2.0</p>
                 </div>
             </div>
+            <div class="credits-library">
+                <!-- A corner of a Minesweeper board around a flag: the squares around it open on hover -->
+                <div class="credits-mines" aria-hidden="true">
+                    <i class="is-open">1</i><i class="is-open">1</i><i>1</i>
+                    <i class="is-open">1</i><i class="is-flag"><img src="/assets/minesweeper/images/flag.png" alt="" width="10" height="14"></i><i>1</i>
+                    <i class="is-open">1</i><i>1</i><i>1</i>
+                </div>
+                <div class="credits-library-text">
+                    <h3><a href="https://github.com/nickarocho/minesweeper" target="_blank" rel="noopener noreferrer">Minesweeper</a></h3>
+                    <p>
+                        By Nick Arocho. The whole <a href="/games/minesweeper/">Minesweeper</a> game in the Games section,
+                        Windows 95 look, pictures and fonts included, with a few small changes for HB Hub.
+                    </p>
+                    <p class="credits-license">No license stated</p>
+                </div>
+            </div>
             <p class="credits-fineprint">"QR Code" is a registered trademark of DENSO WAVE INCORPORATED.</p>
+            <p class="credits-fineprint">HB Hub's Minesweeper looks like the one in Windows 95, but has nothing to do with Microsoft. Windows is a trademark of Microsoft Corporation.</p>
         </section>
 
         <!-- Lists: where most of the blocked links in assets/urlBlacklist.txt come from (the IP loggers are picked by hand) -->
@@ -225,11 +242,12 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
             <p class="credits-fineprint">HB Hub's Wordle is a copy of Wordle by Josh Wardle. "Wordle" is a trademark of The New York Times Company, which has nothing to do with HB Hub.</p>
         </section>
 
-        <!-- Fonts: the copies in assets/fonts/ (from Google Fonts, each with its license next to it: OFL-*.txt) -->
+        <!-- Fonts: the copies in assets/fonts/ (from Google Fonts, each with its license next to it: OFL-*.txt), and Minesweeper's two,
+             which came with its code (assets/minesweeper/css/) -->
         <section class="credits-section" id="fonts" aria-labelledby="credits-fonts-title">
             <p class="home-kicker credits-kicker">Fonts</p>
             <h2 id="credits-fonts-title">The letters on every page.</h2>
-            <p class="credits-section-lead">Both are free fonts, kept on HB Hub's own server so your browser doesn't have to ask anyone else for them.</p>
+            <p class="credits-section-lead">All kept on HB Hub's own server, so your browser doesn't have to ask anyone else for them.</p>
             <div class="credits-library">
                 <!-- A type specimen, going from thin to heavy on hover (Raleway is a variable font) -->
                 <div class="credits-font" aria-hidden="true">
@@ -255,6 +273,28 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <h3><a href="https://github.com/notofonts/symbols" target="_blank" rel="noopener noreferrer">Noto Sans Symbols 2</a></h3>
                     <p>By the Noto Project Authors, for Google. Only its 12 chess letters, which are the pieces in chess and on the frontpage's board.</p>
                     <p class="credits-license">SIL Open Font License 1.1</p>
+                </div>
+            </div>
+            <div class="credits-library">
+                <!-- Pixel letters, which go chunky on hover, and one of Minesweeper's numbers in its blue -->
+                <div class="credits-font is-pixel" aria-hidden="true">
+                    <span class="credits-font-letters">Aa</span>
+                    <span class="credits-font-weights">1 2 3</span>
+                </div>
+                <div class="credits-library-text">
+                    <h3><a href="https://www.zone38.net/font/" target="_blank" rel="noopener noreferrer">Press Start</a></h3>
+                    <p>By codeman38, with letters from old Namco arcade games. The numbers on Minesweeper's board. It came with Minesweeper's code.</p>
+                </div>
+            </div>
+            <div class="credits-library">
+                <!-- A clock's red digits on black, lighting up on hover -->
+                <div class="credits-font is-clock" aria-hidden="true">
+                    <span class="credits-font-letters">038</span>
+                    <span class="credits-font-weights">0123456789</span>
+                </div>
+                <div class="credits-library-text">
+                    <h3>Digital Dismay</h3>
+                    <p>By NALGames. The red mine counter and clock above Minesweeper's board. It came with Minesweeper's code.</p>
                 </div>
             </div>
         </section>

@@ -349,6 +349,21 @@ a.casino-game:hover .casino-game-art {
   fill: #6aaa64;
 }
 
+/* Minesweeper: the Windows 95 desktop's teal, a grey mine with a shine on it, and a red flag */
+.casino-game-minesweeper {
+  --game-from: #0d8584;
+  --game-to: #0b2f45;
+  --game-mark: #e0372b;
+}
+
+.casino-game-minesweeper .casino-game-art {
+  fill: #c0c0c0;
+}
+
+.casino-game-minesweeper .casino-game-art-shine {
+  fill: #fff;
+}
+
 .casino-game-miner {
   --game-from: #3b2a78;
   --game-to: #0d0b26;

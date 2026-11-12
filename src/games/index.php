@@ -114,6 +114,29 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     </a>
                 </li>
                 <li>
+                    <a class="casino-game casino-game-minesweeper" href="/games/minesweeper/">
+                        <span class="casino-game-cover">
+                            <span class="casino-game-kicker">Just you</span>
+                            <span class="casino-game-name">Minesweeper</span>
+                            <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
+                                <!-- A mine with its eight spikes and a shine on it, and a red flag on its stand next to it -->
+                                <g transform="translate(24 38)">
+                                    <rect x="-2" y="-19" width="4" height="38" rx="1"/>
+                                    <rect x="-19" y="-2" width="38" height="4" rx="1"/>
+                                    <rect x="-2" y="-16" width="4" height="32" rx="1" transform="rotate(45)"/>
+                                    <rect x="-2" y="-16" width="4" height="32" rx="1" transform="rotate(-45)"/>
+                                    <circle r="12"/>
+                                    <circle class="casino-game-art-shine" cx="-4" cy="-4" r="3"/>
+                                </g>
+                                <rect x="49" y="8" width="3" height="26"/>
+                                <path class="casino-game-art-mark" d="M49 8L62 14L49 20Z"/>
+                                <rect x="43" y="32" width="15" height="4" rx="1"/>
+                            </svg>
+                        </span>
+                        <span class="casino-game-text">The classic, Windows 95 look and all. Clear the board without opening a mine, on Easy, Medium or Hard.</span>
+                    </a>
+                </li>
+                <li>
                     <a class="casino-game casino-game-miner" href="/games/ore-mining-inc/">
                         <span class="casino-game-cover">
                             <span class="casino-game-kicker">Clicker game</span>

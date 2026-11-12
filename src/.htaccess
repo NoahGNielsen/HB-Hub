@@ -21,8 +21,10 @@ FileETag MTime Size
 # WebAssembly (the chat's JPEG XL codec) has to be sent as application/wasm for browsers to compile it as it downloads
 AddType application/wasm .wasm
 
-# The fonts (assets/fonts/), in case the server's own list lacks them
+# The fonts (assets/fonts/, and Minesweeper's in assets/minesweeper/css/), in case the server's own list lacks them
 AddType font/woff2 .woff2
+AddType font/ttf .ttf
+AddType font/otf .otf
 
 # llms.txt (the site summary for AI assistants) has letters like ø in it, so tell browsers it is UTF-8
 AddCharset utf-8 .txt

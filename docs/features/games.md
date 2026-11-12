@@ -38,6 +38,12 @@
 |---|---|
 | **Wordle** | The daily word game: guess the five-letter word in six tries. There's an English and a Danish word every day (the Danish keyboard has æ, ø and å), the same for everyone, with stats, sharing and a leaderboard for each language with win %, average guesses and the current and longest streak |
 
+## Minesweeper
+
+| | |
+|---|---|
+| **Minesweeper** | The classic in its Windows 95 look, at `/games/minesweeper/`: Easy (9×9, 10 mines), Medium (16×16, 40) and Hard (30×30, 160). Shift + click or a right click (a long press on most phones) flags a square. It's [Nick Arocho's Minesweeper](https://github.com/nickarocho/minesweeper) (`src/assets/minesweeper/`, credited on the credits page) in a frame (`games/minesweeper/frame.php`) on a normal Games page, with a few small fixes. Nothing is saved: no stats or leaderboard |
+
 ## Ore Mining Inc.
 
 | | |

@@ -4,7 +4,7 @@
 |---|---|
 | [💬 Chat](chat.md) | DMs and group chats, roles, GIFs, attachments, formatting, @mentions and link safety |
 | [🎰 Casino](casino.md) | The chip wallet, Blackjack, Baccarat, Roulette, Slots and the leaderboards |
-| [🎲 Games](games.md) | Matador, Chess, UNO, Wordle and Ore Mining Inc. |
+| [🎲 Games](games.md) | Matador, Chess, UNO, Wordle, Minesweeper and Ore Mining Inc. |
 | [🔔 Notifications](notifications.md) | The notification bell and browser notifications |
 | [🔐 Account & security](account.md) | Profiles, two-factor login, login protection, devices, self-blocking, deletion and feedback |
 | [🛠️ For site admins](admin.md) | The admin panel, people with more than one account, ghost bans, banned pictures, the feedback inbox, announcements to everyone, the admin log and the site switches |

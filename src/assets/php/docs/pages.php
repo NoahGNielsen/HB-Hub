@@ -54,6 +54,7 @@ const HBHUB_DOCS_SECTIONS = [
             '/docs/games/chess' => ['Chess', 'Two-player chess, with or without a clock, draw offers and rematches.'],
             '/docs/games/uno' => ['UNO', 'The card game for 2-6 players, with stacking, catching and official scoring.'],
             '/docs/games/wordle' => ['Wordle', 'Guess the day\'s five-letter word in six tries, in English and in Danish.'],
+            '/docs/games/minesweeper' => ['Minesweeper', 'The classic in its Windows 95 look: clear the board without opening a mine.'],
             '/docs/games/ore-mining-inc' => ['Ore Mining Inc.', 'A clicker game: mine an asteroid, build a mining company and prestige across the multiverse.'],
         ],
     ],

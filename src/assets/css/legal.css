@@ -857,6 +857,120 @@
   letter-spacing: 0.04em;
 }
 
+/* Minesweeper's two fonts, from the game's own folder (assets/minesweeper/css/, like in its main.css): Press Start's
+   pixel letters, which go chunky on hover, and Digital Dismay's red clock digits on black, which light up on hover */
+@font-face {
+  font-family: "Press Start";
+  src: url("/assets/minesweeper/css/prstart.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Digital Dismay";
+  src: url("/assets/minesweeper/css/digital-dismay.otf") format("opentype");
+  font-display: swap;
+}
+
+.credits-font.is-pixel {
+  rotate: 3deg;
+}
+
+.credits-font.is-pixel .credits-font-letters {
+  font-family: "Press Start", monospace;
+  font-size: 2.2rem;
+  font-weight: 400;
+  transition: scale 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+.credits-library:hover .credits-font.is-pixel .credits-font-letters {
+  scale: 1.2;
+  font-weight: 400;
+}
+
+.credits-font.is-pixel .credits-font-weights {
+  font-family: "Press Start", monospace;
+  font-size: 0.55rem;
+  font-weight: 400;
+  color: #0000fa; /* Minesweeper's 1 */
+  opacity: 1;
+}
+
+.credits-font.is-clock {
+  background: #111;
+  color: #e0372b;
+}
+
+.credits-font.is-clock span {
+  font-family: "Digital Dismay", monospace;
+  font-weight: 400;
+}
+
+.credits-font.is-clock .credits-font-letters {
+  font-size: 3.6rem;
+  opacity: 0.55;
+  transition: opacity 0.3s ease, text-shadow 0.3s ease;
+}
+
+.credits-library:hover .credits-font.is-clock .credits-font-letters {
+  font-weight: 400;
+  opacity: 1;
+  text-shadow: 0 0 12px rgba(224, 55, 43, 0.7);
+}
+
+.credits-font.is-clock .credits-font-weights {
+  font-size: 1rem;
+  opacity: 0.55;
+}
+
+/* Minesweeper's code: a corner of a board on a grey card, Windows 95 bevels and all. The flag in the middle stays put on
+   hover, and the eight squares around it open, each a blue 1 */
+.credits-mines {
+  flex: none;
+  width: 150px;
+  aspect-ratio: 1;
+  padding: 18px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border-radius: 14px;
+  background: #c0c0c0;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
+  rotate: 3deg;
+  transition: rotate 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+.credits-library:hover .credits-mines {
+  rotate: 0deg;
+}
+
+.credits-mines i {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 4px solid;
+  border-color: #fff #7b7b7b #7b7b7b #fff;
+  background: #c0c0c0;
+  color: transparent;
+  font-family: "Press Start", monospace;
+  font-size: 0.9rem;
+  font-style: normal;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.credits-mines .is-open,
+.credits-library:hover .credits-mines i:not(.is-flag) {
+  border-color: #a0a0a0;
+  border-width: 1px;
+  color: #0000fa;
+}
+
+.credits-mines .is-flag img {
+  width: 40%;
+  height: auto;
+  image-rendering: pixelated; /* it's only 10x14 */
+}
+
 /* ---------- Credits: motion ---------- */
 /* The cards slide in as they're scrolled to, like the frontpage's sections */
 @supports (animation-timeline: view()) {
