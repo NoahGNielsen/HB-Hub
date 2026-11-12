@@ -16,13 +16,11 @@ require_once __DIR__ . '/slots.php';
         <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips you can go <strong>all in</strong> instead: every chip you have on one spin
         (what it wins is rounded down to a whole chip).
     </li>
-    <li>Where each reel stops is picked by the server, every stop as likely as the next, and no spin depends on the ones before it.</li>
-    <li>On average the machine pays back about <?= number_format(hbHubSlotsReturn() * 100, 1) ?>% of what's bet on it.</li>
 </ul>
 <div class="casino-pay-table-wrap docs-table-wrap">
 <table class="casino-pay-table docs-table">
     <thead>
-        <tr><th scope="col">On a line</th><th scope="col">Pays</th><th scope="col">A line hits it</th></tr>
+        <tr><th scope="col">On a line</th><th scope="col">Pays</th></tr>
     </thead>
     <tbody>
         <?php foreach (HBHUB_SLOTS_PAYS as $slotsSymbol => $slotsPays):
@@ -30,12 +28,11 @@ require_once __DIR__ . '/slots.php';
             <tr>
                 <td><span class="casino-pay-symbols" aria-hidden="true"><?= str_repeat('<span class="casino-pay-symbol casino-pay-' . $slotsSymbol . '">' . $slotsShown . '</span>', 3) ?></span> 3 &times; <?= $slotsName ?></td>
                 <td><?= $slotsPays ?>&times;</td>
-                <td>1 in <?= number_format(hbHubSlotsOdds($slotsSymbol)) ?></td>
             </tr>
         <?php endforeach; ?>
-        <tr><td>Any 3 fruit, mixed (🍒 🍋 🍇)</td><td><?= HBHUB_SLOTS_PAY_MIXED_FRUIT ?>&times;</td><td></td></tr>
-        <tr><td>🍒 🍒 on the first two reels</td><td><?= HBHUB_SLOTS_PAY_TWO_CHERRIES ?>&times;</td><td></td></tr>
-        <tr><td>🍒 on the first reel</td><td><?= HBHUB_SLOTS_PAY_CHERRY ?>&times; (the line's share back)</td><td></td></tr>
+        <tr><td>Any 3 fruit, mixed (🍒 🍋 🍇)</td><td><?= HBHUB_SLOTS_PAY_MIXED_FRUIT ?>&times;</td></tr>
+        <tr><td>🍒 🍒 on the first two reels</td><td><?= HBHUB_SLOTS_PAY_TWO_CHERRIES ?>&times;</td></tr>
+        <tr><td>🍒 on the first reel</td><td><?= HBHUB_SLOTS_PAY_CHERRY ?>&times; (the line's share back)</td></tr>
     </tbody>
 </table>
 </div>
