@@ -3168,7 +3168,8 @@
     // ----- Clicking the asteroid: a floating number where it was clicked and bits of rock flying off
 
     // The Shard Shop's click effects that change the bits (.miner-bit.is-<look> in spaceOreMiner.css): effect => look.
-    // Shockwave only adds a ring, and Supernova a gold ring as well as its stars.
+    // Shockwave only adds a ring, Supernova a gold ring as well as its stars, and Darts throws darts (.miner-dart) instead
+    // of bits.
     const BIT_LOOKS = {
         confetti: 'confetti', twinkle: 'twinkle', bubbles: 'bubbles', pixels: 'pixels', snowfall: 'snowfall',
         embers: 'embers', coins: 'coins', supernova: 'twinkle',
@@ -3187,15 +3188,32 @@
 
         // The click effect bought in the Shard Shop: something else instead of rock (BIT_LOOKS), and/or a ring going out
         const effect = saveState.effect ?? null;
-        if (effect === 'shockwave' || effect === 'supernova') {
+        // (Darts only on a crit, for the bullseye)
+        if (effect === 'shockwave' || effect === 'supernova' || (effect === 'darts' && isCrit)) {
             const ring = element('span', 'miner-ring' + (isCrit || effect === 'supernova' ? ' is-crit' : ''));
             ring.style.setProperty('--x', x + 'px');
             ring.style.setProperty('--y', y + 'px');
             ring.addEventListener('animationend', () => ring.remove());
             field.append(ring);
         }
+        // Darts: one flies in from the side and sticks where the click hit (three around it on a crit, with gold
+        // flights and a gold ring for the bullseye), wobbles and fades. No bits, so it's just the darts.
+        if (effect === 'darts') {
+            for (let i = 0; i < (isCrit ? 3 : 1); i++) {
+                const dart = element('span', 'miner-dart' + (isCrit ? ' is-crit' : ''));
+                const spread = i === 0 ? 0 : 14;
+                // Pointing the way it flew: from the left or the right, a bit up or down
+                const angle = (Math.random() < 0.5 ? 0 : 180) + (Math.random() - 0.5) * 60;
+                dart.style.setProperty('--x', x + (Math.random() - 0.5) * spread * 2 + 'px');
+                dart.style.setProperty('--y', y + (Math.random() - 0.5) * spread * 2 + 'px');
+                dart.style.setProperty('--angle', angle + 'deg');
+                dart.style.animationDelay = i * 90 + 'ms';
+                dart.addEventListener('animationend', () => dart.remove());
+                field.append(dart);
+            }
+        }
         const look = BIT_LOOKS[effect] ?? null;
-        for (let i = 0; i < (isCrit ? 10 : 5) * (effect === 'supernova' ? 2 : 1); i++) {
+        for (let i = 0; i < (effect === 'darts' ? 0 : (isCrit ? 10 : 5) * (effect === 'supernova' ? 2 : 1)); i++) {
             const bit = element('span', 'miner-bit' + (look !== null ? ' is-' + look : ''));
             if (look === 'confetti' || look === 'pixels') bit.style.setProperty('--hue', String(Math.floor(Math.random() * 360)));
             // Embers float up and snow drifts down; the rest fly off every way

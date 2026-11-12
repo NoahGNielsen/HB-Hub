@@ -1114,6 +1114,7 @@ const HBHUB_MINER_SHOP = [
     'snowfall' => ['name' => 'Snowfall', 'icon' => 'fxSnow', 'kind' => 'effect', 'cost' => 10, 'text' => 'Clicks shake snow off the asteroid, drifting down.'],
     'embers' => ['name' => 'Embers', 'icon' => 'fxEmbers', 'kind' => 'effect', 'cost' => 12, 'text' => 'Clicks send glowing embers floating up.'],
     'coins' => ['name' => 'Jackpot', 'icon' => 'fxCoins', 'kind' => 'effect', 'cost' => 12, 'text' => 'Clicks spill spinning gold coins. They\'re not real coins.'],
+    'darts' => ['name' => 'Darts', 'icon' => 'fxDarts', 'kind' => 'effect', 'cost' => 12, 'text' => 'Every click throws a dart right where you clicked. Crits hit the bullseye.'],
     'shockwave' => ['name' => 'Shockwave', 'icon' => 'fxShockwave', 'kind' => 'effect', 'cost' => 15, 'text' => 'Every click sends a ring out from where it hit.'],
     'supernova' => ['name' => 'Supernova', 'icon' => 'fxSupernova', 'kind' => 'effect', 'cost' => 25, 'text' => 'A golden ring and a shower of stars on every click.'],
 ];

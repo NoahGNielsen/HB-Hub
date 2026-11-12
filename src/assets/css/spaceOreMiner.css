@@ -6462,6 +6462,52 @@ body:has(.miner[data-backdrop="aurora"]),
   to { opacity: 0; transform: scale(6); }
 }
 
+/* Darts: a thin dart with its tip on the click (the right end, turned by --angle to point the way it flew). It flies in
+   along its own line, sticks, wobbles and fades. Red flights, gold on a crit. */
+.miner-dart {
+  --flight: #ff5a5f;
+  position: absolute;
+  z-index: 3;
+  left: var(--x);
+  top: var(--y);
+  width: 30px;
+  height: 3px;
+  margin: -1.5px 0 0 -30px;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(90deg, #3cc8f0 0 12px, #c9c9c9 12px 24px, #f4f4f4 24px);
+  transform-origin: right center;
+  opacity: 0;
+  pointer-events: none;
+  animation: miner-dart 1s ease-out forwards;
+}
+
+.miner-dart::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: -4.5px;
+  width: 11px;
+  height: 12px;
+  background: var(--flight);
+  clip-path: polygon(0 0, 100% 42%, 100% 58%, 0 100%, 35% 50%);
+}
+
+.miner-dart.is-crit {
+  --flight: var(--miner-gold);
+}
+
+@keyframes miner-dart {
+  0% { opacity: 0; transform: rotate(var(--angle)) translateX(-140px); }
+  10% { opacity: 1; }
+  25% { transform: rotate(var(--angle)) translateX(0); }
+  32% { transform: rotate(calc(var(--angle) + 6deg)); }
+  39% { transform: rotate(calc(var(--angle) - 4deg)); }
+  46% { transform: rotate(calc(var(--angle) + 2deg)); }
+  52% { transform: rotate(var(--angle)); }
+  80% { opacity: 1; transform: rotate(var(--angle)); }
+  100% { opacity: 0; transform: rotate(var(--angle)); }
+}
+
 /* ----- The Skins view (31 Oct 2026): built like the Shard Shop, in cyan. On top the asteroid wearing its skin (a big
    .miner-shop-swatch) in a slowly turning ring, then a card per look, like the shop's. */
 .miner-prestige.is-skins {
