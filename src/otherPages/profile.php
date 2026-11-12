@@ -11,7 +11,7 @@
 // to add a status!" only you see). The popup is a form POSTed back here with action=status (and clear=1 for Clear
 // status), which saves only the status and comes back with a toast. Without JS the status links to settings instead.
 // profile.js paints the banner's colors, as the content security policy doesn't allow style attributes, and opens the
-// popup; statusForm.js adds its emoji row. jxlImages.js draws a banner picture for browsers that can't show JPEG XL.
+// popup; statusForm.js adds its emoji row. Clicking the profile picture or the banner picture shows it big in a popup. jxlImages.js draws a banner picture for browsers that can't show JPEG XL.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
@@ -129,7 +129,10 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
                  Without either, the site's own colors from profile.css. -->
             <div class="profile-banner"<?= $profileBannerSrc === null && $profileGradient !== null ? ' data-profile-gradient="' . htmlspecialchars(implode(' ', $profileGradient)) . '"' : '' ?>>
                 <?php if ($profileBannerSrc !== null): ?>
-                    <img class="profile-banner-picture" src="<?= htmlspecialchars($profileBannerSrc) ?>" alt="" data-jxl data-jxl-worker="<?= htmlspecialchars($profileJxlWorker) ?>">
+                    <!-- Clicking it shows it big in the picture viewer (profile.js); without JS the link opens the file -->
+                    <a class="profile-view-link profile-banner-link" href="<?= htmlspecialchars($profileBannerSrc) ?>" aria-label="View <?= htmlspecialchars($profile['userName']) ?>'s banner" data-profile-view>
+                        <img class="profile-banner-picture" src="<?= htmlspecialchars($profileBannerSrc) ?>" alt="" data-jxl data-jxl-worker="<?= htmlspecialchars($profileJxlWorker) ?>">
+                    </a>
                 <?php endif; ?>
             </div>
 
@@ -137,7 +140,10 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
                 <div class="profile-top">
                     <div class="profile-avatar-wrap">
                         <?php if ($profileAvatarSrc !== null): ?>
-                            <img class="profile-avatar" src="<?= htmlspecialchars($profileAvatarSrc) ?>" alt="Profile picture of <?= htmlspecialchars($profile['userName']) ?>">
+                            <!-- Like the banner: clicking it shows it big -->
+                            <a class="profile-view-link profile-avatar-link" href="<?= htmlspecialchars($profileAvatarSrc) ?>" aria-label="View <?= htmlspecialchars($profile['userName']) ?>'s profile picture" data-profile-view>
+                                <img class="profile-avatar" src="<?= htmlspecialchars($profileAvatarSrc) ?>" alt="Profile picture of <?= htmlspecialchars($profile['userName']) ?>">
+                            </a>
                         <?php else: ?>
                             <span class="profile-avatar profile-avatar-initial" aria-hidden="true"><?= htmlspecialchars(mb_strtoupper(mb_substr($profile['userName'], 0, 1))) ?></span>
                         <?php endif; ?>
@@ -238,6 +244,14 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
                 </p>
             </div>
         </article>
+
+        <?php if ($profileAvatarSrc !== null || $profileBannerSrc !== null): ?>
+            <!-- The picture viewer: profile.js puts a copy of the clicked picture in it. A click anywhere or Escape closes it. -->
+            <dialog class="profile-viewer" data-profile-viewer>
+                <button type="button" class="profile-viewer-close" aria-label="Close">×</button>
+                <div class="profile-viewer-picture" data-profile-viewer-picture></div>
+            </dialog>
+        <?php endif; ?>
 
         <?php if ($profileIsOwn): ?>
             <!-- The status popup (the same fields as in settings). data-open opens it straight away, when saving it went wrong. -->

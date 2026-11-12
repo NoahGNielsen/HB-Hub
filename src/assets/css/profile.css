@@ -50,6 +50,35 @@
   object-fit: cover;
 }
 
+/* The profile picture and banner picture are links that show them big (the picture viewer further down) */
+.profile-view-link {
+  display: block;
+  cursor: zoom-in;
+}
+
+.profile-view-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.profile-banner-link {
+  position: absolute;
+  inset: 0;
+}
+
+.profile-banner-link:hover .profile-banner-picture,
+.profile-avatar-link:hover .profile-avatar {
+  filter: brightness(1.08);
+}
+
+.profile-avatar-link {
+  border-radius: 50%;
+}
+
+.profile-avatar-link:focus-visible {
+  outline-offset: 2px;
+}
+
 .profile-body {
   padding: 0 var(--profile-pad) var(--profile-pad);
 }
@@ -545,6 +574,65 @@ a.profile-status:focus-visible {
 /* Clear status on the left, away from Save */
 .profile-dialog-footer .is-danger {
   margin-right: auto;
+}
+
+/* ---------- The picture viewer: the profile picture or banner, as big as fits the screen ---------- */
+
+.profile-viewer {
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: none;
+  background: transparent;
+  overflow: visible;
+  cursor: zoom-out;
+}
+
+.profile-viewer::backdrop {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* An <img>, or a <canvas> for a JPEG XL banner the browser can't show itself */
+.profile-viewer-picture img,
+.profile-viewer-picture canvas {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+/* Small profile pictures are blown up a bit, so they aren't tiny in the middle of the screen */
+.profile-viewer-picture img {
+  min-width: min(320px, calc(100vw - 32px));
+  object-fit: contain;
+}
+
+.profile-viewer-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.profile-viewer-close:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.profile-viewer-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .profile-visually-hidden {
