@@ -175,7 +175,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
             </div>
             <p class="credits-fineprint">"QR Code" is a registered trademark of DENSO WAVE INCORPORATED.</p>
-            <p class="credits-fineprint">HB Hub's Minesweeper looks like the one in Windows 95, but has nothing to do with Microsoft. Windows is a trademark of Microsoft Corporation.</p>
+            <p class="credits-fineprint">HB Hub ain't associated with Microsoft. Windows is a trademark of Microsoft Corporation.</p>
         </section>
 
         <!-- Lists: where most of the blocked links in assets/urlBlacklist.txt come from (the IP loggers are picked by hand) -->
