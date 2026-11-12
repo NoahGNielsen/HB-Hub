@@ -1106,7 +1106,7 @@ const HBHUB_MINER_SHOP = [
     'northernLights' => ['name' => 'Northern Lights', 'kind' => 'skin', 'cost' => 40, 'text' => 'Green, teal and violet waving over the rock. Animated.'],
     'pocketGalaxy' => ['name' => 'Pocket Galaxy', 'kind' => 'skin', 'cost' => 50, 'text' => 'Deep space blue with a glow that breathes. Animated.'],
     'disco' => ['name' => 'Disco', 'kind' => 'skin', 'cost' => 60, 'text' => 'Every colour there is, and fast. The asteroid has rhythm now. Animated.'],
-    'noah' => ['name' => 'Noah', 'kind' => 'skin', 'cost' => 60, 'text' => 'The asteroid is Noah now. So is the game: it\'s called Noah Clicker while you wear it.'],
+    'noah' => ['name' => 'Noah', 'kind' => 'skin', 'cost' => 60, 'text' => 'Mine Noah. Click Noah. Become one with Noah. Renames the game Noah Clicker while worn, because one Noah was never enough.'],
     'confetti' => ['name' => 'Confetti', 'icon' => 'fxConfetti', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks throw confetti instead of rock.'],
     'twinkle' => ['name' => 'Twinkle', 'icon' => 'fxTwinkle', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks throw glittering little stars.'],
     'bubbles' => ['name' => 'Bubbles', 'icon' => 'fxBubbles', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks blow bubbles. Nobody knows how, in space.'],
