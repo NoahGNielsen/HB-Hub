@@ -3,7 +3,9 @@
    under it, then the deck with the bet and the Spin button. Each reel shows three symbols of --sl-cell high, which
    shrinks with the window's height so the whole machine, deck and all, fits without scrolling; slots.js measures it,
    and rolls a reel by filling its strip with more and sliding it down. A win lights it all up by how big it is (the
-   "Win effects" part, by data-sl-tier), with a banner over the machine for a big one. */
+   "Win effects" part, by data-sl-tier), with a banner over the machine for a big one. The machine is never quite still
+   either ("Spin effects"): bulbs chase down its sides, light glints across the glass, the lever pulls itself, the reels
+   land with a bump and the last one glows when it could make a good win. */
 .sl {
   --casino-up: #2fa36b;
   --casino-down: #d64545;
@@ -27,7 +29,7 @@
     "machine side"
     "rules rules";
   align-items: start;
-  gap: 0 20px;
+  gap: 0 44px; /* room for the lever sticking out of the machine's right side */
 }
 
 .sl [hidden] {
@@ -75,6 +77,8 @@
 }
 
 .sl-marquee {
+  position: relative;
+  overflow: hidden;
   margin: 0 -20px 12px;
   padding: 8px 20px;
   display: flex;
@@ -93,19 +97,61 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   text-shadow: 0 0 14px color-mix(in srgb, var(--sl-gold) 60%, transparent);
+  animation: sl-marquee-glow 2.4s ease-in-out infinite alternate;
 }
 
-/* A row of bulbs, which chase while the reels roll and after a win */
+@keyframes sl-marquee-glow {
+  to { text-shadow: 0 0 4px #fff8d6, 0 0 22px var(--sl-gold); }
+}
+
+/* While the reels roll the words blink, and red while the last reel is teasing a win */
+.sl.is-spinning .sl-marquee-text {
+  animation: sl-marquee-flash 0.8s step-end infinite;
+}
+
+.sl.is-teasing .sl-marquee-text {
+  animation: sl-marquee-tease 0.25s step-end infinite;
+}
+
+@keyframes sl-marquee-tease {
+  50% { color: #ff4f6d; text-shadow: 0 0 12px #ff4f6d, 0 0 28px #ff4f6d; }
+}
+
+/* A glint of light running across the marquee now and then */
+.sl-marquee::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: translateX(-120%);
+  animation: sl-glint 6s ease-in-out infinite;
+}
+
+@keyframes sl-glint {
+  0%, 70% { transform: translateX(-120%); }
+  to { transform: translateX(320%); }
+}
+
+/* A row of bulbs, which chase slowly all the time, faster while the reels roll and after a win */
 .sl-marquee-lights {
   flex: 1;
   height: 10px;
   background: radial-gradient(circle 4px, var(--sl-gold) 3px, transparent 4.5px) 0 50% / 18px 10px repeat-x;
   opacity: 0.85;
+  animation: sl-lights 1.2s steps(2) infinite;
 }
 
 .sl.is-spinning .sl-marquee-lights,
 .sl.is-winning .sl-marquee-lights {
-  animation: sl-lights 0.5s steps(2) infinite;
+  animation-duration: 0.5s;
+}
+
+.sl.is-teasing .sl-marquee-lights {
+  animation-duration: 0.12s;
 }
 
 @keyframes sl-lights {
@@ -206,13 +252,14 @@
 }
 
 .sl-symbol {
+  position: relative;
   height: var(--sl-cell);
   flex: none;
   display: grid;
   place-items: center;
   font-size: calc(var(--sl-cell) * 0.56);
   line-height: 1;
-  transition: transform 0.25s ease;
+  transition: transform 0.25s ease, opacity 0.25s ease, filter 0.25s ease; /* opacity and filter: a line's turn */
 }
 
 .sl-symbol-face {
@@ -274,10 +321,19 @@
   transition: opacity 0.2s ease;
 }
 
+/* A winning line draws itself in from the left, one after another (--sl-order, from slots.js), then pulses. Drawn by
+   clipping it to a growing part of the view box, as the lines all go left to right */
 .sl-line.is-win {
   opacity: 0.9;
   filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.6));
-  animation: sl-line-pulse 0.5s ease-in-out infinite alternate;
+  animation:
+    sl-line-draw 0.45s calc(var(--sl-order, 0) * 0.3s) ease-out both,
+    sl-line-pulse 0.5s calc(var(--sl-order, 0) * 0.3s + 0.45s) ease-in-out infinite alternate;
+}
+
+@keyframes sl-line-draw {
+  from { clip-path: inset(-10% 100% -10% 0) view-box; }
+  to { clip-path: inset(-10% 0 -10% 0) view-box; }
 }
 
 @keyframes sl-line-pulse {
@@ -702,6 +758,461 @@
   pointer-events: none;
 }
 
+/* A glow round the edges of the screen on a big win, pulsing a few times; going through every colour on a mega win or
+   jackpot */
+.sl-aura {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: inset 0 0 90px 24px color-mix(in srgb, var(--sl-gold) 80%, transparent);
+}
+
+.sl[data-sl-tier="big"] .sl-aura {
+  animation: sl-aura 0.6s ease-in-out 8 alternate;
+}
+
+.sl[data-sl-tier="mega"] .sl-aura,
+.sl[data-sl-tier="jackpot"] .sl-aura {
+  animation: sl-aura 0.6s ease-in-out 10 alternate, sl-hue 1.5s linear infinite;
+}
+
+@keyframes sl-aura {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ----- Spin effects (slots.js): the show round the spin itself */
+
+/* Bulbs down both sides of the cabinet, gold and red taking turns: slowly all the time, fast while the reels roll,
+   very fast after a big win and in every colour after a mega win or jackpot */
+.sl-bulbs {
+  position: absolute;
+  top: 72px;
+  bottom: 20px;
+  width: 10px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 3.5px, #ffd23f 2.5px, transparent 4px) 50% 0 / 10px 18px repeat-y,
+    radial-gradient(circle 3.5px, #ff4f6d 2.5px, transparent 4px) 50% 9px / 10px 18px repeat-y;
+  filter: drop-shadow(0 0 3px rgba(255, 210, 63, 0.7));
+  animation: sl-bulbs 1.2s steps(2) infinite;
+}
+
+.sl-bulbs-left { left: 5px; }
+.sl-bulbs-right { right: 5px; }
+
+@keyframes sl-bulbs {
+  to { background-position: 50% 18px, 50% 27px; }
+}
+
+.sl.is-spinning .sl-bulbs,
+.sl.is-winning .sl-bulbs {
+  animation-duration: 0.4s;
+}
+
+.sl.is-teasing .sl-bulbs,
+.sl[data-sl-tier="big"] .sl-bulbs {
+  animation-duration: 0.15s;
+}
+
+.sl[data-sl-tier="mega"] .sl-bulbs,
+.sl[data-sl-tier="jackpot"] .sl-bulbs {
+  animation: sl-bulbs 0.15s steps(2) infinite, sl-hue 1s linear infinite;
+}
+
+/* The lever, sticking out of the machine's right side: a gold socket, a chrome arm and a red ball on top. Pulling it
+   swings the arm down past the socket (squashed, as it comes towards you) and lets it spring back up */
+.sl-lever {
+  position: absolute;
+  left: 100%;
+  top: 28%;
+  width: 32px;
+  height: 150px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.sl-lever:disabled,
+.sl.is-spinning .sl-lever {
+  cursor: default;
+}
+
+.sl-lever-base {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 16px;
+  height: 36px;
+  border-radius: 0 8px 8px 0;
+  background: linear-gradient(90deg, #3d0d15, #8a6a10 35%, #ffe680 60%, #8a6a10);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.sl-lever-arm {
+  position: absolute;
+  left: 4px;
+  bottom: 18px;
+  width: 8px;
+  height: 118px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #8d8d8d, #fff 40%, #9a9a9a);
+  transform-origin: 50% 100%;
+  transition: transform 0.2s ease;
+}
+
+.sl-lever-knob {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 35% 30%, #ffb3b3, #d0142c 50%, #5a0010);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+}
+
+.sl-lever:hover .sl-lever-arm {
+  transform: scaleY(0.93);
+}
+
+.sl-lever.is-pulled .sl-lever-arm {
+  animation: sl-lever-pull 0.75s cubic-bezier(0.3, 0.1, 0.3, 1);
+}
+
+@keyframes sl-lever-pull {
+  35%, 50% { transform: scaleY(-0.7); }
+  80% { transform: scaleY(1.08); }
+  to { transform: none; }
+}
+
+/* A glint of light sweeping across the glass over the reels now and then */
+.sl-window::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: 2;
+  border-radius: 10px;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.28) 48%, rgba(255, 255, 255, 0.08) 52%, transparent 58%) -150% 0 / 250% 100% no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 30%);
+  animation: sl-glass 7s ease-in-out infinite;
+}
+
+@keyframes sl-glass {
+  0%, 75% { background-position: -150% 0, 0 0; }
+  to { background-position: 250% 0, 0 0; }
+}
+
+/* While the reels roll the window glows, and each rolling reel has bands of light rushing down it */
+.sl.is-spinning .sl-window {
+  animation: sl-window-spin 0.35s ease-in-out infinite alternate;
+}
+
+@keyframes sl-window-spin {
+  to {
+    box-shadow: inset 0 0 0 3px #fff3b0, inset 0 6px 18px rgba(0, 0, 0, 0.6),
+      0 0 22px 2px color-mix(in srgb, var(--sl-gold) 55%, transparent);
+  }
+}
+
+.sl-reel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.sl-reel.is-rolling::before {
+  opacity: 1;
+  background: repeating-linear-gradient(180deg, transparent 0 26px, rgba(255, 255, 255, 0.45) 26px 30px, transparent 30px 44px);
+  animation: sl-streaks 0.12s linear infinite;
+}
+
+@keyframes sl-streaks {
+  to { background-position: 0 44px; }
+}
+
+.sl-reel.is-rolling .sl-reel-strip {
+  filter: blur(2px) brightness(1.08);
+}
+
+/* A reel landing: its symbols spring back up, a flash of light goes over it, and the whole machine thuds */
+.sl-reel.is-landed .sl-reel-strip {
+  animation: sl-land 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes sl-land {
+  from { transform: translateY(calc(var(--sl-cell) * 0.14)); }
+}
+
+.sl-reel.is-landed::before {
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.85), rgba(255, 240, 180, 0.3) 50%, transparent 75%);
+  animation: sl-land-flash 0.45s ease-out;
+}
+
+@keyframes sl-land-flash {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.sl-machine.is-thudding {
+  animation: sl-thud 0.22s ease-out;
+}
+
+@keyframes sl-thud {
+  40% { translate: 0 3px; }
+}
+
+/* The tease: the last reel glows red and gold while it rolls on, the others dim a little, and the line it could win
+   on flickers, with the two symbols already on it */
+.sl-reel.is-teasing {
+  animation: sl-tease 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes sl-tease {
+  from { box-shadow: 0 0 0 3px #ff4f6d, 0 0 18px 4px rgba(255, 79, 109, 0.8); }
+  to { box-shadow: 0 0 0 3px #ffd23f, 0 0 34px 10px rgba(255, 210, 63, 0.9); }
+}
+
+.sl.is-teasing .sl-reel:not(.is-teasing) {
+  filter: brightness(0.75);
+  transition: filter 0.3s ease;
+}
+
+.sl-line.is-tease {
+  opacity: 0.9;
+  stroke: #ff4f6d;
+  animation: sl-tease-line 0.16s steps(2) infinite;
+}
+
+@keyframes sl-tease-line {
+  to { opacity: 0.25; }
+}
+
+.sl-symbol.is-tease .sl-symbol-face {
+  animation: sl-tease-symbol 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes sl-tease-symbol {
+  to { transform: scale(1.14); filter: drop-shadow(0 0 8px #ff4f6d); }
+}
+
+/* No win: after a tease the result shakes its head and the last reel flashes red; otherwise the reels dim a moment */
+.sl.is-near-miss .sl-result {
+  color: #ff8a8a;
+  animation: sl-headshake 0.5s ease;
+}
+
+.sl.is-near-miss .sl-reel:last-child {
+  animation: sl-miss 0.8s ease-out;
+}
+
+@keyframes sl-headshake {
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@keyframes sl-miss {
+  from { box-shadow: 0 0 0 3px #ff4f6d, 0 0 24px 6px rgba(255, 79, 109, 0.9); }
+}
+
+.sl.is-losing .sl-reels {
+  animation: sl-dim 0.9s ease;
+}
+
+@keyframes sl-dim {
+  30% { filter: brightness(0.6) saturate(0.4); }
+}
+
+/* A ring of light going out from each winning symbol as it lights up (and again as each line gets its turn) */
+.sl-symbol.is-win::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--sl-cell);
+  height: var(--sl-cell);
+  box-sizing: border-box;
+  border: 3px solid #fff3b0;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  animation: sl-ring 0.8s ease-out;
+}
+
+.sl.is-line-focus .sl-symbol.is-win:not(.is-focus)::after {
+  animation: none;
+}
+
+.sl.is-line-focus .sl-symbol.is-focus::after {
+  animation: sl-ring-again 0.8s ease-out;
+}
+
+@keyframes sl-ring {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(0.2); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.3); }
+}
+
+@keyframes sl-ring-again {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(0.2); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.3); }
+}
+
+/* A spot of white light running along each winning line, over and over. Only where a clip can be measured against the
+   view box (sl-line-draw's trick), as without it the whole line would just be white */
+.sl-line-comet {
+  display: none;
+}
+
+@supports (clip-path: inset(0) view-box) {
+  .sl-line-comet {
+    display: inline;
+    fill: none;
+    stroke: #fff;
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    opacity: 0;
+    filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 10px var(--sl-gold));
+  }
+
+  .sl-line-comet.is-win {
+    opacity: 1;
+    animation: sl-comet 1.1s calc(var(--sl-order, 0) * 0.3s + 0.45s) linear infinite both;
+  }
+}
+
+@keyframes sl-comet {
+  from { clip-path: inset(-10% 100% -10% -14%) view-box; }
+  to { clip-path: inset(-10% -14% -10% 100%) view-box; }
+}
+
+/* With more than one winning line, each gets a turn on its own: the others fade back */
+.sl.is-line-focus .sl-line.is-win:not(.is-focus),
+.sl.is-line-focus .sl-line-comet.is-win:not(.is-focus) {
+  animation: none;
+  opacity: 0.12;
+}
+
+.sl.is-line-focus .sl-symbol.is-win:not(.is-focus) {
+  opacity: 0.45;
+  filter: saturate(0.4);
+}
+
+/* What the line paid, in a badge in its colour at its right end, on the row the line ends on */
+.sl-line-badge {
+  --sl-badge: var(--sl-gold);
+  position: absolute;
+  right: 2px;
+  top: calc(8px + var(--sl-cell) * 0.5);
+  z-index: 3;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--sl-badge);
+  color: #2a070c;
+  font-size: clamp(0.8rem, calc(var(--sl-cell) * 0.2), 1.15rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+  box-shadow: 0 0 0 2px #fff, 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 16px var(--sl-badge);
+}
+
+.sl-line-badge.is-row-1 { top: calc(8px + var(--sl-cell) * 1.5); }
+.sl-line-badge.is-row-2 { top: calc(8px + var(--sl-cell) * 2.5); }
+.sl-line-badge-1 { --sl-badge: #4fc3f7; }
+.sl-line-badge-2 { --sl-badge: #81e36b; }
+.sl-line-badge-3 { --sl-badge: #ff7ab8; }
+.sl-line-badge-4 { --sl-badge: #b388ff; }
+
+.sl-line-badge.is-popping {
+  animation: sl-badge-pop 0.45s cubic-bezier(0.2, 1.8, 0.4, 1);
+}
+
+@keyframes sl-badge-pop {
+  from { opacity: 0; transform: translateY(-50%) scale(0.2); }
+}
+
+/* The Spin button: a ring of light pulsing out of it and a shine running over it while it can be pressed, and a burst
+   when it's pressed */
+.sl-spin {
+  position: relative;
+  overflow: hidden;
+}
+
+.sl-spin:not(:disabled) {
+  animation: sl-spin-ready 1.6s ease-in-out infinite;
+}
+
+@keyframes sl-spin-ready {
+  50% {
+    box-shadow: 0 5px 0 #a3470f, 0 0 0 7px color-mix(in srgb, var(--accent) 30%, transparent),
+      0 0 26px 6px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+}
+
+.sl-spin:active:not(:disabled) {
+  animation: none;
+}
+
+.sl-spin::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.45) 50%, transparent 60%);
+  transform: translateX(-100%);
+  animation: sl-shine 3s ease-in-out infinite;
+}
+
+.sl-spin:disabled::after {
+  animation: none;
+  opacity: 0;
+}
+
+@keyframes sl-shine {
+  0%, 60% { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+.sl-spin.is-pushed {
+  animation: sl-spin-push 0.55s ease-out;
+}
+
+@keyframes sl-spin-push {
+  from { box-shadow: 0 2px 0 #a3470f, 0 0 0 0 color-mix(in srgb, var(--accent) 80%, transparent); }
+  to { box-shadow: 0 5px 0 #a3470f, 0 0 0 28px transparent; }
+}
+
+/* The bet bounces when it changes, and a chip flips over when it's picked */
+.sl-bet-amount.is-bumped {
+  animation: sl-bump 0.35s cubic-bezier(0.2, 1.8, 0.4, 1);
+}
+
+@keyframes sl-bump {
+  from { transform: scale(1.35); color: var(--sl-gold); }
+}
+
+.sl-chip.is-flipping {
+  animation: sl-chip-flip 0.5s ease-out;
+}
+
+@keyframes sl-chip-flip {
+  from { transform: translateY(-3px) rotateY(0); }
+  50% { transform: translateY(-12px) rotateY(180deg); }
+  to { transform: translateY(-3px) rotateY(360deg); }
+}
+
 /* The user's last spins, beside the machine */
 .sl-side {
   padding: 20px;
@@ -734,6 +1245,27 @@
 
 .sl-history-item.is-win {
   box-shadow: inset 3px 0 0 var(--casino-up);
+}
+
+/* A new spin slides in at the top; a win flashes gold as it does, and a big one in every colour */
+.sl-history-item.is-new {
+  animation: sl-history-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.sl-history-item.is-new.is-win {
+  animation: sl-history-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1), sl-history-flash 1.4s ease-out;
+}
+
+.sl-history-item.is-new.is-win:is([data-sl-tier="big"], [data-sl-tier="mega"], [data-sl-tier="jackpot"]) {
+  animation: sl-history-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1), sl-history-flash 1.4s ease-out, sl-hue 0.7s linear 2;
+}
+
+@keyframes sl-history-in {
+  from { opacity: 0; transform: translateX(-24px) scale(0.9); }
+}
+
+@keyframes sl-history-flash {
+  from { background: color-mix(in srgb, var(--sl-gold) 60%, var(--background)); }
 }
 
 .sl-history-symbols {
@@ -814,6 +1346,11 @@
   .sl-side {
     margin-top: 20px;
   }
+
+  /* No room beside the machine for the lever */
+  .sl-lever {
+    display: none;
+  }
 }
 
 /* Phones: the bottom bar (navPanel.css) takes 68px more, so the header is smaller, and the deck has the
@@ -874,6 +1411,11 @@
     font-size: 1.1rem;
   }
 
+  /* The cabinet's sides are too thin for bulbs */
+  .sl-bulbs {
+    display: none;
+  }
+
   .sl-cabinet {
     grid-template-columns: 22px minmax(0, 1fr) 22px;
     gap: 4px;
@@ -887,6 +1429,20 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .sl-marquee-lights,
+  .sl-marquee-text,
+  .sl-marquee::after,
+  .sl-bulbs,
+  .sl[data-sl-tier] .sl-bulbs,
+  .sl-window::after,
+  .sl.is-spinning .sl-window,
+  .sl.is-spinning .sl-marquee-text,
+  .sl-spin:not(:disabled),
+  .sl-spin::after,
+  .sl-line-badge.is-popping,
+  .sl-symbol.is-win::after,
+  .sl-history-item.is-new,
+  .sl[data-sl-tier] .sl-aura,
   .sl.is-spinning .sl-marquee-lights,
   .sl.is-winning .sl-marquee-lights,
   .sl-symbol.is-win,
@@ -902,6 +1458,10 @@
   .sl[data-sl-tier="jackpot"] .sl-banner-title,
   .sl-banner-amount {
     animation: none;
+  }
+
+  .sl-line-comet {
+    display: none;
   }
 
   /* Still lit, just not moving */

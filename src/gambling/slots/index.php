@@ -7,8 +7,9 @@
 // (data-reels, data-symbols, data-lines), so it can roll the reels round the real strips to where the server says they
 // stop. The paylines are drawn over the reels as an SVG, one path each, and their numbers are down both sides.
 // The bet and the Spin button are on the machine itself, under the reels, so the whole thing fits on the screen
-// without scrolling (slots.css sizes the reels to the window's height). A banner over the machine, a flash and a canvas
-// over the page are there for slots.js's win effects.
+// without scrolling (slots.css sizes the reels to the window's height). A banner over the machine, a flash, a glow round
+// the screen's edges and a canvas over the page are there for slots.js's win effects, and the lever beside the machine,
+// the bulbs down its sides, a "comet" on each payline and a badge for what a line paid for the rest of its show.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/slots.php';
@@ -80,6 +81,15 @@ function slotsHistoryLabel(array $spin): string
         </div>
 
         <section class="sl-machine" aria-label="The slot machine">
+            <!-- A row of bulbs down each side, and the lever, which pulls itself on every spin and spins when clicked
+                 (only for the mouse: Spin and Space do the same for everyone else) -->
+            <span class="sl-bulbs sl-bulbs-left" aria-hidden="true"></span>
+            <span class="sl-bulbs sl-bulbs-right" aria-hidden="true"></span>
+            <button type="button" class="sl-lever" data-sl-lever tabindex="-1" aria-hidden="true" title="Pull the lever">
+                <span class="sl-lever-arm"><span class="sl-lever-knob"></span></span>
+                <span class="sl-lever-base"></span>
+            </button>
+
             <div class="sl-marquee" aria-hidden="true">
                 <span class="sl-marquee-lights"></span>
                 <span class="sl-marquee-text">Lucky 7s</span>
@@ -113,8 +123,12 @@ function slotsHistoryLabel(array $spin): string
                     <svg class="sl-lines" viewBox="0 0 300 300" preserveAspectRatio="none" aria-hidden="true">
                         <?php foreach (HBHUB_SLOTS_LINES as $slotsIndex => $slotsRows): ?>
                             <path class="sl-line sl-line-<?= $slotsIndex ?>" d="<?= slotsLinePath($slotsRows) ?>" data-sl-line="<?= $slotsIndex ?>"/>
+                            <!-- A spot of light running along the line while it's won -->
+                            <path class="sl-line-comet" d="<?= slotsLinePath($slotsRows) ?>" data-sl-line-comet="<?= $slotsIndex ?>"/>
                         <?php endforeach; ?>
                     </svg>
+                    <!-- What a winning line paid, at its right end (slots.js), one line at a time -->
+                    <span class="sl-line-badge" data-sl-line-badge aria-hidden="true" hidden></span>
                 </div>
 
                 <ol class="sl-line-numbers sl-line-numbers-right" aria-hidden="true">
@@ -181,7 +195,9 @@ function slotsHistoryLabel(array $spin): string
             <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/rules.php'; ?>
         </details>
 
-        <!-- The win effects over the whole page (slots.js): a flash, and the coins, confetti, sparkles and fireworks -->
+        <!-- The win effects over the whole page (slots.js): a glow round the edges, a flash, and the coins, confetti,
+             sparkles, falling 7s and fireworks -->
+        <div class="sl-aura" aria-hidden="true"></div>
         <div class="sl-flash" data-sl-flash aria-hidden="true"></div>
         <canvas class="sl-fx" data-sl-fx aria-hidden="true"></canvas>
     </main>

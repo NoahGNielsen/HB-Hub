@@ -9,6 +9,10 @@
 // The chips in the top bar (casino.js) only change when the reels have stopped, so they don't give the result away.
 // A win sets things off, more the bigger it is (see "Win effects" further down): sparkles, coins, a banner over the
 // machine, coin and confetti rain, fireworks. Coins and the like are drawn on a canvas over the page (data-sl-fx).
+// The rest of the spin has a show too ("Spin effects"): the lever pulls itself, each reel lands with a thud, a flash and
+// sparks, and when the first two reels have lined up two of a good symbol (tease()), the last one rolls on longer, glowing,
+// with the line it could win on flickering. Winning lines draw themselves in with a spot of light running along them, and
+// with more than one, they're shown one at a time with what each paid.
 (() => {
     const root = document.querySelector('[data-slots]');
     if (!root) return;
@@ -22,6 +26,9 @@
     const MIN_BET = Number(root.dataset.minBet);
     const REEL_MS = [1100, 1500, 1900]; // how long each reel rolls, so they stop one after another from the left
     const REEL_TURNS = [2, 3, 4]; // whole turns of its strip each one rolls first
+    const TEASE_MS = 1600; // how much longer the last reel rolls when the first two could make a good win (tease())
+    const TEASE_TURNS = 3; // and how many more turns it rolls in that time, so it doesn't just go slower
+    const TEASE_SYMBOLS = ['seven', 'diamond', 'star']; // the symbols worth teasing
     const BIG_WIN = 10; // a win of this many times the bet or more is a big one
     const MEGA_WIN = 30; // and this many times a mega one (three 7s on a line is always a jackpot, 60 times)
     const HISTORY_MAX = 10;
@@ -35,6 +42,7 @@
     const find = (selector) => root.querySelector(selector);
     const strips = [...root.querySelectorAll('[data-sl-reel]')];
     const lineDrawings = [...root.querySelectorAll('[data-sl-line]')];
+    const lineComets = [...root.querySelectorAll('[data-sl-line-comet]')];
     const lineNumbers = [...root.querySelectorAll('[data-sl-line-number]')];
     const windowText = find('[data-sl-window-text]');
     const resultText = find('[data-sl-result]');
@@ -142,12 +150,18 @@
         draw();
     }
 
-    // Lights up the winning lines, their numbers and the symbols on them, or puts them all out (lines = [])
+    // Lights up the winning lines, their numbers and the symbols on them, or puts them all out (lines = []). The lines
+    // draw themselves in one after another: --sl-order is which one each is, for slots.css's delay
     function showLines(lines) {
         const winning = new Set(lines.map((line) => line.line));
-        lineDrawings.forEach((path) => path.classList.toggle('is-win', winning.has(Number(path.dataset.slLine))));
+        const order = lines.map((line) => line.line);
+        [...lineDrawings, ...lineComets].forEach((path) => {
+            const line = Number(path.dataset.slLine ?? path.dataset.slLineComet);
+            path.classList.toggle('is-win', winning.has(line));
+            path.style.setProperty('--sl-order', String(Math.max(0, order.indexOf(line))));
+        });
         lineNumbers.forEach((item) => item.classList.toggle('is-win', winning.has(Number(item.dataset.slLineNumber))));
-        strips.forEach((strip) => strip.querySelectorAll('.sl-symbol').forEach((cell) => cell.classList.remove('is-win')));
+        strips.forEach((strip) => strip.querySelectorAll('.sl-symbol').forEach((cell) => cell.classList.remove('is-win', 'is-focus')));
         winning.forEach((line) => {
             LINES[line].forEach((row, reel) => strips[reel].children[row]?.classList.add('is-win'));
         });
@@ -166,15 +180,16 @@
         return cell;
     }
 
-    // Rolls one reel from where it stands to $to, and resolves when it's stopped
-    function rollReel(reel, to, duration) {
+    // Rolls one reel from where it stands to $to, $turns whole turns of its strip first, calls $onStop when it's stopped
+    // (not without a $duration, as nothing moved), and resolves then
+    function rollReel(reel, to, duration, turns, onStop) {
         const strip = strips[reel];
         const from = stops[reel];
         const length = REELS[reel].length;
         // From the symbol above where it stops, down the strip to the one below where it stands now: in view at the
         // end of it now, and the top three in view when it's done
         const between = ((from - to) % length + length) % length;
-        const count = between + 3 + (duration ? REEL_TURNS[reel] * length : 0);
+        const count = between + 3 + (duration ? turns * length : 0);
         const cells = [];
         for (let i = 0; i < count; i++) cells.push(symbolElement(symbolAt(reel, to - 1 + i)));
         strip.replaceChildren(...cells);
@@ -190,6 +205,7 @@
                 strip.style.transition = 'none';
                 strip.style.transform = '';
                 strip.replaceChildren(...cells.slice(0, 3));
+                if (duration) onStop?.(reel);
                 resolve();
             };
             if (!duration) {
@@ -208,8 +224,10 @@
     }
 
     function addHistory(spin) {
+        // is-new slides it in (and flashes a win gold, a big one in colour by its data-sl-tier)
         const item = document.createElement('li');
-        item.className = 'sl-history-item' + (spin.payout > 0 ? ' is-win' : '');
+        item.className = 'sl-history-item is-new' + (spin.payout > 0 ? ' is-win' : '');
+        if (spin.payout > 0) item.dataset.slTier = winTier(spin);
         const middle = spin.window[1];
         const label = middle.map((symbol) => SYMBOLS[symbol][0]).join(', ') + ': bet ' + formatChips(spin.bet) + ', '
             + (spin.payout > 0 ? 'won ' + formatChips(spin.payout) : 'no win');
@@ -272,6 +290,7 @@
         winText.classList.remove('is-big');
         root.classList.remove('is-winning');
         root.classList.add('is-spinning');
+        pullLever();
         resultText.textContent = 'Spinning…';
         draw();
 
@@ -289,7 +308,18 @@
         const result = answer.spin;
         // The bet comes off straight away, as it would at a real machine; what it won only when the reels stop
         setChips(walletChips() - result.bet);
-        await Promise.all(result.stops.map((to, reel) => rollReel(reel, to, IS_REDUCED_MOTION ? 0 : REEL_MS[reel])));
+        // The last reel rolls on longer when the first two have lined up a good win, teasing it from when the second stops
+        const teased = IS_REDUCED_MOTION ? [] : tease(result.stops);
+        if (!IS_REDUCED_MOTION) sizeCanvas(); // for the sparks as the reels land
+        await Promise.all(result.stops.map((to, reel) => {
+            const isTeased = reel === 2 && teased.length > 0;
+            return rollReel(reel, to, IS_REDUCED_MOTION ? 0 : REEL_MS[reel] + (isTeased ? TEASE_MS : 0),
+                REEL_TURNS[reel] + (isTeased ? TEASE_TURNS : 0), (stopped) => {
+                    landReel(stopped);
+                    if (stopped === 1 && teased.length) startTease(teased);
+                });
+        }));
+        stopTease();
         stops = result.stops;
         describeWindow(stops);
 
@@ -306,7 +336,9 @@
             root.classList.toggle('is-winning', result.net > 0);
             celebrate(result);
         } else {
-            resultText.textContent = 'No win this time.';
+            // A tease that came to nothing shakes the result; any other loss just dims the reels for a moment
+            resultText.textContent = teased.length ? 'So close! No win this time.' : 'No win this time.';
+            if (!IS_REDUCED_MOTION) playClass(root, teased.length ? 'is-near-miss' : 'is-losing', 900);
         }
         addHistory(result);
 
@@ -318,8 +350,10 @@
     //   small    the bet back or less: the winning symbols and lines light up and throw off sparkles
     //   win      more than the bet back: coins burst out of the winning symbols, the win counts up, "+chips" floats up
     //   big      BIG_WIN times the bet: a "Big win!" banner over the machine, the machine shakes, coins rain down the page
-    //   mega     MEGA_WIN times the bet: "Mega win!", more coin rain, confetti, fireworks and a flash
-    //   jackpot  three 7s on a line: all of that, longer, with rainbow lights
+    //            and fountain out of the Spin button, and the screen's edges glow gold
+    //   mega     MEGA_WIN times the bet: "Mega win!", more coin rain, confetti, diamonds falling, fireworks and a flash
+    //   jackpot  three 7s on a line: all of that, longer, with 7s falling instead and rainbow lights
+    // Whatever the size, what each winning line paid is shown at its end (showLinePays()).
     // The tier goes on the page as data-sl-tier, which slots.css lights the machine by. Coins, confetti, sparkles and
     // fireworks are particles drawn on one canvas over the whole page, and only while there are any to draw. With
     // reduced motion it's only the lights and the banner, with nothing moving. The next spin puts it all away.
@@ -335,7 +369,7 @@
     const COUNT_MS = { small: 0, win: 900, big: 2000, mega: 3000, jackpot: 3500 }; // how long the win counts up
     const CONFETTI = ['#e8b931', '#ff4f6d', '#4fc3f7', '#81e36b', '#ff7ab8', '#b388ff', '#ffffff'];
     const MAX_PARTICLES = 700; // so a phone doesn't choke on a jackpot
-    let particles = []; // { kind: coin|confetti|spark|ember, x, y, vx, vy (px, px a second), rotation, spin, size, age, life (s), ... }
+    let particles = []; // { kind: coin|confetti|spark|ember|glyph, x, y, vx, vy (px, px a second), rotation, spin, size, age, life (s), ... }
     let frame = 0; // the animation frame drawing them, 0 when there are none
     let lastTime = 0;
     let canvasWidth = 0;
@@ -437,6 +471,21 @@
             context.lineTo(-waist, -waist);
             context.closePath();
             context.fill();
+        } else if (particle.kind === 'glyph') {
+            // A 7 (red with a gold edge, as on the reels) or an emoji, rocking from side to side as it falls
+            const isSeven = particle.text === '7';
+            context.rotate(Math.sin(particle.rotation) * 0.5);
+            context.font = isSeven ? 'italic 900 ' + size + 'px Georgia, serif' : size + 'px sans-serif';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            if (isSeven) {
+                context.lineWidth = size / 7;
+                context.lineJoin = 'round';
+                context.strokeStyle = '#8a6a10';
+                context.strokeText(particle.text, 0, 0);
+                context.fillStyle = '#d0142c';
+            }
+            context.fillText(particle.text, 0, 0);
         } else {
             // A firework's ember
             context.globalCompositeOperation = 'lighter';
@@ -473,8 +522,9 @@
         }
     }
 
-    // Coins or confetti falling from the top of the page for $ms, about $perSecond of them a second
-    function rain(kind, ms, perSecond) {
+    // Coins, confetti or a glyph ($text: a 7 or an emoji) falling from the top of the page for $ms, about $perSecond of
+    // them a second
+    function rain(kind, ms, perSecond, text = '') {
         const end = performance.now() + ms;
         const timer = setInterval(() => {
             if (performance.now() > end) {
@@ -487,6 +537,9 @@
                 if (kind === 'coin') {
                     addParticle({ kind, x, y: -20, vx: randomBetween(-40, 40), vy: randomBetween(50, 250), gravity: 700,
                         size: randomBetween(8, 14), spin: randomBetween(6, 14), life: 4 });
+                } else if (kind === 'glyph') {
+                    addParticle({ kind, text, x, y: -40, vx: randomBetween(-30, 30), vy: randomBetween(40, 160), gravity: 350,
+                        size: randomBetween(22, 40), spin: randomBetween(2, 5), life: 5 });
                 } else {
                     addParticle({ kind, x, y: -20, vx: randomBetween(-80, 80), vy: randomBetween(40, 160), gravity: 250,
                         drag: 1.2, size: randomBetween(8, 13), spin: randomBetween(-6, 6), flip: randomBetween(4, 10),
@@ -562,6 +615,7 @@
             banner.hidden = false;
             fxTimers.push(setTimeout(() => { banner.hidden = true; }, BANNERS[tier][1]));
         }
+        showLinePays(result);
         if (IS_REDUCED_MOTION) return;
 
         sizeCanvas(); // the window may have changed size since the last win
@@ -575,9 +629,11 @@
         }
         playClass(machine, 'is-shaking', 700);
         rain('coin', tier === 'big' ? 2500 : 4500, tier === 'big' ? 40 : 80);
+        coinBurst(spinButton, 24, 1.5);
         if (tier === 'big') return;
         playClass(flash, 'is-on', 1000);
         rain('confetti', tier === 'jackpot' ? 6000 : 4500, 60);
+        rain('glyph', tier === 'jackpot' ? 6000 : 4500, tier === 'jackpot' ? 10 : 6, tier === 'jackpot' ? '7' : '💎');
         fireworks(tier === 'jackpot' ? 12 : 5, tier === 'jackpot' ? 5000 : 3000);
         // A second shake and flash on a jackpot, as the fireworks get going
         if (tier === 'jackpot') {
@@ -596,24 +652,133 @@
         counting = 0;
         delete root.dataset.slTier;
         banner.hidden = true;
-        machine.classList.remove('is-shaking');
+        lineBadge.hidden = true;
+        root.classList.remove('is-line-focus', 'is-near-miss', 'is-losing');
+        [...lineDrawings, ...lineComets].forEach((path) => path.classList.remove('is-focus'));
+        machine.classList.remove('is-shaking', 'is-thudding');
         flash.classList.remove('is-on');
         windowBox.querySelectorAll('.sl-float').forEach((float) => float.remove());
+    }
+
+    // ----- Spin effects: the lever, the reels landing, the tease, and what each winning line paid
+    const lever = find('[data-sl-lever]');
+    const lineBadge = find('[data-sl-line-badge]');
+    const LINE_CYCLE_MS = 1300; // how long each winning line is shown on its own, when there's more than one
+    let teaseTimer = 0; // the sparkles round the teased reel
+
+    // The lines the first two reels put two of the same good symbol on, when they stop at $at: the ones the last reel
+    // could still make a big win of
+    function tease(at) {
+        const shown = windowAt(at);
+        return LINES.map((rows, line) => ({ line, first: shown[rows[0]][0], second: shown[rows[1]][1] }))
+            .filter(({ first, second }) => first === second && TEASE_SYMBOLS.includes(first))
+            .map(({ line }) => line);
+    }
+
+    function pullLever() {
+        if (IS_REDUCED_MOTION) return;
+        playClass(lever, 'is-pulled', 800);
+        playClass(spinButton, 'is-pushed', 600);
+    }
+
+    // A reel has stopped: it bumps and flashes, sparks fly off its top and bottom edges, the machine gives a little thud,
+    // and a 7 that landed in view twinkles
+    function landReel(reel) {
+        const reelBox = strips[reel].parentElement;
+        playClass(reelBox, 'is-landed', 500);
+        playClass(machine, 'is-thudding', 250);
+        const box = reelBox.getBoundingClientRect();
+        for (let i = 0; i < 16; i++) {
+            const isTop = i % 2 === 0;
+            addParticle({
+                kind: 'spark', x: box.left + Math.random() * box.width, y: isTop ? box.top : box.bottom,
+                vx: randomBetween(-90, 90), vy: isTop ? randomBetween(-160, -40) : randomBetween(40, 140), gravity: 300,
+                drag: 1.5, size: randomBetween(2, 5), spin: randomBetween(-4, 4), life: randomBetween(0.3, 0.6),
+                color: Math.random() < 0.5 ? '#fff6c2' : '#ffd23f',
+            });
+        }
+        strips[reel].querySelectorAll('[data-sl-symbol="seven"]').forEach((cell) => sparkles(cell, 8));
+    }
+
+    // The first two reels have lined up $lines: the last reel glows and throws off sparkles while it rolls on, and the
+    // lines and the two symbols on each flicker
+    function startTease(lines) {
+        const reelBox = strips[2].parentElement;
+        root.classList.add('is-teasing');
+        reelBox.classList.add('is-teasing');
+        lines.forEach((line) => {
+            lineDrawings[line].classList.add('is-tease');
+            LINES[line].slice(0, 2).forEach((row, reel) => strips[reel].children[row]?.classList.add('is-tease'));
+        });
+        clearInterval(teaseTimer);
+        teaseTimer = setInterval(() => sparkles(reelBox, 3), 120);
+    }
+
+    function stopTease() {
+        clearInterval(teaseTimer);
+        root.classList.remove('is-teasing');
+        strips[2].parentElement.classList.remove('is-teasing');
+        lineDrawings.forEach((path) => path.classList.remove('is-tease'));
+        root.querySelectorAll('.sl-symbol.is-tease').forEach((cell) => cell.classList.remove('is-tease'));
+    }
+
+    // What each winning line paid, in a badge at its right end in the line's colour. With one line, that one; with more,
+    // after a moment of them all lit, each in turn, with the others dimmed (is-line-focus), until the next spin
+    function showLinePays(result) {
+        const lines = result.lines;
+        let next = 0;
+        const focus = () => {
+            const line = lines[next++ % lines.length];
+            root.classList.toggle('is-line-focus', lines.length > 1);
+            [...lineDrawings, ...lineComets].forEach((path) => {
+                path.classList.toggle('is-focus', Number(path.dataset.slLine ?? path.dataset.slLineComet) === line.line);
+            });
+            root.querySelectorAll('.sl-symbol.is-focus').forEach((cell) => cell.classList.remove('is-focus'));
+            LINES[line.line].forEach((row, reel) => strips[reel].children[row]?.classList.add('is-focus'));
+            lineBadge.textContent = '+' + formatChips(line.payout);
+            lineBadge.className = 'sl-line-badge sl-line-badge-' + line.line + ' is-row-' + LINES[line.line][2];
+            lineBadge.hidden = false;
+            playClass(lineBadge, 'is-popping', 500);
+        };
+        fxTimers.push(setTimeout(() => {
+            focus();
+            if (lines.length > 1) fxTimers.push(setInterval(focus, LINE_CYCLE_MS));
+        }, lines.length > 1 ? 1500 : 700));
     }
 
     window.addEventListener('resize', () => {
         if (frame) sizeCanvas();
     });
 
-    chipButtons.forEach((button) => button.addEventListener('click', () => pickBet(Number(button.dataset.slChip))));
+    // A chip flips over when it's picked, and the bet bounces when it changes
+    const bumpBet = () => {
+        if (!IS_REDUCED_MOTION) playClass(betText, 'is-bumped', 350);
+    };
+    const flipChip = (button) => {
+        if (!IS_REDUCED_MOTION) playClass(button, 'is-flipping', 500);
+    };
+    chipButtons.forEach((button) => button.addEventListener('click', () => {
+        flipChip(button);
+        pickBet(Number(button.dataset.slChip));
+        bumpBet();
+    }));
     allInButton.addEventListener('click', () => {
         isAllIn = true;
         showMessage('');
+        flipChip(allInButton);
         draw();
+        bumpBet();
     });
-    lessButton.addEventListener('click', () => pickBet(nextBet(-1)));
-    moreButton.addEventListener('click', () => pickBet(nextBet(1)));
+    lessButton.addEventListener('click', () => {
+        pickBet(nextBet(-1));
+        bumpBet();
+    });
+    moreButton.addEventListener('click', () => {
+        pickBet(nextBet(1));
+        bumpBet();
+    });
     spinButton.addEventListener('click', spin);
+    lever.addEventListener('click', spin);
 
     // Space spins, also when a button on the page has focus (it would press that one otherwise), but not in text boxes
     document.addEventListener('keydown', (event) => {
