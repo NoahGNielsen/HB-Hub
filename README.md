@@ -19,7 +19,7 @@
 ## What it is
 
 - 💬 **Chat**: direct messages and group chats with replies, reactions, GIFs, attachments and @mentions
-- 🎰 **Casino**: Blackjack, Baccarat and Roulette, with virtual chips only
+- 🎰 **Casino**: Blackjack, Baccarat, Roulette and Slots, with virtual chips only
 - 🎲 **Games**: Matador, Chess, UNO, Wordle and Ore Mining Inc.
 
 Built with plain PHP 8.4, MySQL 8.4 and HTML/CSS/JS. No framework, no build step.

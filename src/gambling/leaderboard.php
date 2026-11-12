@@ -1,8 +1,9 @@
 <?php
 // The whole casino's leaderboard: everyone who has played any casino game, with the rounds they've played (Blackjack
-// and Baccarat hands and Roulette spins together), the chips they've won or lost in each game, all of it together, and
-// their chips now. The games' own rounds come from HBHub-BlackjackPlayerRounds, HBHub-BaccaratPlayerRounds and
-// HBHub-RouletteSpins (playerNet / spinNet: chips won or lost, insurance included), the chips from HBHub-CasinoWallets.
+// and Baccarat hands, Roulette spins and slot spins together), the chips they've won or lost in each game, all of it
+// together, and their chips now. The games' own rounds come from HBHub-BlackjackPlayerRounds,
+// HBHub-BaccaratPlayerRounds, HBHub-RouletteSpins and HBHub-SlotSpins (playerNet / spinNet: chips won or lost,
+// insurance included), the chips from HBHub-CasinoWallets.
 // Sorted by any column with ?sort=column&dir=asc|desc, which the column headings link to. A game someone has never
 // played is "–", and comes after everyone who has when sorting by it (whichever way).
 // Each game's own leaderboard (gambling/<game>/leaderboard.php) has the wins, losses and win %. The rows come from
@@ -21,6 +22,7 @@ const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first]
     'blackjack' => ['Blackjack', 'desc'],
     'baccarat' => ['Baccarat', 'desc'],
     'roulette' => ['Roulette', 'desc'],
+    'slots' => ['Slots', 'desc'],
     'net' => ['Total won / lost', 'desc'],
     'chips' => ['Chips', 'desc'],
 ];
@@ -29,6 +31,7 @@ const LEADERBOARD_GAMES = [ // the games' own leaderboards, linked above the tab
     'Blackjack' => '/gambling/blackjack/leaderboard',
     'Baccarat' => '/gambling/baccarat/leaderboard',
     'Roulette' => '/gambling/roulette/leaderboard',
+    'Slots' => '/gambling/slots/leaderboard',
 ];
 
 $db = hbHubDatabase();
@@ -137,6 +140,7 @@ function leaderboardNetCell(?int $net, string $class = ''): string
                                     <?= leaderboardNetCell($row['blackjack']) ?>
                                     <?= leaderboardNetCell($row['baccarat']) ?>
                                     <?= leaderboardNetCell($row['roulette']) ?>
+                                    <?= leaderboardNetCell($row['slots']) ?>
                                     <?= leaderboardNetCell($row['net'], 'casino-board-total') ?>
                                     <td><?= number_format($row['chips']) ?></td>
                                 </tr>

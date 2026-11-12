@@ -42,6 +42,7 @@ const HBHUB_DOCS_SECTIONS = [
             '/docs/casino/blackjack' => ['Blackjack', 'Beat the dealer without going over 21, solo or at a table with up to 5 players.'],
             '/docs/casino/baccarat' => ['Baccarat', 'Bet on the Player, the Banker or a tie, solo or at a table with up to 6 players.'],
             '/docs/casino/roulette' => ['Roulette', 'European roulette with a single zero, and every bet placed straight on the board.'],
+            '/docs/casino/slots' => ['Slots', 'A three-reel slot machine with five paylines, its pay table and what it pays back.'],
         ],
     ],
     'games' => [

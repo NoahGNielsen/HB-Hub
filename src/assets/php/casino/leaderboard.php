@@ -1,19 +1,20 @@
 <?php
 // The whole casino's leaderboard rows, for gambling/leaderboard.php (the full table) and the casino home
 // (gambling/index.php: the top players and the user's own place). One row per player who has played any casino game:
-// their rounds (Blackjack and Baccarat hands and Roulette spins together), the chips won or lost in each game, all of it
-// together, and their chips now. The rounds come from HBHub-BlackjackPlayerRounds, HBHub-BaccaratPlayerRounds and
-// HBHub-RouletteSpins (playerNet / spinNet: chips won or lost, insurance included), the chips from HBHub-CasinoWallets.
+// their rounds (Blackjack and Baccarat hands, Roulette spins and slot spins together), the chips won or lost in each
+// game, all of it together, and their chips now. The rounds come from HBHub-BlackjackPlayerRounds,
+// HBHub-BaccaratPlayerRounds, HBHub-RouletteSpins and HBHub-SlotSpins (playerNet / spinNet: chips won or lost,
+// insurance included), the chips from HBHub-CasinoWallets.
 // A game someone has never played is null.
 require_once __DIR__ . '/../database.php';
 
-const HBHUB_CASINO_LEADERBOARD_GAMES = ['blackjack', 'baccarat', 'roulette'];
+const HBHUB_CASINO_LEADERBOARD_GAMES = ['blackjack', 'baccarat', 'roulette', 'slots'];
 const HBHUB_CASINO_LEADERBOARD_BANNED = 4; // userStatus in HBHub-Users
 
 /**
  * Everyone on the casino leaderboard, in no order. Banned and deleted accounts (userStatus NULL) are left out.
  *
- * @return list<array{userId: int, player: string, avatarId: ?int, rounds: int, blackjack: ?int, baccarat: ?int, roulette: ?int, net: int, chips: int}>
+ * @return list<array{userId: int, player: string, avatarId: ?int, rounds: int, blackjack: ?int, baccarat: ?int, roulette: ?int, slots: ?int, net: int, chips: int}>
  */
 function hbHubCasinoLeaderboardRows(PDO $db): array
 {
@@ -21,15 +22,18 @@ function hbHubCasinoLeaderboardRows(PDO $db): array
     $statement = $db->prepare('SELECT g.userId, u.userName, u.userAvatarAttachmentId, COALESCE(w.walletChips, 0) AS chips,
             SUM(g.blackjackRounds) AS blackjackRounds, SUM(g.blackjackNet) AS blackjackNet,
             SUM(g.baccaratRounds) AS baccaratRounds, SUM(g.baccaratNet) AS baccaratNet,
-            SUM(g.rouletteRounds) AS rouletteRounds, SUM(g.rouletteNet) AS rouletteNet
+            SUM(g.rouletteRounds) AS rouletteRounds, SUM(g.rouletteNet) AS rouletteNet,
+            SUM(g.slotsRounds) AS slotsRounds, SUM(g.slotsNet) AS slotsNet
         FROM (
             SELECT userId, COUNT(*) AS blackjackRounds, SUM(playerNet) AS blackjackNet,
-                0 AS baccaratRounds, 0 AS baccaratNet, 0 AS rouletteRounds, 0 AS rouletteNet
+                0 AS baccaratRounds, 0 AS baccaratNet, 0 AS rouletteRounds, 0 AS rouletteNet, 0 AS slotsRounds, 0 AS slotsNet
             FROM `HBHub-BlackjackPlayerRounds` GROUP BY userId
             UNION ALL
-            SELECT userId, 0, 0, COUNT(*), SUM(playerNet), 0, 0 FROM `HBHub-BaccaratPlayerRounds` GROUP BY userId
+            SELECT userId, 0, 0, COUNT(*), SUM(playerNet), 0, 0, 0, 0 FROM `HBHub-BaccaratPlayerRounds` GROUP BY userId
             UNION ALL
-            SELECT userId, 0, 0, 0, 0, COUNT(*), SUM(spinNet) FROM `HBHub-RouletteSpins` GROUP BY userId
+            SELECT userId, 0, 0, 0, 0, COUNT(*), SUM(spinNet), 0, 0 FROM `HBHub-RouletteSpins` GROUP BY userId
+            UNION ALL
+            SELECT userId, 0, 0, 0, 0, 0, 0, COUNT(*), SUM(spinNet) FROM `HBHub-SlotSpins` GROUP BY userId
         ) g
         JOIN `HBHub-Users` u ON u.userId = g.userId
         LEFT JOIN `HBHub-CasinoWallets` w ON w.userId = g.userId
@@ -46,9 +50,10 @@ function hbHubCasinoLeaderboardRows(PDO $db): array
             'userId' => (int) $row['userId'],
             'player' => $row['userName'],
             'avatarId' => $row['userAvatarAttachmentId'] !== null ? (int) $row['userAvatarAttachmentId'] : null,
-            'rounds' => (int) $row['blackjackRounds'] + (int) $row['baccaratRounds'] + (int) $row['rouletteRounds'],
+            'rounds' => (int) $row['blackjackRounds'] + (int) $row['baccaratRounds'] + (int) $row['rouletteRounds']
+                + (int) $row['slotsRounds'],
             ...$games,
-            'net' => (int) $row['blackjackNet'] + (int) $row['baccaratNet'] + (int) $row['rouletteNet'],
+            'net' => (int) $row['blackjackNet'] + (int) $row['baccaratNet'] + (int) $row['rouletteNet'] + (int) $row['slotsNet'],
             'chips' => (int) $row['chips'],
         ];
     }, $statement->fetchAll());

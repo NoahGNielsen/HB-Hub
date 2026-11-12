@@ -1,0 +1,340 @@
+// Slots (gambling/slots/): the slot machine. Spin sends the bet to /gambling/slots/spin (data-api, see
+// assets/php/casino/slots/slots.php), which picks where each reel stops and pays out; this only shows it. Each reel rolls
+// round its real strip (data-reels) and stops where the server said, the left one first, then the winning lines light up.
+// A reel is rolled by filling its strip with the symbols between where it stands and where it stops (plus a few whole
+// turns), standing it at the bottom of that, and sliding it to the top: the symbols come down from above like on a real
+// machine. When it's stopped, the strip is cut back to the three symbols in view.
+// The bet is picked with the quick bets or - and + (in steps of 10); with fewer than 10 chips the All in chip bets all
+// of them. Space spins too. Every spin has an id of its own (request), so one sent twice only counts once.
+// The chips in the top bar (casino.js) only change when the reels have stopped, so they don't give the result away.
+(() => {
+    const root = document.querySelector('[data-slots]');
+    if (!root) return;
+
+    const API = root.dataset.api;
+    const IS_REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const REELS = JSON.parse(root.dataset.reels); // [[symbol, ...], x3], the strips from the top
+    const SYMBOLS = JSON.parse(root.dataset.symbols); // symbol => [name, what's shown]
+    const LINES = JSON.parse(root.dataset.lines); // [[row on each reel], ...]
+    const BET_STEP = Number(root.dataset.betStep);
+    const MIN_BET = Number(root.dataset.minBet);
+    const REEL_MS = [1100, 1500, 1900]; // how long each reel rolls, so they stop one after another from the left
+    const REEL_TURNS = [2, 3, 4]; // whole turns of its strip each one rolls first
+    const BIG_WIN = 10; // a win of this many times the bet or more is a big one
+    const HISTORY_MAX = 10;
+    const ERRORS = {
+        blocked: 'Gambling is blocked in your settings right now.',
+        closed: 'The casino isn\'t open right now.',
+        badBet: 'That bet can\'t be played. Bets go in steps of ' + BET_STEP + '.',
+        notEnoughChips: 'You don\'t have enough chips for that bet.',
+    };
+
+    const find = (selector) => root.querySelector(selector);
+    const strips = [...root.querySelectorAll('[data-sl-reel]')];
+    const lineDrawings = [...root.querySelectorAll('[data-sl-line]')];
+    const lineNumbers = [...root.querySelectorAll('[data-sl-line-number]')];
+    const windowText = find('[data-sl-window-text]');
+    const resultText = find('[data-sl-result]');
+    const winText = find('[data-sl-win]');
+    const message = find('[data-sl-message]');
+    const betText = find('[data-sl-bet]');
+    const lineBetText = find('[data-sl-line-bet]');
+    const lessButton = find('[data-sl-less]');
+    const moreButton = find('[data-sl-more]');
+    const chipButtons = [...root.querySelectorAll('[data-sl-chip]')];
+    const allInButton = find('[data-sl-all-in]');
+    const ALL_IN_BELOW = Number(allInButton.dataset.slAllIn);
+    const spinButton = find('[data-sl-spin]');
+    const brokeHint = find('[data-sl-broke]');
+    const historyList = find('[data-sl-history]');
+    const historyEmpty = find('[data-sl-history-empty]');
+    const navChips = document.querySelector('[data-casino-chips]'); // kept up to date by casino.js
+
+    let chips = Number(root.dataset.chips);
+    let bet = MIN_BET;
+    let isAllIn = false;
+    let isSpinning = false;
+    let stops = root.dataset.stops.split(' ').map(Number); // where the reels stand now
+
+    const formatChips = (amount) => amount.toLocaleString('en-US');
+    const symbolAt = (reel, position) => {
+        const strip = REELS[reel];
+        return strip[((position % strip.length) + strip.length) % strip.length];
+    };
+    const windowAt = (at) => [0, 1, 2].map((row) => [0, 1, 2].map((reel) => symbolAt(reel, at[reel] + row - 1)));
+
+    // The user's chips: the top bar's when it's there, as casino.js keeps that up to date (daily chips collected in
+    // another tab and the like)
+    function walletChips() {
+        const shown = navChips ? Number(navChips.dataset.casinoChips) : NaN;
+        return Number.isFinite(shown) ? shown : chips;
+    }
+
+    function setChips(newChips) {
+        chips = newChips;
+        document.dispatchEvent(new CustomEvent('casino:wallet', { detail: { chips: newChips } }));
+    }
+
+    function showMessage(text) {
+        message.textContent = text;
+    }
+
+    // The bet being played: all the chips for an all in, else the one picked
+    function playedBet() {
+        return isAllIn ? walletChips() : bet;
+    }
+
+    function canGoAllIn() {
+        const have = walletChips();
+        return have > 0 && have < ALL_IN_BELOW;
+    }
+
+    // Shows the bet, which buttons can be pressed, and the All in chip when the user has too few chips for any bet
+    function draw() {
+        const have = walletChips();
+        if (isAllIn && !canGoAllIn()) isAllIn = false;
+        if (!isSpinning && !isAllIn && bet > have) {
+            // Not enough for the bet anymore: the most that's left, in steps of 10, or All in for the last few chips
+            if (have >= MIN_BET) {
+                bet = Math.floor(have / BET_STEP) * BET_STEP;
+            } else if (canGoAllIn()) {
+                isAllIn = true;
+            }
+        }
+        const played = playedBet();
+        betText.textContent = formatChips(played);
+        lineBetText.textContent = formatChips(Math.floor((played / LINES.length) * 10) / 10);
+
+        allInButton.hidden = !canGoAllIn();
+        allInButton.setAttribute('aria-pressed', String(isAllIn));
+        chipButtons.forEach((button) => {
+            const amount = Number(button.dataset.slChip);
+            button.setAttribute('aria-pressed', String(!isAllIn && amount === bet));
+            button.disabled = isSpinning || amount > have;
+        });
+        allInButton.disabled = isSpinning;
+        lessButton.disabled = isSpinning || isAllIn || bet <= MIN_BET;
+        moreButton.disabled = isSpinning || isAllIn || nextBet(1) > have;
+        spinButton.disabled = isSpinning || played <= 0 || played > have;
+        brokeHint.hidden = isSpinning || have > 0;
+    }
+
+    // How far - and + move a bet of $amount: 10 under 100, then half its power of ten up to 5 of it, and the whole
+    // power of ten after that (50 from 100, 100 from 500, 500 from 1,000...), so a big bet is a few clicks away
+    function betStep(amount) {
+        if (amount < 100) return BET_STEP;
+        const power = 10 ** Math.floor(Math.log10(amount));
+        return amount < 5 * power ? power / 2 : power;
+    }
+
+    // The bet one step up or down. Going down it takes the step of the bet below, so - and + undo each other
+    function nextBet(direction) {
+        return direction > 0 ? bet + betStep(bet) : Math.max(MIN_BET, bet - betStep(bet - 1));
+    }
+
+    function pickBet(amount) {
+        isAllIn = false;
+        bet = Math.max(MIN_BET, amount);
+        showMessage('');
+        draw();
+    }
+
+    // Lights up the winning lines, their numbers and the symbols on them, or puts them all out (lines = [])
+    function showLines(lines) {
+        const winning = new Set(lines.map((line) => line.line));
+        lineDrawings.forEach((path) => path.classList.toggle('is-win', winning.has(Number(path.dataset.slLine))));
+        lineNumbers.forEach((item) => item.classList.toggle('is-win', winning.has(Number(item.dataset.slLineNumber))));
+        strips.forEach((strip) => strip.querySelectorAll('.sl-symbol').forEach((cell) => cell.classList.remove('is-win')));
+        winning.forEach((line) => {
+            LINES[line].forEach((row, reel) => strips[reel].children[row]?.classList.add('is-win'));
+        });
+    }
+
+    function symbolElement(symbol) {
+        const cell = document.createElement('span');
+        cell.className = 'sl-symbol sl-symbol-' + symbol;
+        cell.dataset.slSymbol = symbol;
+        cell.title = SYMBOLS[symbol][0];
+        const face = document.createElement('span');
+        face.className = 'sl-symbol-face';
+        face.setAttribute('aria-hidden', 'true');
+        face.textContent = SYMBOLS[symbol][1];
+        cell.append(face);
+        return cell;
+    }
+
+    // Rolls one reel from where it stands to $to, and resolves when it's stopped
+    function rollReel(reel, to, duration) {
+        const strip = strips[reel];
+        const from = stops[reel];
+        const length = REELS[reel].length;
+        // From the symbol above where it stops, down the strip to the one below where it stands now: in view at the
+        // end of it now, and the top three in view when it's done
+        const between = ((from - to) % length + length) % length;
+        const count = between + 3 + (duration ? REEL_TURNS[reel] * length : 0);
+        const cells = [];
+        for (let i = 0; i < count; i++) cells.push(symbolElement(symbolAt(reel, to - 1 + i)));
+        strip.replaceChildren(...cells);
+
+        const cellHeight = strip.firstElementChild.getBoundingClientRect().height;
+        strip.style.transition = 'none';
+        strip.style.transform = 'translateY(' + -(count - 3) * cellHeight + 'px)';
+        strip.getBoundingClientRect(); // so the browser stands it there before it slides
+
+        return new Promise((resolve) => {
+            const done = () => {
+                strip.parentElement.classList.remove('is-rolling');
+                strip.style.transition = 'none';
+                strip.style.transform = '';
+                strip.replaceChildren(...cells.slice(0, 3));
+                resolve();
+            };
+            if (!duration) {
+                done();
+                return;
+            }
+            strip.parentElement.classList.add('is-rolling');
+            strip.style.transition = 'transform ' + duration + 'ms cubic-bezier(0.25, 0.1, 0.2, 1.06)';
+            strip.style.transform = 'translateY(0)';
+            setTimeout(done, duration);
+        });
+    }
+
+    function describeWindow(at) {
+        windowText.textContent = windowAt(at).map((row) => row.map((symbol) => SYMBOLS[symbol][0]).join(', ')).join('. ');
+    }
+
+    function addHistory(spin) {
+        const item = document.createElement('li');
+        item.className = 'sl-history-item' + (spin.payout > 0 ? ' is-win' : '');
+        const middle = spin.window[1];
+        const label = middle.map((symbol) => SYMBOLS[symbol][0]).join(', ') + ': bet ' + formatChips(spin.bet) + ', '
+            + (spin.payout > 0 ? 'won ' + formatChips(spin.payout) : 'no win');
+        item.title = label;
+
+        const symbols = document.createElement('span');
+        symbols.className = 'sl-history-symbols';
+        symbols.setAttribute('aria-hidden', 'true');
+        middle.forEach((symbol) => {
+            const shown = document.createElement('span');
+            if (symbol === 'seven') shown.className = 'sl-history-seven';
+            shown.textContent = SYMBOLS[symbol][1];
+            symbols.append(shown);
+        });
+        const spoken = document.createElement('span');
+        spoken.className = 'casino-sr-only';
+        spoken.textContent = label;
+        const net = document.createElement('span');
+        net.className = 'sl-history-net' + (spin.net > 0 ? ' casino-net-up' : spin.net < 0 ? ' casino-net-down' : '');
+        net.setAttribute('aria-hidden', 'true');
+        net.textContent = (spin.net > 0 ? '+' : spin.net < 0 ? '−' : '') + formatChips(Math.abs(spin.net));
+        item.append(symbols, spoken, net);
+
+        historyList.prepend(item);
+        while (historyList.children.length > HISTORY_MAX) historyList.lastElementChild.remove();
+        historyEmpty.hidden = true;
+    }
+
+    function requestId() {
+        const bytes = new Uint8Array(12);
+        crypto.getRandomValues(bytes);
+        return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Sends the spin, and sends it again (with the same id, so it still only counts once) if the answer got lost
+    async function send(body) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const response = await fetch(API, {
+                    method: 'POST',
+                    headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body,
+                });
+                return await response.json();
+            } catch {
+                await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+            }
+        }
+        return null;
+    }
+
+    async function spin() {
+        const played = playedBet();
+        if (isSpinning || played <= 0 || played > walletChips()) return;
+        isSpinning = true;
+        showMessage('');
+        showLines([]);
+        winText.hidden = true;
+        winText.classList.remove('is-big');
+        root.classList.remove('is-winning');
+        root.classList.add('is-spinning');
+        resultText.textContent = 'Spinning…';
+        draw();
+
+        const answer = await send(new URLSearchParams({ action: 'spin', bet: String(played), request: requestId() }));
+        if (!answer || !answer.spin) {
+            root.classList.remove('is-spinning');
+            isSpinning = false;
+            resultText.textContent = 'Pick a bet and pull the lever.';
+            showMessage(answer ? ERRORS[answer.error] ?? 'Something went wrong. Please try again.' : 'Couldn\'t reach HB Hub. Check your connection and try again.');
+            if (answer && typeof answer.chips === 'number') setChips(answer.chips);
+            draw();
+            return;
+        }
+
+        const result = answer.spin;
+        // The bet comes off straight away, as it would at a real machine; what it won only when the reels stop
+        setChips(walletChips() - result.bet);
+        await Promise.all(result.stops.map((to, reel) => rollReel(reel, to, IS_REDUCED_MOTION ? 0 : REEL_MS[reel])));
+        stops = result.stops;
+        describeWindow(stops);
+
+        setChips(answer.chips);
+        root.classList.remove('is-spinning');
+        showLines(result.lines);
+        if (result.payout > 0) {
+            const times = result.payout / result.bet;
+            const lineCount = result.lines.length;
+            resultText.textContent = (lineCount === 1 ? '1 winning line' : lineCount + ' winning lines')
+                + (result.net < 0 ? ', but less than the bet back.' : result.net === 0 ? ': the bet back.' : '!');
+            winText.textContent = 'Won ' + formatChips(result.payout);
+            winText.hidden = false;
+            winText.classList.toggle('is-big', times >= BIG_WIN);
+            root.classList.toggle('is-winning', result.net > 0);
+        } else {
+            resultText.textContent = 'No win this time.';
+        }
+        addHistory(result);
+
+        isSpinning = false;
+        draw();
+    }
+
+    chipButtons.forEach((button) => button.addEventListener('click', () => pickBet(Number(button.dataset.slChip))));
+    allInButton.addEventListener('click', () => {
+        isAllIn = true;
+        showMessage('');
+        draw();
+    });
+    lessButton.addEventListener('click', () => pickBet(nextBet(-1)));
+    moreButton.addEventListener('click', () => pickBet(nextBet(1)));
+    spinButton.addEventListener('click', spin);
+
+    // Space spins, also when a button on the page has focus (it would press that one otherwise), but not in text boxes
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== ' ' || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.target.closest?.('input, textarea, select, [contenteditable], summary')) return;
+        event.preventDefault(); // no scrolling the page
+        if (!event.repeat) spin();
+    });
+    document.addEventListener('keyup', (event) => {
+        if (event.key === ' ' && !event.target.closest?.('input, textarea, select, [contenteditable], summary')) event.preventDefault();
+    });
+
+    // The chips changed somewhere else (daily chips collected, another tab): the bet may not fit anymore, or All in may
+    // come or go. After casino.js has put the new count in the top bar, which walletChips() reads
+    document.addEventListener('casino:wallet', () => setTimeout(draw));
+    document.addEventListener('nav:update', () => setTimeout(draw));
+
+    draw();
+})();

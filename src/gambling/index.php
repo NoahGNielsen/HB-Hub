@@ -1,8 +1,9 @@
 <?php
 // Casino home (the Gambling section), laid out like a casino floor: a felt header with the user's chips, their place on
-// the casino leaderboard and the daily chips; the 30-day calendar of daily chips as a row of chips; the three games
+// the casino leaderboard and the daily chips; the 30-day calendar of daily chips as a row of chips; the four games
 // with what's going on at them right now (open tables and players for Blackjack and Baccarat, who's playing at the shared
-// Roulette table and the user's last spins there) and the user's own result in each; and the top of the casino leaderboard.
+// Roulette table and the user's last spins there, and who's spun the slots lately) and the user's own result in each;
+// and the top of the casino leaderboard.
 // casino.js (loaded by navPanel.php along with the chip count in the top bar) keeps the chips, the daily chips, the
 // calendar and the countdown up to date. The rest is as it was when the page was made.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -12,6 +13,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/leaderboard.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/room.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/baccarat/room.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/roulette/table.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/slots.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
 
@@ -70,6 +72,7 @@ $casinoTables = [
 ];
 $casinoSpins = hbHubRouletteHistory($db, $userId, CASINO_LAST_SPINS);
 $casinoRoulettePlaying = hbHubRoulettePlayingNow($db);
+$casinoSlotsPlaying = hbHubSlotsPlayingNow($db);
 
 /**
  * Seconds as "H:MM:SS", the same as casino.js shows the countdown.
@@ -381,6 +384,33 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                         </span>
                     </a>
                 </li>
+                <li>
+                    <a class="casino-home-game casino-home-game-slots" href="/gambling/slots/">
+                        <span class="casino-home-game-felt">
+                            <!-- A slot machine's window, three 7s on the middle line -->
+                            <span class="casino-home-game-art casino-art-slots" aria-hidden="true">
+                                <span class="casino-art-slots-reel"><span>🍒</span><span class="is-seven">7</span><span>🔔</span></span>
+                                <span class="casino-art-slots-reel"><span>💎</span><span class="is-seven">7</span><span>🍋</span></span>
+                                <span class="casino-art-slots-reel"><span>⭐</span><span class="is-seven">7</span><span>🍇</span></span>
+                            </span>
+                        </span>
+                        <span class="casino-home-game-body">
+                            <span class="casino-home-game-head">
+                                <span class="casino-home-game-name">Slots</span>
+                                <span class="casino-home-game-tag">Solo &middot; <?= count(HBHUB_SLOTS_LINES) ?> lines</span>
+                            </span>
+                            <span class="casino-home-game-text">Spin three reels and line up the symbols. Three 7s pay <?= HBHUB_SLOTS_PAYS['seven'] ?>&times; a line.</span>
+                            <span class="casino-home-game-foot">
+                                <?php if ($casinoSlotsPlaying > 0): ?>
+                                    <span class="casino-home-game-live is-live"><?= $casinoSlotsPlaying ?> playing</span>
+                                <?php else: ?>
+                                    <span class="casino-home-game-live">Quiet right now. Take a spin!</span>
+                                <?php endif; ?>
+                                <?= casinoYouHtml($casinoMe, 'slots') ?>
+                            </span>
+                        </span>
+                    </a>
+                </li>
             </ul>
         </section>
 
@@ -417,6 +447,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                     <a href="/gambling/blackjack/leaderboard">Blackjack leaderboard</a>
                     <a href="/gambling/baccarat/leaderboard">Baccarat leaderboard</a>
                     <a href="/gambling/roulette/leaderboard">Roulette leaderboard</a>
+                    <a href="/gambling/slots/leaderboard">Slots leaderboard</a>
                     <a href="/docs/casino/">How the casino works</a>
                 </nav>
             </section>

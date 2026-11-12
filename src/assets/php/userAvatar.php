@@ -11,6 +11,7 @@ const HBHUB_PROFILE_BACK_PAGES = [
     '/gambling/blackjack/leaderboard' => 'Blackjack leaderboard',
     '/gambling/baccarat/leaderboard' => 'Baccarat leaderboard',
     '/gambling/roulette/leaderboard' => 'Roulette leaderboard',
+    '/gambling/slots/leaderboard' => 'Slots leaderboard',
     '/games/matador/leaderboard' => 'Matador leaderboard',
     '/games/chess/leaderboard' => 'Chess leaderboard',
     '/games/uno/leaderboard' => 'UNO leaderboard',

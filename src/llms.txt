@@ -1,6 +1,6 @@
 # HB Hub
 
-> HB Hub is a student-made messaging site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark: class group chats and DMs, a casino with play chips that aren't real money (Blackjack, Baccarat, Roulette), and games (Matador, chess, UNO, Wordle and Ore Mining Inc.). It runs in the browser, in English.
+> HB Hub is a student-made messaging site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark: class group chats and DMs, a casino with play chips that aren't real money (Blackjack, Baccarat, Roulette, Slots), and games (Matador, chess, UNO, Wordle and Ore Mining Inc.). It runs in the browser, in English.
 
 Most of the site needs an account; the pages below can be read without one. Casino chips are not money: they can't be swapped for real money or anything else, and nothing won can be paid out. HB Hub is a free student project, made and run by one student, not by the school.
 
@@ -39,6 +39,7 @@ Most of the site needs an account; the pages below can be read without one. Casi
 - [Blackjack](https://hbhub.noahgajnielsen.dk/docs/casino/blackjack): Beat the dealer without going over 21, solo or at a table with up to 5 players.
 - [Baccarat](https://hbhub.noahgajnielsen.dk/docs/casino/baccarat): Bet on the Player, the Banker or a tie, solo or at a table with up to 6 players.
 - [Roulette](https://hbhub.noahgajnielsen.dk/docs/casino/roulette): European roulette with a single zero, and every bet placed straight on the board.
+- [Slots](https://hbhub.noahgajnielsen.dk/docs/casino/slots): A three-reel slot machine with five paylines, its pay table and what it pays back.
 
 ## Games
 

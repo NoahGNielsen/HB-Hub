@@ -118,6 +118,14 @@
   margin: 12px 0;
 }
 
+/* The slot machine's 7 in its pay table (casino/slots/rules.php), red like on the reels */
+.docs-body .casino-pay-seven {
+  color: #e0233b;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 900;
+  font-style: italic;
+}
+
 .docs-body .casino-bac-player {
   color: color-mix(in srgb, #2f6fd6 75%, var(--text));
 }

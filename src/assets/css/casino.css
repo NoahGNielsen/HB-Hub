@@ -1260,12 +1260,13 @@ a.casino-game:hover .casino-game-art {
 }
 
 /* The games: a card each, with a felt top in the game's colours and the game's drawing from the front page
-   (homepage.css), then what's on at it and how the user has done. Each game sets --felt-from/--felt-to (the felt). */
+   (homepage.css), then what's on at it and how the user has done. Each game sets --felt-from/--felt-to (the felt).
+   Two to a row, so the four games make a square. */
 .casino-home-games {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   list-style: none;
 }
@@ -1748,6 +1749,62 @@ a.casino-home-game:hover .casino-home-game-art {
 .casino-home-game-roulette {
   --felt-from: #a3281f;
   --felt-to: #220a09;
+}
+
+.casino-home-game-slots {
+  --felt-from: #5b2a86;
+  --felt-to: #1a0b2a;
+}
+
+/* Slots: a slot machine's window with its three reels, three 7s on the middle line (like slots.css draws them) */
+.casino-art-slots {
+  --art-size: 0.85;
+  padding: 8px;
+  display: flex;
+  gap: 5px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1a0408, #3a0c14);
+  box-shadow: inset 0 0 0 3px #e8b931, 0 20px 36px rgba(0, 0, 0, 0.4);
+}
+
+.casino-art-slots-reel {
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #b9b5aa, #fbfaf6 25%, #fbfaf6 75%, #b9b5aa);
+  font-size: 1.9rem;
+  line-height: 46px;
+}
+
+.casino-art-slots-reel span {
+  opacity: 0.55;
+}
+
+.casino-art-slots-reel .is-seven {
+  opacity: 1;
+  color: #d0142c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.4rem;
+  font-weight: 900;
+  font-style: italic;
+  -webkit-text-stroke: 1.5px #8a6a10;
+  paint-order: stroke fill;
+}
+
+/* The middle line across the reels */
+.casino-art-slots::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px;
+  background: #e8b931;
+  opacity: 0.8;
 }
 
 /* Top players and Good to know, side by side */

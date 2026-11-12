@@ -1,0 +1,580 @@
+/* Slots (gambling/slots/, played by slots.js). Loaded after casino.css. The machine is a cabinet with a marquee on top,
+   the three reels in a window with the paylines drawn over them, their numbers down both sides, and the result
+   under it. Each reel shows three symbols of --sl-cell high; slots.js rolls a reel by filling its strip with more and
+   sliding it down. */
+.sl {
+  --casino-up: #2fa36b;
+  --casino-down: #d64545;
+  --sl-cell: 104px; /* one symbol's height on the reels */
+  --sl-gold: #e8b931;
+  --sl-cabinet: #6b1420;
+  --sl-cabinet-dark: #2a070c;
+  --sl-reel-bg: #fbfaf6;
+  max-width: 880px;
+  margin: 32px auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 260px);
+  grid-template-areas:
+    "back back"
+    "header header"
+    "machine side"
+    "controls side"
+    "rules rules";
+  align-items: start;
+  gap: 0 20px;
+}
+
+.sl [hidden] {
+  display: none !important;
+}
+
+.sl > .casino-back { grid-area: back; justify-self: start; }
+.sl-header { grid-area: header; }
+.sl-machine { grid-area: machine; }
+.sl-controls { grid-area: controls; }
+.sl-side { grid-area: side; }
+.sl-rules { grid-area: rules; }
+
+.sl-header {
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sl-title {
+  margin: 0 0 4px;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.sl-meta,
+.sl-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+/* The cabinet */
+.sl-machine {
+  padding: 0 20px 20px;
+  box-sizing: border-box;
+  border-radius: 28px 28px 20px 20px;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 255, 255, 0.16), transparent 70%),
+    linear-gradient(170deg, var(--sl-cabinet), var(--sl-cabinet-dark));
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--sl-gold) 45%, transparent), 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.sl-marquee {
+  margin: 0 -20px 18px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 28px 28px 0 0;
+  background: linear-gradient(180deg, #20090d, #3d0d15);
+  border-bottom: 3px solid var(--sl-gold);
+}
+
+.sl-marquee-text {
+  flex: none;
+  color: var(--sl-gold);
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-shadow: 0 0 14px color-mix(in srgb, var(--sl-gold) 60%, transparent);
+}
+
+/* A row of bulbs, which chase while the reels roll and after a win */
+.sl-marquee-lights {
+  flex: 1;
+  height: 10px;
+  background: radial-gradient(circle 4px, var(--sl-gold) 3px, transparent 4.5px) 0 50% / 18px 10px repeat-x;
+  opacity: 0.85;
+}
+
+.sl.is-spinning .sl-marquee-lights,
+.sl.is-winning .sl-marquee-lights {
+  animation: sl-lights 0.5s steps(2) infinite;
+}
+
+@keyframes sl-lights {
+  to { background-position: 18px 50%; }
+}
+
+.sl-cabinet {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  align-items: stretch;
+  gap: 8px;
+}
+
+/* The paylines' numbers down each side, next to the row each one starts (or ends) on */
+.sl-line-numbers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-rows: repeat(3, var(--sl-cell));
+  align-content: center;
+}
+
+.sl-line-number {
+  width: 24px;
+  height: 24px;
+  margin: 2px auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: color-mix(in srgb, var(--sl-gold) 70%, #fff);
+  font-size: 0.75rem;
+  font-weight: 800;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.sl-line-number.is-win {
+  background: var(--sl-gold);
+  color: #2a070c;
+  transform: scale(1.15);
+}
+
+/* Lines 1-3 sit on their row; the diagonals share the top and bottom rows with them, so they sit at its edge */
+.sl-line-numbers .sl-line-at-0 { grid-row: 1; }
+.sl-line-numbers .sl-line-at-1 { grid-row: 2; }
+.sl-line-numbers .sl-line-at-2 { grid-row: 3; }
+.sl-line-numbers li:nth-child(1),
+.sl-line-numbers li:nth-child(2),
+.sl-line-numbers li:nth-child(3) { align-self: center; }
+.sl-line-numbers li:nth-child(4) { align-self: start; }
+.sl-line-numbers li:nth-child(5) { align-self: end; }
+.sl-line-numbers-right li:nth-child(4) { align-self: end; }
+.sl-line-numbers-right li:nth-child(5) { align-self: start; }
+
+.sl-window {
+  position: relative;
+  padding: 8px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #1a0408, #3a0c14);
+  box-shadow: inset 0 0 0 3px var(--sl-gold), inset 0 6px 18px rgba(0, 0, 0, 0.6);
+}
+
+.sl-reels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.sl-reel {
+  position: relative;
+  height: calc(var(--sl-cell) * 3);
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--sl-reel-bg);
+}
+
+/* The reel's curve: darker at the top and bottom */
+.sl-reel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 22%, transparent 78%, rgba(0, 0, 0, 0.35));
+}
+
+.sl-reel-strip {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.sl-reel.is-rolling .sl-reel-strip {
+  filter: blur(1.5px);
+}
+
+.sl-symbol {
+  height: var(--sl-cell);
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--sl-cell) * 0.56);
+  line-height: 1;
+  transition: transform 0.25s ease;
+}
+
+.sl-symbol-face {
+  display: block;
+}
+
+/* The seven is a number, not an emoji: drawn big and red with a gold edge */
+.sl-symbol-seven .sl-symbol-face,
+.casino-pay-seven,
+.sl-history-seven {
+  color: #d0142c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 900;
+  font-style: italic;
+  -webkit-text-stroke: 2px #8a6a10;
+  paint-order: stroke fill;
+}
+
+.sl-symbol.is-win {
+  animation: sl-win 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes sl-win {
+  to { transform: scale(1.14); }
+}
+
+/* The paylines over the reels: faint while they're not part of anything, bright on a win */
+.sl-lines {
+  position: absolute;
+  inset: 8px;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.sl-line {
+  fill: none;
+  stroke: var(--sl-gold);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sl-line.is-win {
+  opacity: 0.9;
+  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.6));
+}
+
+.sl-line-1.is-win { stroke: #4fc3f7; }
+.sl-line-2.is-win { stroke: #81e36b; }
+.sl-line-3.is-win { stroke: #ff7ab8; }
+.sl-line-4.is-win { stroke: #b388ff; }
+
+/* The result under the reels */
+.sl-display {
+  margin-top: 16px;
+  padding: 12px 16px;
+  min-height: 3.2em;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  text-align: center;
+  color: #fff;
+}
+
+.sl-result {
+  margin: 0;
+  font-weight: 700;
+}
+
+.sl-win {
+  margin: 4px 0 0;
+  color: var(--sl-gold);
+  font-size: 1.6rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-win.is-big {
+  font-size: 2.2rem;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--sl-gold) 70%, transparent);
+  animation: sl-big 0.6s ease;
+}
+
+@keyframes sl-big {
+  from { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.15); }
+}
+
+/* The bet and the Spin button */
+.sl-controls {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.sl-message {
+  margin: 0;
+  min-height: 1.3em;
+  color: var(--casino-down);
+  font-weight: 600;
+  text-align: center;
+}
+
+.sl-message:empty {
+  min-height: 0;
+}
+
+.sl-bet {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sl-bet-step {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.sl-bet-line {
+  margin: 0;
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.sl-bet-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.sl-bet-amount {
+  font-size: 1.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-bet-per-line {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.sl-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.sl-chip {
+  --chip-color: var(--accent);
+  width: 50px;
+  height: 50px;
+  border: 4px dashed rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: var(--chip-color);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 3px var(--chip-color);
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.sl-chip:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.sl-chip[aria-pressed="true"] {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3), 0 0 0 3px var(--chip-color), 0 0 0 6px var(--text);
+}
+
+.sl-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 8px;
+}
+
+.sl-chip:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* The same colours as the chips at the other tables */
+.sl-chip-10 { --chip-color: #3a7bd5; }
+.sl-chip-50 { --chip-color: #2fa36b; }
+.sl-chip-100 { --chip-color: #2f3a4a; }
+.sl-chip-500 { --chip-color: #8e44ad; }
+.sl-chip-1000 { --chip-color: #f2711c; }
+.sl-chip-all-in { --chip-color: #c0392b; font-size: 0.7rem; line-height: 1; }
+
+.sl-spin {
+  min-width: 220px;
+  padding: 14px 28px;
+  border-radius: 999px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 5px 0 #a3470f;
+}
+
+.sl-spin:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #a3470f;
+}
+
+/* The user's last spins, beside the machine */
+.sl-side {
+  padding: 20px;
+}
+
+.sl .sl-label {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sl-history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sl-history-item {
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 10px;
+  background: var(--background);
+}
+
+.sl-history-item.is-win {
+  box-shadow: inset 3px 0 0 var(--casino-up);
+}
+
+.sl-history-symbols {
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.sl-history-net {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The rules and the pay table */
+.sl-rules {
+  margin-top: 24px;
+}
+
+.sl-rules summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sl-rules .casino-rule-list {
+  margin-top: 12px;
+}
+
+.sl .casino-pay-table-wrap {
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+.sl .casino-pay-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.sl .casino-pay-table th,
+.sl .casino-pay-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.sl .casino-pay-table th {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.casino-pay-symbols {
+  margin-right: 6px;
+  letter-spacing: 0.05em;
+}
+
+.casino-pay-seven {
+  -webkit-text-stroke-width: 1px;
+}
+
+/* Narrow screens: the last spins under the machine, and smaller reels */
+@media (max-width: 760px) {
+  .sl {
+    --sl-cell: 84px;
+    margin: 16px auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "back"
+      "header"
+      "machine"
+      "controls"
+      "side"
+      "rules";
+  }
+
+  .sl-side {
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .sl {
+    --sl-cell: 68px;
+  }
+
+  .sl-machine {
+    padding: 0 10px 14px;
+  }
+
+  .sl-marquee {
+    margin: 0 -10px 14px;
+  }
+
+  .sl-marquee-text {
+    font-size: 1.1rem;
+  }
+
+  .sl-cabinet {
+    grid-template-columns: 22px minmax(0, 1fr) 22px;
+    gap: 4px;
+  }
+
+  .sl-line-number {
+    width: 20px;
+    height: 20px;
+    font-size: 0.65rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl.is-spinning .sl-marquee-lights,
+  .sl.is-winning .sl-marquee-lights,
+  .sl-symbol.is-win,
+  .sl-win.is-big {
+    animation: none;
+  }
+}

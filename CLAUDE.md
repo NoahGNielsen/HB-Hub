@@ -33,7 +33,7 @@ Last updated 06/11-26
 ## What this is
 
 HB Hub (https://hbhub.noahgajnielsen.dk) is a messaging site for the owner's school, with a virtual-chip casino
-(Blackjack, Baccarat, Roulette) and games (Matador, chess, UNO, Wordle, Ore Mining Inc.). The feature list is in
+(Blackjack, Baccarat, Roulette, Slots) and games (Matador, chess, UNO, Wordle, Ore Mining Inc.). The feature list is in
 [docs/features/](docs/features/index.md); keep it up to date when a feature changes.
 
 - **PHP 8.4 + PDO + MySQL 8.4.** No framework, no Composer packages, no build step.

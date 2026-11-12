@@ -14,7 +14,7 @@
 HB-Hub/
 ├── src/                 The website itself (everything here gets uploaded)
 │   ├── chat/            Messages and group chats
-│   ├── gambling/        The casino: chips, Blackjack, Baccarat and Roulette
+│   ├── gambling/        The casino: chips, Blackjack, Baccarat, Roulette and Slots
 │   ├── games/           The Games section: Matador, Chess, UNO, Wordle and Ore Mining Inc.
 │   ├── admin/           The admin panel
 │   ├── userMgmt/        Login and sign-up

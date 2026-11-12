@@ -8,7 +8,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
 
 $docsPath = '/docs/casino/';
-$docsIntro = 'Blackjack, Baccarat and Roulette, played with chips you get for free. No real money is involved anywhere,
+$docsIntro = 'Blackjack, Baccarat, Roulette and Slots, played with chips you get for free. No real money is involved anywhere,
     and nothing you win can be paid out.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
@@ -16,7 +16,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <div><dt>To start</dt><dd><?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips</dd></div>
                         <div><dt>Every day</dt><dd>+<?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> to <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?> chips</dd></div>
                         <div><dt>New day at</dt><dd><?= HBHUB_CASINO_DAY_START ?> AM</dd></div>
-                        <div><dt>Games</dt><dd>3</dd></div>
+                        <div><dt>Games</dt><dd>4</dd></div>
                     </dl>
 
                     <section id="chips" aria-labelledby="docs-chips">
@@ -56,6 +56,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td><a href="/docs/casino/blackjack">Blackjack</a></td><td>Get closer to 21 than the dealer without going over.</td><td>Solo, or up to 5 at a table</td></tr>
                                     <tr><td><a href="/docs/casino/baccarat">Baccarat</a></td><td>Bet on which hand ends closest to 9.</td><td>Solo, or up to 6 at a table</td></tr>
                                     <tr><td><a href="/docs/casino/roulette">Roulette</a></td><td>Bet on where the ball lands.</td><td>One table for everyone</td></tr>
+                                    <tr><td><a href="/docs/casino/slots">Slots</a></td><td>Spin three reels and line up the symbols.</td><td>Solo</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -94,8 +95,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             The <a href="/gambling/leaderboard">casino leaderboard</a> shows how many chips everyone has won or
                             lost in each game and in all of them together, and their chips right now. The daily chips don't count
                             as won. Each game also has its own leaderboard, with hands (or spins), wins, losses and win %, plus the
-                            biggest win and how much you've won or lost in Roulette. Click a column's heading to sort by it. Win %
-                            only counts once you've played 20 hands or spins, so one lucky round can't top it.
+                            biggest win and how much you've won or lost in Roulette and Slots. Click a column's heading to sort by it. Win %
+                            only counts once you've played 20 hands or spins (50 at Slots), so one lucky round can't top it.
                         </p>
                         <p>
                             The <a href="/gambling/">casino's home page</a> shows the top 5 of the casino leaderboard and your own
