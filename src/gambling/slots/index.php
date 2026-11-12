@@ -72,7 +72,6 @@ function slotsHistoryLabel(array $spin): string
         <div class="sl-header">
             <div>
                 <h1 class="sl-title">Slots</h1>
-                <p class="sl-meta">3 reels &middot; <?= $slotsLineCount ?> paylines &middot; Three 7s pay <?= HBHUB_SLOTS_PAYS['seven'] ?>&times; a line</p>
             </div>
             <a class="casino-btn" href="/gambling/slots/leaderboard">Leaderboard</a>
         </div>
