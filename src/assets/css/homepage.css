@@ -1289,15 +1289,33 @@ html.home {
   text-align: left;
 }
 
+/* The hover lift uses "translate", not "transform": the scroll-in animation further down owns transform, and an
+   animation always wins over a plain style, so a transform hover would snap instead of easing. */
 .home-safety-grid li {
   padding: 26px 22px;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--secondary);
-  transition: transform 0.2s ease;
+  transition:
+    translate 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
 }
 
-.home-safety-grid li:hover {
-  transform: translateY(-4px);
+.home-safety-grid svg {
+  transition: scale 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (hover: hover) {
+  .home-safety-grid li:hover {
+    translate: 0 -6px;
+    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    box-shadow: 0 16px 32px -16px rgba(0, 0, 0, 0.45);
+  }
+
+  .home-safety-grid li:hover svg {
+    scale: 1.08;
+  }
 }
 
 .home-safety-grid svg {
@@ -1335,17 +1353,29 @@ html.home {
 .home-cta {
   position: relative;
   max-width: var(--home-max);
-  margin: 128px auto 32px;
+  margin: 128px auto 96px;
   padding: 72px 24px;
   box-sizing: border-box;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.07); /* shows its edge when the page is dark too */
+  border: 1px solid rgba(255, 255, 255, 0.08); /* shows its edge when the page is dark too */
   border-radius: 28px;
   background:
-    radial-gradient(60% 120% at 50% 120%, rgba(240, 112, 31, 0.35), transparent 70%),
-    var(--home-dark);
+    radial-gradient(55% 90% at 50% 0%, rgba(240, 112, 31, 0.22), transparent 70%),
+    linear-gradient(180deg, var(--home-dark-raised), var(--home-dark));
+  box-shadow: 0 32px 64px -32px rgba(0, 0, 0, 0.6);
   color: var(--home-dark-text);
   text-align: center;
+}
+
+/* A thin lit edge along the top, where the glow comes from */
+.home-cta::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
 }
 
 .home-cta p {
@@ -1430,6 +1460,12 @@ html.home {
   .home-float-card,
   .home-float-die {
     rotate: var(--home-tilt);
+  }
+
+  .home-safety-grid li,
+  .home-safety-grid svg {
+    translate: none !important;
+    scale: none !important;
   }
 }
 
