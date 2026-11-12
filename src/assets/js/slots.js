@@ -13,6 +13,8 @@
 // sparks, and when the first two reels have lined up two of a good symbol (tease()), the last one rolls on longer, glowing,
 // with the line it could win on flickering. Winning lines draw themselves in with a spot of light running along them, and
 // with more than one, they're shown one at a time with what each paid.
+// All of it has sound effects too ("Sounds"), made with Web Audio rather than loaded, which the Sound button in the
+// header mutes (remembered in localStorage as hbHubSlotsSound).
 (() => {
     const root = document.querySelector('[data-slots]');
     if (!root) return;
@@ -311,6 +313,7 @@
         // The last reel rolls on longer when the first two have lined up a good win, teasing it from when the second stops
         const teased = IS_REDUCED_MOTION ? [] : tease(result.stops);
         if (!IS_REDUCED_MOTION) sizeCanvas(); // for the sparks as the reels land
+        startRollSound();
         await Promise.all(result.stops.map((to, reel) => {
             const isTeased = reel === 2 && teased.length > 0;
             return rollReel(reel, to, IS_REDUCED_MOTION ? 0 : REEL_MS[reel] + (isTeased ? TEASE_MS : 0),
@@ -319,7 +322,9 @@
                     if (stopped === 1 && teased.length) startTease(teased);
                 });
         }));
+        stopRollSound();
         stopTease();
+        if (IS_REDUCED_MOTION) sound('stop', 1); // nothing rolled, so no reel landed with its own thud
         stops = result.stops;
         describeWindow(stops);
 
@@ -338,6 +343,7 @@
         } else {
             // A tease that came to nothing shakes the result; any other loss just dims the reels for a moment
             resultText.textContent = teased.length ? 'So close! No win this time.' : 'No win this time.';
+            sound(teased.length ? 'nearMiss' : 'lose');
             if (!IS_REDUCED_MOTION) playClass(root, teased.length ? 'is-near-miss' : 'is-losing', 900);
         }
         addHistory(result);
@@ -557,6 +563,7 @@
                 const x = randomBetween(0.15, 0.85) * canvasWidth;
                 const y = randomBetween(0.12, 0.45) * canvasHeight;
                 const color = pick(CONFETTI);
+                sound('boom');
                 for (let ember = 0; ember < 50; ember++) {
                     const angle = Math.random() * Math.PI * 2;
                     const speed = randomBetween(120, 360);
@@ -616,6 +623,12 @@
             fxTimers.push(setTimeout(() => { banner.hidden = true; }, BANNERS[tier][1]));
         }
         showLinePays(result);
+        sound('win', tier);
+        // The counter ticking while the win counts up
+        if (COUNT_MS[tier] && !IS_REDUCED_MOTION) {
+            const ticker = setInterval(() => sound('count'), 70);
+            fxTimers.push(ticker, setTimeout(() => clearInterval(ticker), COUNT_MS[tier] * 0.8));
+        }
         if (IS_REDUCED_MOTION) return;
 
         sizeCanvas(); // the window may have changed size since the last win
@@ -676,6 +689,7 @@
     }
 
     function pullLever() {
+        sound('lever');
         if (IS_REDUCED_MOTION) return;
         playClass(lever, 'is-pulled', 800);
         playClass(spinButton, 'is-pushed', 600);
@@ -687,6 +701,7 @@
         const reelBox = strips[reel].parentElement;
         playClass(reelBox, 'is-landed', 500);
         playClass(machine, 'is-thudding', 250);
+        sound('stop', reel);
         const box = reelBox.getBoundingClientRect();
         for (let i = 0; i < 16; i++) {
             const isTop = i % 2 === 0;
@@ -712,10 +727,12 @@
         });
         clearInterval(teaseTimer);
         teaseTimer = setInterval(() => sparkles(reelBox, 3), 120);
+        startTeaseSound((REEL_MS[2] + TEASE_MS - REEL_MS[1]) / 1000); // until the last reel stops
     }
 
     function stopTease() {
         clearInterval(teaseTimer);
+        stopTeaseSound();
         root.classList.remove('is-teasing');
         strips[2].parentElement.classList.remove('is-teasing');
         lineDrawings.forEach((path) => path.classList.remove('is-tease'));
@@ -739,6 +756,7 @@
             lineBadge.className = 'sl-line-badge sl-line-badge-' + line.line + ' is-row-' + LINES[line.line][2];
             lineBadge.hidden = false;
             playClass(lineBadge, 'is-popping', 500);
+            sound('line', line.line);
         };
         fxTimers.push(setTimeout(() => {
             focus();
@@ -746,12 +764,253 @@
         }, lines.length > 1 ? 1500 : 700));
     }
 
+    // ----- Sounds, made here rather than loaded (like the games' pings): a clunk for the lever, the reels ticking round
+    // and thudding as they stop, a rising whine while the last reel is teased, a sad slide for a near miss, and chimes,
+    // a fanfare, coins and fireworks for a win, more the bigger it is. Browsers only let a page play sound once it's been
+    // clicked or typed in, so the first click or key wakes it up. Everything goes through one volume (master), so muting
+    // cuts off what's playing too. The Sound button turns it on and off, remembered in this browser (SOUND_KEY).
+    const SOUND_KEY = 'hbHubSlotsSound';
+    const SOUND_VOLUME = 0.5;
+    const soundButton = document.querySelector('[data-sl-sound]');
+    let isSoundOn = true;
+    try {
+        isSoundOn = localStorage.getItem(SOUND_KEY) !== 'off';
+    } catch {
+        // no storage (a private window): the sound is just on
+    }
+    let audio = null;
+    let master = null;
+    let noise = null; // a second of white noise, for clicks, clunks and booms
+    let rollTicker = 0; // the reels' ticking while they roll
+    let teaseWhine = null; // the oscillator rising while the last reel is teased
+
+    function wakeAudio() {
+        try {
+            if (audio === null) {
+                audio = new AudioContext();
+                master = audio.createGain();
+                master.gain.value = isSoundOn ? SOUND_VOLUME : 0;
+                master.connect(audio.destination);
+                noise = audio.createBuffer(1, audio.sampleRate, audio.sampleRate);
+                const samples = noise.getChannelData(0);
+                for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+            }
+            if (audio.state === 'suspended') audio.resume();
+        } catch {
+            audio = null; // no Web Audio: no sounds
+        }
+    }
+
+    // The time to play a sound from, or -1 when there's no sound
+    function soundNow() {
+        if (!isSoundOn) return -1;
+        wakeAudio();
+        return audio === null ? -1 : audio.currentTime;
+    }
+
+    // A note of $frequency Hz from $at seconds, up to $volume at once and fading out over $length, gliding to $to Hz
+    function tone(at, frequency, length, volume, type = 'sine', to = 0) {
+        const oscillator = audio.createOscillator();
+        const gain = audio.createGain();
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, at);
+        if (to) oscillator.frequency.exponentialRampToValueAtTime(to, at + length);
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.exponentialRampToValueAtTime(volume, at + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+        oscillator.connect(gain).connect(master);
+        oscillator.start(at);
+        oscillator.stop(at + length + 0.02);
+    }
+
+    // A burst of noise through a $filter ('lowpass', 'bandpass', 'highpass') at $frequency Hz: clicks, clunks and booms
+    function hiss(at, length, volume, filter, frequency) {
+        const source = audio.createBufferSource();
+        const shape = audio.createBiquadFilter();
+        const gain = audio.createGain();
+        source.buffer = noise;
+        shape.type = filter;
+        shape.frequency.value = frequency;
+        gain.gain.setValueAtTime(volume, at);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+        source.connect(shape).connect(gain).connect(master);
+        source.start(at, Math.random() * 0.5, length + 0.02);
+    }
+
+    // A coin landing: two bright notes a fifth apart, a bit different every time
+    function clink(at, volume) {
+        const frequency = randomBetween(2400, 3600);
+        tone(at, frequency, 0.15, volume, 'triangle');
+        tone(at + 0.01, frequency * 1.5, 0.1, volume * 0.5, 'sine');
+    }
+
+    // Notes one after another from $at, $gap seconds apart, each $length long
+    function melody(at, notes, gap, length, volume, type = 'triangle') {
+        notes.forEach((frequency, i) => tone(at + i * gap, frequency, length, volume, type));
+    }
+
+    const C5 = 523.25, E5 = 659.25, G5 = 783.99, A5 = 880, C6 = 1046.5, E6 = 1318.5, G6 = 1568, C7 = 2093;
+
+    function sound(kind, detail = 0) {
+        const now = soundNow();
+        if (now < 0) return;
+        if (kind === 'chip') {
+            // A chip clacking on the felt
+            hiss(now, 0.04, 0.35, 'bandpass', 3200);
+            tone(now, 1800, 0.05, 0.08, 'triangle');
+        } else if (kind === 'lever') {
+            // The lever's clunk, then its ratchet clicking back up
+            hiss(now, 0.12, 0.6, 'lowpass', 700);
+            tone(now, 160, 0.15, 0.35, 'square', 55);
+            for (let i = 0; i < 5; i++) hiss(now + 0.18 + i * 0.07, 0.025, 0.25, 'highpass', 2500);
+        } else if (kind === 'tick') {
+            // A symbol going past on a rolling reel, higher while only the teased one is left ($detail = 1)
+            hiss(now, 0.02, 0.12, 'bandpass', detail ? 4200 : 2600);
+        } else if (kind === 'stop') {
+            // A reel thudding to a stop: lower for each one further right
+            tone(now, 170 - detail * 25, 0.2, 0.5, 'sine', 45);
+            hiss(now, 0.06, 0.4, 'lowpass', 900);
+            hiss(now + 0.01, 0.03, 0.15, 'highpass', 3000);
+        } else if (kind === 'lose') {
+            tone(now, 220, 0.18, 0.12, 'triangle', 180);
+        } else if (kind === 'nearMiss') {
+            // "Wah wah": two notes sliding down
+            tone(now, 392, 0.35, 0.25, 'sawtooth', 330);
+            tone(now + 0.38, 330, 0.6, 0.25, 'sawtooth', 220);
+        } else if (kind === 'line') {
+            // A winning line's turn: a ding, higher for each line ($detail is its number)
+            tone(now, C6 * 2 ** (detail / 6), 0.35, 0.18, 'sine');
+        } else if (kind === 'count') {
+            hiss(now, 0.015, 0.1, 'highpass', 5000);
+            tone(now, 2600, 0.03, 0.04, 'square');
+        } else if (kind === 'boom') {
+            // A firework going off: a thump, then crackling
+            hiss(now, 0.6, 0.5, 'lowpass', 300);
+            tone(now, 90, 0.4, 0.3, 'sine', 40);
+            for (let i = 0; i < 8; i++) hiss(now + 0.15 + Math.random() * 0.5, 0.02, 0.12, 'highpass', 4000);
+        } else if (kind === 'win') {
+            winSound(now, detail);
+        }
+    }
+
+    // A win's fanfare, by its tier ($tier, see winTier())
+    function winSound(now, tier) {
+        if (tier === 'small') {
+            melody(now, [E6, G6], 0.09, 0.3, 0.18, 'sine');
+            return;
+        }
+        if (tier === 'win') {
+            melody(now, [C6, E6, G6, C7], 0.08, 0.35, 0.18);
+            for (let i = 0; i < 6; i++) clink(now + 0.15 + i * 0.07, 0.08);
+            return;
+        }
+        // A fanfare: a run up, then a held chord, with coins pouring out under it
+        const run = tier === 'big' ? [C5, E5, G5, C6] : [C5, E5, G5, C6, E6, G6];
+        melody(now, run, 0.1, 0.3, 0.2, 'square');
+        const chordAt = now + run.length * 0.1;
+        const hold = tier === 'jackpot' ? 1.8 : tier === 'mega' ? 1.3 : 0.9;
+        [C6, E6, G6].forEach((frequency) => tone(chordAt, frequency, hold, 0.12, 'square'));
+        tone(chordAt, C5, hold, 0.15, 'triangle');
+        if (tier === 'jackpot') {
+            // and the run again an octave up, ringing like bells
+            melody(chordAt + 0.4, [C6, E6, G6, C7, G6, C7], 0.12, 0.6, 0.14, 'sine');
+        }
+        const coins = tier === 'big' ? 30 : tier === 'mega' ? 55 : 80;
+        const pour = tier === 'big' ? 2.5 : tier === 'mega' ? 4 : 5.5;
+        for (let i = 0; i < coins; i++) clink(now + 0.2 + Math.random() * pour, randomBetween(0.03, 0.08));
+    }
+
+    // The ticking of the reels going round, until stopRollSound(): faster while more are rolling, and higher when only
+    // the teased last reel is left
+    function startRollSound() {
+        clearInterval(rollTicker);
+        const reels = strips.map((strip) => strip.parentElement);
+        rollTicker = setInterval(() => {
+            const rolling = reels.filter((reel) => reel.classList.contains('is-rolling'));
+            if (rolling.length === 0) return;
+            const isTeased = rolling.length === 1 && rolling[0].classList.contains('is-teasing');
+            sound('tick', isTeased ? 1 : 0);
+        }, 65);
+    }
+
+    function stopRollSound() {
+        clearInterval(rollTicker);
+        rollTicker = 0;
+    }
+
+    // While the last reel is teased: a whine rising for the $seconds it has left, with a tremble in it
+    function startTeaseSound(seconds) {
+        const now = soundNow();
+        if (now < 0) return;
+        stopTeaseSound();
+        const oscillator = audio.createOscillator();
+        const tremble = audio.createOscillator();
+        const trembleDepth = audio.createGain();
+        const gain = audio.createGain();
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.setValueAtTime(220, now);
+        oscillator.frequency.exponentialRampToValueAtTime(880, now + seconds);
+        tremble.frequency.setValueAtTime(6, now);
+        tremble.frequency.linearRampToValueAtTime(14, now + seconds);
+        trembleDepth.gain.value = 12;
+        tremble.connect(trembleDepth).connect(oscillator.frequency);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.06, now + seconds);
+        oscillator.connect(gain).connect(master);
+        oscillator.start(now);
+        tremble.start(now);
+        oscillator.stop(now + seconds + 0.1);
+        tremble.stop(now + seconds + 0.1);
+        teaseWhine = { oscillator, tremble, gain };
+    }
+
+    function stopTeaseSound() {
+        if (teaseWhine === null) return;
+        const { oscillator, tremble, gain } = teaseWhine;
+        teaseWhine = null;
+        try {
+            const now = audio.currentTime;
+            gain.gain.cancelScheduledValues(now);
+            gain.gain.setTargetAtTime(0.0001, now, 0.02);
+            oscillator.stop(now + 0.1);
+            tremble.stop(now + 0.1);
+        } catch {
+            // it had already stopped
+        }
+    }
+
+    // aria-pressed also picks the icon (slots.css)
+    function renderSound() {
+        soundButton.setAttribute('aria-pressed', String(isSoundOn));
+        soundButton.title = isSoundOn ? 'Sound on' : 'Sound off';
+    }
+
+    soundButton.addEventListener('click', () => {
+        isSoundOn = !isSoundOn;
+        try {
+            localStorage.setItem(SOUND_KEY, isSoundOn ? 'on' : 'off');
+        } catch {
+            // only kept until the page is closed
+        }
+        renderSound();
+        wakeAudio();
+        if (master !== null) {
+            master.gain.cancelScheduledValues(audio.currentTime);
+            master.gain.setTargetAtTime(isSoundOn ? SOUND_VOLUME : 0, audio.currentTime, 0.02);
+        }
+        sound('chip'); // so they hear it's on
+    });
+    renderSound();
+    document.addEventListener('pointerdown', wakeAudio, { once: true });
+    document.addEventListener('keydown', wakeAudio, { once: true });
+
     window.addEventListener('resize', () => {
         if (frame) sizeCanvas();
     });
 
     // A chip flips over when it's picked, and the bet bounces when it changes
     const bumpBet = () => {
+        sound('chip');
         if (!IS_REDUCED_MOTION) playClass(betText, 'is-bumped', 350);
     };
     const flipChip = (button) => {

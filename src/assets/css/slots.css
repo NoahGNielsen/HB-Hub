@@ -51,6 +51,35 @@
   gap: 12px;
 }
 
+.sl-header-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+/* The Sound button: an icon, showing whether the sound is on (aria-pressed, set by slots.js) */
+.sl-header .sl-sound {
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sl-sound-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sl-sound[aria-pressed="true"] .sl-sound-off,
+.sl-sound[aria-pressed="false"] .sl-sound-on {
+  display: none;
+}
+
 .sl-title {
   margin: 0;
   font-size: 1.6rem;

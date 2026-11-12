@@ -9,7 +9,8 @@
 // The bet and the Spin button are on the machine itself, under the reels, so the whole thing fits on the screen
 // without scrolling (slots.css sizes the reels to the window's height). A banner over the machine, a flash, a glow round
 // the screen's edges and a canvas over the page are there for slots.js's win effects, and the lever beside the machine,
-// the bulbs down its sides, a "comet" on each payline and a badge for what a line paid for the rest of its show.
+// the bulbs down its sides, a "comet" on each payline and a badge for what a line paid for the rest of its show. The
+// Sound button by the leaderboard link mutes slots.js's sound effects.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/slots.php';
@@ -77,7 +78,18 @@ function slotsHistoryLabel(array $spin): string
             <div>
                 <h1 class="sl-title">Slots</h1>
             </div>
-            <a class="casino-btn" href="/gambling/slots/leaderboard">Leaderboard</a>
+            <div class="sl-header-actions">
+                <!-- slots.js sets aria-pressed (which picks the icon shown) and the title -->
+                <button type="button" class="casino-btn sl-sound" aria-label="Sound" title="Sound" aria-pressed="true" data-sl-sound>
+                    <svg class="sl-sound-icon sl-sound-on" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>
+                    </svg>
+                    <svg class="sl-sound-icon sl-sound-off" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>
+                    </svg>
+                </button>
+                <a class="casino-btn" href="/gambling/slots/leaderboard">Leaderboard</a>
+            </div>
         </div>
 
         <section class="sl-machine" aria-label="The slot machine">

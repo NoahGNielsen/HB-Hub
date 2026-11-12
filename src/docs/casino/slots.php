@@ -28,6 +28,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li>Every winning line draws itself in and is paid, and with more than one, each line gets a turn with what it paid. The bigger the win, the bigger the show: coins, a Big win or Mega win banner, and fireworks and falling 7s for three 7s. Your bet stays the same, so you can spin again straight away (which also clears the show).</li>
                         </ol>
                         <p>Your last spins are listed next to the machine, with what each one won or lost.</p>
+                        <p>The machine has sound effects. The <strong>Sound</strong> button next to the leaderboard link turns them off and on, and your browser remembers which.</p>
                     </section>
 
                     <section id="lines" aria-labelledby="docs-lines">
