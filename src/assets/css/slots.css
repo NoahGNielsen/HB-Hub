@@ -1,17 +1,21 @@
 /* Slots (gambling/slots/, played by slots.js). Loaded after casino.css. The machine is a cabinet with a marquee on top,
    the three reels in a window with the paylines drawn over them, their numbers down both sides, and the result
-   under it. Each reel shows three symbols of --sl-cell high; slots.js rolls a reel by filling its strip with more and
-   sliding it down. */
+   under it, then the deck with the bet and the Spin button. Each reel shows three symbols of --sl-cell high, which
+   shrinks with the window's height so the whole machine, deck and all, fits without scrolling; slots.js measures it,
+   and rolls a reel by filling its strip with more and sliding it down. */
 .sl {
   --casino-up: #2fa36b;
   --casino-down: #d64545;
-  --sl-cell: 104px; /* one symbol's height on the reels */
+  /* One symbol's height on the reels: the window's height less everything else on the screen (the top bar, the header,
+     the marquee, the result and the deck, ~480px), split between the three rows */
+  --sl-cell: clamp(48px, calc((100vh - 480px) / 3), 104px);
+  --sl-cell: clamp(48px, calc((100dvh - 480px) / 3), 104px);
   --sl-gold: #e8b931;
   --sl-cabinet: #6b1420;
   --sl-cabinet-dark: #2a070c;
   --sl-reel-bg: #fbfaf6;
   max-width: 880px;
-  margin: 32px auto;
+  margin: 16px auto 32px;
   padding: 0 16px;
   box-sizing: border-box;
   display: grid;
@@ -20,7 +24,6 @@
     "back back"
     "header header"
     "machine side"
-    "controls side"
     "rules rules";
   align-items: start;
   gap: 0 20px;
@@ -30,15 +33,14 @@
   display: none !important;
 }
 
-.sl > .casino-back { grid-area: back; justify-self: start; }
+.sl > .casino-back { grid-area: back; justify-self: start; margin-bottom: 6px; }
 .sl-header { grid-area: header; }
 .sl-machine { grid-area: machine; }
-.sl-controls { grid-area: controls; }
 .sl-side { grid-area: side; }
 .sl-rules { grid-area: rules; }
 
 .sl-header {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -47,8 +49,8 @@
 }
 
 .sl-title {
-  margin: 0 0 4px;
-  font-size: 2rem;
+  margin: 0;
+  font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -61,7 +63,7 @@
 
 /* The cabinet */
 .sl-machine {
-  padding: 0 20px 20px;
+  padding: 0 20px 16px;
   box-sizing: border-box;
   border-radius: 28px 28px 20px 20px;
   background:
@@ -71,8 +73,8 @@
 }
 
 .sl-marquee {
-  margin: 0 -20px 18px;
-  padding: 14px 20px;
+  margin: 0 -20px 12px;
+  padding: 8px 20px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -84,7 +86,7 @@
 .sl-marquee-text {
   flex: none;
   color: var(--sl-gold);
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 900;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -108,7 +110,10 @@
   to { background-position: 18px 50%; }
 }
 
+/* Kept about as wide as the reels are tall, so short reels don't turn into wide stripes */
 .sl-cabinet {
+  max-width: calc(var(--sl-cell) * 4.4 + 72px);
+  margin: 0 auto;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 28px;
   align-items: stretch;
@@ -126,8 +131,8 @@
 }
 
 .sl-line-number {
-  width: 24px;
-  height: 24px;
+  width: clamp(16px, calc(var(--sl-cell) * 0.28), 24px);
+  height: clamp(16px, calc(var(--sl-cell) * 0.28), 24px);
   margin: 2px auto;
   display: grid;
   place-items: center;
@@ -263,11 +268,17 @@
 .sl-line-3.is-win { stroke: #ff7ab8; }
 .sl-line-4.is-win { stroke: #b388ff; }
 
-/* The result under the reels */
+/* The result under the reels, on one line with the win, and any error or the out-of-chips hint under them */
 .sl-display {
-  margin-top: 16px;
-  padding: 12px 16px;
-  min-height: 3.2em;
+  margin-top: 12px;
+  padding: 8px 16px;
+  min-height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 14px;
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.45);
   text-align: center;
@@ -279,8 +290,21 @@
   font-weight: 700;
 }
 
+.sl-display .sl-message,
+.sl-display .sl-hint {
+  flex-basis: 100%;
+}
+
+.sl-display .sl-hint {
+  opacity: 0.9;
+}
+
+.sl-display .sl-hint a {
+  color: var(--sl-gold);
+}
+
 .sl-win {
-  margin: 4px 0 0;
+  margin: 0;
   color: var(--sl-gold);
   font-size: 1.6rem;
   font-weight: 900;
@@ -298,48 +322,56 @@
   60% { transform: scale(1.15); }
 }
 
-/* The bet and the Spin button */
-.sl-controls {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
+/* The deck: the bet stepper over the quick bets, and the big Spin button beside them */
+.sl-deck {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    "bet spin"
+    "chips spin";
+  justify-content: center;
   align-items: center;
-  gap: 14px;
+  gap: 8px 20px;
+  color: #fff;
 }
+
+.sl-deck .sl-bet { grid-area: bet; }
+.sl-deck .sl-chip-row { grid-area: chips; }
+.sl-deck .sl-spin { grid-area: spin; }
 
 .sl-message {
   margin: 0;
-  min-height: 1.3em;
-  color: var(--casino-down);
+  color: #ff8a8a;
   font-weight: 600;
-  text-align: center;
 }
 
 .sl-message:empty {
-  min-height: 0;
+  display: none;
 }
 
 .sl-bet {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 12px;
 }
 
 .sl-bet-step {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   line-height: 1;
 }
 
 .sl-bet-line {
   margin: 0;
-  min-width: 130px;
+  min-width: 100px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .sl-bet-label {
@@ -351,7 +383,7 @@
 }
 
 .sl-bet-amount {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -364,20 +396,20 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .sl-chip {
   --chip-color: var(--accent);
-  width: 50px;
-  height: 50px;
-  border: 4px dashed rgba(255, 255, 255, 0.8);
+  width: 42px;
+  height: 42px;
+  border: 3px dashed rgba(255, 255, 255, 0.8);
   border-radius: 50%;
   background: var(--chip-color);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 3px var(--chip-color);
   color: #fff;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.1s ease;
@@ -388,13 +420,13 @@
 }
 
 .sl-chip[aria-pressed="true"] {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3), 0 0 0 3px var(--chip-color), 0 0 0 6px var(--text);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3), 0 0 0 3px var(--chip-color), 0 0 0 5px var(--sl-gold);
 }
 
 .sl-chip:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 8px;
+  outline: 2px solid var(--sl-gold);
+  outline-offset: 7px;
 }
 
 .sl-chip:disabled {
@@ -408,12 +440,14 @@
 .sl-chip-100 { --chip-color: #2f3a4a; }
 .sl-chip-500 { --chip-color: #8e44ad; }
 .sl-chip-1000 { --chip-color: #f2711c; }
-.sl-chip-all-in { --chip-color: #c0392b; font-size: 0.7rem; line-height: 1; }
+.sl-chip-all-in { --chip-color: #c0392b; font-size: 0.6rem; line-height: 1; }
 
+/* A big round button, like the one on a real machine */
 .sl-spin {
-  min-width: 220px;
-  padding: 14px 28px;
-  border-radius: 999px;
+  width: 104px;
+  height: 104px;
+  padding: 0;
+  border-radius: 50%;
   font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -523,14 +557,14 @@
 /* Narrow screens: the last spins under the machine, and smaller reels */
 @media (max-width: 760px) {
   .sl {
-    --sl-cell: 84px;
-    margin: 16px auto;
+    --sl-cell: clamp(48px, calc((100vh - 480px) / 3), 84px);
+    --sl-cell: clamp(48px, calc((100dvh - 480px) / 3), 84px);
+    margin: 12px auto;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "back"
       "header"
       "machine"
-      "controls"
       "side"
       "rules";
   }
@@ -540,9 +574,50 @@
   }
 }
 
+/* Phones: the bottom bar (navPanel.css) takes 68px more, so the header is smaller, and the deck has the
+   stepper and Spin side by side with the quick bets under them */
+@media (max-width: 600px) {
+  .sl {
+    --sl-cell: clamp(48px, calc((100vh - 520px) / 3), 84px);
+    --sl-cell: clamp(48px, calc((100dvh - 520px) / 3), 84px);
+    margin-top: 8px;
+  }
+
+  .sl-header {
+    margin-bottom: 8px;
+  }
+
+  .sl-title {
+    font-size: 1.35rem;
+  }
+
+
+  .sl-header .casino-btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+
+  .sl-deck {
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      "bet spin"
+      "chips chips";
+    gap: 10px 16px;
+  }
+
+  .sl-spin {
+    width: auto;
+    min-width: 110px;
+    height: 52px;
+    padding: 0 22px;
+    border-radius: 999px;
+  }
+}
+
 @media (max-width: 420px) {
   .sl {
-    --sl-cell: 68px;
+    --sl-cell: clamp(48px, calc((100vh - 520px) / 3), 68px);
+    --sl-cell: clamp(48px, calc((100dvh - 520px) / 3), 68px);
   }
 
   .sl-machine {

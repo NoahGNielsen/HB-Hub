@@ -6,6 +6,8 @@
 // top of each strip before their first). The strips, the symbols and the paylines go to slots.js in data attributes
 // (data-reels, data-symbols, data-lines), so it can roll the reels round the real strips to where the server says they
 // stop. The paylines are drawn over the reels as an SVG, one path each, and their numbers are down both sides.
+// The bet and the Spin button are on the machine itself, under the reels, so the whole thing fits on the screen
+// without scrolling (slots.css sizes the reels to the window's height).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/slots.php';
@@ -124,31 +126,32 @@ function slotsHistoryLabel(array $spin): string
             <div class="sl-display">
                 <p class="sl-result" role="status" data-sl-result>Pick a bet and pull the lever.</p>
                 <p class="sl-win" data-sl-win hidden></p>
+                <p class="sl-message" role="alert" data-sl-message></p>
+                <p class="sl-hint" data-sl-broke hidden>You're out of chips. <a href="/gambling/">Collect your daily chips</a></p>
             </div>
-        </section>
 
-        <section class="sl-controls" aria-label="Your bet">
-            <p class="sl-message" role="alert" data-sl-message></p>
-            <div class="sl-bet">
-                <button type="button" class="casino-btn sl-bet-step" data-sl-less aria-label="Bet less">&minus;</button>
-                <p class="sl-bet-line">
-                    <span class="sl-bet-label">Bet</span>
-                    <strong class="sl-bet-amount" data-sl-bet><?= HBHUB_SLOTS_MIN_BET ?></strong>
-                    <span class="sl-bet-per-line"><span data-sl-line-bet><?= HBHUB_SLOTS_MIN_BET / $slotsLineCount ?></span> a line</span>
-                </p>
-                <button type="button" class="casino-btn sl-bet-step" data-sl-more aria-label="Bet more">+</button>
+            <!-- The bet and the Spin button: the stepper over the quick bets on the left, the big button on the right -->
+            <div class="sl-deck" role="group" aria-label="Your bet">
+                <div class="sl-bet">
+                    <button type="button" class="casino-btn sl-bet-step" data-sl-less aria-label="Bet less">&minus;</button>
+                    <p class="sl-bet-line">
+                        <span class="sl-bet-label">Bet</span>
+                        <strong class="sl-bet-amount" data-sl-bet><?= HBHUB_SLOTS_MIN_BET ?></strong>
+                        <span class="sl-bet-per-line"><span data-sl-line-bet><?= HBHUB_SLOTS_MIN_BET / $slotsLineCount ?></span> a line</span>
+                    </p>
+                    <button type="button" class="casino-btn sl-bet-step" data-sl-more aria-label="Bet more">+</button>
+                </div>
+                <div class="sl-chip-row" role="group" aria-label="Quick bets">
+                    <?php foreach ($slotsBets as $slotsIndex => $slotsBet): ?>
+                        <button type="button" class="sl-chip sl-chip-<?= $slotsBet ?>" data-sl-chip="<?= $slotsBet ?>"
+                                aria-pressed="<?= $slotsIndex === 0 ? 'true' : 'false' ?>" aria-label="Bet <?= $slotsBet ?>"><?= $slotsBet >= 1000 ? ($slotsBet / 1000) . 'K' : $slotsBet ?></button>
+                    <?php endforeach; ?>
+                    <!-- Only with fewer than 10 chips (slots.js) -->
+                    <button type="button" class="sl-chip sl-chip-all-in" data-sl-all-in="<?= HBHUB_CASINO_ALL_IN_BELOW ?>"
+                            aria-pressed="false" aria-label="All in: bet all your chips on one spin" hidden>All in</button>
+                </div>
+                <button type="button" class="casino-btn casino-btn-primary sl-spin" data-sl-spin title="Spin (Space)" aria-keyshortcuts="Space">Spin</button>
             </div>
-            <div class="sl-chip-row" role="group" aria-label="Quick bets">
-                <?php foreach ($slotsBets as $slotsIndex => $slotsBet): ?>
-                    <button type="button" class="sl-chip sl-chip-<?= $slotsBet ?>" data-sl-chip="<?= $slotsBet ?>"
-                            aria-pressed="<?= $slotsIndex === 0 ? 'true' : 'false' ?>" aria-label="Bet <?= $slotsBet ?>"><?= $slotsBet >= 1000 ? ($slotsBet / 1000) . 'K' : $slotsBet ?></button>
-                <?php endforeach; ?>
-                <!-- Only with fewer than 10 chips (slots.js) -->
-                <button type="button" class="sl-chip sl-chip-all-in" data-sl-all-in="<?= HBHUB_CASINO_ALL_IN_BELOW ?>"
-                        aria-pressed="false" aria-label="All in: bet all your chips on one spin" hidden>All in</button>
-            </div>
-            <button type="button" class="casino-btn casino-btn-primary sl-spin" data-sl-spin title="Spin (Space)" aria-keyshortcuts="Space">Spin</button>
-            <p class="sl-hint" data-sl-broke hidden>You're out of chips. <a href="/gambling/">Collect your daily chips</a></p>
         </section>
 
         <section class="sl-side casino-card" aria-labelledby="sl-history-title">

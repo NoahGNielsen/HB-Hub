@@ -23,7 +23,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="play" aria-labelledby="docs-play">
                         <h2 id="docs-play">How to play</h2>
                         <ol class="docs-steps">
-                            <li>Pick a bet with the chips under the machine, or move it up and down with <strong>&minus;</strong> and <strong>+</strong>. With fewer than <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips left, the <strong>All in</strong> chip bets every chip you have.</li>
+                            <li>Pick a bet with the chips on the machine, under the reels, or move it up and down with <strong>&minus;</strong> and <strong>+</strong>. With fewer than <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips left, the <strong>All in</strong> chip bets every chip you have.</li>
                             <li>Press <strong>Spin</strong> (or <kbd>Space</kbd>). The bet is taken, and the reels roll and stop one after another from the left.</li>
                             <li>Every winning line lights up and is paid. Your bet stays the same, so you can spin again straight away.</li>
                         </ol>
