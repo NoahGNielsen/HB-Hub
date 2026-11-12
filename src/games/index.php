@@ -116,7 +116,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                 <li>
                     <a class="casino-game casino-game-minesweeper" href="/games/minesweeper/">
                         <span class="casino-game-cover">
-                            <span class="casino-game-kicker">Just you</span>
+                            <span class="casino-game-kicker">Bomb? BOOM!</span>
                             <span class="casino-game-name">Minesweeper</span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
                                 <!-- A mine with its eight spikes and a shine on it, and a red flag on its stand next to it -->
