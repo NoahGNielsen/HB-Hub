@@ -1,8 +1,13 @@
 <?php
 // The frontpage: what HB Hub is, for visitors, with its own top bar (homeNav.php) instead of the app's nav panel
-// (navPanel.php). Logged in users get a way back into the app instead of Log in / Sign up.
+// (navPanel.php). Logged in users are sent straight on to the chat, unless the address has ?home (what double clicking
+// the HB Hub logo on the chat page opens, navBrand.js), and then get a way back into the app instead of Log in / Sign up.
 $hbHubSessionOptional = true; // the frontpage is open to everyone
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+if ($hbHubUser !== null && !isset($_GET['home'])) {
+    header('Location: /chat/', true, 302);
+    exit;
+}
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/baccarat/round.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/matador/board.php';

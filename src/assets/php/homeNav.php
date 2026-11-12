@@ -11,9 +11,13 @@ $homeNavAvatarSrc = $homeNavUser !== null
     ? hbHubAvatarUrl((int) $homeNavUser['userId'], $homeNavUser['userAvatarAttachmentId'] !== null ? (int) $homeNavUser['userAvatarAttachmentId'] : null)
     : null;
 $homeNavSectionBase ??= '';
+if ($homeNavUser !== null && $homeNavSectionBase === '/') {
+    $homeNavSectionBase = '/?home'; // or the frontpage would send them on to the chat
+}
 ?>
 <header class="home-nav">
-    <a class="home-brand" href="/" aria-label="HB Hub, frontpage">
+    <?php // The logo goes to the frontpage for visitors and to the chat for logged in users, who'd be sent there from the frontpage anyway ?>
+    <a class="home-brand" href="<?= $homeNavUser !== null ? '/chat/' : '/' ?>" aria-label="<?= $homeNavUser !== null ? 'HB Hub, chat' : 'HB Hub, frontpage' ?>">
         <span class="home-brand-mark" aria-hidden="true">HB</span>
         <span class="home-brand-name">Hub</span>
     </a>

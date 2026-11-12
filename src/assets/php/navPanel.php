@@ -67,7 +67,10 @@ $navFeedbackHref = $navOnFeedback
     : HBHUB_FEEDBACK_PAGE . ($navFeedbackFrom !== null ? '?from=' . rawurlencode($navFeedbackFrom) : '');
 ?>
 <header class="nav-top">
-    <a class="nav-brand" href="/" aria-label="HB Hub, frontpage">
+    <?php // Logged in users' logo goes to the chat (the frontpage would send them there anyway). On the chat itself a
+    // double click goes to the frontpage instead (/?home, navBrand.js), as the redirect would otherwise make it unreachable. ?>
+    <a class="nav-brand" href="<?= $navUser !== null ? '/chat/' : '/' ?>" aria-label="<?= $navUser !== null ? 'HB Hub, chat' : 'HB Hub, frontpage' ?>"<?=
+        $navUser !== null && $navSection === 'chat' ? ' data-nav-brand-home="/?home"' : '' ?>>
         <span class="nav-brand-mark" aria-hidden="true">HB</span>
         <span class="nav-brand-name">Hub</span>
     </a>
@@ -147,4 +150,7 @@ $navFeedbackHref = $navOnFeedback
 <?php endif; ?>
 <?php if ($navUser !== null): ?>
     <script src="/assets/js/navUpdates.js?v=<?= filemtime(__DIR__ . '/../js/navUpdates.js') ?>" defer></script>
+<?php endif; ?>
+<?php if ($navUser !== null && $navSection === 'chat'): ?>
+    <script src="/assets/js/navBrand.js?v=<?= filemtime(__DIR__ . '/../js/navBrand.js') ?>" defer></script>
 <?php endif; ?>

@@ -35,6 +35,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             device you're logged in on from your <a href="/docs/account#devices">settings</a>.
                         </p>
                         <p>
+                            While you're logged in, the frontpage and the HB Hub logo in the top bar take you straight to the chat.
+                            To see the frontpage anyway, double click the logo while you're on the chat.
+                        </p>
+                        <p>
                             A few wrong passwords in a row lock the login for a while. That's explained in
                             <a href="/docs/two-factor#lockout">Two-factor login &amp; security</a>.
                         </p>
