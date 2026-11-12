@@ -1237,6 +1237,7 @@
     // ----- The page
 
     const asteroid = root.querySelector('[data-miner-asteroid]');
+    const titleHeading = root.querySelector('.casino-title-row h1');
     const field = root.querySelector('[data-miner-field]');
     const oreText = root.querySelector('[data-miner-ore]');
     const rateText = root.querySelector('[data-miner-rate]');
@@ -2043,6 +2044,10 @@
         if ((asteroid.dataset.skin ?? '') !== skin) {
             if (skin === '') delete asteroid.dataset.skin;
             else asteroid.dataset.skin = skin;
+            // The Noah skin renames the game, on the page and in the tab
+            const [from, to] = skin === 'noah' ? ['Ore Mining Inc.', 'Noah Clicker'] : ['Noah Clicker', 'Ore Mining Inc.'];
+            titleHeading.textContent = to;
+            document.title = document.title.replace(from, to);
         }
         // The background picked (data-backdrop on the page, see renderLooks()), while its perk is done
         const backdrop = engineEffectsOn('backdrops') ? saveState.backdrop ?? '' : '';

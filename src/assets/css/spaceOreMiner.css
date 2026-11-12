@@ -6340,6 +6340,26 @@ body:has(.miner[data-backdrop="aurora"]),
 .miner-comet[data-skin="northernLights"] { --miner-gold: #3ddc97; }
 .miner-comet[data-skin="pocketGalaxy"] { --miner-gold: #a078ff; }
 .miner-comet[data-skin="disco"] { --miner-gold: #ff3ea5; }
+.miner-comet[data-skin="noah"] { --miner-gold: #f0c4a8; }
+
+/* Noah (12 Nov 2026): a picture instead of colours, the same size as the asteroid (720 x 690, about 2 : 1.91), cut to
+   its lumpy shape by the border-radius. No craters or dark corner on it, as they'd sit on the face; the colours are
+   only for the glow, the flash when the stage changes and the comet. */
+:is(.miner-asteroid, .miner-shop-swatch)[data-skin="noah"] {
+  --rock-light: #ffe8d8;
+  --rock: #e0b49a;
+  --rock-dark: #5a3a2a;
+  --rock-glow: rgba(255, 220, 190, 0.35);
+  background: url('/assets/images/spaceOreMiner/skinNoah.png') center / cover no-repeat;
+}
+
+.miner-asteroid[data-skin="noah"] {
+  box-shadow: 0 0 50px var(--rock-glow);
+}
+
+.miner-asteroid[data-skin="noah"] .miner-crater {
+  display: none;
+}
 
 /* The click effects (burst() in spaceOreMiner.js): confetti and little stars instead of rock bits, or a ring going out
    from where the click hit */

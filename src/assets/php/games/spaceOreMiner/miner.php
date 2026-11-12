@@ -1040,6 +1040,8 @@ const HBHUB_MINER_SKINS = [
     'northernLights' => ['name' => 'Northern Lights', 'unlock' => ['shop' => true], 'moving' => true],
     'pocketGalaxy' => ['name' => 'Pocket Galaxy', 'unlock' => ['shop' => true], 'moving' => true],
     'disco' => ['name' => 'Disco', 'unlock' => ['shop' => true], 'moving' => true],
+    // A picture instead of colours (skinNoah.png), and the game's title says Noah Clicker while it's worn (renderStage())
+    'noah' => ['name' => 'Noah', 'unlock' => ['shop' => true], 'moving' => false],
 ];
 
 // ----- Star Shards: the rare currency. One flies past in every HBHUB_MINER_SHARD_SLOT_MS of time (slots counted from
@@ -1104,6 +1106,7 @@ const HBHUB_MINER_SHOP = [
     'northernLights' => ['name' => 'Northern Lights', 'kind' => 'skin', 'cost' => 40, 'text' => 'Green, teal and violet waving over the rock. Animated.'],
     'pocketGalaxy' => ['name' => 'Pocket Galaxy', 'kind' => 'skin', 'cost' => 50, 'text' => 'Deep space blue with a glow that breathes. Animated.'],
     'disco' => ['name' => 'Disco', 'kind' => 'skin', 'cost' => 60, 'text' => 'Every colour there is, and fast. The asteroid has rhythm now. Animated.'],
+    'noah' => ['name' => 'Noah', 'kind' => 'skin', 'cost' => 60, 'text' => 'The asteroid is Noah now. So is the game: it\'s called Noah Clicker while you wear it.'],
     'confetti' => ['name' => 'Confetti', 'icon' => 'fxConfetti', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks throw confetti instead of rock.'],
     'twinkle' => ['name' => 'Twinkle', 'icon' => 'fxTwinkle', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks throw glittering little stars.'],
     'bubbles' => ['name' => 'Bubbles', 'icon' => 'fxBubbles', 'kind' => 'effect', 'cost' => 8, 'text' => 'Clicks blow bubbles. Nobody knows how, in space.'],
