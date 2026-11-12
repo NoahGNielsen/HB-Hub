@@ -519,13 +519,24 @@
 
     // Takes in what the table sent
     function apply({ number, answer }) {
+        const isNew = !answer.same && answer.table && number >= appliedRequest;
+        if (isNew) {
+            appliedRequest = number;
+            version = answer.v;
+            table = answer.table;
+            receivedAt = Date.now();
+        }
+
+        // A spin the page hasn't shown yet: the wheel turns for it below, and until it stops the chips (this answer's
+        // and the top bar's, which come along in "nav") stay as they were, or they'd tell the result before the wheel
+        const last = isNew ? table.last : null;
+        const isNewRound = last !== null && last.round !== shownRound;
+        const startsSpin = isNewRound && !(shownRound === null && phase() !== 'spinning');
+        if (startsSpin) document.dispatchEvent(new CustomEvent('casino:hold', { detail: { hold: true } }));
+
         if (answer.nav) document.dispatchEvent(new CustomEvent('nav:update', { detail: answer.nav }));
-        if (answer.same || !answer.table || number < appliedRequest) return;
-        appliedRequest = number;
-        version = answer.v;
-        table = answer.table;
-        receivedAt = Date.now();
-        if (isSpinning) {
+        if (!isNew) return;
+        if (isSpinning || startsSpin) {
             pendingChips = answer.chips;
         } else {
             setChips(answer.chips);
@@ -539,13 +550,12 @@
         }
         isReady = me?.ready ?? false;
 
-        const last = table.last;
-        if (last !== null && last.round !== shownRound) {
-            if (shownRound === null && phase() !== 'spinning') {
+        if (isNewRound) {
+            if (startsSpin) {
+                spin(last);
+            } else {
                 shownRound = last.round; // over before the page opened: the wheel just stands on it
                 turnWheel(last.number, 0);
-            } else {
-                spin(last);
             }
         }
         if (isResult && !isSpinning && table.players.length > 0) clearResult(); // the next round has started
@@ -576,6 +586,7 @@
         await turnWheel(last.number, left > 300 ? left : 0);
         isSpinning = false;
         revealed = last.number;
+        document.dispatchEvent(new CustomEvent('casino:hold', { detail: { hold: false } })); // the top bar catches up
         if (pendingChips !== null) {
             setChips(pendingChips);
             pendingChips = null;

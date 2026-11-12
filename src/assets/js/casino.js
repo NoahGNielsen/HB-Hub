@@ -5,6 +5,8 @@
 // the answer's "wallet" on nav:update). /gambling/chips is only asked when the daily chips' countdown runs out and to
 // collect them. A game that gets a new balance in its own answers passes it on straight away with
 //     document.dispatchEvent(new CustomEvent('casino:wallet', { detail: { chips: 1234 } }));
+// A game that's showing something whose result the chips would give away (Roulette's wheel turning) holds them back
+// with casino:hold { hold: true }, and the last count that came in meanwhile shows on { hold: false }.
 (() => {
     const counts = document.querySelectorAll('[data-casino-chips]');
     const daily = document.querySelector('[data-casino-daily]');
@@ -23,6 +25,8 @@
     let nextDailyAt = null; // Date.now() when the daily chips can be collected again, null while they can be
     let countdownTimer = null;
     let isClaiming = false;
+    let isHeld = false; // casino:hold: the count stays as it is for now
+    let heldChips = null; // the last count that came in while held
 
     const formatChips = (amount) => amount.toLocaleString('en-US');
 
@@ -116,7 +120,13 @@
     }
 
     function show(wallet) {
-        if (typeof wallet?.chips === 'number') showChips(wallet.chips);
+        if (typeof wallet?.chips === 'number') {
+            if (isHeld) {
+                heldChips = wallet.chips;
+            } else {
+                showChips(wallet.chips);
+            }
+        }
         if (wallet?.daily) showDaily(wallet.daily);
     }
 
@@ -150,6 +160,14 @@
     });
 
     document.addEventListener('casino:wallet', (event) => show(event.detail));
+    document.addEventListener('casino:hold', (event) => {
+        isHeld = Boolean(event.detail?.hold);
+        if (!isHeld && heldChips !== null) {
+            const newChips = heldChips;
+            heldChips = null;
+            showChips(newChips);
+        }
+    });
     document.addEventListener('nav:poll', (event) => event.detail.params.set('wallet', '1'));
     document.addEventListener('nav:update', (event) => {
         if (event.detail.wallet) show(event.detail.wallet);
