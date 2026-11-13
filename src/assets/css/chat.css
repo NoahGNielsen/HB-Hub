@@ -1931,7 +1931,7 @@ a.chat-message-reply:hover {
 }
 
 .chat-tickets-list {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: min(140px, 30dvh);
   margin: 0 -4px;
   padding: 0 4px;
@@ -2171,9 +2171,12 @@ a.chat-message-reply:hover {
   background: rgba(0, 0, 0, 0.5);
 }
 
+/* "1 1 auto", not "flex: 1": the popup has no set height, and Safari (Macs, iPhones) works the popup's height out from
+   a flex-basis of 0, so it squashed the body (and the lists in it) to nothing and only the top of the header showed.
+   Starting from the content's height and shrinking (min-height: 0) when it's too tall works everywhere. */
 .chat-new-form,
 .chat-requests-body {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -2253,7 +2256,7 @@ a.chat-message-reply:hover {
 }
 
 .chat-new-users {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 120px;
   margin: 0 -4px;
   padding: 0 4px;
@@ -2372,7 +2375,7 @@ a.chat-message-reply:hover {
 
 /* Message requests popup */
 .chat-requests-list {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   margin: 0 -4px;
   padding: 0 4px;
@@ -2433,7 +2436,7 @@ a.chat-message-reply:hover {
 }
 
 .chat-members-list {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   margin: 0 -4px;
   padding: 0 4px;
@@ -2549,7 +2552,7 @@ a.chat-member:focus-visible {
 
 /* Pinned messages popup: a card for each pinned message, with who pinned it, Jump and Unpin along the bottom */
 .chat-pins-list {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   margin: 0 -4px;
   padding: 0 4px;
