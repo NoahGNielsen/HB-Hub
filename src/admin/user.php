@@ -5,7 +5,8 @@
 // Everyone else gets a 404, so it doesn't show that the page is here.
 //
 // Shows what there is about the user: their account, sessions (their logins), messages in every chat, chats and casino
-// chips, and ?export=1 downloads all of it as JSON. The actions are one form per card, like the settings page:
+// chips, and ?export=1 downloads everything the site has about them as JSON (games, reactions, feedback and the rest
+// too, see the export below). The actions are one form per card, like the settings page:
 // ghost ban or lift it (what they do in chats only shows to themselves, see the top of assets/php/chat.php),
 // ban or unban, change the name, bio or status (or remove them), remove the picture or the banner picture (or remove
 // and ban it), set the gambling block (straight away, without the wait),
@@ -247,20 +248,104 @@ function adminRedirect(int $userId, ?string $toast, string $card, string $query 
     exit;
 }
 
-// ?export=1: everything there is about the user as a JSON file
+/**
+ * For the export: the rows $sql finds (with $params), with the JSON columns named in $json turned back into arrays,
+ * so they show up as JSON in the file instead of as a string of it.
+ */
+function adminExportRows(PDO $db, string $sql, array $params, array $json = []): array
+{
+    $statement = $db->prepare($sql);
+    $statement->execute($params);
+    return array_map(function (array $row) use ($json): array {
+        foreach ($json as $column) {
+            $row[$column] = $row[$column] !== null ? json_decode($row[$column], true) : null;
+        }
+        return $row;
+    }, $statement->fetchAll());
+}
+
+// ?export=1: everything there is about the user as a JSON file, for a "send me my data" email (privacy.php). Every
+// table with something about them is here. Left out on purpose: the password hash and 2FA secret, session ids and the
+// device cookie's hash (they'd log you in), the files themselves (attachments, pictures), the admin log (the admins'
+// own notes) and anything that would give away a game in progress (Minesweeper's mines, a saved Matador game's card
+// order). When a new table stores something about users, add it here too.
 if (($_GET['export'] ?? null) === '1') {
     $exportUser = $target;
     unset($exportUser['isLocked'], $exportUser['isOnline']);
     $exportUser['totpIsOn'] = (bool) $exportUser['totpIsOn'];
     $exportUser['userSettings'] = hbHubUserSettings($exportUser['userSettings']);
-
-    $statement = $db->prepare('SELECT notificationType, notificationByUserId, notificationData, notificationCreatedTimestamp, notificationReadTimestamp
-        FROM `HBHub-Notifications` WHERE userId = ? ORDER BY notificationId DESC');
+    $statement = $db->prepare('SELECT userDiscordId, userDiscordName FROM `HBHub-Users` WHERE userId = ?');
     $statement->execute([$targetId]);
-    $notifications = array_map(function (array $row): array {
-        $row['notificationData'] = $row['notificationData'] !== null ? json_decode($row['notificationData'], true) : null;
-        return $row;
-    }, $statement->fetchAll());
+    $exportUser += $statement->fetch() ?: [];
+
+    $one = [$targetId];
+
+    // Chats: what's on their own row in each chat (nickname, muted, read up to), pins and reactions
+    $chatMemberships = adminExportRows($db, 'SELECT chatId, memberNickname, memberMutedUntil, lastReadMessageId, memberLastViewedTimestamp
+        FROM `HBHub-ChatMembers` WHERE userId = ? ORDER BY chatId', $one);
+    $pins = adminExportRows($db, 'SELECT messageId, chatId, messagePinnedTimestamp, messagePinIsGhost
+        FROM `HBHub-Messages` WHERE messagePinnedBy = ? ORDER BY messagePinnedTimestamp DESC', $one);
+    $reactions = adminExportRows($db, 'SELECT r.messageId, m.chatId, r.reactionEmoji, r.reactionTimestamp, r.reactionIsGhost
+        FROM `HBHub-MessageReactions` r LEFT JOIN `HBHub-Messages` m ON m.messageId = r.messageId
+        WHERE r.userId = ? ORDER BY r.reactionId DESC', $one);
+
+    // The casino's games, besides the chip history
+    $casino = [
+        'blackjackRounds' => adminExportRows($db, 'SELECT p.roundId, p.roomId, p.roomType, p.seatNumber, p.playersInRound, p.playerBet, p.playerWagered,
+                p.playerInsurance, p.playerPayout, p.playerInsurancePayout, p.playerNet, p.playerResult, p.playerHands, p.playerHits, p.playerStands,
+                p.playerDoubles, p.playerSplits, p.playerAutoStands, p.playerInsuranceTaken, p.playerHandsDetail, r.roundDealerCards, r.roundDealerTotal, p.playerTimestamp
+            FROM `HBHub-BlackjackPlayerRounds` p LEFT JOIN `HBHub-BlackjackRounds` r ON r.roundId = p.roundId
+            WHERE p.userId = ? ORDER BY p.playerRoundId DESC', $one, ['playerHandsDetail']),
+        'baccaratRounds' => adminExportRows($db, 'SELECT p.roundId, p.roomId, p.roomType, p.seatNumber, p.playersInRound, p.playerBetPlayer, p.playerBetBanker,
+                p.playerBetTie, p.playerBetPlayerPair, p.playerBetBankerPair, p.playerWagered, p.playerPayout, p.playerNet, p.playerResult,
+                r.roundPlayerCards, r.roundBankerCards, r.roundPlayerTotal, r.roundBankerTotal, r.roundWinner, p.playerTimestamp
+            FROM `HBHub-BaccaratPlayerRounds` p LEFT JOIN `HBHub-BaccaratRounds` r ON r.roundId = p.roundId
+            WHERE p.userId = ? ORDER BY p.playerRoundId DESC', $one),
+        'rouletteSpins' => adminExportRows($db, 'SELECT spinRound, spinNumber, spinWagered, spinPayout, spinNet, spinBets, spinTimestamp
+            FROM `HBHub-RouletteSpins` WHERE userId = ? ORDER BY spinId DESC', $one, ['spinBets']),
+        'rouletteBetsNow' => adminExportRows($db, 'SELECT betRound, betBets, betWagered, betReady, betTimestamp
+            FROM `HBHub-RouletteBets` WHERE userId = ?', $one, ['betBets']),
+        'slotSpins' => adminExportRows($db, 'SELECT spinBet, spinStops, spinPayout, spinNet, spinTimestamp
+            FROM `HBHub-SlotSpins` WHERE userId = ? ORDER BY spinId DESC', $one),
+    ];
+
+    // The rooms of every game with tables: seats they're in now and invites, plus the in-game chat and results where
+    // the game has them. The table names come from this list, never from the request.
+    $games = [];
+    foreach (['blackjack' => 'Blackjack', 'baccarat' => 'Baccarat', 'chess' => 'Chess', 'matador' => 'Matador', 'uno' => 'Uno'] as $key => $table) {
+        $games[$key]['seats'] = adminExportRows($db, 'SELECT s.*, r.roomName FROM `HBHub-' . $table . 'Seats` s
+            LEFT JOIN `HBHub-' . $table . 'Rooms` r ON r.roomId = s.roomId WHERE s.userId = ?', $one);
+        $games[$key]['invites'] = adminExportRows($db, 'SELECT i.*, r.roomName, u.userName AS invitedByName FROM `HBHub-' . $table . 'Invites` i
+            LEFT JOIN `HBHub-' . $table . 'Rooms` r ON r.roomId = i.roomId LEFT JOIN `HBHub-Users` u ON u.userId = i.invitedByUserId
+            WHERE i.userId = ?', $one);
+    }
+    foreach (['chess' => 'Chess', 'matador' => 'Matador', 'uno' => 'Uno'] as $key => $table) {
+        $games[$key]['chat'] = adminExportRows($db, 'SELECT c.roomId, r.roomName, c.chatText, c.chatTimestamp FROM `HBHub-' . $table . 'Chat` c
+            LEFT JOIN `HBHub-' . $table . 'Rooms` r ON r.roomId = c.roomId WHERE c.userId = ? ORDER BY c.chatMessageId DESC', $one);
+    }
+    $games['chess']['results'] = adminExportRows($db, 'SELECT t.*, u.userName AS opponentName FROM `HBHub-ChessResults` t
+        LEFT JOIN `HBHub-Users` u ON u.userId = t.opponentUserId WHERE t.userId = ? ORDER BY t.resultId DESC', $one);
+    $games['matador']['results'] = adminExportRows($db, 'SELECT * FROM `HBHub-MatadorResults` WHERE userId = ? ORDER BY resultId DESC', $one);
+    $games['matador']['save'] = adminExportRows($db, 'SELECT saveName, saveSummary, saveRoomId, saveTimestamp
+        FROM `HBHub-MatadorSaves` WHERE userId = ?', $one, ['saveSummary'])[0] ?? null;
+    $games['uno']['results'] = adminExportRows($db, 'SELECT * FROM `HBHub-UnoResults` WHERE userId = ? ORDER BY resultId DESC', $one);
+    $games['wordle'] = adminExportRows($db, 'SELECT gameLanguage, gameDate, gameGuesses, gameResult, gameStartTimestamp, gameEndTimestamp
+        FROM `HBHub-WordleGames` WHERE userId = ? ORDER BY gameDate DESC, gameLanguage', $one);
+    $games['minesweeper'] = adminExportRows($db, 'SELECT gameId, gameSize, gameResult, gameMs, gameStartTimestamp, gameEndTimestamp
+        FROM `HBHub-MinesweeperGames` WHERE userId = ? ORDER BY gameId DESC', $one);
+    $games['oreMiningInc'] = [
+        'save' => adminExportRows($db, 'SELECT saveState, saveOreAllTime, saveOrePerSecond, saveDarkMatter, saveAntimatter, saveStrangeMatter, saveWarps,
+                saveClicks, saveAchievements, saveSkills, saveStartTimestamp, saveUpdatedTimestamp
+            FROM `HBHub-MinerSaves` WHERE userId = ?', $one, ['saveState'])[0] ?? null,
+        'anomalyTimes' => adminExportRows($db, 'SELECT timeAnomaly, timeWeek, timeBest, timeDone, timeUpdatedTimestamp
+            FROM `HBHub-MinerAnomalyTimes` WHERE timeUserId = ? ORDER BY timeUpdatedTimestamp DESC', $one),
+        'engineContributions' => adminExportRows($db, 'SELECT e.engineNumber, c.contributionStage, c.contributionParts, c.contributionSource,
+                c.contributionAnomaly, c.contributionMs, c.contributionTimestamp
+            FROM `HBHub-MinerContributions` c LEFT JOIN `HBHub-MinerEngines` e ON e.engineId = c.contributionEngineId
+            WHERE c.contributionUserId = ? ORDER BY c.contributionId DESC', $one),
+        'crashReports' => adminExportRows($db, 'SELECT crashReportKind, crashReportData, crashReportUserAgent, crashReportCreatedTimestamp
+            FROM `HBHub-MinerCrashReports` WHERE crashReportUserId = ? ORDER BY crashReportId DESC', $one, ['crashReportData']),
+    ];
 
     adminLog($db, $adminId, 'user.export', $targetId);
     header('Content-Type: application/json; charset=utf-8');
@@ -270,13 +355,28 @@ if (($_GET['export'] ?? null) === '1') {
         'exportedTimestamp' => date('c'),
         'user' => $exportUser,
         'sessions' => adminSessions($db, $targetId),
+        'loginDevices' => adminExportRows($db, 'SELECT deviceFailedLoginCount, deviceLockedTimestamp, deviceCreatedTimestamp, deviceLastUsedTimestamp
+            FROM `HBHub-LoginDevices` WHERE userId = ? ORDER BY deviceLastUsedTimestamp DESC', $one),
         'chats' => adminChats($db, $targetId),
+        'chatMemberships' => $chatMemberships,
         'messages' => adminMessages($db, $targetId),
-        'casinoWallet' => adminWallet($db, $targetId),
-        'casinoTransactions' => adminTransactions($db, $targetId),
+        'pinnedMessages' => $pins,
+        'reactions' => $reactions,
         'attachmentTicketsTotal' => hbHubChatAttachmentTicketsTotal($db, $targetId),
         'attachments' => adminAttachments($db, $targetId),
-        'notifications' => $notifications,
+        'notifications' => adminExportRows($db, 'SELECT notificationType, notificationByUserId, notificationData, notificationCreatedTimestamp, notificationReadTimestamp
+            FROM `HBHub-Notifications` WHERE userId = ? ORDER BY notificationId DESC', $one, ['notificationData']),
+        'casinoWallet' => adminWallet($db, $targetId),
+        'casinoTransactions' => adminTransactions($db, $targetId),
+        'casino' => $casino,
+        'games' => $games,
+        'feedback' => adminExportRows($db, 'SELECT feedbackContent, feedbackPage, feedbackFromDev, feedbackDoneTimestamp, feedbackCreatedTimestamp
+            FROM `HBHub-Feedback` WHERE feedbackUserId = ? ORDER BY feedbackId DESC', $one),
+        'serverBusyReports' => adminExportRows($db, 'SELECT watchdogCount, watchdogPage, watchdogAddresses, watchdogIpv4, watchdogIpv6, watchdogUserAgent,
+                watchdogFromDev, watchdogFirstTimestamp, watchdogLastTimestamp, watchdogCreatedTimestamp
+            FROM `HBHub-Watchdog` WHERE watchdogUserId = ? ORDER BY watchdogId DESC', $one, ['watchdogAddresses']),
+        'bannedPictures' => adminExportRows($db, 'SELECT bannedAvatarHash, bannedAvatarType, bannedAvatarMatchCount, bannedAvatarLastMatchTimestamp, bannedAvatarCreatedTimestamp
+            FROM `HBHub-BannedAvatars` WHERE bannedAvatarFromUserId = ? ORDER BY bannedAvatarId DESC', $one),
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
