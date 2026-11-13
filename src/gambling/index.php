@@ -399,7 +399,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                                 <span class="casino-home-game-name">Slots</span>
                                 <span class="casino-home-game-tag">Solo &middot; <?= count(HBHUB_SLOTS_LINES) ?> lines</span>
                             </span>
-                            <span class="casino-home-game-text">Spin three reels and line up the symbols. Three 7s pay <?= HBHUB_SLOTS_PAYS['seven'] ?>&times; a line.</span>
+                            <span class="casino-home-game-text">Spin three reels and line up the symbols.</span>
                             <span class="casino-home-game-foot">
                                 <?php if ($casinoSlotsPlaying > 0): ?>
                                     <span class="casino-home-game-live is-live"><?= $casinoSlotsPlaying ?> playing</span>
