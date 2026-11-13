@@ -111,6 +111,8 @@ function adminLogText(array $entry): string
             : ($amount > 0 ? 'Gave {user} ' . $amount . ' more attachment ' . ($amount === 1 ? 'ticket' : 'tickets')
                 : 'Took ' . -$amount . ' attachment ' . ($amount === -1 ? 'ticket' : 'tickets') . ' from {user}')
             . (isset($data['total']) ? ' (' . (int) $data['total'] . ' in all now)' : ''),
+        'watchdog.clear' => isset($data['count'])
+            ? 'Cleared the Watchdog\'s log of 508 errors (' . number_format((int) $data['count']) . ((int) $data['count'] === 1 ? ' report)' : ' reports)') : null,
         'chat.background' => !empty($data['reset']) ? 'Reset the background of {chat}' : null,
         'chat.kick' => !empty($data['invite']) ? 'Took back {user}\'s ' . (!empty($data['ghost']) ? 'ghost ' : '') . 'invite to {chat}' : null,
         'feedback.done', 'feedback.new', 'feedback.delete' => isset($data['feedbackId'])

@@ -685,6 +685,35 @@
   flex-wrap: wrap;
 }
 
+/* The Watchdog (admin/watchdog.php): the most-hit addresses, each report's addresses under its page, the user agent
+   wrapping instead of making the table endless, and the Clear button on its own line */
+.admin-watchdog-subheading {
+  margin: 18px 0 8px;
+  font-size: 0.95rem;
+}
+
+.admin-watchdog-top,
+.admin-watchdog-addresses {
+  margin: 0;
+  padding-left: 1.4em;
+  overflow-wrap: anywhere;
+}
+
+.admin-watchdog-addresses {
+  margin-top: 4px;
+  list-style: disc;
+}
+
+.admin-watchdog-agent {
+  min-width: 200px;
+  max-width: 320px;
+  overflow-wrap: anywhere;
+}
+
+.admin-watchdog-clear {
+  margin-top: 16px;
+}
+
 /* The Cosmic Engine page (admin/engine.php): its numbers as label and value side by side, and the cost boxes */
 .admin-engine-numbers {
   margin: 0;

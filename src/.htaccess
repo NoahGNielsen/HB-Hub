@@ -173,6 +173,7 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # The code links to the short ones; the old long ones are redirected near the top.
     RewriteRule ^(profile|settings|notifications|feedback|avatar|banner)$ otherPages/$1.php [L]
     RewriteRule ^nav-updates$ otherPages/navUpdates.php [L]
+    RewriteRule ^watchdog$ otherPages/watchdog.php [L]
     RewriteRule ^(login|onboarding|discord)$ userMgmt/$1.php [L]
 
     # Without the slash Apache would add it itself, to the folder's real name, so it's added here first.

@@ -53,6 +53,8 @@ $headerKeywords = array_unique([
 <?php if (empty($headerHomeNav)): ?>
 <link rel="stylesheet" href="/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
 <?php endif; ?>
+<!-- The Watchdog counts the 508s the page gets (assets/php/watchdog.php). First of the page's scripts, so every fetch() goes through it. -->
+<script src="/assets/js/watchdog.js?v=<?= filemtime(__DIR__ . '/../js/watchdog.js') ?>" defer></script>
 <link rel="terms-of-service" href="https://hbhub.noahgajnielsen.dk/legal/terms">
 <link rel="privacy-policy" href="https://hbhub.noahgajnielsen.dk/legal/privacy">
 

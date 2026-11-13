@@ -1,8 +1,8 @@
 <?php
 // The admin panel's pages: the lists of users and chats (admin/index.php), the people with more than one account
 // (admin/people.php), the banned pictures (admin/banned.php), the feedback (admin/feedback.php), Ore Mining Inc.'s crash
-// reports (admin/crashes.php), the admin log (admin/log.php), and one user (admin/user.php), person (admin/person.php)
-// or chat (admin/chat.php).
+// reports (admin/crashes.php), the Watchdog's 508s (admin/watchdog.php), the admin log (admin/log.php), and one user
+// (admin/user.php), person (admin/person.php) or chat (admin/chat.php).
 // Only site admins (userRole 2) get in, everyone else gets a 404 so it doesn't show they're there. What the pages share
 // is here: who gets in, the side menus (the settings page's, settings.css), and how dates, statuses, pictures, messages
 // and chat names are shown. Everything they do is logged with adminLog.php.
@@ -113,9 +113,10 @@ function adminPersonUserIds(PDO $db, int $userId): array
 /**
  * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), People (admin/people.php), Banned
  * pictures (admin/banned.php), Feedback (admin/feedback.php), Announcements (admin/announcements.php), Crash reports (admin/crashes.php), Cosmic Engine
- * (admin/engine.php) and Admin log (admin/log.php), each with how many there are in all, or for Feedback how many are
- * new and for the Cosmic Engine how many stages of the one being built are done. $active is 'users', 'chats', 'people', 'banned', 'feedback', 'announcements',
- * 'crashes', 'engine' or 'log'.
+ * (admin/engine.php), Watchdog (admin/watchdog.php) and Admin log (admin/log.php), each with how many there are in all, or
+ * for Feedback how many are new, for the Cosmic Engine how many stages of the one being built are done and for the
+ * Watchdog how many 508s there were in the last 24 hours. $active is 'users', 'chats', 'people', 'banned', 'feedback',
+ * 'announcements', 'crashes', 'engine', 'watchdog' or 'log'.
  */
 function adminListsMenuHtml(PDO $db, string $active): string
 {
@@ -125,6 +126,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
         (SELECT COUNT(*) FROM `HBHub-Announcements`) AS announcements,
         (SELECT COUNT(*) FROM `HBHub-MinerCrashReports`) AS crashes,
         (SELECT COALESCE((SELECT engineStage FROM `HBHub-MinerEngines` ORDER BY engineId DESC LIMIT 1), 0)) AS engine,
+        (SELECT COALESCE(SUM(watchdogCount), 0) FROM `HBHub-Watchdog` WHERE watchdogLastTimestamp > NOW() - INTERVAL 1 DAY) AS watchdog,
         (SELECT COUNT(*) FROM `HBHub-AdminLog`) AS log')->fetch();
     $totals['people'] = count(adminPersonGroups($db));
     $lists = [
@@ -136,6 +138,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
         'announcements' => ['Announcements', '/admin/announcements'],
         'crashes' => ['Crash reports', '/admin/crashes'],
         'engine' => ['Project Starbound', '/admin/engine'],
+        'watchdog' => ['Watchdog', '/admin/watchdog'],
         'log' => ['Admin log', '/admin/log'],
     ];
 
@@ -144,7 +147,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
     foreach ($lists as $list => [$label, $href]) {
         $count = (int) $totals[$list];
         $html .= '<li><a class="settings-menu-link" href="' . $href . '"' . ($list === $active ? ' aria-current="page"' : '') . '>'
-            . $label . ' <span class="settings-menu-count' . ($list === 'feedback' && $count > 0 ? ' is-new' : '') . '">'
+            . $label . ' <span class="settings-menu-count' . (in_array($list, ['feedback', 'watchdog'], true) && $count > 0 ? ' is-new' : '') . '">'
             . number_format($count) . '</span></a></li>';
     }
     return $html . '</ul></div></div></nav>';

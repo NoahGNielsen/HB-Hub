@@ -70,6 +70,7 @@ const ADMIN_LOG_ACTIONS = [
     'announcement.send' => 'Sent an announcement to every user',
     'announcement.takeBack' => 'Took back an announcement from every user',
     'crash.delete' => 'Deleted a Ore Mining Inc. crash report',
+    'watchdog.clear' => 'Cleared the Watchdog\'s log of 508 errors',
     'engine.costs' => 'Changed the costs of the Ore Mining Inc. Project Starbound stages',
     'banned.add' => 'Added a banned picture',
     'banned.remove' => 'Removed a banned picture',

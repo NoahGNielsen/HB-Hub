@@ -7,7 +7,7 @@
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-const HBHUB_PRIVACY_UPDATED = '12 November 2026';
+const HBHUB_PRIVACY_UPDATED = '13 November 2026';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -25,6 +25,7 @@ const HBHUB_PRIVACY_COOKIES = [
 // text says so.
 const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
+    'hbHubWatchdog' => 'How many times this tab got a "server busy" error (508) and from which addresses on HB Hub, until the report about it has reached the server (see Server busy reports above). Kept in session storage, so it\'s gone when you close the tab, and deleted as soon as the report has gone through.',
     'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it\'s still there when you refresh or come back to the chat. Kept in session storage, so it\'s gone when you close the tab.',
     'hbHubNotifiedMessageId' => 'The last message you got a browser notification or sound for, so you don\'t get it twice.',
     'hbHubNavPolledAt' => 'When one of your HB Hub tabs last checked for new messages for browser notifications or the sound (just a time), so the tabs you aren\'t looking at don\'t all check at once.',
@@ -135,7 +136,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             The IP address you signed up from, and the one you used most recently. Only the latest one is kept,
                             not a history. IP addresses are also counted briefly when accounts are made, so one place can't make
-                            hundreds of accounts.
+                            hundreds of accounts, and kept for 30 days with a server busy report (see
+                            <a href="#watchdog">Server busy reports</a> below).
                         </p>
                         <h3>Logins</h3>
                         <p>
@@ -354,7 +356,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., and Blackjack, Baccarat and
                             Roulette with play chips) can be played without an account. Then nothing about you or your game is
-                            stored on HB Hub's server. Your game is kept in your own browser instead, encrypted by HB Hub so it
+                            stored on HB Hub's server, except a server busy report if the server is too busy to answer your
+                            browser (see <a href="#watchdog">Server busy reports</a> below). Your game is kept in your own browser instead, encrypted by HB Hub so it
                             can't be read or changed there, and sent along with each move, so the server can check it with the
                             same rules as the normal games and send it back. Wordle and Ore Mining Inc. keep it in local storage
                             (see <a href="#cookies">Cookies and local storage</a>); the casino games only keep it in the open page,
@@ -387,6 +390,20 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             (not who). Only site admins can see that. When an admin takes it back, it's deleted, and so is
                             everyone's notification of it.
                         </p>
+                        <h3 id="watchdog">Server busy reports</h3>
+                        <p>
+                            HB Hub's server can only handle a few requests at the same time, and when there are too many it
+                            answers some of them with a "server busy" error (508) instead. Every page on HB Hub counts the times
+                            that happens to it, and sends a short report about it to HB Hub's own server a few seconds later
+                            (trying again until it gets through), so the admins can see when and where the server is too busy.
+                            This also happens when you're not logged in. A report holds how many errors there were, when the first
+                            and last of them happened, when the report arrived, the address of the page you were on and of the
+                            ones that gave the error (only the page, like <code>/chat/</code>, not which chat or what you searched
+                            for), your account if you're logged in, your IP address, your browser's user agent (which says which
+                            browser and system you use), and whether it came from the test version of the site. Until it has gone
+                            through, it's kept in your browser (see <a href="#cookies">Cookies and local storage</a>). Only site
+                            admins can see the reports.
+                        </p>
                         <h3>Admin log</h3>
                         <p>
                             Everything a site admin does in the admin panel is written to an admin log: which admin it was, when,
@@ -404,7 +421,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             No email address, phone number, real address or date of birth. No analytics profile, no advertising
                             ids, and no record of which pages you open, apart from the one page you send feedback from, the
-                            views of Ore Mining Inc. in a crash report you agree to send (and, for site admins, the admin log above).
+                            views of Ore Mining Inc. in a crash report you agree to send, the pages in a server busy report
+                            (and, for site admins, the admin log above).
                         </p>
                     </section>
 
@@ -414,7 +432,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li><strong>To run the site</strong>: your account, messages and games are the site. Without them there's nothing to show you.</li>
                             <li><strong>To keep it safe</strong>: IP addresses, failed logins and the device cookie stop people from breaking into accounts, spamming sign-ups and dodging bans. The banned pictures list stops a banned person from coming back with a copy of their old profile.</li>
                             <li><strong>To keep it friendly</strong>: messages are kept so admins can act on bullying or abuse.</li>
-                            <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want. Ore Mining Inc. crash reports, which are only sent if you agree, and the short notes browsers send about crashes, which aren't tied to you, help find out why the game crashed.</li>
+                            <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want. Ore Mining Inc. crash reports, which are only sent if you agree, and the short notes browsers send about crashes, which aren't tied to you, help find out why the game crashed. Server busy reports show when and where the server has too much to do, so it can be fixed.</li>
                         </ul>
                         <p>
                             Under the GDPR, this is "necessary to provide the service you signed up for" and HB Hub's
@@ -437,7 +455,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 kept (their name, size, which chat and how many tickets they take), and your banner picture with them, but doesn't open them,
                                 though the site's owner can reach attachment files on the server. Site admins can delete your
                                 attachments and give you more tickets or take some away. They use it to deal with abuse, bans and
-                                broken accounts, and to improve the site. Feedback and Ore Mining Inc. crash reports are only
+                                broken accounts, and to improve the site. Feedback, Ore Mining Inc. crash reports and server busy reports are only
                                 ever seen by site admins, never by other users. They can never see your password or your two-factor secret. Everything they do
                                 there, also just looking at your account or a chat you're in, goes in the admin log, which only
                                 site admins can read and nobody can change or delete.
@@ -525,12 +543,17 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
                             That right away removes your name, profile picture, banner, bio, status, education badge, year, class, settings, password, two-factor
-                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, your Minesweeper games, and the files you attached in chats. Your name is replaced
+                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, your server busy reports, your Minesweeper games, and the files you attached in chats. Your name is replaced
                             with "Deleted User".
                         </p>
                         <p>
                             Ore Mining Inc. crash reports and the browser notes about crashes are kept for 90 days, and then
                             deleted by themselves (at the latest the night after). Site admins can delete crash reports sooner.
+                        </p>
+                        <p>
+                            Server busy reports are kept for 30 days, and then deleted by themselves (at the latest the night
+                            after). Site admins can delete them all sooner. Reports sent when you weren't logged in aren't tied to
+                            an account, so they're only deleted that way.
                         </p>
                         <p>
                             The free games you play without an account are only kept in your browser, so HB Hub has nothing to

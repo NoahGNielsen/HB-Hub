@@ -7,6 +7,7 @@
 //   - GIF searches cached longer than 15 minutes
 //   - admin log rows older than a year (assets/php/adminLog.php)
 //   - Ore Mining Inc. crash reports and browser crash notes older than 90 days (assets/php/games/spaceOreMiner/crashReports.php)
+//   - the Watchdog's 508 reports older than 30 days (assets/php/watchdog.php)
 //   - linked Discord accounts' usernames, asked from Discord again in case they changed them (assets/php/discord.php).
 //     Skipped without discord_bot_token in hbHubSiteConfig.php.
 // Each job runs on its own, so one failing doesn't stop the rest. It prints one line per job, and errors go to
@@ -41,6 +42,7 @@ require_once __DIR__ . '/../assets/php/games/uno/room.php';
 require_once __DIR__ . '/../assets/php/adminLog.php';
 require_once __DIR__ . '/../assets/php/games/spaceOreMiner/crashReports.php';
 require_once __DIR__ . '/../assets/php/discord.php';
+require_once __DIR__ . '/../assets/php/watchdog.php';
 
 const HBHUB_CRON_ATTACHMENT_ROUNDS = 1000; // the most sweeps of 50 attachments in one night, in case something keeps finding more
 
@@ -101,6 +103,10 @@ hbHubCronRun('Miner crash reports', static function () use ($db): string {
 
 hbHubCronRun('Miner browser crash notes', static function () use ($db): string {
     return hbHubMinerBrowserCrashSweep($db) . ' old notes removed';
+});
+
+hbHubCronRun('Watchdog', static function () use ($db): string {
+    return hbHubWatchdogSweep($db) . ' old reports removed';
 });
 
 hbHubCronRun('Discord names', static function () use ($db, $siteConfig): string {

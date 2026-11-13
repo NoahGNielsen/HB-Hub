@@ -1005,6 +1005,27 @@ CREATE TABLE `HBHub-Users` (
 INSERT INTO `HBHub-Users` (`userId`, `userName`, `userNameLower`, `userPasswordHash`, `userFailedLoginCount`, `userStatus`, `userRole`) VALUES
 (0, 'HB Hub System', NULL, NULL, NULL, NULL, NULL);
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-Watchdog`
+--
+
+CREATE TABLE `HBHub-Watchdog` (
+  `watchdogId` int UNSIGNED NOT NULL,
+  `watchdogUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who got them, NULL when not logged in (deleted with the account)',
+  `watchdogCount` int UNSIGNED NOT NULL COMMENT 'How many 508 answers the browser got',
+  `watchdogPage` varchar(255) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The path of the page the user was on (no query), NULL when not known',
+  `watchdogAddresses` json NOT NULL COMMENT 'Which addresses answered 508 and how often: [{"path": "/chat/", "count": 3}, ...], paths only (see src/assets/php/watchdog.php)',
+  `watchdogIpv4` varchar(15) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  `watchdogIpv6` varchar(62) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  `watchdogUserAgent` varchar(255) DEFAULT NULL COMMENT 'The browser''s user agent, as it sent the report',
+  `watchdogFromDev` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 when it came from the dev site (dev branch), 0 from the live one',
+  `watchdogFirstTimestamp` datetime NOT NULL COMMENT 'When the first of them happened, by its age',
+  `watchdogLastTimestamp` datetime NOT NULL COMMENT 'When the last of them happened, by its age',
+  `watchdogCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the report got through. Deleted after HBHUB_WATCHDOG_KEEP_DAYS'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='508 Resource Limit Is Reached answers browsers got from the site, read on the admin panel (src/admin/watchdog.php)';
+
 --
 -- Indexes for dumped tables
 --
@@ -1469,6 +1490,14 @@ ALTER TABLE `HBHub-Users`
   ADD KEY `fk_users_banner` (`userBannerAttachmentId`);
 
 --
+-- Indexes for table `HBHub-Watchdog`
+--
+ALTER TABLE `HBHub-Watchdog`
+  ADD PRIMARY KEY (`watchdogId`),
+  ADD KEY `createdTimestamp` (`watchdogCreatedTimestamp`),
+  ADD KEY `fk_watchdog_user` (`watchdogUserId`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -1675,6 +1704,12 @@ ALTER TABLE `HBHub-UnoRooms`
 --
 ALTER TABLE `HBHub-Users`
   MODIFY `userId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-Watchdog`
+--
+ALTER TABLE `HBHub-Watchdog`
+  MODIFY `watchdogId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -2022,6 +2057,12 @@ ALTER TABLE `HBHub-UnoSeats`
 ALTER TABLE `HBHub-Users`
   ADD CONSTRAINT `fk_users_avatar` FOREIGN KEY (`userAvatarAttachmentId`) REFERENCES `HBHub-Attachments` (`attachmentId`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_users_banner` FOREIGN KEY (`userBannerAttachmentId`) REFERENCES `HBHub-ChatAttachments` (`attachmentId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-Watchdog`
+--
+ALTER TABLE `HBHub-Watchdog`
+  ADD CONSTRAINT `fk_watchdog_user` FOREIGN KEY (`watchdogUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
