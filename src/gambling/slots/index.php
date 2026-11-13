@@ -11,15 +11,26 @@
 // the screen's edges and a canvas over the page are there for slots.js's win effects, and the lever beside the machine,
 // the bulbs down its sides, a "comet" on each payline and a badge for what a line paid for the rest of its show. The
 // Sound button by the leaderboard link mutes slots.js's sound effects.
+//
+// It's also the guest Slots at /play/slots, for visitors without an account: guestGames/slots/ sets $guestGame and
+// includes this page (see assets/php/guestGames/guestGames.php). Then it has the frontpage's top bar, the guest bar
+// (with the play chips, which start over every time) and the text for search engines, no leaderboard or spins from
+// before, and it spins through /play/slots/spin (data-api), which keeps the play chips in a sealed token.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/slots.php';
-hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
+$guestGame ??= null;
+if ($guestGame === null) {
+    hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
 
-$db = hbHubDatabase();
-$userId = (int) $hbHubUser['userId'];
-$navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
-$slotsHistory = hbHubSlotsHistory($db, $userId);
+    $db = hbHubDatabase();
+    $userId = (int) $hbHubUser['userId'];
+    $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
+    $slotsHistory = hbHubSlotsHistory($db, $userId);
+} else {
+    $navCasinoChips = HBHUB_GUEST_CASINO_CHIPS; // in the guest bar instead (guestGames/top.php)
+    $slotsHistory = [];
+}
 $slotsWindow = hbHubSlotsWindow($slotsHistory[0]['stops'] ?? [0, 0, 0]);
 $slotsBets = [10, 50, 100, 500, 1000]; // the quick bets under the machine
 $slotsLineCount = count(HBHUB_SLOTS_LINES);
@@ -58,22 +69,34 @@ function slotsHistoryLabel(array $spin): string
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="/assets/css/slots.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/slots.css') ?>">
-    <title>Slots - HB Hub</title>
-    <meta name="robots" content="noindex">
-    <meta name="description" content="The slot machine in the HB Hub casino">
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/head.php'; ?>
+    <?php else: ?>
+        <title>Slots - HB Hub</title>
+        <meta name="robots" content="noindex">
+        <meta name="description" content="The slot machine in the HB Hub casino">
+    <?php endif; ?>
 </head>
-<body>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="sl" data-slots data-api="/gambling/slots/spin" data-chips="<?= $navCasinoChips ?>"
+<body<?= $guestGame !== null ? ' class="home-body"' : '' ?>>
+    <?php if ($guestGame !== null): ?>
+        <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
+    <?php else: ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
+    <?php endif; ?>
+    <main class="sl" data-slots data-api="<?= $guestGame !== null ? '/play/slots/spin' : '/gambling/slots/spin' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?> data-chips="<?= $navCasinoChips ?>"
           data-bet-step="<?= HBHUB_SLOTS_BET_STEP ?>" data-min-bet="<?= HBHUB_SLOTS_MIN_BET ?>"
           data-reels="<?= htmlspecialchars(json_encode(HBHUB_SLOTS_REELS)) ?>"
           data-symbols="<?= htmlspecialchars(json_encode(HBHUB_SLOTS_SYMBOLS, JSON_UNESCAPED_UNICODE)) ?>"
           data-lines="<?= htmlspecialchars(json_encode(HBHUB_SLOTS_LINES)) ?>"
           data-stops="<?= implode(' ', $slotsHistory[0]['stops'] ?? [0, 0, 0]) ?>">
-        <a class="casino-back" href="/gambling/">&larr; Casino</a>
+        <?php if ($guestGame !== null): ?>
+            <a class="casino-back" href="/">&larr; HB Hub</a>
+        <?php else: ?>
+            <a class="casino-back" href="/gambling/">&larr; Casino</a>
+        <?php endif; ?>
         <div class="sl-header">
             <div>
                 <h1 class="sl-title">Slots</h1>
@@ -88,9 +111,14 @@ function slotsHistoryLabel(array $spin): string
                         <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>
                     </svg>
                 </button>
-                <a class="casino-btn" href="/gambling/slots/leaderboard">Leaderboard</a>
+                <?php if ($guestGame === null): ?>
+                    <a class="casino-btn" href="/gambling/slots/leaderboard">Leaderboard</a>
+                <?php endif; ?>
             </div>
         </div>
+        <?php if ($guestGame !== null): ?>
+            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/top.php'; ?>
+        <?php endif; ?>
 
         <section class="sl-machine" aria-label="The slot machine">
             <!-- A row of bulbs down each side, and the lever, which pulls itself on every spin and spins when clicked
@@ -154,7 +182,11 @@ function slotsHistoryLabel(array $spin): string
                 <p class="sl-result" role="status" data-sl-result>Pick a bet and pull the lever.</p>
                 <p class="sl-win" data-sl-win hidden></p>
                 <p class="sl-message" role="alert" data-sl-message></p>
-                <p class="sl-hint" data-sl-broke hidden>You're out of chips. <a href="/gambling/">Collect your daily chips</a></p>
+                <?php if ($guestGame !== null): ?>
+                    <p class="sl-hint" data-sl-broke hidden>You're out of chips. Reload the page for a new stack.</p>
+                <?php else: ?>
+                    <p class="sl-hint" data-sl-broke hidden>You're out of chips. <a href="/gambling/">Collect your daily chips</a></p>
+                <?php endif; ?>
             </div>
 
             <!-- The bet and the Spin button: the stepper over the quick bets on the left, the big button on the right -->
@@ -213,7 +245,10 @@ function slotsHistoryLabel(array $spin): string
         <div class="sl-flash" data-sl-flash aria-hidden="true"></div>
         <canvas class="sl-fx" data-sl-fx aria-hidden="true"></canvas>
     </main>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/bottom.php'; ?>
+    <?php endif; ?>
+    <?php $hbHubShowSiteFooter = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="/assets/js/slots.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/slots.js') ?>" defer></script>
 </body>
 </html>

@@ -9,8 +9,10 @@
 // result and the time are needed. The time is the server's own, from the first click to the one that won.
 // Starting a game ends the user's game that's still being played (as left), so there's only ever one, and a game you
 // walk away from counts as played but not won.
-// Used by games/minesweeper/move (the JSON) and games/minesweeper/leaderboard.
+// Used by games/minesweeper/move (the JSON) and games/minesweeper/leaderboard, and by the guest version at
+// /play/minesweeper (guestGames/minesweeper/), whose board is a sealed token instead of a row ("Guests" further down).
 require_once __DIR__ . '/../../database.php';
+require_once __DIR__ . '/../../guestGames/guestGames.php';
 
 const HBHUB_MINESWEEPER_SIZES = [ // gameSize in HBHub-MinesweeperGames (squares on each side) => its difficulty
     9 => ['key' => 'easy', 'name' => 'Easy', 'mines' => 10],
@@ -214,6 +216,68 @@ function hbHubMinesweeperOpen(PDO $db, int $userId, ?int $gameId, mixed $size, m
         $view['ms'] = (int) $statement->fetchColumn();
         $view['best'] = hbHubMinesweeperBest($db, $userId, $size);
         $view['isBest'] = $view['best'] === $view['ms'];
+    }
+    return $view;
+}
+
+// ----- Guests (/play/minesweeper, see assets/php/guestGames/guestGames.php). A guest's game isn't stored: the board
+// ({size, cells, start}: gameSize and gameCells as above, and the first click's time in ms) is a sealed token that the
+// frame sends with every click and gets a new one back, so the browser still never knows where the mines are. Sending
+// an old token again could take a click back, but a guest's wins have no leaderboard or best to spoil, so that's fine.
+
+/**
+ * Opens a square in a guest's game: the one in $token, or when there's none, a new one on a board of $size (the first
+ * click, which places the mines). Returns like hbHubMinesweeperOpen(), but without 'game', 'best' or 'isBest', and
+ * with 'token' (the board after the click) while the game goes on. A won game's 'ms' is the server's time since the
+ * first click. Errors: 'badRequest' (no such size or square) and 'expired' (the token can't be opened, like after the
+ * site's key changed: the page starts a new game).
+ */
+function hbHubMinesweeperGuestOpen(mixed $token, mixed $size, mixed $row, mixed $col): array|string
+{
+    $now = (int) floor(microtime(true) * 1000);
+    $game = null;
+    if (is_string($token) && $token !== '') {
+        $game = hbHubGuestOpen('minesweeper', $token);
+        $isBoard = is_int($game['size'] ?? null) && isset(HBHUB_MINESWEEPER_SIZES[$game['size']])
+            && is_string($game['cells'] ?? null) && strlen($game['cells']) === $game['size'] * $game['size']
+            && is_int($game['start'] ?? null);
+        if (!$isBoard) {
+            return 'expired';
+        }
+        $size = $game['size'];
+    } else {
+        $size = filter_var($size, FILTER_VALIDATE_INT);
+        if (!isset(HBHUB_MINESWEEPER_SIZES[$size])) {
+            return 'badRequest';
+        }
+    }
+
+    $row = filter_var($row, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => $size - 1]]);
+    $col = filter_var($col, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => $size - 1]]);
+    if ($row === false || $col === false) {
+        return 'badRequest';
+    }
+    $index = $row * $size + $col;
+
+    $cells = $game['cells'] ?? hbHubMinesweeperNewBoard($size, $index);
+    $start = $game['start'] ?? $now;
+    $opened = hbHubMinesweeperOpenSquare($cells, $size, $index);
+    $result = match (true) {
+        $opened === null => HBHUB_MINESWEEPER_LOST,
+        hbHubMinesweeperIsWon($cells) => HBHUB_MINESWEEPER_WON,
+        default => HBHUB_MINESWEEPER_PLAYING,
+    };
+
+    $squares = $result === HBHUB_MINESWEEPER_PLAYING ? $opened : range(0, $size * $size - 1);
+    $view = [
+        'result' => $result,
+        'cells' => array_map(static fn (int $square): array => [intdiv($square, $size), $square % $size,
+            hbHubMinesweeperNumber($cells, $size, $square)], $squares),
+    ];
+    if ($result === HBHUB_MINESWEEPER_PLAYING) {
+        $view['token'] = hbHubGuestSeal('minesweeper', ['size' => $size, 'cells' => $cells, 'start' => $start]);
+    } elseif ($result === HBHUB_MINESWEEPER_WON) {
+        $view['ms'] = max(0, $now - $start);
     }
     return $view;
 }

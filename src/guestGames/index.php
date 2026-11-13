@@ -36,7 +36,7 @@ $playStructuredData = json_encode([
     <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <link rel="stylesheet" href="/assets/css/guestGames.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/guestGames.css') ?>">
     <title>Free Online Games - No Sign-Up Needed | HB Hub</title>
-    <meta name="description" content="Free browser games from HB Hub at HANSENBERG: Wordle in English and Danish, an idle clicker, and Blackjack, Baccarat and Roulette with play chips. No sign-up.">
+    <meta name="description" content="Free browser games from HB Hub at HANSENBERG: Wordle in English and Danish, Minesweeper, an idle clicker, and Blackjack, Baccarat, Roulette and Slots with play chips. No sign-up.">
     <script type="application/ld+json"><?= $playStructuredData ?></script>
 </head>
 <body class="home-body">
@@ -75,8 +75,8 @@ $playStructuredData = json_encode([
                 <p>
                     As a guest, your Wordle and Ore Mining Inc. games are kept in your browser, and the casino's play chips
                     start over every time. Make a free HB Hub account to keep your Wordle streak and stats, save your
-                    mining company on HB Hub, get chips of your own every day, play at tables with friends, and get on the
-                    leaderboards. What you played as a guest in Wordle and Ore Mining Inc. comes with you.
+                    mining company on HB Hub, get your Minesweeper times on the leaderboard, get chips of your own every
+                    day, play at tables with friends, and get on the leaderboards. What you played as a guest in Wordle and Ore Mining Inc. comes with you.
                 </p>
                 <p>
                     HB Hub is also a chat for the school, with more games to play with friends, like Matador, chess and

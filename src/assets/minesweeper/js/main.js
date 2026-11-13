@@ -13,7 +13,10 @@
 //   mines, never on or next to it), which answers with the cells that opened and their numbers, and the whole board
 //   once the game is over. Clicks are sent one after the other (queue), so fast clicking works. Flags stay here.
 //   The page around the frame (assets/js/minesweeper.js) hears how it went from the minesweeper:* events below.
+// - in the guest frame (/play/minesweeper/frame) the cells go to /play/minesweeper/move instead (the <body>'s
+//   data-api), whose answers have no game id but a sealed token of the board, sent back with the next click
 /*----- constants -----*/
+var api = document.body.dataset.api || '/games/minesweeper/move'; // HB Hub: where the cells are sent
 var bombImage = '<img src="/assets/minesweeper/images/bomb.png" alt="Mine">';
 var flagImage = '<img src="/assets/minesweeper/images/flag.png" alt="Flag">';
 var wrongBombImage = '<img src="/assets/minesweeper/images/wrong-bomb.png" alt="Wrong flag">'
@@ -45,6 +48,7 @@ var elapsedTime;
 var timerId;
 var winner;
 var gameId; // HB Hub: the server's id for the game, null until the first answer
+var guestToken; // HB Hub: a guest's board, sealed by the server (the guest frame only), null until the first answer
 var queue; // HB Hub: the clicks waiting for the server, one after the other
 var round = 0; // HB Hub: goes up with every new board, so an answer for the board before is ignored
 var stopped; // HB Hub: the server said the game is over (another tab started one), so nothing more opens
@@ -103,16 +107,19 @@ function openCell(row, col, clickedEl) {
     var body = new URLSearchParams({ action: 'open', row: row, col: col });
     if (gameId) {
       body.set('game', gameId);
+    } else if (guestToken) {
+      body.set('token', guestToken);
     } else {
       body.set('size', size);
     }
-    return fetch('/games/minesweeper/move', { method: 'POST', headers: { Accept: 'application/json' }, body: body })
+    return fetch(api, { method: 'POST', headers: { Accept: 'application/json' }, body: body })
       .then(function(response) {
         return response.json().then(function(data) {
           if (thisRound !== round) return;
           if (!response.ok) {
             clearInterval(timerId);
-            stopped = data.error === 'gameOver'; // over on the server: nothing more can be opened
+            // over on the server (or a guest's board that can't be read any more): nothing more can be opened
+            stopped = data.error === 'gameOver' || data.error === 'expired';
             tellPage('error', { error: data.error || 'failed' });
             return;
           }
@@ -128,6 +135,8 @@ function openCell(row, col, clickedEl) {
 // HB Hub: puts what the server answered on the board (see move.php for its shape).
 function applyAnswer(data, clickedEl) {
   gameId = data.game;
+  guestToken = data.token || null; // none once the game is over
+
   var over = data.result !== 0;
   data.cells.forEach(function(entry) {
     var cell = board[entry[0]][entry[1]];
@@ -250,6 +259,7 @@ function init() {
   winner = false;
   stopped = false;
   gameId = null;
+  guestToken = null;
   queue = Promise.resolve();
   round += 1;
   tellPage('new', { size: size });

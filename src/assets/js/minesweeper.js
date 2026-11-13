@@ -6,6 +6,8 @@
 // frame): "new" (a new board, detail {size}), "won" ({size, ms, best, isBest}, the server's time and the player's
 // best), "lost" and "error" ({error}, the server's code). A win or an error goes in the line above the frame
 // (data-minesweeper-result), and the Leaderboard button (data-minesweeper-leaderboard) goes to the board being played.
+// On the guest page (/play/minesweeper) a win has no best, and links to signing up (the <main>'s data-guest-signup)
+// instead of the leaderboard.
 (() => {
   const frame = document.querySelector('[data-minesweeper-frame]');
   if (!frame) {
@@ -40,7 +42,9 @@
     blocked: "Games are blocked for you right now, so this game can't go on.",
     closed: "Games aren't open right now, so this game can't go on.",
     offline: "Couldn't reach HB Hub. Check your connection and click the square again.",
+    expired: "This game couldn't be picked up again. Click the face for a new game.",
   };
+  const guestSignup = document.querySelector('[data-guest-signup]')?.dataset.guestSignup ?? null;
   const result = document.querySelector('[data-minesweeper-result]');
   const leaderboard = document.querySelector('[data-minesweeper-leaderboard]');
 
@@ -85,6 +89,10 @@
   document.addEventListener('minesweeper:won', (event) => {
     const { size, ms, best, isBest } = event.detail ?? {};
     const name = SIZES[size]?.[1] ?? '';
+    if (guestSignup !== null) {
+      show(`You won ${name} in ${formatTime(ms)}.`, false, ['Sign up free to get on the leaderboard', guestSignup]);
+      return;
+    }
     show(
       `You won ${name} in ${formatTime(ms)}. ` + (isBest ? "That's your best yet!" : `Your best is ${formatTime(best)}.`),
       false,

@@ -354,14 +354,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <h3>Playing without an account</h3>
                         <p>
-                            The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., and Blackjack, Baccarat and
-                            Roulette with play chips) can be played without an account. Then nothing about you or your game is
+                            The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, and Blackjack,
+                            Baccarat, Roulette and Slots with play chips) can be played without an account. Then nothing about you or your game is
                             stored on HB Hub's server, except a server busy report if the server is too busy to answer your
                             browser (see <a href="#watchdog">Server busy reports</a> below). Your game is kept in your own browser instead, encrypted by HB Hub so it
                             can't be read or changed there, and sent along with each move, so the server can check it with the
                             same rules as the normal games and send it back. Wordle and Ore Mining Inc. keep it in local storage
-                            (see <a href="#cookies">Cookies and local storage</a>); the casino games only keep it in the open page,
-                            so the play chips start over every time. No cookie is set (they only look at whether the browser
+                            (see <a href="#cookies">Cookies and local storage</a>); Minesweeper and the casino games only keep it
+                            in the open page, so a Minesweeper board and the play chips start over every time, and your
+                            Minesweeper times aren't kept anywhere. No cookie is set (they only look at whether the browser
                             already has the hbHubDevice cookie from logging in before, see <a href="#cookies">Cookies and local
                             storage</a>), and the free games have no leaderboards, stats or crash reports. The only thing they store on the server is each day's Wordle word, which is
                             the same for everyone.

@@ -26,11 +26,20 @@
   grid-template-areas:
     "back back"
     "header header"
+    "guest guest"
     "machine side"
     "rules rules";
   align-items: start;
   gap: 0 44px; /* room for the lever sticking out of the machine's right side */
 }
+
+/* The guest Slots (/play/slots): the "playing as a guest" bar (guestGames.css) takes ~80px more of the screen */
+.sl[data-guest] {
+  --sl-cell: clamp(48px, calc((100vh - 560px) / 3), 104px);
+  --sl-cell: clamp(48px, calc((100dvh - 560px) / 3), 104px);
+}
+
+.sl > .guest-bar { grid-area: guest; }
 
 .sl [hidden] {
   display: none !important;
@@ -1367,9 +1376,16 @@
     grid-template-areas:
       "back"
       "header"
+      "guest"
       "machine"
       "side"
       "rules";
+  }
+
+  /* Guests have no bottom bar on phones (the frontpage's top bar instead), so this is all they need under 600px too */
+  .sl[data-guest] {
+    --sl-cell: clamp(48px, calc((100vh - 560px) / 3), 84px);
+    --sl-cell: clamp(48px, calc((100dvh - 560px) / 3), 84px);
   }
 
   .sl-side {

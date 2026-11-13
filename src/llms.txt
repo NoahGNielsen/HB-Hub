@@ -9,9 +9,11 @@ Most of the site needs an account; the pages below can be read without one. Casi
 - [Free games](https://hbhub.noahgajnielsen.dk/play): Every game that can be played without an account.
 - [Wordle](https://hbhub.noahgajnielsen.dk/play/wordle): Guess the day's five-letter word in six tries, in English or Danish.
 - [Ore Mining Inc.](https://hbhub.noahgajnielsen.dk/play/ore-mining-inc): An idle clicker: mine an asteroid, build a mining company and prestige across the multiverse.
+- [Minesweeper](https://hbhub.noahgajnielsen.dk/play/minesweeper): The classic: open every square that isn't a mine, on an Easy, Medium or Hard board.
 - [Blackjack](https://hbhub.noahgajnielsen.dk/play/blackjack): Beat the dealer without going over 21. Double, split and insurance, with play chips.
 - [Baccarat](https://hbhub.noahgajnielsen.dk/play/baccarat): Bet on Player, Banker or a tie in punto banco, with play chips.
 - [Roulette](https://hbhub.noahgajnielsen.dk/play/roulette): Spin a single-zero wheel and bet straight on the board, with play chips.
+- [Slots](https://hbhub.noahgajnielsen.dk/play/slots): Spin three reels on five paylines and line up the sevens, with play chips.
 
 ## Help docs
 
