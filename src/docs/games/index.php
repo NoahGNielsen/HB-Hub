@@ -6,7 +6,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/games/';
-$docsIntro = 'Five games, no chips needed: three to play with friends and two to play on your own every day. All of
+$docsIntro = 'Seven games, no chips needed: three to play with friends and four to play on your own. All of
     them are under <a href="/games/">Games</a> in the side bar.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
@@ -23,6 +23,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td><a href="/docs/games/uno">UNO</a></td><td>The card game. Get rid of your cards first, and don't forget to say UNO!</td><td>2-6</td></tr>
                                     <tr><td><a href="/docs/games/wordle">Wordle</a></td><td>Guess the day's five-letter word, in English and in Danish.</td><td>Just you</td></tr>
                                     <tr><td><a href="/docs/games/minesweeper">Minesweeper</a></td><td>The classic: clear the board without opening a mine.</td><td>Just you</td></tr>
+                                    <tr><td><a href="/docs/games/sudoku">Sudoku</a></td><td>Fill the board with 1 to 9 in every row, column and box, from Easy to Expert.</td><td>Just you</td></tr>
                                     <tr><td><a href="/docs/games/ore-mining-inc">Ore Mining Inc.</a></td><td>A clicker game about mining asteroids, and then the whole multiverse.</td><td>Just you</td></tr>
                                 </tbody>
                             </table>
@@ -71,7 +72,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="leaderboards" aria-labelledby="docs-leaderboards">
                         <h2 id="docs-leaderboards">Leaderboards</h2>
                         <p>
-                            Every game has a leaderboard, linked from its page. Click a column's heading to sort by it. Win % (or the
+                            Every game but Sudoku has a leaderboard, linked from its page. Click a column's heading to sort by it. Win % (or the
                             score, in Chess) only counts once you've played 5 games, so one lucky game can't top it.
                         </p>
                     </section>

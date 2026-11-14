@@ -44,6 +44,12 @@
 |---|---|
 | **Minesweeper** | The classic in its Windows 95 look, at `/games/minesweeper/`: Easy (9×9, 10 mines), Medium (16×16, 40) and Hard (30×30, 160). Shift + click or a right click (a long press on most phones) flags a square. It's [Nick Arocho's Minesweeper](https://github.com/nickarocho/minesweeper) (`src/assets/minesweeper/`, credited on the credits page) in a frame (`games/minesweeper/frame.php`) on a normal Games page, with a few small fixes. The mines are on the server (`assets/php/games/minesweeper/minesweeper.php`, `HBHub-MinesweeperGames`): every square opened is sent to `games/minesweeper/move`, so the browser never knows where they are, and the first click is never a mine. A leaderboard for each size at `/games/minesweeper/leaderboard` has the best and average time (timed by the server, first click to last), wins, games played and win %. Anticheat: on a win, the server works out the board's 3BV (fewest clicks needed, `gameClicksNeeded`); more than `HBHUB_MINESWEEPER_MAX_CLICKS_PER_SECOND` (10) a second after the first click and it ends as "too fast" (`gameResult` 4) instead: played, but not won or on the leaderboard. The game in the frame (`main.js`) is wrapped in a function so the console can't call it, and a board click whose event isn't `isTrusted` (made by code) stops the game and ends it as "scripted" (`gameResult` 5, `action=scripted` on `move`) |
 
+## Sudoku
+
+| | |
+|---|---|
+| **Sudoku** | At `/games/sudoku/`, on Easy, Medium, Hard and Expert. Everything is in the browser (`assets/js/sudoku.js`): each puzzle is made new, from a random full board with squares taken out in mirrored pairs as long as it keeps exactly one answer. Easy (about 38 numbers) must be solvable with naked singles only, Medium (about 32) with naked and hidden singles, Hard goes to about 28, and Expert takes out single squares too, as low as it can (usually 22-25), and must need more than singles (the best of 12 boards) (`DIFFICULTIES` in the script). Notes (with the number taken out of the notes around a square you fill in), undo, erase, hints, a pad showing how many of each number are left, the same number and the row/column/box lit up, clashes in red, a clock that only runs while the page is on screen, and a pause. The game, best times and wins are kept in `localStorage` (`hbHubSudoku`); nothing goes to the server, and there's no leaderboard yet |
+
 ## Ore Mining Inc.
 
 | | |

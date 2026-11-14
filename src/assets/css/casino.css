@@ -364,6 +364,32 @@ a.casino-game:hover .casino-game-art {
   fill: #fff;
 }
 
+/* Sudoku: a light 3x3 box with dark numbers and lines, the picked square in the middle in orange */
+.casino-game-sudoku {
+  --game-from: #2b5c8a;
+  --game-to: #13253d;
+  --game-mark: #f0701f;
+}
+
+.casino-game-sudoku .casino-game-art {
+  fill: #e9edf3;
+}
+
+.casino-game-sudoku .casino-game-art-grid {
+  fill: none;
+  stroke: #9aa6b8;
+  stroke-width: 1.5;
+}
+
+.casino-game-sudoku .casino-game-art-digit {
+  font: 800 13px "Raleway", sans-serif;
+  fill: #1c2a40;
+}
+
+.casino-game-sudoku .casino-game-art-digit.is-light {
+  fill: #fff;
+}
+
 .casino-game-miner {
   --game-from: #3b2a78;
   --game-to: #0d0b26;
