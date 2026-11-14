@@ -117,6 +117,7 @@ function hbHubDeleteAccount(PDO $db, int $userId): void
         $db->prepare('DELETE FROM `HBHub-Watchdog` WHERE watchdogUserId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-MinesweeperGames` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-SudokuGames` WHERE userId = ?')->execute([$userId]);
+        $db->prepare('DELETE FROM `HBHub-WordleRandomGames` WHERE userId = ?')->execute([$userId]);
         if ($avatarId !== null) {
             $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$avatarId]);
         }

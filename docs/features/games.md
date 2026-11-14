@@ -37,6 +37,7 @@
 | | |
 |---|---|
 | **Wordle** | The daily word game: guess the five-letter word in six tries. There's an English and a Danish word every day (the Danish keyboard has æ, ø and å), the same for everyone, with stats, sharing and a leaderboard for each language with win %, average guesses and the current and longest streak |
+| **Random words** | Besides the daily word, `?mode=random` plays as many extra words as you like, each picked at random just for you (never the day's word, nor the one you just had), in either language. They don't count in stats, streaks or the leaderboard. Members have one per language in `HBHub-WordleRandomGames`; guests keep theirs as a sealed token in their browser (not brought over to an account) |
 
 ## Minesweeper
 

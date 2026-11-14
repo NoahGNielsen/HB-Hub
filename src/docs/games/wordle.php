@@ -1,5 +1,5 @@
 <?php
-// Help docs: Wordle - the colours (with an example guess), the two languages, streaks and the leaderboard. The numbers
+// Help docs: Wordle - the colours (with an example guess), the two languages, random words, streaks and the leaderboard. The numbers
 // are assets/php/games/wordle/wordle.php's constants, the same rules the game's own "How to play" shows.
 // Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
@@ -40,6 +40,17 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             Switch between them with the tabs at the top. The Danish keyboard has æ, ø and å, and any form of a Danish
                             word counts as a guess, like "huset" or "spist". You get one go at each word, and a word isn't used again
                             until every other one has been.
+                        </p>
+                    </section>
+
+                    <section id="random" aria-labelledby="docs-random">
+                        <h2 id="docs-random">Random words</h2>
+                        <p>
+                            Want more than one a day? Pick <strong>Random words</strong> at the top of the
+                            <a href="/games/wordle/?mode=random">Wordle</a> page. Each one is picked at random just for you
+                            (never the day's word), so nobody else is playing the same one, and when it's over,
+                            <strong>New word</strong> gives you another. Play as many as you like, in either language.
+                            They don't count in your stats, streaks or the leaderboard.
                         </p>
                     </section>
 

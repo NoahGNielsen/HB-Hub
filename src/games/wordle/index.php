@@ -9,6 +9,10 @@
 // includes this page (see assets/php/guestGames/guestGames.php). Then it has the frontpage's top bar, the guest bar and
 // the text for search engines, no stats or leaderboard, and starts on an empty board: a guest's game is a token in
 // their browser, which wordle.js sends to /play/wordle/guess to load it (data-guest).
+//
+// ?mode=random plays random words instead (see "Random words" in wordle.php): a word picked just for this player, a new
+// one whenever the last is over, with no stats. A member's is made here when they have none; a guest's comes from
+// their own token like the daily one.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/wordle/wordle.php';
@@ -34,6 +38,7 @@ foreach (array_keys(HBHUB_WORDLE_LANGUAGES) as $code) {
     };
 }
 
+$mode = ($_GET['mode'] ?? null) === 'random' ? 'random' : 'daily';
 $language = $_GET['lang'] ?? null;
 if (!is_string($language) || !isset(HBHUB_WORDLE_LANGUAGES[$language])) {
     $language = array_key_first(array_filter($wordleStatus, static fn (string $status): bool => in_array($status, ['new', 'playing'], true)))
@@ -41,7 +46,16 @@ if (!is_string($language) || !isset(HBHUB_WORDLE_LANGUAGES[$language])) {
 }
 
 $wordleAnswer = hbHubWordleDailyWord($db, $language, $today);
-if ($guestGame === null) {
+if ($mode === 'random') {
+    if ($guestGame === null) {
+        $randomGame = hbHubWordleRandomGame($db, (int) $hbHubUser['userId'], $language)
+            ?? hbHubWordleRandomNew($db, (int) $hbHubUser['userId'], $language);
+        $wordleGame = hbHubWordleView($randomGame, $randomGame['word']);
+    } else {
+        $wordleGame = hbHubWordleView(null, ''); // an empty board until wordle.js has the guest's token
+    }
+    $wordleStats = null;
+} elseif ($guestGame === null) {
     $wordleGame = hbHubWordleView(hbHubWordleGame($db, (int) $hbHubUser['userId'], $language, $today), $wordleAnswer);
     $wordleStats = hbHubWordleUserStats($db, (int) $hbHubUser['userId'], $language);
 } else {
@@ -72,6 +86,7 @@ if ($guestGame === null) {
     <?php endif; ?>
     <main class="casino games wordle" data-wordle
           data-api="<?= $guestGame !== null ? '/play/wordle/guess' : '/games/wordle/guess' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>
+          data-mode="<?= $mode ?>"
           data-lang="<?= $language ?>"
           data-language-name="<?= HBHUB_WORDLE_LANGUAGES[$language] ?>"
           data-date="<?= $today ?>"
@@ -95,16 +110,26 @@ if ($guestGame === null) {
             <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/top.php'; ?>
         <?php endif; ?>
         <p class="casino-intro">
-            Guess the day's five-letter word in six tries. There's a new word every day at midnight, one in English and
-            one in Danish, and everyone gets the same ones.
+            <?php if ($mode === 'random'): ?>
+                Guess a five-letter word in six tries, as many times as you like. Each word is picked at random just for
+                you, so nobody else is playing the same one, and they don't count in your stats or streak.
+            <?php else: ?>
+                Guess the day's five-letter word in six tries. There's a new word every day at midnight, one in English and
+                one in Danish, and everyone gets the same ones.
+            <?php endif; ?>
         </p>
+
+        <nav class="wordle-modes" aria-label="Which words">
+            <a class="wordle-mode<?= $mode === 'daily' ? ' is-active' : '' ?>" href="?lang=<?= $language ?>"<?= $mode === 'daily' ? ' aria-current="page"' : '' ?>>Daily word</a>
+            <a class="wordle-mode<?= $mode === 'random' ? ' is-active' : '' ?>" href="?lang=<?= $language ?>&amp;mode=random"<?= $mode === 'random' ? ' aria-current="page"' : '' ?>>Random words</a>
+        </nav>
 
         <nav class="wordle-languages" aria-label="Language">
             <?php foreach (HBHUB_WORDLE_LANGUAGE_NAMES as $code => $name): ?>
-                <a class="wordle-language<?= $code === $language ? ' is-active' : '' ?>" href="?lang=<?= $code ?>"
+                <a class="wordle-language<?= $code === $language ? ' is-active' : '' ?>" href="?lang=<?= $code ?><?= $mode === 'random' ? '&amp;mode=random' : '' ?>"
                    lang="<?= $code ?>"<?= $code === $language ? ' aria-current="page"' : '' ?>>
                     <span class="wordle-language-name"><?= $name ?></span>
-                    <span class="wordle-language-status is-<?= $wordleStatus[$code] ?>" lang="en" data-wordle-status-of="<?= $code ?>"<?= $code === $language ? ' data-wordle-status' : '' ?>><?= WORDLE_STATUS_NAMES[$wordleStatus[$code]] ?></span>
+                    <span class="wordle-language-status is-<?= $wordleStatus[$code] ?>" lang="en" data-wordle-status-of="<?= $code ?>"<?= $code === $language && $mode === 'daily' ? ' data-wordle-status' : '' ?>><?= WORDLE_STATUS_NAMES[$wordleStatus[$code]] ?></span>
                 </a>
             <?php endforeach; ?>
         </nav>
@@ -145,17 +170,26 @@ if ($guestGame === null) {
             <h2 id="wordle-result-title" data-wordle-result-title></h2>
             <p class="wordle-result-text" data-wordle-result-text></p>
             <div class="casino-actions">
-                <button type="button" class="casino-btn casino-btn-primary" data-wordle-share>Share</button>
-                <?php foreach (HBHUB_WORDLE_LANGUAGES as $code => $name): ?>
-                    <?php if ($code !== $language && ($guestGame !== null || in_array($wordleStatus[$code], ['new', 'playing'], true))): ?>
-                        <a class="casino-btn" href="?lang=<?= $code ?>">Play the <?= $name ?> word</a>
+                <?php if ($mode === 'random'): ?>
+                    <button type="button" class="casino-btn casino-btn-primary" data-wordle-new>New word</button>
+                    <button type="button" class="casino-btn" data-wordle-share>Share</button>
+                    <?php if ($guestGame !== null || in_array($wordleStatus[$language], ['new', 'playing'], true)): ?>
+                        <a class="casino-btn" href="?lang=<?= $language ?>">Play the daily word</a>
                     <?php endif; ?>
-                <?php endforeach; ?>
+                <?php else: ?>
+                    <button type="button" class="casino-btn casino-btn-primary" data-wordle-share>Share</button>
+                    <?php foreach (HBHUB_WORDLE_LANGUAGES as $code => $name): ?>
+                        <?php if ($code !== $language && ($guestGame !== null || in_array($wordleStatus[$code], ['new', 'playing'], true))): ?>
+                            <a class="casino-btn" href="?lang=<?= $code ?>">Play the <?= $name ?> word</a>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    <a class="casino-btn" href="?lang=<?= $language ?>&amp;mode=random">Play random words</a>
+                <?php endif; ?>
             </div>
             <p class="casino-hint wordle-next" data-wordle-next></p>
         </section>
 
-        <?php if ($guestGame === null): ?>
+        <?php if ($guestGame === null && $mode === 'daily'): ?>
         <section class="casino-card wordle-stats" aria-labelledby="wordle-stats-title">
             <h2 id="wordle-stats-title">Your <?= HBHUB_WORDLE_LANGUAGES[$language] ?> stats</h2>
             <dl class="wordle-numbers">
@@ -185,6 +219,7 @@ if ($guestGame === null) {
                 <li>Type on your keyboard or tap the letters<?= $language === 'da' ? '. The Danish word can have æ, ø and å in it' : '' ?>.</li>
                 <li>There's one English and one Danish word a day, and you get one go at each. A new one comes at midnight (Danish time).</li>
                 <li><?= $guestGame !== null ? 'With an account, your' : 'Your' ?> streak is the days in a row you've guessed the word. Missing a day, or not getting it, starts it over. A word you start but don't finish by midnight counts as missed.</li>
+                <li>Want more? <a href="?lang=<?= $language ?>&amp;mode=random">Random words</a> are as many extra words as you like, each picked at random just for you. They don't count in stats, streaks or the leaderboard.</li>
             </ul>
         </section>
     </main>

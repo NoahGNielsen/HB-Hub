@@ -41,6 +41,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubSudokuGuest' => 'Only in the free Sudoku at /play/sudoku, played without an account: your game (the puzzle, its answer, the numbers and notes you\'ve put in, the time and hints so far), and your best time and number of wins on each level, so you can close the page and carry on later. It\'s played only in your browser, so none of it is sent to HB Hub, and it never comes over to an account.',
     'hbHubSudoku' => 'The Sudoku game you\'re playing (with an account): its number, the puzzle, the numbers and notes you\'ve put in, and the time and hints so far, so you can close the page and carry on later. The game itself, its answer and its time are on HB Hub\'s server (see Casino and games above); the numbers you put in are only sent when the board is full, to check it, or with a hint.',
     'hbHubGuestWordle' => 'If you play Wordle without an account (at /play/wordle): your games of the day, encrypted by HB Hub so they can\'t be read or changed in your browser. It\'s sent with each guess so the server can check it. If you then log in or sign up, it\'s sent once to add today\'s games to your account (only in a language you haven\'t played today), and then deleted. Games from an earlier day are ignored and written over.',
+    'hbHubGuestWordleRandom' => 'If you play Wordle\'s random words without an account: your random word in each language with your guesses, encrypted by HB Hub the same way, sent with each guess so the server can check it. It never comes over to an account, and is deleted when you open Wordle logged in.',
     'hbHubGuestMiner' => 'If you play Ore Mining Inc. without an account (at /play/ore-mining-inc): your game, encrypted by HB Hub the same way, and a random id for the tab you\'re playing in (so the game only runs in one tab at a time). It\'s sent with each save so the server can check what you did. If you then log in or sign up, it\'s sent once to become your account\'s game (only if the account doesn\'t have one yet), and then deleted.',
     'hbHubGuestMinerRun:<tab id>' => 'The same as hbHubMinerRun above, when you play Ore Mining Inc. without an account. What you did that isn\'t saved yet is only ever sent with the next save of the game you play without an account, never to an account\'s game.',
     'hbHubGuestPrompt' => 'How long you\'ve played the free games without an account (just a number of seconds, counted while the page is on screen), so the popup asking you to sign up only shows up now and then.',
@@ -261,6 +262,12 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 it, and when you started and finished. They make up your stats and streaks, and your spot on
                                 the Wordle leaderboards. Other people only see the totals there (games, wins, win %, average
                                 guesses and streaks), never your guesses.
+                            </li>
+                            <li>
+                                Your Wordle random word: for each language, the last random word you got, your guesses,
+                                whether you got it, and when it was picked and finished. It's written over when you take a
+                                new word, and isn't in your stats, streaks or the leaderboards, so nobody else sees it.
+                                It's deleted with your account.
                             </li>
                             <li>
                                 Your Minesweeper games: for each game, the size, whether you won, lost or left it (or it

@@ -195,6 +195,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
                                 Wordle has one English and one Danish word a day, and you get one go at each. A word you start
                                 but don't guess by midnight (Danish time) counts as missed, and ends your streak. Don't spoil
                                 the day's word for others, for example in a group chat, before the day is over.
+                                Random words, picked just for you, can be played as many times as you like, and don't count
+                                in stats, streaks or the leaderboard.
                             </li>
                             <li>
                                 Minesweeper times on the leaderboard are timed by HB Hub's server. A game you leave or start
@@ -250,7 +252,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
                                 browser, so clearing the site's data, or using another browser, starts them over, and a
                                 Minesweeper board only lasts until you close or reload the page (and its wins don't go on
                                 the leaderboard; nor do guest Sudoku times, which stay in your browser). If you log in
-                                or sign up from one, today's Wordle games and your Ore Mining Inc. game come with you, but only
+                                or sign up from one, today's Wordle games (not random words) and your Ore Mining Inc. game come with you, but only
                                 into an account that doesn't have them yet: your account's own games are never written over.
                                 In a browser that has logged in to HB Hub before, the free games send you to the login and the
                                 normal game instead. Don't use scripts or bots to flood the free games with requests.

@@ -680,6 +680,22 @@ CREATE TABLE `HBHub-WordleWords` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-WordleRandomGames`
+--
+
+CREATE TABLE `HBHub-WordleRandomGames` (
+  `userId` int UNSIGNED NOT NULL,
+  `gameLanguage` char(2) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'en English, da Danish',
+  `gameWord` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'The word, lowercase, picked at random just for this user from src/assets/php/games/wordle/words/<language>-answers.txt',
+  `gameGuesses` varchar(35) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'The guesses so far, oldest first and lowercase, like crane,slate (up to 6 words of 5 letters)',
+  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing\r\n1 Won\r\n2 Lost',
+  `gameStartTimestamp` datetime NOT NULL COMMENT 'UTC, when the word was picked',
+  `gameEndTimestamp` datetime DEFAULT NULL COMMENT 'UTC, when it was won or lost, NULL while playing'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Wordle random words: each user''s current (or last) random word per language, written over by the next one. Not counted in stats (src/assets/php/games/wordle/wordle.php)';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-MinesweeperGames`
 --
 
@@ -1370,6 +1386,12 @@ ALTER TABLE `HBHub-WordleWords`
   ADD KEY `languageWord` (`wordLanguage`,`wordText`);
 
 --
+-- Indexes for table `HBHub-WordleRandomGames`
+--
+ALTER TABLE `HBHub-WordleRandomGames`
+  ADD PRIMARY KEY (`userId`,`gameLanguage`) COMMENT 'One random game per user and language';
+
+--
 -- Indexes for table `HBHub-MinesweeperGames`
 --
 ALTER TABLE `HBHub-MinesweeperGames`
@@ -1996,6 +2018,12 @@ ALTER TABLE `HBHub-Notifications`
 --
 ALTER TABLE `HBHub-WordleGames`
   ADD CONSTRAINT `fk_wordlegames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-WordleRandomGames`
+--
+ALTER TABLE `HBHub-WordleRandomGames`
+  ADD CONSTRAINT `fk_wordlerandomgames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-MinesweeperGames`
