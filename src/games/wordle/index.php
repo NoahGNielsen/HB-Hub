@@ -200,11 +200,25 @@ if ($mode === 'random') {
                             <a class="casino-btn" href="?lang=<?= $code ?>">Play the <?= $name ?> word</a>
                         <?php endif; ?>
                     <?php endforeach; ?>
-                    <a class="casino-btn" href="?lang=<?= $language ?>&amp;mode=random">Play random words</a>
                 <?php endif; ?>
             </div>
             <p class="casino-hint wordle-next" data-wordle-next></p>
         </section>
+        <?php endif; ?>
+
+        <?php if ($mode === 'daily'): ?>
+        <dialog class="games-dialog" aria-labelledby="wordle-random-title" data-wordle-random-dialog>
+            <h2 id="wordle-random-title">Want another word?</h2>
+            <p>
+                You've played today's <?= HBHUB_WORDLE_LANGUAGES[$language] ?> word, so random words are open: as many
+                extra words as you like, each picked at random just for you. They don't count in stats, streaks or the
+                leaderboard.
+            </p>
+            <div class="games-dialog-actions">
+                <button type="button" class="casino-btn" data-wordle-random-close>Not now</button>
+                <a class="casino-btn casino-btn-primary" href="?lang=<?= $language ?>&amp;mode=random">Play random words</a>
+            </div>
+        </dialog>
         <?php endif; ?>
 
         <?php if ($guestGame === null && $mode === 'daily'): ?>

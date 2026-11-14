@@ -20,7 +20,8 @@
 // day's word in it is over: a member's page then has no board at all (and no data-wordle, so this stays out), and a
 // guest's sends their daily tokens along, and when the answer is 409 dailyFirst the board makes way for the
 // "finish today's word first" card (data-wordle-locked). Should that come mid-game (a new day started), the page
-// just reloads to show the card.
+// just reloads to show the card. On the daily word, finishing it (won or lost) opens a popup over the game offering
+// random words (data-wordle-random-dialog), once the tiles have turned; a guest's sign-up prompt waits until it's shut.
 (() => {
     const root = document.querySelector('[data-wordle]');
     if (!root) return;
@@ -52,6 +53,8 @@
     const nextWord = root.querySelector('[data-wordle-next]');
     const shareButton = root.querySelector('[data-wordle-share]');
     const tabStatus = root.querySelector('[data-wordle-status]');
+    const randomDialog = root.querySelector('[data-wordle-random-dialog]'); // only on the daily word
+    const RANDOM_DIALOG_MS = 1200; // how long the finished board shows before the popup opens over it
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
     let game = JSON.parse(root.dataset.game);
@@ -258,7 +261,15 @@
             drawResult();
             if (!isNewGuess) say('Your game was updated from another tab.');
             else if (game.result !== 'playing') say(resultTitle.textContent + ' ' + resultText.textContent, 0);
-            if (IS_GUEST && isNewGuess && game.result !== 'playing') document.dispatchEvent(new CustomEvent('guest:prompt'));
+            if (isNewGuess && game.result !== 'playing') {
+                // The daily word is done: offer random words over the game first, and a guest's sign-up prompt after
+                if (randomDialog) {
+                    setTimeout(() => { if (!randomDialog.open) randomDialog.showModal(); }, RANDOM_DIALOG_MS);
+                    if (IS_GUEST) randomDialog.addEventListener('close', () => document.dispatchEvent(new CustomEvent('guest:prompt')), { once: true });
+                } else if (IS_GUEST) {
+                    document.dispatchEvent(new CustomEvent('guest:prompt'));
+                }
+            }
         };
         if (animate) setTimeout(done, FLIP_MS * (LENGTH - 1) + 500);
         else done();
@@ -364,6 +375,9 @@
     }
 
     root.querySelector('[data-wordle-new]')?.addEventListener('click', newWord);
+    root.querySelector('[data-wordle-random-close]')?.addEventListener('click', () => randomDialog.close());
+    // A click on the dark backdrop around it shuts it too
+    randomDialog?.addEventListener('click', (event) => { if (event.target === randomDialog) randomDialog.close(); });
 
     // A guest's game, from the tokens this browser keeps: today's, or in random words the random one (asked for even
     // without a token, for the tabs). Typing waits until it's here.
