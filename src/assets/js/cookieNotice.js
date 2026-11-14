@@ -11,7 +11,7 @@
 (() => {
     const NOTICE_KEY = 'hbHubCookieNotice';
     const TERMS_KEY = 'hbHubTermsAgreed';
-    const notice = document.querySelector('[data-corner-cookies]');
+    const notice = document.querySelector('[data-cookie-notice]');
     const termsNotice = document.querySelector('[data-corner-terms]');
     if (!notice) return;
     const termsVersion = termsNotice?.dataset.termsUpdated ?? '';
@@ -43,7 +43,7 @@
 
     if (read(NOTICE_KEY) !== 'seen') {
         // Never clicked away (or no storage: then it comes back on the next page, and the terms box never shows)
-        showUntilClicked(notice, '[data-corner-cookies-ok]', () => {
+        showUntilClicked(notice, '[data-cookie-notice-ok]', () => {
             write(NOTICE_KEY, 'seen');
             if (termsVersion) write(TERMS_KEY, termsVersion);
         });

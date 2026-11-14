@@ -31,12 +31,12 @@ hbHubRenderToast();
 // clicked the cookie notice away back when the terms had an older date than data-terms-updated.
 require_once __DIR__ . '/termsUpdated.php';
 ?>
-<aside class="corner-box" data-corner-cookies aria-label="About cookies" hidden>
-    <p class="corner-box-text">
+<aside class="cookie-notice" data-cookie-notice aria-label="Cookies" hidden>
+    <p class="cookie-notice-text">
         HB Hub uses cookies to keep you logged in and the site working. By using the site, you agree to this and to the
         <a href="/legal/terms">Terms</a> and <a href="/legal/privacy#cookies">Privacy Policy</a>.
     </p>
-    <button type="button" class="corner-box-ok" data-corner-cookies-ok>Got it</button>
+    <button type="button" class="cookie-notice-ok" data-cookie-notice-ok>Got it</button>
 </aside>
 <aside class="corner-box" data-corner-terms data-terms-updated="<?= htmlspecialchars(HBHUB_TERMS_UPDATED) ?>" aria-label="Terms updated" hidden>
     <p class="corner-box-text">
