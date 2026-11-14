@@ -629,7 +629,7 @@ function hbHubMatadorShuffleBoard(array &$state): void
 
 /**
  * Kaos: the players still in the game swap their properties around, and their money too, each with its own draw - so
- * the properties can go one way and the money another. Nobody keeps their own (with 2 players they just swap). A
+ * the properties can go one way and the money another. It's a random draw, so a player can keep their own. A
  * player's properties all go to the same player, with their houses and mortgages, so whole colours stay whole. The
  * "benådet" cards stay where they are. The trade offers are taken back, as what they offered may not be theirs anymore.
  */
@@ -640,7 +640,7 @@ function hbHubMatadorSwapPlayers(array &$state): void
         return;
     }
 
-    $fieldsTo = hbHubMatadorDerangement($seats); // by seat, who gets that seat's properties
+    $fieldsTo = hbHubMatadorSwapOrder($seats); // by seat, who gets that seat's properties
     foreach ($state['fields'] as &$property) {
         if ($property['owner'] !== null && isset($fieldsTo[$property['owner']])) {
             $property['owner'] = $fieldsTo[$property['owner']];
@@ -648,7 +648,7 @@ function hbHubMatadorSwapPlayers(array &$state): void
     }
     unset($property);
 
-    $cashTo = hbHubMatadorDerangement($seats); // by seat, who gets that seat's money
+    $cashTo = hbHubMatadorSwapOrder($seats); // by seat, who gets that seat's money
     $cash = [];
     foreach ($seats as $seat) {
         $cash[$seat] = hbHubMatadorPlayerOf($state, $seat)['cash'];
@@ -659,27 +659,23 @@ function hbHubMatadorSwapPlayers(array &$state): void
 
     $state['trades'] = [];
     foreach ($seats as $seat) {
-        hbHubMatadorLog($state, hbHubMatadorName($state, $seat) . '\'s properties go to ' . hbHubMatadorName($state, $fieldsTo[$seat])
-            . ', and their ' . hbHubMatadorKr($cash[$seat]) . ' to ' . hbHubMatadorName($state, $cashTo[$seat]) . '.');
+        $name = hbHubMatadorName($state, $seat);
+        $properties = $fieldsTo[$seat] === $seat ? $name . ' keeps their properties' : $name . '\'s properties go to ' . hbHubMatadorName($state, $fieldsTo[$seat]);
+        $money = $cashTo[$seat] === $seat ? 'they keep their ' . hbHubMatadorKr($cash[$seat])
+            : 'their ' . hbHubMatadorKr($cash[$seat]) . ' goes to ' . hbHubMatadorName($state, $cashTo[$seat]);
+        hbHubMatadorLog($state, $properties . ', and ' . $money . '.');
     }
 }
 
 /**
- * The seats in a random order where nobody gets their own place: by seat, the seat it goes to.
+ * The seats in a random order: by seat, the seat it goes to. A seat can get its own place (that player keeps theirs).
  *
- * @param list<int> $seats at least 2
+ * @param list<int> $seats
  * @return array<int, int>
  */
-function hbHubMatadorDerangement(array $seats): array
+function hbHubMatadorSwapOrder(array $seats): array
 {
-    do {
-        $to = hbHubMatadorShuffle($seats);
-        $isMixed = true;
-        foreach ($seats as $i => $seat) {
-            $isMixed = $isMixed && $to[$i] !== $seat;
-        }
-    } while (!$isMixed); // at most 4 seats, so this takes a few tries at most
-    return array_combine($seats, $to);
+    return array_combine($seats, hbHubMatadorShuffle($seats));
 }
 
 /**
