@@ -7,7 +7,8 @@
 // Getting out of jail is paying 1,000 kr, a "benådet" card, or rolling a 6 (3 tries, then the bail has to be paid).
 // Building, selling and mortgaging can only be done in your own turn (trading at any time).
 // The host can change some of this in the room's settings before the game starts (hbHubMatadorSettings()): the edition
-// (which board and Prøv lykken cards, board.php's HBHUB_MATADOR_EDITIONS: Classic by default, or HTX), two dice,
+// (which board and Prøv lykken cards, board.php's HBHUB_MATADOR_EDITIONS: Classic by default, HTX, or Kaos, where the
+// fields are in a random order and a Prøv lykken can mix them up again), two dice,
 // where doubles take the place of the 6, whether rent is paid to a player who's in jail, and Parkering's account
 // (parkingPot, on by default): the taxes and what the Prøv lykken cards make you pay go into it instead of to the bank,
 // and whoever lands on Parkering gets all of it. And buildAnyStreet (off by default): houses and hotels can be built
@@ -25,6 +26,8 @@
 //   players     in turn order: seat (1-4, the seat in HBHub-MatadorSeats), userId (who plays it, null while it's
 //               empty), originalUserId (who it's kept for when they leave), reservedFor (who the host gave it to),
 //               name, cash, position (0-39), inJail, jailTries, cards (the "benådet" cards held), bankrupt
+//   layout      Kaos only (null otherwise, missing in games from before it): which of the edition's fields is where, by
+//               field number (board.php). Made when the game starts and again by the Kaos card (hbHubMatadorShuffleBoard())
 //   fields      by field number, the properties: owner (a seat or null for the bank), houses (5 is a hotel), mortgaged
 //   deck        the Prøv lykken cards (cards.php) in the order they'll be drawn
 //   turn        seat, id (goes up with every move, so a double click only counts once), step ('roll', 'wait' while
@@ -131,6 +134,7 @@ function hbHubMatadorNewState(string $roomName, int $roomType): array
         'settings' => HBHUB_MATADOR_DEFAULT_SETTINGS,
         'pot' => 0,
         'players' => [],
+        'layout' => null,
         'fields' => [],
         'deck' => [],
         'turn' => null,
@@ -185,13 +189,15 @@ function hbHubMatadorShuffle(array $list): array
 function hbHubMatadorBegin(array &$state): void
 {
     $state['players'] = hbHubMatadorShuffle($state['players']);
+    $state['layout'] = hbHubMatadorShuffles($state) ? hbHubMatadorNewLayout() : null; // Kaos: the fields in a random order
     $state['fields'] = [];
     foreach (array_keys(hbHubMatadorFields($state)) as $field) {
         if (hbHubMatadorIsProperty($state, $field)) {
             $state['fields'][$field] = ['owner' => null, 'houses' => 0, 'mortgaged' => false];
         }
     }
-    $state['deck'] = hbHubMatadorShuffle(array_keys(hbHubMatadorCards($state)));
+    $state['deck'] = hbHubMatadorShuffle(array_keys(array_filter(hbHubMatadorCards($state),
+        static fn (array $card): bool => $card['do'][0] !== 'kaos'))); // the Kaos card is drawn by chance, not from the deck
     $state['pot'] = 0;
     $state['phase'] = 'playing';
     $state['round'] = 1;
@@ -521,11 +527,13 @@ function hbHubMatadorJail(array &$state, int $seat): void
 }
 
 /**
- * Draws the top Prøv lykken card and does what it says.
+ * Draws the top Prøv lykken card and does what it says. In Kaos it's the Kaos card instead, HBHUB_MATADOR_KAOS_PERCENT
+ * of the time (board.php), which mixes the fields up again and isn't in the deck.
  */
 function hbHubMatadorDrawCard(array &$state, int $seat): void
 {
-    $card = array_shift($state['deck']);
+    $isKaos = hbHubMatadorShuffles($state) && random_int(1, 100) <= HBHUB_MATADOR_KAOS_PERCENT;
+    $card = $isKaos ? HBHUB_MATADOR_KAOS_CARD : array_shift($state['deck']);
     $state['lastCard'] = ['seat' => $seat, 'card' => $card, 'n' => ($state['lastCard']['n'] ?? 0) + 1];
     [$do, $value, $perHotel] = array_pad(hbHubMatadorCards($state)[$card]['do'], 3, 0); // $value: a field, steps or an amount
     $i = hbHubMatadorIndex($state, $seat);
@@ -534,7 +542,7 @@ function hbHubMatadorDrawCard(array &$state, int $seat): void
 
     if ($do === 'jailCard') {
         $state['players'][$i]['cards'][] = $card; // kept until it's used
-    } else {
+    } elseif ($do !== 'kaos') {
         $state['deck'][] = $card;
     }
 
@@ -588,7 +596,40 @@ function hbHubMatadorDrawCard(array &$state, int $seat): void
                 hbHubMatadorLog($state, $name . ' is worth more than ' . hbHubMatadorKr(HBHUB_MATADOR_LEGAT_LIMIT) . ', so no legat.');
             }
             break;
+        case 'kaos':
+            hbHubMatadorShuffleBoard($state);
+            break;
     }
+}
+
+/**
+ * Kaos: puts the fields in a new random order (board.php's layout). Each property takes its owner, houses and
+ * mortgage along to its new place, and so do the trade offers that name it. The pieces stay on the field number they
+ * were on, so they stand on whatever field is there now (nothing happens for that).
+ */
+function hbHubMatadorShuffleBoard(array &$state): void
+{
+    $old = $state['layout'] ?? range(0, HBHUB_MATADOR_FIELD_COUNT - 1);
+    $state['layout'] = hbHubMatadorNewLayout();
+    $where = array_flip($state['layout']); // where each of the edition's fields is now
+    $moved = static fn (int $field): int => $where[$old[$field]];
+
+    $fields = [];
+    foreach ($state['fields'] as $field => $property) {
+        $fields[$moved($field)] = $property;
+    }
+    ksort($fields);
+    $state['fields'] = $fields;
+    if (($state['pending']['type'] ?? null) === 'buy') {
+        $state['pending']['field'] = $moved($state['pending']['field']);
+    }
+    foreach ($state['trades'] as &$trade) {
+        foreach (['give', 'get'] as $side) {
+            $trade[$side]['fields'] = array_map($moved, $trade[$side]['fields']);
+        }
+    }
+    unset($trade);
+    hbHubMatadorLog($state, 'KAOS! Every field on the board has moved to a new place.');
 }
 
 /**
@@ -1549,6 +1590,8 @@ function hbHubMatadorView(array $state, array $people, array $away, int $userId,
             ];
         }, $state['players']),
         'fields' => $fields,
+        // Kaos: which of the edition's fields is where (the page moves its fields to match), null on other boards
+        'layout' => $state['layout'] ?? null,
         'bank' => $state['phase'] === 'lobby' ? null : hbHubMatadorBank($state),
         'turn' => $state['turn'],
         'paused' => hbHubMatadorIsPaused($state),

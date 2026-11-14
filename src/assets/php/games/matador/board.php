@@ -1,9 +1,14 @@
 <?php
 // The Matador board: the editions to choose from, the game's amounts, and the helpers that look up a game's fields.
-// The fields themselves are in editions/<edition>.php, one file per edition (the classic Danish one, HTX's own), each
-// with its 40 fields and its Prøv lykken cards (cards.php). The host picks the edition in the room's settings before
-// the game starts, so it's in the game's state (settings.edition, game.php) - always look a field up through the
+// The fields themselves are in editions/<edition>.php, one file per edition (the classic Danish one, HTX's own, Kaos),
+// each with its 40 fields and its Prøv lykken cards (cards.php). The host picks the edition in the room's settings
+// before the game starts, so it's in the game's state (settings.edition, game.php) - always look a field up through the
 // state (hbHubMatadorFields($state)), never from one edition directly.
+//
+// An edition with 'shuffle' (Kaos) has its fields put in a random order when the game starts, and again by its Kaos
+// card (game.php's hbHubMatadorShuffleBoard()). That order is the state's layout: by field number, the number the
+// field has in its edition's file. The four corners never move. Everything in the state goes by where a field is now
+// (hbHubMatadorFields($state) is already in the layout's order), and a card that moves you to a field follows it.
 //
 // A field: type ('start', 'street', 'chance', 'incomeTax', 'ferry', 'jail', 'brewery', 'parking', 'goToJail' or
 // 'extraTax' with its 'amount') and name. The properties also have a group and a price: the group is 1-8 for the
@@ -32,7 +37,11 @@ const HBHUB_MATADOR_LEGAT_LIMIT = 15000; // only for players worth at most this
 const HBHUB_MATADOR_EDITIONS = [
     'classic' => ['name' => 'Classic', 'about' => 'The original Danish board, with the streets of Copenhagen.'],
     'htx' => ['name' => 'HTX', 'about' => 'HTX\'s own board and cards - BETA!'],
+    'kaos' => ['name' => 'Kaos', 'about' => 'The classic board with every field in a random place, and a Prøv lykken card that mixes them up again.'],
 ];
+const HBHUB_MATADOR_CORNERS = [0, 10, 20, 30]; // START, jail, Parkering and De fængsles: they stay put in Kaos
+const HBHUB_MATADOR_KAOS_CARD = 0; // the Kaos card's number in editions/kaos.php (it isn't in the deck)
+const HBHUB_MATADOR_KAOS_PERCENT = 25; // the chance a Prøv lykken in Kaos is the Kaos card instead of the top of the deck
 const HBHUB_MATADOR_DEFAULT_EDITION = 'classic';
 
 /**
@@ -65,7 +74,70 @@ function hbHubMatadorEdition(string $edition): array
  */
 function hbHubMatadorEditionOf(array $state): array
 {
-    return hbHubMatadorEdition($state['settings']['edition'] ?? HBHUB_MATADOR_DEFAULT_EDITION);
+    static $laidOut = [];
+    $name = $state['settings']['edition'] ?? HBHUB_MATADOR_DEFAULT_EDITION;
+    $edition = hbHubMatadorEdition($name);
+    $layout = $state['layout'] ?? null;
+    if ($layout === null || empty($edition['shuffle'])) {
+        return $edition;
+    }
+    return $laidOut[$name . ':' . implode(',', $layout)] ??= hbHubMatadorLaidOut($edition, $layout);
+}
+
+/**
+ * The edition with its fields in the layout's order (by field number, the number in the edition's file): the fields,
+ * the groups worked out again, and the cards that move you to a field sent to where that field is now.
+ *
+ * @param list<int> $layout
+ */
+function hbHubMatadorLaidOut(array $edition, array $layout): array
+{
+    $where = array_flip($layout); // where each of the edition's fields is now
+    $data = $edition;
+    $data['fields'] = [];
+    $data['groups'] = [];
+    foreach ($layout as $field => $original) {
+        $info = $edition['fields'][$original];
+        $data['fields'][$field] = $info;
+        if (isset($info['group'])) {
+            $data['groups'][$info['group']][] = $field; // in board order, as the "nearest ferry" card needs
+        }
+    }
+    foreach ($data['cards'] as &$card) {
+        if ($card['do'][0] === 'move') {
+            $card['do'][1] = $where[$card['do'][1]];
+        }
+    }
+    unset($card);
+    return $data;
+}
+
+/**
+ * Whether the game's fields are put in a random order (its edition has 'shuffle': Kaos).
+ */
+function hbHubMatadorShuffles(array $state): bool
+{
+    return !empty(hbHubMatadorEdition($state['settings']['edition'] ?? HBHUB_MATADOR_DEFAULT_EDITION)['shuffle']);
+}
+
+/**
+ * A new random order for the fields (the state's layout), with the corners where they are.
+ *
+ * @return list<int>
+ */
+function hbHubMatadorNewLayout(): array
+{
+    $layout = range(0, HBHUB_MATADOR_FIELD_COUNT - 1);
+    $free = array_values(array_diff($layout, HBHUB_MATADOR_CORNERS));
+    $mixed = $free;
+    for ($i = count($mixed) - 1; $i > 0; $i--) { // random_int(), not shuffle(), like hbHubMatadorShuffle() in game.php
+        $j = random_int(0, $i);
+        [$mixed[$i], $mixed[$j]] = [$mixed[$j], $mixed[$i]];
+    }
+    foreach ($free as $i => $field) {
+        $layout[$field] = $mixed[$i];
+    }
+    return $layout;
 }
 
 /**
