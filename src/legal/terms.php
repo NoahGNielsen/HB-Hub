@@ -195,8 +195,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
                                 Wordle has one English and one Danish word a day, and you get one go at each. A word you start
                                 but don't guess by midnight (Danish time) counts as missed, and ends your streak. Don't spoil
                                 the day's word for others, for example in a group chat, before the day is over.
-                                Random words, picked just for you, can be played as many times as you like, and don't count
-                                in stats, streaks or the leaderboard.
+                                Random words, picked just for you, can be played as many times as you like once you've
+                                played the day's word in that language, and don't count in stats, streaks or the
+                                leaderboard.
                             </li>
                             <li>
                                 Minesweeper times on the leaderboard are timed by HB Hub's server. A game you leave or start

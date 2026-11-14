@@ -12,7 +12,9 @@
 //
 // ?mode=random plays random words instead (see "Random words" in wordle.php): a word picked just for this player, a new
 // one whenever the last is over, with no stats. A member's is made here when they have none; a guest's comes from
-// their own token like the daily one.
+// their own token like the daily one. Random words in a language only open once today's word in it is over: until
+// then a member gets a "finish today's word first" card instead of a board (and no data-wordle, so wordle.js stays
+// out of it), and a guest gets the card from wordle.js when /play/wordle/guess says so (dailyFirst).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/wordle/wordle.php';
@@ -46,8 +48,11 @@ if (!is_string($language) || !isset(HBHUB_WORDLE_LANGUAGES[$language])) {
 }
 
 $wordleAnswer = hbHubWordleDailyWord($db, $language, $today);
+$randomLocked = $mode === 'random' && $guestGame === null && in_array($wordleStatus[$language], ['new', 'playing'], true);
 if ($mode === 'random') {
-    if ($guestGame === null) {
+    if ($randomLocked) {
+        $wordleGame = hbHubWordleView(null, ''); // not shown: there's only the card asking for the daily word
+    } elseif ($guestGame === null) {
         $randomGame = hbHubWordleRandomGame($db, (int) $hbHubUser['userId'], $language)
             ?? hbHubWordleRandomNew($db, (int) $hbHubUser['userId'], $language);
         $wordleGame = hbHubWordleView($randomGame, $randomGame['word']);
@@ -84,7 +89,7 @@ if ($mode === 'random') {
     <?php else: ?>
         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <?php endif; ?>
-    <main class="casino games wordle" data-wordle
+    <main class="casino games wordle"<?= $randomLocked ? '' : ' data-wordle' ?>
           data-api="<?= $guestGame !== null ? '/play/wordle/guess' : '/games/wordle/guess' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>
           data-mode="<?= $mode ?>"
           data-lang="<?= $language ?>"
@@ -112,7 +117,8 @@ if ($mode === 'random') {
         <p class="casino-intro">
             <?php if ($mode === 'random'): ?>
                 Guess a five-letter word in six tries, as many times as you like. Each word is picked at random just for
-                you, so nobody else is playing the same one, and they don't count in your stats or streak.
+                you, so nobody else is playing the same one, and they don't count in your stats or streak. They open
+                once you've played the day's word in that language.
             <?php else: ?>
                 Guess the day's five-letter word in six tries. There's a new word every day at midnight, one in English and
                 one in Danish, and everyone gets the same ones.
@@ -134,7 +140,21 @@ if ($mode === 'random') {
             <?php endforeach; ?>
         </nav>
 
-        <div class="wordle-play">
+        <?php if ($mode === 'random' && ($randomLocked || $guestGame !== null)): ?>
+            <section class="casino-card wordle-locked" aria-labelledby="wordle-locked-title" data-wordle-locked<?= $randomLocked ? '' : ' hidden' ?>>
+                <h2 id="wordle-locked-title">Finish today's word first</h2>
+                <p class="wordle-result-text">
+                    Random <?= HBHUB_WORDLE_LANGUAGES[$language] ?> words open once you've played today's
+                    <?= HBHUB_WORDLE_LANGUAGES[$language] ?> word, whether you get it or not.
+                </p>
+                <div class="casino-actions">
+                    <a class="casino-btn casino-btn-primary" href="?lang=<?= $language ?>">Play the daily word</a>
+                </div>
+            </section>
+        <?php endif; ?>
+
+        <?php if (!$randomLocked): ?>
+        <div class="wordle-play" data-wordle-play>
             <div class="wordle-board" role="group" aria-label="Your guesses" data-wordle-board>
                 <?php for ($row = 0; $row < HBHUB_WORDLE_TRIES; $row++): ?>
                     <div class="wordle-row" role="img" aria-label="Guess <?= $row + 1 ?>: empty">
@@ -173,9 +193,6 @@ if ($mode === 'random') {
                 <?php if ($mode === 'random'): ?>
                     <button type="button" class="casino-btn casino-btn-primary" data-wordle-new>New word</button>
                     <button type="button" class="casino-btn" data-wordle-share>Share</button>
-                    <?php if ($guestGame !== null || in_array($wordleStatus[$language], ['new', 'playing'], true)): ?>
-                        <a class="casino-btn" href="?lang=<?= $language ?>">Play the daily word</a>
-                    <?php endif; ?>
                 <?php else: ?>
                     <button type="button" class="casino-btn casino-btn-primary" data-wordle-share>Share</button>
                     <?php foreach (HBHUB_WORDLE_LANGUAGES as $code => $name): ?>
@@ -188,6 +205,7 @@ if ($mode === 'random') {
             </div>
             <p class="casino-hint wordle-next" data-wordle-next></p>
         </section>
+        <?php endif; ?>
 
         <?php if ($guestGame === null && $mode === 'daily'): ?>
         <section class="casino-card wordle-stats" aria-labelledby="wordle-stats-title">
@@ -219,7 +237,7 @@ if ($mode === 'random') {
                 <li>Type on your keyboard or tap the letters<?= $language === 'da' ? '. The Danish word can have æ, ø and å in it' : '' ?>.</li>
                 <li>There's one English and one Danish word a day, and you get one go at each. A new one comes at midnight (Danish time).</li>
                 <li><?= $guestGame !== null ? 'With an account, your' : 'Your' ?> streak is the days in a row you've guessed the word. Missing a day, or not getting it, starts it over. A word you start but don't finish by midnight counts as missed.</li>
-                <li>Want more? <a href="?lang=<?= $language ?>&amp;mode=random">Random words</a> are as many extra words as you like, each picked at random just for you. They don't count in stats, streaks or the leaderboard.</li>
+                <li>Want more? <a href="?lang=<?= $language ?>&amp;mode=random">Random words</a> are as many extra words as you like, each picked at random just for you, once you've played the day's word. They don't count in stats, streaks or the leaderboard.</li>
             </ul>
         </section>
     </main>

@@ -102,6 +102,16 @@
 }
 
 /* The board and keyboard */
+/* Random words before the day's word is played: this card instead of the board */
+.wordle-locked {
+  margin-bottom: 20px;
+  border: 2px solid var(--accent);
+}
+
+.wordle-play[hidden] {
+  display: none;
+}
+
 .wordle-play {
   margin-bottom: 24px;
   display: flex;

@@ -50,7 +50,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <a href="/games/wordle/?mode=random">Wordle</a> page. Each one is picked at random just for you
                             (never the day's word), so nobody else is playing the same one, and when it's over,
                             <strong>New word</strong> gives you another. Play as many as you like, in either language.
-                            They don't count in your stats, streaks or the leaderboard.
+                            They don't count in your stats, streaks or the leaderboard. Random words in a language open
+                            once you've played that day's word in it, whether you got it or not.
                         </p>
                     </section>
 

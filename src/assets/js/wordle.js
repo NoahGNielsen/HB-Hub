@@ -16,7 +16,11 @@
 // In random words (data-mode="random", ?mode=random) the board is the player's own random word instead: guesses and
 // the "New word" button (action=new, once a word is over) go to the same address with mode=random, there's no stats
 // or countdown, and the tabs keep showing the daily words. A guest's random words are a token of their own, kept in
-// localStorage under GUEST_RANDOM_KEY, and never come over to an account.
+// localStorage under GUEST_RANDOM_KEY, and never come over to an account. Random words in a language wait until the
+// day's word in it is over: a member's page then has no board at all (and no data-wordle, so this stays out), and a
+// guest's sends their daily tokens along, and when the answer is 409 dailyFirst the board makes way for the
+// "finish today's word first" card (data-wordle-locked). Should that come mid-game (a new day started), the page
+// just reloads to show the card.
 (() => {
     const root = document.querySelector('[data-wordle]');
     if (!root) return;
@@ -205,6 +209,7 @@
         const body = new URLSearchParams({ action: 'guess', lang: LANGUAGE, date: DATE, turn: String(before), word: typed.join('') });
         if (IS_RANDOM) body.set('mode', 'random');
         if (IS_GUEST) body.set('token', guestToken());
+        if (IS_GUEST && IS_RANDOM) body.set('tokens', JSON.stringify(guestTokens()));
         let response;
         try {
             response = await fetch(API, { method: 'POST', headers: { Accept: 'application/json' }, body });
@@ -228,6 +233,10 @@
         if (data.error === 'newDay') {
             say('It\'s a new day! Getting the new word…', 0);
             setTimeout(() => location.reload(), 1500);
+            return;
+        }
+        if (data.error === 'dailyFirst') {
+            location.reload(); // a new day started: random words wait for its word, as the page will say
             return;
         }
         if (!response.ok || !data.game) {
@@ -321,7 +330,10 @@
         if (isBusy) return;
         isBusy = true;
         const body = new URLSearchParams({ action: 'new', mode: 'random', lang: LANGUAGE });
-        if (IS_GUEST) body.set('token', guestToken());
+        if (IS_GUEST) {
+            body.set('token', guestToken());
+            body.set('tokens', JSON.stringify(guestTokens()));
+        }
         let data = null;
         try {
             const response = await fetch(API, { method: 'POST', headers: { Accept: 'application/json' }, body });
@@ -334,6 +346,10 @@
             // said below
         }
         isBusy = false;
+        if (data?.error === 'dailyFirst') {
+            location.reload(); // a new day started (see send())
+            return;
+        }
         if (!data?.game) {
             say('Couldn\'t get a new word. Check your connection and try again.');
             return;
@@ -370,6 +386,13 @@
             data = await response.json();
         } catch {
             say('Couldn\'t load your game. Check your connection and reload the page.', 0);
+        }
+        if (data?.error === 'dailyFirst') {
+            // Random words wait for the day's word: the card instead of the board, and typing stays off (isBusy)
+            root.querySelector('[data-wordle-play]').hidden = true;
+            root.querySelector('[data-wordle-locked]').hidden = false;
+            drawStatuses(data.statuses ?? {});
+            return;
         }
         isBusy = false;
         if (!data?.game) return;

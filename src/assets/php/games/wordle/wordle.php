@@ -334,6 +334,16 @@ function hbHubWordleUserStats(PDO $db, int $userId, string $language): array
 // like, each one picked at random just for them from the same answers list, so two people almost never get the same
 // one and nobody can spoil it. They don't count in stats, streaks or the leaderboard. A member has one random game per
 // language in HBHub-WordleRandomGames (made when they open the page), written over by the next one once it's over.
+// They only open once the day's word in that language is over (won or lost), so nobody plays random words instead
+// of the daily one (hbHubWordleDailyDone(), and for guests hbHubWordleGuestDailyDone()).
+
+/**
+ * Whether the user has finished (won or lost) today's word in the language, which random words in it wait for.
+ */
+function hbHubWordleDailyDone(PDO $db, int $userId, string $language): bool
+{
+    return (hbHubWordleGame($db, $userId, $language, hbHubWordleToday())['result'] ?? HBHUB_WORDLE_PLAYING) !== HBHUB_WORDLE_PLAYING;
+}
 
 /**
  * A random answer for one player: any from the answers list but today's daily word (so it can't spoil that) and
@@ -462,6 +472,17 @@ function hbHubWordleGuestGuesses(mixed $token, string $language, string $date): 
 function hbHubWordleGuestToken(string $language, string $date, array $guesses): string
 {
     return hbHubGuestSeal('wordle', ['lang' => $language, 'date' => $date, 'guesses' => $guesses]);
+}
+
+/**
+ * Whether a guest has finished (won or lost) today's word in the language, from their daily tokens (language =>
+ * token), which their random words in it wait for like a member's (hbHubWordleDailyDone()).
+ */
+function hbHubWordleGuestDailyDone(PDO $db, array $tokens, string $language): bool
+{
+    $date = hbHubWordleToday();
+    $guesses = hbHubWordleGuestGuesses($tokens[$language] ?? null, $language, $date);
+    return $guesses !== [] && hbHubWordleResult($guesses, hbHubWordleDailyWord($db, $language, $date)) !== HBHUB_WORDLE_PLAYING;
 }
 
 /**

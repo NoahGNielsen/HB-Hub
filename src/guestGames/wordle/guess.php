@@ -12,6 +12,8 @@
 // - mode=random: the guest's random word instead (see "Random words" in wordle.php), in its own token ("token", for
 //   action=view, guess and new, which only gives a new word once the last one is over). The answer always has the
 //   game's new token in "token", and for action=view the tabs' "statuses" from the daily tokens in "tokens".
+//   Every random request sends "tokens" too: until today's word in that language is over in them, the answer is
+//   409 {"error": "dailyFirst"} (with "statuses" for action=view), and the page asks them to play that first.
 // Errors like the members' version: 422 {"error": "notWord"} (nothing changes), 409 {"error": "newDay"} and 400
 // {"error": "badRequest"}. A guess on an older view of the game, or in a game that's over, answers with the game as
 // it is.
@@ -54,7 +56,12 @@ $tokens = is_array($tokens) ? $tokens : [];
 
 // Random words: the game is in its own token ("token"), and a broken or missing one is just a new word
 if ($isRandom) {
-    $game = hbHubWordleGuestRandomGame($db, $_POST['token'] ?? null, $language);
+    if (!hbHubWordleGuestDailyDone($db, $tokens, $language)) {
+        http_response_code(409);
+        echo json_encode(['error' => 'dailyFirst', 'statuses' => $action === 'view' ? wordleGuestStatuses($db, $tokens, $date) : null]);
+        exit;
+    }
+    $game =hbHubWordleGuestRandomGame($db, $_POST['token'] ?? null, $language);
     $result = hbHubWordleResult($game['guesses'], $game['word']);
     if ($action === 'new' && $result !== HBHUB_WORDLE_PLAYING) {
         $game = ['word' => hbHubWordleRandomWord($db, $language, $game['word']), 'guesses' => []];
