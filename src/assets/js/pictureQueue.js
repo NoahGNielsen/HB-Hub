@@ -1,5 +1,6 @@
 // Pictures that load a couple at a time: every <img data-queued-picture="address"> on the page (the profile pictures and
-// chat icons in the chat, and the user/chat lists and Banned pictures in the admin panel). Each of those pictures comes
+// chat icons in the chat, the user/chat lists and Banned pictures in the admin panel, and the casino and games
+// leaderboards). Each of those pictures comes
 // from a PHP script (otherPages/avatar.php, chat/icon.php, admin/bannedPicture.php), and the hosting only runs 10 PHP
 // requests at the same time for the whole site - the rest get "508 Resource Limit Is Reached" instead, and so does
 // anyone else on the site at that moment. So they load PICTURES_AT_ONCE at a time, the ones on screen first, and one
