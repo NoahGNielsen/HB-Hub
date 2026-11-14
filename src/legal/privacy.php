@@ -3,11 +3,12 @@
 // A .legal-page article (legal.css: a dark hero, then the contents next to the text) under the frontpage's top bar
 // (homeNav.php), so it loads homepage.css too.
 // Open to everyone, like the frontpage. Keep it in step with the code: when a new table, cookie, localStorage key or
-// outside service is added, it belongs here, and HBHUB_PRIVACY_UPDATED gets the date of the change.
+// outside service is added, it belongs here, and HBHUB_PRIVACY_UPDATED gets the date of the change. It's set in
+// assets/php/legalUpdated.php, since the footer needs it too: changing it there shows everyone who agreed to the old
+// policy the "privacy policy updated" box.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
-
-const HBHUB_PRIVACY_UPDATED = '14 November 2026';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -43,7 +44,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubGuestPrompt' => 'How long you\'ve played the free games without an account (just a number of seconds, counted while the page is on screen), so the popup asking you to sign up only shows up now and then.',
     'hbHubAppPrompt' => 'That the popup about putting HB Hub on your phone\'s home screen has been shown (or that you already opened HB Hub from the home screen), so it only shows up once.',
     'hbHubCookieNotice' =>'That you clicked away the cookie notice, so it isn\'t shown again.',
-    'hbHubTermsAgreed' => 'The date of the Terms of Service you last agreed to (by clicking away the cookie notice or the "terms have been updated" box), so that box only shows up when the terms change again.',
+    'hbHubTermsAgreed, hbHubPrivacyAgreed' => 'The dates of the Terms of Service and the Privacy Policy you last agreed to (by clicking away the cookie notice or the "has been updated" box), so that box only shows up when one of them changes again.',
 ];
 ?>
 <!DOCTYPE html>

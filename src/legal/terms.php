@@ -4,12 +4,12 @@
 // A .legal-page article (legal.css: a dark hero, then the contents next to the text) under the frontpage's top bar
 // (homeNav.php), so it loads homepage.css too, just like privacy.php. Open to everyone, like the frontpage.
 // Sign-up (onboarding.php) links here.
-// When a rule changes, HBHUB_TERMS_UPDATED gets the date of the change. It's set in assets/php/termsUpdated.php, since
+// When a rule changes, HBHUB_TERMS_UPDATED gets the date of the change. It's set in assets/php/legalUpdated.php, since
 // the footer needs it too: changing it there shows everyone who agreed to the old terms the "terms updated" box.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/termsUpdated.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">

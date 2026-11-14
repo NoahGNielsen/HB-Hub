@@ -27,9 +27,10 @@ require_once __DIR__ . '/toast.php';
 hbHubRenderToast();
 
 // The cookie notice, on every page. It starts hidden; cookieNotice.js shows it until it's been clicked away once.
-// Next to it, the same kind of box saying the terms have changed. Also hidden; cookieNotice.js shows it to anyone who
-// clicked the cookie notice away back when the terms had an older date than data-terms-updated.
-require_once __DIR__ . '/termsUpdated.php';
+// Next to it, the same kind of box saying the terms and/or the privacy policy have changed. Also hidden; cookieNotice.js
+// shows it to anyone who clicked the cookie notice away back when one of them had an older date than
+// data-terms-updated / data-privacy-updated, and hides the part (and the " and ") about the one that hasn't changed.
+require_once __DIR__ . '/legalUpdated.php';
 ?>
 <aside class="cookie-notice" data-cookie-notice aria-label="Cookies" hidden>
     <p class="cookie-notice-text">
@@ -38,10 +39,12 @@ require_once __DIR__ . '/termsUpdated.php';
     </p>
     <button type="button" class="cookie-notice-ok" data-cookie-notice-ok>Got it</button>
 </aside>
-<aside class="corner-box" data-corner-terms data-terms-updated="<?= htmlspecialchars(HBHUB_TERMS_UPDATED) ?>" aria-label="Terms updated" hidden>
+<aside class="corner-box" data-corner-terms data-terms-updated="<?= htmlspecialchars(HBHUB_TERMS_UPDATED) ?>" data-privacy-updated="<?= htmlspecialchars(HBHUB_PRIVACY_UPDATED) ?>" aria-label="Terms and privacy policy updated" hidden>
     <p class="corner-box-text">
-        Hey, the <a href="/legal/terms">Terms of Service</a> have been updated
-        (<?= htmlspecialchars(HBHUB_TERMS_UPDATED) ?>). By continuing to use HB Hub, you agree to the new terms.
+        Hey, the
+        <span data-corner-legal="terms"><a href="/legal/terms">Terms of Service</a> (<?= htmlspecialchars(HBHUB_TERMS_UPDATED) ?>)</span><span data-corner-legal-and> and the </span><span data-corner-legal="privacy"><a href="/legal/privacy">Privacy Policy</a> (<?= htmlspecialchars(HBHUB_PRIVACY_UPDATED) ?>)</span>
+        <span data-corner-legal-verb>have</span> been updated. By continuing to use HB Hub, you agree to
+        <span data-corner-legal-them>the new versions</span>.
     </p>
     <button type="button" class="corner-box-ok" data-corner-terms-ok>Got it</button>
 </aside>
