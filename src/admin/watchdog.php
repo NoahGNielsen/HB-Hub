@@ -94,7 +94,7 @@ function adminWatchdogWhen(string $first, string $last): string
     <link rel="stylesheet" href="/assets/css/admin.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/admin.css') ?>">
     <script src="/assets/js/admin.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/admin.js') ?>" defer></script>
     <script src="/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
-    <title>Watchdog - Admin panel - HB Hub</title>
+    <title>Server busy reports - Admin panel - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
@@ -109,7 +109,7 @@ function adminWatchdogWhen(string $first, string $last): string
                 <section class="settings-card" aria-labelledby="admin-watchdog-heading">
                     <div class="settings-card-head">
                         <div>
-                            <h2 id="admin-watchdog-heading">Watchdog</h2>
+                            <h2 id="admin-watchdog-heading">Server busy reports</h2>
                             <p class="settings-intro">
                                 Every time the server answered &ldquo;508 Resource Limit Is Reached&rdquo; (too many PHP requests at once).
                                 Each page counts the 508s it gets and reports them 3 seconds after the first one, trying again every
@@ -145,7 +145,7 @@ function adminWatchdogWhen(string $first, string $last): string
                     <?php endif; ?>
 
                     <?php if ($adminTotal > 0): ?>
-                        <form action="/admin/watchdog" method="post" class="admin-watchdog-clear" data-confirm="Clear the whole Watchdog log? It can't be brought back.">
+                        <form action="/admin/watchdog" method="post" class="admin-watchdog-clear" data-confirm="Clear all the server busy reports? It can't be brought back.">
                             <input type="hidden" name="action" value="clear">
                             <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Clear the log</button>
                         </form>

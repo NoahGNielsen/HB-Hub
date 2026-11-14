@@ -113,9 +113,9 @@ function adminPersonUserIds(PDO $db, int $userId): array
 /**
  * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), People (admin/people.php), Banned
  * pictures (admin/banned.php), Feedback (admin/feedback.php), Announcements (admin/announcements.php), Crash reports (admin/crashes.php), Cosmic Engine
- * (admin/engine.php), Watchdog (admin/watchdog.php) and Admin log (admin/log.php), each with how many there are in all, or
+ * (admin/engine.php), Server busy reports (admin/watchdog.php) and Admin log (admin/log.php), each with how many there are in all, or
  * for Feedback how many are new, for the Cosmic Engine how many stages of the one being built are done and for the
- * Watchdog how many 508s there were in the last 24 hours. $active is 'users', 'chats', 'people', 'banned', 'feedback',
+ * server busy reports how many 508s there were in the last 24 hours. $active is 'users', 'chats', 'people', 'banned', 'feedback',
  * 'announcements', 'crashes', 'engine', 'watchdog' or 'log'.
  */
 function adminListsMenuHtml(PDO $db, string $active): string
@@ -138,7 +138,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
         'announcements' => ['Announcements', '/admin/announcements'],
         'crashes' => ['Crash reports', '/admin/crashes'],
         'engine' => ['Project Starbound', '/admin/engine'],
-        'watchdog' => ['Watchdog', '/admin/watchdog'],
+        'watchdog' => ['Server busy reports', '/admin/watchdog'],
         'log' => ['Admin log', '/admin/log'],
     ];
 
