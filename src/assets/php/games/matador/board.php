@@ -37,7 +37,7 @@ const HBHUB_MATADOR_LEGAT_LIMIT = 15000; // only for players worth at most this
 const HBHUB_MATADOR_EDITIONS = [
     'classic' => ['name' => 'Classic', 'about' => 'The original Danish board, with the streets of Copenhagen.'],
     'htx' => ['name' => 'HTX', 'about' => 'HTX\'s own board and cards - BETA!'],
-    'kaos' => ['name' => 'Kaos', 'about' => 'The classic board with every field in a random place, and a Prøv lykken card that mixes them up again.'],
+    'kaos' => ['name' => 'Kaos', 'about' => 'The classic board with every field in a random place, and a Prøv lykken card that mixes them up again - and swaps everyone\'s properties and money.'],
 ];
 const HBHUB_MATADOR_CORNERS = [0, 10, 20, 30]; // START, jail, Parkering and De fængsles: they stay put in Kaos
 const HBHUB_MATADOR_KAOS_CARD = 0; // the Kaos card's number in editions/kaos.php (it isn't in the deck)

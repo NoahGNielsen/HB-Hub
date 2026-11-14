@@ -13,9 +13,10 @@ $rulesExtraTax = array_values(array_filter($rulesFields, static fn (array $info)
     <li>
         Kaos is the Classic board, but every field except the four corners is put in a random place when the game
         starts. Landing on Prøv lykken gives a <?= HBHUB_MATADOR_KAOS_PERCENT ?> % chance of the Kaos card instead of
-        the top of the deck, which mixes all the fields up again. Properties keep their owner, houses and mortgage when
-        they move, the pieces stay where they stand, and a card that sends you to a street or ferry sends you to wherever
-        it is now.
+        the top of the deck, which mixes all the fields up again. Properties keep their houses and mortgage when they
+        move, the pieces stay where they stand, and a card that sends you to a street or ferry sends you to wherever it
+        is now. The Kaos card also swaps the players around: everyone's properties go to another player, and everyone's
+        money goes to another player too, drawn separately (nobody keeps their own). Open trade offers are taken back.
     </li>
     <li>
         Everyone starts with <?= hbHubMatadorKr(HBHUB_MATADOR_START_CASH) ?> on START. The turn order is drawn when the game starts.
