@@ -698,6 +698,27 @@ CREATE TABLE `HBHub-MinesweeperGames` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-SudokuGames`
+--
+
+CREATE TABLE `HBHub-SudokuGames` (
+  `gameId` bigint UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `gameLevel` tinyint UNSIGNED NOT NULL COMMENT '1 Easy\r\n2 Medium\r\n3 Hard\r\n4 Expert',
+  `gamePuzzle` varchar(81) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing, the puzzle: one digit per square, row by row, 0 for empty. Empty once the game is over',
+  `gameSolution` varchar(81) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing, the answer, like gamePuzzle. Never sent to the player. Empty once the game is over',
+  `gameHints` smallint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How many hints were used',
+  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing\r\n1 Solved (without a hint: on the leaderboard)\r\n2 Solved with hints (not on the leaderboard)\r\n3 Left (started another game first)\r\n4 Too fast (solved faster than a person can fill in the board, so not counted: the anticheat)',
+  `gameMs` int UNSIGNED DEFAULT NULL COMMENT 'How long a solved (or too fast) game took, in ms, without its pauses. NULL for the rest',
+  `gamePausedMs` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How long it has been paused in all, in ms, not counting the pause it''s in now',
+  `gamePausedTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when the pause it''s in now started (Pause, or the player left the page), NULL while the clock runs',
+  `gameStartTimestamp` datetime(3) NOT NULL COMMENT 'UTC, when it started',
+  `gameEndTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when it was solved or left, NULL while playing'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Sudoku: every game played, for the leaderboard (src/assets/php/games/sudoku/sudoku.php). Others only see the totals on the leaderboard';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-MinerAnomalyTimes`
 --
 
@@ -1357,6 +1378,14 @@ ALTER TABLE `HBHub-MinesweeperGames`
   ADD KEY `sizeUser` (`gameSize`,`userId`,`gameResult`,`gameMs`);
 
 --
+-- Indexes for table `HBHub-SudokuGames`
+--
+ALTER TABLE `HBHub-SudokuGames`
+  ADD PRIMARY KEY (`gameId`),
+  ADD KEY `userResult` (`userId`,`gameResult`),
+  ADD KEY `levelResult` (`gameLevel`,`gameResult`,`userId`,`gameMs`);
+
+--
 -- Indexes for table `HBHub-MinerAnomalyTimes`
 --
 ALTER TABLE `HBHub-MinerAnomalyTimes`
@@ -1644,6 +1673,12 @@ ALTER TABLE `HBHub-MinerContributions`
 -- AUTO_INCREMENT for table `HBHub-MinesweeperGames`
 --
 ALTER TABLE `HBHub-MinesweeperGames`
+  MODIFY `gameId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-SudokuGames`
+--
+ALTER TABLE `HBHub-SudokuGames`
   MODIFY `gameId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
@@ -1967,6 +2002,12 @@ ALTER TABLE `HBHub-WordleGames`
 --
 ALTER TABLE `HBHub-MinesweeperGames`
   ADD CONSTRAINT `fk_minesweepergames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-SudokuGames`
+--
+ALTER TABLE `HBHub-SudokuGames`
+  ADD CONSTRAINT `fk_sudokugames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-MinerAnomalyTimes`

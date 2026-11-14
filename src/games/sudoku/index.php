@@ -1,15 +1,29 @@
 <?php
 // Sudoku: fill the 9x9 board so every row, column and 3x3 box has 1-9 once, on Easy, Medium, Hard or Expert. A normal
-// Games page (side bar, back link, title, the rules under it from assets/php/games/sudoku/rules.php). Everything else
-// happens in the browser: assets/js/sudoku.js makes the puzzles, draws the board's 81 squares into data-sudoku-board,
-// and keeps the game and the best times in localStorage (hbHubSudoku). Nothing is sent to the server, so there's no
-// JSON endpoint and no table yet; a leaderboard would need the puzzles and times to move to the server first.
+// Games page (side bar, back link, title, a Leaderboard button and the rules under it from
+// assets/php/games/sudoku/rules.php). The puzzles are made and checked on the server (assets/php/games/sudoku/sudoku.php,
+// through games/sudoku/move), so the leaderboard can trust them; assets/js/sudoku.js draws the board's 81 squares into
+// data-sudoku-board and keeps the numbers and notes you put in, in localStorage (hbHubSudoku).
+// data-sudoku-state hands the script what the server has: {"current": the game being played (hbHubSudokuCurrent()) or
+// null, "best": {level key: your fastest ranked solve in ms}}.
+// The free version for guests at /play/sudoku is a page of its own (guestGames/sudoku/), played only in the browser.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/sudoku/sudoku.php';
 hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 
-// The levels, as in DIFFICULTIES in sudoku.js
-const SUDOKU_LEVELS = ['easy' => 'Easy', 'medium' => 'Medium', 'hard' => 'Hard', 'expert' => 'Expert'];
+$db = hbHubDatabase();
+$userId = (int) $hbHubUser['userId'];
+$best = [];
+foreach (hbHubSudokuBest($db, $userId) as $level => $ms) {
+    $best[HBHUB_SUDOKU_LEVELS[$level]['key'] ?? 'unknown'] = $ms;
+}
+$sudokuState = ['current' => hbHubSudokuCurrent($db, $userId), 'best' => (object) $best];
+
+$sudokuLevels = []; // 'easy' => 'Easy', ...
+foreach (HBHUB_SUDOKU_LEVELS as $info) {
+    $sudokuLevels[$info['key']] = $info['name'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,18 +38,19 @@ const SUDOKU_LEVELS = ['easy' => 'Easy', 'medium' => 'Medium', 'hard' => 'Hard',
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino games sudoku" data-sudoku>
+    <main class="casino games sudoku" data-sudoku data-sudoku-state="<?= htmlspecialchars(json_encode($sudokuState)) ?>">
         <a class="casino-back" href="/games/">&larr; Games</a>
         <div class="casino-title-row">
             <h1>Sudoku</h1>
+            <a class="casino-btn" href="/games/sudoku/leaderboard" data-sudoku-leaderboard>Leaderboard</a>
         </div>
         <p class="casino-intro">
             Fill in the board so every row, column and 3&times;3 box has the numbers 1 to 9 once each. A new puzzle every
-            time, on four levels.
+            time, on four levels. Solve it fast without a hint for a spot on the leaderboard.
         </p>
 
         <nav class="sudoku-levels" aria-label="New game">
-            <?php foreach (SUDOKU_LEVELS as $key => $name): ?>
+            <?php foreach ($sudokuLevels as $key => $name): ?>
                 <button type="button" class="sudoku-level" data-sudoku-new="<?= $key ?>">
                     <span class="sudoku-level-name"><?= $name ?></span>
                     <span class="sudoku-level-best" data-sudoku-best="<?= $key ?>"></span>
@@ -92,9 +107,9 @@ const SUDOKU_LEVELS = ['easy' => 'Easy', 'medium' => 'Medium', 'hard' => 'Hard',
 
         <section class="casino-card sudoku-result" aria-labelledby="sudoku-result-title" data-sudoku-result hidden>
             <h2 id="sudoku-result-title">Solved!</h2>
-            <p class="sudoku-result-text" data-sudoku-result-text></p>
+            <p class="sudoku-result-text"><span data-sudoku-result-text></span> <a href="/games/sudoku/leaderboard" data-sudoku-result-board>See the leaderboard</a></p>
             <div class="casino-actions">
-                <?php foreach (SUDOKU_LEVELS as $key => $name): ?>
+                <?php foreach ($sudokuLevels as $key => $name): ?>
                     <button type="button" class="casino-btn<?= $key === 'medium' ? ' casino-btn-primary' : '' ?>" data-sudoku-new="<?= $key ?>">New <?= $name ?> game</button>
                 <?php endforeach; ?>
             </div>

@@ -39,7 +39,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubMinerRun:<tab id>' => 'While Ore Mining Inc. is open: what you did in the game that isn\'t saved yet, and what a crash report would say (see Casino and games above), updated every second. If the game crashes or is closed before it\'s saved, the next time you open it, what you did is sent with its first save, like a normal save, and then deleted. It\'s deleted when the game is closed with nothing left to save. After a crash, the crash report part stays until you\'ve answered whether it may be sent; it\'s only sent if you say yes.',
     'hbHubMiner (IndexedDB)' => 'A crash report the game writes if it freezes while you\'re playing (written by a part of the game that keeps running when the rest of it is frozen). It\'s only sent if you say yes the next time you open the game, and deleted either way. If you play without an account, it\'s never sent, just deleted the next time you open the game.',
     'hbHubSudokuGuest' => 'Only in the free Sudoku at /play/sudoku, played without an account: your game (the puzzle, its answer, the numbers and notes you\'ve put in, the time and hints so far), and your best time and number of wins on each level, so you can close the page and carry on later. It\'s played only in your browser, so none of it is sent to HB Hub, and it never comes over to an account.',
-    'hbHubSudoku' => 'Your Sudoku game (the puzzle, its answer, the numbers and notes you\'ve put in, the time and hints so far), and your best time and number of wins on each level, so you can close the page and carry on later. Sudoku is played only in your browser, so none of it is sent to HB Hub.',
+    'hbHubSudoku' => 'The Sudoku game you\'re playing (with an account): its number, the puzzle, the numbers and notes you\'ve put in, and the time and hints so far, so you can close the page and carry on later. The game itself, its answer and its time are on HB Hub\'s server (see Casino and games above); the numbers you put in are only sent when the board is full, to check it, or with a hint.',
     'hbHubGuestWordle' => 'If you play Wordle without an account (at /play/wordle): your games of the day, encrypted by HB Hub so they can\'t be read or changed in your browser. It\'s sent with each guess so the server can check it. If you then log in or sign up, it\'s sent once to add today\'s games to your account (only in a language you haven\'t played today), and then deleted. Games from an earlier day are ignored and written over.',
     'hbHubGuestMiner' => 'If you play Ore Mining Inc. without an account (at /play/ore-mining-inc): your game, encrypted by HB Hub the same way, and a random id for the tab you\'re playing in (so the game only runs in one tab at a time). It\'s sent with each save so the server can check what you did. If you then log in or sign up, it\'s sent once to become your account\'s game (only if the account doesn\'t have one yet), and then deleted.',
     'hbHubGuestMinerRun:<tab id>' => 'The same as hbHubMinerRun above, when you play Ore Mining Inc. without an account. What you did that isn\'t saved yet is only ever sent with the next save of the game you play without an account, never to an account\'s game.',
@@ -270,6 +270,17 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 squares you've opened (and where the mines are); that's deleted when the game is over. Your
                                 flags stay in your browser. The games make up your spot on the Minesweeper leaderboards,
                                 where other people only see the totals (best and average time, wins, games played and win %).
+                                They're kept until your account is deleted.
+                            </li>
+                            <li>
+                                Your Sudoku games: for each game, the level, whether you solved it (with or without hints,
+                                or too fast for a person, which isn't counted) or left it, how many hints you used, how long
+                                it took, how long it was paused, and when you started and finished. While a game is being
+                                played, it also has the puzzle and its answer, and when the pause it's in started (the game
+                                is paused when you press Pause or leave the page); the puzzle and answer are deleted when
+                                the game is over. The numbers and notes you put in stay in your browser until the board is
+                                full and checked. The games make up your spot on the Sudoku leaderboards, where other people
+                                only see the totals (best and average time, and how many you've solved without a hint).
                                 They're kept until your account is deleted.
                             </li>
                             <li>
@@ -550,7 +561,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
                             That right away removes your name, profile picture, banner, bio, status, education badge, year, class, settings, password, two-factor
-                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, your server busy reports, your Minesweeper games, and the files you attached in chats. Your name is replaced
+                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, your server busy reports, your Minesweeper and Sudoku games, and the files you attached in chats. Your name is replaced
                             with "Deleted User".
                         </p>
                         <p>

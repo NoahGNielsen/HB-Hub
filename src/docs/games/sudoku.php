@@ -52,12 +52,23 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     </section>
 
                     <section id="saving" aria-labelledby="docs-saving">
-                        <h2 id="docs-saving">Saving and best times</h2>
+                        <h2 id="docs-saving">Saving and the leaderboard</h2>
                         <p>
-                            Your game, and your best time and number of wins on each level, are kept in your browser, not on
-                            HB Hub's server. So you can close the page and carry on later, in the same browser. In another
-                            browser or on another device, you start over. Clearing your browser's site data deletes them.
+                            The puzzle is made by HB Hub's server, which keeps its answer and times the game, so your browser
+                            never knows the answer. The numbers and notes you put in are kept in your browser, so you can close
+                            the page and carry on later. In another browser or on another device, you get the same puzzle
+                            back, but the squares you filled in start empty again.
                         </p>
-                        <p>Sudoku has no leaderboard yet.</p>
+                        <p>
+                            There's a <a href="/games/sudoku/leaderboard">Sudoku leaderboard</a> for each level, with
+                            everyone's best and average time and how many they've solved. Only puzzles solved without a
+                            hint count. The clock stops while the game is paused or you're away from the page, so that
+                            time isn't counted. A puzzle filled in faster than a person can (less than a second for each
+                            empty square) doesn't count either.
+                        </p>
+                        <p>
+                            The <a href="/play/sudoku">free Sudoku</a>, for playing without an account, is played only in
+                            your browser and has no leaderboard.
+                        </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

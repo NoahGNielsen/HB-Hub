@@ -204,6 +204,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
                                 comes from code (like the browser's console) instead of you: it's stopped there.
                             </li>
                             <li>
+                                Sudoku times on the leaderboard are timed by HB Hub's server, without the time the game was
+                                paused or you were away from the page. Only puzzles solved without a hint count, and starting
+                                a new game ends the one you were playing. No solvers, bots or scripts: a puzzle filled in
+                                faster than a person can (less than a second for each empty square) isn't counted.
+                            </li>
+                            <li>
                                 Ore Mining Inc. saves on HB Hub's server and checks what you do there, so only things that
                                 could really have happened count. Clicks count up to 20 a second, and a game only runs in one
                                 tab at a time. No auto-clickers, macros or scripts: clicks that look like they come from one

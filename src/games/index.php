@@ -153,7 +153,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                                 <text class="casino-game-art-digit" x="49" y="56" text-anchor="middle" dy="-2">1</text>
                             </svg>
                         </span>
-                        <span class="casino-game-text">Fill the board with 1 to 9 in every row, column and box. A new puzzle every time, from Easy to Expert, with notes and hints.</span>
+                        <span class="casino-game-text">Fill the board with 1 to 9 in every row, column and box. A new puzzle every time, from Easy to Expert, and a leaderboard for the fastest solves.</span>
                     </a>
                 </li>
                 <li>
