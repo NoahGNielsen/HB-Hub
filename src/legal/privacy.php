@@ -260,7 +260,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 guesses and streaks), never your guesses.
                             </li>
                             <li>
-                                Your Minesweeper games: for each game, the size, whether you won, lost or left it, how long a
+                                Your Minesweeper games: for each game, the size, whether you won, lost or left it (or it
+                                was stopped because a click on the board came from code instead of you), how long a
                                 win took, the fewest clicks its board could be won in (to catch wins too fast for a person,
                                 which aren't counted), and when you started and finished. While a game is being played, it also has which
                                 squares you've opened (and where the mines are); that's deleted when the game is over. Your

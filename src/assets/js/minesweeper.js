@@ -5,7 +5,8 @@
 // It also listens for the game's minesweeper:* events on this page's document (main.js sends them from inside the
 // frame): "new" (a new board, detail {size}), "won" ({size, ms, best, isBest}, the server's time and the player's
 // best), "tooFast" (the same, for a win the server's anticheat didn't count: faster than a person can click), "lost"
-// and "error" ({error}, the server's code). A win or an error goes in the line above the frame
+// "scripted" (the game stopped itself: a click on the board was made by code, like from the console) and "error"
+// ({error}, the server's code). A win or an error goes in the line above the frame
 // (data-minesweeper-result), and the Leaderboard button (data-minesweeper-leaderboard) goes to the board being played.
 (() => {
   const frame = document.querySelector('[data-minesweeper-frame]');
@@ -98,6 +99,14 @@
     show(
       `You won in ${formatTime(ms)}, but that's faster than a person can click, so it doesn't count on the leaderboard. `
         + 'No bots or scripts, please.',
+      true,
+    );
+  });
+
+  document.addEventListener('minesweeper:scripted', () => {
+    show(
+      "This game was stopped: a click on the board came from code (like the console or an auto clicker extension), not from you. "
+        + "It counts as played, but not won. Click the face for a new game.",
       true,
     );
   });

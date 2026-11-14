@@ -14,6 +14,11 @@
 // won in (its "3BV", gameClicksNeeded) against the time. Faster than HBHUB_MINESWEEPER_MAX_CLICKS_PER_SECOND and it
 // ends as "too fast" instead of won, which counts as played but not won, so it never goes on the leaderboard. It's one
 // pass over the board per win, so it costs the server (and the player) next to nothing.
+// The game in the frame also checks that every click on the board came from a real mouse, finger or key (a click made
+// by code, like one typed into the console, isn't "trusted" in the browser), and if one didn't, it stops the game and
+// says so here (hbHubMinesweeperScripted()), which ends it as "scripted": played, but not won. Its functions are
+// hidden from the console too. Code could still skip the board and ask for squares itself, but then the speed check
+// above is what's left.
 // Used by games/minesweeper/move (the JSON) and games/minesweeper/leaderboard.
 require_once __DIR__ . '/../../database.php';
 
@@ -28,6 +33,7 @@ const HBHUB_MINESWEEPER_WON = 1;
 const HBHUB_MINESWEEPER_LOST = 2;
 const HBHUB_MINESWEEPER_LEFT = 3;
 const HBHUB_MINESWEEPER_TOO_FAST = 4; // won, but faster than a person can click (see the anticheat above)
+const HBHUB_MINESWEEPER_SCRIPTED = 5; // stopped by the game: a click on the board was made by code, not a person
 
 // The anticheat's limit: clicks a second, kept up over a whole win. There's no chording here (opening the squares around
 // a number in one go), so each of the board's clicks needed is a real click, sent after the answer to the one before it
@@ -281,6 +287,24 @@ function hbHubMinesweeperOpen(PDO $db, int $userId, ?int $gameId, mixed $size, m
         $view['isBest'] = $result === HBHUB_MINESWEEPER_WON && $view['best'] === $ms;
     }
     return $view;
+}
+
+/**
+ * Ends the user's game $gameId as scripted, when the game in the frame saw a click made by code. Returns the same
+ * shape as hbHubMinesweeperOpen() without cells (['game' => id, 'result' => HBHUB_MINESWEEPER_SCRIPTED]), or
+ * 'notFound' / 'gameOver' like it.
+ */
+function hbHubMinesweeperScripted(PDO $db, int $userId, int $gameId): array|string
+{
+    $statement = $db->prepare('UPDATE `HBHub-MinesweeperGames` SET gameResult = ?, gameCells = \'\', gameEndTimestamp = UTC_TIMESTAMP(3)
+        WHERE gameId = ? AND userId = ? AND gameResult = ?');
+    $statement->execute([HBHUB_MINESWEEPER_SCRIPTED, $gameId, $userId, HBHUB_MINESWEEPER_PLAYING]);
+    if ($statement->rowCount() === 0) {
+        $statement = $db->prepare('SELECT 1 FROM `HBHub-MinesweeperGames` WHERE gameId = ? AND userId = ?');
+        $statement->execute([$gameId, $userId]);
+        return $statement->fetchColumn() === false ? 'notFound' : 'gameOver';
+    }
+    return ['game' => $gameId, 'result' => HBHUB_MINESWEEPER_SCRIPTED];
 }
 
 /**

@@ -14,6 +14,10 @@
 //   once the game is over. Clicks are sent one after the other (queue), so fast clicking works. Flags stay here. A win
 //   the server's anticheat finds faster than a person can click ends as result 4: won here, but not on the leaderboard.
 //   The page around the frame (assets/js/minesweeper.js) hears how it went from the minesweeper:* events below.
+// - anticheat: the whole file is in a function, so its state and functions (openCell(), board, ...) can't be reached
+//   from the console, and a click on the board made by code (el.click(), dispatchEvent(), an auto clicker browser
+//   extension: anything whose event isn't isTrusted; an auto clicker program outside the browser makes real clicks) stops the game and tells the server, which ends it as scripted (caught()).
+(function() {
 /*----- constants -----*/
 var bombImage = '<img src="/assets/minesweeper/images/bomb.png" alt="Mine">';
 var flagImage = '<img src="/assets/minesweeper/images/flag.png" alt="Flag">';
@@ -71,6 +75,10 @@ function clickCell(e, flagging) {
   var clickedEl;
   clickedEl = e.target.tagName.toLowerCase() === 'img' ? e.target.parentElement : e.target;
   if (clickedEl.classList.contains('game-cell')) {
+    if (!e.isTrusted) { // HB Hub: made by code, not a person
+      caught();
+      return;
+    }
     var row = parseInt(clickedEl.dataset.row);
     var col = parseInt(clickedEl.dataset.col);
     var cell = board[row][col];
@@ -124,6 +132,22 @@ function openCell(row, col, clickedEl) {
         if (thisRound === round) tellPage('error', { error: 'offline' });
       });
   });
+}
+
+// HB Hub: the anticheat saw a click made by code. Nothing more opens (the clicks still waiting are skipped, as they
+// check stopped), and once the clicks already sent have their answers (so the game's id is known), the server is told
+// to end the game as scripted. Before the first answer there's no game on the server yet, so nothing to tell.
+function caught() {
+  stopped = true;
+  clearInterval(timerId);
+  var thisRound = round;
+  queue = queue.then(function() {
+    if (thisRound !== round || !gameId || winner || hitBomb) return;
+    var body = new URLSearchParams({ action: 'scripted', game: gameId });
+    return fetch('/games/minesweeper/move', { method: 'POST', headers: { Accept: 'application/json' }, body: body })
+      .catch(function() {}); // offline: the game ends as left once another one is started
+  });
+  tellPage('scripted', {});
 }
 
 // HB Hub: puts what the server answered on the board (see move.php for its shape).
@@ -305,3 +329,4 @@ function runCodeForAllCells(cb) {
 
 init();
 render();
+})();

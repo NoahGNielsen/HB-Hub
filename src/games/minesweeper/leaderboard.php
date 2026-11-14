@@ -2,7 +2,8 @@
 // Minesweeper leaderboard, one for each difficulty (?size=easy, medium or hard, as tabs), from HBHub-MinesweeperGames:
 // the fastest win and the average win time, wins, games played and win %. The times are the server's own (see
 // assets/php/games/minesweeper/minesweeper.php), so they can be trusted, and a win the anticheat found too fast only
-// counts as played (its time is kept, but left out of the best and average here). Sorted by any column with
+// counts as played (its time is kept, but left out of the best and average here), like a game stopped for a click
+// made by code. Sorted by any column with
 // ?sort=column&dir=asc|desc, which the headings link to; the fastest win first to begin with.
 // Only players with a win are on it. Win % only counts from LEADERBOARD_RANKED_GAMES games, so one lucky game doesn't
 // top it: anyone with fewer has "–", and comes after everyone with one when sorting by it (whichever way).

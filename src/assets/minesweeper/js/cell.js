@@ -1,9 +1,10 @@
 // Minesweeper's cells: one Cell per square on the board, knowing whether it's a mine, how many mines are next to it,
 // and whether it's been revealed or flagged. reveal() opens the cell, and if no mine is next to it, its neighbours too.
 // Copied unchanged (apart from this comment) from Nick Arocho's Minesweeper, https://github.com/nickarocho/minesweeper,
-// and only loaded by the game in its frame (games/minesweeper/frame.php), before main.js, which uses it. The two files
-// share the page's globals (board, hitBomb) the way they do in the original, which is fine as the frame has nothing else.
-// On HB Hub, reveal() and calcAdjBombs() aren't used any more: the server knows the mines and says what opens (main.js).
+// and only loaded by the game in its frame (games/minesweeper/frame.php), before main.js, which uses it. In the
+// original, the two files share the page's globals (board, hitBomb), which getAdjCells() and reveal() read. On HB Hub,
+// main.js keeps those to itself (so the console can't reach them), but getAdjCells(), calcAdjBombs() and reveal()
+// aren't used any more either: the server knows the mines and says what opens (main.js).
 class  Cell {
     constructor(row, col, board) {
         this.row = row;

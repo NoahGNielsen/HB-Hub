@@ -688,7 +688,7 @@ CREATE TABLE `HBHub-MinesweeperGames` (
   `userId` int UNSIGNED NOT NULL,
   `gameSize` tinyint UNSIGNED NOT NULL COMMENT 'Squares on each side: 9 Easy (10 mines), 16 Medium (40), 30 Hard (160)',
   `gameCells` varchar(900) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing, one character per square, row by row: 0 hidden, 1 opened, 2 mine. Empty once the game is over',
-  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing\r\n1 Won\r\n2 Lost (opened a mine)\r\n3 Left (started another game first)\r\n4 Too fast (won faster than a person can click, so not counted: the anticheat)',
+  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing\r\n1 Won\r\n2 Lost (opened a mine)\r\n3 Left (started another game first)\r\n4 Too fast (won faster than a person can click, so not counted: the anticheat)\r\n5 Scripted (the game saw a click on the board made by code, like from the console, and stopped)',
   `gameMs` int UNSIGNED DEFAULT NULL COMMENT 'How long a won (or too fast) game took, in ms, from the first click to the one that won. NULL for the rest',
   `gameClicksNeeded` smallint UNSIGNED DEFAULT NULL COMMENT 'The fewest clicks the board could be won in (its 3BV), for the anticheat. Set for won and too fast games, NULL for the rest',
   `gameStartTimestamp` datetime(3) NOT NULL COMMENT 'UTC, the first click',
