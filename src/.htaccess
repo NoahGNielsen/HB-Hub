@@ -191,12 +191,12 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # like the games' addresses with a slash below.
     RewriteRule ^play$ guestGames/index.php [L]
     RewriteRule ^play/$ /play [R=301,L]
-    RewriteRule ^play/(wordle|minesweeper|blackjack|baccarat|roulette|slots)$ guestGames/$1/index.php [L]
+    RewriteRule ^play/(wordle|minesweeper|sudoku|blackjack|baccarat|roulette|slots)$ guestGames/$1/index.php [L]
     RewriteRule ^play/(wordle|minesweeper|blackjack|baccarat|roulette|slots)/(guess|frame|move|play|spin)$ guestGames/$1/$2.php [L]
     RewriteRule ^play/ore-mining-inc$ guestGames/spaceOreMiner/index.php [L]
     RewriteRule ^play/ore-mining-inc/save$ guestGames/spaceOreMiner/save.php [L]
     # With a slash at the end (or Ore Mining Inc.'s old name), to the one address each page has
-    RewriteRule ^play/(wordle|minesweeper|blackjack|baccarat|roulette|slots|ore-mining-inc)/$ /play/$1 [R=301,L]
+    RewriteRule ^play/(wordle|minesweeper|sudoku|blackjack|baccarat|roulette|slots|ore-mining-inc)/$ /play/$1 [R=301,L]
     RewriteRule ^play/(?:space-ore-miner|spaceOreMiner)/?$ /play/ore-mining-inc [R=301,L]
 
     # B. Serve .html if the clean URL matches a .html file

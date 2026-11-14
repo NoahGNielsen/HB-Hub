@@ -36,7 +36,7 @@ $playStructuredData = json_encode([
     <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <link rel="stylesheet" href="/assets/css/guestGames.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/guestGames.css') ?>">
     <title>Free Online Games - No Sign-Up Needed | HB Hub</title>
-    <meta name="description" content="Free browser games from HB Hub at HANSENBERG: Wordle in English and Danish, an idle clicker, Minesweeper, and Blackjack, Baccarat, Roulette and Slots with play chips. No sign-up.">
+    <meta name="description" content="Free browser games from HB Hub at HANSENBERG: Wordle in English and Danish, an idle clicker, Minesweeper, Sudoku, and Blackjack, Baccarat, Roulette and Slots with play chips. No sign-up.">
     <script type="application/ld+json"><?= $playStructuredData ?></script>
 </head>
 <body class="home-body">
@@ -73,9 +73,9 @@ $playStructuredData = json_encode([
             <section class="guest-hub-text" aria-labelledby="guest-hub-account">
                 <h2 id="guest-hub-account">Want to keep your progress?</h2>
                 <p>
-                    As a guest, your Wordle and Ore Mining Inc. games are kept in your browser, and Minesweeper and the
-                    casino's play chips start over every time. Make a free HB Hub account to keep your Wordle streak and
-                    stats, save your mining company on HB Hub, get your Minesweeper times on the leaderboard, get chips of
+                    As a guest, your Wordle, Ore Mining Inc. and Sudoku games are kept in your browser, and Minesweeper and
+                    the casino's play chips start over every time. Make a free HB Hub account to keep your Wordle streak and
+                    stats, save your mining company on HB Hub, get your Minesweeper and Sudoku times on the leaderboard, get chips of
                     your own every day, play at tables with friends, and get on the leaderboards. What you played as a
                     guest in Wordle and Ore Mining Inc. comes with you.
                 </p>

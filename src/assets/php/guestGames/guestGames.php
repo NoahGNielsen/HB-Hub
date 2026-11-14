@@ -1,6 +1,6 @@
 <?php
 // The games visitors can play without an account, mostly so search engines have something to find: Wordle,
-// Ore Mining Inc., Minesweeper, and solo Blackjack, Baccarat, Roulette and Slots, at /play (the files are in guestGames/, which is only
+// Ore Mining Inc., Minesweeper, Sudoku, and solo Blackjack, Baccarat, Roulette and Slots, at /play (the files are in guestGames/, which is only
 // reached through the rewrites in .htaccess). The normal versions (games/, gambling/) still need an account, and
 // so does everything else on the site.
 //
@@ -21,6 +21,9 @@
 //   Inc. save, but only into an account that doesn't have them yet - it never writes over anything.
 // - Minesweeper keeps its board's token in the page only (the frame's game uses it as the game's id), so a board
 //   left halfway is gone, and its wins have no leaderboard, so they never come over to an account either.
+// - Sudoku has no token: the guest one is a page of its own (guestGames/sudoku/, assets/js/sudokuGuest.js), played
+//   only in the browser with the game and best times in localStorage (hbHubSudokuGuest). The members' Sudoku is made
+//   and checked on the server for its leaderboard, so a guest's times never come over to an account.
 // - The casino games keep theirs in the page only, so the play chips start over every time the page is opened, and
 //   they never come over to an account. A guest who runs out gets a new stack (hbHubGuestCasinoRefill()).
 require_once __DIR__ . '/../games/access.php';
@@ -91,6 +94,24 @@ const HBHUB_GUEST_GAMES = [
         ],
         'docs' => '/docs/games/minesweeper',
         'prompt' => 'Make a free account to get your times on the leaderboard and see your best and average time on each board.',
+    ],
+    'sudoku' => [
+        'path' => '/play/sudoku',
+        'game' => '/games/sudoku/',
+        'section' => 'games',
+        'name' => 'Sudoku',
+        'title' => 'Free Sudoku Online - Easy to Expert, No Sign-Up | HB Hub',
+        'description' => 'Play free Sudoku in your browser: a new puzzle every time on Easy, Medium, Hard or Expert, each with one answer. Notes, hints, undo and best times. No account needed.',
+        'card' => 'Fill the 9x9 board so every row, column and box has 1 to 9 once, on Easy, Medium, Hard or Expert.',
+        'genre' => ['Puzzle', 'Logic game'],
+        'keywords' => ['Sudoku', 'free Sudoku', 'Sudoku online', 'gratis Sudoku', 'Sudoku dansk', 'puzzle game', 'logic game'],
+        'languages' => ['en'],
+        'about' => [
+            'Sudoku is the number puzzle: fill in the 9 by 9 board so every row, every column and every 3 by 3 box has the numbers 1 to 9 once each. Some squares are filled in from the start, and those give you everything you need to work out the rest, without guessing.',
+            'Every game is a new puzzle with exactly one answer, on four levels: Easy, Medium, Hard and Expert. Put notes in the squares, undo, erase, or ask for a hint when you\'re stuck, and see how many of each number are left. It\'s free and runs in your browser; your game and your best time on each level are kept in this browser, so you can close the page and carry on later. With a free HB Hub account your fast solves count on the leaderboard.',
+        ],
+        'docs' => '/docs/games/sudoku',
+        'prompt' => 'Make a free account to get your times on the Sudoku leaderboard, and play Matador, chess and UNO with friends.',
     ],
     'blackjack' => [
         'path' => '/play/blackjack',

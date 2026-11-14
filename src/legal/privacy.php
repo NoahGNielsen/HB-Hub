@@ -38,6 +38,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubMinerAutoWarpTimes, hbHubMinerAutoCrunchTimes' => 'The number you put next to Ore Mining Inc.\'s Autopilot and Auto Crunch switches: how many times as much Dark Matter or Antimatter a Warp Jump or Big Crunch has to give before they make it.',
     'hbHubMinerRun:<tab id>' => 'While Ore Mining Inc. is open: what you did in the game that isn\'t saved yet, and what a crash report would say (see Casino and games above), updated every second. If the game crashes or is closed before it\'s saved, the next time you open it, what you did is sent with its first save, like a normal save, and then deleted. It\'s deleted when the game is closed with nothing left to save. After a crash, the crash report part stays until you\'ve answered whether it may be sent; it\'s only sent if you say yes.',
     'hbHubMiner (IndexedDB)' => 'A crash report the game writes if it freezes while you\'re playing (written by a part of the game that keeps running when the rest of it is frozen). It\'s only sent if you say yes the next time you open the game, and deleted either way. If you play without an account, it\'s never sent, just deleted the next time you open the game.',
+    'hbHubSudokuGuest' => 'Only in the free Sudoku at /play/sudoku, played without an account: your game (the puzzle, its answer, the numbers and notes you\'ve put in, the time and hints so far), and your best time and number of wins on each level, so you can close the page and carry on later. It\'s played only in your browser, so none of it is sent to HB Hub, and it never comes over to an account.',
     'hbHubSudoku' => 'Your Sudoku game (the puzzle, its answer, the numbers and notes you\'ve put in, the time and hints so far), and your best time and number of wins on each level, so you can close the page and carry on later. Sudoku is played only in your browser, so none of it is sent to HB Hub.',
     'hbHubGuestWordle' => 'If you play Wordle without an account (at /play/wordle): your games of the day, encrypted by HB Hub so they can\'t be read or changed in your browser. It\'s sent with each guess so the server can check it. If you then log in or sign up, it\'s sent once to add today\'s games to your account (only in a language you haven\'t played today), and then deleted. Games from an earlier day are ignored and written over.',
     'hbHubGuestMiner' => 'If you play Ore Mining Inc. without an account (at /play/ore-mining-inc): your game, encrypted by HB Hub the same way, and a random id for the tab you\'re playing in (so the game only runs in one tab at a time). It\'s sent with each save so the server can check what you did. If you then log in or sign up, it\'s sent once to become your account\'s game (only if the account doesn\'t have one yet), and then deleted.',
@@ -359,13 +360,14 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <h3>Playing without an account</h3>
                         <p>
-                            The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, and Blackjack,
+                            The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, Sudoku, and Blackjack,
                             Baccarat, Roulette and Slots with play chips) can be played without an account. Then nothing about you or your game is
                             stored on HB Hub's server, except a server busy report if the server is too busy to answer your
                             browser (see <a href="#watchdog">Server busy reports</a> below). Your game is kept in your own browser instead, encrypted by HB Hub so it
                             can't be read or changed there, and sent along with each move, so the server can check it with the
                             same rules as the normal games and send it back. Wordle and Ore Mining Inc. keep it in local storage
-                            (see <a href="#cookies">Cookies and local storage</a>); Minesweeper and the casino games only keep it in
+                            (see <a href="#cookies">Cookies and local storage</a>). Sudoku is played only in your browser and
+                            kept in local storage too, without being sent to the server at all; Minesweeper and the casino games only keep it in
                             the open page, so a Minesweeper board and the play chips start over every time. No cookie is set (they only look at whether the browser
                             already has the hbHubDevice cookie from logging in before, see <a href="#cookies">Cookies and local
                             storage</a>), and the free games have no leaderboards, stats or crash reports. The only thing they store on the server is each day's Wordle word, which is

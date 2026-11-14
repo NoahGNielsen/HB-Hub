@@ -240,10 +240,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
                             </li>
                             <li>
                                 The free games at <a href="/play">/play</a> can be played without an account, and these terms
-                                apply there too. Without an account, your Wordle and Ore Mining Inc. games are only kept in your
+                                apply there too. Without an account, your Wordle, Ore Mining Inc. and Sudoku games are only kept in your
                                 browser, so clearing the site's data, or using another browser, starts them over, and a
                                 Minesweeper board only lasts until you close or reload the page (and its wins don't go on
-                                the leaderboard). If you log in
+                                the leaderboard; nor do guest Sudoku times, which stay in your browser). If you log in
                                 or sign up from one, today's Wordle games and your Ore Mining Inc. game come with you, but only
                                 into an account that doesn't have them yet: your account's own games are never written over.
                                 In a browser that has logged in to HB Hub before, the free games send you to the login and the
