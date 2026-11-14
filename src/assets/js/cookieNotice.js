@@ -11,8 +11,8 @@
 (() => {
     const NOTICE_KEY = 'hbHubCookieNotice';
     const TERMS_KEY = 'hbHubTermsAgreed';
-    const notice = document.querySelector('[data-cookie-notice]');
-    const termsNotice = document.querySelector('[data-terms-notice]');
+    const notice = document.querySelector('[data-corner-cookies]');
+    const termsNotice = document.querySelector('[data-corner-terms]');
     if (!notice) return;
     const termsVersion = termsNotice?.dataset.termsUpdated ?? '';
 
@@ -43,7 +43,7 @@
 
     if (read(NOTICE_KEY) !== 'seen') {
         // Never clicked away (or no storage: then it comes back on the next page, and the terms box never shows)
-        showUntilClicked(notice, '[data-cookie-notice-ok]', () => {
+        showUntilClicked(notice, '[data-corner-cookies-ok]', () => {
             write(NOTICE_KEY, 'seen');
             if (termsVersion) write(TERMS_KEY, termsVersion);
         });
@@ -53,6 +53,6 @@
     if (!termsNotice || !termsVersion) return;
     // null = agreed before versions were kept, so to older terms than these
     if (read(TERMS_KEY) !== termsVersion) {
-        showUntilClicked(termsNotice, '[data-terms-notice-ok]', () => write(TERMS_KEY, termsVersion));
+        showUntilClicked(termsNotice, '[data-corner-terms-ok]', () => write(TERMS_KEY, termsVersion));
     }
 })();

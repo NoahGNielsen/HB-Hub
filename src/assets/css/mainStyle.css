@@ -249,8 +249,9 @@ body:has(> .site-footer) {
   }
 }
 
-/* Cookie notice (assets/php/footer.php + cookieNotice.js) - a small box in the bottom-left corner */
-.cookie-notice {
+/* Cookie notice + terms updated box (assets/php/footer.php + cookieNotice.js) - a small box in the bottom-left corner.
+   Not called .cookie-notice: ad blockers (Brave Shields) hid that, and with it the terms box too */
+.corner-box {
   position: fixed;
   left: 16px;
   bottom: 16px;
@@ -268,21 +269,21 @@ body:has(> .site-footer) {
   animation: toast-in 0.3s ease;
 }
 
-.cookie-notice[hidden] {
+.corner-box[hidden] {
   display: none;
 }
 
-.cookie-notice-text {
+.corner-box-text {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.4;
 }
 
-.cookie-notice-text a {
+.corner-box-text a {
   color: var(--accent);
 }
 
-.cookie-notice-ok {
+.corner-box-ok {
   flex: none;
   padding: 8px 14px;
   border: none;
@@ -294,7 +295,7 @@ body:has(> .site-footer) {
   cursor: pointer;
 }
 
-.cookie-notice-ok:hover {
+.corner-box-ok:hover {
   filter: brightness(1.1);
 }
 
