@@ -9,7 +9,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 
-const HBHUB_TERMS_UPDATED = '12 November 2026';
+const HBHUB_TERMS_UPDATED = '14 November 2026';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -276,8 +276,13 @@ const HBHUB_TERMS_UPDATED = '12 November 2026';
                             admins have added. Admins can also change or remove a status that breaks the rules.
                         </p>
                         <p>
-                            Admins decide what breaks the rules, also for things these terms don't list. If you think a decision
-                            was wrong, email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> and explain why.
+                            Admins decide what breaks the rules, also for things these terms don't list.
+                            <strong>
+                                Admins can also ban, ghost ban or delete any account, or do anything else on this list to it,
+                                at any time and for any reason, or for no reason at all, without warning and without
+                                explaining why to the person.
+                            </strong>
+                            If you think a decision was wrong, email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> and explain why.
                         </p>
                     </section>
 
