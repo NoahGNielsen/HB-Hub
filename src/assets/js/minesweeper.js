@@ -4,7 +4,8 @@
 // different difficulty is picked. The game itself is in assets/minesweeper/js/.
 // It also listens for the game's minesweeper:* events on this page's document (main.js sends them from inside the
 // frame): "new" (a new board, detail {size}), "won" ({size, ms, best, isBest}, the server's time and the player's
-// best), "lost" and "error" ({error}, the server's code). A win or an error goes in the line above the frame
+// best), "tooFast" (the same, for a win the server's anticheat didn't count: faster than a person can click), "lost"
+// and "error" ({error}, the server's code). A win or an error goes in the line above the frame
 // (data-minesweeper-result), and the Leaderboard button (data-minesweeper-leaderboard) goes to the board being played.
 (() => {
   const frame = document.querySelector('[data-minesweeper-frame]');
@@ -89,6 +90,15 @@
       `You won ${name} in ${formatTime(ms)}. ` + (isBest ? "That's your best yet!" : `Your best is ${formatTime(best)}.`),
       false,
       ['See the leaderboard', boardUrl(size)],
+    );
+  });
+
+  document.addEventListener('minesweeper:tooFast', (event) => {
+    const { ms } = event.detail ?? {};
+    show(
+      `You won in ${formatTime(ms)}, but that's faster than a person can click, so it doesn't count on the leaderboard. `
+        + 'No bots or scripts, please.',
+      true,
     );
   });
 

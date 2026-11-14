@@ -198,7 +198,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/termsUpdated.php';
                             </li>
                             <li>
                                 Minesweeper times on the leaderboard are timed by HB Hub's server. A game you leave or start
-                                over counts as played but not won. No bots or scripts that solve the board for you.
+                                over counts as played but not won. No bots or scripts that solve the board for you: a win
+                                faster than a person can click (more than 10 of the board's needed clicks a second) isn't
+                                counted, and only shows as played.
                             </li>
                             <li>
                                 Ore Mining Inc. saves on HB Hub's server and checks what you do there, so only things that

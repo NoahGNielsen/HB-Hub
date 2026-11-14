@@ -9,6 +9,11 @@
 // result and the time are needed. The time is the server's own, from the first click to the one that won.
 // Starting a game ends the user's game that's still being played (as left), so there's only ever one, and a game you
 // walk away from counts as played but not won.
+// Anticheat: as the mines never leave the server, the only way left to cheat is a bot that solves the board and clicks
+// for you, faster than any person can. So a win is checked once, when it happens: the fewest clicks the board can be
+// won in (its "3BV", gameClicksNeeded) against the time. Faster than HBHUB_MINESWEEPER_MAX_CLICKS_PER_SECOND and it
+// ends as "too fast" instead of won, which counts as played but not won, so it never goes on the leaderboard. It's one
+// pass over the board per win, so it costs the server (and the player) next to nothing.
 // Used by games/minesweeper/move (the JSON) and games/minesweeper/leaderboard.
 require_once __DIR__ . '/../../database.php';
 
@@ -22,6 +27,13 @@ const HBHUB_MINESWEEPER_PLAYING = 0; // gameResult in HBHub-MinesweeperGames
 const HBHUB_MINESWEEPER_WON = 1;
 const HBHUB_MINESWEEPER_LOST = 2;
 const HBHUB_MINESWEEPER_LEFT = 3;
+const HBHUB_MINESWEEPER_TOO_FAST = 4; // won, but faster than a person can click (see the anticheat above)
+
+// The anticheat's limit: clicks a second, kept up over a whole win. There's no chording here (opening the squares around
+// a number in one go), so each of the board's clicks needed is a real click, sent after the answer to the one before it
+// came back. The world's best players manage around 6-8 a second, with chording, so 10 without is well past any person
+// and leaves room for a quick burst on a tiny Easy board.
+const HBHUB_MINESWEEPER_MAX_CLICKS_PER_SECOND = 10;
 
 const HBHUB_MINESWEEPER_HIDDEN = '0'; // a square in gameCells
 const HBHUB_MINESWEEPER_OPENED = '1';
@@ -105,6 +117,44 @@ function hbHubMinesweeperOpenSquare(string &$cells, int $size, int $index): ?arr
 }
 
 /**
+ * The fewest clicks a board can be won in (known as its 3BV): one for each area of squares with no mines around them
+ * (one click opens the whole area and its edge), plus one for each numbered square that isn't on the edge of such an
+ * area. Works on any $cells with the mines in them, opened or not.
+ */
+function hbHubMinesweeperClicksNeeded(string $cells, int $size): int
+{
+    $squares = $size * $size;
+    $numbers = [];
+    for ($index = 0; $index < $squares; $index++) {
+        $numbers[$index] = hbHubMinesweeperNumber($cells, $size, $index);
+    }
+    $done = []; // index => true for the squares an area's click opens
+    $clicks = 0;
+    for ($index = 0; $index < $squares; $index++) {
+        if ($numbers[$index] !== 0 || isset($done[$index])) {
+            continue;
+        }
+        $clicks++; // a new area: flood it like a click would
+        $done[$index] = true;
+        $todo = [$index];
+        while ($todo !== []) {
+            foreach (hbHubMinesweeperNeighbours($size, array_pop($todo)) as $neighbour) {
+                if (!isset($done[$neighbour])) {
+                    $done[$neighbour] = true; // never a mine: an empty square has none next to it
+                    if ($numbers[$neighbour] === 0) {
+                        $todo[] = $neighbour;
+                    }
+                }
+            }
+        }
+    }
+    for ($index = 0; $index < $squares; $index++) {
+        $clicks += $numbers[$index] > 0 && !isset($done[$index]) ? 1 : 0;
+    }
+    return $clicks;
+}
+
+/**
  * Whether every square without a mine is open.
  */
 function hbHubMinesweeperIsWon(string $cells): bool
@@ -128,7 +178,9 @@ function hbHubMinesweeperBest(PDO $db, int $userId, int $size): ?int
  * places the mines). Returns what the page needs, or an error code:
  * ['game' => id, 'result' => HBHUB_MINESWEEPER_*, 'cells' => [[row, col, number], ...]]. 'cells' has the squares
  * that opened, and once the game is over, every square on the board (number -1 for a mine). A won game also has
- * 'ms' (its time), 'best' (the user's fastest on the size, this one included) and 'isBest'.
+ * 'ms' (its time), 'best' (the user's fastest on the size, this one included) and 'isBest'. So does a win that was too
+ * fast (HBHUB_MINESWEEPER_TOO_FAST), but its time doesn't count for 'best' (null without another win), and 'isBest' is
+ * false.
  * Errors: 'badRequest' (no such size or square), 'notFound' (not the user's game) and 'gameOver' (the game is won,
  * lost or left already, like when another tab started a new one). Opening a square that's open already does nothing,
  * so a double click is fine.
@@ -186,14 +238,29 @@ function hbHubMinesweeperOpen(PDO $db, int $userId, ?int $gameId, mixed $size, m
             default => HBHUB_MINESWEEPER_PLAYING,
         };
 
+        $ms = null;
+        $clicksNeeded = null;
+        if ($result === HBHUB_MINESWEEPER_WON) {
+            // The time from the first click (TIMESTAMPDIFF in microseconds, as datetime(3) has ms), and the anticheat:
+            // the clicks after the first one (which started the clock) can't have come faster than the limit
+            $statement = $db->prepare('SELECT TIMESTAMPDIFF(MICROSECOND, gameStartTimestamp, UTC_TIMESTAMP(3)) DIV 1000
+                FROM `HBHub-MinesweeperGames` WHERE gameId = ?');
+            $statement->execute([$gameId]);
+            $ms = max(0, (int) $statement->fetchColumn());
+            $clicksNeeded = hbHubMinesweeperClicksNeeded($cells, $size);
+            if (($clicksNeeded - 1) * 1000 > HBHUB_MINESWEEPER_MAX_CLICKS_PER_SECOND * $ms) {
+                $result = HBHUB_MINESWEEPER_TOO_FAST;
+            }
+        }
+
         if ($result === HBHUB_MINESWEEPER_PLAYING) {
             $db->prepare('UPDATE `HBHub-MinesweeperGames` SET gameCells = ? WHERE gameId = ?')->execute([$cells, $gameId]);
         } else {
-            // Over: only the result (and a win's time) is kept. TIMESTAMPDIFF in microseconds, as datetime(3) has ms.
+            // Over: only the result (and a win's time and clicks needed) is kept
             $db->prepare('UPDATE `HBHub-MinesweeperGames` SET gameCells = \'\', gameResult = ?, gameEndTimestamp = UTC_TIMESTAMP(3),
-                    gameMs = IF(? = ?, TIMESTAMPDIFF(MICROSECOND, gameStartTimestamp, UTC_TIMESTAMP(3)) DIV 1000, NULL)
+                    gameMs = ?, gameClicksNeeded = ?
                 WHERE gameId = ?')
-                ->execute([$result, $result, HBHUB_MINESWEEPER_WON, $gameId]);
+                ->execute([$result, $ms, $clicksNeeded, $gameId]);
         }
         $db->commit();
     } catch (Throwable $e) {
@@ -208,12 +275,10 @@ function hbHubMinesweeperOpen(PDO $db, int $userId, ?int $gameId, mixed $size, m
         'cells' => array_map(static fn (int $square): array => [intdiv($square, $size), $square % $size,
             hbHubMinesweeperNumber($cells, $size, $square)], $squares),
     ];
-    if ($result === HBHUB_MINESWEEPER_WON) {
-        $statement = $db->prepare('SELECT gameMs FROM `HBHub-MinesweeperGames` WHERE gameId = ?');
-        $statement->execute([$gameId]);
-        $view['ms'] = (int) $statement->fetchColumn();
+    if ($ms !== null) { // won, or too fast
+        $view['ms'] = $ms;
         $view['best'] = hbHubMinesweeperBest($db, $userId, $size);
-        $view['isBest'] = $view['best'] === $view['ms'];
+        $view['isBest'] = $result === HBHUB_MINESWEEPER_WON && $view['best'] === $ms;
     }
     return $view;
 }

@@ -3,8 +3,8 @@
 //   action=open, row and col (the square, from 0 at the top left), and either game (the id the first answer gave) or,
 //   for the first click of a new game, size (9, 16 or 30), which starts it and places the mines.
 // Answers with what opened (hbHubMinesweeperOpen() in assets/php/games/minesweeper/minesweeper.php):
-//   {"game": id, "result": 0-3, "cells": [[row, col, number], ...]} (number -1 for a mine), and for a win also "ms",
-//   "best" and "isBest". Errors:
+//   {"game": id, "result": 0-4, "cells": [[row, col, number], ...]} (number -1 for a mine), and for a win (1) or a win
+//   the anticheat found too fast to count (4) also "ms", "best" and "isBest". Errors:
 // - 400 {"error": "badRequest"}: no such action, size or square.
 // - 404 {"error": "notFound"}: not one of the user's games.
 // - 409 {"error": "gameOver"}: the game is over already, like when another tab started a new one.

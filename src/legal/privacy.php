@@ -261,7 +261,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             </li>
                             <li>
                                 Your Minesweeper games: for each game, the size, whether you won, lost or left it, how long a
-                                win took, and when you started and finished. While a game is being played, it also has which
+                                win took, the fewest clicks its board could be won in (to catch wins too fast for a person,
+                                which aren't counted), and when you started and finished. While a game is being played, it also has which
                                 squares you've opened (and where the mines are); that's deleted when the game is over. Your
                                 flags stay in your browser. The games make up your spot on the Minesweeper leaderboards,
                                 where other people only see the totals (best and average time, wins, games played and win %).

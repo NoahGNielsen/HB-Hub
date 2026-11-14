@@ -11,7 +11,8 @@
 // - for the leaderboard, the mines are on HB Hub's server (assets/php/games/minesweeper/minesweeper.php), not here:
 //   every cell clicked open is sent to /games/minesweeper/move (the first one starts the game there and places the
 //   mines, never on or next to it), which answers with the cells that opened and their numbers, and the whole board
-//   once the game is over. Clicks are sent one after the other (queue), so fast clicking works. Flags stay here.
+//   once the game is over. Clicks are sent one after the other (queue), so fast clicking works. Flags stay here. A win
+//   the server's anticheat finds faster than a person can click ends as result 4: won here, but not on the leaderboard.
 //   The page around the frame (assets/js/minesweeper.js) hears how it went from the minesweeper:* events below.
 /*----- constants -----*/
 var bombImage = '<img src="/assets/minesweeper/images/bomb.png" alt="Mine">';
@@ -129,17 +130,18 @@ function openCell(row, col, clickedEl) {
 function applyAnswer(data, clickedEl) {
   gameId = data.game;
   var over = data.result !== 0;
+  var won = data.result === 1 || data.result === 4; // 4: won, but too fast for the leaderboard (the server's anticheat)
   data.cells.forEach(function(entry) {
     var cell = board[entry[0]][entry[1]];
     if (entry[2] === -1) {
       cell.bomb = true;
-      if (data.result === 1 && !cell.flagged) { // won: every mine gets a flag, like in Windows
+      if (won && !cell.flagged) { // won: every mine gets a flag, like in Windows
         cell.flagged = true;
         bombCount -= 1;
       }
     } else {
       cell.adjBombs = entry[2];
-      if (cell.flagged && (!over || data.result === 1)) { // a wrong flag stays for a loss, to show it was wrong
+      if (cell.flagged && (!over || won)) { // a wrong flag stays for a loss, to show it was wrong
         cell.flagged = false;
         bombCount += 1;
       }
@@ -151,12 +153,12 @@ function applyAnswer(data, clickedEl) {
     clearInterval(timerId);
     clickedEl.style.backgroundColor = 'red';
     tellPage('lost', {});
-  } else if (data.result === 1) {
+  } else if (won) {
     winner = true;
     clearInterval(timerId);
     elapsedTime = Math.floor(data.ms / 1000);
     document.getElementById('timer').innerText = elapsedTime.toString().padStart(3, '0');
-    tellPage('won', { size: size, ms: data.ms, best: data.best, isBest: data.isBest });
+    tellPage(data.result === 4 ? 'tooFast' : 'won', { size: size, ms: data.ms, best: data.best, isBest: data.isBest });
   }
   render();
 }

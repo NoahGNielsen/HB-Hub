@@ -331,7 +331,7 @@ if (($_GET['export'] ?? null) === '1') {
     $games['uno']['results'] = adminExportRows($db, 'SELECT * FROM `HBHub-UnoResults` WHERE userId = ? ORDER BY resultId DESC', $one);
     $games['wordle'] = adminExportRows($db, 'SELECT gameLanguage, gameDate, gameGuesses, gameResult, gameStartTimestamp, gameEndTimestamp
         FROM `HBHub-WordleGames` WHERE userId = ? ORDER BY gameDate DESC, gameLanguage', $one);
-    $games['minesweeper'] = adminExportRows($db, 'SELECT gameId, gameSize, gameResult, gameMs, gameStartTimestamp, gameEndTimestamp
+    $games['minesweeper'] = adminExportRows($db, 'SELECT gameId, gameSize, gameResult, gameMs, gameClicksNeeded, gameStartTimestamp, gameEndTimestamp
         FROM `HBHub-MinesweeperGames` WHERE userId = ? ORDER BY gameId DESC', $one);
     $games['oreMiningInc'] = [
         'save' => adminExportRows($db, 'SELECT saveState, saveOreAllTime, saveOrePerSecond, saveDarkMatter, saveAntimatter, saveStrangeMatter, saveWarps,
