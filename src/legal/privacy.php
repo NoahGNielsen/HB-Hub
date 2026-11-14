@@ -358,14 +358,14 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <h3>Playing without an account</h3>
                         <p>
-                            The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., and Blackjack, Baccarat and
-                            Roulette with play chips) can be played without an account. Then nothing about you or your game is
+                            The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, and Blackjack,
+                            Baccarat, Roulette and Slots with play chips) can be played without an account. Then nothing about you or your game is
                             stored on HB Hub's server, except a server busy report if the server is too busy to answer your
                             browser (see <a href="#watchdog">Server busy reports</a> below). Your game is kept in your own browser instead, encrypted by HB Hub so it
                             can't be read or changed there, and sent along with each move, so the server can check it with the
                             same rules as the normal games and send it back. Wordle and Ore Mining Inc. keep it in local storage
-                            (see <a href="#cookies">Cookies and local storage</a>); the casino games only keep it in the open page,
-                            so the play chips start over every time. No cookie is set (they only look at whether the browser
+                            (see <a href="#cookies">Cookies and local storage</a>); Minesweeper and the casino games only keep it in
+                            the open page, so a Minesweeper board and the play chips start over every time. No cookie is set (they only look at whether the browser
                             already has the hbHubDevice cookie from logging in before, see <a href="#cookies">Cookies and local
                             storage</a>), and the free games have no leaderboards, stats or crash reports. The only thing they store on the server is each day's Wordle word, which is
                             the same for everyone.
@@ -561,8 +561,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <p>
                             The free games you play without an account are only kept in your browser, so HB Hub has nothing to
-                            delete: clearing this site's data in your browser deletes them. The casino games' play chips are
-                            gone as soon as you close or reload the page.
+                            delete: clearing this site's data in your browser deletes them. A Minesweeper board and the casino
+                            games' play chips are gone as soon as you close or reload the page.
                         </p>
                         <p>
                             What stays is what other people need for their chats and games to make sense: the messages you sent

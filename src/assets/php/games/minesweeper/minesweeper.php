@@ -19,7 +19,8 @@
 // says so here (hbHubMinesweeperScripted()), which ends it as "scripted": played, but not won. Its functions are
 // hidden from the console too. Code could still skip the board and ask for squares itself, but then the speed check
 // above is what's left.
-// Used by games/minesweeper/move (the JSON) and games/minesweeper/leaderboard.
+// Used by games/minesweeper/move (the JSON) and games/minesweeper/leaderboard, and by guestGames/minesweeper/move for
+// the free Minesweeper without an account (hbHubMinesweeperGuestOpen(), whose game is a sealed token instead of a row).
 require_once __DIR__ . '/../../database.php';
 
 const HBHUB_MINESWEEPER_SIZES = [ // gameSize in HBHub-MinesweeperGames (squares on each side) => its difficulty
@@ -305,6 +306,68 @@ function hbHubMinesweeperScripted(PDO $db, int $userId, int $gameId): array|stri
         return $statement->fetchColumn() === false ? 'notFound' : 'gameOver';
     }
     return ['game' => $gameId, 'result' => HBHUB_MINESWEEPER_SCRIPTED];
+}
+
+/**
+ * Guests (the free Minesweeper at /play/minesweeper, guestGames/minesweeper/move): the same as hbHubMinesweeperOpen(),
+ * but the game isn't a row in the database. It's $game, from the guest's sealed token (null for the first click,
+ * which places the mines on a board of $size): ['size' => 9|16|30, 'cells' => like gameCells, 'start' => the first
+ * click's server time in ms, 'result' => HBHUB_MINESWEEPER_*]. Guests have no leaderboard, so there's no anticheat (a
+ * win is just won), no best time ('best' null, 'isBest' false), and a guest who sends an older token again can take a
+ * move back, which only matters to them.
+ * Returns [the game after the click, to seal again, and the view like hbHubMinesweeperOpen()'s without 'game'], or the
+ * same error codes ('badRequest', 'gameOver').
+ *
+ * @return array{0: array, 1: array}|string
+ */
+function hbHubMinesweeperGuestOpen(?array $game, mixed $size, mixed $row, mixed $col): array|string
+{
+    if ($game === null) {
+        $size = filter_var($size, FILTER_VALIDATE_INT);
+        if (!isset(HBHUB_MINESWEEPER_SIZES[$size])) {
+            return 'badRequest';
+        }
+    } else {
+        $size = $game['size'] ?? null;
+        $cells = $game['cells'] ?? null;
+        if (!is_int($size) || !isset(HBHUB_MINESWEEPER_SIZES[$size]) || !is_string($cells) || !is_int($game['start'] ?? null)) {
+            return 'badRequest';
+        }
+        if (($game['result'] ?? null) !== HBHUB_MINESWEEPER_PLAYING || strlen($cells) !== $size * $size) {
+            return 'gameOver';
+        }
+    }
+
+    $row = filter_var($row, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => $size - 1]]);
+    $col = filter_var($col, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => $size - 1]]);
+    if ($row === false || $col === false) {
+        return 'badRequest';
+    }
+    $index = $row * $size + $col;
+    $now = (int) floor(microtime(true) * 1000);
+    if ($game === null) {
+        $cells = hbHubMinesweeperNewBoard($size, $index);
+        $game = ['size' => $size, 'start' => $now];
+    }
+
+    $opened = hbHubMinesweeperOpenSquare($cells, $size, $index);
+    $result = match (true) {
+        $opened === null => HBHUB_MINESWEEPER_LOST,
+        hbHubMinesweeperIsWon($cells) => HBHUB_MINESWEEPER_WON,
+        default => HBHUB_MINESWEEPER_PLAYING,
+    };
+
+    $squares = $result === HBHUB_MINESWEEPER_PLAYING ? $opened : range(0, $size * $size - 1);
+    $view = [
+        'result' => $result,
+        'cells' => array_map(static fn (int $square): array => [intdiv($square, $size), $square % $size,
+            hbHubMinesweeperNumber($cells, $size, $square)], $squares),
+    ];
+    if ($result === HBHUB_MINESWEEPER_WON) {
+        $view += ['ms' => max(0, $now - $game['start']), 'best' => null, 'isBest' => false];
+    }
+    // Over: like for members, the board isn't needed any more
+    return [['cells' => $result === HBHUB_MINESWEEPER_PLAYING ? $cells : '', 'result' => $result] + $game, $view];
 }
 
 /**

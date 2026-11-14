@@ -9,9 +9,15 @@
 // - the mines are on the server, for the leaderboard: main.js sends every square opened to games/minesweeper/move
 // Only the squares opened, the result and the time are kept (assets/php/games/minesweeper/minesweeper.php). A game
 // closed halfway can't be picked up again: it counts as left once another one is started.
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
-hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
+// It's also the frame of the guest Minesweeper at /play/minesweeper: guestGames/minesweeper/frame sets
+// $minesweeperGuest (after its own checks) and includes this, and then main.js sends the squares to
+// /play/minesweeper/move (data-api on the <body>), where nothing is stored.
+$minesweeperGuest ??= false;
+if (!$minesweeperGuest) {
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
+    hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
+}
 
 $minesweeperAsset = static fn (string $path): string => '/assets/minesweeper/' . $path . '?v=' . filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/minesweeper/' . $path);
 ?>
@@ -24,7 +30,7 @@ $minesweeperAsset = static fn (string $path): string => '/assets/minesweeper/' .
     <title>Minesweeper - HB Hub</title>
     <link rel="stylesheet" href="<?= $minesweeperAsset('css/main.css') ?>">
 </head>
-<body>
+<body data-api="<?= $minesweeperGuest ? '/play/minesweeper/move' : '/games/minesweeper/move' ?>">
     <div class="flex-container">
         <div class="game-board">
             <br>

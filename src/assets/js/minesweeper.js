@@ -8,6 +8,8 @@
 // "scripted" (the game stopped itself: a click on the board was made by code, like from the console) and "error"
 // ({error}, the server's code). A win or an error goes in the line above the frame
 // (data-minesweeper-result), and the Leaderboard button (data-minesweeper-leaderboard) goes to the board being played.
+// On the guest Minesweeper (/play/minesweeper, data-minesweeper-guest) there's no Leaderboard button, and a win's line
+// links to signing up instead of a best time.
 (() => {
   const frame = document.querySelector('[data-minesweeper-frame]');
   if (!frame) {
@@ -84,9 +86,16 @@
 
   document.addEventListener('minesweeper:lost', () => show(null));
 
+  // The guest Minesweeper at /play/minesweeper: where signing up goes, as guests have no best times or leaderboard
+  const guestSignup = document.querySelector('[data-minesweeper-guest]')?.dataset.minesweeperGuest ?? null;
+
   document.addEventListener('minesweeper:won', (event) => {
     const { size, ms, best, isBest } = event.detail ?? {};
     const name = SIZES[size]?.[1] ?? '';
+    if (guestSignup !== null) {
+      show(`You won ${name} in ${formatTime(ms)}!`, false, ['Sign up free to get on the leaderboard', guestSignup]);
+      return;
+    }
     show(
       `You won ${name} in ${formatTime(ms)}. ` + (isBest ? "That's your best yet!" : `Your best is ${formatTime(best)}.`),
       false,

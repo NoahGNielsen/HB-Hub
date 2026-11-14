@@ -15,11 +15,15 @@
 // with more than one, they're shown one at a time with what each paid.
 // All of it has sound effects too ("Sounds"), made with Web Audio rather than loaded, which the Sound button in the
 // header mutes (remembered in localStorage as hbHubSlotsSound).
+// The guest Slots at /play/slots (data-guest, see assets/php/guestGames/guestGames.php) plays the same, but its play
+// chips come and go in a sealed token with every spin, kept here in the page only (so they start over when it's opened
+// again), and a guest who runs out gets a new stack with the spin that emptied them (the answer's notice).
 (() => {
     const root = document.querySelector('[data-slots]');
     if (!root) return;
 
     const API = root.dataset.api;
+    const IS_GUEST = 'guest' in root.dataset;
     const IS_REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const REELS = JSON.parse(root.dataset.reels); // [[symbol, ...], x3], the strips from the top
     const SYMBOLS = JSON.parse(root.dataset.symbols); // symbol => [name, what's shown]
@@ -68,6 +72,7 @@
     let isAllIn = false;
     let isSpinning = false;
     let stops = root.dataset.stops.split(' ').map(Number); // where the reels stand now
+    let guestToken = ''; // a guest's play chips, sealed by the server (none before the first spin: a new stack)
 
     const formatChips = (amount) => amount.toLocaleString('en-US');
     const symbolAt = (reel, position) => {
@@ -264,8 +269,10 @@
         return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
     }
 
-    // Sends the spin, and sends it again (with the same id, so it still only counts once) if the answer got lost
+    // Sends the spin, and sends it again (with the same id, so it still only counts once) if the answer got lost.
+    // A guest's goes with their token, and the answer's new one is kept for the next spin.
     async function send(body) {
+        if (IS_GUEST) body.set('token', guestToken);
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
                 const response = await fetch(API, {
@@ -273,7 +280,13 @@
                     headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
                     body,
                 });
-                return await response.json();
+                if (IS_GUEST && response.status === 403) {
+                    location.reload(); // the casino was closed: the page is gone
+                    return null;
+                }
+                const answer = await response.json();
+                if (IS_GUEST && typeof answer?.token === 'string') guestToken = answer.token;
+                return answer;
             } catch {
                 await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
             }
@@ -347,6 +360,10 @@
             if (!IS_REDUCED_MOTION) playClass(root, teased.length ? 'is-near-miss' : 'is-losing', 900);
         }
         addHistory(result);
+        if (answer.notice) { // a guest who ran out: a new stack of play chips
+            setChips(answer.refilledChips);
+            showMessage(answer.notice);
+        }
 
         isSpinning = false;
         draw();

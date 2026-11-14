@@ -26,6 +26,7 @@
   grid-template-areas:
     "back back"
     "header header"
+    "guest guest"
     "machine side"
     "rules rules";
   align-items: start;
@@ -41,6 +42,7 @@
 .sl-machine { grid-area: machine; }
 .sl-side { grid-area: side; }
 .sl-rules { grid-area: rules; }
+.sl > .guest-bar { grid-area: guest; } /* only on the guest Slots at /play/slots (guestGames/top.php) */
 
 .sl-header {
   margin-bottom: 12px;
@@ -1367,6 +1369,7 @@
     grid-template-areas:
       "back"
       "header"
+      "guest"
       "machine"
       "side"
       "rules";
@@ -1498,5 +1501,19 @@
   .sl[data-sl-tier="mega"] .sl-machine::after,
   .sl[data-sl-tier="jackpot"] .sl-machine::after {
     opacity: 1;
+  }
+}
+
+/* The guest Slots at /play/slots: the guest bar over the machine takes room too (more on narrow screens, where it
+   wraps), so the reels are a bit smaller to keep the machine on the screen */
+.sl[data-guest] {
+  --sl-cell: clamp(48px, calc((100vh - 560px) / 3), 104px);
+  --sl-cell: clamp(48px, calc((100dvh - 560px) / 3), 104px);
+}
+
+@media (max-width: 760px) {
+  .sl[data-guest] {
+    --sl-cell: clamp(48px, calc((100vh - 600px) / 3), 84px);
+    --sl-cell: clamp(48px, calc((100dvh - 600px) / 3), 84px);
   }
 }

@@ -1,6 +1,6 @@
 <?php
 // The games visitors can play without an account, mostly so search engines have something to find: Wordle,
-// Ore Mining Inc., and solo Blackjack, Baccarat and Roulette, at /play (the files are in guestGames/, which is only
+// Ore Mining Inc., Minesweeper, and solo Blackjack, Baccarat, Roulette and Slots, at /play (the files are in guestGames/, which is only
 // reached through the rewrites in .htaccess). The normal versions (games/, gambling/) still need an account, and
 // so does everything else on the site.
 //
@@ -19,6 +19,8 @@
 // - Wordle and Ore Mining Inc. keep their token in localStorage. Logging in or signing up from the guest game goes
 //   to the normal version, which brings that progress over to the account: today's Wordle games, and the Ore Mining
 //   Inc. save, but only into an account that doesn't have them yet - it never writes over anything.
+// - Minesweeper keeps its board's token in the page only (the frame's game uses it as the game's id), so a board
+//   left halfway is gone, and its wins have no leaderboard, so they never come over to an account either.
 // - The casino games keep theirs in the page only, so the play chips start over every time the page is opened, and
 //   they never come over to an account. A guest who runs out gets a new stack (hbHubGuestCasinoRefill()).
 require_once __DIR__ . '/../games/access.php';
@@ -72,6 +74,24 @@ const HBHUB_GUEST_GAMES = [
         'docs' => '/docs/games/ore-mining-inc',
         'prompt' => 'Make a free account to keep your mining company safe, play it on any device and get on the leaderboard. Everything you\'ve mined so far comes with you.',
     ],
+    'minesweeper' => [
+        'path' => '/play/minesweeper',
+        'game' => '/games/minesweeper/',
+        'section' => 'games',
+        'name' => 'Minesweeper',
+        'title' => 'Free Minesweeper Online - Classic Windows Look, No Sign-Up | HB Hub',
+        'description' => 'Play classic Minesweeper for free in your browser, Windows 95 look and all: Easy, Medium and Hard boards, flags, and a first click that\'s never a mine. No account needed.',
+        'card' => 'The classic: open every square that doesn\'t hide a mine, on an Easy, Medium or Hard board.',
+        'genre' => ['Puzzle', 'Logic game'],
+        'keywords' => ['Minesweeper', 'free Minesweeper', 'Minesweeper online', 'Minestryger', 'gratis Minestryger', 'puzzle game', 'logic game'],
+        'languages' => ['en'],
+        'about' => [
+            'Minesweeper is the classic logic puzzle: open every square on the board that doesn\'t hide a mine. Each square you open shows how many mines are in the 8 squares around it, so you can work out where they are and flag them (right click, Shift + click or a long press). Open a mine and the game is over. The first click is never a mine, and always opens up an area to start from.',
+            'Pick Easy (9 by 9, 10 mines), Medium (16 by 16, 40 mines) or Hard (30 by 30, 160 mines). It\'s free and runs in your browser, with the look of the old Windows game. With a free HB Hub account your wins count on the leaderboard, with your best and average time on each board.',
+        ],
+        'docs' => '/docs/games/minesweeper',
+        'prompt' => 'Make a free account to get your times on the leaderboard and see your best and average time on each board.',
+    ],
     'blackjack' => [
         'path' => '/play/blackjack',
         'game' => '/gambling/blackjack/',
@@ -124,6 +144,24 @@ const HBHUB_GUEST_GAMES = [
             'The chips are just for fun. They aren\'t money, can\'t be bought or won, and start over every time you open the page. With a free HB Hub account you get your own chips, daily chips and a spot on the leaderboard.',
         ],
         'docs' => '/docs/casino/roulette',
+        'prompt' => 'Make a free account to get {startChips} chips of your own, daily chips and a spot on the leaderboard. (The guest chips are just for trying it out, so they don\'t come with you.)',
+    ],
+    'slots' => [
+        'path' => '/play/slots',
+        'game' => '/gambling/slots/',
+        'section' => 'casino',
+        'name' => 'Slots',
+        'title' => 'Free Slot Machine Online - Classic 3-Reel Slots, No Sign-Up | HB Hub',
+        'description' => 'Spin a free classic three-reel slot machine with play chips: five paylines, lucky 7s, diamonds and fruit. No account, no download and no real money.',
+        'card' => 'A classic three-reel slot machine with five paylines and lucky 7s, with play chips.',
+        'genre' => ['Casino game', 'Slot machine'],
+        'keywords' => ['slots', 'slot machine', 'free slots', 'gratis slots', 'spillemaskine', 'enarmet tyveknægt', 'play chips'],
+        'languages' => ['en'],
+        'about' => [
+            'Slots is a classic three-reel slot machine: pick a bet, pull the lever and line up three of a kind on one of the five paylines (the three rows and the two diagonals). Three 7s pay 300 times the line\'s bet, and there are diamonds, stars, bells and fruit too, where mixed fruit and a cherry on the left pay a little. This is the same machine as in the HB Hub casino, with the same reels and pay table, played free with play chips.',
+            'The chips are just for fun. They aren\'t money, can\'t be bought or won, and start over every time you open the page. With a free HB Hub account you get your own chips, daily chips and a spot on the leaderboard.',
+        ],
+        'docs' => '/docs/casino/slots',
         'prompt' => 'Make a free account to get {startChips} chips of your own, daily chips and a spot on the leaderboard. (The guest chips are just for trying it out, so they don\'t come with you.)',
     ],
 ];
@@ -206,7 +244,7 @@ function hbHubGuestKey(): string
 
 /**
  * Seals a guest's game into a token for their browser to keep: AES-256-GCM, so it can't be read or changed without
- * the key. $kind ('wordle', 'miner', 'blackjack', 'baccarat' or 'roulette') is sealed in with it, so one game's token
+ * the key. $kind ('wordle', 'miner', 'minesweeper', 'blackjack', 'baccarat', 'roulette' or 'slots') is sealed in with it, so one game's token
  * can't be passed off as another's. URL-safe base64 of the nonce (12 bytes), the tag (16) and the encrypted JSON.
  */
 function hbHubGuestSeal(string $kind, array $data): string

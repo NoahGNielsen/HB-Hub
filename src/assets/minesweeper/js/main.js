@@ -14,6 +14,8 @@
 //   once the game is over. Clicks are sent one after the other (queue), so fast clicking works. Flags stay here. A win
 //   the server's anticheat finds faster than a person can click ends as result 4: won here, but not on the leaderboard.
 //   The page around the frame (assets/js/minesweeper.js) hears how it went from the minesweeper:* events below.
+//   Where they're sent is the <body>'s data-api (frame.php): /play/minesweeper/move for the free game without an
+//   account, whose "game" is a sealed token with the board in it instead of an id, but is used just the same here.
 // - anticheat: the whole file is in a function, so its state and functions (openCell(), board, ...) can't be reached
 //   from the console, and a click on the board made by code (el.click(), dispatchEvent(), an auto clicker browser
 //   extension: anything whose event isn't isTrusted; an auto clicker program outside the browser makes real clicks) stops the game and tells the server, which ends it as scripted (caught()).
@@ -27,6 +29,7 @@ var sizeLookup = {
   '16': {totalBombs: 40, tableWidth: '420px'},
   '30': {totalBombs: 160, tableWidth: '794px'}
 };
+var api = document.body.dataset.api || '/games/minesweeper/move'; // HB Hub: where the cells go (frame.php)
 var colors = [
   '',
   '#0000FA',
@@ -115,7 +118,7 @@ function openCell(row, col, clickedEl) {
     } else {
       body.set('size', size);
     }
-    return fetch('/games/minesweeper/move', { method: 'POST', headers: { Accept: 'application/json' }, body: body })
+    return fetch(api, { method: 'POST', headers: { Accept: 'application/json' }, body: body })
       .then(function(response) {
         return response.json().then(function(data) {
           if (thisRound !== round) return;
@@ -144,7 +147,7 @@ function caught() {
   queue = queue.then(function() {
     if (thisRound !== round || !gameId || winner || hitBomb) return;
     var body = new URLSearchParams({ action: 'scripted', game: gameId });
-    return fetch('/games/minesweeper/move', { method: 'POST', headers: { Accept: 'application/json' }, body: body })
+    return fetch(api, { method: 'POST', headers: { Accept: 'application/json' }, body: body })
       .catch(function() {}); // offline: the game ends as left once another one is started
   });
   tellPage('scripted', {});
