@@ -43,7 +43,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubGuestPrompt' => 'How long you\'ve played the free games without an account (just a number of seconds, counted while the page is on screen), so the popup asking you to sign up only shows up now and then.',
     'hbHubAppPrompt' => 'That the popup about putting HB Hub on your phone\'s home screen has been shown (or that you already opened HB Hub from the home screen), so it only shows up once.',
     'hbHubCookieNotice' =>'That you clicked away the cookie notice, so it isn\'t shown again.',
-    'hbHubTermsSeen' => 'The date of the Terms of Service you last agreed to (by clicking away the cookie notice or the "terms have been updated" box), so that box only shows up when the terms change again.',
+    'hbHubTermsAgreed' => 'The date of the Terms of Service you last agreed to (by clicking away the cookie notice or the "terms have been updated" box), so that box only shows up when the terms change again.',
 ];
 ?>
 <!DOCTYPE html>

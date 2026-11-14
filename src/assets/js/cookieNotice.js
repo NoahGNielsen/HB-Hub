@@ -5,11 +5,12 @@
 // Clicking it away also remembers which version of the terms that was (the date in the terms notice's
 // data-terms-updated, from assets/php/termsUpdated.php). When the terms later get a new date, the second box - "the
 // terms have been updated" - shows instead, until its own "Got it" is clicked. Someone who clicked the cookie notice
-// away before versions were remembered just has today's version written down quietly, so they aren't asked about a
-// change they can't tell apart from the terms they agreed to.
+// away before versions were remembered (so no version saved at all) agreed to some older terms, so they get the box
+// too. (The key used to be 'hbHubTermsSeen', which quietly saved the current date for those people instead; it was
+// renamed so everyone who agreed before the 14 November 2026 terms gets told about them.)
 (() => {
     const NOTICE_KEY = 'hbHubCookieNotice';
-    const TERMS_KEY = 'hbHubTermsSeen';
+    const TERMS_KEY = 'hbHubTermsAgreed';
     const notice = document.querySelector('[data-cookie-notice]');
     const termsNotice = document.querySelector('[data-terms-notice]');
     if (!notice) return;
@@ -50,10 +51,8 @@
     }
 
     if (!termsNotice || !termsVersion) return;
-    const seenVersion = read(TERMS_KEY);
-    if (seenVersion === null) {
-        write(TERMS_KEY, termsVersion); // agreed before versions were kept: start counting from now
-    } else if (seenVersion !== termsVersion) {
+    // null = agreed before versions were kept, so to older terms than these
+    if (read(TERMS_KEY) !== termsVersion) {
         showUntilClicked(termsNotice, '[data-terms-notice-ok]', () => write(TERMS_KEY, termsVersion));
     }
 })();
