@@ -22,7 +22,8 @@ Last updated 06/11-26
   - Anything else that makes a legal page untrue.
   Every time a page's content changes, set its `HBHUB_*_UPDATED` constant at the top (`HBHUB_PRIVACY_UPDATED`,
   `HBHUB_TERMS_UPDATED`, `HBHUB_CONDUCT_UPDATED`, `HBHUB_DO_NOT_SELL_UPDATED`) to today's date, written like
-  `19 October 2026`. When it's unclear whether a page needs a change, update it anyway or tell the owner.
+  `19 October 2026`. `HBHUB_TERMS_UPDATED` is the exception: it lives in `src/assets/php/termsUpdated.php`, because a
+  new date there also shows everyone who agreed to the old terms a "terms have been updated" box (`cookieNotice.js`). When it's unclear whether a page needs a change, update it anyway or tell the owner.
 - **Automatically make a commit after making changes**, with an appropriate commit message. Existing history uses
   short, lowercase, plain-English messages (`added leaderboard`, `QOL update to matador`).
 - `database/migrations/*` is in `.gitignore`, so migrations are never part of a commit.

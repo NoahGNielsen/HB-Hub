@@ -4,12 +4,12 @@
 // A .legal-page article (legal.css: a dark hero, then the contents next to the text) under the frontpage's top bar
 // (homeNav.php), so it loads homepage.css too, just like privacy.php. Open to everyone, like the frontpage.
 // Sign-up (onboarding.php) links here.
-// When a rule changes, HBHUB_TERMS_UPDATED gets the date of the change.
+// When a rule changes, HBHUB_TERMS_UPDATED gets the date of the change. It's set in assets/php/termsUpdated.php, since
+// the footer needs it too: changing it there shows everyone who agreed to the old terms the "terms updated" box.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
-
-const HBHUB_TERMS_UPDATED = '14 November 2026';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/termsUpdated.php';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -317,8 +317,9 @@ const HBHUB_TERMS_UPDATED = '14 November 2026';
                         <h2 id="terms-changes">10. Changes to these terms</h2>
                         <p>
                             As HB Hub gets new features, these terms may change. The date at the top shows when they last did.
-                            If something big changes, it'll be announced on the site. If you keep using HB Hub after a change, you
-                            agree to the new terms.
+                            When they change, a box on the site tells you the next time you visit, and if something big changes,
+                            it'll be announced on the site too. If you keep using HB Hub after a change, you agree to the new
+                            terms.
                         </p>
                     </section>
 

@@ -1,24 +1,59 @@
 // Cookie notice (footer.php): the small box in the corner saying the site uses cookies and that using it means you
 // agree to the terms. footer.php renders it hidden on every page; this shows it until "Got it" is clicked, and then
 // remembers that in localStorage so it stays away.
+//
+// Clicking it away also remembers which version of the terms that was (the date in the terms notice's
+// data-terms-updated, from assets/php/termsUpdated.php). When the terms later get a new date, the second box - "the
+// terms have been updated" - shows instead, until its own "Got it" is clicked. Someone who clicked the cookie notice
+// away before versions were remembered just has today's version written down quietly, so they aren't asked about a
+// change they can't tell apart from the terms they agreed to.
 (() => {
     const NOTICE_KEY = 'hbHubCookieNotice';
+    const TERMS_KEY = 'hbHubTermsSeen';
     const notice = document.querySelector('[data-cookie-notice]');
+    const termsNotice = document.querySelector('[data-terms-notice]');
     if (!notice) return;
+    const termsVersion = termsNotice?.dataset.termsUpdated ?? '';
 
-    try {
-        if (localStorage.getItem(NOTICE_KEY) === 'seen') return;
-    } catch {
-        // no storage (a private window): show it, it just comes back on the next page
-    }
-    notice.hidden = false;
-
-    notice.querySelector('[data-cookie-notice-ok]').addEventListener('click', () => {
-        notice.hidden = true;
+    /** localStorage that just gives up (null / nothing saved) when there's no storage, e.g. in a private window. */
+    const read = (key) => {
         try {
-            localStorage.setItem(NOTICE_KEY, 'seen');
+            return localStorage.getItem(key);
+        } catch {
+            return null;
+        }
+    };
+    const write = (key, value) => {
+        try {
+            localStorage.setItem(key, value);
         } catch {
             // nowhere to remember it, so it's only gone from this page
         }
-    });
+    };
+
+    /** Shows a box and hides it again (remembering why) when its "Got it" is clicked. */
+    const showUntilClicked = (box, button, onClick) => {
+        box.hidden = false;
+        box.querySelector(button).addEventListener('click', () => {
+            box.hidden = true;
+            onClick();
+        });
+    };
+
+    if (read(NOTICE_KEY) !== 'seen') {
+        // Never clicked away (or no storage: then it comes back on the next page, and the terms box never shows)
+        showUntilClicked(notice, '[data-cookie-notice-ok]', () => {
+            write(NOTICE_KEY, 'seen');
+            if (termsVersion) write(TERMS_KEY, termsVersion);
+        });
+        return;
+    }
+
+    if (!termsNotice || !termsVersion) return;
+    const seenVersion = read(TERMS_KEY);
+    if (seenVersion === null) {
+        write(TERMS_KEY, termsVersion); // agreed before versions were kept: start counting from now
+    } else if (seenVersion !== termsVersion) {
+        showUntilClicked(termsNotice, '[data-terms-notice-ok]', () => write(TERMS_KEY, termsVersion));
+    }
 })();
