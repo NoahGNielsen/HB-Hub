@@ -86,6 +86,9 @@
     const isTyped = (field) => field.matches('textarea, input[type="text"], input[type="search"], input[type="color"]');
 
     function autosave(form) {
+        // Where the form goes. Not form.action, as every form here has an <input name="action">, which that gives
+        // instead (and fetch() would then post to "/[object HTMLInputElement]"). The #card part is dropped by fetch.
+        const url = form.getAttribute('action');
         // The profile form holds its three panels, the others sit in theirs
         const states = [
             ...form.querySelectorAll('[data-save-state]'),
@@ -137,7 +140,7 @@
             let answer = null;
             let ok = false;
             try {
-                const response = await fetch(form.action, {
+                const response = await fetch(url, {
                     method: 'POST',
                     body: data,
                     headers: { Accept: 'application/json' },
@@ -193,7 +196,7 @@
             for (const [key, value] of [...data.entries()]) {
                 if (value instanceof File) data.delete(key);
             }
-            fetch(form.action, { method: 'POST', body: data, headers: { Accept: 'application/json' }, keepalive: true }).catch(() => {});
+            fetch(url, { method: 'POST', body: data, headers: { Accept: 'application/json' }, keepalive: true }).catch(() => {});
         });
 
         lastSent = withoutFiles(formData()); // as the page came, so a change that's undone again isn't sent
