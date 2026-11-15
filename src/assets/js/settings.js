@@ -1,9 +1,12 @@
-// Settings page: hides the field of study for Not HTX, shows the profile banner being picked and gets a banner picture
-// ready (JPEG XL), draws the QR code for setting up two-factor login, shows how strong a new password is, asks the browser for permission
-// to show notifications once they're turned on, plays the message sound when it's turned on, and asks "are you sure?"
-// before deleting the account.
+// Settings page (otherPages/settings.php): saves the settings by themselves as they're changed (autosave, below),
+// hides the field of study for Not HTX, shows the profile picture and banner being picked and gets a banner picture
+// ready (JPEG XL), draws the QR code for setting up two-factor login, shows how strong a new password is, opens the
+// folded rows (Password, Delete account, ...) when the address points at them, asks the browser for permission to
+// show notifications once they're turned on, plays the message sound when it's turned on, and asks "are you sure?"
+// before unlinking Discord, logging out everywhere and deleting the account.
 // The status's emoji row is statusForm.js, as the popup on your own profile has it too.
-// Without JS the 2FA key can still be typed in by hand, and deleting still needs the password.
+// Without JS the autosave forms have a Save button each (in <noscript>), the 2FA key can still be typed in by hand,
+// and deleting still needs the password.
 (() => {
     for (const form of document.querySelectorAll('form[data-confirm]')) {
         form.addEventListener('submit', (event) => {
@@ -12,6 +15,14 @@
             }
         });
     }
+
+    // A link to /settings#password or #delete opens that folded row
+    const openFromHash = () => {
+        const target = location.hash.length > 1 ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+        if (target instanceof HTMLDetailsElement) target.open = true;
+    };
+    openFromHash();
+    window.addEventListener('hashchange', openFromHash);
 
     // Profile: the field of study is only asked for when a year at HTX is picked, not for Not HTX.
     // Turned off otherwise, so it isn't checked or sent.
@@ -27,6 +38,194 @@
         };
         classYear.addEventListener('change', updateClassField);
         updateClassField();
+    }
+
+    // ---------- Autosave ----------
+    // Every form[data-autosave] is sent by itself (form-encoded, Accept: application/json) once it's changed: straight
+    // away for a switch, a picker or a file, and SAVE_DELAY after the last key press for text (or once the field is
+    // left, for [data-save-on-change] ones like the name). One send at a time per form; a change made meanwhile is
+    // sent right after. The answer (see the top of settings.php):
+    // - {"ok": true, ...}: saved. The card's [data-save-state] says so.
+    // - 422 {"errors": {field: message}}: shown in the form's [data-error-for] boxes, and nothing on the form was saved.
+    // - {"redirect": url}: off to there (a banned picture).
+    // Each file is only sent once, worked or not, so a wrong one can't keep the rest of the form from being saved.
+    // Events on the form, for the parts below:
+    // - autosave:data (detail: the FormData), just before sending, to change what's sent
+    // - autosave:done (detail: { ok, answer }), once the answer is in
+    // - autosave:now, sent to it to save straight away (the banner, once its picture is ready)
+    // While the form has data-busy (a banner picture being got ready) it waits, and saves once autosave:now comes.
+    const SAVE_DELAY = 800;
+    const isTyped = (field) => field.matches('textarea, input[type="text"], input[type="search"], input[type="color"]');
+
+    function autosave(form) {
+        const state = form.closest('.settings-card')?.querySelector('[data-save-state]');
+        let timer = 0;
+        let sending = false;
+        let again = false; // changed while sending or busy, so it's sent again after
+        let lastSent = ''; // what was last saved (without the files), so the same thing isn't sent twice
+
+        const setState = (name, text) => {
+            if (!state) return;
+            state.dataset.state = name;
+            state.textContent = text;
+        };
+
+        function formData() {
+            const data = new FormData(form);
+            form.dispatchEvent(new CustomEvent('autosave:data', { detail: data }));
+            return data;
+        }
+
+        const files = (data) => [...data.values()].filter((value) => value instanceof File && value.size > 0);
+        const withoutFiles = (data) => new URLSearchParams([...data.entries()].filter(([, value]) => !(value instanceof File))).toString();
+
+        function schedule(delay) {
+            clearTimeout(timer);
+            timer = setTimeout(send, delay);
+        }
+
+        async function send() {
+            clearTimeout(timer);
+            timer = 0;
+            if (sending || 'busy' in form.dataset) {
+                again = true;
+                return;
+            }
+            const data = formData();
+            const sentFiles = files(data);
+            const text = withoutFiles(data);
+            if (sentFiles.length === 0 && text === lastSent) {
+                return; // nothing new
+            }
+
+            sending = true;
+            again = false;
+            setState('saving', 'Saving…');
+            let answer = null;
+            let ok = false;
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: data,
+                    headers: { Accept: 'application/json' },
+                    keepalive: sentFiles.length === 0, // so it still gets there when the page is left right after
+                });
+                answer = await response.json();
+                ok = response.ok && answer.ok === true;
+            } catch {
+                answer = null; // offline, or not JSON
+            }
+            sending = false;
+
+            if (answer?.redirect) {
+                location.href = answer.redirect;
+                return;
+            }
+            if (answer) {
+                for (const input of form.querySelectorAll('input[type="file"]')) {
+                    if (input.files[0] && sentFiles.includes(input.files[0])) input.value = '';
+                }
+                for (const slot of form.querySelectorAll('[data-error-for]')) {
+                    const message = answer.errors?.[slot.dataset.errorFor] ?? '';
+                    slot.textContent = message;
+                    slot.hidden = message === '';
+                }
+                if (ok) lastSent = text;
+                form.dispatchEvent(new CustomEvent('autosave:done', { detail: { ok, answer } }));
+            }
+            if (ok) setState('saved', 'Saved');
+            else if (answer) setState('failed', 'Not saved, see below');
+            else setState('failed', 'Couldn\'t save. Check your connection.');
+
+            if (again) send();
+        }
+
+        form.addEventListener('input', (event) => {
+            if (isTyped(event.target) && !event.target.matches('[data-save-on-change]')) schedule(SAVE_DELAY);
+        });
+        form.addEventListener('change', (event) => {
+            if (event.target.matches('[data-banner-input], [data-banner-check]')) return; // the banner says when it's ready
+            schedule(0);
+        });
+        form.addEventListener('autosave:now', () => schedule(0));
+        // Enter in a text field
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            send();
+        });
+        // Typed but not sent yet when the page is left: sent anyway (keepalive takes no files, and they're sent straight away)
+        window.addEventListener('pagehide', () => {
+            if (timer === 0 && !again) return;
+            const data = formData();
+            for (const [key, value] of [...data.entries()]) {
+                if (value instanceof File) data.delete(key);
+            }
+            fetch(form.action, { method: 'POST', body: data, headers: { Accept: 'application/json' }, keepalive: true }).catch(() => {});
+        });
+
+        lastSent = withoutFiles(formData()); // as the page came, so a change that's undone again isn't sent
+    }
+
+    for (const form of document.querySelectorAll('form[data-autosave]')) {
+        autosave(form);
+    }
+
+    // Gambling and Games: a looser block that waits says until when
+    const blockPending = document.querySelector('[data-block-pending]');
+    blockPending?.closest('form').addEventListener('autosave:done', ({ detail: { ok, answer } }) => {
+        if (!ok) return;
+        blockPending.textContent = answer.notice ?? '';
+        blockPending.hidden = !answer.notice;
+    });
+
+    // ---------- Profile ----------
+    // The picture is shown straight away when one is picked, and the saved one again if it wasn't taken. Once saved,
+    // the picture, the name in the side menu, the free tickets and the status's "Clear after" picker are what the
+    // server says they are now.
+    const profileForm = document.querySelector('[data-profile-form]');
+    if (profileForm) {
+        const avatarInput = profileForm.querySelector('[data-avatar-input]');
+        const avatarRemove = profileForm.querySelector('[data-avatar-remove]');
+        const savedAvatar = () => document.querySelector('[data-avatar-picture]:not([hidden])')?.getAttribute('src') || null;
+        let avatarUrl = savedAvatar();
+        let avatarPreview = null; // object URL of the picked one
+
+        // In the side menu too unless onlyHere, which is the look at the top of the card
+        const showAvatar = (url, onlyHere = false) => {
+            const scope = onlyHere ? profileForm : document;
+            for (const picture of scope.querySelectorAll('[data-avatar-picture]')) {
+                if (url) picture.src = url;
+                picture.hidden = !url;
+            }
+            for (const initial of scope.querySelectorAll('[data-avatar-initial]')) {
+                initial.hidden = Boolean(url);
+            }
+        };
+
+        avatarInput?.addEventListener('change', () => {
+            if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+            avatarPreview = avatarInput.files[0] ? URL.createObjectURL(avatarInput.files[0]) : null;
+            showAvatar(avatarPreview ?? avatarUrl, true);
+        });
+
+        profileForm.addEventListener('autosave:done', ({ detail: { ok, answer } }) => {
+            if (ok) {
+                avatarUrl = answer.avatarUrl;
+                if (avatarRemove) avatarRemove.hidden = !avatarUrl;
+                const name = document.querySelector('[data-settings-name]');
+                if (name) name.textContent = answer.name;
+                const tickets = profileForm.querySelector('[data-tickets-free]');
+                if (tickets) tickets.textContent = answer.ticketsFree;
+                // The <option>s from hbHubProfileStatusClearOptions() (assets/php/profile.php), which escapes them
+                const clear = profileForm.querySelector('[data-status-clear]');
+                if (clear) clear.innerHTML = answer.statusClearOptions;
+            }
+            if (avatarPreview && !avatarInput.files.length) {
+                URL.revokeObjectURL(avatarPreview);
+                avatarPreview = null;
+            }
+            showAvatar(avatarPreview ?? avatarUrl, !ok);
+        });
     }
 
     // qrcode.js (assets/js/vendor) is only loaded while setting up two-factor login
@@ -117,7 +316,8 @@
     // Profile banner: Colors shows the gradient pickers, Picture the file input, and the preview above shows whichever
     // is picked (set from here, as the content security policy doesn't allow style attributes). A new picture is
     // made smaller and turned into JPEG XL by the JPEG XL worker (chatJxlWorker.js) straight away, and put back in the
-    // file input in place of the original, as the server only takes JPEG XL. Save waits until it's ready.
+    // file input in place of the original, as the server only takes JPEG XL. The form waits (data-busy) until it's
+    // ready, and is then saved.
     // A small PNG of it goes in the hidden data-banner-check input too: the server can't read JPEG XL, so that's what it
     // compares with the banned pictures list (assets/php/bannedAvatars.php).
     const banner = document.querySelector('[data-banner]');
@@ -129,7 +329,6 @@
         const input = banner.querySelector('[data-banner-input]'); // not there while banner pictures are off
         const checkInput = banner.querySelector('[data-banner-check]');
         const status = banner.querySelector('[data-banner-status]');
-        const saveButton = form.querySelector('[data-profile-save]');
         const maxBytes = Number(banner.dataset.bannerMaxBytes);
         const ticketBytes = Number(banner.dataset.ticketBytes);
         let picked = null; // { url } of the new picture's original, for the preview
@@ -168,6 +367,11 @@
             status.classList.toggle('settings-error', isError);
         }
 
+        const ready = () => {
+            delete form.dataset.busy;
+            form.dispatchEvent(new CustomEvent('autosave:now'));
+        };
+
         input?.addEventListener('change', async () => {
             const file = input.files[0];
             const id = ++converting;
@@ -176,13 +380,13 @@
             if (checkInput) checkInput.value = '';
             if (!file) {
                 setStatus('');
-                saveButton.disabled = false;
                 show();
+                ready();
                 return;
             }
             picked = { url: URL.createObjectURL(file) };
             show();
-            saveButton.disabled = true;
+            form.dataset.busy = '';
             setStatus('Getting your picture ready…');
             try {
                 const buffer = await bannerJxlJob(banner.dataset.jxlWorker, { type: 'encode', file, maxSide: Number(banner.dataset.bannerMaxSide) });
@@ -199,7 +403,7 @@
                 checkFiles.items.add(check);
                 checkInput.files = checkFiles.files;
                 const tickets = Math.max(1, Math.ceil(jxl.size / ticketBytes));
-                setStatus(`Ready: ${sizeLabel(jxl.size)}, takes ${tickets} ${tickets === 1 ? 'ticket' : 'tickets'}. Save profile to use it.`);
+                setStatus(`Saving your banner (${sizeLabel(jxl.size)}, ${tickets} ${tickets === 1 ? 'ticket' : 'tickets'})…`);
             } catch (error) {
                 if (id !== converting) return;
                 input.value = '';
@@ -211,7 +415,37 @@
                     ? 'That picture is too big, even made smaller. Please choose another one.'
                     : "That picture couldn't be got ready. Please try another one.", true);
             }
-            saveButton.disabled = false;
+            ready();
+        });
+
+        // Picture picked, but there's no picture yet: the colors are saved meanwhile (the server would turn it down)
+        form.addEventListener('autosave:data', ({ detail: data }) => {
+            if (data.get('bannerType') === 'picture' && !preview.querySelector('[data-banner-current]') && !input?.files.length) {
+                data.set('bannerType', 'colors');
+            }
+        });
+
+        // Once it's saved, the new picture is the saved one, and back to colors removes the saved one.
+        // A new picture that wasn't taken goes again (why is in the banner's error box).
+        form.addEventListener('autosave:done', ({ detail: { ok, answer } }) => {
+            const wasSent = picked !== null && !input?.files.length;
+            const current = preview.querySelector('[data-banner-current]');
+            const newPicture = preview.querySelector('[data-banner-new]');
+            if (ok && answer.bannerUrl === null) {
+                current?.remove();
+            } else if (ok && wasSent && newPicture) {
+                current?.remove();
+                delete newPicture.dataset.bannerNew;
+                newPicture.dataset.bannerCurrent = '';
+                picked = null; // its object URL stays, as the picture shows it
+            }
+            if (wasSent && picked) {
+                newPicture?.remove();
+                URL.revokeObjectURL(picked.url);
+                picked = null;
+            }
+            if (wasSent || (ok && !status.classList.contains('settings-error'))) setStatus('');
+            show();
         });
 
         form.addEventListener('input', show);
@@ -257,7 +491,7 @@
         return new File([blob], 'check.png', { type: 'image/png' });
     }
 
-    // The message sound plays when its box is ticked, so the user hears what it sounds like (assets/js/messageSound.js)
+    // The message sound plays when its switch is turned on, so the user hears what it sounds like (assets/js/messageSound.js)
     const soundToggle = document.querySelector('[data-notification-sound-toggle]');
     soundToggle?.addEventListener('change', () => {
         if (soundToggle.checked) document.dispatchEvent(new CustomEvent('message:sound'));
@@ -289,7 +523,7 @@
         showStatus();
     }
 
-    // Asked straight away while ticking the box, as browsers only allow asking right after a click
+    // Asked straight away while turning the switch on, as browsers only allow asking right after a click
     toggle.addEventListener('change', () => {
         if (toggle.checked) {
             askPermission();

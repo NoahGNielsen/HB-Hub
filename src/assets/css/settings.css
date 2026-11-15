@@ -975,6 +975,175 @@
   user-select: all;
 }
 
+/* ---------- The settings page's own layout (otherPages/settings.php) ---------- */
+
+/* "Settings" with "Changes are saved as you make them." under it */
+.settings-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Saving… / Saved / Not saved, at the top right of a card with autosave forms (settings.js sets data-state) */
+.settings-save-state {
+  flex: none;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.settings-save-state[data-state="saved"] {
+  color: var(--settings-on);
+  opacity: 1;
+}
+
+.settings-save-state[data-state="saved"]::before {
+  content: "✓ ";
+}
+
+.settings-save-state[data-state="failed"] {
+  color: var(--settings-danger);
+  opacity: 1;
+  white-space: normal;
+  text-align: right;
+}
+
+/* A row in a card: Password, Two-factor login, Log out, ... each with a line above it but the first */
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* Clear of the fixed top bar (and the menu row on a small screen) when jumped to with #block, #totp etc. */
+  scroll-margin-top: calc(var(--nav-top-h) + var(--settings-menu-row-h) + 16px);
+}
+
+.settings form.settings-group {
+  gap: 14px;
+}
+
+.settings-group + .settings-group {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--settings-line);
+}
+
+/* What it is on the left, its switch, picker or button on the right */
+.settings-line,
+.settings form.settings-line {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.settings-line .settings-item-text {
+  flex: 1 1 auto;
+}
+
+.settings-line > .settings-btn,
+.settings-line > .settings-switch {
+  flex: none;
+  align-self: center;
+}
+
+.settings-checkbox.settings-line {
+  font-weight: inherit;
+}
+
+.settings-line > select {
+  flex: 0 1 220px;
+  width: auto;
+}
+
+/* A label in a line with a badge after it (Two-factor login On) */
+.settings-line .settings-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+/* Folded rows (details): the summary is the line, its button says Change or Cancel */
+details.settings-group {
+  display: block;
+}
+
+details.settings-group > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details.settings-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.settings-group > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+details.settings-group > summary:hover .settings-btn {
+  background: color-mix(in srgb, var(--text) 8%, var(--background));
+}
+
+details.settings-group > summary:hover .settings-btn-danger {
+  background: color-mix(in srgb, var(--settings-danger) 12%, var(--background));
+}
+
+details[open] .settings-when-closed,
+details:not([open]) .settings-when-open {
+  display: none;
+}
+
+.settings-group-body {
+  margin-top: 18px;
+}
+
+.settings-group.is-danger > summary .settings-label {
+  color: var(--settings-danger);
+}
+
+/* Logged in devices: the list under its heading */
+.settings-group .settings-devices {
+  margin: 0;
+}
+
+/* The profile's look: the banner with the picture over its bottom left corner, like on the profile, and the
+   controls for both under it */
+.settings-look {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-look-avatar {
+  position: relative;
+  margin: -48px 0 0 20px;
+  width: 96px;
+  height: 96px;
+}
+
+.settings-look-avatar .settings-avatar-preview {
+  box-shadow: 0 0 0 4px var(--secondary);
+}
+
+.settings-look-controls {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px 24px;
+  align-items: start;
+}
+
+.settings-banner-color-pickers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 /* ---------- Buttons ---------- */
 
 .settings-actions {
@@ -1195,5 +1364,27 @@
   .settings-item > .settings-btn,
   .settings form.settings-item > .settings-btn {
     flex: 1 1 100%;
+  }
+
+  /* The settings page's rows: a picker or button goes under its text, a switch stays on the right */
+  .settings-line,
+  .settings form.settings-line {
+    flex-wrap: wrap;
+  }
+
+  .settings-line > select {
+    flex: 1 1 100%;
+  }
+
+  .settings-look-avatar {
+    margin: -36px 0 0 12px;
+    width: 72px;
+    height: 72px;
+  }
+
+  .settings-look-avatar .settings-avatar-preview {
+    width: 72px;
+    height: 72px;
+    font-size: 30px;
   }
 }

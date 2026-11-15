@@ -22,8 +22,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="how" aria-labelledby="docs-how">
                         <h2 id="docs-how">At slå en blokering til</h2>
                         <p>
-                            Åbn kortet <strong>Block Gambling and Games</strong> under dine
-                            <a href="/settings#block">indstillinger</a>, og vælg en blokering. Den dækker både
+                            Find <strong>Block Gambling and Games</strong> i kortet <strong>Preferences</strong> under dine
+                            <a href="/settings#block">indstillinger</a>, og vælg en blokering. Den bliver gemt med det samme. Den dækker både
                             <a href="/docs/casino/">casinoet</a> og <a href="/docs/games/">spillene</a>.
                         </p>
                         <div class="docs-table-wrap">
@@ -58,7 +58,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-admin">En blokering fra en admin</h2>
                         <p>
                             Side-admins kan også blokere Casino og Spil for nogen. Det virker som "All the time", oven i din egen
-                            blokering. Kortet under indstillinger siger så <strong>Blocked by an admin</strong>, og kun en admin kan
+                            blokering. Under indstillinger står der så <strong>Blocked by an admin</strong>, og kun en admin kan
                             ophæve den.
                         </p>
                         <p>

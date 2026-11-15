@@ -35,15 +35,15 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 
                     <section id="browser" aria-labelledby="docs-browser">
                         <h2 id="docs-browser">Browsernotifikationer og beskedlyden</h2>
-                        <p>Begge er i kortet <strong>Notifications</strong> under dine <a href="/settings#notifications">indstillinger</a>:</p>
+                        <p>Begge er kontakter i kortet <strong>Preferences</strong> under dine <a href="/settings#notifications">indstillinger</a>, og bliver gemt, så snart du slår dem til eller fra:</p>
                         <ul>
                             <li>
-                                <strong>Notify me when I get a new message</strong> viser en popup fra din browser. Første gang spørger
+                                <strong>Message notifications</strong> viser en popup fra din browser. Første gang spørger
                                 din browser, om HB Hub må vise notifikationer: tryk Tillad. Trykkede du Bloker ved en fejl, så tillad
                                 det igen i din browsers indstillinger for siden (ikonet til venstre for adressen).
                             </li>
                             <li>
-                                <strong>Play a sound when I get a new message</strong> spiller en kort lyd, men ikke for den chat, du
+                                <strong>Message sound</strong> spiller en kort lyd, men ikke for den chat, du
                                 kigger på. Browsere lader kun en side spille lyd, efter du har klikket eller skrevet på den.
                             </li>
                         </ul>

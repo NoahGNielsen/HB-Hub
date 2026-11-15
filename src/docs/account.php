@@ -1,13 +1,14 @@
 <?php
 // Help docs: profile and settings - the profile card, password, logged in devices, logging out and deleting the
-// account. Follows the settings page's cards (otherPages/settings.php). Open to everyone. Built by
+// account. Follows the settings page's four cards, Profile, Preferences, Security and Account (otherPages/settings.php). Open to everyone. Built by
 // assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/account';
 $docsIntro = 'Alt om din konto er på <a href="/settings">indstillingssiden</a>: åbn din profil (dit billede i
-    topbjælken), og tryk på tandhjulet.';
+    topbjælken), og tryk på tandhjulet. Den har fire kort: Profile, Preferences, Security og Account. Det, du ændrer,
+    bliver gemt med det samme, så der er ingen gem-knap.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="profile" aria-labelledby="docs-profile">
@@ -35,7 +36,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="password" aria-labelledby="docs-password">
                         <h2 id="docs-password">At skifte din adgangskode</h2>
                         <p>
-                            Skriv din nuværende adgangskode, og så den nye to gange, i kortet <strong>Password</strong>. At skifte
+                            Skriv din nuværende adgangskode, og så den nye to gange, efter at have trykket på <strong>Change</strong> ved <strong>Password</strong> i kortet <strong>Security</strong>. At skifte
                             den logger dig ud på alle andre enheder, så det er også det, du skal gøre, hvis du tror, at en anden
                             kender den. Reglerne for en ny adgangskode står i <a href="/docs/two-factor#passwords">Totrinslogin og sikkerhed</a>.
                         </p>
@@ -44,17 +45,17 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="devices" aria-labelledby="docs-devices">
                         <h2 id="docs-devices">Enheder, du er logget ind på</h2>
                         <p>
-                            <strong>Logged in devices</strong> viser hver browser, du er logget ind i, med dens browser og system,
+                            <strong>Logged in devices</strong>, i kortet <strong>Security</strong>, viser hver browser, du er logget ind i, med dens browser og system,
                             hvornår du loggede ind, og hvornår den sidst blev brugt. Log ud af hver af dem med dens knap. Er der en,
                             du ikke kan genkende, så log den ud, og skift din adgangskode.
                         </p>
-                        <p><strong>Log out everywhere</strong> logger dig ud på alle enheder, også den, du er på.</p>
+                        <p><strong>Log out everywhere</strong>, i kortet <strong>Account</strong>, logger dig ud på alle enheder, også den, du er på.</p>
                     </section>
 
                     <section id="log-out" aria-labelledby="docs-log-out">
                         <h2 id="docs-log-out">At logge ud</h2>
                         <p>
-                            <strong>Log out</strong>, nær bunden af indstillingssiden, logger dig ud på den enhed, du er på. Du
+                            <strong>Log out</strong>, i kortet <strong>Account</strong> nederst på indstillingssiden, logger dig ud på den enhed, du er på. Du
                             forbliver logget ind alle andre steder. På en delt computer skal du altid logge ud, når du er færdig.
                         </p>
                     </section>
@@ -62,7 +63,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="delete" aria-labelledby="docs-delete">
                         <h2 id="docs-delete">At slette din konto</h2>
                         <p>
-                            <strong>Delete account</strong>, helt nederst, beder om din adgangskode og sletter så din konto med det
+                            <strong>Delete account</strong>, helt nederst, foldes ud med <strong>Delete…</strong>, beder om din adgangskode og sletter så din konto med det
                             samme. Det kan ikke fortrydes.
                         </p>
                         <ul>
@@ -78,10 +79,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 
                     <section id="more" aria-labelledby="docs-more">
                         <h2 id="docs-more">De andre indstillinger</h2>
+                        <p>Kortet <strong>Preferences</strong> har:</p>
                         <ul>
                             <li><a href="/docs/notifications">Notifikationer</a>: en browsernotifikation eller en lyd ved nye beskeder.</li>
                             <li><a href="/docs/self-blocking">Bloker Casino og Spil</a>: hold dig selv væk fra dem i skoletiden eller hele tiden.</li>
-                            <li><a href="/docs/two-factor">Totrinslogin</a>: en kode fra din telefon oven i din adgangskode.</li>
                             <li>
                                 <strong>Help improve HB Hub</strong>: om siden må samle statistik om, hvordan den virker for dig, fx
                                 de fejl, der sker i din browser på siden, og når serveren har for travlt til at svare. Den er slået til, indtil du slår den fra. Ore Mining Inc.s
@@ -90,5 +91,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 <a href="/legal/privacy#watchdog">privatlivspolitikken</a>.
                             </li>
                         </ul>
+                        <p>
+                            Kortet <strong>Security</strong> har, ud over din adgangskode og dine enheder,
+                            <a href="/docs/two-factor">totrinslogin</a> (en kode fra din telefon oven i din adgangskode) og Discord-login.
+                        </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>
