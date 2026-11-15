@@ -85,6 +85,7 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                             <li>deler dem ikke til reklamer (der er ingen reklamer eller reklame-id'er på siden),</li>
                             <li>sporer dig ikke på tværs af hjemmesider (der er ingen sporingspixels, analyseprofiler eller sporingscookies),</li>
                             <li>bruger kun browserfingeraftryk til at forhindre misbrug, aldrig til reklamer eller sporing, og du kan fravælge det med Do Not Track (se <a href="/legal/privacy#fingerprint">privatlivspolitikken</a>),</li>
+                            <li>slår <strong>Help improve HB Hub</strong> (fejlrapporter og optælling af sidevisninger) fra som standard, hvis du opretter din konto med Do Not Track slået til i din browser (se <a href="/legal/privacy#do-not-track">privatlivspolitikken</a>),</li>
                             <li>giver ikke dine beskeder, din profil eller din spilhistorik til andre virksomheder til deres egne formål.</li>
                         </ul>
                         <p>
