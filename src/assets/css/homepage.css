@@ -1350,7 +1350,8 @@ html.home {
 }
 
 /* ---------- About (in Danish) ----------
-   Laid out like the Safety section above it (.home-safety), but with plain paragraphs instead of the grid. */
+   Sits right under the hero, laid out like the Safety section (.home-safety) but with plain paragraphs instead of
+   the grid. */
 .home-about h2 {
   max-width: 820px;
   margin-left: auto;

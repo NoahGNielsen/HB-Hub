@@ -193,6 +193,29 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
             </dl>
         </section>
 
+        <!-- About, in Danish: people in Denmark search in Danish ("hansenberg", "hansenberg elever", "htx kolding chat"),
+             and the rest of the page is in English, so this is the part that matches those searches and tells Google
+             which school the site is about. It sits right under the hero so it's one of the first things both visitors
+             and search engines read. lang="da" so screen readers and search engines read it as Danish. Says plainly
+             that the school doesn't run it, like the terms do. -->
+        <section class="home-safety home-about" id="om" aria-labelledby="home-about-title" lang="da">
+            <p class="home-kicker home-kicker-center">Om HB Hub</p>
+            <h2 id="home-about-title">Elevernes eget sted på HANSENBERG.</h2>
+            <p>
+                HB Hub er en chat- og spilside for eleverne på HANSENBERG Tekniske Gymnasium (HTX) i Kolding. Din klasse
+                har sin egen klassechat, og du kan skrive med andre HANSENBERG-elever, både én til én og i grupper.
+            </p>
+            <p>
+                Når timen er slut, kan I spille Matador, skak og UNO mod hinanden, eller du kan tage en runde Wordle,
+                Minesweeper, Sudoku eller Ore Mining Inc. I casinoet er der Blackjack, Baccarat, Roulette og Slots, spillet
+                med chips, der ikke er rigtige penge.
+            </p>
+            <p>
+                HB Hub er lavet og drevet af en elev, ikke af HANSENBERG selv. Siden er gratis, kører direkte i browseren,
+                og al koden ligger åbent på GitHub.
+            </p>
+        </section>
+
         <!-- Chat -->
         <section class="home-feature" id="chat" aria-labelledby="home-chat-title">
             <div class="home-feature-text">
@@ -383,25 +406,6 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <p>Delete your account and its data from the settings page whenever you want.</p>
                 </li>
             </ul>
-        </section>
-
-        <!-- About, in Danish: people in Denmark search in Danish ("hansenberg", "hansenberg elever", "htx kolding chat"),
-             and the rest of the page is in English, so this is the part that matches those searches and tells Google
-             which school the site is about. lang="da" so screen readers and search engines read it as Danish. Says
-             plainly that the school doesn't run it, like the terms do. -->
-        <section class="home-safety home-about" id="om" aria-labelledby="home-about-title" lang="da">
-            <p class="home-kicker home-kicker-center">Om HB Hub</p>
-            <h2 id="home-about-title">Lavet af en elev på HANSENBERG, til eleverne på HANSENBERG.</h2>
-            <p>
-                HB Hub er et chat- og spilsted for elever på HANSENBERG Tekniske Gymnasium (HTX) i Kolding. Her kan du skrive
-                med din klasse i jeres klassechat, sende beskeder til andre HANSENBERG-elever, spille Matador, skak og UNO med
-                dine venner, og prøve Blackjack, Baccarat, Roulette og Slots med chips, der ikke er rigtige penge.
-            </p>
-            <p>
-                Siden er lavet og drevet af en elev, ikke af HANSENBERG selv. Den kører i browseren, er gratis, og al
-                koden ligger åbent på GitHub. Leder du efter skolens egen hjemmeside, så er den på
-                <a href="https://www.hansenberg.dk/" rel="noopener noreferrer">hansenberg.dk</a>.
-            </p>
         </section>
 
         <!-- Last call -->
