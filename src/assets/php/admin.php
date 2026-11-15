@@ -1,5 +1,5 @@
 <?php
-// The admin panel's pages: the lists of users and chats (admin/index.php), the people with more than one account
+// The admin panel's pages: the Overview and the lists of users and chats (admin/index.php, admin/overview.php), the people with more than one account
 // (admin/people.php), the banned pictures (admin/banned.php), the feedback (admin/feedback.php), Ore Mining Inc.'s crash
 // reports (admin/crashes.php), the Watchdog's browser errors (admin/watchdog.php), the admin log (admin/log.php), and one user
 // (admin/user.php), person (admin/person.php) or chat (admin/chat.php).
@@ -134,11 +134,11 @@ function adminPersonUserIds(PDO $db, int $userId): array
 }
 
 /**
- * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), People (admin/people.php), Banned
+ * The side menu of the admin panel's lists: Overview (admin/overview.php, shown at /admin/), Users, Chats (both admin/index.php), People (admin/people.php), Banned
  * pictures (admin/banned.php), Feedback (admin/feedback.php), Announcements (admin/announcements.php), Crash reports (admin/crashes.php), Cosmic Engine
  * (admin/engine.php), Browser errors (admin/watchdog.php) and Admin log (admin/log.php), each with how many there are in all, or
  * for Feedback how many are new, for the Cosmic Engine how many stages of the one being built are done and for the
- * browser errors how many errors there were in the last 24 hours. $active is 'users', 'chats', 'people', 'banned', 'feedback',
+ * browser errors how many errors there were in the last 24 hours (the Overview has no number). $active is 'overview', 'users', 'chats', 'people', 'banned', 'feedback',
  * 'announcements', 'crashes', 'engine', 'watchdog' or 'log'.
  */
 function adminListsMenuHtml(PDO $db, string $active): string
@@ -153,6 +153,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
         (SELECT COUNT(*) FROM `HBHub-AdminLog`) AS log')->fetch();
     $totals['people'] = count(adminPersonGroups($db));
     $lists = [
+        'overview' => ['Overview', '/admin/'],
         'users' => ['Users', '/admin/?list=users'],
         'chats' => ['Chats', '/admin/?list=chats'],
         'people' => ['People', '/admin/people'],
@@ -168,10 +169,14 @@ function adminListsMenuHtml(PDO $db, string $active): string
     $html = '<nav class="settings-menu" aria-label="Admin panel"><div class="settings-menu-links"><div class="settings-menu-group">'
         . '<p class="settings-menu-heading">Admin panel</p><ul class="settings-menu-list">';
     foreach ($lists as $list => [$label, $href]) {
-        $count = (int) $totals[$list];
-        $html .= '<li><a class="settings-menu-link" href="' . $href . '"' . ($list === $active ? ' aria-current="page"' : '') . '>'
-            . $label . ' <span class="settings-menu-count' . (in_array($list, ['feedback', 'watchdog'], true) && $count > 0 ? ' is-new' : '') . '">'
-            . number_format($count) . '</span></a></li>';
+        $html .= '<li><a class="settings-menu-link" href="' . $href . '"' . ($list === $active ? ' aria-current="page"' : '') . '>' . $label;
+        // Every list but the Overview has its number
+        if (isset($totals[$list])) {
+            $count = (int) $totals[$list];
+            $html .= ' <span class="settings-menu-count' . (in_array($list, ['feedback', 'watchdog'], true) && $count > 0 ? ' is-new' : '') . '">'
+                . number_format($count) . '</span>';
+        }
+        $html .= '</a></li>';
     }
     return $html . '</ul></div></div></nav>';
 }

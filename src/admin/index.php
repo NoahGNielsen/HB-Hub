@@ -2,7 +2,8 @@
 // Admin panel start page: /admin/. Site admins open it from Admin in the side bar (navPanel.php), and get back to it
 // from the top of a user's or a chat's admin panel. Everyone else gets a 404, so it doesn't show that the page is here.
 //
-// Lists every user (?list=users, the default) or every chat (?list=chats), to pick one and open its admin panel:
+// Without ?list= it's the Overview, the dashboard of numbers about the site (admin/overview.php, required from here).
+// Lists every user (?list=users) or every chat (?list=chats), to pick one and open its admin panel:
 // admin/user.php for a user, admin/chat.php for a chat. Deleted accounts and chats are in the lists too, at the end.
 // ?q= searches the list by name (a chat by its name or its members' names), or by id when it's a number,
 // ?sort= and ?dir= put it in order by one of its columns (ADMIN_USER_SORTS / ADMIN_CHAT_SORTS, picked by clicking a
@@ -15,6 +16,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
+
+// No list asked for: the Overview is the admin panel's start page
+if (!in_array($_GET['list'] ?? null, ['users', 'chats'], true)) {
+    require __DIR__ . '/overview.php';
+    exit;
+}
 
 const ADMIN_LIST_SHOWN = 50; // per page
 const ADMIN_SEARCH_MAX = 35; // as long as a name can be
@@ -43,7 +50,7 @@ adminOnly($hbHubUser);
 $db = hbHubDatabase();
 [, $adminLockoutMinutes] = hbHubLoginLimits($siteConfig);
 
-$adminList = ($_GET['list'] ?? null) === 'chats' ? 'chats' : 'users';
+$adminList = $_GET['list'];
 $adminSearch = is_string($_GET['q'] ?? null) ? mb_substr(trim($_GET['q']), 0, ADMIN_SEARCH_MAX) : '';
 $adminPage = is_string($_GET['page'] ?? null) && ctype_digit($_GET['page']) && strlen($_GET['page']) <= 6 ? max(1, (int) $_GET['page']) : 1;
 $adminSorts = $adminList === 'users' ? ADMIN_USER_SORTS : ADMIN_CHAT_SORTS;

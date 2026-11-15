@@ -750,7 +750,7 @@ $adminMessageCounts = $statement->fetch();
     <main class="settings settings-page admin">
         <div class="settings-layout">
             <!-- Links to the cards, in the order they're on the page -->
-            <?= adminPageMenuHtml('/admin/', 'All users', $adminAvatarSrc, $target['userName'], adminStatusHtml(adminUserStatus($target)), [
+            <?= adminPageMenuHtml('/admin/?list=users', 'All users', $adminAvatarSrc, $target['userName'], adminStatusHtml(adminUserStatus($target)), [
                 'Overview' => ['overview' => 'Information'],
                 'Manage' => $adminCanChange ? ['profile' => 'Profile', 'block' => 'Gambling block', 'security' => 'Login'] : [],
                 'Activity' => ['sessions' => 'Sessions', 'messages' => 'Messages', 'attachments' => 'Attachments', 'chats' => 'Chats', 'casino' => 'Casino'],

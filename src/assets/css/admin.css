@@ -1,4 +1,4 @@
-/* Admin panel (admin/index.php, admin/people.php, admin/banned.php, admin/feedback.php, admin/log.php, admin/user.php, admin/person.php and admin/chat.php). Built on the settings page's
+/* Admin panel (admin/index.php, admin/overview.php, admin/people.php, admin/banned.php, admin/feedback.php, admin/log.php, admin/user.php, admin/person.php and admin/chat.php). Built on the settings page's
    side menu, cards, fields and buttons (settings.css); this is what only the admin panel has: tables, lists and details. */
 
 .admin-link:focus-visible,
@@ -783,6 +783,193 @@
   background: var(--background);
   color: var(--text);
   font: inherit;
+}
+
+/* ---------- Overview (admin/overview.php) ---------- */
+
+/* The headline numbers, as many in a row as fit */
+.admin-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: calc(var(--radius) / 2);
+  background: var(--background);
+}
+
+.admin-tile-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-tile-label {
+  font-weight: 600;
+}
+
+.admin-tiles + .admin-overview-lists,
+.admin-tiles + .admin-watchdog-subheading {
+  margin-top: 20px;
+}
+
+/* The bar charts, side by side when there's room */
+.admin-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.admin-chart {
+  margin: 0;
+  min-width: 0;
+}
+
+.admin-chart-title {
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+/* The numbers at the top and middle of the y axis sit over the chart's left edge, on its grid lines */
+.admin-chart-plot {
+  position: relative;
+  padding-top: 18px;
+}
+
+.admin-chart-max,
+.admin-chart-mid {
+  position: absolute;
+  left: 0;
+  line-height: 1;
+}
+
+.admin-chart-max {
+  top: 0;
+}
+
+.admin-chart-mid {
+  top: 74px; /* just over the middle grid line: 18px padding + half of the 140px chart, less the text */
+}
+
+.admin-chart-svg {
+  display: block;
+  width: 100%;
+  height: 140px;
+  overflow: visible;
+}
+
+.admin-chart-grid {
+  stroke: var(--settings-line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.admin-chart-axis {
+  stroke: color-mix(in srgb, var(--text) 25%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.admin-chart-hit {
+  fill: transparent;
+}
+
+.admin-chart-bar {
+  fill: color-mix(in srgb, var(--accent) 70%, var(--secondary));
+}
+
+.admin-chart-day.is-today .admin-chart-bar,
+.admin-chart-day:hover .admin-chart-bar {
+  fill: var(--accent);
+}
+
+.admin-chart-day:hover .admin-chart-hit {
+  fill: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.admin-chart-dates {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.admin-chart-table {
+  margin-top: 8px;
+}
+
+.admin-chart-table summary {
+  cursor: pointer;
+}
+
+.admin-chart-table .admin-table-wrap {
+  max-height: 260px;
+  margin-top: 8px;
+  overflow-y: auto;
+}
+
+/* Needs a look: each count links to where it's dealt with */
+.admin-attention {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-attention-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: calc(var(--radius) / 2);
+  background: var(--background);
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-attention-link:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--background));
+}
+
+.admin-attention-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Busiest chats and people, side by side when there's room */
+.admin-overview-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0 24px;
+}
+
+.admin-overview-top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+.admin-overview-top li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.admin-overview-minus {
+  color: var(--settings-danger);
 }
 
 @media (max-width: 600px) {
