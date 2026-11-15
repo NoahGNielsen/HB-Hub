@@ -238,7 +238,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </ul>
                         <p>
                             Chips er virtuelle. HB Hub beder aldrig om og gemmer aldrig
-                            betalingsoplysninger. Køber du ekstra chips af ejeren, foregår betalingen uden for siden, og en
+                            betalingsoplysninger. Chips er gratis, og køb af ekstra chips er kun en sjælden undtagelse. Sker det, foregår betalingen uden for siden, og en
                             side-admin tilføjer chipsene som en almindelig ændring af din saldo.
                         </p>
 

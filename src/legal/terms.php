@@ -175,7 +175,7 @@ function termsNumber(int $number): string
                         <ul>
                             <li><strong>Chips er ikke penge.</strong> De kan ikke veksles til penge, gavekort eller andet, og gevinster i casinoet kan ikke udbetales.</li>
                             <li>Du må ikke købe, sælge eller spille om chips, konti eller casinoresultater for rigtige penge eller ting, hverken på HB Hub eller andre steder.</li>
-                            <li>Side-admins kan tilføje og fratage chips, fx for at tilføje købte chips eller rette og nulstille saldoer efter fejl eller snyd.</li>
+                            <li>Side-admins kan tilføje og fratage chips, fx for at tilføje chips i de sjældne tilfælde, hvor nogen har købt dem, eller rette og nulstille saldoer efter fejl eller snyd.</li>
                         </ul>
                         <h3>Legechips i de gratis spil</h3>
                         <p>
@@ -185,11 +185,18 @@ function termsNumber(int $number): string
                         </p>
                         <h3>Køb af chips</h3>
                         <p>
-                            Chips er som udgangspunkt gratis. Ekstra chips kan kun købes direkte fra ejeren af HB Hub til
-                            <?= termsNumber(HBHUB_CASINO_CHIPS_PER_KRONE) ?> chips pr. 1 kr., som beskrevet på siden
-                            <a href="/casino/buy-chips">Buy chips</a>.
+                            Chips er gratis, og casinoet er lavet til at blive spillet med de gratis chips. At købe chips er
+                            <strong>ikke en almindelig del af HB Hub</strong>, men en undtagelse, som ejeren kun gør i enkelte
+                            tilfælde. Der findes ingen betaling på siden, og du skal aldrig købe chips for at kunne bruge HB Hub
+                            eller spille i casinoet.
                         </p>
                         <ul>
+                            <li>
+                                Ekstra chips kan kun købes direkte fra ejeren af HB Hub til
+                                <?= termsNumber(HBHUB_CASINO_CHIPS_PER_KRONE) ?> chips pr. 1 kr., som beskrevet på siden
+                                <a href="/casino/buy-chips">Buy chips</a>.
+                            </li>
+                            <li>Ejeren bestemmer selv, om et køb kan lade sig gøre, og kan sige nej uden at give en grund. Ingen har krav på at kunne købe chips.</li>
                             <li>Købte chips er almindelige chips. De kan tabes i spillene, og ovenstående regler gælder også for dem.</li>
                             <li>
                                 <strong>Køb refunderes ikke.</strong> Det gælder også, hvis du bliver udelukket, sletter din konto,

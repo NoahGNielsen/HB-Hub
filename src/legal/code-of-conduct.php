@@ -143,7 +143,7 @@ const HBHUB_CONDUCT_UPDATED = '15 November 2026';
                             <li>Snyd, scripts, autoklikkere og samarbejde mod en enkelt spiller er ikke tilladt. Fejl skal rapporteres, ikke udnyttes.</li>
                             <li>Afslør ikke dagens Wordle-ord, før dagen er omme. Del gerne dine farvede felter.</li>
                             <li>Pres ikke andre til at spille, satse eller give dig chips.</li>
-                            <li>Chips og spilresultater må aldrig byttes for rigtige penge eller ting. Chips kan kun købes hos ejeren (se <a href="/legal/terms#chips">vilkårene</a>).</li>
+                            <li>Chips og spilresultater må aldrig byttes for rigtige penge eller ting. Chips er gratis; at købe chips hos ejeren er kun en sjælden undtagelse, ikke noget, man forventes at gøre (se <a href="/legal/terms#chips">vilkårene</a>).</li>
                         </ul>
                         <p class="legal-note">
                             Du kan blokere casinoet og spillene for dig selv, fx i skoletiden, under <a href="/settings">indstillinger</a>.
