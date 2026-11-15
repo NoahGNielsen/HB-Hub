@@ -139,17 +139,32 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Mislykkede logins, om kontoen er låst eller udelukket (og om udelukkelsen kom fra en admin eller var automatisk), og om og siden hvornår kontoen er spøgelsesudelukket.</li>
                         </ul>
 
-                        <h3>Browserfingeraftryk</h3>
+                        <h3 id="fingerprint">Browserfingeraftryk</h3>
                         <p>
                             Mens du er logget ind, beregner din browser omtrent én gang om dagen et fingeraftryk: en SHA-256-hash af
                             tekniske egenskaber som grafik- og lydgengivelse, grafikkort, installerede skrifttyper, skærm, tidszone,
                             sprog, platform, processorkerner og hukommelse. Kun hashen sendes og gemmes, sammen med det korte
                             browsernavn, din konto, og hvornår den først og sidst blev set. Fingeraftrykket bevares, selvom du rydder
-                            cookies. Det bruges udelukkende til at vise side-admins, hvilke konti der bruges i samme browser (se
-                            <a href="#see">Hvem har adgang</a>), og til at give de daglige chips én gang per person (se afsnit 3).
-                            Det bruges aldrig til at følge dig på andre hjemmesider og deles ikke med nogen. Sender din browser
-                            "Do Not Track", beregnes der intet fingeraftryk; tidligere fingeraftryk slettes som normalt 180 dage
-                            efter, de sidst blev set.
+                            cookies.
+                        </p>
+                        <p>
+                            <strong>Fingeraftrykket bruges kun til at forhindre misbrug</strong>, og kun på disse to måder:
+                        </p>
+                        <ul>
+                            <li>at vise side-admins, hvilke konti der bruges i samme browser, så udelukkede brugere ikke blot kan oprette en ny konto (se <a href="#see">Hvem har adgang</a>),</li>
+                            <li>at forhindre, at nogen henter de daglige chips flere gange med ekstra konti (se <a href="#why">afsnit 3</a>).</li>
+                        </ul>
+                        <p>
+                            Det bruges aldrig til reklamer, statistik, analyseprofiler eller til at følge dig på andre hjemmesider,
+                            og det deles ikke med nogen.
+                        </p>
+                        <p class="legal-note">
+                            <strong>Du kan sige nej til fingeraftryk med "Do Not Track".</strong> Slår du Do Not Track til i din
+                            browsers indstillinger, beregnes og sendes der intet fingeraftryk, og serveren kasserer alt, hvad den
+                            alligevel måtte modtage fra en browser, der sender signalet. Du behøver ikke gøre andet, og siden virker
+                            som normalt. Fingeraftryk, der blev gemt, før du slog det til, slettes 180 dage efter, de sidst blev set;
+                            vil du have dem slettet med det samme, kan du skrive til os (se <a href="#rights">Dine rettigheder</a>).
+                            Dine konti kan stadig kobles sammen via cookien hbHubDevice, som er nødvendig for sidens sikkerhed.
                         </p>
 
                         <h3>Bandlyste billeder</h3>
@@ -311,7 +326,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-why">3. Formål og retsgrundlag</h2>
                         <ul>
                             <li><strong>Levering af tjenesten</strong>: din konto, dine beskeder og dine spil er selve tjenesten.</li>
-                            <li><strong>Sikkerhed</strong>: IP-adresser, mislykkede logins, enhedscookien og browserfingeraftryk forhindrer kontoovertagelse, masseoprettelse af konti og omgåelse af udelukkelser. De samme koblinger sikrer, at de daglige chips gives én gang per person: når én af dine konti har hentet dem, får dine øvrige konti kun 20 % den dag. Det beregnes, når du henter dem, og der gemmes intet nyt om det. Listen over bandlyste billeder forhindrer udelukkede brugere i at vende tilbage med samme profil.</li>
+                            <li><strong>Sikkerhed</strong>: IP-adresser, mislykkede logins, enhedscookien og browserfingeraftryk forhindrer kontoovertagelse, masseoprettelse af konti og omgåelse af udelukkelser. De samme koblinger sikrer, at de daglige chips gives én gang per person: når én af dine konti har hentet dem, får dine øvrige konti kun 20 % den dag. Det beregnes, når du henter dem, og der gemmes intet nyt om det. Listen over bandlyste billeder forhindrer udelukkede brugere i at vende tilbage med samme profil. Browserfingeraftryk bruges kun til disse formål og kan fravælges med Do Not Track (se <a href="#fingerprint">Browserfingeraftryk</a>).</li>
                             <li><strong>Et trygt fællesskab</strong>: beskeder gemmes, så admins kan gribe ind over for mobning og misbrug.</li>
                             <li><strong>Forbedring af siden</strong>: feedback, nedbrudsrapporter, fejlrapporter og sidevisningstal bruges til at finde fejl, forstå overbelastning og prioritere udviklingen.</li>
                         </ul>
@@ -446,6 +461,10 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>få dine oplysninger slettet,</li>
                             <li>gøre indsigelse mod behandlingen eller få den begrænset.</li>
                         </ul>
+                        <p>
+                            Browserfingeraftryk kan du selv fravælge når som helst ved at slå Do Not Track til i din browser (se
+                            <a href="#fingerprint">Browserfingeraftryk</a>).
+                        </p>
                         <p>
                             Skriv til <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>; du får svar inden for
                             en måned. Du kan også klage til
