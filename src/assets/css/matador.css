@@ -566,6 +566,54 @@
   text-transform: uppercase;
 }
 
+/* HTX Edition's logo (game.php): the school's technical side - MATADOR drawn on a blueprint, squared paper with a
+   white dashed frame like a technical drawing, and a wooden ruler with mm/cm marks laid across under it saying
+   "HTX Edition". */
+.mt-brand.is-htx {
+  gap: 0;
+}
+
+.mt-logo-htx {
+  position: relative;
+  z-index: 1;
+  padding: 4px 18px;
+  border-color: #dbe8ff;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px) 0 0 / 0.5em 0.5em,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 1px, transparent 1px) 0 0 / 0.5em 0.5em,
+    #1f4e9c;
+  outline: 1px dashed rgba(255, 255, 255, 0.7);
+  outline-offset: -7px;
+  font-family: Consolas, 'Courier New', monospace;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 6px rgba(160, 200, 255, 0.6);
+}
+
+/* The ruler, tilted a little the other way and overlapping the plate's bottom edge. Its marks are two background
+   layers along the top edge: a short mark every 6px and a long one every 30px. */
+.mt-edition-ruler {
+  margin: -0.3em 0 0;
+  transform: rotate(4deg);
+  border: 1px solid #8a5a1c;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(90deg, #3b2608 0 1px, transparent 1px 30px) 4px 0 / 100% 45% no-repeat,
+    repeating-linear-gradient(90deg, #3b2608 0 1px, transparent 1px 6px) 4px 0 / 100% 22% no-repeat,
+    linear-gradient(#f6d58a, #e2b25a);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.mt-edition-ruler span {
+  display: block;
+  padding: 0.7em 22px 2px;
+  color: #3b2608;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: clamp(0.6rem, 2.2cqi, 1.4rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mt-logo-kaos span {
     animation: none;

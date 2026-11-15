@@ -221,6 +221,13 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
                                     <p class="mt-logo">MATADOR</p>
                                     <p class="mt-edition-ribbon"><span>Classic Edition</span></p>
                                 </div>
+                            <?php elseif ($gameEdition === 'htx'): ?>
+                                <?php // HTX has its own logo: MATADOR drawn on a blueprint (squared paper, a white dashed
+                                      // frame like a technical drawing), with a ruler saying "HTX Edition" laid across under it ?>
+                                <div class="mt-brand is-htx" aria-hidden="true">
+                                    <p class="mt-logo mt-logo-htx">MATADOR</p>
+                                    <p class="mt-edition-ruler"><span>HTX Edition</span></p>
+                                </div>
                             <?php else: ?>
                                 <div class="mt-brand" aria-hidden="true">
                                     <p class="mt-logo">MATADOR</p>
