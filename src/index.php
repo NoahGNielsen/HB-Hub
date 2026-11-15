@@ -98,8 +98,9 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
     <meta name="description" content="HB Hub is the student-made hangout for HANSENBERG Tekniske Gymnasium (HTX): class group chats, DMs, a play-chip casino, and Matador, chess, UNO and Wordle.">
     <meta property="og:title" content="HB Hub - The whole school, one tab away">
     <meta property="og:description" content="Group chats with your HTX class, Blackjack with chips that aren't real money, and Matador and chess with your friends from HANSENBERG. All in your browser.">
-    <!-- Tells Google the site's name for search results, and who it's for. A data block, not a script, so the CSP doesn't stop it. -->
-    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "HB Hub", "alternateName": "HBHub", "url": "https://hbhub.noahgajnielsen.dk/", "description": "A student-made chat, casino and games site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark.", "inLanguage": "en", "keywords": "HANSENBERG, HANSENBERG Tekniske Gymnasium, HTX, Kolding, school chat", "audience": {"@type": "EducationalAudience", "educationalRole": "student", "audienceType": "Students at HANSENBERG Tekniske Gymnasium (HTX)"}}</script>
+    <!-- Tells Google the site's name for search results, who it's for, and which school it's about ("about", so it can
+         tie the site to HANSENBERG when someone searches for the school). A data block, not a script, so the CSP doesn't stop it. -->
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "HB Hub", "alternateName": "HBHub", "url": "https://hbhub.noahgajnielsen.dk/", "description": "A student-made chat, casino and games site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark.", "inLanguage": "en", "keywords": "HANSENBERG, HANSENBERG Tekniske Gymnasium, HTX, Kolding, school chat", "about": {"@type": "HighSchool", "name": "HANSENBERG", "alternateName": "HANSENBERG Tekniske Gymnasium", "url": "https://www.hansenberg.dk/", "address": {"@type": "PostalAddress", "addressLocality": "Kolding", "addressCountry": "DK"}}, "audience": {"@type": "EducationalAudience", "educationalRole": "student", "audienceType": "Students at HANSENBERG Tekniske Gymnasium (HTX)"}}</script>
 </head>
 <body class="home-body">
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -382,6 +383,25 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <p>Delete your account and its data from the settings page whenever you want.</p>
                 </li>
             </ul>
+        </section>
+
+        <!-- About, in Danish: people in Denmark search in Danish ("hansenberg", "hansenberg elever", "htx kolding chat"),
+             and the rest of the page is in English, so this is the part that matches those searches and tells Google
+             which school the site is about. lang="da" so screen readers and search engines read it as Danish. Says
+             plainly that the school doesn't run it, like the terms do. -->
+        <section class="home-safety home-about" id="om" aria-labelledby="home-about-title" lang="da">
+            <p class="home-kicker home-kicker-center">Om HB Hub</p>
+            <h2 id="home-about-title">Lavet af en elev på HANSENBERG, til eleverne på HANSENBERG.</h2>
+            <p>
+                HB Hub er et chat- og spilsted for elever på HANSENBERG Tekniske Gymnasium (HTX) i Kolding. Her kan du skrive
+                med din klasse i jeres klassechat, sende beskeder til andre HANSENBERG-elever, spille Matador, skak og UNO med
+                dine venner, og prøve Blackjack, Baccarat, Roulette og Slots med chips, der ikke er rigtige penge.
+            </p>
+            <p>
+                Siden er lavet og drevet af en elev, ikke af HANSENBERG selv. Den kører i browseren, er gratis, og al
+                koden ligger åbent på GitHub. Leder du efter skolens egen hjemmeside, så er den på
+                <a href="https://www.hansenberg.dk/" rel="noopener noreferrer">hansenberg.dk</a>.
+            </p>
         </section>
 
         <!-- Last call -->
