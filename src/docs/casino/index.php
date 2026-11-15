@@ -8,112 +8,114 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
 
 $docsPath = '/docs/casino/';
-$docsIntro = 'Blackjack, Baccarat, Roulette and Slots, played with chips you get for free. No real money is involved anywhere,
-    and nothing you win can be paid out.';
+$docsIntro = 'Blackjack, Baccarat, Roulette og Slots, spillet med chips, du får gratis. Der er ingen rigtige penge med
+    nogen steder, og intet, du vinder, kan udbetales.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">
-                        <div><dt>To start</dt><dd><?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips</dd></div>
-                        <div><dt>Every day</dt><dd>+<?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> to <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?> chips</dd></div>
-                        <div><dt>New day at</dt><dd><?= HBHUB_CASINO_DAY_START ?> AM</dd></div>
-                        <div><dt>Games</dt><dd>4</dd></div>
+                        <div><dt>Til at starte</dt><dd><?= number_format(HBHUB_CASINO_START_CHIPS, 0, ',', '.') ?> chips</dd></div>
+                        <div><dt>Hver dag</dt><dd>+<?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0], 0, ',', '.') ?> til <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR), 0, ',', '.') ?> chips</dd></div>
+                        <div><dt>Ny dag</dt><dd>kl. <?= HBHUB_CASINO_DAY_START ?></dd></div>
+                        <div><dt>Spil</dt><dd>4</dd></div>
                     </dl>
 
                     <section id="chips" aria-labelledby="docs-chips">
-                        <h2 id="docs-chips">Your chips</h2>
+                        <h2 id="docs-chips">Dine chips</h2>
                         <p>
-                            Every account starts with <strong><?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips</strong>. All
-                            the casino games share them, so what you win at Blackjack you can bet at Roulette. Your chips are on the
-                            <a href="/casino/">casino's home page</a> and in the top bar on every casino page.
+                            Alle konti starter med <strong><?= number_format(HBHUB_CASINO_START_CHIPS, 0, ',', '.') ?> chips</strong>.
+                            Alle casinospillene deler dem, så det, du vinder i Blackjack, kan du satse i Roulette. Dine chips står på
+                            <a href="/casino/">casinoets forside</a> og i topbjælken på alle casinosider.
                         </p>
                     </section>
 
                     <section id="daily" aria-labelledby="docs-daily">
-                        <h2 id="docs-daily">Daily chips</h2>
+                        <h2 id="docs-daily">Daglige chips</h2>
                         <p>
-                            Press <strong>Collect daily chips</strong> on the casino's home page for free chips, once a day. A new
-                            casino day starts at <?= HBHUB_CASINO_DAY_START ?> AM (Danish time), and until then the button shows how
-                            long is left.
+                            Tryk på <strong>Collect daily chips</strong> på casinoets forside for gratis chips, én gang om dagen. En
+                            ny casinodag starter kl. <?= HBHUB_CASINO_DAY_START ?> (dansk tid), og indtil da viser knappen, hvor lang
+                            tid der er tilbage.
                         </p>
                         <p>
-                            How many you get follows a <strong><?= HBHUB_CASINO_DAILY_DAYS ?>-day calendar</strong>: day 1 is
-                            <strong><?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> chips</strong>, and every day in a row
-                            moves you one day further. Most days give more than the one before and a few give a bit less, the end
-                            of every week is a bonus, and day <?= HBHUB_CASINO_DAILY_DAYS ?> is
-                            <strong><?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?> chips</strong>. After that the calendar
-                            starts over. Missed a day? Then you're back at day 1, and missed days don't pile up.
+                            Hvor mange du får, følger en <strong>kalender på <?= HBHUB_CASINO_DAILY_DAYS ?> dage</strong>: dag 1 er
+                            <strong><?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0], 0, ',', '.') ?> chips</strong>, og hver dag i
+                            træk flytter dig én dag videre. De fleste dage giver mere end dagen før, og nogle få giver lidt mindre,
+                            slutningen af hver uge er en bonus, og dag <?= HBHUB_CASINO_DAILY_DAYS ?> er
+                            <strong><?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR), 0, ',', '.') ?> chips</strong>. Derefter
+                            starter kalenderen forfra. Har du sprunget en dag over? Så er du tilbage på dag 1, og missede dage hober
+                            sig ikke op.
                         </p>
                     </section>
 
                     <section id="games" aria-labelledby="docs-games">
-                        <h2 id="docs-games">The games</h2>
+                        <h2 id="docs-games">Spillene</h2>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Game</th><th scope="col">How it's played</th><th scope="col">Players</th></tr>
+                                    <tr><th scope="col">Spil</th><th scope="col">Sådan spilles det</th><th scope="col">Spillere</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td><a href="/docs/casino/blackjack">Blackjack</a></td><td>Get closer to 21 than the dealer without going over.</td><td>Solo, or up to 5 at a table</td></tr>
-                                    <tr><td><a href="/docs/casino/baccarat">Baccarat</a></td><td>Bet on which hand ends closest to 9.</td><td>Solo, or up to 6 at a table</td></tr>
-                                    <tr><td><a href="/docs/casino/roulette">Roulette</a></td><td>Bet on where the ball lands.</td><td>One table for everyone</td></tr>
-                                    <tr><td><a href="/docs/casino/slots">Slots</a></td><td>Spin three reels and line up the symbols.</td><td>Solo</td></tr>
+                                    <tr><td><a href="/docs/casino/blackjack">Blackjack</a></td><td>Kom tættere på 21 end dealeren uden at komme over.</td><td>Alene, eller op til 5 ved et bord</td></tr>
+                                    <tr><td><a href="/docs/casino/baccarat">Baccarat</a></td><td>Sats på, hvilken hånd der ender tættest på 9.</td><td>Alene, eller op til 6 ved et bord</td></tr>
+                                    <tr><td><a href="/docs/casino/roulette">Roulette</a></td><td>Sats på, hvor kuglen lander.</td><td>Ét bord for alle</td></tr>
+                                    <tr><td><a href="/docs/casino/slots">Slots</a></td><td>Drej tre hjul, og få symbolerne på linje.</td><td>Alene</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </section>
 
                     <section id="tables" aria-labelledby="docs-tables">
-                        <h2 id="docs-tables">Tables, codes and invites</h2>
-                        <p>Blackjack and Baccarat are played at tables. Open one from the game's page, or join one that's already there:</p>
+                        <h2 id="docs-tables">Borde, koder og invitationer</h2>
+                        <p>Blackjack og Baccarat spilles ved borde. Åbn et fra spillets side, eller gå med ved et, der allerede er der:</p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Kind of table</th><th scope="col">Who can join</th></tr>
+                                    <tr><th scope="col">Slags bord</th><th scope="col">Hvem kan være med</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>Public</td><td>Anyone. It's listed in the game's lobby.</td></tr>
-                                    <tr><td>Code</td><td>Anyone with its 6-character code. Type it under <strong>Join a table</strong> on the game's page.</td></tr>
-                                    <tr><td>Invite-only</td><td>Only the people the host invites. They get a <a href="/docs/notifications">notification</a>, and it shows under <strong>Your invites</strong> on the game's page.</td></tr>
-                                    <tr><td>Solo</td><td>Just you and the dealer.</td></tr>
+                                    <tr><td>Offentligt</td><td>Alle. Det står i spillets lobby.</td></tr>
+                                    <tr><td>Kode</td><td>Alle med dets kode på 6 tegn. Skriv den under <strong>Join a table</strong> på spillets side.</td></tr>
+                                    <tr><td>Kun for inviterede</td><td>Kun dem, værten inviterer. De får en <a href="/docs/notifications">notifikation</a>, og den bliver vist under <strong>Your invites</strong> på spillets side.</td></tr>
+                                    <tr><td>Alene</td><td>Kun dig og dealeren.</td></tr>
                                 </tbody>
                             </table>
                         </div>
                         <p>
-                            The host picks the table's name and its minimum bet (10, 50, 100 or 500 chips). Every player plays
-                            against the house, never against each other. You can join a table in the middle of a hand, and you're
-                            dealt in from the next one. <strong>Sit out</strong> skips hands without giving up your seat.
+                            Værten vælger bordets navn og dets mindsteindsats (10, 50, 100 eller 500 chips). Alle spillere spiller mod
+                            huset, aldrig mod hinanden. Du kan gå med ved et bord midt i en hånd, og du får kort fra den næste.
+                            <strong>Sit out</strong> springer hænder over uden at opgive din plads.
                         </p>
                         <p>
-                            Close the table, and your seat is kept for a minute in case you come back. After that you've left it.
-                            Bets close by themselves after a while, and so do turns, so nobody can keep a table waiting.
+                            Lukker du bordet, bliver din plads holdt i et minut, hvis du kommer tilbage. Derefter har du forladt det.
+                            Indsatser lukker af sig selv efter et stykke tid, og det gør ture også, så ingen kan få et bord til at vente.
                         </p>
                     </section>
 
                     <section id="leaderboards" aria-labelledby="docs-leaderboards">
-                        <h2 id="docs-leaderboards">Leaderboards</h2>
+                        <h2 id="docs-leaderboards">Ranglister</h2>
                         <p>
-                            The <a href="/casino/leaderboard">casino leaderboard</a> shows how many chips everyone has won or
-                            lost in each game and in all of them together, and their chips right now. The daily chips don't count
-                            as won. Each game also has its own leaderboard, with hands (or spins), wins, losses and win %, plus the
-                            biggest win and how much you've won or lost in Roulette and Slots. Click a column's heading to sort by it. Win %
-                            only counts once you've played 20 hands or spins (50 at Slots), so one lucky round can't top it.
+                            <a href="/casino/leaderboard">Casinoets rangliste</a> viser, hvor mange chips alle har vundet eller tabt i
+                            hvert spil og i dem alle tilsammen, og deres chips lige nu. De daglige chips tæller ikke som vundet. Hvert
+                            spil har også sin egen rangliste, med hænder (eller spins), sejre, nederlag og sejrsprocent, plus den
+                            største gevinst, og hvor meget du har vundet eller tabt i Roulette og Slots. Klik på en kolonnes overskrift
+                            for at sortere efter den. Sejrsprocenten tæller først, når du har spillet 20 hænder eller spins (50 i
+                            Slots), så én heldig runde ikke kan komme øverst.
                         </p>
                         <p>
-                            The <a href="/casino/">casino's home page</a> shows the top 5 of the casino leaderboard and your own
-                            place on it, and under each game how many tables are open and how many people are playing right now.
+                            <a href="/casino/">Casinoets forside</a> viser top 5 på casinoets rangliste og din egen plads på den, og
+                            under hvert spil, hvor mange borde der er åbne, og hvor mange der spiller lige nu.
                         </p>
                     </section>
 
                     <section id="not-money" aria-labelledby="docs-not-money">
-                        <h2 id="docs-not-money">Chips aren't money</h2>
+                        <h2 id="docs-not-money">Chips er ikke penge</h2>
                         <ul>
-                            <li>Chips can't be swapped for real money, gift cards or anything else, and nothing you win can be paid out.</li>
-                            <li>Don't sell, buy or bet chips, accounts or results for real money or real things with each other.</li>
-                            <li>Site admins can add or take away chips, for example to fix a bug, or when chips were won by cheating.</li>
+                            <li>Chips kan ikke byttes til rigtige penge, gavekort eller noget andet, og intet, du vinder, kan udbetales.</li>
+                            <li>Sælg, køb eller sats ikke chips, konti eller resultater for rigtige penge eller rigtige ting med hinanden.</li>
+                            <li>Side-admins kan tilføje eller tage chips væk, fx for at rette en fejl, eller når chips er vundet ved snyd.</li>
                         </ul>
                         <p>
-                            All of it is in <a href="/legal/terms#chips">The casino and chips</a> in the Terms. If you feel like
-                            you're playing too much, you can <a href="/docs/self-blocking">block the casino for yourself</a>.
+                            Det hele står i <a href="/legal/terms#chips">Casinoet og chips</a> i vilkårene. Føler du, at du spiller for
+                            meget, kan du <a href="/docs/self-blocking">blokere casinoet for dig selv</a>.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

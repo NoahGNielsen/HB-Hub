@@ -1,38 +1,46 @@
 <?php
-// The rules of the slot machine as played here, with its pay table, shown on the Slots page and in the help docs.
-// slots.php plays by them, and every number here comes from it, so the strips and the pays only change there.
-// The pay table has docs-table too, so it looks like the docs' other tables there (slots.css styles it on the game).
+// The rules of the slot machine as played here, with its pay table, shown on the Slots page and in the help docs. In
+// Danish, like the docs (a public page), also on the game, so the symbols get Danish names here (slots.php's own names
+// are the game's, in English). slots.php plays by them, and every number here comes from it, so the strips and the
+// pays only change there. The pay table has docs-table too, so it looks like the docs' other tables there (slots.css
+// styles it on the game).
 require_once __DIR__ . '/slots.php';
+
+// HBHUB_SLOTS_SYMBOLS' keys => the symbol's name in Danish, for the pay table
+$slotsDanishNames = [
+    'seven' => '7\'ere', 'diamond' => 'diamanter', 'star' => 'stjerner', 'bell' => 'klokker', 'grape' => 'vindruer',
+    'lemon' => 'citroner', 'cherry' => 'kirsebær',
+];
 ?>
-<ul class="casino-rule-list">
-    <li>Three reels, three rows and <?= count(HBHUB_SLOTS_LINES) ?> paylines: the three rows and the two diagonals. Every spin plays all of them.</li>
+<ul class="casino-rule-list" lang="da">
+    <li>Tre hjul, tre rækker og <?= count(HBHUB_SLOTS_LINES) ?> gevinstlinjer: de tre rækker og de to diagonaler. Hvert spin spiller dem alle.</li>
     <li>
-        Your bet is split evenly across the lines, and a line wins by what it pays times its share. A line only pays
-        its best win, and every winning line is paid. So a bet of 50 is 10 a line, and three bells on one of them
-        pays 250.
+        Din indsats bliver delt ligeligt ud på linjerne, og en linje vinder det, den betaler, gange sin andel. En linje
+        betaler kun sin bedste gevinst, og hver vindende linje bliver betalt. Så en indsats på 50 er 10 per linje, og tre
+        klokker på en af dem betaler 250.
     </li>
     <li>
-        Bets go from <?= HBHUB_SLOTS_MIN_BET ?> in steps of <?= HBHUB_SLOTS_BET_STEP ?>. With fewer than
-        <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips you can go <strong>all in</strong> instead: every chip you have on one spin
-        (what it wins is rounded down to a whole chip).
+        Indsatser går fra <?= HBHUB_SLOTS_MIN_BET ?> i trin af <?= HBHUB_SLOTS_BET_STEP ?>. Med færre end
+        <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips kan du i stedet gå <strong>all in</strong>: alle dine chips på ét spin (det,
+        det vinder, bliver rundet ned til en hel chip).
     </li>
 </ul>
-<div class="casino-pay-table-wrap docs-table-wrap">
+<div class="casino-pay-table-wrap docs-table-wrap" lang="da">
 <table class="casino-pay-table docs-table">
     <thead>
-        <tr><th scope="col">On a line</th><th scope="col">Pays</th></tr>
+        <tr><th scope="col">På en linje</th><th scope="col">Betaler</th></tr>
     </thead>
     <tbody>
         <?php foreach (HBHUB_SLOTS_PAYS as $slotsSymbol => $slotsPays):
             [$slotsName, $slotsShown] = HBHUB_SLOTS_SYMBOLS[$slotsSymbol]; ?>
             <tr>
-                <td><span class="casino-pay-symbols" aria-hidden="true"><?= str_repeat('<span class="casino-pay-symbol casino-pay-' . $slotsSymbol . '">' . $slotsShown . '</span>', 3) ?></span> 3 &times; <?= $slotsName ?></td>
+                <td><span class="casino-pay-symbols" aria-hidden="true"><?= str_repeat('<span class="casino-pay-symbol casino-pay-' . $slotsSymbol . '">' . $slotsShown . '</span>', 3) ?></span> 3 &times; <?= htmlspecialchars($slotsDanishNames[$slotsSymbol] ?? $slotsName) ?></td>
                 <td><?= $slotsPays ?>&times;</td>
             </tr>
         <?php endforeach; ?>
-        <tr><td>Any 3 fruit, mixed (🍒 🍋 🍇)</td><td><?= HBHUB_SLOTS_PAY_MIXED_FRUIT ?>&times;</td></tr>
-        <tr><td>🍒 🍒 on the first two reels</td><td><?= HBHUB_SLOTS_PAY_TWO_CHERRIES ?>&times;</td></tr>
-        <tr><td>🍒 on the first reel</td><td><?= HBHUB_SLOTS_PAY_CHERRY ?>&times; (the line's share back)</td></tr>
+        <tr><td>3 blandede frugter (🍒 🍋 🍇)</td><td><?= HBHUB_SLOTS_PAY_MIXED_FRUIT ?>&times;</td></tr>
+        <tr><td>🍒 🍒 på de første to hjul</td><td><?= HBHUB_SLOTS_PAY_TWO_CHERRIES ?>&times;</td></tr>
+        <tr><td>🍒 på det første hjul</td><td><?= HBHUB_SLOTS_PAY_CHERRY ?>&times; (linjens andel tilbage)</td></tr>
     </tbody>
 </table>
 </div>
