@@ -579,7 +579,7 @@
   z-index: 1;
   display: flex;
   gap: 0.1em;
-  padding: 0.32em 0.4em;
+  padding: 0.5em 0.45em;
   overflow: hidden;
   border-color: #c9b98f;
   border-width: 4px;
@@ -601,7 +601,7 @@
   right: 0;
   color: rgba(255, 255, 255, 0.32);
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 0.2em;
+  font-size: 0.19em;
   font-style: italic;
   font-weight: 400;
   white-space: nowrap;
@@ -610,13 +610,13 @@
 
 .mt-logo-htx::before {
   content: "E = mc²    ∫ sin x dx = −cos x    a² + b² = c²    PV = nRT";
-  top: 0.15em;
+  top: 0.7em;
   text-align: left;
 }
 
 .mt-logo-htx::after {
   content: "Σ 1/n² = π²/6    F = m·a    √2 ≈ 1.414    H₂O    e^iπ + 1 = 0";
-  bottom: 0.1em;
+  bottom: 0.7em;
   text-align: right;
 }
 
@@ -625,11 +625,11 @@
   position: relative;
   z-index: 1;
   display: inline-flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   width: 1.12em;
   height: 1.22em;
-  padding-bottom: 0.1em;
+  padding-top: 0.16em;
   border: 2px solid rgba(0, 0, 0, 0.45);
   border-radius: 3px;
   background: #ffd166;
@@ -684,9 +684,10 @@
 
 .mt-edition-integral span::before {
   content: "∫";
-  font-size: 1.7em;
+  font-size: 1.4em;
   font-weight: 400;
-  line-height: 1;
+  line-height: 0.8;
+  translate: 0 -0.08em;
 }
 
 .mt-edition-integral span::after {
