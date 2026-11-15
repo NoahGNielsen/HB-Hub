@@ -54,9 +54,9 @@ return [
     'cards' => [
         1 => ['text' => 'Ryk frem til START.', 'do' => ['move', 0]],
         2 => ['text' => 'Ryk frem til START.', 'do' => ['move', 0]],
-        3 => ['text' => 'Ryk frem til Frederiksberg Allé. Hvis De passerer START, indkassér da 4.000 kr.', 'do' => ['move', 11]],
-        4 => ['text' => 'Ryk frem til Grønningen. Hvis De passerer START, indkassér da 4.000 kr.', 'do' => ['move', 24]],
-        5 => ['text' => 'Ryk frem til Strandvejen. Hvis De passerer START, indkassér da 4.000 kr.', 'do' => ['move', 19]],
+        3 => ['text' => 'Ryk frem til Multibanen. Hvis De passerer START, indkassér da 4.000 kr.', 'do' => ['move', 14]],
+        4 => ['text' => 'Ryk frem til X-House. Hvis De passerer START, indkassér da 4.000 kr.', 'do' => ['move', 21]],
+        5 => ['text' => 'Ryk frem til Pool Rummet. Hvis De passerer START, indkassér da 4.000 kr.', 'do' => ['move', 19]],
         6 => ['text' => 'Du er sulten. Ryk til Bistroen.', 'do' => ['move', 39]],
         7 => ['text' => 'Tag med Mols-Linien. Flyt brikken frem, og hvis De passerer START, indkassér da 4.000 kr.', 'do' => ['move', 15]],
         8 => ['text' => 'Ryk tre felter tilbage.', 'do' => ['back', 3]],
