@@ -225,7 +225,7 @@ switch ($adminAction) {
 
 // What the page shows, which is logged: it has all the chat's messages
 adminLogView($db, $adminId, 'chat.view', null, $chatId);
-chatDeletedMessagesSweep($db); // a message deleted over 14 days ago never shows its text here, even before the night's clean-up
+chatDeletedMessagesSweep($db); // a message deleted over 3 days ago never shows its text here, even before the night's clean-up
 $adminBackground = chatBackground(chatSettings($chat['chatSettings']));
 // The default background starts the picker at the site's orange going right into purple, like in the chat (chat.js)
 [$adminColor1, $adminColor2, $adminAngle] = $adminBackground ?? ['#f2711c', '#6a4bd6', 90];

@@ -5,7 +5,7 @@
 //   - every expired chat attachment: its file deleted from disk and its row marked as expired
 //   - casino tables and game rooms nobody has open anymore (a batch of each, like a lobby visit)
 //   - GIF searches cached longer than 15 minutes
-//   - the text of chat messages deleted more than 14 days ago, the rows stay (assets/php/chat.php)
+//   - the text of chat messages deleted more than 3 days ago, the rows stay (assets/php/chat.php)
 //   - admin log rows older than a year (assets/php/adminLog.php)
 //   - Ore Mining Inc. crash reports and browser crash notes older than 90 days (assets/php/games/spaceOreMiner/crashReports.php)
 //   - the Watchdog's 508 reports older than 30 days (assets/php/watchdog.php)

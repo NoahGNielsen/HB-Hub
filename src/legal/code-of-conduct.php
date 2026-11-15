@@ -84,7 +84,7 @@ const HBHUB_CONDUCT_UPDATED = '15 November 2026';
                             har blokeret dig eller forladt en chat med dig, fx ved at tilføje vedkommende til en ny gruppe.
                         </p>
                         <p class="legal-note">
-                            En slettet besked skjules i chatten, men side-admins kan se dens tekst i 14 dage (se
+                            En slettet besked skjules i chatten, men side-admins kan se dens tekst i 3 dage (se
                             <a href="/legal/privacy#see">privatlivspolitikken</a>). At slette en besked fjerner derfor ikke ansvaret for den.
                         </p>
                     </section>

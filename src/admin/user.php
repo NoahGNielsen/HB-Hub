@@ -702,7 +702,7 @@ switch ($adminAction) {
 
 // What the page shows, which is logged: it has all their messages and personal info
 adminLogView($db, $adminId, 'user.view', $targetId, null);
-chatDeletedMessagesSweep($db); // a message deleted over 14 days ago never shows its text here, even before the night's clean-up
+chatDeletedMessagesSweep($db); // a message deleted over 3 days ago never shows its text here, even before the night's clean-up
 $adminSettings = $adminSettingsSaved;
 $adminClass = hbHubClassOf($adminSettings);
 $adminBlock = hbHubBlockSettings($adminSettings);

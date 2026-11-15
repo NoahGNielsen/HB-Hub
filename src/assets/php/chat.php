@@ -69,7 +69,7 @@ const HBHUB_CHAT_EVENT_BY_SITE_ADMIN = 100;
 // How long a deleted message's text is kept (from messageDeletedTimestamp) so site admins can look into a report about
 // it. After that chatDeletedMessagesSweep() empties it: the row stays (it still shows as deleted, with its reactions and
 // replies pointing at it), but the text is gone for good, for site admins too.
-const HBHUB_CHAT_DELETED_KEEP_DAYS = 14;
+const HBHUB_CHAT_DELETED_KEEP_DAYS = 3;
 
 /**
  * Puts a notice in the middle of the chat about a change the user made, like a new group name or a member kicked.
