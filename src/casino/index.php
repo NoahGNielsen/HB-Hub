@@ -208,7 +208,8 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
 
             <section class="casino-home-daily<?= $casinoDaily['ready'] ? ' is-ready' : '' ?>" aria-labelledby="casino-daily-title"
                      data-casino-daily data-seconds="<?= $casinoDaily['seconds'] ?>" data-amount="<?= $casinoDaily['amount'] ?>"
-                     data-day="<?= $casinoDaily['day'] ?>" data-collected="<?= $casinoDaily['collected'] ?>">
+                     data-day="<?= $casinoDaily['day'] ?>" data-collected="<?= $casinoDaily['collected'] ?>"
+                     data-shared="<?= $casinoDaily['shared'] ? '1' : '0' ?>">
                 <div class="casino-home-daily-head">
                     <h2 id="casino-daily-title">Daily chips</h2>
                     <p class="casino-home-streak" data-casino-streak><?= casinoStreakText($casinoDaily['collected']) ?></p>
@@ -219,6 +220,10 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                 <p class="casino-home-daily-next">
                     <span data-casino-daily-when><?= $casinoDaily['ready'] ? 'Today' : 'Tomorrow' ?></span>:
                     day <span data-casino-daily-day><?= $casinoDaily['day'] ?></span> of <?= HBHUB_CASINO_DAILY_DAYS ?>
+                </p>
+                <?php // When another account used in the same browser already collected today (wallet.php), casino.js shows and hides it ?>
+                <p class="casino-home-daily-shared" data-casino-daily-shared<?= $casinoDaily['shared'] ? '' : ' hidden' ?>>
+                    Another of your accounts already collected today's chips, so this one gets <?= HBHUB_CASINO_DAILY_ALT_PERCENT ?>%.
                 </p>
                 <button type="button" class="casino-btn casino-btn-primary" data-casino-claim<?= $casinoDaily['ready'] ? '' : ' disabled' ?>>Collect daily chips</button>
                 <p class="casino-home-daily-timer" role="timer" data-casino-daily-timer>

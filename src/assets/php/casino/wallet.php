@@ -10,11 +10,15 @@
 // (HBHUB_CASINO_DAILY_CALENDAR): each day in a row moves one day further on it, which mostly gives more, and
 // walletDailyStreak is the day on it that was collected last. Missing a casino day starts it over at day 1, and so
 // does finishing day 30.
+// The daily chips are per person, not per account: once one of someone's accounts (the ones used in the same browser,
+// personAccounts.php) has collected them on a casino day, their other accounts only get HBHUB_CASINO_DAILY_ALT_PERCENT
+// of their own day's chips that day. Their streaks still go on as normal.
 //
 // To use the chips in a game:
 //   $chips = hbHubCasinoChange($db, $userId, -$bet, 'bet', 'blackjack', $roundId); // null when there aren't enough
 // Inside the game's own transaction it's part of that one, so the bet and the game's own tables change together.
 require_once __DIR__ . '/../database.php';
+require_once __DIR__ . '/../personAccounts.php';
 
 const HBHUB_CASINO_START_CHIPS = 2500;
 // The daily chips on each day of the calendar, day 1 first: mostly more the further in, with a few lean days in between,
@@ -27,6 +31,8 @@ const HBHUB_CASINO_DAILY_CALENDAR = [
     15000,
 ];
 const HBHUB_CASINO_DAILY_DAYS = 30; // how many days the calendar has, count(HBHUB_CASINO_DAILY_CALENDAR)
+// What an account gets of its day's daily chips when another of the same person's accounts already had them that day
+const HBHUB_CASINO_DAILY_ALT_PERCENT = 20;
 const HBHUB_CASINO_TIME_ZONE = 'Europe/Copenhagen';
 const HBHUB_CASINO_DAY_START = 3; // 3 AM, when a new casino day starts
 const HBHUB_CASINO_CHIPS_PER_KRONE = 100; // what 1 kr buys, when someone buys extra chips from the owner (casino/buy-chips.php)
@@ -95,21 +101,36 @@ function hbHubCasinoChange(PDO $db, int $userId, int $amount, string $reason, ?s
 
 /**
  * Gives the user their daily chips for their next day on the calendar, unless they've already had them this casino day.
+ * When another of the person's accounts already had theirs today, it's HBHUB_CASINO_DAILY_ALT_PERCENT of them.
  * Returns how many chips that was, or null when they'd already had them.
  */
 function hbHubCasinoClaimDaily(PDO $db, int $userId, ?int $now = null): ?int
 {
     $today = hbHubCasinoDay($now ?? time());
+    $personIds = hbHubPersonUserIds($db, $userId);
+    hbHubCasinoWallet($db, $userId); // makes their wallet first if they have none, so the lock below has a row to lock
 
-    return hbHubCasinoTransaction($db, function () use ($db, $userId, $today): ?int {
-        // Locked, so two claims at once can't both see today as not collected yet
-        $wallet = hbHubCasinoLockWallet($db, $userId);
+    return hbHubCasinoTransaction($db, function () use ($db, $userId, $today, $personIds): ?int {
+        // Every one of the person's wallets is locked, in one go and in order (so two claims can't deadlock), so two of
+        // their accounts claiming at once can't both see today as not collected yet. Accounts without a wallet have
+        // never collected anything, so there's nothing of theirs to lock.
+        $statement = $db->prepare('SELECT userId, walletDailyDay FROM `HBHub-CasinoWallets`
+            WHERE userId IN (' . implode(',', array_fill(0, count($personIds), '?')) . ') ORDER BY userId FOR UPDATE');
+        $statement->execute($personIds);
+        $isShared = false;
+        foreach ($statement->fetchAll() as $row) {
+            if ((int) $row['userId'] !== $userId && $row['walletDailyDay'] !== null && $row['walletDailyDay'] >= $today) {
+                $isShared = true;
+            }
+        }
+
+        $wallet = hbHubCasinoLockWallet($db, $userId); // already locked above, this just reads it
         if ($wallet['dailyDay'] !== null && $wallet['dailyDay'] >= $today) {
             return null;
         }
 
         $day = hbHubCasinoDailyCalendar($wallet, $today)['day'];
-        $amount = HBHUB_CASINO_DAILY_CALENDAR[$day - 1];
+        $amount = hbHubCasinoDailyAmount($day, $isShared);
         $db->prepare('UPDATE `HBHub-CasinoWallets` SET walletDailyDay = ?, walletDailyStreak = ? WHERE userId = ?')
             ->execute([$today, $day, $userId]);
         hbHubCasinoChange($db, $userId, $amount, HBHUB_CASINO_REASON_DAILY);
@@ -141,11 +162,38 @@ function hbHubCasinoDailyCalendar(array $wallet, string $today): array
 }
 
 /**
+ * The daily chips day $day of the calendar gives, or HBHUB_CASINO_DAILY_ALT_PERCENT of them when $isShared (another of
+ * the person's accounts already had theirs that day).
+ */
+function hbHubCasinoDailyAmount(int $day, bool $isShared): int
+{
+    $amount = HBHUB_CASINO_DAILY_CALENDAR[$day - 1];
+    return $isShared ? intdiv($amount * HBHUB_CASINO_DAILY_ALT_PERCENT, 100) : $amount;
+}
+
+/**
+ * Whether another of the person's accounts (not $userId itself) has collected its daily chips on the casino day $today.
+ */
+function hbHubCasinoDailyIsShared(PDO $db, int $userId, string $today): bool
+{
+    $otherIds = array_values(array_diff(hbHubPersonUserIds($db, $userId), [$userId]));
+    if ($otherIds === []) {
+        return false;
+    }
+    $statement = $db->prepare('SELECT 1 FROM `HBHub-CasinoWallets`
+        WHERE userId IN (' . implode(',', array_fill(0, count($otherIds), '?')) . ') AND walletDailyDay >= ? LIMIT 1');
+    $statement->execute([...$otherIds, $today]);
+    return $statement->fetchColumn() !== false;
+}
+
+/**
  * The user's chips and daily chips, as sent to casino.js. ready says whether the daily chips can be collected now,
  * seconds how long until they can (0 when ready). collected and day are where they are on the calendar
  * (hbHubCasinoDailyCalendar()), and amount is what that day gives: today's chips when ready, else tomorrow's.
+ * shared says that another of the person's accounts already had theirs today, so amount is only
+ * HBHUB_CASINO_DAILY_ALT_PERCENT of the day's chips (only while ready: tomorrow's can't be known yet).
  *
- * @return array{chips: int, daily: array{amount: int, day: int, collected: int, ready: bool, seconds: int}}
+ * @return array{chips: int, daily: array{amount: int, day: int, collected: int, ready: bool, shared: bool, seconds: int}}
  */
 function hbHubCasinoStatus(PDO $db, int $userId, ?int $now = null): array
 {
@@ -154,14 +202,16 @@ function hbHubCasinoStatus(PDO $db, int $userId, ?int $now = null): array
     $wallet = hbHubCasinoWallet($db, $userId);
     $isReady = $wallet['dailyDay'] === null || $wallet['dailyDay'] < $today;
     $calendar = hbHubCasinoDailyCalendar($wallet, $today);
+    $isShared = $isReady && hbHubCasinoDailyIsShared($db, $userId, $today); // only looked up when it matters
 
     return [
         'chips' => $wallet['chips'],
         'daily' => [
-            'amount' => HBHUB_CASINO_DAILY_CALENDAR[$calendar['day'] - 1],
+            'amount' => hbHubCasinoDailyAmount($calendar['day'], $isShared),
             'day' => $calendar['day'],
             'collected' => $calendar['collected'],
             'ready' => $isReady,
+            'shared' => $isShared,
             'seconds' => $isReady ? 0 : max(1, hbHubCasinoNextDay($now) - $now),
         ],
     ];

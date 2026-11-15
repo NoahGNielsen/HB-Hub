@@ -2,7 +2,8 @@
 // The user's chips for casino.js, as JSON (hbHubCasinoStatus() in assets/php/casino/wallet.php):
 // - GET /casino/chips is the chips, and whether the daily chips can be collected (or how long until they can)
 // - POST action=claimDaily collects the daily chips. "claimed" says whether it did (false when they'd already been
-//   collected this casino day, like in another tab), and "claimedAmount" how many chips it gave (0 when it didn't).
+//   collected this casino day, like in another tab), and "claimedAmount" how many chips it gave (0 when it didn't),
+//   which is only part of the day's chips when another of the person's accounts already had theirs (daily.shared).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';

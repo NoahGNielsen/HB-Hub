@@ -44,6 +44,12 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             starter kalenderen forfra. Har du sprunget en dag over? Så er du tilbage på dag 1, og missede dage hober
                             sig ikke op.
                         </p>
+                        <p>
+                            De daglige chips er <strong>én gang per person</strong>, ikke per konto. Når én af dine konti (dem, der
+                            har været brugt i den samme browser) har hentet dem, får dine andre konti kun
+                            <strong><?= HBHUB_CASINO_DAILY_ALT_PERCENT ?> %</strong> af deres dags chips den dag. Deres kalender
+                            går stadig videre som normalt.
+                        </p>
                     </section>
 
                     <section id="games" aria-labelledby="docs-games">

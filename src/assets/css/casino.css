@@ -1071,6 +1071,18 @@ a.casino-game:hover .casino-game-art {
   opacity: 0.75;
 }
 
+/* Another of the person's accounts already collected today, so this one only gets part of it (wallet.php) */
+.casino-home-daily-shared {
+  max-width: 32ch;
+  margin: -10px 0 14px;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.casino-home-daily-shared[hidden] {
+  display: none;
+}
+
 .casino-home-daily .casino-btn {
   padding: 12px 18px;
   font-size: 1rem;

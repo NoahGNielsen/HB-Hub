@@ -18,7 +18,7 @@ const HBHUB_PRIVACY_COOKIES = [
     'hbHubPendingLogin' => ['Husker, at du har skrevet den rigtige adgangskode (eller er logget ind med Discord), mens du skriver din totrinskode.', '5 minutter'],
     'hbHubDiscordSignup' => ['Sættes, når du kommer tilbage fra Discord efter at have klikket på Opret dig med Discord. Indeholder, krypteret så kun HB Hub kan læse det, dit Discord-id, brugernavn, visningsnavn, dit billedes id og din bio, så oprettelsesformularen kan starte med dem, og din nye konto bliver koblet til den Discord-konto. Fjernes, når din konto er oprettet, eller du vælger ikke at koble den til.', '30 minutter'],
     'hbHubDiscordState' => ['Sættes, når du klikker på Log ind med Discord, Opret dig med Discord eller kobler din Discord-konto til. Indeholder en tilfældig kode, hvad du startede, og den side, du skal tilbage til, så kun din browser kan gøre det færdigt, når Discord sender dig tilbage. Fjernes, så snart du er tilbage.', '10 minutter'],
-    'hbHubDevice' => ['Genkender en browser, du har logget ind fra eller er logget ind i, så nogen, der gætter din adgangskode, ikke kan låse dig ude af den. Det er også sådan, en spøgelsesudelukkelse bliver givet videre til en ny konto, der bruges i den samme browser, og sådan side-admins ser, hvilke konti der bruges i den samme browser. De gratis spil på /play tjekker også, om den er der, og sender en browser, der har været logget ind før, til login og videre til det normale spil.', '180 dage'],
+    'hbHubDevice' => ['Genkender en browser, du har logget ind fra eller er logget ind i, så nogen, der gætter din adgangskode, ikke kan låse dig ude af den. Det er også sådan, en spøgelsesudelukkelse bliver givet videre til en ny konto, der bruges i den samme browser, og sådan side-admins ser, hvilke konti der bruges i den samme browser. Casinoet bruger det samme til at give de daglige chips én gang per person (se afsnit 3). De gratis spil på /play tjekker også, om den er der, og sender en browser, der har været logget ind før, til login og videre til det normale spil.', '180 dage'],
     'hbHubBanned' => ['Sættes, når en udelukket konto bruges i browseren, så den ikke bare kan oprette en ny konto.', '400 dage, eller til kontoen ikke længere er udelukket og logger ind igen'],
     'hbHubToast' => ['En kort besked til den næste side, som "Your password was changed".', '60 sekunder'],
 ];
@@ -166,8 +166,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             i den, sammen med det korte browsernavn (som "Chrome on Windows"), din konto, og hvornår den først og
                             sidst blev set. Modsat tokenen ovenfor forbliver den den samme efter du har ryddet cookies eller i et
                             privat vindue. Den bliver kun brugt, så side-admins kan se, hvilke konti der bruges i den samme browser
-                            (se <a href="#see">Hvem kan se hvad</a>), aldrig til at følge dig på andre sider, og den bliver aldrig
-                            delt med nogen.
+                            (se <a href="#see">Hvem kan se hvad</a>), og så casinoet kan give de daglige chips én gang per person
+                            (se afsnit 3), aldrig til at følge dig på andre sider, og den bliver aldrig delt med nogen.
                         </p>
                         <h3>Beskeder og chats</h3>
                         <ul>
@@ -504,7 +504,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-why">3. Hvorfor det bliver gemt</h2>
                         <ul>
                             <li><strong>For at køre siden</strong>: din konto, dine beskeder og spil er siden. Uden dem er der intet at vise dig.</li>
-                            <li><strong>For at holde den sikker</strong>: IP-adresser, mislykkede logins, enhedscookien og browserfingeraftryk forhindrer folk i at bryde ind på konti, spamme oprettelser og undgå udelukkelser. Listen over bandlyste billeder forhindrer en udelukket person i at komme tilbage med en kopi af sin gamle profil.</li>
+                            <li><strong>For at holde den sikker</strong>: IP-adresser, mislykkede logins, enhedscookien og browserfingeraftryk forhindrer folk i at bryde ind på konti, spamme oprettelser og undgå udelukkelser. De samme koblinger mellem konti gør, at de daglige chips i casinoet er én gang per person: når én af dine konti har hentet dem, får dine andre konti kun 20 % den dag. Det bliver regnet ud, når du henter dem, og intet nyt bliver gemt om det. Listen over bandlyste billeder forhindrer en udelukket person i at komme tilbage med en kopi af sin gamle profil.</li>
                             <li><strong>For at holde den venlig</strong>: beskeder bliver gemt, så admins kan gribe ind over for mobning eller misbrug.</li>
                             <li><strong>For at gøre den bedre</strong>: feedback, og den side, den kom fra, hjælper admins med at finde fejl og se, hvad folk gerne vil have. Nedbrudsrapporter fra Ore Mining Inc., som kun bliver sendt, hvis du accepterer, og de korte beskeder, browsere sender om nedbrud, som ikke er knyttet til dig, hjælper med at finde ud af, hvorfor spillet gik ned. Fejlrapporter fra browseren viser, hvad der går galt på siden, og hvornår og hvor serveren har for meget at lave, så det kan blive rettet. Sidevisningerne viser, hvilke sider der bliver brugt, så det er dem, der bliver arbejdet på.</li>
                         </ul>
