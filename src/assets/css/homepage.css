@@ -29,11 +29,11 @@ html.home {
 }
 
 /* The chess pieces in the Games section: only the 12 chess letters of Noto Sans Symbols 2 (SIL Open Font License),
-   the same file as chess.css. "fallback" rather than chess.css' "block": the board is far down the page, so the text
-   above it shouldn't wait for the file. */
+   the same file as chess.css. "swap" rather than chess.css' "block": the board is far down the page, so nothing should
+   wait for the file - the device's own chess letters show until it's in, which is long before anyone scrolls there. */
 @font-face {
   font-family: "Noto Sans Symbols 2";
-  font-display: fallback;
+  font-display: swap;
   src: url("/assets/fonts/noto-sans-symbols-2-chess.woff2") format("woff2");
 }
 

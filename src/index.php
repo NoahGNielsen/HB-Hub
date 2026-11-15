@@ -203,7 +203,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
              turns with Chat. -->
         <section class="home-feature home-feature-flip home-about" id="om" aria-labelledby="home-about-title">
             <div class="home-feature-text">
-                <p class="home-kicker"><img src="/assets/images/icons/user.png" width="18" height="18" alt="Person-ikon" aria-hidden="true">Om HB Hub</p>
+                <p class="home-kicker"><img src="/assets/images/icons/small/user.png" width="18" height="18" alt="Person-ikon" aria-hidden="true">Om HB Hub</p>
                 <h2 id="home-about-title">Et sted kun for eleverne på HANSENBERG.</h2>
                 <p>
                     HB Hub er en chat- og spilside for eleverne på HANSENBERG Tekniske Gymnasium (HTX) i Kolding. Din
@@ -218,7 +218,9 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
             <div class="home-feature-art home-about-art" aria-hidden="true">
                 <!-- A page from a squared notebook with HB Hub's to-do list written by hand (everything ticked off
                      except the homework), and a polaroid of the student who makes it taped over the corner. The photo
-                     is a real one of the owner (assets/images/home/creator.jpg, cropped and without its EXIF data). -->
+                     is a real one of the owner (assets/images/home/creator.jpg, cropped and without its EXIF data).
+                     The polaroid is never wider than 250px, so the photo comes in two sizes: creator-small.jpg
+                     (240px) for ordinary screens and creator.jpg (480px) for sharp ones. -->
                 <div class="home-notebook">
                     <p class="home-notebook-title">HB Hub, to do</p>
                     <ul class="home-notebook-list">
@@ -231,8 +233,10 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <p class="home-notebook-note">lektier i morgen... måske</p>
                 </div>
                 <figure class="home-polaroid">
-                    <img src="/assets/images/home/creator.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator.jpg') ?>"
-                         width="640" height="640" alt="Noah, der laver HB Hub" loading="lazy" decoding="async">
+                    <img src="/assets/images/home/creator-small.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator-small.jpg') ?>"
+                         srcset="/assets/images/home/creator-small.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator-small.jpg') ?> 1x,
+                                 /assets/images/home/creator.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator.jpg') ?> 2x"
+                         width="240" height="240" alt="Noah, der laver HB Hub" loading="lazy" decoding="async">
                     <figcaption>Noha – Professionel AI-afhængig</figcaption>
                 </figure>
             </div>
