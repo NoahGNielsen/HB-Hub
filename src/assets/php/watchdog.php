@@ -12,7 +12,7 @@
 // Each report is a row in HBHub-Watchdog: who (NULL when not logged in), how many, the path of the page they were on,
 // which addresses answered 508 and how often (paths only, never the query, so no chat ids or search words), their IP
 // address and user agent, whether it came from the dev site, and when the first and last of them happened and when the
-// report got through. Rows go after HBHUB_WATCHDOG_KEEP_DAYS (after each new one and in the nightly clean-up,
+// report got through, and whether an admin has cleared it off the list (it still counts in the totals). Rows go after HBHUB_WATCHDOG_KEEP_DAYS (after each new one and in the nightly clean-up,
 // cron/nightly.php), and with the account (account.php).
 //
 // Anyone can send one, also visitors who aren't logged in (the free games get 508s too), so nothing in it is trusted:
@@ -108,13 +108,15 @@ function hbHubWatchdogSave(PDO $db, ?int $userId, int $count, ?string $page, arr
 
     $db->beginTransaction();
     try {
-        // Over the limit for this address: added to its newest row of the last hour instead (see the top)
+        // Over the limit for this address: added to its newest row of the last hour instead (see the top). Never to one
+        // an admin has cleared, or it wouldn't show in the list; with none left, it gets a new row after all
         $statement = $db->prepare('SELECT COUNT(*) FROM `HBHub-Watchdog`
             WHERE watchdogCreatedTimestamp > NOW() - INTERVAL 1 HOUR AND watchdogIpv4 <=> ? AND watchdogIpv6 <=> ?');
         $statement->execute([$ipv4, $ipv6]);
         if ((int) $statement->fetchColumn() >= HBHUB_WATCHDOG_ROWS_PER_HOUR) {
             $statement = $db->prepare('SELECT watchdogId, watchdogAddresses FROM `HBHub-Watchdog`
                 WHERE watchdogCreatedTimestamp > NOW() - INTERVAL 1 HOUR AND watchdogIpv4 <=> ? AND watchdogIpv6 <=> ?
+                    AND watchdogCleared = 0
                 ORDER BY watchdogId DESC LIMIT 1 FOR UPDATE');
             $statement->execute([$ipv4, $ipv6]);
             $newest = $statement->fetch();
@@ -143,11 +145,13 @@ function hbHubWatchdogSave(PDO $db, ?int $userId, int $count, ?string $page, arr
 }
 
 /**
- * Deletes every row, from the admin panel's Clear the log button. Returns how many went.
+ * Takes every report off the admin panel's list of reports, from its Clear the reports button. The rows stay (marked
+ * watchdogCleared), so the numbers at the top (last hour ... last HBHUB_WATCHDOG_KEEP_DAYS days) still count them, and
+ * go by themselves with hbHubWatchdogSweep() like the rest. Returns how many were cleared.
  */
 function hbHubWatchdogClear(PDO $db): int
 {
-    return $db->exec('DELETE FROM `HBHub-Watchdog`');
+    return $db->exec('UPDATE `HBHub-Watchdog` SET watchdogCleared = 1 WHERE watchdogCleared = 0');
 }
 
 /**

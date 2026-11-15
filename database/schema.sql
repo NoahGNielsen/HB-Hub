@@ -1074,6 +1074,7 @@ CREATE TABLE `HBHub-Watchdog` (
   `watchdogIpv6` varchar(62) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
   `watchdogUserAgent` varchar(255) DEFAULT NULL COMMENT 'The browser''s user agent, as it sent the report',
   `watchdogFromDev` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 when it came from the dev site (dev branch), 0 from the live one',
+  `watchdogCleared` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 when an admin cleared it from the list of reports (Clear the reports): still counted in the numbers at the top until it''s deleted after HBHUB_WATCHDOG_KEEP_DAYS',
   `watchdogFirstTimestamp` datetime NOT NULL COMMENT 'When the first of them happened, by its age',
   `watchdogLastTimestamp` datetime NOT NULL COMMENT 'When the last of them happened, by its age',
   `watchdogCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the report got through. Deleted after HBHUB_WATCHDOG_KEEP_DAYS'

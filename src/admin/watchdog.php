@@ -9,8 +9,9 @@
 // (?page=): when the first and last of them happened (and when the report got through, if that was later), how many,
 // who (or "Not logged in"), the page they were on, which addresses answered 508 and how often, the IP address, the
 // browser's user agent and a Dev mark when it came from the dev site.
-// Form (action=clear) deletes all of it for good, and goes in the admin log (assets/php/adminLog.php). The rows also go
-// by themselves after HBHUB_WATCHDOG_KEEP_DAYS.
+// Form (action=clear) under the list takes every report off the list for good, and goes in the admin log
+// (assets/php/adminLog.php). It only clears the list: the rows stay (watchdogCleared) so the numbers at the top still
+// count them, and go by themselves after HBHUB_WATCHDOG_KEEP_DAYS like the rest.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/watchdog.php';
@@ -53,7 +54,8 @@ $adminTop = $db->query('SELECT a.path, SUM(a.hits) AS hits
     WHERE w.watchdogLastTimestamp > NOW() - INTERVAL ' . ADMIN_WATCHDOG_TOP_DAYS . ' DAY AND a.path IS NOT NULL
     GROUP BY a.path ORDER BY hits DESC LIMIT ' . ADMIN_WATCHDOG_TOP)->fetchAll();
 
-$adminTotal = (int) $db->query('SELECT COUNT(*) FROM `HBHub-Watchdog`')->fetchColumn();
+// The list only has the reports nobody has cleared yet (the numbers above count those too)
+$adminTotal = (int) $db->query('SELECT COUNT(*) FROM `HBHub-Watchdog` WHERE watchdogCleared = 0')->fetchColumn();
 $adminPages = max(1, intdiv($adminTotal + ADMIN_WATCHDOG_SHOWN - 1, ADMIN_WATCHDOG_SHOWN));
 $adminPage = min($adminPage, $adminPages);
 $adminReports = $db->query('SELECT w.watchdogId, w.watchdogUserId, u.userName, u.userAvatarAttachmentId, w.watchdogCount, w.watchdogPage,
@@ -61,6 +63,7 @@ $adminReports = $db->query('SELECT w.watchdogId, w.watchdogUserId, u.userName, u
         w.watchdogFirstTimestamp, w.watchdogLastTimestamp, w.watchdogCreatedTimestamp
     FROM `HBHub-Watchdog` w
     LEFT JOIN `HBHub-Users` u ON u.userId = w.watchdogUserId
+    WHERE w.watchdogCleared = 0
     ORDER BY w.watchdogId DESC
     LIMIT ' . ADMIN_WATCHDOG_SHOWN . ' OFFSET ' . (($adminPage - 1) * ADMIN_WATCHDOG_SHOWN))->fetchAll();
 
@@ -143,13 +146,6 @@ function adminWatchdogWhen(string $first, string $last): string
                             <?php endforeach; ?>
                         </ol>
                     <?php endif; ?>
-
-                    <?php if ($adminTotal > 0): ?>
-                        <form action="/admin/watchdog" method="post" class="admin-watchdog-clear" data-confirm="Clear all the server busy reports? It can't be brought back.">
-                            <input type="hidden" name="action" value="clear">
-                            <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Clear the log</button>
-                        </form>
-                    <?php endif; ?>
                 </section>
 
                 <section class="settings-card" id="list" aria-labelledby="admin-list-heading">
@@ -161,7 +157,7 @@ function adminWatchdogWhen(string $first, string $last): string
                     </div>
 
                     <?php if ($adminReports === []): ?>
-                        <p class="settings-hint">No 508s have been reported in the last <?= HBHUB_WATCHDOG_KEEP_DAYS ?> days.</p>
+                        <p class="settings-hint">No reports to show (none since the list was last cleared, or in the last <?= HBHUB_WATCHDOG_KEEP_DAYS ?> days).</p>
                     <?php else: ?>
                         <p class="settings-hint admin-list-count">
                             <?= number_format(($adminPage - 1) * ADMIN_WATCHDOG_SHOWN + 1) ?>&ndash;<?= number_format(($adminPage - 1) * ADMIN_WATCHDOG_SHOWN + count($adminReports)) ?>
@@ -235,6 +231,13 @@ function adminWatchdogWhen(string $first, string $last): string
                                 <a class="settings-btn" href="/admin/watchdog?page=<?= $adminPage + 1 ?>#list" rel="next">Next</a>
                             <?php endif; ?>
                         </nav>
+                    <?php endif; ?>
+
+                    <?php if ($adminTotal > 0): ?>
+                        <form action="/admin/watchdog" method="post" class="admin-watchdog-clear" data-confirm="Clear all the reports from this list? It can't be brought back, but the numbers at the top still count them.">
+                            <input type="hidden" name="action" value="clear">
+                            <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Clear the reports</button>
+                        </form>
                     <?php endif; ?>
                 </section>
             </div>

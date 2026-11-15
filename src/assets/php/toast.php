@@ -71,7 +71,7 @@ const HBHUB_TOASTS = [
     'adminAnnouncementBadLink' => 'Nothing was sent: the link has to be a page on HB Hub, starting with /.',
     'adminAnnouncementTakenBack' => 'The announcement has been taken back.',
     'adminCrashDeleted' => 'The crash report has been deleted.',
-    'adminWatchdogCleared' => 'The server busy reports have been cleared.',
+    'adminWatchdogCleared' => 'The server busy reports have been cleared from the list. The numbers at the top still count them.',
 ];
 
 /**
