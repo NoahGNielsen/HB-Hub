@@ -1350,230 +1350,224 @@ html.home {
 }
 
 /* ---------- About (in Danish) ----------
-   Sits right under the hero and uses the feature sections' layout (.home-feature). The picture is three things
-   stacked: a made-up commit log at the back, a student card tilted in front of it and a price tag stuck on top. Like
-   the casino picture, the pieces are placed by hand inside a box of fixed height. */
+   Sits right under the hero and uses the feature sections' layout (.home-feature). The picture is a page from a
+   squared notebook with HB Hub's to-do list in handwriting, and a polaroid of the student who makes it taped on top
+   of its corner. Like the casino picture, the pieces are placed by hand inside a box of fixed height. The paper and
+   the photo are real-world things, so they keep their own light colours on the dark page. */
 .home-about a {
   color: var(--accent);
   text-underline-offset: 2px;
 }
 
+/* The handwriting: Caveat (SIL Open Font License), our own copy of Google Fonts' latin part, which has æ, ø and å */
+@font-face {
+  font-family: "Caveat";
+  font-weight: 600;
+  font-display: swap;
+  src: url("/assets/fonts/caveat-latin.woff2") format("woff2");
+}
+
 .home-about-art {
+  --home-ink: #24479a;
+  --home-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
   height: 400px;
 }
 
-/* The commit log: a code window in the dark colours of the hero, at the top right */
-.home-repo {
+/* The notebook page: off-white paper with a faint blue 24px grid, tilted a little */
+.home-notebook {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 24px;
+  left: 0;
   width: 78%;
-  padding: 16px 18px 18px;
+  height: 340px;
+  padding: 28px 30px 0 36px;
   box-sizing: border-box;
-  border-radius: 18px;
-  background: var(--home-dark-raised);
-  color: var(--home-dark-text);
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.18);
-  transform: rotate(2deg);
+  border-radius: 4px 14px 14px 4px;
+  background-color: #fbfaf4;
+  background-image:
+    linear-gradient(rgba(60, 110, 200, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(60, 110, 200, 0.16) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+  box-shadow: 0 28px 56px -12px rgba(0, 0, 0, 0.5);
+  color: var(--home-ink);
+  font-family: var(--home-hand);
+  font-weight: 600;
+  transform: rotate(-3deg);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.home-repo-head {
-  margin: 0 0 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
+.home-notebook-title {
+  display: inline-block;
+  margin: 0 0 6px;
+  font-size: 1.9rem;
+  line-height: 1.2;
+  /* Underlined twice, a bit wobbly, the way you'd do it with a pen */
+  background:
+    linear-gradient(var(--home-ink), var(--home-ink)) left calc(100% - 4px) / 100% 2px no-repeat,
+    linear-gradient(var(--home-ink), var(--home-ink)) 6px 100% / 88% 2px no-repeat;
+  padding-bottom: 8px;
 }
 
-.home-repo-head svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.home-repo-head span {
-  margin-left: auto;
-  padding: 2px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  font-size: 0.72rem;
-  opacity: 0.75;
-}
-
-/* Each commit is a dot on a line running down the left side, the message in monospace and how long ago on the right */
-.home-repo-log {
+.home-notebook-list {
   margin: 0;
   padding: 0;
   list-style: none;
+  font-size: 1.55rem;
+  line-height: 40px;
 }
 
-.home-repo-log li {
+/* A drawn box in front of each line. Done ones get a red tick and are crossed out */
+.home-notebook-list li {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 7px 0 7px 22px;
-  font-size: 0.82rem;
+  padding-left: 34px;
 }
 
-.home-repo-log li::before {
+.home-notebook-list li::before {
   content: "";
   position: absolute;
-  left: 5px;
+  left: 2px;
+  top: 12px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--home-ink);
+  border-radius: 3px 5px 3px 4px;
+  transform: rotate(-4deg);
+}
+
+.home-notebook-list li.is-done {
+  text-decoration: line-through 2px color-mix(in srgb, var(--home-ink) 70%, transparent);
+}
+
+.home-notebook-list li.is-done::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 4px;
+  width: 9px;
+  height: 22px;
+  border: solid #d23c3c;
+  border-width: 0 3px 3px 0;
+  border-radius: 0 0 3px 0;
+  transform: rotate(40deg);
+}
+
+/* The last one is still waiting */
+.home-notebook-list li:last-child {
+  color: #d23c3c;
+}
+
+/* A note at the bottom with a hand-drawn ring around it */
+.home-notebook-note {
+  display: inline-block;
+  margin: 14px 0 0 -8px;
+  padding: 2px 14px;
+  border: 2px solid var(--home-ink);
+  border-radius: 48% 52% 44% 56% / 60% 46% 54% 40%;
+  font-size: 1.3rem;
+  transform: rotate(-2deg);
+}
+
+/* The polaroid: a white frame with the photo and a handwritten caption, held on by a strip of tape */
+.home-polaroid {
+  position: absolute;
   top: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.home-repo-log li:first-child::before { top: 50%; }
-.home-repo-log li:last-child::before { bottom: 50%; }
-
-.home-repo-log i {
-  position: absolute;
-  left: 0;
-  width: 12px;
-  height: 12px;
+  right: 0;
+  width: 46%;
+  max-width: 250px;
+  margin: 0;
+  padding: 12px 12px 0;
   box-sizing: border-box;
-  border: 2px solid var(--accent);
-  border-radius: 50%;
-  background: var(--home-dark-raised);
-}
-
-.home-repo-log code {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: inherit;
-}
-
-.home-repo-log span {
-  opacity: 0.5;
-  font-size: 0.75rem;
-}
-
-/* The student card: a plastic card in the page's own colours with an accent band, tilted the other way */
-.home-idcard {
-  position: absolute;
-  left: 0;
-  bottom: 24px;
-  width: 64%;
-  max-width: 340px;
-  overflow: hidden;
-  border-radius: 18px;
-  background: var(--secondary);
-  box-shadow: 0 28px 56px -12px rgba(0, 0, 0, 0.35);
-  transform: rotate(-5deg);
+  background: #fdfdfb;
+  box-shadow: 0 30px 50px -14px rgba(0, 0, 0, 0.6);
+  transform: rotate(5deg);
   transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.home-idcard-band {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.home-idcard-band img {
-  border-radius: 6px;
-  background: #fff;
-}
-
-.home-idcard-body {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 18px 10px;
-}
-
-.home-idcard-photo {
-  flex: none;
-  width: 72px;
-  height: 88px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  color: #fff;
-  font-size: 1.8rem;
-  font-weight: 850;
-}
-
-.home-idcard-body dl {
-  margin: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 12px;
-  font-size: 0.85rem;
-}
-
-.home-idcard-body dt {
-  opacity: 0.55;
-}
-
-.home-idcard-body dd {
-  margin: 0;
-  font-weight: 700;
-}
-
-/* Thin and thick stripes, like a real barcode */
-.home-idcard-barcode {
-  height: 26px;
-  margin: 6px 18px 16px;
-  background: repeating-linear-gradient(90deg,
-    var(--text) 0 2px, transparent 2px 4px,
-    var(--text) 4px 5px, transparent 5px 8px,
-    var(--text) 8px 11px, transparent 11px 13px);
-  opacity: 0.7;
-}
-
-/* The price tag: a round red sticker over the card's corner */
-.home-pricetag {
+.home-polaroid::before {
+  content: "";
   position: absolute;
-  left: 54%;
-  bottom: 0;
+  top: -14px;
+  left: 50%;
   width: 96px;
-  height: 96px;
-  display: grid;
-  place-content: center;
-  border-radius: 50%;
-  background: var(--home-red);
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  height: 28px;
+  margin-left: -48px;
+  background: rgba(244, 232, 190, 0.72);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transform: rotate(-6deg);
+}
+
+.home-polaroid img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  background: #d9d6cc; /* until the photo has loaded */
+}
+
+.home-polaroid figcaption {
+  padding: 8px 2px 14px;
+  color: #2a2d33;
+  font-family: var(--home-hand);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.1;
   text-align: center;
-  text-transform: uppercase;
-  box-shadow: 0 14px 28px -8px rgba(0, 0, 0, 0.4);
-  transform: rotate(12deg);
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.home-pricetag b {
-  font-size: 1.5rem;
-  letter-spacing: -0.02em;
-  text-transform: none;
-}
-
-/* Hovering the picture straightens the card and spins the sticker a little */
+/* Hovering the picture straightens the page and the photo a little */
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .home-about-art:hover .home-idcard {
-    transform: rotate(-2deg) translateY(-6px);
+  .home-about-art:hover .home-notebook {
+    transform: rotate(-1deg);
   }
 
-  .home-about-art:hover .home-pricetag {
-    transform: rotate(-4deg) scale(1.06);
+  .home-about-art:hover .home-polaroid {
+    transform: rotate(2deg) translateY(-6px);
+  }
+}
+
+@media (max-width: 600px) {
+  .home-about-art {
+    height: 380px;
+  }
+
+  .home-notebook {
+    width: 86%;
+    height: 340px;
+    padding: 22px 20px 0 24px;
+  }
+
+  .home-notebook-title {
+    font-size: 1.6rem;
+  }
+
+  .home-notebook-list {
+    font-size: 1.35rem;
+    line-height: 36px;
+  }
+
+  .home-notebook-list li::before {
+    top: 10px;
+  }
+
+  .home-notebook-list li.is-done::after {
+    top: 2px;
+  }
+
+  .home-notebook-note {
+    font-size: 1.15rem;
+  }
+
+  .home-polaroid {
+    top: auto;
+    bottom: 0;
+    width: 48%;
+    padding: 8px 8px 0;
+  }
+
+  .home-polaroid figcaption {
+    padding: 6px 2px 10px;
+    font-size: 1.05rem;
   }
 }
 

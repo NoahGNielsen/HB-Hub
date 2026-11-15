@@ -857,6 +857,27 @@
   letter-spacing: 0.04em;
 }
 
+/* Caveat, the frontpage's handwriting (its @font-face is in homepage.css), in blue ink */
+.credits-font.is-hand {
+  rotate: -2deg;
+  color: #24479a;
+}
+
+.credits-font.is-hand span {
+  font-family: "Caveat", cursive;
+  font-weight: 600;
+}
+
+.credits-library:hover .credits-font.is-hand .credits-font-letters {
+  font-weight: 600;
+}
+
+.credits-font.is-hand .credits-font-weights {
+  font-size: 1.2rem;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
 /* Minesweeper's two fonts, from the game's own folder (assets/minesweeper/css/, like in its main.css): Press Start's
    pixel letters, which go chunky on hover, and Digital Dismay's red clock digits on black, which light up on hover */
 @font-face {

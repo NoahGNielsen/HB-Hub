@@ -216,38 +216,25 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 </p>
             </div>
             <div class="home-feature-art home-about-art" aria-hidden="true">
-                <!-- A made-up commit log at the back (made by a student, the code is open), a student card in front
-                     of it (only for HANSENBERG's students) and a price tag stuck on top (it's free) -->
-                <div class="home-repo">
-                    <p class="home-repo-head">
-                        <svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5"/><path d="M16 7l5 5-5 5"/></svg>
-                        <b>HB-Hub</b><span>Offentlig</span>
-                    </p>
-                    <ul class="home-repo-log">
-                        <li><i></i><code>tilføjede rangliste</code><span>2 d.</span></li>
-                        <li><i></i><code>QOL-opdatering til Matador</code><span>4 d.</span></li>
-                        <li><i></i><code>rettede Wordle i frikvarteret</code><span>1 u.</span></li>
+                <!-- A page from a squared notebook with HB Hub's to-do list written by hand (everything ticked off
+                     except the homework), and a polaroid of the student who makes it taped over the corner. The photo
+                     is a real one of the owner (assets/images/home/creator.jpg, cropped and without its EXIF data). -->
+                <div class="home-notebook">
+                    <p class="home-notebook-title">HB Hub, to do</p>
+                    <ul class="home-notebook-list">
+                        <li class="is-done">klassechat</li>
+                        <li class="is-done">Blackjack</li>
+                        <li class="is-done">Matador</li>
+                        <li class="is-done">Wordle</li>
+                        <li>lektier</li>
                     </ul>
+                    <p class="home-notebook-note">gratis + koden på GitHub!</p>
                 </div>
-                <div class="home-idcard">
-                    <div class="home-idcard-band">
-                        <img src="/assets/images/favicon.svg" width="22" height="22" alt="HB Hub-logo">
-                        <span>Elevkort</span>
-                    </div>
-                    <div class="home-idcard-body">
-                        <span class="home-idcard-photo home-msg-avatar-a">D</span>
-                        <dl>
-                            <dt>Skole</dt>
-                            <dd>HANSENBERG</dd>
-                            <dt>Linje</dt>
-                            <dd>HTX, Kolding</dd>
-                            <dt>Klasse</dt>
-                            <dd>2.B</dd>
-                        </dl>
-                    </div>
-                    <div class="home-idcard-barcode"></div>
-                </div>
-                <div class="home-pricetag"><b>0 kr.</b>Gratis</div>
+                <figure class="home-polaroid">
+                    <img src="/assets/images/home/creator.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator.jpg') ?>"
+                         width="640" height="640" alt="Noah, der laver HB Hub" loading="lazy" decoding="async">
+                    <figcaption>Noah, ham der laver HB Hub</figcaption>
+                </figure>
             </div>
         </section>
 
@@ -346,10 +333,10 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                      the side bets above them (each pair over its own side, the Tie in between), and a bet on the
                      Banker. The payouts are the table's own (round.php). -->
                 <div class="home-baccarat">
-                    <p class="home-baccarat-spot is-side">S-par<small><?= HBHUB_BACCARAT_PAYS['playerPair'] ?> til 1</small></p>
-                    <p class="home-baccarat-spot is-side is-tie">Uafgjort<small><?= HBHUB_BACCARAT_PAYS['tie'] ?> til 1</small></p>
-                    <p class="home-baccarat-spot is-side is-banker">B-par<small><?= HBHUB_BACCARAT_PAYS['bankerPair'] ?> til 1</small></p>
-                    <p class="home-baccarat-spot">Spiller<small><?= HBHUB_BACCARAT_PAYS['player'] ?> til 1</small></p>
+                    <p class="home-baccarat-spot is-side">P-Pair<small><?= HBHUB_BACCARAT_PAYS['playerPair'] ?> til 1</small></p>
+                    <p class="home-baccarat-spot is-side is-tie">Tie<small><?= HBHUB_BACCARAT_PAYS['tie'] ?> til 1</small></p>
+                    <p class="home-baccarat-spot is-side is-banker">B-Pair<small><?= HBHUB_BACCARAT_PAYS['bankerPair'] ?> til 1</small></p>
+                    <p class="home-baccarat-spot">PLAYER<small><?= HBHUB_BACCARAT_PAYS['player'] ?> til 1</small></p>
                     <p class="home-baccarat-spot is-banker">
                         Banker<small><?= HBHUB_BACCARAT_PAYS['banker'] ?> til 1<br>minus <?= str_replace('.', ',', (string) (HBHUB_BACCARAT_BANKER_COMMISSION / 10)) ?> %</small>
                         <span class="home-baccarat-chips">

@@ -278,6 +278,18 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
             </div>
             <div class="credits-library">
+                <!-- Handwriting, like the notebook on the frontpage (its @font-face is in homepage.css) -->
+                <div class="credits-font is-hand" aria-hidden="true">
+                    <span class="credits-font-letters">Aa</span>
+                    <span class="credits-font-weights">æ ø å</span>
+                </div>
+                <div class="credits-library-text">
+                    <h3><a href="https://github.com/googlefonts/caveat" target="_blank" rel="noopener noreferrer">Caveat</a></h3>
+                    <p>Af Pablo Impallari. Håndskriften i kladdehæftet og på polaroidet på forsiden.</p>
+                    <p class="credits-license">SIL Open Font License 1.1</p>
+                </div>
+            </div>
+            <div class="credits-library">
                 <!-- Pixel letters, which go chunky on hover, and one of Minesweeper's numbers in its blue -->
                 <div class="credits-font is-pixel" aria-hidden="true">
                     <span class="credits-font-letters">Aa</span>
