@@ -153,8 +153,9 @@ function termsNumber(int $number): string
                             </li>
                             <li>For at forhindre spam kan du sende højst 10 beskeder pr. 5 sekunder på tværs af alle chats (filer og GIFs medregnet). Beskeder ud over grænsen sendes ikke.</li>
                             <li>
-                                Beskeder er ikke end-to-end-krypterede, og admins kan læse dem, når de behandler en anmeldelse (se
-                                <a href="/legal/privacy#see">privatlivspolitikken</a>).
+                                Beskeder er ikke end-to-end-krypterede. Side-admins kan læse beskeder i alle chats, også private
+                                beskeder og slettede beskeder i 3 dage, fx når de behandler en anmeldelse. Alt, hvad de ser, registreres
+                                i adminloggen (se <a href="/legal/privacy#see">privatlivspolitikken</a>).
                             </li>
                             <li>
                                 Feedback sendt med Feedback-knappen går kun til side-admins, som frit kan bruge dine idéer uden
