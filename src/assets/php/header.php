@@ -60,7 +60,7 @@ $headerKeywords = array_unique([
 <link rel="stylesheet" href="/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
 <?php endif; ?>
 <?php if (!isset($hbHubUser) || hbHubImproveSiteOn(hbHubUserSettings($hbHubUser['userSettings'] ?? null))): ?>
-<!-- The Watchdog counts the 508s the page gets (assets/php/watchdog.php). First of the page's scripts, so every fetch() goes through it.
+<!-- The Watchdog notes the errors the page gets (assets/php/watchdog.php). First of the page's scripts, so every fetch() and error goes through it.
      Left out when "Help improve HB Hub" is off in the settings (hbHubImproveSiteOn()). -->
 <script src="/assets/js/watchdog.js?v=<?= filemtime(__DIR__ . '/../js/watchdog.js') ?>" defer></script>
 <?php endif; ?>

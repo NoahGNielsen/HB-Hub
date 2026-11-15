@@ -964,8 +964,9 @@ function settingsTime(?string $timestamp): string
                                 <span>Send usage statistics</span>
                             </label>
                             <p class="settings-hint" id="settings-improve-hint">
-                                For now, that's a short report when the server is too busy to answer you (which page you were on,
-                                which addresses failed, your browser), and, in Chrome, a note from the browser if Ore Mining Inc.'s
+                                For now, that's a short report when something goes wrong in your browser, like the server being
+                                too busy to answer you, a file that won't load or the page's code breaking (which page you were on,
+                                what went wrong and where, your browser), and, in Chrome, a note from the browser if Ore Mining Inc.'s
                                 tab crashes. Only site admins can see them. Ore Mining Inc.'s own crash reports always ask you first,
                                 whatever you choose here.
                             </p>

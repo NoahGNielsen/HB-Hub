@@ -1067,9 +1067,9 @@ INSERT INTO `HBHub-Users` (`userId`, `userName`, `userNameLower`, `userPasswordH
 CREATE TABLE `HBHub-Watchdog` (
   `watchdogId` int UNSIGNED NOT NULL,
   `watchdogUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who got them, NULL when not logged in (deleted with the account)',
-  `watchdogCount` int UNSIGNED NOT NULL COMMENT 'How many 508 answers the browser got',
+  `watchdogCount` int UNSIGNED NOT NULL COMMENT 'How many errors the browser had',
   `watchdogPage` varchar(255) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The path of the page the user was on (no query), NULL when not known',
-  `watchdogAddresses` json NOT NULL COMMENT 'Which addresses answered 508 and how often: [{"path": "/chat/", "count": 3}, ...], paths only (see src/assets/php/watchdog.php)',
+  `watchdogErrors` json NOT NULL COMMENT 'Which errors and how often: [{"kind": "http", "path": "/chat/", "status": 508, "message": null, "line": null, "count": 3}, ...], addresses without their query. Entries without a kind are 508s (see src/assets/php/watchdog.php)',
   `watchdogIpv4` varchar(15) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
   `watchdogIpv6` varchar(62) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
   `watchdogUserAgent` varchar(255) DEFAULT NULL COMMENT 'The browser''s user agent, as it sent the report',
@@ -1078,7 +1078,7 @@ CREATE TABLE `HBHub-Watchdog` (
   `watchdogFirstTimestamp` datetime NOT NULL COMMENT 'When the first of them happened, by its age',
   `watchdogLastTimestamp` datetime NOT NULL COMMENT 'When the last of them happened, by its age',
   `watchdogCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the report got through. Deleted after HBHUB_WATCHDOG_KEEP_DAYS'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='508 Resource Limit Is Reached answers browsers got from the site, read on the admin panel (src/admin/watchdog.php)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Errors browsers had on the site (HTTP errors, failed requests and loads, JavaScript errors, CSP blocks), read on the admin panel (src/admin/watchdog.php)';
 
 --
 -- Indexes for dumped tables

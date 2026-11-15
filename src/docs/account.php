@@ -84,7 +84,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><a href="/docs/two-factor">Totrinslogin</a>: en kode fra din telefon oven i din adgangskode.</li>
                             <li>
                                 <strong>Help improve HB Hub</strong>: om siden må samle statistik om, hvordan den virker for dig, fx
-                                når serveren har for travlt til at svare. Den er slået til, indtil du slår den fra. Ore Mining Inc.s
+                                de fejl, der sker i din browser på siden, og når serveren har for travlt til at svare. Den er slået til, indtil du slår den fra. Ore Mining Inc.s
                                 egne nedbrudsrapporter spørger altid først; har du slået den fra, står der i spørgsmålet, at det går
                                 imod indstillingen at sende en. Hvad der bliver samlet, står i
                                 <a href="/legal/privacy#watchdog">privatlivspolitikken</a>.

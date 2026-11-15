@@ -685,23 +685,68 @@
   flex-wrap: wrap;
 }
 
-/* The Watchdog (admin/watchdog.php): the most-hit addresses, each report's addresses under its page, the user agent
-   wrapping instead of making the table endless, and the Clear button on its own line */
+/* The Watchdog (admin/watchdog.php): the kinds, the most common errors, each report's errors under its page, a tag
+   per kind (508s, the server being busy, in amber; what's broken in red), the user agent wrapping instead of making
+   the table endless, and the Clear button on its own line */
 .admin-watchdog-subheading {
   margin: 18px 0 8px;
   font-size: 0.95rem;
 }
 
 .admin-watchdog-top,
-.admin-watchdog-addresses {
+.admin-watchdog-errors {
   margin: 0;
   padding-left: 1.4em;
   overflow-wrap: anywhere;
 }
 
-.admin-watchdog-addresses {
+.admin-watchdog-top li,
+.admin-watchdog-errors li {
+  margin-bottom: 4px;
+}
+
+.admin-watchdog-errors {
   margin-top: 4px;
   list-style: disc;
+}
+
+.admin-watchdog-kinds {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.settings-status.admin-watchdog-kind {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.settings-status.admin-watchdog-kind-http,
+.settings-status.admin-watchdog-kind-network,
+.settings-status.admin-watchdog-kind-load {
+  background: color-mix(in srgb, var(--settings-danger) 45%, var(--background));
+  color: #fff;
+}
+
+.settings-status.admin-watchdog-kind-script,
+.settings-status.admin-watchdog-kind-promise,
+.settings-status.admin-watchdog-kind-csp {
+  background: var(--settings-danger);
+  color: #fff;
+}
+
+.settings-status.admin-watchdog-kind-busy {
+  background: #e8a317;
+  color: #1a1d23;
+}
+
+.admin-watchdog-message {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.85em;
+  opacity: 0.9;
 }
 
 .admin-watchdog-agent {

@@ -1,7 +1,7 @@
 <?php
 // The admin panel's pages: the lists of users and chats (admin/index.php), the people with more than one account
 // (admin/people.php), the banned pictures (admin/banned.php), the feedback (admin/feedback.php), Ore Mining Inc.'s crash
-// reports (admin/crashes.php), the Watchdog's 508s (admin/watchdog.php), the admin log (admin/log.php), and one user
+// reports (admin/crashes.php), the Watchdog's browser errors (admin/watchdog.php), the admin log (admin/log.php), and one user
 // (admin/user.php), person (admin/person.php) or chat (admin/chat.php).
 // Only site admins (userRole 2) get in, everyone else gets a 404 so it doesn't show they're there. What the pages share
 // is here: who gets in, the side menus (the settings page's, settings.css), and how dates, statuses, pictures, messages
@@ -136,9 +136,9 @@ function adminPersonUserIds(PDO $db, int $userId): array
 /**
  * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), People (admin/people.php), Banned
  * pictures (admin/banned.php), Feedback (admin/feedback.php), Announcements (admin/announcements.php), Crash reports (admin/crashes.php), Cosmic Engine
- * (admin/engine.php), Server busy reports (admin/watchdog.php) and Admin log (admin/log.php), each with how many there are in all, or
+ * (admin/engine.php), Browser errors (admin/watchdog.php) and Admin log (admin/log.php), each with how many there are in all, or
  * for Feedback how many are new, for the Cosmic Engine how many stages of the one being built are done and for the
- * server busy reports how many 508s there were in the last 24 hours. $active is 'users', 'chats', 'people', 'banned', 'feedback',
+ * browser errors how many errors there were in the last 24 hours. $active is 'users', 'chats', 'people', 'banned', 'feedback',
  * 'announcements', 'crashes', 'engine', 'watchdog' or 'log'.
  */
 function adminListsMenuHtml(PDO $db, string $active): string
@@ -161,7 +161,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
         'announcements' => ['Announcements', '/admin/announcements'],
         'crashes' => ['Crash reports', '/admin/crashes'],
         'engine' => ['Project Starbound', '/admin/engine'],
-        'watchdog' => ['Server busy reports', '/admin/watchdog'],
+        'watchdog' => ['Browser errors', '/admin/watchdog'],
         'log' => ['Admin log', '/admin/log'],
     ];
 

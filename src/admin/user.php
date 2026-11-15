@@ -378,9 +378,9 @@ if (($_GET['export'] ?? null) === '1') {
         'games' => $games,
         'feedback' => adminExportRows($db, 'SELECT feedbackContent, feedbackPage, feedbackFromDev, feedbackDoneTimestamp, feedbackCreatedTimestamp
             FROM `HBHub-Feedback` WHERE feedbackUserId = ? ORDER BY feedbackId DESC', $one),
-        'serverBusyReports' => adminExportRows($db, 'SELECT watchdogCount, watchdogPage, watchdogAddresses, watchdogIpv4, watchdogIpv6, watchdogUserAgent,
+        'browserErrorReports' => adminExportRows($db, 'SELECT watchdogCount, watchdogPage, watchdogErrors, watchdogIpv4, watchdogIpv6, watchdogUserAgent,
                 watchdogFromDev, watchdogFirstTimestamp, watchdogLastTimestamp, watchdogCreatedTimestamp
-            FROM `HBHub-Watchdog` WHERE watchdogUserId = ? ORDER BY watchdogId DESC', $one, ['watchdogAddresses']),
+            FROM `HBHub-Watchdog` WHERE watchdogUserId = ? ORDER BY watchdogId DESC', $one, ['watchdogErrors']),
         'bannedPictures' => adminExportRows($db, 'SELECT bannedAvatarHash, bannedAvatarType, bannedAvatarMatchCount, bannedAvatarLastMatchTimestamp, bannedAvatarCreatedTimestamp
             FROM `HBHub-BannedAvatars` WHERE bannedAvatarFromUserId = ? ORDER BY bannedAvatarId DESC', $one),
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);

@@ -112,7 +112,7 @@ function adminLogText(array $entry): string
                 : 'Took ' . -$amount . ' attachment ' . ($amount === -1 ? 'ticket' : 'tickets') . ' from {user}')
             . (isset($data['total']) ? ' (' . (int) $data['total'] . ' in all now)' : ''),
         'watchdog.clear' => isset($data['count'])
-            ? 'Cleared the server busy reports (' . number_format((int) $data['count']) . ((int) $data['count'] === 1 ? ' report of 508 errors)' : ' reports of 508 errors)') : null,
+            ? 'Cleared the browser error reports (' . number_format((int) $data['count']) . ((int) $data['count'] === 1 ? ' report)' : ' reports)') : null,
         'chat.background' => !empty($data['reset']) ? 'Reset the background of {chat}' : null,
         'chat.kick' => !empty($data['invite']) ? 'Took back {user}\'s ' . (!empty($data['ghost']) ? 'ghost ' : '') . 'invite to {chat}' : null,
         'feedback.done', 'feedback.new', 'feedback.delete' => isset($data['feedbackId'])

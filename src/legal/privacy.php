@@ -27,7 +27,7 @@ const HBHUB_PRIVACY_COOKIES = [
 // text says so.
 const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbhub-chat-emoji-recent' => 'De emoji, du senest har brugt i chatten, i beskeder og reaktioner, så de kommer først i emojivælgeren, og når du reagerer.',
-    'hbHubWatchdog' => 'Hvor mange gange denne fane har fået en "server optaget"-fejl (508), og fra hvilke adresser på HB Hub, indtil rapporten om det er nået frem til serveren (se Rapporter om optaget server ovenfor). Gemmes i session storage, så det er væk, når du lukker fanen, og slettes, så snart rapporten er gået igennem.',
+    'hbHubWatchdog' => 'De fejl, der er sket i denne fane (hvilke, hvor mange gange og hvor), indtil rapporten om dem er nået frem til serveren (se Fejlrapporter fra browseren ovenfor). Gemmes i session storage, så det er væk, når du lukker fanen, og slettes, så snart rapporten er gået igennem.',
     'hbHubChatListScroll' => 'Hvor langt ned i chatlisten du havde scrollet, så den stadig står der, når du genindlæser eller kommer tilbage til chatten. Gemmes i session storage, så det er væk, når du lukker fanen.',
     'hbHubNotifiedMessageId' => 'Den seneste besked, du fik en browsernotifikation eller lyd for, så du ikke får den to gange.',
     'hbHubNavPolledAt' => 'Hvornår en af dine HB Hub-faner sidst tjekkede for nye beskeder til browsernotifikationer eller lyden (bare et tidspunkt), så de faner, du ikke kigger på, ikke alle tjekker på én gang.',
@@ -143,8 +143,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             Den IP-adresse, du oprettede dig fra, og den, du senest har brugt. Kun den seneste bliver gemt, ikke en
                             historik. IP-adresser bliver også talt kortvarigt, når konti bliver oprettet, så ét sted ikke kan lave
-                            hundredvis af konti, og gemt i 30 dage med en rapport om optaget server (se
-                            <a href="#watchdog">Rapporter om optaget server</a> nedenfor).
+                            hundredvis af konti, og gemt i 30 dage med en fejlrapport fra browseren (se
+                            <a href="#watchdog">Fejlrapporter fra browseren</a> nedenfor).
                         </p>
                         <h3>Logins</h3>
                         <p>
@@ -393,8 +393,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             De gratis spil på <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, Sudoku, og Blackjack,
                             Baccarat, Roulette og Slots med legechips) kan spilles uden en konto. Så bliver intet om dig eller dit
-                            spil gemt på HB Hubs server, bortset fra en rapport om optaget server, hvis serveren har for travlt til at
-                            svare din browser (se <a href="#watchdog">Rapporter om optaget server</a> nedenfor). Dit spil bliver i
+                            spil gemt på HB Hubs server, bortset fra en fejlrapport, hvis noget går galt i din browser, fx hvis serveren har for travlt til at
+                            svare din browser (se <a href="#watchdog">Fejlrapporter fra browseren</a> nedenfor). Dit spil bliver i
                             stedet gemt i din egen browser, krypteret af HB Hub, så det ikke kan læses eller ændres dér, og sendt med
                             hvert træk, så serveren kan tjekke det med de samme regler som de normale spil og sende det tilbage. Wordle
                             og Ore Mining Inc. gemmer det i local storage (se <a href="#cookies">Cookies og local storage</a>). Sudoku
@@ -430,23 +430,32 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             hvem). Kun side-admins kan se det. Når en admin trækker den tilbage, bliver den slettet, og det bliver
                             alles notifikation om den også.
                         </p>
-                        <h3 id="watchdog">Rapporter om optaget server</h3>
+                        <h3 id="watchdog">Fejlrapporter fra browseren</h3>
                         <p>
-                            HB Hubs server kan kun håndtere få forespørgsler på samme tid, og når der er for mange, svarer den nogle af
-                            dem med en "server optaget"-fejl (508) i stedet. Hver side på HB Hub tæller, hvor mange gange det sker for
-                            den, og sender et par sekunder senere en kort rapport om det til HB Hubs egen server (og prøver igen, til
-                            den kommer igennem), så admins kan se, hvornår og hvor serveren har for travlt. Det sker også, når du ikke
-                            er logget ind. En rapport indeholder, hvor mange fejl der var, hvornår den første og sidste af dem skete,
-                            hvornår rapporten kom frem, adressen på den side, du var på, og på dem, der gav fejlen (kun siden, som
-                            <code>/chat/</code>, ikke hvilken chat eller hvad du søgte efter), din konto, hvis du er logget ind, din
-                            IP-adresse, din browsers user agent (som siger, hvilken browser og hvilket system du bruger), og om den kom
-                            fra testversionen af siden. Indtil den er gået igennem, bliver den gemt i din browser (se
-                            <a href="#cookies">Cookies og local storage</a>). Kun side-admins kan se rapporterne.
+                            Hver side på HB Hub holder øje med de fejl, der sker i din browser, mens du er på den, og sender et par
+                            sekunder senere en kort rapport om dem til HB Hubs egen server (og prøver igen, til den kommer igennem), så
+                            admins kan se, hvad der går galt, hvornår og hvor, og rette det. Det sker også, når du ikke er logget ind.
+                            Fejlene er: når serveren svarer med en fejl (fx "server optaget" (508), når den har for mange forespørgsler
+                            på samme tid, eller "ikke fundet" (404)), når en forespørgsel slet ikke får svar, når et billede, en lyd
+                            eller en af sidens filer ikke kan indlæses, når sidens JavaScript går i stykker, og når sidens
+                            sikkerhedsregler (Content-Security-Policy) blokerer noget. Fejl fra dine browserudvidelser og forespørgsler,
+                            der bliver afbrudt, fordi du forlader siden eller er offline, bliver ikke talt med.
+                        </p>
+                        <p>
+                            En rapport indeholder, hvor mange fejl der var, hvornår den første og sidste af dem skete, hvornår
+                            rapporten kom frem, adressen på den side, du var på, og for hver fejl hvilken slags den var, hvor mange
+                            gange den skete, adressen på det, der gav fejlen (uden det efter <code>?</code>, så kun siden, som
+                            <code>/chat/</code>, ikke hvilken chat eller hvad du søgte efter; på andre sider, som Giphy, med sidens
+                            navn), HTTP-statuskoden, og for JavaScript-fejl og blokeringer browserens fejlbesked (op til 300 tegn) og
+                            linjen i sidens kode. Derudover din konto, hvis du er logget ind, din IP-adresse, din browsers user agent
+                            (som siger, hvilken browser og hvilket system du bruger), og om den kom fra testversionen af siden. Indtil
+                            den er gået igennem, bliver den gemt i din browser (se <a href="#cookies">Cookies og local storage</a>).
+                            Kun side-admins kan se rapporterne.
                         </p>
                         <p>
                             Er du logget ind, kan du slå det fra med <strong>Help improve HB Hub</strong> under dine
                             <a href="/settings#improve">indstillinger</a> (det er slået til, indtil du slår det fra). Så sender siderne
-                            ingen rapporter om optaget server for dig, og en rapport, der stadig ventede i din fane fra før, bliver
+                            ingen fejlrapporter for dig, og en rapport, der stadig ventede i din fane fra før, bliver
                             smidt væk uden at blive gemt. Ore Mining Inc. beder så heller ikke din browser om at fortælle os, når
                             spillets fane går ned (se Casino og spil ovenfor). Spillets egne nedbrudsrapporter spørger stadig først,
                             og spørgsmålet siger, at det går imod din indstilling at sende en, men kun for den ene rapport:
@@ -471,7 +480,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             Ingen e-mailadresse, intet telefonnummer, ingen rigtig adresse eller fødselsdato. Ingen analyseprofil,
                             ingen reklame-id'er og ingen registrering af, hvilke sider du åbner, bortset fra den ene side, du sender
                             feedback fra, visningerne i Ore Mining Inc. i en nedbrudsrapport, du accepterer at sende, siderne i en
-                            rapport om optaget server (og, for side-admins, adminloggen ovenfor).
+                            fejlrapport fra browseren (og, for side-admins, adminloggen ovenfor).
                         </p>
                     </section>
 
@@ -481,7 +490,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li><strong>For at køre siden</strong>: din konto, dine beskeder og spil er siden. Uden dem er der intet at vise dig.</li>
                             <li><strong>For at holde den sikker</strong>: IP-adresser, mislykkede logins, enhedscookien og browserfingeraftryk forhindrer folk i at bryde ind på konti, spamme oprettelser og undgå udelukkelser. Listen over bandlyste billeder forhindrer en udelukket person i at komme tilbage med en kopi af sin gamle profil.</li>
                             <li><strong>For at holde den venlig</strong>: beskeder bliver gemt, så admins kan gribe ind over for mobning eller misbrug.</li>
-                            <li><strong>For at gøre den bedre</strong>: feedback, og den side, den kom fra, hjælper admins med at finde fejl og se, hvad folk gerne vil have. Nedbrudsrapporter fra Ore Mining Inc., som kun bliver sendt, hvis du accepterer, og de korte beskeder, browsere sender om nedbrud, som ikke er knyttet til dig, hjælper med at finde ud af, hvorfor spillet gik ned. Rapporter om optaget server viser, hvornår og hvor serveren har for meget at lave, så det kan blive rettet.</li>
+                            <li><strong>For at gøre den bedre</strong>: feedback, og den side, den kom fra, hjælper admins med at finde fejl og se, hvad folk gerne vil have. Nedbrudsrapporter fra Ore Mining Inc., som kun bliver sendt, hvis du accepterer, og de korte beskeder, browsere sender om nedbrud, som ikke er knyttet til dig, hjælper med at finde ud af, hvorfor spillet gik ned. Fejlrapporter fra browseren viser, hvad der går galt på siden, og hvornår og hvor serveren har for meget at lave, så det kan blive rettet.</li>
                         </ul>
                         <p>
                             Efter GDPR er det "nødvendigt for at levere den tjeneste, du har tilmeldt dig", og HB Hubs "legitime
@@ -504,7 +513,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 mange billetter de tager), og dit bannerbillede sammen med dem, men åbner dem ikke, selvom sidens ejer
                                 kan nå filerne på serveren. Side-admins kan slette dine vedhæftede filer og give dig flere billetter
                                 eller tage nogle væk. De bruger det til at håndtere misbrug, udelukkelser og ødelagte konti og til at
-                                forbedre siden. Feedback, nedbrudsrapporter fra Ore Mining Inc. og rapporter om optaget server bliver
+                                forbedre siden. Feedback, nedbrudsrapporter fra Ore Mining Inc. og fejlrapporter fra browseren bliver
                                 kun nogensinde set af side-admins, aldrig af andre brugere. De kan aldrig se din adgangskode eller din
                                 totrinshemmelighed. Alt, hvad de gør dér, også bare at kigge på din konto eller en chat, du er i,
                                 kommer i adminloggen, som kun side-admins kan læse, og som ingen kan ændre eller slette.
@@ -598,7 +607,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             med det samme dit navn, profilbillede, banner, din bio, status, dit uddannelsesmærke, din årgang, klasse,
                             dine indstillinger, din adgangskode, totrinshemmelighed, tilkoblede Discord-konto, IP-adresser, logins,
                             kendte enheder, browserfingeraftryk, dit gemte spil og dine nedbrudsrapporter i Ore Mining Inc., dine
-                            rapporter om optaget server, dine spil Minesweeper og Sudoku og de filer, du har vedhæftet i chats. Dit
+                            fejlrapporter fra browseren, dine spil Minesweeper og Sudoku og de filer, du har vedhæftet i chats. Dit
                             navn bliver erstattet med "Deleted User".
                         </p>
                         <p>
@@ -606,8 +615,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             af sig selv (senest natten efter). Side-admins kan slette nedbrudsrapporter før.
                         </p>
                         <p>
-                            Rapporter om optaget server bliver gemt i 30 dage og så slettet af sig selv (senest natten efter).
-                            Side-admins kan slette dem alle før. Rapporter, der blev sendt, mens du ikke var logget ind, er ikke
+                            Fejlrapporter fra browseren bliver gemt i 30 dage og så slettet af sig selv (senest natten efter).
+                            Side-admins kan fjerne dem fra listen før, men de bliver stadig talt med, til de bliver slettet. Rapporter, der blev sendt, mens du ikke var logget ind, er ikke
                             knyttet til en konto, så de bliver kun slettet på den måde.
                         </p>
                         <p>
