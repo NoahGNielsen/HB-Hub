@@ -206,9 +206,19 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
                         <?php endforeach; ?>
     
                         <div class="mt-center">
-                            <div class="mt-brand" aria-hidden="true">
-                                <p class="mt-logo">MATADOR</p>
-                            </div>
+                            <?php if ($gameEdition === 'kaos'): ?>
+                                <?php // Kaos has its own logo: the letters of MATADOR knocked out of line, each its own tilt and
+                                      // colour (matador.css, by nth-child, as the CSP allows no inline styles), and a hazard-striped
+                                      // "Kaos Edition" tape across under it ?>
+                                <div class="mt-brand is-kaos" aria-hidden="true">
+                                    <p class="mt-logo mt-logo-kaos"><?php foreach (str_split('MATADOR') as $letter): ?><span><?= $letter ?></span><?php endforeach; ?></p>
+                                    <p class="mt-edition-tape"><span>Kaos Edition</span></p>
+                                </div>
+                            <?php else: ?>
+                                <div class="mt-brand" aria-hidden="true">
+                                    <p class="mt-logo">MATADOR</p>
+                                </div>
+                            <?php endif; ?>
                             <div class="mt-die" role="img" aria-label="The dice" data-mt-die>⚀</div>
                             <p class="mt-status" role="status" data-mt-status>Loading the game…</p>
                             <div class="mt-timer" data-mt-timer hidden>
