@@ -228,7 +228,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                         <li class="is-done">Wordle</li>
                         <li>lektier</li>
                     </ul>
-                    <p class="home-notebook-note">gratis + koden på GitHub!</p>
+                    <p class="home-notebook-note">lektier i morgen... måske</p>
                 </div>
                 <figure class="home-polaroid">
                     <img src="/assets/images/home/creator.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator.jpg') ?>"
