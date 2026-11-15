@@ -214,6 +214,13 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
                                     <p class="mt-logo mt-logo-kaos"><?php foreach (str_split('MATADOR') as $letter): ?><span><?= $letter ?></span><?php endforeach; ?></p>
                                     <p class="mt-edition-tape"><span>Kaos Edition</span></p>
                                 </div>
+                            <?php elseif ($gameEdition === 'classic'): ?>
+                                <?php // Classic keeps the plain red MATADOR plate, with a tidy cream "Classic Edition" ribbon
+                                      // across under it - the calm twin of Kaos's hazard tape ?>
+                                <div class="mt-brand is-classic" aria-hidden="true">
+                                    <p class="mt-logo">MATADOR</p>
+                                    <p class="mt-edition-ribbon"><span>Classic Edition</span></p>
+                                </div>
                             <?php else: ?>
                                 <div class="mt-brand" aria-hidden="true">
                                     <p class="mt-logo">MATADOR</p>

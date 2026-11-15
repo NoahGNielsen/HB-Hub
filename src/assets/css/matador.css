@@ -468,6 +468,40 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 
+/* Classic Edition's logo (game.php): the usual red MATADOR plate, with a cream ribbon tucked under its bottom edge
+   saying "Classic Edition" - straight, neat and gold-edged, where Kaos's tape is crooked and striped. */
+.mt-brand.is-classic {
+  gap: 0;
+}
+
+.mt-brand.is-classic .mt-logo {
+  position: relative;
+  z-index: 1;
+}
+
+.mt-edition-ribbon {
+  margin: -0.3em 0 0;
+  padding: 2px;
+  border-radius: 3px;
+  background: #c9a227;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+
+.mt-edition-ribbon span {
+  display: block;
+  padding: 3px 14px 1px;
+  border: 1px solid #8a6d12;
+  border-radius: 2px;
+  background: #fbf3dc;
+  color: #c8102e;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(0.6rem, 2.2cqi, 1.4rem);
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 /* Kaos Edition's logo (game.php): the same red MATADOR plate, but black and cracked open, with each letter knocked out
    of line - its own tilt, height and colour - and a yellow-and-black hazard tape stuck across under it. The letters
    wobble a little now and then, unless the player has asked for less motion. */
