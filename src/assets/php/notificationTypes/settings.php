@@ -7,10 +7,10 @@
 return [
     'icon' => '/assets/images/icons/settings.png',
     'kinds' => [
-        // The user signed up with a browser that sends "Do Not Track" (the DNT: 1 header), so the new account was made
+        // The user signed up with a browser that sends Global Privacy Control or Do Not Track (Sec-GPC: 1 / DNT: 1), so the new account was made
         // with "Help improve HB Hub" turned off (onboardingSaveToDB.php's hbHubSignupDoNotTrack()). No data.
         'doNotTrack' => [
-            'text' => static fn (array $data): string => 'Your browser asks websites not to track you (Do Not Track), so we\'ve '
+            'text' => static fn (array $data): string => 'Your browser asks websites not to track you (Global Privacy Control), so we\'ve '
                 . 'turned off Help improve HB Hub for you: your page views aren\'t counted and no error reports are sent. '
                 . 'You can turn it back on in your settings.',
             'link' => static fn (array $data): ?string => '/settings#improve',

@@ -32,18 +32,21 @@ const HBHUB_SESSION_ONLINE_SECONDS = 5 * 60;
 const HBHUB_SESSION_FINGERPRINT_HOURS = 24;
 
 // Whether this request's page should load assets/js/fingerprint.js (header.php): set by hbHubSessionUser() when the
-// login hasn't sent one in the last HBHUB_SESSION_FINGERPRINT_HOURS, and never when the browser sends Do Not Track
+// login hasn't sent one in the last HBHUB_SESSION_FINGERPRINT_HOURS, and never when the browser sends Global Privacy
+// Control (or the older Do Not Track)
 $hbHubFingerprintDue = false;
 
 /**
- * Whether the browser asks sites not to track it: the "Do Not Track" setting, sent as the header DNT: 1.
+ * Whether the browser asks sites not to track it: Global Privacy Control, sent as the header Sec-GPC: 1 (the legal
+ * pages talk about this one), or the older "Do Not Track", sent as DNT: 1 - either counts.
  * Such a browser is never fingerprinted (assets/php/fingerprint.php), and signing up with it turns "Help improve
  * HB Hub" off (onboardingSaveToDB.php). The device cookie (loginLimit.php) is still used for it: that's our own
  * cookie, not tracking across sites.
  */
 function hbHubSessionDoNotTrack(): bool
 {
-    return trim((string) ($_SERVER['HTTP_DNT'] ?? '')) === '1';
+    return trim((string) ($_SERVER['HTTP_SEC_GPC'] ?? '')) === '1'
+        || trim((string) ($_SERVER['HTTP_DNT'] ?? '')) === '1';
 }
 
 /**

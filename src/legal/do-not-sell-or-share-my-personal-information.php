@@ -59,7 +59,7 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                     <?php if ($doNotSellHasGpc): ?>
                         <p class="legal-note">
                             Din browser sender et Global Privacy Control-signal. HB Hub behandler det som en anmodning om ikke at
-                            sælge eller dele dine oplysninger, hvilket i forvejen ikke sker.
+                            sælge eller dele dine oplysninger, hvilket i forvejen ikke sker, og beregner intet browserfingeraftryk.
                         </p>
                     <?php endif; ?>
 
@@ -84,8 +84,8 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                             <li>sælger ikke dine personoplysninger,</li>
                             <li>deler dem ikke til reklamer (der er ingen reklamer eller reklame-id'er på siden),</li>
                             <li>sporer dig ikke på tværs af hjemmesider (der er ingen sporingspixels, analyseprofiler eller sporingscookies),</li>
-                            <li>bruger kun browserfingeraftryk til at forhindre misbrug, aldrig til reklamer eller sporing, og du kan fravælge det med Do Not Track (se <a href="/legal/privacy#fingerprint">privatlivspolitikken</a>),</li>
-                            <li>slår <strong>Help improve HB Hub</strong> (fejlrapporter og optælling af sidevisninger) fra som standard, hvis du opretter din konto med Do Not Track slået til i din browser (se <a href="/legal/privacy#do-not-track">privatlivspolitikken</a>),</li>
+                            <li>bruger kun browserfingeraftryk til at forhindre misbrug, aldrig til reklamer eller sporing, og du kan fravælge det med Global Privacy Control (se <a href="#gpc">afsnit 4</a>),</li>
+                            <li>slår <strong>Help improve HB Hub</strong> (fejlrapporter og optælling af sidevisninger) fra som standard, hvis du opretter din konto med Global Privacy Control slået til i din browser (se <a href="/legal/privacy#gpc">privatlivspolitikken</a>),</li>
                             <li>giver ikke dine beskeder, din profil eller din spilhistorik til andre virksomheder til deres egne formål.</li>
                         </ul>
                         <p>
@@ -121,8 +121,12 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                         <h2 id="do-not-sell-gpc">4. Global Privacy Control</h2>
                         <p>
                             Global Privacy Control (GPC) er en indstilling i visse browsere og udvidelser, der beder hjemmesider om
-                            ikke at sælge eller dele dine data. HB Hub respekterer signalet, men da intet sælges eller deles, fungerer
-                            siden ens, uanset om det er slået til.
+                            ikke at sælge eller dele dine data. Da intet sælges eller deles, er der ikke noget at stoppe, men HB Hub
+                            behandler signalet som et nej til sporing: Sender din browser det, beregnes der intet browserfingeraftryk
+                            (se <a href="/legal/privacy#fingerprint">privatlivspolitikken</a>), og opretter du din konto med det slået
+                            til, er <strong>Help improve HB Hub</strong> slået fra fra starten (se
+                            <a href="/legal/privacy#gpc">privatlivspolitikken</a>). Resten af siden fungerer ens, uanset om det er
+                            slået til. Det ældre signal "Do Not Track" respekteres på samme måde.
                             <?php if (!$doNotSellHasGpc): ?>
                                 Din browser sender ikke signalet i øjeblikket.
                             <?php endif; ?>

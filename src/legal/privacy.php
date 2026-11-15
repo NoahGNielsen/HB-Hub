@@ -160,14 +160,16 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             og det deles ikke med nogen.
                         </p>
                         <p class="legal-note">
-                            <strong>Du kan sige nej til fingeraftryk med "Do Not Track".</strong> Slår du Do Not Track til i din
-                            browsers indstillinger, beregnes og sendes der intet fingeraftryk, og serveren kasserer alt, hvad den
+                            <strong>Du kan sige nej til fingeraftryk med Global Privacy Control (GPC).</strong> Slår du GPC til i
+                            din browsers indstillinger eller med en udvidelse, beregnes og sendes der intet fingeraftryk, og
+                            serveren kasserer alt, hvad den
                             alligevel måtte modtage fra en browser, der sender signalet. Du behøver ikke gøre andet, og siden virker
                             som normalt. Fingeraftryk, der blev gemt, før du slog det til, slettes 180 dage efter, de sidst blev set;
                             vil du have dem slettet med det samme, kan du skrive til os (se <a href="#rights">Dine rettigheder</a>).
                             Dine konti kan stadig kobles sammen via cookien hbHubDevice, som er nødvendig for sidens sikkerhed.
-                            Opretter du din konto med Do Not Track slået til, er <strong>Help improve HB Hub</strong> desuden slået
-                            fra som standard (se <a href="#do-not-track">Fejlrapporter fra browseren</a>).
+                            Opretter du din konto med GPC slået til, er <strong>Help improve HB Hub</strong> desuden slået
+                            fra som standard (se <a href="#gpc">Fejlrapporter fra browseren</a>). Det ældre signal "Do Not Track"
+                            respekteres på samme måde.
                         </p>
 
                         <h3>Bandlyste billeder</h3>
@@ -290,19 +292,19 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             Er du logget ind, kan du slå dette fra med <strong>Help improve HB Hub</strong> under dine
                             <a href="/settings#improve">indstillinger</a>. Indstillingen er slået til som standard, undtagen hvis du
-                            opretter din konto med Do Not Track slået til (se nedenfor). Når indstillingen er slået fra, sendes
+                            opretter din konto med GPC slået til (se nedenfor). Når indstillingen er slået fra, sendes
                             ingen fejlrapporter, dine sidevisninger tælles ikke, ventende rapporter kasseres, og Ore Mining Inc.
                             beder ikke browseren om nedbrudsbeskeder. Spillets egne nedbrudsrapporter spørger stadig først, men et
                             ja gælder kun den ene rapport; indstillingen forbliver slået fra.
                         </p>
-                        <p class="legal-note" id="do-not-track">
-                            <strong>Med Do Not Track er "Help improve HB Hub" slået fra som standard.</strong> Har du slået Do Not
-                            Track til i din browser, når du opretter din konto, oprettes kontoen med <strong>Help improve HB
+                        <p class="legal-note" id="gpc">
+                            <strong>Med Global Privacy Control (GPC) er "Help improve HB Hub" slået fra som standard.</strong> Har
+                            du slået GPC (eller det ældre "Do Not Track") til i din browser, når du opretter din konto, oprettes kontoen med <strong>Help improve HB
                             Hub</strong> slået fra fra starten, og du får en notifikation om det. Der sendes da ingen fejlrapporter,
                             og dine sidevisninger tælles ikke, uden at du skal gøre noget. Du kan selv slå indstillingen til igen
                             under dine <a href="/settings#improve">indstillinger</a>. Signalet tjekkes kun, når kontoen oprettes:
-                            slår du Do Not Track til senere, ændres indstillingen ikke, men du kan altid selv slå den fra. Uanset
-                            hvornår du slår Do Not Track til, beregnes der intet browserfingeraftryk (se
+                            slår du GPC til senere, ændres indstillingen ikke, men du kan altid selv slå den fra. Uanset
+                            hvornår du slår GPC til, beregnes der intet browserfingeraftryk (se
                             <a href="#fingerprint">Browserfingeraftryk</a>).
                         </p>
 
@@ -338,7 +340,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-why">3. Formål og retsgrundlag</h2>
                         <ul>
                             <li><strong>Levering af tjenesten</strong>: din konto, dine beskeder og dine spil er selve tjenesten.</li>
-                            <li><strong>Sikkerhed</strong>: IP-adresser, mislykkede logins, enhedscookien og browserfingeraftryk forhindrer kontoovertagelse, masseoprettelse af konti og omgåelse af udelukkelser. De samme koblinger sikrer, at de daglige chips gives én gang per person: når én af dine konti har hentet dem, får dine øvrige konti kun 20 % den dag. Det beregnes, når du henter dem, og der gemmes intet nyt om det. Listen over bandlyste billeder forhindrer udelukkede brugere i at vende tilbage med samme profil. Browserfingeraftryk bruges kun til disse formål og kan fravælges med Do Not Track (se <a href="#fingerprint">Browserfingeraftryk</a>).</li>
+                            <li><strong>Sikkerhed</strong>: IP-adresser, mislykkede logins, enhedscookien og browserfingeraftryk forhindrer kontoovertagelse, masseoprettelse af konti og omgåelse af udelukkelser. De samme koblinger sikrer, at de daglige chips gives én gang per person: når én af dine konti har hentet dem, får dine øvrige konti kun 20 % den dag. Det beregnes, når du henter dem, og der gemmes intet nyt om det. Listen over bandlyste billeder forhindrer udelukkede brugere i at vende tilbage med samme profil. Browserfingeraftryk bruges kun til disse formål og kan fravælges med Global Privacy Control (se <a href="#fingerprint">Browserfingeraftryk</a>).</li>
                             <li><strong>Et trygt fællesskab</strong>: beskeder gemmes, så admins kan gribe ind over for mobning og misbrug.</li>
                             <li><strong>Forbedring af siden</strong>: feedback, nedbrudsrapporter, fejlrapporter og sidevisningstal bruges til at finde fejl, forstå overbelastning og prioritere udviklingen.</li>
                         </ul>
@@ -474,11 +476,11 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>gøre indsigelse mod behandlingen eller få den begrænset.</li>
                         </ul>
                         <p>
-                            Browserfingeraftryk kan du selv fravælge når som helst ved at slå Do Not Track til i din browser (se
-                            <a href="#fingerprint">Browserfingeraftryk</a>). Fejlrapporter og optælling af sidevisninger kan du slå
-                            fra med <strong>Help improve HB Hub</strong> under dine <a href="/settings#improve">indstillinger</a>;
-                            opretter du din konto med Do Not Track slået til, er den slået fra som standard (se
-                            <a href="#do-not-track">Do Not Track</a>).
+                            Browserfingeraftryk kan du selv fravælge når som helst ved at slå Global Privacy Control (GPC) til i din
+                            browser (se <a href="#fingerprint">Browserfingeraftryk</a>). Fejlrapporter og optælling af sidevisninger
+                            kan du slå fra med <strong>Help improve HB Hub</strong> under dine <a href="/settings#improve">indstillinger</a>;
+                            opretter du din konto med GPC slået til, er den slået fra som standard (se
+                            <a href="#gpc">Global Privacy Control</a>).
                         </p>
                         <p>
                             Skriv til <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>; du får svar inden for

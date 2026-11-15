@@ -1,11 +1,11 @@
 <?php
 // Where assets/js/fingerprint.js sends the browser's fingerprint (assets/php/fingerprint.php says what it is and
 // what's kept). Only for logged in users: header.php only loads the script for them, when their login hasn't sent
-// one in the last day, and never for a browser that sends Do Not Track (hbHubSessionDoNotTrack()).
+// one in the last day, and never for a browser that sends Global Privacy Control or Do Not Track (hbHubSessionDoNotTrack()).
 //
 // POST /fingerprint (form-encoded): action=save, fingerprint (64 lowercase hex characters, a SHA-256).
 // Answers {"ok": true, "saved": bool} (saved is false when this login already sent one today, or when the browser
-// sends Do Not Track: an already open page could still post one, and it's thrown away). Errors:
+// sends GPC/Do Not Track: an already open page could still post one, and it's thrown away). Errors:
 // - 405 {"error": "methodNotAllowed"}: not a POST.
 // - 401 {"error": "notLoggedIn"}: no valid session.
 // - 400 {"error": "badRequest"}: no action=save, or the fingerprint isn't one.

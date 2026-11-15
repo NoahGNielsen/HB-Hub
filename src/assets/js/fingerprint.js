@@ -1,7 +1,8 @@
 // The browser's fingerprint, for the admin panel's People (assets/php/fingerprint.php has the why and what's kept).
 // header.php only loads this for a logged in user whose login hasn't sent one in the last day, so it runs about once
 // a day per browser, a little after the page has loaded, while the browser has nothing else to do. It's never loaded
-// for a browser that sends Do Not Track, and does nothing if it somehow is (navigator.doNotTrack).
+// for a browser that sends Global Privacy Control or Do Not Track, and does nothing if it somehow is
+// (navigator.globalPrivacyControl / navigator.doNotTrack).
 //
 // It's a SHA-256 of things about the browser and computer that stay the same from day to day and don't depend on
 // cookies, so they're the same in a private window or after clearing cookies:
@@ -187,7 +188,8 @@
 
     const send = async () => {
         if (!window.crypto?.subtle) return; // only over HTTPS, which the site always is
-        if (navigator.doNotTrack === '1' || window.doNotTrack === '1') return; // Do Not Track: the server skips it too
+        // Global Privacy Control or the older Do Not Track: the server skips it too
+        if (navigator.globalPrivacyControl === true || navigator.doNotTrack === '1' || window.doNotTrack === '1') return;
         const parts = [
             await canvasPart().catch(() => ''),
             safely(webglPart),

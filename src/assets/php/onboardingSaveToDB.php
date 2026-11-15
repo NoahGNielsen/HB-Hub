@@ -4,7 +4,7 @@
 // login page with the browser marked, like a banned account's (session.php).
 // When a ghost-banned account is known in the browser (loginLimit.php), the new account is quietly ghost banned too.
 // A new account at HTX is put in its class chat (schoolClass.php).
-// Signing up with a browser that sends "Do Not Track" makes the account with "Help improve HB Hub" off, and tells them
+// Signing up with a browser that sends Global Privacy Control (or Do Not Track) makes the account with "Help improve HB Hub" off, and tells them
 // so with a notification (settings.doNotTrack in notificationTypes/settings.php).
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/session.php';
@@ -14,7 +14,7 @@ require_once __DIR__ . '/schoolClass.php'; // how the class is saved, and the cl
 require_once __DIR__ . '/notifications.php';
 
 /**
- * Whether the browser signing up asks sites not to track it: the "Do Not Track" setting, sent as the header DNT: 1
+ * Whether the browser signing up asks sites not to track it: Global Privacy Control (Sec-GPC: 1) or Do Not Track (DNT: 1)
  * (hbHubSessionDoNotTrack() in session.php).
  */
 function hbHubSignupDoNotTrack(): bool
