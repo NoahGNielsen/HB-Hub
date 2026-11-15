@@ -237,7 +237,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                          srcset="/assets/images/home/creator-small.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator-small.jpg') ?> 1x,
                                  /assets/images/home/creator.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator.jpg') ?> 2x"
                          width="240" height="240" alt="Noah, der laver HB Hub" loading="lazy" decoding="async">
-                    <figcaption>Noha – Professionel AI-afhængig</figcaption>
+                    <figcaption>Noha - ham der har skabt HB Hub</figcaption>
                 </figure>
             </div>
         </section>
