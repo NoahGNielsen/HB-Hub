@@ -17,6 +17,8 @@
 // - Page views: a bar chart of the pages opened each day of the last ADMIN_OVERVIEW_DAYS days, and the
 //   ADMIN_OVERVIEW_TOP_PAGES most visited pages of the last 7 days with how many of their views were guests. These are
 //   the only numbers that are stored for it: counts per page and day, kept by header.php (assets/php/pageViews.php).
+// - Visits from links: the pages opened from an address with ?utm_source= in the last ADMIN_OVERVIEW_DAYS days, per
+//   source and page, with how many were guests and the last day it happened (counts in HBHub-PageSources, same file)
 // - Casino: the chips in everyone's wallets, and each game's rounds, players, chips bet and what the house won or
 //   lost in the last 7 days, with a total
 // - Games: each game's games played and players in the last 7 days, and games played ever
@@ -30,6 +32,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/pageViews.php';
 const ADMIN_OVERVIEW_DAYS = 30; // days in the bar charts
 const ADMIN_OVERVIEW_TOP = 5; // chats and people in the "busiest" lists
 const ADMIN_OVERVIEW_TOP_PAGES = 10; // pages in "Most visited pages"
+const ADMIN_OVERVIEW_TOP_SOURCES = 50; // source and page rows in "Visits from links"
 // The bar charts' drawing area, in SVG units (it's stretched to the card's width)
 const ADMIN_OVERVIEW_CHART_W = 600;
 const ADMIN_OVERVIEW_CHART_H = 140;
@@ -217,6 +220,20 @@ function adminOverviewTopPages(PDO $db): array
 }
 
 /**
+ * The pages opened from a link with ?utm_source= in the last ADMIN_OVERVIEW_DAYS days, one row per source and page,
+ * the most first: how many times, how many weren't logged in, and the last day it happened. At most
+ * ADMIN_OVERVIEW_TOP_SOURCES rows.
+ *
+ * @return list<array{viewSource: string, viewPath: string, views: mixed, guests: mixed, lastDay: string}>
+ */
+function adminOverviewSources(PDO $db): array
+{
+    return $db->query('SELECT viewSource, viewPath, SUM(viewCount) AS views, SUM(viewGuestCount) AS guests, MAX(viewDate) AS lastDay
+        FROM `HBHub-PageSources` WHERE viewDate > CURDATE() - INTERVAL ' . ADMIN_OVERVIEW_DAYS . ' DAY
+        GROUP BY viewSource, viewPath ORDER BY views DESC, lastDay DESC, viewSource, viewPath LIMIT ' . ADMIN_OVERVIEW_TOP_SOURCES)->fetchAll();
+}
+
+/**
  * A bar chart of $days (from adminOverviewPerDay()), one bar per day with its top corners rounded, as HTML: the
  * total and today's number as its caption, the highest number over the chart, the first, middle and last dates under it, a tooltip per day (an SVG <title> on a
  * column as tall as the chart, so it's easy to point at), and the numbers as a table under "Show as a table".
@@ -369,6 +386,7 @@ $adminSignupsPerDay = adminOverviewPerDay($db, 'SELECT DATE(userCreatedTimestamp
 $adminViewsPerDay = adminOverviewPerDay($db, 'SELECT viewDate, SUM(viewCount) FROM `HBHub-PageViews`
     WHERE viewDate >= ? GROUP BY viewDate');
 $adminTopPages = adminOverviewTopPages($db);
+$adminSources = adminOverviewSources($db);
 $adminCasino = adminOverviewCasino($db);
 $adminGames = adminOverviewGames($db);
 $adminBusiestChats = adminOverviewBusiestChats($db);
@@ -491,6 +509,31 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                                 . '<code class="admin-list-name">' . htmlspecialchars($page['viewPath']) . '</code></a>'
                                 . ($guests > 0 ? '<span class="admin-small" title="Not logged in">' . $guests . '% guests</span>' : '');
                         }, 'views', 'No page views in the last 7 days.')) ?>
+
+                    <?php ob_start(); ?>
+                    <?php if ($adminSources === []): ?>
+                        <p class="admin-empty">Nobody has opened a page from a link with ?utm_source= in the last <?= ADMIN_OVERVIEW_DAYS ?> days.</p>
+                    <?php else: ?>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table admin-dash-table">
+                                <caption class="admin-visually-hidden">Pages opened from links with utm_source</caption>
+                                <thead><tr><th scope="col">Source</th><th scope="col">Page</th><th scope="col">Visits</th><th scope="col" title="Not logged in">Guests</th><th scope="col">Last time</th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($adminSources as $source): ?>
+                                        <tr>
+                                            <th scope="row"><?= htmlspecialchars($source['viewSource']) ?></th>
+                                            <td><a href="<?= htmlspecialchars($source['viewPath']) ?>"><code><?= htmlspecialchars($source['viewPath']) ?></code></a></td>
+                                            <td><?= number_format((int) $source['views']) ?></td>
+                                            <td><?= number_format((int) $source['guests']) ?></td>
+                                            <td class="admin-nowrap"><?= date('D d/m', strtotime($source['lastDay'])) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                    <p class="admin-panel-foot">Page views from an address with ?utm_source= on it, like <code>/?utm_source=instagram</code>, counted the same way as the page views above. Only the source, the page and a count per day are kept, never who, and only for <?= HBHUB_PAGE_VIEWS_KEEP_DAYS ?> days.</p>
+                    <?= adminOverviewPanelHtml('admin-overview-sources-heading', 'Visits from links', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 12, ob_get_clean()) ?>
 
                     <?php ob_start(); ?>
                     <dl class="admin-stats admin-stats-3">

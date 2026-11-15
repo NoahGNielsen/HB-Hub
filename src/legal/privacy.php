@@ -316,6 +316,12 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             andre robotter tælles ikke med, og har du slået <strong>Help improve HB Hub</strong> fra, tælles dine
                             visninger ikke.
                         </p>
+                        <p>
+                            Åbner du en side fra et link med <code>utm_source</code> i adressen (fx
+                            <code>?utm_source=instagram</code>, som fortæller, hvor linket er delt), tæller vi også visningen pr.
+                            kilde: vi gemmer datoen, kilden, sidens sti, antal visninger, og hvor mange af dem der var uden login. Heller
+                            ikke her gemmes hvem, IP-adresse eller browser. Side-admins kan se tallene i adminpanelet.
+                        </p>
 
                         <h3 id="admin-log">Adminlog</h3>
                         <p>
@@ -446,7 +452,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li><strong>Teksten i slettede beskeder</strong> 3 dage efter, de blev slettet. Side-admins kan ikke se den derefter.</li>
                             <li><strong>Nedbrudsrapporter og nedbrudsbeskeder</strong> fra Ore Mining Inc. efter 90 dage. Side-admins kan slette rapporter tidligere.</li>
                             <li><strong>Fejlrapporter fra browseren</strong> efter 30 dage. Rapporter sendt uden login er ikke knyttet til en konto og slettes kun på denne måde.</li>
-                            <li><strong>Sidevisningstal</strong> efter 90 dage. De er ikke knyttet til nogen og slettes derfor ikke sammen med din konto.</li>
+                            <li><strong>Sidevisningstal</strong> (også dem pr. <code>utm_source</code>) efter 90 dage. De er ikke knyttet til nogen og slettes derfor ikke sammen med din konto.</li>
                             <li><strong>Adminloggen</strong> efter ét år.</li>
                         </ul>
                         <p>

@@ -9,7 +9,7 @@
 //   - admin log rows older than a year (assets/php/adminLog.php)
 //   - Ore Mining Inc. crash reports and browser crash notes older than 90 days (assets/php/games/spaceOreMiner/crashReports.php)
 //   - the Watchdog's 508 reports older than 30 days (assets/php/watchdog.php)
-//   - page view counts older than 90 days (assets/php/pageViews.php)
+//   - page view counts, and the utm_source ones, older than 90 days (assets/php/pageViews.php)
 //   - linked Discord accounts' usernames, asked from Discord again in case they changed them (assets/php/discord.php).
 //     Skipped without discord_bot_token in hbHubSiteConfig.php.
 // Each job runs on its own, so one failing doesn't stop the rest. It prints one line per job, and errors go to
