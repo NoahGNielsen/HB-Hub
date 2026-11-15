@@ -1,4 +1,7 @@
-/* Roulette (casino/roulette/, played by roulette.js). Loaded after casino.css. */
+/* Roulette (casino/roulette/, played by roulette.js). Loaded after casino.css.
+   The wheel, the table and the betting all fit on one screen without scrolling (only the rules are further down):
+   the wheel and the table's rows grow and shrink with the screen's height (--rl-wheel-size, --rl-row-h,
+   --rl-outside-h), and on wide screens the betting sits next to the wheel instead of under the table. */
 .rl {
   --rl-felt: #1d6b45;
   --rl-line: rgba(255, 255, 255, 0.6);
@@ -8,8 +11,11 @@
   --rl-gold: #e0b84f;
   --rl-win: #2fa36b;
   --rl-lose: #d64545;
-  max-width: 1040px;
-  margin: 32px auto;
+  --rl-wheel-size: clamp(140px, 26vh, 280px);
+  --rl-row-h: clamp(34px, 6vh, 58px); /* the numbers' rows */
+  --rl-outside-h: clamp(28px, 4.5vh, 46px); /* the rows with the dozens and the even-money bets */
+  max-width: 1280px;
+  margin: 16px auto;
   padding: 0 16px;
   box-sizing: border-box;
 }
@@ -19,7 +25,7 @@
 }
 
 .rl-header {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -28,8 +34,8 @@
 }
 
 .rl-title {
-  margin: 0 0 4px;
-  font-size: 2rem;
+  margin: 0 0 2px;
+  font-size: 1.75rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -43,20 +49,20 @@
 
 /* The wheel, and next to it the result and the last spins */
 .rl-top {
-  margin-bottom: 16px;
-  padding: 24px;
+  margin-bottom: 12px;
+  padding: 16px 24px;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  grid-template-columns: var(--rl-wheel-size) minmax(0, 1fr);
   align-items: center;
-  gap: 32px;
+  gap: 24px;
   border-radius: 28px;
   background: radial-gradient(ellipse at 30% 50%, color-mix(in srgb, var(--accent) 12%, var(--secondary)), var(--secondary) 70%);
 }
 
 .rl-wheel svg {
   width: 100%;
-  max-width: 300px;
+  max-width: var(--rl-wheel-size);
   height: auto;
   display: block;
   margin: 0 auto;
@@ -114,9 +120,11 @@
 
 .rl-info {
   min-width: 0;
+  max-height: max(var(--rl-wheel-size), 180px); /* a long list of players scrolls in here, not the page */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .rl-result {
@@ -145,7 +153,7 @@
 }
 
 .rl-label {
-  margin: 12px 0 0;
+  margin: 6px 0 0;
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -189,7 +197,7 @@
    their cell, on the line's middle. Across: 0 on the left, the numbers in 12 columns of 3 (1 at the bottom left),
    the columns' bets on the right, the dozens and the even-money bets underneath. */
 .rl-board-wrap {
-  padding: 16px;
+  padding: 12px;
   border-radius: 28px;
   background: var(--rl-felt);
 }
@@ -197,7 +205,7 @@
 .rl-board {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) repeat(12, minmax(0, 1fr)) minmax(0, 1.2fr);
-  grid-template-rows: repeat(3, 58px) 46px 46px;
+  grid-template-rows: repeat(3, var(--rl-row-h)) var(--rl-outside-h) var(--rl-outside-h);
   gap: 2px;
   padding: 2px;
   background: var(--rl-line);
@@ -483,8 +491,8 @@
 
 /* Betting */
 .rl-controls {
-  margin-top: 16px;
-  padding: 20px;
+  margin-top: 12px;
+  padding: 16px 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -577,7 +585,40 @@
 }
 
 .rl-rules {
-  margin-top: 16px;
+  margin-top: 24px;
+}
+
+/* Wide screens: the betting goes next to the wheel, so the table is right under both and nothing has to scroll.
+   order puts the table and the rules after the betting, so it takes the row beside the wheel. */
+@media (min-width: 1100px) {
+  .rl {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    column-gap: 12px;
+  }
+
+  .rl > * {
+    grid-column: 1 / -1;
+  }
+
+  .rl > .casino-back {
+    justify-self: start;
+  }
+
+  .rl > .rl-top {
+    grid-column: 1;
+  }
+
+  .rl > .rl-controls {
+    grid-column: 2;
+    margin: 0 0 12px;
+    justify-content: center;
+  }
+
+  .rl > .rl-board-wrap,
+  .rl > .rl-rules {
+    order: 1;
+  }
 }
 
 .rl-rules summary {
@@ -593,23 +634,29 @@
    columns' bets at the bottom, and the even-money bets and dozens on the left. Every line bet turns with it: what was
    on the right of its number is now underneath, what was on top is now on the right. */
 @media (max-width: 760px) {
+  .rl {
+    --rl-wheel-size: clamp(110px, 36vw, 170px);
+    --rl-row-h: clamp(28px, 4vh, 42px);
+  }
+
   .rl-top {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-    padding: 20px 16px;
-    text-align: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 20px;
   }
 
-  .rl-wheel svg {
-    max-width: 240px;
+  .rl-result {
+    font-size: 1.15rem;
   }
 
-  .rl-history {
-    justify-content: center;
+  .rl-history-item {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
   }
 
   .rl-board-wrap {
-    padding: 12px;
+    padding: 10px;
     border-radius: 20px;
   }
 
@@ -617,7 +664,7 @@
     max-width: 400px;
     margin: 0 auto;
     grid-template-columns: 34px 38px repeat(3, minmax(0, 1fr));
-    grid-template-rows: 46px repeat(12, 42px) 42px;
+    grid-template-rows: calc(var(--rl-row-h) + 4px) repeat(13, var(--rl-row-h));
   }
 
   .rl-at-zero { grid-column: 3 / span 3; grid-row: 1; }
@@ -675,19 +722,23 @@
   }
 
   .rl-chip {
-    width: 46px;
-    height: 46px;
-    font-size: 0.8rem;
+    width: 42px;
+    height: 42px;
+    font-size: 0.78rem;
+  }
+
+  .rl-controls {
+    gap: 10px;
   }
 }
 
 @media (max-width: 600px) {
   .rl {
-    margin: 16px auto;
+    margin: 12px auto;
   }
 
   .rl-controls {
-    padding: 16px 12px;
+    padding: 12px;
   }
 }
 
