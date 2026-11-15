@@ -174,7 +174,7 @@ function termsNumber(int $number): string
                         </p>
                         <ul>
                             <li><strong>Chips er ikke penge.</strong> De kan ikke veksles til penge, gavekort eller andet, og gevinster i casinoet kan ikke udbetales.</li>
-                            <li>Du må ikke købe, sælge eller spille om chips, konti eller casinoresultater for rigtige penge eller ting, hverken på HB Hub eller andre steder.</li>
+                            <li>Du må ikke købe, sælge eller spille om chips, konti eller casinoresultater for rigtige penge eller ting, hverken på HB Hub eller andre steder, bortset fra køb direkte hos ejeren, se <a href="#chips-koeb">nedenfor</a>.</li>
                             <li>Side-admins kan tilføje og fratage chips, fx for at tilføje chips i de sjældne tilfælde, hvor nogen har købt dem, eller rette og nulstille saldoer efter fejl eller snyd.</li>
                         </ul>
                         <h3>Legechips i de gratis spil</h3>
@@ -183,7 +183,7 @@ function termsNumber(int $number): string
                             Legechips har ingen værdi, gælder kun, til siden lukkes eller genindlæses, fornyes, når de slipper op, og
                             overføres aldrig til en konto.
                         </p>
-                        <h3>Køb af chips</h3>
+                        <h3 id="chips-koeb">Køb af chips</h3>
                         <p>
                             Chips er gratis, og casinoet er lavet til at blive spillet med de gratis chips. At købe chips er
                             <strong>ikke en almindelig del af HB Hub</strong>, men en undtagelse, som ejeren kun gør i enkelte
