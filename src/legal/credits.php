@@ -1,7 +1,8 @@
 <?php
 // Credits: the third-party icons, code, link lists, dictionaries and fonts HB Hub uses, and who made them. Built like the frontpage (index.php) - its
 // top bar (homeNav.php), a dark hero, a grid of cards and a dark last call - with homepage.css plus legal.css.
-// Open to everyone, like the frontpage.
+// Open to everyone, like the frontpage, and so in Danish like every public page. The Flaticon attributions ('text',
+// 'title') stay word for word as Flaticon gives them.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
@@ -10,34 +11,34 @@ $creditsUser = $hbHubUser ?? null;
 // One entry per icon, with the attribution Flaticon gives you ("copy attribution" on the icon's download page):
 // the link, its title and its text. 'use' says where on HB Hub the icon shows up.
 const HBHUB_CREDITS_ICONS = [
-    ['file' => 'chat.png', 'name' => 'Chat', 'use' => 'Chat in the side bar',
+    ['file' => 'chat.png', 'name' => 'Chat', 'use' => 'Chat i sidebjælken',
         'href' => 'https://www.flaticon.com/free-icons/comments', 'title' => 'comments icons', 'text' => 'Comments icons created by Magnific - Flaticon', 'by' => 'Magnific'],
-    ['file' => 'controler.png', 'name' => 'Controller', 'use' => 'Games in the side bar',
+    ['file' => 'controler.png', 'name' => 'Controller', 'use' => 'Spil i sidebjælken',
         'href' => 'https://www.flaticon.com/free-icons/joystick', 'title' => 'joystick icons', 'text' => 'Joystick icons created by Good Ware - Flaticon', 'by' => 'Good Ware'],
-    ['file' => 'dice.png', 'name' => 'Dice', 'use' => 'Casino in the side bar',
+    ['file' => 'dice.png', 'name' => 'Terninger', 'use' => 'Casino i sidebjælken',
         'href' => 'https://www.flaticon.com/free-icons/dice', 'title' => 'dice icons', 'text' => 'Dice icons created by Jonggol - Flaticon', 'by' => 'Jonggol'],
-    ['file' => 'gif.png', 'name' => 'GIF', 'use' => 'The GIF button in the chat',
+    ['file' => 'gif.png', 'name' => 'GIF', 'use' => 'GIF-knappen i chatten',
         'href' => 'https://www.flaticon.com/free-icons/gif-file', 'title' => 'gif file icons', 'text' => 'Gif file icons created by Grand Iconic - Flaticon', 'by' => 'Grand Iconic'],
-    ['file' => 'notification.png', 'name' => 'Notification', 'use' => 'The bell, with something new',
+    ['file' => 'notification.png', 'name' => 'Notifikation', 'use' => 'Klokken, når der er noget nyt',
         'href' => 'https://www.flaticon.com/free-icons/notification', 'title' => 'notification icons', 'text' => 'Notification icons created by Magnific - Flaticon', 'by' => 'Magnific'],
-    ['file' => 'no-notification.png', 'name' => 'No notification', 'use' => 'The bell, when it\'s quiet',
+    ['file' => 'no-notification.png', 'name' => 'Ingen notifikationer', 'use' => 'Klokken, når der er stille',
         'href' => 'https://www.flaticon.com/free-icons/notification', 'title' => 'notification icons', 'text' => 'Notification icons created by JessHG - Flaticon', 'by' => 'JessHG'],
-    ['file' => 'user.png', 'name' => 'User', 'use' => 'Chat members, and a missing profile picture',
+    ['file' => 'user.png', 'name' => 'Bruger', 'use' => 'Chatmedlemmer, og et manglende profilbillede',
         'href' => 'https://www.flaticon.com/free-icons/user', 'title' => 'user icons', 'text' => 'User icons created by Magnific - Flaticon', 'by' => 'Magnific'],
-    ['file' => 'settings.png', 'name' => 'Settings', 'use' => 'The cog next to your name in the chat and on your own profile',
+    ['file' => 'settings.png', 'name' => 'Indstillinger', 'use' => 'Tandhjulet ved dit navn i chatten og på din egen profil',
         'href' => 'https://www.flaticon.com/free-icons/settings', 'title' => 'settings icons', 'text' => 'Settings icons created by Pixel Perfect - Flaticon', 'by' => 'Pixel Perfect'],
 ];
 
 $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')));
 ?>
 <!DOCTYPE html>
-<html lang="en" class="home">
+<html lang="da" class="home">
 <head>
-    <?php $headerHomeNav = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = true; $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
-    <title>Credits - HB Hub</title>
-    <meta name="description" content="Credits for the third-party icons, code, lists and fonts used on HB Hub.">
+    <title>Krediteringer - HB Hub</title>
+    <meta name="description" content="Krediteringer for de ikoner, den kode, de lister og skrifttyper fra andre, som HB Hub bruger.">
 </head>
 <body class="home-body">
     <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -48,39 +49,39 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
             <div class="home-hero-glow" aria-hidden="true"></div>
             <div class="home-hero-inner">
                 <div class="home-hero-text">
-                    <h1 id="credits-title">Made at school,<br><span class="home-hero-accent">with a little help.</span></h1>
+                    <h1 id="credits-title">Lavet på skolen,<br><span class="home-hero-accent">med lidt hjælp.</span></h1>
                     <p class="home-lead">
-                        HB Hub is written by hand, but not everything on it is drawn by hand.
-                        These are the people whose free icons and code it's built with. Thank you!
+                        HB Hub er skrevet i hånden, men ikke alt på den er tegnet i hånden.
+                        Det her er dem, hvis gratis ikoner og kode den er bygget med. Tak!
                     </p>
                 </div>
 
                 <ul class="credits-stickers" aria-hidden="true">
                     <?php foreach (HBHUB_CREDITS_ICONS as $creditsIcon): ?>
-                        <li><img src="/assets/images/icons/<?= htmlspecialchars($creditsIcon['file']) ?>" alt="<?= htmlspecialchars($creditsIcon['name']) ?> icon"></li>
+                        <li><img src="/assets/images/icons/<?= htmlspecialchars($creditsIcon['file']) ?>" alt="<?= htmlspecialchars($creditsIcon['name']) ?>-ikon"></li>
                     <?php endforeach; ?>
                 </ul>
             </div>
 
             <dl class="home-stats">
                 <div>
-                    <dt>Icons</dt>
+                    <dt>Ikoner</dt>
                     <dd><?= count(HBHUB_CREDITS_ICONS) ?></dd>
                 </div>
                 <div>
-                    <dt>Code libraries</dt>
+                    <dt>Kodebiblioteker</dt>
                     <dd>4</dd>
                 </div>
                 <div>
-                    <dt>Blacklists</dt>
+                    <dt>Sortlister</dt>
                     <dd>2</dd>
                 </div>
                 <div>
-                    <dt>Dictionaries</dt>
+                    <dt>Ordbøger</dt>
                     <dd>2</dd>
                 </div>
                 <div>
-                    <dt>Fonts</dt>
+                    <dt>Skrifttyper</dt>
                     <dd>4</dd>
                 </div>
             </dl>
@@ -88,13 +89,13 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
 
         <!-- Icons -->
         <section class="credits-section" id="icons" aria-labelledby="credits-icons-title">
-            <p class="home-kicker credits-kicker">Icons</p>
-            <h2 id="credits-icons-title">The icons, and who drew them.</h2>
-            <p class="credits-section-lead">All free from Flaticon. Every one of them has a job somewhere on HB Hub.</p>
+            <p class="home-kicker credits-kicker">Ikoner</p>
+            <h2 id="credits-icons-title">Ikonerne, og hvem der tegnede dem.</h2>
+            <p class="credits-section-lead">Alle gratis fra Flaticon. Hver eneste af dem har et job et sted på HB Hub.</p>
             <ul class="credits-grid">
                 <?php foreach (HBHUB_CREDITS_ICONS as $creditsIcon): ?>
                     <li class="credits-card">
-                        <span class="credits-card-icon"><img src="/assets/images/icons/<?= htmlspecialchars($creditsIcon['file']) ?>" alt="<?= htmlspecialchars($creditsIcon['name']) ?> icon" aria-hidden="true" width="28" height="28"></span>
+                        <span class="credits-card-icon"><img src="/assets/images/icons/<?= htmlspecialchars($creditsIcon['file']) ?>" alt="<?= htmlspecialchars($creditsIcon['name']) ?>-ikon" aria-hidden="true" width="28" height="28"></span>
                         <h3><?= htmlspecialchars($creditsIcon['name']) ?></h3>
                         <p class="credits-card-use"><?= htmlspecialchars($creditsIcon['use']) ?></p>
                         <p class="credits-card-by"><a  target="_blank" rel="noopener noreferrer" href="<?= htmlspecialchars($creditsIcon['href']) ?>" title="<?= htmlspecialchars($creditsIcon['title']) ?>"><?= htmlspecialchars($creditsIcon['text']) ?></a></p>
@@ -105,9 +106,9 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
 
         <!-- Code -->
         <section class="credits-section" id="code" aria-labelledby="credits-code-title">
-            <p class="home-kicker credits-kicker">Code</p>
-            <h2 id="credits-code-title">Code libraries, no frameworks.</h2>
-            <p class="credits-section-lead">Everything else on HB Hub is plain PHP, HTML, CSS and JavaScript.</p>
+            <p class="home-kicker credits-kicker">Kode</p>
+            <h2 id="credits-code-title">Kodebiblioteker, ingen frameworks.</h2>
+            <p class="credits-section-lead">Alt andet på HB Hub er almindelig PHP, HTML, CSS og JavaScript.</p>
             <div class="credits-library">
                 <div class="credits-qr" aria-hidden="true">
                     <?php
@@ -123,8 +124,8 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener noreferrer">QR Code Generator for JavaScript</a></h3>
-                    <p>By Kazuhiko Arase. Draws the QR code you scan to set up two-factor login.</p>
-                    <p class="credits-license">MIT license</p>
+                    <p>Af Kazuhiko Arase. Tegner den QR-kode, du scanner for at sætte totrinslogin op.</p>
+                    <p class="credits-license">MIT-licens</p>
                 </div>
             </div>
             <div class="credits-library">
@@ -134,13 +135,13 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-jxl-bar"></span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/jamsinclair/jSquash" target="_blank" rel="noopener noreferrer">jSquash</a> with <a href="https://github.com/libjxl/libjxl" target="_blank" rel="noopener noreferrer">libjxl</a></h3>
+                    <h3><a href="https://github.com/jamsinclair/jSquash" target="_blank" rel="noopener noreferrer">jSquash</a> med <a href="https://github.com/libjxl/libjxl" target="_blank" rel="noopener noreferrer">libjxl</a></h3>
                     <p>
-                        jSquash by Jamie Sinclair (built on Google's Squoosh) runs libjxl, the JPEG XL Project's encoder and
-                        decoder, in your browser. It turns pictures you attach in the chat into JPEG XL, and shows
-                        JPEG XL pictures in browsers that can't yet.
+                        jSquash af Jamie Sinclair (bygget på Googles Squoosh) kører libjxl, JPEG XL-projektets encoder og
+                        decoder, i din browser. Den laver billeder, du vedhæfter i chatten, om til JPEG XL og viser
+                        JPEG XL-billeder i browsere, der ikke kan endnu.
                     </p>
-                    <p class="credits-license">Apache 2.0 and BSD 3-Clause licenses</p>
+                    <p class="credits-license">Apache 2.0- og BSD 3-Clause-licenser</p>
                 </div>
             </div>
             <div class="credits-library">
@@ -152,8 +153,8 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/Vanilagy/mediabunny" target="_blank" rel="noopener noreferrer">Mediabunny</a></h3>
                     <p>
-                        By Vanilagy and contributors. Reads videos you attach in the chat and, with your browser's own
-                        codecs, turns them into WebM with VP9 before they're sent.
+                        Af Vanilagy og bidragydere. Læser videoer, du vedhæfter i chatten, og laver dem, med din browsers
+                        egne codecs, om til WebM med VP9, før de bliver sendt.
                     </p>
                     <p class="credits-license">Mozilla Public License 2.0</p>
                 </div>
@@ -168,22 +169,22 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/nickarocho/minesweeper" target="_blank" rel="noopener noreferrer">Minesweeper</a></h3>
                     <p>
-                        By Nick Arocho. The whole <a href="/games/minesweeper/">Minesweeper</a> game in the Games section,
-                        Windows 95 look, pictures and fonts included, with some changes for HB Hub: a few small fixes, and the mines are
-                        kept on HB Hub's server, for the leaderboard.
+                        Af Nick Arocho. Hele <a href="/games/minesweeper/">Minesweeper</a>-spillet i Spil-sektionen,
+                        med Windows 95-udseende, billeder og skrifttyper, og nogle ændringer til HB Hub: et par små rettelser, og minerne
+                        bliver holdt på HB Hubs server, til ranglisten.
                     </p>
-                    <p class="credits-license">No license stated</p>
+                    <p class="credits-license">Ingen licens angivet</p>
                 </div>
             </div>
-            <p class="credits-fineprint">"QR Code" is a registered trademark of DENSO WAVE INCORPORATED.</p>
-            <p class="credits-fineprint">HB Hub ain't associated with Microsoft. Windows is a trademark of Microsoft Corporation.</p>
+            <p class="credits-fineprint">"QR Code" er et registreret varemærke tilhørende DENSO WAVE INCORPORATED.</p>
+            <p class="credits-fineprint">HB Hub har intet med Microsoft at gøre. Windows er et varemærke tilhørende Microsoft Corporation.</p>
         </section>
 
         <!-- Lists: where most of the blocked links in assets/urlBlacklist.txt come from (the IP loggers are picked by hand) -->
         <section class="credits-section" id="lists" aria-labelledby="credits-lists-title">
-            <p class="home-kicker credits-kicker">Lists</p>
-            <h2 id="credits-lists-title">The links you can't send.</h2>
-            <p class="credits-section-lead">Most of the links in these lists are blocked in the chat and bios.</p>
+            <p class="home-kicker credits-kicker">Lister</p>
+            <h2 id="credits-lists-title">De links, du ikke kan sende.</h2>
+            <p class="credits-section-lead">De fleste links i disse lister er blokeret i chatten og i bioer.</p>
             <div class="credits-library">
                 <!-- A long link squeezed into a short one: the long one blurs away on hover, like it does behind a shortener -->
                 <div class="credits-short" aria-hidden="true">
@@ -193,28 +194,28 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/PeterDaveHello/url-shorteners" target="_blank" rel="noopener noreferrer">url-shorteners</a></h3>
-                    <p>By Peter Dave Hello. URL shorteners, which can hide where a link really goes.</p>
-                    <p class="credits-license">CC BY-SA 4.0 license</p>
+                    <p>Af Peter Dave Hello. Linkforkortere, som kan skjule, hvor et link i virkeligheden fører hen.</p>
+                    <p class="credits-license">CC BY-SA 4.0-licens</p>
                 </div>
             </div>
             <div class="credits-library">
                 <!-- A made-up scam address with a "Blocked" stamp on it, which stamps down again on hover -->
                 <div class="credits-scam" aria-hidden="true">
                     <span class="credits-scam-url">free-c0ins.io</span>
-                    <span class="credits-scam-stamp">Blocked</span>
+                    <span class="credits-scam-stamp">Blokeret</span>
                 </div>
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/CryptoScamDB/blacklist" target="_blank" rel="noopener noreferrer">CryptoScamDB blacklist</a></h3>
-                    <p>By CryptoScamDB. Crypto scam and phishing sites, turned from its YAML into a plain list of domains.</p>
+                    <p>Af CryptoScamDB. Kryptosvindel- og phishingsider, lavet om fra dens YAML til en almindelig liste over domæner.</p>
                 </div>
             </div>
         </section>
 
         <!-- Words: where the words Wordle accepts as guesses come from (assets/php/games/wordle/words/). The daily words are picked by hand. -->
         <section class="credits-section" id="words" aria-labelledby="credits-words-title">
-            <p class="home-kicker credits-kicker">Words</p>
-            <h2 id="credits-words-title">Every word you can guess.</h2>
-            <p class="credits-section-lead">Wordle checks your guesses against these dictionaries. The daily words are picked from them by hand.</p>
+            <p class="home-kicker credits-kicker">Ord</p>
+            <h2 id="credits-words-title">Alle de ord, du kan gætte.</h2>
+            <p class="credits-section-lead">Wordle tjekker dine gæt mod disse ordbøger. Dagens ord bliver valgt fra dem i hånden.</p>
             <div class="credits-library">
                 <!-- A guess on a card, its tiles going green on hover like a solved word -->
                 <div class="credits-words" aria-hidden="true">
@@ -222,8 +223,8 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/dolph/dictionary" target="_blank" rel="noopener noreferrer">ENABLE</a></h3>
-                    <p>The Enhanced North American Benchmark Lexicon, a word list made for word games. Its five-letter words are the English ones Wordle accepts.</p>
-                    <p class="credits-license">Public domain</p>
+                    <p>Enhanced North American Benchmark Lexicon, en ordliste lavet til ordspil. Dens ord på fem bogstaver er de engelske ord, Wordle godtager.</p>
+                    <p class="credits-license">Offentlig ejendom (public domain)</p>
                 </div>
             </div>
             <div class="credits-library">
@@ -233,22 +234,22 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 <div class="credits-library-text">
                     <h3><a href="https://www.stavekontrolden.dk" target="_blank" rel="noopener noreferrer">Stavekontrolden</a></h3>
                     <p>
-                        The Danish dictionary by Foreningen for frit tilgængelige sprogværktøjer, based on data from Det
-                        Danske Sprog- og Litteraturselskab. Every form of its five-letter words (like "huset" and "spist")
-                        is a Danish word Wordle accepts.
+                        Den danske ordbog fra Foreningen for frit tilgængelige sprogværktøjer, bygget på data fra Det
+                        Danske Sprog- og Litteraturselskab. Alle bøjninger af dens ord på fem bogstaver (som "huset" og "spist")
+                        er danske ord, Wordle godtager.
                     </p>
-                    <p class="credits-license">GPL 2.0, LGPL 2.1 and MPL 1.1 licenses</p>
+                    <p class="credits-license">GPL 2.0-, LGPL 2.1- og MPL 1.1-licenser</p>
                 </div>
             </div>
-            <p class="credits-fineprint">HB Hub's Wordle is a copy of Wordle by Josh Wardle. "Wordle" is a trademark of The New York Times Company, which has nothing to do with HB Hub.</p>
+            <p class="credits-fineprint">HB Hubs Wordle er en kopi af Wordle af Josh Wardle. "Wordle" er et varemærke tilhørende The New York Times Company, som intet har med HB Hub at gøre.</p>
         </section>
 
         <!-- Fonts: the copies in assets/fonts/ (from Google Fonts, each with its license next to it: OFL-*.txt), and Minesweeper's two,
              which came with its code (assets/minesweeper/css/) -->
         <section class="credits-section" id="fonts" aria-labelledby="credits-fonts-title">
-            <p class="home-kicker credits-kicker">Fonts</p>
-            <h2 id="credits-fonts-title">The letters on every page.</h2>
-            <p class="credits-section-lead">All kept on HB Hub's own server, so your browser doesn't have to ask anyone else for them.</p>
+            <p class="home-kicker credits-kicker">Skrifttyper</p>
+            <h2 id="credits-fonts-title">Bogstaverne på hver side.</h2>
+            <p class="credits-section-lead">Alle ligger på HB Hubs egen server, så din browser ikke behøver at spørge nogen andre efter dem.</p>
             <div class="credits-library">
                 <!-- A type specimen, going from thin to heavy on hover (Raleway is a variable font) -->
                 <div class="credits-font" aria-hidden="true">
@@ -258,8 +259,8 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/impallari/Raleway" target="_blank" rel="noopener noreferrer">Raleway</a></h3>
                     <p>
-                        By Matt McInerney, Pablo Impallari and Rodrigo Fuenzalida. The font almost everything on HB Hub is
-                        written in, from the thinnest weight to the heaviest.
+                        Af Matt McInerney, Pablo Impallari og Rodrigo Fuenzalida. Den skrifttype, næsten alt på HB Hub er
+                        skrevet med, fra den tyndeste vægt til den tungeste.
                     </p>
                     <p class="credits-license">SIL Open Font License 1.1</p>
                 </div>
@@ -272,7 +273,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/notofonts/symbols" target="_blank" rel="noopener noreferrer">Noto Sans Symbols 2</a></h3>
-                    <p>By the Noto Project Authors, for Google. Only its 12 chess letters, which are the pieces in chess and on the frontpage's board.</p>
+                    <p>Af Noto Project Authors, for Google. Kun dens 12 skaktegn, som er brikkerne i skak og på forsidens bræt.</p>
                     <p class="credits-license">SIL Open Font License 1.1</p>
                 </div>
             </div>
@@ -284,7 +285,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div class="credits-library-text">
                     <h3><a href="https://www.zone38.net/font/" target="_blank" rel="noopener noreferrer">Press Start</a></h3>
-                    <p>By codeman38, with letters from old Namco arcade games. The numbers on Minesweeper's board. It came with Minesweeper's code.</p>
+                    <p>Af codeman38, med bogstaver fra gamle Namco-arkadespil. Tallene på Minesweepers bræt. Den kom med Minesweepers kode.</p>
                 </div>
             </div>
             <div class="credits-library">
@@ -295,14 +296,14 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div class="credits-library-text">
                     <h3>Digital Dismay</h3>
-                    <p>By NALGames. The red mine counter and clock above Minesweeper's board. It came with Minesweeper's code.</p>
+                    <p>Af NALGames. Den røde minetæller og det ur, der står over Minesweepers bræt. Den kom med Minesweepers kode.</p>
                 </div>
             </div>
         </section>
 
         <!-- Logos: other companies' logos on HB Hub's buttons -->
         <section class="credits-section" id="logos">
-            <p class="credits-fineprint">The small logo on the Log in with Discord buttons is Discord's own. Discord and its logo are trademarks of Discord Inc., which has nothing to do with HB Hub beyond letting you log in with it.</p>
+            <p class="credits-fineprint">Det lille logo på knapperne Log ind med Discord er Discords eget. Discord og dets logo er varemærker tilhørende Discord Inc., som intet har med HB Hub at gøre, ud over at du kan logge ind med det.</p>
         </section>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
