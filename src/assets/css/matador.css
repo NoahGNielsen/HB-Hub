@@ -587,7 +587,7 @@
     /* The benzene ring, top left */
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='rgba(127,219,255,0.45)' stroke-width='2'%3E%3Cpath d='M20 3L35 11.5V28.5L20 37L5 28.5V11.5Z'/%3E%3Ccircle cx='20' cy='20' r='9'/%3E%3C/g%3E%3C/svg%3E") 0.12em 0.1em / 0.75em 0.75em no-repeat,
     /* The ball-and-stick molecule, bottom right */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'%3E%3Cg stroke='rgba(255,255,255,0.4)' stroke-width='2.5'%3E%3Cpath d='M10 30L28 18L48 26M28 18L30 5'/%3E%3C/g%3E%3Ccircle cx='28' cy='18' r='6' fill='rgba(255,107,107,0.75)'/%3E%3Cg fill='rgba(255,255,255,0.6)'%3E%3Ccircle cx='10' cy='30' r='4'/%3E%3Ccircle cx='48' cy='26' r='4'/%3E%3Ccircle cx='30' cy='5' r='4'/%3E%3C/g%3E%3C/svg%3E") right 0.1em bottom 0.06em / 0.95em 0.63em no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'%3E%3Cg fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5'%3E%3Cpath d='M10 30L28 18L48 26M28 18L30 5'/%3E%3C/g%3E%3Ccircle cx='28' cy='18' r='6' fill='rgba(255,107,107,0.75)'/%3E%3Cg fill='rgba(255,255,255,0.6)'%3E%3Ccircle cx='10' cy='30' r='4'/%3E%3Ccircle cx='48' cy='26' r='4'/%3E%3Ccircle cx='30' cy='5' r='4'/%3E%3C/g%3E%3C/svg%3E") right 0.1em bottom 0.06em / 0.95em 0.63em no-repeat,
     radial-gradient(ellipse at 50% 120%, #1f6f8b, #0b2545 70%);
   letter-spacing: 0.06em;
   line-height: 1.15;
