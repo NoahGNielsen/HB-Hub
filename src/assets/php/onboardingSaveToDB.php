@@ -14,11 +14,12 @@ require_once __DIR__ . '/schoolClass.php'; // how the class is saved, and the cl
 require_once __DIR__ . '/notifications.php';
 
 /**
- * Whether the browser signing up asks sites not to track it: the "Do Not Track" setting, sent as the header DNT: 1.
+ * Whether the browser signing up asks sites not to track it: the "Do Not Track" setting, sent as the header DNT: 1
+ * (hbHubSessionDoNotTrack() in session.php).
  */
 function hbHubSignupDoNotTrack(): bool
 {
-    return trim((string) ($_SERVER['HTTP_DNT'] ?? '')) === '1';
+    return hbHubSessionDoNotTrack();
 }
 
 /**

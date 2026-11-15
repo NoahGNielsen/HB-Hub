@@ -168,6 +168,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             privat vindue. Den bliver kun brugt, så side-admins kan se, hvilke konti der bruges i den samme browser
                             (se <a href="#see">Hvem kan se hvad</a>), og så casinoet kan give de daglige chips én gang per person
                             (se afsnit 3), aldrig til at følge dig på andre sider, og den bliver aldrig delt med nogen.
+                            Sender din browser "Do Not Track", bliver der ikke lavet noget fingeraftryk af den: så bliver dine konti
+                            kun koblet sammen ud fra enhedscookien. Fingeraftryk, den sendte, før du slog det til, bliver slettet
+                            som normalt, 180 dage efter de sidst blev set.
                         </p>
                         <h3>Beskeder og chats</h3>
                         <ul>

@@ -32,8 +32,19 @@ const HBHUB_SESSION_ONLINE_SECONDS = 5 * 60;
 const HBHUB_SESSION_FINGERPRINT_HOURS = 24;
 
 // Whether this request's page should load assets/js/fingerprint.js (header.php): set by hbHubSessionUser() when the
-// login hasn't sent one in the last HBHUB_SESSION_FINGERPRINT_HOURS
+// login hasn't sent one in the last HBHUB_SESSION_FINGERPRINT_HOURS, and never when the browser sends Do Not Track
 $hbHubFingerprintDue = false;
+
+/**
+ * Whether the browser asks sites not to track it: the "Do Not Track" setting, sent as the header DNT: 1.
+ * Such a browser is never fingerprinted (assets/php/fingerprint.php), and signing up with it turns "Help improve
+ * HB Hub" off (onboardingSaveToDB.php). The device cookie (loginLimit.php) is still used for it: that's our own
+ * cookie, not tracking across sites.
+ */
+function hbHubSessionDoNotTrack(): bool
+{
+    return trim((string) ($_SERVER['HTTP_DNT'] ?? '')) === '1';
+}
 
 /**
  * Stores a new session for the user and returns its id. Pass it to hbHubSetSessionCookie() once
@@ -224,8 +235,9 @@ function hbHubSessionUser(): ?array
             }
         }
         // The browser's fingerprint ties a person's accounts together too, also once the device cookie is gone
-        // (assets/php/fingerprint.php): header.php loads the script that sends it when it's due
-        $GLOBALS['hbHubFingerprintDue'] = (bool) $user['fingerprintIsDue'];
+        // (assets/php/fingerprint.php): header.php loads the script that sends it when it's due. Never for a browser
+        // that sends Do Not Track: that one is only tied to the person by the device cookie.
+        $GLOBALS['hbHubFingerprintDue'] = (bool) $user['fingerprintIsDue'] && !hbHubSessionDoNotTrack();
         unset($user['userStatus'], $user['sessionIsStale'], $user['userIsStale'], $user['fingerprintIsDue'],
             $user['userIpv4AdresseLastAccessed'], $user['userIpv6AdresseLastAccessed']);
     } catch (PDOException $e) {
