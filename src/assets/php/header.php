@@ -25,7 +25,11 @@
 // The font (Raleway, assets/fonts/, @font-face in mainStyle.css) is our own copy instead of Google Fonts', so the
 // first paint doesn't wait on two other servers. Its Latin file is preloaded, since the browser would otherwise only
 // find it after mainStyle.css has loaded.
+//
+// The Watchdog's script (watchdog.js) is left out for a logged-in user who has turned "Help improve HB Hub" off in the
+// settings (hbHubImproveSiteOn() in userSettings.php). Visitors who aren't logged in always have it.
 require_once __DIR__ . '/maintenance.php';
+require_once __DIR__ . '/userSettings.php';
 
 $headerCanonical = null;
 if (http_response_code() === 200) {
@@ -55,8 +59,11 @@ $headerKeywords = array_unique([
 <?php if (empty($headerHomeNav)): ?>
 <link rel="stylesheet" href="/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
 <?php endif; ?>
-<!-- The Watchdog counts the 508s the page gets (assets/php/watchdog.php). First of the page's scripts, so every fetch() goes through it. -->
+<?php if (!isset($hbHubUser) || hbHubImproveSiteOn(hbHubUserSettings($hbHubUser['userSettings'] ?? null))): ?>
+<!-- The Watchdog counts the 508s the page gets (assets/php/watchdog.php). First of the page's scripts, so every fetch() goes through it.
+     Left out when "Help improve HB Hub" is off in the settings (hbHubImproveSiteOn()). -->
 <script src="/assets/js/watchdog.js?v=<?= filemtime(__DIR__ . '/../js/watchdog.js') ?>" defer></script>
+<?php endif; ?>
 <?php if (!empty($hbHubFingerprintDue)): ?>
 <!-- Sends the browser's fingerprint, at most once a day per login (assets/php/fingerprint.php) -->
 <script src="/assets/js/fingerprint.js?v=<?= filemtime(__DIR__ . '/../js/fingerprint.js') ?>" defer></script>

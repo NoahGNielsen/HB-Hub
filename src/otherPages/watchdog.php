@@ -10,9 +10,13 @@
 // - 400 {"error": "badRequest"}: no action=report, or count isn't a whole number above 0. watchdog.js gives up on
 //   that report instead of trying again, since it would never go through.
 // Anything else (a 508 for this request too, mostly) makes watchdog.js try again 3 seconds later.
+// A logged-in user who has turned "Help improve HB Hub" off (hbHubImproveSiteOn()) doesn't get watchdog.js at all, but a
+// report from before they did can still be waiting in their tab: it's answered {"ok": true} too, so the tab lets go of
+// it, but never saved.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/watchdog.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-store');
@@ -36,6 +40,11 @@ $count = watchdogNumber($_POST['count'] ?? null);
 if (($_POST['action'] ?? null) !== 'report' || $count === null || $count < 1) {
     http_response_code(400);
     echo json_encode(['error' => 'badRequest']);
+    exit;
+}
+
+if ($hbHubUser !== null && !hbHubImproveSiteOn(hbHubUserSettings($hbHubUser['userSettings']))) {
+    echo json_encode(['ok' => true]); // turned off in the settings: not saved, see the top
     exit;
 }
 

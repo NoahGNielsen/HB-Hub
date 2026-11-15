@@ -12,6 +12,23 @@ function hbHubUserSettings(?string $json): array
 }
 
 /**
+ * Whether the user lets HB Hub gather statistics about how the site works for them (improveSite, the "Help improve HB
+ * Hub" card in the settings). On unless they've turned it off, so accounts from before the setting have it on, like
+ * visitors who aren't logged in. While it's off:
+ * - The Watchdog's server busy reports (assets/js/watchdog.js) aren't sent: header.php leaves the script out, and
+ *   /watchdog (otherPages/watchdog.php) throws away any that were still waiting in the tab from before.
+ * - Ore Mining Inc. doesn't ask Chrome to tell us when its tab crashes (the Reporting-Endpoints header in
+ *   games/spaceOreMiner/index.php, see games/spaceOreMiner/browserCrash.php).
+ * - Ore Mining Inc.'s own crash reports still ask after a crash, since they're only ever sent when the player says
+ *   yes, but the popup warns that sending one goes against this setting (for that report only; the setting stays off).
+ * Anything new that gathers statistics about how people use the site has to check this too.
+ */
+function hbHubImproveSiteOn(array $settings): bool
+{
+    return ($settings['improveSite'] ?? true) !== false;
+}
+
+/**
  * Whether the user muted the chat right now, so it doesn't send them notifications (chatMuted in their settings,
  * keyed by chatId). A mute with a Unix time in chatMutedUntil ends then, one without lasts until they unmute it.
  */

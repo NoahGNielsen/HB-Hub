@@ -363,7 +363,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 billedhastighed, hvor lang tid hver del af spillet tager at køre, og de sidste dele, det kørte. Det
                                 bliver i din browser (se <a href="#privacy-cookies">Cookies og local storage</a>). Fryser spillet eller
                                 lukker uden at gemme ordentligt, mens du spiller, spørger det, næste gang du åbner det, om det må sende
-                                en nedbrudsrapport om det. Du kan se alt i den, før du svarer. Siger du ja, bliver den gemt med din
+                                en nedbrudsrapport om det, også hvis du har slået <strong>Help improve HB Hub</strong> fra (så står
+                                der i spørgsmålet, at det går imod den indstilling at sende den). Du kan se alt i den, før du svarer. Siger du ja, bliver den gemt med din
                                 konto, tidspunktet og din browsers user agent (som siger, hvilken browser og hvilket system du bruger):
                                 det, spillet noterede, hvad det lavede, da det frøs, og hvor længe, dit gemte spil i Ore Mining Inc.,
                                 som det var dengang, din skærmstørrelse, hvor mange processorkerner og hvor meget hukommelse din enhed
@@ -373,9 +374,10 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 af dem). Siger du nej, bliver intet sendt, og den bliver slettet fra din browser.
                             </li>
                             <li>
-                                En kort besked fra din browser, hvis Ore Mining Inc. går ned. Er du logget ind, og gør din browser det
-                                (Chrome og nogle andre bygget på den), beder spillets side den om at fortælle HB Hub, når spillets fane
-                                går ned, fx fordi den løber tør for hukommelse. Din browser sender det af sig selv uden at spørge dig,
+                                En kort besked fra din browser, hvis Ore Mining Inc. går ned. Er du logget ind, har du ikke slået
+                                <strong>Help improve HB Hub</strong> fra under dine <a href="/settings#improve">indstillinger</a>, og
+                                gør din browser det (Chrome og nogle andre bygget på den), beder spillets side den om at fortælle HB
+                                Hub, når spillets fane går ned, fx fordi den løber tør for hukommelse. Din browser sender det af sig selv uden at spørge dig,
                                 så modsat nedbrudsrapporterne ovenfor er den ikke knyttet til dig. Vi gemmer kun årsagen, hvornår det
                                 skete, og din browsers user agent (som siger, hvilken browser og hvilket system du bruger). Vi gemmer
                                 ikke din konto, din IP-adresse eller dit gemte spil med den, og sender din browser din login-cookie
@@ -440,6 +442,16 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             IP-adresse, din browsers user agent (som siger, hvilken browser og hvilket system du bruger), og om den kom
                             fra testversionen af siden. Indtil den er gået igennem, bliver den gemt i din browser (se
                             <a href="#cookies">Cookies og local storage</a>). Kun side-admins kan se rapporterne.
+                        </p>
+                        <p>
+                            Er du logget ind, kan du slå det fra med <strong>Help improve HB Hub</strong> under dine
+                            <a href="/settings#improve">indstillinger</a> (det er slået til, indtil du slår det fra). Så sender siderne
+                            ingen rapporter om optaget server for dig, og en rapport, der stadig ventede i din fane fra før, bliver
+                            smidt væk uden at blive gemt. Ore Mining Inc. beder så heller ikke din browser om at fortælle os, når
+                            spillets fane går ned (se Casino og spil ovenfor). Spillets egne nedbrudsrapporter spørger stadig først,
+                            og spørgsmålet siger, at det går imod din indstilling at sende en, men kun for den ene rapport:
+                            indstillingen forbliver slået fra. Selve indstillingen bliver gemt med dine andre indstillinger på din
+                            konto.
                         </p>
                         <h3>Adminlog</h3>
                         <p>

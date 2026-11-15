@@ -11,6 +11,8 @@
 // - Notifications (#notifications): a browser notification and/or a sound for new messages while the site is open
 //   (assets/js/notifications.js, assets/js/messageSound.js)
 // - Gambling and Games (#block): blocking them, during school hours or all the time (assets/php/block.php)
+// - Help improve HB Hub (#improve): whether the site may gather statistics about how it works for them (improveSite,
+//   on by default; hbHubImproveSiteOn() in assets/php/userSettings.php says what it turns off)
 // Security
 // - Password (#password): a new one, after entering the current one. Logs out every other session.
 // - Two-factor login (#totp): a code from an authenticator app when logging in (assets/php/totp.php)
@@ -486,6 +488,15 @@ if ($settingsAction === 'notifications') {
     settingsRedirect('settings', 'notifications');
 }
 
+if ($settingsAction === 'improveSite') {
+    $improveSiteOn = ($_POST['improveSite'] ?? null) === '1';
+    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($improveSiteOn): array {
+        $settings['improveSite'] = $improveSiteOn;
+        return $settings;
+    });
+    settingsRedirect('settings', 'improve');
+}
+
 if ($settingsAction === 'block') {
     $blockMode = $_POST['block'] ?? null;
     if (!hbHubBlockIsMode($blockMode)) {
@@ -539,6 +550,7 @@ if ($settingsAction === 'deleteAccount') {
 $settingsAvatarSrc = hbHubAvatarUrl($userId, $settingsAvatarId);
 $settingsNotificationsOn = ($savedSettings['notifications'] ?? false) === true;
 $settingsNotificationSoundOn = ($savedSettings['notificationSound'] ?? false) === true;
+$settingsImproveSiteOn = hbHubImproveSiteOn($savedSettings);
 $navMessageSound = true; // messageSound.js, so ticking the sound box plays it (navPanel.php)
 $settingsBlock = hbHubBlockSettings($savedSettings);
 $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
@@ -588,6 +600,7 @@ function settingsTime(?string $timestamp): string
                             <li><a class="settings-menu-link" href="#profile">Profile</a></li>
                             <li><a class="settings-menu-link" href="#notifications">Notifications</a></li>
                             <li><a class="settings-menu-link" href="#block">Gambling and Games</a></li>
+                            <li><a class="settings-menu-link" href="#improve">Help improve HB Hub</a></li>
                         </ul>
                     </div>
                     <div class="settings-menu-group">
@@ -926,6 +939,36 @@ function settingsTime(?string $timestamp): string
                             <?php if (isset($settingsErrors['block'])): ?>
                                 <p class="settings-error" role="alert"><?= htmlspecialchars($settingsErrors['block']) ?></p>
                             <?php endif; ?>
+                        </div>
+                        <div class="settings-actions">
+                            <button type="submit" class="settings-btn settings-btn-primary">Save</button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Help improve HB Hub (hbHubImproveSiteOn() in assets/php/userSettings.php) -->
+                <section class="settings-card" id="improve" aria-labelledby="settings-improve-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="settings-improve-heading">Help improve HB Hub</h2>
+                            <p class="settings-intro">Let HB Hub gather statistics about how the site works for you, so we can find what's slow or broken and fix it.</p>
+                        </div>
+                        <span class="settings-status<?= $settingsImproveSiteOn ? ' is-on' : '' ?>"><?= $settingsImproveSiteOn ? 'On' : 'Off' ?></span>
+                    </div>
+                    <form action="/settings#improve" method="post">
+                        <input type="hidden" name="action" value="improveSite">
+                        <div class="settings-field">
+                            <label class="settings-checkbox">
+                                <input type="checkbox" class="settings-switch" name="improveSite" value="1"<?= $settingsImproveSiteOn ? ' checked' : '' ?>
+                                       aria-describedby="settings-improve-hint">
+                                <span>Send usage statistics</span>
+                            </label>
+                            <p class="settings-hint" id="settings-improve-hint">
+                                For now, that's a short report when the server is too busy to answer you (which page you were on,
+                                which addresses failed, your browser), and, in Chrome, a note from the browser if Ore Mining Inc.'s
+                                tab crashes. Only site admins can see them. Ore Mining Inc.'s own crash reports always ask you first,
+                                whatever you choose here.
+                            </p>
                         </div>
                         <div class="settings-actions">
                             <button type="submit" class="settings-btn settings-btn-primary">Save</button>
