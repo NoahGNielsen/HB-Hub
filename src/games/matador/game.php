@@ -222,11 +222,12 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
                                     <p class="mt-edition-ribbon"><span>Classic Edition</span></p>
                                 </div>
                             <?php elseif ($gameEdition === 'htx'): ?>
-                                <?php // HTX has its own logo: MATADOR drawn on a blueprint (squared paper, a white dashed
-                                      // frame like a technical drawing), with a ruler saying "HTX Edition" laid across under it ?>
+                                <?php // HTX has its own logo, all science and maths: each letter of MATADOR a periodic-table
+                                      // tile with its place in the alphabet as the "atomic number" (data-n, shown by matador.css),
+                                      // on a chalkboard full of formulas, and "HTX Edition" written as an integral under it ?>
                                 <div class="mt-brand is-htx" aria-hidden="true">
-                                    <p class="mt-logo mt-logo-htx">MATADOR</p>
-                                    <p class="mt-edition-ruler"><span>HTX Edition</span></p>
+                                    <p class="mt-logo mt-logo-htx"><?php foreach (str_split('MATADOR') as $letter): ?><span data-n="<?= ord($letter) - 64 ?>"><?= $letter ?></span><?php endforeach; ?></p>
+                                    <p class="mt-edition-integral"><span>HTX Edition</span></p>
                                 </div>
                             <?php else: ?>
                                 <div class="mt-brand" aria-hidden="true">

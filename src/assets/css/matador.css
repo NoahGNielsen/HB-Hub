@@ -566,9 +566,10 @@
   text-transform: uppercase;
 }
 
-/* HTX Edition's logo (game.php): the school's technical side - MATADOR drawn on a blueprint, squared paper with a
-   white dashed frame like a technical drawing, and a wooden ruler with mm/cm marks laid across under it saying
-   "HTX Edition". */
+/* HTX Edition's logo (game.php): the school's science-and-maths side - the letters of MATADOR as tiles from the
+   periodic table, each with its "atomic number" in the corner (really its place in the alphabet: M = 13, A = 1, ...,
+   from data-n), on a green chalkboard covered in faint chalk formulas and a plotted sine wave. Under it, a chalk
+   strip turns "HTX Edition" into an integral: ∫ HTX Edition dx. */
 .mt-brand.is-htx {
   gap: 0;
 }
@@ -576,42 +577,123 @@
 .mt-logo-htx {
   position: relative;
   z-index: 1;
-  padding: 4px 18px;
-  border-color: #dbe8ff;
+  display: flex;
+  gap: 0.1em;
+  padding: 0.32em 0.4em;
+  overflow: hidden;
+  border-color: #c9b98f;
+  border-width: 4px;
+  border-radius: 6px;
+  /* The chalk sine wave and its x axis (an SVG picture, which the CSP allows as a data: URL), over the board */
   background:
-    linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px) 0 0 / 0.5em 0.5em,
-    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 1px, transparent 1px) 0 0 / 0.5em 0.5em,
-    #1f4e9c;
-  outline: 1px dashed rgba(255, 255, 255, 0.7);
-  outline-offset: -7px;
-  font-family: Consolas, 'Courier New', monospace;
-  letter-spacing: 0.12em;
-  text-shadow: 0 0 6px rgba(160, 200, 255, 0.6);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60' preserveAspectRatio='none'%3E%3Cpath d='M0 30H200M6 2V58' stroke='rgba(255,255,255,0.18)' stroke-width='1' fill='none'/%3E%3Cpath d='M6 30Q24 -4 42 30T78 30T114 30T150 30T186 30' stroke='rgba(255,255,255,0.22)' stroke-width='1.6' fill='none' stroke-dasharray='4 3'/%3E%3C/svg%3E") center / 100% 100% no-repeat,
+    radial-gradient(ellipse at 30% 20%, #2f5a45, #1d3b2c 75%);
+  font-size: clamp(0.95rem, 4.6cqi, 3rem);
+  letter-spacing: 0;
+  line-height: 1;
 }
 
-/* The ruler, tilted a little the other way and overlapping the plate's bottom edge. Its marks are two background
-   layers along the top edge: a short mark every 6px and a long one every 30px. */
-.mt-edition-ruler {
-  margin: -0.3em 0 0;
+/* The chalk formulas behind the tiles, one line along the top and one along the bottom */
+.mt-logo-htx::before,
+.mt-logo-htx::after {
+  position: absolute;
+  left: 0;
+  right: 0;
+  color: rgba(255, 255, 255, 0.32);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.2em;
+  font-style: italic;
+  font-weight: 400;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.mt-logo-htx::before {
+  content: "E = mc²    ∫ sin x dx = −cos x    a² + b² = c²    PV = nRT";
+  top: 0.15em;
+  text-align: left;
+}
+
+.mt-logo-htx::after {
+  content: "Σ 1/n² = π²/6    F = m·a    √2 ≈ 1.414    H₂O    e^iπ + 1 = 0";
+  bottom: 0.1em;
+  text-align: right;
+}
+
+/* One periodic-table tile per letter, its number from data-n in the top-left corner */
+.mt-logo-htx span {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 1.12em;
+  height: 1.22em;
+  padding-bottom: 0.1em;
+  border: 2px solid rgba(0, 0, 0, 0.45);
+  border-radius: 3px;
+  background: #ffd166;
+  color: #1a1a1a;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-weight: 800;
+  box-shadow: inset 0 -0.08em 0 rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.mt-logo-htx span::before {
+  content: attr(data-n);
+  position: absolute;
+  top: 0.12em;
+  left: 0.16em;
+  font-size: 0.3em;
+  font-weight: 700;
+}
+
+/* The tiles' colours, like the periodic table's groups: M A T A D O R */
+.mt-logo-htx span:nth-child(1) { background: #8ecae6; }
+.mt-logo-htx span:nth-child(2) { background: #ffd166; }
+.mt-logo-htx span:nth-child(3) { background: #f4978e; }
+.mt-logo-htx span:nth-child(4) { background: #ffd166; }
+.mt-logo-htx span:nth-child(5) { background: #b5e48c; }
+.mt-logo-htx span:nth-child(6) { background: #cdb4db; }
+.mt-logo-htx span:nth-child(7) { background: #8ecae6; }
+
+/* The "HTX Edition" chalk strip, tilted a little the other way and overlapping the board's bottom edge, with an
+   integral sign before the words and "dx" after them */
+.mt-edition-integral {
+  margin: -0.35em 0 0;
   transform: rotate(4deg);
-  border: 1px solid #8a5a1c;
-  border-radius: 2px;
-  background:
-    repeating-linear-gradient(90deg, #3b2608 0 1px, transparent 1px 30px) 4px 0 / 100% 45% no-repeat,
-    repeating-linear-gradient(90deg, #3b2608 0 1px, transparent 1px 6px) 4px 0 / 100% 22% no-repeat,
-    linear-gradient(#f6d58a, #e2b25a);
+  border: 2px solid #c9b98f;
+  border-radius: 3px;
+  background: #fbf8ee;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 
-.mt-edition-ruler span {
-  display: block;
-  padding: 0.7em 22px 2px;
-  color: #3b2608;
-  font-family: Consolas, 'Courier New', monospace;
+.mt-edition-integral span {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 1px 14px;
+  color: #1d3b2c;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(0.6rem, 2.2cqi, 1.4rem);
+  font-style: italic;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.mt-edition-integral span::before {
+  content: "∫";
+  font-size: 1.7em;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.mt-edition-integral span::after {
+  content: "dx";
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
