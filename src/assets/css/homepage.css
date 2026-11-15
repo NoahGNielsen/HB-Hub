@@ -1515,14 +1515,14 @@ html.home {
   text-align: center;
 }
 
-/* Hovering the picture straightens the page and the photo a little */
+/* Hovering the picture straightens the page and the photo just a touch (kept small, so it doesn't jump about) */
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .home-about-art:hover .home-notebook {
-    transform: rotate(-1deg);
+    transform: rotate(-2.5deg);
   }
 
   .home-about-art:hover .home-polaroid {
-    transform: rotate(2deg) translateY(-6px);
+    transform: rotate(4deg) translateY(-2px);
   }
 }
 
