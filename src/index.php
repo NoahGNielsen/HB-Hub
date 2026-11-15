@@ -233,7 +233,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 <figure class="home-polaroid">
                     <img src="/assets/images/home/creator.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator.jpg') ?>"
                          width="640" height="640" alt="Noah, der laver HB Hub" loading="lazy" decoding="async">
-                    <figcaption>Noah, spasseren der ikke laver lektier</figcaption>
+                    <figcaption>Noha – Professionel prompt-skriver</figcaption>
                 </figure>
             </div>
         </section>
