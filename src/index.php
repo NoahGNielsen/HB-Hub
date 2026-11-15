@@ -211,6 +211,26 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 Siden er lavet og bliver drevet af en elev, ikke af HANSENBERG. Den er gratis, kører direkte i browseren,
                 og al koden ligger frit tilgængeligt på GitHub.
             </p>
+            <!-- The same four facts as small icon badges, drawn like the Safety section's icons (inline SVG strokes in
+                 the accent colour). Decoration only: the paragraphs above already say all of it. -->
+            <ul class="home-about-facts" aria-hidden="true">
+                <li>
+                    <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+                    <span><b>HTX i Kolding</b><small>HANSENBERG</small></span>
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/><path d="M22 9v6"/></svg>
+                    <span><b>Lavet af en elev</b><small>Ikke af skolen</small></span>
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M7 6.5h.01M10 6.5h.01"/></svg>
+                    <span><b>Gratis</b><small>Lige i browseren</small></span>
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5"/><path d="M16 7l5 5-5 5"/><path d="M14 4l-4 16"/></svg>
+                    <span><b>Åben kildekode</b><small>På GitHub</small></span>
+                </li>
+            </ul>
         </section>
 
         <!-- Chat -->

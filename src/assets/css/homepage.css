@@ -1371,6 +1371,89 @@ html.home {
   text-underline-offset: 2px;
 }
 
+/* The row of fact badges under the paragraphs: an icon tile (same look as .home-safety-grid svg) next to a bold
+   line and a quieter one. Wraps to two per row, then one, on narrow screens. Hover lift uses "translate" for the
+   same reason as the Safety cards (the scroll-in animation owns transform). */
+.home-about-facts {
+  max-width: 900px;
+  margin: 36px auto 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  text-align: left;
+}
+
+.home-about-facts li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: var(--secondary);
+  transition:
+    translate 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.35s ease;
+}
+
+.home-about-facts svg {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-about-facts span {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.home-about-facts b {
+  font-size: 0.95rem;
+}
+
+.home-about-facts small {
+  font-size: inherit;
+  opacity: 0.7;
+}
+
+@media (hover: hover) {
+  .home-about-facts li:hover {
+    translate: 0 -4px;
+    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-about-facts li {
+    translate: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .home-about-facts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .home-about-facts {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---------- Last call ---------- */
 .home-cta {
   position: relative;
@@ -1456,6 +1539,7 @@ html.home {
     .home-feature-text,
     .home-feature-art,
     .home-safety-grid li,
+    .home-about-facts li,
     .home-cta {
       animation: home-reveal linear both;
       animation-timeline: view();
