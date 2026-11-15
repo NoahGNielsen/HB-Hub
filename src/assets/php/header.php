@@ -10,7 +10,8 @@
 //
 // The canonical URL is the page's clean path without the query string, so /login?return=%2Fchat (where
 // session.php sends visitors who aren't logged in) counts as /login, and /index as /. Error pages (anything
-// that isn't a 200) are noindex, so they get none.
+// that isn't a 200) are noindex, so they get none. That same path is counted as a page view for the admin panel's
+// Overview (hbHubPageViewCount() in pageViews.php, which decides whether the request counts).
 //
 // Public pages (in Danish) set $headerLocale = 'da_DK' first for og:locale; the app behind the login is en_GB.
 //
@@ -35,7 +36,11 @@ $headerCanonical = null;
 if (http_response_code() === 200) {
     $headerPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
     $headerPath = is_string($headerPath) && str_starts_with($headerPath, '/') ? $headerPath : '/';
-    $headerCanonical = 'https://hbhub.noahgajnielsen.dk' . preg_replace('~(^|/)index$~', '$1', $headerPath);
+    $headerPath = preg_replace('~(^|/)index$~', '$1', $headerPath);
+    $headerCanonical = 'https://hbhub.noahgajnielsen.dk' . $headerPath;
+    // One more view of this page for the admin panel's Overview (only a count per page and day, see pageViews.php)
+    require_once __DIR__ . '/pageViews.php';
+    hbHubPageViewCount($headerPath, isset($hbHubUser));
 }
 
 $headerKeywords = array_unique([

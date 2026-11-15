@@ -856,6 +856,19 @@ CREATE TABLE `HBHub-MinerSaves` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-PageViews`
+--
+
+CREATE TABLE `HBHub-PageViews` (
+  `viewDate` date NOT NULL COMMENT 'The day, by the database''s own clock (CURDATE()). Deleted after HBHUB_PAGE_VIEWS_KEEP_DAYS',
+  `viewPath` varchar(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The page''s clean path without the query, like /chat/ or /games/chess',
+  `viewCount` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Times it was opened that day',
+  `viewGuestCount` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How many of viewCount weren''t logged in'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='How many times each page was opened each day, only counts and never who (src/assets/php/pageViews.php), for the admin panel''s Overview';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-RouletteBets`
 --
 
@@ -1474,6 +1487,12 @@ ALTER TABLE `HBHub-MinerCrashReports`
 ALTER TABLE `HBHub-MinerSaves`
   ADD PRIMARY KEY (`userId`) COMMENT 'One save per user',
   ADD KEY `oreAllTime` (`saveOreAllTime`);
+
+--
+-- Indexes for table `HBHub-PageViews`
+--
+ALTER TABLE `HBHub-PageViews`
+  ADD PRIMARY KEY (`viewDate`,`viewPath`) COMMENT 'One row per page and day';
 
 --
 -- Indexes for table `HBHub-RouletteBets`

@@ -14,6 +14,9 @@
 //   tooltip on each day, and the same numbers as a table under "Show as a table")
 // - Chat: chats, messages, reactions and attachments, and the busiest chats and people of the last 7 days, each with
 //   a bar showing how they compare to the busiest one
+// - Page views: a bar chart of the pages opened each day of the last ADMIN_OVERVIEW_DAYS days, and the
+//   ADMIN_OVERVIEW_TOP_PAGES most visited pages of the last 7 days with how many of their views were guests. These are
+//   the only numbers that are stored for it: counts per page and day, kept by header.php (assets/php/pageViews.php).
 // - Casino: the chips in everyone's wallets, and each game's rounds, players, chips bet and what the house won or
 //   lost in the last 7 days, with a total
 // - Games: each game's games played and players in the last 7 days, and games played ever
@@ -22,9 +25,11 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/pageViews.php';
 
 const ADMIN_OVERVIEW_DAYS = 30; // days in the bar charts
 const ADMIN_OVERVIEW_TOP = 5; // chats and people in the "busiest" lists
+const ADMIN_OVERVIEW_TOP_PAGES = 10; // pages in "Most visited pages"
 // The bar charts' drawing area, in SVG units (it's stretched to the card's width)
 const ADMIN_OVERVIEW_CHART_W = 600;
 const ADMIN_OVERVIEW_CHART_H = 140;
@@ -199,6 +204,19 @@ function adminOverviewBusiestUsers(PDO $db): array
 }
 
 /**
+ * The pages opened the most in the last 7 days (today and the 6 days before, as page views are kept per day), the
+ * most first, with how many of those views weren't logged in. What counts as a view is in assets/php/pageViews.php.
+ *
+ * @return list<array{viewPath: string, views: mixed, guests: mixed}>
+ */
+function adminOverviewTopPages(PDO $db): array
+{
+    return $db->query('SELECT viewPath, SUM(viewCount) AS views, SUM(viewGuestCount) AS guests FROM `HBHub-PageViews`
+        WHERE viewDate > CURDATE() - INTERVAL 7 DAY
+        GROUP BY viewPath ORDER BY views DESC, viewPath LIMIT ' . ADMIN_OVERVIEW_TOP_PAGES)->fetchAll();
+}
+
+/**
  * A bar chart of $days (from adminOverviewPerDay()), one bar per day with its top corners rounded, as HTML: the
  * total and today's number as its caption, the highest number over the chart, the first, middle and last dates under it, a tooltip per day (an SVG <title> on a
  * column as tall as the chart, so it's easy to point at), and the numbers as a table under "Show as a table".
@@ -308,23 +326,24 @@ function adminOverviewMeterHtml(int $value, int $max): string
 }
 
 /**
- * A ranked list of the busiest chats or people: each row is $rows' link (from $linkHtml), the number of messages on
- * the right, and a bar under it showing how it compares to the busiest. Says so when there are none.
+ * A ranked list of the busiest chats, people or pages: each row is $rows' link (from $linkHtml), its number (the
+ * row's $key, the most first) on the right, and a bar under it showing how it compares to the top one. $empty is what
+ * it says when there are none.
  *
- * @param list<array<string, mixed>> $rows each with 'messages'
+ * @param list<array<string, mixed>> $rows each with $key
  * @param callable(array<string, mixed>): string $linkHtml the HTML of a row's link and anything after it
  */
-function adminOverviewRankHtml(array $rows, callable $linkHtml): string
+function adminOverviewRankHtml(array $rows, callable $linkHtml, string $key = 'messages', string $empty = 'No messages in the last 7 days.'): string
 {
     if ($rows === []) {
-        return '<p class="admin-empty">No messages in the last 7 days.</p>';
+        return '<p class="admin-empty">' . htmlspecialchars($empty) . '</p>';
     }
-    $max = (int) $rows[0]['messages'];
+    $max = (int) $rows[0][$key];
     $html = '<ol class="admin-rank">';
     foreach ($rows as $row) {
         $html .= '<li><div class="admin-rank-row">' . $linkHtml($row)
-            . '<span class="admin-rank-value">' . number_format((int) $row['messages']) . '</span></div>'
-            . adminOverviewMeterHtml((int) $row['messages'], $max) . '</li>';
+            . '<span class="admin-rank-value">' . number_format((int) $row[$key]) . '</span></div>'
+            . adminOverviewMeterHtml((int) $row[$key], $max) . '</li>';
     }
     return $html . '</ol>';
 }
@@ -347,6 +366,9 @@ $adminMessagesPerDay = adminOverviewPerDay($db, 'SELECT DATE(messageSentTimestam
     WHERE messageEvent = 0 AND messageSentTimestamp >= ? GROUP BY day');
 $adminSignupsPerDay = adminOverviewPerDay($db, 'SELECT DATE(userCreatedTimestamp) AS day, COUNT(*) FROM `HBHub-Users`
     WHERE userId <> 0 AND userCreatedTimestamp >= ? GROUP BY day');
+$adminViewsPerDay = adminOverviewPerDay($db, 'SELECT viewDate, SUM(viewCount) FROM `HBHub-PageViews`
+    WHERE viewDate >= ? GROUP BY viewDate');
+$adminTopPages = adminOverviewTopPages($db);
 $adminCasino = adminOverviewCasino($db);
 $adminGames = adminOverviewGames($db);
 $adminBusiestChats = adminOverviewBusiestChats($db);
@@ -457,6 +479,18 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                                 . adminAvatarHtml(hbHubAvatarUrl($userId, $user['userAvatarAttachmentId'] !== null ? (int) $user['userAvatarAttachmentId'] : null), $user['userName'], true)
                                 . '<span class="admin-list-name">' . htmlspecialchars($user['userName']) . '</span></a>';
                         })) ?>
+
+                    <?= adminOverviewPanelHtml('admin-overview-views-heading', 'Page views', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 8,
+                        adminOverviewChartHtml($adminViewsPerDay, 'page views', 'Pages opened each day')
+                        . '<p class="admin-panel-foot">Every time a page is opened, including the chat switching to another chat. Reloads after sending something, prefetches, error pages and bots don\'t count. Only a count per page and day is kept, never who, and only for ' . HBHUB_PAGE_VIEWS_KEEP_DAYS . ' days.</p>') ?>
+                    <?= adminOverviewPanelHtml('admin-overview-pages-heading', 'Most visited pages', 'Last 7 days', 4,
+                        adminOverviewRankHtml($adminTopPages, static function (array $page): string {
+                            $guests = (int) $page['views'] > 0 ? round((int) $page['guests'] / (int) $page['views'] * 100) : 0;
+                            // Chat pages are /chat/ whichever chat it was, as the query isn't kept
+                            return '<a class="admin-list-link" href="' . htmlspecialchars($page['viewPath']) . '">'
+                                . '<code class="admin-list-name">' . htmlspecialchars($page['viewPath']) . '</code></a>'
+                                . ($guests > 0 ? '<span class="admin-small" title="Not logged in">' . $guests . '% guests</span>' : '');
+                        }, 'views', 'No page views in the last 7 days.')) ?>
 
                     <?php ob_start(); ?>
                     <dl class="admin-stats admin-stats-3">

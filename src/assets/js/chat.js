@@ -3891,10 +3891,15 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
     chatRequest = request;
     main.setAttribute('aria-busy', 'true');
 
+    // Counted as a page view for the admin panel's Overview (assets/php/pageViews.php) when someone opened a chat page,
+    // not when it's the page coming back after a form, a sent message, or the open chat being gone
+    const headers = { Accept: 'text/html' };
+    if (!body && !sent && !replace) headers['X-HBHub-Page-View'] = '1';
+
     let response;
     let page;
     try {
-        response = await fetch(url, { method: body ? 'POST' : 'GET', body, signal: request.signal, headers: { Accept: 'text/html' } });
+        response = await fetch(url, { method: body ? 'POST' : 'GET', body, signal: request.signal, headers });
         page = new DOMParser().parseFromString(await response.text(), 'text/html');
     } catch (error) {
         if (error.name === 'AbortError') return; // a newer one took over

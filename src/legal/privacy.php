@@ -462,6 +462,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             indstillingen forbliver slået fra. Selve indstillingen bliver gemt med dine andre indstillinger på din
                             konto.
                         </p>
+                        <h3 id="page-views">Sidevisninger</h3>
+                        <p>
+                            HB Hub tæller, hvor mange gange hver side bliver åbnet hver dag, så side-admins kan se, hvilke sider der
+                            bliver brugt mest. Der bliver kun gemt dagen, sidens adresse (uden det efter <code>?</code>, så kun
+                            <code>/chat/</code>, ikke hvilken chat), hvor mange gange den blev åbnet, og hvor mange af dem der ikke var
+                            logget ind. Aldrig hvem det var, din IP-adresse, din browser eller andet, der kan knyttes til dig, så tallene
+                            kan ikke føres tilbage til nogen. Det sker også, når du ikke er logget ind, og bliver ikke gemt i din browser.
+                            Søgemaskiner og andre robotter bliver ikke talt med.
+                        </p>
                         <h3>Adminlog</h3>
                         <p>
                             Alt, hvad en side-admin gør i adminpanelet, bliver skrevet i en adminlog: hvilken admin det var, hvornår,
@@ -480,7 +489,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             Ingen e-mailadresse, intet telefonnummer, ingen rigtig adresse eller fødselsdato. Ingen analyseprofil,
                             ingen reklame-id'er og ingen registrering af, hvilke sider du åbner, bortset fra den ene side, du sender
                             feedback fra, visningerne i Ore Mining Inc. i en nedbrudsrapport, du accepterer at sende, siderne i en
-                            fejlrapport fra browseren (og, for side-admins, adminloggen ovenfor).
+                            fejlrapport fra browseren (og, for side-admins, adminloggen ovenfor). Sidevisningerne ovenfor er kun tal
+                            pr. side og dag, ikke hvem der åbnede hvad.
                         </p>
                     </section>
 
@@ -490,7 +500,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li><strong>For at køre siden</strong>: din konto, dine beskeder og spil er siden. Uden dem er der intet at vise dig.</li>
                             <li><strong>For at holde den sikker</strong>: IP-adresser, mislykkede logins, enhedscookien og browserfingeraftryk forhindrer folk i at bryde ind på konti, spamme oprettelser og undgå udelukkelser. Listen over bandlyste billeder forhindrer en udelukket person i at komme tilbage med en kopi af sin gamle profil.</li>
                             <li><strong>For at holde den venlig</strong>: beskeder bliver gemt, så admins kan gribe ind over for mobning eller misbrug.</li>
-                            <li><strong>For at gøre den bedre</strong>: feedback, og den side, den kom fra, hjælper admins med at finde fejl og se, hvad folk gerne vil have. Nedbrudsrapporter fra Ore Mining Inc., som kun bliver sendt, hvis du accepterer, og de korte beskeder, browsere sender om nedbrud, som ikke er knyttet til dig, hjælper med at finde ud af, hvorfor spillet gik ned. Fejlrapporter fra browseren viser, hvad der går galt på siden, og hvornår og hvor serveren har for meget at lave, så det kan blive rettet.</li>
+                            <li><strong>For at gøre den bedre</strong>: feedback, og den side, den kom fra, hjælper admins med at finde fejl og se, hvad folk gerne vil have. Nedbrudsrapporter fra Ore Mining Inc., som kun bliver sendt, hvis du accepterer, og de korte beskeder, browsere sender om nedbrud, som ikke er knyttet til dig, hjælper med at finde ud af, hvorfor spillet gik ned. Fejlrapporter fra browseren viser, hvad der går galt på siden, og hvornår og hvor serveren har for meget at lave, så det kan blive rettet. Sidevisningerne viser, hvilke sider der bliver brugt, så det er dem, der bliver arbejdet på.</li>
                         </ul>
                         <p>
                             Efter GDPR er det "nødvendigt for at levere den tjeneste, du har tilmeldt dig", og HB Hubs "legitime
@@ -513,7 +523,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 mange billetter de tager), og dit bannerbillede sammen med dem, men åbner dem ikke, selvom sidens ejer
                                 kan nå filerne på serveren. Side-admins kan slette dine vedhæftede filer og give dig flere billetter
                                 eller tage nogle væk. De bruger det til at håndtere misbrug, udelukkelser og ødelagte konti og til at
-                                forbedre siden. Feedback, nedbrudsrapporter fra Ore Mining Inc. og fejlrapporter fra browseren bliver
+                                forbedre siden. Feedback, nedbrudsrapporter fra Ore Mining Inc., fejlrapporter fra browseren og sidevisningerne bliver
                                 kun nogensinde set af side-admins, aldrig af andre brugere. De kan aldrig se din adgangskode eller din
                                 totrinshemmelighed. Alt, hvad de gør dér, også bare at kigge på din konto eller en chat, du er i,
                                 kommer i adminloggen, som kun side-admins kan læse, og som ingen kan ændre eller slette.
@@ -618,6 +628,10 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             Fejlrapporter fra browseren bliver gemt i 30 dage og så slettet af sig selv (senest natten efter).
                             Side-admins kan fjerne dem fra listen før, men de bliver stadig talt med, til de bliver slettet. Rapporter, der blev sendt, mens du ikke var logget ind, er ikke
                             knyttet til en konto, så de bliver kun slettet på den måde.
+                        </p>
+                        <p>
+                            Sidevisninger bliver gemt i 90 dage og så slettet af sig selv (senest natten efter). Da de ikke er knyttet
+                            til nogen, bliver de ikke slettet sammen med din konto.
                         </p>
                         <p>
                             De gratis spil, du spiller uden en konto, bliver kun gemt i din browser, så HB Hub har intet at slette:
