@@ -10,7 +10,7 @@ $docsCommission = HBHUB_BACCARAT_BANKER_COMMISSION / 10; // per thousand in roun
 
 $docsPath = '/docs/casino/baccarat';
 $docsIntro = 'Two hands are dealt, the Player and the Banker. Bet on the one you think ends closest to 9. Nobody makes
-    any choices once the cards are out, so <a href="/gambling/baccarat/">Baccarat</a> is quick to learn.';
+    any choices once the cards are out, so <a href="/casino/baccarat/">Baccarat</a> is quick to learn.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">
@@ -87,7 +87,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             Press <strong>Play solo</strong> for a table of your own, open one for others (public, with a code
                             or invite-only), or join one from the lobby. More in
                             <a href="/docs/casino/#tables">How the casino works</a>. Every hand counts towards the
-                            <a href="/gambling/baccarat/leaderboard">Baccarat leaderboard</a>.
+                            <a href="/casino/baccarat/leaderboard">Baccarat leaderboard</a>.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

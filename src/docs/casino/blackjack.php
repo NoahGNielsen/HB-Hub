@@ -7,7 +7,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/room.php';
 
 $docsPath = '/docs/casino/blackjack';
-$docsIntro = 'Get closer to 21 than the dealer without going over. Play <a href="/gambling/blackjack/">Blackjack</a>
+$docsIntro = 'Get closer to 21 than the dealer without going over. Play <a href="/casino/blackjack/">Blackjack</a>
     on your own against the dealer, or at a table with your friends.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
@@ -71,7 +71,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             invite-only, with a minimum bet of <?= implode(', ', array_slice(HBHUB_BLACKJACK_MIN_BETS, 0, -1)) ?> or
                             <?= HBHUB_BLACKJACK_MIN_BETS[count(HBHUB_BLACKJACK_MIN_BETS) - 1] ?> chips. More in
                             <a href="/docs/casino/#tables">How the casino works</a>. Every hand counts towards the
-                            <a href="/gambling/blackjack/leaderboard">Blackjack leaderboard</a>.
+                            <a href="/casino/blackjack/leaderboard">Blackjack leaderboard</a>.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

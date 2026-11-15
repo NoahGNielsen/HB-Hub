@@ -1,5 +1,5 @@
 <?php
-// Buying extra chips: the page behind the faint card button in the top right of the casino home (gambling/index.php).
+// Buying extra chips: the page behind the faint card button in the top right of the casino home (casino/index.php).
 // Nothing is bought here. It only explains that chips are normally free, that extra ones can be bought from the owner
 // at HBHUB_CASINO_CHIPS_PER_KRONE per krone by messaging them, and that the money is never refunded. The owner then
 // adds the chips by hand. The same rules are in the terms (legal/terms.php#chips).
@@ -30,7 +30,7 @@ $buyChipsSellerId = $statement->fetchColumn();
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="casino">
-        <a class="casino-back" href="/gambling/">&larr; Casino</a>
+        <a class="casino-back" href="/casino/">&larr; Casino</a>
         <h1>Buy chips</h1>
         <p class="casino-intro">
             Normally I don't take money for chips. Everyone gets at least <?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> free

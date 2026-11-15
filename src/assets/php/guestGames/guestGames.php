@@ -1,7 +1,7 @@
 <?php
 // The games visitors can play without an account, mostly so search engines have something to find: Wordle,
 // Ore Mining Inc., Minesweeper, Sudoku, and solo Blackjack, Baccarat, Roulette and Slots, at /play (the files are in guestGames/, which is only
-// reached through the rewrites in .htaccess). The normal versions (games/, gambling/) still need an account, and
+// reached through the rewrites in .htaccess). The normal versions (games/, casino/) still need an account, and
 // so does everything else on the site.
 //
 // Each guest page is the normal game's own page, included by the one in guestGames/ after hbHubGuestGamePage():
@@ -115,7 +115,7 @@ const HBHUB_GUEST_GAMES = [
     ],
     'blackjack' => [
         'path' => '/play/blackjack',
-        'game' => '/gambling/blackjack/',
+        'game' => '/casino/blackjack/',
         'section' => 'casino',
         'name' => 'Blackjack',
         'title' => 'Free Blackjack Online - Play Solo, No Sign-Up | HB Hub',
@@ -133,7 +133,7 @@ const HBHUB_GUEST_GAMES = [
     ],
     'baccarat' => [
         'path' => '/play/baccarat',
-        'game' => '/gambling/baccarat/',
+        'game' => '/casino/baccarat/',
         'section' => 'casino',
         'name' => 'Baccarat',
         'title' => 'Free Baccarat Online - Punto Banco, No Sign-Up | HB Hub',
@@ -151,7 +151,7 @@ const HBHUB_GUEST_GAMES = [
     ],
     'roulette' => [
         'path' => '/play/roulette',
-        'game' => '/gambling/roulette/',
+        'game' => '/casino/roulette/',
         'section' => 'casino',
         'name' => 'Roulette',
         'title' => 'Free European Roulette Online - No Sign-Up | HB Hub',
@@ -169,7 +169,7 @@ const HBHUB_GUEST_GAMES = [
     ],
     'slots' => [
         'path' => '/play/slots',
-        'game' => '/gambling/slots/',
+        'game' => '/casino/slots/',
         'section' => 'casino',
         'name' => 'Slots',
         'title' => 'Free Slot Machine Online - Classic 3-Reel Slots, No Sign-Up | HB Hub',

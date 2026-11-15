@@ -80,7 +80,7 @@ Most of the site needs an account; the pages below can be read without one. Casi
 - /assets/php
 - /cron
 - /chat
-- /gambling
+- /casino
 - /games
 
 ## Contact

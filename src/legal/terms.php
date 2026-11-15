@@ -162,7 +162,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
                         <p>
                             Chips are normally free. If you want more, you can buy them from the owner of HB Hub at
                             <?= number_format(HBHUB_CASINO_CHIPS_PER_KRONE) ?> chips for 1 kr, as described on the
-                            <a href="/gambling/buy-chips">Buy chips</a> page. This is the only way to buy chips.
+                            <a href="/casino/buy-chips">Buy chips</a> page. This is the only way to buy chips.
                         </p>
                         <ul>
                             <li>Bought chips are the same as any other chips. They can be lost in the games, and everything above applies to them too.</li>

@@ -1,4 +1,4 @@
-// Slots effects tester: paste all of this into the browser console on /gambling/slots, then run
+// Slots effects tester: paste all of this into the browser console on /casino/slots, then run
 //
 //   slotsTest('jackpot')   three 7s on the middle line (60x), after the last reel teases it
 //   slotsTest('mega')      a 32x win with diamonds
@@ -10,14 +10,14 @@
 //   slotsTest('tease')     7, 7 and a lemon: the last reel teases the jackpot and misses ("So close!")
 //   slotsTest.all()        every one of them in turn, 9 seconds apart
 //
-// It doesn't touch the server: it catches the next request slots.js sends to /gambling/slots/spin, answers it with a
+// It doesn't touch the server: it catches the next request slots.js sends to /casino/slots/spin, answers it with a
 // made-up spin of that size, and presses Spin. So no chips are spent or won (the top bar ends where it started), and
 // the fake spin only shows up in "Your last spins" until the page is reloaded. Spin needs the bet to be playable, so
 // have at least the bet in chips. Not part of the site: tools/ isn't uploaded.
 (() => {
     const root = document.querySelector('[data-slots]');
     if (!root) {
-        console.warn('slotsTest: open /gambling/slots first.');
+        console.warn('slotsTest: open /casino/slots first.');
         return;
     }
     const REELS = JSON.parse(root.dataset.reels);

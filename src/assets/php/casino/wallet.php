@@ -29,7 +29,7 @@ const HBHUB_CASINO_DAILY_CALENDAR = [
 const HBHUB_CASINO_DAILY_DAYS = 30; // how many days the calendar has, count(HBHUB_CASINO_DAILY_CALENDAR)
 const HBHUB_CASINO_TIME_ZONE = 'Europe/Copenhagen';
 const HBHUB_CASINO_DAY_START = 3; // 3 AM, when a new casino day starts
-const HBHUB_CASINO_CHIPS_PER_KRONE = 100; // what 1 kr buys, when someone buys extra chips from the owner (gambling/buy-chips.php)
+const HBHUB_CASINO_CHIPS_PER_KRONE = 100; // what 1 kr buys, when someone buys extra chips from the owner (casino/buy-chips.php)
 // With fewer chips than this, a member can go all in: bet every chip they have on one thing, at any table, whatever its
 // minimum bet and the steps of 10 (hbHubCasinoIsAllIn()). Otherwise those last few chips could never be played.
 const HBHUB_CASINO_ALL_IN_BELOW = 10;

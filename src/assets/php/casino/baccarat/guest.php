@@ -153,7 +153,7 @@ function hbHubBaccaratGuestSettle(array &$state, int $now): void
 }
 
 /**
- * The answer for baccaratTable.js, in the shape of gambling/baccarat/play's for a solo table: the play chips, and the
+ * The answer for baccaratTable.js, in the shape of casino/baccarat/play's for a solo table: the play chips, and the
  * table as the guest may see it (without the shoe, and only the cards that are turned over).
  */
 function hbHubBaccaratGuestView(array $state, int $now): array

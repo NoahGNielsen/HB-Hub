@@ -1,6 +1,6 @@
 <?php
 // The guest Roulette's spins (/play/roulette/spin), for roulette.js on /play/roulette. Members all play at one shared
-// table (gambling/roulette/table); a guest has a table of their own instead, spun the moment they ask, with play chips
+// table (casino/roulette/table); a guest has a table of their own instead, spun the moment they ask, with play chips
 // that come and go in a sealed token, {chips}, kept only in the page (see assets/php/guestGames/guestGames.php).
 // Nothing is stored. POST only:
 //   bets={"17": 10, "red": 50} and token (none on the page's first spin: a new stack of play chips).

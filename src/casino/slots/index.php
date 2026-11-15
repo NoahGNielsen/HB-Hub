@@ -1,6 +1,6 @@
 <?php
 // Slots: the slot machine, the bet and the user's last spins. Every spin is the user's own (no table to share), sent
-// by slots.js to /gambling/slots/spin, where the reels' stops are picked and the chips are paid
+// by slots.js to /casino/slots/spin, where the reels' stops are picked and the chips are paid
 // (assets/php/casino/slots/slots.php has the rules).
 // The machine is drawn here as three reels of three symbols, standing where the user's last spin stopped (or at the
 // top of each strip before their first). The strips, the symbols and the paylines go to slots.js in data attributes
@@ -87,7 +87,7 @@ function slotsHistoryLabel(array $spin): string
         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <?php endif; ?>
     <main class="sl" data-slots data-chips="<?= $navCasinoChips ?>"
-          data-api="<?= $guestGame !== null ? '/play/slots/spin' : '/gambling/slots/spin' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>
+          data-api="<?= $guestGame !== null ? '/play/slots/spin' : '/casino/slots/spin' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>
           data-bet-step="<?= HBHUB_SLOTS_BET_STEP ?>" data-min-bet="<?= HBHUB_SLOTS_MIN_BET ?>"
           data-reels="<?= htmlspecialchars(json_encode(HBHUB_SLOTS_REELS)) ?>"
           data-symbols="<?= htmlspecialchars(json_encode(HBHUB_SLOTS_SYMBOLS, JSON_UNESCAPED_UNICODE)) ?>"
@@ -96,7 +96,7 @@ function slotsHistoryLabel(array $spin): string
         <?php if ($guestGame !== null): ?>
             <a class="casino-back" href="/">&larr; HB Hub</a>
         <?php else: ?>
-            <a class="casino-back" href="/gambling/">&larr; Casino</a>
+            <a class="casino-back" href="/casino/">&larr; Casino</a>
         <?php endif; ?>
         <div class="sl-header">
             <div>
@@ -113,7 +113,7 @@ function slotsHistoryLabel(array $spin): string
                     </svg>
                 </button>
                 <?php if ($guestGame === null): ?>
-                    <a class="casino-btn" href="/gambling/slots/leaderboard">Leaderboard</a>
+                    <a class="casino-btn" href="/casino/slots/leaderboard">Leaderboard</a>
                 <?php endif; ?>
             </div>
         </div>
@@ -187,7 +187,7 @@ function slotsHistoryLabel(array $spin): string
                     <?php if ($guestGame !== null): ?>
                         You're out of chips. Reload the page for a new stack.
                     <?php else: ?>
-                        You're out of chips. <a href="/gambling/">Collect your daily chips</a>
+                        You're out of chips. <a href="/casino/">Collect your daily chips</a>
                     <?php endif; ?>
                 </p>
             </div>

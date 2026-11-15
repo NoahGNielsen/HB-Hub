@@ -1,7 +1,7 @@
 <?php
 // Roulette: the wheel, the table's last numbers, who's playing and the table to bet on. The whole site shares this one
 // table (assets/php/casino/roulette/table.php): everyone sees everyone's bets, and one ball is spun for all of them.
-// roulette.js puts the user's bets on it and keeps the table up to date through /gambling/roulette/table, where the
+// roulette.js puts the user's bets on it and keeps the table up to date through /casino/roulette/table, where the
 // ball is decided.
 // The table is drawn here, every bet a button with the bet's key (data-rl-bet) and the numbers it covers. Besides each
 // number's own button, a number has small buttons on its edges and corners for the bets it shares with the numbers
@@ -111,11 +111,11 @@ function rouletteWheelPockets(): string
         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <?php endif; ?>
     <main class="rl" data-roulette data-chips="<?= $navCasinoChips ?>" data-bet-step="<?= HBHUB_ROULETTE_BET_STEP ?>"
-          data-api="<?= $guestGame !== null ? '/play/roulette/spin' : '/gambling/roulette/table' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
+          data-api="<?= $guestGame !== null ? '/play/roulette/spin' : '/casino/roulette/table' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
         <?php if ($guestGame !== null): ?>
             <a class="casino-back" href="/">&larr; HB Hub</a>
         <?php else: ?>
-            <a class="casino-back" href="/gambling/">&larr; Casino</a>
+            <a class="casino-back" href="/casino/">&larr; Casino</a>
         <?php endif; ?>
         <div class="rl-header">
             <div>
@@ -123,7 +123,7 @@ function rouletteWheelPockets(): string
                 <p class="rl-meta"><?= $guestGame === null ? 'One table for all of HB Hub &middot; ' : '' ?>Single zero &middot; A number pays 35:1 &middot; Bets in steps of <?= HBHUB_ROULETTE_BET_STEP ?></p>
             </div>
             <?php if ($guestGame === null): ?>
-                <a class="casino-btn" href="/gambling/roulette/leaderboard">Leaderboard</a>
+                <a class="casino-btn" href="/casino/roulette/leaderboard">Leaderboard</a>
             <?php endif; ?>
         </div>
         <?php if ($guestGame !== null): ?>
@@ -255,7 +255,7 @@ function rouletteWheelPockets(): string
                 <?php if ($guestGame !== null): ?>
                     You're out of chips. Reload the page for a new stack.
                 <?php else: ?>
-                    You're out of chips. <a href="/gambling/">Collect your daily chips</a>
+                    You're out of chips. <a href="/casino/">Collect your daily chips</a>
                 <?php endif; ?>
             </p>
         </section>

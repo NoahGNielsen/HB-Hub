@@ -18,7 +18,7 @@
   ],
   "shortcuts": [
     { "name": "Chat", "url": "/chat/" },
-    { "name": "Casino", "url": "/gambling/" },
+    { "name": "Casino", "url": "/casino/" },
     { "name": "Games", "url": "/games/" }
   ]
 }

@@ -11,12 +11,12 @@ return [
         // The lobby lists their invites with a Join button, as joining is a form post.
         'blackjackInvite' => [
             'text' => static fn (array $data): string => 'invited you to Blackjack at ' . ($data['roomName'] ?? 'their table'),
-            'link' => static fn (array $data): string => '/gambling/blackjack/#invites',
+            'link' => static fn (array $data): string => '/casino/blackjack/#invites',
         ],
         // The host of a Baccarat table invited the user (assets/php/casino/baccarat/room.php). Data: roomId, roomName.
         'baccaratInvite' => [
             'text' => static fn (array $data): string => 'invited you to Baccarat at ' . ($data['roomName'] ?? 'their table'),
-            'link' => static fn (array $data): string => '/gambling/baccarat/#invites',
+            'link' => static fn (array $data): string => '/casino/baccarat/#invites',
         ],
     ],
 ];

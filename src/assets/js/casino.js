@@ -2,7 +2,7 @@
 // and on the casino home the big chip count too, and the daily chips panel with its countdown and Collect button, its
 // streak and the 30-day calendar under it (which days are ticked off, which one is next, and the progress bar over it).
 // The chips come along with navUpdates.js's request (every 15 seconds while the page is in view: wallet=1 on nav:poll,
-// the answer's "wallet" on nav:update). /gambling/chips is only asked when the daily chips' countdown runs out and to
+// the answer's "wallet" on nav:update). /casino/chips is only asked when the daily chips' countdown runs out and to
 // collect them. A game that gets a new balance in its own answers passes it on straight away with
 //     document.dispatchEvent(new CustomEvent('casino:wallet', { detail: { chips: 1234 } }));
 // A game that's showing something whose result the chips would give away (Roulette's wheel turning) holds them back
@@ -32,7 +32,7 @@
 
     async function request(options) {
         try {
-            const response = await fetch('/gambling/chips', { headers: { Accept: 'application/json' }, ...options });
+            const response = await fetch('/casino/chips', { headers: { Accept: 'application/json' }, ...options });
             return response.ok ? await response.json() : null;
         } catch {
             return null; // offline for a moment, or logged out in another tab
@@ -71,11 +71,11 @@
         dailyTimer.textContent = 'Next daily chips in ' + formatCountdown(left);
     }
 
-    // The same as casinoStreakText() in gambling/index.php
+    // The same as casinoStreakText() in casino/index.php
     const streakText = (collected) => collected === 0 ? 'No streak yet'
         : collected === 1 ? '1 day in a row' : collected + ' days in a row';
 
-    // Ticks off the days collected so far and marks the next one, like gambling/index.php does when it makes the page.
+    // Ticks off the days collected so far and marks the next one, like casino/index.php does when it makes the page.
     // A day that's ticked off now but wasn't before bounces once.
     function showCalendar(state) {
         dailyStreak.textContent = streakText(state.collected);

@@ -24,7 +24,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             Every account starts with <strong><?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips</strong>. All
                             the casino games share them, so what you win at Blackjack you can bet at Roulette. Your chips are on the
-                            <a href="/gambling/">casino's home page</a> and in the top bar on every casino page.
+                            <a href="/casino/">casino's home page</a> and in the top bar on every casino page.
                         </p>
                     </section>
 
@@ -92,14 +92,14 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="leaderboards" aria-labelledby="docs-leaderboards">
                         <h2 id="docs-leaderboards">Leaderboards</h2>
                         <p>
-                            The <a href="/gambling/leaderboard">casino leaderboard</a> shows how many chips everyone has won or
+                            The <a href="/casino/leaderboard">casino leaderboard</a> shows how many chips everyone has won or
                             lost in each game and in all of them together, and their chips right now. The daily chips don't count
                             as won. Each game also has its own leaderboard, with hands (or spins), wins, losses and win %, plus the
                             biggest win and how much you've won or lost in Roulette and Slots. Click a column's heading to sort by it. Win %
                             only counts once you've played 20 hands or spins (50 at Slots), so one lucky round can't top it.
                         </p>
                         <p>
-                            The <a href="/gambling/">casino's home page</a> shows the top 5 of the casino leaderboard and your own
+                            The <a href="/casino/">casino's home page</a> shows the top 5 of the casino leaderboard and your own
                             place on it, and under each game how many tables are open and how many people are playing right now.
                         </p>
                     </section>

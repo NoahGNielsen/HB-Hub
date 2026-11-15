@@ -1,4 +1,4 @@
-/* A Blackjack table (gambling/blackjack/table.php, drawn by blackjackTable.js). Loaded after casino.css. */
+/* A Blackjack table (casino/blackjack/table.php, drawn by blackjackTable.js). Loaded after casino.css. */
 .bj {
   --bj-card-w: 64px;
   --bj-card-h: 90px;

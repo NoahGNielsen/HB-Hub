@@ -53,7 +53,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><th scope="col">Where</th><th scope="col">What's there</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>Side bar</td><td><strong>Chat</strong>, <strong>Gambling</strong> (the casino) and <strong>Games</strong>, with a red number on Chat for chats with unread messages. <strong>Feedback</strong> is at the bottom. On a phone it's a bar along the bottom of the screen.</td></tr>
+                                    <tr><td>Side bar</td><td><strong>Chat</strong>, <strong>Casino</strong> and <strong>Games</strong>, with a red number on Chat for chats with unread messages. <strong>Feedback</strong> is at the bottom. On a phone it's a bar along the bottom of the screen.</td></tr>
                                     <tr><td>Top bar</td><td>The <a href="/docs/notifications">notification bell</a>, your chips on casino pages, and your profile picture, which opens your profile.</td></tr>
                                     <tr><td>Your profile</td><td>Your picture, name, class and bio, as others see them, with the cog that opens your <a href="/docs/account">settings</a>.</td></tr>
                                 </tbody>

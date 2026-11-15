@@ -1,6 +1,6 @@
 <?php
-// The whole casino's leaderboard rows, for gambling/leaderboard.php (the full table) and the casino home
-// (gambling/index.php: the top players and the user's own place). One row per player who has played any casino game:
+// The whole casino's leaderboard rows, for casino/leaderboard.php (the full table) and the casino home
+// (casino/index.php: the top players and the user's own place). One row per player who has played any casino game:
 // their rounds (Blackjack and Baccarat hands, Roulette spins and slot spins together), the chips won or lost in each
 // game, all of it together, and their chips now. The rounds come from HBHub-BlackjackPlayerRounds,
 // HBHub-BaccaratPlayerRounds, HBHub-RouletteSpins and HBHub-SlotSpins (playerNet / spinNet: chips won or lost,

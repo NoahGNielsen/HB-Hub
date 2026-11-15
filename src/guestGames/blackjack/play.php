@@ -1,6 +1,6 @@
 <?php
 // The guest Blackjack table's JSON (/play/blackjack/play), for blackjackTable.js on /play/blackjack - the same as
-// gambling/blackjack/play for a members' solo table, but the table and the play chips come and go as a sealed token,
+// casino/blackjack/play for a members' solo table, but the table and the play chips come and go as a sealed token,
 // kept only in the page (assets/php/casino/blackjack/guest.php). Nothing is stored. POST only, as each request
 // carries the token (none on the page's first: a new table with a new stack of play chips):
 //   action=poll (what's new: the table moves on for the timers that ran out, like the dealer's cards), bet (amount),

@@ -57,7 +57,7 @@ hand, so tell them when a push needs one run first.
 
 ```text
 src/                     web root (everything here is uploaded)
-  chat/, gambling/, games/, admin/, userMgmt/, otherPages/   the pages and their JSON endpoints
+  chat/, casino/, games/, admin/, userMgmt/, otherPages/   the pages and their JSON endpoints
   legal/                 terms, privacy, code-of-conduct, do-not-sell, credits (must match the code - see Rules)
   docs/                  public help docs (/docs/), a page per feature/game; list in assets/php/docs/pages.php +
                          sitemap.xml + llms.txt. Game pages include the games' own rules.php files; update the text when a feature changes

@@ -250,7 +250,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <li>Fresh chips every day, more the longer your streak</li>
                     <li>Leaderboards, if you're that good!</li>
                 </ul>
-                <a class="home-link" href="/gambling/">Open the casino <span aria-hidden="true">→</span></a>
+                <a class="home-link" href="/casino/">Open the casino <span aria-hidden="true">→</span></a>
             </div>
             <div class="home-feature-art home-casino-art" aria-hidden="true">
                 <!-- A blackjack table seen from above: the dealer's hand at the top, the table's print in an arc,

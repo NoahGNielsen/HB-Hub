@@ -1,4 +1,4 @@
-/* Roulette (gambling/roulette/, played by roulette.js). Loaded after casino.css. */
+/* Roulette (casino/roulette/, played by roulette.js). Loaded after casino.css. */
 .rl {
   --rl-felt: #1d6b45;
   --rl-line: rgba(255, 255, 255, 0.6);

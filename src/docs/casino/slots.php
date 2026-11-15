@@ -10,7 +10,7 @@ const DOCS_SLOTS_LINE_NAMES = ['The middle row', 'The top row', 'The bottom row'
 
 $docsPath = '/docs/casino/slots';
 $docsIntro = 'A three-reel slot machine with ' . count(HBHUB_SLOTS_LINES) . ' paylines. Pick a bet, spin, and see what
-    lines up. Every spin is your own, so you can play at your own pace at the <a href="/gambling/slots/">slot machine</a>.';
+    lines up. Every spin is your own, so you can play at your own pace at the <a href="/casino/slots/">slot machine</a>.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">
@@ -63,7 +63,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             never "due" a win.
                         </p>
                         <p>
-                            Every spin counts towards the <a href="/gambling/slots/leaderboard">Slots leaderboard</a>, with your
+                            Every spin counts towards the <a href="/casino/slots/leaderboard">Slots leaderboard</a>, with your
                             biggest win and how much you've won or lost in total.
                         </p>
                     </section>

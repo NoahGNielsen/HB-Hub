@@ -8,7 +8,7 @@
 // A kind can also have a button (its label is 'action'), which runs its 'act' function when clicked (hbHubNotificationAct()),
 // like Undo kick on chat.kickedUndoable.
 // To add notifications to a new part of the site, like gambling:
-//   1. Make notificationTypes/gambling.php, the same shape as chat.php
+//   1. Make notificationTypes/casino.php, the same shape as chat.php
 //   2. Call hbHubNotify($db, $userId, 'gambling.bigWin', null, ['amount' => 500]) where it happens
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/userAvatar.php';

@@ -22,7 +22,7 @@ const DOCS_ROULETTE_BETS = [
 
 $docsPath = '/docs/casino/roulette';
 $docsIntro = 'European roulette with a single green zero. Put your chips anywhere on the table and see where the ball
-    lands. Everyone on HB Hub plays at the same <a href="/gambling/roulette/">Roulette</a> table, so you see each
+    lands. Everyone on HB Hub plays at the same <a href="/casino/roulette/">Roulette</a> table, so you see each
     other\'s bets and one ball is spun for all of you.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
@@ -81,7 +81,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             "due": every spin is as random as the one before.
                         </p>
                         <p>
-                            Every spin counts towards the <a href="/gambling/roulette/leaderboard">Roulette leaderboard</a>, with your
+                            Every spin counts towards the <a href="/casino/roulette/leaderboard">Roulette leaderboard</a>, with your
                             biggest win and how much you've won or lost in total.
                         </p>
                     </section>
