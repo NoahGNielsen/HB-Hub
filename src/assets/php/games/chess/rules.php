@@ -1,47 +1,46 @@
 <?php
-// The rules of chess as played here, shown on the chess page and in the game. board.php, game.php and room.php play by
-// them, so change them together.
+// The rules of chess as played here, shown on the chess page and in the game, and in the help docs. In Danish, like the
+// docs (a public page), also in the game. board.php, game.php and room.php play by them, so change them together.
 ?>
-<ul class="casino-rule-list">
+<ul class="casino-rule-list" lang="da">
     <li>
-        The normal rules of chess, with castling and en passant. Once a second player has joined, the host starts the
-        game.
+        Skakkens normale regler, med rokade og en passant. Når en anden spiller er kommet med, starter værten spillet.
     </li>
     <li>
-        A pawn on the last rank can only become a piece your opponent has taken from you: a queen once they've taken
-        your queen, a rook once they've taken a rook, and so on. Until they've taken one of your pieces (pawns don't
-        count), a pawn that gets there stays a pawn and can't move. The moment one of your pieces is taken, you can
-        make it that piece: that's your move.
+        En bonde på den sidste række kan kun blive til en brik, din modstander har taget fra dig: en dronning, når de har
+        taget din dronning, et tårn, når de har taget et tårn, og så videre. Indtil de har taget en af dine brikker (bønder
+        tæller ikke), forbliver en bonde, der kommer derhen, en bonde og kan ikke flytte. I det øjeblik en af dine brikker
+        bliver taget, kan du gøre den til den brik: det er dit træk.
     </li>
     <li>
-        The host picks the clock and who plays White in the game's settings, until they start the game or between
-        games.
+        Værten vælger uret, og hvem der spiller hvid, i spillets indstillinger, indtil de starter spillet, eller mellem
+        spil.
     </li>
     <li>
-        Checkmate wins. Stalemate, the same position three times, 50 moves each without a capture or a pawn move, and
-        too few pieces left for anyone to mate are all draws, straight away.
+        Skakmat vinder. Pat, den samme stilling tre gange, 50 træk hver uden et slag eller et bondetræk, og for få brikker
+        tilbage til, at nogen kan sætte mat, er alle remis, med det samme.
     </li>
     <li>
-        With a clock, the time you take for a move comes off your clock (White's first move is free), and the extra
-        seconds are added after every move. Run out of time and you lose, unless all your opponent has left is their
-        king, or a king and one bishop or knight. Then it's a draw.
+        Med et ur bliver den tid, du bruger på et træk, trukket fra dit ur (hvids første træk er gratis), og de ekstra
+        sekunder bliver lagt til efter hvert træk. Løber din tid ud, taber du, medmindre din modstander kun har sin konge
+        tilbage, eller en konge og én løber eller springer. Så er det remis.
     </li>
     <li>
-        You can resign or offer a draw at any time, and abort the game until you've both made a move (an aborted game
-        doesn't count). A draw offer is taken back when your opponent plays a move instead of answering it.
+        Du kan opgive eller tilbyde remis når som helst og afbryde spillet, indtil I begge har lavet et træk (et afbrudt spil
+        tæller ikke). Et remistilbud bliver trukket tilbage, når din modstander spiller et træk i stedet for at svare på det.
     </li>
     <li>
-        Leaving the game loses it, unless the host has paused it: then it just ends, and doesn't count for either of
-        you. If your opponent's game has been closed for <?= HBHUB_CHESS_CLAIM_SECONDS ?> seconds, you can claim the
-        win, and if you've both been gone so long that you leave, it's a loss for both.
+        At forlade spillet taber det, medmindre værten har sat det på pause: så slutter det bare og tæller ikke for nogen af
+        jer. Har din modstanders spil været lukket i <?= HBHUB_CHESS_CLAIM_SECONDS ?> sekunder, kan du kræve sejren, og har I
+        begge været væk så længe, at I går, er det et nederlag for begge.
     </li>
     <li>
-        The host can pause the game. The clocks stop and nobody can move or offer a draw until the host goes on, and
-        the host can't claim the win while it's paused (their opponent still can, if the host's game is closed).
+        Værten kan sætte spillet på pause. Urene stopper, og ingen kan trække eller tilbyde remis, før værten fortsætter, og
+        værten kan ikke kræve sejren, mens det er sat på pause (det kan modstanderen stadig, hvis værtens spil er lukket).
     </li>
-    <li>When the game is over, you can both ask for a rematch. You swap colours.</li>
+    <li>Når spillet er slut, kan I begge bede om en revanche. I bytter farver.</li>
     <li>
-        With a mouse, drag with the right button to draw an arrow, or right-click a square to colour it in (hold Shift,
-        Ctrl or Alt for other colours). Only you see them, and a left click on the board or the next move clears them.
+        Med en mus kan du trække med højre knap for at tegne en pil eller højreklikke på et felt for at farve det (hold Shift,
+        Ctrl eller Alt nede for andre farver). Kun du ser dem, og et venstreklik på brættet eller det næste træk rydder dem.
     </li>
 </ul>

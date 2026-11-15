@@ -1,87 +1,93 @@
 <?php
-// The rules of Matador as played here, shown on the Matador page and in the game. game.php and room.php play by them,
-// so change both together. The amounts that differ between editions (board.php) are the game's own edition's in a
-// game ($room), and Classic's everywhere else.
+// The rules of Matador as played here, shown on the Matador page and in the game, and in the help docs. In Danish, like
+// the docs (a public page) and Matador's own game terms, also in the game. game.php and room.php play by them, so
+// change both together. The amounts that differ between editions (board.php) are the game's own edition's in a game
+// ($room), and Classic's everywhere else.
 $rulesFields = hbHubMatadorFields(is_array($room['state'] ?? null) ? $room['state'] : []);
 $rulesExtraTax = array_values(array_filter($rulesFields, static fn (array $info): bool => $info['type'] === 'extraTax'))[0]['amount'] ?? 0;
 ?>
-<ul class="casino-rule-list">
+<ul class="casino-rule-list" lang="da">
     <li>
-        The host picks the edition in the room's settings before the game starts: Classic, the original Danish
-        board, HTX, the school's own (for now the same as Classic), or Kaos.
+        Værten vælger udgaven i rummets indstillinger, før spillet starter: Classic, det originale danske bræt, HTX, skolens
+        eget (indtil videre det samme som Classic), eller Kaos.
     </li>
     <li>
-        Kaos is the Classic board, but every field except the four corners is put in a random place when the game
-        starts. Landing on Prøv lykken gives a <?= HBHUB_MATADOR_KAOS_PERCENT ?> % chance of the Kaos card instead of
-        the top of the deck, which mixes all the fields up again. Properties keep their houses and mortgage when they
-        move, the pieces stay where they stand, and a card that sends you to a street or ferry sends you to wherever it
-        is now. The Kaos card also swaps the players around: everyone's properties go to a random player, and everyone's
-        money goes to a random player too, drawn separately. You might get to keep your own. Open trade offers are taken back.
+        Kaos er det klassiske bræt, men alle felter undtagen de fire hjørner bliver lagt et tilfældigt sted, når spillet
+        starter. Lander du på Prøv lykken, er der <?= HBHUB_MATADOR_KAOS_PERCENT ?> % chance for Kaos-kortet i stedet for det
+        øverste kort i bunken, og det blander alle felterne igen. Grunde beholder deres huse og pantsætning, når de flytter,
+        brikkerne bliver stående, hvor de står, og et kort, der sender dig til en gade eller færge, sender dig derhen, hvor
+        den er nu. Kaos-kortet bytter også rundt på spillerne: alles grunde går til en tilfældig spiller, og alles penge går
+        også til en tilfældig spiller, trukket for sig. Du kan være heldig at beholde dine egne. Åbne handelstilbud bliver
+        trukket tilbage.
     </li>
     <li>
-        Everyone starts with <?= hbHubMatadorKr(HBHUB_MATADOR_START_CASH) ?> on START. The turn order is drawn when the game starts.
-        You get <?= hbHubMatadorKr(HBHUB_MATADOR_START_PAY) ?> every time you pass or land on START.
+        Alle starter med <?= hbHubMatadorKr(HBHUB_MATADOR_START_CASH) ?> på START. Rækkefølgen bliver trukket, når spillet
+        starter. Du får <?= hbHubMatadorKr(HBHUB_MATADOR_START_PAY) ?>, hver gang du passerer eller lander på START.
     </li>
     <li>
-        You roll one die. A 6 gives you another roll, as many times as you roll it. The host can choose 2 dice in the
-        room's settings before the game starts: then doubles give you another roll instead.
+        Du slår med én terning. En 6'er giver dig et slag til, så mange gange du slår den. Værten kan vælge 2 terninger i
+        rummets indstillinger, før spillet starter: så giver to ens dig et slag til i stedet.
     </li>
     <li>
-        Land on a street, a ferry or a brewery nobody owns, and you can buy it. If you don't, it stays with the bank,
-        and the next player to land there can buy it.
+        Lander du på en gade, en færge eller et bryggeri, som ingen ejer, kan du købe den. Gør du ikke det, bliver den i
+        banken, og den næste spiller, der lander dér, kan købe den.
     </li>
     <li>
-        Land on someone else's property and you pay them rent. Owning every street in a colour doubles the rent while it's unbuilt.
-        Ferries take more the more of them the owner has, and breweries take 100 or 200 times your roll.
+        Lander du på en andens grund, betaler du dem leje. Ejer man alle gader i en farve, fordobles lejen, så længe der ikke
+        er bygget. Færger tager mere, jo flere af dem ejeren har, og bryggerier tager 100 eller 200 gange dit slag.
     </li>
     <li>
-        Own every street in a colour to build houses on it in your turn, evenly, and a hotel after 4 houses. The bank has
-        <?= HBHUB_MATADOR_BANK_HOUSES ?> houses and <?= HBHUB_MATADOR_BANK_HOTELS ?> hotels. Selling them back gives half the price.
-        The host can change this in the room's settings: let you build on any street you own (then they go up evenly across the
-        streets of the colour you have), or still need the whole colour but build on its streets in any order.
+        Ejer du alle gader i en farve, kan du bygge huse på dem i din tur, jævnt, og et hotel efter 4 huse. Banken har
+        <?= HBHUB_MATADOR_BANK_HOUSES ?> huse og <?= HBHUB_MATADOR_BANK_HOTELS ?> hoteller. Sælger du dem tilbage, får du
+        halvdelen af prisen. Værten kan ændre det i rummets indstillinger: lade dig bygge på alle gader, du ejer (så kommer de
+        op jævnt på tværs af de gader i farven, du har), eller stadig kræve hele farven, men bygge på dens gader i vilkårlig
+        rækkefølge.
     </li>
     <li>
-        Mortgage a property in your turn for half its price (sell the houses in its colour first). No rent is paid for it while it's mortgaged,
-        and paying it back costs <?= HBHUB_MATADOR_INTEREST_PERCENT ?> % on top.
+        Pantsæt en grund i din tur for halvdelen af dens pris (sælg først husene i dens farve). Der bliver ikke betalt leje
+        for den, mens den er pantsat, og at indfri den koster <?= HBHUB_MATADOR_INTEREST_PERCENT ?> % oveni.
     </li>
     <li>
-        Indkomstskat: pay <?= hbHubMatadorKr(HBHUB_MATADOR_TAX_FIXED) ?> or <?= HBHUB_MATADOR_TAX_PERCENT ?> % of everything you're worth,
-        chosen before it's worked out. Ekstraordinær statsskat is <?= hbHubMatadorKr($rulesExtraTax) ?>.
-        These taxes, and what the Prøv lykken cards make you pay, go into Parkering's account: land on Parkering and you
-        get everything in it. The host can turn this off in the room's settings, and then the money goes to the bank and
-        Parkering is a free rest.
+        Indkomstskat: betal <?= hbHubMatadorKr(HBHUB_MATADOR_TAX_FIXED) ?> eller <?= HBHUB_MATADOR_TAX_PERCENT ?> % af alt,
+        hvad du er værd, valgt før det bliver regnet ud. Ekstraordinær statsskat er <?= hbHubMatadorKr($rulesExtraTax) ?>.
+        Disse skatter, og det, Prøv lykken-kortene får dig til at betale, går ind på Parkerings konto: lander du på
+        Parkering, får du alt, hvad der er på den. Værten kan slå det fra i rummets indstillinger, og så går pengene til
+        banken, og Parkering er et gratis hvil.
     </li>
     <li>
-        De fængsles sends you to jail. To get out, pay <?= hbHubMatadorKr(HBHUB_MATADOR_BAIL) ?> before you roll, use a
-        "benådet" card, or roll a 6 (doubles with 2 dice). After <?= HBHUB_MATADOR_JAIL_TRIES ?> tries you pay and move what you rolled.
-        Whether you still get rent while you're in jail is a room setting: yes (the default), no, or it's paid to the bank instead.
+        De fængsles sender dig i fængsel. For at komme ud betaler du <?= hbHubMatadorKr(HBHUB_MATADOR_BAIL) ?>, før du slår,
+        bruger et "benådet"-kort eller slår en 6'er (to ens med 2 terninger). Efter <?= HBHUB_MATADOR_JAIL_TRIES ?> forsøg
+        betaler du og rykker det, du slog. Om du stadig får leje, mens du sidder i fængsel, er en indstilling i rummet: ja
+        (standard), nej, eller den bliver betalt til banken i stedet.
     </li>
-    <li>Prøv lykken: draw a card and do what it says. The "benådet" cards are kept until they're used, or traded.</li>
+    <li>Prøv lykken: træk et kort, og gør, hvad det siger. "Benådet"-kortene bliver gemt, til de bliver brugt eller byttet væk.</li>
     <li>
-        Trade with the others at any time, also in their turns: properties (with nothing built on your streets in their colour), money and "benådet" cards.
-        Whoever gets a mortgaged property pays the <?= HBHUB_MATADOR_INTEREST_PERCENT ?> % interest on it straight away.
-        An offer made to you pops up. You can minimize it to look at the board first, but then it runs out if you haven't
-        answered it within <?= HBHUB_MATADOR_TRADE_SECONDS ?> seconds.
-    </li>
-    <li>
-        Can't pay? Sell houses, mortgage or trade to raise the money, or go bankrupt: everything goes to the one you owe
-        (or back to the bank). The last player left wins.
+        Handl med de andre når som helst, også i deres ture: grunde (uden noget bygget på dine gader i deres farve), penge
+        og "benådet"-kort. Den, der får en pantsat grund, betaler de <?= HBHUB_MATADOR_INTEREST_PERCENT ?> % i rente på den
+        med det samme. Et tilbud til dig dukker op. Du kan minimere det for at kigge på brættet først, men så udløber det,
+        hvis du ikke har svaret inden for <?= HBHUB_MATADOR_TRADE_SECONDS ?> sekunder.
     </li>
     <li>
-        You have <?= HBHUB_MATADOR_TURN_SECONDS ?> seconds to do something in your turn, and the time starts again with
-        everything you do. Run out of time and your turn is passed on: a property you landed on stays with the bank.
-        While you owe money the timer is paused, and the game waits for you to pay or go bankrupt.
+        Kan du ikke betale? Sælg huse, pantsæt eller handl for at skaffe pengene, eller gå fallit: alt går til den, du
+        skylder (eller tilbage til banken). Den sidste spiller tilbage vinder.
     </li>
     <li>
-        The game is saved after every move, in the save slot of whoever opened it. Leave, and your seat is kept for you while
-        your turns are skipped. The host can give an empty seat to someone else, or save the game and stop it.
+        Du har <?= HBHUB_MATADOR_TURN_SECONDS ?> sekunder til at gøre noget i din tur, og tiden starter forfra med alt, hvad
+        du gør. Løber tiden ud, går turen videre: en grund, du landede på, bliver i banken. Mens du skylder penge, er uret
+        sat på pause, og spillet venter på, at du betaler eller går fallit.
     </li>
     <li>
-        Leaving while the game is being played (or closing it for <?= HBHUB_MATADOR_GRACE_SECONDS ?> seconds) counts as a
-        loss on the leaderboard, even if you come back, unless the host has paused the game.
+        Spillet bliver gemt efter hvert træk, i den gemmeplads, der tilhører den, der åbnede det. Går du, bliver din plads
+        holdt til dig, mens dine ture bliver sprunget over. Værten kan give en tom plads til en anden eller gemme spillet og
+        stoppe det.
     </li>
     <li>
-        The host can pause the game. Nobody can roll, build or trade, and no turn runs out or is skipped, until the host
-        goes on. Then the player whose turn it is gets their full <?= HBHUB_MATADOR_TURN_SECONDS ?> seconds again.
+        At gå, mens spillet bliver spillet (eller lukke det i <?= HBHUB_MATADOR_GRACE_SECONDS ?> sekunder), tæller som et
+        nederlag på ranglisten, også hvis du kommer tilbage, medmindre værten har sat spillet på pause.
+    </li>
+    <li>
+        Værten kan sætte spillet på pause. Ingen kan slå, bygge eller handle, og ingen tur løber ud eller bliver sprunget
+        over, før værten fortsætter. Så får den spiller, hvis tur det er, sine fulde <?= HBHUB_MATADOR_TURN_SECONDS ?>
+        sekunder igen.
     </li>
 </ul>

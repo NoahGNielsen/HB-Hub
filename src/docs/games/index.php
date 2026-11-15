@@ -6,86 +6,87 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/games/';
-$docsIntro = 'Seven games, no chips needed: three to play with friends and four to play on your own. All of
-    them are under <a href="/games/">Games</a> in the side bar.';
+$docsIntro = 'Syv spil, ingen chips nødvendige: tre at spille med venner og fire at spille alene. De ligger alle under
+    <a href="/games/">Games</a> i sidebjælken.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="list" aria-labelledby="docs-list">
-                        <h2 id="docs-list">The games</h2>
+                        <h2 id="docs-list">Spillene</h2>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Game</th><th scope="col">What it is</th><th scope="col">Players</th></tr>
+                                    <tr><th scope="col">Spil</th><th scope="col">Hvad det er</th><th scope="col">Spillere</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td><a href="/docs/games/matador">Matador</a></td><td>The Danish Monopoly: buy streets, build hotels and bankrupt your friends.</td><td>2-4</td></tr>
-                                    <tr><td><a href="/docs/games/chess">Chess</a></td><td>Chess, with or without a clock.</td><td>2</td></tr>
-                                    <tr><td><a href="/docs/games/uno">UNO</a></td><td>The card game. Get rid of your cards first, and don't forget to say UNO!</td><td>2-6</td></tr>
-                                    <tr><td><a href="/docs/games/wordle">Wordle</a></td><td>Guess the day's five-letter word, in English and in Danish.</td><td>Just you</td></tr>
-                                    <tr><td><a href="/docs/games/minesweeper">Minesweeper</a></td><td>The classic: clear the board without opening a mine.</td><td>Just you</td></tr>
-                                    <tr><td><a href="/docs/games/sudoku">Sudoku</a></td><td>Fill the board with 1 to 9 in every row, column and box, from Easy to Expert.</td><td>Just you</td></tr>
-                                    <tr><td><a href="/docs/games/ore-mining-inc">Ore Mining Inc.</a></td><td>A clicker game about mining asteroids, and then the whole multiverse.</td><td>Just you</td></tr>
+                                    <tr><td><a href="/docs/games/matador">Matador</a></td><td>Det danske brætspil: køb gader, byg hoteller, og gør dine venner fallit.</td><td>2-4</td></tr>
+                                    <tr><td><a href="/docs/games/chess">Skak</a></td><td>Skak, med eller uden ur.</td><td>2</td></tr>
+                                    <tr><td><a href="/docs/games/uno">UNO</a></td><td>Kortspillet. Bliv af med dine kort først, og glem ikke at sige UNO!</td><td>2-6</td></tr>
+                                    <tr><td><a href="/docs/games/wordle">Wordle</a></td><td>Gæt dagens ord på fem bogstaver, på engelsk og på dansk.</td><td>Kun dig</td></tr>
+                                    <tr><td><a href="/docs/games/minesweeper">Minesweeper</a></td><td>Klassikeren: ryd brættet uden at åbne en mine.</td><td>Kun dig</td></tr>
+                                    <tr><td><a href="/docs/games/sudoku">Sudoku</a></td><td>Fyld brættet med 1 til 9 i hver række, kolonne og boks, fra Easy til Expert.</td><td>Kun dig</td></tr>
+                                    <tr><td><a href="/docs/games/ore-mining-inc">Ore Mining Inc.</a></td><td>Et clickerspil om at mine asteroider, og siden hele multiverset.</td><td>Kun dig</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </section>
 
                     <section id="rooms" aria-labelledby="docs-rooms">
-                        <h2 id="docs-rooms">Opening a game</h2>
-                        <p>Matador, Chess and UNO are played in rooms. On the game's page, open one or join one:</p>
+                        <h2 id="docs-rooms">At åbne et spil</h2>
+                        <p>Matador, skak og UNO spilles i rum. Åbn et, eller gå med i et, på spillets side:</p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Kind of game</th><th scope="col">Who can join</th></tr>
+                                    <tr><th scope="col">Slags spil</th><th scope="col">Hvem kan være med</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>Public</td><td>Anyone. It's listed on the game's page.</td></tr>
-                                    <tr><td>Code</td><td>Anyone with its 6-character code, typed in on the game's page.</td></tr>
-                                    <tr><td>Invite-only</td><td>Only the people the host invites. They get a <a href="/docs/notifications">notification</a>, and the invite waits on the game's page.</td></tr>
+                                    <tr><td>Offentligt</td><td>Alle. Det står på spillets side.</td></tr>
+                                    <tr><td>Kode</td><td>Alle med dets kode på 6 tegn, skrevet ind på spillets side.</td></tr>
+                                    <tr><td>Kun for inviterede</td><td>Kun dem, værten inviterer. De får en <a href="/docs/notifications">notifikation</a>, og invitationen venter på spillets side.</td></tr>
                                 </tbody>
                             </table>
                         </div>
-                        <p>Every game has a code, whatever kind it is, so you can always send it to a friend. Codes leave out letters that look alike, like 0 and O.</p>
+                        <p>Hvert spil har en kode, uanset hvilken slags det er, så du altid kan sende den til en ven. Koder springer bogstaver over, der ligner hinanden, som 0 og O.</p>
                     </section>
 
                     <section id="host" aria-labelledby="docs-host">
-                        <h2 id="docs-host">The host</h2>
-                        <p>Whoever opens a game is its host. The host:</p>
+                        <h2 id="docs-host">Værten</h2>
+                        <p>Den, der åbner et spil, er dets vært. Værten:</p>
                         <ul>
-                            <li>picks the game's settings (like the clock in Chess, or the turn timer and stacking in UNO),</li>
-                            <li>invites people, and starts the game once enough have joined,</li>
-                            <li>can pause the game, which stops the timers until they go on,</li>
-                            <li>and in Matador can give an empty seat to someone else, or save the game to finish another day.</li>
+                            <li>vælger spillets indstillinger (som uret i skak, eller tidsgrænsen og stabling i UNO),</li>
+                            <li>inviterer folk og starter spillet, når nok er kommet med,</li>
+                            <li>kan sætte spillet på pause, hvilket stopper urene, til de fortsætter,</li>
+                            <li>og kan i Matador give en tom plads til en anden, eller gemme spillet for at spille det færdigt en anden dag.</li>
                         </ul>
                     </section>
 
                     <section id="playing" aria-labelledby="docs-playing">
-                        <h2 id="docs-playing">While you play</h2>
+                        <h2 id="docs-playing">Mens du spiller</h2>
                         <ul>
-                            <li><strong>Game chat:</strong> every game has its own chat, with <a href="/docs/chat/mentions">@mentions</a>. It follows the same rules as the normal chat.</li>
-                            <li><strong>Your turn:</strong> in Matador and UNO a sound plays when it's your turn, so you can look at something else while you wait.</li>
-                            <li><strong>Timers:</strong> turns have a time limit, so nobody can keep the game waiting. What happens when it runs out is different in each game.</li>
-                            <li><strong>Leaving:</strong> in Chess and UNO, leaving a game that's being played counts as a loss. In Matador your seat is kept for you. Keeping the game closed for a while counts as leaving it.</li>
+                            <li><strong>Spilchat:</strong> hvert spil har sin egen chat, med <a href="/docs/chat/mentions">@omtaler</a>. Den følger de samme regler som den normale chat.</li>
+                            <li><strong>Din tur:</strong> i Matador og UNO spiller der en lyd, når det er din tur, så du kan kigge på noget andet, mens du venter.</li>
+                            <li><strong>Tidsgrænser:</strong> ture har en tidsgrænse, så ingen kan få spillet til at vente. Hvad der sker, når den løber ud, er forskelligt i hvert spil.</li>
+                            <li><strong>At gå:</strong> i skak og UNO tæller det som et nederlag at forlade et spil, der bliver spillet. I Matador bliver din plads holdt til dig. At holde spillet lukket et stykke tid tæller som at forlade det.</li>
                         </ul>
                     </section>
 
                     <section id="leaderboards" aria-labelledby="docs-leaderboards">
-                        <h2 id="docs-leaderboards">Leaderboards</h2>
+                        <h2 id="docs-leaderboards">Ranglister</h2>
                         <p>
-                            Every game but Sudoku has a leaderboard, linked from its page. Click a column's heading to sort by it. Win % (or the
-                            score, in Chess) only counts once you've played 5 games, so one lucky game can't top it.
+                            Alle spil undtagen Sudoku har en rangliste, som der linkes til fra deres side. Klik på en kolonnes
+                            overskrift for at sortere efter den. Sejrsprocenten (eller scoren, i skak) tæller først, når du har spillet
+                            5 spil, så ét heldigt spil ikke kan komme øverst.
                         </p>
                     </section>
 
                     <section id="fair" aria-labelledby="docs-fair">
-                        <h2 id="docs-fair">Playing fair</h2>
+                        <h2 id="docs-fair">At spille fair</h2>
                         <p>
-                            No cheating, no bots or auto-clickers, no extra accounts to win against yourself, and no bugs used for an
-                            advantage. Found a bug? <a href="/docs/feedback">Tell the admins</a> instead. And win and lose nicely.
-                            The details are in the <a href="/legal/code-of-conduct">Code of Conduct</a>.
+                            Ingen snyd, ingen bots eller autoklikkere, ingen ekstra konti for at vinde over dig selv, og ingen fejl
+                            brugt til en fordel. Har du fundet en fejl? <a href="/docs/feedback">Sig det til admins</a> i stedet. Og vind
+                            og tab pænt. Detaljerne står i <a href="/legal/code-of-conduct">adfærdskodekset</a>.
                         </p>
                         <p>
-                            The games can be <a href="/docs/self-blocking">blocked for yourself</a> during school hours or all the time.
+                            Spillene kan <a href="/docs/self-blocking">blokeres for dig selv</a> i skoletiden eller hele tiden.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>
