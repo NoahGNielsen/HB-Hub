@@ -10,7 +10,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php'; // only for hbHubLegalDanishDate()
 
-const HBHUB_CONDUCT_UPDATED = '14 November 2026';
+const HBHUB_CONDUCT_UPDATED = '15 November 2026';
 ?>
 <!DOCTYPE html>
 <html lang="da" class="home">
@@ -84,7 +84,7 @@ const HBHUB_CONDUCT_UPDATED = '14 November 2026';
                             har blokeret dig eller forladt en chat med dig, fx ved at tilføje dem til en ny gruppe.
                         </p>
                         <p class="legal-note">
-                            Sletter du en besked, bliver den skjult i chatten, men admins kan stadig se den (se
+                            Sletter du en besked, bliver den skjult i chatten, men admins kan stadig se den i 14 dage (se
                             <a href="/legal/privacy#see">privatlivspolitikken</a>), så "jeg har slettet den" gør ikke en ond besked
                             god igen. Tænk, før du sender.
                         </p>

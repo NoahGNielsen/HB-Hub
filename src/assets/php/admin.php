@@ -324,8 +324,10 @@ function adminChatTitleSql(?string $exceptColumn = null): string
  * A message's text for a list of messages, as HTML: GIFs and attachments are named, not shown.
  * A ghost (sent while ghost banned, assets/php/chat.php) gets a badge, and an edit only its sender sees
  * (messageGhostContent) is shown below the text everyone else sees.
+ * A message deleted more than HBHUB_CHAT_DELETED_KEEP_DAYS ago has no text left (chatDeletedMessagesSweep()), which
+ * says so, unless it was only attachments.
  *
- * @param array{messageContent: ?string, attachmentCount: mixed, messageIsGhost: mixed, messageGhostContent: ?string} $message
+ * @param array{messageContent: ?string, attachmentCount: mixed, messageIsGhost: mixed, messageGhostContent: ?string, messageDeletedTimestamp?: ?string} $message
  */
 function adminMessageHtml(array $message): string
 {
@@ -333,6 +335,9 @@ function adminMessageHtml(array $message): string
     $content = $message['messageContent'];
     if ($content === null) {
         $attachments = (int) $message['attachmentCount'];
+        if ($attachments === 0 && ($message['messageDeletedTimestamp'] ?? null) !== null) {
+            return $ghostBadge . '<span class="admin-muted">Text removed ' . HBHUB_CHAT_DELETED_KEEP_DAYS . ' days after it was deleted</span>';
+        }
         return $ghostBadge . '<span class="admin-muted">' . ($attachments > 0 ? hbHubChatAttachmentsLabel($attachments) : 'Empty') . '</span>';
     }
     if (preg_match('~^https://media\.giphy\.com/media/[A-Za-z0-9]{1,64}/giphy\.gif$~', $content) === 1) {

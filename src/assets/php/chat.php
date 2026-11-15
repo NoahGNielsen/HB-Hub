@@ -66,6 +66,10 @@ const HBHUB_CHAT_EVENT_NICKNAME = 15; // a group member's nickname, messageEvent
 // Added to the event when a site admin made the change from the admin panel (admin/chat.php), so 101 is a group renamed
 // by a site admin. The notice says "A site admin" then, and userId is still the admin who did it.
 const HBHUB_CHAT_EVENT_BY_SITE_ADMIN = 100;
+// How long a deleted message's text is kept (from messageDeletedTimestamp) so site admins can look into a report about
+// it. After that chatDeletedMessagesSweep() empties it: the row stays (it still shows as deleted, with its reactions and
+// replies pointing at it), but the text is gone for good, for site admins too.
+const HBHUB_CHAT_DELETED_KEEP_DAYS = 14;
 
 /**
  * Puts a notice in the middle of the chat about a change the user made, like a new group name or a member kicked.
@@ -88,6 +92,20 @@ function chatNotice(PDO $db, int $userId, int $chatId, int $event, ?int $aboutUs
         ->execute([$userId, $chatId, $content, $aboutMessageId, $bySiteAdmin ? HBHUB_CHAT_EVENT_BY_SITE_ADMIN + $event : $event,
             $aboutUserId, (int) $isGhost]);
     return (int) $db->lastInsertId();
+}
+
+/**
+ * Empties the text of every message deleted more than HBHUB_CHAT_DELETED_KEEP_DAYS ago (messageContent, and an edit
+ * made while ghost banned in messageGhostContent). The row itself stays, so the chat still shows "deleted" in its place.
+ * Run by the nightly clean-up (cron/nightly.php) and before the admin panel shows any messages (admin/chat.php,
+ * admin/user.php), so an admin never sees one past the limit even before the night comes. Uses the
+ * messageDeleted index, so it's cheap when there's nothing to do. Returns how many messages were emptied.
+ */
+function chatDeletedMessagesSweep(PDO $db): int
+{
+    return $db->exec('UPDATE `HBHub-Messages` SET messageContent = NULL, messageGhostContent = NULL
+        WHERE messageDeletedTimestamp < NOW() - INTERVAL ' . HBHUB_CHAT_DELETED_KEEP_DAYS . ' DAY
+            AND (messageContent IS NOT NULL OR messageGhostContent IS NOT NULL)');
 }
 
 /**

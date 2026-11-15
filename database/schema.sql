@@ -633,7 +633,7 @@ CREATE TABLE `HBHub-Messages` (
   `chatId` int UNSIGNED NOT NULL,
   `messageContent` varchar(2500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `messageSentTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `messageDeletedTimestamp` datetime DEFAULT NULL,
+  `messageDeletedTimestamp` datetime DEFAULT NULL COMMENT 'When it was deleted. 14 days later its messageContent and messageGhostContent are emptied (chatDeletedMessagesSweep()), the row stays',
   `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin\r\n2 Deleted by a site admin (admin panel)',
   `messageIsEdited` tinyint NOT NULL DEFAULT '0',
   `messageReplyToId` bigint UNSIGNED DEFAULT NULL COMMENT 'The message it replies to. On a pin or unpin notice (messageEventType 13 and 14), the message that was pinned or unpinned',
@@ -1397,7 +1397,8 @@ ALTER TABLE `HBHub-Messages`
   ADD KEY `fk_messages_replyto` (`messageReplyToId`),
   ADD KEY `fk_messages_eventuser` (`messageEventUserId`),
   ADD KEY `messagePinned` (`chatId`,`messagePinnedTimestamp`),
-  ADD KEY `fk_messages_pinnedby` (`messagePinnedBy`);
+  ADD KEY `fk_messages_pinnedby` (`messagePinnedBy`),
+  ADD KEY `messageDeleted` (`messageDeletedTimestamp`);
 
 --
 -- Indexes for table `HBHub-Notifications`

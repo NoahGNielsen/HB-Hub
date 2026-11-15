@@ -5,6 +5,7 @@
 //   - every expired chat attachment: its file deleted from disk and its row marked as expired
 //   - casino tables and game rooms nobody has open anymore (a batch of each, like a lobby visit)
 //   - GIF searches cached longer than 15 minutes
+//   - the text of chat messages deleted more than 14 days ago, the rows stay (assets/php/chat.php)
 //   - admin log rows older than a year (assets/php/adminLog.php)
 //   - Ore Mining Inc. crash reports and browser crash notes older than 90 days (assets/php/games/spaceOreMiner/crashReports.php)
 //   - the Watchdog's 508 reports older than 30 days (assets/php/watchdog.php)
@@ -35,6 +36,7 @@ if (filter_var($siteConfig['site_maintenance'], FILTER_VALIDATE_BOOLEAN)) {
 }
 
 require_once __DIR__ . '/../assets/php/chatAttachments.php';
+require_once __DIR__ . '/../assets/php/chat.php';
 require_once __DIR__ . '/../assets/php/casino/blackjack/room.php';
 require_once __DIR__ . '/../assets/php/casino/baccarat/room.php';
 require_once __DIR__ . '/../assets/php/games/chess/room.php';
@@ -95,7 +97,11 @@ hbHubCronRun('GIF cache', static function () use ($db): string {
     return $db->exec('DELETE FROM `HBHub-GifCache` WHERE gifCacheExpiresTimestamp <= UTC_TIMESTAMP()') . ' expired removed';
 });
 
-hbHubCronRun('Admin log', static function () use ($db): string {
+hbHubCronRun('Deleted messages', static function () use ($db): string {
+    return chatDeletedMessagesSweep($db) . ' emptied';
+});
+
+hbHubCronRun('Admin log',static function () use ($db): string {
     return adminLogSweep($db) . ' old rows removed';
 });
 

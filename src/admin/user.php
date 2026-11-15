@@ -702,6 +702,7 @@ switch ($adminAction) {
 
 // What the page shows, which is logged: it has all their messages and personal info
 adminLogView($db, $adminId, 'user.view', $targetId, null);
+chatDeletedMessagesSweep($db); // a message deleted over 14 days ago never shows its text here, even before the night's clean-up
 $adminSettings = $adminSettingsSaved;
 $adminClass = hbHubClassOf($adminSettings);
 $adminBlock = hbHubBlockSettings($adminSettings);
@@ -1120,7 +1121,7 @@ $adminMessageCounts = $statement->fetch();
                         <div>
                             <h2 id="admin-messages-heading">Messages</h2>
                             <p class="settings-intro">
-                                Everything they've sent, in every chat, newest first. Deleted messages are still here, but only shown as deleted in the chat.
+                                Everything they've sent, in every chat, newest first. Deleted messages are still here for <?= HBHUB_CHAT_DELETED_KEEP_DAYS ?> days, but only shown as deleted in the chat; after that their text is removed for good.
                                 Deleting one here shows it as deleted by a site admin.
                             </p>
                         </div>

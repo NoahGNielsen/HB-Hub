@@ -172,7 +172,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Dine chats samt gruppenavne, -ikoner og -baggrunde.</li>
                             <li>Kælenavne: i en gruppe gemmes kælenavnet med personens medlemskab og vises for alle i gruppen. Ændringen noteres med en besked i chatten, og den, der får et kælenavn, får en notifikation (ikke fra lydløse grupper eller blokerede personer). Kælenavnet forsvinder, når det fjernes, eller personen forlader gruppen. I en privat chat er kælenavnet kun synligt for dig.</li>
                             <li>Mens du skriver, gemmes tidspunktet, så andre ser "... is typing". Selve teksten gemmes aldrig, og tidspunktet ryddes, når du sender, tømmer feltet eller holder op med at skrive. Det gemmes ikke, hvis du er spøgelsesudelukket eller gjort lydløs i chatten.</li>
-                            <li>Slettede beskeder skjules for alle, men bevares sammen med deres reaktioner, så side-admins kan undersøge anmeldelser af misbrug. Vedhæftede filer i en slettet besked slettes permanent, inklusive deres navne.</li>
+                            <li>Slettede beskeder skjules for alle, men deres tekst bevares i 14 dage, så side-admins kan undersøge anmeldelser af misbrug. Derefter slettes teksten permanent; kun en note om, at der var en besked (afsender, tidspunkter og reaktioner), bliver tilbage. Vedhæftede filer i en slettet besked slettes permanent, inklusive deres navne.</li>
                             <li>Notifikationer: hvad der skete, hvem der gjorde det, og om du har set det. Fjerner en gruppeadmin en side-admin fra en gruppe, gemmer notifikationen side-adminens tidligere medlemskab (rolle, kælenavn, lydløs og læseposition), så det kan fortrydes; notifikationen slettes derefter.</li>
                             <li>Omtaler (@navn) i chats og i chatten i skak, Matador og UNO giver en notifikation om, hvem og hvor. Du får den ikke fra lydløse chats eller blokerede personer, og kun hvis du ikke har chatten eller spillet åbent; derfor gemmes, hvornår du sidst havde hver chat åben. Slettes beskeden, slettes notifikationerne også.</li>
                             <li>
@@ -332,7 +332,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li><strong>Medspillere</strong> kan se dine træk og spillets chat.</li>
                             <li>
                                 <strong>Side-admins</strong> kan i adminpanelet se alle oplysninger om en konto, herunder beskeder i
-                                alle chats (også slettede), IP-adresser, logins, bandlyste billeder, feedback, nedbrudsrapporter,
+                                alle chats (også slettede, og slettede beskeder i 14 dage), IP-adresser, logins, bandlyste billeder, feedback, nedbrudsrapporter,
                                 fejlrapporter og sidevisningstal. Adminpanelet viser oplysninger om dine vedhæftede filer (navn,
                                 størrelse, chat og billetter) og dit bannerbillede, men åbner ikke filerne, selvom sidens ejer har
                                 adgang til dem på serveren. Side-admins kan slette dine vedhæftede filer og ændre dit antal billetter.
@@ -402,6 +402,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li><strong>Logins</strong> efter 30 dage, eller straks når du logger ud.</li>
                             <li><strong>Kendte browsere</strong> efter 180 dage uden login, og <strong>browserfingeraftryk</strong> 180 dage efter, de sidst blev set.</li>
                             <li><strong>Vedhæftede filer</strong> efter 90 dage (3 dage for filer over 25 MB), eller tidligere, hvis du sletter dem eller deres besked, en admin sletter beskeden, chatten slettes, eller din konto slettes. Derefter bevares kun en note om antal, størrelse, type og datoer, aldrig filerne eller deres navne.</li>
+                            <li><strong>Teksten i slettede beskeder</strong> 14 dage efter, de blev slettet. Side-admins kan ikke se den derefter.</li>
                             <li><strong>Nedbrudsrapporter og nedbrudsbeskeder</strong> fra Ore Mining Inc. efter 90 dage. Side-admins kan slette rapporter tidligere.</li>
                             <li><strong>Fejlrapporter fra browseren</strong> efter 30 dage. Rapporter sendt uden login er ikke knyttet til en konto og slettes kun på denne måde.</li>
                             <li><strong>Sidevisningstal</strong> efter 90 dage. De er ikke knyttet til nogen og slettes derfor ikke sammen med din konto.</li>
