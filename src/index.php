@@ -153,11 +153,11 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                         <ul class="home-chat-thread">
                             <li class="home-msg">
                                 <span class="home-msg-avatar home-msg-avatar-a">M</span>
-                                <p><b>Maja</b>Blackjack efter skole?</p>
+                                <p><b>Maja</b>Blackjack?</p>
                             </li>
                             <li class="home-msg">
                                 <span class="home-msg-avatar home-msg-avatar-b">O</span>
-                                <p><b>Oliver</b>Kun hvis jeg vinder mine 2.500 chips tilbage</p>
+                                <p><b>Oliver</b>Dealer skal tabe denne gang!</p>
                             </li>
                             <li class="home-msg home-msg-me">
                                 <p>Nej, lad os tage et slag Matador :)</p>
@@ -220,11 +220,11 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 <h2 id="home-chat-title">Privat, i grupper eller med hele klassen.</h2>
                 <p>
                     Skriv privat, eller lav grupper til klassen, projektet og dem, du spiser frokost med. Svar på
-                    beskeder, ret dem bagefter, send GIFs, giv vennerne kælenavne, og sæt den gruppe, der aldrig bliver
+                    beskeder, send GIFs, giv vennerne kælenavne, og sæt den gruppe, der aldrig bliver
                     stille, på lydløs.
                 </p>
                 <ul class="home-ticks">
-                    <li>Beskedanmodninger, så fremmede skal spørge først</li>
+                    <li>Beskedanmodninger</li>
                     <li>Ejere og admins bestemmer selv over deres grupper</li>
                     <li>GIFs, emojis og styr på ulæste beskeder</li>
                 </ul>
@@ -264,12 +264,11 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     Du starter med <?= homeKroner(HBHUB_CASINO_START_CHIPS) ?> chips og kan hente mindst
                     <?= homeKroner(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> nye hver dag, helt op til
                     <?= homeKroner(max(HBHUB_CASINO_DAILY_CALENDAR)) ?>, når du har hentet dem <?= HBHUB_CASINO_DAILY_DAYS ?> dage i træk.
-                    Taber du det hele, mister du kun æren.
                 </p>
                 <ul class="home-ticks">
-                    <li>Spil alene eller ved samme bord som vennerne</li>
-                    <li>Kortspil og roulette med de klassiske regler og indsatser</li>
-                    <li>Gratis chips hver dag, og flere jo længere din stime er</li>
+                    <li>Spil alene eller ved sammen med vennerne</li>
+                    <li>Kortspil og roulette med de klassiske regler</li>
+                    <li>Gratis chips hver dag, og flere jo oftere du henter dem</li>
                     <li>Ranglister, så alle kan se, hvem der er bedst</li>
                 </ul>
                 <a class="home-link" href="/casino/">Gå til casinoet <span aria-hidden="true">→</span></a>
@@ -330,13 +329,13 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 <p class="home-kicker"><img src="/assets/images/icons/small/controler.png" width="18" height="18" alt="Controller-ikon" aria-hidden="true">Spil<?php if (!$homeGamesOpen): ?><span class="home-soon">Kommer snart</span><?php endif; ?></p>
                 <h2 id="home-games-title">Brætspil, uden at finde æsken frem.</h2>
                 <p>
-                    Klassiske bræt- og kortspil, du kan spille med vennerne, plus en daglig udfordring og et spil til
-                    de lange mellemtimer. Der er tidsgrænse på hver tur, så ingen kan trække den, når de er ved at tabe.
+                    Klassiske bræt- og kortspil, du kan spille med vennerne, daglige udfordringer og andre spil til
+                    de lange mellemtimer.
                 </p>
                 <ul class="home-ticks">
                     <li>Spil med vennerne eller alene</li>
                     <li>Spillet bliver gemt, så I kan spille videre i morgen</li>
-                    <li>Offentlige rum, private rum med kode, eller kun for inviterede</li>
+                    <li>Offentlige rum, eller private</li>
                     <li>Chat med de andre ved bordet, mens I spiller</li>
                     <li>Ranglister og revanchekampe</li>
                 </ul>
@@ -371,7 +370,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <!-- Safety -->
         <section class="home-safety" id="safety" aria-labelledby="home-safety-title">
             <p class="home-kicker home-kicker-center">Sikkerhed</p>
-            <h2 id="home-safety-title">Sjovt, men sikkert.</h2>
+            <h2 id="home-safety-title">Sjovt, og sikkert.</h2>
             <ul class="home-safety-grid">
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg>
@@ -391,7 +390,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/></svg>
                     <h3>Din adgangskode er kun din</h3>
-                    <p>Adgangskoder bliver hashet og gemmes aldrig i klartekst. Ingen kan se din, heller ikke admins.</p>
+                    <p>Adgangskoder bliver hashet og gemmes IKKE som tekst. Ingen kan se din adganskode, heller ikke admins.</p>
                 </li>
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8l-5 4 5 4"/><path d="M16 8l5 4-5 4"/><path d="M13.5 5l-3 14"/></svg>
@@ -410,7 +409,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <section class="home-cta" aria-labelledby="home-cta-title">
             <?php if ($homeUser === null): ?>
                 <h2 id="home-cta-title">Din klasse er her allerede.</h2>
-                <p>Det tager under et minut at oprette en konto, og så misser du aldrig den næste joke.</p>
+                <p>Det tager under et minut at oprette en konto, og så misser du ikke det næste spil.</p>
                 <div class="home-hero-actions">
                     <a class="home-btn home-btn-primary home-btn-lg" href="/onboarding">Opret konto</a>
                     <a class="home-btn home-btn-glass home-btn-lg" href="/login">Log ind</a>
