@@ -42,10 +42,7 @@ HB Hub (https://hbhub.noahgajnielsen.dk) is a messaging site for the owner's sch
 - **Plain HTML/CSS/JS** frontend. No bundler, no npm. Each page loads its own `assets/js/*.js` and `assets/css/*.css`.
 - **Shared hosting (Apache, Simply.com)**, so no WebSockets, cron or long-running processes. Real-time is HTTP
   polling, and game timers/cleanup move forward lazily on the next request.
-- **No tests and no linter.** PHP and Node aren't installed on the owner's PC, so `php -l` doesn't work here: check JS
-  by loading the page or script in headless Brave
-  (`"/c/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe" --headless=new`), and PHP by reading it
-  carefully.
+- **No tests and no linter.** PHP and Node aren't installed on the owner's PC, so `php -l` doesn't work here
 
 ## Deploy
 
