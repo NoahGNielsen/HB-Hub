@@ -328,12 +328,14 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <p>
                             Du kan få vist adminloggens poster, der vedrører dig, ved at skrive til
-                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. En anmodning kan dog afvises,
-                            helt eller delvist, hvis der er mistanke om, at oplysningerne vil blive misbrugt, eller hvis de kan
-                            bruges imod en admin, fx til chikane eller til at gengælde en udelukkelse eller anden moderation, i
-                            det omfang databeskyttelsesreglerne tillader det (GDPR art. 15, stk. 4, og databeskyttelseslovens
-                            § 22). Afviser vi en anmodning, får du at vide hvorfor, og du kan klage til Datatilsynet (se
-                            <a href="#rights">Dine rettigheder</a>).
+                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. For at beskytte admins mod
+                            chikane eller gengældelse for en udelukkelse eller anden moderation kan posterne udleveres
+                            anonymiseret, så det ikke fremgår, hvilken admin der gjorde hvad. Du får stadig at vide, hvad der
+                            blev gjort, hvornår og hvad det vedrørte. Kun i yderste tilfælde, hvor det ikke er nok at
+                            anonymisere, fx hvis der er konkret mistanke om, at oplysningerne vil blive misbrugt, kan en
+                            anmodning afvises helt eller delvist, i det omfang databeskyttelsesreglerne tillader det (GDPR
+                            art. 15, stk. 4, og databeskyttelseslovens § 22). Afviser vi en anmodning, får du at vide hvorfor,
+                            og du kan klage til Datatilsynet (se <a href="#rights">Dine rettigheder</a>).
                         </p>
 
                         <h3>Hvad vi ikke gemmer</h3>
