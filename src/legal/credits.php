@@ -297,7 +297,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div class="credits-library-text">
                     <h3><a href="https://www.zone38.net/font/" target="_blank" rel="noopener noreferrer">Press Start</a></h3>
-                    <p>Af codeman38, med bogstaver fra gamle Namco-arkadespil. Tallene på Minesweepers bræt. Den kom med Minesweepers kode.</p>
+                    <p>Af codeman38, med bogstaver fra gamle Namco-arkadespil. Tallene på Minesweepers bræt.</p>
                 </div>
             </div>
             <div class="credits-library">
@@ -308,14 +308,14 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div class="credits-library-text">
                     <h3>Digital Dismay</h3>
-                    <p>Af NALGames. Den røde minetæller og det ur, der står over Minesweepers bræt. Den kom med Minesweepers kode.</p>
+                    <p>Af NALGames. Den røde minetæller og det ur, der står over Minesweepers bræt.</p>
                 </div>
             </div>
         </section>
 
         <!-- Logos: other companies' logos on HB Hub's buttons -->
         <section class="credits-section" id="logos">
-            <p class="credits-fineprint">Det lille logo på knapperne Log ind med Discord er Discords eget. Discord og dets logo er varemærker tilhørende Discord Inc., som intet har med HB Hub at gøre, ud over at du kan logge ind med det.</p>
+            <p class="credits-fineprint">Discord og Discord-logoet er varemærker tilhørende Discord Inc. HB Hub er ikke tilknyttet Discord Inc.</p>
         </section>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
