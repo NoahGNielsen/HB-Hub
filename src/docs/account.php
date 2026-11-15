@@ -87,7 +87,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li>
                                 <strong>Help improve HB Hub</strong>: om siden må samle statistik om, hvordan den virker for dig, fx
                                 de fejl, der sker i din browser på siden, når serveren har for travlt til at svare, og om dine
-                                sidevisninger tæller med i, hvor mange gange hver side bliver åbnet. Den er slået til, indtil du slår den fra. Ore Mining Inc.s
+                                sidevisninger tæller med i, hvor mange gange hver side bliver åbnet. Den er slået til, indtil du slår den fra,
+                                medmindre din browser sendte "Do Not Track", da du oprettede dig: så er den slået fra fra start, og
+                                du får en notifikation om det. Ore Mining Inc.s
                                 egne nedbrudsrapporter spørger altid først; har du slået den fra, står der i spørgsmålet, at det går
                                 imod indstillingen at sende en. Hvad der bliver samlet, står i
                                 <a href="/legal/privacy#watchdog">privatlivspolitikken</a>.

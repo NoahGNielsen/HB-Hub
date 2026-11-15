@@ -14,7 +14,8 @@ function hbHubUserSettings(?string $json): array
 /**
  * Whether the user lets HB Hub gather statistics about how the site works for them (improveSite, the "Help improve HB
  * Hub" card in the settings). On unless they've turned it off, so accounts from before the setting have it on, like
- * visitors who aren't logged in. While it's off:
+ * visitors who aren't logged in. An account made with a browser that sends Do Not Track starts with it off
+ * (onboardingSaveToDB.php). While it's off:
  * - The Watchdog's browser error reports (assets/js/watchdog.js) aren't sent: header.php leaves the script out, and
  *   /watchdog (otherPages/watchdog.php) throws away any that were still waiting in the tab from before.
  * - Ore Mining Inc. doesn't ask Chrome to tell us when its tab crashes (the Reporting-Endpoints header in

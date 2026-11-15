@@ -4,11 +4,22 @@
 // login page with the browser marked, like a banned account's (session.php).
 // When a ghost-banned account is known in the browser (loginLimit.php), the new account is quietly ghost banned too.
 // A new account at HTX is put in its class chat (schoolClass.php).
+// Signing up with a browser that sends "Do Not Track" makes the account with "Help improve HB Hub" off, and tells them
+// so with a notification (settings.doNotTrack in notificationTypes/settings.php).
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/loginLimit.php';
 require_once __DIR__ . '/bannedAvatars.php';
 require_once __DIR__ . '/schoolClass.php'; // how the class is saved, and the class chat they're put in
+require_once __DIR__ . '/notifications.php';
+
+/**
+ * Whether the browser signing up asks sites not to track it: the "Do Not Track" setting, sent as the header DNT: 1.
+ */
+function hbHubSignupDoNotTrack(): bool
+{
+    return trim((string) ($_SERVER['HTTP_DNT'] ?? '')) === '1';
+}
 
 /**
  * Returns [] when the account was created, otherwise step name => message to show on the form.
@@ -20,8 +31,14 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
 {
     [$ipv4, $ipv6] = hbHubClientIp();
 
-    // Same shape as database/defaultUserSettings.json
-    $settings = json_encode(hbHubClassSetSettings([], $values['year'], $values['class']));
+    // Same shape as database/defaultUserSettings.json. Do Not Track turns "Help improve HB Hub" off from the start
+    // (hbHubImproveSiteOn() in userSettings.php), so not even the first page after signing up is counted.
+    $doNotTrack = hbHubSignupDoNotTrack();
+    $settings = hbHubClassSetSettings([], $values['year'], $values['class']);
+    if ($doNotTrack) {
+        $settings['improveSite'] = false;
+    }
+    $settings = json_encode($settings);
 
     $db = null;
     $bannedAvatarId = null;
@@ -106,6 +123,15 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
         hbHubClassChatSync($db, $userId);
     } catch (PDOException $e) {
         error_log('Onboarding: could not put the account in its class chat: ' . $e->getMessage());
+    }
+
+    // Tell them we turned "Help improve HB Hub" off and why. The setting is already saved, so it's only the note if this fails.
+    if ($doNotTrack) {
+        try {
+            hbHubNotify($db, $userId, 'settings.doNotTrack');
+        } catch (PDOException $e) {
+            error_log('Onboarding: could not send the Do Not Track notification: ' . $e->getMessage());
+        }
     }
 
     return [];

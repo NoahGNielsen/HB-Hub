@@ -454,7 +454,10 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <p>
                             Er du logget ind, kan du slå det fra med <strong>Help improve HB Hub</strong> under dine
-                            <a href="/settings#improve">indstillinger</a> (det er slået til, indtil du slår det fra). Så sender siderne
+                            <a href="/settings#improve">indstillinger</a> (det er slået til, indtil du slår det fra). Opretter du
+                            dig med en browser, der beder sider om ikke at spore dig (indstillingen "Do Not Track"), bliver din
+                            konto oprettet med den slået fra, og du får en notifikation under klokken om, at vi har gjort det og
+                            hvorfor. Du kan selv slå den til igen. Så sender siderne
                             ingen fejlrapporter for dig, dine sidevisninger bliver ikke talt med (se
                             <a href="#page-views">Sidevisninger</a> nedenfor), og en rapport, der stadig ventede i din fane fra før, bliver
                             smidt væk uden at blive gemt. Ore Mining Inc. beder så heller ikke din browser om at fortælle os, når
