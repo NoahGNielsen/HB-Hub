@@ -1,28 +1,31 @@
 <?php
-// Settings page for the logged in user: a side menu with four links (settings.css, settingsMenu.js marks the card on
-// screen) next to four cards, each made of rows (.settings-group) that keep their old #anchors:
-// Profile (#profile)
-// - Picture, name, class and bio, with the same rules as onboarding (userMgmt/onboarding.php).
-//   A new class moves them to its class chat (assets/php/schoolClass.php).
-//   A picture on the banned list bans the account (assets/php/bannedAvatars.php).
-//   Also the banner (colors, or a picture that takes tickets), the status and the education badge (assets/php/profile.php).
+// Settings page for the logged in user, laid out like a phone's settings app: a list of rows in four groups, each row
+// showing what it's set to now and opening its own panel. The panel is the one the address points at (/settings#block),
+// shown by the CSS with :target (settings.css), so the rows are plain links and it works without JS. On a small screen
+// the list and the panel take turns (the panel has a "‹ Settings" link back); on a wide one the list stays on the left
+// and Picture and banner shows when no panel is picked. The panels, by their #id:
+// Profile
+// - Picture and banner (#look), Name, class and bio (#profile), Status (#status): one form over three panels, with the
+//   same rules as onboarding (userMgmt/onboarding.php). A new class moves them to its class chat
+//   (assets/php/schoolClass.php). A picture on the banned list bans the account (assets/php/bannedAvatars.php).
+//   The banner (colors, or a picture that takes tickets), the status and the education badge are assets/php/profile.php.
 //   settings.js turns a banner picture into JPEG XL before the form is sent, as only that is taken, and adds a small PNG
 //   check copy of it (bannerCheck), so a banner on the banned list (or a similar copy) bans the account too.
-// Preferences (#preferences)
+// Preferences
 // - Notifications (#notifications): a browser notification and/or a sound for new messages while the site is open
 //   (assets/js/notifications.js, assets/js/messageSound.js)
 // - Gambling and Games (#block): blocking them, during school hours or all the time (assets/php/block.php)
 // - Help improve HB Hub (#improve): whether the site may gather statistics about how it works for them (improveSite,
 //   on by default; hbHubImproveSiteOn() in assets/php/userSettings.php says what it turns off)
-// Security (#security)
+// Security
 // - Password (#password): a new one, after entering the current one. Logs out every other session.
 // - Two-factor login (#totp): a code from an authenticator app when logging in (assets/php/totp.php)
 // - Discord login (#discord): linking a Discord account to log in with (assets/php/discord.php), or unlinking it,
 //   and whether its username is shown on the profile (profileShowDiscord). Only there when Discord login is set up.
 // - Logged in devices (#devices): every session (HBHub-Sessions) with its browser and system and when it was last used,
 //   and a button to log out each of the others
-// Account (#account)
-// - Log out: only this device. Log out everywhere: every device, this one too.
+// Account
+// - Log out: only this device. Log out everywhere: every device, this one too. Both straight from their rows.
 // - Delete account (#delete): after entering the password
 // The password and 2FA codes typed in to confirm a change count towards the login lock (assets/php/loginLimit.php).
 //
@@ -645,6 +648,56 @@ function settingsErrorSlot(array $errors, string $field): string
     return '<p class="settings-error" role="alert" data-error-for="' . $field . '"' . ($message === null ? ' hidden' : '') . '>'
         . htmlspecialchars($message ?? '') . '</p>';
 }
+
+/**
+ * The top of a panel: back to the list (only on a small screen, where the list and the panel take turns), its title
+ * with Saving… / Saved next to it when it saves by itself ($saves), and a line about it.
+ */
+function settingsPanelHead(string $id, string $title, ?string $intro = null, bool $saves = false): string
+{
+    return '<header class="settings-panel-head">'
+        . '<a class="settings-back" href="#" data-settings-back>‹ Settings</a>'
+        . '<div class="settings-panel-title">'
+        . '<h2 id="settings-' . $id . '-heading">' . htmlspecialchars($title) . '</h2>'
+        . ($saves ? '<span class="settings-save-state" aria-live="polite" data-save-state></span>' : '')
+        . '</div>'
+        . ($intro !== null ? '<p class="settings-intro">' . htmlspecialchars($intro) . '</p>' : '')
+        . '</header>';
+}
+
+/**
+ * One row in the list: an icon in a colored tile, its name, what it's set to now ($value, which settings.js keeps up to
+ * date through [data-summary="$summary"]), and an arrow. Goes to its panel (#$id).
+ */
+function settingsRow(string $id, string $icon, string $tone, string $title, string $value = '', ?string $summary = null, string $class = ''): string
+{
+    return '<li><a class="settings-row' . ($class !== '' ? ' ' . $class : '') . '" href="#' . $id . '" data-settings-row>'
+        . '<span class="settings-row-icon" data-tone="' . $tone . '" aria-hidden="true">' . $icon . '</span>'
+        . '<span class="settings-row-text">'
+        . '<span class="settings-row-title">' . htmlspecialchars($title) . '</span>'
+        . '<span class="settings-row-value"' . ($summary !== null ? ' data-summary="' . $summary . '"' : '') . ($value === '' ? ' hidden' : '') . '>'
+        . htmlspecialchars($value) . '</span>'
+        . '</span>'
+        . '<span class="settings-row-arrow" aria-hidden="true">›</span>'
+        . '</a></li>';
+}
+
+// What each row in the list says it's set to now. settings.js works out the same from the forms after an autosave.
+$settingsClassSummary = match ($settingsValues['year']) {
+    '' => 'No class yet',
+    HBHUB_CLASS_NOT_HTX => 'Not HTX',
+    HBHUB_CLASS_GRADUATE => 'Graduate',
+    default => $settingsValues['year'] . '. year',
+} . ($settingsValues['year'] !== HBHUB_CLASS_NOT_HTX && in_array($settingsValues['class'], HBHUB_CLASS_FIELDS, true) ? ' · ' . $settingsValues['class'] : '');
+$settingsStatusSummary = trim($settingsValues['statusEmoji'] . ' ' . str_replace("\n", ' ', $settingsValues['statusText']));
+$settingsNotificationsSummary = match (true) {
+    $settingsNotificationsOn && $settingsNotificationSoundOn => 'Notifications and sound',
+    $settingsNotificationsOn => 'Notifications',
+    $settingsNotificationSoundOn => 'Sound',
+    default => 'Off',
+};
+$settingsBlockSummary = $settingsBlockIsAdmin ? 'Blocked by an admin' : HBHUB_BLOCK_MODES[$settingsBlock['pendingMode'] ?? $settingsBlock['mode']];
+$settingsDeviceCount = count($settingsDevices);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -654,7 +707,6 @@ function settingsErrorSlot(array $errors, string $field): string
     <?php if ($settingsTotpSetupSecret !== null): ?>
         <script src="/assets/js/vendor/qrcode.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/vendor/qrcode.js') ?>" defer></script>
     <?php endif; ?>
-    <script src="/assets/js/settingsMenu.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/settingsMenu.js') ?>" defer></script>
     <script src="/assets/js/settings.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/settings.js') ?>" defer></script>
     <script src="/assets/js/statusForm.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/statusForm.js') ?>" defer></script>
     <script src="/assets/js/jxlImages.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/jxlImages.js') ?>" defer></script>
@@ -668,143 +720,197 @@ function settingsErrorSlot(array $errors, string $field): string
     $settingsAvatarRemovable = $settingsAvatarMode !== SETTINGS_REQUIRED; // the Remove button is there, hidden while there's no picture
     $settingsJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatJxlWorker.js');
     ?>
-    <main class="settings settings-page">
-        <div class="settings-layout">
-            <!-- Side menu: links to the cards next to it, settingsMenu.js marks the one on screen -->
-            <nav class="settings-menu" aria-label="Settings sections" data-settings-menu>
-                <div class="settings-menu-who">
-                    <span class="settings-menu-avatar" aria-hidden="true">
-                        <img src="<?= htmlspecialchars($settingsAvatarSrc ?? '') ?>" alt="" data-avatar-picture<?= $settingsAvatarSrc === null ? ' hidden' : '' ?>>
-                        <span data-avatar-initial<?= $settingsAvatarSrc !== null ? ' hidden' : '' ?>><?= $settingsInitial ?></span>
-                    </span>
-                    <div class="settings-menu-who-text">
-                        <span class="settings-menu-who-name" data-settings-name><?= htmlspecialchars($settingsUser['userName']) ?></span>
-                        <a href="/profile">View your profile</a>
-                    </div>
-                </div>
-                <div class="settings-menu-links">
-                    <ul class="settings-menu-list">
-                        <li><a class="settings-menu-link" href="#profile">Profile</a></li>
-                        <li><a class="settings-menu-link" href="#preferences">Preferences</a></li>
-                        <li><a class="settings-menu-link" href="#security">Security</a></li>
-                        <li><a class="settings-menu-link" href="#account">Account</a></li>
-                    </ul>
-                </div>
+    <main class="settings settings-page settings-app" data-settings-app>
+        <!-- The list: you at the top, then a row for each panel, in groups. The rows are plain #links, and the CSS shows
+             the panel the address points at (:target), so it works without JS too. -->
+        <div class="settings-home" data-settings-home>
+            <div class="settings-title">
+                <h1>Settings</h1>
+                <p class="settings-hint">Changes are saved as you make them.</p>
+            </div>
+
+            <a class="settings-me" href="/profile">
+                <span class="settings-me-avatar" aria-hidden="true">
+                    <img src="<?= htmlspecialchars($settingsAvatarSrc ?? '') ?>" alt="" data-avatar-picture<?= $settingsAvatarSrc === null ? ' hidden' : '' ?>>
+                    <span data-avatar-initial<?= $settingsAvatarSrc !== null ? ' hidden' : '' ?>><?= $settingsInitial ?></span>
+                </span>
+                <span class="settings-me-text">
+                    <span class="settings-me-name" data-settings-name><?= htmlspecialchars($settingsUser['userName']) ?></span>
+                    <span class="settings-me-status" data-summary="status"<?= $settingsStatusSummary === '' ? ' hidden' : '' ?>><?= htmlspecialchars($settingsStatusSummary) ?></span>
+                    <span class="settings-me-link">View your profile ›</span>
+                </span>
+            </a>
+
+            <nav class="settings-lists" aria-label="Settings">
+                <h2 class="settings-list-heading">Profile</h2>
+                <ul class="settings-list">
+                    <?= settingsRow('look', '🖼️', 'orange', 'Picture and banner', $settingsValues['bannerType'] === 'picture' ? 'Picture banner' : 'Color banner', 'look') ?>
+                    <?= settingsRow('profile', '🪪', 'purple', 'Name, class and bio', $settingsClassSummary, 'profile') ?>
+                    <?= settingsRow('status', '💬', 'blue', 'Status', $settingsStatusSummary !== '' ? $settingsStatusSummary : 'None', 'statusRow') ?>
+                </ul>
+
+                <h2 class="settings-list-heading">Preferences</h2>
+                <ul class="settings-list">
+                    <?= settingsRow('notifications', '🔔', 'red', 'Notifications', $settingsNotificationsSummary, 'notifications') ?>
+                    <?= settingsRow('block', '🎰', 'green', 'Gambling and Games', $settingsBlockSummary, 'block') ?>
+                    <?= settingsRow('improve', '📊', 'grey', 'Help improve HB Hub', $settingsImproveSiteOn ? 'On' : 'Off', 'improve') ?>
+                </ul>
+
+                <h2 class="settings-list-heading">Security</h2>
+                <ul class="settings-list">
+                    <?= settingsRow('password', '🔑', 'orange', 'Password', 'Change your password') ?>
+                    <?= settingsRow('totp', '🔐', 'green', 'Two-factor login', $settingsTotpIsOn ? 'On' : 'Off') ?>
+                    <?php if ($settingsDiscord !== null): ?>
+                        <?= settingsRow('discord', hbHubDiscordLogo(), 'discord', 'Discord login', $settingsDiscordName !== null ? 'Linked to ' . $settingsDiscordName : 'Not linked') ?>
+                    <?php endif; ?>
+                    <?= settingsRow('devices', '💻', 'blue', 'Logged in devices', $settingsDeviceCount === 1 ? 'Only this one' : "$settingsDeviceCount devices") ?>
+                </ul>
+
+                <h2 class="settings-list-heading">Account</h2>
+                <ul class="settings-list">
+                    <li>
+                        <form action="/settings" method="post">
+                            <input type="hidden" name="action" value="logout">
+                            <button type="submit" class="settings-row">
+                                <span class="settings-row-icon" data-tone="grey" aria-hidden="true">🚪</span>
+                                <span class="settings-row-text">
+                                    <span class="settings-row-title">Log out</span>
+                                    <span class="settings-row-value">On this device</span>
+                                </span>
+                            </button>
+                        </form>
+                    </li>
+                    <li>
+                        <form action="/settings" method="post" data-confirm="Log out on every device, this one too?">
+                            <input type="hidden" name="action" value="logoutEverywhere">
+                            <button type="submit" class="settings-row">
+                                <span class="settings-row-icon" data-tone="grey" aria-hidden="true">🌍</span>
+                                <span class="settings-row-text">
+                                    <span class="settings-row-title">Log out everywhere</span>
+                                    <span class="settings-row-value">On every device, this one too</span>
+                                </span>
+                            </button>
+                        </form>
+                    </li>
+                    <?= settingsRow('delete', '🗑️', 'red', 'Delete account', '', null, 'is-danger') ?>
+                </ul>
             </nav>
+        </div>
 
-            <div class="settings-content">
-                <div class="settings-title">
-                    <h1>Settings</h1>
-                    <p class="settings-hint">Changes are saved as you make them.</p>
-                </div>
+        <!-- The panels: one shows at a time, the one the address points at (or holds what it points at, like
+             #settings-status-text). On a wide screen the list stays next to it, and Picture and banner shows when the
+             address points at none. -->
+        <div class="settings-panels">
+            <!-- Profile: one form over three panels, sent by itself as it's changed (settings.js). All of it is sent
+                 every time, the panels that aren't showing too. -->
+            <form action="/settings#profile" method="post" enctype="multipart/form-data" data-autosave data-profile-form>
+                <input type="hidden" name="action" value="profile">
 
-                <!-- Profile: one form, sent by itself as it's changed (settings.js) -->
-                <section class="settings-card" id="profile" aria-labelledby="settings-profile-heading">
-                    <div class="settings-card-head">
-                        <div>
-                            <h2 id="settings-profile-heading">Profile</h2>
-                            <p class="settings-intro">How everyone else sees you on HB Hub.</p>
+                <!-- Picture and banner: the banner with the profile picture over it, like on the profile, and the
+                     controls for both under it. Banner (assets/php/profile.php): two colors and a direction like a
+                     chat's background, or a picture. settings.js shows the one picked in the preview, and turns a new
+                     picture into JPEG XL before it's sent. Without JS the preview stays plain, and a picture isn't taken. -->
+                <section class="settings-card settings-panel" id="look" aria-labelledby="settings-look-heading" data-settings-panel data-settings-default>
+                    <?= settingsPanelHead('look', 'Picture and banner', 'The top of your profile.', true) ?>
+                    <?= settingsErrorSlot($settingsErrors, 'profile') ?>
+
+                    <div class="settings-look" data-banner data-jxl-worker="<?= $settingsJxlWorker ?>"
+                         data-banner-max-side="<?= HBHUB_PROFILE_BANNER_MAX_SIDE ?>" data-banner-max-bytes="<?= HBHUB_PROFILE_BANNER_MAX_BYTES ?>"
+                         data-ticket-bytes="<?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES ?>">
+                        <div class="settings-banner-preview" aria-hidden="true" data-banner-preview>
+                            <?php if ($settingsBannerId !== null): ?>
+                                <img class="settings-banner-picture" src="<?= htmlspecialchars(hbHubProfileBannerUrl($userId, $settingsBannerId)) ?>" alt=""
+                                     data-banner-current data-jxl data-jxl-worker="<?= $settingsJxlWorker ?>">
+                            <?php endif; ?>
                         </div>
-                        <span class="settings-save-state" aria-live="polite" data-save-state></span>
-                    </div>
+                        <div class="settings-look-avatar" aria-hidden="true">
+                            <img class="settings-avatar-preview" src="<?= htmlspecialchars($settingsAvatarSrc ?? '') ?>" alt="" data-avatar-picture<?= $settingsAvatarSrc === null ? ' hidden' : '' ?>>
+                            <span class="settings-avatar-preview settings-avatar-initial" data-avatar-initial<?= $settingsAvatarSrc !== null ? ' hidden' : '' ?>><?= $settingsInitial ?></span>
+                        </div>
 
-                    <form action="/settings#profile" method="post" enctype="multipart/form-data" data-autosave data-profile-form>
-                        <input type="hidden" name="action" value="profile">
-                        <?= settingsErrorSlot($settingsErrors, 'profile') ?>
-
-                        <!-- The banner with the profile picture over it, like on the profile, and the controls for both
-                             under it. Banner (assets/php/profile.php): two colors and a direction like a chat's
-                             background, or a picture. settings.js shows the one picked in the preview, and turns a new
-                             picture into JPEG XL before it's sent. Without JS the preview stays plain, and a picture
-                             isn't taken. -->
-                        <div class="settings-look" data-banner data-jxl-worker="<?= $settingsJxlWorker ?>"
-                             data-banner-max-side="<?= HBHUB_PROFILE_BANNER_MAX_SIDE ?>" data-banner-max-bytes="<?= HBHUB_PROFILE_BANNER_MAX_BYTES ?>"
-                             data-ticket-bytes="<?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES ?>">
-                            <div class="settings-banner-preview" aria-hidden="true" data-banner-preview>
-                                <?php if ($settingsBannerId !== null): ?>
-                                    <img class="settings-banner-picture" src="<?= htmlspecialchars(hbHubProfileBannerUrl($userId, $settingsBannerId)) ?>" alt=""
-                                         data-banner-current data-jxl data-jxl-worker="<?= $settingsJxlWorker ?>">
+                        <?php if ($settingsCanUploadAvatar || $settingsCanRemoveAvatar): ?>
+                        <div class="settings-group">
+                            <div class="settings-field">
+                                <span class="settings-label">Profile picture</span>
+                                <?php if ($settingsCanUploadAvatar): ?>
+                                    <label class="settings-visually-hidden" for="settings-avatar">Choose a profile picture</label>
+                                    <input type="file" id="settings-avatar" name="avatar" accept="<?= implode(',', SETTINGS_AVATAR_TYPES) ?>" aria-describedby="settings-avatar-hint" data-avatar-input>
+                                    <p class="settings-hint" id="settings-avatar-hint">PNG, JPEG, GIF or WebP, up to <?= $settingsAvatarMaxLabel ?>.</p>
                                 <?php endif; ?>
+                                <?php if ($settingsAvatarRemovable): ?>
+                                    <!-- Belongs to a form of its own, so pressing Enter in a field never removes the picture -->
+                                    <button type="submit" class="settings-btn settings-btn-danger settings-btn-small" form="settings-remove-avatar"
+                                            data-avatar-remove<?= $settingsAvatarId === null ? ' hidden' : '' ?>>Remove picture</button>
+                                <?php endif; ?>
+                                <?= settingsErrorSlot($settingsErrors, 'avatar') ?>
                             </div>
-                            <div class="settings-look-avatar" aria-hidden="true">
-                                <img class="settings-avatar-preview" src="<?= htmlspecialchars($settingsAvatarSrc ?? '') ?>" alt="" data-avatar-picture<?= $settingsAvatarSrc === null ? ' hidden' : '' ?>>
-                                <span class="settings-avatar-preview settings-avatar-initial" data-avatar-initial<?= $settingsAvatarSrc !== null ? ' hidden' : '' ?>><?= $settingsInitial ?></span>
+                        </div>
+                        <?php endif; ?>
+
+                        <fieldset class="settings-group settings-field settings-banner">
+                            <legend class="settings-label">Banner</legend>
+                            <div class="settings-banner-types">
+                                <label class="settings-banner-type">
+                                    <input type="radio" name="bannerType" value="colors"<?= $settingsValues['bannerType'] === 'colors' ? ' checked' : '' ?> data-banner-type>
+                                    <span>Colors</span>
+                                </label>
+                                <label class="settings-banner-type">
+                                    <input type="radio" name="bannerType" value="picture"<?= $settingsValues['bannerType'] === 'picture' ? ' checked' : '' ?>
+                                           <?= !$settingsCanUploadBanner && $settingsBannerId === null ? ' disabled' : '' ?> data-banner-type>
+                                    <span>Picture</span>
+                                </label>
                             </div>
 
-                            <div class="settings-look-controls">
-                                <?php if ($settingsCanUploadAvatar || $settingsCanRemoveAvatar): ?>
-                                <div class="settings-field">
-                                    <span class="settings-label">Profile picture</span>
-                                    <?php if ($settingsCanUploadAvatar): ?>
-                                        <label class="settings-visually-hidden" for="settings-avatar">Choose a profile picture</label>
-                                        <input type="file" id="settings-avatar" name="avatar" accept="<?= implode(',', SETTINGS_AVATAR_TYPES) ?>" aria-describedby="settings-avatar-hint" data-avatar-input>
-                                        <p class="settings-hint" id="settings-avatar-hint">PNG, JPEG, GIF or WebP, up to <?= $settingsAvatarMaxLabel ?>.</p>
-                                    <?php endif; ?>
-                                    <?php if ($settingsAvatarRemovable): ?>
-                                        <!-- Belongs to a form of its own, so pressing Enter in a field never removes the picture -->
-                                        <button type="submit" class="settings-btn settings-btn-danger settings-btn-small" form="settings-remove-avatar"
-                                                data-avatar-remove<?= $settingsAvatarId === null ? ' hidden' : '' ?>>Remove picture</button>
-                                    <?php endif; ?>
-                                    <?= settingsErrorSlot($settingsErrors, 'avatar') ?>
+                            <div class="settings-banner-colors" data-banner-colors>
+                                <div class="settings-banner-color-pickers">
+                                    <label class="settings-visually-hidden" for="settings-banner-color1">From</label>
+                                    <input type="color" id="settings-banner-color1" name="bannerColor1" value="<?= htmlspecialchars($settingsValues['bannerColor1']) ?>" title="From">
+                                    <label class="settings-visually-hidden" for="settings-banner-color2">To</label>
+                                    <input type="color" id="settings-banner-color2" name="bannerColor2" value="<?= htmlspecialchars($settingsValues['bannerColor2']) ?>" title="To">
                                 </div>
-                                <?php endif; ?>
-
-                                <fieldset class="settings-field settings-banner">
-                                    <legend class="settings-label">Banner</legend>
-                                    <div class="settings-banner-types">
-                                        <label class="settings-banner-type">
-                                            <input type="radio" name="bannerType" value="colors"<?= $settingsValues['bannerType'] === 'colors' ? ' checked' : '' ?> data-banner-type>
-                                            <span>Colors</span>
+                                <fieldset class="settings-directions">
+                                    <legend class="settings-visually-hidden">Direction</legend>
+                                    <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [$arrow, $label]): ?>
+                                        <label title="<?= $label ?>">
+                                            <input type="radio" class="settings-visually-hidden" name="bannerAngle" value="<?= $angle ?>"<?= $settingsValues['bannerAngle'] === (string) $angle ? ' checked' : '' ?>>
+                                            <span class="settings-direction-arrow" aria-hidden="true"><?= $arrow ?></span>
+                                            <span class="settings-visually-hidden"><?= $label ?></span>
                                         </label>
-                                        <label class="settings-banner-type">
-                                            <input type="radio" name="bannerType" value="picture"<?= $settingsValues['bannerType'] === 'picture' ? ' checked' : '' ?>
-                                                   <?= !$settingsCanUploadBanner && $settingsBannerId === null ? ' disabled' : '' ?> data-banner-type>
-                                            <span>Picture</span>
-                                        </label>
-                                    </div>
-
-                                    <div class="settings-banner-colors" data-banner-colors>
-                                        <div class="settings-banner-color-pickers">
-                                            <label class="settings-visually-hidden" for="settings-banner-color1">From</label>
-                                            <input type="color" id="settings-banner-color1" name="bannerColor1" value="<?= htmlspecialchars($settingsValues['bannerColor1']) ?>" title="From">
-                                            <label class="settings-visually-hidden" for="settings-banner-color2">To</label>
-                                            <input type="color" id="settings-banner-color2" name="bannerColor2" value="<?= htmlspecialchars($settingsValues['bannerColor2']) ?>" title="To">
-                                        </div>
-                                        <fieldset class="settings-directions">
-                                            <legend class="settings-visually-hidden">Direction</legend>
-                                            <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [$arrow, $label]): ?>
-                                                <label title="<?= $label ?>">
-                                                    <input type="radio" class="settings-visually-hidden" name="bannerAngle" value="<?= $angle ?>"<?= $settingsValues['bannerAngle'] === (string) $angle ? ' checked' : '' ?>>
-                                                    <span class="settings-direction-arrow" aria-hidden="true"><?= $arrow ?></span>
-                                                    <span class="settings-visually-hidden"><?= $label ?></span>
-                                                </label>
-                                            <?php endforeach; ?>
-                                        </fieldset>
-                                    </div>
-
-                                    <div class="settings-banner-upload" data-banner-upload>
-                                        <?php if ($settingsCanUploadBanner): ?>
-                                            <label class="settings-visually-hidden" for="settings-banner">Choose a banner picture</label>
-                                            <input type="file" id="settings-banner" name="banner" accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp,image/jxl"
-                                                   aria-describedby="settings-banner-hint" data-banner-input>
-                                            <!-- settings.js puts the banner's check copy for the banned pictures list here (assets/php/bannedAvatars.php) -->
-                                            <input type="file" name="bannerCheck" hidden tabindex="-1" aria-hidden="true"
-                                                   data-banner-check="<?= HBHUB_BANNED_AVATAR_CHECK_SIDE ?>">
-                                            <p class="settings-hint" id="settings-banner-hint">
-                                                Takes a ticket from your chat attachments (you have <span data-tickets-free><?= $settingsTicketsFree ?></span> free)
-                                                for as long as it's your banner. Choosing colors removes the picture and gives the ticket back.
-                                            </p>
-                                        <?php else: ?>
-                                            <p class="settings-hint">New banner pictures are turned off for now.</p>
-                                        <?php endif; ?>
-                                        <!-- settings.js: how getting the picture ready is going -->
-                                        <p class="settings-hint" aria-live="polite" data-banner-status></p>
-                                    </div>
-                                    <?= settingsErrorSlot($settingsErrors, 'banner') ?>
+                                    <?php endforeach; ?>
                                 </fieldset>
                             </div>
-                        </div>
 
+                            <div class="settings-banner-upload" data-banner-upload>
+                                <?php if ($settingsCanUploadBanner): ?>
+                                    <label class="settings-visually-hidden" for="settings-banner">Choose a banner picture</label>
+                                    <input type="file" id="settings-banner" name="banner" accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp,image/jxl"
+                                           aria-describedby="settings-banner-hint" data-banner-input>
+                                    <!-- settings.js puts the banner's check copy for the banned pictures list here (assets/php/bannedAvatars.php) -->
+                                    <input type="file" name="bannerCheck" hidden tabindex="-1" aria-hidden="true"
+                                           data-banner-check="<?= HBHUB_BANNED_AVATAR_CHECK_SIDE ?>">
+                                    <p class="settings-hint" id="settings-banner-hint">
+                                        Takes a ticket from your chat attachments (you have <span data-tickets-free><?= $settingsTicketsFree ?></span> free)
+                                        for as long as it's your banner. Choosing colors removes the picture and gives the ticket back.
+                                    </p>
+                                <?php else: ?>
+                                    <p class="settings-hint">New banner pictures are turned off for now.</p>
+                                <?php endif; ?>
+                                <!-- settings.js: how getting the picture ready is going -->
+                                <p class="settings-hint" aria-live="polite" data-banner-status></p>
+                            </div>
+                            <?= settingsErrorSlot($settingsErrors, 'banner') ?>
+                        </fieldset>
+                    </div>
+
+                    <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save profile</button></div></noscript>
+                </section>
+
+                <!-- Name, class and bio -->
+                <section class="settings-card settings-panel" id="profile" aria-labelledby="settings-profile-heading" data-settings-panel>
+                    <?= settingsPanelHead('profile', 'Name, class and bio', 'How everyone else sees you on HB Hub.', true) ?>
+                    <?= settingsErrorSlot($settingsErrors, 'profile') ?>
+
+                    <div class="settings-group">
                         <div class="settings-field">
                             <label class="settings-label" for="settings-name">Name</label>
                             <!-- Saved once you leave the field, not while typing, as it's what you log in with -->
@@ -813,7 +919,9 @@ function settingsErrorSlot(array $errors, string $field): string
                             <p class="settings-hint" id="settings-name-hint">What everyone else sees you as, and what you log in with. <?= HBHUB_USER_NAME_MIN ?> to <?= $settingsNameMax ?> characters.</p>
                             <?= settingsErrorSlot($settingsErrors, 'name') ?>
                         </div>
+                    </div>
 
+                    <div class="settings-group">
                         <div class="settings-field">
                             <div class="settings-row">
                                 <div class="settings-field">
@@ -856,33 +964,10 @@ function settingsErrorSlot(array $errors, string $field): string
                             <p class="settings-hint" id="settings-education-hint">A badge on your profile for the kind of education you're taking.</p>
                             <?= settingsErrorSlot($settingsErrors, 'education') ?>
                         </div>
+                    </div>
 
-                        <!-- Status (assets/php/profile.php): an emoji and a short text under the name, and when it clears.
-                             statusForm.js adds a row of emoji to pick from, and stops the text at two lines. -->
-                        <div class="settings-field">
-                            <label class="settings-label" for="settings-status-text">Status <span class="settings-optional">(Optional)</span></label>
-                            <div class="settings-status-row">
-                                <label class="settings-visually-hidden" for="settings-status-emoji">Status emoji</label>
-                                <input type="text" id="settings-status-emoji" class="settings-status-emoji" name="statusEmoji" maxlength="16"
-                                       placeholder="😀" autocomplete="off" value="<?= htmlspecialchars($settingsValues['statusEmoji']) ?>" data-status-emoji>
-                                <textarea id="settings-status-text" name="statusText" maxlength="<?= HBHUB_PROFILE_STATUS_TEXT_MAX ?>" rows="2"
-                                          placeholder="What are you up to?" aria-describedby="settings-status-hint" data-status-text
-                                          data-max-lines="<?= HBHUB_PROFILE_STATUS_LINES_MAX ?>"><?= htmlspecialchars($settingsValues['statusText']) ?></textarea>
-                            </div>
-                            <div class="settings-status-picks" data-status-picks hidden></div>
-                            <div class="settings-status-clear">
-                                <label for="settings-status-clear">Clear after</label>
-                                <select id="settings-status-clear" name="statusClearAfter" data-status-clear>
-                                    <?= hbHubProfileStatusClearOptions($settingsStatus, $settingsValues['statusClearAfter']) ?>
-                                </select>
-                            </div>
-                            <p class="settings-hint" id="settings-status-hint">
-                                Shown next to your profile picture. One emoji and up to <?= HBHUB_PROFILE_STATUS_TEXT_MAX ?> characters on up to <?= HBHUB_PROFILE_STATUS_LINES_MAX ?> lines.
-                            </p>
-                            <?= settingsErrorSlot($settingsErrors, 'status') ?>
-                        </div>
-
-                        <?php if ($settingsDescriptionMode !== SETTINGS_DISABLED): ?>
+                    <?php if ($settingsDescriptionMode !== SETTINGS_DISABLED): ?>
+                    <div class="settings-group">
                         <div class="settings-field">
                             <label class="settings-label" for="settings-description">Bio<?php if ($settingsDescriptionMode === SETTINGS_OPTIONAL): ?> <span class="settings-optional">(Optional)</span><?php endif; ?></label>
                             <textarea id="settings-description" name="description" maxlength="<?= $settingsDescriptionMax ?>" rows="4"
@@ -893,34 +978,57 @@ function settingsErrorSlot(array $errors, string $field): string
                             </p>
                             <?= settingsErrorSlot($settingsErrors, 'description') ?>
                         </div>
-                        <?php endif; ?>
-
-                        <noscript>
-                            <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-primary">Save profile</button>
-                            </div>
-                        </noscript>
-                    </form>
-
-                    <?php if ($settingsAvatarRemovable): ?>
-                        <form id="settings-remove-avatar" action="/settings" method="post" hidden>
-                            <input type="hidden" name="action" value="removeAvatar">
-                        </form>
+                    </div>
                     <?php endif; ?>
+
+                    <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save profile</button></div></noscript>
                 </section>
 
-                <!-- Preferences: a small form each, sent by themselves as they're changed (settings.js) -->
-                <section class="settings-card" id="preferences" aria-labelledby="settings-preferences-heading">
-                    <div class="settings-card-head">
-                        <div>
-                            <h2 id="settings-preferences-heading">Preferences</h2>
-                            <p class="settings-intro">Notifications, blocking and statistics.</p>
+                <!-- Status (assets/php/profile.php): an emoji and a short text under the name, and when it clears.
+                     statusForm.js adds a row of emoji to pick from, and stops the text at two lines. -->
+                <section class="settings-card settings-panel" id="status" aria-labelledby="settings-status-heading" data-settings-panel>
+                    <?= settingsPanelHead('status', 'Status', 'Shown next to your profile picture.', true) ?>
+                    <?= settingsErrorSlot($settingsErrors, 'profile') ?>
+
+                    <div class="settings-field">
+                        <label class="settings-label" for="settings-status-text">Status <span class="settings-optional">(Optional)</span></label>
+                        <div class="settings-status-row">
+                            <label class="settings-visually-hidden" for="settings-status-emoji">Status emoji</label>
+                            <input type="text" id="settings-status-emoji" class="settings-status-emoji" name="statusEmoji" maxlength="16"
+                                   placeholder="😀" autocomplete="off" value="<?= htmlspecialchars($settingsValues['statusEmoji']) ?>" data-status-emoji>
+                            <textarea id="settings-status-text" name="statusText" maxlength="<?= HBHUB_PROFILE_STATUS_TEXT_MAX ?>" rows="2"
+                                      placeholder="What are you up to?" aria-describedby="settings-status-hint" data-status-text
+                                      data-max-lines="<?= HBHUB_PROFILE_STATUS_LINES_MAX ?>"><?= htmlspecialchars($settingsValues['statusText']) ?></textarea>
                         </div>
-                        <span class="settings-save-state" aria-live="polite" data-save-state></span>
+                        <div class="settings-status-picks" data-status-picks hidden></div>
+                        <div class="settings-status-clear">
+                            <label for="settings-status-clear">Clear after</label>
+                            <select id="settings-status-clear" name="statusClearAfter" data-status-clear>
+                                <?= hbHubProfileStatusClearOptions($settingsStatus, $settingsValues['statusClearAfter']) ?>
+                            </select>
+                        </div>
+                        <p class="settings-hint" id="settings-status-hint">
+                            One emoji and up to <?= HBHUB_PROFILE_STATUS_TEXT_MAX ?> characters on up to <?= HBHUB_PROFILE_STATUS_LINES_MAX ?> lines.
+                        </p>
+                        <?= settingsErrorSlot($settingsErrors, 'status') ?>
                     </div>
 
-                    <form class="settings-group" id="notifications" action="/settings#notifications" method="post" data-autosave>
-                        <input type="hidden" name="action" value="notifications">
+                    <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save profile</button></div></noscript>
+                </section>
+            </form>
+
+            <?php if ($settingsAvatarRemovable): ?>
+                <form id="settings-remove-avatar" action="/settings" method="post" hidden>
+                    <input type="hidden" name="action" value="removeAvatar">
+                </form>
+            <?php endif; ?>
+
+            <!-- Notifications -->
+            <section class="settings-card settings-panel" id="notifications" aria-labelledby="settings-notifications-heading" data-settings-panel>
+                <?= settingsPanelHead('notifications', 'Notifications', 'For new messages while HB Hub is open.', true) ?>
+                <form action="/settings#notifications" method="post" data-autosave>
+                    <input type="hidden" name="action" value="notifications">
+                    <div class="settings-group">
                         <label class="settings-checkbox settings-line">
                             <span class="settings-item-text">
                                 <span class="settings-label">Message notifications</span>
@@ -935,6 +1043,8 @@ function settingsErrorSlot(array $errors, string $field): string
                         <!-- Filled in by settings.js when the browser blocks or doesn't support notifications -->
                         <p class="settings-error" data-notifications-status hidden></p>
                         <button type="button" class="settings-btn settings-btn-small" data-notifications-allow hidden>Allow notifications in this browser</button>
+                    </div>
+                    <div class="settings-group">
                         <label class="settings-checkbox settings-line">
                             <span class="settings-item-text">
                                 <span class="settings-label">Message sound</span>
@@ -946,324 +1056,272 @@ function settingsErrorSlot(array $errors, string $field): string
                             <input type="checkbox" class="settings-switch" name="notificationSound" value="1"<?= $settingsNotificationSoundOn ? ' checked' : '' ?>
                                    aria-describedby="settings-notification-sound-hint" data-notification-sound-toggle>
                         </label>
-                        <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
-                    </form>
+                    </div>
+                    <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
+                </form>
+            </section>
 
-                    <form class="settings-group" id="block" action="/settings#block" method="post" data-autosave>
-                        <input type="hidden" name="action" value="block">
-                        <div class="settings-line">
-                            <span class="settings-item-text">
-                                <label class="settings-label" for="settings-block">Block Gambling and Games</label>
-                                <span class="settings-hint" id="settings-block-hint">
-                                    Keeps you away from the casino and the games. School hours are 8 AM to 3 PM, Monday to Friday.
-                                    A stricter block starts straight away. A looser one waits: until 3 PM during school hours,
-                                    and 6 hours from "All the time".
-                                </span>
+            <!-- Gambling and Games -->
+            <section class="settings-card settings-panel" id="block" aria-labelledby="settings-block-heading" data-settings-panel>
+                <?= settingsPanelHead('block', 'Gambling and Games', 'Keeps you away from the casino and the games.', true) ?>
+                <form action="/settings#block" method="post" data-autosave>
+                    <input type="hidden" name="action" value="block">
+                    <fieldset class="settings-choices">
+                        <legend class="settings-label">Block them</legend>
+                        <?php foreach (HBHUB_BLOCK_MODES as $mode => $label): ?>
+                            <label class="settings-choice">
+                                <input type="radio" name="block" value="<?= $mode ?>"<?= ($settingsBlock['pendingMode'] ?? $settingsBlock['mode']) === $mode ? ' checked' : '' ?>>
+                                <span><?= htmlspecialchars($label) ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </fieldset>
+                    <p class="settings-hint">
+                        School hours are 8 AM to 3 PM, Monday to Friday. A stricter block starts straight away. A looser one
+                        waits: until 3 PM during school hours, and 6 hours from "All the time".
+                    </p>
+                    <?php if ($settingsBlockIsAdmin): ?>
+                        <p class="settings-notice">
+                            <strong>Blocked by an admin.</strong> A site admin has blocked Gambling and Games for your account,
+                            all the time. Only a site admin can lift it, so it stays blocked whatever you choose here.
+                        </p>
+                    <?php endif; ?>
+                    <?php $settingsBlockPending = settingsBlockPending($settingsBlock); ?>
+                    <p class="settings-notice" data-block-pending<?= $settingsBlockPending === null ? ' hidden' : '' ?>><?= htmlspecialchars($settingsBlockPending ?? '') ?></p>
+                    <?= settingsErrorSlot($settingsErrors, 'block') ?>
+                    <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
+                </form>
+            </section>
+
+            <!-- Help improve HB Hub (hbHubImproveSiteOn() in assets/php/userSettings.php) -->
+            <section class="settings-card settings-panel" id="improve" aria-labelledby="settings-improve-heading" data-settings-panel>
+                <?= settingsPanelHead('improve', 'Help improve HB Hub', null, true) ?>
+                <form action="/settings#improve" method="post" data-autosave>
+                    <input type="hidden" name="action" value="improveSite">
+                    <label class="settings-checkbox settings-line">
+                        <span class="settings-item-text">
+                            <span class="settings-label">Send reports when something goes wrong</span>
+                            <span class="settings-hint" id="settings-improve-hint">
+                                Sends a short report when the server is too busy to answer you (which page you were on, which
+                                addresses failed, your browser), and, in Chrome, a note from the browser if Ore Mining Inc.'s
+                                tab crashes. Only site admins can see them. Ore Mining Inc.'s own crash reports always ask you
+                                first, whatever you choose here.
                             </span>
-                            <select id="settings-block" name="block" aria-describedby="settings-block-hint">
-                                <?php foreach (HBHUB_BLOCK_MODES as $mode => $label): ?>
-                                    <option value="<?= $mode ?>"<?= ($settingsBlock['pendingMode'] ?? $settingsBlock['mode']) === $mode ? ' selected' : '' ?>><?= htmlspecialchars($label) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <?php if ($settingsBlockIsAdmin): ?>
-                            <p class="settings-notice">
-                                <strong>Blocked by an admin.</strong> A site admin has blocked Gambling and Games for your account,
-                                all the time. Only a site admin can lift it, so it stays blocked whatever you choose here.
-                            </p>
-                        <?php endif; ?>
-                        <?php $settingsBlockPending = settingsBlockPending($settingsBlock); ?>
-                        <p class="settings-notice" data-block-pending<?= $settingsBlockPending === null ? ' hidden' : '' ?>><?= htmlspecialchars($settingsBlockPending ?? '') ?></p>
-                        <?= settingsErrorSlot($settingsErrors, 'block') ?>
-                        <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
-                    </form>
+                        </span>
+                        <input type="checkbox" class="settings-switch" name="improveSite" value="1"<?= $settingsImproveSiteOn ? ' checked' : '' ?>
+                               aria-describedby="settings-improve-hint">
+                    </label>
+                    <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
+                </form>
+            </section>
 
-                    <!-- Help improve HB Hub (hbHubImproveSiteOn() in assets/php/userSettings.php) -->
-                    <form class="settings-group" id="improve" action="/settings#improve" method="post" data-autosave>
-                        <input type="hidden" name="action" value="improveSite">
+            <!-- Password -->
+            <section class="settings-card settings-panel" id="password" aria-labelledby="settings-password-heading" data-settings-panel>
+                <?= settingsPanelHead('password', 'Password', 'Changing it logs you out on every other device.') ?>
+                <form action="/settings#password" method="post">
+                    <input type="hidden" name="action" value="password">
+                    <!-- For password managers, so they know which account the new password is for -->
+                    <input type="text" name="username" value="<?= htmlspecialchars($settingsUser['userName']) ?>" autocomplete="username" hidden>
+
+                    <div class="settings-field">
+                        <label class="settings-label" for="settings-current-password">Current password</label>
+                        <input type="password" id="settings-current-password" name="currentPassword" maxlength="72" required autocomplete="current-password">
+                        <?= settingsErrorSlot($settingsErrors, 'currentPassword') ?>
+                    </div>
+
+                    <div class="settings-field">
+                        <div class="settings-row">
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-new-password">New password</label>
+                                <input type="password" id="settings-new-password" name="newPassword" minlength="<?= $settingsPasswordPolicy['minLength'] ?>" maxlength="72"
+                                       required autocomplete="new-password" aria-describedby="settings-new-password-hint"
+                                       data-min-length="<?= $settingsPasswordPolicy['minLength'] ?>" data-char-types="<?= $settingsPasswordPolicy['charTypes'] ?>"
+                                       data-common-passwords="/assets/commonPasswords.txt?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/commonPasswords.txt') ?>">
+                            </div>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-new-password-confirm">Repeat new password</label>
+                                <input type="password" id="settings-new-password-confirm" name="newPasswordConfirm" maxlength="72" required autocomplete="new-password">
+                            </div>
+                        </div>
+                        <!-- Filled in by settings.js while typing, the same meter as onboarding -->
+                        <div class="settings-strength" data-level="none" hidden>
+                            <div class="settings-strength-track"><div class="settings-strength-bar"></div></div>
+                            <p class="settings-strength-label" aria-live="polite"></p>
+                        </div>
+                        <p class="settings-hint" id="settings-new-password-hint">
+                            <?php if ($settingsPasswordPolicy['minLength'] > 1): ?>At least <?= $settingsPasswordPolicy['minLength'] ?> characters.<?php endif; ?>
+                            <?php if ($settingsPasswordPolicy['charTypes'] === 4): ?>
+                                Needs lowercase letters, uppercase letters, numbers and special characters.
+                            <?php elseif ($settingsPasswordPolicy['charTypes'] > 0): ?>
+                                Needs at least <?= $settingsPasswordPolicy['charTypes'] ?> of: lowercase letters, uppercase letters, numbers and special characters.
+                            <?php endif; ?>
+                            Common passwords can't be used.
+                        </p>
+                        <?= settingsErrorSlot($settingsErrors, 'newPassword') ?>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button type="submit" class="settings-btn settings-btn-primary">Change password</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Two-factor login -->
+            <section class="settings-card settings-panel" id="totp" aria-labelledby="settings-totp-heading" data-settings-panel>
+                <?= settingsPanelHead('totp', 'Two-factor login') ?>
+                <?php if ($settingsTotpIsOn): ?>
+                    <p class="settings-line">
+                        <span class="settings-hint">When you log in, you're asked for a code from your authenticator app after your password.</span>
+                        <span class="settings-status is-on">On</span>
+                    </p>
+                    <form action="/settings#totp" method="post">
+                        <input type="hidden" name="action" value="totpDisable">
+                        <div class="settings-field">
+                            <label class="settings-label" for="settings-totp-code">To turn it off, enter a code from your app</label>
+                            <input type="text" id="settings-totp-code" class="settings-code" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7"
+                                   required autocomplete="one-time-code">
+                            <?= settingsErrorSlot($settingsErrors, 'totp') ?>
+                        </div>
+                        <div class="settings-actions">
+                            <button type="submit" class="settings-btn settings-btn-danger">Turn off two-factor login</button>
+                        </div>
+                    </form>
+                <?php else: ?>
+                    <p class="settings-line">
+                        <span class="settings-hint">A 6 digit code from an authenticator app on your phone when you log in, so your password alone isn't enough.</span>
+                        <span class="settings-status">Off</span>
+                    </p>
+                    <?php if ($settingsTotpSetupSecret === null): ?>
+                        <div class="settings-actions">
+                            <a class="settings-btn settings-btn-primary" href="/settings?totp=setup#totp">Set up</a>
+                        </div>
+                    <?php else: ?>
+                        <?php $settingsTotpUri = hbHubTotpUri($settingsTotpSetupSecret, $settingsUser['userName']); ?>
+                        <ol class="settings-steps">
+                            <li>
+                                Open your authenticator app (like Google Authenticator, Microsoft Authenticator or Authy) and scan this QR code.
+                                <img class="settings-qr" data-qr="<?= htmlspecialchars($settingsTotpUri) ?>" alt="QR code for adding HB Hub to your authenticator app" hidden>
+                                <span class="settings-hint">
+                                    On your phone? <a href="<?= htmlspecialchars($settingsTotpUri) ?>">Open it in your app</a> instead.
+                                    Or type in this key: <code class="settings-secret"><?= hbHubTotpFormatSecret($settingsTotpSetupSecret) ?></code>
+                                </span>
+                            </li>
+                            <li>Enter the 6 digit code the app shows for HB Hub.</li>
+                        </ol>
+                        <form action="/settings#totp" method="post">
+                            <input type="hidden" name="action" value="totpEnable">
+                            <input type="hidden" name="secret" value="<?= $settingsTotpSetupSecret ?>">
+                            <div class="settings-field">
+                                <label class="settings-label" for="settings-totp-code">Code from the app</label>
+                                <input type="text" id="settings-totp-code" class="settings-code" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7"
+                                       required autocomplete="one-time-code">
+                                <?= settingsErrorSlot($settingsErrors, 'totp') ?>
+                            </div>
+                            <div class="settings-actions">
+                                <a class="settings-btn" href="/settings#totp">Cancel</a>
+                                <button type="submit" class="settings-btn settings-btn-primary">Turn on two-factor login</button>
+                            </div>
+                        </form>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </section>
+
+            <?php if ($settingsDiscord !== null): ?>
+            <!-- Discord login -->
+            <section class="settings-card settings-panel" id="discord" aria-labelledby="settings-discord-heading" data-settings-panel>
+                <?= settingsPanelHead('discord', 'Discord login', null, $settingsDiscordName !== null) ?>
+                <?php if ($settingsDiscordName !== null): ?>
+                    <form class="settings-group settings-line" action="/settings#discord" method="post" data-confirm="Unlink your Discord account? You can only log in with your password after this.">
+                        <input type="hidden" name="action" value="discordUnlink">
+                        <span class="settings-item-text">
+                            <span class="settings-label">Linked to <?= htmlspecialchars($settingsDiscordName) ?></span>
+                            <span class="settings-hint">
+                                You can log in with Discord instead of your password.<?= $settingsTotpIsOn ? ' You\'re still asked for your two-factor code.' : '' ?>
+                            </span>
+                        </span>
+                        <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Unlink</button>
+                    </form>
+                    <form class="settings-group" action="/settings#discord" method="post" data-autosave>
+                        <input type="hidden" name="action" value="discordProfile">
                         <label class="settings-checkbox settings-line">
                             <span class="settings-item-text">
-                                <span class="settings-label">Help improve HB Hub</span>
-                                <span class="settings-hint" id="settings-improve-hint">
-                                    Sends a short report when the server is too busy to answer you (which page you were on, which
-                                    addresses failed, your browser), and, in Chrome, a note from the browser if Ore Mining Inc.'s
-                                    tab crashes. Only site admins can see them. Ore Mining Inc.'s own crash reports always ask you
-                                    first, whatever you choose here.
+                                <span class="settings-label">Show my Discord username on my profile</span>
+                                <span class="settings-hint" id="settings-discord-profile-hint">
+                                    Everyone logged in to HB Hub can see it there. It's checked with Discord every night, so a new Discord username shows up by itself.
                                 </span>
                             </span>
-                            <input type="checkbox" class="settings-switch" name="improveSite" value="1"<?= $settingsImproveSiteOn ? ' checked' : '' ?>
-                                   aria-describedby="settings-improve-hint">
+                            <input type="checkbox" class="settings-switch" name="profileShowDiscord" value="1"<?= $settingsDiscordOnProfile ? ' checked' : '' ?>
+                                   aria-describedby="settings-discord-profile-hint">
                         </label>
                         <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
                     </form>
-                </section>
-
-                <!-- Security: password, two-factor login, Discord and the logged in devices -->
-                <section class="settings-card" id="security" aria-labelledby="settings-security-heading">
-                    <div class="settings-card-head">
-                        <div>
-                            <h2 id="settings-security-heading">Security</h2>
-                            <p class="settings-intro">How you log in, and where you're logged in.</p>
+                <?php else: ?>
+                    <form action="/settings#discord" method="post">
+                        <input type="hidden" name="action" value="discordLink">
+                        <p class="settings-hint">
+                            Log in with Discord instead of typing your password (which keeps working too). Discord asks you to
+                            let HB Hub see your Discord username, and nothing else is shared. It's shown on your profile,
+                            which you can turn off here once it's linked.
+                        </p>
+                        <div class="settings-actions">
+                            <button type="submit" class="settings-btn settings-btn-discord"><?= hbHubDiscordLogo() ?>Link Discord</button>
                         </div>
-                        <span class="settings-save-state" aria-live="polite" data-save-state></span>
-                    </div>
+                    </form>
+                <?php endif; ?>
+            </section>
+            <?php endif; ?>
 
-                    <!-- Password: folded away until Change is clicked (or there's an error to show) -->
-                    <details class="settings-group" id="password"<?= isset($settingsErrors['currentPassword']) || isset($settingsErrors['newPassword']) ? ' open' : '' ?>>
-                        <summary class="settings-line">
-                            <span class="settings-item-text">
-                                <span class="settings-label">Password</span>
-                                <span class="settings-hint">Changing it logs you out on every other device.</span>
-                            </span>
-                            <span class="settings-btn settings-btn-small"><span class="settings-when-closed">Change</span><span class="settings-when-open">Cancel</span></span>
-                        </summary>
-                        <form class="settings-group-body" action="/settings#password" method="post">
-                            <input type="hidden" name="action" value="password">
-                            <!-- For password managers, so they know which account the new password is for -->
-                            <input type="text" name="username" value="<?= htmlspecialchars($settingsUser['userName']) ?>" autocomplete="username" hidden>
-
-                            <div class="settings-field">
-                                <label class="settings-label" for="settings-current-password">Current password</label>
-                                <input type="password" id="settings-current-password" name="currentPassword" maxlength="72" required autocomplete="current-password">
-                                <?= settingsErrorSlot($settingsErrors, 'currentPassword') ?>
-                            </div>
-
-                            <div class="settings-field">
-                                <div class="settings-row">
-                                    <div class="settings-field">
-                                        <label class="settings-label" for="settings-new-password">New password</label>
-                                        <input type="password" id="settings-new-password" name="newPassword" minlength="<?= $settingsPasswordPolicy['minLength'] ?>" maxlength="72"
-                                               required autocomplete="new-password" aria-describedby="settings-new-password-hint"
-                                               data-min-length="<?= $settingsPasswordPolicy['minLength'] ?>" data-char-types="<?= $settingsPasswordPolicy['charTypes'] ?>"
-                                               data-common-passwords="/assets/commonPasswords.txt?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/commonPasswords.txt') ?>">
-                                    </div>
-                                    <div class="settings-field">
-                                        <label class="settings-label" for="settings-new-password-confirm">Repeat new password</label>
-                                        <input type="password" id="settings-new-password-confirm" name="newPasswordConfirm" maxlength="72" required autocomplete="new-password">
-                                    </div>
-                                </div>
-                                <!-- Filled in by settings.js while typing, the same meter as onboarding -->
-                                <div class="settings-strength" data-level="none" hidden>
-                                    <div class="settings-strength-track"><div class="settings-strength-bar"></div></div>
-                                    <p class="settings-strength-label" aria-live="polite"></p>
-                                </div>
-                                <p class="settings-hint" id="settings-new-password-hint">
-                                    <?php if ($settingsPasswordPolicy['minLength'] > 1): ?>At least <?= $settingsPasswordPolicy['minLength'] ?> characters.<?php endif; ?>
-                                    <?php if ($settingsPasswordPolicy['charTypes'] === 4): ?>
-                                        Needs lowercase letters, uppercase letters, numbers and special characters.
-                                    <?php elseif ($settingsPasswordPolicy['charTypes'] > 0): ?>
-                                        Needs at least <?= $settingsPasswordPolicy['charTypes'] ?> of: lowercase letters, uppercase letters, numbers and special characters.
+            <!-- Logged in devices -->
+            <section class="settings-card settings-panel" id="devices" aria-labelledby="settings-devices-heading" data-settings-panel>
+                <?= settingsPanelHead('devices', 'Logged in devices', 'Everywhere you\'re logged in right now. If there\'s one you don\'t recognise, log it out and change your password.') ?>
+                <ul class="settings-devices">
+                    <?php foreach ($settingsDevices as $device): ?>
+                        <li class="settings-device<?= $device['isCurrent'] ? ' is-current' : '' ?>">
+                            <div class="settings-device-text">
+                                <span class="settings-label">
+                                    <?= htmlspecialchars($device['sessionDevice'] ?? 'Unknown device') ?>
+                                    <?php if ($device['isCurrent']): ?>
+                                        <span class="settings-status is-on">This device</span>
                                     <?php endif; ?>
-                                    Common passwords can't be used.
-                                </p>
-                                <?= settingsErrorSlot($settingsErrors, 'newPassword') ?>
-                            </div>
-
-                            <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-primary">Change password</button>
-                            </div>
-                        </form>
-                    </details>
-
-                    <!-- Two-factor login -->
-                    <?php if ($settingsTotpIsOn): ?>
-                        <details class="settings-group" id="totp"<?= isset($settingsErrors['totp']) ? ' open' : '' ?>>
-                            <summary class="settings-line">
-                                <span class="settings-item-text">
-                                    <span class="settings-label">Two-factor login <span class="settings-status is-on">On</span></span>
-                                    <span class="settings-hint">When you log in, you're asked for a code from your authenticator app after your password.</span>
                                 </span>
-                                <span class="settings-btn settings-btn-small"><span class="settings-when-closed">Turn off</span><span class="settings-when-open">Cancel</span></span>
-                            </summary>
-                            <form class="settings-group-body" action="/settings#totp" method="post">
-                                <input type="hidden" name="action" value="totpDisable">
-                                <div class="settings-field">
-                                    <label class="settings-label" for="settings-totp-code">To turn it off, enter a code from your app</label>
-                                    <input type="text" id="settings-totp-code" class="settings-code" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7"
-                                           required autocomplete="one-time-code">
-                                    <?= settingsErrorSlot($settingsErrors, 'totp') ?>
-                                </div>
-                                <div class="settings-actions">
-                                    <button type="submit" class="settings-btn settings-btn-danger">Turn off two-factor login</button>
-                                </div>
-                            </form>
-                        </details>
-                    <?php else: ?>
-                        <div class="settings-group" id="totp">
-                            <div class="settings-line">
-                                <span class="settings-item-text">
-                                    <span class="settings-label">Two-factor login <span class="settings-status">Off</span></span>
-                                    <span class="settings-hint">A 6 digit code from an authenticator app on your phone when you log in, so your password alone isn't enough.</span>
+                                <span class="settings-hint">
+                                    Logged in <?= settingsTime($device['sessionGenerated']) ?>
+                                    · <?= $device['isCurrent'] ? 'Active now' : 'Last active ' . settingsTime($device['sessionLastSeen'] ?? $device['sessionGenerated']) ?>
                                 </span>
-                                <?php if ($settingsTotpSetupSecret === null): ?>
-                                    <a class="settings-btn settings-btn-small" href="/settings?totp=setup#totp">Set up</a>
-                                <?php endif; ?>
                             </div>
-                            <?php if ($settingsTotpSetupSecret !== null): ?>
-                                <?php $settingsTotpUri = hbHubTotpUri($settingsTotpSetupSecret, $settingsUser['userName']); ?>
-                                <ol class="settings-steps">
-                                    <li>
-                                        Open your authenticator app (like Google Authenticator, Microsoft Authenticator or Authy) and scan this QR code.
-                                        <img class="settings-qr" data-qr="<?= htmlspecialchars($settingsTotpUri) ?>" alt="QR code for adding HB Hub to your authenticator app" hidden>
-                                        <span class="settings-hint">
-                                            On your phone? <a href="<?= htmlspecialchars($settingsTotpUri) ?>">Open it in your app</a> instead.
-                                            Or type in this key: <code class="settings-secret"><?= hbHubTotpFormatSecret($settingsTotpSetupSecret) ?></code>
-                                        </span>
-                                    </li>
-                                    <li>Enter the 6 digit code the app shows for HB Hub.</li>
-                                </ol>
-                                <form action="/settings#totp" method="post">
-                                    <input type="hidden" name="action" value="totpEnable">
-                                    <input type="hidden" name="secret" value="<?= $settingsTotpSetupSecret ?>">
-                                    <div class="settings-field">
-                                        <label class="settings-label" for="settings-totp-code">Code from the app</label>
-                                        <input type="text" id="settings-totp-code" class="settings-code" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7"
-                                               required autocomplete="one-time-code">
-                                        <?= settingsErrorSlot($settingsErrors, 'totp') ?>
-                                    </div>
-                                    <div class="settings-actions">
-                                        <a class="settings-btn" href="/settings#totp">Cancel</a>
-                                        <button type="submit" class="settings-btn settings-btn-primary">Turn on two-factor login</button>
-                                    </div>
+                            <?php if (!$device['isCurrent']): ?>
+                                <form action="/settings#devices" method="post">
+                                    <input type="hidden" name="action" value="logoutDevice">
+                                    <input type="hidden" name="device" value="<?= htmlspecialchars($device['deviceKey']) ?>">
+                                    <button type="submit" class="settings-btn settings-btn-small">Log out</button>
                                 </form>
                             <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </section>
 
-                    <?php if ($settingsDiscord !== null): ?>
-                    <!-- Discord login -->
-                    <div class="settings-group" id="discord">
-                        <?php if ($settingsDiscordName !== null): ?>
-                            <form class="settings-line" action="/settings#discord" method="post" data-confirm="Unlink your Discord account? You can only log in with your password after this.">
-                                <input type="hidden" name="action" value="discordUnlink">
-                                <span class="settings-item-text">
-                                    <span class="settings-label">Discord login <span class="settings-status is-on">Linked</span></span>
-                                    <span class="settings-hint">
-                                        Linked to <strong><?= htmlspecialchars($settingsDiscordName) ?></strong>, so you can log in with Discord instead of your password.<?= $settingsTotpIsOn ? ' You\'re still asked for your two-factor code.' : '' ?>
-                                    </span>
-                                </span>
-                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Unlink</button>
-                            </form>
-                            <form action="/settings#discord" method="post" data-autosave>
-                                <input type="hidden" name="action" value="discordProfile">
-                                <label class="settings-checkbox settings-line">
-                                    <span class="settings-item-text">
-                                        <span class="settings-label">Show my Discord username on my profile</span>
-                                        <span class="settings-hint" id="settings-discord-profile-hint">
-                                            Everyone logged in to HB Hub can see it there. It's checked with Discord every night, so a new Discord username shows up by itself.
-                                        </span>
-                                    </span>
-                                    <input type="checkbox" class="settings-switch" name="profileShowDiscord" value="1"<?= $settingsDiscordOnProfile ? ' checked' : '' ?>
-                                           aria-describedby="settings-discord-profile-hint">
-                                </label>
-                                <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
-                            </form>
-                        <?php else: ?>
-                            <form class="settings-line" action="/settings#discord" method="post">
-                                <input type="hidden" name="action" value="discordLink">
-                                <span class="settings-item-text">
-                                    <span class="settings-label">Discord login <span class="settings-status">Not linked</span></span>
-                                    <span class="settings-hint">
-                                        Log in with Discord instead of typing your password (which keeps working too). Discord asks you to
-                                        let HB Hub see your Discord username, and nothing else is shared. It's shown on your profile,
-                                        which you can turn off here once it's linked.
-                                    </span>
-                                </span>
-                                <button type="submit" class="settings-btn settings-btn-discord settings-btn-small"><?= hbHubDiscordLogo() ?>Link Discord</button>
-                            </form>
-                        <?php endif; ?>
+            <!-- Delete account -->
+            <section class="settings-card settings-panel is-danger" id="delete" aria-labelledby="settings-delete-heading" data-settings-panel>
+                <?= settingsPanelHead('delete', 'Delete account') ?>
+                <form action="/settings#delete" method="post" data-confirm="Delete your account? This can't be undone.">
+                    <input type="hidden" name="action" value="deleteAccount">
+                    <!-- For password managers, so they know which account the password is for -->
+                    <input type="text" name="username" value="<?= htmlspecialchars($settingsUser['userName']) ?>" autocomplete="username" hidden>
+                    <p class="settings-hint" id="settings-delete-hint">
+                        Your name, picture, bio and settings are deleted and you're logged out everywhere. Messages
+                        you've sent stay in their chats, from "<?= HBHUB_DELETED_USER_NAME ?>". This can't be undone.
+                    </p>
+                    <div class="settings-field">
+                        <label class="settings-label" for="settings-delete-password">Enter your password to confirm</label>
+                        <input type="password" id="settings-delete-password" name="password" maxlength="72" required autocomplete="current-password"
+                               aria-describedby="settings-delete-hint">
+                        <?= settingsErrorSlot($settingsErrors, 'deleteAccount') ?>
                     </div>
-                    <?php endif; ?>
-
-                    <!-- Logged in devices -->
-                    <div class="settings-group" id="devices">
-                        <span class="settings-item-text">
-                            <span class="settings-label">Logged in devices</span>
-                            <span class="settings-hint">Everywhere you're logged in right now. If there's one you don't recognise, log it out and change your password.</span>
-                        </span>
-                        <ul class="settings-devices">
-                            <?php foreach ($settingsDevices as $device): ?>
-                                <li class="settings-device<?= $device['isCurrent'] ? ' is-current' : '' ?>">
-                                    <div class="settings-device-text">
-                                        <span class="settings-label">
-                                            <?= htmlspecialchars($device['sessionDevice'] ?? 'Unknown device') ?>
-                                            <?php if ($device['isCurrent']): ?>
-                                                <span class="settings-status is-on">This device</span>
-                                            <?php endif; ?>
-                                        </span>
-                                        <span class="settings-hint">
-                                            Logged in <?= settingsTime($device['sessionGenerated']) ?>
-                                            · <?= $device['isCurrent'] ? 'Active now' : 'Last active ' . settingsTime($device['sessionLastSeen'] ?? $device['sessionGenerated']) ?>
-                                        </span>
-                                    </div>
-                                    <?php if (!$device['isCurrent']): ?>
-                                        <form action="/settings#devices" method="post">
-                                            <input type="hidden" name="action" value="logoutDevice">
-                                            <input type="hidden" name="device" value="<?= htmlspecialchars($device['deviceKey']) ?>">
-                                            <button type="submit" class="settings-btn settings-btn-small">Log out</button>
-                                        </form>
-                                    <?php endif; ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
+                    <div class="settings-actions">
+                        <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid">Delete my account</button>
                     </div>
-                </section>
-
-                <!-- Account: logging out, and deleting the account -->
-                <section class="settings-card" id="account" aria-labelledby="settings-account-heading">
-                    <div class="settings-card-head">
-                        <div>
-                            <h2 id="settings-account-heading">Account</h2>
-                        </div>
-                    </div>
-
-                    <form class="settings-group settings-line" action="/settings" method="post">
-                        <input type="hidden" name="action" value="logout">
-                        <span class="settings-item-text">
-                            <span class="settings-label">Log out</span>
-                            <span class="settings-hint">On this device. You stay logged in on your other devices.</span>
-                        </span>
-                        <button type="submit" class="settings-btn settings-btn-small">Log out</button>
-                    </form>
-
-                    <form class="settings-group settings-line" action="/settings" method="post" data-confirm="Log out on every device, this one too?">
-                        <input type="hidden" name="action" value="logoutEverywhere">
-                        <span class="settings-item-text">
-                            <span class="settings-label">Log out everywhere</span>
-                            <span class="settings-hint">On every device, this one too. You can log in again with your password.</span>
-                        </span>
-                        <button type="submit" class="settings-btn settings-btn-small">Log out everywhere</button>
-                    </form>
-
-                    <!-- Delete account: folded away until Delete is clicked (or the password was wrong) -->
-                    <details class="settings-group is-danger" id="delete"<?= isset($settingsErrors['deleteAccount']) ? ' open' : '' ?>>
-                        <summary class="settings-line">
-                            <span class="settings-item-text">
-                                <span class="settings-label">Delete account</span>
-                                <span class="settings-hint" id="settings-delete-hint">
-                                    Your name, picture, bio and settings are deleted and you're logged out everywhere. Messages
-                                    you've sent stay in their chats, from "<?= HBHUB_DELETED_USER_NAME ?>". This can't be undone.
-                                </span>
-                            </span>
-                            <span class="settings-btn settings-btn-danger settings-btn-small"><span class="settings-when-closed">Delete…</span><span class="settings-when-open">Cancel</span></span>
-                        </summary>
-                        <form class="settings-group-body" action="/settings#delete" method="post" data-confirm="Delete your account? This can't be undone.">
-                            <input type="hidden" name="action" value="deleteAccount">
-                            <!-- For password managers, so they know which account the password is for -->
-                            <input type="text" name="username" value="<?= htmlspecialchars($settingsUser['userName']) ?>" autocomplete="username" hidden>
-                            <div class="settings-field">
-                                <label class="settings-label" for="settings-delete-password">Enter your password to confirm</label>
-                                <input type="password" id="settings-delete-password" name="password" maxlength="72" required autocomplete="current-password"
-                                       aria-describedby="settings-delete-hint">
-                                <?= settingsErrorSlot($settingsErrors, 'deleteAccount') ?>
-                            </div>
-                            <div class="settings-actions">
-                                <button type="submit" class="settings-btn settings-btn-danger settings-btn-solid">Delete my account</button>
-                            </div>
-                        </form>
-                    </details>
-                </section>
-            </div>
+                </form>
+            </section>
         </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>

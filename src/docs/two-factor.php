@@ -22,7 +22,7 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                         </p>
                         <ol class="docs-steps">
                             <li>Installer en godkendelsesapp på din telefon, som <a href="https://proton.me/authenticator" target="_blank" rel="noopener">Proton Authenticator</a>, <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener">Google Authenticator</a>, <a href="https://2fas.com/" target="_blank" rel="noopener">2FAS</a> eller den adgangskodeapp, der er indbygget i din telefon.</li>
-                            <li>Tryk på <strong>Set up</strong> ved <strong>Two-factor login</strong> i kortet <strong>Security</strong> under dine <a href="/settings#totp">indstillinger</a>.</li>
+                            <li>Åbn <strong>Two-factor login</strong> i gruppen <strong>Security</strong> under dine <a href="/settings#totp">indstillinger</a>, og tryk på <strong>Set up</strong>.</li>
                             <li>Scan QR-koden med appen. På selve telefonen kan du bruge <strong>Open it in your app</strong> i stedet, eller skrive nøglen under koden.</li>
                             <li>Skriv den 6-cifrede kode, appen viser, for at slå det til. Fra nu af beder login om en kode efter din adgangskode.</li>
                         </ol>
@@ -42,7 +42,7 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                         </p>
                         <ul>
                             <li>Opret dig med <strong>Opret dig med Discord</strong> på første trin af oprettelsen. Dit navn, din bio og dit billede starter som dem fra Discord, og du kan ændre dem, før din konto bliver oprettet. Du vælger stadig din klasse og en adgangskode, og kontoen bliver koblet til Discord med det samme. <strong>Kobl den ikke til</strong> går tilbage til en normal oprettelse.</li>
-                            <li>Eller kobl den til senere med <strong>Link Discord</strong> ved <strong>Discord login</strong> i kortet <strong>Security</strong> under dine <a href="/settings#discord">indstillinger</a>.</li>
+                            <li>Eller kobl den til senere med <strong>Link Discord</strong> under <strong>Discord login</strong> i gruppen <strong>Security</strong> under dine <a href="/settings#discord">indstillinger</a>.</li>
                             <li>Dit Discord-brugernavn bliver vist på din profil, mens den er koblet til. Slå <strong>Show my Discord username on my profile</strong> fra samme sted for at skjule det. Skifter du dit brugernavn på Discord, opdager HB Hub det nye i løbet af natten (eller næste gang du logger ind med Discord).</li>
                             <li><strong>Unlink</strong> samme sted fjerner koblingen igen. Én Discord-konto kan kun kobles til én HB Hub-konto.</li>
                         </ul>

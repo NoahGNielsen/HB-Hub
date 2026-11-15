@@ -22,7 +22,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="how" aria-labelledby="docs-how">
                         <h2 id="docs-how">At slå en blokering til</h2>
                         <p>
-                            Find <strong>Block Gambling and Games</strong> i kortet <strong>Preferences</strong> under dine
+                            Åbn <strong>Gambling and Games</strong> i gruppen <strong>Preferences</strong> under dine
                             <a href="/settings#block">indstillinger</a>, og vælg en blokering. Den bliver gemt med det samme. Den dækker både
                             <a href="/docs/casino/">casinoet</a> og <a href="/docs/games/">spillene</a>.
                         </p>

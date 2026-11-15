@@ -35,7 +35,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 
                     <section id="browser" aria-labelledby="docs-browser">
                         <h2 id="docs-browser">Browsernotifikationer og beskedlyden</h2>
-                        <p>Begge er kontakter i kortet <strong>Preferences</strong> under dine <a href="/settings#notifications">indstillinger</a>, og bliver gemt, så snart du slår dem til eller fra:</p>
+                        <p>Begge er kontakter under <strong>Notifications</strong> i dine <a href="/settings#notifications">indstillinger</a>, og bliver gemt, så snart du slår dem til eller fra:</p>
                         <ul>
                             <li>
                                 <strong>Message notifications</strong> viser en popup fra din browser. Første gang spørger

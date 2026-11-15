@@ -1,7 +1,7 @@
 // Settings page (otherPages/settings.php): saves the settings by themselves as they're changed (autosave, below),
 // hides the field of study for Not HTX, shows the profile picture and banner being picked and gets a banner picture
-// ready (JPEG XL), draws the QR code for setting up two-factor login, shows how strong a new password is, opens the
-// folded rows (Password, Delete account, ...) when the address points at them, asks the browser for permission to
+// ready (JPEG XL), draws the QR code for setting up two-factor login, shows how strong a new password is, marks the
+// list's row for the panel showing and keeps what the rows say up to date, asks the browser for permission to
 // show notifications once they're turned on, plays the message sound when it's turned on, and asks "are you sure?"
 // before unlinking Discord, logging out everywhere and deleting the account.
 // The status's emoji row is statusForm.js, as the popup on your own profile has it too.
@@ -16,13 +16,41 @@
         });
     }
 
-    // A link to /settings#password or #delete opens that folded row
-    const openFromHash = () => {
-        const target = location.hash.length > 1 ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
-        if (target instanceof HTMLDetailsElement) target.open = true;
-    };
-    openFromHash();
-    window.addEventListener('hashchange', openFromHash);
+    // ---------- The list and its panels ----------
+    // Which panel shows is up to the CSS (:target, see the top of settings.php). Here: the row for the panel showing is
+    // marked (on a wide screen, where the list stays next to it), and "‹ Settings" goes back in the history when it was
+    // the list that opened the panel, so going back and forth doesn't pile up history.
+    const app = document.querySelector('[data-settings-app]');
+    if (app) {
+        const rows = [...app.querySelectorAll('a[data-settings-row]')];
+        let openedFromList = false;
+
+        const markRow = () => {
+            for (const row of rows) {
+                const panel = document.getElementById(row.hash.slice(1));
+                const isShowing = panel !== null && panel.getClientRects().length > 0; // display: none has none
+                row.classList.toggle('is-active', isShowing);
+                if (isShowing) row.setAttribute('aria-current', 'true');
+                else row.removeAttribute('aria-current');
+            }
+        };
+
+        for (const row of rows) {
+            // Only from the list itself (no panel picked), so going back never lands on another panel
+            row.addEventListener('click', () => { openedFromList = location.hash.length <= 1; });
+        }
+        for (const back of app.querySelectorAll('[data-settings-back]')) {
+            back.addEventListener('click', (event) => {
+                if (!openedFromList) return; // came straight to the panel from a link: on to the list (href="#")
+                event.preventDefault();
+                openedFromList = false;
+                history.back();
+            });
+        }
+        window.addEventListener('hashchange', markRow);
+        window.addEventListener('resize', markRow);
+        markRow();
+    }
 
     // Profile: the field of study is only asked for when a year at HTX is picked, not for Not HTX.
     // Turned off otherwise, so it isn't checked or sent.
@@ -45,7 +73,7 @@
     // away for a switch, a picker or a file, and SAVE_DELAY after the last key press for text (or once the field is
     // left, for [data-save-on-change] ones like the name). One send at a time per form; a change made meanwhile is
     // sent right after. The answer (see the top of settings.php):
-    // - {"ok": true, ...}: saved. The card's [data-save-state] says so.
+    // - {"ok": true, ...}: saved. The panel's [data-save-state] says so (every panel the form is in, for the profile).
     // - 422 {"errors": {field: message}}: shown in the form's [data-error-for] boxes, and nothing on the form was saved.
     // - {"redirect": url}: off to there (a banned picture).
     // Each file is only sent once, worked or not, so a wrong one can't keep the rest of the form from being saved.
@@ -58,16 +86,21 @@
     const isTyped = (field) => field.matches('textarea, input[type="text"], input[type="search"], input[type="color"]');
 
     function autosave(form) {
-        const state = form.closest('.settings-card')?.querySelector('[data-save-state]');
+        // The profile form holds its three panels, the others sit in theirs
+        const states = [
+            ...form.querySelectorAll('[data-save-state]'),
+            ...(form.closest('[data-settings-panel]')?.querySelectorAll('[data-save-state]') ?? []),
+        ];
         let timer = 0;
         let sending = false;
         let again = false; // changed while sending or busy, so it's sent again after
         let lastSent = ''; // what was last saved (without the files), so the same thing isn't sent twice
 
         const setState = (name, text) => {
-            if (!state) return;
-            state.dataset.state = name;
-            state.textContent = text;
+            for (const state of states) {
+                state.dataset.state = name;
+                state.textContent = text;
+            }
         };
 
         function formData() {
@@ -170,6 +203,46 @@
         autosave(form);
     }
 
+    // ---------- What the list's rows say ----------
+    // Once a form is saved, its rows in the list ([data-summary]) say what it's set to now, worked out the same way
+    // as settings.php does for the page.
+    const setSummary = (key, text, emptyText = null) => {
+        for (const summary of document.querySelectorAll(`[data-summary="${key}"]`)) {
+            summary.textContent = text || emptyText || '';
+            summary.hidden = !summary.textContent;
+        }
+    };
+    const checkedLabel = (form, name) => form.querySelector(`input[name="${name}"]:checked`)?.closest('label')?.textContent.trim() ?? '';
+
+    const summarize = (form, answer) => {
+        const action = form.elements.action?.value;
+        if (action === 'profile') {
+            const { year, statusEmoji, statusText } = form.elements;
+            setSummary('look', answer.bannerUrl ? 'Picture banner' : 'Color banner');
+            let classText = { '': 'No class yet', none: 'Not HTX', graduate: 'Graduate' }[year.value] ?? `${year.value}. year`;
+            if (year.value !== 'none' && form.elements.class.value) classText += ` · ${form.elements.class.value}`;
+            setSummary('profile', classText);
+            const status = `${statusEmoji.value} ${statusText.value.replace(/\n/g, ' ')}`.trim();
+            setSummary('status', status);
+            setSummary('statusRow', status, 'None');
+        } else if (action === 'notifications') {
+            const on = form.elements.notifications.checked;
+            const sound = form.elements.notificationSound.checked;
+            setSummary('notifications', on && sound ? 'Notifications and sound' : on ? 'Notifications' : sound ? 'Sound' : 'Off');
+        } else if (action === 'block') {
+            // An admin's block stays what the row says, whatever is picked
+            const row = document.querySelector('[data-summary="block"]');
+            if (row?.textContent !== 'Blocked by an admin') setSummary('block', checkedLabel(form, 'block'));
+        } else if (action === 'improveSite') {
+            setSummary('improve', form.elements.improveSite.checked ? 'On' : 'Off');
+        }
+    };
+    for (const form of document.querySelectorAll('form[data-autosave]')) {
+        form.addEventListener('autosave:done', ({ detail: { ok, answer } }) => {
+            if (ok) summarize(form, answer);
+        });
+    }
+
     // Gambling and Games: a looser block that waits says until when
     const blockPending = document.querySelector('[data-block-pending]');
     blockPending?.closest('form').addEventListener('autosave:done', ({ detail: { ok, answer } }) => {
@@ -180,7 +253,7 @@
 
     // ---------- Profile ----------
     // The picture is shown straight away when one is picked, and the saved one again if it wasn't taken. Once saved,
-    // the picture, the name in the side menu, the free tickets and the status's "Clear after" picker are what the
+    // the picture, the name at the top of the list, the free tickets and the status's "Clear after" picker are what the
     // server says they are now.
     const profileForm = document.querySelector('[data-profile-form]');
     if (profileForm) {
@@ -190,7 +263,7 @@
         let avatarUrl = savedAvatar();
         let avatarPreview = null; // object URL of the picked one
 
-        // In the side menu too unless onlyHere, which is the look at the top of the card
+        // At the top of the list too unless onlyHere, which is the preview in Picture and banner
         const showAvatar = (url, onlyHere = false) => {
             const scope = onlyHere ? profileForm : document;
             for (const picture of scope.querySelectorAll('[data-avatar-picture]')) {
