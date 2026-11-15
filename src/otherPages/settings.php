@@ -1099,13 +1099,14 @@ $settingsDeviceCount = count($settingsDevices);
                     <input type="hidden" name="action" value="improveSite">
                     <label class="settings-checkbox settings-line">
                         <span class="settings-item-text">
-                            <span class="settings-label">Send reports when something goes wrong</span>
+                            <span class="settings-label">Share usage statistics and error reports</span>
                             <span class="settings-hint" id="settings-improve-hint">
-                                Sends a short report when something goes wrong on a page: requests that fail or get no answer,
-                                pictures or scripts that don't load, and JavaScript errors (which page you were on, what went
-                                wrong, your browser). In Chrome, it also lets the browser tell us if Ore Mining Inc.'s tab
-                                crashes. Only site admins can see them. Ore Mining Inc.'s own crash reports always ask you
-                                first, whatever you choose here.
+                                Counts the pages you open towards how many times each page is visited a day (only the
+                                number, never who). Sends a short report when something goes wrong on a page: requests that
+                                fail or get no answer, pictures or scripts that don't load, and JavaScript errors (which page
+                                you were on, what went wrong, your browser). In Chrome, it also lets the browser tell us if
+                                Ore Mining Inc.'s tab crashes. Only site admins can see any of it. Ore Mining Inc.'s own
+                                crash reports always ask you first, whatever you choose here.
                             </span>
                         </span>
                         <input type="checkbox" class="settings-switch" name="improveSite" value="1"<?= $settingsImproveSiteOn ? ' checked' : '' ?>

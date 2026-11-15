@@ -455,7 +455,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             Er du logget ind, kan du slå det fra med <strong>Help improve HB Hub</strong> under dine
                             <a href="/settings#improve">indstillinger</a> (det er slået til, indtil du slår det fra). Så sender siderne
-                            ingen fejlrapporter for dig, og en rapport, der stadig ventede i din fane fra før, bliver
+                            ingen fejlrapporter for dig, dine sidevisninger bliver ikke talt med (se
+                            <a href="#page-views">Sidevisninger</a> nedenfor), og en rapport, der stadig ventede i din fane fra før, bliver
                             smidt væk uden at blive gemt. Ore Mining Inc. beder så heller ikke din browser om at fortælle os, når
                             spillets fane går ned (se Casino og spil ovenfor). Spillets egne nedbrudsrapporter spørger stadig først,
                             og spørgsmålet siger, at det går imod din indstilling at sende en, men kun for den ene rapport:
@@ -469,7 +470,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <code>/chat/</code>, ikke hvilken chat), hvor mange gange den blev åbnet, og hvor mange af dem der ikke var
                             logget ind. Aldrig hvem det var, din IP-adresse, din browser eller andet, der kan knyttes til dig, så tallene
                             kan ikke føres tilbage til nogen. Det sker også, når du ikke er logget ind, og bliver ikke gemt i din browser.
-                            Søgemaskiner og andre robotter bliver ikke talt med.
+                            Søgemaskiner og andre robotter bliver ikke talt med. Er du logget ind og har slået
+                            <strong>Help improve HB Hub</strong> fra under dine <a href="/settings#improve">indstillinger</a>,
+                            bliver dine sidevisninger ikke talt med.
                         </p>
                         <h3>Adminlog</h3>
                         <p>

@@ -86,7 +86,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><a href="/docs/self-blocking">Bloker Casino og Spil</a>: hold dig selv væk fra dem i skoletiden eller hele tiden.</li>
                             <li>
                                 <strong>Help improve HB Hub</strong>: om siden må samle statistik om, hvordan den virker for dig, fx
-                                de fejl, der sker i din browser på siden, og når serveren har for travlt til at svare. Den er slået til, indtil du slår den fra. Ore Mining Inc.s
+                                de fejl, der sker i din browser på siden, når serveren har for travlt til at svare, og om dine
+                                sidevisninger tæller med i, hvor mange gange hver side bliver åbnet. Den er slået til, indtil du slår den fra. Ore Mining Inc.s
                                 egne nedbrudsrapporter spørger altid først; har du slået den fra, står der i spørgsmålet, at det går
                                 imod indstillingen at sende en. Hvad der bliver samlet, står i
                                 <a href="/legal/privacy#watchdog">privatlivspolitikken</a>.
