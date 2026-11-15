@@ -317,7 +317,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             visninger ikke.
                         </p>
 
-                        <h3>Adminlog</h3>
+                        <h3 id="admin-log">Adminlog</h3>
                         <p>
                             Alt, hvad en side-admin gør i adminpanelet, registreres i en adminlog: hvilken admin, hvornår, hvad og
                             hvilken konto eller chat det vedrørte. Det gælder også, når en admin blot åbner en konto eller en chat
@@ -325,6 +325,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             der blev slettet) og adminens begrundelse, men aldrig adgangskoder, navne eller beskedindhold. Automatiske
                             udelukkelser for bandlyste billeder og ændringer af din status eller dine billeder registreres også, dog
                             ikke statussens tekst.
+                        </p>
+                        <p>
+                            Du kan få vist adminloggens poster, der vedrører dig, ved at skrive til
+                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. En anmodning kan dog afvises,
+                            helt eller delvist, hvis der er mistanke om, at oplysningerne vil blive misbrugt, eller hvis de kan
+                            bruges imod en admin, fx til chikane eller til at gengælde en udelukkelse eller anden moderation, i
+                            det omfang databeskyttelsesreglerne tillader det (GDPR art. 15, stk. 4, og databeskyttelseslovens
+                            § 22). Afviser vi en anmodning, får du at vide hvorfor, og du kan klage til Datatilsynet (se
+                            <a href="#rights">Dine rettigheder</a>).
                         </p>
 
                         <h3>Hvad vi ikke gemmer</h3>
@@ -370,7 +379,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 dem på én gang. Et fingeraftryk, der deles af mere end 4 konti (fx ens skolecomputere), bruges ikke til
                                 at koble konti sammen, og admins kontrollerer først, at der ikke blot er tale om en delt computer.
                                 Side-admins kan aldrig se din adgangskode eller totrinshemmelighed. Alt, hvad de gør i adminpanelet,
-                                registreres i adminloggen, som kun side-admins kan læse, og som ingen kan ændre eller slette.
+                                registreres i adminloggen, som kun side-admins kan læse, og som ingen kan ændre eller slette. Du kan
+                                dog anmode om at se de poster, der vedrører dig (se <a href="#admin-log">Adminlog</a>).
                             </li>
                         </ul>
                         <p class="legal-note">
