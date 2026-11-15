@@ -4,16 +4,19 @@
 // Everyone but site admins gets a 404, so it doesn't show that the page is here. Opened as /admin/overview it sends
 // the browser on to /admin/, so the page only has the one address.
 //
-// A dashboard of numbers about the whole site, all worked out on each load (nothing is stored for it):
-// - the headline numbers: accounts, online now, seen in the last 24 hours and 7 days, new accounts and messages
+// A dashboard of numbers about the whole site, all worked out on each load (nothing is stored for it), laid out as a
+// grid of panels (.admin-dash: 12 columns on a wide screen, one on a phone):
+// - Needs a look: a strip at the top with new feedback, browser errors, crash reports, and locked, ghost banned and
+//   banned accounts, each linking to where it's dealt with. The first three light up when there are any.
+// - four headline numbers: online now, active in the last 24 hours, messages in the last 24 hours (up or down on the
+//   24 hours before) and accounts (with how many are new this week, up or down on the week before)
 // - two bar charts of the last ADMIN_OVERVIEW_DAYS days: messages sent and new accounts each day (inline SVG, a
 //   tooltip on each day, and the same numbers as a table under "Show as a table")
-// - Chat: chats, messages, reactions and attachments, and the busiest chats and people of the last 7 days
+// - Chat: chats, messages, reactions and attachments, and the busiest chats and people of the last 7 days, each with
+//   a bar showing how they compare to the busiest one
 // - Casino: the chips in everyone's wallets, and each game's rounds, players, chips bet and what the house won or
-//   lost in the last 7 days
+//   lost in the last 7 days, with a total
 // - Games: each game's games played and players in the last 7 days, and games played ever
-// - Needs a look: new feedback, browser errors, crash reports, and locked, banned and ghost banned accounts, each
-//   linking to where it's dealt with
 // The casino's and the games' tables keep their times in UTC (UTC_TIMESTAMP()), the users', chats' and messages' in
 // the database's own time (NOW(), CURDATE()), so each query goes by its table's clock.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -37,7 +40,8 @@ if (basename($_SERVER['SCRIPT_NAME']) === 'overview.php') {
 $db = hbHubDatabase();
 
 /**
- * The headline numbers and the rest of the single numbers on the page, in one query. Deleted accounts (userStatus
+ * The headline numbers and the rest of the single numbers on the page, in one query. The "Prev" ones are the same
+ * stretch of time just before, for the up or down under a headline number. Deleted accounts (userStatus
  * NULL) and the HB Hub System account (userId 0) don't count as accounts; messages are only real ones, not the notices
  * about changes in a chat (messageEvent 1). An account counts as locked the same way as in the lists (index.php):
  * locked less than $lockoutMinutes ago.
@@ -52,7 +56,11 @@ function adminOverviewTotals(PDO $db, int $lockoutMinutes): array
         (SELECT COUNT(*) FROM `HBHub-Users` WHERE userStatus IS NOT NULL AND userLastSeenTimestamp >= NOW() - INTERVAL 1 DAY) AS seenDay,
         (SELECT COUNT(*) FROM `HBHub-Users` WHERE userStatus IS NOT NULL AND userLastSeenTimestamp >= NOW() - INTERVAL 7 DAY) AS seenWeek,
         (SELECT COUNT(*) FROM `HBHub-Users` WHERE userStatus IS NOT NULL AND userCreatedTimestamp >= NOW() - INTERVAL 7 DAY) AS newWeek,
+        (SELECT COUNT(*) FROM `HBHub-Users` WHERE userStatus IS NOT NULL AND userCreatedTimestamp >= NOW() - INTERVAL 14 DAY
+            AND userCreatedTimestamp < NOW() - INTERVAL 7 DAY) AS newPrevWeek,
         (SELECT COUNT(*) FROM `HBHub-Messages` WHERE messageEvent = 0 AND messageSentTimestamp >= NOW() - INTERVAL 1 DAY) AS messagesDay,
+        (SELECT COUNT(*) FROM `HBHub-Messages` WHERE messageEvent = 0 AND messageSentTimestamp >= NOW() - INTERVAL 2 DAY
+            AND messageSentTimestamp < NOW() - INTERVAL 1 DAY) AS messagesPrevDay,
         (SELECT COUNT(*) FROM `HBHub-Messages` WHERE messageEvent = 0 AND messageSentTimestamp >= NOW() - INTERVAL 7 DAY) AS messagesWeek,
         (SELECT COUNT(*) FROM `HBHub-Messages` WHERE messageEvent = 0) AS messagesEver,
         (SELECT COUNT(*) FROM `HBHub-Chats` WHERE chatStatus = ' . HBHUB_CHAT_STATUS_ACTIVE . ' AND chatType = ' . HBHUB_CHAT_TYPE_DM . ') AS dms,
@@ -192,7 +200,7 @@ function adminOverviewBusiestUsers(PDO $db): array
 
 /**
  * A bar chart of $days (from adminOverviewPerDay()), one bar per day with its top corners rounded, as HTML: the
- * highest number over the chart, the first, middle and last dates under it, a tooltip per day (an SVG <title> on a
+ * total and today's number as its caption, the highest number over the chart, the first, middle and last dates under it, a tooltip per day (an SVG <title> on a
  * column as tall as the chart, so it's easy to point at), and the numbers as a table under "Show as a table".
  * $noun is what's counted, like "messages". No inline styles, as the CSP doesn't allow them: it's all attributes and
  * classes in admin.css.
@@ -237,8 +245,10 @@ function adminOverviewChartHtml(array $days, string $noun, string $label): strin
         $rows .= '<tr><td class="admin-nowrap">' . date('D d/m/Y', strtotime($date)) . '</td><td>' . number_format($value) . '</td></tr>';
     }
 
-    return '<figure class="admin-chart"><figcaption class="admin-chart-title">' . htmlspecialchars($label)
-        . ' <span class="admin-small">' . number_format(array_sum($days)) . ' in all</span></figcaption>'
+    // The panel it's in has the title, so the caption is the total, big, and today's number
+    return '<figure class="admin-chart"><figcaption class="admin-chart-title"><span class="admin-chart-total">' . number_format(array_sum($days)) . '</span>'
+        . ' <span class="admin-small">in ' . $count . ' days &middot; ' . number_format(end($days)) . ' today</span>'
+        . '<span class="admin-visually-hidden">: ' . htmlspecialchars($label) . '</span></figcaption>'
         . '<div class="admin-chart-plot"><span class="admin-chart-max admin-small">' . number_format($max) . '</span>'
         . '<span class="admin-chart-mid admin-small">' . number_format($max / 2, $max % 2 === 0 ? 0 : 1) . '</span>' . $svg . '</div>'
         . '<div class="admin-chart-dates admin-small"><span>' . date('d/m', strtotime($dates[0])) . '</span><span>'
@@ -249,13 +259,74 @@ function adminOverviewChartHtml(array $days, string $noun, string $label): strin
 }
 
 /**
- * One headline number: big, with what it is under it and, if given, a smaller note.
+ * One headline number: what it is over it, the number big, and a line about it under it. $trend is extra HTML for the
+ * end of that line, like adminOverviewTrendHtml()'s up or down. $live puts a pulsing green dot by the label.
  */
-function adminOverviewTileHtml(string $label, int $value, string $note = ''): string
+function adminOverviewKpiHtml(string $label, int $value, string $note, string $trend = '', bool $live = false): string
 {
-    return '<li class="admin-tile"><span class="admin-tile-value">' . number_format($value) . '</span>'
-        . '<span class="admin-tile-label">' . htmlspecialchars($label) . '</span>'
-        . ($note !== '' ? '<span class="admin-small">' . htmlspecialchars($note) . '</span>' : '') . '</li>';
+    return '<li class="admin-kpi">'
+        . '<span class="admin-kpi-label">' . ($live ? '<span class="admin-live-dot" aria-hidden="true"></span>' : '') . htmlspecialchars($label) . '</span>'
+        . '<span class="admin-kpi-value">' . number_format($value) . '</span>'
+        . '<span class="admin-kpi-note">' . $trend . '<span>' . htmlspecialchars($note) . '</span></span></li>';
+}
+
+/**
+ * How $now compares to $before, as a small green arrow up or red arrow down with the change in percent ("▲ 12%"), or
+ * "No change". From nothing it's the number itself ("▲ 5"), as a percent of nothing means nothing.
+ */
+function adminOverviewTrendHtml(int $now, int $before): string
+{
+    if ($now === $before) {
+        return '<span class="admin-trend">No change</span>';
+    }
+    $up = $now > $before;
+    $change = $before === 0 ? number_format($now) : number_format(abs($now - $before) / $before * 100) . '%';
+    return '<span class="admin-trend ' . ($up ? 'is-up' : 'is-down') . '"><span aria-hidden="true">' . ($up ? '▲' : '▼') . '</span> '
+        . '<span class="admin-visually-hidden">' . ($up ? 'Up' : 'Down') . ' </span>' . $change . '</span>';
+}
+
+/**
+ * A panel on the dashboard's grid: a settings card with its heading and, if given, a tag on the right of it (like
+ * "Last 7 days"), taking $span of the grid's 12 columns on a wide screen. $body is its HTML.
+ */
+function adminOverviewPanelHtml(string $id, string $title, string $tag, int $span, string $body): string
+{
+    return '<section class="settings-card admin-panel admin-span-' . $span . '" aria-labelledby="' . $id . '">'
+        . '<div class="admin-panel-head"><h2 id="' . $id . '">' . htmlspecialchars($title) . '</h2>'
+        . ($tag !== '' ? '<span class="admin-panel-tag">' . htmlspecialchars($tag) . '</span>' : '') . '</div>'
+        . $body . '</section>';
+}
+
+/**
+ * A thin bar showing $value next to the highest one, $max, as an SVG (a width in a style isn't allowed by the CSP).
+ */
+function adminOverviewMeterHtml(int $value, int $max): string
+{
+    $width = $max > 0 ? round($value / $max * 100, 1) : 0;
+    return '<svg class="admin-meter" viewBox="0 0 100 4" preserveAspectRatio="none" aria-hidden="true">'
+        . '<rect class="admin-meter-track" width="100" height="4" rx="2"/><rect class="admin-meter-fill" width="' . $width . '" height="4" rx="2"/></svg>';
+}
+
+/**
+ * A ranked list of the busiest chats or people: each row is $rows' link (from $linkHtml), the number of messages on
+ * the right, and a bar under it showing how it compares to the busiest. Says so when there are none.
+ *
+ * @param list<array<string, mixed>> $rows each with 'messages'
+ * @param callable(array<string, mixed>): string $linkHtml the HTML of a row's link and anything after it
+ */
+function adminOverviewRankHtml(array $rows, callable $linkHtml): string
+{
+    if ($rows === []) {
+        return '<p class="admin-empty">No messages in the last 7 days.</p>';
+    }
+    $max = (int) $rows[0]['messages'];
+    $html = '<ol class="admin-rank">';
+    foreach ($rows as $row) {
+        $html .= '<li><div class="admin-rank-row">' . $linkHtml($row)
+            . '<span class="admin-rank-value">' . number_format((int) $row['messages']) . '</span></div>'
+            . adminOverviewMeterHtml((int) $row['messages'], $max) . '</li>';
+    }
+    return $html . '</ol>';
 }
 
 /**
@@ -263,7 +334,8 @@ function adminOverviewTileHtml(string $label, int $value, string $note = ''): st
  */
 function adminOverviewSignedHtml(int $chips): string
 {
-    return '<span class="' . ($chips < 0 ? 'admin-overview-minus' : '') . '">' . ($chips > 0 ? '+' : '') . number_format($chips) . '</span>';
+    return '<span class="' . ($chips < 0 ? 'admin-overview-minus' : ($chips > 0 ? 'admin-overview-plus' : '')) . '">'
+        . ($chips > 0 ? '+' : '') . number_format($chips) . '</span>';
 }
 
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
@@ -279,15 +351,27 @@ $adminCasino = adminOverviewCasino($db);
 $adminGames = adminOverviewGames($db);
 $adminBusiestChats = adminOverviewBusiestChats($db);
 $adminBusiestUsers = adminOverviewBusiestUsers($db);
-// The "Needs a look" list: label => [count, where it's dealt with, whether a count above 0 is worth pointing out]
+// The "Needs a look" strip: label => [count, where it's dealt with, whether a count above 0 is worth pointing out]
 $adminAttention = [
     'New feedback' => [$adminTotals['feedback'], '/admin/feedback', true],
-    'Browser errors, last 24 hours' => [$adminTotals['browserErrors'], '/admin/watchdog', true],
-    'Ore Mining Inc. crash reports' => [$adminTotals['crashReports'], '/admin/crashes', true],
-    'Locked accounts' => [$adminTotals['locked'], '/admin/?list=users&sort=status', false],
-    'Ghost banned accounts' => [$adminTotals['ghostBanned'], '/admin/?list=users&sort=status', false],
-    'Banned accounts' => [$adminTotals['banned'], '/admin/?list=users&sort=status', false],
+    'Browser errors (24 h)' => [$adminTotals['browserErrors'], '/admin/watchdog', true],
+    'Crash reports' => [$adminTotals['crashReports'], '/admin/crashes', true],
+    'Locked' => [$adminTotals['locked'], '/admin/?list=users&sort=status', false],
+    'Ghost banned' => [$adminTotals['ghostBanned'], '/admin/?list=users&sort=status', false],
+    'Banned' => [$adminTotals['banned'], '/admin/?list=users&sort=status', false],
 ];
+$adminNeedsLook = 0;
+foreach ($adminAttention as [$count, , $pointOut]) {
+    $adminNeedsLook += $pointOut ? $count : 0;
+}
+// The casino's totals for the week. Players can't be added up, as the same person plays more than one game.
+$adminCasinoTotal = ['rounds' => 0, 'wagered' => 0, 'house' => 0];
+foreach ($adminCasino as $game) {
+    foreach ($adminCasinoTotal as $key => $sum) {
+        $adminCasinoTotal[$key] = $sum + $game[$key];
+    }
+}
+$adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay'] / $adminTotals['accounts'] * 100) : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -306,115 +390,87 @@ $adminAttention = [
             <?= adminListsMenuHtml($db, 'overview') ?>
 
             <div class="settings-content">
-                <h1>Admin panel</h1>
+                <header class="admin-dash-header">
+                    <h1>Overview</h1>
+                    <p class="admin-small">Worked out at <?= date('H:i') ?>. Reload the page for the newest numbers.</p>
+                </header>
 
-                <section class="settings-card" aria-labelledby="admin-overview-heading">
-                    <div class="settings-card-head">
-                        <div>
-                            <h2 id="admin-overview-heading">Overview</h2>
-                            <p class="settings-intro">How the site is doing right now. Deleted accounts don't count, and messages are only the ones people wrote, not the notices about changes in a chat.</p>
-                        </div>
-                    </div>
-
-                    <ul class="admin-tiles">
-                        <?= adminOverviewTileHtml('Accounts', $adminTotals['accounts'], '+' . number_format($adminTotals['newWeek']) . ' in the last 7 days') ?>
-                        <?= adminOverviewTileHtml('Online now', $adminTotals['online'], 'seen in the last ' . intdiv(HBHUB_SESSION_ONLINE_SECONDS, 60) . ' minutes') ?>
-                        <?= adminOverviewTileHtml('Seen today', $adminTotals['seenDay'], 'in the last 24 hours') ?>
-                        <?= adminOverviewTileHtml('Seen this week', $adminTotals['seenWeek'], 'in the last 7 days') ?>
-                        <?= adminOverviewTileHtml('Messages today', $adminTotals['messagesDay'], 'in the last 24 hours') ?>
-                        <?= adminOverviewTileHtml('Messages this week', $adminTotals['messagesWeek'], 'in the last 7 days') ?>
-                    </ul>
-                </section>
-
-                <section class="settings-card" aria-labelledby="admin-overview-days-heading">
-                    <h2 id="admin-overview-days-heading">Last <?= ADMIN_OVERVIEW_DAYS ?> days</h2>
-                    <div class="admin-charts">
-                        <?= adminOverviewChartHtml($adminMessagesPerDay, 'messages', 'Messages sent each day') ?>
-                        <?= adminOverviewChartHtml($adminSignupsPerDay, 'new accounts', 'New accounts each day') ?>
-                    </div>
-                </section>
-
-                <section class="settings-card" aria-labelledby="admin-overview-attention-heading">
-                    <h2 id="admin-overview-attention-heading">Needs a look</h2>
-                    <ul class="admin-attention">
+                <section class="admin-alerts<?= $adminNeedsLook > 0 ? ' is-on' : '' ?>" aria-labelledby="admin-overview-attention-heading">
+                    <h2 id="admin-overview-attention-heading" class="admin-alerts-title">
+                        <?= $adminNeedsLook > 0 ? 'Needs a look' : 'All clear' ?>
+                    </h2>
+                    <ul class="admin-alerts-list">
                         <?php foreach ($adminAttention as $label => [$count, $href, $pointOut]): ?>
                             <li>
-                                <a class="admin-attention-link" href="<?= htmlspecialchars($href) ?>">
-                                    <span class="settings-menu-count<?= $pointOut && $count > 0 ? ' is-new' : '' ?>"><?= number_format($count) ?></span>
-                                    <?= htmlspecialchars($label) ?>
+                                <a class="admin-alert<?= $count === 0 ? ' is-zero' : ($pointOut ? ' is-hot' : '') ?>" href="<?= htmlspecialchars($href) ?>">
+                                    <span class="admin-alert-count"><?= number_format($count) ?></span>
+                                    <span><?= htmlspecialchars($label) ?></span>
                                 </a>
                             </li>
                         <?php endforeach; ?>
                     </ul>
                 </section>
 
-                <section class="settings-card" aria-labelledby="admin-overview-chat-heading">
-                    <h2 id="admin-overview-chat-heading">Chat</h2>
-                    <ul class="admin-tiles">
-                        <?= adminOverviewTileHtml('DMs', $adminTotals['dms'], 'not deleted') ?>
-                        <?= adminOverviewTileHtml('Groups', $adminTotals['groupChats'], 'not deleted') ?>
-                        <?= adminOverviewTileHtml('Chats in use', $adminTotals['chatsWeek'], 'a message in the last 7 days') ?>
-                        <?= adminOverviewTileHtml('Messages ever', $adminTotals['messagesEver']) ?>
-                        <?= adminOverviewTileHtml('Reactions', $adminTotals['reactionsWeek'], 'in the last 7 days') ?>
-                        <?= adminOverviewTileHtml('Attachments', $adminTotals['attachmentsWeek'], 'sent in the last 7 days') ?>
-                    </ul>
+                <div class="admin-dash">
+                    <section class="admin-span-12" aria-label="The main numbers">
+                        <ul class="admin-kpis">
+                            <?= adminOverviewKpiHtml('Online now', $adminTotals['online'], 'seen in the last ' . intdiv(HBHUB_SESSION_ONLINE_SECONDS, 60) . ' minutes', '', true) ?>
+                            <?= adminOverviewKpiHtml('Active today', $adminTotals['seenDay'], $adminActivePercent . '% of accounts · ' . number_format($adminTotals['seenWeek']) . ' this week') ?>
+                            <?= adminOverviewKpiHtml('Messages today', $adminTotals['messagesDay'], 'on the 24 hours before', adminOverviewTrendHtml($adminTotals['messagesDay'], $adminTotals['messagesPrevDay'])) ?>
+                            <?= adminOverviewKpiHtml('Accounts', $adminTotals['accounts'], '+' . number_format($adminTotals['newWeek']) . ' new this week', adminOverviewTrendHtml($adminTotals['newWeek'], $adminTotals['newPrevWeek'])) ?>
+                        </ul>
+                    </section>
 
-                    <div class="admin-overview-lists">
-                        <div>
-                            <h3 class="admin-watchdog-subheading">Busiest chats, last 7 days</h3>
-                            <?php if ($adminBusiestChats === []): ?>
-                                <p class="settings-hint">No messages in the last 7 days.</p>
-                            <?php else: ?>
-                                <ol class="admin-overview-top">
-                                    <?php foreach ($adminBusiestChats as $chat): ?>
-                                        <?php $topChatId = (int) $chat['chatId']; ?>
-                                        <li>
-                                            <a class="admin-list-link" href="/admin/chat?chat=<?= $topChatId ?>">
-                                                <?= adminAvatarHtml(adminChatIconUrl($topChatId, $chat['chatIconAttachmentId']), $chat['chatTitle'], true) ?>
-                                                <span class="admin-list-name"><?= htmlspecialchars($chat['chatTitle']) ?></span>
-                                            </a>
-                                            <span class="admin-small"><?= (int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group' ?> &middot; <?= number_format((int) $chat['messages']) ?> messages</span>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ol>
-                            <?php endif; ?>
-                        </div>
-                        <div>
-                            <h3 class="admin-watchdog-subheading">Most messages sent, last 7 days</h3>
-                            <?php if ($adminBusiestUsers === []): ?>
-                                <p class="settings-hint">No messages in the last 7 days.</p>
-                            <?php else: ?>
-                                <ol class="admin-overview-top">
-                                    <?php foreach ($adminBusiestUsers as $user): ?>
-                                        <?php $topUserId = (int) $user['userId']; ?>
-                                        <li>
-                                            <a class="admin-list-link" href="/admin/user?user=<?= $topUserId ?>">
-                                                <?= adminAvatarHtml(hbHubAvatarUrl($topUserId, $user['userAvatarAttachmentId'] !== null ? (int) $user['userAvatarAttachmentId'] : null), $user['userName'], true) ?>
-                                                <span class="admin-list-name"><?= htmlspecialchars($user['userName']) ?></span>
-                                            </a>
-                                            <span class="admin-small"><?= number_format((int) $user['messages']) ?> messages</span>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ol>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </section>
+                    <?= adminOverviewPanelHtml('admin-overview-messages-heading', 'Messages', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 8,
+                        adminOverviewChartHtml($adminMessagesPerDay, 'messages', 'Messages sent each day')) ?>
+                    <?= adminOverviewPanelHtml('admin-overview-signups-heading', 'New accounts', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 4,
+                        adminOverviewChartHtml($adminSignupsPerDay, 'new accounts', 'New accounts each day')) ?>
 
-                <section class="settings-card" aria-labelledby="admin-overview-casino-heading">
-                    <h2 id="admin-overview-casino-heading">Casino</h2>
-                    <ul class="admin-tiles">
-                        <?= adminOverviewTileHtml('Chips in wallets', $adminTotals['chips'], 'everyone\'s together') ?>
-                        <?= adminOverviewTileHtml('Wallets', $adminTotals['wallets'], 'people who have opened the casino') ?>
-                        <?= adminOverviewTileHtml('Daily chips collected', $adminTotals['dailyBonuses'], 'in the last 24 hours') ?>
-                    </ul>
-                    <h3 class="admin-watchdog-subheading">Last 7 days</h3>
+                    <?php ob_start(); ?>
+                    <dl class="admin-stats">
+                        <div><dt>Chats in use</dt><dd><?= number_format($adminTotals['chatsWeek']) ?></dd></div>
+                        <div><dt>Messages</dt><dd><?= number_format($adminTotals['messagesWeek']) ?></dd></div>
+                        <div><dt>Reactions</dt><dd><?= number_format($adminTotals['reactionsWeek']) ?></dd></div>
+                        <div><dt>Attachments</dt><dd><?= number_format($adminTotals['attachmentsWeek']) ?></dd></div>
+                    </dl>
+                    <p class="admin-panel-sub">All time</p>
+                    <dl class="admin-stats">
+                        <div><dt>DMs</dt><dd><?= number_format($adminTotals['dms']) ?></dd></div>
+                        <div><dt>Groups</dt><dd><?= number_format($adminTotals['groupChats']) ?></dd></div>
+                        <div class="admin-stats-wide"><dt>Messages ever</dt><dd><?= number_format($adminTotals['messagesEver']) ?></dd></div>
+                    </dl>
+                    <p class="admin-panel-foot">Chats in use had a message this week. DMs and groups don't count deleted ones, and messages are only the ones people wrote, not the notices about changes in a chat.</p>
+                    <?= adminOverviewPanelHtml('admin-overview-chat-heading', 'Chat', 'Last 7 days', 4, ob_get_clean()) ?>
+
+                    <?= adminOverviewPanelHtml('admin-overview-chats-heading', 'Busiest chats', 'Last 7 days', 4,
+                        adminOverviewRankHtml($adminBusiestChats, static function (array $chat): string {
+                            $chatId = (int) $chat['chatId'];
+                            return '<a class="admin-list-link" href="/admin/chat?chat=' . $chatId . '">'
+                                . adminAvatarHtml(adminChatIconUrl($chatId, $chat['chatIconAttachmentId']), $chat['chatTitle'], true)
+                                . '<span class="admin-list-name">' . htmlspecialchars($chat['chatTitle']) . '</span></a>'
+                                . '<span class="admin-small">' . ((int) $chat['chatType'] === HBHUB_CHAT_TYPE_DM ? 'DM' : 'Group') . '</span>';
+                        })) ?>
+                    <?= adminOverviewPanelHtml('admin-overview-users-heading', 'Most messages sent', 'Last 7 days', 4,
+                        adminOverviewRankHtml($adminBusiestUsers, static function (array $user): string {
+                            $userId = (int) $user['userId'];
+                            return '<a class="admin-list-link" href="/admin/user?user=' . $userId . '">'
+                                . adminAvatarHtml(hbHubAvatarUrl($userId, $user['userAvatarAttachmentId'] !== null ? (int) $user['userAvatarAttachmentId'] : null), $user['userName'], true)
+                                . '<span class="admin-list-name">' . htmlspecialchars($user['userName']) . '</span></a>';
+                        })) ?>
+
+                    <?php ob_start(); ?>
+                    <dl class="admin-stats admin-stats-3">
+                        <div><dt>Chips in wallets</dt><dd><?= number_format($adminTotals['chips']) ?></dd></div>
+                        <div><dt title="People who have opened the casino">Wallets</dt><dd><?= number_format($adminTotals['wallets']) ?></dd></div>
+                        <div><dt title="In the last 24 hours">Daily chips today</dt><dd><?= number_format($adminTotals['dailyBonuses']) ?></dd></div>
+                    </dl>
                     <div class="admin-table-wrap">
-                        <table class="admin-table">
+                        <table class="admin-table admin-dash-table">
+                            <caption class="admin-visually-hidden">The casino's games in the last 7 days</caption>
                             <thead><tr><th scope="col">Game</th><th scope="col">Rounds</th><th scope="col">Players</th><th scope="col">Chips bet</th><th scope="col" title="What the players lost, minus what they won">House won</th></tr></thead>
                             <tbody>
                                 <?php foreach ($adminCasino as $name => $game): ?>
-                                    <tr>
+                                    <tr<?= $game['rounds'] === 0 ? ' class="is-quiet"' : '' ?>>
                                         <th scope="row"><?= htmlspecialchars($name) ?></th>
                                         <td><?= number_format($game['rounds']) ?></td>
                                         <td><?= number_format($game['players']) ?></td>
@@ -423,29 +479,40 @@ $adminAttention = [
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th scope="row">Total</th>
+                                    <td><?= number_format($adminCasinoTotal['rounds']) ?></td>
+                                    <td></td>
+                                    <td><?= number_format($adminCasinoTotal['wagered']) ?></td>
+                                    <td><?= adminOverviewSignedHtml($adminCasinoTotal['house']) ?></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
-                </section>
+                    <p class="admin-panel-foot">House won is what the players lost minus what they won, so red means the players came out ahead.</p>
+                    <?= adminOverviewPanelHtml('admin-overview-casino-heading', 'Casino', 'Last 7 days', 6, ob_get_clean()) ?>
 
-                <section class="settings-card" aria-labelledby="admin-overview-games-heading">
-                    <h2 id="admin-overview-games-heading">Games</h2>
-                    <p class="settings-intro">Each player's game counts as one, so a chess game counts twice. Games still going, and Minesweeper and Sudoku games left for a new one, aren't counted.</p>
+                    <?php ob_start(); ?>
                     <div class="admin-table-wrap">
-                        <table class="admin-table">
-                            <thead><tr><th scope="col">Game</th><th scope="col">Games, last 7 days</th><th scope="col">Players, last 7 days</th><th scope="col">Games ever</th></tr></thead>
+                        <table class="admin-table admin-dash-table">
+                            <caption class="admin-visually-hidden">The games' numbers</caption>
+                            <thead><tr><th scope="col">Game</th><th scope="col">Games</th><th scope="col">Players</th><th scope="col">Ever</th></tr></thead>
                             <tbody>
                                 <?php foreach ($adminGames as $name => $game): ?>
-                                    <tr>
+                                    <tr<?= $game['players'] === 0 ? ' class="is-quiet"' : '' ?>>
                                         <th scope="row"><?= htmlspecialchars($name) ?></th>
                                         <td><?= $game['week'] !== null ? number_format($game['week']) : '<span class="admin-muted" title="It has no games, only saves">–</span>' ?></td>
                                         <td><?= number_format($game['players']) ?></td>
-                                        <td><?= $game['week'] !== null ? number_format($game['ever']) : number_format($game['ever']) . ' <span class="admin-small">saves</span>' ?></td>
+                                        <td><?= number_format($game['ever']) . ($game['week'] === null ? ' <span class="admin-small">saves</span>' : '') ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
                     </div>
-                </section>
+                    <p class="admin-panel-foot">Games and players are for the last 7 days. Each player's game counts as one, so a chess game counts twice. Games still going, and Minesweeper and Sudoku games left for a new one, aren't counted. For Ore Mining Inc., players are the ones who saved this week.</p>
+                    <?= adminOverviewPanelHtml('admin-overview-games-heading', 'Games', 'Last 7 days', 6, ob_get_clean()) ?>
+                </div>
             </div>
         </div>
     </main>
