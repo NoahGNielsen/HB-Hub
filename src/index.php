@@ -211,8 +211,8 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     eller i grupper.
                 </p>
                 <p>
-                    Siden er lavet og bliver drevet af en elev med lidt hjælp fra en anden elev. Den har intet med
-                    HANSENBERG at gøre.
+                    HB Hub er bygget og drives af en elev, med lidt hjælp fra en anden. Siden er ikke lavet af
+                    HANSENBERG.
                 </p>
             </div>
             <div class="home-feature-art home-about-art" aria-hidden="true">
