@@ -206,11 +206,6 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 har sin egen klassechat, og du kan skrive med andre HANSENBERG-elever, både én til én og i grupper.
             </p>
             <p>
-                Når timen er slut, kan I spille Matador, skak og UNO mod hinanden, eller du kan tage en runde Wordle,
-                Minesweeper, Sudoku eller Ore Mining Inc. I casinoet kan du spille Blackjack, Baccarat, Roulette og Slots
-                med chips.
-            </p>
-            <p>
                 HB Hub er lavet og drevet af en elev, ikke af HANSENBERG selv. Siden er gratis, kører direkte i browseren,
                 og al koden ligger åbent på GitHub.
             </p>
