@@ -197,6 +197,12 @@ function termsNumber(int $number): string
                                 <a href="/casino/buy-chips">Buy chips</a>.
                             </li>
                             <li>Ejeren bestemmer selv, om et køb kan lade sig gøre, og kan sige nej uden at give en grund. Ingen har krav på at kunne købe chips.</li>
+                            <li>
+                                <strong>Er du under 18 år, kan du aldrig købe chips.</strong> Det samme gælder, hvis du er
+                                tilmeldt <a href="https://www.spillemyndigheden.dk/rofus" rel="noopener">ROFUS</a> (Register Over
+                                Frivilligt Udelukkede Spillere), uanset om tilmeldingen er midlertidig eller endelig. Det er der
+                                ingen undtagelser fra.
+                            </li>
                             <li>Købte chips er almindelige chips. De kan tabes i spillene, og ovenstående regler gælder også for dem.</li>
                             <li>
                                 <strong>Køb refunderes ikke.</strong> Det gælder også, hvis du bliver udelukket, sletter din konto,
