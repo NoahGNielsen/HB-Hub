@@ -1350,107 +1350,230 @@ html.home {
 }
 
 /* ---------- About (in Danish) ----------
-   Sits right under the hero, laid out like the Safety section (.home-safety) but with plain paragraphs instead of
-   the grid. */
-.home-about h2 {
-  max-width: 820px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.home-about > p:not(.home-kicker) {
-  max-width: 720px;
-  margin: 0 auto 18px;
-  font-size: 1.05rem;
-  line-height: 1.65;
-  opacity: 0.8;
-}
-
+   Sits right under the hero and uses the feature sections' layout (.home-feature). The picture is three things
+   stacked: a made-up commit log at the back, a student card tilted in front of it and a price tag stuck on top. Like
+   the casino picture, the pieces are placed by hand inside a box of fixed height. */
 .home-about a {
   color: var(--accent);
   text-underline-offset: 2px;
 }
 
-/* The row of fact badges under the paragraphs: an icon tile (same look as .home-safety-grid svg) next to a bold
-   line and a quieter one. Wraps to two per row, then one, on narrow screens. Hover lift uses "translate" for the
-   same reason as the Safety cards (the scroll-in animation owns transform). */
-.home-about-facts {
-  max-width: 900px;
-  margin: 36px auto 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  text-align: left;
+.home-about-art {
+  height: 400px;
 }
 
-.home-about-facts li {
+/* The commit log: a code window in the dark colours of the hero, at the top right */
+.home-repo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 78%;
+  padding: 16px 18px 18px;
+  box-sizing: border-box;
+  border-radius: 18px;
+  background: var(--home-dark-raised);
+  color: var(--home-dark-text);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.18);
+  transform: rotate(2deg);
+}
+
+.home-repo-head {
+  margin: 0 0 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  background: var(--secondary);
-  transition:
-    translate 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 0.35s ease;
+  gap: 8px;
+  font-size: 0.95rem;
 }
 
-.home-about-facts svg {
-  flex: none;
-  width: 40px;
-  height: 40px;
-  padding: 9px;
-  box-sizing: border-box;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+.home-repo-head svg {
+  width: 20px;
+  height: 20px;
   fill: none;
   stroke: var(--accent);
-  stroke-width: 2;
+  stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.home-about-facts span {
+.home-repo-head span {
+  margin-left: auto;
+  padding: 2px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+
+/* Each commit is a dot on a line running down the left side, the message in monospace and how long ago on the right */
+.home-repo-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-repo-log li {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  font-size: 0.85rem;
-  line-height: 1.35;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0 7px 22px;
+  font-size: 0.82rem;
 }
 
-.home-about-facts b {
-  font-size: 0.95rem;
+.home-repo-log li::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.14);
 }
 
-.home-about-facts small {
+.home-repo-log li:first-child::before { top: 50%; }
+.home-repo-log li:last-child::before { bottom: 50%; }
+
+.home-repo-log i {
+  position: absolute;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: var(--home-dark-raised);
+}
+
+.home-repo-log code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: inherit;
+}
+
+.home-repo-log span {
+  opacity: 0.5;
+  font-size: 0.75rem;
+}
+
+/* The student card: a plastic card in the page's own colours with an accent band, tilted the other way */
+.home-idcard {
+  position: absolute;
+  left: 0;
+  bottom: 24px;
+  width: 64%;
+  max-width: 340px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--secondary);
+  box-shadow: 0 28px 56px -12px rgba(0, 0, 0, 0.35);
+  transform: rotate(-5deg);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.home-idcard-band {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-idcard-band img {
+  border-radius: 6px;
+  background: #fff;
+}
+
+.home-idcard-body {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 18px 10px;
+}
+
+.home-idcard-photo {
+  flex: none;
+  width: 72px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 850;
+}
+
+.home-idcard-body dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  font-size: 0.85rem;
+}
+
+.home-idcard-body dt {
+  opacity: 0.55;
+}
+
+.home-idcard-body dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* Thin and thick stripes, like a real barcode */
+.home-idcard-barcode {
+  height: 26px;
+  margin: 6px 18px 16px;
+  background: repeating-linear-gradient(90deg,
+    var(--text) 0 2px, transparent 2px 4px,
+    var(--text) 4px 5px, transparent 5px 8px,
+    var(--text) 8px 11px, transparent 11px 13px);
   opacity: 0.7;
 }
 
-@media (hover: hover) {
-  .home-about-facts li:hover {
-    translate: 0 -4px;
-    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-  }
+/* The price tag: a round red sticker over the card's corner */
+.home-pricetag {
+  position: absolute;
+  left: 54%;
+  bottom: 0;
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-content: center;
+  border-radius: 50%;
+  background: var(--home-red);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  box-shadow: 0 14px 28px -8px rgba(0, 0, 0, 0.4);
+  transform: rotate(12deg);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .home-about-facts li {
-    translate: none !important;
-  }
+.home-pricetag b {
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  text-transform: none;
 }
 
-@media (max-width: 900px) {
-  .home-about-facts {
-    grid-template-columns: repeat(2, 1fr);
+/* Hovering the picture straightens the card and spins the sticker a little */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .home-about-art:hover .home-idcard {
+    transform: rotate(-2deg) translateY(-6px);
   }
-}
 
-@media (max-width: 480px) {
-  .home-about-facts {
-    grid-template-columns: 1fr;
+  .home-about-art:hover .home-pricetag {
+    transform: rotate(-4deg) scale(1.06);
   }
 }
 
@@ -1539,7 +1662,6 @@ html.home {
     .home-feature-text,
     .home-feature-art,
     .home-safety-grid li,
-    .home-about-facts li,
     .home-cta {
       animation: home-reveal linear both;
       animation-timeline: view();
@@ -1598,7 +1720,8 @@ html.home {
   }
 
   .home-casino-art,
-  .home-games-art {
+  .home-games-art,
+  .home-about-art {
     max-width: 540px;
     width: 100%;
     margin: 0 auto;
@@ -1775,7 +1898,8 @@ html.home {
     height: 26px;
   }
 
-  .home-games-art {
+  .home-games-art,
+  .home-about-art {
     height: 400px;
   }
 

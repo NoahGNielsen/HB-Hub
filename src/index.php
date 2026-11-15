@@ -199,38 +199,56 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <!-- About: the part that matches the Danish searches for the school ("hansenberg", "hansenberg elever", "htx
              kolding chat") and tells Google which school the site is about. It sits right under the hero so it's one of
              the first things both visitors and search engines read. Says plainly that the school doesn't run it, like
-             the terms do. -->
-        <section class="home-safety home-about" id="om" aria-labelledby="home-about-title">
-            <p class="home-kicker home-kicker-center">Om HB Hub</p>
-            <h2 id="home-about-title">Et sted kun for eleverne på HANSENBERG.</h2>
-            <p>
-                HB Hub er en chat- og spilside for eleverne på HANSENBERG Tekniske Gymnasium (HTX) i Kolding. Din klasse
-                har sin egen klassechat, og du kan skrive med alle de andre elever på skolen, enten privat eller i grupper.
-            </p>
-            <p>
-                Siden er lavet og bliver drevet af en elev, ikke af HANSENBERG. Den er gratis, kører direkte i browseren,
-                og al koden ligger frit tilgængeligt på GitHub.
-            </p>
-            <!-- The same four facts as small icon badges, drawn like the Safety section's icons (inline SVG strokes in
-                 the accent colour). Decoration only: the paragraphs above already say all of it. -->
-            <ul class="home-about-facts" aria-hidden="true">
-                <li>
-                    <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
-                    <span><b>HTX i Kolding</b><small>HANSENBERG</small></span>
-                </li>
-                <li>
-                    <svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/><path d="M22 9v6"/></svg>
-                    <span><b>Lavet af en elev</b><small>Ikke af skolen</small></span>
-                </li>
-                <li>
-                    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M7 6.5h.01M10 6.5h.01"/></svg>
-                    <span><b>Gratis</b><small>Lige i browseren</small></span>
-                </li>
-                <li>
-                    <svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5"/><path d="M16 7l5 5-5 5"/><path d="M14 4l-4 16"/></svg>
-                    <span><b>Åben kildekode</b><small>På GitHub</small></span>
-                </li>
-            </ul>
+             the terms do. Laid out like the feature sections below it, with the picture on the left so the sides take
+             turns with Chat. -->
+        <section class="home-feature home-feature-flip home-about" id="om" aria-labelledby="home-about-title">
+            <div class="home-feature-text">
+                <p class="home-kicker"><img src="/assets/images/icons/user.png" width="18" height="18" alt="Person-ikon" aria-hidden="true">Om HB Hub</p>
+                <h2 id="home-about-title">Et sted kun for eleverne på HANSENBERG.</h2>
+                <p>
+                    HB Hub er en chat- og spilside for eleverne på HANSENBERG Tekniske Gymnasium (HTX) i Kolding. Din
+                    klasse har sin egen klassechat, og du kan skrive med alle de andre elever på skolen, enten privat
+                    eller i grupper.
+                </p>
+                <p>
+                    Siden er lavet og bliver drevet af en elev, ikke af HANSENBERG. Den er gratis, kører direkte i
+                    browseren, og al koden ligger frit tilgængeligt på GitHub.
+                </p>
+            </div>
+            <div class="home-feature-art home-about-art" aria-hidden="true">
+                <!-- A made-up commit log at the back (made by a student, the code is open), a student card in front
+                     of it (only for HANSENBERG's students) and a price tag stuck on top (it's free) -->
+                <div class="home-repo">
+                    <p class="home-repo-head">
+                        <svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5"/><path d="M16 7l5 5-5 5"/></svg>
+                        <b>HB-Hub</b><span>Offentlig</span>
+                    </p>
+                    <ul class="home-repo-log">
+                        <li><i></i><code>tilføjede rangliste</code><span>2 d.</span></li>
+                        <li><i></i><code>QOL-opdatering til Matador</code><span>4 d.</span></li>
+                        <li><i></i><code>rettede Wordle i frikvarteret</code><span>1 u.</span></li>
+                    </ul>
+                </div>
+                <div class="home-idcard">
+                    <div class="home-idcard-band">
+                        <img src="/assets/images/favicon.svg" width="22" height="22" alt="HB Hub-logo">
+                        <span>Elevkort</span>
+                    </div>
+                    <div class="home-idcard-body">
+                        <span class="home-idcard-photo home-msg-avatar-a">D</span>
+                        <dl>
+                            <dt>Skole</dt>
+                            <dd>HANSENBERG</dd>
+                            <dt>Linje</dt>
+                            <dd>HTX, Kolding</dd>
+                            <dt>Klasse</dt>
+                            <dd>2.B</dd>
+                        </dl>
+                    </div>
+                    <div class="home-idcard-barcode"></div>
+                </div>
+                <div class="home-pricetag"><b>0 kr.</b>Gratis</div>
+            </div>
         </section>
 
         <!-- Chat -->
