@@ -1,102 +1,122 @@
 <?php
 // How to play Ore Mining Inc., shown in the game's How to play popup (games/spaceOreMiner/index.php) and on its docs
-// page (docs/games/ore-mining-inc.php). The numbers are miner.php's, so it has to be included first. miner.php and
-// spaceOreMiner.js play by these rules, so change them together.
+// page (docs/games/ore-mining-inc.php). In Danish, like the docs (a public page), also in the game, but everything
+// named in the game (buildings, upgrades, views, Anomalies) keeps the English name the game shows it by. The numbers
+// are miner.php's, so it has to be included first. miner.php and spaceOreMiner.js play by these rules, so change them
+// together.
+
+/**
+ * A big number the Danish way (long scale: a milliard is the game's billion, a billion its trillion), like
+ * "10 billioner". Only for the few big numbers below.
+ */
+$rulesNumber = static function (float $number): string {
+    foreach ([[1e12, 'billion', 'billioner'], [1e9, 'milliard', 'milliarder'], [1e6, 'million', 'millioner']] as [$size, $one, $many]) {
+        if ($number >= $size) {
+            $shown = rtrim(rtrim(number_format($number / $size, 2, ',', '.'), '0'), ',');
+            return $shown . ' ' . ($shown === '1' ? $one : $many);
+        }
+    }
+    return number_format($number, 0, ',', '.');
+};
 ?>
-<ul class="casino-rule-list">
-    <li>Click the asteroid to mine ore. Spend it in the store on buildings, which mine for you every second, and on upgrades that make clicks and buildings better.</li>
+<ul class="casino-rule-list" lang="da">
+    <li>Klik på asteroiden for at mine malm. Brug den i butikken på bygninger, som miner for dig hvert sekund, og på opgraderinger, der gør klik og bygninger bedre.</li>
     <li>
-        Every building costs <?= round((HBHUB_MINER_COST_GROWTH - 1) * 100) ?>% more than the one before
-        (Space Pickaxe Guys only <?= round((HBHUB_MINER_BUILDINGS['pickaxe']['growth'] - 1) * 100) ?>%). Each one
-        gets <?= count(HBHUB_MINER_BUILDING_UPGRADE_AT) ?> upgrades, at
-        <?= implode(', ', array_slice(HBHUB_MINER_BUILDING_UPGRADE_AT, 0, -1)) ?> and
-        <?= HBHUB_MINER_BUILDING_UPGRADE_AT[count(HBHUB_MINER_BUILDING_UPGRADE_AT) - 1] ?> owned, that double what it
-        mines, and Space Pickaxe Guys get crew upgrades that make them mine more for every other building you own.
+        Hver bygning koster <?= round((HBHUB_MINER_COST_GROWTH - 1) * 100) ?> % mere end den før
+        (Space Pickaxe Guys kun <?= round((HBHUB_MINER_BUILDINGS['pickaxe']['growth'] - 1) * 100) ?> %). Hver af dem
+        får <?= count(HBHUB_MINER_BUILDING_UPGRADE_AT) ?> opgraderinger, ved
+        <?= implode(', ', array_slice(HBHUB_MINER_BUILDING_UPGRADE_AT, 0, -1)) ?> og
+        <?= HBHUB_MINER_BUILDING_UPGRADE_AT[count(HBHUB_MINER_BUILDING_UPGRADE_AT) - 1] ?> ejede, som fordobler, hvad den
+        miner, og Space Pickaxe Guys får crew-opgraderinger, der får dem til at mine mere for hver anden bygning, du ejer.
     </li>
-    <li>Now and then a Golden Comet flies across the screen. Click it before it's gone for a big pile of ore, or seven times the production for a while.</li>
+    <li>En gang imellem flyver en Golden Comet hen over skærmen. Klik på den, før den er væk, for en stor bunke malm eller syv gange produktionen et stykke tid.</li>
     <li>
-        About every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes while the game is open, a Star Shard flies past the other
-        way, for only <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds. Click it to keep it. Star Shards are kept for good,
-        and the Shard Shop view sells boosts, ore right away, a Comet Beacon that calls the next comet in,
-        asteroid skins and click effects for them. Boosts, ore and comets are for your own game, so not in an Anomaly.
-    </li>
-    <li>
-        Later on, the Dark Matter view has the Warp Jump, which starts you over in a new galaxy for Dark Matter,
-        the Antimatter view has the Big Crunch, which starts the whole universe over for Antimatter, and the
-        Strange Matter view has the Big Rip, which starts the whole multiverse over for Strange Matter. The game
-        keeps running whichever view you're on.
+        Cirka hvert <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?>. minut, mens spillet er åbent, flyver en Star Shard forbi den
+        anden vej, i kun <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> sekunder. Klik på den for at beholde den. Star Shards
+        beholder du for altid, og Shard Shop-visningen sælger boosts, malm med det samme, en Comet Beacon, der kalder den
+        næste komet frem, asteroideskins og klikeffekter til dem. Boosts, malm og kometer er til dit eget spil, så ikke i en
+        Anomaly.
     </li>
     <li>
-        Strange Matter is spent in the skill tree, on <?= count(HBHUB_MINER_SKILLS) ?> skills you keep for good. It
-        grows to the right from the Strangelet on the left, with a row for each of its five branches, and a
-        skill can be learned once every skill linked to the left of it is, including the ones in the
-        branches next to it.
-        Pick one to see what it does and what it costs.
+        Senere har Dark Matter-visningen Warp Jump, som starter dig forfra i en ny galakse for Dark Matter,
+        Antimatter-visningen har Big Crunch, som starter hele universet forfra for Antimatter, og Strange Matter-visningen
+        har Big Rip, som starter hele multiverset forfra for Strange Matter. Spillet bliver ved med at køre, uanset hvilken
+        visning du er på.
     </li>
     <li>
-        With the Auto Buy Dark Matter upgrade, a switch in the store buys for you while the game is open: the
-        building <kbd>B</kbd> would pick or an upgrade, whichever pays back its price soonest. When an upgrade
-        is worth waiting for, it saves up for it instead of spending the ore on buildings. When you have a lot
-        of ore, it buys that building 10 or 100 at a time, even without Bulk Buying. In the Hands Only Anomaly
-        it counts a click a second of your own, so it still buys before you have an auto-clicker, and in One
-        Track it leaves each run's first building (the only kind that run can have) for you to pick.
+        Strange Matter bruges i færdighedstræet, på <?= count(HBHUB_MINER_SKILLS) ?> færdigheder, du beholder for altid. Det
+        vokser mod højre fra Strangelet til venstre, med en række for hver af dets fem grene, og en færdighed kan læres, når
+        alle færdigheder, der er forbundet til venstre for den, er lært, også dem i grenene ved siden af. Vælg en for at se,
+        hvad den gør, og hvad den koster.
     </li>
     <li>
-        With the Comet Catcher Antimatter upgrade, every Golden Comet is caught for you a moment after it shows up,
-        while the game is open. Diamond Comets are left for you to catch yourself.
+        Med Dark Matter-opgraderingen Auto Buy køber en knap i butikken for dig, mens spillet er åbent: den bygning,
+        <kbd>B</kbd> ville vælge, eller en opgradering, alt efter hvad der tjener sin pris hjem hurtigst. Er en opgradering
+        værd at vente på, sparer den op til den i stedet for at bruge malmen på bygninger. Har du meget malm, køber den den
+        bygning 10 eller 100 ad gangen, også uden Bulk Buying. I Anomalyen Hands Only tæller den et klik i sekundet af dine
+        egne, så den stadig køber, før du har en autoklikker, og i One Track lader den hvert forsøgs første bygning (den
+        eneste slags, det forsøg kan have) være op til dig at vælge.
     </li>
     <li>
-        the Project Starbound view has the Cosmic Engine, which everyone on HB Hub builds together, one stage at a time, out of
-        Starbound Parts. Once you've earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter you can give it parts
-        (until then the view only shows how far it is): up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> a day
-        for ore (the first for <?= hbHubMinerSkillNumber(HBHUB_MINER_ENGINE_ORE_PART) ?>, each next one that day ten
-        times as much), as many as you like for <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> Strange Matter each (it doesn't
-        make you mine slower, as the Strange Matter bonus counts all you've earned), and by working the day's
-        <?= HBHUB_MINER_SHIFT_COUNT ?> Starbound Shifts, tasks picked from <?= count(HBHUB_MINER_SHIFTS) ?> that are the
-        same for everyone and give <?= HBHUB_MINER_SHIFT_PARTS ?> parts each (<?= HBHUB_MINER_SHIFT_PARTS_HARD ?> for a hard
-        one), plus <?= HBHUB_MINER_SHIFT_BONUS ?> more once all of them are done.
-        Every stage finished gives everyone who plays its perk for good. Some stages have a lock too, like a number of
-        different players who have helped, and only finish once it's met. Parts from ore count half from stage 11 and a
-        quarter from stage 16. Once a build is done the next one starts, with new stages and locks that count from
-        nothing again; Build #2 is the Starforge, and there are <?= count(HBHUB_MINER_ENGINES) ?> builds in all. A build's last stage has to be filled within
-        <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days of the one before it, or half its parts are
-        lost and the time starts over; once it's full, everything mines <?= HBHUB_MINER_IGNITION_TIMES ?> times as much for
-        <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours.
+        Med Antimatter-opgraderingen Comet Catcher bliver hver Golden Comet fanget for dig et øjeblik efter, den dukker op,
+        mens spillet er åbent. Diamond Comets bliver ladt tilbage, så du selv kan fange dem.
     </li>
     <li>
-        Once you've earned <?= number_format(HBHUB_MINER_ANOMALY_STRANGE) ?> Strange Matter, the Anomalies view opens: challenge runs in a universe of their own with one rule
-        changed, like no comets or clicks that mine nothing. You keep your skills and Strange Matter, start without Dark
-        Matter or Antimatter, and finish one by earning its goal of Antimatter. Meanwhile your own game mines as if you
-        were away, and you can leave whenever you like: Save and leave keeps the run to carry on later (its clock keeps
-        going), plain Leave loses it. Finishing one gives Project Starbound being
-        built parts: all of them the first time for each build and for a new best time, <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% otherwise.
-        Every time you finish one, your own game also gets an Afterglow: it mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much
-        for an hour (Tier I), 3 hours (Tier II), 12 hours (Tier III) or 24 hours (The Gauntlet).
-        Tier II opens with the Theory of Everything, and turns Autopilot and Auto Crunch off. Tier III opens then too, and
-        starts you from nothing: no skills, no Strange Matter and no upgrades, with goals of their own (like a Big Rip, or
-        ore in one run). Tier I and II Anomalies can be stacked, with all their rules at once, for their parts added up
-        times <?= HBHUB_MINER_ANOMALY_STACK ?> for each one after the first (apart from Unstable Vacuum, which only goes on its
-        own, and a few pairs that can't be done together). Every week there's a weekly Anomaly, a stack
-        that's the same for everyone and worth <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts that week. Finishing
-        Anomalies also earns asteroid skins, which you pick in the Skins view.
+        Project Starbound-visningen har Cosmic Engine, som alle på HB Hub bygger sammen, ét trin ad gangen, ud af Starbound
+        Parts. Når du har tjent <?= number_format(HBHUB_MINER_ENGINE_STRANGE, 0, ',', '.') ?> Strange Matter, kan du give den
+        dele (indtil da viser visningen kun, hvor langt den er): op til <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> om dagen for malm
+        (den første for <?= $rulesNumber(HBHUB_MINER_ENGINE_ORE_PART) ?>, hver næste den dag ti gange så meget), så mange du
+        vil for <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> Strange Matter hver (det får dig ikke til at mine langsommere, da
+        Strange Matter-bonussen tæller alt, du har tjent), og ved at klare dagens <?= HBHUB_MINER_SHIFT_COUNT ?> Starbound
+        Shifts, opgaver valgt blandt <?= count(HBHUB_MINER_SHIFTS) ?>, som er de samme for alle og giver
+        <?= HBHUB_MINER_SHIFT_PARTS ?> dele hver (<?= HBHUB_MINER_SHIFT_PARTS_HARD ?> for en svær), plus
+        <?= HBHUB_MINER_SHIFT_BONUS ?> mere, når de alle er klaret. Hvert færdigt trin giver alle, der spiller, dets fordel
+        for altid. Nogle trin har også en lås, som et antal forskellige spillere, der har hjulpet, og bliver først færdige,
+        når den er opfyldt. Dele fra malm tæller halvt fra trin 11 og en kvart fra trin 16. Når et byggeri er færdigt, starter
+        det næste, med nye trin og låse, der tæller fra nul igen; byggeri #2 er Starforge, og der er
+        <?= count(HBHUB_MINER_ENGINES) ?> byggerier i alt. Et byggeris sidste trin skal fyldes inden for
+        <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> dage efter det før, ellers går halvdelen af dets
+        dele tabt, og tiden starter forfra; når det er fyldt, miner alt <?= HBHUB_MINER_IGNITION_TIMES ?> gange så meget i
+        <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> timer.
     </li>
     <li>
-        The game saves by itself every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave. While you're away,
-        your machines keep mining at <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed (more once the Cosmic Engine
-        has the stages for it). The daily limits and Starbound Shifts start over at midnight UTC.
+        Når du har tjent <?= number_format(HBHUB_MINER_ANOMALY_STRANGE, 0, ',', '.') ?> Strange Matter, åbner
+        Anomalies-visningen: udfordringer i et univers for sig med én regel ændret, som ingen kometer eller klik, der ikke
+        miner noget. Du beholder dine færdigheder og din Strange Matter, starter uden Dark Matter eller Antimatter og
+        gennemfører en ved at tjene dens mål af Antimatter. Imens miner dit eget spil, som om du var væk, og du kan gå, når du
+        vil: Save and leave gemmer forsøget, så du kan fortsætte senere (dets ur bliver ved med at gå), almindelig Leave
+        mister det. At gennemføre en giver det Project Starbound, der bliver bygget, dele: dem alle første gang for hvert
+        byggeri og ved en ny bedste tid, ellers <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?> %. Hver gang du gennemfører en, får
+        dit eget spil også en Afterglow: det miner <?= HBHUB_MINER_AFTERGLOW_TIMES ?> gange så meget i en time (Tier I), 3
+        timer (Tier II), 12 timer (Tier III) eller 24 timer (The Gauntlet). Tier II åbner med Theory of Everything og slår
+        Autopilot og Auto Crunch fra. Tier III åbner også dér og starter dig fra nul: ingen færdigheder, ingen Strange Matter
+        og ingen opgraderinger, med deres egne mål (som et Big Rip eller malm i én runde). Tier I- og II-Anomalies kan
+        stables, med alle deres regler på én gang, for deres dele lagt sammen gange <?= HBHUB_MINER_ANOMALY_STACK ?> for hver
+        efter den første (bortset fra Unstable Vacuum, som kun kan spilles alene, og et par par, der ikke kan klares
+        sammen). Hver uge er der en ugentlig Anomaly, en stak, der er den samme for alle og værd
+        <?= HBHUB_MINER_ANOMALY_WEEKLY ?> gange så mange dele den uge. At gennemføre Anomalies giver også asteroideskins,
+        som du vælger i Skins-visningen.
+    </li>
+    <li>
+        Spillet gemmer af sig selv hvert <?= HBHUB_MINER_SAVE_SECONDS ?>. sekund, og når du går. Mens du er væk, bliver dine
+        maskiner ved med at mine med <?= HBHUB_MINER_OFFLINE_RATE * 100 ?> % af farten (mere, når Cosmic Engine har trinene
+        til det). De daglige grænser og Starbound Shifts starter forfra ved midnat UTC.
     </li>
     <li class="miner-hot-keys" id="hot-keys"><!-- the Hot Key Panel's popup in the game links here -->
-        Hot keys: <kbd>Space</kbd> mines the asteroid, <kbd>C</kbd> catches a comet (once you have the Comet Hot Key upgrade). Once you have
-        the Hot Key Panel upgrade, <kbd>1</kbd>-<kbd>9</kbd> and <kbd>0</kbd>
-        buy the buildings in the order they're listed (the last ten instead, with Long-Range Hot Keys switched
-        on, which <kbd>K</kbd> does too), <kbd>U</kbd> buys the cheapest upgrade you can afford and <kbd>B</kbd>
-        the building you can afford that gives the most ore per second for its price. <kbd>A</kbd> switches between buying 1, 10, 100 and as many as you can afford (with Max Buying), <kbd>W</kbd> opens the
-        Warp Jump, <kbd>X</kbd> the Big Crunch, <kbd>R</kbd> the Big Rip (then <kbd>Y</kbd>, or the same key again, says yes and <kbd>N</kbd> not yet) and <kbd>M</kbd> turns the sound on or off. Holding Space down only mines once, but
-        holding <kbd>1</kbd>-<kbd>9</kbd>, <kbd>0</kbd>, <kbd>U</kbd> or <kbd>B</kbd> keeps buying.
+        Genvejstaster: <kbd>Space</kbd> miner asteroiden, <kbd>C</kbd> fanger en komet (når du har opgraderingen Comet Hot
+        Key). Når du har opgraderingen Hot Key Panel, køber <kbd>1</kbd>-<kbd>9</kbd> og <kbd>0</kbd> bygningerne i den
+        rækkefølge, de står (i stedet de sidste ti, med Long-Range Hot Keys slået til, hvilket <kbd>K</kbd> også gør),
+        <kbd>U</kbd> køber den billigste opgradering, du har råd til, og <kbd>B</kbd> den bygning, du har råd til, der giver
+        mest malm per sekund for prisen. <kbd>A</kbd> skifter mellem at købe 1, 10, 100 og så mange, du har råd til (med Max
+        Buying), <kbd>W</kbd> åbner Warp Jump, <kbd>X</kbd> Big Crunch, <kbd>R</kbd> Big Rip (så siger <kbd>Y</kbd>, eller
+        samme tast igen, ja og <kbd>N</kbd> ikke endnu), og <kbd>M</kbd> slår lyden til eller fra. At holde Space nede miner
+        kun én gang, men holder du <kbd>1</kbd>-<kbd>9</kbd>, <kbd>0</kbd>, <kbd>U</kbd> eller <kbd>B</kbd> nede, bliver den
+        ved med at købe.
     </li>
-    <li>Play in one tab at a time: opening the game somewhere else stops it here.</li>
+    <li>Spil i én fane ad gangen: åbner du spillet et andet sted, stopper det her.</li>
     <li>
-        Clicks are counted up to <?= HBHUB_MINER_CLICKS_PER_SECOND ?> a second. Auto-clickers and scripts aren't allowed, and buy
-        you little anyway: clicks that look like they come from one only mine <?= HBHUB_MINER_AUTO_VALUE * 100 ?>% of what they would.
+        Klik bliver talt op til <?= HBHUB_MINER_CLICKS_PER_SECOND ?> i sekundet. Autoklikkere og scripts er ikke tilladt og
+        giver dig alligevel ikke meget: klik, der ligner, at de kommer fra en, miner kun <?= HBHUB_MINER_AUTO_VALUE * 100 ?> %
+        af det, de ellers ville.
     </li>
 </ul>
