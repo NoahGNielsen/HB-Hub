@@ -6,113 +6,113 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/chat/';
-$docsIntro = 'The chat is the heart of HB Hub: DMs with one person, group chats with lots, and everything you can do
-    with a message.';
+$docsIntro = 'Chatten er hjertet i HB Hub: private chats med én person, gruppechats med mange, og alt det, du kan gøre
+    med en besked.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="start" aria-labelledby="docs-start">
-                        <h2 id="docs-start">Starting a chat</h2>
+                        <h2 id="docs-start">At starte en chat</h2>
                         <ol class="docs-steps">
-                            <li>Open <a href="/chat/">Chat</a> in the side bar and press <strong>New chat</strong> above your list of chats.</li>
-                            <li>Search for the people you want to talk to and pick them.</li>
+                            <li>Åbn <a href="/chat/">Chat</a> i sidebjælken, og tryk på <strong>New chat</strong> over din liste af chats.</li>
+                            <li>Søg efter dem, du vil snakke med, og vælg dem.</li>
                             <li>
-                                Pick one person and press <strong>Start DM</strong> for a direct message. Pick more and it becomes a
-                                <a href="/docs/chat/groups">group chat</a>, which you can give a name.
+                                Vælg én person, og tryk på <strong>Start DM</strong> for en privat besked. Vælger du flere, bliver det
+                                en <a href="/docs/chat/groups">gruppechat</a>, som du kan give et navn.
                             </li>
                         </ol>
-                        <p>If you already have a DM with someone, it opens that one instead of making a second.</p>
+                        <p>Har du allerede en privat chat med nogen, åbner den den i stedet for at lave en ny.</p>
                     </section>
 
                     <section id="requests" aria-labelledby="docs-requests">
-                        <h2 id="docs-requests">Message requests</h2>
+                        <h2 id="docs-requests">Beskedanmodninger</h2>
                         <p>
-                            When someone starts a chat with you, or adds you to a group, it shows up under
-                            <strong>Message requests</strong> at the top of your chat list, and in the
-                            <a href="/docs/notifications">bell</a>. You can read it before you answer:
+                            Når nogen starter en chat med dig eller tilføjer dig til en gruppe, dukker den op under
+                            <strong>Message requests</strong> øverst i din chatliste og i <a href="/docs/notifications">klokken</a>.
+                            Du kan læse den, før du svarer:
                         </p>
                         <ul>
-                            <li><strong>Accept</strong> moves it to your chats, and you can write back.</li>
-                            <li><strong>Decline</strong> says no thanks. They can ask again later.</li>
-                            <li><strong>Block</strong> declines it and stops that person from sending you more requests. See <a href="/docs/chat/safety#block">Blocking</a>.</li>
+                            <li><strong>Accept</strong> flytter den over til dine chats, og du kan skrive tilbage.</li>
+                            <li><strong>Decline</strong> siger nej tak. De kan spørge igen senere.</li>
+                            <li><strong>Block</strong> afviser den og forhindrer personen i at sende dig flere anmodninger. Se <a href="/docs/chat/safety#block">At blokere</a>.</li>
                         </ul>
                     </section>
 
                     <section id="send" aria-labelledby="docs-send">
-                        <h2 id="docs-send">Writing messages</h2>
+                        <h2 id="docs-send">At skrive beskeder</h2>
                         <ul>
-                            <li><kbd>Enter</kbd> sends, <kbd>Shift</kbd> + <kbd>Enter</kbd> makes a new line.</li>
-                            <li>A message can be up to 2,500 characters long, and <a href="/docs/chat/formatting">styled</a> with bold, italic, code, lists and more.</li>
-                            <li>The buttons next to the message box send <a href="/docs/chat/attachments">files and pictures</a>, <a href="/docs/chat/gifs">GIFs and smileys</a>.</li>
-                            <li>Type <code>@</code> to <a href="/docs/chat/mentions">mention</a> someone in the chat.</li>
-                            <li>While you type, the others in the chat see <strong>... is typing</strong> above their message box. It goes away when you send, empty the box or stop typing for a few seconds.</li>
-                            <li>Messages sent in a row by the same person (less than 10 minutes apart) are shown together. Point at one to see when it was sent.</li>
+                            <li><kbd>Enter</kbd> sender, <kbd>Shift</kbd> + <kbd>Enter</kbd> laver en ny linje.</li>
+                            <li>En besked kan være op til 2.500 tegn lang og <a href="/docs/chat/formatting">formateres</a> med fed, kursiv, kode, lister og mere.</li>
+                            <li>Knapperne ved beskedfeltet sender <a href="/docs/chat/attachments">filer og billeder</a>, <a href="/docs/chat/gifs">GIFs og smileys</a>.</li>
+                            <li>Skriv <code>@</code> for at <a href="/docs/chat/mentions">omtale</a> nogen i chatten.</li>
+                            <li>Mens du skriver, ser de andre i chatten <strong>... is typing</strong> over deres beskedfelt. Det forsvinder, når du sender, tømmer feltet eller holder op med at skrive i et par sekunder.</li>
+                            <li>Beskeder, der er sendt i træk af den samme person (mindre end 10 minutter imellem), bliver vist samlet. Peg på en for at se, hvornår den blev sendt.</li>
                         </ul>
                     </section>
 
                     <section id="message-menu" aria-labelledby="docs-message-menu">
-                        <h2 id="docs-message-menu">Replies, reactions, edits and deleting</h2>
-                        <p>Right-click a message (or long-press it on a phone) for its menu:</p>
+                        <h2 id="docs-message-menu">Svar, reaktioner, rettelser og sletning</h2>
+                        <p>Højreklik på en besked (eller hold fingeren på den på en telefon) for at få dens menu:</p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Option</th><th scope="col">What it does</th></tr>
+                                    <tr><th scope="col">Valg</th><th scope="col">Hvad det gør</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>Reactions</td><td>The emoji along the top are the ones you've used most lately. Press one to react with it, or <strong>+</strong> for all the others. Press a reaction under a message to add yours or take it away, and point at it to see who reacted.</td></tr>
-                                    <tr><td>File info</td><td>On a file, picture or video: its name, type, size, who sent it and when it expires. See <a href="/docs/chat/attachments">Files and pictures</a>.</td></tr>
-                                    <tr><td>Reply</td><td>Quotes the message above yours. Click a quote to jump back to the message it answers. <kbd>Esc</kbd> cancels the reply.</td></tr>
-                                    <tr><td>Edit message</td><td>Your own messages only. The message shows that it was edited.</td></tr>
-                                    <tr><td>Pin message</td><td>Pins it to the chat for everyone in it, see <a href="#pins">Pinned messages</a>. A pinned message gets <strong>Unpin message</strong> instead, if you can unpin it.</td></tr>
-                                    <tr><td>Mark unread</td><td>Marks the chat as unread from that message, so you remember to come back to it.</td></tr>
-                                    <tr><td>Delete message</td><td>Your own messages, or anyone's if you're an admin of the group. It shows as "Message deleted" for everyone.</td></tr>
+                                    <tr><td>Reactions</td><td>De emoji øverst er dem, du har brugt mest for nylig. Tryk på en for at reagere med den, eller <strong>+</strong> for alle de andre. Tryk på en reaktion under en besked for at tilføje din eller tage den væk, og peg på den for at se, hvem der reagerede.</td></tr>
+                                    <tr><td>File info</td><td>På en fil, et billede eller en video: dens navn, type, størrelse, hvem der sendte den, og hvornår den udløber. Se <a href="/docs/chat/attachments">Filer og billeder</a>.</td></tr>
+                                    <tr><td>Reply</td><td>Citerer beskeden over din. Klik på et citat for at hoppe tilbage til den besked, det svarer på. <kbd>Esc</kbd> annullerer svaret.</td></tr>
+                                    <tr><td>Edit message</td><td>Kun dine egne beskeder. Beskeden viser, at den er rettet.</td></tr>
+                                    <tr><td>Pin message</td><td>Fastgør den i chatten for alle i den, se <a href="#pins">Fastgjorte beskeder</a>. En fastgjort besked får <strong>Unpin message</strong> i stedet, hvis du kan løsne den.</td></tr>
+                                    <tr><td>Mark unread</td><td>Markerer chatten som ulæst fra den besked, så du husker at komme tilbage til den.</td></tr>
+                                    <tr><td>Delete message</td><td>Dine egne beskeder, eller alles, hvis du er admin i gruppen. Den bliver vist som "Message deleted" for alle.</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </section>
 
                     <section id="pins" aria-labelledby="docs-pins">
-                        <h2 id="docs-pins">Pinned messages</h2>
+                        <h2 id="docs-pins">Fastgjorte beskeder</h2>
                         <p>
-                            Pin a message to keep it easy to find, like plans, homework or a link everyone needs. Anyone in a
-                            chat can pin a message from the <a href="#message-menu">message menu</a>, and it gets a small pin
-                            in its corner. Everyone in the chat sees a notice that you pinned it.
+                            Fastgør en besked, så den er nem at finde, som planer, lektier eller et link, alle skal bruge. Alle i en
+                            chat kan fastgøre en besked fra <a href="#message-menu">beskedmenuen</a>, og den får en lille nål i
+                            hjørnet. Alle i chatten ser en besked om, at du har fastgjort den.
                         </p>
                         <ul>
-                            <li>The <strong>pin</strong> at the top right of the chat lists everything pinned in it, the newest first. <strong>Jump</strong> scrolls up to the message.</li>
-                            <li>You can unpin the messages you pinned yourself. Group admins can unpin anything in their group, and in a DM either of you can unpin anything.</li>
-                            <li>A chat can have up to 50 pinned messages. Deleting a pinned message unpins it.</li>
+                            <li><strong>Nålen</strong> øverst til højre i chatten viser alt, der er fastgjort i den, det nyeste først. <strong>Jump</strong> scroller op til beskeden.</li>
+                            <li>Du kan løsne de beskeder, du selv har fastgjort. Gruppeadmins kan løsne alt i deres gruppe, og i en privat chat kan I begge løsne alt.</li>
+                            <li>En chat kan have op til 50 fastgjorte beskeder. Sletter man en fastgjort besked, bliver den løsnet.</li>
                         </ul>
                     </section>
 
                     <section id="unread" aria-labelledby="docs-unread">
-                        <h2 id="docs-unread">Unread messages</h2>
+                        <h2 id="docs-unread">Ulæste beskeder</h2>
                         <p>
-                            Chats with new messages are marked in your list, and Chat in the side bar shows how many have something
-                            new. Opening a chat you've been away from puts a <strong>New messages</strong> line above the first one
-                            you haven't seen. Scroll up to load older messages.
+                            Chats med nye beskeder er markeret i din liste, og Chat i sidebjælken viser, hvor mange der har noget
+                            nyt. Åbner du en chat, du har været væk fra, kommer der en <strong>New messages</strong>-linje over den
+                            første, du ikke har set. Scroll op for at hente ældre beskeder.
                         </p>
                     </section>
 
                     <section id="chat-menu" aria-labelledby="docs-chat-menu">
-                        <h2 id="docs-chat-menu">The chat menu</h2>
-                        <p>Right-click a chat in your list (or long-press it) for more:</p>
+                        <h2 id="docs-chat-menu">Chatmenuen</h2>
+                        <p>Højreklik på en chat i din liste (eller hold fingeren på den) for mere:</p>
                         <ul>
-                            <li><strong>Show profile</strong> and <strong>Give nickname</strong> (DMs): open their profile, or give them a name only you see. In a group, nicknames are given from <strong>Members</strong> instead, and everyone sees them (see <a href="/docs/chat/groups#nicknames">Nicknames</a>).</li>
-                            <li><strong>Chat info</strong>: what kind of chat it is, when it was made and by who, how many people and messages are in it, and when you joined (and your role, in a group).</li>
-                            <li><strong>Mute chat</strong>: no notifications or sounds from it for a while, or for good. See <a href="/docs/notifications#mute">Muting a chat</a>.</li>
-                            <li><strong>Hide chat</strong>: takes it out of your list until a new message comes in, or you search for it and open it.</li>
-                            <li><strong>Change background</strong>: give the chat a colour or gradient, for everyone in it. Either of you can in a DM, only admins in a group.</li>
-                            <li><strong>Leave chat</strong>: leave it for good. In a group, someone has to add you again to get back in.</li>
+                            <li><strong>Show profile</strong> og <strong>Give nickname</strong> (private chats): åbn deres profil, eller giv dem et navn, kun du ser. I en gruppe bliver kælenavne i stedet givet fra <strong>Members</strong>, og alle ser dem (se <a href="/docs/chat/groups#nicknames">Kælenavne</a>).</li>
+                            <li><strong>Chat info</strong>: hvilken slags chat det er, hvornår den blev lavet og af hvem, hvor mange personer og beskeder der er i den, og hvornår du kom med (og din rolle, i en gruppe).</li>
+                            <li><strong>Mute chat</strong>: ingen notifikationer eller lyde fra den i et stykke tid eller for altid. Se <a href="/docs/notifications#mute">At gøre en chat lydløs</a>.</li>
+                            <li><strong>Hide chat</strong>: tager den ud af din liste, indtil der kommer en ny besked, eller du søger efter den og åbner den.</li>
+                            <li><strong>Change background</strong>: giv chatten en farve eller en overgang, for alle i den. I kan begge gøre det i en privat chat, kun admins i en gruppe.</li>
+                            <li><strong>Leave chat</strong>: forlad den for altid. I en gruppe skal nogen tilføje dig igen, for at du kan komme ind igen.</li>
                         </ul>
-                        <p>Groups have a few more for their admins, explained in <a href="/docs/chat/groups">Group chats</a>.</p>
+                        <p>Grupper har et par flere til deres admins, forklaret i <a href="/docs/chat/groups">Gruppechats</a>.</p>
                     </section>
 
                     <section id="search" aria-labelledby="docs-search">
-                        <h2 id="docs-search">Finding a chat</h2>
+                        <h2 id="docs-search">At finde en chat</h2>
                         <p>
-                            Type in <strong>Search chats</strong> above your list to find a chat by its name (a DM by the other
-                            person's name, or the nickname you gave them). Search finds hidden chats too, and opening one brings it
-                            back into your list.
+                            Skriv i <strong>Search chats</strong> over din liste for at finde en chat ud fra dens navn (en privat chat
+                            ud fra den anden persons navn eller det kælenavn, du har givet dem). Søgningen finder også skjulte chats,
+                            og åbner du en, kommer den tilbage i din liste.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

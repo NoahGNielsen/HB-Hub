@@ -6,55 +6,55 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/feedback';
-$docsIntro = 'Found a bug, got an idea, or need a hand? Here\'s who to ask, and how.';
+$docsIntro = 'Har du fundet en fejl, fået en idé eller brug for en hånd? Her er, hvem du kan spørge, og hvordan.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="feedback" aria-labelledby="docs-feedback">
-                        <h2 id="docs-feedback">Sending feedback</h2>
+                        <h2 id="docs-feedback">At sende feedback</h2>
                         <ol class="docs-steps">
-                            <li>Press <strong>Feedback</strong> at the bottom of the side bar (at the end of the bottom bar on a phone), on the page you want to tell about.</li>
-                            <li>Write what's wrong, what you'd like, or what you think. For a bug, say what you did and what happened.</li>
-                            <li>Send it. You're taken back to the page you were on.</li>
+                            <li>Tryk på <strong>Feedback</strong> nederst i sidebjælken (for enden af bundbjælken på en telefon), på den side, du vil fortælle om.</li>
+                            <li>Skriv, hvad der er galt, hvad du gerne vil have, eller hvad du synes. Ved en fejl, så skriv, hvad du gjorde, og hvad der skete.</li>
+                            <li>Send den. Du bliver sendt tilbage til den side, du var på.</li>
                         </ol>
                         <p>
-                            Only site admins can read feedback, and they see which page you sent it from, so you don't have to
-                            explain where you were. When an admin marks yours as done, you get a
-                            <a href="/docs/notifications">notification</a> with their answer.
+                            Kun side-admins kan læse feedback, og de kan se, hvilken side du sendte den fra, så du behøver ikke
+                            forklare, hvor du var. Når en admin markerer din som færdig, får du en
+                            <a href="/docs/notifications">notifikation</a> med deres svar.
                         </p>
                     </section>
 
                     <section id="admins" aria-labelledby="docs-admins">
-                        <h2 id="docs-admins">Who are the admins?</h2>
+                        <h2 id="docs-admins">Hvem er admins?</h2>
                         <p>
-                            Site admins run HB Hub. They have a <strong>Site Admin</strong> badge on their profiles. They help
-                            people who are stuck, look into reports, and can ban accounts or delete messages that break the
-                            <a href="/legal/code-of-conduct">Code of Conduct</a>. Everything they do in the admin panel is logged.
+                            Side-admins driver HB Hub. De har et <strong>Site Admin</strong>-mærke på deres profiler. De hjælper
+                            folk, der sidder fast, undersøger anmeldelser og kan udelukke konti eller slette beskeder, der bryder
+                            <a href="/legal/code-of-conduct">adfærdskodekset</a>. Alt, hvad de gør i adminpanelet, bliver logget.
                         </p>
                         <p>
-                            Group Owners and Group Admins are different: they only run their own <a href="/docs/chat/groups">group
-                            chat</a>, and can't do anything outside it.
+                            Gruppeejere og gruppeadmins er noget andet: de styrer kun deres egen <a href="/docs/chat/groups">gruppechat</a>
+                            og kan ikke gøre noget uden for den.
                         </p>
                     </section>
 
                     <section id="help" aria-labelledby="docs-help">
-                        <h2 id="docs-help">Where to go for what</h2>
+                        <h2 id="docs-help">Hvor du skal gå hen med hvad</h2>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">You want to</th><th scope="col">Do this</th></tr>
+                                    <tr><th scope="col">Du vil</th><th scope="col">Gør sådan her</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>Report a bug or send an idea</td><td>The Feedback button.</td></tr>
-                                    <tr><td>Report someone</td><td>The Feedback button, a site admin, or <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. See <a href="/docs/chat/safety#report">Reporting someone</a>.</td></tr>
-                                    <tr><td>Get back into your account</td><td>Email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> from outside HB Hub, or ask a site admin at school.</td></tr>
-                                    <tr><td>Ask about your data</td><td>See the <a href="/legal/privacy">Privacy Policy</a>.</td></tr>
-                                    <tr><td>Report a security problem</td><td>Privately, with <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">Report Security Concern</a>. Please don't tell anyone else before it's fixed.</td></tr>
+                                    <tr><td>Rapportere en fejl eller sende en idé</td><td>Feedback-knappen.</td></tr>
+                                    <tr><td>Anmelde nogen</td><td>Feedback-knappen, en side-admin eller <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. Se <a href="/docs/chat/safety#report">At anmelde nogen</a>.</td></tr>
+                                    <tr><td>Komme ind på din konto igen</td><td>Skriv til <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> uden for HB Hub, eller spørg en side-admin på skolen.</td></tr>
+                                    <tr><td>Spørge om dine data</td><td>Se <a href="/legal/privacy">privatlivspolitikken</a>.</td></tr>
+                                    <tr><td>Rapportere et sikkerhedsproblem</td><td>Privat, med <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">Rapportér et sikkerhedsproblem</a>. Fortæl det ikke til andre, før det er rettet.</td></tr>
                                 </tbody>
                             </table>
                         </div>
                         <p>
-                            HB Hub is open source: the code is on <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">GitHub</a>,
-                            if you're curious how something works.
+                            HB Hub er open source: koden ligger på <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">GitHub</a>,
+                            hvis du er nysgerrig efter, hvordan noget virker.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

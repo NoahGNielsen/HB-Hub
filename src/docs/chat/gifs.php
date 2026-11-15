@@ -5,43 +5,45 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/chat/gifs';
-$docsIntro = 'Sometimes a GIF or a smiley says it better than words.';
+$docsIntro = 'Nogle gange siger en GIF eller en smiley det bedre end ord.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="gifs" aria-labelledby="docs-gifs">
-                        <h2 id="docs-gifs">Sending a GIF</h2>
+                        <h2 id="docs-gifs">At sende en GIF</h2>
                         <ol class="docs-steps">
-                            <li>Press the <strong>GIF</strong> button next to the message box. It opens with what's trending.</li>
-                            <li>Type in <strong>Search GIFs</strong> to find something else.</li>
-                            <li>Click a GIF to send it straight away.</li>
+                            <li>Tryk på knappen <strong>GIF</strong> ved beskedfeltet. Den åbner med det, der trender.</li>
+                            <li>Skriv i <strong>Search GIFs</strong> for at finde noget andet.</li>
+                            <li>Klik på en GIF for at sende den med det samme.</li>
                         </ol>
                         <p>
-                            The GIFs come from <a href="https://giphy.com" target="_blank" rel="noopener noreferrer">Giphy</a>.
-                            Your search goes through HB Hub's server, but the GIFs themselves are loaded from Giphy, which means
-                            Giphy can see your IP address. More on that in the <a href="/legal/privacy">Privacy Policy</a>.
-                            GIFs count towards the <a href="/docs/chat/safety#spam">spam limit</a> like any other message, and
-                            have to follow the <a href="/legal/code-of-conduct">Code of Conduct</a> too.
+                            GIF'erne kommer fra <a href="https://giphy.com" target="_blank" rel="noopener noreferrer">Giphy</a>. Din
+                            søgning går gennem HB Hubs server, men selve GIF'erne bliver hentet fra Giphy, hvilket betyder, at Giphy
+                            kan se din IP-adresse. Mere om det i <a href="/legal/privacy">privatlivspolitikken</a>. GIFs tæller med i
+                            <a href="/docs/chat/safety#spam">spamgrænsen</a> ligesom alle andre beskeder og skal også følge
+                            <a href="/legal/code-of-conduct">adfærdskodekset</a>.
                         </p>
                     </section>
 
                     <section id="smileys" aria-labelledby="docs-smileys">
                         <h2 id="docs-smileys">Smileys</h2>
                         <p>
-                            The smiley button opens every emoji, sorted into tabs (faces, people, animals, food and so on). Click one
-                            to put it in your message where the cursor is. You can of course also type emoji straight from your
-                            phone's keyboard, or with <kbd>Win</kbd> + <kbd>.</kbd> on Windows and <kbd>Ctrl</kbd> + <kbd>&#8984;</kbd> + <kbd>Space</kbd> on a Mac.
+                            Smiley-knappen åbner alle emoji, sorteret i faner (ansigter, mennesker, dyr, mad og så videre). Klik på
+                            en for at sætte den ind i din besked, hvor markøren er. Du kan selvfølgelig også skrive emoji direkte fra
+                            din telefons tastatur, eller med <kbd>Win</kbd> + <kbd>.</kbd> på Windows og <kbd>Ctrl</kbd> +
+                            <kbd>&#8984;</kbd> + <kbd>Mellemrum</kbd> på en Mac.
                         </p>
                         <p>
-                            A message that's only emoji (up to 75 of them) is shown big, without the bubble around it.
+                            En besked, der kun er emoji (op til 75 af dem), bliver vist stort, uden boblen rundt om.
                         </p>
                     </section>
 
                     <section id="reactions" aria-labelledby="docs-reactions">
-                        <h2 id="docs-reactions">Reacting with emoji</h2>
+                        <h2 id="docs-reactions">At reagere med emoji</h2>
                         <p>
-                            Right-click a message to react to it. The menu has the emoji you've used most lately along the top, and
-                            <strong>+</strong> for the rest. A message can have up to 20 different reactions. Point at one to see who
-                            reacted, and click it to join in or take yours back. More in <a href="/docs/chat/#message-menu">Chat basics</a>.
+                            Højreklik på en besked for at reagere på den. Menuen har de emoji, du har brugt mest for nylig, øverst,
+                            og <strong>+</strong> for resten. En besked kan have op til 20 forskellige reaktioner. Peg på en for at se,
+                            hvem der reagerede, og klik på den for at være med eller tage din tilbage. Mere i
+                            <a href="/docs/chat/#message-menu">Grundlæggende chat</a>.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

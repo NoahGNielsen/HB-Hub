@@ -5,49 +5,48 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/chat/mentions';
-$docsIntro = 'Want someone to see your message? Mention them with an @, and they get a notification.';
+$docsIntro = 'Vil du have, at nogen ser din besked? Omtal dem med et @, så får de en notifikation.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="how" aria-labelledby="docs-how">
-                        <h2 id="docs-how">Mentioning someone</h2>
+                        <h2 id="docs-how">At omtale nogen</h2>
                         <ol class="docs-steps">
-                            <li>Type <code>@</code> in the message box. A list of the people in the chat pops up.</li>
-                            <li>Keep typing to narrow it down, and pick someone with the mouse, or with <kbd>&uarr;</kbd> <kbd>&darr;</kbd> and <kbd>Enter</kbd> or <kbd>Tab</kbd>. <kbd>Esc</kbd> closes the list.</li>
-                            <li>Send the message. The name lights up, like <span class="docs-mention">@Name</span>, and links to their profile.</li>
+                            <li>Skriv <code>@</code> i beskedfeltet. En liste over dem i chatten dukker op.</li>
+                            <li>Bliv ved med at skrive for at indsnævre den, og vælg nogen med musen eller med <kbd>&uarr;</kbd> <kbd>&darr;</kbd> og <kbd>Enter</kbd> eller <kbd>Tab</kbd>. <kbd>Esc</kbd> lukker listen.</li>
+                            <li>Send beskeden. Navnet lyser op, som <span class="docs-mention">@Navn</span>, og linker til deres profil.</li>
                         </ol>
                         <p>
-                            You can also just type the name after the <code>@</code>. It works with spaces in names too, and upper or
-                            lower case doesn't matter. A nickname works as well: in a DM the one you gave
-                            someone, in a group the one they have there. An @ in the middle of a
-                            word (like in an email address) isn't a mention.
+                            Du kan også bare skrive navnet efter <code>@</code>. Det virker også med mellemrum i navne, og store eller
+                            små bogstaver betyder ikke noget. Et kælenavn virker også: i en privat chat det, du har givet nogen, i en
+                            gruppe det, de har dér. Et @ midt i et ord (som i en e-mailadresse) er ikke en omtale.
                         </p>
                     </section>
 
                     <section id="told" aria-labelledby="docs-told">
-                        <h2 id="docs-told">Who gets told</h2>
-                        <p>Whoever you mention gets a notification under the <a href="/docs/notifications">bell</a>, and messages that mention you light up in the chat. They're not told when:</p>
+                        <h2 id="docs-told">Hvem der får besked</h2>
+                        <p>Den, du omtaler, får en notifikation under <a href="/docs/notifications">klokken</a>, og beskeder, der omtaler dig, lyser op i chatten. De får ikke besked, når:</p>
                         <ul>
-                            <li>they're looking at the chat already,</li>
-                            <li>they've <a href="/docs/notifications#mute">muted</a> the chat,</li>
-                            <li>or they've <a href="/docs/chat/safety#block">blocked</a> you.</li>
+                            <li>de allerede kigger på chatten,</li>
+                            <li>de har <a href="/docs/notifications#mute">gjort chatten lydløs</a>,</li>
+                            <li>eller de har <a href="/docs/chat/safety#block">blokeret</a> dig.</li>
                         </ul>
-                        <p>Only people in the chat can be mentioned. Someone who has left it since, or changed their name, just shows as text.</p>
+                        <p>Kun folk i chatten kan omtales. En, der har forladt den siden, eller har skiftet navn, bliver bare vist som tekst.</p>
                     </section>
 
                     <section id="games" aria-labelledby="docs-games">
-                        <h2 id="docs-games">In game chats</h2>
+                        <h2 id="docs-games">I spilchats</h2>
                         <p>
-                            Mentions work the same way in the chats of <a href="/docs/games/matador">Matador</a>,
-                            <a href="/docs/games/chess">Chess</a> and <a href="/docs/games/uno">UNO</a> games, with the players
-                            in that game. The notification takes them straight to the game.
+                            Omtaler virker på samme måde i chatten i spil som <a href="/docs/games/matador">Matador</a>,
+                            <a href="/docs/games/chess">skak</a> og <a href="/docs/games/uno">UNO</a>, med spillerne i det spil.
+                            Notifikationen fører dem direkte hen til spillet.
                         </p>
                     </section>
 
                     <section id="nice" aria-labelledby="docs-nice">
-                        <h2 id="docs-nice">Be nice with it</h2>
+                        <h2 id="docs-nice">Vær sød med det</h2>
                         <p>
-                            Mentioning someone over and over to annoy them is spam, and against the
-                            <a href="/legal/code-of-conduct">Code of Conduct</a>.
+                            At omtale nogen igen og igen for at irritere dem er spam og imod
+                            <a href="/legal/code-of-conduct">adfærdskodekset</a>.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>
