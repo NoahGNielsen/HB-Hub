@@ -4,8 +4,8 @@
 // Site admins open it from Person at the top of a user's admin panel, or from the list of people (admin/people.php).
 // Everyone else gets a 404, so it doesn't show that the page is here.
 //
-// Shows what there is about them together: the accounts with their status, chips and messages, the devices (browsers)
-// that link the accounts, and every account's sessions. The actions are one form per card, like on a user's page:
+// Shows what there is about them together: the accounts with their status, chips and messages, the devices (browsers,
+// by cookie) and fingerprints (assets/php/fingerprint.php) that link the accounts, and every account's sessions. The actions are one form per card, like on a user's page:
 // the gambling block and the admin block, logging out everywhere, ghost ban or lift it, ban or unban (with or without
 // their pictures) and delete. Each form has a tick box for every account it can change, all ticked to begin with,
 // since a shared computer (like at school) can link someone who isn't the same person: untick them. Site admins and
@@ -17,6 +17,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/adminAccounts.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/loginLimit.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/fingerprint.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
 
@@ -186,6 +187,27 @@ foreach ($statement->fetchAll() as $row) {
     unset($device);
 }
 
+// The browser fingerprints the accounts were used with (assets/php/fingerprint.php): fingerprintHash => [the
+// accounts here seen with it, the browser names, first and last seen, and how many accounts in all have it, since one
+// with more than HBHUB_FINGERPRINT_SHARED_MAX doesn't link anyone]
+$statement = $db->prepare('SELECT f.fingerprintHash, f.userId, f.fingerprintDevice, f.fingerprintCreatedTimestamp, f.fingerprintLastSeenTimestamp,
+        (SELECT COUNT(*) FROM `HBHub-DeviceFingerprints` a WHERE a.fingerprintHash = f.fingerprintHash) AS fingerprintAccounts
+    FROM `HBHub-DeviceFingerprints` f WHERE f.userId IN (' . $personPlaceholders . ') ORDER BY f.fingerprintLastSeenTimestamp DESC');
+$statement->execute($personIds);
+$personFingerprints = [];
+foreach ($statement->fetchAll() as $row) {
+    $fingerprint = &$personFingerprints[$row['fingerprintHash']];
+    $fingerprint ??= ['userIds' => [], 'devices' => [], 'accounts' => (int) $row['fingerprintAccounts'],
+        'first' => $row['fingerprintCreatedTimestamp'], 'last' => $row['fingerprintLastSeenTimestamp']];
+    $fingerprint['userIds'][] = (int) $row['userId'];
+    if ($row['fingerprintDevice'] !== null && !in_array($row['fingerprintDevice'], $fingerprint['devices'], true)) {
+        $fingerprint['devices'][] = $row['fingerprintDevice'];
+    }
+    $fingerprint['first'] = min($fingerprint['first'], $row['fingerprintCreatedTimestamp']);
+    $fingerprint['last'] = max($fingerprint['last'], $row['fingerprintLastSeenTimestamp']);
+    unset($fingerprint);
+}
+
 // Every account's sessions, newest first. The ids are left out: they'd log you in as the user.
 $statement = $db->prepare('SELECT userId, sessionDevice, sessionGenerated, sessionLastSeen, sessionValidUntil, sessionTotpPending, sessionValidUntil > NOW() AS isValid
     FROM `HBHub-Sessions` WHERE userId IN (' . $personPlaceholders . ') ORDER BY sessionGenerated DESC');
@@ -254,7 +276,7 @@ function personNamesHtml(array $userIds, array $accounts): string
             <!-- Links to the cards, in the order they're on the page -->
             <?= adminPageMenuHtml('/admin/people', 'All people', $personAvatarSrc, $target['userName'],
                 '<span class="settings-status">' . $personCount . ' ' . ($personCount === 1 ? 'account' : 'accounts') . '</span>', [
-                'Overview' => ['overview' => 'Information', 'accounts' => 'Accounts', 'devices' => 'Devices'],
+                'Overview' => ['overview' => 'Information', 'accounts' => 'Accounts', 'devices' => 'Devices', 'fingerprints' => 'Fingerprints'],
                 'Manage' => $personHasChangeable ? ['block' => 'Gambling block'] : [],
                 'Activity' => ['sessions' => 'Sessions'],
                 ADMIN_MENU_DANGER => $personHasChangeable ? ['ghost' => 'Ghost ban', 'ban' => 'Ban', 'delete' => 'Delete accounts'] : [],
@@ -287,6 +309,7 @@ function personNamesHtml(array $userIds, array $accounts): string
                     <dl class="admin-details">
                         <div><dt>Accounts</dt><dd><?= $personCount ?></dd></div>
                         <div><dt>Devices</dt><dd><?= count($personDevices) ?></dd></div>
+                        <div><dt>Fingerprints</dt><dd><?= count($personFingerprints) ?></dd></div>
                         <div><dt>Online now</dt><dd><?= $personOnline ?></dd></div>
                         <div><dt>Banned</dt><dd><?= $personBanned ?> of <?= $personCount ?></dd></div>
                         <div><dt>Ghost banned</dt><dd><?= $personGhosts ?> of <?= $personCount ?></dd></div>
@@ -299,7 +322,7 @@ function personNamesHtml(array $userIds, array $accounts): string
 
                     <?php if ($personCount === 1): ?>
                         <p class="settings-notice admin-overview-notice">
-                            No other account has been used in the same browser as this one, so as far as the site can tell, it's their only account.
+                            No other account has been used in the same browser as this one (by its cookie or its fingerprint), so as far as the site can tell, it's their only account.
                         </p>
                     <?php elseif (!$personHasChangeable): ?>
                         <p class="settings-notice admin-overview-notice">These accounts are all deleted or site admins, so there's nothing to change here.</p>
@@ -312,7 +335,8 @@ function personNamesHtml(array $userIds, array $accounts): string
                         <div>
                             <h2 id="person-accounts-heading">Accounts</h2>
                             <p class="settings-intro">
-                                Every account that's been used in the same browser as another one of them, the oldest first. Open one for
+                                Every account that's been used in the same browser as another one of them (by its cookie or its
+                                fingerprint), the oldest first. Open one for
                                 everything about it, like its messages, chats, attachments and chip history.
                             </p>
                         </div>
@@ -384,6 +408,54 @@ function personNamesHtml(array $userIds, array $accounts): string
                                                 ? ' <span class="admin-small">(' . count($device['userIds']) . ' accounts)</span>' : '' ?></td>
                                             <td class="admin-nowrap"><?= adminTime($device['first']) ?></td>
                                             <td class="admin-nowrap"><?= adminTime($device['last']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </section>
+
+                <!-- The browser fingerprints that link the accounts, also once the cookie is gone -->
+                <section class="settings-card" id="fingerprints" aria-labelledby="person-fingerprints-heading">
+                    <div class="settings-card-head">
+                        <div>
+                            <h2 id="person-fingerprints-heading">Fingerprints</h2>
+                            <p class="settings-intro">
+                                What the browsers and computers the accounts were used on are like (the graphics card, fonts,
+                                screen, time zone and so on), sent about once a day while logged in. It stays the same after
+                                clearing cookies or in a private window, so it links accounts the Devices above miss. Accounts in
+                                the same row were used on a browser that looked the same. Identical school computers can look
+                                the same too, so a fingerprint seen with more than <?= HBHUB_FINGERPRINT_SHARED_MAX ?> accounts
+                                doesn't link anyone, and two can still be different people: check before changing them below.
+                            </p>
+                        </div>
+                        <span class="settings-status"><?= count($personFingerprints) ?></span>
+                    </div>
+                    <?php if ($personFingerprints === []): ?>
+                        <p class="settings-hint">No fingerprints. The accounts haven't been used since fingerprints started being recorded.</p>
+                    <?php else: ?>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead><tr><th scope="col">Fingerprint</th><th scope="col">Browser</th><th scope="col">Accounts seen with it</th><th scope="col">First seen</th><th scope="col">Last seen</th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($personFingerprints as $hash => $fingerprint): ?>
+                                        <?php $fingerprintOthers = $fingerprint['accounts'] - count($fingerprint['userIds']); ?>
+                                        <tr>
+                                            <!-- The start of the hash, just to tell them apart -->
+                                            <td class="admin-mono"><?= htmlspecialchars(substr((string) $hash, 0, 8)) ?></td>
+                                            <td><?= htmlspecialchars($fingerprint['devices'] !== [] ? implode(', ', $fingerprint['devices']) : '–') ?></td>
+                                            <td>
+                                                <?= personNamesHtml($fingerprint['userIds'], $personAccounts) ?>
+                                                <?php if ($fingerprintOthers > 0): ?>
+                                                    <span class="admin-small">and <?= $fingerprintOthers ?> other <?= $fingerprintOthers === 1 ? 'account' : 'accounts' ?></span>
+                                                <?php endif; ?>
+                                                <?php if ($fingerprint['accounts'] > HBHUB_FINGERPRINT_SHARED_MAX): ?>
+                                                    <span class="admin-small">(too common to link: <?= $fingerprint['accounts'] ?> accounts in all)</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="admin-nowrap"><?= adminTime($fingerprint['first']) ?></td>
+                                            <td class="admin-nowrap"><?= adminTime($fingerprint['last']) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>

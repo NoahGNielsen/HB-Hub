@@ -38,7 +38,7 @@ function adminOnly(array $user): void
 }
 
 /**
- * Every person with more than one account: the accounts that have logged in from the same browser (a known device in
+ * Every person with more than one account: the accounts that have been used in the same browser (a known device in
  * HBHub-LoginDevices, the hbHubDevice cookie, loginLimit.php), and the ones those have logged in from, and so on. So
  * someone who made a new account on their phone and logged in to it once on their computer counts as one person.
  * session.php makes every browser someone is logged in on a known device, so logins from before the known devices
@@ -47,12 +47,19 @@ function adminOnly(array $user): void
  * Each person is ['userIds' => their accounts' ids, lowest first, 'devices' => how many browsers they share between
  * them], the people with the newest account first. A shared computer (like at school) can tie two people together,
  * which is why the person page (admin/person.php) lists the devices and lets the admin pick the accounts.
+ * Browser fingerprints (HBHub-DeviceFingerprints, assets/php/fingerprint.php) join accounts the same way, so clearing
+ * cookies or using a private window doesn't get around it, except a fingerprint seen with more than
+ * HBHUB_FINGERPRINT_SHARED_MAX accounts: that's most likely a lot of identical school computers, not one person.
+ * 'fingerprints' is how many fingerprints that do link accounts they have between them.
  *
- * @return list<array{userIds: list<int>, devices: int}>
+ * @return list<array{userIds: list<int>, devices: int, fingerprints: int}>
  */
 function adminPersonGroups(PDO $db): array
 {
-    // Union-find: every account starts as its own person, and each browser joins the accounts known in it
+    require_once __DIR__ . '/fingerprint.php';
+
+    // Union-find: every account starts as its own person, and each browser (cookie or fingerprint) joins the accounts
+    // known in it
     $parent = [];
     $find = function (int $id) use (&$parent): int {
         while ($parent[$id] !== $id) {
@@ -61,33 +68,49 @@ function adminPersonGroups(PDO $db): array
         }
         return $id;
     };
-    $deviceFirstUser = []; // deviceTokenHash => the first account seen in it
-    foreach ($db->query('SELECT deviceTokenHash, userId FROM `HBHub-LoginDevices`') as $row) {
-        $userId = (int) $row['userId'];
-        $parent[$userId] ??= $userId;
-        $first = $deviceFirstUser[$row['deviceTokenHash']] ??= $userId;
-        $root = $find($userId);
-        $firstRoot = $find($first);
-        if ($root !== $firstRoot) {
-            $parent[$root] = $firstRoot;
+    // Joins the accounts of each key; $rows are [key, userId]. Returns key => the first account seen with it.
+    $join = function (iterable $rows) use (&$parent, $find): array {
+        $firstUser = [];
+        foreach ($rows as [$key, $userId]) {
+            $userId = (int) $userId;
+            $parent[$userId] ??= $userId;
+            $first = $firstUser[$key] ??= $userId;
+            $root = $find($userId);
+            $firstRoot = $find($first);
+            if ($root !== $firstRoot) {
+                $parent[$root] = $firstRoot;
+            }
         }
-    }
+        return $firstUser;
+    };
+
+    $deviceFirstUser = $join($db->query('SELECT deviceTokenHash, userId FROM `HBHub-LoginDevices`')->fetchAll(PDO::FETCH_NUM));
+    // Only the fingerprints that link two to HBHUB_FINGERPRINT_SHARED_MAX accounts
+    $fingerprintFirstUser = $join($db->query('SELECT f.fingerprintHash, f.userId FROM `HBHub-DeviceFingerprints` f
+        JOIN (SELECT fingerprintHash FROM `HBHub-DeviceFingerprints` GROUP BY fingerprintHash
+            HAVING COUNT(*) BETWEEN 2 AND ' . HBHUB_FINGERPRINT_SHARED_MAX . ') linking ON linking.fingerprintHash = f.fingerprintHash')
+        ->fetchAll(PDO::FETCH_NUM));
 
     $groups = [];
     foreach (array_keys($parent) as $userId) {
         $groups[$find($userId)][] = $userId;
     }
-    $devices = [];
-    foreach ($deviceFirstUser as $first) {
-        $root = $find($first);
-        $devices[$root] = ($devices[$root] ?? 0) + 1;
-    }
+    $count = function (array $firstUser) use ($find): array {
+        $counts = [];
+        foreach ($firstUser as $first) {
+            $root = $find($first);
+            $counts[$root] = ($counts[$root] ?? 0) + 1;
+        }
+        return $counts;
+    };
+    $devices = $count($deviceFirstUser);
+    $fingerprints = $count($fingerprintFirstUser);
 
     $people = [];
     foreach ($groups as $root => $userIds) {
         if (count($userIds) > 1) {
             sort($userIds);
-            $people[] = ['userIds' => $userIds, 'devices' => $devices[$root] ?? 0];
+            $people[] = ['userIds' => $userIds, 'devices' => $devices[$root] ?? 0, 'fingerprints' => $fingerprints[$root] ?? 0];
         }
     }
     usort($people, fn (array $a, array $b): int => end($b['userIds']) <=> end($a['userIds']));

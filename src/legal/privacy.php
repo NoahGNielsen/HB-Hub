@@ -154,6 +154,19 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             any of them, or all of them at once. Browsers you've logged in from are also remembered by a
                             random token (only a hash of it is stored) and how many wrong passwords they've tried.
                         </p>
+                        <h3>Browser fingerprints</h3>
+                        <p>
+                            While you're logged in, about once a day, your browser works out a fingerprint of itself and the
+                            computer it's on: a SHA-256 hash made from how it draws a small picture and plays a short sound
+                            (no sound is played out loud), the name and limits of the graphics card, which of a list of
+                            common fonts are installed, the screen size and colour depth, the time zone, languages,
+                            platform, touch points, processor cores and memory. Only the hash is sent and stored, never what
+                            went into it, together with the short browser name (like "Chrome on Windows"), your account and
+                            when it was first and last seen. Unlike the token above, it stays the same after clearing
+                            cookies or in a private window. It's only used so site admins can see which accounts are used
+                            on the same browser (see <a href="#see">Who can see what</a>), never to follow you on other
+                            sites, and it's never shared with anyone.
+                        </p>
                         <h3>Messages and chats</h3>
                         <ul>
                             <li>Every message you send, with the time, which chat it's in, what it replies to and any GIF.</li>
@@ -455,7 +468,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-why">3. Why it's stored</h2>
                         <ul>
                             <li><strong>To run the site</strong>: your account, messages and games are the site. Without them there's nothing to show you.</li>
-                            <li><strong>To keep it safe</strong>: IP addresses, failed logins and the device cookie stop people from breaking into accounts, spamming sign-ups and dodging bans. The banned pictures list stops a banned person from coming back with a copy of their old profile.</li>
+                            <li><strong>To keep it safe</strong>: IP addresses, failed logins, the device cookie and browser fingerprints stop people from breaking into accounts, spamming sign-ups and dodging bans. The banned pictures list stops a banned person from coming back with a copy of their old profile.</li>
                             <li><strong>To keep it friendly</strong>: messages are kept so admins can act on bullying or abuse.</li>
                             <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want. Ore Mining Inc. crash reports, which are only sent if you agree, and the short notes browsers send about crashes, which aren't tied to you, help find out why the game crashed. Server busy reports show when and where the server has too much to do, so it can be fixed.</li>
                         </ul>
@@ -484,11 +497,13 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 ever seen by site admins, never by other users. They can never see your password or your two-factor secret. Everything they do
                                 there, also just looking at your account or a chat you're in, goes in the admin log, which only
                                 site admins can read and nobody can change or delete.
-                                Site admins can also see which accounts have been logged in to from the same browser (the
-                                hbHubDevice cookie, see <a href="#privacy-cookies">Cookies and local storage</a>, never your IP
-                                address), with when each browser was first and last used, and put those accounts side by side on
-                                one page, to deal with one person's extra accounts together, like banning them all at once.
-                                Nothing new is stored for this: it uses the known devices that are already kept for the login.
+                                Site admins can also see which accounts have been used in the same browser (by the
+                                hbHubDevice cookie, see <a href="#privacy-cookies">Cookies and local storage</a>, or by the
+                                browser fingerprint, see Browser fingerprints under <a href="#what">What is stored</a>, never by
+                                your IP address), with when each browser was first and last used, and put those accounts side by
+                                side on one page, to deal with one person's extra accounts together, like banning them all at once.
+                                A fingerprint shared by more than 4 accounts (like a room of identical school computers) isn't
+                                used to link anyone, and admins check that accounts aren't just on a shared computer first.
                             </li>
                         </ul>
                         <p class="legal-note">
@@ -555,7 +570,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-keep">7. How long it's kept</h2>
                         <p>
                             Your data is kept for as long as you have an account. Logins run out after 30 days, and a browser
-                            stops counting as a known device after 180 days without a login. Logging out a device, or
+                            stops counting as a known device after 180 days without a login. A browser fingerprint is deleted
+                            180 days after it was last seen. Logging out a device, or
                             logging out everywhere, deletes those logins right away.
                         </p>
                         <p>
@@ -568,7 +584,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
                             That right away removes your name, profile picture, banner, bio, status, education badge, year, class, settings, password, two-factor
-                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, your server busy reports, your Minesweeper and Sudoku games, and the files you attached in chats. Your name is replaced
+                            secret, linked Discord account, IP addresses, logins, known devices, browser fingerprints, your Ore Mining Inc. save and crash reports, your server busy reports, your Minesweeper and Sudoku games, and the files you attached in chats. Your name is replaced
                             with "Deleted User".
                         </p>
                         <p>

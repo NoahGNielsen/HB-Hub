@@ -72,7 +72,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
                     <section id="account" aria-labelledby="terms-account">
                         <h2 id="terms-account">2. Your account</h2>
                         <ul>
-                            <li><strong>One account per person.</strong> Don't make extra accounts, for example to get more daily chips or to get around a ban. Admins can see which accounts are used in the same browser, and can treat them as one person (see section 7).</li>
+                            <li><strong>One account per person.</strong> Don't make extra accounts, for example to get more daily chips or to get around a ban. Admins can see which accounts are used in the same browser (also after clearing cookies or in a private window, by the browser's fingerprint, see the Privacy Policy), and can treat them as one person (see section 7).</li>
                             <li><strong>Be yourself.</strong> Use a name people from school will recognise you by, and don't pretend to be someone else.</li>
                             <li><strong>Your class.</strong> When you sign up you say which year of HTX you're in (1., 2. or 3.) and your field of study, or that you don't go to HTX. Pick your real class. Your year goes up by itself every July 1st, and after 3. year you're shown as a Graduate, with your field of study. At HTX you're put in your class's group chat straight away, with no message request. You can mute or hide it, but not leave it; changing your class in your <a href="/settings">settings</a> moves you to the other class's chat.</li>
                             <li>Names, bios, statuses and nicknames in chats can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them. A bio, status or nickname can't have a link to one of the blocked sites in it either (see section 3), and a name can't be an email address. A new username has to be at least 3 characters long.</li>
@@ -279,7 +279,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
                                 old) that's made or used in the same browser is ghost banned too,
                             </li>
                             <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture, and can cover its banner picture.</li>
-                            <li>do any of the above to all of a person's accounts at once. Accounts that have been logged in to from the same browser are taken to be the same person, and admins check that it isn't just a shared computer first.</li>
+                            <li>do any of the above to all of a person's accounts at once. Accounts that have been used in the same browser (by its cookie or its fingerprint) are taken to be the same person, and admins check that it isn't just a shared or identical computer first.</li>
                         </ul>
                         <p>
                             Using a banned picture is against the rules too: an account that uploads one as its profile picture or

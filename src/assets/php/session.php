@@ -28,6 +28,12 @@ const HBHUB_BANNED_COOKIE_DAYS = 400; // the longest browsers keep a cookie
 const HBHUB_SESSION_LAST_SEEN_MINUTES = 1;
 // Seen this recently counts as online (userLastSeenTimestamp, updated at most once a minute), on profiles and in the admin panel
 const HBHUB_SESSION_ONLINE_SECONDS = 5 * 60;
+// A login sends the browser's fingerprint (assets/php/fingerprint.php) at most this often (sessionFingerprintTimestamp)
+const HBHUB_SESSION_FINGERPRINT_HOURS = 24;
+
+// Whether this request's page should load assets/js/fingerprint.js (header.php): set by hbHubSessionUser() when the
+// login hasn't sent one in the last HBHUB_SESSION_FINGERPRINT_HOURS
+$hbHubFingerprintDue = false;
 
 /**
  * Stores a new session for the user and returns its id. Pass it to hbHubSetSessionCookie() once
@@ -158,6 +164,7 @@ function hbHubIsReservedUserName(string $name): bool
  * userGhostBanned is whether a site admin ghost banned them (assets/php/chat.php): only the chat looks at it, and it's
  * never shown to the user. Their browser is made one of their known devices (loginLimit.php), so it passes a ghost ban
  * on to a new account made in it and site admins can see which accounts are used in the same browser.
+ * Sets $hbHubFingerprintDue when the login hasn't sent the browser's fingerprint lately (assets/php/fingerprint.php).
  *
  * @return ?array{userId: int, userName: string, userRole: int, userAvatarAttachmentId: ?int, userSettings: ?string, userGhostBanned: int}
  */
@@ -180,6 +187,7 @@ function hbHubSessionUser(): ?array
                 u.userGhostBannedTimestamp IS NOT NULL AS userGhostBanned,
                 COALESCE(s.sessionLastSeen < NOW() - INTERVAL ' . HBHUB_SESSION_LAST_SEEN_MINUTES . ' MINUTE, 1) AS sessionIsStale,
                 COALESCE(u.userLastSeenTimestamp < NOW() - INTERVAL ' . HBHUB_SESSION_LAST_SEEN_MINUTES . ' MINUTE, 1) AS userIsStale,
+                COALESCE(s.sessionFingerprintTimestamp < NOW() - INTERVAL ' . HBHUB_SESSION_FINGERPRINT_HOURS . ' HOUR, 1) AS fingerprintIsDue,
                 u.userIpv4AdresseLastAccessed, u.userIpv6AdresseLastAccessed
             FROM `HBHub-Sessions` s JOIN `HBHub-Users` u ON u.userId = s.userId
             WHERE s.sessionId = ? AND s.sessionValidUntil > NOW() AND s.sessionTotpPending = 0 AND u.userStatus IS NOT NULL');
@@ -215,7 +223,11 @@ function hbHubSessionUser(): ?array
                 hbHubLoginTrustDevice($db, (int) $user['userId']);
             }
         }
-        unset($user['userStatus'], $user['sessionIsStale'], $user['userIsStale'], $user['userIpv4AdresseLastAccessed'], $user['userIpv6AdresseLastAccessed']);
+        // The browser's fingerprint ties a person's accounts together too, also once the device cookie is gone
+        // (assets/php/fingerprint.php): header.php loads the script that sends it when it's due
+        $GLOBALS['hbHubFingerprintDue'] = (bool) $user['fingerprintIsDue'];
+        unset($user['userStatus'], $user['sessionIsStale'], $user['userIsStale'], $user['fingerprintIsDue'],
+            $user['userIpv4AdresseLastAccessed'], $user['userIpv6AdresseLastAccessed']);
     } catch (PDOException $e) {
         error_log('Session: could not check the session: ' . $e->getMessage());
         return null;

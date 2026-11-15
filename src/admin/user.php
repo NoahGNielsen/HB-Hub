@@ -131,8 +131,8 @@ function adminAllAccountsSwitchHtml(array $others, string $action, string $verb,
         . '<input type="checkbox" class="settings-switch" name="allAccounts" value="1" aria-describedby="admin-all-' . $action . '-hint">'
         . '<span>Also ' . $verb . ' their ' . ($count === 1 ? 'other account' : $count . ' other accounts') . '</span></label>'
         . '<p class="settings-hint" id="admin-all-' . $action . '-hint">' . $names . ' ' . ($count === 1 ? 'is' : 'are')
-        . ' used in the same browser as this account, so it\'s probably the same person. Check on the '
-        . '<a class="admin-link" href="/admin/person?user=' . $targetId . '">person page</a> first: a shared computer links people too.</p></div>';
+        . ' used in the same browser as this account (by its cookie or its fingerprint), so it\'s probably the same person. Check on the '
+        . '<a class="admin-link" href="/admin/person?user=' . $targetId . '">person page</a> first: a shared or identical computer links people too.</p></div>';
 }
 
 /**
@@ -361,6 +361,8 @@ if (($_GET['export'] ?? null) === '1') {
         'sessions' => adminSessions($db, $targetId),
         'loginDevices' => adminExportRows($db, 'SELECT deviceFailedLoginCount, deviceLockedTimestamp, deviceCreatedTimestamp, deviceLastUsedTimestamp
             FROM `HBHub-LoginDevices` WHERE userId = ? ORDER BY deviceLastUsedTimestamp DESC', $one),
+        'fingerprints' => adminExportRows($db, 'SELECT fingerprintHash, fingerprintDevice, fingerprintCreatedTimestamp, fingerprintLastSeenTimestamp
+            FROM `HBHub-DeviceFingerprints` WHERE userId = ? ORDER BY fingerprintLastSeenTimestamp DESC', $one),
         'chats' => adminChats($db, $targetId),
         'chatMemberships' => $chatMemberships,
         'messages' => adminMessages($db, $targetId),

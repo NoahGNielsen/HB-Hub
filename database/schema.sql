@@ -456,6 +456,20 @@ CREATE TABLE `HBHub-ChessSeats` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-DeviceFingerprints`
+--
+
+CREATE TABLE `HBHub-DeviceFingerprints` (
+  `fingerprintHash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'SHA-256 of what the browser and computer are like (assets/js/fingerprint.js)',
+  `userId` int UNSIGNED NOT NULL,
+  `fingerprintDevice` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Browser and system, like "Chrome on Windows" (never the whole user agent)',
+  `fingerprintCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fingerprintLastSeenTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Deleted 180 days after this'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Browser fingerprints the account was used with, to link one person''s accounts in the admin panel (src/assets/php/fingerprint.php)';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Feedback`
 --
 
@@ -900,7 +914,8 @@ CREATE TABLE `HBHub-Sessions` (
   `sessionValidUntil` datetime NOT NULL,
   `sessionTotpPending` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Logged in\r\n1 Right password, waiting for the 2FA code',
   `sessionDevice` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Browser and system, like "Chrome on Windows" (never the whole user agent)',
-  `sessionLastSeen` datetime DEFAULT NULL COMMENT 'Last request with this session, written at most once a minute'
+  `sessionLastSeen` datetime DEFAULT NULL COMMENT 'Last request with this session, written at most once a minute',
+  `sessionFingerprintTimestamp` datetime DEFAULT NULL COMMENT 'Last browser fingerprint sent with this session (assets/php/fingerprint.php), at most once a day'
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -1269,6 +1284,13 @@ ALTER TABLE `HBHub-ChessSeats`
   ADD PRIMARY KEY (`roomId`,`seatNumber`),
   ADD UNIQUE KEY `userId` (`userId`) COMMENT 'One chess game at a time',
   ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
+
+--
+-- Indexes for table `HBHub-DeviceFingerprints`
+--
+ALTER TABLE `HBHub-DeviceFingerprints`
+  ADD PRIMARY KEY (`fingerprintHash`,`userId`),
+  ADD KEY `userLastSeen` (`userId`,`fingerprintLastSeenTimestamp`);
 
 --
 -- Indexes for table `HBHub-Feedback`
@@ -1932,6 +1954,12 @@ ALTER TABLE `HBHub-ChessRooms`
 ALTER TABLE `HBHub-ChessSeats`
   ADD CONSTRAINT `fk_chessseats_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-ChessRooms` (`roomId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_chessseats_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-DeviceFingerprints`
+--
+ALTER TABLE `HBHub-DeviceFingerprints`
+  ADD CONSTRAINT `fk_devicefingerprints_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Feedback`
