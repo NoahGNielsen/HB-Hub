@@ -86,7 +86,7 @@ function termsNumber(int $number): string
                                 <a href="/legal/privacy">privatlivspolitikken</a>) og behandles som én person (se afsnit 7). Når én
                                 af en persons konti har hentet dagens chips, får de øvrige kun 20 % af deres daglige chips den dag.
                             </li>
-                            <li><strong>Din identitet.</strong> Brug et navn, som andre fra skolen kan genkende dig på, og udgiv dig ikke for at være en anden.</li>
+                            <li><strong>Din identitet.</strong> Du vælger selv dit navn, og det behøver ikke at være dit rigtige, men du må ikke udgive dig for at være en anden.</li>
                             <li>
                                 <strong>Din klasse.</strong> Angiv din korrekte årgang (1.-3.) og studieretning på HTX, eller at du
                                 ikke går på HTX. Årgangen opdateres automatisk den 1. juli, og efter 3. år vises du som student. Går

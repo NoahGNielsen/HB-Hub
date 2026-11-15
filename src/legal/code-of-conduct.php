@@ -123,7 +123,7 @@ const HBHUB_CONDUCT_UPDATED = '15 November 2026';
                         <h2 id="conduct-profile">5. Din profil</h2>
                         <p>
                             Dit navn, profilbillede, banner, din bio og status kan ses af alle på HB Hub, og de samme regler gælder
-                            for dem som for beskeder. Brug et navn, andre fra skolen kan genkende dig på, efterlign ikke andre, og
+                            for dem som for beskeder. Dit navn behøver ikke at være dit rigtige, men efterlign ikke andre, og
                             angiv din rigtige klasse og dit rigtige uddannelsesmærke. Navne, bioer, statusser og kælenavne må kun
                             indeholde latinske bogstaver (herunder æ, ø og å), tal, tegnsætning og emoji og må ikke indeholde
                             blokerede links.
