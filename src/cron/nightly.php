@@ -111,7 +111,7 @@ hbHubCronRun('Watchdog', static function () use ($db): string {
     return hbHubWatchdogSweep($db) . ' old reports removed';
 });
 
-hbHubCronRun('Page views', static function () use ($db): string {
+hbHubCronRun('Page views', function () use ($db) {
     return hbHubPageViewsSweep($db) . ' old days removed';
 });
 
