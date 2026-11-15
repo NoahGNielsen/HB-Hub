@@ -12,7 +12,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php'; // only for hbHubLegalDanishDate()
 
-const HBHUB_DO_NOT_SELL_UPDATED = '30 October 2026';
+const HBHUB_DO_NOT_SELL_UPDATED = '15 November 2026';
 
 // Global Privacy Control: browsers with it turned on send "Sec-GPC: 1" on every request
 $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
@@ -24,7 +24,7 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
     <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <title>Sælg eller del ikke mine personoplysninger - HB Hub</title>
-    <meta name="description" content="HB Hub sælger eller deler aldrig dine personoplysninger, hverken til reklamer eller noget andet. Her er, hvad det betyder, og hvem der stadig ser hvad.">
+    <meta name="description" content="HB Hub sælger og deler ikke dine personoplysninger. Læs, hvad det betyder, og hvilke tjenester der indgår i driften af siden.">
 </head>
 <body class="home-body">
     <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -36,8 +36,8 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                     <p class="home-kicker legal-kicker">Juridisk</p>
                     <h1 id="do-not-sell-title">Sælg eller del ikke mine personoplysninger</h1>
                     <p class="legal-intro">
-                        Kort svar: HB Hub sælger eller deler ikke dine personoplysninger og har aldrig gjort det. Der er ingen
-                        reklamer, ingen sporing og ingen dataaftaler, så du har allerede fravalgt det. Du behøver ikke gøre noget.
+                        HB Hub sælger og deler ikke dine personoplysninger og har aldrig gjort det. Siden har ingen reklamer,
+                        ingen sporing og ingen dataaftaler med andre. Du skal derfor ikke foretage dig noget for at fravælge det.
                     </p>
                     <p class="legal-updated">Sidst opdateret <?= hbHubLegalDanishDate(HBHUB_DO_NOT_SELL_UPDATED) ?></p>
                 </div>
@@ -47,88 +47,93 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                 <nav class="legal-toc" aria-label="På denne side">
                     <p class="legal-toc-title" aria-hidden="true">På denne side</p>
                     <ol>
-                        <li><a href="#meaning">Hvad "sælge" og "dele" betyder</a></li>
-                        <li><a href="#never">Hvad HB Hub aldrig gør</a></li>
-                        <li><a href="#services">Hvem der stadig ser noget</a></li>
+                        <li><a href="#meaning">Baggrund</a></li>
+                        <li><a href="#never">Hvad HB Hub ikke gør</a></li>
+                        <li><a href="#services">Eksterne tjenester</a></li>
                         <li><a href="#gpc">Global Privacy Control</a></li>
-                        <li><a href="#ask">Spørg alligevel</a></li>
+                        <li><a href="#ask">Kontakt</a></li>
                     </ol>
                 </nav>
 
                 <div class="legal-body">
                     <?php if ($doNotSellHasGpc): ?>
                         <p class="legal-note">
-                            Din browser sender et Global Privacy Control-signal. HB Hub ser det og behandler det som en anmodning
-                            om ikke at sælge eller dele dine oplysninger, hvilket den i forvejen ikke gør.
+                            Din browser sender et Global Privacy Control-signal. HB Hub behandler det som en anmodning om ikke at
+                            sælge eller dele dine oplysninger, hvilket i forvejen ikke sker.
                         </p>
                     <?php endif; ?>
 
                     <section id="meaning" aria-labelledby="do-not-sell-meaning">
-                        <h2 id="do-not-sell-meaning">1. Hvad "sælge" og "dele" betyder</h2>
+                        <h2 id="do-not-sell-meaning">1. Baggrund</h2>
                         <p>
-                            Nogle privatlivslove, som Californiens CCPA, giver folk ret til at forhindre en hjemmeside i at
-                            <strong>sælge</strong> deres personoplysninger (give dem til en anden virksomhed for penge eller noget
-                            andet af værdi) eller <strong>dele</strong> dem (give dem til en anden virksomhed, så den kan vise dig
-                            målrettede reklamer ud fra det, du gør på andre sider). Sider, der gør en af delene, skal tilbyde en måde
-                            at fravælge det på, som regel på en side som denne.
+                            Visse privatlivslove, fx Californiens CCPA, giver ret til at fravælge, at en hjemmeside
+                            <strong>sælger</strong> dine personoplysninger (overdrager dem til en anden virksomhed mod betaling
+                            eller anden værdi) eller <strong>deler</strong> dem (overdrager dem til brug for målrettede reklamer).
+                            Hjemmesider, der gør det, skal tilbyde en side som denne.
                         </p>
                         <p>
-                            HB Hub bliver drevet fra Danmark, hvor GDPR beskytter dine data i forvejen. Denne side er her, så det er
-                            tydeligt for alle, uanset hvor de er.
+                            HB Hub drives fra Danmark, hvor dine data er beskyttet af GDPR. Siden findes, så det er klart for alle,
+                            uanset hvor de bor.
                         </p>
                     </section>
 
                     <section id="never" aria-labelledby="do-not-sell-never">
-                        <h2 id="do-not-sell-never">2. Hvad HB Hub aldrig gør</h2>
+                        <h2 id="do-not-sell-never">2. Hvad HB Hub ikke gør</h2>
+                        <p>Det betyder, at HB Hub:</p>
                         <ul>
-                            <li>Sælger dine personoplysninger, til nogen, for nogen pris.</li>
-                            <li>Deler dem til reklamer. Der er ingen reklamer på HB Hub og ingen reklame-id'er.</li>
-                            <li>Følger dig rundt på nettet. Der er ingen sporingspixels, ingen analyseprofiler og ingen sporingscookies.</li>
-                            <li>Giver dine beskeder, din profil eller din spilhistorik til andre virksomheder til deres egne formål.</li>
+                            <li>sælger ikke dine personoplysninger,</li>
+                            <li>deler dem ikke til reklamer (der er ingen reklamer eller reklame-id'er på siden),</li>
+                            <li>sporer dig ikke på tværs af hjemmesider (der er ingen sporingspixels, analyseprofiler eller sporingscookies),</li>
+                            <li>giver ikke dine beskeder, din profil eller din spilhistorik til andre virksomheder til deres egne formål.</li>
                         </ul>
                         <p>
-                            Hvis det nogensinde ændrede sig, ville denne side og <a href="/legal/privacy">privatlivspolitikken</a>
-                            blive opdateret først, og du ville få en rigtig måde at sige nej på.
+                            Skulle det ændre sig, opdateres denne side og <a href="/legal/privacy">privatlivspolitikken</a> først,
+                            og du får mulighed for at sige nej.
                         </p>
                     </section>
 
                     <section id="services" aria-labelledby="do-not-sell-services">
-                        <h2 id="do-not-sell-services">3. Hvem der stadig ser noget</h2>
+                        <h2 id="do-not-sell-services">3. Eksterne tjenester</h2>
                         <p>
-                            En hjemmeside kan ikke køre helt af sig selv, så nogle få tjenester er involveret. Intet af det er salg
-                            eller deling, da de kun får det, de skal bruge for at gøre deres arbejde:
+                            Nogle få tjenester indgår i driften af siden. De modtager kun det, der er nødvendigt for deres opgave,
+                            og det er hverken salg eller deling:
                         </p>
                         <ul>
-                            <li><strong>Simply.com</strong> (Danmark) hoster hjemmesiden og databasen, i EU.</li>
-                            <li><strong>Giphy</strong> ser din IP-adresse, når din browser henter en GIF i chatten. Dine GIF-søgninger går gennem HB Hubs server, så Giphy ikke får at vide, hvem der søgte.</li>
-                            <li><strong>GitHub</strong> får kun det samlede antal medlemmer og beskeder, til tællerne i README'en.</li>
-                            <li><strong>Discord</strong>, kun hvis du logger ind eller opretter dig med Discord, eller kobler din Discord-konto til: du giver lov på Discords egen side, så Discord ser din IP-adresse og at du bruger HB Hub. Mens den er koblet til, spørger HB Hubs server Discord én gang om natten om den tilkoblede kontos nuværende brugernavn, hvilket kun sender Discord dens eget Discord-id tilbage. HB Hub sender aldrig Discord andet om dig.</li>
+                            <li><strong>Simply.com</strong> (Danmark) hoster hjemmesiden og databasen i EU.</li>
+                            <li><strong>Giphy</strong> ser din IP-adresse, når en GIF vises i chatten. Søgninger sendes via HB Hubs server, så Giphy ikke ved, hvem der søger.</li>
+                            <li><strong>GitHub</strong> modtager kun det samlede antal medlemmer og beskeder til sidens README.</li>
+                            <li>
+                                <strong>Discord</strong>, kun hvis du logger ind, opretter dig eller kobler din konto til med Discord.
+                                Discord ser da din IP-adresse, og at du bruger HB Hub. Mens kontoen er koblet til, spørger HB Hubs
+                                server hver nat Discord om dit nuværende brugernavn ud fra dit Discord-id. Andre oplysninger om dig
+                                sendes ikke til Discord.
+                            </li>
                         </ul>
                         <p>
-                            <a href="/legal/privacy#services">Privatlivspolitikken</a> har alle detaljerne og
-                            <a href="/legal/privacy#cookies">listen over cookies</a>, siden bruger (de skal alle bruges for at logge ind).
+                            Detaljerne står i <a href="/legal/privacy#services">privatlivspolitikken</a> sammen med
+                            <a href="/legal/privacy#cookies">listen over cookies</a>, som alle er nødvendige for, at siden fungerer.
                         </p>
                     </section>
 
                     <section id="gpc" aria-labelledby="do-not-sell-gpc">
                         <h2 id="do-not-sell-gpc">4. Global Privacy Control</h2>
                         <p>
-                            Global Privacy Control (GPC) er en indstilling i nogle browsere og udvidelser, der fortæller alle de
-                            sider, du besøger, at de ikke må sælge eller dele dine data. HB Hub respekterer den, men da intet bliver
-                            solgt eller delt, er din oplevelse på siden den samme uanset hvad.
+                            Global Privacy Control (GPC) er en indstilling i visse browsere og udvidelser, der beder hjemmesider om
+                            ikke at sælge eller dele dine data. HB Hub respekterer signalet, men da intet sælges eller deles, fungerer
+                            siden ens, uanset om det er slået til.
                             <?php if (!$doNotSellHasGpc): ?>
-                                Din browser sender det ikke lige nu.
+                                Din browser sender ikke signalet i øjeblikket.
                             <?php endif; ?>
                         </p>
                     </section>
 
                     <section id="ask" aria-labelledby="do-not-sell-ask">
-                        <h2 id="do-not-sell-ask">5. Spørg alligevel</h2>
+                        <h2 id="do-not-sell-ask">5. Kontakt</h2>
                         <p>
-                            Vil du have det på skrift, en kopi af de data, HB Hub har om dig, eller det hele slettet? Skriv til
-                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>, så får du svar inden for en
-                            måned. Du behøver ikke give en grund, og det ændrer ikke, hvordan du bliver behandlet på HB Hub at
-                            spørge. Dine andre rettigheder står i <a href="/legal/privacy#rights">privatlivspolitikken</a>.
+                            Ønsker du en skriftlig bekræftelse, en kopi af dine data eller at få dem slettet, kan du skrive til
+                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. Du får svar inden for en måned.
+                            Du behøver ikke begrunde din henvendelse, og den har ingen betydning for, hvordan du behandles på HB Hub.
+                            Dine øvrige rettigheder står i <a href="/legal/privacy#rights">privatlivspolitikken</a>.
                         </p>
                     </section>
                 </div>
