@@ -635,9 +635,12 @@
 }
 
 /* The "HTX Edition" reagent-bottle label, tilted a little the other way and overlapping the plate's bottom edge,
-   with a stripe top and bottom and a green flask before the words */
+   on top of it, with a stripe top and bottom and a green flask before the words */
 .mt-edition-flask {
-  margin: -0.35em 0 0;
+  /* Above the plate (which has z-index 1), so the plate's bottom edge doesn't cover the top of the label */
+  position: relative;
+  z-index: 2;
+  margin: -0.2em 0 0;
   transform: rotate(4deg);
   border: 2px solid #0b2545;
   border-radius: 4px;
