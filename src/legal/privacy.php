@@ -135,7 +135,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Hemmeligheden bag dine totrinskoder, hvis du har slået totrinslogin til.</li>
                             <li>For hvert login: hvornår det startede, sidst blev brugt og udløber, samt et kort navn for browser og system (fx "Chrome on Windows"), udledt af din browsers user agent. Kun det korte navn gemmes. Du kan se og afslutte dine logins under Logged in devices på <a href="/settings#devices">indstillingssiden</a>.</li>
                             <li>Browsere, du har logget ind fra, genkendes ud fra en tilfældig token (vi gemmer kun en hash af den) sammen med antallet af forkerte adgangskodeforsøg.</li>
-                            <li>Den IP-adresse, du oprettede dig fra, og den senest brugte. Vi gemmer ingen historik. IP-adresser tælles desuden kortvarigt ved kontooprettelse for at forhindre masseoprettelse af konti.</li>
+                            <li>På din konto: den IP-adresse, du oprettede dig fra, og den senest brugte. Der gemmes ingen historik over dine logins' IP-adresser. IP-adresser tælles desuden kortvarigt ved kontooprettelse for at forhindre masseoprettelse af konti.</li>
+                            <li>Din IP-adresse gemmes også i <a href="#watchdog">fejlrapporter fra browseren</a> sammen med din browsers user agent, også når du ikke er logget ind. Rapporterne slettes efter 30 dage, og du kan slå dem fra med <strong>Help improve HB Hub</strong>.</li>
                             <li>Mislykkede logins, om kontoen er låst eller udelukket (og om udelukkelsen kom fra en admin eller var automatisk), og om og siden hvornår kontoen er spøgelsesudelukket.</li>
                         </ul>
 
