@@ -1,4 +1,4 @@
-Last updated 06/11-26
+Last updated 15/11-26
 # CLAUDE.md
 
 ## Rules (from the project owner)
@@ -126,7 +126,15 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
   `document` between scripts.
 - **Comments**: every file starts with a plain-English comment on what it does, who calls it and the shape of its
   data; functions have short docblocks. The codebase is heavily commented in a conversational tone - match it.
-- **UI text** is English (except Matador's Danish game terms).
+- **UI text**: public pages (the ones you can see without logging in) are in **Danish**: the frontpage, login and
+  onboarding, `legal/`, the help docs (`docs/`), the free games' wrapper at `/play` (`assets/php/guestGames/`, the
+  guest Sudoku), the error pages, the nav bar/footer/cookie notice, and the games' `rules.php` files (shown in the docs,
+  so in the games too). They set `lang="da"` and `$headerLocale = 'da_DK'` before `header.php`, and write numbers the
+  Danish way (`number_format($n, 0, ',', '.')`). Everything behind the login (the app, the games' own UI) is
+  **English** (except Matador's Danish game terms), so docs refer to its buttons by their English names, in bold.
+  Shared helpers that show text on both sides take a `$danish` flag (`hbHubNameError()`, `hbHubPasswordError()`,
+  `hbHubClassError()`, `hbHubLoginLockedMessage()`). Legal dates are kept in English (they're the version key
+  `cookieNotice.js` saves) and shown with `hbHubLegalDanishDate()`. Code comments stay English.
 - **schema.sql** is a phpMyAdmin dump: `CREATE TABLE`s first, then indexes, `AUTO_INCREMENT` and foreign keys as
   separate `ALTER TABLE` blocks further down - keep that structure.
 

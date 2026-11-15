@@ -9,18 +9,18 @@ if (!headers_sent()) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/statusCodePage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/statusCodePage.css') ?>">
-    <title><?= $siteMaintenance ? 'Down for maintenance' : 'Service unavailable' ?> - HB Hub</title>
+    <title><?= $siteMaintenance ? 'Lukket for vedligeholdelse' : 'Tjenesten er utilgængelig' ?> - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
     <main class="status-page">
         <p class="status-code">503</p>
-        <h1><?= $siteMaintenance ? 'Down for maintenance' : 'Service unavailable' ?></h1>
-        <p class="status-message"><?= htmlspecialchars($siteMaintenance ? $siteConfig['site_maintenance_message'] : 'The site is temporarily unavailable. Please try again later.') ?></p>
+        <h1><?= $siteMaintenance ? 'Lukket for vedligeholdelse' : 'Tjenesten er utilgængelig' ?></h1>
+        <p class="status-message"><?= htmlspecialchars($siteMaintenance ? $siteConfig['site_maintenance_message'] : 'Siden er midlertidigt utilgængelig. Prøv igen senere.') ?></p>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

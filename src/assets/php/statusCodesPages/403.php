@@ -5,18 +5,18 @@ if (!headers_sent()) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/statusCodePage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/statusCodePage.css') ?>">
-    <title>Access denied - HB Hub</title>
+    <title>Adgang nægtet - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
     <main class="status-page">
         <p class="status-code">403</p>
-        <h1>Access denied</h1>
-        <p class="status-message">You don't have permission to view this page.<br>Either you are not logged in or your account does not have the necessary permissions.</p>
+        <h1>Adgang nægtet</h1>
+        <p class="status-message">Du har ikke tilladelse til at se denne side.<br>Enten er du ikke logget ind, eller din konto har ikke de nødvendige rettigheder.</p>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

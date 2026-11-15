@@ -2,6 +2,7 @@
 // handles the number pad, the tools, the keyboard and the clock. It all happens in the browser; nothing is sent to the
 // server. It's the members' Sudoku as it was before that moved to the server for its leaderboard (assets/js/sudoku.js),
 // kept apart so the two can change on their own, with its own STORAGE_KEY so the two never read each other's game.
+// Its texts are in Danish, like the page (a public page); the levels keep the names the members' Sudoku uses.
 //
 // A board is 81 squares, row by row (index = row * 9 + column), each 0 (empty) or 1-9. A new puzzle starts from a
 // random full board (solve() on an empty one, trying the numbers in a random order), then takes out squares in
@@ -321,10 +322,10 @@
             cell.classList.toggle('is-conflict-given', bad.has(i) && given);
             cell.tabIndex = i === (selected >= 0 ? selected : 0) ? 0 : -1;
 
-            const where = `Row ${rowOf(i) + 1}, column ${colOf(i) + 1}`;
+            const where = `Række ${rowOf(i) + 1}, kolonne ${colOf(i) + 1}`;
             if (value) {
                 cell.replaceChildren(String(value));
-                cell.setAttribute('aria-label', `${where}: ${value}${given ? ', given' : ''}${bad.has(i) ? ', clashes' : ''}`);
+                cell.setAttribute('aria-label', `${where}: ${value}${given ? ', givet' : ''}${bad.has(i) ? ', i konflikt' : ''}`);
             } else if (game.notes[i]) {
                 const notes = document.createElement('span');
                 notes.className = 'sudoku-notes';
@@ -338,10 +339,10 @@
                     if (on) list.push(d);
                 }
                 cell.replaceChildren(notes);
-                cell.setAttribute('aria-label', `${where}: empty, notes ${list.join(' ')}`);
+                cell.setAttribute('aria-label', `${where}: tom, noter ${list.join(' ')}`);
             } else {
                 cell.replaceChildren();
-                cell.setAttribute('aria-label', `${where}: empty`);
+                cell.setAttribute('aria-label', `${where}: tom`);
             }
         });
 
@@ -353,17 +354,17 @@
             const left = Math.max(0, 9 - placed[d]);
             key.querySelector('[data-sudoku-left]').textContent = left || '';
             key.classList.toggle('is-done', left === 0);
-            key.setAttribute('aria-label', `${d}${left ? `, ${left} left` : ', all placed'}`);
+            key.setAttribute('aria-label', `${d}${left ? `, ${left} tilbage` : ', alle placeret'}`);
         });
 
         levelText.textContent = DIFFICULTIES[game.level].name;
-        notesState.textContent = notesMode ? 'on' : 'off';
+        notesState.textContent = notesMode ? 'til' : 'fra';
         notesButton.setAttribute('aria-pressed', String(notesMode));
         notesButton.classList.toggle('is-on', notesMode);
         root.querySelectorAll('[data-sudoku-tool]').forEach((button) => { button.disabled = game.solved || paused; });
         padKeys.forEach((key) => { key.disabled = game.solved || paused; });
         pauseButton.disabled = game.solved;
-        pauseButton.textContent = paused ? 'Carry on' : 'Pause';
+        pauseButton.textContent = paused ? 'Fortsæt' : 'Pause';
         pauseButton.setAttribute('aria-pressed', String(paused));
         cover.hidden = !paused;
         board.classList.toggle('is-paused', paused);
@@ -375,7 +376,7 @@
     function drawBest() {
         root.querySelectorAll('[data-sudoku-best]').forEach((span) => {
             const level = span.dataset.sudokuBest;
-            span.textContent = store.best[level] ? `Best ${formatTime(store.best[level])}` : 'No wins yet';
+            span.textContent = store.best[level] ? `Bedste ${formatTime(store.best[level])}` : 'Ingen sejre endnu';
             span.closest('.sudoku-level').classList.toggle('is-active', game?.level === level && !game.solved);
         });
     }
@@ -394,11 +395,11 @@
     // Puts a number in the selected square (or a note, in notes mode)
     function enter(digit) {
         if (!game || game.solved || paused) return;
-        if (selected < 0) { say('Pick a square first.'); return; }
-        if (game.puzzle[selected]) { say('That number was given, it can\'t be changed.'); return; }
+        if (selected < 0) { say('Vælg et felt først.'); return; }
+        if (game.puzzle[selected]) { say('Det tal var givet, det kan ikke ændres.'); return; }
         const i = selected;
         if (notesMode) {
-            if (game.values[i]) { say('Erase the number first to write notes there.'); return; }
+            if (game.values[i]) { say('Slet tallet først for at skrive noter dér.'); return; }
             remember(i);
             game.notes[i] ^= 1 << digit;
         } else {
@@ -423,7 +424,7 @@
     function takeBack() {
         if (!game || game.solved || paused) return;
         const last = undo.pop();
-        if (!last) { say('Nothing to undo.'); return; }
+        if (!last) { say('Intet at fortryde.'); return; }
         game.values[last.i] = last.value;
         game.notes = last.notes;
         selected = last.i;
@@ -450,7 +451,7 @@
         selected = i;
         changed();
         cells[i].focus();
-        say(`Hint: row ${rowOf(i) + 1}, column ${colOf(i) + 1} is ${digit}.`);
+        say(`Hint: række ${rowOf(i) + 1}, kolonne ${colOf(i) + 1} er ${digit}.`);
     }
 
     // After every move: is it solved? Then draw and save
@@ -464,13 +465,13 @@
             const isBest = !store.best[level] || game.ms < store.best[level];
             if (isBest) store.best[level] = Math.round(game.ms);
             store.wins[level] = (Number(store.wins[level]) || 0) + 1;
-            const hints = game.hints ? ` with ${game.hints} hint${game.hints === 1 ? '' : 's'}` : ' without a hint';
-            resultText.textContent = `You solved the ${DIFFICULTIES[level].name} puzzle in ${formatTime(game.ms)}${hints}. `
-                + (isBest ? 'That\'s your best time on this level!' : `Your best is ${formatTime(store.best[level])}.`)
-                + ` You've solved ${store.wins[level]} on ${DIFFICULTIES[level].name}.`;
+            const hints = game.hints ? ` med ${game.hints} hint${game.hints === 1 ? '' : 's'}` : ' uden et hint';
+            resultText.textContent = `Du løste ${DIFFICULTIES[level].name}-opgaven på ${formatTime(game.ms)}${hints}. `
+                + (isBest ? 'Det er din bedste tid på dette niveau!' : `Din bedste er ${formatTime(store.best[level])}.`)
+                + ` Du har løst ${store.wins[level]} på ${DIFFICULTIES[level].name}.`;
             say('Solved!', 0);
         } else if (checkWin && game.values.every(Boolean)) {
-            say('The board is full, but some numbers clash.', 4000);
+            say('Brættet er fyldt, men nogle tal er i konflikt.', 4000);
         }
         draw();
         save();
@@ -479,7 +480,7 @@
     }
 
     function startGame(level) {
-        coverText.textContent = 'Making a puzzle…';
+        coverText.textContent = 'Laver en opgave…';
         cover.querySelector('[data-sudoku-resume]').hidden = true;
         cover.hidden = false;
         board.classList.add('is-paused');
@@ -492,7 +493,7 @@
             paused = false;
             notesMode = false;
             selected = -1;
-            coverText.textContent = 'Paused';
+            coverText.textContent = 'Sat på pause';
             cover.querySelector('[data-sudoku-resume]').hidden = false;
             message.textContent = '';
             draw();
@@ -510,7 +511,7 @@
             startGame(level);
             return;
         }
-        confirmText.textContent = `Your ${DIFFICULTIES[game.level].name} game will be gone, and a new ${DIFFICULTIES[level].name} one starts.`;
+        confirmText.textContent = `Dit ${DIFFICULTIES[game.level].name}-spil forsvinder, og et nyt ${DIFFICULTIES[level].name}-spil starter.`;
         confirmDialog.returnValue = '';
         confirmDialog.addEventListener('close', () => {
             if (confirmDialog.returnValue === 'yes') startGame(level);
@@ -603,9 +604,9 @@
     game = savedGame(store.game);
     if (game) {
         if (game.solved) {
-            resultText.textContent = `You solved this ${DIFFICULTIES[game.level].name} puzzle in ${formatTime(game.ms)}. Pick a level for a new one.`;
+            resultText.textContent = `Du løste denne ${DIFFICULTIES[game.level].name}-opgave på ${formatTime(game.ms)}. Vælg et niveau for en ny.`;
         } else if (game.values.some((v, i) => v && !game.puzzle[i])) {
-            say('Your game from last time. Pick a level above for a new one.', 4000);
+            say('Dit spil fra sidst. Vælg et niveau ovenfor for et nyt.', 4000);
         }
         draw();
         updateClock();
