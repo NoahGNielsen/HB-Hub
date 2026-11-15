@@ -33,7 +33,7 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
             AND (userIpv4AdresseOnAccountCreate = ? OR userIpv6AdresseOnAccountCreate = ?)');
         $statement->execute([$ipv4, $ipv6]);
         if ((int) $statement->fetchColumn() >= $accountsPerHour) {
-            return ['password' => 'Too many accounts have been made from this network in the last hour. Please try again later.'];
+            return ['password' => 'Der er oprettet for mange konti fra dette netværk den sidste time. Prøv igen senere.'];
         }
 
         $bannedAvatarId = $avatarBlob !== null ? hbHubBannedAvatarFind($db, $avatarBlob) : null;
@@ -86,11 +86,11 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
         if (($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userNameLower and userDiscordId are unique
             // The message names the key, and a Discord account only gets this far when it was linked in the meantime
             return str_contains($e->getMessage(), 'userDiscordId')
-                ? ['name' => 'That Discord account has just been linked to another HB Hub account. Choose "Don\'t link it" to sign up without it.']
-                : ['name' => 'That name is already taken. Please choose another one.'];
+                ? ['name' => 'Den Discord-konto er lige blevet koblet til en anden HB Hub-konto. Vælg "Kobl den ikke til" for at oprette dig uden den.']
+                : ['name' => 'Det navn er allerede taget. Vælg et andet.'];
         }
         error_log('Onboarding: could not create the account: ' . $e->getMessage());
-        return ['password' => 'Something went wrong creating your account. Please try again.'];
+        return ['password' => 'Noget gik galt, da din konto skulle oprettes. Prøv igen.'];
     }
 
     if ($bannedAvatarId !== null) {

@@ -201,7 +201,13 @@ function hbHubLoginUnlockAll(PDO $db, int $userId): void
         ->execute([$userId]);
 }
 
-function hbHubLoginLockedMessage(int $minutes): string
+/**
+ * The message for a locked account. In Danish ($danish) for the login page, which is public; in English for settings.
+ */
+function hbHubLoginLockedMessage(int $minutes, bool $danish = false): string
 {
+    if ($danish) {
+        return 'Kontoen er låst på denne enhed. Prøv igen om ' . $minutes . ($minutes === 1 ? ' minut.' : ' minutter.');
+    }
     return 'This account is locked on this device. Please try again in ' . $minutes . ($minutes === 1 ? ' minute.' : ' minutes.');
 }

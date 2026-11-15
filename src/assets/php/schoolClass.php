@@ -90,16 +90,16 @@ function hbHubClassFormValues(array $settings): array
 
 /**
  * Why the picked year and field can't be saved, or null when they can. The field only counts for 1. to 3. year.
- * $canBeGraduate is for settings, where a graduate can stay one.
+ * $canBeGraduate is for settings, where a graduate can stay one. $danish is for onboarding, which is in Danish.
  */
-function hbHubClassError(string $year, string $field, bool $canBeGraduate = false): ?string
+function hbHubClassError(string $year, string $field, bool $canBeGraduate = false, bool $danish = false): ?string
 {
     $isHtx = in_array($year, HBHUB_CLASS_YEARS, true) || ($canBeGraduate && $year === HBHUB_CLASS_GRADUATE);
     if (!$isHtx && $year !== HBHUB_CLASS_NOT_HTX) {
-        return 'Please choose your year.';
+        return $danish ? 'Vælg din årgang.' : 'Please choose your year.';
     }
     if ($isHtx && !in_array($field, HBHUB_CLASS_FIELDS, true)) {
-        return 'Please choose your field of study.';
+        return $danish ? 'Vælg din studieretning.' : 'Please choose your field of study.';
     }
     return null;
 }

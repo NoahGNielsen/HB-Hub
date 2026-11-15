@@ -22,10 +22,10 @@ $loginError = null;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/discord.php';
 $loginHasDiscord = hbHubDiscordClient($siteConfig) !== null;
 $loginError = match ($_SERVER['REQUEST_METHOD'] === 'GET' ? ($_GET['discord'] ?? null) : null) {
-    'notLinked' => 'That Discord account isn\'t linked to an HB Hub account. Log in with your name and password, then link Discord in your settings.',
-    'banned' => 'This account has been banned.',
-    'failed' => 'Logging in with Discord didn\'t work. Please try again.',
-    'expired' => 'That took too long. Please try logging in with Discord again.',
+    'notLinked' => 'Den Discord-konto er ikke koblet til en HB Hub-konto. Log ind med dit navn og din adgangskode, og kobl Discord til under dine indstillinger.',
+    'banned' => 'Denne konto er blevet udelukket.',
+    'failed' => 'Det virkede ikke at logge ind med Discord. Prøv igen.',
+    'expired' => 'Det tog for lang tid. Prøv at logge ind med Discord igen.',
     default => null,
 };
 
@@ -56,10 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'can
     $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
 
     if ($loginName === '' || $password === '') {
-        $loginError = 'Please enter your name and password.';
+        $loginError = 'Skriv dit navn og din adgangskode.';
     } elseif (mb_strlen($loginName) > 35 || strlen($password) > 72) {
         // Longer than the userName column / what onboarding allows, so it can't match an account
-        $loginError = 'Wrong name or password.';
+        $loginError = 'Forkert navn eller adgangskode.';
     } else {
         $loginError = loginCheckDB($loginName, $password, $loginAttemptsMax, $loginLockoutMinutes, $loginNeedsTotp);
         if ($loginError === null && $loginNeedsTotp) {
@@ -77,27 +77,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? null) === 'can
 $loginIsTotpStep = loginPendingUserId() !== null;
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
     <script src="/assets/js/login.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/login.js') ?>" defer></script>
-    <title>Log in - HB Hub</title>
-    <meta name="description" content="Log in to HB Hub, the student-made chat, casino and games site for HANSENBERG Tekniske Gymnasium (HTX): your class chat, DMs, play chips and games.">
+    <title>Log ind - HB Hub</title>
+    <meta name="description" content="Log ind på HB Hub, den elevlavede chat-, casino- og spilside for HANSENBERG Tekniske Gymnasium (HTX): din klassechat, private beskeder, legechips og spil.">
 </head>
 <body>
     <main>
         <?php if ($loginIsTotpStep): ?>
         <form class="login login-totp" action="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post">
-            <h1>Two-factor login</h1>
+            <h1>Totrinslogin</h1>
 
             <section class="onboarding-step" aria-labelledby="login-q3">
-                <h2 id="login-q3"><label for="login-code">Enter the code from your authenticator app</label></h2>
+                <h2 id="login-q3"><label for="login-code">Skriv koden fra din godkendelsesapp</label></h2>
                 <div class="onboarding-input-wrap">
                     <input type="text" id="login-code" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" required
                            autocomplete="one-time-code" autofocus aria-describedby="login-code-hint">
                 </div>
-                <p class="onboarding-hint" id="login-code-hint">The 6 digit code for HB Hub. It changes every 30 seconds.</p>
+                <p class="onboarding-hint" id="login-code-hint">Den 6-cifrede kode til HB Hub. Den skifter hvert 30. sekund.</p>
             </section>
 
             <?php if ($loginError !== null): ?>
@@ -106,8 +106,8 @@ $loginIsTotpStep = loginPendingUserId() !== null;
 
             <div class="onboarding-nav">
                 <!-- Belongs to the form below this one, so pressing Enter in the code field logs in instead -->
-                <button type="submit" class="onboarding-btn" form="login-cancel-totp">Use another account</button>
-                <button type="submit" class="onboarding-btn onboarding-btn-primary">Log in</button>
+                <button type="submit" class="onboarding-btn" form="login-cancel-totp">Brug en anden konto</button>
+                <button type="submit" class="onboarding-btn onboarding-btn-primary">Log ind</button>
             </div>
         </form>
         <form id="login-cancel-totp" action="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" hidden>
@@ -115,10 +115,10 @@ $loginIsTotpStep = loginPendingUserId() !== null;
         </form>
         <?php else: ?>
         <form class="login" action="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post">
-            <h1>Welcome back!</h1>
+            <h1>Velkommen tilbage!</h1>
 
             <section class="onboarding-step" aria-labelledby="login-q1">
-                <h2 id="login-q1"><label for="login-name">What's your username?</label></h2>
+                <h2 id="login-q1"><label for="login-name">Hvad er dit brugernavn?</label></h2>
                 <div class="onboarding-input-wrap">
                     <input type="text" id="login-name" name="name" maxlength="35" required autocomplete="username" aria-describedby="login-name-about"
                            value="<?= htmlspecialchars($loginName) ?>"<?= $loginName === '' ? ' autofocus' : '' ?>>
@@ -126,7 +126,7 @@ $loginIsTotpStep = loginPendingUserId() !== null;
             </section>
 
             <section class="onboarding-step onboarding-reveal" aria-labelledby="login-q2" data-password-step>
-                <h2 id="login-q2"><label for="login-password">What's your password?</label></h2>
+                <h2 id="login-q2"><label for="login-password">Hvad er din adgangskode?</label></h2>
                 <div class="onboarding-input-wrap">
                     <input type="password" id="login-password" name="password" maxlength="72" required autocomplete="current-password"<?= $loginName !== '' ? ' autofocus' : '' ?>>
                 </div>
@@ -137,17 +137,17 @@ $loginIsTotpStep = loginPendingUserId() !== null;
             <?php endif; ?>
 
             <div class="onboarding-nav">
-                <button type="button" class="onboarding-btn onboarding-btn-primary" data-action="next" hidden>Next</button>
-                <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Log in</button>
+                <button type="button" class="onboarding-btn onboarding-btn-primary" data-action="next" hidden>Næste</button>
+                <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Log ind</button>
             </div>
 
             <?php if ($loginHasDiscord): ?>
-                <p class="userMgmt-or"><span>or</span></p>
+                <p class="userMgmt-or"><span>eller</span></p>
                 <!-- Belongs to the form below this one, so it doesn't need the name and password -->
-                <button type="submit" class="onboarding-btn userMgmt-discord" form="login-discord"><?= hbHubDiscordLogo() ?>Log in with Discord</button>
+                <button type="submit" class="onboarding-btn userMgmt-discord" form="login-discord"><?= hbHubDiscordLogo() ?>Log ind med Discord</button>
             <?php endif; ?>
 
-            <p class="userMgmt-switch">New here? <a href="/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>">Sign Up!</a></p>
+            <p class="userMgmt-switch">Ny her? <a href="/onboarding<?= htmlspecialchars(hbHubReturnQuery()) ?>">Opret en konto!</a></p>
         </form>
         <?php if ($loginHasDiscord): ?>
         <form id="login-discord" action="/discord<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" hidden>

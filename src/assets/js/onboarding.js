@@ -52,7 +52,7 @@
         submitBtn.hidden = !isLast;
         updateNextLabel();
 
-        counter.textContent = `Step ${index + 1} of ${steps.length}`;
+        counter.textContent = `Trin ${index + 1} af ${steps.length}`;
         progressSegments.forEach((segment, i) => {
             segment.classList.toggle('is-done', i < index);
             segment.classList.toggle('is-current', i === index);
@@ -76,7 +76,7 @@
         const step = steps[current];
         const skippable = (avatarInput && step.contains(avatarInput) && !avatarInput.required && avatarInput.files.length === 0)
             || (description && step.contains(description) && !description.required && description.value.trim() === '');
-        nextBtn.textContent = skippable ? 'Skip' : 'Next';
+        nextBtn.textContent = skippable ? 'Spring over' : 'Næste';
     }
 
     backBtn.addEventListener('click', () => {
@@ -150,12 +150,12 @@
             }
             if (!avatarTypes.includes(file.type)) {
                 resetAvatar();
-                showAvatarError('Please upload a PNG, JPEG, GIF or WebP image.');
+                showAvatarError('Upload et billede i PNG, JPEG, GIF eller WebP.');
                 return;
             }
             if (file.size > avatarMaxBytes) {
                 resetAvatar();
-                showAvatarError(`That picture is too big. Please choose one under ${avatarInput.dataset.maxLabel}.`);
+                showAvatarError(`Billedet er for stort. Vælg et under ${avatarInput.dataset.maxLabel}.`);
                 return;
             }
 
@@ -195,7 +195,7 @@
     function checkDescription() {
         const minLength = Number(description.dataset.minLength) || 0;
         const length = description.value.trim().length;
-        description.setCustomValidity(length > 0 && length < minLength ? `Please write at least ${minLength} characters.` : '');
+        description.setCustomValidity(length > 0 && length < minLength ? `Skriv mindst ${minLength} tegn.` : '');
     }
     description?.addEventListener('input', () => {
         checkDescription();
@@ -209,8 +209,8 @@
         nameEmailWarning.hidden = !isEmail;
         nameTakenError.hidden = isEmail || !nameTaken;
         let message = '';
-        if (isEmail) message = 'That looks like an email address. Pick a name or nickname instead.';
-        else if (nameTaken) message = 'That name is already taken. Please choose another one.';
+        if (isEmail) message = 'Det ligner en e-mailadresse. Vælg et navn eller kælenavn i stedet.';
+        else if (nameTaken) message = 'Det navn er allerede taget. Vælg et andet.';
         nameInput.setCustomValidity(message);
     }
 
@@ -293,13 +293,13 @@
         const isCommon = commonPasswords !== null && commonPasswords.has(value.toLowerCase());
 
         let message = '';
-        if (value === '') message = 'Please choose a password.';
-        else if (!met.length) message = `Your password needs to be at least ${passwordMinLength} characters.`;
+        if (value === '') message = 'Vælg en adgangskode.';
+        else if (!met.length) message = `Din adgangskode skal være på mindst ${passwordMinLength} tegn.`;
         else if (charTypes < passwordCharTypes) {
             message = passwordCharTypes === 4
-                ? 'Your password needs lowercase letters, uppercase letters, numbers and special characters.'
-                : `Your password needs at least ${passwordCharTypes} of: lowercase letters, uppercase letters, numbers and special characters.`;
-        } else if (isCommon) message = 'That password is too common. Please choose another one.';
+                ? 'Din adgangskode skal have små bogstaver, store bogstaver, tal og specialtegn.'
+                : `Din adgangskode skal have mindst ${passwordCharTypes} af: små bogstaver, store bogstaver, tal og specialtegn.`;
+        } else if (isCommon) message = 'Den adgangskode er for almindelig. Vælg en anden.';
         password.setCustomValidity(message);
 
         // Meter is the same whatever the rules are: one point per character type, plus one each for 8+ and 12+ characters
@@ -315,11 +315,11 @@
         strengthBar.style.width = level === 'none' ? '0%' : `${((isCommon ? 1 : Math.max(points, 1)) / 6) * 100}%`;
         strengthLabel.textContent = {
             none: '',
-            common: 'Too common - this password is on a list of leaked passwords',
-            weak: 'Too weak',
-            fair: 'Weak',
-            good: 'Good',
-            strong: 'Strong',
+            common: 'For almindelig - denne adgangskode er på en liste over lækkede adgangskoder',
+            weak: 'For svag',
+            fair: 'Svag',
+            good: 'God',
+            strong: 'Stærk',
         }[level];
 
         // Only ask for the password again once the first one is good enough
@@ -328,7 +328,7 @@
     }
 
     function checkPasswordsMatch() {
-        passwordConfirm.setCustomValidity(passwordConfirm.value === password.value ? '' : 'The passwords don\'t match.');
+        passwordConfirm.setCustomValidity(passwordConfirm.value === password.value ? '' : 'Adgangskoderne er ikke ens.');
     }
     password.addEventListener('input', updatePassword);
     passwordConfirm.addEventListener('input', checkPasswordsMatch);

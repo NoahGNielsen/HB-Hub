@@ -46,9 +46,21 @@ function hbHubLooksLikeEmail(string $text): bool
  * Why the name can't be used, or null when it's fine. Taken names are found when saving (userNameLower is unique).
  * $currentName is the name the account has now: keeping it is fine even if it's from before the allow list (or an
  * email address or a name shorter than HBHUB_USER_NAME_MIN from before those rules).
+ * $danish gives the messages in Danish, for onboarding (a public page, so in Danish); settings and admin use English.
  */
-function hbHubNameError(string $name, int $nameMax, ?string $currentName = null): ?string
+function hbHubNameError(string $name, int $nameMax, ?string $currentName = null, bool $danish = false): ?string
 {
+    if ($danish) {
+        return match (true) {
+            $name === '' => 'Vælg et brugernavn.',
+            $name !== $currentName && hbHubLooksLikeEmail($name) => 'Det ligner en e-mailadresse. Dit brugernavn kan ses af alle, så vælg et navn eller kælenavn i stedet - du skal ikke bruge en e-mail her.',
+            $name !== $currentName && !hbHubIsLatinText($name) => 'Navne kan kun bruge bogstaver fra det latinske alfabet (som a-z, æ, ø og å), tal, tegnsætning og emoji.',
+            $name !== $currentName && mb_strlen($name) < HBHUB_USER_NAME_MIN => 'Brug mindst ' . HBHUB_USER_NAME_MIN . ' tegn.',
+            mb_strlen($name) > $nameMax => "Hold det på højst $nameMax tegn.",
+            hbHubIsReservedUserName($name) => 'Det navn kan ikke bruges. Vælg et andet.',
+            default => null,
+        };
+    }
     if ($name === '') {
         return 'Please choose a username.';
     } elseif ($name !== $currentName && hbHubLooksLikeEmail($name)) {

@@ -12,6 +12,8 @@
 // session.php sends visitors who aren't logged in) counts as /login, and /index as /. Error pages (anything
 // that isn't a 200) are noindex, so they get none.
 //
+// Public pages (in Danish) set $headerLocale = 'da_DK' first for og:locale; the app behind the login is en_GB.
+//
 // Pages under the frontpage's top bar (homeNav.php) instead of the app's nav panel set $headerHomeNav = true before
 // including this, so they don't wait for navPanel.css, which they don't use.
 //
@@ -70,7 +72,7 @@ $headerKeywords = array_unique([
 <meta name="keywords" content="<?= htmlspecialchars(implode(', ', $headerKeywords)) ?>">
 <meta property="og:site_name" content="HB Hub">
 <meta property="og:type" content="website">
-<meta property="og:locale" content="en_GB">
+<meta property="og:locale" content="<?= htmlspecialchars($headerLocale ?? 'en_GB') ?>">
 <meta property="og:image" content="https://hbhub.noahgajnielsen.dk/assets/images/shareImage.png?v=<?= filemtime(__DIR__ . '/../images/shareImage.png') ?>">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
