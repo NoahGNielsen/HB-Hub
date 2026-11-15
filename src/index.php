@@ -207,8 +207,8 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
             </p>
             <p>
                 Når timen er slut, kan I spille Matador, skak og UNO mod hinanden, eller du kan tage en runde Wordle,
-                Minesweeper, Sudoku eller Ore Mining Inc. I casinoet er der Blackjack, Baccarat, Roulette og Slots, spillet
-                med chips, der ikke er rigtige penge.
+                Minesweeper, Sudoku eller Ore Mining Inc. I casinoet kan du spille Blackjack, Baccarat, Roulette og Slots
+                med chips.
             </p>
             <p>
                 HB Hub er lavet og drevet af en elev, ikke af HANSENBERG selv. Siden er gratis, kører direkte i browseren,
