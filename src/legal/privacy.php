@@ -372,7 +372,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li><strong>Medspillere</strong> kan se dine træk og spillets chat.</li>
                             <li>
                                 <strong>Side-admins</strong> kan i adminpanelet se alle oplysninger om en konto, herunder beskeder i
-                                alle chats (også slettede, og slettede beskeder i 3 dage), IP-adresser, logins, bandlyste billeder, feedback, nedbrudsrapporter,
+                                alle chats (også slettede beskeder i 3 dage), IP-adresser, logins, bandlyste billeder, feedback, nedbrudsrapporter,
                                 fejlrapporter og sidevisningstal. Adminpanelet viser oplysninger om dine vedhæftede filer (navn,
                                 størrelse, chat og billetter) og dit bannerbillede, men åbner ikke filerne, selvom sidens ejer har
                                 adgang til dem på serveren. Side-admins kan slette dine vedhæftede filer og ændre dit antal billetter.
