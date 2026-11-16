@@ -922,6 +922,7 @@ CREATE TABLE `HBHub-RouletteSpins` (
 CREATE TABLE `HBHub-RouletteTable` (
   `tableId` tinyint UNSIGNED NOT NULL COMMENT 'Always 1: the whole site shares one Roulette table. Made by the code the first time it''s needed',
   `tableRound` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'The round being bet on, or the one that was just spun. Counts up',
+  `tableStartedAt` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in ms of the first bet on tableRound, which starts its clock. NULL while nobody has bets on it',
   `tableClosesAt` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in ms when betting on tableRound closes and the wheel spins. NULL while nobody has bets on it',
   `tableNumber` tinyint UNSIGNED DEFAULT NULL COMMENT '0-36, where the ball landed in tableRound. NULL until it''s spun',
   `tableSpunAt` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in ms when tableRound was spun',

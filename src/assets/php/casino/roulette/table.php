@@ -6,7 +6,10 @@
 // A round goes like this (hbHubRoulettePhase()):
 // - open: nobody has bets on the table. The first bet starts the round, and betting closes HBHUB_ROULETTE_BET_MS later.
 // - betting: anyone can put bets on and take them off until then. A player who presses Ready can't change theirs
-//   anymore, and when every player with bets is ready, betting closes straight away.
+//   anymore, and when every player with bets is ready, betting closes early, but never before
+//   HBHUB_ROULETTE_MIN_BET_MS after the round's first bet: otherwise whoever bets first (Space bets again and is ready
+//   in one go) could spin the wheel the moment it's open, round after round, and nobody else would ever get a bet on.
+//   Someone who joins in that time, and isn't ready, puts the full clock back.
 // - the wheel spins (hbHubRouletteTableSpin()): one ball for everyone. Only then are the bets taken from the chips and
 //   the winning bets paid, each player's spin logged in HBHub-RouletteSpins (spinRound is the round), and the bets are
 //   cleared off the table. A player who doesn't have the chips for their bets by then (spent at another table, say),
@@ -21,6 +24,7 @@ require_once __DIR__ . '/../../userAvatar.php';
 
 const HBHUB_ROULETTE_TABLE_ID = 1; // tableId in HBHub-RouletteTable, its only row
 const HBHUB_ROULETTE_BET_MS = 20000; // how long betting stays open after the round's first bet
+const HBHUB_ROULETTE_MIN_BET_MS = 6000; // betting stays open at least this long after the first bet, even when everyone is ready
 const HBHUB_ROULETTE_SPIN_MS = 5000; // how long the wheel turns (roulette.js)
 const HBHUB_ROULETTE_RESULT_MS = 9000; // from the spin until the next round's bets can go on: the wheel, then the result
 const HBHUB_ROULETTE_RECENT = 12; // the table's last numbers, shown next to the wheel
@@ -38,11 +42,11 @@ function hbHubRouletteNow(): int
 /**
  * The table's row, locked until the transaction ends when $lock (only inside one). Made the first time.
  *
- * @return array{round: int, closesAt: ?int, number: ?int, spunAt: ?int, version: int}
+ * @return array{round: int, startedAt: ?int, closesAt: ?int, number: ?int, spunAt: ?int, version: int}
  */
 function hbHubRouletteTable(PDO $db, bool $lock = false): array
 {
-    $statement = $db->prepare('SELECT tableRound, tableClosesAt, tableNumber, tableSpunAt, tableVersion
+    $statement = $db->prepare('SELECT tableRound, tableStartedAt, tableClosesAt, tableNumber, tableSpunAt, tableVersion
         FROM `HBHub-RouletteTable` WHERE tableId = ?' . ($lock ? ' FOR UPDATE' : ''));
     $statement->execute([HBHUB_ROULETTE_TABLE_ID]);
     $row = $statement->fetch();
@@ -55,6 +59,7 @@ function hbHubRouletteTable(PDO $db, bool $lock = false): array
     $number = static fn (mixed $value): ?int => $value !== null ? (int) $value : null;
     return [
         'round' => (int) $row['tableRound'],
+        'startedAt' => $number($row['tableStartedAt']),
         'closesAt' => $number($row['tableClosesAt']),
         'number' => $number($row['tableNumber']),
         'spunAt' => $number($row['tableSpunAt']),
@@ -66,7 +71,7 @@ function hbHubRouletteTable(PDO $db, bool $lock = false): array
  * Where the round is: 'open' (no bets on it, the first one starts it), 'betting', 'due' (betting has closed, so the
  * wheel spins on this request) or 'spinning' (the wheel turns and the result is shown, no bets go on).
  *
- * @param array{round: int, closesAt: ?int, number: ?int, spunAt: ?int, version: int} $table
+ * @param array{round: int, startedAt: ?int, closesAt: ?int, number: ?int, spunAt: ?int, version: int} $table
  */
 function hbHubRoulettePhase(array $table, int $now): string
 {
@@ -84,7 +89,7 @@ function hbHubRoulettePhase(array $table, int $now): string
  * error code, or null when it went fine. Returns the table after, and $do's error.
  *
  * @param ?callable(array &$table, int $now): ?string $do
- * @return array{0: array{round: int, closesAt: ?int, number: ?int, spunAt: ?int, version: int}, 1: ?string}
+ * @return array{0: array{round: int, startedAt: ?int, closesAt: ?int, number: ?int, spunAt: ?int, version: int}, 1: ?string}
  */
 function hbHubRouletteTablePlay(PDO $db, ?callable $do = null): array
 {
@@ -103,9 +108,9 @@ function hbHubRouletteTablePlay(PDO $db, ?callable $do = null): array
 
         if ($table !== $before) {
             $table['version']++;
-            $db->prepare('UPDATE `HBHub-RouletteTable` SET tableRound = ?, tableClosesAt = ?, tableNumber = ?,
+            $db->prepare('UPDATE `HBHub-RouletteTable` SET tableRound = ?, tableStartedAt = ?, tableClosesAt = ?, tableNumber = ?,
                     tableSpunAt = ?, tableVersion = ? WHERE tableId = ?')
-                ->execute([$table['round'], $table['closesAt'], $table['number'], $table['spunAt'], $table['version'],
+                ->execute([$table['round'], $table['startedAt'], $table['closesAt'], $table['number'], $table['spunAt'], $table['version'],
                     HBHUB_ROULETTE_TABLE_ID]);
         }
         return [$table, $error];
@@ -170,7 +175,7 @@ function hbHubRouletteTableBet(PDO $db, array &$table, int $userId, array $bets,
         if ($bets === []) {
             return null;
         }
-        $table = ['round' => $table['round'] + 1, 'closesAt' => null, 'number' => null, 'spunAt' => null] + $table;
+        $table = ['round' => $table['round'] + 1, 'startedAt' => null, 'closesAt' => null, 'number' => null, 'spunAt' => null] + $table;
     }
 
     $statement = $db->prepare('SELECT betReady FROM `HBHub-RouletteBets` WHERE userId = ? AND betRound = ?');
@@ -197,11 +202,16 @@ function hbHubRouletteTableBet(PDO $db, array &$table, int $userId, array $bets,
     $statement->execute([$table['round']]);
     $counts = $statement->fetch();
     if ((int) $counts['players'] === 0) {
-        $table['closesAt'] = null; // the last bets were taken off: open again, and the next bet starts the clock over
+        // The last bets were taken off: open again, and the next bet starts the clock over
+        $table['startedAt'] = null;
+        $table['closesAt'] = null;
     } else {
-        $table['closesAt'] ??= $now + HBHUB_ROULETTE_BET_MS;
+        // A round from before tableStartedAt was a column started when its full clock did
+        $table['startedAt'] ??= $table['closesAt'] !== null ? $table['closesAt'] - HBHUB_ROULETTE_BET_MS : $now;
+        $table['closesAt'] = $table['startedAt'] + HBHUB_ROULETTE_BET_MS; // also puts it back when a new player joins
         if ((int) $counts['ready'] === (int) $counts['players']) {
-            $table['closesAt'] = min($table['closesAt'], $now); // everyone is ready: spin now
+            // Everyone is ready: spin now, but give the others at the table a moment to join first
+            $table['closesAt'] = min($table['closesAt'], max($now, $table['startedAt'] + HBHUB_ROULETTE_MIN_BET_MS));
         }
     }
     $table['version']++; // the bets changed, so the table did too, even when nothing in its row did
@@ -253,7 +263,7 @@ function hbHubRoulettePeople(PDO $db, array $userIds): array
  *   net, wins: {bet: what it paid}}]}, or null. Players whose bets were taken off at the spin aren't in it.
  * - recent: the table's last numbers, newest first, [{number, color}]
  *
- * @param array{round: int, closesAt: ?int, number: ?int, spunAt: ?int, version: int} $table
+ * @param array{round: int, startedAt: ?int, closesAt: ?int, number: ?int, spunAt: ?int, version: int} $table
  */
 function hbHubRouletteTableView(PDO $db, array $table, int $userId, int $now): array
 {

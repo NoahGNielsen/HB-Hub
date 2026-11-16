@@ -20,7 +20,10 @@ require_once __DIR__ . '/table.php';
         Medlemmer spiller alle ved ét bord: alle ser alles indsatser, og der bliver drejet én kugle for dem alle. Den første
         indsats på bordet starter et ur på <?= intdiv(HBHUB_ROULETTE_BET_MS, 1000) ?> sekunder, og alle kan lægge indsatser på
         eller tage dem af, indtil det løber ud. Tryk på Ready (eller Mellemrum), når du er færdig: så kan dine indsatser ikke
-        ændres, og når alle med indsatser er klar, drejer hjulet med det samme.
+        ændres, og når alle med indsatser er klar, drejer hjulet med det samme, dog tidligst
+        <?= intdiv(HBHUB_ROULETTE_MIN_BET_MS, 1000) ?> sekunder efter den første indsats, så de andre ved bordet også kan nå
+        at være med. Lægger en ny spiller indsatser i den tid, går uret tilbage til de fulde
+        <?= intdiv(HBHUB_ROULETTE_BET_MS, 1000) ?> sekunder.
     </li>
     <li>
         Dine chips bliver først taget, når hjulet drejer. Har du ikke chips nok til dine indsatser til den tid, fx fordi du
