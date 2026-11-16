@@ -236,7 +236,9 @@
             return;
         }
 
-        // The message first, then a moment before the pop-up goes (showBonus() leaves it be meanwhile)
+        // The message first, then a moment before the pop-up goes (showBonus() leaves it be meanwhile). The bar
+        // along its bottom runs out over that same moment (--bonus-pop-linger in navPanel.css).
+        bonus.style.setProperty('--bonus-pop-linger', BONUS_COLLECTED_MS + 'ms');
         bonus.classList.add('is-collected');
         bonusMessage.textContent = !wallet.claimed ? 'This bonus was already collected.'
             : 'You collected ' + formatChips(wallet.claimedAmount) + ' chips!'

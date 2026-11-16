@@ -324,61 +324,118 @@ a.nav-notification.is-unread:focus-visible {
 }
 
 /* The 3-hour bonus pop-up, in the bottom-right corner of casino pages while it can be collected (navPanel.php +
-   casino.js). Built like the cookie notice's corner box (mainStyle.css) on the other side, with a gold edge for the
-   casino's bonus colour. Above the bottom bar on a phone (further down). */
+   casino.js). A dark card lit gold from the corner its chip sits in: the chip in a slowly turning gold ring, the
+   amount big next to it, and a full-width gold Collect button that a shine runs over now and then. Once collected
+   the button makes way for a "You collected ..." line, and a gold bar along the bottom runs out over the time
+   casino.js keeps it up (--bonus-pop-linger, set from BONUS_COLLECTED_MS). Above the bottom bar on a phone
+   (further down). */
 .casino-bonus-pop {
   --casino-gold: #e8b931;
+  --casino-gold-deep: #c98a12;
+  --bonus-pop-linger: 4000ms;
   position: fixed;
   right: 16px;
   bottom: 16px;
   z-index: 190;
-  width: min(340px, calc(100vw - 32px));
-  padding: 14px 16px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px;
   box-sizing: border-box;
   display: grid;
   grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "badge text close"
+    "action action action"
+    "message message message";
   align-items: center;
-  gap: 4px 12px;
-  border-radius: 12px;
-  background: var(--secondary);
+  column-gap: 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--casino-gold) 55%, transparent);
+  border-radius: 16px;
+  background:
+    radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--casino-gold) 22%, transparent), transparent 55%),
+    var(--secondary);
   color: var(--text);
-  box-shadow: inset 0 0 0 2px var(--casino-gold), 0 8px 24px rgba(0, 0, 0, 0.3),
-    0 0 22px color-mix(in srgb, var(--casino-gold) 25%, transparent);
-  animation: casino-bonus-pop-in 0.35s ease;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 28px color-mix(in srgb, var(--casino-gold) 18%, transparent);
+  animation: casino-bonus-pop-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25);
 }
 
 .casino-bonus-pop[hidden] {
   display: none;
 }
 
+/* The chip in its ring: a gold sweep (::before) turns round behind a dark disc (::after) the chip sits on */
+.casino-bonus-pop-badge {
+  grid-area: badge;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.casino-bonus-pop-badge::before,
+.casino-bonus-pop-badge::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  z-index: -1;
+}
+
+.casino-bonus-pop-badge::before {
+  inset: 0;
+  background: conic-gradient(var(--casino-gold), transparent 40%, var(--casino-gold) 60%, transparent 90%, var(--casino-gold));
+  animation: casino-bonus-pop-spin 6s linear infinite;
+}
+
+.casino-bonus-pop-badge::after {
+  inset: 3px;
+  background: radial-gradient(circle at 35% 30%, #3a3220, #14171d 70%);
+}
+
 .casino-bonus-pop-icon {
-  grid-row: span 2;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  animation: casino-bonus-pop-bob 2.4s ease-in-out infinite;
+}
+
+.casino-bonus-pop-text {
+  grid-area: text;
+  min-width: 0;
 }
 
 .casino-bonus-pop-title {
   margin: 0;
-  font-size: 0.85rem;
+  color: var(--casino-gold);
+  font-size: 0.72rem;
   font-weight: 700;
-  opacity: 0.85;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .casino-bonus-pop-amount {
-  grid-column: 2;
-  margin: 0;
-  color: var(--casino-gold);
-  font-size: 1.25rem;
+  margin: 2px 0 0;
+  font-size: 1.6rem;
   font-weight: 800;
+  line-height: 1.1;
   font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+
+.casino-bonus-pop-unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.7;
 }
 
 .casino-bonus-pop-close {
-  grid-column: 3;
-  grid-row: 1;
-  justify-self: end;
+  grid-area: close;
+  align-self: start;
   width: 28px;
   height: 28px;
+  margin: -6px -6px 0 0;
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -387,7 +444,7 @@ a.nav-notification.is-unread:focus-visible {
   font: inherit;
   font-size: 1.2rem;
   line-height: 1;
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: pointer;
 }
 
@@ -396,27 +453,55 @@ a.nav-notification.is-unread:focus-visible {
   opacity: 1;
 }
 
+/* Gold, with a shine (::after) that runs across it every few seconds while it can be clicked */
 .casino-bonus-pop-claim {
-  grid-column: 3;
-  grid-row: 2;
-  padding: 8px 14px;
+  grid-area: action;
+  position: relative;
+  overflow: hidden;
+  margin-top: 14px;
+  padding: 11px 16px;
   border: none;
-  border-radius: 8px;
-  background: var(--casino-gold);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f6d35a, var(--casino-gold) 45%, var(--casino-gold-deep));
   color: #2a1d00;
   font: inherit;
-  font-weight: 700;
-  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 0 #8a5d08, 0 6px 14px rgba(0, 0, 0, 0.35);
   cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease;
+}
+
+.casino-bonus-pop-claim::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg);
+  animation: casino-bonus-pop-shine 3.5s ease-in-out 0.6s infinite;
 }
 
 .casino-bonus-pop-claim:hover:not(:disabled) {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
+}
+
+/* Pressed down onto its own edge */
+.casino-bonus-pop-claim:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #8a5d08, 0 3px 8px rgba(0, 0, 0, 0.35);
 }
 
 .casino-bonus-pop-claim:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+.casino-bonus-pop-claim:disabled::after {
+  display: none;
 }
 
 .casino-bonus-pop-close:focus-visible,
@@ -425,11 +510,12 @@ a.nav-notification.is-unread:focus-visible {
   outline-offset: 2px;
 }
 
-/* "You collected ...", or what went wrong (casino.js). Takes the whole width under the rest. */
+/* What went wrong under the button, or "You collected ..." in its place (casino.js) */
 .casino-bonus-pop-message {
-  grid-column: 1 / -1;
-  margin: 6px 0 0;
+  grid-area: message;
+  margin: 10px 0 0;
   font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 .casino-bonus-pop-message:empty {
@@ -440,18 +526,93 @@ a.nav-notification.is-unread:focus-visible {
   color: #ff8a80;
 }
 
-/* Collected: the button goes and only the message stays, until casino.js hides it a moment later */
+/* Collected: the button goes, the message moves up into its place with a tick, the ring stops turning, the amount
+   gives a little bump and the bar along the bottom runs out until casino.js hides the pop-up */
+.casino-bonus-pop.is-collected {
+  grid-template-areas:
+    "badge text close"
+    "message message message";
+}
+
 .casino-bonus-pop.is-collected .casino-bonus-pop-claim {
-  visibility: hidden;
+  display: none;
+}
+
+.casino-bonus-pop.is-collected .casino-bonus-pop-message {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--casino-gold) 12%, transparent);
+  animation: casino-bonus-pop-fade 0.3s ease;
+}
+
+.casino-bonus-pop.is-collected .casino-bonus-pop-message:not(.is-error)::before {
+  content: "\2713\00a0";
+  color: var(--casino-gold);
+  font-weight: 800;
+}
+
+.casino-bonus-pop.is-collected .casino-bonus-pop-badge::before {
+  animation-play-state: paused;
+}
+
+.casino-bonus-pop.is-collected .casino-bonus-pop-amount {
+  animation: casino-bonus-pop-bump 0.4s ease;
+}
+
+.casino-bonus-pop.is-collected::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--casino-gold);
+  transform-origin: left;
+  animation: casino-bonus-pop-linger var(--bonus-pop-linger) linear forwards;
 }
 
 @keyframes casino-bonus-pop-in {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
 }
 
+@keyframes casino-bonus-pop-spin {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes casino-bonus-pop-bob {
+  50% { transform: translateY(-2px) rotate(-8deg); }
+}
+
+@keyframes casino-bonus-pop-shine {
+  0%, 60% { left: -60%; }
+  100% { left: 130%; }
+}
+
+@keyframes casino-bonus-pop-fade {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+@keyframes casino-bonus-pop-bump {
+  40% { transform: scale(1.12); color: var(--casino-gold); }
+}
+
+@keyframes casino-bonus-pop-linger {
+  to { transform: scaleX(0); }
+}
+
+/* No turning, bobbing or shine; the bar along the bottom still runs out (it shows how long the message stays) */
 @media (prefers-reduced-motion: reduce) {
-  .casino-bonus-pop {
+  .casino-bonus-pop,
+  .casino-bonus-pop-badge::before,
+  .casino-bonus-pop-icon,
+  .casino-bonus-pop.is-collected .casino-bonus-pop-message,
+  .casino-bonus-pop.is-collected .casino-bonus-pop-amount {
     animation: none;
+  }
+
+  .casino-bonus-pop-claim::after {
+    display: none;
   }
 }
 

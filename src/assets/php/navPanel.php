@@ -155,10 +155,17 @@ $navFeedbackHref = $navOnFeedback
     <aside class="casino-bonus-pop" aria-label="3-hour bonus" data-casino-bonus
            data-ready="<?= $navCasinoBonus['ready'] ? '1' : '0' ?>" data-available="<?= $navCasinoBonus['available'] ? '1' : '0' ?>"
            data-seconds="<?= $navCasinoBonus['seconds'] ?>" data-amount="<?= $navCasinoBonus['amount'] ?>"<?= $navCasinoBonus['ready'] ? '' : ' hidden' ?>>
-        <img class="casino-bonus-pop-icon" src="/assets/images/icons/chip.svg" alt="">
-        <p class="casino-bonus-pop-title">Your 3-hour bonus is ready</p>
+        <span class="casino-bonus-pop-badge" aria-hidden="true">
+            <img class="casino-bonus-pop-icon" src="/assets/images/icons/chip.svg" alt="">
+        </span>
+        <div class="casino-bonus-pop-text">
+            <p class="casino-bonus-pop-title">3-hour bonus ready</p>
+            <p class="casino-bonus-pop-amount">
+                +<span data-casino-bonus-amount><?= number_format($navCasinoBonus['amount']) ?></span>
+                <span class="casino-bonus-pop-unit">chips</span>
+            </p>
+        </div>
         <button type="button" class="casino-bonus-pop-close" aria-label="Hide" title="Hide" data-casino-bonus-close>&times;</button>
-        <p class="casino-bonus-pop-amount">+<span data-casino-bonus-amount><?= number_format($navCasinoBonus['amount']) ?></span> chips</p>
         <button type="button" class="casino-bonus-pop-claim" data-casino-bonus-claim>Collect</button>
         <p class="casino-bonus-pop-message" role="status" data-casino-bonus-message></p>
     </aside>
