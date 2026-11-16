@@ -87,6 +87,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <script src="/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
     <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <title>Matador leaderboard - HB Hub</title>
@@ -135,7 +136,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                                         <a class="casino-player" href="<?= htmlspecialchars(hbHubProfileUrl($row['userId'], $_SERVER['REQUEST_URI'])) ?>">
                                             <span class="casino-avatar" aria-hidden="true">
                                                 <?php if ($avatarSrc !== null): ?>
-                                                    <img src="<?= htmlspecialchars($avatarSrc) ?>" alt="" loading="lazy">
+                                                    <img data-queued-picture="<?= htmlspecialchars($avatarSrc) ?>" alt=""><noscript><img src="<?= htmlspecialchars($avatarSrc) ?>" alt="" loading="lazy"></noscript>
                                                 <?php else: ?>
                                                     <?= htmlspecialchars(mb_strtoupper(mb_substr($row['player'], 0, 1))) ?>
                                                 <?php endif; ?>

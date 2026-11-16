@@ -13,7 +13,7 @@
 //       answer: accept, decline or cancel), minimize (trade: its id - the player it was offered to minimized its
 //       pop-up, so it runs out after 30 seconds unless they answer, game.php's hbHubMatadorMinimizeTrade()) and leave
 //     For the host: start, invite (user), giveSeat (seat, user), saveStop, pause and resume (room.php's
-//       hbHubMatadorPause()), and settings (edition: classic or htx, dice: 1 or 2, jailRent: yes, no or bank,
+//       hbHubMatadorPause()), and settings (edition: classic, htx or kaos, dice: 1 or 2, jailRent: yes, no or bank,
 //       parkingPot: on or off, building: group, uneven or any - before the game starts)
 //     chat (text) writes in the game's chat (chat.php), for anyone in the game
 //   Anything the player whose turn it is does (not the chat) starts their 30 seconds again (hbHubMatadorPlayerActed()).

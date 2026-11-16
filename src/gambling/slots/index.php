@@ -15,7 +15,7 @@
 // It's also the guest Slots at /play/slots, for visitors without an account: guestGames/slots/ sets $guestGame and
 // includes this page (see assets/php/guestGames/guestGames.php). Then it has the frontpage's top bar, the guest bar
 // (with the play chips, which start over every time) and the text for search engines, no leaderboard or spins from
-// before, and it spins through /play/slots/spin (data-api), which keeps the play chips in a sealed token.
+// before, and it spins through /play/slots/spin (data-api, with data-guest for slots.js).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/slots.php';
@@ -86,7 +86,8 @@ function slotsHistoryLabel(array $spin): string
     <?php else: ?>
         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <?php endif; ?>
-    <main class="sl" data-slots data-api="<?= $guestGame !== null ? '/play/slots/spin' : '/gambling/slots/spin' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?> data-chips="<?= $navCasinoChips ?>"
+    <main class="sl" data-slots data-chips="<?= $navCasinoChips ?>"
+          data-api="<?= $guestGame !== null ? '/play/slots/spin' : '/gambling/slots/spin' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>
           data-bet-step="<?= HBHUB_SLOTS_BET_STEP ?>" data-min-bet="<?= HBHUB_SLOTS_MIN_BET ?>"
           data-reels="<?= htmlspecialchars(json_encode(HBHUB_SLOTS_REELS)) ?>"
           data-symbols="<?= htmlspecialchars(json_encode(HBHUB_SLOTS_SYMBOLS, JSON_UNESCAPED_UNICODE)) ?>"
@@ -182,11 +183,13 @@ function slotsHistoryLabel(array $spin): string
                 <p class="sl-result" role="status" data-sl-result>Pick a bet and pull the lever.</p>
                 <p class="sl-win" data-sl-win hidden></p>
                 <p class="sl-message" role="alert" data-sl-message></p>
-                <?php if ($guestGame !== null): ?>
-                    <p class="sl-hint" data-sl-broke hidden>You're out of chips. Reload the page for a new stack.</p>
-                <?php else: ?>
-                    <p class="sl-hint" data-sl-broke hidden>You're out of chips. <a href="/gambling/">Collect your daily chips</a></p>
-                <?php endif; ?>
+                <p class="sl-hint" data-sl-broke hidden>
+                    <?php if ($guestGame !== null): ?>
+                        You're out of chips. Reload the page for a new stack.
+                    <?php else: ?>
+                        You're out of chips. <a href="/gambling/">Collect your daily chips</a>
+                    <?php endif; ?>
+                </p>
             </div>
 
             <!-- The bet and the Spin button: the stepper over the quick bets on the left, the big button on the right -->

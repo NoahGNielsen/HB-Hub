@@ -15,9 +15,9 @@
 // with more than one, they're shown one at a time with what each paid.
 // All of it has sound effects too ("Sounds"), made with Web Audio rather than loaded, which the Sound button in the
 // header mutes (remembered in localStorage as hbHubSlotsSound).
-// The guest Slots at /play/slots (data-guest, see assets/php/guestGames/guestGames.php) spins through /play/slots/spin
-// the same way, but its play chips come and go as a sealed token with every spin, kept here in the page only (so they
-// start over when it's opened again), and a guest who runs out gets a new stack ("notice").
+// The guest Slots at /play/slots (data-guest, see assets/php/guestGames/guestGames.php) plays the same, but its play
+// chips come and go in a sealed token with every spin, kept here in the page only (so they start over when it's opened
+// again), and a guest who runs out gets a new stack with the spin that emptied them (the answer's notice).
 (() => {
     const root = document.querySelector('[data-slots]');
     if (!root) return;
@@ -270,7 +270,7 @@
     }
 
     // Sends the spin, and sends it again (with the same id, so it still only counts once) if the answer got lost.
-    // A guest's go with their token, and every answer brings the next one.
+    // A guest's goes with their token, and the answer's new one is kept for the next spin.
     async function send(body) {
         if (IS_GUEST) body.set('token', guestToken);
         for (let attempt = 0; attempt < 3; attempt++) {

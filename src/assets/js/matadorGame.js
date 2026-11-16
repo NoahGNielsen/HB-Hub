@@ -22,7 +22,9 @@
 //
 // The room's settings (game.settings: edition, dice, jailRent, parkingPot, buildAnyStreet and buildUnevenly) are shown in their
 // dialog, where the host changes them before the game starts. The edition decides the board, which the page draws
-// (data-edition), so the page is loaded again when the host picks another one. With buildAnyStreet, the Build button works on a street
+// (data-edition), so the page is loaded again when the host picks another one. In Kaos the fields are in a random
+// order (game.layout), which changes when the game starts and with the Kaos card: then the field buttons are moved to
+// their new places (moveFields()), without loading the page. With buildAnyStreet, the Build button works on a street
 // without the rest of its colour. buildUnevenly (houses don't have to go up evenly) only changes what the server
 // allows, so it's only in the dialog here. With parkingPot, what's in Parkering's account (game.pot) is shown on its field. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
 // on (after asking) and Backspace leaves it with the bank, and Enter ends the turn.
@@ -61,6 +63,7 @@
     const die = find('[data-mt-die]');
     const statusText = find('[data-mt-status]');
     const boardFrame = find('[data-mt-board-frame]');
+    const board = find('[data-mt-board]');
     const timer = find('[data-mt-timer]');
     const timerFill = find('[data-mt-timer-fill]');
     const timerText = find('[data-mt-timer-text]');
@@ -84,24 +87,64 @@
     const chatForm = find('[data-mt-chat-form]');
     const chatText = find('[data-mt-chat-text]');
 
-    // The board's fields, by number, with what the page says about them
-    const FIELDS = [...root.querySelectorAll('[data-field]')]
-        .sort((a, b) => Number(a.dataset.field) - Number(b.dataset.field))
-        .map((element) => ({
-            element,
-            name: element.dataset.name,
-            type: element.dataset.type,
-            group: element.dataset.group ?? null,
-            price: Number(element.dataset.price ?? 0),
-            house: Number(element.dataset.house ?? 0),
-            rent: element.dataset.rent ? element.dataset.rent.split(',').map(Number) : [],
-            houses: element.querySelector('[data-mt-houses]'),
-            tokens: element.querySelector('[data-mt-tokens]'),
-        }));
-    const GROUP_FIELDS = {};
-    FIELDS.forEach((field, number) => {
-        if (field.group !== null) (GROUP_FIELDS[field.group] ??= []).push(number);
-    });
+    // The board's fields, with what the page says about them. base is the field's number in its edition (data-base),
+    // which only differs from where it is (data-field) in Kaos, where the fields are mixed up (game.layout)
+    const ALL_FIELDS = [...root.querySelectorAll('[data-field]')].map((element) => ({
+        element,
+        base: Number(element.dataset.base),
+        name: element.dataset.name,
+        type: element.dataset.type,
+        group: element.dataset.group ?? null,
+        price: Number(element.dataset.price ?? 0),
+        house: Number(element.dataset.house ?? 0),
+        rent: element.dataset.rent ? element.dataset.rent.split(',').map(Number) : [],
+        houses: element.querySelector('[data-mt-houses]'),
+        tokens: element.querySelector('[data-mt-tokens]'),
+    }));
+    const FIELDS = []; // by where they are on the board (data-field), which is what the game's numbers mean
+    const GROUP_FIELDS = {}; // the field numbers in each group
+    let shownLayout = root.dataset.layout; // the Kaos layout the board is drawn in ('' when there's none)
+
+    // Fills FIELDS and GROUP_FIELDS from where the fields are on the board
+    function indexFields() {
+        FIELDS.length = 0;
+        ALL_FIELDS.forEach((field) => (FIELDS[Number(field.element.dataset.field)] = field));
+        Object.keys(GROUP_FIELDS).forEach((group) => delete GROUP_FIELDS[group]);
+        FIELDS.forEach((field, number) => {
+            if (field.group !== null) (GROUP_FIELDS[field.group] ??= []).push(number);
+        });
+    }
+    indexFields();
+
+    // Where the field goes on the 11 x 11 board: [row, column, side] (game.php's gameFieldPlace(), the same numbers)
+    function fieldPlace(number) {
+        if (number <= 10) return [11, 11 - number, 'bottom'];
+        if (number < 20) return [11 - (number - 10), 1, 'left'];
+        if (number <= 30) return [1, 1 + (number - 20), 'top'];
+        return [1 + (number - 30), 11, 'right'];
+    }
+
+    // Kaos: the game's fields have been mixed up (at the start, or by the Kaos card), so each field moves to its new
+    // place. The open property card and trade dialog name fields by number, so they're closed.
+    function moveFields(layout) {
+        shownLayout = layout.join(',');
+        const byBase = Object.fromEntries(ALL_FIELDS.map((field) => [field.base, field]));
+        layout.forEach((base, number) => {
+            const element = byBase[base].element;
+            const [row, column, side] = fieldPlace(number);
+            element.classList.remove(...[...element.classList].filter((name) => /^mt-(r|c|side)-/.test(name)));
+            element.classList.add('mt-r-' + row, 'mt-c-' + column, 'mt-side-' + side);
+            element.dataset.field = String(number);
+        });
+        indexFields();
+        if (deedDialog.open) deedDialog.close();
+        if (tradeDialog.open) tradeDialog.close();
+        if (!isFirstDraw && !reduceMotion) {
+            board.classList.remove('is-kaos');
+            void board.offsetWidth; // so the animation starts again
+            board.classList.add('is-kaos');
+        }
+    }
 
     let version = null; // the game's version that's shown
     let revision = -1; // the room's revision in it, to tell older answers from newer ones
@@ -168,6 +211,7 @@
             location.reload(); // the host picked another edition: the page draws its board
             return;
         }
+        if (game.layout && game.layout.join(',') !== shownLayout) moveFields(game.layout); // Kaos
         turnEndsAt = game.timeLeft !== null ? performance.now() + game.timeLeft : null;
         hasAskedAtTurnEnd = false;
         tradeEndsAt = Object.fromEntries(game.trades.filter((trade) => trade.timeLeft !== null)
@@ -1250,7 +1294,7 @@
         return button(text, () => act(action, { field: String(deedField) }, deedMessage), { disabled });
     }
 
-    FIELDS.forEach((field, number) => field.element.addEventListener('click', () => openDeed(number)));
+    ALL_FIELDS.forEach((field) => field.element.addEventListener('click', () => openDeed(Number(field.element.dataset.field))));
     find('[data-mt-deed-close]').addEventListener('click', () => deedDialog.close());
     deedDialog.addEventListener('close', () => (deedField = null));
 

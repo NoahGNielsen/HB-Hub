@@ -2,6 +2,9 @@
 // A Matador game (?room=id). The board's fields are drawn here, with what they cost and take in rent (data-* for the
 // property cards); matadorGame.js puts the pieces, owners and houses on them and plays the game through
 // /games/matador/play. Only for the game the user is in - anyone else is sent to the Matador page, where games are joined.
+// Each field button has data-field (where it is) and data-base (its number in the edition's file): in Kaos the fields
+// are in the game's layout order (board.php), and matadorGame.js moves the buttons when the layout changes.
+// The mt-r-*, mt-c-* and mt-side-* classes come from gameFieldPlace(), which matadorGame.js's fieldPlace() copies.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/matador/room.php';
@@ -82,6 +85,7 @@ $gameTypeName = HBHUB_MATADOR_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
 // The board is drawn for the game's edition (board.php). When the host picks another one, matadorGame.js sees it's not
 // data-edition anymore and loads the page again.
 $gameEdition = hbHubMatadorSettings($room['state'])['edition'];
+$gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (null on the other boards, and before it starts)
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -98,7 +102,8 @@ $gameEdition = hbHubMatadorSettings($room['state'])['edition'];
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="mt" data-matador data-room="<?= $room['roomId'] ?>" data-turn-seconds="<?= HBHUB_MATADOR_TURN_SECONDS ?>"
-          data-trade-seconds="<?= HBHUB_MATADOR_TRADE_SECONDS ?>" data-edition="<?= htmlspecialchars($gameEdition) ?>">
+          data-trade-seconds="<?= HBHUB_MATADOR_TRADE_SECONDS ?>" data-edition="<?= htmlspecialchars($gameEdition) ?>"
+          data-layout="<?= $gameLayout !== null ? implode(',', $gameLayout) : '' ?>">
         <!-- The board on the left; the game's name and buttons, then the panels and the rules, on the right -->
         <div class="mt-layout">
             <div class="mt-header">
@@ -174,7 +179,7 @@ $gameEdition = hbHubMatadorSettings($room['state'])['edition'];
                             $classes = 'mt-field mt-r-' . $row . ' mt-c-' . $column . ' mt-side-' . $side . ' mt-type-' . $info['type']
                                 . (isset($info['group']) ? ' mt-group-' . $info['group'] : '') . ($isCorner ? ' is-corner' : '');
                             $isProperty = isset($info['price']); ?>
-                            <button type="button" class="<?= $classes ?>" data-field="<?= $field ?>"
+                            <button type="button" class="<?= $classes ?>" data-field="<?= $field ?>" data-base="<?= (int) ($gameLayout[$field] ?? $field) ?>"
                                     data-name="<?= htmlspecialchars($info['name']) ?>" data-type="<?= $info['type'] ?>"
                                     <?php if ($isProperty): ?>
                                         data-group="<?= $info['group'] ?>" data-price="<?= $info['price'] ?>"

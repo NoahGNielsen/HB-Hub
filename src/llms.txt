@@ -1,6 +1,6 @@
 # HB Hub
 
-> HB Hub is a student-made messaging site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark: class group chats and DMs, a casino with play chips that aren't real money (Blackjack, Baccarat, Roulette, Slots), and games (Matador, chess, UNO, Wordle, Minesweeper and Ore Mining Inc.). It runs in the browser, in English.
+> HB Hub is a student-made messaging site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark: class group chats and DMs, a casino with play chips that aren't real money (Blackjack, Baccarat, Roulette, Slots), and games (Matador, chess, UNO, Wordle, Minesweeper, Sudoku and Ore Mining Inc.). It runs in the browser, in English.
 
 Most of the site needs an account; the pages below can be read without one. Casino chips are not money: they can't be swapped for real money or anything else, and nothing won can be paid out. HB Hub is a free student project, made and run by one student, not by the school.
 
@@ -9,11 +9,12 @@ Most of the site needs an account; the pages below can be read without one. Casi
 - [Free games](https://hbhub.noahgajnielsen.dk/play): Every game that can be played without an account.
 - [Wordle](https://hbhub.noahgajnielsen.dk/play/wordle): Guess the day's five-letter word in six tries, in English or Danish.
 - [Ore Mining Inc.](https://hbhub.noahgajnielsen.dk/play/ore-mining-inc): An idle clicker: mine an asteroid, build a mining company and prestige across the multiverse.
-- [Minesweeper](https://hbhub.noahgajnielsen.dk/play/minesweeper): The classic: open every square that isn't a mine, on an Easy, Medium or Hard board.
+- [Minesweeper](https://hbhub.noahgajnielsen.dk/play/minesweeper): The classic: open every square that doesn't hide a mine, on an Easy, Medium or Hard board.
+- [Sudoku](https://hbhub.noahgajnielsen.dk/play/sudoku): Fill the 9x9 board so every row, column and box has 1 to 9 once, on Easy, Medium, Hard or Expert.
 - [Blackjack](https://hbhub.noahgajnielsen.dk/play/blackjack): Beat the dealer without going over 21. Double, split and insurance, with play chips.
 - [Baccarat](https://hbhub.noahgajnielsen.dk/play/baccarat): Bet on Player, Banker or a tie in punto banco, with play chips.
 - [Roulette](https://hbhub.noahgajnielsen.dk/play/roulette): Spin a single-zero wheel and bet straight on the board, with play chips.
-- [Slots](https://hbhub.noahgajnielsen.dk/play/slots): Spin three reels on five paylines and line up the sevens, with play chips.
+- [Slots](https://hbhub.noahgajnielsen.dk/play/slots): A classic three-reel slot machine with five paylines and lucky 7s, with play chips.
 
 ## Help docs
 
@@ -51,6 +52,7 @@ Most of the site needs an account; the pages below can be read without one. Casi
 - [UNO](https://hbhub.noahgajnielsen.dk/docs/games/uno): The card game for 2-6 players, with stacking, catching and official scoring.
 - [Wordle](https://hbhub.noahgajnielsen.dk/docs/games/wordle): Guess the day's five-letter word in six tries, in English and in Danish.
 - [Minesweeper](https://hbhub.noahgajnielsen.dk/docs/games/minesweeper): The classic in its Windows 95 look: clear the board without opening a mine.
+- [Sudoku](https://hbhub.noahgajnielsen.dk/docs/games/sudoku): Fill the board so every row, column and box has 1 to 9, on four levels from Easy to Expert.
 - [Ore Mining Inc.](https://hbhub.noahgajnielsen.dk/docs/games/ore-mining-inc): A clicker game: mine an asteroid, build a mining company and prestige across the multiverse.
 
 ## Legal

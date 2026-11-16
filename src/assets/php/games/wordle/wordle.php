@@ -8,6 +8,8 @@
 // so the browser never knows the word until the game is over (hbHubWordleView()).
 // A day is a day in Denmark: the new words come at midnight there. A game that isn't won by the end of its day counts
 // as lost, so giving up halfway doesn't save a streak or the win %.
+// On top of that, anyone can play random words: as many as they like, each one picked just for them and not counted
+// anywhere (see "Random words" below).
 // Used by games/wordle/ (the page), games/wordle/guess (the JSON the page sends guesses to) and games/wordle/leaderboard,
 // and by the guest version at /play/wordle (guestGames/wordle/), where a visitor without an account plays the same
 // words: their game is only kept in their own browser (see "Guests" at the bottom).
@@ -328,6 +330,121 @@ function hbHubWordleUserStats(PDO $db, int $userId, string $language): array
     return hbHubWordleStats(array_map('hbHubWordleStatsGame', $statement->fetchAll()), $today);
 }
 
+// ----- Random words (?mode=random on the page). Besides the daily word, anyone can play as many extra words as they
+// like, each one picked at random just for them from the same answers list, so two people almost never get the same
+// one and nobody can spoil it. They don't count in stats, streaks or the leaderboard. A member has one random game per
+// language in HBHub-WordleRandomGames (made when they open the page), written over by the next one once it's over.
+// They only open once the day's word in that language is over (won or lost), so nobody plays random words instead
+// of the daily one (hbHubWordleDailyDone(), and for guests hbHubWordleGuestDailyDone()).
+
+/**
+ * Whether the user has finished (won or lost) today's word in the language, which random words in it wait for.
+ */
+function hbHubWordleDailyDone(PDO $db, int $userId, string $language): bool
+{
+    return (hbHubWordleGame($db, $userId, $language, hbHubWordleToday())['result'] ?? HBHUB_WORDLE_PLAYING) !== HBHUB_WORDLE_PLAYING;
+}
+
+/**
+ * A random answer for one player: any from the answers list but today's daily word (so it can't spoil that) and
+ * $not (the word they just had).
+ */
+function hbHubWordleRandomWord(PDO $db, string $language, ?string $not = null): string
+{
+    $skip = [hbHubWordleDailyWord($db, $language, hbHubWordleToday()), $not];
+    $answers = array_values(array_filter(hbHubWordleWords($language, 'answers'),
+        static fn (string $answer): bool => !in_array($answer, $skip, true)));
+    return $answers[random_int(0, count($answers) - 1)];
+}
+
+/**
+ * The user's random game in a language: ['word' => string, 'guesses' => string[], 'result' => int], or null before
+ * their first one.
+ */
+function hbHubWordleRandomGame(PDO $db, int $userId, string $language, bool $lock = false): ?array
+{
+    $statement = $db->prepare('SELECT gameWord, gameGuesses, gameResult FROM `HBHub-WordleRandomGames` WHERE userId = ? AND gameLanguage = ?'
+        . ($lock ? ' FOR UPDATE' : ''));
+    $statement->execute([$userId, $language]);
+    $row = $statement->fetch();
+    return $row === false ? null : [
+        'word' => $row['gameWord'],
+        'guesses' => $row['gameGuesses'] === '' ? [] : explode(',', $row['gameGuesses']),
+        'result' => (int) $row['gameResult'],
+    ];
+}
+
+/**
+ * Gives the user a new random word in the language, but only when they have none yet or theirs is over: a double
+ * click or a second tab asking for one while a word is being played just gets that word. Returns the game as it is
+ * after (hbHubWordleRandomGame()).
+ */
+function hbHubWordleRandomNew(PDO $db, int $userId, string $language): array
+{
+    $db->beginTransaction();
+    try {
+        $game = hbHubWordleRandomGame($db, $userId, $language, true);
+        if ($game === null || $game['result'] !== HBHUB_WORDLE_PLAYING) {
+            $game = ['word' => hbHubWordleRandomWord($db, $language, $game['word'] ?? null), 'guesses' => [], 'result' => HBHUB_WORDLE_PLAYING];
+            $db->prepare('INSERT INTO `HBHub-WordleRandomGames` (userId, gameLanguage, gameWord, gameGuesses, gameResult, gameStartTimestamp, gameEndTimestamp)
+                    VALUES (?, ?, ?, \'\', ?, UTC_TIMESTAMP(), NULL)
+                ON DUPLICATE KEY UPDATE gameWord = VALUES(gameWord), gameGuesses = \'\', gameResult = VALUES(gameResult),
+                    gameStartTimestamp = UTC_TIMESTAMP(), gameEndTimestamp = NULL')
+                ->execute([$userId, $language, $game['word'], HBHUB_WORDLE_PLAYING]);
+        }
+        $db->commit();
+        return $game;
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+}
+
+/**
+ * Makes a guess in the user's random game in the language, like hbHubWordleGuess() does in the daily one, with the
+ * same answers: null when it counted, or 'notWord', 'finished' or 'stale'. Without a random game yet, it starts one.
+ */
+function hbHubWordleRandomGuess(PDO $db, int $userId, string $language, mixed $word, mixed $turn): ?string
+{
+    $guess = hbHubWordleCleanGuess($language, $word);
+    if ($guess === null || !hbHubWordleIsWord($language, $guess)) {
+        return 'notWord';
+    }
+    if (hbHubWordleRandomGame($db, $userId, $language) === null) {
+        hbHubWordleRandomNew($db, $userId, $language);
+    }
+
+    $db->beginTransaction();
+    try {
+        $game = hbHubWordleRandomGame($db, $userId, $language, true);
+        $error = match (true) {
+            $game['result'] !== HBHUB_WORDLE_PLAYING => 'finished',
+            !is_string($turn) || $turn !== (string) count($game['guesses']) => 'stale',
+            default => null,
+        };
+        if ($error !== null) {
+            $db->rollBack();
+            return $error;
+        }
+
+        $game['guesses'][] = $guess;
+        $result = hbHubWordleResult($game['guesses'], $game['word']);
+        $db->prepare('UPDATE `HBHub-WordleRandomGames` SET gameGuesses = ?, gameResult = ?,
+                gameEndTimestamp = IF(? = ?, NULL, UTC_TIMESTAMP())
+            WHERE userId = ? AND gameLanguage = ?')
+            ->execute([implode(',', $game['guesses']), $result, $result, HBHUB_WORDLE_PLAYING, $userId, $language]);
+        $db->commit();
+        return null;
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+}
+
 // ----- Guests (/play/wordle, see assets/php/guestGames/guestGames.php). A guest's game of the day is a sealed token
 // in their browser, ['lang' => 'en', 'date' => '2026-10-19', 'guesses' => ['crane', ...]], played by the same rules
 // as above. They only get today's games: no stats or streaks, which need an account.
@@ -355,6 +472,40 @@ function hbHubWordleGuestGuesses(mixed $token, string $language, string $date): 
 function hbHubWordleGuestToken(string $language, string $date, array $guesses): string
 {
     return hbHubGuestSeal('wordle', ['lang' => $language, 'date' => $date, 'guesses' => $guesses]);
+}
+
+/**
+ * Whether a guest has finished (won or lost) today's word in the language, from their daily tokens (language =>
+ * token), which their random words in it wait for like a member's (hbHubWordleDailyDone()).
+ */
+function hbHubWordleGuestDailyDone(PDO $db, array $tokens, string $language): bool
+{
+    $date = hbHubWordleToday();
+    $guesses = hbHubWordleGuestGuesses($tokens[$language] ?? null, $language, $date);
+    return $guesses !== [] && hbHubWordleResult($guesses, hbHubWordleDailyWord($db, $language, $date)) !== HBHUB_WORDLE_PLAYING;
+}
+
+/**
+ * A guest's random game (see "Random words" above) from its token, ['word' => ..., 'guesses' => [...]], or a new one
+ * when the token is missing, broken or for the other language. Its own kind of token ('wordleRandom'), so it can never
+ * pass for a daily game or be brought over to an account.
+ */
+function hbHubWordleGuestRandomGame(PDO $db, mixed $token, string $language): array
+{
+    $game = hbHubGuestOpen('wordleRandom', $token);
+    if ($game === null || ($game['lang'] ?? null) !== $language || !is_string($game['word'] ?? null)
+        || !in_array($game['word'], hbHubWordleWords($language, 'answers'), true) || !is_array($game['guesses'] ?? null)) {
+        return ['word' => hbHubWordleRandomWord($db, $language), 'guesses' => []];
+    }
+    return ['word' => $game['word'], 'guesses' => array_slice(array_values(array_filter($game['guesses'], 'is_string')), 0, HBHUB_WORDLE_TRIES)];
+}
+
+/**
+ * A guest's random game as a token for their browser to keep.
+ */
+function hbHubWordleGuestRandomToken(string $language, array $game): string
+{
+    return hbHubGuestSeal('wordleRandom', ['lang' => $language, 'word' => $game['word'], 'guesses' => $game['guesses']]);
 }
 
 /**

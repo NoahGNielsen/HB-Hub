@@ -249,8 +249,11 @@ body:has(> .site-footer) {
   }
 }
 
-/* Cookie notice (assets/php/footer.php + cookieNotice.js) - a small box in the bottom-left corner */
-.cookie-notice {
+/* Cookie notice (.cookie-notice) + terms/privacy updated box (.corner-box) (assets/php/footer.php + cookieNotice.js) -
+   a small box in the bottom-left corner.
+   The updated box isn't called .cookie-notice, since ad blockers (Brave Shields) hide anything called that */
+.cookie-notice,
+.corner-box {
   position: fixed;
   left: 16px;
   bottom: 16px;
@@ -268,21 +271,25 @@ body:has(> .site-footer) {
   animation: toast-in 0.3s ease;
 }
 
-.cookie-notice[hidden] {
+.cookie-notice[hidden],
+.corner-box[hidden] {
   display: none;
 }
 
-.cookie-notice-text {
+.cookie-notice-text,
+.corner-box-text {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.4;
 }
 
-.cookie-notice-text a {
+.cookie-notice-text a,
+.corner-box-text a {
   color: var(--accent);
 }
 
-.cookie-notice-ok {
+.cookie-notice-ok,
+.corner-box-ok {
   flex: none;
   padding: 8px 14px;
   border: none;
@@ -294,7 +301,8 @@ body:has(> .site-footer) {
   cursor: pointer;
 }
 
-.cookie-notice-ok:hover {
+.cookie-notice-ok:hover,
+.corner-box-ok:hover {
   filter: brightness(1.1);
 }
 

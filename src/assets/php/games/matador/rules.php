@@ -8,7 +8,15 @@ $rulesExtraTax = array_values(array_filter($rulesFields, static fn (array $info)
 <ul class="casino-rule-list">
     <li>
         The host picks the edition in the room's settings before the game starts: Classic, the original Danish
-        board, or HTX, the school's own (for now the same as Classic).
+        board, HTX, the school's own (for now the same as Classic), or Kaos.
+    </li>
+    <li>
+        Kaos is the Classic board, but every field except the four corners is put in a random place when the game
+        starts. Landing on Prøv lykken gives a <?= HBHUB_MATADOR_KAOS_PERCENT ?> % chance of the Kaos card instead of
+        the top of the deck, which mixes all the fields up again. Properties keep their houses and mortgage when they
+        move, the pieces stay where they stand, and a card that sends you to a street or ferry sends you to wherever it
+        is now. The Kaos card also swaps the players around: everyone's properties go to a random player, and everyone's
+        money goes to a random player too, drawn separately. You might get to keep your own. Open trade offers are taken back.
     </li>
     <li>
         Everyone starts with <?= hbHubMatadorKr(HBHUB_MATADOR_START_CASH) ?> on START. The turn order is drawn when the game starts.

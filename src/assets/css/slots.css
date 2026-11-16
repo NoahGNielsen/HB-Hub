@@ -33,14 +33,6 @@
   gap: 0 44px; /* room for the lever sticking out of the machine's right side */
 }
 
-/* The guest Slots (/play/slots): the "playing as a guest" bar (guestGames.css) takes ~80px more of the screen */
-.sl[data-guest] {
-  --sl-cell: clamp(48px, calc((100vh - 560px) / 3), 104px);
-  --sl-cell: clamp(48px, calc((100dvh - 560px) / 3), 104px);
-}
-
-.sl > .guest-bar { grid-area: guest; }
-
 .sl [hidden] {
   display: none !important;
 }
@@ -50,6 +42,7 @@
 .sl-machine { grid-area: machine; }
 .sl-side { grid-area: side; }
 .sl-rules { grid-area: rules; }
+.sl > .guest-bar { grid-area: guest; } /* only on the guest Slots at /play/slots (guestGames/top.php) */
 
 .sl-header {
   margin-bottom: 12px;
@@ -1382,12 +1375,6 @@
       "rules";
   }
 
-  /* Guests have no bottom bar on phones (the frontpage's top bar instead), so this is all they need under 600px too */
-  .sl[data-guest] {
-    --sl-cell: clamp(48px, calc((100vh - 560px) / 3), 84px);
-    --sl-cell: clamp(48px, calc((100dvh - 560px) / 3), 84px);
-  }
-
   .sl-side {
     margin-top: 20px;
   }
@@ -1514,5 +1501,19 @@
   .sl[data-sl-tier="mega"] .sl-machine::after,
   .sl[data-sl-tier="jackpot"] .sl-machine::after {
     opacity: 1;
+  }
+}
+
+/* The guest Slots at /play/slots: the guest bar over the machine takes room too (more on narrow screens, where it
+   wraps), so the reels are a bit smaller to keep the machine on the screen */
+.sl[data-guest] {
+  --sl-cell: clamp(48px, calc((100vh - 560px) / 3), 104px);
+  --sl-cell: clamp(48px, calc((100dvh - 560px) / 3), 104px);
+}
+
+@media (max-width: 760px) {
+  .sl[data-guest] {
+    --sl-cell: clamp(48px, calc((100vh - 600px) / 3), 84px);
+    --sl-cell: clamp(48px, calc((100dvh - 600px) / 3), 84px);
   }
 }

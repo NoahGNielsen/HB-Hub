@@ -12,6 +12,16 @@
 // finished game asks them to sign up (the guest:prompt event, guestPrompt.js). On the members' page, tokens found from
 // today are sent once to be brought over to the account (action=import), as that's where logging in or signing up
 // from the guest page leads.
+//
+// In random words (data-mode="random", ?mode=random) the board is the player's own random word instead: guesses and
+// the "New word" button (action=new, once a word is over) go to the same address with mode=random, there's no stats
+// or countdown, and the tabs keep showing the daily words. A guest's random words are a token of their own, kept in
+// localStorage under GUEST_RANDOM_KEY, and never come over to an account. Random words in a language wait until the
+// day's word in it is over: a member's page then has no board at all (and no data-wordle, so this stays out), and a
+// guest's sends their daily tokens along, and when the answer is 409 dailyFirst the board makes way for the
+// "finish today's word first" card (data-wordle-locked). Should that come mid-game (a new day started), the page
+// just reloads to show the card. On the daily word, finishing it (won or lost) opens a popup over the game offering
+// random words (data-wordle-random-dialog), once the tiles have turned; a guest's sign-up prompt waits until it's shut.
 (() => {
     const root = document.querySelector('[data-wordle]');
     if (!root) return;
@@ -19,6 +29,8 @@
     const API = root.dataset.api;
     const IS_GUEST = 'guest' in root.dataset;
     const GUEST_KEY = 'hbHubGuestWordle'; // a guest's games of today: {date, en: token, da: token}
+    const GUEST_RANDOM_KEY = 'hbHubGuestWordleRandom'; // a guest's random word in each language: {en: token, da: token}
+    const IS_RANDOM = root.dataset.mode === 'random';
     const LANGUAGE = root.dataset.lang;
     const LANGUAGE_NAME = root.dataset.languageName;
     const DATE = root.dataset.date;
@@ -41,6 +53,8 @@
     const nextWord = root.querySelector('[data-wordle-next]');
     const shareButton = root.querySelector('[data-wordle-share]');
     const tabStatus = root.querySelector('[data-wordle-status]');
+    const randomDialog = root.querySelector('[data-wordle-random-dialog]'); // only on the daily word
+    const RANDOM_DIALOG_MS = 1200; // how long the finished board shows before the popup opens over it
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
     let game = JSON.parse(root.dataset.game);
@@ -59,9 +73,26 @@
         return { date: DATE };
     }
 
+    // A guest's random word tokens, {en: token, da: token}
+    function guestRandomTokens() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(GUEST_RANDOM_KEY));
+            if (saved && typeof saved === 'object') return saved;
+        } catch {
+            // no storage, or something broken in it
+        }
+        return {};
+    }
+
+    // The guest's token for the game on the page (the day's or the random one)
+    function guestToken() {
+        return (IS_RANDOM ? guestRandomTokens() : guestTokens())[LANGUAGE] ?? '';
+    }
+
     function keepGuestToken(token) {
         try {
-            localStorage.setItem(GUEST_KEY, JSON.stringify({ ...guestTokens(), [LANGUAGE]: token }));
+            if (IS_RANDOM) localStorage.setItem(GUEST_RANDOM_KEY, JSON.stringify({ ...guestRandomTokens(), [LANGUAGE]: token }));
+            else localStorage.setItem(GUEST_KEY, JSON.stringify({ ...guestTokens(), [LANGUAGE]: token }));
         } catch {
             // no storage: the game only lasts as long as the page
         }
@@ -142,13 +173,13 @@
                 + (game.guesses.length === 1 ? ' try.' : ' tries.');
         } else {
             resultTitle.textContent = 'So close';
-            resultText.textContent = 'The word was ' + answer + '. Better luck tomorrow!';
+            resultText.textContent = 'The word was ' + answer + (IS_RANDOM ? '. Try another one!' : '. Better luck tomorrow!');
         }
         drawCountdown();
     }
 
     function drawCountdown() {
-        if (result.hidden) return;
+        if (result.hidden || IS_RANDOM) return; // random words don't wait for midnight
         const left = NEXT_WORD_AT - Date.now();
         if (left <= 0) {
             nextWord.replaceChildren('A new word is ready! ');
@@ -179,7 +210,9 @@
         isBusy = true;
         const before = game.guesses.length;
         const body = new URLSearchParams({ action: 'guess', lang: LANGUAGE, date: DATE, turn: String(before), word: typed.join('') });
-        if (IS_GUEST) body.set('token', guestTokens()[LANGUAGE] ?? '');
+        if (IS_RANDOM) body.set('mode', 'random');
+        if (IS_GUEST) body.set('token', guestToken());
+        if (IS_GUEST && IS_RANDOM) body.set('tokens', JSON.stringify(guestTokens()));
         let response;
         try {
             response = await fetch(API, { method: 'POST', headers: { Accept: 'application/json' }, body });
@@ -205,6 +238,10 @@
             setTimeout(() => location.reload(), 1500);
             return;
         }
+        if (data.error === 'dailyFirst') {
+            location.reload(); // a new day started: random words wait for its word, as the page will say
+            return;
+        }
         if (!response.ok || !data.game) {
             isBusy = false;
             say('Something went wrong. Please try again.');
@@ -224,7 +261,15 @@
             drawResult();
             if (!isNewGuess) say('Your game was updated from another tab.');
             else if (game.result !== 'playing') say(resultTitle.textContent + ' ' + resultText.textContent, 0);
-            if (IS_GUEST && isNewGuess && game.result !== 'playing') document.dispatchEvent(new CustomEvent('guest:prompt'));
+            if (isNewGuess && game.result !== 'playing') {
+                // The daily word is done: offer random words over the game first, and a guest's sign-up prompt after
+                if (randomDialog) {
+                    setTimeout(() => { if (!randomDialog.open) randomDialog.showModal(); }, RANDOM_DIALOG_MS);
+                    if (IS_GUEST) randomDialog.addEventListener('close', () => document.dispatchEvent(new CustomEvent('guest:prompt')), { once: true });
+                } else if (IS_GUEST) {
+                    document.dispatchEvent(new CustomEvent('guest:prompt'));
+                }
+            }
         };
         if (animate) setTimeout(done, FLIP_MS * (LENGTH - 1) + 500);
         else done();
@@ -270,7 +315,7 @@
     shareButton.addEventListener('click', async () => {
         const squares = { correct: '🟩', present: '🟨', absent: '⬛' };
         const [year, month, day] = DATE.split('-');
-        const text = 'HB Hub Wordle (' + LANGUAGE_NAME + ') ' + day + '/' + month + '/' + year + ' '
+        const text = 'HB Hub Wordle (' + LANGUAGE_NAME + ') ' + (IS_RANDOM ? 'random word' : day + '/' + month + '/' + year) + ' '
             + (game.result === 'won' ? game.guesses.length : 'X') + '/' + rows.length + '\n\n'
             + game.guesses.map((guess) => guess.score.map((status) => squares[status]).join('')).join('\n');
         try {
@@ -291,18 +336,63 @@
         });
     }
 
-    // A guest's game of today, from the tokens this browser keeps. Typing waits until it's here.
-    async function loadGuestGame() {
-        const tokens = guestTokens();
-        if (Object.keys(tokens).length <= 1) return; // only the date: nothing played today
+    // Random words: a new word once the last one is over. The server only gives one then, so a double click is fine.
+    async function newWord() {
+        if (isBusy) return;
         isBusy = true;
+        const body = new URLSearchParams({ action: 'new', mode: 'random', lang: LANGUAGE });
+        if (IS_GUEST) {
+            body.set('token', guestToken());
+            body.set('tokens', JSON.stringify(guestTokens()));
+        }
         let data = null;
         try {
-            const response = await fetch(API, {
-                method: 'POST',
-                headers: { Accept: 'application/json' },
-                body: new URLSearchParams({ action: 'view', lang: LANGUAGE, tokens: JSON.stringify(tokens) }),
-            });
+            const response = await fetch(API, { method: 'POST', headers: { Accept: 'application/json' }, body });
+            if (response.status === 403) {
+                location.reload();
+                return;
+            }
+            data = await response.json();
+        } catch {
+            // said below
+        }
+        isBusy = false;
+        if (data?.error === 'dailyFirst') {
+            location.reload(); // a new day started (see send())
+            return;
+        }
+        if (!data?.game) {
+            say('Couldn\'t get a new word. Check your connection and try again.');
+            return;
+        }
+        if (IS_GUEST && data.token) keepGuestToken(data.token);
+        game = data.game;
+        typed = [];
+        drawBoard();
+        drawKeys();
+        drawResult();
+        say('New word! Good luck.');
+    }
+
+    root.querySelector('[data-wordle-new]')?.addEventListener('click', newWord);
+    root.querySelector('[data-wordle-random-close]')?.addEventListener('click', () => randomDialog.close());
+    // A click on the dark backdrop around it shuts it too
+    randomDialog?.addEventListener('click', (event) => { if (event.target === randomDialog) randomDialog.close(); });
+
+    // A guest's game, from the tokens this browser keeps: today's, or in random words the random one (asked for even
+    // without a token, for the tabs). Typing waits until it's here.
+    async function loadGuestGame() {
+        const tokens = guestTokens();
+        if (!IS_RANDOM && Object.keys(tokens).length <= 1) return; // only the date: nothing played today
+        isBusy = true;
+        let data = null;
+        const body = new URLSearchParams({ action: 'view', lang: LANGUAGE, tokens: JSON.stringify(tokens) });
+        if (IS_RANDOM) {
+            body.set('mode', 'random');
+            body.set('token', guestToken());
+        }
+        try {
+            const response = await fetch(API, { method: 'POST', headers: { Accept: 'application/json' }, body });
             if (response.status === 403) {
                 location.reload(); // the games were closed: the page is gone
                 return;
@@ -311,8 +401,16 @@
         } catch {
             say('Couldn\'t load your game. Check your connection and reload the page.', 0);
         }
+        if (data?.error === 'dailyFirst') {
+            // Random words wait for the day's word: the card instead of the board, and typing stays off (isBusy)
+            root.querySelector('[data-wordle-play]').hidden = true;
+            root.querySelector('[data-wordle-locked]').hidden = false;
+            drawStatuses(data.statuses ?? {});
+            return;
+        }
         isBusy = false;
         if (!data?.game) return;
+        if (data.token) keepGuestToken(data.token);
         game = data.game;
         drawBoard();
         drawKeys();
@@ -322,9 +420,11 @@
 
     // On the members' page: the games played today as a guest before logging in or signing up, brought over to the
     // account. The tokens are only forgotten once the server has answered, and the page reloads when it took any.
+    // A guest's random words never come over, so they're just forgotten.
     async function importGuestGames() {
         let saved = null;
         try {
+            localStorage.removeItem(GUEST_RANDOM_KEY);
             saved = localStorage.getItem(GUEST_KEY);
         } catch {
             return; // no storage, so no guest games either

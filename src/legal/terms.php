@@ -4,12 +4,12 @@
 // A .legal-page article (legal.css: a dark hero, then the contents next to the text) under the frontpage's top bar
 // (homeNav.php), so it loads homepage.css too, just like privacy.php. Open to everyone, like the frontpage.
 // Sign-up (onboarding.php) links here.
-// When a rule changes, HBHUB_TERMS_UPDATED gets the date of the change.
+// When a rule changes, HBHUB_TERMS_UPDATED gets the date of the change. It's set in assets/php/legalUpdated.php, since
+// the footer needs it too: changing it there shows everyone who agreed to the old terms the "terms updated" box.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
-
-const HBHUB_TERMS_UPDATED = '13 November 2026';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="home">
@@ -195,10 +195,22 @@ const HBHUB_TERMS_UPDATED = '13 November 2026';
                                 Wordle has one English and one Danish word a day, and you get one go at each. A word you start
                                 but don't guess by midnight (Danish time) counts as missed, and ends your streak. Don't spoil
                                 the day's word for others, for example in a group chat, before the day is over.
+                                Random words, picked just for you, can be played as many times as you like once you've
+                                played the day's word in that language, and don't count in stats, streaks or the
+                                leaderboard.
                             </li>
                             <li>
                                 Minesweeper times on the leaderboard are timed by HB Hub's server. A game you leave or start
-                                over counts as played but not won. No bots or scripts that solve the board for you.
+                                over counts as played but not won. No bots or scripts that solve the board for you: a win
+                                faster than a person can click (more than 10 of the board's needed clicks a second) isn't
+                                counted, and only shows as played. The same goes for a game where a click on the board
+                                comes from code (like the browser's console) instead of you: it's stopped there.
+                            </li>
+                            <li>
+                                Sudoku times on the leaderboard are timed by HB Hub's server, without the time the game was
+                                paused or you were away from the page. Only puzzles solved without a hint count, and starting
+                                a new game ends the one you were playing. No solvers, bots or scripts: a puzzle filled in
+                                faster than a person can (less than a second for each empty square) isn't counted.
                             </li>
                             <li>
                                 Ore Mining Inc. saves on HB Hub's server and checks what you do there, so only things that
@@ -237,12 +249,13 @@ const HBHUB_TERMS_UPDATED = '13 November 2026';
                             </li>
                             <li>
                                 The free games at <a href="/play">/play</a> can be played without an account, and these terms
-                                apply there too. Without an account, your Wordle and Ore Mining Inc. games are only kept in your
-                                browser, so clearing the site's data, or using another browser, starts them over. If you log in
-                                or sign up from one, today's Wordle games and your Ore Mining Inc. game come with you, but only
+                                apply there too. Without an account, your Wordle, Ore Mining Inc. and Sudoku games are only kept in your
+                                browser, so clearing the site's data, or using another browser, starts them over, and a
+                                Minesweeper board only lasts until you close or reload the page (and its wins don't go on
+                                the leaderboard; nor do guest Sudoku times, which stay in your browser). If you log in
+                                or sign up from one, today's Wordle games (not random words) and your Ore Mining Inc. game come with you, but only
                                 into an account that doesn't have them yet: your account's own games are never written over.
-                                Minesweeper without an account only lasts while the page is open, and its wins don't go on
-                                the leaderboard or come with you. In a browser that has logged in to HB Hub before, the free games send you to the login and the
+                                In a browser that has logged in to HB Hub before, the free games send you to the login and the
                                 normal game instead. Don't use scripts or bots to flood the free games with requests.
                             </li>
                         </ul>
@@ -277,8 +290,13 @@ const HBHUB_TERMS_UPDATED = '13 November 2026';
                             admins have added. Admins can also change or remove a status that breaks the rules.
                         </p>
                         <p>
-                            Admins decide what breaks the rules, also for things these terms don't list. If you think a decision
-                            was wrong, email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> and explain why.
+                            Admins decide what breaks the rules, also for things these terms don't list.
+                            <strong>
+                                Admins can also ban, ghost ban or delete any account, or do anything else on this list to it,
+                                at any time and for any reason, or for no reason at all, without warning and without
+                                explaining why to the person.
+                            </strong>
+                            If you think a decision was wrong, email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> and explain why.
                         </p>
                     </section>
 
@@ -313,8 +331,9 @@ const HBHUB_TERMS_UPDATED = '13 November 2026';
                         <h2 id="terms-changes">10. Changes to these terms</h2>
                         <p>
                             As HB Hub gets new features, these terms may change. The date at the top shows when they last did.
-                            If something big changes, it'll be announced on the site. If you keep using HB Hub after a change, you
-                            agree to the new terms.
+                            When they change, a box on the site tells you the next time you visit, and if something big changes,
+                            it'll be announced on the site too. If you keep using HB Hub after a change, you agree to the new
+                            terms.
                         </p>
                     </section>
 

@@ -3,11 +3,12 @@
 // A .legal-page article (legal.css: a dark hero, then the contents next to the text) under the frontpage's top bar
 // (homeNav.php), so it loads homepage.css too.
 // Open to everyone, like the frontpage. Keep it in step with the code: when a new table, cookie, localStorage key or
-// outside service is added, it belongs here, and HBHUB_PRIVACY_UPDATED gets the date of the change.
+// outside service is added, it belongs here, and HBHUB_PRIVACY_UPDATED gets the date of the change. It's set in
+// assets/php/legalUpdated.php, since the footer needs it too: changing it there shows everyone who agreed to the old
+// policy the "privacy policy updated" box.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
-
-const HBHUB_PRIVACY_UPDATED = '13 November 2026';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
 
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
@@ -37,12 +38,16 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubMinerAutoWarpTimes, hbHubMinerAutoCrunchTimes' => 'The number you put next to Ore Mining Inc.\'s Autopilot and Auto Crunch switches: how many times as much Dark Matter or Antimatter a Warp Jump or Big Crunch has to give before they make it.',
     'hbHubMinerRun:<tab id>' => 'While Ore Mining Inc. is open: what you did in the game that isn\'t saved yet, and what a crash report would say (see Casino and games above), updated every second. If the game crashes or is closed before it\'s saved, the next time you open it, what you did is sent with its first save, like a normal save, and then deleted. It\'s deleted when the game is closed with nothing left to save. After a crash, the crash report part stays until you\'ve answered whether it may be sent; it\'s only sent if you say yes.',
     'hbHubMiner (IndexedDB)' => 'A crash report the game writes if it freezes while you\'re playing (written by a part of the game that keeps running when the rest of it is frozen). It\'s only sent if you say yes the next time you open the game, and deleted either way. If you play without an account, it\'s never sent, just deleted the next time you open the game.',
+    'hbHubSudokuGuest' => 'Only in the free Sudoku at /play/sudoku, played without an account: your game (the puzzle, its answer, the numbers and notes you\'ve put in, the time and hints so far), and your best time and number of wins on each level, so you can close the page and carry on later. It\'s played only in your browser, so none of it is sent to HB Hub, and it never comes over to an account.',
+    'hbHubSudoku' => 'The Sudoku game you\'re playing (with an account): its number, the puzzle, the numbers and notes you\'ve put in, and the time and hints so far, so you can close the page and carry on later. The game itself, its answer and its time are on HB Hub\'s server (see Casino and games above); the numbers you put in are only sent when the board is full, to check it, or with a hint.',
     'hbHubGuestWordle' => 'If you play Wordle without an account (at /play/wordle): your games of the day, encrypted by HB Hub so they can\'t be read or changed in your browser. It\'s sent with each guess so the server can check it. If you then log in or sign up, it\'s sent once to add today\'s games to your account (only in a language you haven\'t played today), and then deleted. Games from an earlier day are ignored and written over.',
+    'hbHubGuestWordleRandom' => 'If you play Wordle\'s random words without an account: your random word in each language with your guesses, encrypted by HB Hub the same way, sent with each guess so the server can check it. It never comes over to an account, and is deleted when you open Wordle logged in.',
     'hbHubGuestMiner' => 'If you play Ore Mining Inc. without an account (at /play/ore-mining-inc): your game, encrypted by HB Hub the same way, and a random id for the tab you\'re playing in (so the game only runs in one tab at a time). It\'s sent with each save so the server can check what you did. If you then log in or sign up, it\'s sent once to become your account\'s game (only if the account doesn\'t have one yet), and then deleted.',
     'hbHubGuestMinerRun:<tab id>' => 'The same as hbHubMinerRun above, when you play Ore Mining Inc. without an account. What you did that isn\'t saved yet is only ever sent with the next save of the game you play without an account, never to an account\'s game.',
     'hbHubGuestPrompt' => 'How long you\'ve played the free games without an account (just a number of seconds, counted while the page is on screen), so the popup asking you to sign up only shows up now and then.',
     'hbHubAppPrompt' => 'That the popup about putting HB Hub on your phone\'s home screen has been shown (or that you already opened HB Hub from the home screen), so it only shows up once.',
     'hbHubCookieNotice' =>'That you clicked away the cookie notice, so it isn\'t shown again.',
+    'hbHubTermsAgreed, hbHubPrivacyAgreed' => 'The dates of the Terms of Service and the Privacy Policy you last agreed to (by clicking away the cookie notice or the "has been updated" box), so that box only shows up when one of them changes again.',
 ];
 ?>
 <!DOCTYPE html>
@@ -259,11 +264,30 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 guesses and streaks), never your guesses.
                             </li>
                             <li>
-                                Your Minesweeper games: for each game, the size, whether you won, lost or left it, how long a
-                                win took, and when you started and finished. While a game is being played, it also has which
+                                Your Wordle random word: for each language, the last random word you got, your guesses,
+                                whether you got it, and when it was picked and finished. It's written over when you take a
+                                new word, and isn't in your stats, streaks or the leaderboards, so nobody else sees it.
+                                It's deleted with your account.
+                            </li>
+                            <li>
+                                Your Minesweeper games: for each game, the size, whether you won, lost or left it (or it
+                                was stopped because a click on the board came from code instead of you), how long a
+                                win took, the fewest clicks its board could be won in (to catch wins too fast for a person,
+                                which aren't counted), and when you started and finished. While a game is being played, it also has which
                                 squares you've opened (and where the mines are); that's deleted when the game is over. Your
                                 flags stay in your browser. The games make up your spot on the Minesweeper leaderboards,
                                 where other people only see the totals (best and average time, wins, games played and win %).
+                                They're kept until your account is deleted.
+                            </li>
+                            <li>
+                                Your Sudoku games: for each game, the level, whether you solved it (with or without hints,
+                                or too fast for a person, which isn't counted) or left it, how many hints you used, how long
+                                it took, how long it was paused, and when you started and finished. While a game is being
+                                played, it also has the puzzle and its answer, and when the pause it's in started (the game
+                                is paused when you press Pause or leave the page); the puzzle and answer are deleted when
+                                the game is over. The numbers and notes you put in stay in your browser until the board is
+                                full and checked. The games make up your spot on the Sudoku leaderboards, where other people
+                                only see the totals (best and average time, and how many you've solved without a hint).
                                 They're kept until your account is deleted.
                             </li>
                             <li>
@@ -354,15 +378,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <h3>Playing without an account</h3>
                         <p>
-                            The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, and Blackjack,
+                            The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, Sudoku, and Blackjack,
                             Baccarat, Roulette and Slots with play chips) can be played without an account. Then nothing about you or your game is
                             stored on HB Hub's server, except a server busy report if the server is too busy to answer your
                             browser (see <a href="#watchdog">Server busy reports</a> below). Your game is kept in your own browser instead, encrypted by HB Hub so it
                             can't be read or changed there, and sent along with each move, so the server can check it with the
                             same rules as the normal games and send it back. Wordle and Ore Mining Inc. keep it in local storage
-                            (see <a href="#cookies">Cookies and local storage</a>); Minesweeper and the casino games only keep it
-                            in the open page, so a Minesweeper board and the play chips start over every time, and your
-                            Minesweeper times aren't kept anywhere. No cookie is set (they only look at whether the browser
+                            (see <a href="#cookies">Cookies and local storage</a>). Sudoku is played only in your browser and
+                            kept in local storage too, without being sent to the server at all; Minesweeper and the casino games only keep it in
+                            the open page, so a Minesweeper board and the play chips start over every time. No cookie is set (they only look at whether the browser
                             already has the hbHubDevice cookie from logging in before, see <a href="#cookies">Cookies and local
                             storage</a>), and the free games have no leaderboards, stats or crash reports. The only thing they store on the server is each day's Wordle word, which is
                             the same for everyone.
@@ -544,7 +568,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
                             That right away removes your name, profile picture, banner, bio, status, education badge, year, class, settings, password, two-factor
-                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, your server busy reports, your Minesweeper games, and the files you attached in chats. Your name is replaced
+                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, your server busy reports, your Minesweeper and Sudoku games, and the files you attached in chats. Your name is replaced
                             with "Deleted User".
                         </p>
                         <p>
@@ -558,8 +582,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         </p>
                         <p>
                             The free games you play without an account are only kept in your browser, so HB Hub has nothing to
-                            delete: clearing this site's data in your browser deletes them. The casino games' play chips are
-                            gone as soon as you close or reload the page.
+                            delete: clearing this site's data in your browser deletes them. A Minesweeper board and the casino
+                            games' play chips are gone as soon as you close or reload the page.
                         </p>
                         <p>
                             What stays is what other people need for their chats and games to make sense: the messages you sent

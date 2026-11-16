@@ -9,6 +9,10 @@
 // - 400 {"error": "badRequest"}: no such language or action.
 // A guess on an older view of the game (another tab, a double click) or in a game that's over isn't an error: the
 // answer is just the game as it is, for the page to catch up with.
+// With mode=random it's the user's random word in that language instead of the day's (see "Random words" in
+// wordle.php): the same action=guess (date isn't needed), and action=new for a new word once the last one is over.
+// Both answer with the game, and "stats" null, as random words have none. Until today's word in that language is
+// over, they answer 409 {"error": "dailyFirst"} instead (the page reloads, and then says so).
 // Also action=import, tokens (a JSON object, language => token): brings the games the user played today as a guest on
 // /play/wordle over to their account, after they logged in or signed up from there (hbHubWordleImport() in wordle.php).
 // The page sends it when it finds the guest's tokens in the browser. Answers {"imported": [the languages brought over]}.
@@ -31,9 +35,32 @@ if (($_POST['action'] ?? null) === 'import') {
 }
 
 $language = $_POST['lang'] ?? null;
-if (($_POST['action'] ?? null) !== 'guess' || !is_string($language) || !isset(HBHUB_WORDLE_LANGUAGES[$language])) {
+$action = $_POST['action'] ?? null;
+if (!in_array($action, ['guess', 'new'], true) || !is_string($language) || !isset(HBHUB_WORDLE_LANGUAGES[$language])
+    || ($action === 'new' && ($_POST['mode'] ?? null) !== 'random')) {
     http_response_code(400);
     echo json_encode(['error' => 'badRequest']);
+    exit;
+}
+
+// Random words: no day to keep to, and no stats
+if (($_POST['mode'] ?? null) === 'random') {
+    $db = hbHubDatabase();
+    $userId = (int) $hbHubUser['userId'];
+    if (!hbHubWordleDailyDone($db, $userId, $language)) {
+        http_response_code(409);
+        echo json_encode(['error' => 'dailyFirst']);
+        exit;
+    }
+    if ($action === 'new') {
+        hbHubWordleRandomNew($db, $userId, $language);
+    } elseif (hbHubWordleRandomGuess($db, $userId, $language, $_POST['word'] ?? null, $_POST['turn'] ?? null) === 'notWord') {
+        http_response_code(422);
+        echo json_encode(['error' => 'notWord']);
+        exit;
+    }
+    $game = hbHubWordleRandomGame($db, $userId, $language);
+    echo json_encode(['game' => hbHubWordleView($game, $game['word']), 'stats' => null]);
     exit;
 }
 

@@ -1,6 +1,6 @@
 <?php
 // The games visitors can play without an account, mostly so search engines have something to find: Wordle,
-// Ore Mining Inc., Minesweeper, and solo Blackjack, Baccarat, Roulette and Slots, at /play (the files are in guestGames/, which is only
+// Ore Mining Inc., Minesweeper, Sudoku, and solo Blackjack, Baccarat, Roulette and Slots, at /play (the files are in guestGames/, which is only
 // reached through the rewrites in .htaccess). The normal versions (games/, gambling/) still need an account, and
 // so does everything else on the site.
 //
@@ -19,9 +19,11 @@
 // - Wordle and Ore Mining Inc. keep their token in localStorage. Logging in or signing up from the guest game goes
 //   to the normal version, which brings that progress over to the account: today's Wordle games, and the Ore Mining
 //   Inc. save, but only into an account that doesn't have them yet - it never writes over anything.
-// - Minesweeper keeps its board's token in the frame's page only (a game's mines, so the browser never knows where
-//   they are), and nothing comes over to an account: there's no time to keep, as a guest's wins don't count for the
-//   leaderboard.
+// - Minesweeper keeps its board's token in the page only (the frame's game uses it as the game's id), so a board
+//   left halfway is gone, and its wins have no leaderboard, so they never come over to an account either.
+// - Sudoku has no token: the guest one is a page of its own (guestGames/sudoku/, assets/js/sudokuGuest.js), played
+//   only in the browser with the game and best times in localStorage (hbHubSudokuGuest). The members' Sudoku is made
+//   and checked on the server for its leaderboard, so a guest's times never come over to an account.
 // - The casino games keep theirs in the page only, so the play chips start over every time the page is opened, and
 //   they never come over to an account. A guest who runs out gets a new stack (hbHubGuestCasinoRefill()).
 require_once __DIR__ . '/../games/access.php';
@@ -80,18 +82,36 @@ const HBHUB_GUEST_GAMES = [
         'game' => '/games/minesweeper/',
         'section' => 'games',
         'name' => 'Minesweeper',
-        'title' => 'Free Minesweeper Online - Classic, No Sign-Up | HB Hub',
-        'description' => 'Play classic Minesweeper for free in your browser, with the old Windows look: Easy, Medium and Hard boards, flags and a clock. No download and no account needed.',
-        'card' => 'The classic: open every square that isn\'t a mine, on an Easy, Medium or Hard board.',
+        'title' => 'Free Minesweeper Online - Classic Windows Look, No Sign-Up | HB Hub',
+        'description' => 'Play classic Minesweeper for free in your browser, Windows 95 look and all: Easy, Medium and Hard boards, flags, and a first click that\'s never a mine. No account needed.',
+        'card' => 'The classic: open every square that doesn\'t hide a mine, on an Easy, Medium or Hard board.',
         'genre' => ['Puzzle', 'Logic game'],
-        'keywords' => ['Minesweeper', 'free Minesweeper', 'Minesweeper online', 'classic Minesweeper', 'minestryger', 'gratis Minesweeper', 'puzzle game'],
+        'keywords' => ['Minesweeper', 'free Minesweeper', 'Minesweeper online', 'Minestryger', 'gratis Minestryger', 'puzzle game', 'logic game'],
         'languages' => ['en'],
         'about' => [
-            'Minesweeper is the classic logic puzzle: open every square on the board that doesn\'t hide a mine. Each number tells you how many of the 8 squares around it are mines, so you can work out where they are and flag them. Your first click is never a mine. Pick Easy (9×9, 10 mines), Medium (16×16, 40 mines) or Hard (30×30, 160 mines), in the old Windows look.',
-            'It\'s free and runs in your browser, without a download or an account. With a free HB Hub account, your fastest times also go on the leaderboard for each size, and you can see your best.',
+            'Minesweeper is the classic logic puzzle: open every square on the board that doesn\'t hide a mine. Each square you open shows how many mines are in the 8 squares around it, so you can work out where they are and flag them (right click, Shift + click or a long press). Open a mine and the game is over. The first click is never a mine, and always opens up an area to start from.',
+            'Pick Easy (9 by 9, 10 mines), Medium (16 by 16, 40 mines) or Hard (30 by 30, 160 mines). It\'s free and runs in your browser, with the look of the old Windows game. With a free HB Hub account your wins count on the leaderboard, with your best and average time on each board.',
         ],
         'docs' => '/docs/games/minesweeper',
-        'prompt' => 'Make a free account to get your times on the leaderboard and keep track of your best on every size.',
+        'prompt' => 'Make a free account to get your times on the leaderboard and see your best and average time on each board.',
+    ],
+    'sudoku' => [
+        'path' => '/play/sudoku',
+        'game' => '/games/sudoku/',
+        'section' => 'games',
+        'name' => 'Sudoku',
+        'title' => 'Free Sudoku Online - Easy to Expert, No Sign-Up | HB Hub',
+        'description' => 'Play free Sudoku in your browser: a new puzzle every time on Easy, Medium, Hard or Expert, each with one answer. Notes, hints, undo and best times. No account needed.',
+        'card' => 'Fill the 9x9 board so every row, column and box has 1 to 9 once, on Easy, Medium, Hard or Expert.',
+        'genre' => ['Puzzle', 'Logic game'],
+        'keywords' => ['Sudoku', 'free Sudoku', 'Sudoku online', 'gratis Sudoku', 'Sudoku dansk', 'puzzle game', 'logic game'],
+        'languages' => ['en'],
+        'about' => [
+            'Sudoku is the number puzzle: fill in the 9 by 9 board so every row, every column and every 3 by 3 box has the numbers 1 to 9 once each. Some squares are filled in from the start, and those give you everything you need to work out the rest, without guessing.',
+            'Every game is a new puzzle with exactly one answer, on four levels: Easy, Medium, Hard and Expert. Put notes in the squares, undo, erase, or ask for a hint when you\'re stuck, and see how many of each number are left. It\'s free and runs in your browser; your game and your best time on each level are kept in this browser, so you can close the page and carry on later. With a free HB Hub account your fast solves count on the leaderboard.',
+        ],
+        'docs' => '/docs/games/sudoku',
+        'prompt' => 'Make a free account to get your times on the Sudoku leaderboard, and play Matador, chess and UNO with friends.',
     ],
     'blackjack' => [
         'path' => '/play/blackjack',
@@ -152,14 +172,14 @@ const HBHUB_GUEST_GAMES = [
         'game' => '/gambling/slots/',
         'section' => 'casino',
         'name' => 'Slots',
-        'title' => 'Free Slot Machine Online - Lucky 7s, No Sign-Up | HB Hub',
-        'description' => 'Spin a free three-reel slot machine with five paylines and play chips: sevens, diamonds, bells and fruit. No account, no download and no real money.',
-        'card' => 'Spin three reels on five paylines and line up the sevens, with play chips.',
+        'title' => 'Free Slot Machine Online - Classic 3-Reel Slots, No Sign-Up | HB Hub',
+        'description' => 'Spin a free classic three-reel slot machine with play chips: five paylines, lucky 7s, diamonds and fruit. No account, no download and no real money.',
+        'card' => 'A classic three-reel slot machine with five paylines and lucky 7s, with play chips.',
         'genre' => ['Casino game', 'Slot machine'],
-        'keywords' => ['slots', 'slot machine', 'free slots', 'gratis slots', 'spilleautomat', 'enarmet tyveknægt', 'play chips'],
+        'keywords' => ['slots', 'slot machine', 'free slots', 'gratis slots', 'spillemaskine', 'enarmet tyveknægt', 'play chips'],
         'languages' => ['en'],
         'about' => [
-            'Slots is the casino\'s slot machine: three reels, three rows and five paylines (the three rows and both diagonals), and every spin plays all of them. Line up three of a kind for the big wins, from cherries up to three 7s, which pay 300 times a line\'s share of the bet. Any three fruit and a cherry on the first reel pay something too. It uses the same reels and pay table as the machine on HB Hub, which pays back about 96% of what\'s bet.',
+            'Slots is a classic three-reel slot machine: pick a bet, pull the lever and line up three of a kind on one of the five paylines (the three rows and the two diagonals). Three 7s pay 300 times the line\'s bet, and there are diamonds, stars, bells and fruit too, where mixed fruit and a cherry on the left pay a little. This is the same machine as in the HB Hub casino, with the same reels and pay table, played free with play chips.',
             'The chips are just for fun. They aren\'t money, can\'t be bought or won, and start over every time you open the page. With a free HB Hub account you get your own chips, daily chips and a spot on the leaderboard.',
         ],
         'docs' => '/docs/casino/slots',

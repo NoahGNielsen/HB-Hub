@@ -267,7 +267,7 @@ function adminExportRows(PDO $db, string $sql, array $params, array $json = []):
 // ?export=1: everything there is about the user as a JSON file, for a "send me my data" email (privacy.php). Every
 // table with something about them is here. Left out on purpose: the password hash and 2FA secret, session ids and the
 // device cookie's hash (they'd log you in), the files themselves (attachments, pictures), the admin log (the admins'
-// own notes) and anything that would give away a game in progress (Minesweeper's mines, a saved Matador game's card
+// own notes) and anything that would give away a game in progress (Minesweeper's mines, a Sudoku game's answer, a saved Matador game's card
 // order). When a new table stores something about users, add it here too.
 if (($_GET['export'] ?? null) === '1') {
     $exportUser = $target;
@@ -331,8 +331,12 @@ if (($_GET['export'] ?? null) === '1') {
     $games['uno']['results'] = adminExportRows($db, 'SELECT * FROM `HBHub-UnoResults` WHERE userId = ? ORDER BY resultId DESC', $one);
     $games['wordle'] = adminExportRows($db, 'SELECT gameLanguage, gameDate, gameGuesses, gameResult, gameStartTimestamp, gameEndTimestamp
         FROM `HBHub-WordleGames` WHERE userId = ? ORDER BY gameDate DESC, gameLanguage', $one);
-    $games['minesweeper'] = adminExportRows($db, 'SELECT gameId, gameSize, gameResult, gameMs, gameStartTimestamp, gameEndTimestamp
+    $games['wordleRandom'] = adminExportRows($db, 'SELECT gameLanguage, gameWord, gameGuesses, gameResult, gameStartTimestamp, gameEndTimestamp
+        FROM `HBHub-WordleRandomGames` WHERE userId = ? ORDER BY gameLanguage', $one);
+    $games['minesweeper'] = adminExportRows($db, 'SELECT gameId, gameSize, gameResult, gameMs, gameClicksNeeded, gameStartTimestamp, gameEndTimestamp
         FROM `HBHub-MinesweeperGames` WHERE userId = ? ORDER BY gameId DESC', $one);
+    $games['sudoku'] = adminExportRows($db, 'SELECT gameId, gameLevel, gameHints, gameResult, gameMs, gamePausedMs, gameStartTimestamp, gameEndTimestamp
+        FROM `HBHub-SudokuGames` WHERE userId = ? ORDER BY gameId DESC', $one);
     $games['oreMiningInc'] = [
         'save' => adminExportRows($db, 'SELECT saveState, saveOreAllTime, saveOrePerSecond, saveDarkMatter, saveAntimatter, saveStrangeMatter, saveWarps,
                 saveClicks, saveAchievements, saveSkills, saveStartTimestamp, saveUpdatedTimestamp

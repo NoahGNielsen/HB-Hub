@@ -11,12 +11,16 @@
 // - for the leaderboard, the mines are on HB Hub's server (assets/php/games/minesweeper/minesweeper.php), not here:
 //   every cell clicked open is sent to /games/minesweeper/move (the first one starts the game there and places the
 //   mines, never on or next to it), which answers with the cells that opened and their numbers, and the whole board
-//   once the game is over. Clicks are sent one after the other (queue), so fast clicking works. Flags stay here.
+//   once the game is over. Clicks are sent one after the other (queue), so fast clicking works. Flags stay here. A win
+//   the server's anticheat finds faster than a person can click ends as result 4: won here, but not on the leaderboard.
 //   The page around the frame (assets/js/minesweeper.js) hears how it went from the minesweeper:* events below.
-// - in the guest frame (/play/minesweeper/frame) the cells go to /play/minesweeper/move instead (the <body>'s
-//   data-api), whose answers have no game id but a sealed token of the board, sent back with the next click
+//   Where they're sent is the <body>'s data-api (frame.php): /play/minesweeper/move for the free game without an
+//   account, whose "game" is a sealed token with the board in it instead of an id, but is used just the same here.
+// - anticheat: the whole file is in a function, so its state and functions (openCell(), board, ...) can't be reached
+//   from the console, and a click on the board made by code (el.click(), dispatchEvent(), an auto clicker browser
+//   extension: anything whose event isn't isTrusted; an auto clicker program outside the browser makes real clicks) stops the game and tells the server, which ends it as scripted (caught()).
+(function() {
 /*----- constants -----*/
-var api = document.body.dataset.api || '/games/minesweeper/move'; // HB Hub: where the cells are sent
 var bombImage = '<img src="/assets/minesweeper/images/bomb.png" alt="Mine">';
 var flagImage = '<img src="/assets/minesweeper/images/flag.png" alt="Flag">';
 var wrongBombImage = '<img src="/assets/minesweeper/images/wrong-bomb.png" alt="Wrong flag">'
@@ -25,6 +29,7 @@ var sizeLookup = {
   '16': {totalBombs: 40, tableWidth: '420px'},
   '30': {totalBombs: 160, tableWidth: '794px'}
 };
+var api = document.body.dataset.api || '/games/minesweeper/move'; // HB Hub: where the cells go (frame.php)
 var colors = [
   '',
   '#0000FA',
@@ -48,7 +53,6 @@ var elapsedTime;
 var timerId;
 var winner;
 var gameId; // HB Hub: the server's id for the game, null until the first answer
-var guestToken; // HB Hub: a guest's board, sealed by the server (the guest frame only), null until the first answer
 var queue; // HB Hub: the clicks waiting for the server, one after the other
 var round = 0; // HB Hub: goes up with every new board, so an answer for the board before is ignored
 var stopped; // HB Hub: the server said the game is over (another tab started one), so nothing more opens
@@ -74,6 +78,10 @@ function clickCell(e, flagging) {
   var clickedEl;
   clickedEl = e.target.tagName.toLowerCase() === 'img' ? e.target.parentElement : e.target;
   if (clickedEl.classList.contains('game-cell')) {
+    if (!e.isTrusted) { // HB Hub: made by code, not a person
+      caught();
+      return;
+    }
     var row = parseInt(clickedEl.dataset.row);
     var col = parseInt(clickedEl.dataset.col);
     var cell = board[row][col];
@@ -107,8 +115,6 @@ function openCell(row, col, clickedEl) {
     var body = new URLSearchParams({ action: 'open', row: row, col: col });
     if (gameId) {
       body.set('game', gameId);
-    } else if (guestToken) {
-      body.set('token', guestToken);
     } else {
       body.set('size', size);
     }
@@ -118,8 +124,7 @@ function openCell(row, col, clickedEl) {
           if (thisRound !== round) return;
           if (!response.ok) {
             clearInterval(timerId);
-            // over on the server (or a guest's board that can't be read any more): nothing more can be opened
-            stopped = data.error === 'gameOver' || data.error === 'expired';
+            stopped = data.error === 'gameOver'; // over on the server: nothing more can be opened
             tellPage('error', { error: data.error || 'failed' });
             return;
           }
@@ -132,23 +137,38 @@ function openCell(row, col, clickedEl) {
   });
 }
 
+// HB Hub: the anticheat saw a click made by code. Nothing more opens (the clicks still waiting are skipped, as they
+// check stopped), and once the clicks already sent have their answers (so the game's id is known), the server is told
+// to end the game as scripted. Before the first answer there's no game on the server yet, so nothing to tell.
+function caught() {
+  stopped = true;
+  clearInterval(timerId);
+  var thisRound = round;
+  queue = queue.then(function() {
+    if (thisRound !== round || !gameId || winner || hitBomb) return;
+    var body = new URLSearchParams({ action: 'scripted', game: gameId });
+    return fetch(api, { method: 'POST', headers: { Accept: 'application/json' }, body: body })
+      .catch(function() {}); // offline: the game ends as left once another one is started
+  });
+  tellPage('scripted', {});
+}
+
 // HB Hub: puts what the server answered on the board (see move.php for its shape).
 function applyAnswer(data, clickedEl) {
   gameId = data.game;
-  guestToken = data.token || null; // none once the game is over
-
   var over = data.result !== 0;
+  var won = data.result === 1 || data.result === 4; // 4: won, but too fast for the leaderboard (the server's anticheat)
   data.cells.forEach(function(entry) {
     var cell = board[entry[0]][entry[1]];
     if (entry[2] === -1) {
       cell.bomb = true;
-      if (data.result === 1 && !cell.flagged) { // won: every mine gets a flag, like in Windows
+      if (won && !cell.flagged) { // won: every mine gets a flag, like in Windows
         cell.flagged = true;
         bombCount -= 1;
       }
     } else {
       cell.adjBombs = entry[2];
-      if (cell.flagged && (!over || data.result === 1)) { // a wrong flag stays for a loss, to show it was wrong
+      if (cell.flagged && (!over || won)) { // a wrong flag stays for a loss, to show it was wrong
         cell.flagged = false;
         bombCount += 1;
       }
@@ -160,12 +180,12 @@ function applyAnswer(data, clickedEl) {
     clearInterval(timerId);
     clickedEl.style.backgroundColor = 'red';
     tellPage('lost', {});
-  } else if (data.result === 1) {
+  } else if (won) {
     winner = true;
     clearInterval(timerId);
     elapsedTime = Math.floor(data.ms / 1000);
     document.getElementById('timer').innerText = elapsedTime.toString().padStart(3, '0');
-    tellPage('won', { size: size, ms: data.ms, best: data.best, isBest: data.isBest });
+    tellPage(data.result === 4 ? 'tooFast' : 'won', { size: size, ms: data.ms, best: data.best, isBest: data.isBest });
   }
   render();
 }
@@ -259,7 +279,6 @@ function init() {
   winner = false;
   stopped = false;
   gameId = null;
-  guestToken = null;
   queue = Promise.resolve();
   round += 1;
   tellPage('new', { size: size });
@@ -313,3 +332,4 @@ function runCodeForAllCells(cb) {
 
 init();
 render();
+})();

@@ -9,12 +9,12 @@
 // It's also the guest Minesweeper at /play/minesweeper, for visitors without an account: guestGames/minesweeper/ sets
 // $guestGame and includes this page (see assets/php/guestGames/guestGames.php). Then it has the frontpage's top bar,
 // the guest bar and the text for search engines, no leaderboard, and the frame is the guest one
-// (/play/minesweeper/frame), whose board is a sealed token instead of a stored game. After a win, the line above the
-// frame asks the guest to sign up for the leaderboard (data-guest-signup) instead of showing their best.
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
+// (/play/minesweeper/frame), whose games aren't stored. data-minesweeper-guest has where signing up goes, for the line
+// after a win.
 $guestGame ??= null;
 if ($guestGame === null) {
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
     hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 }
 ?>
@@ -39,7 +39,7 @@ if ($guestGame === null) {
     <?php else: ?>
         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <?php endif; ?>
-    <main class="casino games minesweeper"<?= $guestGame !== null ? ' data-guest-signup="' . htmlspecialchars(hbHubGuestAccountLinks($guestGame)['signup']) . '"' : '' ?>>
+    <main class="casino games minesweeper"<?= $guestGame !== null ? ' data-minesweeper-guest="' . htmlspecialchars(hbHubGuestAccountLinks($guestGame)['signup']) . '"' : '' ?>>
         <?php if ($guestGame !== null): ?>
             <a class="casino-back" href="/">&larr; HB Hub</a>
         <?php else: ?>
@@ -56,7 +56,7 @@ if ($guestGame === null) {
         <?php endif; ?>
         <p class="casino-intro">
             Open every square that doesn't hide a mine. The numbers tell you how many mines are next to a square.
-            <?= $guestGame !== null ? 'With a free account, a fast win gets you' : 'Win fast for' ?> a spot on the leaderboard.
+            <?= $guestGame !== null ? 'Make a free account to get your wins on the leaderboard.' : 'Win fast for a spot on the leaderboard.' ?>
         </p>
 
         <p class="minesweeper-result" data-minesweeper-result aria-live="polite" hidden></p>

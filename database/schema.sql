@@ -680,6 +680,22 @@ CREATE TABLE `HBHub-WordleWords` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-WordleRandomGames`
+--
+
+CREATE TABLE `HBHub-WordleRandomGames` (
+  `userId` int UNSIGNED NOT NULL,
+  `gameLanguage` char(2) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'en English, da Danish',
+  `gameWord` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'The word, lowercase, picked at random just for this user from src/assets/php/games/wordle/words/<language>-answers.txt',
+  `gameGuesses` varchar(35) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'The guesses so far, oldest first and lowercase, like crane,slate (up to 6 words of 5 letters)',
+  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing\r\n1 Won\r\n2 Lost',
+  `gameStartTimestamp` datetime NOT NULL COMMENT 'UTC, when the word was picked',
+  `gameEndTimestamp` datetime DEFAULT NULL COMMENT 'UTC, when it was won or lost, NULL while playing'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Wordle random words: each user''s current (or last) random word per language, written over by the next one. Not counted in stats (src/assets/php/games/wordle/wordle.php)';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-MinesweeperGames`
 --
 
@@ -688,11 +704,33 @@ CREATE TABLE `HBHub-MinesweeperGames` (
   `userId` int UNSIGNED NOT NULL,
   `gameSize` tinyint UNSIGNED NOT NULL COMMENT 'Squares on each side: 9 Easy (10 mines), 16 Medium (40), 30 Hard (160)',
   `gameCells` varchar(900) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing, one character per square, row by row: 0 hidden, 1 opened, 2 mine. Empty once the game is over',
-  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing\r\n1 Won\r\n2 Lost (opened a mine)\r\n3 Left (started another game first)',
-  `gameMs` int UNSIGNED DEFAULT NULL COMMENT 'How long a won game took, in ms, from the first click to the one that won. NULL for the rest',
+  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing\r\n1 Won\r\n2 Lost (opened a mine)\r\n3 Left (started another game first)\r\n4 Too fast (won faster than a person can click, so not counted: the anticheat)\r\n5 Scripted (the game saw a click on the board made by code, like from the console, and stopped)',
+  `gameMs` int UNSIGNED DEFAULT NULL COMMENT 'How long a won (or too fast) game took, in ms, from the first click to the one that won. NULL for the rest',
+  `gameClicksNeeded` smallint UNSIGNED DEFAULT NULL COMMENT 'The fewest clicks the board could be won in (its 3BV), for the anticheat. Set for won and too fast games, NULL for the rest',
   `gameStartTimestamp` datetime(3) NOT NULL COMMENT 'UTC, the first click',
   `gameEndTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when it was won, lost or left, NULL while playing'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Minesweeper: every game played, for the leaderboard (src/assets/php/games/minesweeper/minesweeper.php). Others only see the totals on the leaderboard';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-SudokuGames`
+--
+
+CREATE TABLE `HBHub-SudokuGames` (
+  `gameId` bigint UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `gameLevel` tinyint UNSIGNED NOT NULL COMMENT '1 Easy\r\n2 Medium\r\n3 Hard\r\n4 Expert',
+  `gamePuzzle` varchar(81) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing, the puzzle: one digit per square, row by row, 0 for empty. Empty once the game is over',
+  `gameSolution` varchar(81) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing, the answer, like gamePuzzle. Never sent to the player. Empty once the game is over',
+  `gameHints` smallint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How many hints were used',
+  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing\r\n1 Solved (without a hint: on the leaderboard)\r\n2 Solved with hints (not on the leaderboard)\r\n3 Left (started another game first)\r\n4 Too fast (solved faster than a person can fill in the board, so not counted: the anticheat)',
+  `gameMs` int UNSIGNED DEFAULT NULL COMMENT 'How long a solved (or too fast) game took, in ms, without its pauses. NULL for the rest',
+  `gamePausedMs` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How long it has been paused in all, in ms, not counting the pause it''s in now',
+  `gamePausedTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when the pause it''s in now started (Pause, or the player left the page), NULL while the clock runs',
+  `gameStartTimestamp` datetime(3) NOT NULL COMMENT 'UTC, when it started',
+  `gameEndTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when it was solved or left, NULL while playing'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Sudoku: every game played, for the leaderboard (src/assets/php/games/sudoku/sudoku.php). Others only see the totals on the leaderboard';
 
 -- --------------------------------------------------------
 
@@ -1348,12 +1386,26 @@ ALTER TABLE `HBHub-WordleWords`
   ADD KEY `languageWord` (`wordLanguage`,`wordText`);
 
 --
+-- Indexes for table `HBHub-WordleRandomGames`
+--
+ALTER TABLE `HBHub-WordleRandomGames`
+  ADD PRIMARY KEY (`userId`,`gameLanguage`) COMMENT 'One random game per user and language';
+
+--
 -- Indexes for table `HBHub-MinesweeperGames`
 --
 ALTER TABLE `HBHub-MinesweeperGames`
   ADD PRIMARY KEY (`gameId`),
   ADD KEY `userResult` (`userId`,`gameResult`),
   ADD KEY `sizeUser` (`gameSize`,`userId`,`gameResult`,`gameMs`);
+
+--
+-- Indexes for table `HBHub-SudokuGames`
+--
+ALTER TABLE `HBHub-SudokuGames`
+  ADD PRIMARY KEY (`gameId`),
+  ADD KEY `userResult` (`userId`,`gameResult`),
+  ADD KEY `levelResult` (`gameLevel`,`gameResult`,`userId`,`gameMs`);
 
 --
 -- Indexes for table `HBHub-MinerAnomalyTimes`
@@ -1643,6 +1695,12 @@ ALTER TABLE `HBHub-MinerContributions`
 -- AUTO_INCREMENT for table `HBHub-MinesweeperGames`
 --
 ALTER TABLE `HBHub-MinesweeperGames`
+  MODIFY `gameId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-SudokuGames`
+--
+ALTER TABLE `HBHub-SudokuGames`
   MODIFY `gameId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
@@ -1962,10 +2020,22 @@ ALTER TABLE `HBHub-WordleGames`
   ADD CONSTRAINT `fk_wordlegames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `HBHub-WordleRandomGames`
+--
+ALTER TABLE `HBHub-WordleRandomGames`
+  ADD CONSTRAINT `fk_wordlerandomgames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `HBHub-MinesweeperGames`
 --
 ALTER TABLE `HBHub-MinesweeperGames`
   ADD CONSTRAINT `fk_minesweepergames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-SudokuGames`
+--
+ALTER TABLE `HBHub-SudokuGames`
+  ADD CONSTRAINT `fk_sudokugames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-MinerAnomalyTimes`

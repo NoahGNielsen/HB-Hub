@@ -137,6 +137,26 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     </a>
                 </li>
                 <li>
+                    <a class="casino-game casino-game-sudoku" href="/games/sudoku/">
+                        <span class="casino-game-cover">
+                            <span class="casino-game-kicker">Four levels</span>
+                            <span class="casino-game-name">Sudoku</span>
+                            <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
+                                <!-- A 3x3 box of a Sudoku board, with a few numbers in it and the picked square in the middle -->
+                                <rect x="6" y="6" width="52" height="52" rx="5"/>
+                                <rect class="casino-game-art-mark" x="23.5" y="23.5" width="17" height="17" rx="2"/>
+                                <path class="casino-game-art-grid" d="M23 8V56 M41 8V56 M8 23H56 M8 41H56"/>
+                                <text class="casino-game-art-digit" x="15" y="20" text-anchor="middle">5</text>
+                                <text class="casino-game-art-digit" x="49" y="20" text-anchor="middle">3</text>
+                                <text class="casino-game-art-digit is-light" x="32" y="38" text-anchor="middle">7</text>
+                                <text class="casino-game-art-digit" x="15" y="56" text-anchor="middle" dy="-2">9</text>
+                                <text class="casino-game-art-digit" x="49" y="56" text-anchor="middle" dy="-2">1</text>
+                            </svg>
+                        </span>
+                        <span class="casino-game-text">Fill the board with 1 to 9 in every row, column and box. A new puzzle every time, from Easy to Expert, and a leaderboard for the fastest solves.</span>
+                    </a>
+                </li>
+                <li>
                     <a class="casino-game casino-game-miner" href="/games/ore-mining-inc/">
                         <span class="casino-game-cover">
                             <span class="casino-game-kicker">Clicker game</span>

@@ -4,10 +4,12 @@
 // different difficulty is picked. The game itself is in assets/minesweeper/js/.
 // It also listens for the game's minesweeper:* events on this page's document (main.js sends them from inside the
 // frame): "new" (a new board, detail {size}), "won" ({size, ms, best, isBest}, the server's time and the player's
-// best), "lost" and "error" ({error}, the server's code). A win or an error goes in the line above the frame
+// best), "tooFast" (the same, for a win the server's anticheat didn't count: faster than a person can click), "lost"
+// "scripted" (the game stopped itself: a click on the board was made by code, like from the console) and "error"
+// ({error}, the server's code). A win or an error goes in the line above the frame
 // (data-minesweeper-result), and the Leaderboard button (data-minesweeper-leaderboard) goes to the board being played.
-// On the guest page (/play/minesweeper) a win has no best, and links to signing up (the <main>'s data-guest-signup)
-// instead of the leaderboard.
+// On the guest Minesweeper (/play/minesweeper, data-minesweeper-guest) there's no Leaderboard button, and a win's line
+// links to signing up instead of a best time.
 (() => {
   const frame = document.querySelector('[data-minesweeper-frame]');
   if (!frame) {
@@ -42,9 +44,7 @@
     blocked: "Games are blocked for you right now, so this game can't go on.",
     closed: "Games aren't open right now, so this game can't go on.",
     offline: "Couldn't reach HB Hub. Check your connection and click the square again.",
-    expired: "This game couldn't be picked up again. Click the face for a new game.",
   };
-  const guestSignup = document.querySelector('[data-guest-signup]')?.dataset.guestSignup ?? null;
   const result = document.querySelector('[data-minesweeper-result]');
   const leaderboard = document.querySelector('[data-minesweeper-leaderboard]');
 
@@ -86,17 +86,37 @@
 
   document.addEventListener('minesweeper:lost', () => show(null));
 
+  // The guest Minesweeper at /play/minesweeper: where signing up goes, as guests have no best times or leaderboard
+  const guestSignup = document.querySelector('[data-minesweeper-guest]')?.dataset.minesweeperGuest ?? null;
+
   document.addEventListener('minesweeper:won', (event) => {
     const { size, ms, best, isBest } = event.detail ?? {};
     const name = SIZES[size]?.[1] ?? '';
     if (guestSignup !== null) {
-      show(`You won ${name} in ${formatTime(ms)}.`, false, ['Sign up free to get on the leaderboard', guestSignup]);
+      show(`You won ${name} in ${formatTime(ms)}!`, false, ['Sign up free to get on the leaderboard', guestSignup]);
       return;
     }
     show(
       `You won ${name} in ${formatTime(ms)}. ` + (isBest ? "That's your best yet!" : `Your best is ${formatTime(best)}.`),
       false,
       ['See the leaderboard', boardUrl(size)],
+    );
+  });
+
+  document.addEventListener('minesweeper:tooFast', (event) => {
+    const { ms } = event.detail ?? {};
+    show(
+      `You won in ${formatTime(ms)}, but that's faster than a person can click, so it doesn't count on the leaderboard. `
+        + 'No bots or scripts, please.',
+      true,
+    );
+  });
+
+  document.addEventListener('minesweeper:scripted', () => {
+    show(
+      "This game was stopped: a click on the board came from code (like the console or an auto clicker extension), not from you. "
+        + "It counts as played, but not won. Click the face for a new game.",
+      true,
     );
   });
 

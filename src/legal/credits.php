@@ -168,10 +168,9 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/nickarocho/minesweeper" target="_blank" rel="noopener noreferrer">Minesweeper</a></h3>
                     <p>
-                        By Nick Arocho. The whole <a href="/games/minesweeper/">Minesweeper</a> game in the Games section
-                        (and the free one at <a href="/play/minesweeper">/play/minesweeper</a>), Windows 95 look, pictures
-                        and fonts included, with some changes for HB Hub: a few small fixes, and the mines are kept on HB
-                        Hub's server, for the leaderboard.
+                        By Nick Arocho. The whole <a href="/games/minesweeper/">Minesweeper</a> game in the Games section,
+                        Windows 95 look, pictures and fonts included, with some changes for HB Hub: a few small fixes, and the mines are
+                        kept on HB Hub's server, for the leaderboard.
                     </p>
                     <p class="credits-license">No license stated</p>
                 </div>

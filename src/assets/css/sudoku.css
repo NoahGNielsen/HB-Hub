@@ -1,0 +1,447 @@
+/* Sudoku (games/sudoku/): the level buttons, the board with its 3x3 boxes, the pad and tools next to it (under it on
+   phones), the paused cover and the result. Loaded after casino.css and games.css. A square's look comes from the
+   classes sudoku.js gives it: is-given, is-selected, is-related (same row, column or box), is-same (same number) and
+   is-conflict / is-conflict-given (a number twice in a row, column or box). */
+.sudoku {
+  --sudoku-line: color-mix(in srgb, var(--text) 14%, transparent);
+  --sudoku-box-line: color-mix(in srgb, var(--text) 55%, transparent);
+  --sudoku-cell: var(--secondary);
+  --sudoku-related: color-mix(in srgb, var(--text) 7%, var(--secondary));
+  --sudoku-same: color-mix(in srgb, var(--accent) 22%, var(--secondary));
+  --sudoku-selected: color-mix(in srgb, var(--accent) 40%, var(--secondary));
+  --sudoku-entered: #ffb07a; /* the numbers you put in, the given ones are --text */
+  --sudoku-conflict: #d64545;
+}
+
+/* Level buttons, each with its best time */
+.sudoku-levels {
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.sudoku-level {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sudoku-level:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.sudoku-level:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sudoku-level.is-active {
+  background: var(--background);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.sudoku-level-name {
+  font-weight: 700;
+}
+
+.sudoku-level-best {
+  font-size: 0.78rem;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The board on the left, the pad on the right; stacked on narrow screens */
+.sudoku-play {
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 20px 28px;
+}
+
+.sudoku-main {
+  flex: 1 1 340px;
+  max-width: 520px;
+  min-width: 0;
+}
+
+.sudoku-bar {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sudoku-bar-level {
+  font-weight: 700;
+}
+
+.sudoku-bar-time {
+  margin-left: auto;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sudoku-pause {
+  padding: 4px 12px;
+  border: 1px solid var(--sudoku-line);
+  border-radius: 8px;
+  background: var(--secondary);
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sudoku-pause:hover {
+  background: color-mix(in srgb, var(--text) 8%, var(--secondary));
+}
+
+.sudoku-pause:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sudoku-pause:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.sudoku-board-wrap {
+  position: relative;
+}
+
+.sudoku-board {
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+  border: 3px solid var(--sudoku-box-line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--sudoku-box-line);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.sudoku-row {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+}
+
+.sudoku-cell {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-right: 1px solid var(--sudoku-line);
+  border-bottom: 1px solid var(--sudoku-line);
+  background: var(--sudoku-cell);
+  color: var(--sudoku-entered);
+  font: inherit;
+  font-size: clamp(1.1rem, 5.4vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+/* The thick lines between the boxes: after columns 3 and 6, under rows 3 and 6 */
+.sudoku-cell:nth-child(3),
+.sudoku-cell:nth-child(6) {
+  border-right: 2px solid var(--sudoku-box-line);
+}
+
+.sudoku-cell:nth-child(9) {
+  border-right: none;
+}
+
+.sudoku-row:nth-child(3) .sudoku-cell,
+.sudoku-row:nth-child(6) .sudoku-cell {
+  border-bottom: 2px solid var(--sudoku-box-line);
+}
+
+.sudoku-row:nth-child(9) .sudoku-cell {
+  border-bottom: none;
+}
+
+.sudoku-cell.is-given {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.sudoku-cell.is-related {
+  background: var(--sudoku-related);
+}
+
+.sudoku-cell.is-same {
+  background: var(--sudoku-same);
+}
+
+.sudoku-cell.is-selected {
+  background: var(--sudoku-selected);
+}
+
+.sudoku-cell.is-conflict {
+  color: var(--sudoku-conflict);
+}
+
+.sudoku-cell.is-conflict-given {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sudoku-conflict) 70%, transparent);
+}
+
+.sudoku-cell:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+/* Notes: a 3x3 grid of small numbers in an empty square */
+.sudoku-notes {
+  width: 100%;
+  height: 100%;
+  padding: 2px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  place-items: center;
+  color: color-mix(in srgb, var(--text) 70%, transparent);
+  font-size: clamp(0.5rem, 1.9vw, 0.72rem);
+  font-weight: 600;
+}
+
+.sudoku-notes .is-same {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+/* Paused, or making a puzzle: the numbers are hidden under a cover */
+.sudoku-board.is-paused .sudoku-cell {
+  color: transparent;
+}
+
+.sudoku-board.is-paused .sudoku-notes {
+  visibility: hidden;
+}
+
+.sudoku-board.is-solved .sudoku-cell {
+  cursor: default;
+}
+
+.sudoku-board.is-solved {
+  border-color: var(--casino-up, #2fa36b);
+}
+
+.sudoku-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--background) 80%, transparent);
+}
+
+.sudoku-cover[hidden] {
+  display: none;
+}
+
+.sudoku-cover p {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.sudoku-message {
+  min-height: 1.5em;
+  margin: 8px 0 0;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* The tools and the number pad */
+.sudoku-controls {
+  flex: 0 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 34px; /* level with the board, under the bar */
+}
+
+.sudoku-tools {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.sudoku-tool {
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  border-radius: 10px;
+  background: var(--secondary);
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sudoku-tool svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sudoku-tool:hover {
+  background: color-mix(in srgb, var(--text) 8%, var(--secondary));
+}
+
+.sudoku-tool:focus-visible,
+.sudoku-pad-key:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sudoku-tool.is-on {
+  background: color-mix(in srgb, var(--accent) 30%, var(--secondary));
+}
+
+.sudoku-tool-state {
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+.sudoku-tool:disabled,
+.sudoku-pad-key:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sudoku-pad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.sudoku-pad-key {
+  aspect-ratio: 1.3;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 12px;
+  background: var(--secondary);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sudoku-pad-key:hover {
+  background: color-mix(in srgb, var(--text) 8%, var(--secondary));
+}
+
+.sudoku-pad-digit {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.sudoku-pad-left {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  font-size: 0.72rem;
+  opacity: 0.65;
+}
+
+.sudoku-pad-key.is-done .sudoku-pad-digit {
+  color: inherit;
+  opacity: 0.35;
+}
+
+.sudoku-result {
+  margin-bottom: 20px;
+  background: color-mix(in srgb, var(--casino-up, #2fa36b) 14%, var(--secondary));
+}
+
+.sudoku-result h2 {
+  margin: 0 0 8px;
+}
+
+.sudoku-result-text {
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.sudoku-rules kbd,
+.casino-rules kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--sudoku-line);
+  border-radius: 5px;
+  background: var(--background);
+  font: inherit;
+  font-size: 0.85em;
+}
+
+/* Phones: the pad goes in one row of nine under the board, the tools above it */
+@media (max-width: 720px) {
+  .sudoku-levels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sudoku-controls {
+    flex: 1 1 100%;
+    max-width: 520px;
+    margin-top: 0;
+  }
+
+  .sudoku-pad {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .sudoku-pad-key {
+    aspect-ratio: 0.8;
+    border-radius: 8px;
+  }
+
+  .sudoku-pad-digit {
+    font-size: 1.4rem;
+  }
+
+  .sudoku-pad-left {
+    right: 0;
+    left: 0;
+    bottom: 3px;
+    text-align: center;
+    font-size: 0.65rem;
+  }
+}

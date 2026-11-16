@@ -17,6 +17,9 @@
         <loc>https://hbhub.noahgajnielsen.dk/play/minesweeper</loc>
     </url>
     <url>
+        <loc>https://hbhub.noahgajnielsen.dk/play/sudoku</loc>
+    </url>
+    <url>
         <loc>https://hbhub.noahgajnielsen.dk/play/blackjack</loc>
     </url>
     <url>
@@ -123,6 +126,9 @@
     </url>
     <url>
         <loc>https://hbhub.noahgajnielsen.dk/docs/games/minesweeper</loc>
+    </url>
+    <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/games/sudoku</loc>
     </url>
     <url>
         <loc>https://hbhub.noahgajnielsen.dk/docs/games/ore-mining-inc</loc>

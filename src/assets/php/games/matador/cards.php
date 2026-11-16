@@ -14,6 +14,9 @@
 //   repairs (house, hotel)  pay for every house and hotel you own
 //   fromEach (amount)    every other player pays you
 //   legat                the Matador-legat, when you're worth at most 15,000 kr
+//   kaos                 Kaos only: the fields are mixed up again (board.php's layout), and the players swap their
+//                        properties and, separately, their money. Never in the deck - it's drawn
+//                        by chance instead of the top card (HBHUB_MATADOR_KAOS_PERCENT)
 
 /**
  * The game's Prøv lykken cards (its edition's), by number.

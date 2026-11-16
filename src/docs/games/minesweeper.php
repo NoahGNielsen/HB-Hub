@@ -46,6 +46,14 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             the server, and peeking at the page's code doesn't give away the mines. A game can't be picked up
                             again after you close the page: it counts as played, but not won.
                         </p>
+                        <p>
+                            There's also a simple anticheat against bots that solve the board for you. When you win, the
+                            server works out the fewest clicks the board could be won in, and if you made them faster than
+                            10 a second (well past the world's best players), the win doesn't count: it shows as played,
+                            but not on the leaderboard. Normal fast play is nowhere near it. The game also stops itself
+                            when a click on the board comes from code instead of you (like one typed into the browser's
+                            console, or an auto clicker extension), and that game counts as played, but not won.
+                        </p>
                         <p>It's a copy of Nick Arocho's Minesweeper (see the <a href="/legal/credits#code">credits</a>).</p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

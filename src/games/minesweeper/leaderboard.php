@@ -1,7 +1,9 @@
 <?php
 // Minesweeper leaderboard, one for each difficulty (?size=easy, medium or hard, as tabs), from HBHub-MinesweeperGames:
 // the fastest win and the average win time, wins, games played and win %. The times are the server's own (see
-// assets/php/games/minesweeper/minesweeper.php), so they can be trusted. Sorted by any column with
+// assets/php/games/minesweeper/minesweeper.php), so they can be trusted, and a win the anticheat found too fast only
+// counts as played (its time is kept, but left out of the best and average here), like a game stopped for a click
+// made by code. Sorted by any column with
 // ?sort=column&dir=asc|desc, which the headings link to; the fastest win first to begin with.
 // Only players with a win are on it. Win % only counts from LEADERBOARD_RANKED_GAMES games, so one lucky game doesn't
 // top it: anyone with fewer has "–", and comes after everyone with one when sorting by it (whichever way).
@@ -43,13 +45,14 @@ $podium = $sort !== 'player' && $dir === LEADERBOARD_COLUMNS[$sort][1];
 // Everyone's totals on the size, for players with a win. Banned and deleted accounts (userStatus NULL) are left out.
 // A game still being played counts as played, as it isn't known yet whether it'll be finished.
 $statement = $db->prepare('SELECT g.userId, u.userName, u.userAvatarAttachmentId, COUNT(*) AS played,
-        SUM(g.gameResult = ?) AS wins, MIN(g.gameMs) AS best, AVG(g.gameMs) AS average
+        SUM(g.gameResult = ?) AS wins, MIN(IF(g.gameResult = ?, g.gameMs, NULL)) AS best,
+        AVG(IF(g.gameResult = ?, g.gameMs, NULL)) AS average
     FROM `HBHub-MinesweeperGames` g
     JOIN `HBHub-Users` u ON u.userId = g.userId
     WHERE g.gameSize = ? AND u.userStatus IS NOT NULL AND u.userStatus <> ?
     GROUP BY g.userId, u.userName, u.userAvatarAttachmentId
     HAVING wins > 0');
-$statement->execute([HBHUB_MINESWEEPER_WON, $size, LEADERBOARD_STATUS_BANNED]);
+$statement->execute([HBHUB_MINESWEEPER_WON, HBHUB_MINESWEEPER_WON, HBHUB_MINESWEEPER_WON, $size, LEADERBOARD_STATUS_BANNED]);
 
 $rows = [];
 foreach ($statement->fetchAll() as $row) {
@@ -94,6 +97,7 @@ function leaderboardSortUrl(string $sizeKey, string $column, string $sort, strin
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <script src="/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
     <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <title>Minesweeper leaderboard - HB Hub</title>
@@ -108,7 +112,8 @@ function leaderboardSortUrl(string $sizeKey, string $column, string $sort, strin
         <p class="casino-intro">
             Easy, Medium and Hard have a leaderboard each, of everyone who has won there. A time is from your first click
             to the one that wins, timed by HB Hub's server. Win % is only shown from <?= LEADERBOARD_RANKED_GAMES ?>
-            games, and a game you leave or start over counts as played.
+            games, and a game you leave or start over counts as played. So does a win faster than a person can click,
+            which is left off as a bot's.
         </p>
 
         <nav class="casino-board-links" aria-label="Difficulty">
@@ -148,7 +153,7 @@ function leaderboardSortUrl(string $sizeKey, string $column, string $sort, strin
                                         <a class="casino-player" href="<?= htmlspecialchars(hbHubProfileUrl($row['userId'], $_SERVER['REQUEST_URI'])) ?>">
                                             <span class="casino-avatar" aria-hidden="true">
                                                 <?php if ($avatarSrc !== null): ?>
-                                                    <img src="<?= htmlspecialchars($avatarSrc) ?>" alt="" loading="lazy">
+                                                    <img data-queued-picture="<?= htmlspecialchars($avatarSrc) ?>" alt=""><noscript><img src="<?= htmlspecialchars($avatarSrc) ?>" alt="" loading="lazy"></noscript>
                                                 <?php else: ?>
                                                     <?= htmlspecialchars(mb_strtoupper(mb_substr($row['player'], 0, 1))) ?>
                                                 <?php endif; ?>

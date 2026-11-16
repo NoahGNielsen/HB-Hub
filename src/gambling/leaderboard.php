@@ -76,6 +76,7 @@ function leaderboardNetCell(?int $net, string $class = ''): string
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <script src="/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
     <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <title>Casino leaderboard - HB Hub</title>
     <meta name="robots" content="noindex">
@@ -128,7 +129,7 @@ function leaderboardNetCell(?int $net, string $class = ''): string
                                         <a class="casino-player" href="<?= htmlspecialchars(hbHubProfileUrl($row['userId'], $_SERVER['REQUEST_URI'])) ?>">
                                             <span class="casino-avatar" aria-hidden="true">
                                                 <?php if ($avatarSrc !== null): ?>
-                                                    <img src="<?= htmlspecialchars($avatarSrc) ?>" alt="" loading="lazy">
+                                                    <img data-queued-picture="<?= htmlspecialchars($avatarSrc) ?>" alt=""><noscript><img src="<?= htmlspecialchars($avatarSrc) ?>" alt="" loading="lazy"></noscript>
                                                 <?php else: ?>
                                                     <?= htmlspecialchars(mb_strtoupper(mb_substr($row['player'], 0, 1))) ?>
                                                 <?php endif; ?>
