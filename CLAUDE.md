@@ -1,4 +1,4 @@
-Last updated 15/11-26
+Last updated 16/11-26
 # CLAUDE.md
 
 ## Rules (from the project owner)
@@ -71,6 +71,15 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
 - **`session.php` is `require_once`d first by every page/endpoint**, before any output. It sets `$hbHubUser` (or null)
   and redirects to the login when not logged in; set `$hbHubSessionOptional = true` before it for public pages. It also
   rejects cross-origin POSTs globally.
+- **Pictures are files on disk, never BLOBs**: profile pictures and group icons (`HBHub-Attachments.attachmentKey`)
+  and the banned pictures' copies (`HBHub-BannedAvatars.bannedAvatarKey`) live in `pictures/` and `bannedPictures/`
+  inside the attachments folder, outside the web root. Everything goes through `assets/php/pictureFiles.php`: write
+  the file first, then the row (`hbHubPictureAdd()`), and never unlink yourself - call `hbHubPictureFileRelease()` /
+  `hbHubPictureDelete()`, which delete the file at the end of the request if no row points at it any more. They're
+  sent by `avatar.php`, `icon.php` and `bannedPicture.php` through `hbHubPictureFileSend()`, which has the cache
+  headers (`private, max-age=31536000, immutable` + ETag, only after the access check and once the file is found),
+  so a new link to one must carry `&v=<id>`. A new script that sends pictures goes in both `FilesMatch` exclusion
+  lists in `src/.htaccess`.
 - **Ghost bans** (top of `chat.php`): any new query that shows chat content to users must filter them
   (`chatGhostVisibleSql()`, `cm.memberIsGhost = 0`).
 - **Game state** for Matador/Blackjack/Baccarat/UNO is JSON in `roomState` and holds hidden info (card order, the hole

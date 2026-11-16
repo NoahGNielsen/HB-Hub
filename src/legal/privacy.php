@@ -401,7 +401,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <h2 id="privacy-services">5. Eksterne tjenester</h2>
                         <p>Dine data sælges aldrig og deles ikke til markedsføring. Følgende tjenester indgår i driften af siden:</p>
                         <ul>
-                            <li><strong>Simply.com</strong> (Danmark) hoster hjemmesiden, databasen og vedhæftede filer. Alle data opbevares i EU.</li>
+                            <li><strong>Simply.com</strong> (Danmark) hoster hjemmesiden, databasen og de filer, der gemmes på serveren: vedhæftede filer, profilbilleder, bannerbilleder, gruppeikoner og kopierne af bandlyste billeder. Filerne ligger i en mappe, der ikke kan tilgås direkte udefra, og udleveres kun til dem, der må se dem. Alle data opbevares i EU.</li>
                             <li><strong>Giphy</strong> leverer GIF'er. Søgninger sendes via HB Hubs server, så Giphy ikke ved, hvem der søger, og resultaterne gemmes i 15 minutter uden oplysning om, hvem der søgte. Selve GIF'erne hentes direkte fra Giphy, som derfor ser din IP-adresse, når en GIF vises.</li>
                             <li><strong>GitHub</strong> hoster sidens kildekode og modtager kun det samlede antal medlemmer og beskeder, aldrig oplysninger om enkeltpersoner.</li>
                             <li>
@@ -461,7 +461,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             indstillinger, adgangskode, totrinshemmelighed, Discord-kobling, IP-adresser, logins, kendte enheder,
                             browserfingeraftryk, dit Ore Mining Inc.-spil og dine nedbrudsrapporter, dine fejlrapporter, dine
                             Minesweeper- og Sudoku-spil, dit tilfældige Wordle-ord og dine vedhæftede filer. Dit navn erstattes
-                            med "Deleted User".
+                            med "Deleted User". Udskifter eller fjerner du dit profilbillede, eller udskiftes eller fjernes en
+                            gruppes ikon, slettes den gamle billedfil fra serveren med det samme.
                         </p>
                         <p>
                             Det, der er nødvendigt for, at andres chats og spil fortsat giver mening, bevares uden kobling til dit

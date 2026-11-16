@@ -15,7 +15,7 @@ the [example config](../config-examples/hbHubSiteConfig.example.php). The main o
 | `login_attempts_max`, `login_attempts_lockout_time` | Failed logins before a lockout, and how many minutes it lasts |
 | `onboarding_*` | What sign-up requires (profile picture, password strength, bio) and how many accounts one IP can make per hour |
 | `user_*_maxSize` | The longest name and bio, and the biggest profile picture |
-| `attachments_path`, `attachments_max_total_bytes` | Where chat attachments are kept on disk, and how much space they may take together (9 GB by default) before nobody can send new ones |
+| `attachments_path`, `attachments_max_total_bytes` | Where chat attachments are kept on disk, and how much space they may take together (9 GB by default) before nobody can send new ones. Profile pictures, group icons and banned pictures are kept in the same folder (in `pictures/` and `bannedPictures/`) and don't count towards that |
 
 ---
 
