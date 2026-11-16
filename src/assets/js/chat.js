@@ -2305,6 +2305,7 @@ chatPart((signal) => {
     let uploadText = ''; // "Sending… 40%"
     let sendToken = 0; // which Send is going on, so one called off by taking a file out stops where it is
     let sending = null; // the faded message shown while it's being sent: { item, meta }
+    let sendingText = null; // the message typed with them, taken out of the box at Send so a new one can be typed meanwhile
 
     // The + tile at the end of the row, for adding more
     const addTile = document.createElement('li');
@@ -2727,7 +2728,8 @@ chatPart((signal) => {
     // The message as it'll look, faded at the bottom of the chat until the page reloads with the real one: the pictures
     // (or file cards, also for pictures the browser can't show), and the text as typed. It has no data-message-id, so
     // polling and the message menu leave it alone, and polling adds new messages above it (addMessages below).
-    function showSending() {
+    // text: the message as it was when Send was pressed (the box may hold the next one by now).
+    function showSending(text) {
         const item = element('li', 'chat-message is-own is-sending');
         item.setAttribute('data-message-sending', '');
         const bubble = element('div', 'chat-message-bubble has-attachment');
@@ -2748,7 +2750,7 @@ chatPart((signal) => {
             box.append(cards);
         }
         bubble.append(box);
-        if (textarea.value.trim() !== '') bubble.append(element('div', 'chat-message-text', textarea.value));
+        if (text.trim() !== '') bubble.append(element('div', 'chat-message-text', text));
         const meta = element('span', 'chat-message-meta', 'Sending…');
         meta.setAttribute('role', 'status');
         item.append(bubble, meta);
@@ -2769,8 +2771,22 @@ chatPart((signal) => {
         if (empty) empty.hidden = false;
     }
 
+    // Not sent after all: the message goes back in the box to try again, in front of anything typed since
+    function restoreText() {
+        if (sendingText === null) return;
+        const text = sendingText;
+        sendingText = null;
+        if (text === '') return;
+        const typed = textarea.value;
+        const joined = typed === '' ? text : text + '\n' + typed;
+        if (textarea.maxLength > 0 && joined.length > textarea.maxLength) return; // no room: the new one stays as it is
+        textarea.value = joined;
+        textarea.dispatchEvent(new Event('input', { bubbles: true })); // grows to fit it
+    }
+
     function finishSending() {
         hideSending();
+        restoreText();
         isSending = false;
         isUploading = false;
         sendButton.disabled = false;
@@ -2812,6 +2828,15 @@ chatPart((signal) => {
         isSending = true;
         sendButton.disabled = true;
         notice = null;
+        // The text goes with them as it is now, and the box empties straight away like after a normal message, so
+        // whatever is typed while the pictures convert is the next message rather than added to this one
+        const message = textarea.value;
+        const reply = replyInput.value;
+        sendingText = message;
+        if (message !== '') {
+            textarea.value = '';
+            textarea.dispatchEvent(new Event('input', { bubbles: true })); // shrinks back, and stops "is typing"
+        }
         render();
         let isSent = false;
         try {
@@ -2819,7 +2844,7 @@ chatPart((signal) => {
             // Ticking "Keep original pictures" or "Keep original videos" meanwhile stops waiting and sends those originals.
             await Promise.all(jobs.map((job) => job.ready));
             if (!isCurrent()) return;
-            showSending();
+            showSending(message);
             convertNext();
             while (converting) await converting.promise;
             if (!isCurrent()) return;
@@ -2830,8 +2855,8 @@ chatPart((signal) => {
             const body = new FormData();
             body.set('action', 'upload');
             body.set('chat', composer.elements.chat.value);
-            body.set('message', textarea.value);
-            body.set('reply', replyInput.value);
+            body.set('message', message);
+            body.set('reply', reply);
             sent.forEach((job) => {
                 body.append('files[]', toSend(job), uploadName(job));
                 body.append('converted[]', toSend(job) === job.result ? '1' : '0');
