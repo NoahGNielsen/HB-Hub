@@ -485,7 +485,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                         <div><dt>Groups</dt><dd><?= number_format($adminTotals['groupChats']) ?></dd></div>
                         <div class="admin-stats-wide"><dt>Messages ever</dt><dd><?= number_format($adminTotals['messagesEver']) ?></dd></div>
                     </dl>
-                    <p class="admin-panel-foot">Chats in use had a message this week. DMs and groups don't count deleted ones, and messages are only the ones people wrote, not the notices about changes in a chat.</p>
+                    <p class="admin-panel-foot">Chats with a message this week. Deleted chats and system notices don't count.</p>
                     <?= adminOverviewPanelHtml('admin-overview-chat-heading', 'Chat', 'Last 7 days', 4, ob_get_clean()) ?>
 
                     <?= adminOverviewPanelHtml('admin-overview-chats-heading', 'Busiest chats', 'Last 7 days', 4,
