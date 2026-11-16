@@ -78,7 +78,7 @@ $headerKeywords = array_unique([
 <?php endif; ?>
 <?php if (!empty($hbHubFingerprintDue)): ?>
 <!-- Sends the browser's fingerprint, at most once a day per login (assets/php/fingerprint.php) -->
-<script src="/assets/js/fingerprint.js?v=<?= filemtime(__DIR__ . '/../js/fingerprint.js') ?>" defer></script>
+<script src="/assets/js/deviceCheck.js?v=<?= filemtime(__DIR__ . '/../js/deviceCheck.js') ?>" defer></script>
 <?php endif; ?>
 <link rel="terms-of-service" href="https://hbhub.noahgajnielsen.dk/legal/terms">
 <link rel="privacy-policy" href="https://hbhub.noahgajnielsen.dk/legal/privacy">

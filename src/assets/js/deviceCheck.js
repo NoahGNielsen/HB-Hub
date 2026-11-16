@@ -1,4 +1,6 @@
 // The browser's fingerprint, for the admin panel's People (assets/php/fingerprint.php has the why and what's kept).
+// It's called deviceCheck.js and posts to /device-check rather than anything with "fingerprint" in it, because ad and
+// tracker blockers (uBlock Origin, Brave Shields, AdGuard, EasyPrivacy lists) block URLs with that word in them.
 // header.php only loads this for a logged in user whose login hasn't sent one in the last day, so it runs about once
 // a day per browser, a little after the page has loaded, while the browser has nothing else to do. It's never loaded
 // for a browser that sends Global Privacy Control or Do Not Track, and does nothing if it somehow is
@@ -17,11 +19,11 @@
 // (change with zoom and resizing) and light/dark mode. Brave makes up a new canvas, audio and core count every
 // session, so those are left out there, or its fingerprint would change all the time.
 //
-// Only the hash is sent: POST /fingerprint (otherPages/fingerprint.php), form-encoded action=save&fingerprint=<hex>.
+// Only the hash is sent: POST /device-check (otherPages/deviceCheck.php), form-encoded action=save&fingerprint=<hex>.
 // If any part fails, that part is just left empty; if it all fails or the post doesn't go through, nothing happens and
 // it's tried again on the next page load (the server only stores one a day per login anyway).
 (() => {
-    const REPORT_URL = '/fingerprint';
+    const REPORT_URL = '/device-check';
     const START_DELAY_MS = 2000;
     const AUDIO_TIMEOUT_MS = 1000;
     // Brave randomises canvas, audio and hardwareConcurrency per session ("farbling")

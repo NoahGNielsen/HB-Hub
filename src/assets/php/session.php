@@ -31,7 +31,7 @@ const HBHUB_SESSION_ONLINE_SECONDS = 5 * 60;
 // A login sends the browser's fingerprint (assets/php/fingerprint.php) at most this often (sessionFingerprintTimestamp)
 const HBHUB_SESSION_FINGERPRINT_HOURS = 24;
 
-// Whether this request's page should load assets/js/fingerprint.js (header.php): set by hbHubSessionUser() when the
+// Whether this request's page should load assets/js/deviceCheck.js (header.php): set by hbHubSessionUser() when the
 // login hasn't sent one in the last HBHUB_SESSION_FINGERPRINT_HOURS, and never when the browser sends Global Privacy
 // Control (or the older Do Not Track)
 $hbHubFingerprintDue = false;
