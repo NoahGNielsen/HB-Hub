@@ -24,7 +24,7 @@ Last updated 15/11-26
   `HBHUB_TERMS_UPDATED`, `HBHUB_CONDUCT_UPDATED`, `HBHUB_DO_NOT_SELL_UPDATED`) to today's date, written like
   `19 October 2026`. `HBHUB_TERMS_UPDATED` and `HBHUB_PRIVACY_UPDATED` are the exception: they live in
   `src/assets/php/legalUpdated.php`, because a new date there also shows everyone who agreed to the old version a "has
-  been updated" box (`cookieNotice.js`). When it's unclear whether a page needs a change, update it anyway or tell the owner.
+  been updated" box (`cornerBoxes.js`). When it's unclear whether a page needs a change, update it anyway or tell the owner.
 - **Automatically make a commit after making changes**, with an appropriate commit message. Existing history uses
   short, lowercase, plain-English messages (`added leaderboard`, `QOL update to matador`).
 - `database/migrations/*` is in `.gitignore`, so migrations are never part of a commit.
@@ -131,7 +131,7 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
   **English** (except Matador's Danish game terms), so docs refer to its buttons by their English names, in bold.
   Shared helpers that show text on both sides take a `$danish` flag (`hbHubNameError()`, `hbHubPasswordError()`,
   `hbHubClassError()`, `hbHubLoginLockedMessage()`). Legal dates are kept in English (they're the version key
-  `cookieNotice.js` saves) and shown with `hbHubLegalDanishDate()`. Code comments stay English.
+  `cornerBoxes.js` saves) and shown with `hbHubLegalDanishDate()`. Code comments stay English.
 - **schema.sql** is a phpMyAdmin dump: `CREATE TABLE`s first, then indexes, `AUTO_INCREMENT` and foreign keys as
   separate `ALTER TABLE` blocks further down - keep that structure.
 

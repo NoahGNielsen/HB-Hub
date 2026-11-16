@@ -7,7 +7,8 @@
 // assets/js/watchdog.js (on every page, header.php) notes every error the page gets, as one of HBHUB_WATCHDOG_KINDS:
 // answers of 400 or more ('http', with the status), requests with no answer ('network'), pictures/scripts/styles that
 // didn't load ('load'), uncaught JavaScript errors ('script'), uncaught rejected promises ('promise') and what the
-// Content-Security-Policy blocked ('csp'). 3 seconds after the first one it sends them to /watchdog
+// Content-Security-Policy blocked ('csp'). An endpoint's answer that's a normal part of how things work (Wordle's "not a
+// word", a stopped Matador game) sends the header "X-HBHub-Expected: 1" and isn't counted. 3 seconds after the first one it sends them to /watchdog
 // (otherPages/watchdog.php), and when that doesn't go through (it's a PHP request too, so it often gets a 508 itself) it
 // tries again every 3 seconds until it does. hbHubWatchdogSave() saves it here. Site admins read it under Browser errors
 // in the admin panel's side menu (admin/watchdog.php).

@@ -42,6 +42,7 @@ if ($seat === null || ($input['room'] ?? null) !== (string) $seat['roomId']) {
     $isGone = $seat === null && is_string($askedFor) && ctype_digit($askedFor) && strlen($askedFor) <= 10
         && hbHubMatadorRoom($db, (int) $askedFor) === null;
     http_response_code(404);
+    header('X-HBHub-Expected: 1'); // a normal answer, not an error for the Watchdog to count (watchdog.js)
     echo json_encode(['error' => $isGone ? 'stopped' : 'notSeated']);
     exit;
 }
@@ -162,11 +163,13 @@ if ($do === null) {
 $played ??= hbHubMatadorPlay($db, $roomId, $do);
 if ($played === null || !empty($played[0]['isDeleted'])) {
     http_response_code(404);
+    header('X-HBHub-Expected: 1'); // a normal answer, not an error for the Watchdog to count (watchdog.js)
     echo json_encode(['error' => 'stopped']); // the host saved and stopped it
     exit;
 }
 if (!hbHubMatadorSeated($played[1], $userId)) {
     http_response_code(404);
+    header('X-HBHub-Expected: 1'); // a normal answer, not an error for the Watchdog to count (watchdog.js)
     echo json_encode(['error' => 'notSeated']); // taken out of the game (gone too long)
     exit;
 }

@@ -249,7 +249,7 @@ body:has(> .site-footer) {
   }
 }
 
-/* Cookie notice (.cookie-notice) + terms/privacy updated box (.corner-box) (assets/php/footer.php + cookieNotice.js) -
+/* Cookie notice (.cookie-notice) + terms/privacy updated box (.corner-box) (assets/php/footer.php + cornerBoxes.js) -
    a small box in the bottom-left corner.
    The updated box isn't called .cookie-notice, since ad blockers (Brave Shields) hide anything called that */
 .cookie-notice,

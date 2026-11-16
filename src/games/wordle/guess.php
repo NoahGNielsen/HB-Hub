@@ -56,6 +56,7 @@ if (($_POST['mode'] ?? null) === 'random') {
         hbHubWordleRandomNew($db, $userId, $language);
     } elseif (hbHubWordleRandomGuess($db, $userId, $language, $_POST['word'] ?? null, $_POST['turn'] ?? null) === 'notWord') {
         http_response_code(422);
+        header('X-HBHub-Expected: 1'); // a normal answer, not an error for the Watchdog to count (watchdog.js)
         echo json_encode(['error' => 'notWord']);
         exit;
     }
@@ -75,6 +76,7 @@ $userId = (int) $hbHubUser['userId'];
 
 if (hbHubWordleGuess($db, $userId, $language, $_POST['word'] ?? null, $_POST['turn'] ?? null) === 'notWord') {
     http_response_code(422);
+    header('X-HBHub-Expected: 1'); // a normal answer, not an error for the Watchdog to count (watchdog.js)
     echo json_encode(['error' => 'notWord']);
     exit;
 }
