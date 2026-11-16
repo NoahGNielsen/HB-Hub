@@ -1295,18 +1295,6 @@
   color: var(--settings-danger);
 }
 
-/* The house's win/loss as a little tag after the chips bet number */
-.admin-overview-signed {
-  display: inline-block;
-  margin-left: 0.4em;
-  padding: 0.05em 0.45em;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  font-size: 0.75em;
-  font-weight: 700;
-  vertical-align: 0.1em;
-}
-
 /* Narrower: two headline numbers a row, the panels in two columns (the full-width ones stay full width) */
 @media (max-width: 1100px) {
   .admin-kpis {

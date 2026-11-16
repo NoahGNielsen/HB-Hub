@@ -370,13 +370,12 @@ function adminOverviewRankHtml(array $rows, callable $linkHtml, string $key = 'm
 }
 
 /**
- * A number of chips won or lost, as a little tag that sits next to the chips bet: green with a + above nothing, red
- * below it.
+ * A number of chips won or lost, with + for more than nothing, red when it's below nothing.
  */
 function adminOverviewSignedHtml(int $chips): string
 {
-    return '<span class="admin-overview-signed' . ($chips < 0 ? ' admin-overview-minus' : ($chips > 0 ? ' admin-overview-plus' : ''))
-        . '" title="House won">' . ($chips > 0 ? '+' : '') . number_format($chips) . '</span>';
+    return '<span class="' . ($chips < 0 ? 'admin-overview-minus' : ($chips > 0 ? 'admin-overview-plus' : '')) . '">'
+        . ($chips > 0 ? '+' : '') . number_format($chips) . '</span>';
 }
 
 $siteConfig = require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php';
@@ -555,14 +554,15 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                     <div class="admin-table-wrap">
                         <table class="admin-table admin-dash-table">
                             <caption class="admin-visually-hidden">The casino's games in the last 7 days</caption>
-                            <thead><tr><th scope="col">Game</th><th scope="col">Rounds</th><th scope="col">Players</th><th scope="col" title="The tag is what the house won: what the players lost, minus what they won">Chips bet</th></tr></thead>
+                            <thead><tr><th scope="col">Game</th><th scope="col">Rounds</th><th scope="col">Players</th><th scope="col">Chips bet</th><th scope="col" title="What the players lost, minus what they won">House won</th></tr></thead>
                             <tbody>
                                 <?php foreach ($adminCasino as $name => $game): ?>
                                     <tr<?= $game['rounds'] === 0 ? ' class="is-quiet"' : '' ?>>
                                         <th scope="row"><?= htmlspecialchars($name) ?></th>
                                         <td><?= number_format($game['rounds']) ?></td>
                                         <td><?= number_format($game['players']) ?></td>
-                                        <td class="admin-nowrap"><?= number_format($game['wagered']) ?> <?= adminOverviewSignedHtml($game['house']) ?></td>
+                                        <td><?= number_format($game['wagered']) ?></td>
+                                        <td><?= adminOverviewSignedHtml($game['house']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -571,12 +571,13 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                                     <th scope="row">Total</th>
                                     <td><?= number_format($adminCasinoTotal['rounds']) ?></td>
                                     <td></td>
-                                    <td class="admin-nowrap"><?= number_format($adminCasinoTotal['wagered']) ?> <?= adminOverviewSignedHtml($adminCasinoTotal['house']) ?></td>
+                                    <td><?= number_format($adminCasinoTotal['wagered']) ?></td>
+                                    <td><?= adminOverviewSignedHtml($adminCasinoTotal['house']) ?></td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
-                    <p class="admin-panel-foot">The tag next to the chips bet is what the house won: what the players lost minus what they won, so red means the players came out ahead.</p>
+                    <p class="admin-panel-foot">House won is what the players lost minus what they won, so red means the players came out ahead.</p>
                     <?= adminOverviewPanelHtml('admin-overview-casino-heading', 'Casino', 'Last 7 days', 6, ob_get_clean()) ?>
 
                     <?php ob_start(); ?>
