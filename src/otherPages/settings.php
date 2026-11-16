@@ -663,19 +663,46 @@ function settingsPanelHead(string $id, string $title, ?string $intro = null, boo
 }
 
 /**
- * One row in the list: an icon in a colored tile, its name, what it's set to now ($value, which settings.js keeps up to
- * date through [data-summary="$summary"]), and an arrow. Goes to its panel (#$id).
+ * A tab's icon: a small line drawing in the text color (drawn for HB Hub, like the nav bar's icons rather than emoji),
+ * or Discord's logo. $name is one of the keys below.
  */
-function settingsRow(string $id, string $icon, string $tone, string $title, string $value = '', ?string $summary = null, string $class = ''): string
+function settingsIcon(string $name): string
 {
-    return '<li><a class="settings-row' . ($class !== '' ? ' ' . $class : '') . '" href="#' . $id . '" data-settings-row>'
-        . '<span class="settings-row-icon" data-tone="' . $tone . '" aria-hidden="true">' . $icon . '</span>'
-        . '<span class="settings-row-text">'
-        . '<span class="settings-row-title">' . htmlspecialchars($title) . '</span>'
-        . '<span class="settings-row-value"' . ($summary !== null ? ' data-summary="' . $summary . '"' : '') . ($value === '' ? ' hidden' : '') . '>'
+    if ($name === 'discord') {
+        return hbHubDiscordLogo();
+    }
+    $paths = [
+        'look' => '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5L5 20"/>',
+        'profile' => '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.8-1.4 1.8-2 3-2s2.2.6 3 2M14.5 10H18M14.5 14H17"/>',
+        'status' => '<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 20 12z"/>',
+        'notifications' => '<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+        'block' => '<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/>',
+        'improve' => '<path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/>',
+        'password' => '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14.5 8.5l2 2"/>',
+        'totp' => '<path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+        'devices' => '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/>',
+        'logout' => '<path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M15 16l4-4-4-4M19 12H9"/>',
+        'everywhere' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.4 2.7 3.5 5.7 3.5 9s-1.1 6.3-3.5 9c-2.4-2.7-3.5-5.7-3.5-9S9.6 5.7 12 3z"/>',
+        'delete' => '<path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+    ];
+    return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
+        . ($paths[$name] ?? '') . '</svg>';
+}
+
+/**
+ * One tab in the list: its icon (settingsIcon()), its name, what it's set to now ($value, which settings.js keeps up
+ * to date through [data-summary="$summary"]), and an arrow. Goes to its panel (#$id).
+ */
+function settingsRow(string $id, string $icon, string $title, string $value = '', ?string $summary = null, string $class = ''): string
+{
+    return '<li><a class="settings-tab' . ($class !== '' ? ' ' . $class : '') . '" href="#' . $id . '" data-settings-row>'
+        . '<span class="settings-tab-icon" aria-hidden="true">' . settingsIcon($icon) . '</span>'
+        . '<span class="settings-tab-text">'
+        . '<span class="settings-tab-title">' . htmlspecialchars($title) . '</span>'
+        . '<span class="settings-tab-value"' . ($summary !== null ? ' data-summary="' . $summary . '"' : '') . ($value === '' ? ' hidden' : '') . '>'
         . htmlspecialchars($value) . '</span>'
         . '</span>'
-        . '<span class="settings-row-arrow" aria-hidden="true">›</span>'
+        . '<span class="settings-tab-arrow" aria-hidden="true">›</span>'
         . '</a></li>';
 }
 
@@ -741,26 +768,26 @@ $settingsDeviceCount = count($settingsDevices);
             <nav class="settings-lists" aria-label="Settings">
                 <h2 class="settings-list-heading">Profile</h2>
                 <ul class="settings-list">
-                    <?= settingsRow('look', '🖼️', 'orange', 'Picture and banner', $settingsValues['bannerType'] === 'picture' ? 'Picture banner' : 'Color banner', 'look') ?>
-                    <?= settingsRow('profile', '🪪', 'purple', 'Name, class and bio', $settingsClassSummary, 'profile') ?>
-                    <?= settingsRow('status', '💬', 'blue', 'Status', $settingsStatusSummary !== '' ? $settingsStatusSummary : 'None', 'statusRow') ?>
+                    <?= settingsRow('look', 'look', 'Picture and banner', $settingsValues['bannerType'] === 'picture' ? 'Picture banner' : 'Color banner', 'look') ?>
+                    <?= settingsRow('profile', 'profile', 'Name, class and bio', $settingsClassSummary, 'profile') ?>
+                    <?= settingsRow('status', 'status', 'Status', $settingsStatusSummary !== '' ? $settingsStatusSummary : 'None', 'statusRow') ?>
                 </ul>
 
                 <h2 class="settings-list-heading">Preferences</h2>
                 <ul class="settings-list">
-                    <?= settingsRow('notifications', '🔔', 'red', 'Notifications', $settingsNotificationsSummary, 'notifications') ?>
-                    <?= settingsRow('block', '🎰', 'green', 'Gambling and Games', $settingsBlockSummary, 'block') ?>
-                    <?= settingsRow('improve', '📊', 'grey', 'Help improve HB Hub', $settingsImproveSiteOn ? 'On' : 'Off', 'improve') ?>
+                    <?= settingsRow('notifications', 'notifications', 'Notifications', $settingsNotificationsSummary, 'notifications') ?>
+                    <?= settingsRow('block', 'block', 'Gambling and Games', $settingsBlockSummary, 'block') ?>
+                    <?= settingsRow('improve', 'improve', 'Help improve HB Hub', $settingsImproveSiteOn ? 'On' : 'Off', 'improve') ?>
                 </ul>
 
                 <h2 class="settings-list-heading">Security</h2>
                 <ul class="settings-list">
-                    <?= settingsRow('password', '🔑', 'orange', 'Password', 'Change your password') ?>
-                    <?= settingsRow('totp', '🔐', 'green', 'Two-factor login', $settingsTotpIsOn ? 'On' : 'Off') ?>
+                    <?= settingsRow('password', 'password', 'Password', 'Change your password') ?>
+                    <?= settingsRow('totp', 'totp', 'Two-factor login', $settingsTotpIsOn ? 'On' : 'Off') ?>
                     <?php if ($settingsDiscord !== null): ?>
-                        <?= settingsRow('discord', hbHubDiscordLogo(), 'discord', 'Discord login', $settingsDiscordName !== null ? 'Linked to ' . $settingsDiscordName : 'Not linked') ?>
+                        <?= settingsRow('discord', 'discord', 'Discord login', $settingsDiscordName !== null ? 'Linked to ' . $settingsDiscordName : 'Not linked') ?>
                     <?php endif; ?>
-                    <?= settingsRow('devices', '💻', 'blue', 'Logged in devices', $settingsDeviceCount === 1 ? 'Only this one' : "$settingsDeviceCount devices") ?>
+                    <?= settingsRow('devices', 'devices', 'Logged in devices', $settingsDeviceCount === 1 ? 'Only this one' : "$settingsDeviceCount devices") ?>
                 </ul>
 
                 <h2 class="settings-list-heading">Account</h2>
@@ -768,11 +795,11 @@ $settingsDeviceCount = count($settingsDevices);
                     <li>
                         <form action="/settings" method="post">
                             <input type="hidden" name="action" value="logout">
-                            <button type="submit" class="settings-row">
-                                <span class="settings-row-icon" data-tone="grey" aria-hidden="true">🚪</span>
-                                <span class="settings-row-text">
-                                    <span class="settings-row-title">Log out</span>
-                                    <span class="settings-row-value">On this device</span>
+                            <button type="submit" class="settings-tab">
+                                <span class="settings-tab-icon" aria-hidden="true"><?= settingsIcon('logout') ?></span>
+                                <span class="settings-tab-text">
+                                    <span class="settings-tab-title">Log out</span>
+                                    <span class="settings-tab-value">On this device</span>
                                 </span>
                             </button>
                         </form>
@@ -780,16 +807,16 @@ $settingsDeviceCount = count($settingsDevices);
                     <li>
                         <form action="/settings" method="post" data-confirm="Log out on every device, this one too?">
                             <input type="hidden" name="action" value="logoutEverywhere">
-                            <button type="submit" class="settings-row">
-                                <span class="settings-row-icon" data-tone="grey" aria-hidden="true">🌍</span>
-                                <span class="settings-row-text">
-                                    <span class="settings-row-title">Log out everywhere</span>
-                                    <span class="settings-row-value">On every device, this one too</span>
+                            <button type="submit" class="settings-tab">
+                                <span class="settings-tab-icon" aria-hidden="true"><?= settingsIcon('everywhere') ?></span>
+                                <span class="settings-tab-text">
+                                    <span class="settings-tab-title">Log out everywhere</span>
+                                    <span class="settings-tab-value">On every device, this one too</span>
                                 </span>
                             </button>
                         </form>
                     </li>
-                    <?= settingsRow('delete', '🗑️', 'red', 'Delete account', '', null, 'is-danger') ?>
+                    <?= settingsRow('delete', 'delete', 'Delete account', '', null, 'is-danger') ?>
                 </ul>
             </nav>
         </div>

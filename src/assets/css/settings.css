@@ -3,7 +3,8 @@
    .settings on its own is one narrow column (the feedback page). .settings-page makes it wide, with a side menu
    (.settings-menu) next to the cards (.settings-content); settingsMenu.js marks the link to the card on screen (the
    admin panel). On a small screen the menu becomes a row of links across the top that stays under the top bar.
-   The settings page itself (.settings-app) is a list of rows that each open a panel instead, near the bottom. */
+   The settings page itself (.settings-app) is a list of tabs (.settings-tab) that each open a panel instead, near the
+   bottom. */
 .settings {
   --settings-danger: #e05252;
   --settings-on: #2fa36b;
@@ -1162,30 +1163,31 @@
   opacity: 0.55;
 }
 
+/* A group's card, with its tabs inside it as rounded rows, like the chats in the chat list */
 .settings-list {
   margin: 0;
-  padding: 0;
+  padding: 6px;
   list-style: none;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   border: 1px solid var(--settings-line);
   border-radius: var(--radius);
   background: var(--secondary);
 }
 
-.settings-list > li + li {
-  border-top: 1px solid var(--settings-line);
-}
-
-/* A row: icon, name with what it's set to under it, and an arrow. A link to its panel, or the Log out buttons. */
-.settings-row {
+/* A tab: icon, name with what it's set to under it, and an arrow. A link to its panel, or the Log out buttons.
+   (Not .settings-row, which is the two fields side by side further up.) */
+.settings-tab {
   width: 100%;
-  min-height: 56px;
-  padding: 10px 14px;
+  min-height: 52px;
+  padding: 8px 10px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 12px;
   border: none;
+  border-radius: 12px;
   background: none;
   color: var(--text);
   font: inherit;
@@ -1195,42 +1197,55 @@
   transition: background-color 0.15s ease;
 }
 
-.settings-row:hover {
-  background: color-mix(in srgb, var(--text) 5%, var(--secondary));
+.settings-tab:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
 }
 
-.settings-row:focus-visible {
+.settings-tab:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
-/* The panel showing next to the list (settings.js) */
-.settings-row.is-active {
-  background: color-mix(in srgb, var(--accent) 16%, var(--secondary));
-}
-
-.settings-row-icon {
-  --tone: #8a8f98;
+/* The icon in a quiet tile, in the text color like the nav bar's icons */
+.settings-tab-icon {
   flex: none;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
-  background: var(--tone);
-  color: #fff;
-  font-size: 1rem;
-  line-height: 1;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  color: var(--text);
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.settings-row-icon[data-tone="orange"] { --tone: #f2711c; }
-.settings-row-icon[data-tone="purple"] { --tone: #6a4bd6; }
-.settings-row-icon[data-tone="blue"] { --tone: #2f80ed; }
-.settings-row-icon[data-tone="red"] { --tone: #e05252; }
-.settings-row-icon[data-tone="green"] { --tone: #2fa36b; }
-.settings-row-icon[data-tone="discord"] { --tone: #5865f2; }
+.settings-tab-icon svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
+}
 
-.settings-row-text {
+.settings-tab:hover .settings-tab-icon {
+  background: color-mix(in srgb, var(--text) 11%, transparent);
+}
+
+/* The panel showing next to the list (settings.js): tinted orange, with the icon in an orange pill like the section
+   you're in on the nav bar */
+.settings-tab.is-active {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.settings-tab.is-active .settings-tab-icon {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.settings-tab.is-active .settings-tab-icon svg {
+  opacity: 1;
+}
+
+.settings-tab-text {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1238,32 +1253,64 @@
   gap: 2px;
 }
 
-.settings-row-title {
+.settings-tab-title {
   font-weight: 600;
 }
 
-.settings-row-value {
+.settings-tab-value {
   overflow: hidden;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   opacity: 0.65;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.settings-row-arrow {
+.settings-tab-arrow {
   flex: none;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   line-height: 1;
-  opacity: 0.4;
+  opacity: 0.35;
+  transition: opacity 0.15s ease, color 0.15s ease;
 }
 
-.settings-row.is-danger .settings-row-title {
+.settings-tab:hover .settings-tab-arrow {
+  opacity: 0.7;
+}
+
+.settings-tab.is-active .settings-tab-arrow {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* Delete account */
+.settings-tab.is-danger .settings-tab-title {
+  color: var(--settings-danger);
+}
+
+.settings-tab.is-danger .settings-tab-icon {
+  background: color-mix(in srgb, var(--settings-danger) 14%, transparent);
+  color: var(--settings-danger);
+}
+
+.settings-tab.is-danger.is-active {
+  background: color-mix(in srgb, var(--settings-danger) 14%, transparent);
+}
+
+.settings-tab.is-danger.is-active .settings-tab-icon {
+  background: var(--settings-danger);
+  color: #fff;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--settings-danger) 35%, transparent);
+}
+
+.settings-tab.is-danger.is-active .settings-tab-arrow {
   color: var(--settings-danger);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .settings-me,
-  .settings-row {
+  .settings-tab,
+  .settings-tab-icon,
+  .settings-tab-arrow {
     transition: none;
   }
 }
@@ -1495,8 +1542,26 @@
     display: inline-block;
   }
 
-  .settings-row.is-active {
+  /* Only the list shows, so nothing is "open" next to it */
+  .settings-tab.is-active,
+  .settings-tab.is-danger.is-active {
     background: none;
+  }
+
+  .settings-tab.is-active .settings-tab-icon {
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+    color: var(--text);
+    box-shadow: none;
+  }
+
+  .settings-tab.is-danger.is-active .settings-tab-icon {
+    background: color-mix(in srgb, var(--settings-danger) 14%, transparent);
+    color: var(--settings-danger);
+  }
+
+  .settings-tab.is-active .settings-tab-arrow {
+    color: inherit;
+    opacity: 0.35;
   }
 }
 
