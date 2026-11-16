@@ -207,7 +207,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
 
                         <h3>Casino og spil</h3>
                         <ul>
-                            <li>Din chipsaldo og alle ændringer af den (indsatser, gevinster, daglige chips og justeringer foretaget af en side-admin, med hvilken admin), samt hvornår du sidst hentede de daglige chips, og hvor mange dage i træk.</li>
+                            <li>Din chipsaldo og alle ændringer af den (indsatser, gevinster, daglige chips og justeringer foretaget af en side-admin, med hvilken admin), samt hvornår du sidst hentede de daglige chips, hvor mange dage i træk, hvor meget din 3-timersbonus giver, og hvornår den næste kan hentes.</li>
                             <li>Dine runder i casinospillene (bl.a. Blackjack, Baccarat, Roulette og Slots), som bruges til ranglisterne. Andre ser kun dine totaler: runder, sejre, nederlag, sejrsprocent, største gevinst, vundne og tabte chips samt din nuværende saldo. Casinoets forside viser toppen af ranglisten og antallet af aktive spillere uden navne.</li>
                             <li>Roulette er ét fælles bord. Mens du har indsatser på bordet, kan alle med siden åben se dit navn, dit profilbillede, dine indsatser, og om du er klar. Efter spinnet vises dit resultat, indtil næste runde starter.</li>
                             <li>Skak og Matador: pladser, træk, gemte spil, resultater (at forlade et spil tæller som et nederlag) og spillets chat.</li>

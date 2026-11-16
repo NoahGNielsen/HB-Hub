@@ -1,10 +1,11 @@
 // Casino chips (assets/php/casino/wallet.php), on every casino page: keeps the chip count in the top bar up to date,
 // and on the casino home the big chip count too, and the daily chips panel with its countdown and Collect button, its
 // streak, a note when another of the person's accounts already had today's (so this one gets less, wallet.php), and
-// the 30-day calendar under it (which days are ticked off, which one is next, and the progress bar over it).
+// the 30-day calendar under it (which days are ticked off, which one is next, and the progress bar over it), and the
+// 3-hour bonus that follows the daily chips (its own countdown and Collect bonus button).
 // The chips come along with navUpdates.js's request (every 15 seconds while the page is in view: wallet=1 on nav:poll,
-// the answer's "wallet" on nav:update). /casino/chips is only asked when the daily chips' countdown runs out and to
-// collect them. A game that gets a new balance in its own answers passes it on straight away with
+// the answer's "wallet" on nav:update). /casino/chips is only asked when the daily chips' or the 3-hour bonus's
+// countdown runs out and to collect them. A game that gets a new balance in its own answers passes it on straight away with
 //     document.dispatchEvent(new CustomEvent('casino:wallet', { detail: { chips: 1234 } }));
 // A game that's showing something whose result the chips would give away (Roulette's wheel turning) holds them back
 // with casino:hold { hold: true }, and the last count that came in meanwhile shows on { hold: false }.
@@ -22,11 +23,20 @@
     const calendarDays = document.querySelectorAll('[data-casino-calendar] [data-day]');
     const progress = document.querySelector('[data-casino-progress]');
     const progressText = document.querySelector('[data-casino-progress-text]');
+    const bonus = document.querySelector('[data-casino-bonus]');
+    const bonusButton = bonus?.querySelector('[data-casino-bonus-claim]');
+    const bonusTimer = bonus?.querySelector('[data-casino-bonus-timer]');
+    const bonusAmount = bonus?.querySelector('[data-casino-bonus-amount]');
+    const bonusMessage = bonus?.querySelector('[data-casino-bonus-message]');
 
     let chips = counts.length > 0 ? Number(counts[0].dataset.casinoChips) : null;
     let nextDailyAt = null; // Date.now() when the daily chips can be collected again, null while they can be
     let countdownTimer = null;
     let isClaiming = false;
+    let nextBonusAt = null; // Date.now() when the 3-hour bonus is ready, null while it is or there's none to come
+    let bonusTimerId = null;
+    let isClaimingBonus = false;
+    let isDailyReady = daily?.classList.contains('is-ready') ?? false; // words the bonus's line while there's none
     let isHeld = false; // casino:hold: the count stays as it is for now
     let heldChips = null; // the last count that came in while held
 
@@ -123,6 +133,43 @@
         }
     }
 
+    function tickBonus() {
+        const left = nextBonusAt - Date.now();
+        if (left <= 0) {
+            // Ready now, going by this device's clock: the server has the last word
+            clearInterval(bonusTimerId);
+            bonusTimerId = null;
+            refresh();
+            return;
+        }
+        bonusTimer.textContent = 'Next bonus in ' + formatCountdown(left);
+    }
+
+    // The 3-hour bonus under the daily chips (wallet.php's hbHubCasinoBonusState()). The same as casinoBonusText() in
+    // casino/index.php when there's none to come.
+    function showBonus(state) {
+        if (!bonus) return;
+        clearInterval(bonusTimerId);
+        bonusTimerId = null;
+        nextBonusAt = null;
+        bonusButton.disabled = !state.ready || isClaimingBonus;
+        bonus.classList.toggle('is-ready', state.ready);
+        bonusAmount.textContent = formatChips(state.amount);
+        bonusAmount.parentElement.hidden = state.amount <= 0;
+
+        if (state.ready) {
+            bonusTimer.textContent = 'Your bonus is ready.';
+        } else if (state.available) {
+            nextBonusAt = Date.now() + state.seconds * 1000;
+            tickBonus();
+            bonusTimerId = setInterval(tickBonus, 1000);
+        } else {
+            bonusTimer.textContent = isDailyReady
+                ? 'Collect your daily chips first. Then there\'s ' + bonus.dataset.percent + '% of them every 3 hours.'
+                : 'No more bonuses today. They start again after tomorrow\'s daily chips.';
+        }
+    }
+
     function show(wallet) {
         if (typeof wallet?.chips === 'number') {
             if (isHeld) {
@@ -131,7 +178,11 @@
                 showChips(wallet.chips);
             }
         }
-        if (wallet?.daily) showDaily(wallet.daily);
+        if (wallet?.daily) {
+            isDailyReady = wallet.daily.ready;
+            showDaily(wallet.daily);
+        }
+        if (wallet?.bonus) showBonus(wallet.bonus);
     }
 
     async function refresh() {
@@ -163,6 +214,27 @@
             : 'You already collected your chips today.');
     });
 
+    bonusButton?.addEventListener('click', async () => {
+        isClaimingBonus = true;
+        bonusButton.disabled = true;
+        bonusMessage.textContent = '';
+        bonusMessage.classList.remove('is-error');
+
+        const wallet = await request({ method: 'POST', body: new URLSearchParams({ action: 'claimBonus' }) });
+        isClaimingBonus = false;
+        if (wallet === null) {
+            bonusButton.disabled = false;
+            bonusMessage.textContent = 'Could not collect your bonus. Please try again.';
+            bonusMessage.classList.add('is-error');
+            return;
+        }
+
+        show(wallet);
+        bonusMessage.textContent = !wallet.claimed ? 'Your bonus isn\'t ready yet.'
+            : 'You collected ' + formatChips(wallet.claimedAmount) + ' chips!'
+                + (wallet.bonus.available ? ' The next one is in 3 hours.' : ' That was the last one today.');
+    });
+
     document.addEventListener('casino:wallet', (event) => show(event.detail));
     document.addEventListener('casino:hold', (event) => {
         isHeld = Boolean(event.detail?.hold);
@@ -187,6 +259,14 @@
             day: Number(daily.dataset.day),
             collected: Number(daily.dataset.collected),
             shared: daily.dataset.shared === '1',
+        });
+    }
+    if (bonus) {
+        showBonus({
+            available: bonus.dataset.available === '1',
+            ready: bonus.dataset.ready === '1',
+            seconds: Number(bonus.dataset.seconds),
+            amount: Number(bonus.dataset.amount),
         });
     }
 })();

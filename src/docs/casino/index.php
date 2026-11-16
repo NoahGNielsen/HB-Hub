@@ -1,6 +1,6 @@
 <?php
-// Help docs: how the casino works - the chip wallet (assets/php/casino/wallet.php: the start and daily chips and when a
-// casino day starts), the tables (public, code, invite-only and solo, like casino/blackjack/room.php), the
+// Help docs: how the casino works - the chip wallet (assets/php/casino/wallet.php: the start and daily chips, the 3-hour
+// bonus and when a casino day starts), the tables (public, code, invite-only and solo, like casino/blackjack/room.php), the
 // leaderboards, and what chips are (the terms' "The casino and chips"). Open to everyone. Built by
 // assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
@@ -15,6 +15,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <dl class="docs-facts">
                         <div><dt>Til at starte</dt><dd><?= number_format(HBHUB_CASINO_START_CHIPS, 0, ',', '.') ?> chips</dd></div>
                         <div><dt>Hver dag</dt><dd>+<?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0], 0, ',', '.') ?> til <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR), 0, ',', '.') ?> chips</dd></div>
+                        <div><dt>Hver 3. time</dt><dd>+<?= HBHUB_CASINO_BONUS_PERCENT ?> % af dagens chips</dd></div>
                         <div><dt>Ny dag</dt><dd>kl. <?= HBHUB_CASINO_DAY_START ?></dd></div>
                         <div><dt>Spil</dt><dd>4</dd></div>
                     </dl>
@@ -49,6 +50,22 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             har været brugt i den samme browser) har hentet dem, får dine andre konti kun
                             <strong><?= HBHUB_CASINO_DAILY_ALT_PERCENT ?> %</strong> af deres dags chips den dag. Deres kalender
                             går stadig videre som normalt.
+                        </p>
+                    </section>
+
+                    <section id="bonus" aria-labelledby="docs-bonus">
+                        <h2 id="docs-bonus">3-timersbonus</h2>
+                        <p>
+                            Når du har hentet dine daglige chips, kan du hente en bonus på
+                            <strong><?= HBHUB_CASINO_BONUS_PERCENT ?> %</strong> af dem hver 3. time med
+                            <strong>Collect bonus</strong> under de daglige chips. Den første er klar 3 timer efter de daglige
+                            chips, og den næste 3 timer efter, at du har hentet den forrige, så bonusser, du ikke henter, hober
+                            sig ikke op. Fik du kun <?= HBHUB_CASINO_DAILY_ALT_PERCENT ?> % på en af dine andre konti, er bonussen
+                            <?= HBHUB_CASINO_BONUS_PERCENT ?> % af det.
+                        </p>
+                        <p>
+                            Bonussen gælder kun den casinodag, du hentede de daglige chips. Ville den næste først være klar efter
+                            kl. <?= HBHUB_CASINO_DAY_START ?>, er der ikke flere den dag, og næste dags daglige chips starter den forfra.
                         </p>
                     </section>
 

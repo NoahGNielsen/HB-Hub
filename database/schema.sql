@@ -287,8 +287,8 @@ CREATE TABLE `HBHub-CasinoTransactions` (
   `userId` int UNSIGNED NOT NULL,
   `transactionAmount` bigint NOT NULL COMMENT 'Chips added (positive) or taken (negative)',
   `transactionBalance` bigint NOT NULL COMMENT 'walletChips right after the change',
-  `transactionReason` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'start (starting chips), dailyBonus, admin (added or taken by a site admin), or the game''s own, like bet and payout',
-  `transactionGame` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'NULL for the casino''s own changes (start, dailyBonus, admin), otherwise the game, like blackjack',
+  `transactionReason` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'start (starting chips), dailyBonus, threeHourBonus, admin (added or taken by a site admin), or the game''s own, like bet and payout',
+  `transactionGame` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'NULL for the casino''s own changes (start, dailyBonus, threeHourBonus, admin), otherwise the game, like blackjack',
   `transactionReference` bigint UNSIGNED DEFAULT NULL COMMENT 'The game''s id for what it was about, like the blackjack round, or for admin the userId of the site admin who did it',
   `transactionTimestamp` datetime NOT NULL COMMENT 'UTC'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -304,6 +304,8 @@ CREATE TABLE `HBHub-CasinoWallets` (
   `walletChips` bigint NOT NULL COMMENT 'Only changed through hbHubCasinoChange() (src/assets/php/casino/wallet.php), which logs it in HBHub-CasinoTransactions',
   `walletDailyDay` date DEFAULT NULL COMMENT 'The casino day (Danish date, starting at 3 AM) the daily chips were last collected on, NULL if never',
   `walletDailyStreak` tinyint UNSIGNED NOT NULL DEFAULT '0' COMMENT 'The day (1-30) on the daily chips calendar collected on walletDailyDay, 0 if never (HBHUB_CASINO_DAILY_CALENDAR)',
+  `walletBonusChips` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'What each 3-hour bonus gives on walletDailyDay: HBHUB_CASINO_BONUS_PERCENT of what the daily chips gave then',
+  `walletBonusTimestamp` datetime DEFAULT NULL COMMENT 'UTC. When the next 3-hour bonus can be collected (only on walletDailyDay), NULL if the daily chips were never collected since it was added',
   `walletCreatedTimestamp` datetime NOT NULL COMMENT 'UTC',
   CONSTRAINT `chk_casinowallets_chips` CHECK (`walletChips` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
