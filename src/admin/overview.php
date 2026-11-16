@@ -17,6 +17,9 @@
 // - Page views: a bar chart of the pages opened each day of the last ADMIN_OVERVIEW_DAYS days, and the
 //   ADMIN_OVERVIEW_TOP_PAGES most visited pages of the last 7 days with how many of their views were guests. These are
 //   the only numbers that are stored for it: counts per page and day, kept by header.php (assets/php/pageViews.php).
+// - Browser errors: a bar chart of the errors in people's browsers each day of the last ADMIN_OVERVIEW_DAYS days
+//   (HBHub-Watchdog, assets/php/watchdog.php), by the day the last error in a report happened, like admin/watchdog.php
+//   counts them, cleared reports and the dev site's included
 // - Visits from links: the pages opened from an address with ?utm_source= in the last ADMIN_OVERVIEW_DAYS days, per
 //   source and page, with how many were guests and the last day it happened (counts in HBHub-PageSources, same file)
 // - Casino: the chips in everyone's wallets, and each game's rounds, players, chips bet and what the house won or
@@ -28,6 +31,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/pageViews.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/watchdog.php'; // HBHUB_WATCHDOG_KEEP_DAYS
 
 const ADMIN_OVERVIEW_DAYS = 30; // days in the bar charts
 const ADMIN_OVERVIEW_TOP = 5; // chats and people in the "busiest" lists
@@ -385,6 +389,8 @@ $adminSignupsPerDay = adminOverviewPerDay($db, 'SELECT DATE(userCreatedTimestamp
     WHERE userId <> 0 AND userCreatedTimestamp >= ? GROUP BY day');
 $adminViewsPerDay = adminOverviewPerDay($db, 'SELECT viewDate, SUM(viewCount) FROM `HBHub-PageViews`
     WHERE viewDate >= ? GROUP BY viewDate');
+$adminErrorsPerDay = adminOverviewPerDay($db, 'SELECT DATE(watchdogLastTimestamp) AS day, SUM(watchdogCount) FROM `HBHub-Watchdog`
+    WHERE watchdogLastTimestamp >= ? GROUP BY day');
 $adminTopPages = adminOverviewTopPages($db);
 $adminSources = adminOverviewSources($db);
 $adminCasino = adminOverviewCasino($db);
@@ -509,6 +515,10 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                                 . '<code class="admin-list-name">' . htmlspecialchars($page['viewPath']) . '</code></a>'
                                 . ($guests > 0 ? '<span class="admin-small" title="Not logged in">' . $guests . '% guests</span>' : '');
                         }, 'views', 'No page views in the last 7 days.')) ?>
+
+                    <?= adminOverviewPanelHtml('admin-overview-errors-heading', 'Browser errors', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 12,
+                        adminOverviewChartHtml($adminErrorsPerDay, 'errors', 'Errors in people\'s browsers each day')
+                        . '<p class="admin-panel-foot">Every error the Watchdog noted in someone\'s browser: failed requests, pictures or scripts that didn\'t load, JavaScript errors and what the CSP blocked, by the day the last error in a report happened. Cleared reports still count. Reports are kept for ' . HBHUB_WATCHDOG_KEEP_DAYS . ' days, so the first day can be short. <a href="/admin/watchdog">See them under Browser errors</a>.</p>') ?>
 
                     <?php ob_start(); ?>
                     <?php if ($adminSources === []): ?>
