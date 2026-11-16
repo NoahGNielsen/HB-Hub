@@ -37,7 +37,7 @@ return [
         24 => ['type' => 'street', 'name' => 'Frisørne', 'group' => 5, 'price' => 4800, 'house' => 3000, 'rent' => [400, 2000, 6000, 15000, 18500, 22000]],
         25 => ['type' => 'ferry', 'name' => 'Disc Golf Bane 3', 'group' => 'ferry', 'price' => 4000],
         26 => ['type' => 'street', 'name' => 'Lab🧪', 'group' => 6, 'price' => 5200, 'house' => 3000, 'rent' => [450, 2200, 6600, 16000, 19500, 23000]],
-        27 => ['type' => 'street', 'name' => 'Kemi Skabene', 'group' => 6, 'price' => 5200, 'house' => 3000, 'rent' => [450, 2200, 6600, 16000, 19500, 23000]],
+        27 => ['type' => 'street', 'name' => 'Louises Kontor', 'group' => 6, 'price' => 5200, 'house' => 3000, 'rent' => [450, 2200, 6600, 16000, 19500, 23000]],
         28 => ['type' => 'brewery', 'name' => 'Faxe Kondi Booster', 'group' => 'brewery', 'price' => 3000],
         29 => ['type' => 'street', 'name' => 'Fysik Lokalet', 'group' => 6, 'price' => 5600, 'house' => 3000, 'rent' => [500, 2400, 7200, 17000, 20500, 24000]],
         30 => ['type' => 'goToJail', 'name' => 'Indkaldelse Til Bonus Timer'],

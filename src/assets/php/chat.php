@@ -21,6 +21,7 @@
 // uses is ghost banned too, by itself (loginLimit.php's hbHubGhostBanFromDevice()), so they can't just make another one.
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/chatAttachments.php'; // a deleted chat's attachments are deleted with it
+require_once __DIR__ . '/pictureFiles.php'; // group icons are files on disk
 
 const HBHUB_CHAT_TYPE_DM = 1; // chatType in HBHub-Chats
 const HBHUB_CHAT_TYPE_GROUP = 2; // class chats are groups too, with a chatClassKey (assets/php/schoolClass.php)
@@ -345,7 +346,7 @@ function chatRename(PDO $db, int $userId, int $chatId, mixed $name, bool $bySite
 }
 
 /**
- * Gives the group a new icon, or none when $icon is null. The old icon is deleted.
+ * Gives the group a new icon, or none when $icon is null. The old icon is deleted, its file on disk too.
  * Returns false when nothing changed (removing the icon of a group that has none).
  *
  * @param ?array{0: string, 1: string} $icon [type, data] from chatIconUpload()
@@ -359,16 +360,12 @@ function chatSetIcon(PDO $db, int $chatId, ?array $icon): bool
 
     $newIconId = null;
     if ($icon !== null) {
-        $statement = $db->prepare('INSERT INTO `HBHub-Attachments` (attachmentType, attachmentFile) VALUES (?, ?)');
-        $statement->bindValue(1, $icon[0]);
-        $statement->bindValue(2, $icon[1], PDO::PARAM_LOB);
-        $statement->execute();
-        $newIconId = (int) $db->lastInsertId();
+        $newIconId = hbHubPictureAdd($db, $icon[0], $icon[1]); // the file on disk first, then its row (pictureFiles.php)
     }
 
     $db->prepare('UPDATE `HBHub-Chats` SET chatIconAttachmentId = ? WHERE chatId = ?')->execute([$newIconId, $chatId]);
     if ($oldIconId !== null) {
-        $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$oldIconId]);
+        hbHubPictureDelete($db, (int) $oldIconId); // its file is deleted once this is committed
     }
     $db->commit();
 

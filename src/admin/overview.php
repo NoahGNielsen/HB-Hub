@@ -17,17 +17,22 @@
 // - Page views: a bar chart of the pages opened each day of the last ADMIN_OVERVIEW_DAYS days, and the
 //   ADMIN_OVERVIEW_TOP_PAGES most visited pages of the last 7 days with how many of their views were guests. These are
 //   the only numbers that are stored for it: counts per page and day, kept by header.php (assets/php/pageViews.php).
+// - Browser errors: a bar chart of the errors in people's browsers each day of the last ADMIN_OVERVIEW_DAYS days
+//   (HBHub-Watchdog, assets/php/watchdog.php), by the day the last error in a report happened, like admin/watchdog.php
+//   counts them, cleared reports and the dev site's included
 // - Visits from links: the pages opened from an address with ?utm_source= in the last ADMIN_OVERVIEW_DAYS days, per
 //   source and page, with how many were guests and the last day it happened (counts in HBHub-PageSources, same file)
 // - Casino: the chips in everyone's wallets, and each game's rounds, players, chips bet and what the house won or
 //   lost in the last 7 days, with a total
 // - Games: each game's games played and players in the last 7 days, and games played ever
+//   (both panels show a small + or - under each number: the change from a week before)
 // The casino's and the games' tables keep their times in UTC (UTC_TIMESTAMP()), the users', chats' and messages' in
 // the database's own time (NOW(), CURDATE()), so each query goes by its table's clock.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/pageViews.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/watchdog.php'; // HBHUB_WATCHDOG_KEEP_DAYS
 
 const ADMIN_OVERVIEW_DAYS = 30; // days in the bar charts
 const ADMIN_OVERVIEW_TOP = 5; // chats and people in the "busiest" lists
@@ -49,7 +54,9 @@ $db = hbHubDatabase();
 
 /**
  * The headline numbers and the rest of the single numbers on the page, in one query. The "Prev" ones are the same
- * stretch of time just before, for the up or down under a headline number. Deleted accounts (userStatus
+ * stretch of time just before, for the up or down under a headline number. The "WeekAgo" ones are what the casino's
+ * numbers were a week ago (chips: today's minus every change since; daily chips: the same 24 hours a week back), for
+ * the + or - under them. Deleted accounts (userStatus
  * NULL) and the HB Hub System account (userId 0) don't count as accounts; messages are only real ones, not the notices
  * about changes in a chat (messageEvent 1). An account counts as locked the same way as in the lists (index.php):
  * locked less than $lockoutMinutes ago.
@@ -78,7 +85,12 @@ function adminOverviewTotals(PDO $db, int $lockoutMinutes): array
         (SELECT COUNT(*) FROM `HBHub-ChatAttachments` WHERE chatId IS NOT NULL AND attachmentUploadedTimestamp >= NOW() - INTERVAL 7 DAY) AS attachmentsWeek,
         (SELECT COALESCE(SUM(walletChips), 0) FROM `HBHub-CasinoWallets`) AS chips,
         (SELECT COUNT(*) FROM `HBHub-CasinoWallets`) AS wallets,
+        (SELECT COALESCE(SUM(walletChips), 0) FROM `HBHub-CasinoWallets`)
+            - (SELECT COALESCE(SUM(transactionAmount), 0) FROM `HBHub-CasinoTransactions` WHERE transactionTimestamp >= UTC_TIMESTAMP() - INTERVAL 7 DAY) AS chipsWeekAgo,
+        (SELECT COUNT(*) FROM `HBHub-CasinoWallets` WHERE walletCreatedTimestamp < UTC_TIMESTAMP() - INTERVAL 7 DAY) AS walletsWeekAgo,
         (SELECT COUNT(*) FROM `HBHub-CasinoTransactions` WHERE transactionReason = \'dailyBonus\' AND transactionTimestamp >= UTC_TIMESTAMP() - INTERVAL 1 DAY) AS dailyBonuses,
+        (SELECT COUNT(*) FROM `HBHub-CasinoTransactions` WHERE transactionReason = \'dailyBonus\' AND transactionTimestamp >= UTC_TIMESTAMP() - INTERVAL 8 DAY
+            AND transactionTimestamp < UTC_TIMESTAMP() - INTERVAL 7 DAY) AS dailyBonusesWeekAgo,
         (SELECT COUNT(*) FROM `HBHub-Feedback` WHERE feedbackDoneTimestamp IS NULL) AS feedback,
         (SELECT COALESCE(SUM(watchdogCount), 0) FROM `HBHub-Watchdog` WHERE watchdogLastTimestamp > NOW() - INTERVAL 1 DAY) AS browserErrors,
         (SELECT COUNT(*) FROM `HBHub-MinerCrashReports`) AS crashReports,
@@ -119,22 +131,23 @@ function adminOverviewPerDay(PDO $db, string $sql): array
 /**
  * The casino's games in the last 7 days: rounds or spins, how many played, everything bet and what the house won
  * (the players' net the other way round, so a negative number is the players winning). Blackjack's insurance counts
- * as bet.
+ * as bet. $weeksAgo 1 gives the 7 days before that, for the + or - under each number.
  *
  * @return array<string, array{rounds: int, players: int, wagered: int, house: int}> the game's name => its numbers
  */
-function adminOverviewCasino(PDO $db): array
+function adminOverviewCasino(PDO $db, int $weeksAgo = 0): array
 {
-    $week = 'UTC_TIMESTAMP() - INTERVAL 7 DAY';
+    $week = static fn(string $column): string => $column . ' >= UTC_TIMESTAMP() - INTERVAL ' . (7 * ($weeksAgo + 1)) . ' DAY'
+        . ($weeksAgo > 0 ? ' AND ' . $column . ' < UTC_TIMESTAMP() - INTERVAL ' . (7 * $weeksAgo) . ' DAY' : '');
     $games = [
         'Blackjack' => 'SELECT COUNT(DISTINCT roundId), COUNT(DISTINCT userId), COALESCE(SUM(playerWagered + playerInsurance), 0), COALESCE(-SUM(playerNet), 0)
-            FROM `HBHub-BlackjackPlayerRounds` WHERE playerTimestamp >= ' . $week,
+            FROM `HBHub-BlackjackPlayerRounds` WHERE ' . $week('playerTimestamp'),
         'Baccarat' => 'SELECT COUNT(DISTINCT roundId), COUNT(DISTINCT userId), COALESCE(SUM(playerWagered), 0), COALESCE(-SUM(playerNet), 0)
-            FROM `HBHub-BaccaratPlayerRounds` WHERE playerTimestamp >= ' . $week,
+            FROM `HBHub-BaccaratPlayerRounds` WHERE ' . $week('playerTimestamp'),
         'Roulette' => 'SELECT COUNT(*), COUNT(DISTINCT userId), COALESCE(SUM(spinWagered), 0), COALESCE(-SUM(spinNet), 0)
-            FROM `HBHub-RouletteSpins` WHERE spinTimestamp >= ' . $week,
+            FROM `HBHub-RouletteSpins` WHERE ' . $week('spinTimestamp'),
         'Slots' => 'SELECT COUNT(*), COUNT(DISTINCT userId), COALESCE(SUM(spinBet), 0), COALESCE(-SUM(spinNet), 0)
-            FROM `HBHub-SlotSpins` WHERE spinTimestamp >= ' . $week,
+            FROM `HBHub-SlotSpins` WHERE ' . $week('spinTimestamp'),
     ];
     $casino = [];
     foreach ($games as $name => $sql) {
@@ -150,11 +163,16 @@ function adminOverviewCasino(PDO $db): array
  * Sudoku's left ones, don't count. Ore Mining Inc. has no games, so it's the players who saved in the last 7 days
  * and everyone who has a save (null for the games played).
  *
- * @return array<string, array{week: ?int, players: int, ever: int}> the game's name => its numbers
+ * $weeksAgo 1 gives the 7 days before that, and "ever" as it was a week ago, for the + or - under each number. Ore
+ * Mining Inc.'s players are null then, as a save only keeps when it was last saved; its saves a week ago go by when
+ * each game was started ("started" in saveState, Unix ms; one without it counts as older).
+ *
+ * @return array<string, array{week: ?int, players: ?int, ever: int}> the game's name => its numbers
  */
-function adminOverviewGames(PDO $db): array
+function adminOverviewGames(PDO $db, int $weeksAgo = 0): array
 {
-    $week = 'UTC_TIMESTAMP() - INTERVAL 7 DAY';
+    $from = 'UTC_TIMESTAMP() - INTERVAL ' . (7 * ($weeksAgo + 1)) . ' DAY';
+    $to = 'UTC_TIMESTAMP() - INTERVAL ' . (7 * $weeksAgo) . ' DAY';
     // name => [table, timestamp column, WHERE for a finished game]
     $tables = [
         'Chess' => ['HBHub-ChessResults', 'resultTimestamp', '1'],
@@ -166,12 +184,20 @@ function adminOverviewGames(PDO $db): array
     ];
     $games = [];
     foreach ($tables as $name => [$table, $column, $finished]) {
-        [$inWeek, $players, $ever] = $db->query('SELECT COALESCE(SUM(' . $column . ' >= ' . $week . '), 0),
-                COUNT(DISTINCT CASE WHEN ' . $column . ' >= ' . $week . ' THEN userId END), COUNT(*)
+        $inWeek = $column . ' >= ' . $from . ($weeksAgo > 0 ? ' AND ' . $column . ' < ' . $to : '');
+        [$week, $players, $ever] = $db->query('SELECT COALESCE(SUM(' . $inWeek . '), 0),
+                COUNT(DISTINCT CASE WHEN ' . $inWeek . ' THEN userId END),
+                ' . ($weeksAgo > 0 ? 'COALESCE(SUM(' . $column . ' < ' . $to . '), 0)' : 'COUNT(*)') . '
             FROM `' . $table . '` WHERE (' . $finished . ')')->fetch(PDO::FETCH_NUM);
-        $games[$name] = ['week' => (int) $inWeek, 'players' => (int) $players, 'ever' => (int) $ever];
+        $games[$name] = ['week' => (int) $week, 'players' => (int) $players, 'ever' => (int) $ever];
     }
-    [$players, $ever] = $db->query('SELECT COALESCE(SUM(saveUpdatedTimestamp >= ' . $week . '), 0), COUNT(*) FROM `HBHub-MinerSaves`')->fetch(PDO::FETCH_NUM);
+    if ($weeksAgo > 0) {
+        $ever = $db->query('SELECT COUNT(*) FROM `HBHub-MinerSaves`
+            WHERE COALESCE(CAST(saveState->>\'$.started\' AS UNSIGNED), 0) < (UNIX_TIMESTAMP() - ' . (7 * $weeksAgo * 86400) . ') * 1000')->fetchColumn();
+        $games['Ore Mining Inc.'] = ['week' => null, 'players' => null, 'ever' => (int) $ever];
+        return $games;
+    }
+    [$players, $ever] = $db->query('SELECT COALESCE(SUM(saveUpdatedTimestamp >= ' . $from . '), 0), COUNT(*) FROM `HBHub-MinerSaves`')->fetch(PDO::FETCH_NUM);
     $games['Ore Mining Inc.'] = ['week' => null, 'players' => (int) $players, 'ever' => (int) $ever];
     return $games;
 }
@@ -321,6 +347,23 @@ function adminOverviewTrendHtml(int $now, int $before): string
 }
 
 /**
+ * The change from a week before as a small line under a number in the casino and games panels: green "+12", red
+ * "−5", or a faint "±0". $before is the number a week before (hovering shows it), or null for nothing to compare to,
+ * which shows nothing.
+ */
+function adminOverviewDeltaHtml(int $now, ?int $before): string
+{
+    if ($before === null) {
+        return '';
+    }
+    $change = $now - $before;
+    $class = $change > 0 ? ' is-up' : ($change < 0 ? ' is-down' : '');
+    $text = $change > 0 ? '+' . number_format($change) : ($change < 0 ? '−' . number_format(-$change) : '±0');
+    return '<span class="admin-delta' . $class . '" title="A week before: ' . number_format($before) . '">'
+        . '<span class="admin-visually-hidden">Compared to a week before: </span>' . $text . '</span>';
+}
+
+/**
  * A panel on the dashboard's grid: a settings card with its heading and, if given, a tag on the right of it (like
  * "Last 7 days"), taking $span of the grid's 12 columns on a wide screen. $body is its HTML.
  */
@@ -385,10 +428,14 @@ $adminSignupsPerDay = adminOverviewPerDay($db, 'SELECT DATE(userCreatedTimestamp
     WHERE userId <> 0 AND userCreatedTimestamp >= ? GROUP BY day');
 $adminViewsPerDay = adminOverviewPerDay($db, 'SELECT viewDate, SUM(viewCount) FROM `HBHub-PageViews`
     WHERE viewDate >= ? GROUP BY viewDate');
+$adminErrorsPerDay = adminOverviewPerDay($db, 'SELECT DATE(watchdogLastTimestamp) AS day, SUM(watchdogCount) FROM `HBHub-Watchdog`
+    WHERE watchdogLastTimestamp >= ? GROUP BY day');
 $adminTopPages = adminOverviewTopPages($db);
 $adminSources = adminOverviewSources($db);
 $adminCasino = adminOverviewCasino($db);
+$adminCasinoBefore = adminOverviewCasino($db, 1);
 $adminGames = adminOverviewGames($db);
+$adminGamesBefore = adminOverviewGames($db, 1);
 $adminBusiestChats = adminOverviewBusiestChats($db);
 $adminBusiestUsers = adminOverviewBusiestUsers($db);
 // The "Needs a look" strip: label => [count, where it's dealt with, whether a count above 0 is worth pointing out]
@@ -406,9 +453,11 @@ foreach ($adminAttention as [$count, , $pointOut]) {
 }
 // The casino's totals for the week. Players can't be added up, as the same person plays more than one game.
 $adminCasinoTotal = ['rounds' => 0, 'wagered' => 0, 'house' => 0];
-foreach ($adminCasino as $game) {
+$adminCasinoTotalBefore = $adminCasinoTotal;
+foreach ($adminCasino as $name => $game) {
     foreach ($adminCasinoTotal as $key => $sum) {
         $adminCasinoTotal[$key] = $sum + $game[$key];
+        $adminCasinoTotalBefore[$key] += $adminCasinoBefore[$name][$key];
     }
 }
 $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay'] / $adminTotals['accounts'] * 100) : 0;
@@ -479,7 +528,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                         <div><dt>Groups</dt><dd><?= number_format($adminTotals['groupChats']) ?></dd></div>
                         <div class="admin-stats-wide"><dt>Messages ever</dt><dd><?= number_format($adminTotals['messagesEver']) ?></dd></div>
                     </dl>
-                    <p class="admin-panel-foot">Chats in use had a message this week. DMs and groups don't count deleted ones, and messages are only the ones people wrote, not the notices about changes in a chat.</p>
+                    <p class="admin-panel-foot">Chats with a message this week. Deleted chats and system notices don't count.</p>
                     <?= adminOverviewPanelHtml('admin-overview-chat-heading', 'Chat', 'Last 7 days', 4, ob_get_clean()) ?>
 
                     <?= adminOverviewPanelHtml('admin-overview-chats-heading', 'Busiest chats', 'Last 7 days', 4,
@@ -510,6 +559,10 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                                 . ($guests > 0 ? '<span class="admin-small" title="Not logged in">' . $guests . '% guests</span>' : '');
                         }, 'views', 'No page views in the last 7 days.')) ?>
 
+                    <?= adminOverviewPanelHtml('admin-overview-errors-heading', 'Browser errors', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 12,
+                        adminOverviewChartHtml($adminErrorsPerDay, 'errors', 'Errors in people\'s browsers each day')
+                        . '<p class="admin-panel-foot">Every error the Watchdog noted in someone\'s browser: failed requests, pictures or scripts that didn\'t load, JavaScript errors and what the CSP blocked, by the day the last error in a report happened. Cleared reports still count. Reports are kept for ' . HBHUB_WATCHDOG_KEEP_DAYS . ' days, so the first day can be short. <a href="/admin/watchdog">See them under Browser errors</a>.</p>') ?>
+
                     <?php ob_start(); ?>
                     <?php if ($adminSources === []): ?>
                         <p class="admin-empty">Nobody has opened a page from a link with ?utm_source= in the last <?= ADMIN_OVERVIEW_DAYS ?> days.</p>
@@ -537,9 +590,9 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
 
                     <?php ob_start(); ?>
                     <dl class="admin-stats admin-stats-3">
-                        <div><dt>Chips in wallets</dt><dd><?= number_format($adminTotals['chips']) ?></dd></div>
-                        <div><dt title="People who have opened the casino">Wallets</dt><dd><?= number_format($adminTotals['wallets']) ?></dd></div>
-                        <div><dt title="In the last 24 hours">Daily chips today</dt><dd><?= number_format($adminTotals['dailyBonuses']) ?></dd></div>
+                        <div><dt>Chips in wallets</dt><dd><?= number_format($adminTotals['chips']) . adminOverviewDeltaHtml($adminTotals['chips'], $adminTotals['chipsWeekAgo']) ?></dd></div>
+                        <div><dt title="People who have opened the casino">Wallets</dt><dd><?= number_format($adminTotals['wallets']) . adminOverviewDeltaHtml($adminTotals['wallets'], $adminTotals['walletsWeekAgo']) ?></dd></div>
+                        <div><dt title="In the last 24 hours">Daily chips today</dt><dd><?= number_format($adminTotals['dailyBonuses']) . adminOverviewDeltaHtml($adminTotals['dailyBonuses'], $adminTotals['dailyBonusesWeekAgo']) ?></dd></div>
                     </dl>
                     <div class="admin-table-wrap">
                         <table class="admin-table admin-dash-table">
@@ -547,27 +600,28 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                             <thead><tr><th scope="col">Game</th><th scope="col">Rounds</th><th scope="col">Players</th><th scope="col">Chips bet</th><th scope="col" title="What the players lost, minus what they won">House won</th></tr></thead>
                             <tbody>
                                 <?php foreach ($adminCasino as $name => $game): ?>
+                                    <?php $before = $adminCasinoBefore[$name]; ?>
                                     <tr<?= $game['rounds'] === 0 ? ' class="is-quiet"' : '' ?>>
                                         <th scope="row"><?= htmlspecialchars($name) ?></th>
-                                        <td><?= number_format($game['rounds']) ?></td>
-                                        <td><?= number_format($game['players']) ?></td>
-                                        <td><?= number_format($game['wagered']) ?></td>
-                                        <td><?= adminOverviewSignedHtml($game['house']) ?></td>
+                                        <td><?= number_format($game['rounds']) . adminOverviewDeltaHtml($game['rounds'], $before['rounds']) ?></td>
+                                        <td><?= number_format($game['players']) . adminOverviewDeltaHtml($game['players'], $before['players']) ?></td>
+                                        <td><?= number_format($game['wagered']) . adminOverviewDeltaHtml($game['wagered'], $before['wagered']) ?></td>
+                                        <td><?= adminOverviewSignedHtml($game['house']) . adminOverviewDeltaHtml($game['house'], $before['house']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
                             <tfoot>
                                 <tr>
                                     <th scope="row">Total</th>
-                                    <td><?= number_format($adminCasinoTotal['rounds']) ?></td>
+                                    <td><?= number_format($adminCasinoTotal['rounds']) . adminOverviewDeltaHtml($adminCasinoTotal['rounds'], $adminCasinoTotalBefore['rounds']) ?></td>
                                     <td></td>
-                                    <td><?= number_format($adminCasinoTotal['wagered']) ?></td>
-                                    <td><?= adminOverviewSignedHtml($adminCasinoTotal['house']) ?></td>
+                                    <td><?= number_format($adminCasinoTotal['wagered']) . adminOverviewDeltaHtml($adminCasinoTotal['wagered'], $adminCasinoTotalBefore['wagered']) ?></td>
+                                    <td><?= adminOverviewSignedHtml($adminCasinoTotal['house']) . adminOverviewDeltaHtml($adminCasinoTotal['house'], $adminCasinoTotalBefore['house']) ?></td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
-                    <p class="admin-panel-foot">House won is what the players lost minus what they won, so red means the players came out ahead.</p>
+                    <p class="admin-panel-foot">House won is what the players lost minus what they won, so red means the players came out ahead. The small + or − under each number is the change from the 7 days before (for chips in wallets and wallets, from a week ago; for daily chips, from the same 24 hours a week ago).</p>
                     <?= adminOverviewPanelHtml('admin-overview-casino-heading', 'Casino', 'Last 7 days', 6, ob_get_clean()) ?>
 
                     <?php ob_start(); ?>
@@ -577,17 +631,18 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                             <thead><tr><th scope="col">Game</th><th scope="col">Games</th><th scope="col">Players</th><th scope="col">Ever</th></tr></thead>
                             <tbody>
                                 <?php foreach ($adminGames as $name => $game): ?>
+                                    <?php $before = $adminGamesBefore[$name]; ?>
                                     <tr<?= $game['players'] === 0 ? ' class="is-quiet"' : '' ?>>
                                         <th scope="row"><?= htmlspecialchars($name) ?></th>
-                                        <td><?= $game['week'] !== null ? number_format($game['week']) : '<span class="admin-muted" title="It has no games, only saves">–</span>' ?></td>
-                                        <td><?= number_format($game['players']) ?></td>
-                                        <td><?= number_format($game['ever']) . ($game['week'] === null ? ' <span class="admin-small">saves</span>' : '') ?></td>
+                                        <td><?= $game['week'] !== null ? number_format($game['week']) . adminOverviewDeltaHtml($game['week'], $before['week']) : '<span class="admin-muted" title="It has no games, only saves">–</span>' ?></td>
+                                        <td><?= number_format($game['players']) . adminOverviewDeltaHtml($game['players'], $before['players']) ?></td>
+                                        <td><?= number_format($game['ever']) . ($game['week'] === null ? ' <span class="admin-small">saves</span>' : '') . adminOverviewDeltaHtml($game['ever'], $before['ever']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
                     </div>
-                    <p class="admin-panel-foot">Games and players are for the last 7 days. Each player's game counts as one, so a chess game counts twice. Games still going, and Minesweeper and Sudoku games left for a new one, aren't counted. For Ore Mining Inc., players are the ones who saved this week.</p>
+                    <p class="admin-panel-foot">Games and players are for the last 7 days. Each player's game counts as one, so a chess game counts twice. Games still going, and Minesweeper and Sudoku games left for a new one, aren't counted. For Ore Mining Inc., players are the ones who saved this week. The small + or − under each number is the change from the 7 days before (for ever, from a week ago). Ore Mining Inc.'s players have none, as a save only remembers when it was last saved.</p>
                     <?= adminOverviewPanelHtml('admin-overview-games-heading', 'Games', 'Last 7 days', 6, ob_get_clean()) ?>
                 </div>
             </div>

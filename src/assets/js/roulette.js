@@ -4,7 +4,8 @@
 // Click a bet to put the chosen chip on it, right-click to take one off. The user's bets go to the server a moment after
 // each change (sync()), so the others see them, and everyone else's are drawn as smaller chips next to them. Hovering a
 // player in the list shows only theirs. The first bet on the table starts the round's clock; pressing Ready (Space)
-// says the user is done, and when everyone with bets is, the wheel spins straight away. After a spin the board shows
+// says the user is done, and when everyone with bets is, the wheel spins straight away (though never in the round's
+// first few seconds, so the others at the table can get a bet on: the server sends that as an earlier closesIn). After a spin the board shows
 // the spin's bets, won and lost, until the next round starts; "Same again" puts the user's last bets back.
 // The table is asked what's new every second while the page is in view (poll()), and not at all while it isn't.
 //
@@ -681,7 +682,7 @@
         if (isReady) {
             detailText.textContent = waiting > 0
                 ? 'You\'re ready. Waiting for ' + waiting + (waiting === 1 ? ' player.' : ' players.')
-                : 'You\'re ready.';
+                : now === 'betting' ? 'You\'re ready. The wheel spins in a moment, so others can still join.' : 'You\'re ready.';
         } else if (now === 'betting') {
             detailText.textContent = 'Press Ready when you\'re done. The wheel spins when everyone is, or when the time runs out.';
         } else {

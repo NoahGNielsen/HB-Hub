@@ -1295,6 +1295,26 @@
   color: var(--settings-danger);
 }
 
+/* The change from a week before, as a small line under a number in the casino and games panels */
+.admin-delta {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0.5;
+}
+
+.admin-delta.is-up {
+  color: var(--settings-on);
+  opacity: 1;
+}
+
+.admin-delta.is-down {
+  color: var(--settings-danger);
+  opacity: 1;
+}
+
 /* Narrower: two headline numbers a row, the panels in two columns (the full-width ones stay full width) */
 @media (max-width: 1100px) {
   .admin-kpis {

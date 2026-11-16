@@ -62,9 +62,9 @@ CREATE TABLE `HBHub-Announcements` (
 CREATE TABLE `HBHub-Attachments` (
   `attachmentId` int UNSIGNED NOT NULL,
   `attachmentType` varchar(25) NOT NULL,
-  `attachmentFile` longblob NOT NULL,
+  `attachmentKey` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Random name of the file on disk, in pictures/ in attachments_path from the config',
   `attachmentUploadTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Profile pictures and group chat icons, as files on disk (src/assets/php/pictureFiles.php)';
 
 -- --------------------------------------------------------
 
@@ -171,7 +171,7 @@ CREATE TABLE `HBHub-BannedAvatars` (
   `bannedAvatarId` int UNSIGNED NOT NULL,
   `bannedAvatarHash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'SHA-256 of the file, as lowercase hex',
   `bannedAvatarType` varchar(25) NOT NULL,
-  `bannedAvatarFile` longblob NOT NULL COMMENT 'A copy, so it can still be seen after the account changes or loses its picture',
+  `bannedAvatarKey` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Random name of the copy''s file on disk, in bannedPictures/ in attachments_path from the config, so it can still be seen after the account changes or loses its picture',
   `bannedAvatarFingerprints` blob DEFAULT NULL COMMENT '32-byte difference hashes of the picture and crops of it, for similar copies. NULL until worked out, empty when it can''t be read or is too plain',
   `bannedAvatarFromUserId` int UNSIGNED DEFAULT NULL COMMENT 'The banned account it was the picture of, NULL when an admin uploaded it',
   `bannedAvatarAddedByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The site admin who banned the account or uploaded the picture',
@@ -287,8 +287,8 @@ CREATE TABLE `HBHub-CasinoTransactions` (
   `userId` int UNSIGNED NOT NULL,
   `transactionAmount` bigint NOT NULL COMMENT 'Chips added (positive) or taken (negative)',
   `transactionBalance` bigint NOT NULL COMMENT 'walletChips right after the change',
-  `transactionReason` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'start (starting chips), dailyBonus, admin (added or taken by a site admin), or the game''s own, like bet and payout',
-  `transactionGame` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'NULL for the casino''s own changes (start, dailyBonus, admin), otherwise the game, like blackjack',
+  `transactionReason` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'start (starting chips), dailyBonus, threeHourBonus, admin (added or taken by a site admin), or the game''s own, like bet and payout',
+  `transactionGame` varchar(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'NULL for the casino''s own changes (start, dailyBonus, threeHourBonus, admin), otherwise the game, like blackjack',
   `transactionReference` bigint UNSIGNED DEFAULT NULL COMMENT 'The game''s id for what it was about, like the blackjack round, or for admin the userId of the site admin who did it',
   `transactionTimestamp` datetime NOT NULL COMMENT 'UTC'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -304,6 +304,8 @@ CREATE TABLE `HBHub-CasinoWallets` (
   `walletChips` bigint NOT NULL COMMENT 'Only changed through hbHubCasinoChange() (src/assets/php/casino/wallet.php), which logs it in HBHub-CasinoTransactions',
   `walletDailyDay` date DEFAULT NULL COMMENT 'The casino day (Danish date, starting at 3 AM) the daily chips were last collected on, NULL if never',
   `walletDailyStreak` tinyint UNSIGNED NOT NULL DEFAULT '0' COMMENT 'The day (1-30) on the daily chips calendar collected on walletDailyDay, 0 if never (HBHUB_CASINO_DAILY_CALENDAR)',
+  `walletBonusChips` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'What each 3-hour bonus gives on walletDailyDay: HBHUB_CASINO_BONUS_PERCENT of what the daily chips gave then',
+  `walletBonusTimestamp` datetime DEFAULT NULL COMMENT 'UTC. When the next 3-hour bonus can be collected (only on walletDailyDay), NULL if the daily chips were never collected since it was added',
   `walletCreatedTimestamp` datetime NOT NULL COMMENT 'UTC',
   CONSTRAINT `chk_casinowallets_chips` CHECK (`walletChips` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -922,6 +924,7 @@ CREATE TABLE `HBHub-RouletteSpins` (
 CREATE TABLE `HBHub-RouletteTable` (
   `tableId` tinyint UNSIGNED NOT NULL COMMENT 'Always 1: the whole site shares one Roulette table. Made by the code the first time it''s needed',
   `tableRound` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'The round being bet on, or the one that was just spun. Counts up',
+  `tableStartedAt` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in ms of the first bet on tableRound, which starts its clock. NULL while nobody has bets on it',
   `tableClosesAt` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in ms when betting on tableRound closes and the wheel spins. NULL while nobody has bets on it',
   `tableNumber` tinyint UNSIGNED DEFAULT NULL COMMENT '0-36, where the ball landed in tableRound. NULL until it''s spun',
   `tableSpunAt` bigint UNSIGNED DEFAULT NULL COMMENT 'Unix time in ms when tableRound was spun',
@@ -1133,6 +1136,7 @@ ALTER TABLE `HBHub-Announcements`
 --
 ALTER TABLE `HBHub-Attachments`
   ADD PRIMARY KEY (`attachmentId`),
+  ADD UNIQUE KEY `attachmentKey` (`attachmentKey`),
   ADD KEY `attachmentType` (`attachmentType`);
 
 --
@@ -1183,6 +1187,7 @@ ALTER TABLE `HBHub-BaccaratSeats`
 ALTER TABLE `HBHub-BannedAvatars`
   ADD PRIMARY KEY (`bannedAvatarId`),
   ADD UNIQUE KEY `bannedAvatarHash` (`bannedAvatarHash`),
+  ADD UNIQUE KEY `bannedAvatarKey` (`bannedAvatarKey`),
   ADD KEY `fk_bannedavatars_from` (`bannedAvatarFromUserId`),
   ADD KEY `fk_bannedavatars_by` (`bannedAvatarAddedByUserId`);
 

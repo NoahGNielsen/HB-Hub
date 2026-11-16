@@ -26,8 +26,8 @@ if (!empty($hbHubShowSiteFooter)):
 require_once __DIR__ . '/toast.php';
 hbHubRenderToast();
 
-// The cookie notice, on every page. It starts hidden; cookieNotice.js shows it until it's been clicked away once.
-// Next to it, the same kind of box saying the terms and/or the privacy policy have changed. Also hidden; cookieNotice.js
+// The cookie notice, on every page. It starts hidden; cornerBoxes.js shows it until it's been clicked away once.
+// Next to it, the same kind of box saying the terms and/or the privacy policy have changed. Also hidden; cornerBoxes.js
 // shows it to anyone who clicked the cookie notice away back when one of them had an older date than
 // data-terms-updated / data-privacy-updated, and hides the part (and the " and ") about the one that hasn't changed.
 require_once __DIR__ . '/legalUpdated.php';
@@ -49,7 +49,7 @@ require_once __DIR__ . '/legalUpdated.php';
     </p>
     <button type="button" class="corner-box-ok" data-corner-terms-ok>Forstået</button>
 </aside>
-<script src="/assets/js/cookieNotice.js?v=<?= filemtime(__DIR__ . '/../js/cookieNotice.js') ?>" defer></script>
+<script src="/assets/js/cornerBoxes.js?v=<?= filemtime(__DIR__ . '/../js/cornerBoxes.js') ?>" defer></script>
 <?php
 // For anyone logged in: the popup asking them to put HB Hub on their phone's home screen. It starts hidden too;
 // appPrompt.js shows it once per browser, and only on phones and tablets.

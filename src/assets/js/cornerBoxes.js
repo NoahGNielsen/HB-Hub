@@ -11,6 +11,9 @@
 // date for those people instead; it was renamed so everyone who agreed before the 14 November 2026 terms gets told about
 // them. The privacy key was added on 14 November 2026, so everyone who'd already clicked the cookie notice away then
 // was told about that day's privacy policy.)
+//
+// This file used to be cookieNotice.js, but ad blockers' cookie-notice lists blocked it by that name (the Watchdog
+// counted it failing to load on most pages), so keep "cookie", "notice", "consent" and the like out of its name.
 (() => {
     const NOTICE_KEY = 'hbHubCookieNotice';
     const TERMS_KEY = 'hbHubTermsAgreed';

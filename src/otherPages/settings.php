@@ -151,11 +151,8 @@ function settingsSave(PDO $db, int $userId, array $values, bool $saveDescription
         $oldAvatarId = $current['userAvatarAttachmentId'];
         $avatarId = $oldAvatarId;
         if ($avatar !== null) {
-            $statement = $db->prepare('INSERT INTO `HBHub-Attachments` (attachmentType, attachmentFile) VALUES (?, ?)');
-            $statement->bindValue(1, $avatar[0]);
-            $statement->bindValue(2, $avatar[1], PDO::PARAM_LOB);
-            $statement->execute();
-            $avatarId = (int) $db->lastInsertId();
+            // The file on disk first, then its row (assets/php/pictureFiles.php). It goes again if this isn't saved after all.
+            $avatarId = hbHubPictureAdd($db, $avatar[0], $avatar[1]);
         }
 
         $db->prepare('UPDATE `HBHub-Users` SET userName = ?, userNameLower = ?, userSettings = ?, userAvatarAttachmentId = ?'
@@ -170,14 +167,14 @@ function settingsSave(PDO $db, int $userId, array $values, bool $saveDescription
             ]);
 
         if ($avatar !== null && $oldAvatarId !== null) {
-            $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$oldAvatarId]);
+            hbHubPictureDelete($db, (int) $oldAvatarId); // its file is deleted once this is committed
         }
         $db->commit();
-    } catch (PDOException $e) {
+    } catch (PDOException | RuntimeException $e) { // a RuntimeException is the picture's file that couldn't be written
         if ($db->inTransaction()) {
             $db->rollBack();
         }
-        if (($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userNameLower is unique
+        if ($e instanceof PDOException && ($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userNameLower is unique
             return ['name' => 'That name is already taken. Please choose another one.'];
         }
         error_log('Settings: could not save the profile: ' . $e->getMessage());

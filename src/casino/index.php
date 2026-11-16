@@ -3,7 +3,8 @@
 // the casino leaderboard and the daily chips; the 30-day calendar of daily chips as a row of chips; the four games
 // with what's going on at them right now (open tables and players for Blackjack and Baccarat, who's playing at the shared
 // Roulette table and the user's last spins there, and who's spun the slots lately) and the user's own result in each;
-// and the top of the casino leaderboard.
+// and the top of the casino leaderboard. (The 3-hour bonus that follows the daily chips pops up in the bottom-right
+// corner of every casino page instead, navPanel.php.)
 // casino.js (loaded by navPanel.php along with the chip count in the top bar) keeps the chips, the daily chips, the
 // calendar and the countdown up to date. The rest is as it was when the page was made.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -445,6 +446,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                 <h2 id="casino-info-title">Good to know</h2>
                 <ul class="casino-home-facts">
                     <li>A new casino day starts at <?= HBHUB_CASINO_DAY_START ?> AM.</li>
+                    <li>After your daily chips, you get <?= HBHUB_CASINO_BONUS_PERCENT ?>% of them again every 3 hours until the day ends.</li>
                     <li>Chips are only for fun here: they can't be cashed out, and nothing you win is real money.</li>
                     <li>Each game has its own leaderboard with wins, losses and win %.</li>
                 </ul>

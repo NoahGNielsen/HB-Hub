@@ -1,5 +1,5 @@
 // Terms notice tester: paste all of this into the browser console on any HB Hub page to see the "the Terms of Service
-// and the Privacy Policy have been updated" box again. It's not a cookie: cookieNotice.js keeps it in localStorage. This
+// and the Privacy Policy have been updated" box again. It's not a cookie: cornerBoxes.js keeps it in localStorage. This
 // keeps "clicked the cookie notice away" (hbHubCookieNotice) and forgets which terms and privacy policy versions you
 // agreed to (hbHubTermsAgreed, hbHubPrivacyAgreed), then reloads, so the page treats you as someone who agreed to older
 // versions of both. Clicking "Got it" saves the versions again, as usual.

@@ -60,11 +60,8 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
 
         $avatarId = null;
         if ($avatarBlob !== null) {
-            $statement = $db->prepare('INSERT INTO `HBHub-Attachments` (attachmentType, attachmentFile) VALUES (?, ?)');
-            $statement->bindValue(1, $avatarType);
-            $statement->bindValue(2, $avatarBlob, PDO::PARAM_LOB);
-            $statement->execute();
-            $avatarId = (int) $db->lastInsertId();
+            // The file on disk first, then its row (pictureFiles.php). It goes again if the account isn't made after all.
+            $avatarId = hbHubPictureAdd($db, $avatarType, $avatarBlob);
         }
 
         $db->prepare('INSERT INTO `HBHub-Users` (userName, userNameLower, userDescription, userSettings, userAvatarAttachmentId,
@@ -97,11 +94,11 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
         }
 
         $db->commit();
-    } catch (PDOException $e) {
+    } catch (PDOException | RuntimeException $e) { // a RuntimeException is the picture's file that couldn't be written
         if ($db !== null && $db->inTransaction()) {
             $db->rollBack();
         }
-        if (($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userNameLower and userDiscordId are unique
+        if ($e instanceof PDOException && ($e->errorInfo[1] ?? null) === 1062) { // duplicate key - userNameLower and userDiscordId are unique
             // The message names the key, and a Discord account only gets this far when it was linked in the meantime
             return str_contains($e->getMessage(), 'userDiscordId')
                 ? ['name' => 'Den Discord-konto er lige blevet koblet til en anden HB Hub-konto. Vælg "Kobl den ikke til" for at oprette dig uden den.']

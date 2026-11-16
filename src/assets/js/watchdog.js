@@ -7,16 +7,19 @@
 // What counts, as an error of one of these kinds (an entry's `kind`):
 // - 'http': an answer of 400 or more from the site, with its status. From every fetch() (window.fetch is wrapped), every
 //   XMLHttpRequest (open/send are wrapped), and in browsers that give the status of everything else they load
-//   (Chromium, PerformanceResourceTiming.responseStatus) also pictures, styles and scripts.
+//   (Chromium, PerformanceResourceTiming.responseStatus) also pictures, styles and scripts. Not an answer the endpoint
+//   marked with the header "X-HBHub-Expected: 1" (a normal part of a game, like Wordle's "not a word").
 // - 'network': a fetch() or XMLHttpRequest that got no answer at all (the connection broke, the server didn't answer).
-//   Not when it was stopped on purpose (AbortError), while the browser says it's offline, or once the page is being left.
+//   Not when it was stopped on purpose (AbortError), while the browser says it's offline, once the page is being left,
+//   or when the tab was hidden while it was on its way (phones freeze tabs in the background and break their requests).
 // - 'load': a picture, script, stylesheet, video or audio that didn't load, when the browser doesn't say it was an
 //   'http' one (waits LOAD_WAIT_MS for that first, so one isn't counted twice).
 // - 'script': an uncaught JavaScript error (window 'error'), with its message and the file, line and column.
 // - 'promise': a promise that was rejected with nobody catching it (unhandledrejection), with the message and, where
 //   the stack says, the file, line and column.
 // - 'csp': something the Content-Security-Policy blocked (securitypolicyviolation), with the directive.
-// Left out: browser extensions' own errors (chrome-extension:// and the like), cross-origin scripts' "Script error."
+// Left out: browser extensions' own errors (chrome-extension:// and the like), fonts from other sites that the CSP
+// blocked (ours are all self-hosted, so those come from extensions too), cross-origin scripts' "Script error."
 // that says nothing, the harmless "ResizeObserver loop" warning, and the report itself. Addresses are kept as a path
 // on this site (/chat/), or with the origin for other sites (https://media.giphy.com/...), never with the query, and
 // URLs in messages lose their query too. A page that's an error as a whole (the hosting's 508 page) doesn't have this
@@ -48,6 +51,7 @@
     let sending = null; // on its way
     let timer = 0;
     let isLeaving = false; // the page is being left: requests it had going break off, which isn't an error
+    let hiddenAt = 0; // the last time the tab was hidden or frozen (Date.now()), see noteNetwork()
     const recentHttp = new Map(); // address => Date.now(), the 'http' ones, so a 'load' for the same one isn't counted too
 
     // Adds batch b into batch a (or returns b when there's no a)
@@ -177,9 +181,13 @@
         note('http', { path, status });
     };
 
-    // A request to address that got no answer, unless that's because of the page or the browser (see the top)
-    const noteNetwork = (address, error) => {
+    // A request to address that got no answer, unless that's because of the page or the browser (see the top).
+    // startedAt is when it was sent (Date.now()): a tab that was hidden since then may have been frozen or lost its
+    // connection (phones do that to tabs in the background, and the polls they had going come back as "Failed to
+    // fetch"), so that doesn't count either.
+    const noteNetwork = (address, error, startedAt) => {
         if (isLeaving || navigator.onLine === false || error?.name === 'AbortError') return;
+        if (document.visibilityState !== 'visible' || hiddenAt >= startedAt) return;
         const path = addressOf(address);
         if (path !== null) note('network', { path, message: messageOf(error?.message) });
     };
@@ -192,13 +200,27 @@
 
     const requestUrl = (input) => (input instanceof Request ? input.url : String(input));
 
+    // An answer the endpoint sent as part of how things work (EXPECTED_HEADER: "not a word" in Wordle, "the host
+    // stopped the game" in Matador) isn't an error, whatever its status. get(name) reads a header of the answer.
+    const EXPECTED_HEADER = 'X-HBHub-Expected';
+    const isExpected = (get) => {
+        try {
+            return get(EXPECTED_HEADER) === '1';
+        } catch {
+            return false;
+        }
+    };
+
     // Every fetch() on the page goes through here first. The answer (or the failure) is passed on untouched.
     window.fetch = function (input, init) {
+        const startedAt = Date.now();
         return nativeFetch.call(this, input, init).then((response) => {
-            if (response.status >= 400) noteHttp(response.url || requestUrl(input), response.status);
+            if (response.status >= 400 && !isExpected((name) => response.headers.get(name))) {
+                noteHttp(response.url || requestUrl(input), response.status);
+            }
             return response;
         }, (error) => {
-            noteNetwork(requestUrl(input), error);
+            noteNetwork(requestUrl(input), error, startedAt);
             throw error;
         });
     };
@@ -214,10 +236,13 @@
         };
         XMLHttpRequest.prototype.send = function (...args) {
             const url = urls.get(this);
+            const startedAt = Date.now();
             this.addEventListener('load', () => {
-                if (this.status >= 400) noteHttp(this.responseURL || url, this.status);
+                if (this.status >= 400 && !isExpected((name) => this.getResponseHeader(name))) {
+                    noteHttp(this.responseURL || url, this.status);
+                }
             });
-            this.addEventListener('error', () => noteNetwork(url, null));
+            this.addEventListener('error', () => noteNetwork(url, null, startedAt));
             return nativeSend.apply(this, args);
         };
     }
@@ -276,14 +301,22 @@
         note('promise', { path, message, line });
     });
 
-    // Something the Content-Security-Policy blocked
+    // Something the Content-Security-Policy blocked. blockedURI is an address, or a word for what isn't one: 'inline'
+    // (a style="" or inline script), 'eval', or a scheme like 'data' / 'blob'. Those words aren't resolved as addresses
+    // (they'd turn into /games/matador/inline): then the file it happened in is the address, and the word goes in the message.
     document.addEventListener('securitypolicyviolation', (event) => {
         if (isExtension(event.sourceFile) || isExtension(event.blockedURI)) return;
-        const blocked = addressOf(event.blockedURI);
+        const isAddress = /^https?:/i.test(event.blockedURI ?? '');
+        const blocked = isAddress ? addressOf(event.blockedURI) : null;
         const directive = event.effectiveDirective || event.violatedDirective;
+        // Every font we use is our own copy (assets/fonts/), so a font from another site was asked for by something the
+        // browser put on the page, like an extension's CSS (Mulish from fonts.gstatic.com, say), and font loads don't name
+        // a sourceFile for isExtension() to catch. If our own code ever linked an outside font, its stylesheet would still
+        // show up here as style-src.
+        if (directive === 'font-src' && isAddress && /^https?:\/\//i.test(blocked ?? '')) return;
         note('csp', {
             path: blocked ?? addressOf(event.sourceFile),
-            message: messageOf(directive + (blocked === null && event.blockedURI ? ' (' + event.blockedURI + ')' : '')),
+            message: messageOf(directive + (!isAddress && event.blockedURI ? ' (' + event.blockedURI + ')' : '')),
             line: event.lineNumber ? event.lineNumber + ':' + (event.columnNumber || 0) : null,
         });
     });
@@ -292,6 +325,12 @@
     window.addEventListener('pagehide', () => { isLeaving = true; });
     window.addEventListener('beforeunload', () => { isLeaving = true; });
     window.addEventListener('pageshow', () => { isLeaving = false; });
+    // A hidden (or frozen) tab's requests can break off too, see noteNetwork()
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') hiddenAt = Date.now();
+    });
+    document.addEventListener('freeze', () => { hiddenAt = Date.now(); });
+    document.addEventListener('resume', () => { hiddenAt = Date.now(); });
 
     load();
     schedule();

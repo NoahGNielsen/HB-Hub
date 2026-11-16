@@ -171,6 +171,8 @@ function termsNumber(int $number): string
                             start og derefter <?= termsNumber(HBHUB_CASINO_DAILY_CALENDAR[0]) ?>-<?= termsNumber(max(HBHUB_CASINO_DAILY_CALENDAR)) ?>
                             chips gratis hver dag. Beløbet følger en kalender på <?= HBHUB_CASINO_DAILY_DAYS ?> dage på casinoets
                             forside og stiger, jo flere dage i træk du henter dem. Springer du en dag over, starter kalenderen forfra.
+                            Når du har hentet dagens chips, kan du hver 3. time hente en bonus på
+                            <?= HBHUB_CASINO_BONUS_PERCENT ?> % af dem resten af casinodagen. Bonusser, du ikke henter, gemmes ikke.
                         </p>
                         <ul>
                             <li><strong>Chips er ikke penge.</strong> De kan ikke veksles til penge, gavekort eller andet, og gevinster i casinoet kan ikke udbetales.</li>

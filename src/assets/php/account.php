@@ -3,6 +3,7 @@
 // and the rules for names and bios that sign-up (userMgmt/onboarding.php) uses as well.
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/chatAttachments.php'; // a deleted account's attachments go with it
+require_once __DIR__ . '/pictureFiles.php'; // profile pictures are files on disk
 
 // What names and bios may be made of. It's an allow list, so anything not on it - Arabic, Chinese, Cyrillic and every
 // other alphabet, invisible characters, combining marks stacked on letters - can't be used.
@@ -78,7 +79,7 @@ function hbHubNameError(string $name, int $nameMax, ?string $currentName = null,
 }
 
 /**
- * Takes away the user's profile picture.
+ * Takes away the user's profile picture, its file on disk too (pictureFiles.php).
  */
 function hbHubRemoveAvatar(PDO $db, int $userId): void
 {
@@ -89,7 +90,7 @@ function hbHubRemoveAvatar(PDO $db, int $userId): void
 
     $db->prepare('UPDATE `HBHub-Users` SET userAvatarAttachmentId = NULL WHERE userId = ?')->execute([$userId]);
     if ($avatarId !== null) {
-        $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$avatarId]);
+        hbHubPictureDelete($db, (int) $avatarId); // its file is deleted once this is committed
     }
     $db->commit();
 }
@@ -97,7 +98,7 @@ function hbHubRemoveAvatar(PDO $db, int $userId): void
 /**
  * Deletes the account. Everything in the user's row is cleared except userId, userCreatedTimestamp and
  * userLastSeenTimestamp, and the name becomes "Deleted User", so their messages stay but nothing about them does.
- * Their profile picture, every one of their sessions, their known devices (loginLimit.php) and browser fingerprints
+ * Their profile picture (the row and its file on disk), every one of their sessions, their known devices (loginLimit.php) and browser fingerprints
  * (fingerprint.php), their Ore Mining Inc.
  * save (nobody else plays in it) and their Minesweeper and Sudoku games are deleted too, and so are the files of their chat
  * attachments (the messages they were in stay, showing them as deleted) and their profile banner.
@@ -133,7 +134,7 @@ function hbHubDeleteAccount(PDO $db, int $userId): void
         $db->prepare('DELETE FROM `HBHub-SudokuGames` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-WordleRandomGames` WHERE userId = ?')->execute([$userId]);
         if ($avatarId !== null) {
-            $db->prepare('DELETE FROM `HBHub-Attachments` WHERE attachmentId = ?')->execute([$avatarId]);
+            hbHubPictureDelete($db, (int) $avatarId); // its file is deleted once this is committed
         }
         $db->commit();
     } catch (Throwable $e) {

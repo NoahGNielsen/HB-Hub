@@ -1,4 +1,4 @@
-Last updated 15/11-26
+Last updated 16/11-26
 # CLAUDE.md
 
 ## Rules (from the project owner)
@@ -24,7 +24,7 @@ Last updated 15/11-26
   `HBHUB_TERMS_UPDATED`, `HBHUB_CONDUCT_UPDATED`, `HBHUB_DO_NOT_SELL_UPDATED`) to today's date, written like
   `19 October 2026`. `HBHUB_TERMS_UPDATED` and `HBHUB_PRIVACY_UPDATED` are the exception: they live in
   `src/assets/php/legalUpdated.php`, because a new date there also shows everyone who agreed to the old version a "has
-  been updated" box (`cookieNotice.js`). When it's unclear whether a page needs a change, update it anyway or tell the owner.
+  been updated" box (`cornerBoxes.js`). When it's unclear whether a page needs a change, update it anyway or tell the owner.
 - **Automatically make a commit after making changes**, with an appropriate commit message. Existing history uses
   short, lowercase, plain-English messages (`added leaderboard`, `QOL update to matador`).
 - `database/migrations/*` is in `.gitignore`, so migrations are never part of a commit.
@@ -62,7 +62,8 @@ src/                     web root (everything here is uploaded)
   assets/js/, assets/css/  one file per page/feature
 docs/                    public docs (start at docs/index.md)
 config-examples/         hbHubSiteConfig.example.php - template for the real config
-tools/                   console scripts for testing by hand (not uploaded): slotsEffectsTest.js fakes slot wins
+tools/                   console scripts for testing by hand (not uploaded): slotsEffectsTest.js fakes slot wins,
+                         bonusPopTest.js shows the 3-hour bonus pop-up
 database/                schema.sql, defaultUserSettings.json, defaultChatSettings.json, migrations/ (gitignored)
 ```
 
@@ -71,6 +72,15 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
 - **`session.php` is `require_once`d first by every page/endpoint**, before any output. It sets `$hbHubUser` (or null)
   and redirects to the login when not logged in; set `$hbHubSessionOptional = true` before it for public pages. It also
   rejects cross-origin POSTs globally.
+- **Pictures are files on disk, never BLOBs**: profile pictures and group icons (`HBHub-Attachments.attachmentKey`)
+  and the banned pictures' copies (`HBHub-BannedAvatars.bannedAvatarKey`) live in `pictures/` and `bannedPictures/`
+  inside the attachments folder, outside the web root. Everything goes through `assets/php/pictureFiles.php`: write
+  the file first, then the row (`hbHubPictureAdd()`), and never unlink yourself - call `hbHubPictureFileRelease()` /
+  `hbHubPictureDelete()`, which delete the file at the end of the request if no row points at it any more. They're
+  sent by `avatar.php`, `icon.php` and `bannedPicture.php` through `hbHubPictureFileSend()`, which has the cache
+  headers (`private, max-age=31536000, immutable` + ETag, only after the access check and once the file is found),
+  so a new link to one must carry `&v=<id>`. A new script that sends pictures goes in both `FilesMatch` exclusion
+  lists in `src/.htaccess`.
 - **Ghost bans** (top of `chat.php`): any new query that shows chat content to users must filter them
   (`chatGhostVisibleSql()`, `cm.memberIsGhost = 0`).
 - **Game state** for Matador/Blackjack/Baccarat/UNO is JSON in `roomState` and holds hidden info (card order, the hole
@@ -131,7 +141,7 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
   **English** (except Matador's Danish game terms), so docs refer to its buttons by their English names, in bold.
   Shared helpers that show text on both sides take a `$danish` flag (`hbHubNameError()`, `hbHubPasswordError()`,
   `hbHubClassError()`, `hbHubLoginLockedMessage()`). Legal dates are kept in English (they're the version key
-  `cookieNotice.js` saves) and shown with `hbHubLegalDanishDate()`. Code comments stay English.
+  `cornerBoxes.js` saves) and shown with `hbHubLegalDanishDate()`. Code comments stay English.
 - **schema.sql** is a phpMyAdmin dump: `CREATE TABLE`s first, then indexes, `AUTO_INCREMENT` and foreign keys as
   separate `ALTER TABLE` blocks further down - keep that structure.
 
