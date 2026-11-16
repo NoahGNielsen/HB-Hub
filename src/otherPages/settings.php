@@ -1149,15 +1149,26 @@ $settingsDeviceCount = count($settingsDevices);
                             <div class="settings-strength-track"><div class="settings-strength-bar"></div></div>
                             <p class="settings-strength-label" aria-live="polite"></p>
                         </div>
-                        <p class="settings-hint" id="settings-new-password-hint">
-                            <?php if ($settingsPasswordPolicy['minLength'] > 1): ?>At least <?= $settingsPasswordPolicy['minLength'] ?> characters.<?php endif; ?>
-                            <?php if ($settingsPasswordPolicy['charTypes'] === 4): ?>
-                                Needs lowercase letters, uppercase letters, numbers and special characters.
-                            <?php elseif ($settingsPasswordPolicy['charTypes'] > 0): ?>
-                                Needs at least <?= $settingsPasswordPolicy['charTypes'] ?> of: lowercase letters, uppercase letters, numbers and special characters.
+                        <!-- The rules as chips that settings.js ticks off while typing (the server checks them too) -->
+                        <div class="settings-password-rules" id="settings-new-password-hint">
+                            <?php if ($settingsPasswordPolicy['minLength'] > 1): ?>
+                            <ul class="settings-checklist">
+                                <li data-check="length">At least <?= $settingsPasswordPolicy['minLength'] ?> characters</li>
+                            </ul>
                             <?php endif; ?>
-                            Common passwords can't be used.
-                        </p>
+                            <?php if ($settingsPasswordPolicy['charTypes'] > 0): ?>
+                            <p class="settings-hint"><?= $settingsPasswordPolicy['charTypes'] === 4 ? 'All of these:' : 'At least ' . $settingsPasswordPolicy['charTypes'] . ' of these:' ?></p>
+                            <ul class="settings-checklist">
+                                <li data-check="lower">Lowercase (a-z)</li>
+                                <li data-check="upper">Uppercase (A-Z)</li>
+                                <li data-check="number">Number (0-9)</li>
+                                <li data-check="special">Special character (!, ?, # ...)</li>
+                            </ul>
+                            <?php endif; ?>
+                            <ul class="settings-checklist">
+                                <li data-check="common">Not a common password</li>
+                            </ul>
+                        </div>
                         <?= settingsErrorSlot($settingsErrors, 'newPassword') ?>
                     </div>
 

@@ -323,6 +323,7 @@
         const strengthBar = strength.querySelector('.settings-strength-bar');
         const passwordMinLength = Number(newPassword.dataset.minLength) || 1;
         const passwordCharTypes = Number(newPassword.dataset.charTypes) || 0;
+        const passwordRules = document.querySelector('.settings-password-rules');
 
         // Common passwords list - only downloaded once the field is used
         let commonPasswords = null;
@@ -342,8 +343,20 @@
         function updatePassword() {
             const value = newPassword.value;
             const hasLength = value.length >= passwordMinLength;
-            const charTypes = /\p{Ll}/u.test(value) + /\p{Lu}/u.test(value) + /\p{N}/u.test(value) + /[^\p{Ll}\p{Lu}\p{N}]/u.test(value);
+            const met = {
+                length: hasLength,
+                lower: /\p{Ll}/u.test(value),
+                upper: /\p{Lu}/u.test(value),
+                number: /\p{N}/u.test(value),
+                special: /[^\p{Ll}\p{Lu}\p{N}]/u.test(value),
+            };
+            const charTypes = met.lower + met.upper + met.number + met.special;
             const isCommon = commonPasswords !== null && commonPasswords.has(value.toLowerCase());
+            // "Not a common password" only gets its tick once the list has loaded and there's something to check
+            met.common = value !== '' && commonPasswords !== null && !isCommon;
+            for (const [name, isMet] of Object.entries(met)) {
+                passwordRules?.querySelector(`[data-check="${name}"]`)?.classList.toggle('is-met', isMet);
+            }
 
             let message = '';
             if (value === '') message = 'Please choose a password.';

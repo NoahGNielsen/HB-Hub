@@ -536,8 +536,56 @@
   color: var(--strength-color);
 }
 
+/* New password rules as chips that turn green once they're met (like onboarding's) */
+.settings-password-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  font-variant-numeric: lining-nums;
+}
+
+.settings-checklist li {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  opacity: 0.8;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.settings-checklist li::before {
+  content: "\25CB";
+  margin-right: 6px;
+}
+
+.settings-checklist li.is-met {
+  background: color-mix(in srgb, var(--settings-on) 20%, transparent);
+  color: var(--settings-on);
+  opacity: 1;
+}
+
+.settings-checklist li.is-met::before {
+  content: "\2713";
+  font-weight: 700;
+}
+
+/* "At least 3 of these:" sits a little closer to its chips */
+.settings-password-rules .settings-hint {
+  margin-bottom: -2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .settings-strength-bar {
+  .settings-strength-bar,
+  .settings-checklist li {
     transition: none;
   }
 }
