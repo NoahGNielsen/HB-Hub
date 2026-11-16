@@ -18,7 +18,8 @@
 // - 'promise': a promise that was rejected with nobody catching it (unhandledrejection), with the message and, where
 //   the stack says, the file, line and column.
 // - 'csp': something the Content-Security-Policy blocked (securitypolicyviolation), with the directive.
-// Left out: browser extensions' own errors (chrome-extension:// and the like), cross-origin scripts' "Script error."
+// Left out: browser extensions' own errors (chrome-extension:// and the like), fonts from other sites that the CSP
+// blocked (ours are all self-hosted, so those come from extensions too), cross-origin scripts' "Script error."
 // that says nothing, the harmless "ResizeObserver loop" warning, and the report itself. Addresses are kept as a path
 // on this site (/chat/), or with the origin for other sites (https://media.giphy.com/...), never with the query, and
 // URLs in messages lose their query too. A page that's an error as a whole (the hosting's 508 page) doesn't have this
@@ -308,6 +309,11 @@
         const isAddress = /^https?:/i.test(event.blockedURI ?? '');
         const blocked = isAddress ? addressOf(event.blockedURI) : null;
         const directive = event.effectiveDirective || event.violatedDirective;
+        // Every font we use is our own copy (assets/fonts/), so a font from another site was asked for by something the
+        // browser put on the page, like an extension's CSS (Mulish from fonts.gstatic.com, say), and font loads don't name
+        // a sourceFile for isExtension() to catch. If our own code ever linked an outside font, its stylesheet would still
+        // show up here as style-src.
+        if (directive === 'font-src' && isAddress && /^https?:\/\//i.test(blocked ?? '')) return;
         note('csp', {
             path: blocked ?? addressOf(event.sourceFile),
             message: messageOf(directive + (!isAddress && event.blockedURI ? ' (' + event.blockedURI + ')' : '')),
