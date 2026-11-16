@@ -3,9 +3,10 @@
 // the casino leaderboard and the daily chips; the 30-day calendar of daily chips as a row of chips; the four games
 // with what's going on at them right now (open tables and players for Blackjack and Baccarat, who's playing at the shared
 // Roulette table and the user's last spins there, and who's spun the slots lately) and the user's own result in each;
-// and the top of the casino leaderboard. Under the daily chips is the 3-hour bonus that follows them.
+// and the top of the casino leaderboard. (The 3-hour bonus that follows the daily chips pops up in the bottom-right
+// corner of every casino page instead, navPanel.php.)
 // casino.js (loaded by navPanel.php along with the chip count in the top bar) keeps the chips, the daily chips, the
-// 3-hour bonus, the calendar and the countdowns up to date. The rest is as it was when the page was made.
+// calendar and the countdown up to date. The rest is as it was when the page was made.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
@@ -26,7 +27,6 @@ $userId = (int) $hbHubUser['userId'];
 
 $casinoWallet = hbHubCasinoStatus($db, $userId);
 $casinoDaily = $casinoWallet['daily'];
-$casinoBonus = $casinoWallet['bonus'];
 $navCasinoChips = $casinoWallet['chips']; // the chip count in the top bar (navPanel.php)
 
 // The casino leaderboard by chips won or lost, like casino/leaderboard.php shows it first, and the user's place on it
@@ -81,22 +81,6 @@ $casinoSlotsPlaying = hbHubSlotsPlayingNow($db);
 function casinoCountdown(int $seconds): string
 {
     return sprintf('%d:%02d:%02d', intdiv($seconds, 3600), intdiv($seconds, 60) % 60, $seconds % 60);
-}
-
-/**
- * The line under the 3-hour bonus's button, the same as casino.js writes it: ready, a countdown, or why there's none.
- */
-function casinoBonusText(array $bonus, bool $isDailyReady): string
-{
-    if ($bonus['ready']) {
-        return 'Your bonus is ready.';
-    }
-    if ($bonus['available']) {
-        return 'Next bonus in ' . casinoCountdown($bonus['seconds']);
-    }
-    return $isDailyReady
-        ? 'Collect your daily chips first. Then there\'s ' . HBHUB_CASINO_BONUS_PERCENT . '% of them every 3 hours.'
-        : 'No more bonuses today. They start again after tomorrow\'s daily chips.';
 }
 
 /**
@@ -247,20 +231,6 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                     <?= $casinoDaily['ready'] ? 'Your daily chips are ready.' : 'Next daily chips in ' . casinoCountdown($casinoDaily['seconds']) ?>
                 </p>
                 <p class="casino-home-daily-message" role="status" data-casino-daily-message></p>
-
-                <?php // The 3-hour bonus (wallet.php), after the daily chips. casino.js runs its countdown and button too. ?>
-                <div class="casino-home-bonus<?= $casinoBonus['ready'] ? ' is-ready' : '' ?>" data-casino-bonus
-                     data-available="<?= $casinoBonus['available'] ? '1' : '0' ?>" data-seconds="<?= $casinoBonus['seconds'] ?>"
-                     data-amount="<?= $casinoBonus['amount'] ?>" data-ready="<?= $casinoBonus['ready'] ? '1' : '0' ?>"
-                     data-percent="<?= HBHUB_CASINO_BONUS_PERCENT ?>">
-                    <div class="casino-home-bonus-head">
-                        <h3>3-hour bonus</h3>
-                        <span class="casino-home-bonus-amount"<?= $casinoBonus['amount'] > 0 ? '' : ' hidden' ?>>+<span data-casino-bonus-amount><?= number_format($casinoBonus['amount']) ?></span></span>
-                    </div>
-                    <button type="button" class="casino-btn" data-casino-bonus-claim<?= $casinoBonus['ready'] ? '' : ' disabled' ?>>Collect bonus</button>
-                    <p class="casino-home-bonus-timer" role="timer" data-casino-bonus-timer><?= casinoBonusText($casinoBonus, $casinoDaily['ready']) ?></p>
-                    <p class="casino-home-daily-message" role="status" data-casino-bonus-message></p>
-                </div>
             </section>
         </header>
 

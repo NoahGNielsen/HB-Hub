@@ -1,8 +1,10 @@
 // Casino chips (assets/php/casino/wallet.php), on every casino page: keeps the chip count in the top bar up to date,
 // and on the casino home the big chip count too, and the daily chips panel with its countdown and Collect button, its
 // streak, a note when another of the person's accounts already had today's (so this one gets less, wallet.php), and
-// the 30-day calendar under it (which days are ticked off, which one is next, and the progress bar over it), and the
-// 3-hour bonus that follows the daily chips (its own countdown and Collect bonus button).
+// the 30-day calendar under it (which days are ticked off, which one is next, and the progress bar over it). On every
+// casino page it also pops up the 3-hour bonus that follows the daily chips (navPanel.php's box in the bottom-right
+// corner) as soon as it can be collected, counting down to that without showing it, and collects it from there.
+// Its x hides it on this page until the next bonus.
 // The chips come along with navUpdates.js's request (every 15 seconds while the page is in view: wallet=1 on nav:poll,
 // the answer's "wallet" on nav:update). /casino/chips is only asked when the daily chips' or the 3-hour bonus's
 // countdown runs out and to collect them. A game that gets a new balance in its own answers passes it on straight away with
@@ -25,9 +27,10 @@
     const progressText = document.querySelector('[data-casino-progress-text]');
     const bonus = document.querySelector('[data-casino-bonus]');
     const bonusButton = bonus?.querySelector('[data-casino-bonus-claim]');
-    const bonusTimer = bonus?.querySelector('[data-casino-bonus-timer]');
+    const bonusClose = bonus?.querySelector('[data-casino-bonus-close]');
     const bonusAmount = bonus?.querySelector('[data-casino-bonus-amount]');
     const bonusMessage = bonus?.querySelector('[data-casino-bonus-message]');
+    const BONUS_COLLECTED_MS = 4000; // how long "You collected ..." stays before the pop-up goes
 
     let chips = counts.length > 0 ? Number(counts[0].dataset.casinoChips) : null;
     let nextDailyAt = null; // Date.now() when the daily chips can be collected again, null while they can be
@@ -36,7 +39,8 @@
     let nextBonusAt = null; // Date.now() when the 3-hour bonus is ready, null while it is or there's none to come
     let bonusTimerId = null;
     let isClaimingBonus = false;
-    let isDailyReady = daily?.classList.contains('is-ready') ?? false; // words the bonus's line while there's none
+    let isBonusDismissed = false; // its x was clicked, so it stays away until a bonus that isn't ready yet comes in
+    let bonusHideTimer = null; // hides it a moment after it was collected
     let isHeld = false; // casino:hold: the count stays as it is for now
     let heldChips = null; // the last count that came in while held
 
@@ -140,33 +144,39 @@
             clearInterval(bonusTimerId);
             bonusTimerId = null;
             refresh();
-            return;
         }
-        bonusTimer.textContent = 'Next bonus in ' + formatCountdown(left);
     }
 
-    // The 3-hour bonus under the daily chips (wallet.php's hbHubCasinoBonusState()). The same as casinoBonusText() in
-    // casino/index.php when there's none to come.
+    function hideBonus() {
+        clearTimeout(bonusHideTimer);
+        bonusHideTimer = null;
+        bonus.hidden = true;
+        bonus.classList.remove('is-collected');
+        bonusMessage.textContent = '';
+        bonusMessage.classList.remove('is-error');
+    }
+
+    // The 3-hour bonus pop-up (wallet.php's hbHubCasinoBonusState()): shown while it's ready, and otherwise counting
+    // down (once a second, but only checking the time) to when it will be, to ask the server then
     function showBonus(state) {
         if (!bonus) return;
         clearInterval(bonusTimerId);
         bonusTimerId = null;
         nextBonusAt = null;
-        bonusButton.disabled = !state.ready || isClaimingBonus;
-        bonus.classList.toggle('is-ready', state.ready);
-        bonusAmount.textContent = formatChips(state.amount);
-        bonusAmount.parentElement.hidden = state.amount <= 0;
+        if (!state.ready && state.available) {
+            nextBonusAt = Date.now() + state.seconds * 1000;
+            bonusTimerId = setInterval(tickBonus, 1000);
+        }
+        if (bonusHideTimer !== null) return; // just collected: the message stays up until it goes by itself
 
         if (state.ready) {
-            bonusTimer.textContent = 'Your bonus is ready.';
-        } else if (state.available) {
-            nextBonusAt = Date.now() + state.seconds * 1000;
-            tickBonus();
-            bonusTimerId = setInterval(tickBonus, 1000);
-        } else {
-            bonusTimer.textContent = isDailyReady
-                ? 'Collect your daily chips first. Then there\'s ' + bonus.dataset.percent + '% of them every 3 hours.'
-                : 'No more bonuses today. They start again after tomorrow\'s daily chips.';
+            bonusAmount.textContent = formatChips(state.amount);
+            bonusButton.disabled = isClaimingBonus;
+            if (!isBonusDismissed) bonus.hidden = false;
+        } else if (!isClaimingBonus) {
+            // Not ready (collected in another tab, say): out of sight, and the next one may pop up again
+            isBonusDismissed = false;
+            hideBonus();
         }
     }
 
@@ -178,10 +188,7 @@
                 showChips(wallet.chips);
             }
         }
-        if (wallet?.daily) {
-            isDailyReady = wallet.daily.ready;
-            showDaily(wallet.daily);
-        }
+        if (wallet?.daily) showDaily(wallet.daily);
         if (wallet?.bonus) showBonus(wallet.bonus);
     }
 
@@ -229,10 +236,18 @@
             return;
         }
 
-        show(wallet);
-        bonusMessage.textContent = !wallet.claimed ? 'Your bonus isn\'t ready yet.'
+        // The message first, then a moment before the pop-up goes (showBonus() leaves it be meanwhile)
+        bonus.classList.add('is-collected');
+        bonusMessage.textContent = !wallet.claimed ? 'This bonus was already collected.'
             : 'You collected ' + formatChips(wallet.claimedAmount) + ' chips!'
                 + (wallet.bonus.available ? ' The next one is in 3 hours.' : ' That was the last one today.');
+        bonusHideTimer = setTimeout(hideBonus, BONUS_COLLECTED_MS);
+        show(wallet);
+    });
+
+    bonusClose?.addEventListener('click', () => {
+        isBonusDismissed = bonusHideTimer === null; // after collecting, it's just closing the message
+        hideBonus();
     });
 
     document.addEventListener('casino:wallet', (event) => show(event.detail));

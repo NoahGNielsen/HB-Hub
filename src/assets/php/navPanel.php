@@ -7,7 +7,7 @@
 // The bell lists the logged in user's notifications (notificationBell.js), with the number of unread ones on it.
 // Chat in the side bar has the number of chats with unread messages on it, kept up to date by chatUnread.js.
 // Casino pages set $navCasinoChips (the user's chips) before including this, to show them in the top bar too,
-// kept up to date by casino.js.
+// kept up to date by casino.js, and the 3-hour bonus pop-up in the bottom-right corner while it can be collected.
 // Those four share one request (navUpdates.js, otherPages/navUpdates.php), so a page only sends one every 15 seconds.
 // Site admins also get Admin in the side bar, the admin panel's lists of users and chats (admin/index.php), with the
 // number of new feedback on it.
@@ -144,6 +144,24 @@ $navFeedbackHref = $navOnFeedback
 <?php if ($navNotifications): ?>
     <script src="/assets/js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>" defer
             data-notify="<?= $navNotify ? '1' : '0' ?>" data-sound="<?= $navSound ? '1' : '0' ?>"></script>
+<?php endif; ?>
+<?php if ($navCasinoChips !== null && $navUser !== null):
+    // The 3-hour bonus pop-up (wallet.php), in the bottom-right corner of every casino page. It starts hidden unless
+    // the bonus can be collected right now; casino.js shows it whenever it becomes ready (counting down to it from
+    // data-seconds and the nav polling's "wallet"), collects it, and hides it again.
+    require_once __DIR__ . '/casino/wallet.php';
+    $navCasinoBonus = hbHubCasinoBonusState(hbHubCasinoWallet(hbHubDatabase(), (int) $navUser['userId']), time());
+    ?>
+    <aside class="casino-bonus-pop" aria-label="3-hour bonus" data-casino-bonus
+           data-ready="<?= $navCasinoBonus['ready'] ? '1' : '0' ?>" data-available="<?= $navCasinoBonus['available'] ? '1' : '0' ?>"
+           data-seconds="<?= $navCasinoBonus['seconds'] ?>" data-amount="<?= $navCasinoBonus['amount'] ?>"<?= $navCasinoBonus['ready'] ? '' : ' hidden' ?>>
+        <img class="casino-bonus-pop-icon" src="/assets/images/icons/chip.svg" alt="">
+        <p class="casino-bonus-pop-title">Your 3-hour bonus is ready</p>
+        <button type="button" class="casino-bonus-pop-close" aria-label="Hide" title="Hide" data-casino-bonus-close>&times;</button>
+        <p class="casino-bonus-pop-amount">+<span data-casino-bonus-amount><?= number_format($navCasinoBonus['amount']) ?></span> chips</p>
+        <button type="button" class="casino-bonus-pop-claim" data-casino-bonus-claim>Collect</button>
+        <p class="casino-bonus-pop-message" role="status" data-casino-bonus-message></p>
+    </aside>
 <?php endif; ?>
 <?php if ($navCasinoChips !== null): ?>
     <script src="/assets/js/casino.js?v=<?= filemtime(__DIR__ . '/../js/casino.js') ?>" defer></script>

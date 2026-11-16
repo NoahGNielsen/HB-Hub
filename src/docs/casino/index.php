@@ -58,7 +58,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <p>
                             Når du har hentet dine daglige chips, kan du hente en bonus på
                             <strong><?= HBHUB_CASINO_BONUS_PERCENT ?> %</strong> af dem hver 3. time med
-                            <strong>Collect bonus</strong> under de daglige chips. Den første er klar 3 timer efter de daglige
+                            <strong>Collect</strong> i boksen, der dukker op nederst til højre på casinoets sider, når den er klar. Den første er klar 3 timer efter de daglige
                             chips, og den næste 3 timer efter, at du har hentet den forrige, så bonusser, du ikke henter, hober
                             sig ikke op. Fik du kun <?= HBHUB_CASINO_DAILY_ALT_PERCENT ?> % på en af dine andre konti, er bonussen
                             <?= HBHUB_CASINO_BONUS_PERCENT ?> % af det.

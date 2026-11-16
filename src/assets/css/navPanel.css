@@ -323,6 +323,138 @@ a.nav-notification.is-unread:focus-visible {
   height: 22px;
 }
 
+/* The 3-hour bonus pop-up, in the bottom-right corner of casino pages while it can be collected (navPanel.php +
+   casino.js). Built like the cookie notice's corner box (mainStyle.css) on the other side, with a gold edge for the
+   casino's bonus colour. Above the bottom bar on a phone (further down). */
+.casino-bonus-pop {
+  --casino-gold: #e8b931;
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 190;
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px 16px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+  border-radius: 12px;
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: inset 0 0 0 2px var(--casino-gold), 0 8px 24px rgba(0, 0, 0, 0.3),
+    0 0 22px color-mix(in srgb, var(--casino-gold) 25%, transparent);
+  animation: casino-bonus-pop-in 0.35s ease;
+}
+
+.casino-bonus-pop[hidden] {
+  display: none;
+}
+
+.casino-bonus-pop-icon {
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+}
+
+.casino-bonus-pop-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.casino-bonus-pop-amount {
+  grid-column: 2;
+  margin: 0;
+  color: var(--casino-gold);
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.casino-bonus-pop-close {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.casino-bonus-pop-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 1;
+}
+
+.casino-bonus-pop-claim {
+  grid-column: 3;
+  grid-row: 2;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--casino-gold);
+  color: #2a1d00;
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.casino-bonus-pop-claim:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.casino-bonus-pop-claim:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.casino-bonus-pop-close:focus-visible,
+.casino-bonus-pop-claim:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* "You collected ...", or what went wrong (casino.js). Takes the whole width under the rest. */
+.casino-bonus-pop-message {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+}
+
+.casino-bonus-pop-message:empty {
+  display: none;
+}
+
+.casino-bonus-pop-message.is-error {
+  color: #ff8a80;
+}
+
+/* Collected: the button goes and only the message stays, until casino.js hides it a moment later */
+.casino-bonus-pop.is-collected .casino-bonus-pop-claim {
+  visibility: hidden;
+}
+
+@keyframes casino-bonus-pop-in {
+  from { opacity: 0; transform: translateY(16px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .casino-bonus-pop {
+    animation: none;
+  }
+}
+
 .nav-visually-hidden {
   position: absolute;
   width: 1px;
@@ -555,5 +687,9 @@ a.nav-notification.is-unread:focus-visible {
     right: 8px;
     width: auto;
     max-height: calc(100dvh - var(--nav-top-h) - 68px - 16px); /* above the bottom bar */
+  }
+
+  .casino-bonus-pop {
+    bottom: calc(68px + 12px); /* above the bottom bar */
   }
 }
