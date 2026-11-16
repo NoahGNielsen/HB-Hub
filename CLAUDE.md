@@ -62,7 +62,8 @@ src/                     web root (everything here is uploaded)
   assets/js/, assets/css/  one file per page/feature
 docs/                    public docs (start at docs/index.md)
 config-examples/         hbHubSiteConfig.example.php - template for the real config
-tools/                   console scripts for testing by hand (not uploaded): slotsEffectsTest.js fakes slot wins
+tools/                   console scripts for testing by hand (not uploaded): slotsEffectsTest.js fakes slot wins,
+                         bonusPopTest.js shows the 3-hour bonus pop-up
 database/                schema.sql, defaultUserSettings.json, defaultChatSettings.json, migrations/ (gitignored)
 ```
 

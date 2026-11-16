@@ -29,7 +29,8 @@ HB-Hub/
 │                        (defaultUserSettings.json and defaultChatSettings.json are the
 │                        defaults for the settings columns on users and chats)
 ├── tools/               Scripts for testing by hand, never uploaded (slotsEffectsTest.js:
-│                        paste into the console on /casino/slots to see the win effects)
+│                        paste into the console on /casino/slots to see the win effects;
+│                        bonusPopTest.js: on any casino page, to see the 3-hour bonus pop-up)
 └── .github/workflows/   Deploying, and updating the README badges every hour
 ```
 
