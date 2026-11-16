@@ -770,20 +770,21 @@
   gap: 8px;
 }
 
-/* ---------- Profile banner, status (assets/php/profile.php) ---------- */
+/* ---------- Picture and banner (assets/php/profile.php) ---------- */
 
-.settings fieldset.settings-field,
-.settings-directions {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: none;
+/* The preview at the top (the banner with the picture over its bottom left corner and the name next to it, like on
+   the profile), then a row each for the profile picture and the banner, with a line between them */
+.settings-look {
+  display: flex;
+  flex-direction: column;
 }
 
-.settings fieldset.settings-field > legend,
-.settings-directions > legend {
-  margin-bottom: 6px;
-  padding: 0;
+.settings-look-preview {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--settings-line);
+  border-radius: 14px;
+  background: var(--background);
 }
 
 /* The banner as it looks on the profile (3:1 there too), painted by settings.js. Without a picture or JS, the site's
@@ -792,7 +793,6 @@
   position: relative;
   aspect-ratio: 3 / 1;
   overflow: hidden;
-  border-radius: 12px;
   background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, var(--background)), #6a4bd6);
 }
 
@@ -804,122 +804,521 @@
   object-fit: cover;
 }
 
-.settings-banner-types {
-  display: flex;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-/* Colors / Picture, as two buttons */
-.settings-banner-type {
-  position: relative;
-  cursor: pointer;
-}
-
-.settings-banner-type input {
+/* "Change banner" in the banner's top right corner, dark glass so it shows on any banner */
+.settings-banner-edit {
   position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.settings-banner-type span {
-  display: block;
-  padding: 7px 16px;
-  border: 1px solid var(--settings-line);
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  background: var(--background);
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.settings-banner-type input:checked + span {
-  border-color: var(--accent);
-  background: var(--accent);
+  background: rgba(10, 12, 16, 0.55);
+  backdrop-filter: blur(6px);
   color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.settings-banner-type input:focus-visible + span {
+.settings-banner-edit:hover {
+  background: rgba(10, 12, 16, 0.75);
+}
+
+.settings-banner-edit:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-.settings-banner-type input:disabled + span {
-  opacity: 0.5;
-  cursor: not-allowed;
+.settings-look-who {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 0 18px 16px;
 }
 
-.settings-banner-colors,
-.settings-banner-upload {
+.settings-look-avatar {
+  position: relative;
+  flex: none;
+  margin-top: -44px;
+  width: 96px;
+  height: 96px;
+}
+
+.settings-look-avatar .settings-avatar-preview {
+  box-shadow: 0 0 0 4px var(--background);
+}
+
+.settings-look-text {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 6px;
+  gap: 2px;
+  padding-bottom: 4px;
 }
 
-.settings-banner-colors input[type="color"] {
-  width: 100%;
-  height: 44px;
+.settings-look-name {
+  overflow: hidden;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-look-status {
+  overflow: hidden;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A row: its name and hint on the left, its buttons on the right */
+.settings-look-part {
+  position: relative; /* keeps the hidden file inputs inside it */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--settings-line);
+}
+
+.settings-look-preview + .settings-look-part {
+  border-top: none;
+  padding-top: 4px;
+}
+
+.settings-look-part-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.settings-look-part-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-look-part-text .settings-hint {
+  margin: 0;
+}
+
+.settings-look-part-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-look-part p[data-banner-status]:empty {
+  display: none;
+}
+
+/* A file input behind a button: the button is its label, and shows the input's keyboard focus */
+.settings-file-btn {
+  display: inline-block;
+}
+
+.settings-file-input:focus-visible + .settings-file-btn {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- The Change banner popup ---------- */
+
+.settings-banner-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0; /* so a click on the dialog itself is always the backdrop (settings.js) */
+  box-sizing: border-box;
+  overflow: auto;
+  border: 1px solid var(--settings-line);
+  border-radius: var(--radius);
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+.settings-banner-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-banner-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.settings-banner-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 14px 6px 20px;
+}
+
+.settings-banner-dialog-head h3 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.settings-banner-dialog-head [data-banner-back]:not([hidden]) + h3 {
+  margin-left: -4px;
+}
+
+.settings-banner-dialog-head:has([data-banner-back]:not([hidden])) {
+  padding-left: 10px;
+}
+
+.settings-banner-dialog-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex: none;
   padding: 0;
   border: none;
   border-radius: 10px;
   background: none;
+  color: inherit;
   cursor: pointer;
 }
 
-.settings-banner-colors input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0;
+.settings-banner-dialog-icon:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
 }
 
-.settings-banner-colors input[type="color"]::-webkit-color-swatch {
-  border: 2px solid var(--settings-line);
-  border-radius: 10px;
+.settings-banner-dialog-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
-.settings-banner-colors input[type="color"]::-moz-color-swatch {
-  border: 2px solid var(--settings-line);
-  border-radius: 10px;
+.settings-banner-view {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 10px 20px 20px;
 }
 
-.settings-banner-colors input[type="color"]:focus-visible {
+/* The three choices, as big rows with an icon */
+.settings-banner-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-banner-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--settings-line);
+  border-radius: 14px;
+  background: var(--background);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.settings-banner-option:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--background));
+}
+
+.settings-banner-option:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* The direction arrows, like Change background in the chat */
-.settings-directions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.settings-banner-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.settings-directions label {
+.settings-banner-option-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+.settings-banner-option-gif {
+  padding: 2px 5px;
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+/* Choose gradient's icon is a little gradient itself */
+.settings-banner-option-swirl {
+  background: linear-gradient(135deg, var(--accent), #6a4bd6);
+}
+
+.settings-banner-option-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-banner-option-title {
+  font-weight: 700;
+}
+
+.settings-banner-option-hint {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+/* Choose GIF: the search, and the GIFs in a grid of wide tiles, like the banner itself */
+.settings-banner-gifs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  max-height: min(380px, 55dvh);
+  overflow-y: auto;
+}
+
+.settings-banner-gif {
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--background);
+  cursor: pointer;
+}
+
+.settings-banner-gif:hover,
+.settings-banner-gif:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.settings-banner-gif img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-banner-gif-status {
+  margin: 0;
+  text-align: center;
+}
+
+.settings-banner-gif-status:empty {
+  display: none;
+}
+
+.settings-banner-giphy {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.5;
+  text-align: right;
+}
+
+/* Choose gradient: a preview, then the colors on the left and the compass on the right */
+.settings-banner-gradient-preview {
+  aspect-ratio: 3 / 1;
+  border-radius: 12px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, var(--background)), #6a4bd6);
+}
+
+.settings-banner-colors {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-banner-swatches {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* A color: the round swatch (the color input itself) with its name and hex code */
+.settings-swatch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid var(--settings-line);
+  border-radius: 12px;
+  background: var(--background);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.settings-swatch:hover,
+.settings-swatch:has(input:focus-visible) {
+  border-color: var(--accent);
+}
+
+.settings-swatch input[type="color"] {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.settings-swatch input[type="color"]:focus-visible {
+  outline: none;
+}
+
+.settings-swatch input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.settings-swatch input[type="color"]::-webkit-color-swatch {
+  border: 2px solid color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 50%;
+}
+
+.settings-swatch input[type="color"]::-moz-color-swatch {
+  border: 2px solid color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 50%;
+}
+
+.settings-swatch-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.settings-swatch-name {
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.settings-swatch-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* The direction: the eight arrows as a compass, with a dot in the middle */
+.settings-directions {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 38px);
+  grid-template-rows: repeat(3, 38px);
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.settings-direction {
   position: relative; /* keeps the hidden radio inside it */
   cursor: pointer;
 }
 
+.settings-direction-a315 { grid-area: 1 / 1; }
+.settings-direction-a0 { grid-area: 1 / 2; }
+.settings-direction-a45 { grid-area: 1 / 3; }
+.settings-direction-a270 { grid-area: 2 / 1; }
+.settings-direction-a90 { grid-area: 2 / 3; }
+.settings-direction-a225 { grid-area: 3 / 1; }
+.settings-direction-a180 { grid-area: 3 / 2; }
+.settings-direction-a135 { grid-area: 3 / 3; }
+
+.settings-direction-dot {
+  grid-area: 2 / 2;
+  place-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 25%, transparent);
+}
+
 .settings-direction-arrow {
-  width: 40px;
-  height: 40px;
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
   border-radius: 10px;
   background: var(--background);
-  font-size: 1.2rem;
-  line-height: 1;
+  color: color-mix(in srgb, var(--text) 75%, transparent);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.settings-directions label:hover .settings-direction-arrow {
+/* One arrow drawn pointing up, turned to each direction */
+.settings-direction-arrow svg {
+  display: block;
+}
+
+.settings-direction-a45 svg { transform: rotate(45deg); }
+.settings-direction-a90 svg { transform: rotate(90deg); }
+.settings-direction-a135 svg { transform: rotate(135deg); }
+.settings-direction-a180 svg { transform: rotate(180deg); }
+.settings-direction-a225 svg { transform: rotate(225deg); }
+.settings-direction-a270 svg { transform: rotate(270deg); }
+.settings-direction-a315 svg { transform: rotate(315deg); }
+
+.settings-direction:hover .settings-direction-arrow {
   background: color-mix(in srgb, var(--accent) 20%, var(--background));
+  color: var(--text);
 }
 
-.settings-directions input:checked + .settings-direction-arrow {
+.settings-direction input:checked + .settings-direction-arrow {
   background: var(--accent);
   color: #fff;
 }
 
-.settings-directions input:focus-visible + .settings-direction-arrow {
+.settings-direction input:focus-visible + .settings-direction-arrow {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Narrow phones: the compass goes under the colors */
+@media (max-width: 420px) {
+  .settings-banner-colors {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-directions {
+    align-self: center;
+  }
+}
+
+/* ---------- Status (assets/php/profile.php) ---------- */
+
+.settings fieldset.settings-field {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.settings fieldset.settings-field > legend {
+  margin-bottom: 6px;
+  padding: 0;
 }
 
 /* Status: the emoji in a little box next to the text */
@@ -1497,30 +1896,6 @@
   outline-offset: 2px;
 }
 
-/* Picture and banner: the banner with the picture over its bottom left corner, like on the profile, and the
-   controls for both under it */
-.settings-look {
-  display: flex;
-  flex-direction: column;
-}
-
-.settings-look-avatar {
-  position: relative;
-  margin: -48px 0 20px 20px;
-  width: 96px;
-  height: 96px;
-}
-
-.settings-look-avatar .settings-avatar-preview {
-  box-shadow: 0 0 0 4px var(--secondary);
-}
-
-.settings-banner-color-pickers {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
 /* Small screens: the list or a panel, not both. The panel has "‹ Settings" back to the list. */
 @media (max-width: 900px) {
   .settings.settings-page.settings-app {
@@ -1797,8 +2172,12 @@
     flex: 1 1 100%;
   }
 
+  .settings-look-who {
+    padding: 0 12px 12px;
+  }
+
   .settings-look-avatar {
-    margin: -36px 0 0 12px;
+    margin-top: -32px;
     width: 72px;
     height: 72px;
   }

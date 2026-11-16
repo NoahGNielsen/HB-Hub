@@ -19,7 +19,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li><strong>Picture</strong>: en PNG, JPEG, GIF eller WebP. Den bliver vist ved dine beskeder, i chatlisten og på ranglisterne.</li>
                             <li><strong>Name</strong>: det, alle ser dig som, og det, du logger ind med.</li>
                             <li><strong>Year og field of study</strong>: 1., 2. eller 3. år og X, U, T, Y eller Z, eller Not HTX, så folk ved, hvem du er. Din årgang stiger af sig selv hvert år den 1. juli, og efter 3. år bliver du vist som Graduate. Skifter du, flytter du over i den anden <a href="/docs/chat/groups#class">klassechat</a>.</li>
-                            <li><strong>Banner</strong>: den brede stribe øverst på din profil. Vælg to farver, og hvilken vej de går, ligesom en <a href="/docs/chat/groups#look">chatbaggrund</a>, eller et billede. Et billede bliver gjort mindre og lavet om til JPEG XL på din enhed, og tager en af dine <a href="/docs/chat/attachments#tickets">billetter til vedhæftede filer</a>, så længe det er dit banner (det udløber aldrig). Går du tilbage til farver, får du billetten tilbage.</li>
+                            <li><strong>Banner</strong>: den brede stribe øverst på din profil. Tryk på <strong>Change banner</strong>, og vælg <strong>Upload image</strong> (et billede), <strong>Choose GIF</strong> (en GIF fra Giphy) eller <strong>Choose gradient</strong> (to farver, og hvilken vej de går, ligesom en <a href="/docs/chat/groups#look">chatbaggrund</a>; tryk <strong>Use gradient</strong> for at bruge dem). Et billede bliver gjort mindre og lavet om til JPEG XL på din enhed, og tager en af dine <a href="/docs/chat/attachments#tickets">billetter til vedhæftede filer</a>, så længe det er dit banner (det udløber aldrig). Skifter du til farver eller en GIF, får du billetten tilbage.</li>
                             <li><strong>Education</strong>: et mærke for den slags uddannelse, du tager, som 💻 IT and media eller 🍳 Food and service.</li>
                             <li><strong>Status</strong>: en emoji og op til 45 tegn på op til to linjer, vist ved dit profilbillede. Ligesom bioen tager den kun det latinske alfabet, tal, tegnsætning og emoji. Vælg, hvornår den rydder sig selv: efter 30 minutter, 1 time, 8 timer, 24 timer (standard) eller 7 dage, eller aldrig. Du kan også klikke på din status på din egen profil for at ændre eller rydde den dér, eller klikke på "Click here to add a status!" (kun du ser det), når du ikke har en.</li>
                             <li><strong>Bio</strong>: et par ord om dig selv.</li>
@@ -30,7 +30,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             uddannelse viser den et Site admin-mærke for side-admins, og om du er online. Billeder skal følge
                             <a href="/legal/code-of-conduct">adfærdskodekset</a> ligesom alt andet: et profilbillede eller
                             bannerbillede, der får en konto udelukket, bliver også bandlyst, på alle konti, både som profilbillede og
-                            som banner. Side-admins kan også fjerne en status eller et bannerbillede, der bryder reglerne.
+                            som banner. Side-admins kan også fjerne en status, et bannerbillede eller et GIF-banner, der bryder reglerne.
                         </p>
                     </section>
 

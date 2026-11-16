@@ -12,6 +12,8 @@
 // - profileEducation: which kind of education they're taking, a key of HBHUB_PROFILE_EDUCATIONS, or null
 // - profileBanner: { color1, color2, gradientAngle } - the banner's gradient, made like a chat's background (Change
 //   background in the chat, chatBackgroundOf() in chat.php). "default" colors for the site's own one.
+//   gifId: a Giphy GIF id when the banner is a GIF (picked in settings through the chat's GIF search, /chat/gifs),
+//   otherwise null or missing. It's shown straight from Giphy's servers (hbHubProfileBannerGifUrl()).
 //
 // The banner can be a picture instead: userBannerAttachmentId in HBHub-Users. It's kept like a chat attachment
 // (chatAttachments.php), on disk and paid for with tickets, but without a chat or a message, and it never expires
@@ -23,6 +25,7 @@ require_once __DIR__ . '/chat.php'; // chatBackgroundOf() and the gradient direc
 require_once __DIR__ . '/account.php'; // the allow list the bio uses
 require_once __DIR__ . '/urlBlacklist.php'; // and its blacklisted links
 require_once __DIR__ . '/userSettings.php'; // hbHubUserSettings(), for saving the status
+require_once __DIR__ . '/giphy.php'; // hbHubGiphyIsId(), for GIF banners
 
 const HBHUB_PROFILE_STATUS_TEXT_MAX = 45;
 const HBHUB_PROFILE_STATUS_LINES_MAX = 2;
@@ -260,6 +263,50 @@ function hbHubProfileBannerGradient(array $settings): ?array
     return is_array($gradient)
         ? chatBackgroundOf($gradient['color1'] ?? null, $gradient['color2'] ?? null, $gradient['gradientAngle'] ?? null)
         : null;
+}
+
+/**
+ * The Giphy id of the user's GIF banner (profileBanner.gifId in their settings), or null when they don't have one.
+ * A banner picture wins over it, but the two are never both set: picking one takes the other away (settings.php).
+ */
+function hbHubProfileBannerGif(array $settings): ?string
+{
+    $gifId = $settings['profileBanner']['gifId'] ?? null;
+    return hbHubGiphyIsId($gifId) ? $gifId : null;
+}
+
+/**
+ * The address of a GIF banner on Giphy's own servers (allowed by the content security policy, like the chat's GIFs).
+ * The whole GIF as WebP, as a banner is wider than the chat's 200px previews.
+ */
+function hbHubProfileBannerGifUrl(string $gifId): string
+{
+    return 'https://media.giphy.com/media/' . $gifId . '/giphy.webp';
+}
+
+/**
+ * Takes away the user's GIF banner, so the gradient is shown again. Locked like hbHubProfileSaveStatus(). Used by the
+ * admin panel (admin/user.php); the user's own settings do it as part of saving the profile.
+ */
+function hbHubProfileRemoveBannerGif(PDO $db, int $userId): void
+{
+    try {
+        $db->beginTransaction();
+        $statement = $db->prepare('SELECT userSettings FROM `HBHub-Users` WHERE userId = ? FOR UPDATE');
+        $statement->execute([$userId]);
+        $settings = hbHubUserSettings($statement->fetchColumn() ?: null);
+        if (is_array($settings['profileBanner'] ?? null)) {
+            $settings['profileBanner']['gifId'] = null;
+        }
+        $db->prepare('UPDATE `HBHub-Users` SET userSettings = ? WHERE userId = ?')
+            ->execute([json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE), $userId]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
 }
 
 /**

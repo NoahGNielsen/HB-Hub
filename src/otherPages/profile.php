@@ -1,7 +1,7 @@
 <?php
 // Profile page: /profile?user=id shows that user, without ?user= it shows the logged in user.
 // Banned users don't have a profile (the same as in the chat's user search).
-// A card with the banner along the top (a picture, or the colors they picked: assets/php/profile.php), the profile
+// A card with the banner along the top (a picture, a GIF, or the colors they picked: assets/php/profile.php), the profile
 // picture over its bottom edge with a dot for online (hover it for how long they've been offline), their status next to
 // it, and on the right a Message button (someone else) or the settings cog (your own). Under it the name, badges
 // (Site admin, class, education, Engine Crew for giving parts to Ore Mining Inc.'s Cosmic Engine once its Crew Deck is
@@ -99,6 +99,8 @@ const PROFILE_MEDALS = [1 => ['🥇', 'Gold', 'fastest'], 2 => ['🥈', 'Silver'
 
 $profileAvatarSrc = hbHubAvatarUrl((int) $profile['userId'], $profile['userAvatarAttachmentId'] !== null ? (int) $profile['userAvatarAttachmentId'] : null);
 $profileBannerSrc = $profile['bannerId'] !== null ? hbHubProfileBannerUrl((int) $profile['userId'], (int) $profile['bannerId']) : null;
+// A GIF banner, straight from Giphy (only when there's no banner picture, which wins)
+$profileBannerGif = $profileBannerSrc === null ? hbHubProfileBannerGif($profileSettings) : null;
 $profileJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatJxlWorker.js');
 // Opened from a leaderboard (?from=, see hbHubProfileUrl()): a link back to it over the card
 $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
@@ -125,9 +127,12 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
             <a class="profile-back" href="<?= htmlspecialchars($profileBack[0]) ?>">&larr; Back to <?= htmlspecialchars($profileBack[1]) ?></a>
         <?php endif; ?>
         <article class="profile-card" aria-labelledby="profile-name">
-            <!-- The banner: a picture, or the colors they picked as "#a1b2c3 #d4e5f6 90" (profile.js paints them).
-                 Without either, the site's own colors from profile.css. -->
-            <div class="profile-banner"<?= $profileBannerSrc === null && $profileGradient !== null ? ' data-profile-gradient="' . htmlspecialchars(implode(' ', $profileGradient)) . '"' : '' ?>>
+            <!-- The banner: a picture, a GIF from Giphy, or the colors they picked as "#a1b2c3 #d4e5f6 90" (profile.js
+                 paints them). Without any, the site's own colors from profile.css. -->
+            <div class="profile-banner"<?= $profileBannerSrc === null && $profileBannerGif === null && $profileGradient !== null ? ' data-profile-gradient="' . htmlspecialchars(implode(' ', $profileGradient)) . '"' : '' ?>>
+                <?php if ($profileBannerGif !== null): ?>
+                    <img class="profile-banner-picture" src="<?= htmlspecialchars(hbHubProfileBannerGifUrl($profileBannerGif)) ?>" alt="">
+                <?php endif; ?>
                 <?php if ($profileBannerSrc !== null): ?>
                     <!-- Clicking it shows it big in the picture viewer (profile.js); without JS the link opens the file -->
                     <a class="profile-view-link profile-banner-link" href="<?= htmlspecialchars($profileBannerSrc) ?>" aria-label="View <?= htmlspecialchars($profile['userName']) ?>'s banner" data-profile-view>

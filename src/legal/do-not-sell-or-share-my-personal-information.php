@@ -12,7 +12,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php'; // only for hbHubLegalDanishDate()
 
-const HBHUB_DO_NOT_SELL_UPDATED = '15 November 2026';
+const HBHUB_DO_NOT_SELL_UPDATED = '16 November 2026';
 
 // Global Privacy Control: browsers with it turned on send "Sec-GPC: 1" on every request
 $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
@@ -102,7 +102,7 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                         </p>
                         <ul>
                             <li><strong>Simply.com</strong> (Danmark) hoster hjemmesiden og databasen i EU.</li>
-                            <li><strong>Giphy</strong> ser din IP-adresse, når en GIF vises i chatten. Søgninger sendes via HB Hubs server, så Giphy ikke ved, hvem der søger.</li>
+                            <li><strong>Giphy</strong> ser din IP-adresse, når en GIF vises i chatten eller som banner på en profil. Søgninger sendes via HB Hubs server, så Giphy ikke ved, hvem der søger.</li>
                             <li><strong>GitHub</strong> modtager kun det samlede antal medlemmer og beskeder til sidens README.</li>
                             <li>
                                 <strong>Discord</strong>, kun hvis du logger ind, opretter dig eller kobler din konto til med Discord.

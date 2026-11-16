@@ -13,7 +13,8 @@
     "profileBanner": {
         "color1": "default",
         "color2": "default",
-        "gradientAngle": 90
+        "gradientAngle": 90,
+        "gifId": null
     },
     "notifications": false,
     "notificationSound": false,

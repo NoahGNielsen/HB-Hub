@@ -221,7 +221,7 @@
         const action = form.elements.action?.value;
         if (action === 'profile') {
             const { year, statusEmoji, statusText } = form.elements;
-            setSummary('look', answer.bannerUrl ? 'Picture banner' : 'Color banner');
+            setSummary('look', answer.bannerUrl ? 'Picture banner' : answer.bannerGif ? 'GIF banner' : 'Color banner');
             let classText = { '': 'No class yet', none: 'Not HTX', graduate: 'Graduate' }[year.value] ?? `${year.value}. year`;
             if (year.value !== 'none' && form.elements.class.value) classText += ` · ${form.elements.class.value}`;
             setSummary('profile', classText);
@@ -402,35 +402,45 @@
         updatePassword();
     }
 
-    // Profile banner: Colors shows the gradient pickers, Picture the file input, and the preview above shows whichever
-    // is picked (set from here, as the content security policy doesn't allow style attributes). A new picture is
-    // made smaller and turned into JPEG XL by the JPEG XL worker (chatJxlWorker.js) straight away, and put back in the
-    // file input in place of the original, as the server only takes JPEG XL. The form waits (data-busy) until it's
-    // ready, and is then saved.
-    // A small PNG of it goes in the hidden data-banner-check input too: the server can't read JPEG XL, so that's what it
-    // compares with the banned pictures list (assets/php/bannedAvatars.php).
+    // Profile banner: "Change banner" opens a popup with Upload image, Choose GIF and Choose gradient. What's picked is
+    // the hidden bannerType radio (colors | picture | gif), and the preview at the top of the panel shows it (painted
+    // from here, as the content security policy doesn't allow style attributes).
+    // - Upload image opens the file picker. A new picture is made smaller and turned into JPEG XL by the JPEG XL worker
+    //   (chatJxlWorker.js) straight away, and put back in the file input in place of the original, as the server only
+    //   takes JPEG XL. The form waits (data-busy) until it's ready, and is then saved. A small PNG of it goes in the
+    //   hidden data-banner-check input too: the server can't read JPEG XL, so that's what it compares with the banned
+    //   pictures list (assets/php/bannedAvatars.php).
+    // - Choose GIF searches GIPHY through the chat's /chat/gifs (trending before anything is typed); picking one saves
+    //   its id (bannerGif) straight away.
+    // - Choose gradient has the two colors and the direction. They're saved as they're changed (the colors are kept
+    //   whatever the banner is), but only Use gradient makes the banner a gradient; leaving without it puts them back.
     const banner = document.querySelector('[data-banner]');
     if (banner) {
         const form = banner.closest('form');
         const preview = banner.querySelector('[data-banner-preview]');
-        const colors = banner.querySelector('[data-banner-colors]');
-        const upload = banner.querySelector('[data-banner-upload]');
+        const gifPicture = banner.querySelector('[data-banner-gif-picture]');
+        const kind = banner.querySelector('[data-banner-kind]');
         const input = banner.querySelector('[data-banner-input]'); // not there while banner pictures are off
         const checkInput = banner.querySelector('[data-banner-check]');
         const status = banner.querySelector('[data-banner-status]');
+        const dialog = banner.querySelector('[data-banner-dialog]');
+        const mini = banner.querySelector('[data-banner-mini]');
         const maxBytes = Number(banner.dataset.bannerMaxBytes);
         const ticketBytes = Number(banner.dataset.ticketBytes);
+        const { bannerColor1, bannerColor2, bannerAngle, bannerGif } = form.elements;
+        const KINDS = { colors: 'A gradient of two colors', picture: 'A picture of your own', gif: 'A GIF from GIPHY' };
         let picked = null; // { url } of the new picture's original, for the preview
         let converting = 0; // which conversion is going on, so an older one that finishes late is ignored
 
         const sizeLabel = (bytes) => (bytes < 1024 * 1024
             ? `${Math.max(1, Math.round(bytes / 1024))} KB`
             : `${(bytes / 1024 / 1024).toFixed(1).replace(/\.0$/, '')} MB`);
+        const gifUrl = (id) => `https://media.giphy.com/media/${id}/giphy.webp`; // hbHubProfileBannerGifUrl() in profile.php
+        const gradient = () => `linear-gradient(${bannerAngle.value}deg, ${bannerColor1.value}, ${bannerColor2.value})`;
+        const saveNow = () => form.dispatchEvent(new CustomEvent('autosave:now'));
 
         function show() {
             const type = form.elements.bannerType.value;
-            colors.hidden = type !== 'colors';
-            upload.hidden = type !== 'picture';
             // The saved picture (an <img>, or the canvas jxlImages.js drew it into) or the new one
             const current = preview.querySelector('[data-banner-current]');
             let newPicture = preview.querySelector('[data-banner-new]');
@@ -446,9 +456,15 @@
             }
             if (newPicture) newPicture.hidden = type !== 'picture' || !picked;
             if (current) current.hidden = type !== 'picture' || picked !== null;
-            const { bannerColor1, bannerColor2, bannerAngle } = form.elements;
-            preview.style.backgroundImage = type === 'colors'
-                ? `linear-gradient(${bannerAngle.value}deg, ${bannerColor1.value}, ${bannerColor2.value})` : '';
+            const gifSrc = bannerGif.value ? gifUrl(bannerGif.value) : '';
+            if (type === 'gif' && gifPicture.getAttribute('src') !== gifSrc) gifPicture.src = gifSrc;
+            gifPicture.hidden = type !== 'gif' || !gifSrc;
+            preview.style.backgroundImage = type === 'colors' ? gradient() : '';
+            mini.style.backgroundImage = gradient();
+            kind.textContent = KINDS[type] ?? KINDS.colors;
+            for (const value of banner.querySelectorAll('[data-color-value]')) {
+                value.textContent = form.elements[value.dataset.colorValue].value.toUpperCase();
+            }
         }
 
         function setStatus(text, isError = false) {
@@ -458,8 +474,20 @@
 
         const ready = () => {
             delete form.dataset.busy;
-            form.dispatchEvent(new CustomEvent('autosave:now'));
+            saveNow();
         };
+
+        // A picture that's being got ready is forgotten, when a GIF or gradient is picked instead
+        function dropPicture() {
+            converting++;
+            if (input) input.value = '';
+            if (checkInput) checkInput.value = '';
+            if (picked) URL.revokeObjectURL(picked.url);
+            picked = null;
+            preview.querySelector('[data-banner-new]')?.remove();
+            setStatus('');
+            delete form.dataset.busy;
+        }
 
         input?.addEventListener('change', async () => {
             const file = input.files[0];
@@ -473,6 +501,7 @@
                 ready();
                 return;
             }
+            form.elements.bannerType.value = 'picture';
             picked = { url: URL.createObjectURL(file) };
             show();
             form.dataset.busy = '';
@@ -514,7 +543,7 @@
             }
         });
 
-        // Once it's saved, the new picture is the saved one, and back to colors removes the saved one.
+        // Once it's saved, the new picture is the saved one, and a gradient or GIF removes the saved one.
         // A new picture that wasn't taken goes again (why is in the banner's error box).
         form.addEventListener('autosave:done', ({ detail: { ok, answer } }) => {
             const wasSent = picked !== null && !input?.files.length;
@@ -540,6 +569,127 @@
         form.addEventListener('input', show);
         form.addEventListener('change', show);
         show();
+
+        // ---- The popup ----
+        const views = dialog.querySelectorAll('[data-banner-view]');
+        const title = dialog.querySelector('[data-banner-dialog-title]');
+        const back = dialog.querySelector('[data-banner-back]');
+        const TITLES = { choose: 'Change banner', gif: 'Choose GIF', gradient: 'Choose gradient' };
+        let gradientBefore = null; // the colors and direction when Choose gradient was opened, to put back
+
+        // Leaving Choose gradient without Use gradient: the colors and direction go back to what they were
+        function restoreGradient() {
+            if (!gradientBefore) return;
+            [bannerColor1.value, bannerColor2.value, bannerAngle.value] = gradientBefore;
+            gradientBefore = null;
+            show();
+            saveNow();
+        }
+
+        function openView(name) {
+            if (name !== 'gradient') restoreGradient();
+            for (const view of views) view.hidden = view.dataset.bannerView !== name;
+            title.textContent = TITLES[name];
+            back.hidden = name === 'choose';
+            if (name === 'gradient') {
+                gradientBefore = [bannerColor1.value, bannerColor2.value, bannerAngle.value];
+            } else if (name === 'gif') {
+                gifSearch.focus();
+                if (!gifsLoaded) loadGifs();
+            }
+        }
+
+        for (const button of banner.querySelectorAll('[data-banner-open]')) {
+            button.hidden = false; // only there with JS
+            button.addEventListener('click', () => {
+                openView('choose');
+                dialog.showModal();
+            });
+        }
+        dialog.querySelector('[data-banner-close]').addEventListener('click', () => dialog.close());
+        back.addEventListener('click', () => openView('choose'));
+        dialog.addEventListener('close', restoreGradient);
+        // A click on the dark backdrop around it closes it too (the dialog has no padding, so only that is the dialog itself)
+        dialog.addEventListener('click', (event) => {
+            if (event.target === dialog) dialog.close();
+        });
+
+        dialog.querySelector('[data-banner-choose="upload"]').addEventListener('click', () => {
+            dialog.close();
+            input?.click();
+        });
+        dialog.querySelector('[data-banner-choose="gif"]').addEventListener('click', () => openView('gif'));
+        dialog.querySelector('[data-banner-choose="gradient"]').addEventListener('click', () => openView('gradient'));
+
+        dialog.querySelector('[data-banner-use-gradient]').addEventListener('click', () => {
+            gradientBefore = null;
+            dropPicture();
+            form.elements.bannerType.value = 'colors';
+            dialog.close();
+            show();
+            saveNow();
+        });
+
+        // ---- Choose GIF ----
+        const gifSearch = dialog.querySelector('[data-banner-gif-search]');
+        const gifResults = dialog.querySelector('[data-banner-gifs]');
+        const gifStatus = dialog.querySelector('[data-banner-gif-status]');
+        let gifsLoaded = false;
+        let gifSearchTimer = 0;
+        let gifSearchId = 0; // which search is the newest, so an older answer that comes late is ignored
+
+        function pickGif(id) {
+            dropPicture();
+            bannerGif.value = id;
+            form.elements.bannerType.value = 'gif';
+            dialog.close();
+            show();
+            saveNow();
+        }
+
+        async function loadGifs() {
+            const id = ++gifSearchId;
+            gifsLoaded = true;
+            gifStatus.textContent = 'Loading…';
+            try {
+                const response = await fetch('/chat/gifs?q=' + encodeURIComponent(gifSearch.value.trim()), {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!response.ok) throw new Error(String(response.status));
+                const gifs = (await response.json()).gifs;
+                if (id !== gifSearchId) return;
+                gifResults.replaceChildren(...gifs.map((gif) => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'settings-banner-gif';
+                    const image = document.createElement('img');
+                    image.src = gif.preview;
+                    image.alt = gif.title || 'GIF';
+                    image.loading = 'lazy';
+                    button.append(image);
+                    button.addEventListener('click', () => pickGif(gif.id));
+                    return button;
+                }));
+                gifStatus.textContent = gifs.length === 0 ? 'No GIFs found.' : '';
+            } catch {
+                if (id !== gifSearchId) return;
+                gifsLoaded = false;
+                gifResults.replaceChildren();
+                gifStatus.textContent = "Couldn't load GIFs. Try again.";
+            }
+        }
+
+        gifSearch.addEventListener('input', (event) => {
+            event.stopPropagation(); // not part of the profile, so the autosave doesn't need to hear it
+            clearTimeout(gifSearchTimer);
+            gifSearchTimer = setTimeout(loadGifs, 350);
+        });
+        gifSearch.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault(); // Enter would send the profile form
+            clearTimeout(gifSearchTimer);
+            loadGifs();
+        });
     }
 
     // One JPEG XL job (chatJxlWorker.js) in a worker of its own, which is stopped again once it's done. Gives back the

@@ -114,7 +114,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
 
                         <h3>Konto og profil</h3>
                         <ul>
-                            <li>Dit brugernavn og, hvis du tilføjer dem, profilbillede, bio, status (emoji, kort tekst og udløbstidspunkt), uddannelsesmærke og banner (to farver og en retning, eller et billede).</li>
+                            <li>Dit brugernavn og, hvis du tilføjer dem, profilbillede, bio, status (emoji, kort tekst og udløbstidspunkt), uddannelsesmærke og banner (to farver og en retning, et billede eller en GIF fra Giphy, som gemmes som GIF'ens id).</li>
                             <li>Din klasse: det år, du startede på HTX, og din studieretning, eller at du ikke går på HTX. Din årgang beregnes ud fra startåret. Går du på HTX, bliver du automatisk medlem af din klasses gruppechat.</li>
                             <li>Dine indstillinger, fx hvilke chats du har gjort lydløse, skjult eller blokeret, dine notifikationsvalg, og om Casino og Spil er blokeret (af dig eller af en side-admin).</li>
                             <li>Hvornår kontoen blev oprettet, og hvornår du sidst var aktiv.</li>
@@ -402,7 +402,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>Dine data sælges aldrig og deles ikke til markedsføring. Følgende tjenester indgår i driften af siden:</p>
                         <ul>
                             <li><strong>Simply.com</strong> (Danmark) hoster hjemmesiden, databasen og de filer, der gemmes på serveren: vedhæftede filer, profilbilleder, bannerbilleder, gruppeikoner og kopierne af bandlyste billeder. Filerne ligger i en mappe, der ikke kan tilgås direkte udefra, og udleveres kun til dem, der må se dem. Alle data opbevares i EU.</li>
-                            <li><strong>Giphy</strong> leverer GIF'er. Søgninger sendes via HB Hubs server, så Giphy ikke ved, hvem der søger, og resultaterne gemmes i 15 minutter uden oplysning om, hvem der søgte. Selve GIF'erne hentes direkte fra Giphy, som derfor ser din IP-adresse, når en GIF vises.</li>
+                            <li><strong>Giphy</strong> leverer GIF'er. Søgninger sendes via HB Hubs server, så Giphy ikke ved, hvem der søger, og resultaterne gemmes i 15 minutter uden oplysning om, hvem der søgte. Selve GIF'erne hentes direkte fra Giphy, som derfor ser din IP-adresse, når en GIF vises, også når du ser en profil med et GIF-banner.</li>
                             <li><strong>GitHub</strong> hoster sidens kildekode og modtager kun det samlede antal medlemmer og beskeder, aldrig oplysninger om enkeltpersoner.</li>
                             <li>
                                 <strong>Discord</strong>, kun hvis du logger ind, opretter dig eller kobler din konto til med Discord.

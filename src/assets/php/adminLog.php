@@ -41,6 +41,7 @@ const ADMIN_LOG_ACTIONS = [
     'user.avatarBan' => 'Removed and banned {user}\'s profile picture',
     'user.banner' => 'Removed {user}\'s banner picture',
     'user.bannerBan' => 'Removed and banned {user}\'s banner picture',
+    'user.bannerGif' => 'Removed {user}\'s GIF banner',
     'user.status' => 'Changed {user}\'s status',
     'user.block' => 'Changed {user}\'s gambling block',
     'user.blockAdmin' => 'Blocked Gambling and Games for {user} (they can\'t lift it)',

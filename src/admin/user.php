@@ -512,6 +512,12 @@ switch ($adminAction) {
         adminLog($db, $adminId, $banBanner ? 'user.bannerBan' : 'user.banner', $targetId, null, $bannedAvatarId !== null ? ['pictureId' => $bannedAvatarId] : null);
         adminRedirect($targetId, 'adminSaved', 'profile');
 
+    case 'removeBannerGif':
+        // A GIF banner (from Giphy) is only an id in their settings, so there's nothing to ban: back to their colors
+        hbHubProfileRemoveBannerGif($db, $targetId);
+        adminLog($db, $adminId, 'user.bannerGif', $targetId);
+        adminRedirect($targetId, 'adminSaved', 'profile');
+
     case 'status':
         // Remove status, or Save with both emptied, takes it away. Otherwise the same rules as their own (profile.php).
         $adminValues['statusEmoji'] = ($_POST['remove'] ?? null) === '1' || !is_string($_POST['statusEmoji'] ?? null) ? '' : trim($_POST['statusEmoji']);
@@ -709,6 +715,7 @@ $adminBlock = hbHubBlockSettings($adminSettings);
 $adminBlockIsAdmin = hbHubBlockIsAdmin($adminSettings);
 $adminAvatarSrc = hbHubAvatarUrl($targetId, $target['userAvatarAttachmentId'] !== null ? (int) $target['userAvatarAttachmentId'] : null);
 $adminBannerSrc = $target['bannerId'] !== null ? hbHubProfileBannerUrl($targetId, (int) $target['bannerId']) : null;
+$adminBannerGif = hbHubProfileBannerGif($adminSettings); // a Giphy id, or null
 $adminJxlWorker = '/assets/js/chatJxlWorker.js?v=' . filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/chatJxlWorker.js');
 
 $adminSessions = adminSessions($db, $targetId);
@@ -960,6 +967,21 @@ $adminMessageCounts = $statement->fetch();
                                 <button type="submit" class="settings-btn settings-btn-danger">Remove banner</button>
                                 <button type="submit" class="settings-btn settings-btn-danger" name="ban" value="1"
                                         data-confirm="Remove and ban <?= htmlspecialchars($target['userName']) ?>'s banner picture?">Remove and ban banner</button>
+                            </form>
+                        <?php endif; ?>
+
+                        <?php if ($adminBannerGif !== null): ?>
+                            <hr class="settings-divider">
+                            <!-- GIF banner (assets/php/profile.php), straight from Giphy -->
+                            <img class="admin-banner-preview" src="<?= htmlspecialchars(hbHubProfileBannerGifUrl($adminBannerGif)) ?>" alt="GIF banner of <?= htmlspecialchars($target['userName']) ?>">
+                            <form class="settings-item" action="/admin/user?user=<?= $targetId ?>#profile" method="post"
+                                  data-confirm="Remove <?= htmlspecialchars($target['userName']) ?>'s GIF banner?">
+                                <input type="hidden" name="action" value="removeBannerGif">
+                                <div class="settings-item-text">
+                                    <span class="settings-label">GIF banner</span>
+                                    <p class="settings-hint">Their GIF banner is taken off, and their banner's colors are shown instead.</p>
+                                </div>
+                                <button type="submit" class="settings-btn settings-btn-danger">Remove GIF banner</button>
                             </form>
                         <?php endif; ?>
                     </section>

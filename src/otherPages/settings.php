@@ -90,6 +90,7 @@ $settingsStatus = hbHubProfileStatus($savedSettings);
 $settingsBannerId = $settingsUser['bannerId'] !== null ? (int) $settingsUser['bannerId'] : null;
 // A banner without colors of its own starts the pickers at the site's orange going right into purple, like the chat's
 $settingsBannerGradient = hbHubProfileBannerGradient($savedSettings) ?? ['#f2711c', '#6a4bd6', 90];
+$settingsBannerGif = hbHubProfileBannerGif($savedSettings); // a Giphy id, or null
 $settingsValues = [
     'name' => $settingsUser['userName'],
     'year' => $settingsClass['year'],
@@ -99,7 +100,8 @@ $settingsValues = [
     'statusText' => $settingsStatus['text'],
     'statusClearAfter' => '', // the picker's default (hbHubProfileStatusClearOptions())
     'education' => hbHubProfileEducation($savedSettings)[0] ?? '',
-    'bannerType' => $settingsBannerId !== null ? 'picture' : 'colors', // colors | picture
+    'bannerType' => $settingsBannerId !== null ? 'picture' : ($settingsBannerGif !== null ? 'gif' : 'colors'), // colors | picture | gif
+    'bannerGif' => $settingsBannerGif ?? '', // the GIF banner's Giphy id
     'bannerColor1' => $settingsBannerGradient[0],
     'bannerColor2' => $settingsBannerGradient[1],
     'bannerAngle' => (string) $settingsBannerGradient[2],
@@ -111,6 +113,8 @@ $settingsCanUploadAvatar = $settingsAvatarMode !== SETTINGS_DISABLED;
 $settingsCanRemoveAvatar = $settingsAvatarId !== null && $settingsAvatarMode !== SETTINGS_REQUIRED;
 // Banner pictures are attachments, so they're off whenever those are (site_save_diskspace 2)
 $settingsCanUploadBanner = (int) $siteConfig['site_save_diskspace'] !== 2;
+// GIF banners search Giphy through the chat's /chat/gifs, so they're off whenever the chat's GIFs are (assets/php/giphy.php)
+$settingsCanUseGifs = hbHubGiphyApiKey($siteConfig) !== null;
 $settingsTicketsFree = hbHubChatAttachmentTicketsFree($db, $userId);
 
 $settingsTotpIsOn = $settingsUser['userTotpSecret'] !== null;
@@ -397,11 +401,16 @@ if ($settingsAction === 'profile') {
             $settingsErrors['education'] = 'Please choose one of the options.';
         }
 
-        // Banner - the colors are saved either way, so going back from a picture finds them as they were.
+        // Banner - the colors are saved either way, so going back from a picture or GIF finds them as they were.
         // A new picture has to have been turned into JPEG XL by settings.js, and have its check copy with it.
+        // A GIF is a Giphy id; a new one only while GIFs are on (the one they have stays when they're turned off).
         $bannerGradient = chatBackgroundOf($settingsValues['bannerColor1'], $settingsValues['bannerColor2'], $settingsValues['bannerAngle']);
-        if (!in_array($settingsValues['bannerType'], ['colors', 'picture'], true) || $bannerGradient === null) {
-            $settingsErrors['banner'] = 'Please choose colors and a direction, or a picture.';
+        if (!in_array($settingsValues['bannerType'], ['colors', 'picture', 'gif'], true) || $bannerGradient === null) {
+            $settingsErrors['banner'] = 'Please choose colors and a direction, a picture or a GIF.';
+        } elseif ($settingsValues['bannerType'] === 'gif' && !hbHubGiphyIsId($settingsValues['bannerGif'])) {
+            $settingsErrors['banner'] = 'Please choose a GIF for your banner.';
+        } elseif ($settingsValues['bannerType'] === 'gif' && !$settingsCanUseGifs && $settingsValues['bannerGif'] !== $settingsBannerGif) {
+            $settingsErrors['banner'] = 'GIF banners are turned off for now.';
         } elseif ($settingsValues['bannerType'] === 'picture' && !$hasBannerFile && $settingsBannerId === null) {
             $settingsErrors['banner'] = $settingsCanUploadBanner ? 'Please choose a picture for your banner.' : 'Banner pictures are turned off for now.';
         } elseif ($settingsValues['bannerType'] === 'picture' && is_string($bannerUpload) && $bannerCheckCopy === null) {
@@ -428,11 +437,12 @@ if ($settingsAction === 'profile') {
             $settingsErrors = settingsSave($db, $userId, $settingsValues, $settingsDescriptionMode !== SETTINGS_DISABLED, $avatar, [
                 'profileStatus' => $statusToSave,
                 'profileEducation' => $settingsValues['education'] !== '' ? $settingsValues['education'] : null,
-                'profileBanner' => ['color1' => $bannerGradient[0], 'color2' => $bannerGradient[1], 'gradientAngle' => $bannerGradient[2]],
+                'profileBanner' => ['color1' => $bannerGradient[0], 'color2' => $bannerGradient[1], 'gradientAngle' => $bannerGradient[2],
+                    'gifId' => $settingsValues['bannerType'] === 'gif' ? $settingsValues['bannerGif'] : null],
             ]);
             if (!$settingsErrors) {
-                // Back to colors: the picture goes, and its tickets are free again
-                if ($settingsValues['bannerType'] === 'colors' && $settingsBannerId !== null) {
+                // Colors or a GIF: the picture goes, and its tickets are free again
+                if ($settingsValues['bannerType'] !== 'picture' && $settingsBannerId !== null) {
                     hbHubProfileRemoveBanner($db, $userId);
                 }
                 // An autosave is told what the picture and banner are now, so the page can show them, and gets the
@@ -448,6 +458,7 @@ if ($settingsAction === 'profile') {
                         'name' => $settingsValues['name'],
                         'avatarUrl' => hbHubAvatarUrl($userId, $saved['userAvatarAttachmentId'] !== null ? (int) $saved['userAvatarAttachmentId'] : null),
                         'bannerUrl' => $saved['bannerId'] !== null ? hbHubProfileBannerUrl($userId, (int) $saved['bannerId']) : null,
+                        'bannerGif' => $settingsValues['bannerType'] === 'gif' ? $settingsValues['bannerGif'] : null,
                         'ticketsFree' => hbHubChatAttachmentTicketsFree($db, $userId),
                         'statusClearOptions' => hbHubProfileStatusClearOptions($statusToSave),
                     ];
@@ -768,7 +779,7 @@ $settingsDeviceCount = count($settingsDevices);
             <nav class="settings-lists" aria-label="Settings">
                 <h2 class="settings-list-heading">Profile</h2>
                 <ul class="settings-list">
-                    <?= settingsRow('look', 'look', 'Picture and banner', $settingsValues['bannerType'] === 'picture' ? 'Picture banner' : 'Color banner', 'look') ?>
+                    <?= settingsRow('look', 'look', 'Picture and banner', ['picture' => 'Picture banner', 'gif' => 'GIF banner'][$settingsValues['bannerType']] ?? 'Color banner', 'look') ?>
                     <?= settingsRow('profile', 'profile', 'Name, class and bio', $settingsClassSummary, 'profile') ?>
                     <?= settingsRow('status', 'status', 'Status', $settingsStatusSummary !== '' ? $settingsStatusSummary : 'None', 'statusRow') ?>
                 </ul>
@@ -830,10 +841,11 @@ $settingsDeviceCount = count($settingsDevices);
             <form action="/settings#profile" method="post" enctype="multipart/form-data" data-autosave data-profile-form>
                 <input type="hidden" name="action" value="profile">
 
-                <!-- Picture and banner: the banner with the profile picture over it, like on the profile, and the
-                     controls for both under it. Banner (assets/php/profile.php): two colors and a direction like a
-                     chat's background, or a picture. settings.js shows the one picked in the preview, and turns a new
-                     picture into JPEG XL before it's sent. Without JS the preview stays plain, and a picture isn't taken. -->
+                <!-- Picture and banner: a preview of the top of the profile (the banner with the profile picture over
+                     it, and the name and status next to it), then a row for each. Banner (assets/php/profile.php): two
+                     colors and a direction like a chat's background, a picture, or a GIF from Giphy. "Change banner"
+                     opens a popup to pick which (settings.js), which shows the one picked in the preview, and turns a
+                     new picture into JPEG XL before it's sent. Without JS the banner can't be changed. -->
                 <section class="settings-card settings-panel" id="look" aria-labelledby="settings-look-heading" data-settings-panel data-settings-default>
                     <?= settingsPanelHead('look', 'Picture and banner', 'The top of your profile.', true) ?>
                     <?= settingsErrorSlot($settingsErrors, 'profile') ?>
@@ -841,89 +853,181 @@ $settingsDeviceCount = count($settingsDevices);
                     <div class="settings-look" data-banner data-jxl-worker="<?= $settingsJxlWorker ?>"
                          data-banner-max-side="<?= HBHUB_PROFILE_BANNER_MAX_SIDE ?>" data-banner-max-bytes="<?= HBHUB_PROFILE_BANNER_MAX_BYTES ?>"
                          data-ticket-bytes="<?= HBHUB_CHAT_ATTACHMENT_TICKET_BYTES ?>">
-                        <div class="settings-banner-preview" aria-hidden="true" data-banner-preview>
-                            <?php if ($settingsBannerId !== null): ?>
-                                <img class="settings-banner-picture" src="<?= htmlspecialchars(hbHubProfileBannerUrl($userId, $settingsBannerId)) ?>" alt=""
-                                     data-banner-current data-jxl data-jxl-worker="<?= $settingsJxlWorker ?>">
-                            <?php endif; ?>
-                        </div>
-                        <div class="settings-look-avatar" aria-hidden="true">
-                            <img class="settings-avatar-preview" src="<?= htmlspecialchars($settingsAvatarSrc ?? '') ?>" alt="" data-avatar-picture<?= $settingsAvatarSrc === null ? ' hidden' : '' ?>>
-                            <span class="settings-avatar-preview settings-avatar-initial" data-avatar-initial<?= $settingsAvatarSrc !== null ? ' hidden' : '' ?>><?= $settingsInitial ?></span>
+                        <div class="settings-look-preview">
+                            <div class="settings-banner-preview" aria-hidden="true" data-banner-preview>
+                                <?php if ($settingsBannerId !== null): ?>
+                                    <img class="settings-banner-picture" src="<?= htmlspecialchars(hbHubProfileBannerUrl($userId, $settingsBannerId)) ?>" alt=""
+                                         data-banner-current data-jxl data-jxl-worker="<?= $settingsJxlWorker ?>">
+                                <?php endif; ?>
+                                <img class="settings-banner-picture" src="<?= $settingsBannerGif !== null ? htmlspecialchars(hbHubProfileBannerGifUrl($settingsBannerGif)) : '' ?>" alt=""
+                                     data-banner-gif-picture<?= $settingsValues['bannerType'] !== 'gif' ? ' hidden' : '' ?>>
+                            </div>
+                            <button type="button" class="settings-banner-edit" data-banner-open hidden>
+                                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                Change banner
+                            </button>
+                            <div class="settings-look-who" aria-hidden="true">
+                                <div class="settings-look-avatar">
+                                    <img class="settings-avatar-preview" src="<?= htmlspecialchars($settingsAvatarSrc ?? '') ?>" alt="" data-avatar-picture<?= $settingsAvatarSrc === null ? ' hidden' : '' ?>>
+                                    <span class="settings-avatar-preview settings-avatar-initial" data-avatar-initial<?= $settingsAvatarSrc !== null ? ' hidden' : '' ?>><?= $settingsInitial ?></span>
+                                </div>
+                                <div class="settings-look-text">
+                                    <span class="settings-look-name" data-settings-name><?= htmlspecialchars($settingsUser['userName']) ?></span>
+                                    <span class="settings-look-status" data-summary="status"<?= $settingsStatusSummary === '' ? ' hidden' : '' ?>><?= htmlspecialchars($settingsStatusSummary) ?></span>
+                                </div>
+                            </div>
                         </div>
 
                         <?php if ($settingsCanUploadAvatar || $settingsCanRemoveAvatar): ?>
-                        <div class="settings-group">
-                            <div class="settings-field">
-                                <span class="settings-label">Profile picture</span>
-                                <?php if ($settingsCanUploadAvatar): ?>
-                                    <label class="settings-visually-hidden" for="settings-avatar">Choose a profile picture</label>
-                                    <input type="file" id="settings-avatar" name="avatar" accept="<?= implode(',', SETTINGS_AVATAR_TYPES) ?>" aria-describedby="settings-avatar-hint" data-avatar-input>
-                                    <p class="settings-hint" id="settings-avatar-hint">PNG, JPEG, GIF or WebP, up to <?= $settingsAvatarMaxLabel ?>.</p>
-                                <?php endif; ?>
-                                <?php if ($settingsAvatarRemovable): ?>
-                                    <!-- Belongs to a form of its own, so pressing Enter in a field never removes the picture -->
-                                    <button type="submit" class="settings-btn settings-btn-danger settings-btn-small" form="settings-remove-avatar"
-                                            data-avatar-remove<?= $settingsAvatarId === null ? ' hidden' : '' ?>>Remove picture</button>
-                                <?php endif; ?>
-                                <?= settingsErrorSlot($settingsErrors, 'avatar') ?>
+                        <!-- Profile picture: the file input is hidden behind a button (its label); the preview above shows what was picked -->
+                        <div class="settings-look-part">
+                            <div class="settings-look-part-head">
+                                <div class="settings-look-part-text">
+                                    <span class="settings-label">Profile picture</span>
+                                    <?php if ($settingsCanUploadAvatar): ?>
+                                        <p class="settings-hint" id="settings-avatar-hint">PNG, JPEG, GIF or WebP, up to <?= $settingsAvatarMaxLabel ?>.</p>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="settings-look-part-actions">
+                                    <?php if ($settingsCanUploadAvatar): ?>
+                                        <input type="file" class="settings-visually-hidden settings-file-input" id="settings-avatar" name="avatar" accept="<?= implode(',', SETTINGS_AVATAR_TYPES) ?>"
+                                               aria-describedby="settings-avatar-hint" data-avatar-input>
+                                        <label class="settings-btn settings-btn-small settings-file-btn" for="settings-avatar">Upload picture</label>
+                                    <?php endif; ?>
+                                    <?php if ($settingsAvatarRemovable): ?>
+                                        <!-- Belongs to a form of its own, so pressing Enter in a field never removes the picture -->
+                                        <button type="submit" class="settings-btn settings-btn-danger settings-btn-small" form="settings-remove-avatar"
+                                                data-avatar-remove<?= $settingsAvatarId === null ? ' hidden' : '' ?>>Remove</button>
+                                    <?php endif; ?>
+                                </div>
                             </div>
+                            <?= settingsErrorSlot($settingsErrors, 'avatar') ?>
                         </div>
                         <?php endif; ?>
 
-                        <fieldset class="settings-group settings-field settings-banner">
-                            <legend class="settings-label">Banner</legend>
-                            <div class="settings-banner-types">
-                                <label class="settings-banner-type">
-                                    <input type="radio" name="bannerType" value="colors"<?= $settingsValues['bannerType'] === 'colors' ? ' checked' : '' ?> data-banner-type>
-                                    <span>Colors</span>
-                                </label>
-                                <label class="settings-banner-type">
-                                    <input type="radio" name="bannerType" value="picture"<?= $settingsValues['bannerType'] === 'picture' ? ' checked' : '' ?>
-                                           <?= !$settingsCanUploadBanner && $settingsBannerId === null ? ' disabled' : '' ?> data-banner-type>
-                                    <span>Picture</span>
-                                </label>
-                            </div>
-
-                            <div class="settings-banner-colors" data-banner-colors>
-                                <div class="settings-banner-color-pickers">
-                                    <label class="settings-visually-hidden" for="settings-banner-color1">From</label>
-                                    <input type="color" id="settings-banner-color1" name="bannerColor1" value="<?= htmlspecialchars($settingsValues['bannerColor1']) ?>" title="From">
-                                    <label class="settings-visually-hidden" for="settings-banner-color2">To</label>
-                                    <input type="color" id="settings-banner-color2" name="bannerColor2" value="<?= htmlspecialchars($settingsValues['bannerColor2']) ?>" title="To">
+                        <!-- Banner: what it is now, and "Change banner", which opens the popup below -->
+                        <div class="settings-look-part">
+                            <div class="settings-look-part-head">
+                                <div class="settings-look-part-text">
+                                    <span class="settings-label">Banner</span>
+                                    <p class="settings-hint" data-banner-kind><?= ['picture' => 'A picture of your own', 'gif' => 'A GIF from GIPHY'][$settingsValues['bannerType']] ?? 'A gradient of two colors' ?></p>
                                 </div>
-                                <fieldset class="settings-directions">
-                                    <legend class="settings-visually-hidden">Direction</legend>
-                                    <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [$arrow, $label]): ?>
-                                        <label title="<?= $label ?>">
-                                            <input type="radio" class="settings-visually-hidden" name="bannerAngle" value="<?= $angle ?>"<?= $settingsValues['bannerAngle'] === (string) $angle ? ' checked' : '' ?>>
-                                            <span class="settings-direction-arrow" aria-hidden="true"><?= $arrow ?></span>
-                                            <span class="settings-visually-hidden"><?= $label ?></span>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </fieldset>
+                                <div class="settings-look-part-actions">
+                                    <button type="button" class="settings-btn settings-btn-small" data-banner-open hidden>Change banner</button>
+                                </div>
+                            </div>
+                            <noscript><p class="settings-hint">Changing your banner needs JavaScript.</p></noscript>
+                            <!-- settings.js: how getting a new picture ready is going -->
+                            <p class="settings-hint" aria-live="polite" data-banner-status></p>
+                            <?= settingsErrorSlot($settingsErrors, 'banner') ?>
+
+                            <!-- What the banner is (colors | picture | gif), set by the popup -->
+                            <?php foreach (['colors', 'picture', 'gif'] as $bannerType): ?>
+                                <input type="radio" name="bannerType" value="<?= $bannerType ?>"<?= $settingsValues['bannerType'] === $bannerType ? ' checked' : '' ?> hidden>
+                            <?php endforeach; ?>
+                            <input type="hidden" name="bannerGif" value="<?= htmlspecialchars($settingsValues['bannerGif']) ?>">
+                            <?php if ($settingsCanUploadBanner): ?>
+                                <input type="file" class="settings-visually-hidden" id="settings-banner" name="banner" tabindex="-1" aria-hidden="true"
+                                       accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp,image/jxl" data-banner-input>
+                                <!-- settings.js puts the banner's check copy for the banned pictures list here (assets/php/bannedAvatars.php) -->
+                                <input type="file" name="bannerCheck" hidden tabindex="-1" aria-hidden="true"
+                                       data-banner-check="<?= HBHUB_BANNED_AVATAR_CHECK_SIDE ?>">
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- The Change banner popup: Upload image, Choose GIF or Choose gradient, each its own view
+                             ([data-banner-view]). Upload image opens the file picker straight away. Inside the form, so
+                             the colors and direction are sent with it. -->
+                        <dialog class="settings-banner-dialog" aria-labelledby="settings-banner-dialog-title" data-banner-dialog>
+                            <div class="settings-banner-dialog-head">
+                                <button type="button" class="settings-banner-dialog-icon" aria-label="Back" data-banner-back hidden>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </button>
+                                <h3 id="settings-banner-dialog-title" data-banner-dialog-title>Change banner</h3>
+                                <button type="button" class="settings-banner-dialog-icon" aria-label="Close" data-banner-close>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+                                </button>
                             </div>
 
-                            <div class="settings-banner-upload" data-banner-upload>
-                                <?php if ($settingsCanUploadBanner): ?>
-                                    <label class="settings-visually-hidden" for="settings-banner">Choose a banner picture</label>
-                                    <input type="file" id="settings-banner" name="banner" accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp,image/jxl"
-                                           aria-describedby="settings-banner-hint" data-banner-input>
-                                    <!-- settings.js puts the banner's check copy for the banned pictures list here (assets/php/bannedAvatars.php) -->
-                                    <input type="file" name="bannerCheck" hidden tabindex="-1" aria-hidden="true"
-                                           data-banner-check="<?= HBHUB_BANNED_AVATAR_CHECK_SIDE ?>">
-                                    <p class="settings-hint" id="settings-banner-hint">
-                                        Takes a ticket from your chat attachments (you have <span data-tickets-free><?= $settingsTicketsFree ?></span> free)
-                                        for as long as it's your banner. Choosing colors removes the picture and gives the ticket back.
-                                    </p>
-                                <?php else: ?>
-                                    <p class="settings-hint">New banner pictures are turned off for now.</p>
-                                <?php endif; ?>
-                                <!-- settings.js: how getting the picture ready is going -->
-                                <p class="settings-hint" aria-live="polite" data-banner-status></p>
+                            <!-- The three choices -->
+                            <div class="settings-banner-view" data-banner-view="choose">
+                                <div class="settings-banner-options">
+                                    <button type="button" class="settings-banner-option" data-banner-choose="upload"<?= $settingsCanUploadBanner ? '' : ' disabled' ?>>
+                                        <span class="settings-banner-option-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 16V4M7 9l5-5 5 5M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        </span>
+                                        <span class="settings-banner-option-text">
+                                            <span class="settings-banner-option-title">Upload image</span>
+                                            <span class="settings-banner-option-hint">
+                                                <?php if ($settingsCanUploadBanner): ?>
+                                                    Takes a ticket from your chat attachments (<span data-tickets-free><?= $settingsTicketsFree ?></span> free) while it's your banner
+                                                <?php else: ?>
+                                                    Turned off for now
+                                                <?php endif; ?>
+                                            </span>
+                                        </span>
+                                    </button>
+                                    <button type="button" class="settings-banner-option" data-banner-choose="gif"<?= $settingsCanUseGifs ? '' : ' disabled' ?>>
+                                        <span class="settings-banner-option-icon" aria-hidden="true"><span class="settings-banner-option-gif">GIF</span></span>
+                                        <span class="settings-banner-option-text">
+                                            <span class="settings-banner-option-title">Choose GIF</span>
+                                            <span class="settings-banner-option-hint"><?= $settingsCanUseGifs ? 'Search GIPHY for one that moves' : 'Turned off for now' ?></span>
+                                        </span>
+                                    </button>
+                                    <button type="button" class="settings-banner-option" data-banner-choose="gradient">
+                                        <span class="settings-banner-option-icon settings-banner-option-swirl" aria-hidden="true"></span>
+                                        <span class="settings-banner-option-text">
+                                            <span class="settings-banner-option-title">Choose gradient</span>
+                                            <span class="settings-banner-option-hint">Two colors fading into each other</span>
+                                        </span>
+                                    </button>
+                                </div>
                             </div>
-                            <?= settingsErrorSlot($settingsErrors, 'banner') ?>
-                        </fieldset>
+
+                            <!-- GIPHY search, through the chat's /chat/gifs (trending before anything is typed) -->
+                            <div class="settings-banner-view" data-banner-view="gif" hidden>
+                                <label class="settings-visually-hidden" for="settings-banner-gif-search">Search GIPHY</label>
+                                <input type="search" id="settings-banner-gif-search" placeholder="Search GIPHY" maxlength="50" autocomplete="off" data-banner-gif-search>
+                                <div class="settings-banner-gifs" data-banner-gifs></div>
+                                <p class="settings-hint settings-banner-gif-status" aria-live="polite" data-banner-gif-status></p>
+                                <p class="settings-banner-giphy">Powered by GIPHY</p>
+                            </div>
+
+                            <!-- The gradient: a preview, the two colors with their hex codes (kept up to date by
+                                 settings.js) and the direction as a compass -->
+                            <div class="settings-banner-view" data-banner-view="gradient" hidden>
+                                <div class="settings-banner-gradient-preview" aria-hidden="true" data-banner-mini></div>
+                                <div class="settings-banner-colors">
+                                    <div class="settings-banner-swatches">
+                                        <?php foreach (['bannerColor1' => ['settings-banner-color1', 'From'], 'bannerColor2' => ['settings-banner-color2', 'To']] as $colorName => [$colorId, $colorLabel]): ?>
+                                            <label class="settings-swatch" for="<?= $colorId ?>">
+                                                <input type="color" id="<?= $colorId ?>" name="<?= $colorName ?>" value="<?= htmlspecialchars($settingsValues[$colorName]) ?>">
+                                                <span class="settings-swatch-text">
+                                                    <span class="settings-swatch-name"><?= $colorLabel ?></span>
+                                                    <span class="settings-swatch-value" data-color-value="<?= $colorName ?>"><?= htmlspecialchars(strtoupper($settingsValues[$colorName])) ?></span>
+                                                </span>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <fieldset class="settings-directions">
+                                        <legend class="settings-visually-hidden">Direction</legend>
+                                        <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [, $label]): ?>
+                                            <label class="settings-direction settings-direction-a<?= $angle ?>" title="<?= $label ?>">
+                                                <input type="radio" class="settings-visually-hidden" name="bannerAngle" value="<?= $angle ?>"<?= $settingsValues['bannerAngle'] === (string) $angle ? ' checked' : '' ?>>
+                                                <span class="settings-direction-arrow" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                </span>
+                                                <span class="settings-visually-hidden"><?= $label ?></span>
+                                            </label>
+                                        <?php endforeach; ?>
+                                        <span class="settings-direction-dot" aria-hidden="true"></span>
+                                    </fieldset>
+                                </div>
+                                <div class="settings-actions">
+                                    <button type="button" class="settings-btn settings-btn-primary" data-banner-use-gradient>Use gradient</button>
+                                </div>
+                            </div>
+                        </dialog>
                     </div>
 
                     <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save profile</button></div></noscript>
