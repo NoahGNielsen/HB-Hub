@@ -468,6 +468,215 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 
+/* Classic Edition's logo (game.php): the usual red MATADOR plate, with a cream ribbon tucked under its bottom edge
+   saying "Classic Edition" - straight, neat and gold-edged, where Kaos's tape is crooked and striped. */
+.mt-brand.is-classic {
+  gap: 0;
+}
+
+.mt-brand.is-classic .mt-logo {
+  position: relative;
+  z-index: 1;
+}
+
+.mt-edition-ribbon {
+  margin: -0.3em 0 0;
+  padding: 2px;
+  border-radius: 3px;
+  background: #c9a227;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+
+.mt-edition-ribbon span {
+  display: block;
+  padding: 3px 14px 1px;
+  border: 1px solid #8a6d12;
+  border-radius: 2px;
+  background: #fbf3dc;
+  color: #c8102e;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(0.6rem, 2.2cqi, 1.4rem);
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Kaos Edition's logo (game.php): the same red MATADOR plate, but black and cracked open, with each letter knocked out
+   of line - its own tilt, height and colour - and a yellow-and-black hazard tape stuck across under it. The letters
+   wobble a little now and then, unless the player has asked for less motion. */
+.mt-brand.is-kaos {
+  transform: rotate(-5deg);
+  gap: 0;
+}
+
+.mt-logo-kaos {
+  display: flex;
+  align-items: center;
+  gap: 0.04em;
+  padding: 4px 14px;
+  background: #1a1a1a;
+  border-color: #c8102e;
+  border-style: dashed;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.mt-logo-kaos span {
+  display: inline-block;
+  color: #fff;
+  text-shadow: 2px 2px 0 #c8102e;
+  animation: mt-kaos-wobble 3.2s ease-in-out infinite;
+}
+
+/* Each letter's own place, colour and wobble timing: M A T A D O R */
+.mt-logo-kaos span:nth-child(1) { transform: rotate(-14deg) translateY(-6%); color: #ffd400; animation-delay: 0s; }
+.mt-logo-kaos span:nth-child(2) { transform: rotate(10deg) translateY(10%); animation-delay: -0.5s; }
+.mt-logo-kaos span:nth-child(3) { transform: rotate(-6deg) translateY(-12%) scale(1.15); color: #ff5a36; animation-delay: -1.1s; }
+.mt-logo-kaos span:nth-child(4) { transform: rotate(18deg) translateY(4%) scale(0.9); animation-delay: -1.7s; }
+.mt-logo-kaos span:nth-child(5) { transform: rotate(-20deg) translateY(8%); color: #3ec1ff; animation-delay: -2.2s; }
+.mt-logo-kaos span:nth-child(6) { transform: rotate(8deg) translateY(-10%) scale(1.1); animation-delay: -0.8s; }
+.mt-logo-kaos span:nth-child(7) { transform: rotate(-10deg) translateY(6%); color: #ffd400; animation-delay: -2.7s; }
+
+@keyframes mt-kaos-wobble {
+  0%, 80%, 100% { rotate: 0deg; }
+  85% { rotate: 12deg; }
+  90% { rotate: -10deg; }
+  95% { rotate: 5deg; }
+}
+
+/* The "Kaos Edition" tape, tilted the other way and overlapping the plate's bottom edge */
+.mt-edition-tape {
+  margin: -0.35em 0 0;
+  padding: 3px 14px;
+  transform: rotate(7deg);
+  background: repeating-linear-gradient(-45deg, #ffd400 0 10px, #1a1a1a 10px 20px);
+  border: 2px solid #1a1a1a;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.mt-edition-tape span {
+  display: block;
+  padding: 1px 10px;
+  background: #ffd400;
+  color: #1a1a1a;
+  font-size: clamp(0.6rem, 2.2cqi, 1.4rem);
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* HTX Edition's logo (game.php): a science lab - MATADOR in glowing white on a dark lab-blue plate, with a benzene
+   ring in the top-left corner, a ball-and-stick molecule in the bottom-right and bubbles slowly rising behind the
+   letters, like a flask on the boil. The O is an atom: three electron orbits round a red nucleus, turning slowly.
+   Under it, "HTX Edition" is on a reagent-bottle label with a bubbling green flask in front. The pictures are SVG
+   data: URLs, which the CSP allows. The bubbles and the atom stand still if the player has asked for less motion. */
+.mt-brand.is-htx {
+  gap: 0;
+}
+
+.mt-logo-htx {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 0.18em 0.55em;
+  overflow: hidden;
+  border-color: #7fdbff;
+  background:
+    /* The benzene ring, top left */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='rgba(127,219,255,0.45)' stroke-width='2'%3E%3Cpath d='M20 3L35 11.5V28.5L20 37L5 28.5V11.5Z'/%3E%3Ccircle cx='20' cy='20' r='9'/%3E%3C/g%3E%3C/svg%3E") 0.12em 0.1em / 0.75em 0.75em no-repeat,
+    /* The ball-and-stick molecule, bottom right */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'%3E%3Cg fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5'%3E%3Cpath d='M10 30L28 18L48 26M28 18L30 5'/%3E%3C/g%3E%3Ccircle cx='28' cy='18' r='6' fill='rgba(255,107,107,0.75)'/%3E%3Cg fill='rgba(255,255,255,0.6)'%3E%3Ccircle cx='10' cy='30' r='4'/%3E%3Ccircle cx='48' cy='26' r='4'/%3E%3Ccircle cx='30' cy='5' r='4'/%3E%3C/g%3E%3C/svg%3E") right 0.1em bottom 0.06em / 0.95em 0.63em no-repeat,
+    radial-gradient(ellipse at 50% 120%, #1f6f8b, #0b2545 70%);
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+}
+
+/* The rising bubbles: one tile of bubbles, repeated and slid upwards one tile height at a time so it loops */
+.mt-logo-htx::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 120'%3E%3Cg fill='rgba(127,219,255,0.12)' stroke='rgba(255,255,255,0.35)' stroke-width='1.2'%3E%3Ccircle cx='10' cy='100' r='4'/%3E%3Ccircle cx='32' cy='62' r='2.5'/%3E%3Ccircle cx='50' cy='20' r='3.5'/%3E%3Ccircle cx='20' cy='30' r='2'/%3E%3Ccircle cx='45' cy='92' r='2'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 1.2em 2.4em repeat;
+  animation: mt-htx-bubbles 6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes mt-htx-bubbles {
+  to { background-position: 0 -2.4em; }
+}
+
+.mt-logo-htx span {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  color: #fff;
+  text-shadow: 0 0 0.18em rgba(127, 219, 255, 0.85), 0 2px 0 #0b2545;
+}
+
+/* The O as an atom: the letter itself is hidden and the atom drawn over its place, turning slowly */
+.mt-logo-htx span:nth-child(6) {
+  color: transparent;
+  text-shadow: none;
+}
+
+.mt-logo-htx span:nth-child(6)::before {
+  content: "";
+  position: absolute;
+  inset: 0.04em -0.06em 0.04em -0.12em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Cg fill='none' stroke='%237fdbff' stroke-width='4.5'%3E%3Cellipse rx='45' ry='15'/%3E%3Cellipse rx='45' ry='15' transform='rotate(60)'/%3E%3Cellipse rx='45' ry='15' transform='rotate(120)'/%3E%3C/g%3E%3Ccircle r='10' fill='%23ff6b6b' stroke='%23fff' stroke-width='2.5'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='45' r='5.5'/%3E%3Ccircle cx='-22.5' cy='-39' r='5.5'/%3E%3Ccircle cx='-22.5' cy='39' r='5.5'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  filter: drop-shadow(0 0 0.08em rgba(127, 219, 255, 0.8));
+  animation: mt-htx-atom 14s linear infinite;
+}
+
+@keyframes mt-htx-atom {
+  to { rotate: 360deg; }
+}
+
+/* The "HTX Edition" reagent-bottle label, tilted a little the other way and overlapping the plate's bottom edge,
+   on top of it, with a stripe top and bottom and a green flask before the words */ 
+.mt-edition-flask {
+  /* Above the plate (which has z-index 1), so the plate's bottom edge doesn't cover the top of the label */
+  position: relative;
+  z-index: 2;
+  margin: -0.2em 0 0;
+  transform: rotate(4deg);
+  border: 2px solid #0b2545;
+  border-radius: 4px;
+  background: #f4fbff;
+  box-shadow: inset 0 3px 0 #3ddc97, inset 0 -3px 0 #3ddc97, 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.mt-edition-flask span {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 4px 14px 3px 10px;
+  color: #0b2545;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: clamp(0.6rem, 2.2cqi, 1.4rem);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.mt-edition-flask span::before {
+  content: "";
+  flex: none;
+  width: 1.3em;
+  height: 1.3em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 14.5H17L20.3 20.4Q21 21.8 19.4 21.8H4.6Q3 21.8 3.7 20.4Z' fill='%233ddc97'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='10' cy='18.5' r='1.1'/%3E%3Ccircle cx='14' cy='17' r='0.8'/%3E%3C/g%3E%3Cpath d='M8.5 2.2H15.5M10 2.2V8.5L3.7 20.4Q3 21.8 4.6 21.8H19.4Q21 21.8 20.3 20.4L14 8.5V2.2' fill='none' stroke='%230b2545' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mt-logo-kaos span,
+  .mt-logo-htx::after,
+  .mt-logo-htx span:nth-child(6)::before {
+    animation: none;
+  }
+}
+
 
 .mt-die {
   font-size: clamp(2.4rem, 9.6cqi, 6.4rem);

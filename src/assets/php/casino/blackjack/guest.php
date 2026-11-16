@@ -297,7 +297,7 @@ function hbHubBlackjackGuestSettle(array &$state, int $now): void
 }
 
 /**
- * The answer for blackjackTable.js, in the shape of gambling/blackjack/play's for a solo table: the play chips, and the
+ * The answer for blackjackTable.js, in the shape of casino/blackjack/play's for a solo table: the play chips, and the
  * table as the guest may see it (without the shoe, and with the hole card hidden until it's turned over).
  */
 function hbHubBlackjackGuestView(array $state, int $now): array

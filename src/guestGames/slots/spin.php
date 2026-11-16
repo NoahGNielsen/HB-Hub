@@ -1,6 +1,6 @@
 <?php
 // The guest Slots' spins (/play/slots/spin), for slots.js on /play/slots: the same machine and rules as the members'
-// gambling/slots/spin (hbHubSlotsResolve() in assets/php/casino/slots/slots.php), but with play chips that come and go
+// casino/slots/spin (hbHubSlotsResolve() in assets/php/casino/slots/slots.php), but with play chips that come and go
 // in a sealed token, {chips}, kept only in the page (see assets/php/guestGames/guestGames.php). Nothing is stored or
 // logged. POST only:
 //   action=spin, bet, request (slots.js's id for the spin, only checked for its shape here) and token (none on the

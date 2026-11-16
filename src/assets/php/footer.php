@@ -8,16 +8,16 @@ if (!empty($hbHubShowSiteFooter)):
     $footerYear = (int) ($siteConfig['footer_copyrightYear'] ?? date('Y'));
 ?>
 <footer class="site-footer">
-    <nav class="site-footer-links" aria-label="Footer">
-        <a href="/docs/">Help &amp; docs</a>
-        <a href="/play">Free games</a>
-        <a href="/legal/terms">Terms</a>
-        <a href="/legal/privacy">Privacy</a>
-        <a href="/legal/code-of-conduct">Code of Conduct</a>
-        <a href="/legal/do-not-sell-or-share-my-personal-information">Do not sell or share my data</a>
-        <a href="/legal/credits">Credits</a>
+    <nav class="site-footer-links" aria-label="Sidefod">
+        <a href="/docs/">Hjælp</a>
+        <a href="/play">Gratis spil</a>
+        <a href="/legal/terms">Vilkår</a>
+        <a href="/legal/privacy">Privatliv</a>
+        <a href="/legal/code-of-conduct">Adfærdskodeks</a>
+        <a href="/legal/do-not-sell-or-share-my-personal-information">Sælg eller del ikke mine data</a>
+        <a href="/legal/credits">Krediteringer</a>
         <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">Report Security Concern</a>
+        <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">Rapportér et sikkerhedsproblem</a>
     </nav>
     <p class="site-footer-copyright">&copy; <?= (int) date('Y') > $footerYear ? $footerYear . '&ndash;' . date('Y') : $footerYear ?> Noah Gaj Nedergaard Nielsen</p>
 </footer>
@@ -32,21 +32,22 @@ hbHubRenderToast();
 // data-terms-updated / data-privacy-updated, and hides the part (and the " and ") about the one that hasn't changed.
 require_once __DIR__ . '/legalUpdated.php';
 ?>
-<aside class="cookie-notice" data-cookie-notice aria-label="Cookies" hidden>
+<?php // In Danish, like the public pages (and the legal pages they link to). ?>
+<aside class="cookie-notice" data-cookie-notice aria-label="Cookies" hidden lang="da">
     <p class="cookie-notice-text">
-        HB Hub uses cookies to keep you logged in and the site working. By using the site, you agree to this and to the
-        <a href="/legal/terms">Terms</a> and <a href="/legal/privacy#cookies">Privacy Policy</a>.
+        HB Hub bruger cookies til at holde dig logget ind og få siden til at virke. Ved at bruge siden accepterer du
+        det og <a href="/legal/terms">vilkårene</a> og <a href="/legal/privacy#cookies">privatlivspolitikken</a>.
     </p>
-    <button type="button" class="cookie-notice-ok" data-cookie-notice-ok>Got it</button>
+    <button type="button" class="cookie-notice-ok" data-cookie-notice-ok>Forstået</button>
 </aside>
-<aside class="corner-box" data-corner-terms data-terms-updated="<?= htmlspecialchars(HBHUB_TERMS_UPDATED) ?>" data-privacy-updated="<?= htmlspecialchars(HBHUB_PRIVACY_UPDATED) ?>" aria-label="Terms and privacy policy updated" hidden>
+<aside class="corner-box" data-corner-terms data-terms-updated="<?= htmlspecialchars(HBHUB_TERMS_UPDATED) ?>" data-privacy-updated="<?= htmlspecialchars(HBHUB_PRIVACY_UPDATED) ?>" aria-label="Vilkår og privatlivspolitik opdateret" hidden lang="da">
     <p class="corner-box-text">
-        Hey, the
-        <span data-corner-legal="terms"><a href="/legal/terms">Terms of Service</a> (<?= htmlspecialchars(HBHUB_TERMS_UPDATED) ?>)</span><span data-corner-legal-and> and the </span><span data-corner-legal="privacy"><a href="/legal/privacy">Privacy Policy</a> (<?= htmlspecialchars(HBHUB_PRIVACY_UPDATED) ?>)</span>
-        <span data-corner-legal-verb>have</span> been updated. By continuing to use HB Hub, you agree to
-        <span data-corner-legal-them>the new versions</span>.
+        Hej,
+        <span data-corner-legal="terms"><a href="/legal/terms">vilkårene</a> (<?= htmlspecialchars(hbHubLegalDanishDate(HBHUB_TERMS_UPDATED)) ?>)</span><span data-corner-legal-and> og </span><span data-corner-legal="privacy"><a href="/legal/privacy">privatlivspolitikken</a> (<?= htmlspecialchars(hbHubLegalDanishDate(HBHUB_PRIVACY_UPDATED)) ?>)</span>
+        er blevet opdateret. Ved at fortsætte med at bruge HB Hub accepterer du
+        <span data-corner-legal-them>de nye versioner</span>.
     </p>
-    <button type="button" class="corner-box-ok" data-corner-terms-ok>Got it</button>
+    <button type="button" class="corner-box-ok" data-corner-terms-ok>Forstået</button>
 </aside>
 <script src="/assets/js/cookieNotice.js?v=<?= filemtime(__DIR__ . '/../js/cookieNotice.js') ?>" defer></script>
 <?php

@@ -46,9 +46,21 @@ function hbHubLooksLikeEmail(string $text): bool
  * Why the name can't be used, or null when it's fine. Taken names are found when saving (userNameLower is unique).
  * $currentName is the name the account has now: keeping it is fine even if it's from before the allow list (or an
  * email address or a name shorter than HBHUB_USER_NAME_MIN from before those rules).
+ * $danish gives the messages in Danish, for onboarding (a public page, so in Danish); settings and admin use English.
  */
-function hbHubNameError(string $name, int $nameMax, ?string $currentName = null): ?string
+function hbHubNameError(string $name, int $nameMax, ?string $currentName = null, bool $danish = false): ?string
 {
+    if ($danish) {
+        return match (true) {
+            $name === '' => 'Vælg et brugernavn.',
+            $name !== $currentName && hbHubLooksLikeEmail($name) => 'Det ligner en e-mailadresse. Dit brugernavn kan ses af alle, så vælg et navn eller kælenavn i stedet - du skal ikke bruge en e-mail her.',
+            $name !== $currentName && !hbHubIsLatinText($name) => 'Navne kan kun bruge bogstaver fra det latinske alfabet (som a-z, æ, ø og å), tal, tegnsætning og emoji.',
+            $name !== $currentName && mb_strlen($name) < HBHUB_USER_NAME_MIN => 'Brug mindst ' . HBHUB_USER_NAME_MIN . ' tegn.',
+            mb_strlen($name) > $nameMax => "Hold det på højst $nameMax tegn.",
+            hbHubIsReservedUserName($name) => 'Det navn kan ikke bruges. Vælg et andet.',
+            default => null,
+        };
+    }
     if ($name === '') {
         return 'Please choose a username.';
     } elseif ($name !== $currentName && hbHubLooksLikeEmail($name)) {
@@ -85,7 +97,8 @@ function hbHubRemoveAvatar(PDO $db, int $userId): void
 /**
  * Deletes the account. Everything in the user's row is cleared except userId, userCreatedTimestamp and
  * userLastSeenTimestamp, and the name becomes "Deleted User", so their messages stay but nothing about them does.
- * Their profile picture, every one of their sessions, their known devices (loginLimit.php), their Ore Mining Inc.
+ * Their profile picture, every one of their sessions, their known devices (loginLimit.php) and browser fingerprints
+ * (fingerprint.php), their Ore Mining Inc.
  * save (nobody else plays in it) and their Minesweeper and Sudoku games are deleted too, and so are the files of their chat
  * attachments (the messages they were in stay, showing them as deleted) and their profile banner.
  * userNameLower and userPasswordHash end up NULL, so nobody can log in to it or find it in the user search.
@@ -111,6 +124,7 @@ function hbHubDeleteAccount(PDO $db, int $userId): void
             ->execute([HBHUB_DELETED_USER_NAME, $userId]);
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-LoginDevices` WHERE userId = ?')->execute([$userId]);
+        $db->prepare('DELETE FROM `HBHub-DeviceFingerprints` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-MinerSaves` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-MinerAnomalyTimes` WHERE timeUserId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-MinerCrashReports` WHERE crashReportUserId = ?')->execute([$userId]);

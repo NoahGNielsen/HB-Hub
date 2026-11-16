@@ -1,4 +1,4 @@
-/* Admin panel (admin/index.php, admin/people.php, admin/banned.php, admin/feedback.php, admin/log.php, admin/user.php, admin/person.php and admin/chat.php). Built on the settings page's
+/* Admin panel (admin/index.php, admin/overview.php, admin/people.php, admin/banned.php, admin/feedback.php, admin/log.php, admin/user.php, admin/person.php and admin/chat.php). Built on the settings page's
    side menu, cards, fields and buttons (settings.css); this is what only the admin panel has: tables, lists and details. */
 
 .admin-link:focus-visible,
@@ -685,23 +685,68 @@
   flex-wrap: wrap;
 }
 
-/* The Watchdog (admin/watchdog.php): the most-hit addresses, each report's addresses under its page, the user agent
-   wrapping instead of making the table endless, and the Clear button on its own line */
+/* The Watchdog (admin/watchdog.php): the kinds, the most common errors, each report's errors under its page, a tag
+   per kind (508s, the server being busy, in amber; what's broken in red), the user agent wrapping instead of making
+   the table endless, and the Clear button on its own line */
 .admin-watchdog-subheading {
   margin: 18px 0 8px;
   font-size: 0.95rem;
 }
 
 .admin-watchdog-top,
-.admin-watchdog-addresses {
+.admin-watchdog-errors {
   margin: 0;
   padding-left: 1.4em;
   overflow-wrap: anywhere;
 }
 
-.admin-watchdog-addresses {
+.admin-watchdog-top li,
+.admin-watchdog-errors li {
+  margin-bottom: 4px;
+}
+
+.admin-watchdog-errors {
   margin-top: 4px;
   list-style: disc;
+}
+
+.admin-watchdog-kinds {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.settings-status.admin-watchdog-kind {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.settings-status.admin-watchdog-kind-http,
+.settings-status.admin-watchdog-kind-network,
+.settings-status.admin-watchdog-kind-load {
+  background: color-mix(in srgb, var(--settings-danger) 45%, var(--background));
+  color: #fff;
+}
+
+.settings-status.admin-watchdog-kind-script,
+.settings-status.admin-watchdog-kind-promise,
+.settings-status.admin-watchdog-kind-csp {
+  background: var(--settings-danger);
+  color: #fff;
+}
+
+.settings-status.admin-watchdog-kind-busy {
+  background: #e8a317;
+  color: #1a1d23;
+}
+
+.admin-watchdog-message {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.85em;
+  opacity: 0.9;
 }
 
 .admin-watchdog-agent {
@@ -738,6 +783,551 @@
   background: var(--background);
   color: var(--text);
   font: inherit;
+}
+
+/* ---------- Overview (admin/overview.php) ---------- */
+
+/* Screen readers only */
+.admin-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.admin-dash-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+.admin-dash-header h1 {
+  margin: 0;
+}
+
+/* Needs a look: one strip of counts, each going to where it's dealt with. Gets an orange edge when something's new. */
+.admin-alerts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--settings-line);
+  border-left: 4px solid var(--settings-on);
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.admin-alerts.is-on {
+  border-left-color: var(--accent);
+}
+
+.admin-alerts-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.admin-alerts-title::before {
+  content: "✓ ";
+  color: var(--settings-on);
+}
+
+.admin-alerts.is-on .admin-alerts-title::before {
+  content: "! ";
+  color: var(--accent);
+}
+
+.admin-alerts-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 6px;
+  border-radius: 999px;
+  background: var(--background);
+  color: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-alert:hover {
+  background: color-mix(in srgb, var(--accent) 14%, var(--background));
+}
+
+.admin-alert:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.admin-alert-count {
+  min-width: 1.6em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--secondary);
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+
+.admin-alert.is-hot .admin-alert-count {
+  background: var(--accent);
+  color: #fff;
+}
+
+.admin-alert.is-zero {
+  opacity: 0.55;
+}
+
+/* The grid of panels: 12 columns, each panel taking .admin-span-N of them */
+.admin-dash {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-span-4 {
+  grid-column: span 4;
+}
+
+.admin-span-6 {
+  grid-column: span 6;
+}
+
+.admin-span-8 {
+  grid-column: span 8;
+}
+
+.admin-span-12 {
+  grid-column: 1 / -1;
+}
+
+.admin-dash > .settings-card {
+  margin: 0;
+}
+
+/* A panel: a smaller card with its title and a tag like "Last 7 days" on one line */
+.admin-panel {
+  --settings-card-pad: 20px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 18px var(--settings-card-pad);
+}
+
+.admin-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.admin-panel .admin-panel-head h2 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.admin-panel-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--background);
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.admin-panel-sub {
+  margin: 14px 0 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+/* The small print at the bottom of a panel, pushed down so panels side by side end on the same line */
+.admin-panel-foot {
+  margin: auto 0 0;
+  padding-top: 12px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  opacity: 0.6;
+}
+
+.admin-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+/* The four headline numbers */
+.admin-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 16px 20px;
+  border: 1px solid var(--settings-line);
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.admin-kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.admin-kpi-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-kpi-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  font-size: 0.8rem;
+}
+
+.admin-kpi-note > span:last-child {
+  opacity: 0.65;
+}
+
+.admin-trend {
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.admin-trend.is-up {
+  color: var(--settings-on);
+  opacity: 1;
+}
+
+.admin-trend.is-down {
+  color: var(--settings-danger);
+  opacity: 1;
+}
+
+.admin-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--settings-on);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--settings-on) 60%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .admin-live-dot {
+    animation: admin-live-pulse 2s ease-out infinite;
+  }
+}
+
+@keyframes admin-live-pulse {
+  to {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+
+/* Small numbers in a grid: what it is over it, the number under it */
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.admin-stats-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.admin-stats > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--background);
+}
+
+.admin-stats-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-stats dt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.admin-stats dd {
+  margin: 2px 0 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* The bar charts */
+.admin-chart {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+}
+
+.admin-chart-title {
+  margin-bottom: 10px;
+}
+
+.admin-chart-total {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The numbers at the top and middle of the y axis sit over the chart's left edge, on its grid lines */
+.admin-chart-plot {
+  position: relative;
+  padding-top: 18px;
+}
+
+.admin-chart-max,
+.admin-chart-mid {
+  position: absolute;
+  left: 0;
+  line-height: 1;
+}
+
+.admin-chart-max {
+  top: 0;
+}
+
+.admin-chart-mid {
+  top: 74px; /* just over the middle grid line: 18px padding + half of the 140px chart, less the text */
+}
+
+.admin-chart-svg {
+  display: block;
+  width: 100%;
+  height: 140px;
+  overflow: visible;
+}
+
+.admin-chart-grid {
+  stroke: var(--settings-line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.admin-chart-axis {
+  stroke: color-mix(in srgb, var(--text) 25%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.admin-chart-hit {
+  fill: transparent;
+}
+
+.admin-chart-bar {
+  fill: color-mix(in srgb, var(--accent) 55%, var(--secondary));
+}
+
+.admin-chart-day.is-today .admin-chart-bar,
+.admin-chart-day:hover .admin-chart-bar {
+  fill: var(--accent);
+}
+
+.admin-chart-day:hover .admin-chart-hit {
+  fill: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.admin-chart-dates {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.admin-chart-table {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.admin-chart-table summary {
+  cursor: pointer;
+}
+
+.admin-chart-table .admin-table-wrap {
+  max-height: 260px;
+  margin-top: 8px;
+  overflow-y: auto;
+}
+
+/* Busiest chats and people: name and number on a line, a bar under it */
+.admin-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: admin-rank;
+}
+
+.admin-rank li {
+  counter-increment: admin-rank;
+}
+
+.admin-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-rank-row::before {
+  content: counter(admin-rank);
+  width: 1.1em;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.5;
+}
+
+.admin-rank-row .admin-list-link {
+  min-width: 0;
+  margin-right: 0;
+}
+
+.admin-rank-row .admin-list-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.admin-rank-value {
+  margin-left: auto;
+  padding-left: 8px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-meter {
+  display: block;
+  width: calc(100% - 1.1em - 8px);
+  height: 4px;
+  margin: 6px 0 0 calc(1.1em + 8px);
+}
+
+.admin-meter-track {
+  fill: var(--background);
+}
+
+.admin-meter-fill {
+  fill: var(--accent);
+}
+
+/* The casino's and games' tables: numbers lined up on the right, quiet games faded */
+.admin-dash-table td,
+.admin-dash-table thead th:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dash-table tbody tr.is-quiet {
+  opacity: 0.5;
+}
+
+.admin-dash-table tfoot tr {
+  border-top: 2px solid var(--secondary);
+  font-weight: 800;
+}
+
+.admin-dash-table tfoot th {
+  opacity: 1;
+}
+
+.admin-overview-plus {
+  color: var(--settings-on);
+}
+
+.admin-overview-minus {
+  color: var(--settings-danger);
+}
+
+/* Narrower: two headline numbers a row, the panels in two columns (the full-width ones stay full width) */
+@media (max-width: 1100px) {
+  .admin-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-span-4 {
+    grid-column: span 6;
+  }
+
+  .admin-span-8,
+  .admin-span-6 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Phone: everything in one column */
+@media (max-width: 600px) {
+  .admin-span-4 {
+    grid-column: 1 / -1;
+  }
+
+  .admin-kpi {
+    padding: 14px 16px;
+  }
+
+  .admin-kpi-value {
+    font-size: 1.8rem;
+  }
+
+  .admin-stats-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 600px) {

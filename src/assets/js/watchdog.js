@@ -1,18 +1,33 @@
-// The Watchdog, on every page (header.php, before every other script): counts the "508 Resource Limit Is Reached"
-// answers the page gets from the site, and tells the server. The hosting only runs about 10 PHP requests at the same
-// time, and every one over that gets a 508 (assets/php/watchdog.php has the rest), so site admins can see when and where
-// that happens, under Watchdog in the admin panel (admin/watchdog.php).
+// The Watchdog, on every page (header.php, before every other script): notes every error that happens in the browser
+// and tells the server, so site admins can see when, where and how often things go wrong, under Browser errors in the
+// admin panel (admin/watchdog.php). assets/php/watchdog.php has the rest. It started out counting only the
+// "508 Resource Limit Is Reached" answers (the hosting only runs about 10 PHP requests at once, and every one over that
+// gets a 508), and those are still counted on their own on the admin panel.
 //
-// What counts: every fetch() the page's scripts make (window.fetch is wrapped, so it sees each answer's status), and in
-// browsers that give the status of everything else they load (Chromium, PerformanceResourceTiming.responseStatus) also
-// pictures, styles, scripts and XMLHttpRequests. Only addresses on this site, and never the report itself.
-// A page that's a 508 as a whole is the hosting's own error page, without this script, so that one isn't counted.
+// What counts, as an error of one of these kinds (an entry's `kind`):
+// - 'http': an answer of 400 or more from the site, with its status. From every fetch() (window.fetch is wrapped), every
+//   XMLHttpRequest (open/send are wrapped), and in browsers that give the status of everything else they load
+//   (Chromium, PerformanceResourceTiming.responseStatus) also pictures, styles and scripts.
+// - 'network': a fetch() or XMLHttpRequest that got no answer at all (the connection broke, the server didn't answer).
+//   Not when it was stopped on purpose (AbortError), while the browser says it's offline, or once the page is being left.
+// - 'load': a picture, script, stylesheet, video or audio that didn't load, when the browser doesn't say it was an
+//   'http' one (waits LOAD_WAIT_MS for that first, so one isn't counted twice).
+// - 'script': an uncaught JavaScript error (window 'error'), with its message and the file, line and column.
+// - 'promise': a promise that was rejected with nobody catching it (unhandledrejection), with the message and, where
+//   the stack says, the file, line and column.
+// - 'csp': something the Content-Security-Policy blocked (securitypolicyviolation), with the directive.
+// Left out: browser extensions' own errors (chrome-extension:// and the like), cross-origin scripts' "Script error."
+// that says nothing, the harmless "ResizeObserver loop" warning, and the report itself. Addresses are kept as a path
+// on this site (/chat/), or with the origin for other sites (https://media.giphy.com/...), never with the query, and
+// URLs in messages lose their query too. A page that's an error as a whole (the hosting's 508 page) doesn't have this
+// script, so that one isn't counted.
 //
-// WAIT_MS (3 seconds) after the first one, how many there were is sent to /watchdog (otherPages/watchdog.php) as a
-// form: action=report, count, page (the path of this page), addresses (JSON {"/path": count}, at most MAX_ADDRESSES),
-// firstAgo and lastAgo (milliseconds ago, so the computer's clock doesn't matter). The report is a PHP request too, so
-// while the server is busy it often gets a 508 itself: then it's tried again every WAIT_MS until it goes through, with
-// any new 508s from the meantime added to it. Only a 400 (the report itself is wrong) makes it give up.
+// WAIT_MS (3 seconds) after the first one, what there was is sent to /watchdog (otherPages/watchdog.php) as a form:
+// action=report, count, page (the path of this page), errors (JSON list of {kind, path, status, message, line, count},
+// at most MAX_ERRORS different ones, the same error again only adds to its count), firstAgo and lastAgo (milliseconds
+// ago, so the computer's clock doesn't matter). The report is a PHP request too, so while the server is busy it often
+// gets a 508 itself: then it's tried again every WAIT_MS until it goes through, with any new errors from the meantime
+// added to it. Only a 400 (the report itself is wrong) makes it give up.
 //
 // What hasn't gone through yet is kept in sessionStorage (STORE_KEY, {pending, sending}), so reloading or going to
 // another page in the same tab carries on with it instead of losing it. A report that was on its way when the page
@@ -20,17 +35,20 @@
 (() => {
     const REPORT_URL = '/watchdog';
     const WAIT_MS = 3000;
-    const MAX_ADDRESSES = 20; // different addresses in one report, the same as HBHUB_WATCHDOG_MAX_ADDRESSES
+    const LOAD_WAIT_MS = 1000; // a 'load' error waits this long for the browser to say it was an 'http' one
+    const MAX_ERRORS = 20; // different errors in one report, the same as HBHUB_WATCHDOG_MAX_ERRORS
+    const MAX_MESSAGE = 300; // characters of a message, the same as HBHUB_WATCHDOG_MAX_MESSAGE
     const STORE_KEY = 'hbHubWatchdog';
-    const STATUS = 508;
 
     const nativeFetch = window.fetch;
     if (typeof nativeFetch !== 'function') return;
 
-    // A batch is {count, addresses: {"/path": count}, first, last} (first/last as Date.now())
+    // A batch is {count, errors: {key: {kind, path, status, message, line, count}}, first, last} (first/last as Date.now())
     let pending = null; // not sent yet
     let sending = null; // on its way
     let timer = 0;
+    let isLeaving = false; // the page is being left: requests it had going break off, which isn't an error
+    const recentHttp = new Map(); // address => Date.now(), the 'http' ones, so a 'load' for the same one isn't counted too
 
     // Adds batch b into batch a (or returns b when there's no a)
     const merge = (a, b) => {
@@ -39,16 +57,18 @@
         a.count += b.count;
         a.first = Math.min(a.first, b.first);
         a.last = Math.max(a.last, b.last);
-        for (const [path, count] of Object.entries(b.addresses)) {
-            if (path in a.addresses || Object.keys(a.addresses).length < MAX_ADDRESSES) {
-                a.addresses[path] = (a.addresses[path] || 0) + count;
+        for (const [key, error] of Object.entries(b.errors)) {
+            if (key in a.errors) {
+                a.errors[key].count += error.count;
+            } else if (Object.keys(a.errors).length < MAX_ERRORS) {
+                a.errors[key] = error;
             }
         }
         return a;
     };
 
-    const isBatch = (batch) => batch && Number.isInteger(batch.count) && batch.count > 0 && batch.addresses
-        && typeof batch.addresses === 'object' && Number.isFinite(batch.first) && Number.isFinite(batch.last);
+    const isBatch = (batch) => batch && Number.isInteger(batch.count) && batch.count > 0 && batch.errors
+        && typeof batch.errors === 'object' && Number.isFinite(batch.first) && Number.isFinite(batch.last);
 
     const save = () => {
         try {
@@ -62,7 +82,8 @@
         }
     };
 
-    // What an earlier page in this tab didn't get sent. One that was on its way is sent again (see the top).
+    // What an earlier page in this tab didn't get sent. One that was on its way is sent again (see the top). One saved
+    // by the older Watchdog (only 508s, {addresses} instead of {errors}) isn't a batch any more and is dropped.
     const load = () => {
         try {
             const saved = JSON.parse(sessionStorage.getItem(STORE_KEY));
@@ -92,7 +113,7 @@
             action: 'report',
             count: String(sending.count),
             page: location.pathname,
-            addresses: JSON.stringify(sending.addresses),
+            errors: JSON.stringify(Object.values(sending.errors)),
             firstAgo: String(Math.max(0, now - sending.first)),
             lastAgo: String(Math.max(0, now - sending.last)),
         });
@@ -114,43 +135,163 @@
         schedule();
     };
 
-    // Counts one 508 from this address, if it's on this site and isn't the report itself
-    const note = (address) => {
-        let path;
+    // An address as it's kept: the path on this site, or origin + path elsewhere, never the query. Null for what isn't
+    // a web address (data:, blob:, an extension's) and for the report itself.
+    const addressOf = (address) => {
+        if (!address) return null;
         try {
-            const url = new URL(address, location.href);
-            if (url.origin !== location.origin) return;
-            path = url.pathname;
+            const url = new URL(String(address), location.href);
+            if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+            if (url.origin === location.origin) return url.pathname === REPORT_URL ? null : url.pathname;
+            return url.origin + url.pathname;
         } catch {
-            return;
+            return null;
         }
-        if (path === REPORT_URL) return;
+    };
+
+    // A message as it's kept: one line, URLs without their query, at most MAX_MESSAGE characters
+    const messageOf = (text) => {
+        const message = String(text ?? '').replace(/\s+/g, ' ').trim()
+            .replace(/(https?:\/\/[^\s?#'"]*)[?#][^\s'"]*/g, '$1');
+        return message === '' ? null : message.slice(0, MAX_MESSAGE);
+    };
+
+    // Whether a file the error came from belongs to a browser extension rather than the site
+    const isExtension = (file) => /^(chrome|moz|safari|safari-web|ms-browser)-extension:/i.test(String(file ?? ''));
+
+    // Counts one error: {kind, path, status, message, line} (path from addressOf(), line "120:5" or null)
+    const note = (kind, { path = null, status = null, message = null, line = null } = {}) => {
+        const error = { kind, path, status, message, line, count: 1 };
+        const key = [kind, path, status, message, line].join('|');
         const now = Date.now();
-        pending = merge(pending, { count: 1, addresses: { [path]: 1 }, first: now, last: now });
+        pending = merge(pending, { count: 1, errors: { [key]: error }, first: now, last: now });
         save();
         schedule();
     };
 
-    // Every fetch() on the page goes through here first. The answer itself is passed on untouched.
+    // An answer of 400 or more from address (anything not ours to report is skipped)
+    const noteHttp = (address, status) => {
+        const path = addressOf(address);
+        if (path === null) return;
+        recentHttp.set(path, Date.now());
+        note('http', { path, status });
+    };
+
+    // A request to address that got no answer, unless that's because of the page or the browser (see the top)
+    const noteNetwork = (address, error) => {
+        if (isLeaving || navigator.onLine === false || error?.name === 'AbortError') return;
+        const path = addressOf(address);
+        if (path !== null) note('network', { path, message: messageOf(error?.message) });
+    };
+
+    // The file, line and column an error's stack starts in, as [path, "120:5"], from the first frame that's a web address
+    const whereOf = (stack) => {
+        const match = /(https?:\/\/[^\s()]+?):(\d+):(\d+)/.exec(String(stack ?? ''));
+        return match ? [addressOf(match[1]), match[2] + ':' + match[3]] : [null, null];
+    };
+
+    const requestUrl = (input) => (input instanceof Request ? input.url : String(input));
+
+    // Every fetch() on the page goes through here first. The answer (or the failure) is passed on untouched.
     window.fetch = function (input, init) {
         return nativeFetch.call(this, input, init).then((response) => {
-            if (response.status === STATUS) note(response.url || (input instanceof Request ? input.url : String(input)));
+            if (response.status >= 400) noteHttp(response.url || requestUrl(input), response.status);
             return response;
+        }, (error) => {
+            noteNetwork(requestUrl(input), error);
+            throw error;
         });
     };
 
-    // Everything else the page loads, where the browser tells the status (fetch() is counted above, not twice)
+    // Every XMLHttpRequest too (chat.js's uploads): open() remembers where to, send() listens for how it went
+    if (typeof XMLHttpRequest === 'function') {
+        const nativeOpen = XMLHttpRequest.prototype.open;
+        const nativeSend = XMLHttpRequest.prototype.send;
+        const urls = new WeakMap();
+        XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+            urls.set(this, url);
+            return nativeOpen.call(this, method, url, ...rest);
+        };
+        XMLHttpRequest.prototype.send = function (...args) {
+            const url = urls.get(this);
+            this.addEventListener('load', () => {
+                if (this.status >= 400) noteHttp(this.responseURL || url, this.status);
+            });
+            this.addEventListener('error', () => noteNetwork(url, null));
+            return nativeSend.apply(this, args);
+        };
+    }
+
+    // Everything else the page loads, where the browser tells the status (fetch() and XMLHttpRequest are counted above,
+    // not twice)
     if (typeof PerformanceObserver === 'function' && PerformanceObserver.supportedEntryTypes?.includes('resource')) {
         try {
             new PerformanceObserver((list) => {
                 for (const entry of list.getEntries()) {
-                    if (entry.responseStatus === STATUS && entry.initiatorType !== 'fetch') note(entry.name);
+                    if (entry.responseStatus >= 400 && entry.initiatorType !== 'fetch' && entry.initiatorType !== 'xmlhttprequest') {
+                        noteHttp(entry.name, entry.responseStatus);
+                    }
                 }
             }).observe({ type: 'resource', buffered: true });
         } catch {
-            // An older browser that can't watch these: only fetch() is counted
+            // An older browser that can't watch these: only fetch() and XMLHttpRequest give a status
         }
     }
+
+    // A picture, script, stylesheet, video or audio that didn't load. Their 'error' doesn't bubble, so it's caught on
+    // the way down. Counted LOAD_WAIT_MS later, unless the browser said it was an 'http' error in the meantime.
+    const LOADS = new Set(['IMG', 'SCRIPT', 'LINK', 'VIDEO', 'AUDIO', 'SOURCE', 'TRACK', 'IFRAME', 'EMBED', 'OBJECT']);
+    window.addEventListener('error', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element) || !LOADS.has(target.tagName)) return;
+        const path = addressOf(target.currentSrc || target.src || target.href || target.data);
+        if (path === null) return;
+        const at = Date.now();
+        setTimeout(() => {
+            const httpAt = recentHttp.get(path);
+            if (httpAt !== undefined && httpAt >= at - WAIT_MS) return;
+            if (!isLeaving) note('load', { path, message: target.tagName.toLowerCase() });
+        }, LOAD_WAIT_MS);
+    }, true);
+
+    // An uncaught JavaScript error
+    window.addEventListener('error', (event) => {
+        if (event.target instanceof Element) return; // a file that didn't load, above
+        if (isExtension(event.filename) || isExtension(event.error?.stack)) return;
+        const message = messageOf(String(event.message || event.error?.message || '').replace(/^Uncaught\s+/, '')); // Chromium starts with "Uncaught "
+        if (message === null || /^Script error\.?$/i.test(message) || /^(Error: )?ResizeObserver loop/i.test(message)) return;
+        let path = addressOf(event.filename);
+        let line = event.lineno ? event.lineno + ':' + (event.colno || 0) : null;
+        if (path === null) [path, line] = whereOf(event.error?.stack);
+        note('script', { path, message: (event.error?.name && !message.includes(event.error.name) ? event.error.name + ': ' : '') + message, line });
+    });
+
+    // A rejected promise nobody caught
+    window.addEventListener('unhandledrejection', (event) => {
+        const reason = event.reason;
+        if (reason?.name === 'AbortError' || isExtension(reason?.stack)) return;
+        const message = messageOf(reason instanceof Error ? reason.name + ': ' + reason.message
+            : typeof reason === 'string' ? reason : (() => { try { return JSON.stringify(reason); } catch { return String(reason); } })());
+        const [path, line] = whereOf(reason?.stack);
+        note('promise', { path, message, line });
+    });
+
+    // Something the Content-Security-Policy blocked
+    document.addEventListener('securitypolicyviolation', (event) => {
+        if (isExtension(event.sourceFile) || isExtension(event.blockedURI)) return;
+        const blocked = addressOf(event.blockedURI);
+        const directive = event.effectiveDirective || event.violatedDirective;
+        note('csp', {
+            path: blocked ?? addressOf(event.sourceFile),
+            message: messageOf(directive + (blocked === null && event.blockedURI ? ' (' + event.blockedURI + ')' : '')),
+            line: event.lineNumber ? event.lineNumber + ':' + (event.columnNumber || 0) : null,
+        });
+    });
+
+    // Leaving the page breaks off what it was loading: none of that is an error. Back from the back/forward cache, it is again.
+    window.addEventListener('pagehide', () => { isLeaving = true; });
+    window.addEventListener('beforeunload', () => { isLeaving = true; });
+    window.addEventListener('pageshow', () => { isLeaving = false; });
 
     load();
     schedule();

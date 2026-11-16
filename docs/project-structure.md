@@ -14,7 +14,7 @@
 HB-Hub/
 ├── src/                 The website itself (everything here gets uploaded)
 │   ├── chat/            Messages and group chats
-│   ├── gambling/        The casino: chips, Blackjack, Baccarat, Roulette and Slots
+│   ├── casino/        The casino: chips, Blackjack, Baccarat, Roulette and Slots
 │   ├── games/           The Games section: Matador, Chess, UNO, Wordle, Minesweeper and Ore Mining Inc.
 │   ├── admin/           The admin panel
 │   ├── userMgmt/        Login and sign-up
@@ -29,7 +29,7 @@ HB-Hub/
 │                        (defaultUserSettings.json and defaultChatSettings.json are the
 │                        defaults for the settings columns on users and chats)
 ├── tools/               Scripts for testing by hand, never uploaded (slotsEffectsTest.js:
-│                        paste into the console on /gambling/slots to see the win effects)
+│                        paste into the console on /casino/slots to see the win effects)
 └── .github/workflows/   Deploying, and updating the README badges every hour
 ```
 

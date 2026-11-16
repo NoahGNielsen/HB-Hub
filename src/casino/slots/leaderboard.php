@@ -1,9 +1,9 @@
 <?php
-// Baccarat leaderboard: everyone who has played a hand, from HBHub-BaccaratPlayerRounds (one row per player per
-// round): hands, wins, losses, draws and win %. A hand counts by whether all the player's bets on it together won or
-// lost chips. Sorted by any column with ?sort=column&dir=asc|desc, which the column headings link to. Everyone's chips
-// are on the whole casino's leaderboard (gambling/leaderboard.php).
-// Win % only counts from LEADERBOARD_RANKED_HANDS hands, so one lucky hand doesn't top it: anyone with fewer has "–",
+// Slots leaderboard: everyone who has spun, from HBHub-SlotSpins (one row per spin): spins, wins and losses (by
+// whether the spin won or lost chips overall), win %, the biggest win on one spin and chips won or lost on the slots
+// altogether. Sorted by any column with ?sort=column&dir=asc|desc, which the column headings link to. Everyone's chips
+// are on the whole casino's leaderboard (casino/leaderboard.php).
+// Win % only counts from LEADERBOARD_RANKED_SPINS spins, so one lucky spin doesn't top it: anyone with fewer has "–",
 // and comes after everyone with a win % when sorting by it (whichever way).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
@@ -11,56 +11,59 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
 
-const LEADERBOARD_RANKED_HANDS = 20;
+const LEADERBOARD_RANKED_SPINS = 50; // more than at Roulette, as a spin of the slots is over in two seconds
 const LEADERBOARD_ROWS = 200;
 const LEADERBOARD_STATUS_BANNED = 4; // userStatus in HBHub-Users
 const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first]
     'player' => ['Player', 'asc'],
-    'hands' => ['Hands', 'desc'],
+    'spins' => ['Spins', 'desc'],
     'wins' => ['Wins', 'desc'],
     'losses' => ['Losses', 'desc'],
-    'draws' => ['Draws', 'desc'],
     'winRate' => ['Win %', 'desc'],
+    'biggestWin' => ['Biggest win', 'desc'],
+    'net' => ['Won / lost', 'desc'],
 ];
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 
-$sort = is_string($_GET['sort'] ?? null) && isset(LEADERBOARD_COLUMNS[$_GET['sort']]) ? $_GET['sort'] : 'winRate';
+$sort = is_string($_GET['sort'] ?? null) && isset(LEADERBOARD_COLUMNS[$_GET['sort']]) ? $_GET['sort'] : 'net';
 $dir = in_array($_GET['dir'] ?? null, ['asc', 'desc'], true) ? $_GET['dir'] : LEADERBOARD_COLUMNS[$sort][1];
 // The top three get a gold, silver and bronze rank, but only while it's sorted the way the column sorts first (not by
 // name, or turned round)
 $podium = $sort !== 'player' && $dir === LEADERBOARD_COLUMNS[$sort][1];
 
 // Banned and deleted accounts (userStatus NULL) are left out
-$statement = $db->prepare('SELECT p.userId, u.userName, u.userAvatarAttachmentId,
-        COUNT(*) AS hands,
-        SUM(p.playerResult = \'win\') AS wins,
-        SUM(p.playerResult = \'loss\') AS losses,
-        SUM(p.playerResult = \'push\') AS draws
-    FROM `HBHub-BaccaratPlayerRounds` p
-    JOIN `HBHub-Users` u ON u.userId = p.userId
+$statement = $db->prepare('SELECT s.userId, u.userName, u.userAvatarAttachmentId,
+        COUNT(*) AS spins,
+        SUM(s.spinNet > 0) AS wins,
+        SUM(s.spinNet < 0) AS losses,
+        GREATEST(MAX(s.spinNet), 0) AS biggestWin,
+        SUM(s.spinNet) AS net
+    FROM `HBHub-SlotSpins` s
+    JOIN `HBHub-Users` u ON u.userId = s.userId
     WHERE u.userStatus IS NOT NULL AND u.userStatus <> ?
-    GROUP BY p.userId, u.userName, u.userAvatarAttachmentId');
+    GROUP BY s.userId, u.userName, u.userAvatarAttachmentId');
 $statement->execute([LEADERBOARD_STATUS_BANNED]);
 
 $rows = array_map(static function (array $row): array {
-    $hands = (int) $row['hands'];
+    $spins = (int) $row['spins'];
     return [
         'userId' => (int) $row['userId'],
         'player' => $row['userName'],
         'avatarId' => $row['userAvatarAttachmentId'] !== null ? (int) $row['userAvatarAttachmentId'] : null,
-        'hands' => $hands,
+        'spins' => $spins,
         'wins' => (int) $row['wins'],
         'losses' => (int) $row['losses'],
-        'draws' => (int) $row['draws'],
-        'winRate' => $hands >= LEADERBOARD_RANKED_HANDS ? (int) $row['wins'] / $hands : null,
+        'winRate' => $spins >= LEADERBOARD_RANKED_SPINS ? (int) $row['wins'] / $spins : null,
+        'biggestWin' => (int) $row['biggestWin'],
+        'net' => (int) $row['net'],
     ];
 }, $statement->fetchAll());
 
 usort($rows, static function (array $a, array $b) use ($sort, $dir): int {
     if ($sort === 'winRate' && ($a['winRate'] === null) !== ($b['winRate'] === null)) {
-        return $a['winRate'] === null ? 1 : -1; // too few hands: after everyone with a win %
+        return $a['winRate'] === null ? 1 : -1; // too few spins: after everyone with a win %
     }
     $order = $sort === 'player'
         ? strcmp(mb_strtolower($a['player']), mb_strtolower($b['player']))
@@ -68,8 +71,8 @@ usort($rows, static function (array $a, array $b) use ($sort, $dir): int {
     if ($dir === 'desc') {
         $order = -$order;
     }
-    // A tie goes to who played more, then by name
-    return $order ?: ($b['hands'] <=> $a['hands'] ?: strcmp(mb_strtolower($a['player']), mb_strtolower($b['player'])));
+    // A tie goes to who spun more, then by name
+    return $order ?: ($b['spins'] <=> $a['spins'] ?: strcmp(mb_strtolower($a['player']), mb_strtolower($b['player'])));
 });
 $rows = array_slice($rows, 0, LEADERBOARD_ROWS);
 
@@ -90,24 +93,24 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <script src="/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
     <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
-    <title>Baccarat leaderboard - HB Hub</title>
+    <title>Slots leaderboard - HB Hub</title>
     <meta name="robots" content="noindex">
-    <meta name="description" content="Who wins the most at Baccarat in the HB Hub casino">
+    <meta name="description" content="Who wins the most at the slots in the HB Hub casino">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="casino casino-leaderboard">
-        <a class="casino-back" href="/gambling/baccarat/">&larr; Baccarat</a>
-        <h1>Baccarat leaderboard</h1>
+        <a class="casino-back" href="/casino/slots/">&larr; Slots</a>
+        <h1>Slots leaderboard</h1>
         <p class="casino-intro">
-            A hand counts once, however many bets you had on it: won, lost or a draw by the chips it made overall.
-            Win % is only shown from <?= LEADERBOARD_RANKED_HANDS ?> hands, so one lucky hand doesn't top the board.
-            Everyone's chips are on the <a href="/gambling/leaderboard">casino leaderboard</a>.
+            A spin is a win when it paid back more than its bet, and a loss when it paid back less.
+            Win % is only shown from <?= LEADERBOARD_RANKED_SPINS ?> spins, so one lucky spin doesn't top the board.
+            Everyone's chips are on the <a href="/casino/leaderboard">casino leaderboard</a>.
         </p>
 
         <section class="casino-card casino-board" aria-label="Leaderboard">
             <?php if ($rows === []): ?>
-                <p class="casino-hint">Nobody has played a hand yet. <a href="/gambling/baccarat/">Be the first!</a></p>
+                <p class="casino-hint">Nobody has spun yet. <a href="/casino/slots/">Be the first!</a></p>
             <?php else: ?>
                 <div class="casino-table-wrap">
                     <table class="casino-table">
@@ -143,16 +146,25 @@ function leaderboardSortUrl(string $column, string $sort, string $dir): string
                                             <span class="casino-player-name"><?= htmlspecialchars($row['player']) ?></span>
                                         </a>
                                     </td>
-                                    <td><?= number_format($row['hands']) ?></td>
+                                    <td><?= number_format($row['spins']) ?></td>
                                     <td><?= number_format($row['wins']) ?></td>
                                     <td><?= number_format($row['losses']) ?></td>
-                                    <td><?= number_format($row['draws']) ?></td>
                                     <td>
                                         <?php if ($row['winRate'] === null): ?>
-                                            <span class="casino-unranked" title="Shown from <?= LEADERBOARD_RANKED_HANDS ?> hands">–</span>
+                                            <span class="casino-unranked" title="Shown from <?= LEADERBOARD_RANKED_SPINS ?> spins">–</span>
                                         <?php else: ?>
                                             <?= number_format($row['winRate'] * 100, 1) ?>%
                                         <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($row['biggestWin'] === 0): ?>
+                                            <span class="casino-unranked">–</span>
+                                        <?php else: ?>
+                                            +<?= number_format($row['biggestWin']) ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="<?= $row['net'] > 0 ? 'casino-net-up' : ($row['net'] < 0 ? 'casino-net-down' : '') ?>">
+                                        <?= $row['net'] > 0 ? '+' : ($row['net'] < 0 ? '−' : '') ?><?= number_format(abs($row['net'])) ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

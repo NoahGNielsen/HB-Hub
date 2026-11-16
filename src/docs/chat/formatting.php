@@ -9,27 +9,27 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/chatFormat.php';
 
 // One group of examples per section: [what's typed, whether it's shown as your own (orange) message]
 const DOCS_FORMAT_TEXT = [
-    ['**bold**', false],
-    ['*italic* or _italic_', false],
-    ['__underline__', false],
-    ['~~strikethrough~~', false],
-    ['***bold and italic*** and **bold with __underline__ in it**', true],
+    ['**fed**', false],
+    ['*kursiv* eller _kursiv_', false],
+    ['__understreget__', false],
+    ['~~gennemstreget~~', false],
+    ['***fed og kursiv*** og **fed med __understregning__ i**', true],
 ];
 const DOCS_FORMAT_CODE = [
-    ['Type `npm install` to start', false],
+    ['Skriv `npm install` for at starte', false],
     ["```js\nconst answer = 42;\nconsole.log(answer);\n```", true],
 ];
 const DOCS_FORMAT_BLOCKS = [
-    ["# Big heading\n## Smaller heading\n### Smallest heading", false],
-    ["Shopping list:\n- milk\n- bread\n  - the brown one\n- cheese", true],
-    ["1. Open the chat\n2. Press New chat\n3. Say hi", false],
+    ["# Stor overskrift\n## Mindre overskrift\n### Mindste overskrift", false],
+    ["Indkøbsliste:\n- mælk\n- brød\n  - det grove\n- ost", true],
+    ["1. Åbn chatten\n2. Tryk New chat\n3. Sig hej", false],
 ];
 const DOCS_FORMAT_LINKS = [
     ['https://hbhub.noahgajnielsen.dk', false],
-    ['Read the [Code of Conduct](https://hbhub.noahgajnielsen.dk/legal/code-of-conduct)', true],
+    ['Læs [adfærdskodekset](https://hbhub.noahgajnielsen.dk/legal/code-of-conduct)', true],
 ];
 const DOCS_FORMAT_ESCAPE = [
-    ['\*not italic\* and 2 \* 3 = 6', false],
+    ['\*ikke kursiv\* og 2 \* 3 = 6', false],
 ];
 
 /**
@@ -42,8 +42,8 @@ function docsFormatExamples(array $examples): void
     ?>
     <div class="docs-format">
         <div class="docs-format-row" aria-hidden="true">
-            <span class="docs-format-head">Type this</span>
-            <span class="docs-format-head">You get</span>
+            <span class="docs-format-head">Skriv det her</span>
+            <span class="docs-format-head">Du får</span>
         </div>
         <?php foreach ($examples as [$typed, $isOwn]): ?>
             <div class="docs-format-row">
@@ -56,61 +56,61 @@ function docsFormatExamples(array $examples): void
 }
 
 $docsPath = '/docs/chat/formatting';
-$docsIntro = 'Make your messages stand out with bold, italic, code, headings, lists and links. It works like Discord:
-    put a few characters around your text, and the chat does the rest.';
+$docsIntro = 'Få dine beskeder til at skille sig ud med fed, kursiv, kode, overskrifter, lister og links. Det virker som
+    på Discord: sæt et par tegn rundt om din tekst, så klarer chatten resten.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="menu" aria-labelledby="docs-menu">
-                        <h2 id="docs-menu">The quick way</h2>
+                        <h2 id="docs-menu">Den hurtige måde</h2>
                         <p>
-                            Select some text in the message box and right-click it: the formatting menu puts the right characters
-                            around it for you. Or use the shortcuts:
+                            Markér noget tekst i beskedfeltet, og højreklik på den: formateringsmenuen sætter de rigtige tegn rundt
+                            om den for dig. Eller brug genvejene:
                         </p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Shortcut</th><th scope="col">Does</th></tr>
+                                    <tr><th scope="col">Genvej</th><th scope="col">Gør</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td><kbd>Ctrl</kbd> + <kbd>B</kbd></td><td><strong>Bold</strong></td></tr>
-                                    <tr><td><kbd>Ctrl</kbd> + <kbd>I</kbd></td><td><em>Italic</em></td></tr>
-                                    <tr><td><kbd>Ctrl</kbd> + <kbd>U</kbd></td><td><u>Underline</u></td></tr>
+                                    <tr><td><kbd>Ctrl</kbd> + <kbd>B</kbd></td><td><strong>Fed</strong></td></tr>
+                                    <tr><td><kbd>Ctrl</kbd> + <kbd>I</kbd></td><td><em>Kursiv</em></td></tr>
+                                    <tr><td><kbd>Ctrl</kbd> + <kbd>U</kbd></td><td><u>Understreget</u></td></tr>
                                 </tbody>
                             </table>
                         </div>
                         <p>
-                            On a Mac, use <kbd>&#8984;</kbd> instead of <kbd>Ctrl</kbd>. The menu also has strikethrough, code, a
-                            code block, a heading, lists and a link, plus cut, copy and paste. <kbd>Shift</kbd> + right-click opens
-                            your browser's own menu instead. It works when you're editing a message too.
+                            På en Mac bruger du <kbd>&#8984;</kbd> i stedet for <kbd>Ctrl</kbd>. Menuen har også gennemstregning,
+                            kode, en kodeblok, en overskrift, lister og et link, plus klip, kopiér og indsæt. <kbd>Shift</kbd> +
+                            højreklik åbner i stedet din browsers egen menu. Det virker også, når du retter en besked.
                         </p>
                     </section>
 
                     <section id="text" aria-labelledby="docs-text">
-                        <h2 id="docs-text">Bold, italic, underline and strikethrough</h2>
+                        <h2 id="docs-text">Fed, kursiv, understreget og gennemstreget</h2>
                         <?php docsFormatExamples(DOCS_FORMAT_TEXT); ?>
                         <p>
-                            They can go inside each other. <code>_italic_</code> with underscores needs a space or punctuation on
-                            both sides, so words like <code>snake_case_names</code> stay as they are.
+                            De kan stå inden i hinanden. <code>_kursiv_</code> med understregningstegn skal have et mellemrum eller
+                            tegnsætning på begge sider, så ord som <code>snake_case_navne</code> bliver, som de er.
                         </p>
                     </section>
 
                     <section id="code" aria-labelledby="docs-code">
-                        <h2 id="docs-code">Code</h2>
+                        <h2 id="docs-code">Kode</h2>
                         <p>
-                            One backtick (<code>`</code>) on each side for a bit of code in a sentence, three for a code block
-                            over several lines. Nothing inside code is formatted, so it's also a good way to show stars and
-                            underscores as they are. A word right after the first three backticks (like <code>js</code>) says
-                            which language it is, and isn't shown.
+                            Én backtick (<code>`</code>) på hver side giver et stykke kode i en sætning, tre giver en kodeblok over
+                            flere linjer. Intet inden i kode bliver formateret, så det er også en god måde at vise stjerner og
+                            understregningstegn, som de er. Et ord lige efter de første tre backticks (som <code>js</code>) siger,
+                            hvilket sprog det er, og bliver ikke vist.
                         </p>
                         <?php docsFormatExamples(DOCS_FORMAT_CODE); ?>
                     </section>
 
                     <section id="blocks" aria-labelledby="docs-blocks">
-                        <h2 id="docs-blocks">Headings and lists</h2>
+                        <h2 id="docs-blocks">Overskrifter og lister</h2>
                         <p>
-                            These go at the start of a line. A heading is one to three <code>#</code> and a space. A list is
-                            <code>-</code> or <code>*</code> and a space, a numbered list a number and a dot. Indent a line with
-                            two spaces to put it in a list inside the one above (up to three deep).
+                            De skal stå i starten af en linje. En overskrift er én til tre <code>#</code> og et mellemrum. En liste er
+                            <code>-</code> eller <code>*</code> og et mellemrum, en nummereret liste et tal og et punktum. Ryk en linje
+                            ind med to mellemrum for at lægge den i en liste inden i den ovenover (op til tre niveauer).
                         </p>
                         <?php docsFormatExamples(DOCS_FORMAT_BLOCKS); ?>
                     </section>
@@ -118,37 +118,38 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="links" aria-labelledby="docs-links">
                         <h2 id="docs-links">Links</h2>
                         <p>
-                            Addresses starting with <code>http://</code> or <code>https://</code> become links by themselves.
-                            To show some words instead of the address, put the words in square brackets and the address in
-                            brackets right after: a masked link.
+                            Adresser, der starter med <code>http://</code> eller <code>https://</code>, bliver selv til links. For at
+                            vise nogle ord i stedet for adressen sætter du ordene i firkantede parenteser og adressen i parenteser
+                            lige efter: et maskeret link.
                         </p>
                         <?php docsFormatExamples(DOCS_FORMAT_LINKS); ?>
                         <p>
-                            Pointing at a link shows where it really goes, and every link asks before it opens. A masked link whose
-                            text looks like an address shows the real address instead, so nobody can make a link look like it goes
-                            somewhere it doesn't. Some links can't be sent at all: see <a href="/docs/chat/safety#links">Link safety</a>.
+                            Peger du på et link, kan du se, hvor det i virkeligheden fører hen, og hvert link spørger, før det
+                            åbner. Et maskeret link, hvis tekst ligner en adresse, viser i stedet den rigtige adresse, så ingen kan få
+                            et link til at se ud, som om det fører et andet sted hen. Nogle links kan slet ikke sendes: se
+                            <a href="/docs/chat/safety#links">Sikre links</a>.
                         </p>
                     </section>
 
                     <section id="mentions" aria-labelledby="docs-mentions">
-                        <h2 id="docs-mentions">Mentions</h2>
+                        <h2 id="docs-mentions">Omtaler</h2>
                         <p>
-                            Type <code>@</code> and pick someone from the list to mention them. Their name lights up like
-                            <span class="docs-mention">@Name</span>, and they get a notification. More in
-                            <a href="/docs/chat/mentions">@mentions</a>.
+                            Skriv <code>@</code>, og vælg nogen fra listen for at omtale dem. Deres navn lyser op som
+                            <span class="docs-mention">@Navn</span>, og de får en notifikation. Mere i
+                            <a href="/docs/chat/mentions">@omtaler</a>.
                         </p>
                     </section>
 
                     <section id="escape" aria-labelledby="docs-escape">
-                        <h2 id="docs-escape">Showing the characters themselves</h2>
+                        <h2 id="docs-escape">At vise selve tegnene</h2>
                         <p>
-                            Want a star or an underscore without it turning into formatting? Put a backslash (<code>\</code>)
-                            in front of it.
+                            Vil du have en stjerne eller et understregningstegn, uden at det bliver til formatering? Sæt en
+                            backslash (<code>\</code>) foran.
                         </p>
                         <?php docsFormatExamples(DOCS_FORMAT_ESCAPE); ?>
                         <p>
-                            The formatting is only how a message is shown. Edit it, and you get back exactly what you typed. In
-                            the chat list, replies and notifications, a message is shown as plain text without the stars.
+                            Formateringen er kun, hvordan en besked bliver vist. Retter du den, får du præcis det tilbage, du skrev. I
+                            chatlisten, svar og notifikationer bliver en besked vist som almindelig tekst uden stjernerne.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

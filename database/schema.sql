@@ -456,6 +456,20 @@ CREATE TABLE `HBHub-ChessSeats` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-DeviceFingerprints`
+--
+
+CREATE TABLE `HBHub-DeviceFingerprints` (
+  `fingerprintHash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'SHA-256 of what the browser and computer are like (assets/js/fingerprint.js)',
+  `userId` int UNSIGNED NOT NULL,
+  `fingerprintDevice` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Browser and system, like "Chrome on Windows" (never the whole user agent)',
+  `fingerprintCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fingerprintLastSeenTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Deleted 180 days after this'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Browser fingerprints the account was used with, to link one person''s accounts in the admin panel (src/assets/php/fingerprint.php)';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Feedback`
 --
 
@@ -619,7 +633,7 @@ CREATE TABLE `HBHub-Messages` (
   `chatId` int UNSIGNED NOT NULL,
   `messageContent` varchar(2500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `messageSentTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `messageDeletedTimestamp` datetime DEFAULT NULL,
+  `messageDeletedTimestamp` datetime DEFAULT NULL COMMENT 'When it was deleted. 3 days later its messageContent and messageGhostContent are emptied (chatDeletedMessagesSweep()), the row stays',
   `messageDeletedByAdmin` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Deleted by the sender (or not deleted)\r\n1 Deleted by a group admin\r\n2 Deleted by a site admin (admin panel)',
   `messageIsEdited` tinyint NOT NULL DEFAULT '0',
   `messageReplyToId` bigint UNSIGNED DEFAULT NULL COMMENT 'The message it replies to. On a pin or unpin notice (messageEventType 13 and 14), the message that was pinned or unpinned',
@@ -842,6 +856,33 @@ CREATE TABLE `HBHub-MinerSaves` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-PageSources`
+--
+
+CREATE TABLE `HBHub-PageSources` (
+  `viewDate` date NOT NULL COMMENT 'The day, by the database''s own clock (CURDATE()). Deleted after HBHUB_PAGE_VIEWS_KEEP_DAYS',
+  `viewSource` varchar(64) NOT NULL COMMENT 'The address''s ?utm_source=, lower case and cut to HBHUB_PAGE_VIEWS_SOURCE_MAX characters',
+  `viewPath` varchar(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The page''s clean path without the query, as in HBHub-PageViews',
+  `viewCount` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Times it was opened with that utm_source that day',
+  `viewGuestCount` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How many of viewCount weren''t logged in'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='How many times each page was opened from a link with ?utm_source= each day, only counts and never who (src/assets/php/pageViews.php), for the admin panel''s Overview';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-PageViews`
+--
+
+CREATE TABLE `HBHub-PageViews` (
+  `viewDate` date NOT NULL COMMENT 'The day, by the database''s own clock (CURDATE()). Deleted after HBHUB_PAGE_VIEWS_KEEP_DAYS',
+  `viewPath` varchar(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The page''s clean path without the query, like /chat/ or /games/chess',
+  `viewCount` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Times it was opened that day',
+  `viewGuestCount` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How many of viewCount weren''t logged in'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='How many times each page was opened each day, only counts and never who (src/assets/php/pageViews.php), for the admin panel''s Overview';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-RouletteBets`
 --
 
@@ -900,7 +941,8 @@ CREATE TABLE `HBHub-Sessions` (
   `sessionValidUntil` datetime NOT NULL,
   `sessionTotpPending` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 Logged in\r\n1 Right password, waiting for the 2FA code',
   `sessionDevice` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Browser and system, like "Chrome on Windows" (never the whole user agent)',
-  `sessionLastSeen` datetime DEFAULT NULL COMMENT 'Last request with this session, written at most once a minute'
+  `sessionLastSeen` datetime DEFAULT NULL COMMENT 'Last request with this session, written at most once a minute',
+  `sessionFingerprintTimestamp` datetime DEFAULT NULL COMMENT 'Last browser fingerprint sent with this session (assets/php/fingerprint.php), at most once a day'
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -1052,17 +1094,18 @@ INSERT INTO `HBHub-Users` (`userId`, `userName`, `userNameLower`, `userPasswordH
 CREATE TABLE `HBHub-Watchdog` (
   `watchdogId` int UNSIGNED NOT NULL,
   `watchdogUserId` int UNSIGNED DEFAULT NULL COMMENT 'Who got them, NULL when not logged in (deleted with the account)',
-  `watchdogCount` int UNSIGNED NOT NULL COMMENT 'How many 508 answers the browser got',
+  `watchdogCount` int UNSIGNED NOT NULL COMMENT 'How many errors the browser had',
   `watchdogPage` varchar(255) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'The path of the page the user was on (no query), NULL when not known',
-  `watchdogAddresses` json NOT NULL COMMENT 'Which addresses answered 508 and how often: [{"path": "/chat/", "count": 3}, ...], paths only (see src/assets/php/watchdog.php)',
+  `watchdogErrors` json NOT NULL COMMENT 'Which errors and how often: [{"kind": "http", "path": "/chat/", "status": 508, "message": null, "line": null, "count": 3}, ...], addresses without their query. Entries without a kind are 508s (see src/assets/php/watchdog.php)',
   `watchdogIpv4` varchar(15) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
   `watchdogIpv6` varchar(62) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
   `watchdogUserAgent` varchar(255) DEFAULT NULL COMMENT 'The browser''s user agent, as it sent the report',
   `watchdogFromDev` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 when it came from the dev site (dev branch), 0 from the live one',
+  `watchdogCleared` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 when an admin cleared it from the list of reports (Clear the reports): still counted in the numbers at the top until it''s deleted after HBHUB_WATCHDOG_KEEP_DAYS',
   `watchdogFirstTimestamp` datetime NOT NULL COMMENT 'When the first of them happened, by its age',
   `watchdogLastTimestamp` datetime NOT NULL COMMENT 'When the last of them happened, by its age',
   `watchdogCreatedTimestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the report got through. Deleted after HBHUB_WATCHDOG_KEEP_DAYS'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='508 Resource Limit Is Reached answers browsers got from the site, read on the admin panel (src/admin/watchdog.php)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Errors browsers had on the site (HTTP errors, failed requests and loads, JavaScript errors, CSP blocks), read on the admin panel (src/admin/watchdog.php)';
 
 --
 -- Indexes for dumped tables
@@ -1271,6 +1314,13 @@ ALTER TABLE `HBHub-ChessSeats`
   ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
 
 --
+-- Indexes for table `HBHub-DeviceFingerprints`
+--
+ALTER TABLE `HBHub-DeviceFingerprints`
+  ADD PRIMARY KEY (`fingerprintHash`,`userId`),
+  ADD KEY `userLastSeen` (`userId`,`fingerprintLastSeenTimestamp`);
+
+--
 -- Indexes for table `HBHub-Feedback`
 --
 ALTER TABLE `HBHub-Feedback`
@@ -1361,7 +1411,8 @@ ALTER TABLE `HBHub-Messages`
   ADD KEY `fk_messages_replyto` (`messageReplyToId`),
   ADD KEY `fk_messages_eventuser` (`messageEventUserId`),
   ADD KEY `messagePinned` (`chatId`,`messagePinnedTimestamp`),
-  ADD KEY `fk_messages_pinnedby` (`messagePinnedBy`);
+  ADD KEY `fk_messages_pinnedby` (`messagePinnedBy`),
+  ADD KEY `messageDeleted` (`messageDeletedTimestamp`);
 
 --
 -- Indexes for table `HBHub-Notifications`
@@ -1451,6 +1502,18 @@ ALTER TABLE `HBHub-MinerCrashReports`
 ALTER TABLE `HBHub-MinerSaves`
   ADD PRIMARY KEY (`userId`) COMMENT 'One save per user',
   ADD KEY `oreAllTime` (`saveOreAllTime`);
+
+--
+-- Indexes for table `HBHub-PageSources`
+--
+ALTER TABLE `HBHub-PageSources`
+  ADD PRIMARY KEY (`viewDate`,`viewSource`,`viewPath`) COMMENT 'One row per source, page and day';
+
+--
+-- Indexes for table `HBHub-PageViews`
+--
+ALTER TABLE `HBHub-PageViews`
+  ADD PRIMARY KEY (`viewDate`,`viewPath`) COMMENT 'One row per page and day';
 
 --
 -- Indexes for table `HBHub-RouletteBets`
@@ -1932,6 +1995,12 @@ ALTER TABLE `HBHub-ChessRooms`
 ALTER TABLE `HBHub-ChessSeats`
   ADD CONSTRAINT `fk_chessseats_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-ChessRooms` (`roomId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_chessseats_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-DeviceFingerprints`
+--
+ALTER TABLE `HBHub-DeviceFingerprints`
+  ADD CONSTRAINT `fk_devicefingerprints_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Feedback`

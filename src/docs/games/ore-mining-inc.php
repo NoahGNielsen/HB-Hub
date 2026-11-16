@@ -6,62 +6,74 @@
 // and HBHUB_MINER_ENGINES, with their default costs, and a table of the builds after them from HBHUB_MINER_BUILDS), the Anomalies (from HBHUB_MINER_ANOMALIES and HBHUB_MINER_ANOMALY_TIERS), saving and the game's own How to
 // play (rules.php, included as the game shows it).
 // How much Strange Matter a Big Rip gives is still being balanced, so it's only described, never given as numbers.
+// The page is in Danish like the rest of the docs, but the game is in English, so everything named in the game
+// (buildings, comets, skills, Anomalies, stages, perks, locks) keeps its English name, and the texts that come from
+// miner.php are shown as the game writes them.
 // Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php';
 
 /**
- * A big number the way people say it: 12,000, 1.4 million, 75 billion. Above a quadrillion it's still words, up to
- * the decillions, which is further than any price in the store.
+ * A big number the way people say it in Danish: 12.000, 1,4 millioner, 75 milliarder. Danish uses the long scale, so a
+ * milliard is what the game (in English) calls a billion, and a billion is its trillion. Above that it's still words,
+ * up to the kvintilliards (10^33), which is further than any price in the store.
  * The list is keyed by the power of ten, not the number itself: PHP turns float keys into ints, and 1e21 and up
  * don't fit in one (that broke the page with "0 octillion").
  */
 function docsMinerNumber(float $number): string
 {
-    $names = [33 => 'decillion', 30 => 'nonillion', 27 => 'octillion', 24 => 'septillion', 21 => 'sextillion',
-        18 => 'quintillion', 15 => 'quadrillion', 12 => 'trillion', 9 => 'billion', 6 => 'million'];
-    foreach ($names as $power => $name) {
+    $names = [33 => ['kvintilliard', 'kvintilliarder'], 30 => ['kvintillion', 'kvintillioner'],
+        27 => ['kvadrilliard', 'kvadrilliarder'], 24 => ['kvadrillion', 'kvadrillioner'],
+        21 => ['trilliard', 'trilliarder'], 18 => ['trillion', 'trillioner'], 15 => ['billiard', 'billiarder'],
+        12 => ['billion', 'billioner'], 9 => ['milliard', 'milliarder'], 6 => ['million', 'millioner']];
+    foreach ($names as $power => [$one, $many]) {
         $size = 10.0 ** $power;
         if ($number >= $size) {
-            return rtrim(rtrim(number_format($number / $size, 1), '0'), '.') . ' ' . $name;
+            $shown = rtrim(rtrim(number_format($number / $size, 1, ',', '.'), '0'), ',');
+            return $shown . ' ' . ($shown === '1' ? $one : $many);
         }
     }
-    return $number < 1 ? (string) $number : number_format($number);
+    return $number < 1 ? str_replace('.', ',', (string) $number) : number_format($number, 0, ',', '.');
 }
 
 $docsPath = '/docs/games/ore-mining-inc';
-$docsIntro = 'Click an asteroid for ore, hire machines that mine for you, and keep growing, from one pickaxe to a drill
-    that mines the multiverse. Play it on the <a href="/games/ore-mining-inc/">Ore Mining Inc.</a> page.';
+$docsIntro = 'Klik på en asteroide for at få malm, ansæt maskiner, der miner for dig, og bliv ved med at vokse, fra én
+    hakke til et bor, der miner multiverset. Spil det på <a href="/games/ore-mining-inc/">Ore Mining Inc.</a>-siden.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">
-                        <div><dt>Buildings</dt><dd><?= count(HBHUB_MINER_BUILDINGS) ?></dd></div>
-                        <div><dt>Skills</dt><dd><?= count(HBHUB_MINER_SKILLS) ?></dd></div>
-                        <div><dt>Achievements</dt><dd><?= count(HBHUB_MINER_ACHIEVEMENTS) ?></dd></div>
+                        <div><dt>Bygninger</dt><dd><?= count(HBHUB_MINER_BUILDINGS) ?></dd></div>
+                        <div><dt>Færdigheder</dt><dd><?= count(HBHUB_MINER_SKILLS) ?></dd></div>
+                        <div><dt>Præstationer</dt><dd><?= count(HBHUB_MINER_ACHIEVEMENTS) ?></dd></div>
                     </dl>
 
+                    <p class="legal-note">
+                        Spillet er på engelsk, så bygninger, kometer, færdigheder og alt andet står med deres engelske navne her.
+                        Store tal står på dansk: en milliard er det, spillet kalder <em>a billion</em>.
+                    </p>
+
                     <section id="start" aria-labelledby="docs-start">
-                        <h2 id="docs-start">Getting started</h2>
+                        <h2 id="docs-start">Kom i gang</h2>
                         <ol class="docs-steps">
-                            <li>Click the asteroid (or press <kbd>Space</kbd>) to mine ore.</li>
-                            <li>Buy a Space Pickaxe Guy in the store. Buildings mine for you every second, even while you don't click.</li>
-                            <li>Keep buying buildings and upgrades. Each building gets upgrades when you own 10, 25, 50 and more of it, and each one doubles what it mines.</li>
-                            <li>Catch the Golden Comets that fly past for a big boost.</li>
-                            <li>Once you've mined a lot, Warp Jump to a new galaxy and start over, stronger.</li>
+                            <li>Klik på asteroiden (eller tryk <kbd>Mellemrum</kbd>) for at mine malm.</li>
+                            <li>Køb en Space Pickaxe Guy i butikken. Bygninger miner for dig hvert sekund, også mens du ikke klikker.</li>
+                            <li>Bliv ved med at købe bygninger og opgraderinger. Hver bygning får opgraderinger, når du ejer 10, 25, 50 og flere af den, og hver af dem fordobler, hvad den miner.</li>
+                            <li>Fang de Golden Comets, der flyver forbi, for et stort boost.</li>
+                            <li>Når du har minet meget, så lav et Warp Jump til en ny galakse, og start forfra, stærkere.</li>
                         </ol>
                     </section>
 
                     <section id="buildings" aria-labelledby="docs-buildings">
-                        <h2 id="docs-buildings">The buildings</h2>
+                        <h2 id="docs-buildings">Bygningerne</h2>
                         <p>
-                            Every one you buy costs <?= round((HBHUB_MINER_COST_GROWTH - 1) * 100) ?>% more than the one before.
-                            What they mine is before any upgrades.
+                            Hver ny, du køber, koster <?= round((HBHUB_MINER_COST_GROWTH - 1) * 100) ?> % mere end den før. Det, de
+                            miner, er før opgraderinger.
                         </p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Building</th><th scope="col">First one costs</th><th scope="col">Ore per second</th></tr>
+                                    <tr><th scope="col">Bygning</th><th scope="col">Den første koster</th><th scope="col">Malm per sekund</th></tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach (HBHUB_MINER_BUILDINGS as $docsBuilding): ?>
@@ -75,18 +87,18 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             </table>
                         </div>
                         <p>
-                            A good rule of thumb: buy whatever gives the most ore per second for its price. The <kbd>B</kbd> key does
-                            exactly that, once you have the Hot Key Panel upgrade.
+                            En god tommelfingerregel: køb det, der giver mest malm per sekund for prisen. Tasten <kbd>B</kbd> gør
+                            præcis det, når du har opgraderingen Hot Key Panel.
                         </p>
                     </section>
 
                     <section id="comets" aria-labelledby="docs-comets">
                         <h2 id="docs-comets">Golden Comets</h2>
-                        <p>Every few minutes a comet flies across the screen. Click it before it's gone, and you get one of these:</p>
+                        <p>Med få minutters mellemrum flyver en komet hen over skærmen. Klik på den, før den er væk, så får du en af disse:</p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Comet</th><th scope="col">What you get</th></tr>
+                                    <tr><th scope="col">Komet</th><th scope="col">Hvad du får</th></tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach (HBHUB_MINER_COMETS as $docsComet): ?>
@@ -94,9 +106,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                             <td><?= htmlspecialchars($docsComet['name']) ?></td>
                                             <td>
                                                 <?php if ($docsComet['buff'] === null): ?>
-                                                    A pile of ore straight away: <?= HBHUB_MINER_LUCKY_SECONDS[0] ?> to <?= HBHUB_MINER_LUCKY_SECONDS[1] ?> seconds of production
+                                                    En bunke malm med det samme: <?= HBHUB_MINER_LUCKY_SECONDS[0] ?> til <?= HBHUB_MINER_LUCKY_SECONDS[1] ?> sekunders produktion
                                                 <?php else: ?>
-                                                    <?= $docsComet['multiplier'] ?>&times; <?= $docsComet['buff'] === 'click' ? 'every click' : 'production' ?> for <?= $docsComet['ms'] / 1000 ?> seconds
+                                                    <?= $docsComet['multiplier'] ?>&times; <?= $docsComet['buff'] === 'click' ? 'hvert klik' : 'produktion' ?> i <?= $docsComet['ms'] / 1000 ?> sekunder
                                                 <?php endif; ?>
                                             </td>
                                         </tr>
@@ -104,172 +116,175 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 </tbody>
                             </table>
                         </div>
-                        <p>Diamond Rush is rare. Different comets' effects stack: a Diamond Rush caught during a Supernova multiplies on top of it. Comet upgrades in the store make comets come more often, stay longer and give more.</p>
+                        <p>Diamond Rush er sjælden. Forskellige kometers effekter lægges sammen: et Diamond Rush, der bliver fanget under en Supernova, ganges oven i den. Kometopgraderinger i butikken får kometer til at komme oftere, blive længere og give mere.</p>
                     </section>
 
                     <section id="star-shards" aria-labelledby="docs-star-shards">
-                        <h2 id="docs-star-shards">Star Shards and the Shard Shop</h2>
+                        <h2 id="docs-star-shards">Star Shards og Shard Shop</h2>
                         <p>
-                            About every <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?> minutes, a glittering Star Shard flies across the
-                            screen the other way from the comets. It only stays <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> seconds,
-                            so keep an eye out: click it to keep it. It only comes while the game is open, also in an Anomaly
-                            (it still goes to your own game), and Comet Catcher leaves it for you. Star Shards are yours for
-                            good: Warp Jumps, Big Crunches and Big Rips don't take them.
+                            Cirka hvert <?= HBHUB_MINER_SHARD_SLOT_MS / 60000 ?>. minut flyver en glitrende Star Shard hen over skærmen
+                            den modsatte vej af kometerne. Den bliver kun i <?= HBHUB_MINER_SHARD_STAY_MS / 1000 ?> sekunder, så hold
+                            øje: klik på den for at beholde den. Den kommer kun, mens spillet er åbent, også i en Anomaly (den går
+                            stadig til dit eget spil), og Comet Catcher lader den være til dig. Star Shards er dine for altid: Warp
+                            Jumps, Big Crunches og Big Rips tager dem ikke.
                         </p>
-                        <p>Spend them in the Shard Shop, a view of its own in the game's menu:</p>
+                        <p>Brug dem i Shard Shop, en visning for sig i spillets menu:</p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Item</th><th scope="col">Star Shards</th><th scope="col">What you get</th></tr>
+                                    <tr><th scope="col">Ting</th><th scope="col">Star Shards</th><th scope="col">Hvad du får</th></tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach (HBHUB_MINER_SHOP as $docsItem): ?>
                                         <tr>
                                             <td><?= htmlspecialchars($docsItem['name']) ?></td>
                                             <td><?= $docsItem['cost'] ?></td>
-                                            <td><?= htmlspecialchars($docsItem['kind'] === 'skin' ? 'An asteroid skin: ' . $docsItem['text'] : ($docsItem['kind'] === 'effect' ? 'A click effect: ' . $docsItem['text'] : $docsItem['text'])) ?></td>
+                                            <td><?= htmlspecialchars($docsItem['kind'] === 'skin' ? 'Et asteroideskin: ' . $docsItem['text'] : ($docsItem['kind'] === 'effect' ? 'En klikeffekt: ' . $docsItem['text'] : $docsItem['text'])) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
                         <p>
-                            Boosts work on top of the comets' effects and keep going through Warp Jumps; buying one again adds
-                            its time on, up to <?= HBHUB_MINER_SHOP_BOOST_MAX_MS / 3600000 ?> hours ahead. Ore is that many hours of
-                            what you mine a second right now. Boosts, ore and the Comet Beacon are for your own game, so they
-                            can't be bought in an Anomaly. Skins and click effects are kept for good, and you can switch them
-                            on and off in the shop, or in the Skins view, which has every skin and how to get the ones you don't have yet.
+                            Boosts virker oven i kometernes effekter og fortsætter gennem Warp Jumps; køber du en igen, lægges dens
+                            tid til, op til <?= HBHUB_MINER_SHOP_BOOST_MAX_MS / 3600000 ?> timer frem. Malm er så mange timer af det,
+                            du miner i sekundet lige nu. Boosts, malm og Comet Beacon er til dit eget spil, så de kan ikke købes i en
+                            Anomaly. Skins og klikeffekter beholder du for altid, og du kan slå dem til og fra i butikken eller i
+                            Skins-visningen, som har alle skins, og hvordan du får dem, du ikke har endnu.
                         </p>
                     </section>
 
                     <section id="prestige" aria-labelledby="docs-prestige">
-                        <h2 id="docs-prestige">Warp Jump, Big Crunch and Big Rip</h2>
+                        <h2 id="docs-prestige">Warp Jump, Big Crunch og Big Rip</h2>
                         <p>
-                            Sooner or later, growing gets slow. That's when you start over, for something that makes the next run
-                            much faster. There are three ways, each bigger than the last, and each in its own view (the menu at the
-                            top switches views without stopping the game):
+                            Før eller siden går væksten langsomt. Det er dér, du starter forfra, for noget, der gør næste runde meget
+                            hurtigere. Der er tre måder, hver større end den forrige, og hver i sin egen visning (menuen øverst skifter
+                            visning uden at stoppe spillet):
                         </p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Prestige</th><th scope="col">When</th><th scope="col">Starts over</th><th scope="col">Gives</th></tr>
+                                    <tr><th scope="col">Prestige</th><th scope="col">Hvornår</th><th scope="col">Starter forfra</th><th scope="col">Giver</th></tr>
                                 </thead>
                                 <tbody>
                                     <tr>
                                         <td>Warp Jump <kbd>W</kbd></td>
-                                        <td>After <?= docsMinerNumber(HBHUB_MINER_WARP_ORE) ?> ore in a run</td>
-                                        <td>Your ore, buildings and upgrades</td>
-                                        <td>Dark Matter: the cube root of the ore mined in this universe, in billions. Each one is +<?= HBHUB_MINER_DARK_BONUS * 100 ?>% production, and buys Dark Matter upgrades</td>
+                                        <td>Efter <?= docsMinerNumber(HBHUB_MINER_WARP_ORE) ?> malm i en runde</td>
+                                        <td>Din malm, dine bygninger og opgraderinger</td>
+                                        <td>Dark Matter: kubikroden af den malm, der er minet i dette univers, i milliarder. Hver er +<?= HBHUB_MINER_DARK_BONUS * 100 ?> % produktion og køber Dark Matter-opgraderinger</td>
                                     </tr>
                                     <tr>
                                         <td>Big Crunch <kbd>X</kbd></td>
-                                        <td>After <?= number_format(HBHUB_MINER_CRUNCH_DARK) ?> Dark Matter in a universe</td>
-                                        <td>Everything above, Dark Matter and its upgrades too</td>
-                                        <td>Antimatter: the square root of the Dark Matter, in hundreds. Each one is +<?= HBHUB_MINER_ANTI_BONUS * 100 ?>% production and more Dark Matter from every Warp Jump, and buys Antimatter upgrades</td>
+                                        <td>Efter <?= number_format(HBHUB_MINER_CRUNCH_DARK, 0, ',', '.') ?> Dark Matter i et univers</td>
+                                        <td>Alt ovenfor, også Dark Matter og dens opgraderinger</td>
+                                        <td>Antimatter: kvadratroden af Dark Matter, i hundreder. Hver er +<?= HBHUB_MINER_ANTI_BONUS * 100 ?> % produktion og mere Dark Matter fra hvert Warp Jump, og køber Antimatter-opgraderinger</td>
                                     </tr>
                                     <tr>
                                         <td>Big Rip <kbd>R</kbd></td>
-                                        <td>After <?= number_format(HBHUB_MINER_RIP_ANTI) ?> Antimatter in a multiverse</td>
-                                        <td>Everything above, Antimatter and its upgrades too</td>
-                                        <td>Strange Matter: more for every ten times as much Antimatter, but slowly. Each one ever earned is +<?= HBHUB_MINER_STRANGE_BONUS * 100 ?>% production for good, and it buys skills</td>
+                                        <td>Efter <?= number_format(HBHUB_MINER_RIP_ANTI, 0, ',', '.') ?> Antimatter i et multivers</td>
+                                        <td>Alt ovenfor, også Antimatter og dens opgraderinger</td>
+                                        <td>Strange Matter: mere for hver ti gange så meget Antimatter, men langsomt. Hver, du nogensinde har tjent, er +<?= HBHUB_MINER_STRANGE_BONUS * 100 ?> % produktion for altid, og den køber færdigheder</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                         <p>
-                            A Warp Jump and a Big Rip only give what's more than you've had from them before, so each one has to beat
-                            your best. The Antimatter view opens after your first Warp Jump, the Strange Matter view after your first
-                            Big Crunch. Project Starbound and Anomalies have their own bar under the menu, and the Shard Shop and Skins another under that: the Project Starbound view opens
-                            once you've earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter (before that it only shows the rocket and how far it is), and you can start Anomalies once you've earned <?= number_format(HBHUB_MINER_ANOMALY_STRANGE) ?> Strange Matter too. A dot in the menu
-                            shows when there's something to do in a view.
+                            Et Warp Jump og et Big Rip giver kun det, der er mere, end du har fået fra dem før, så hver skal slå din
+                            bedste. Antimatter-visningen åbner efter dit første Warp Jump, Strange Matter-visningen efter dit første
+                            Big Crunch. Project Starbound og Anomalies har deres egen bjælke under menuen, og Shard Shop og Skins en
+                            anden under den: Project Starbound-visningen åbner, når du har tjent
+                            <?= number_format(HBHUB_MINER_ENGINE_STRANGE, 0, ',', '.') ?> Strange Matter (før det viser den kun raketten,
+                            og hvor langt den er), og du kan starte Anomalies, når du også har tjent
+                            <?= number_format(HBHUB_MINER_ANOMALY_STRANGE, 0, ',', '.') ?> Strange Matter. En prik i menuen viser, når
+                            der er noget at gøre i en visning.
                         </p>
                     </section>
 
                     <section id="skills" aria-labelledby="docs-skills">
-                        <h2 id="docs-skills">The skill tree</h2>
+                        <h2 id="docs-skills">Færdighedstræet</h2>
                         <p>
-                            Strange Matter buys skills, which you keep for good, through every prestige. The tree grows from the
-                            Strangelet on the left to the Theory of Everything on the right, in five branches:
+                            Strange Matter køber færdigheder, som du beholder for altid, gennem alle prestiges. Træet vokser fra
+                            Strangelet til venstre til Theory of Everything til højre, i fem grene:
                         </p>
                         <ul>
-                            <li><strong>Industry</strong>: buildings, cheaper prices, starting buildings, and keeping upgrades through Warp Jumps.</li>
-                            <li><strong>Hands</strong>: clicks, critical clicks and auto-clicks.</li>
-                            <li><strong>Core</strong>, across the middle: big production boosts.</li>
-                            <li><strong>Sky</strong>: comets.</li>
-                            <li><strong>Cosmos</strong>: more Dark Matter, Antimatter and Strange Matter, more ore while you're away, and the Autopilot and Auto Crunch switches, which Warp Jump and Big Crunch for you once it would multiply your Dark Matter or Antimatter by the number you put next to them (4 to start with).</li>
+                            <li><strong>Industry</strong>: bygninger, lavere priser, startbygninger og at beholde opgraderinger gennem Warp Jumps.</li>
+                            <li><strong>Hands</strong>: klik, kritiske klik og autoklik.</li>
+                            <li><strong>Core</strong>, hen over midten: store produktionsboosts.</li>
+                            <li><strong>Sky</strong>: kometer.</li>
+                            <li><strong>Cosmos</strong>: mere Dark Matter, Antimatter og Strange Matter, mere malm, mens du er væk, og knapperne Autopilot og Auto Crunch, som laver Warp Jump og Big Crunch for dig, når det ville gange din Dark Matter eller Antimatter med det tal, du skriver ved dem (4 til at starte med).</li>
                         </ul>
                         <p>
-                            A skill can be learned once every skill linked to the left of it is, the ones in the branch next to it
-                            included. Pick a skill to see what it does, what it needs and what it costs.
+                            En færdighed kan læres, når alle færdigheder, der er forbundet til venstre for den, er lært, også dem i
+                            grenen ved siden af. Vælg en færdighed for at se, hvad den gør, hvad den kræver, og hvad den koster.
                         </p>
                     </section>
 
                     <section id="engine" aria-labelledby="docs-engine">
                         <h2 id="docs-engine">Project Starbound</h2>
                         <p>
-                            The Project Starbound view has a machine everyone on HB Hub builds together, out of Starbound Parts, drawn as a rocket
-                            on its launch pad: each stage done adds a part to it, the one being built fills up as parts come in, and
-                            you can point at a part to see its stage. Once you've earned <?= number_format(HBHUB_MINER_ENGINE_STRANGE) ?> Strange Matter (until then the view only shows the
-                            rocket and how far it is), you can help in three ways:
+                            Project Starbound-visningen har en maskine, som alle på HB Hub bygger sammen ud af Starbound Parts, tegnet
+                            som en raket på sin affyringsrampe: hvert færdigt trin lægger en del til den, den, der bliver bygget,
+                            fyldes op, efterhånden som dele kommer ind, og du kan pege på en del for at se dens trin. Når du har tjent
+                            <?= number_format(HBHUB_MINER_ENGINE_STRANGE, 0, ',', '.') ?> Strange Matter (indtil da viser visningen kun
+                            raketten, og hvor langt den er), kan du hjælpe på tre måder:
                         </p>
                         <ul>
-                            <li><strong>Ore</strong>: up to <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> parts a day (one more once the Starforge's Air Intakes are done). The day's first costs <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> ore, and each next one ten times as much. From each build's third section (stage 11) a part from ore counts as half a part, and from its fourth (stage 16) as a quarter, or half again once the Starforge's Piston Arms are done.</li>
-                            <li><strong>Strange Matter</strong>: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> for a part, as many as you like. It doesn't make you mine slower, as the Strange Matter bonus counts all you've ever earned, not what you have left.</li>
+                            <li><strong>Malm</strong>: op til <?= HBHUB_MINER_ENGINE_ORE_PARTS ?> dele om dagen (én mere, når Starforges Air Intakes er færdige). Dagens første koster <?= docsMinerNumber(HBHUB_MINER_ENGINE_ORE_PART) ?> malm, og hver næste ti gange så meget. Fra hvert byggeris tredje sektion (trin 11) tæller en del fra malm som en halv del, og fra dets fjerde (trin 16) som en kvart, eller en halv igen, når Starforges Piston Arms er færdige.</li>
+                            <li><strong>Strange Matter</strong>: <?= HBHUB_MINER_ENGINE_STRANGE_PART ?> for en del, så mange du vil. Det får dig ikke til at mine langsommere, da Strange Matter-bonussen tæller alt, du nogensinde har tjent, ikke det, du har tilbage.</li>
                             <li>
-                                <strong>Starbound Shifts</strong>: <?= HBHUB_MINER_SHIFT_COUNT ?> tasks a day, picked from
-                                <?= count(HBHUB_MINER_SHIFTS) ?> and the same for everyone (like
-                                <?= strtolower(HBHUB_MINER_SHIFTS['comets']['text']) ?> or <?= strtolower(HBHUB_MINER_SHIFTS['buildings']['text']) ?>),
-                                worth <?= HBHUB_MINER_SHIFT_PARTS ?> parts each, plus <?= HBHUB_MINER_SHIFT_BONUS ?> once all of them are done.
-                                Some are hard (like <?= strtolower(HBHUB_MINER_SHIFTS['rip']['text']) ?> or
-                                <?= strtolower(HBHUB_MINER_SHIFTS['playingHard']['text']) ?>) and worth <?= HBHUB_MINER_SHIFT_PARTS_HARD ?> parts.
+                                <strong>Starbound Shifts</strong>: <?= HBHUB_MINER_SHIFT_COUNT ?> opgaver om dagen, valgt blandt
+                                <?= count(HBHUB_MINER_SHIFTS) ?> og de samme for alle (som "<?= htmlspecialchars(HBHUB_MINER_SHIFTS['comets']['text']) ?>"
+                                eller "<?= htmlspecialchars(HBHUB_MINER_SHIFTS['buildings']['text']) ?>"), værd <?= HBHUB_MINER_SHIFT_PARTS ?>
+                                dele hver, plus <?= HBHUB_MINER_SHIFT_BONUS ?>, når de alle er klaret. Nogle er svære (som
+                                "<?= htmlspecialchars(HBHUB_MINER_SHIFTS['rip']['text']) ?>" eller
+                                "<?= htmlspecialchars(HBHUB_MINER_SHIFTS['playingHard']['text']) ?>") og værd <?= HBHUB_MINER_SHIFT_PARTS_HARD ?> dele.
                             </li>
                         </ul>
                         <p>
-                            The parts go into one stage at a time. When a stage has all its parts, it's finished, and everyone who
-                            plays gets its perk for good. Some stages have a lock too, which has to be met before they finish
-                            however many parts they have: until then the parts wait there (or, for a lock that needs Anomalies, the
-                            build only takes parts from Anomalies). A full stage finishes as soon as its lock is met, even if
-                            nobody gives another part: it's checked again within half a minute while someone plays.
-                            Finishing <a href="#anomalies">Anomalies</a> gives parts
-                            too, and they're the biggest source of them. The daily limits and Shifts start over at midnight UTC. The
-                            <a href="/games/ore-mining-inc/leaderboard?board=starbound">leaderboard</a> shows who has given the most.
+                            Delene går ind i ét trin ad gangen. Når et trin har alle sine dele, er det færdigt, og alle, der spiller,
+                            får dets fordel for altid. Nogle trin har også en lås, som skal være opfyldt, før de bliver færdige,
+                            uanset hvor mange dele de har: indtil da venter delene dér (eller, for en lås, der kræver Anomalies, tager
+                            byggeriet kun dele fra Anomalies). Et fyldt trin bliver færdigt, så snart dets lås er opfyldt, også selvom
+                            ingen giver en del mere: det bliver tjekket igen inden for et halvt minut, mens nogen spiller. At
+                            gennemføre <a href="#anomalies">Anomalies</a> giver også dele, og de er den største kilde til dem. De
+                            daglige grænser og Shifts starter forfra ved midnat UTC.
+                            <a href="/games/ore-mining-inc/leaderboard?board=starbound">Ranglisten</a> viser, hvem der har givet mest.
                         </p>
                         <p>
-                            The last stage, Ignition, has a countdown: it has to be full within
-                            <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days of the stage before it being
-                            finished. If it isn't, <?= (1 - HBHUB_MINER_ENGINE_DRAIN) * 100 ?>% of its parts are lost and it
-                            gets another <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> days. Once it's full,
-                            everything mines <?= HBHUB_MINER_IGNITION_TIMES ?> times as much for
-                            <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours, and everyone who gave parts to Ignition gets the
-                            Ignition badge on their profile and the Ignition asteroid skin.
+                            Det sidste trin, Ignition, har en nedtælling: det skal være fyldt inden for
+                            <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> dage efter, at trinnet før det er
+                            færdigt. Er det ikke det, går <?= (1 - HBHUB_MINER_ENGINE_DRAIN) * 100 ?> % af dets dele tabt, og det får
+                            <?= intdiv(HBHUB_MINER_ENGINE_COUNTDOWN_MS, HBHUB_MINER_DAY_MS) ?> dage til. Når det er fyldt, miner alt
+                            <?= HBHUB_MINER_IGNITION_TIMES ?> gange så meget i <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> timer, og
+                            alle, der gav dele til Ignition, får Ignition-mærket på deres profil og Ignition-asteroideskinnet.
                         </p>
                         <p>
-                            Once a build is done, the next one starts straight away, with new stages and new locks. Its locks
-                            count from nothing again (an Anomaly finished for Project Starbound before doesn't count), and each Anomaly
-                            or stack gives all its parts again the first time it's finished for the new build. Every perk of the
-                            Engines before it stays. Build #2, the Starforge, has perks that are mostly for looks or to make the
-                            game easier to play, and only 3 &times; 5% more production, so the game doesn't keep getting
-                            faster. Its last stage, First Light, works like Ignition, with a First Light badge and skin. Once
-                            the Starforge's Alloy Bins are done, the Project Starbound view has a Starbound Hall with every build done so
-                            far.
+                            Når et byggeri er færdigt, starter det næste med det samme, med nye trin og nye låse. Dets låse tæller fra
+                            nul igen (en Anomaly, der er gennemført for Project Starbound før, tæller ikke), og hver Anomaly eller stak
+                            giver alle sine dele igen første gang, den bliver gennemført for det nye byggeri. Alle fordele fra
+                            Engines før det bliver. Byggeri #2, Starforge, har fordele, der mest er for udseendets skyld eller gør
+                            spillet nemmere at spille, og kun 3 &times; 5 % mere produktion, så spillet ikke bliver ved med at blive
+                            hurtigere. Dets sidste trin, First Light, virker som Ignition, med et First Light-mærke og -skin. Når
+                            Starforges Alloy Bins er færdige, har Project Starbound-visningen en Starbound Hall med alle byggerier, der
+                            er færdige indtil videre.
                         </p>
                         <p>
-                            There are <?= count(HBHUB_MINER_ENGINES) ?> builds in all. From Build #3 on, every build has its own
-                            name, sections and stage names but the same plan: stage 1 adds news lines about it, each section ends in a
-                            seal, the seals of its 2nd and 4th sections make everything mine 1% more, and its last stage works like
-                            Ignition (<?= HBHUB_MINER_IGNITION_TIMES ?> times as much for <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> hours).
-                            Every other stage only takes the build further. The seals have locks: 8 different players giving parts,
-                            6 players giving parts to the 2nd section, a stack of 3 Anomalies, and every Tier I Anomaly finished for
-                            that build. Each build costs a bit more than the one before. Only every 10th build gives a badge, to
-                            whoever gave parts to its last stage.
+                            Der er <?= count(HBHUB_MINER_ENGINES) ?> byggerier i alt. Fra byggeri #3 og frem har hvert byggeri sit eget
+                            navn, sine egne sektioner og trinnavne, men den samme plan: trin 1 tilføjer nyhedslinjer om det, hver
+                            sektion slutter med et segl, seglene i dets 2. og 4. sektion får alt til at mine 1 % mere, og dets sidste
+                            trin virker som Ignition (<?= HBHUB_MINER_IGNITION_TIMES ?> gange så meget i
+                            <?= intdiv(HBHUB_MINER_IGNITION_MS, 3600000) ?> timer). Alle andre trin fører kun byggeriet videre. Seglene
+                            har låse: 8 forskellige spillere, der giver dele, 6 spillere, der giver dele til 2. sektion, en stak på 3
+                            Anomalies, og alle Tier I Anomalies gennemført for det byggeri. Hvert byggeri koster lidt mere end det
+                            før. Kun hvert 10. byggeri giver et mærke, til dem, der gav dele til dets sidste trin.
                         </p>
-                        <p>These are the stages of the first two builds:</p>
+                        <p>Dette er trinene i de første to byggerier:</p>
                         <?php foreach (array_slice(HBHUB_MINER_ENGINES, 0, 2, true) as $docsEngineNumber => $docsEngine): ?>
-                            <h3>Build #<?= $docsEngineNumber ?>: the <?= htmlspecialchars($docsEngine['name']) ?></h3>
+                            <h3>Byggeri #<?= $docsEngineNumber ?>: <?= htmlspecialchars($docsEngine['name']) ?></h3>
                             <div class="docs-table-wrap">
                                 <table class="docs-table">
                                     <thead>
-                                        <tr><th scope="col">Stage</th><th scope="col">Parts</th><th scope="col">Perk</th><th scope="col">Lock</th></tr>
+                                        <tr><th scope="col">Trin</th><th scope="col">Dele</th><th scope="col">Fordel</th><th scope="col">Lås</th></tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach (hbHubMinerEngineStages($docsEngineNumber) as $index => $stage): ?>
@@ -278,7 +293,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                             <?php endif; ?>
                                             <tr>
                                                 <td><?= $index + 1 ?>. <?= htmlspecialchars($stage['name']) ?></td>
-                                                <td><?= number_format($stage['cost']) ?></td>
+                                                <td><?= number_format($stage['cost'], 0, ',', '.') ?></td>
                                                 <td><?= htmlspecialchars($stage['perk']['text']) ?></td>
                                                 <td><?= $stage['lock'] !== null ? htmlspecialchars($stage['lock']['text']) : '' ?></td>
                                             </tr>
@@ -287,95 +302,93 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 </table>
                             </div>
                         <?php endforeach; ?>
-                        <h3>Build #3 to #<?= array_key_last(HBHUB_MINER_ENGINES) ?></h3>
+                        <h3>Byggeri #3 til #<?= array_key_last(HBHUB_MINER_ENGINES) ?></h3>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Build</th><th scope="col">Sections</th><th scope="col">Last stage</th><th scope="col">Parts</th><th scope="col">Badge</th></tr>
+                                    <tr><th scope="col">Byggeri</th><th scope="col">Sektioner</th><th scope="col">Sidste trin</th><th scope="col">Dele</th><th scope="col">Mærke</th></tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach (HBHUB_MINER_BUILDS as $docsEngineNumber => $docsEngine): ?>
                                         <tr>
-                                            <td>#<?= $docsEngineNumber ?>. The <?= htmlspecialchars($docsEngine['name']) ?></td>
+                                            <td>#<?= $docsEngineNumber ?>. <?= htmlspecialchars($docsEngine['name']) ?></td>
                                             <td><?= htmlspecialchars(implode(', ', $docsEngine['sections'])) ?></td>
                                             <td><?= htmlspecialchars($docsEngine['finale']) ?></td>
-                                            <td><?= number_format(array_sum(array_column(hbHubMinerEngineStages($docsEngineNumber), 'cost'))) ?></td>
+                                            <td><?= number_format(array_sum(array_column(hbHubMinerEngineStages($docsEngineNumber), 'cost')), 0, ',', '.') ?></td>
                                             <td><?= isset($docsEngine['crew']) ? htmlspecialchars($docsEngine['crew']['icon'] . ' ' . $docsEngine['crew']['name']) : '' ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
-                        <p>The parts each stage needs can still change as Project Starbound is tuned.</p>
+                        <p>De dele, hvert trin skal bruge, kan stadig ændre sig, efterhånden som Project Starbound bliver justeret.</p>
                     </section>
 
                     <section id="anomalies" aria-labelledby="docs-anomalies">
                         <h2 id="docs-anomalies">Anomalies</h2>
                         <p>
-                            The Anomalies view has challenge runs: universes of their own, each with one rule changed. In Tiers
-                            I and II you go in with your skill tree, your Strange Matter bonus and the counts that make you mine
-                            faster (Warp Jumps, Big Crunches, comets caught), but with no Dark Matter, Antimatter or ore.
-                            Antimatter Echo and Dark Echo keep their upgrades, like on a Big Rip. You finish one by earning its
-                            goal of Antimatter in it. Tier III starts you from nothing instead: no skills, no Strange Matter
-                            bonus, no upgrades and none of those counts, and each has a goal of its own. The Cosmic Engine's perks
-                            work in every Anomaly.
+                            Anomalies-visningen har udfordringer: universer for sig, hver med én regel ændret. I Tier I og II går du
+                            ind med dit færdighedstræ, din Strange Matter-bonus og de tællere, der får dig til at mine hurtigere (Warp
+                            Jumps, Big Crunches, fangede kometer), men uden Dark Matter, Antimatter eller malm. Antimatter Echo og Dark
+                            Echo beholder deres opgraderinger, som ved et Big Rip. Du gennemfører en ved at tjene dens mål af
+                            Antimatter i den. Tier III starter dig i stedet fra nul: ingen færdigheder, ingen Strange Matter-bonus,
+                            ingen opgraderinger og ingen af de tællere, og hver har sit eget mål. Cosmic Engines fordele virker i alle
+                            Anomalies.
                         </p>
                         <p>
-                            <strong>Stacks:</strong> any Tier I and Tier II Anomalies can be played together, with all their rules
-                            at once, from the stack builder in the Anomalies view. A stack's goal is the lowest of its Anomalies'
-                            goals, and it's worth their parts added up, times <?= HBHUB_MINER_ANOMALY_STACK ?> for each Anomaly
-                            after the first. A stack has its own best time. Unstable Vacuum doesn't stack (its Warp Jumps run out
-                            before most stacks' goals), and a few pairs can't be picked together because they can't be done:
-                            <?= implode(', ', array_map(static fn (array $pair): string => HBHUB_MINER_ANOMALIES[$pair[0]]['name'] . ' with ' . HBHUB_MINER_ANOMALIES[$pair[1]]['name'], HBHUB_MINER_ANOMALY_CLASHES)) ?>.
+                            <strong>Stakke:</strong> alle Tier I- og Tier II-Anomalies kan spilles sammen, med alle deres regler på én
+                            gang, fra stakbyggeren i Anomalies-visningen. En staks mål er det laveste af dens Anomalies' mål, og den er
+                            værd deres dele lagt sammen, gange <?= HBHUB_MINER_ANOMALY_STACK ?> for hver Anomaly efter den første. En
+                            stak har sin egen bedste tid. Unstable Vacuum kan ikke stables (dens Warp Jumps slipper op før de fleste
+                            stakkes mål), og et par par kan ikke vælges sammen, fordi de ikke kan klares:
+                            <?= htmlspecialchars(implode(', ', array_map(static fn (array $pair): string => HBHUB_MINER_ANOMALIES[$pair[0]]['name'] . ' med ' . HBHUB_MINER_ANOMALIES[$pair[1]]['name'], HBHUB_MINER_ANOMALY_CLASHES))) ?>.
                         </p>
                         <p>
-                            <strong>The weekly Anomaly</strong> is a stack of <?= implode(' or ', HBHUB_MINER_WEEKLY_SIZES) ?>
-                            picked for everyone each week (weeks start on Monday at 00:00 UTC), never one that can't be done. Finishing it that week is worth
-                            <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times the parts, and the
-                            <a href="/games/ore-mining-inc/leaderboard?board=weekly">leaderboard</a> lists the fastest times each
-                            week.
+                            <strong>Den ugentlige Anomaly</strong> er en stak på <?= implode(' eller ', HBHUB_MINER_WEEKLY_SIZES) ?>,
+                            valgt for alle hver uge (ugerne starter mandag kl. 00:00 UTC), aldrig en, der ikke kan klares. At
+                            gennemføre den i den uge er værd <?= HBHUB_MINER_ANOMALY_WEEKLY ?> gange så mange dele, og
+                            <a href="/games/ore-mining-inc/leaderboard?board=weekly">ranglisten</a> viser de hurtigste tider hver uge.
                         </p>
                         <p>
-                            <strong>Rewards for you:</strong> a badge and best time for each Anomaly, achievements, asteroid skins
-                            (a colour for each Tier II Anomaly, an animated one for each Tier III, and more from the Cosmic
-                            Engine), picked in the Skins view, and the leaderboard titles "Singularity" (Naked Singularity) and
-                            "Gauntlet Runner" (The Gauntlet). Those come before the builds' titles, "Forgemaster" and
-                            "Engineer".
+                            <strong>Belønninger til dig:</strong> et mærke og en bedste tid for hver Anomaly, præstationer,
+                            asteroideskins (en farve for hver Tier II-Anomaly, et animeret for hver Tier III, og flere fra Cosmic
+                            Engine), valgt i Skins-visningen, og ranglistetitlerne "Singularity" (Naked Singularity) og "Gauntlet
+                            Runner" (The Gauntlet). De kommer før byggeriernes titler, "Forgemaster" og "Engineer".
                         </p>
                         <p>
-                            While you're in one, a banner says so on every view, and your own game waits and mines as if you
-                            were away. You can leave whenever you like. With <strong>Save and leave</strong> you keep the run
-                            and carry on from the Anomalies view later (up to <?= HBHUB_MINER_ANOMALY_SAVED_MAX ?> saved at once,
-                            but not Speed of Light). A saved run's clock keeps going, and it mines as if you were away until you
-                            carry on. With plain <strong>Leave</strong>, that run is lost. Skills, Big Rips, donations and
-                            Starbound Shifts only work in your own game. What you do in an Anomaly doesn't count towards your
-                            stats or the leaderboard, but finishing Anomalies has achievements of its own.
+                            Mens du er i en, siger et banner det på alle visninger, og dit eget spil venter og miner, som om du var
+                            væk. Du kan gå, når du vil. Med <strong>Save and leave</strong> beholder du forsøget og fortsætter fra
+                            Anomalies-visningen senere (op til <?= HBHUB_MINER_ANOMALY_SAVED_MAX ?> gemt på én gang, men ikke Speed of
+                            Light). Et gemt forsøgs ur bliver ved med at gå, og det miner, som om du var væk, til du fortsætter. Med
+                            almindelig <strong>Leave</strong> er det forsøg tabt. Færdigheder, Big Rips, donationer og Starbound Shifts
+                            virker kun i dit eget spil. Det, du gør i en Anomaly, tæller ikke med i din statistik eller på ranglisten,
+                            men at gennemføre Anomalies har sine egne præstationer.
                         </p>
                         <p>
-                            Finishing one gives Project Starbound being built its parts the first time (and again the first time
-                            for each new build) and whenever you beat your best time, and <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?>% of them otherwise (rounded down). These parts go in
-                            even while Project Starbound is full and waiting for a lock, since some locks need Anomalies. You also get
-                            a badge for each one in the Anomalies view, with your best time.
+                            At gennemføre en giver det Project Starbound, der bliver bygget, dens dele første gang (og igen første
+                            gang for hvert nyt byggeri), og når du slår din bedste tid, og ellers <?= HBHUB_MINER_ANOMALY_REPEAT * 100 ?> %
+                            af dem (rundet ned). Disse dele går ind, også mens Project Starbound er fyldt og venter på en lås, da nogle
+                            låse kræver Anomalies. Du får også et mærke for hver af dem i Anomalies-visningen, med din bedste tid.
                         </p>
                         <p>
-                            <strong>Afterglow:</strong> every time you finish one (not only the first time), your own game
-                            mines <?= HBHUB_MINER_AFTERGLOW_TIMES ?> times as much for a while afterwards, to make up for the time
-                            it spent mining as if you were away: an hour for a Tier I Anomaly, 3 for Tier II, 12 for Tier III and
-                            24 for The Gauntlet. A stack's are added up, and the weekly Anomaly's lasts
-                            <?= HBHUB_MINER_ANOMALY_WEEKLY ?> times as long that week. Finishing another while one is running
-                            adds to it, up to <?= HBHUB_MINER_AFTERGLOW_MAX_MS / 3600000 ?> hours ahead. It shows under your ore
-                            with the comet effects, and works with them and with Ignition.
+                            <strong>Afterglow:</strong> hver gang du gennemfører en (ikke kun første gang), miner dit eget spil
+                            <?= HBHUB_MINER_AFTERGLOW_TIMES ?> gange så meget et stykke tid bagefter, for at gøre op for den tid, det
+                            brugte på at mine, som om du var væk: en time for en Tier I-Anomaly, 3 for Tier II, 12 for Tier III og 24 for
+                            The Gauntlet. En staks bliver lagt sammen, og den ugentlige Anomalys varer <?= HBHUB_MINER_ANOMALY_WEEKLY ?>
+                            gange så længe i den uge. Gennemfører du en til, mens en kører, bliver den lagt til, op til
+                            <?= HBHUB_MINER_AFTERGLOW_MAX_MS / 3600000 ?> timer frem. Den bliver vist under din malm med kometeffekterne
+                            og virker sammen med dem og med Ignition.
                         </p>
                         <?php foreach (HBHUB_MINER_ANOMALY_TIERS as $docsTier => $docsTierData): ?>
                             <h3>Tier <?= str_repeat('I', $docsTier) ?>: <?= htmlspecialchars($docsTierData['name']) ?></h3>
                             <p>
-                                <?= $docsTierData['unlock'] === 'strange' ? 'Opens once you\'ve earned ' . number_format(HBHUB_MINER_ANOMALY_STRANGE) . ' Strange Matter.' : 'Opens once you\'ve learned the Theory of Everything.' ?>
-                                <?= $docsTierData['fresh'] ? 'From nothing, and they don\'t stack.' : $docsTierData['parts'] . ' parts each.' ?><?= $docsTierData['noAuto'] ? ' Autopilot and Auto Crunch are off in these.' : '' ?>
+                                <?= $docsTierData['unlock'] === 'strange' ? 'Åbner, når du har tjent ' . number_format(HBHUB_MINER_ANOMALY_STRANGE, 0, ',', '.') . ' Strange Matter.' : 'Åbner, når du har lært Theory of Everything.' ?>
+                                <?= $docsTierData['fresh'] ? 'Fra nul, og de kan ikke stables.' : $docsTierData['parts'] . ' dele hver.' ?><?= $docsTierData['noAuto'] ? ' Autopilot og Auto Crunch er slået fra i disse.' : '' ?>
                             </p>
                             <div class="docs-table-wrap">
                                 <table class="docs-table">
                                     <thead>
-                                        <tr><th scope="col">Anomaly</th><th scope="col">Rule</th><th scope="col">Goal</th><?= $docsTierData['fresh'] ? '<th scope="col">Parts</th>' : '' ?></tr>
+                                        <tr><th scope="col">Anomaly</th><th scope="col">Regel</th><th scope="col">Mål</th><?= $docsTierData['fresh'] ? '<th scope="col">Dele</th>' : '' ?></tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach (HBHUB_MINER_ANOMALIES as $docsAnomaly): ?>
@@ -383,9 +396,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                             <tr>
                                                 <td><?= htmlspecialchars($docsAnomaly['name']) ?></td>
                                                 <td><?= htmlspecialchars($docsAnomaly['text']) ?></td>
-                                                <td><?= docsMinerNumber($docsAnomaly['goal']) ?> <?= ['runOre' => 'ore in one run', 'darkEarned' => 'Dark Matter'][$docsAnomaly['stat'] ?? ''] ?? 'Antimatter' ?></td>
+                                                <td><?= docsMinerNumber($docsAnomaly['goal']) ?> <?= ['runOre' => 'malm i én runde', 'darkEarned' => 'Dark Matter'][$docsAnomaly['stat'] ?? ''] ?? 'Antimatter' ?></td>
                                                 <?php if ($docsTierData['fresh']): ?>
-                                                    <td><?= number_format($docsAnomaly['parts'] ?? $docsTierData['parts']) ?></td>
+                                                    <td><?= number_format($docsAnomaly['parts'] ?? $docsTierData['parts'], 0, ',', '.') ?></td>
                                                 <?php endif; ?>
                                             </tr>
                                         <?php endforeach; ?>
@@ -393,35 +406,35 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 </table>
                             </div>
                         <?php endforeach; ?>
-                        <p>The goals can still change as the Anomalies are balanced.</p>
+                        <p>Målene kan stadig ændre sig, efterhånden som Anomalies bliver balanceret.</p>
                     </section>
 
                     <section id="rules" aria-labelledby="docs-rules">
-                        <h2 id="docs-rules">How to play, from the game</h2>
+                        <h2 id="docs-rules">Sådan spiller du, fra spillet</h2>
                         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/rules.php'; ?>
                     </section>
 
                     <section id="saving" aria-labelledby="docs-saving">
-                        <h2 id="docs-saving">Saving, and playing fair</h2>
+                        <h2 id="docs-saving">At gemme, og at spille fair</h2>
                         <p>
-                            Your game is saved on HB Hub's server every <?= HBHUB_MINER_SAVE_SECONDS ?> seconds and when you leave,
-                            so you can carry on from any device. While you're away, your buildings keep mining at
-                            <?= HBHUB_MINER_OFFLINE_RATE * 100 ?>% of the speed, or more once the Cosmic Engine has the stages for it.
+                            Dit spil bliver gemt på HB Hubs server hvert <?= HBHUB_MINER_SAVE_SECONDS ?>. sekund, og når du går, så du
+                            kan fortsætte fra en hvilken som helst enhed. Mens du er væk, bliver dine bygninger ved med at mine med
+                            <?= HBHUB_MINER_OFFLINE_RATE * 100 ?> % af farten, eller mere, når Cosmic Engine har trinene til det.
                         </p>
                         <p>
-                            If the game crashes or freezes before it's saved, what you did just before is kept in your browser
-                            and saved the next time you open the game there. After a crash, the game asks whether it may send a
-                            crash report, so the problem can be found and fixed. It's only sent if you say yes, and you can see
-                            what's in it first. Some browsers also send a short note by themselves if the game's tab runs out
-                            of memory or stops responding, which doesn't say who you are (more in the
-                            <a href="/legal/privacy#what">privacy policy</a>).
+                            Går spillet ned eller fryser, før det er gemt, bliver det, du gjorde lige før, holdt i din browser og gemt,
+                            næste gang du åbner spillet dér. Efter et nedbrud spørger spillet, om det må sende en nedbrudsrapport, så
+                            problemet kan findes og rettes. Den bliver kun sendt, hvis du siger ja, og du kan se, hvad der står i den,
+                            først. Nogle browsere sender også selv en kort besked, hvis spillets fane løber tør for hukommelse eller
+                            holder op med at svare, og den siger ikke, hvem du er (mere i
+                            <a href="/legal/privacy#what">privatlivspolitikken</a>).
                         </p>
                         <p>
-                            The server plays every click and purchase again to check it, so the
-                            <a href="/games/ore-mining-inc/leaderboard">leaderboard</a> can't be cheated from the browser. Clicks only
-                            count up to <?= HBHUB_MINER_CLICKS_PER_SECOND ?> a second, and clicks at a perfectly even pace (like an
-                            auto-clicker's, or a held-down key) only mine <?= HBHUB_MINER_AUTO_VALUE * 100 ?>% until the pace changes.
-                            Auto-clickers and scripts aren't allowed anyway.
+                            Serveren spiller hvert klik og køb igen for at tjekke det, så der ikke kan snydes på
+                            <a href="/games/ore-mining-inc/leaderboard">ranglisten</a> fra browseren. Klik tæller kun op til
+                            <?= HBHUB_MINER_CLICKS_PER_SECOND ?> i sekundet, og klik i et helt jævnt tempo (som en autoklikkers, eller en
+                            tast, der bliver holdt nede) miner kun <?= HBHUB_MINER_AUTO_VALUE * 100 ?> %, indtil tempoet ændrer sig.
+                            Autoklikkere og scripts er alligevel ikke tilladt.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

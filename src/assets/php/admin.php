@@ -1,7 +1,7 @@
 <?php
-// The admin panel's pages: the lists of users and chats (admin/index.php), the people with more than one account
+// The admin panel's pages: the Overview and the lists of users and chats (admin/index.php, admin/overview.php), the people with more than one account
 // (admin/people.php), the banned pictures (admin/banned.php), the feedback (admin/feedback.php), Ore Mining Inc.'s crash
-// reports (admin/crashes.php), the Watchdog's 508s (admin/watchdog.php), the admin log (admin/log.php), and one user
+// reports (admin/crashes.php), the Watchdog's browser errors (admin/watchdog.php), the admin log (admin/log.php), and one user
 // (admin/user.php), person (admin/person.php) or chat (admin/chat.php).
 // Only site admins (userRole 2) get in, everyone else gets a 404 so it doesn't show they're there. What the pages share
 // is here: who gets in, the side menus (the settings page's, settings.css), and how dates, statuses, pictures, messages
@@ -38,7 +38,7 @@ function adminOnly(array $user): void
 }
 
 /**
- * Every person with more than one account: the accounts that have logged in from the same browser (a known device in
+ * Every person with more than one account: the accounts that have been used in the same browser (a known device in
  * HBHub-LoginDevices, the hbHubDevice cookie, loginLimit.php), and the ones those have logged in from, and so on. So
  * someone who made a new account on their phone and logged in to it once on their computer counts as one person.
  * session.php makes every browser someone is logged in on a known device, so logins from before the known devices
@@ -47,12 +47,19 @@ function adminOnly(array $user): void
  * Each person is ['userIds' => their accounts' ids, lowest first, 'devices' => how many browsers they share between
  * them], the people with the newest account first. A shared computer (like at school) can tie two people together,
  * which is why the person page (admin/person.php) lists the devices and lets the admin pick the accounts.
+ * Browser fingerprints (HBHub-DeviceFingerprints, assets/php/fingerprint.php) join accounts the same way, so clearing
+ * cookies or using a private window doesn't get around it, except a fingerprint seen with more than
+ * HBHUB_FINGERPRINT_SHARED_MAX accounts: that's most likely a lot of identical school computers, not one person.
+ * 'fingerprints' is how many fingerprints that do link accounts they have between them.
  *
- * @return list<array{userIds: list<int>, devices: int}>
+ * @return list<array{userIds: list<int>, devices: int, fingerprints: int}>
  */
 function adminPersonGroups(PDO $db): array
 {
-    // Union-find: every account starts as its own person, and each browser joins the accounts known in it
+    require_once __DIR__ . '/fingerprint.php';
+
+    // Union-find: every account starts as its own person, and each browser (cookie or fingerprint) joins the accounts
+    // known in it
     $parent = [];
     $find = function (int $id) use (&$parent): int {
         while ($parent[$id] !== $id) {
@@ -61,33 +68,49 @@ function adminPersonGroups(PDO $db): array
         }
         return $id;
     };
-    $deviceFirstUser = []; // deviceTokenHash => the first account seen in it
-    foreach ($db->query('SELECT deviceTokenHash, userId FROM `HBHub-LoginDevices`') as $row) {
-        $userId = (int) $row['userId'];
-        $parent[$userId] ??= $userId;
-        $first = $deviceFirstUser[$row['deviceTokenHash']] ??= $userId;
-        $root = $find($userId);
-        $firstRoot = $find($first);
-        if ($root !== $firstRoot) {
-            $parent[$root] = $firstRoot;
+    // Joins the accounts of each key; $rows are [key, userId]. Returns key => the first account seen with it.
+    $join = function (iterable $rows) use (&$parent, $find): array {
+        $firstUser = [];
+        foreach ($rows as [$key, $userId]) {
+            $userId = (int) $userId;
+            $parent[$userId] ??= $userId;
+            $first = $firstUser[$key] ??= $userId;
+            $root = $find($userId);
+            $firstRoot = $find($first);
+            if ($root !== $firstRoot) {
+                $parent[$root] = $firstRoot;
+            }
         }
-    }
+        return $firstUser;
+    };
+
+    $deviceFirstUser = $join($db->query('SELECT deviceTokenHash, userId FROM `HBHub-LoginDevices`')->fetchAll(PDO::FETCH_NUM));
+    // Only the fingerprints that link two to HBHUB_FINGERPRINT_SHARED_MAX accounts
+    $fingerprintFirstUser = $join($db->query('SELECT f.fingerprintHash, f.userId FROM `HBHub-DeviceFingerprints` f
+        JOIN (SELECT fingerprintHash FROM `HBHub-DeviceFingerprints` GROUP BY fingerprintHash
+            HAVING COUNT(*) BETWEEN 2 AND ' . HBHUB_FINGERPRINT_SHARED_MAX . ') linking ON linking.fingerprintHash = f.fingerprintHash')
+        ->fetchAll(PDO::FETCH_NUM));
 
     $groups = [];
     foreach (array_keys($parent) as $userId) {
         $groups[$find($userId)][] = $userId;
     }
-    $devices = [];
-    foreach ($deviceFirstUser as $first) {
-        $root = $find($first);
-        $devices[$root] = ($devices[$root] ?? 0) + 1;
-    }
+    $count = function (array $firstUser) use ($find): array {
+        $counts = [];
+        foreach ($firstUser as $first) {
+            $root = $find($first);
+            $counts[$root] = ($counts[$root] ?? 0) + 1;
+        }
+        return $counts;
+    };
+    $devices = $count($deviceFirstUser);
+    $fingerprints = $count($fingerprintFirstUser);
 
     $people = [];
     foreach ($groups as $root => $userIds) {
         if (count($userIds) > 1) {
             sort($userIds);
-            $people[] = ['userIds' => $userIds, 'devices' => $devices[$root] ?? 0];
+            $people[] = ['userIds' => $userIds, 'devices' => $devices[$root] ?? 0, 'fingerprints' => $fingerprints[$root] ?? 0];
         }
     }
     usort($people, fn (array $a, array $b): int => end($b['userIds']) <=> end($a['userIds']));
@@ -111,11 +134,11 @@ function adminPersonUserIds(PDO $db, int $userId): array
 }
 
 /**
- * The side menu of the admin panel's lists: Users, Chats (both admin/index.php), People (admin/people.php), Banned
+ * The side menu of the admin panel's lists: Overview (admin/overview.php, shown at /admin/), Users, Chats (both admin/index.php), People (admin/people.php), Banned
  * pictures (admin/banned.php), Feedback (admin/feedback.php), Announcements (admin/announcements.php), Crash reports (admin/crashes.php), Cosmic Engine
- * (admin/engine.php), Server busy reports (admin/watchdog.php) and Admin log (admin/log.php), each with how many there are in all, or
+ * (admin/engine.php), Browser errors (admin/watchdog.php) and Admin log (admin/log.php), each with how many there are in all, or
  * for Feedback how many are new, for the Cosmic Engine how many stages of the one being built are done and for the
- * server busy reports how many 508s there were in the last 24 hours. $active is 'users', 'chats', 'people', 'banned', 'feedback',
+ * browser errors how many errors there were in the last 24 hours (the Overview has no number). $active is 'overview', 'users', 'chats', 'people', 'banned', 'feedback',
  * 'announcements', 'crashes', 'engine', 'watchdog' or 'log'.
  */
 function adminListsMenuHtml(PDO $db, string $active): string
@@ -130,6 +153,7 @@ function adminListsMenuHtml(PDO $db, string $active): string
         (SELECT COUNT(*) FROM `HBHub-AdminLog`) AS log')->fetch();
     $totals['people'] = count(adminPersonGroups($db));
     $lists = [
+        'overview' => ['Overview', '/admin/'],
         'users' => ['Users', '/admin/?list=users'],
         'chats' => ['Chats', '/admin/?list=chats'],
         'people' => ['People', '/admin/people'],
@@ -138,17 +162,21 @@ function adminListsMenuHtml(PDO $db, string $active): string
         'announcements' => ['Announcements', '/admin/announcements'],
         'crashes' => ['Crash reports', '/admin/crashes'],
         'engine' => ['Project Starbound', '/admin/engine'],
-        'watchdog' => ['Server busy reports', '/admin/watchdog'],
+        'watchdog' => ['Browser errors', '/admin/watchdog'],
         'log' => ['Admin log', '/admin/log'],
     ];
 
     $html = '<nav class="settings-menu" aria-label="Admin panel"><div class="settings-menu-links"><div class="settings-menu-group">'
         . '<p class="settings-menu-heading">Admin panel</p><ul class="settings-menu-list">';
     foreach ($lists as $list => [$label, $href]) {
-        $count = (int) $totals[$list];
-        $html .= '<li><a class="settings-menu-link" href="' . $href . '"' . ($list === $active ? ' aria-current="page"' : '') . '>'
-            . $label . ' <span class="settings-menu-count' . (in_array($list, ['feedback', 'watchdog'], true) && $count > 0 ? ' is-new' : '') . '">'
-            . number_format($count) . '</span></a></li>';
+        $html .= '<li><a class="settings-menu-link" href="' . $href . '"' . ($list === $active ? ' aria-current="page"' : '') . '>' . $label;
+        // Every list but the Overview has its number
+        if (isset($totals[$list])) {
+            $count = (int) $totals[$list];
+            $html .= ' <span class="settings-menu-count' . (in_array($list, ['feedback', 'watchdog'], true) && $count > 0 ? ' is-new' : '') . '">'
+                . number_format($count) . '</span>';
+        }
+        $html .= '</a></li>';
     }
     return $html . '</ul></div></div></nav>';
 }
@@ -296,8 +324,10 @@ function adminChatTitleSql(?string $exceptColumn = null): string
  * A message's text for a list of messages, as HTML: GIFs and attachments are named, not shown.
  * A ghost (sent while ghost banned, assets/php/chat.php) gets a badge, and an edit only its sender sees
  * (messageGhostContent) is shown below the text everyone else sees.
+ * A message deleted more than HBHUB_CHAT_DELETED_KEEP_DAYS ago has no text left (chatDeletedMessagesSweep()), which
+ * says so, unless it was only attachments.
  *
- * @param array{messageContent: ?string, attachmentCount: mixed, messageIsGhost: mixed, messageGhostContent: ?string} $message
+ * @param array{messageContent: ?string, attachmentCount: mixed, messageIsGhost: mixed, messageGhostContent: ?string, messageDeletedTimestamp?: ?string} $message
  */
 function adminMessageHtml(array $message): string
 {
@@ -305,6 +335,9 @@ function adminMessageHtml(array $message): string
     $content = $message['messageContent'];
     if ($content === null) {
         $attachments = (int) $message['attachmentCount'];
+        if ($attachments === 0 && ($message['messageDeletedTimestamp'] ?? null) !== null) {
+            return $ghostBadge . '<span class="admin-muted">Text removed ' . HBHUB_CHAT_DELETED_KEEP_DAYS . ' days after it was deleted</span>';
+        }
         return $ghostBadge . '<span class="admin-muted">' . ($attachments > 0 ? hbHubChatAttachmentsLabel($attachments) : 'Empty') . '</span>';
     }
     if (preg_match('~^https://media\.giphy\.com/media/[A-Za-z0-9]{1,64}/giphy\.gif$~', $content) === 1) {

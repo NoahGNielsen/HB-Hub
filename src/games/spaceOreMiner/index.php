@@ -18,7 +18,8 @@
 // loading it again (changing the address, so Back works), so the game keeps running; ?view= only picks the one shown
 // first. Stats, achievements and how to play are popups.
 // data-watchdog is the worker that notices when the page freezes (spaceOreMinerWatchdog.js). After a crash, the next
-// time the game is opened, the script asks in data-miner-crash-dialog whether it may send a crash report.
+// time the game is opened, the script asks in data-miner-crash-dialog whether it may send a crash report (with a
+// warning in it when the player has turned "Help improve HB Hub" off in the settings).
 //
 // It's also the guest Ore Mining Inc. at /play/ore-mining-inc, for visitors without an account: guestGames/spaceOreMiner/
 // sets $guestGame and includes this page (see assets/php/guestGames/guestGames.php). Then it has the frontpage's top
@@ -28,6 +29,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/miner.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spaceOreMiner/crashReports.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php'; // hbHubImproveSiteOn()
 $guestGame ??= null;
 if ($guestGame === null) {
     hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
@@ -53,8 +55,11 @@ if (($_GET['view'] ?? null) === 'engine') {
 }
 $minerView = is_string($_GET['view'] ?? null) && isset(MINER_VIEWS[$_GET['view']]) ? $_GET['view'] : 'ore';
 // Asks Chrome to tell us if this tab runs out of memory or stops responding, see games/spaceOreMiner/browserCrash.php.
-// Not for guests: the privacy page says their games have no crash reports.
-if ($guestGame === null) {
+// Not for guests: the privacy page says their games have no crash reports. Nor when "Help improve HB Hub" is off in the
+// settings (hbHubImproveSiteOn()), since Chrome sends it without asking; then the crash popup warns that sending a
+// report of the game's own goes against that setting.
+$minerImproveSiteOn = $hbHubUser === null || hbHubImproveSiteOn(hbHubUserSettings($hbHubUser['userSettings']));
+if ($guestGame === null && $minerImproveSiteOn) {
     $minerHost = preg_replace('/[^a-zA-Z0-9.:-]/', '', $_SERVER['HTTP_HOST'] ?? ''); // it's sent by the visitor, and this goes in a quoted header
     header('Reporting-Endpoints: crash-reporting="https://' . $minerHost . '/games/ore-mining-inc/browserCrash"');
 }
@@ -1190,6 +1195,13 @@ if ($guestGame === null) {
                 use. Only site admins can see it,
                 and it's deleted after <?= HBHUB_MINER_CRASH_KEEP_DAYS ?> days.
             </p>
+            <?php if (!$minerImproveSiteOn): ?>
+                <p class="games-warning">
+                    You've turned off <a href="/settings#improve">Help improve HB Hub</a> in your settings. Sending this crash
+                    report overrides that setting: it's sent anyway, just this once. Your setting stays off, and choose
+                    <strong>Don't send</strong> to keep to it.
+                </p>
+            <?php endif; ?>
             <details class="miner-crash-details">
                 <summary>What's in it</summary>
                 <pre class="miner-crash-json" data-miner-crash-json></pre>

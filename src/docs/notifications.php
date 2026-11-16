@@ -6,60 +6,60 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/notifications';
-$docsIntro = 'HB Hub tells you when something happens in three ways: the bell in the top bar, a notification from your
-    browser, and a sound. Only the bell is on to begin with.';
+$docsIntro = 'HB Hub fortæller dig på tre måder, når der sker noget: klokken i topbjælken, en notifikation fra din
+    browser og en lyd. Kun klokken er slået til fra starten.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="bell" aria-labelledby="docs-bell">
-                        <h2 id="docs-bell">The bell</h2>
+                        <h2 id="docs-bell">Klokken</h2>
                         <p>
-                            The bell in the top bar shows a red number when there's something new. Open it to see your newest
-                            notifications, and press one to go to what it's about.
+                            Klokken i topbjælken viser et rødt tal, når der er noget nyt. Åbn den for at se dine nyeste
+                            notifikationer, og tryk på en for at komme hen til det, den handler om.
                         </p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">From</th><th scope="col">What you're told about</th></tr>
+                                    <tr><th scope="col">Fra</th><th scope="col">Hvad du får besked om</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>Chat</td><td>Message requests, <a href="/docs/chat/mentions">@mentions</a>, being kicked from a group, being made admin or no longer admin, and someone leaving your DM.</td></tr>
-                                    <tr><td>Casino</td><td>Invites to a Blackjack or Baccarat table.</td></tr>
-                                    <tr><td>Games</td><td>Invites to Matador, Chess and UNO, @mentions in their game chats, a seat given to you in a Matador game, and a saved Matador game being continued.</td></tr>
-                                    <tr><td>Feedback</td><td>An admin marking your <a href="/docs/feedback">feedback</a> as done, with their answer.</td></tr>
-                                    <tr><td>Admins</td><td>Announcements the site admins send to everyone, like news about the site. Some link to the page they're about.</td></tr>
+                                    <tr><td>Chat</td><td>Beskedanmodninger, <a href="/docs/chat/mentions">@omtaler</a>, at blive smidt ud af en gruppe, at blive gjort til admin eller ikke længere være admin, og at nogen forlader din private chat.</td></tr>
+                                    <tr><td>Casino</td><td>Invitationer til et Blackjack- eller Baccarat-bord.</td></tr>
+                                    <tr><td>Spil</td><td>Invitationer til Matador, skak og UNO, @omtaler i deres spilchats, en plads, du har fået i et spil Matador, og et gemt spil Matador, der bliver fortsat.</td></tr>
+                                    <tr><td>Feedback</td><td>At en admin markerer din <a href="/docs/feedback">feedback</a> som færdig, med deres svar.</td></tr>
+                                    <tr><td>Admins</td><td>Meddelelser, som side-admins sender til alle, som nyheder om siden. Nogle linker til den side, de handler om.</td></tr>
                                 </tbody>
                             </table>
                         </div>
-                        <p>New messages themselves don't go under the bell: they show as a red number on Chat in the side bar instead.</p>
+                        <p>Selve de nye beskeder kommer ikke under klokken: de bliver i stedet vist som et rødt tal på Chat i sidebjælken.</p>
                     </section>
 
                     <section id="browser" aria-labelledby="docs-browser">
-                        <h2 id="docs-browser">Browser notifications and the message sound</h2>
-                        <p>Both are in the <strong>Notifications</strong> card in your <a href="/settings#notifications">settings</a>:</p>
+                        <h2 id="docs-browser">Browsernotifikationer og beskedlyden</h2>
+                        <p>Begge er kontakter under <strong>Notifications</strong> i dine <a href="/settings#notifications">indstillinger</a>, og bliver gemt, så snart du slår dem til eller fra:</p>
                         <ul>
                             <li>
-                                <strong>Notify me when I get a new message</strong> shows a pop-up from your browser. The first time,
-                                your browser asks if HB Hub may show notifications: press Allow. If you pressed Block by mistake, allow
-                                it again in your browser's site settings (the icon left of the address).
+                                <strong>Message notifications</strong> viser en popup fra din browser. Første gang spørger
+                                din browser, om HB Hub må vise notifikationer: tryk Tillad. Trykkede du Bloker ved en fejl, så tillad
+                                det igen i din browsers indstillinger for siden (ikonet til venstre for adressen).
                             </li>
                             <li>
-                                <strong>Play a sound when I get a new message</strong> plays a short sound, but not for the chat
-                                you're looking at. Browsers only let a page play sound after you've clicked or typed on it.
+                                <strong>Message sound</strong> spiller en kort lyd, men ikke for den chat, du
+                                kigger på. Browsere lader kun en side spille lyd, efter du har klikket eller skrevet på den.
                             </li>
                         </ul>
                         <p class="legal-note">
-                            Both only work while HB Hub is open in a tab somewhere, a background tab is fine. Close every HB Hub tab
-                            and they stop until you open it again.
+                            Begge virker kun, mens HB Hub er åben i en fane et sted; en fane i baggrunden er fint. Lukker du alle
+                            HB Hub-faner, holder de op, til du åbner den igen.
                         </p>
                     </section>
 
                     <section id="mute" aria-labelledby="docs-mute">
-                        <h2 id="docs-mute">Muting a chat</h2>
+                        <h2 id="docs-mute">At gøre en chat lydløs</h2>
                         <p>
-                            Too much going on in a group? Right-click it in the chat list (or long-press it on a phone) and pick
-                            <strong>Mute chat</strong>, for 15 minutes, 1, 3, 8 or 24 hours, or for good. A muted chat sends no
-                            browser notifications, sounds or @mention notifications, but its messages still come in. Unmute it
-                            the same way.
+                            Sker der for meget i en gruppe? Højreklik på den i chatlisten (eller hold fingeren på den på en
+                            telefon), og vælg <strong>Mute chat</strong>, i 15 minutter, 1, 3, 8 eller 24 timer, eller for altid. En
+                            lydløs chat sender ingen browsernotifikationer, lyde eller notifikationer om @omtaler, men dens beskeder
+                            kommer stadig ind. Slå lyden til igen på samme måde.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

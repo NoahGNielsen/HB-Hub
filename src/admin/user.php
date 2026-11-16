@@ -131,8 +131,8 @@ function adminAllAccountsSwitchHtml(array $others, string $action, string $verb,
         . '<input type="checkbox" class="settings-switch" name="allAccounts" value="1" aria-describedby="admin-all-' . $action . '-hint">'
         . '<span>Also ' . $verb . ' their ' . ($count === 1 ? 'other account' : $count . ' other accounts') . '</span></label>'
         . '<p class="settings-hint" id="admin-all-' . $action . '-hint">' . $names . ' ' . ($count === 1 ? 'is' : 'are')
-        . ' used in the same browser as this account, so it\'s probably the same person. Check on the '
-        . '<a class="admin-link" href="/admin/person?user=' . $targetId . '">person page</a> first: a shared computer links people too.</p></div>';
+        . ' used in the same browser as this account (by its cookie or its fingerprint), so it\'s probably the same person. Check on the '
+        . '<a class="admin-link" href="/admin/person?user=' . $targetId . '">person page</a> first: a shared or identical computer links people too.</p></div>';
 }
 
 /**
@@ -361,6 +361,8 @@ if (($_GET['export'] ?? null) === '1') {
         'sessions' => adminSessions($db, $targetId),
         'loginDevices' => adminExportRows($db, 'SELECT deviceFailedLoginCount, deviceLockedTimestamp, deviceCreatedTimestamp, deviceLastUsedTimestamp
             FROM `HBHub-LoginDevices` WHERE userId = ? ORDER BY deviceLastUsedTimestamp DESC', $one),
+        'fingerprints' => adminExportRows($db, 'SELECT fingerprintHash, fingerprintDevice, fingerprintCreatedTimestamp, fingerprintLastSeenTimestamp
+            FROM `HBHub-DeviceFingerprints` WHERE userId = ? ORDER BY fingerprintLastSeenTimestamp DESC', $one),
         'chats' => adminChats($db, $targetId),
         'chatMemberships' => $chatMemberships,
         'messages' => adminMessages($db, $targetId),
@@ -376,9 +378,9 @@ if (($_GET['export'] ?? null) === '1') {
         'games' => $games,
         'feedback' => adminExportRows($db, 'SELECT feedbackContent, feedbackPage, feedbackFromDev, feedbackDoneTimestamp, feedbackCreatedTimestamp
             FROM `HBHub-Feedback` WHERE feedbackUserId = ? ORDER BY feedbackId DESC', $one),
-        'serverBusyReports' => adminExportRows($db, 'SELECT watchdogCount, watchdogPage, watchdogAddresses, watchdogIpv4, watchdogIpv6, watchdogUserAgent,
+        'browserErrorReports' => adminExportRows($db, 'SELECT watchdogCount, watchdogPage, watchdogErrors, watchdogIpv4, watchdogIpv6, watchdogUserAgent,
                 watchdogFromDev, watchdogFirstTimestamp, watchdogLastTimestamp, watchdogCreatedTimestamp
-            FROM `HBHub-Watchdog` WHERE watchdogUserId = ? ORDER BY watchdogId DESC', $one, ['watchdogAddresses']),
+            FROM `HBHub-Watchdog` WHERE watchdogUserId = ? ORDER BY watchdogId DESC', $one, ['watchdogErrors']),
         'bannedPictures' => adminExportRows($db, 'SELECT bannedAvatarHash, bannedAvatarType, bannedAvatarMatchCount, bannedAvatarLastMatchTimestamp, bannedAvatarCreatedTimestamp
             FROM `HBHub-BannedAvatars` WHERE bannedAvatarFromUserId = ? ORDER BY bannedAvatarId DESC', $one),
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
@@ -700,6 +702,7 @@ switch ($adminAction) {
 
 // What the page shows, which is logged: it has all their messages and personal info
 adminLogView($db, $adminId, 'user.view', $targetId, null);
+chatDeletedMessagesSweep($db); // a message deleted over 3 days ago never shows its text here, even before the night's clean-up
 $adminSettings = $adminSettingsSaved;
 $adminClass = hbHubClassOf($adminSettings);
 $adminBlock = hbHubBlockSettings($adminSettings);
@@ -748,7 +751,7 @@ $adminMessageCounts = $statement->fetch();
     <main class="settings settings-page admin">
         <div class="settings-layout">
             <!-- Links to the cards, in the order they're on the page -->
-            <?= adminPageMenuHtml('/admin/', 'All users', $adminAvatarSrc, $target['userName'], adminStatusHtml(adminUserStatus($target)), [
+            <?= adminPageMenuHtml('/admin/?list=users', 'All users', $adminAvatarSrc, $target['userName'], adminStatusHtml(adminUserStatus($target)), [
                 'Overview' => ['overview' => 'Information'],
                 'Manage' => $adminCanChange ? ['profile' => 'Profile', 'block' => 'Gambling block', 'security' => 'Login'] : [],
                 'Activity' => ['sessions' => 'Sessions', 'messages' => 'Messages', 'attachments' => 'Attachments', 'chats' => 'Chats', 'casino' => 'Casino'],
@@ -1118,7 +1121,7 @@ $adminMessageCounts = $statement->fetch();
                         <div>
                             <h2 id="admin-messages-heading">Messages</h2>
                             <p class="settings-intro">
-                                Everything they've sent, in every chat, newest first. Deleted messages are still here, but only shown as deleted in the chat.
+                                Everything they've sent, in every chat, newest first. Deleted messages are still here for <?= HBHUB_CHAT_DELETED_KEEP_DAYS ?> days, but only shown as deleted in the chat; after that their text is removed for good.
                                 Deleting one here shows it as deleted by a site admin.
                             </p>
                         </div>

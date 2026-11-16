@@ -1,4 +1,4 @@
-Last updated 06/11-26
+Last updated 15/11-26
 # CLAUDE.md
 
 ## Rules (from the project owner)
@@ -42,10 +42,7 @@ HB Hub (https://hbhub.noahgajnielsen.dk) is a messaging site for the owner's sch
 - **Plain HTML/CSS/JS** frontend. No bundler, no npm. Each page loads its own `assets/js/*.js` and `assets/css/*.css`.
 - **Shared hosting (Apache, Simply.com)**, so no WebSockets, cron or long-running processes. Real-time is HTTP
   polling, and game timers/cleanup move forward lazily on the next request.
-- **No tests and no linter.** PHP and Node aren't installed on the owner's PC, so `php -l` doesn't work here: check JS
-  by loading the page or script in headless Brave
-  (`"/c/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe" --headless=new`), and PHP by reading it
-  carefully.
+- **No tests and no linter.** PHP and Node aren't installed on the owner's PC, so `php -l` doesn't work here
 
 ## Deploy
 
@@ -57,7 +54,7 @@ hand, so tell them when a push needs one run first.
 
 ```text
 src/                     web root (everything here is uploaded)
-  chat/, gambling/, games/, admin/, userMgmt/, otherPages/   the pages and their JSON endpoints
+  chat/, casino/, games/, admin/, userMgmt/, otherPages/   the pages and their JSON endpoints
   legal/                 terms, privacy, code-of-conduct, do-not-sell, credits (must match the code - see Rules)
   docs/                  public help docs (/docs/), a page per feature/game; list in assets/php/docs/pages.php +
                          sitemap.xml + llms.txt. Game pages include the games' own rules.php files; update the text when a feature changes
@@ -126,7 +123,15 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
   `document` between scripts.
 - **Comments**: every file starts with a plain-English comment on what it does, who calls it and the shape of its
   data; functions have short docblocks. The codebase is heavily commented in a conversational tone - match it.
-- **UI text** is English (except Matador's Danish game terms).
+- **UI text**: public pages (the ones you can see without logging in) are in **Danish**: the frontpage, login and
+  onboarding, `legal/`, the help docs (`docs/`), the free games' wrapper at `/play` (`assets/php/guestGames/`, the
+  guest Sudoku), the error pages, the nav bar/footer/cookie notice, and the games' `rules.php` files (shown in the docs,
+  so in the games too). They set `lang="da"` and `$headerLocale = 'da_DK'` before `header.php`, and write numbers the
+  Danish way (`number_format($n, 0, ',', '.')`). Everything behind the login (the app, the games' own UI) is
+  **English** (except Matador's Danish game terms), so docs refer to its buttons by their English names, in bold.
+  Shared helpers that show text on both sides take a `$danish` flag (`hbHubNameError()`, `hbHubPasswordError()`,
+  `hbHubClassError()`, `hbHubLoginLockedMessage()`). Legal dates are kept in English (they're the version key
+  `cookieNotice.js` saves) and shown with `hbHubLegalDanishDate()`. Code comments stay English.
 - **schema.sql** is a phpMyAdmin dump: `CREATE TABLE`s first, then indexes, `AUTO_INCREMENT` and foreign keys as
   separate `ALTER TABLE` blocks further down - keep that structure.
 

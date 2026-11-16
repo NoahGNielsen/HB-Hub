@@ -1,8 +1,9 @@
 /* Settings page (otherPages/settings.php), and the building blocks the admin panel (admin.css) and the feedback page
    (otherPages/feedback.php) use too: cards, fields, buttons and badges.
    .settings on its own is one narrow column (the feedback page). .settings-page makes it wide, with a side menu
-   (.settings-menu) next to the cards (.settings-content); settingsMenu.js marks the link to the card on screen.
-   On a small screen the menu becomes a row of links across the top that stays under the top bar. */
+   (.settings-menu) next to the cards (.settings-content); settingsMenu.js marks the link to the card on screen (the
+   admin panel). On a small screen the menu becomes a row of links across the top that stays under the top bar.
+   The settings page itself (.settings-app) is a list of rows that each open a panel instead, near the bottom. */
 .settings {
   --settings-danger: #e05252;
   --settings-on: #2fa36b;
@@ -975,6 +976,482 @@
   user-select: all;
 }
 
+/* ---------- The settings page's own layout (otherPages/settings.php) ---------- */
+
+/* Like a phone's settings app: the list (.settings-home) with a row for each panel, and the panels
+   (.settings-panel), of which only the one the address points at shows (:target, or the panel holding what it points
+   at). On a wide screen the list stays on the left, and Picture and banner ([data-settings-default]) shows while no
+   panel is picked. On a small screen the list and the panel take turns. */
+.settings.settings-app {
+  max-width: 1040px;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.settings-home {
+  position: sticky;
+  top: calc(var(--nav-top-h) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-panels {
+  min-width: 0;
+}
+
+.settings-panel {
+  display: none;
+  /* Clear of the fixed top bar when the address jumps to it */
+  scroll-margin-top: calc(var(--nav-top-h) + 24px);
+}
+
+.settings-panel:target,
+.settings-panel:has(:target),
+.settings-app:not(:has(.settings-panel:target, .settings-panel :target)) .settings-panel[data-settings-default] {
+  display: block;
+}
+
+/* "Settings" with "Changes are saved as you make them." under it */
+.settings-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-title h1 {
+  margin: 0;
+}
+
+/* You, at the top of the list: picture, name, status and a link to the profile */
+.settings-me {
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--settings-line);
+  border-radius: var(--radius);
+  background: var(--secondary);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.settings-me:hover {
+  background: color-mix(in srgb, var(--text) 5%, var(--secondary));
+}
+
+.settings-me:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.settings-me-avatar {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.settings-me-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-me-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-me-name {
+  overflow: hidden;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-me-status {
+  overflow: hidden;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-me-link {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* The groups of rows */
+.settings-lists {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-list-heading {
+  margin: 14px 0 6px;
+  padding: 0 14px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.settings-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  border: 1px solid var(--settings-line);
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.settings-list > li + li {
+  border-top: 1px solid var(--settings-line);
+}
+
+/* A row: icon, name with what it's set to under it, and an arrow. A link to its panel, or the Log out buttons. */
+.settings-row {
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.settings-row:hover {
+  background: color-mix(in srgb, var(--text) 5%, var(--secondary));
+}
+
+.settings-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* The panel showing next to the list (settings.js) */
+.settings-row.is-active {
+  background: color-mix(in srgb, var(--accent) 16%, var(--secondary));
+}
+
+.settings-row-icon {
+  --tone: #8a8f98;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--tone);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.settings-row-icon[data-tone="orange"] { --tone: #f2711c; }
+.settings-row-icon[data-tone="purple"] { --tone: #6a4bd6; }
+.settings-row-icon[data-tone="blue"] { --tone: #2f80ed; }
+.settings-row-icon[data-tone="red"] { --tone: #e05252; }
+.settings-row-icon[data-tone="green"] { --tone: #2fa36b; }
+.settings-row-icon[data-tone="discord"] { --tone: #5865f2; }
+
+.settings-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-row-title {
+  font-weight: 600;
+}
+
+.settings-row-value {
+  overflow: hidden;
+  font-size: 0.85rem;
+  opacity: 0.65;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-row-arrow {
+  flex: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  opacity: 0.4;
+}
+
+.settings-row.is-danger .settings-row-title {
+  color: var(--settings-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-me,
+  .settings-row {
+    transition: none;
+  }
+}
+
+/* The top of a panel: "‹ Settings" (small screens only), the title with Saving… / Saved, and a line about it */
+.settings-panel-head {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-back {
+  display: none;
+  align-self: flex-start;
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.settings-back:hover {
+  text-decoration: underline;
+}
+
+.settings-back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.settings-panel-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.settings-card .settings-panel-title h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.settings-panel-head .settings-intro {
+  margin: 0;
+}
+
+.settings-panel.is-danger h2 {
+  color: var(--settings-danger);
+}
+
+/* Saving… / Saved / Not saved, next to a panel's title (settings.js sets data-state) */
+.settings-save-state {
+  flex: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.settings-save-state[data-state="saved"] {
+  color: var(--settings-on);
+  opacity: 1;
+}
+
+.settings-save-state[data-state="saved"]::before {
+  content: "✓ ";
+}
+
+.settings-save-state[data-state="failed"] {
+  color: var(--settings-danger);
+  opacity: 1;
+  white-space: normal;
+  text-align: right;
+}
+
+/* Parts of a panel, each with a line above it but the first */
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.settings form.settings-group {
+  gap: 14px;
+}
+
+.settings-group + .settings-group {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--settings-line);
+}
+
+/* In a form, which already has gaps between its parts */
+.settings form > .settings-group + .settings-group {
+  margin-top: 2px;
+}
+
+/* Two-factor login's line with its On or Off badge, above the rest */
+.settings-panel > p.settings-line {
+  margin-bottom: 18px;
+}
+
+/* What it is on the left, its switch, badge or button on the right */
+.settings-line,
+.settings form.settings-line {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.settings-line .settings-item-text {
+  flex: 1 1 auto;
+}
+
+.settings-line > .settings-btn,
+.settings-line > .settings-switch,
+.settings-line > .settings-status {
+  flex: none;
+  align-self: center;
+}
+
+.settings-checkbox.settings-line {
+  font-weight: inherit;
+}
+
+.settings-line .settings-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+/* Gambling and Games: the blocks as a list of radio rows */
+.settings-choices {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-choices > legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.settings-choice {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--settings-line);
+  border-radius: 12px;
+  background: var(--background);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-choice:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--background));
+}
+
+.settings-choice input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.settings-choice input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Picture and banner: the banner with the picture over its bottom left corner, like on the profile, and the
+   controls for both under it */
+.settings-look {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-look-avatar {
+  position: relative;
+  margin: -48px 0 20px 20px;
+  width: 96px;
+  height: 96px;
+}
+
+.settings-look-avatar .settings-avatar-preview {
+  box-shadow: 0 0 0 4px var(--secondary);
+}
+
+.settings-banner-color-pickers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* Small screens: the list or a panel, not both. The panel has "‹ Settings" back to the list. */
+@media (max-width: 900px) {
+  .settings.settings-page.settings-app {
+    margin-top: 24px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .settings-home {
+    position: static;
+  }
+
+  .settings-app:has(.settings-panel:target, .settings-panel :target) .settings-home,
+  .settings-app:not(:has(.settings-panel:target, .settings-panel :target)) .settings-panel[data-settings-default] {
+    display: none;
+  }
+
+  .settings-back {
+    display: inline-block;
+  }
+
+  .settings-row.is-active {
+    background: none;
+  }
+}
+
 /* ---------- Buttons ---------- */
 
 .settings-actions {
@@ -1195,5 +1672,27 @@
   .settings-item > .settings-btn,
   .settings form.settings-item > .settings-btn {
     flex: 1 1 100%;
+  }
+
+  /* The settings page's rows: a picker or button goes under its text, a switch stays on the right */
+  .settings-line,
+  .settings form.settings-line {
+    flex-wrap: wrap;
+  }
+
+  .settings-line > select {
+    flex: 1 1 100%;
+  }
+
+  .settings-look-avatar {
+    margin: -36px 0 0 12px;
+    width: 72px;
+    height: 72px;
+  }
+
+  .settings-look-avatar .settings-avatar-preview {
+    width: 72px;
+    height: 72px;
+    font-size: 30px;
   }
 }

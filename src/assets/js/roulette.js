@@ -1,5 +1,5 @@
-// Roulette (gambling/roulette/): the table the whole site shares. Everyone's chips are on the same board, and one ball
-// is spun for all of them by /gambling/roulette/table (data-api, see assets/php/casino/roulette/table.php), which
+// Roulette (casino/roulette/): the table the whole site shares. Everyone's chips are on the same board, and one ball
+// is spun for all of them by /casino/roulette/table (data-api, see assets/php/casino/roulette/table.php), which
 // decides where it lands and pays out. This only shows it: the wheel turns to the number the server sent.
 // Click a bet to put the chosen chip on it, right-click to take one off. The user's bets go to the server a moment after
 // each change (sync()), so the others see them, and everyone else's are drawn as smaller chips next to them. Hovering a

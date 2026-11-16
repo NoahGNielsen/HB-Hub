@@ -6,58 +6,59 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/chat/safety';
-$docsIntro = 'HB Hub should feel like a friendly corner of school. Here\'s what keeps it that way, and what you can do
-    when it isn\'t.';
+$docsIntro = 'HB Hub skal føles som et venligt hjørne af skolen. Her er det, der holder det sådan, og hvad du kan gøre,
+    når det ikke er.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="block" aria-labelledby="docs-block">
-                        <h2 id="docs-block">Blocking someone</h2>
+                        <h2 id="docs-block">At blokere nogen</h2>
                         <p>
-                            Press <strong>Block</strong> on a <a href="/docs/chat/#requests">message request</a> to decline it and
-                            stop that person from sending you new requests: they can't start a chat with you or add you to groups,
-                            and their @mentions don't notify you. They aren't told that you blocked them.
+                            Tryk på <strong>Block</strong> på en <a href="/docs/chat/#requests">beskedanmodning</a> for at afvise den
+                            og forhindre personen i at sende dig nye anmodninger: de kan ikke starte en chat med dig eller tilføje dig
+                            til grupper, og deres @omtaler giver dig ingen notifikation. De får ikke at vide, at du har blokeret dem.
                         </p>
                         <p>
-                            Starting a chat with them yourself unblocks them again. For someone you already have a chat with, you
-                            can mute, hide or leave it from the <a href="/docs/chat/#chat-menu">chat menu</a>.
+                            Starter du selv en chat med dem, er de ikke blokeret længere. For en, du allerede har en chat med, kan du
+                            gøre den lydløs, skjule den eller forlade den fra <a href="/docs/chat/#chat-menu">chatmenuen</a>.
                         </p>
                     </section>
 
                     <section id="links" aria-labelledby="docs-links">
-                        <h2 id="docs-links">Link safety</h2>
+                        <h2 id="docs-links">Sikre links</h2>
                         <ul>
-                            <li><strong>Every link asks first.</strong> Clicking a link in a message shows where it goes before you leave HB Hub, so you can decide if you trust it.</li>
+                            <li><strong>Hvert link spørger først.</strong> Klikker du på et link i en besked, viser den, hvor det fører hen, før du forlader HB Hub, så du kan afgøre, om du stoler på det.</li>
                             <li>
-                                <strong>Some links can't be sent at all</strong>, in chats, game chats or bios: IP loggers (which find
-                                out where you are the moment you click), URL shorteners (which can hide where a link really goes), and
-                                known crypto scam and phishing sites. Trying shows <strong>Link blocked</strong>.
+                                <strong>Nogle links kan slet ikke sendes</strong>, hverken i chats, spilchats eller bioer: IP-loggere
+                                (som finder ud af, hvor du er, i det øjeblik du klikker), linkforkortere (som kan skjule, hvor et link i
+                                virkeligheden fører hen) og kendte kryptosvindel- og phishingsider. Prøver du, viser den
+                                <strong>Link blocked</strong>.
                             </li>
-                            <li><strong>Masked links can't lie</strong>: one whose text looks like an address shows the real address instead. See <a href="/docs/chat/formatting#links">Links</a>.</li>
+                            <li><strong>Maskerede links kan ikke lyve</strong>: et, hvis tekst ligner en adresse, viser i stedet den rigtige adresse. Se <a href="/docs/chat/formatting#links">Links</a>.</li>
                         </ul>
-                        <p>Changing a link to sneak a blocked one through is against the <a href="/legal/code-of-conduct">Code of Conduct</a>, just like sending it.</p>
+                        <p>At ændre et link for at snige et blokeret igennem er imod <a href="/legal/code-of-conduct">adfærdskodekset</a>, ligesom at sende det.</p>
                     </section>
 
                     <section id="spam" aria-labelledby="docs-spam">
-                        <h2 id="docs-spam">The spam limit</h2>
+                        <h2 id="docs-spam">Spamgrænsen</h2>
                         <p>
-                            Everyone can send up to <strong>10 messages every 5 seconds</strong>, in all their chats together (files
-                            and GIFs count too). Send one more, and you get <strong>Woah! Slow down!</strong>: the message isn't
-                            sent, but it stays in the message box, so you can send it a moment later.
+                            Alle kan sende op til <strong>10 beskeder hvert 5. sekund</strong>, i alle deres chats tilsammen (filer
+                            og GIFs tæller også). Sender du én til, får du <strong>Woah! Slow down!</strong>: beskeden bliver ikke
+                            sendt, men den bliver i beskedfeltet, så du kan sende den et øjeblik senere.
                         </p>
                     </section>
 
                     <section id="report" aria-labelledby="docs-report">
-                        <h2 id="docs-report">Reporting someone</h2>
-                        <p>If someone is mean, makes you feel unsafe or breaks the rules:</p>
+                        <h2 id="docs-report">At anmelde nogen</h2>
+                        <p>Hvis nogen er onde, får dig til at føle dig utryg eller bryder reglerne:</p>
                         <ol class="docs-steps">
-                            <li>Press <strong>Feedback</strong> at the bottom of the side bar (only site admins can read it), tell a site admin, or email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.</li>
-                            <li>Say who it was, which chat or game it happened in, and roughly when.</li>
-                            <li>Mute, hide or leave the chat in the meantime if you like. You don't have to keep reading it.</li>
+                            <li>Tryk på <strong>Feedback</strong> nederst i sidebjælken (kun side-admins kan læse den), sig det til en side-admin, eller skriv til <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.</li>
+                            <li>Sig, hvem det var, hvilken chat eller hvilket spil det skete i, og cirka hvornår.</li>
+                            <li>Gør chatten lydløs, skjul den eller forlad den imens, hvis du vil. Du behøver ikke blive ved med at læse den.</li>
                         </ol>
-                        <p>Reports are kept private, and the person you report isn't told who reported them. You won't get in trouble for reporting.</p>
+                        <p>Anmeldelser bliver holdt private, og den, du anmelder, får ikke at vide, hvem der anmeldte dem. Du kommer ikke i problemer for at anmelde.</p>
                         <p class="legal-note">
-                            If something is serious, like threats or someone being in danger, also talk to a teacher, a parent or
-                            another adult you trust. If someone is in immediate danger, call 112.
+                            Er det alvorligt, som trusler, eller at nogen er i fare, så snak også med en lærer, en forælder eller en
+                            anden voksen, du stoler på. Er nogen i akut fare, så ring 112.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

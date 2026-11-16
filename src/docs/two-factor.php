@@ -7,82 +7,82 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/two-factor';
-$docsIntro = 'A good password and two-factor login make sure you\'re the only one who can get into your account.';
+$docsIntro = 'En god adgangskode og totrinslogin sørger for, at du er den eneste, der kan komme ind på din konto.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 
 $docsLoginAttempts = (int) ($siteConfig['login_attempts_max'] ?? 5);
 $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
 ?>
                     <section id="two-factor" aria-labelledby="docs-two-factor">
-                        <h2 id="docs-two-factor">Turning on two-factor login</h2>
+                        <h2 id="docs-two-factor">At slå totrinslogin til</h2>
                         <p>
-                            With two-factor login, logging in takes your password <em>and</em> a 6-digit code from an
-                            authenticator app on your phone. The code changes every 30 seconds, so someone who finds out your
-                            password still can't get in.
+                            Med totrinslogin skal du bruge din adgangskode <em>og</em> en 6-cifret kode fra en godkendelsesapp på
+                            din telefon for at logge ind. Koden skifter hvert 30. sekund, så en, der finder ud af din adgangskode,
+                            stadig ikke kan komme ind.
                         </p>
                         <ol class="docs-steps">
-                            <li>Install an authenticator app on your phone, like <a href="https://proton.me/authenticator" target="_blank" rel="noopener">Proton Authenticator</a>, <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener">Google Authenticator</a>, <a href="https://2fas.com/" target="_blank" rel="noopener">2FAS</a> or the passwords app built into your phone.</li>
-                            <li>Open the <strong>Two-factor login</strong> card in your <a href="/settings#totp">settings</a>.</li>
-                            <li>Scan the QR code with the app. On the phone itself, use <strong>Open it in your app</strong> instead, or type in the key under the code.</li>
-                            <li>Type the 6-digit code the app shows to turn it on. From now on, the login asks for a code after your password.</li>
+                            <li>Installer en godkendelsesapp på din telefon, som <a href="https://proton.me/authenticator" target="_blank" rel="noopener">Proton Authenticator</a>, <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener">Google Authenticator</a>, <a href="https://2fas.com/" target="_blank" rel="noopener">2FAS</a> eller den adgangskodeapp, der er indbygget i din telefon.</li>
+                            <li>Åbn <strong>Two-factor login</strong> i gruppen <strong>Security</strong> under dine <a href="/settings#totp">indstillinger</a>, og tryk på <strong>Set up</strong>.</li>
+                            <li>Scan QR-koden med appen. På selve telefonen kan du bruge <strong>Open it in your app</strong> i stedet, eller skrive nøglen under koden.</li>
+                            <li>Skriv den 6-cifrede kode, appen viser, for at slå det til. Fra nu af beder login om en kode efter din adgangskode.</li>
                         </ol>
                         <p>
-                            To turn it off again, type a code from the app in the same card. Keep the app: if you lose your phone,
-                            you'll need an admin to help you back in.
+                            For at slå det fra igen trykker du på <strong>Turn off</strong> samme sted og skriver en kode fra appen. Behold appen: mister du din
+                            telefon, skal du have hjælp fra en admin for at komme ind igen.
                         </p>
                     </section>
 
                     <section id="discord" aria-labelledby="docs-discord">
-                        <h2 id="docs-discord">Logging in with Discord</h2>
+                        <h2 id="docs-discord">At logge ind med Discord</h2>
                         <p>
-                            You can link your Discord account to HB Hub and then log in with <strong>Log in with Discord</strong>
-                            on the login page, instead of typing your password. Your password keeps working too, and with
-                            two-factor login on you're still asked for the code. HB Hub only sees your Discord username, display
-                            name and profile picture (and your bio, if Discord shares it), nothing else from Discord.
+                            Du kan koble din Discord-konto til HB Hub og så logge ind med <strong>Log ind med Discord</strong> på
+                            login-siden i stedet for at skrive din adgangskode. Din adgangskode virker også stadig, og med
+                            totrinslogin slået til bliver du stadig bedt om koden. HB Hub ser kun dit Discord-brugernavn,
+                            visningsnavn og profilbillede (og din bio, hvis Discord deler den), intet andet fra Discord.
                         </p>
                         <ul>
-                            <li>Sign up with <strong>Sign up with Discord</strong> on the first step of sign-up. Your name, bio and picture start out as your Discord ones, and you can change them before your account is made. You still choose your class and a password, and the account is linked to Discord straight away. <strong>Don't link it</strong> goes back to a normal sign-up.</li>
-                            <li>Or link it later in the <strong>Discord login</strong> card in your <a href="/settings#discord">settings</a>.</li>
-                            <li>Your Discord username is shown on your profile while it's linked. Turn off <strong>Show my Discord username on my profile</strong> in the same card to hide it. If you change your username on Discord, HB Hub picks up the new one overnight (or the next time you log in with Discord).</li>
-                            <li>The same card unlinks it again. One Discord account can only be linked to one HB Hub account.</li>
+                            <li>Opret dig med <strong>Opret dig med Discord</strong> på første trin af oprettelsen. Dit navn, din bio og dit billede starter som dem fra Discord, og du kan ændre dem, før din konto bliver oprettet. Du vælger stadig din klasse og en adgangskode, og kontoen bliver koblet til Discord med det samme. <strong>Kobl den ikke til</strong> går tilbage til en normal oprettelse.</li>
+                            <li>Eller kobl den til senere med <strong>Link Discord</strong> under <strong>Discord login</strong> i gruppen <strong>Security</strong> under dine <a href="/settings#discord">indstillinger</a>.</li>
+                            <li>Dit Discord-brugernavn bliver vist på din profil, mens den er koblet til. Slå <strong>Show my Discord username on my profile</strong> fra samme sted for at skjule det. Skifter du dit brugernavn på Discord, opdager HB Hub det nye i løbet af natten (eller næste gang du logger ind med Discord).</li>
+                            <li><strong>Unlink</strong> samme sted fjerner koblingen igen. Én Discord-konto kan kun kobles til én HB Hub-konto.</li>
                         </ul>
                     </section>
 
                     <section id="passwords" aria-labelledby="docs-passwords">
-                        <h2 id="docs-passwords">The password rules</h2>
+                        <h2 id="docs-passwords">Reglerne for adgangskoder</h2>
                         <p>
-                            A new password has to be long enough and mix enough kinds of characters (lowercase, uppercase,
-                            numbers and symbols). The form tells you what's missing as you type. Passwords that are on the list of
-                            the most used ones, like <code>123456</code> or <code>password</code>, can't be used at all.
+                            En ny adgangskode skal være lang nok og blande nok slags tegn (små bogstaver, store bogstaver, tal og
+                            symboler). Formularen fortæller dig, hvad der mangler, mens du skriver. Adgangskoder, der er på listen
+                            over de mest brugte, som <code>123456</code> eller <code>password</code>, kan slet ikke bruges.
                         </p>
                         <ul>
-                            <li>Don't use the same password as somewhere else.</li>
-                            <li>Never tell anyone your password, not even an admin. Admins never need it.</li>
-                            <li>A password manager (most browsers and phones have one) can make and remember a strong one for you.</li>
+                            <li>Brug ikke den samme adgangskode som et andet sted.</li>
+                            <li>Fortæl aldrig nogen din adgangskode, heller ikke en admin. Admins har aldrig brug for den.</li>
+                            <li>En adgangskodeadministrator (de fleste browsere og telefoner har en) kan lave og huske en stærk en for dig.</li>
                         </ul>
                     </section>
 
                     <section id="lockout" aria-labelledby="docs-lockout">
-                        <h2 id="docs-lockout">Wrong passwords and the login lock</h2>
+                        <h2 id="docs-lockout">Forkerte adgangskoder og login-spærringen</h2>
                         <p>
-                            After <?= $docsLoginAttempts ?> wrong passwords (or two-factor codes) in a row, logging in is locked
-                            for for some time. The same goes for the password and codes the settings page
-                            asks for before a big change.
+                            Efter <?= $docsLoginAttempts ?> forkerte adgangskoder (eller totrinskoder) i træk bliver login låst et
+                            stykke tid. Det samme gælder for den adgangskode og de koder, indstillingssiden beder om før en stor
+                            ændring.
                         </p>
                     </section>
 
                     <section id="hacked" aria-labelledby="docs-hacked">
-                        <h2 id="docs-hacked">If you think someone got into your account</h2>
+                        <h2 id="docs-hacked">Hvis du tror, at nogen er kommet ind på din konto</h2>
                         <ol class="docs-steps">
-                            <li>Log in and <a href="/docs/account#password">change your password</a>. That logs out every other device.</li>
-                            <li>Check <a href="/docs/account#devices">Logged in devices</a> for anything you don't recognise.</li>
-                            <li>Turn on two-factor login, if it isn't already, and unlink a Discord account you don't recognise under <a href="/settings#discord">Discord login</a>.</li>
-                            <li>Tell an admin, send a message to <a href="https://hbhub.noahgajnielsen.dk/profile?user=1">Noha Gayy</a> or by email to <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>, especially if you can't log in any more.</li>
+                            <li>Log ind, og <a href="/docs/account#password">skift din adgangskode</a>. Det logger alle andre enheder ud.</li>
+                            <li>Tjek <a href="/docs/account#devices">Logged in devices</a> for noget, du ikke kan genkende.</li>
+                            <li>Slå totrinslogin til, hvis det ikke allerede er, og fjern koblingen til en Discord-konto, du ikke kan genkende, under <a href="/settings#discord">Discord login</a>.</li>
+                            <li>Sig det til en admin, send en besked til <a href="https://hbhub.noahgajnielsen.dk/profile?user=1">Noha Gayy</a> eller en e-mail til <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>, især hvis du ikke kan logge ind længere.</li>
                         </ol>
                         <p>
-                            Found a security problem in HB Hub itself? Please report it privately with
-                            <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">Report Security Concern</a>
-                            instead of telling everyone.
+                            Har du fundet et sikkerhedsproblem i selve HB Hub? Rapportér det privat med
+                            <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">Rapportér et sikkerhedsproblem</a>
+                            i stedet for at fortælle alle om det.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

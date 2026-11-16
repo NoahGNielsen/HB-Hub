@@ -206,9 +206,34 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
                         <?php endforeach; ?>
     
                         <div class="mt-center">
-                            <div class="mt-brand" aria-hidden="true">
-                                <p class="mt-logo">MATADOR</p>
-                            </div>
+                            <?php if ($gameEdition === 'kaos'): ?>
+                                <?php // Kaos has its own logo: the letters of MATADOR knocked out of line, each its own tilt and
+                                      // colour (matador.css, by nth-child, as the CSP allows no inline styles), and a hazard-striped
+                                      // "Kaos Edition" tape across under it ?>
+                                <div class="mt-brand is-kaos" aria-hidden="true">
+                                    <p class="mt-logo mt-logo-kaos"><?php foreach (str_split('MATADOR') as $letter): ?><span><?= $letter ?></span><?php endforeach; ?></p>
+                                    <p class="mt-edition-tape"><span>Kaos Edition</span></p>
+                                </div>
+                            <?php elseif ($gameEdition === 'classic'): ?>
+                                <?php // Classic keeps the plain red MATADOR plate, with a tidy cream "Classic Edition" ribbon
+                                      // across under it - the calm twin of Kaos's hazard tape ?>
+                                <div class="mt-brand is-classic" aria-hidden="true">
+                                    <p class="mt-logo">MATADOR</p>
+                                    <p class="mt-edition-ribbon"><span>Classic Edition</span></p>
+                                </div>
+                            <?php elseif ($gameEdition === 'htx'): ?>
+                                <?php // HTX has its own logo, a science lab: MATADOR glowing on a dark lab-blue plate with
+                                      // molecules and rising bubbles, the O drawn as a turning atom (matador.css, by nth-child, as
+                                      // the CSP allows no inline styles), and "HTX Edition" on a reagent-bottle label under it ?>
+                                <div class="mt-brand is-htx" aria-hidden="true">
+                                    <p class="mt-logo mt-logo-htx"><?php foreach (str_split('MATADOR') as $letter): ?><span><?= $letter ?></span><?php endforeach; ?></p>
+                                    <p class="mt-edition-flask"><span>HTX Edition</span></p>
+                                </div>
+                            <?php else: ?>
+                                <div class="mt-brand" aria-hidden="true">
+                                    <p class="mt-logo">MATADOR</p>
+                                </div>
+                            <?php endif; ?>
                             <div class="mt-die" role="img" aria-label="The dice" data-mt-die>⚀</div>
                             <p class="mt-status" role="status" data-mt-status>Loading the game…</p>
                             <div class="mt-timer" data-mt-timer hidden>

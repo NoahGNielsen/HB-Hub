@@ -1,58 +1,59 @@
 <?php
-// The rules of UNO as played here, shown on the UNO page and in the game. game.php and room.php play by them, so change
-// them together.
+// The rules of UNO as played here, shown on the UNO page and in the game, and in the help docs. In Danish, like the docs
+// (a public page), also in the game; the cards keep the names the game shows them by. game.php and room.php play by
+// them, so change them together.
 ?>
-<ul class="casino-rule-list">
+<ul class="casino-rule-list" lang="da">
     <li>
-        For <?= HBHUB_UNO_MIN_PLAYERS ?> to <?= HBHUB_UNO_MAX_PLAYERS ?> players. Everyone gets <?= HBHUB_UNO_HAND ?>
-        cards, and the first one to get rid of all their cards wins. The host starts the game once someone has joined,
-        and a new one when it's over.
+        For <?= HBHUB_UNO_MIN_PLAYERS ?> til <?= HBHUB_UNO_MAX_PLAYERS ?> spillere. Alle får <?= HBHUB_UNO_HAND ?> kort, og
+        den første, der bliver af med alle sine kort, vinder. Værten starter spillet, når nogen er kommet med, og et nyt, når
+        det er slut.
     </li>
     <li>
-        Someone won? The others play on for 2nd, 3rd and so on, until only one of them has cards left (unless the host
-        has set the game to end at the first win). Once you're out of cards you watch, and leaving doesn't count as a
-        loss.
+        Har nogen vundet? De andre spiller videre om 2.-, 3.-pladsen og så videre, til kun én af dem har kort tilbage
+        (medmindre værten har sat spillet til at slutte ved første sejr). Når du er løbet tør for kort, ser du med, og at gå
+        tæller ikke som et nederlag.
     </li>
     <li>
-        On your turn, play a card with the same colour, number or symbol as the top card, or a wild card. A Wild lets you
-        pick the colour to play on. A Wild Draw Four does too, and the next player draws 4 cards and misses their turn.
-        It can be played at any time.
+        I din tur lægger du et kort med samme farve, tal eller symbol som det øverste kort, eller et wild-kort. Et Wild lader
+        dig vælge den farve, der skal spilles på. Det gør et Wild Draw Four også, og den næste spiller trækker 4 kort og
+        mister sin tur. Det kan lægges når som helst.
     </li>
     <li>
-        Skip: the next player misses their turn. Reverse: play goes the other way round the table (with two players it
-        works like a Skip). Draw Two: the next player draws 2 cards and misses their turn.
+        Skip: den næste spiller mister sin tur. Reverse: spillet går den anden vej rundt om bordet (med to spillere virker det
+        som et Skip). Draw Two: den næste spiller trækker 2 kort og mister sin tur.
     </li>
     <li>
-        Got more than one card with the same number or symbol? Play them together, whatever their colour: click the one
-        that goes on the top card, then the others in the order you want, and press Play. The last one decides the
-        colour to play on. Each card counts, so two Skips skip two players and two Draw Twos make 4 cards to draw.
-        Wild cards, and a card you've just drawn, are played one at a time.
+        Har du mere end ét kort med samme tal eller symbol? Læg dem sammen, uanset farve: klik på det, der passer på det
+        øverste kort, og så de andre i den rækkefølge, du vil, og tryk på Play. Det sidste bestemmer, hvilken farve der skal
+        spilles på. Hvert kort tæller, så to Skips springer to spillere over, og to Draw Twos giver 4 kort at trække.
+        Wild-kort, og et kort, du lige har trukket, bliver lagt ét ad gangen.
     </li>
     <li>
-        Can't or don't want to play? Draw: you keep drawing until you get a card that can be played (unless the host
-        has set it to one card), then you can play it straight away or keep it.
+        Kan du ikke, eller vil du ikke, lægge? Træk: du bliver ved med at trække, til du får et kort, der kan lægges
+        (medmindre værten har sat det til ét kort), og så kan du lægge det med det samme eller beholde det.
     </li>
     <li>
-        With stacking on, a Draw Two or a Wild Draw Four can be answered with another one, passing it on to the next
-        player. Unless the host has set stacking to the same card only, a Draw Two can go on a Wild Draw Four and the
-        other way round; otherwise only the same kind goes. The cards add up, and whoever can't (or won't) stack draws them all and
-        misses their turn.
+        Med stabling slået til kan et Draw Two eller et Wild Draw Four besvares med et til, så det går videre til den næste
+        spiller. Medmindre værten har sat stabling til kun samme kort, kan et Draw Two lægges på et Wild Draw Four og omvendt;
+        ellers kan kun samme slags lægges. Kortene lægges sammen, og den, der ikke kan (eller vil) stable, trækker dem alle og
+        mister sin tur.
     </li>
     <li>
-        Press UNO! when you play your second-to-last card. If you forget, anyone can catch you before the next player
-        makes their move, and you draw <?= HBHUB_UNO_CATCH_CARDS ?> cards. You can still press it yourself until then.
+        Tryk på UNO!, når du lægger dit næstsidste kort. Glemmer du det, kan alle fange dig, før den næste spiller laver sit
+        træk, og så trækker du <?= HBHUB_UNO_CATCH_CARDS ?> kort. Du kan stadig selv trykke på den indtil da.
     </li>
     <li>
-        Every turn has a timer (the host picks 15, 30 or 60 seconds in the game's settings). Run out of time and you
-        draw a card (or the cards waiting for you), and your turn is over. The host can pause the game.
+        Hver tur har en tidsgrænse (værten vælger 15, 30 eller 60 sekunder i spillets indstillinger). Løber tiden ud,
+        trækker du et kort (eller de kort, der venter på dig), og din tur er slut. Værten kan sætte spillet på pause.
     </li>
     <li>
-        The winner scores the cards left in everyone else's hands: number cards their number, Skip, Reverse and Draw Two
-        20, and wild cards 50.
+        Vinderen får point for de kort, der er tilbage på alle de andres hænder: talkort deres tal, Skip, Reverse og Draw Two
+        20, og wild-kort 50.
     </li>
     <li>
-        Leaving a game that's being played counts as a loss (unless the host has paused it), and your cards are
-        shuffled back into the deck. Close the game for <?= HBHUB_UNO_GRACE_SECONDS ?> seconds and you leave it too. If
-        everyone else leaves, the last player left wins.
+        At forlade et spil, der bliver spillet, tæller som et nederlag (medmindre værten har sat det på pause), og dine kort
+        bliver blandet tilbage i bunken. Lukker du spillet i <?= HBHUB_UNO_GRACE_SECONDS ?> sekunder, forlader du det også.
+        Går alle de andre, vinder den sidste spiller tilbage.
     </li>
 </ul>

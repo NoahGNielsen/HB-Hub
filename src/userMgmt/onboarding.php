@@ -16,19 +16,19 @@ if (hbHubBannedCookieUserId() !== null):
     http_response_code(403);
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
-    <title>Sign up - HB Hub</title>
+    <title>Opret konto - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
     <main>
         <div class="login">
-            <h1>You can't sign up here</h1>
-            <p class="onboarding-hint">An account that was used on this device has been banned, so a new account can't be made from it.</p>
-            <p class="userMgmt-switch">Already have an account? <a href="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to login</a></p>
+            <h1>Du kan ikke oprette dig her</h1>
+            <p class="onboarding-hint">En konto, der er blevet brugt på denne enhed, er blevet udelukket, så der kan ikke oprettes en ny konto herfra.</p>
+            <p class="userMgmt-switch">Har du allerede en konto? <a href="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Gå til login</a></p>
         </div>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
@@ -156,15 +156,15 @@ if ($onboardingDiscordUser !== null && $_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Why signing up with Discord didn't work, from /discord (userMgmt/discord.php)
 $onboardingDiscordError = $onboardingHasDiscord && $onboardingDiscordUser === null && ($_GET['discord'] ?? null) === 'failed'
-    ? 'Signing up with Discord didn\'t work. Please try again, or fill in the form yourself.' : null;
+    ? 'Det virkede ikke at oprette dig med Discord. Prøv igen, eller udfyld formularen selv.' : null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($_POST) && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
         // Body was larger than post_max_size, so PHP dropped all of it - the picture is the only thing that big
         if (in_array('avatar', $onboardingSteps, true)) {
-            $onboardingErrors['avatar'] = 'That picture is too big. Please choose a smaller one.';
+            $onboardingErrors['avatar'] = 'Billedet er for stort. Vælg et mindre.';
         } else {
-            $onboardingErrors['name'] = 'Something went wrong. Please try again.';
+            $onboardingErrors['name'] = 'Noget gik galt. Prøv igen.';
         }
     } else {
         foreach (array_keys($onboardingValues) as $key) {
@@ -178,12 +178,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $passwordConfirm = is_string($_POST['passwordConfirm'] ?? null) ? $_POST['passwordConfirm'] : '';
 
         // Name - the same rules as in settings (account.php), including the allow list of characters
-        if (($nameError = hbHubNameError($onboardingValues['name'], $onboardingNameMax)) !== null) {
+        if (($nameError = hbHubNameError($onboardingValues['name'], $onboardingNameMax, null, true)) !== null) {
             $onboardingErrors['name'] = $nameError;
         }
 
         // Class - the field of study only for 1. to 3. year, not for Not HTX
-        if (($classError = hbHubClassError($onboardingValues['year'], $onboardingValues['class'])) !== null) {
+        if (($classError = hbHubClassError($onboardingValues['year'], $onboardingValues['class'], false, true)) !== null) {
             $onboardingErrors['class'] = $classError;
         }
 
@@ -194,35 +194,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (is_array($avatar) && is_int($avatar['error'] ?? null) && $avatar['error'] !== UPLOAD_ERR_NO_FILE) {
             if (in_array($avatar['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
                 || ($avatar['error'] === UPLOAD_ERR_OK && $avatar['size'] > $onboardingAvatarMaxBytes)) {
-                $onboardingErrors['avatar'] = "That picture is too big. Please choose one under $onboardingAvatarMaxLabel.";
+                $onboardingErrors['avatar'] = "Billedet er for stort. Vælg et under $onboardingAvatarMaxLabel.";
             } elseif ($avatar['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($avatar['tmp_name'])) {
-                $onboardingErrors['avatar'] = 'Something went wrong uploading your picture. Please try again.';
+                $onboardingErrors['avatar'] = 'Noget gik galt, da dit billede skulle uploades. Prøv igen.';
             } elseif (!in_array($avatarType = (new finfo(FILEINFO_MIME_TYPE))->file($avatar['tmp_name']), $onboardingAvatarTypes, true)
                 || getimagesize($avatar['tmp_name']) === false) {
-                $onboardingErrors['avatar'] = 'Please upload a PNG, JPEG, GIF or WebP image.';
+                $onboardingErrors['avatar'] = 'Upload et billede i PNG, JPEG, GIF eller WebP.';
             } else {
                 $avatarBlob = file_get_contents($avatar['tmp_name']);
             }
         } elseif ($onboardingAvatarMode === ONBOARDING_REQUIRED) {
-            $onboardingErrors['avatar'] = 'Please upload a picture of yourself.';
+            $onboardingErrors['avatar'] = 'Upload et billede af dig selv.';
         }
 
         // Description
         $descriptionLength = mb_strlen($onboardingValues['description']);
         if (!hbHubIsLatinText($onboardingValues['description'], true)) {
-            $onboardingErrors['description'] = 'Your description can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji.';
+            $onboardingErrors['description'] = 'Din beskrivelse kan kun bruge bogstaver fra det latinske alfabet (som a-z, æ, ø og å), tal, tegnsætning og emoji.';
         } elseif (hbHubUrlBlacklisted($onboardingValues['description'])) {
-            $onboardingErrors['description'] = 'Woah, hold up! Your description has a dangerous link or a link that compromises people\'s privacy in it.';
+            $onboardingErrors['description'] = 'Hov, vent lige! Din beskrivelse har et farligt link eller et link, der krænker folks privatliv.';
         } elseif ($descriptionLength > $onboardingDescriptionMax) {
-            $onboardingErrors['description'] = "Please keep it to $onboardingDescriptionMax characters or fewer.";
+            $onboardingErrors['description'] = "Hold den på højst $onboardingDescriptionMax tegn.";
         } elseif ($onboardingDescriptionMode === ONBOARDING_REQUIRED && $descriptionLength === 0) {
-            $onboardingErrors['description'] = 'Please write a little about yourself.';
+            $onboardingErrors['description'] = 'Skriv lidt om dig selv.';
         } elseif ($onboardingDescriptionMode === ONBOARDING_REQUIRED && $descriptionLength < $onboardingDescriptionMin) {
-            $onboardingErrors['description'] = "Please write at least $onboardingDescriptionMin characters.";
+            $onboardingErrors['description'] = "Skriv mindst $onboardingDescriptionMin tegn.";
         }
 
         // Password
-        $passwordError = hbHubPasswordError($password, $passwordConfirm, $onboardingPasswordPolicy);
+        $passwordError = hbHubPasswordError($password, $passwordConfirm, $onboardingPasswordPolicy, danish: true);
         if ($passwordError !== null) {
             $onboardingErrors['password'] = $passwordError;
         }
@@ -255,13 +255,13 @@ foreach ($onboardingSteps as $index => $step) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/userMgmt.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/userMgmt.css') ?>">
     <script src="/assets/js/onboarding.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/onboarding.js') ?>" defer></script>
-    <title>Sign up - HB Hub</title>
-    <meta name="description" content="Make a free HB Hub account: you're put in your HTX class's group chat at HANSENBERG, and get DMs, a casino with play chips, and Matador, chess and UNO.">
+    <title>Opret konto - HB Hub</title>
+    <meta name="description" content="Opret en gratis HB Hub-konto: du kommer med i din HTX-klasses gruppechat på HANSENBERG og får private beskeder, et casino med legechips, og Matador, skak og UNO.">
 </head>
 <body>
     <main>
@@ -271,39 +271,39 @@ foreach ($onboardingSteps as $index => $step) {
             <div class="onboarding-header">
                 <img class="onboarding-logo" src="/assets/images/favicon.svg" alt="HB Hub logo">
                 <div>
-                    <h1>Welcome to HB Hub!</h1>
-                    <p class="onboarding-intro">Let's set up your account. It only takes a minute.</p>
+                    <h1>Velkommen til HB Hub!</h1>
+                    <p class="onboarding-intro">Lad os sætte din konto op. Det tager kun et minut.</p>
                 </div>
             </div>
 
             <!-- One segment per question, filled in by onboarding.js -->
             <div class="onboarding-progress" hidden>
-                <p class="onboarding-counter">Step 1 of <?= count($onboardingSteps) ?></p>
+                <p class="onboarding-counter">Trin 1 af <?= count($onboardingSteps) ?></p>
                 <ol class="onboarding-progress-steps" aria-hidden="true">
                     <?php foreach ($onboardingSteps as $step): ?><li></li><?php endforeach; ?>
                 </ol>
             </div>
 
             <section class="onboarding-step" aria-labelledby="onboarding-q1">
-                <h2 id="onboarding-q1"><label for="onboarding-name">Choose a username</label></h2>
+                <h2 id="onboarding-q1"><label for="onboarding-name">Vælg et brugernavn</label></h2>
                 <p class="onboarding-hint" id="onboarding-name-about">
-                    Everyone on HB Hub sees you by it, and you log in with it. It can be your name, a nickname or anything
-                    else.
+                    Alle på HB Hub ser dig under det, og du logger ind med det. Det kan være dit navn, et kælenavn eller hvad som
+                    helst andet.
                 </p>
                 <div class="onboarding-input-wrap">
                     <!-- autocomplete="username" so password managers save it with the password, but that also makes some
                          browsers suggest a saved email here - the check in onboarding.js catches that -->
                     <input type="text" id="onboarding-name" name="name" minlength="<?= HBHUB_USER_NAME_MIN ?>" maxlength="<?= $onboardingNameMax ?>" required autocomplete="username"
-                           placeholder="e.g. Alex, alex_h or TheChessKing" aria-describedby="onboarding-name-about"
+                           placeholder="fx Alex, alex_h eller Skakkongen" aria-describedby="onboarding-name-about"
                            value="<?= htmlspecialchars($onboardingValues['name']) ?>" data-counter="onboarding-name-counter">
                 </div>
-                <p class="onboarding-hint"><span id="onboarding-name-counter"><?= mb_strlen($onboardingValues['name']) ?></span>/<?= $onboardingNameMax ?> characters (at least <?= HBHUB_USER_NAME_MIN ?>)</p>
+                <p class="onboarding-hint"><span id="onboarding-name-counter"><?= mb_strlen($onboardingValues['name']) ?></span>/<?= $onboardingNameMax ?> tegn (mindst <?= HBHUB_USER_NAME_MIN ?>)</p>
                 <p class="onboarding-warning" role="alert" data-name-email-warning hidden>
-                    That looks like an email address. Pick a name or nickname instead - it's shown to everyone.
+                    Det ligner en e-mailadresse. Vælg et navn eller kælenavn i stedet - det kan ses af alle.
                 </p>
                 <!-- Shown by onboarding.js once it has checked the name half a second after they stop typing -->
                 <p class="onboarding-error" role="alert" data-name-taken-error hidden>
-                    That name is already taken. Please choose another one.
+                    Det navn er allerede taget. Vælg et andet.
                 </p>
                 <?php if (isset($onboardingErrors['name'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['name']) ?></p>
@@ -311,13 +311,13 @@ foreach ($onboardingSteps as $index => $step) {
                 <?php if ($onboardingDiscordUser !== null): ?>
                     <p class="onboarding-discord-linked">
                         <?= hbHubDiscordLogo() ?>
-                        <span>Signing up with Discord as <strong><?= htmlspecialchars($onboardingDiscordUser['name'] ?? '') ?></strong>, so you can log in with it too. Your name, bio and picture are from Discord - change them as you like.
-                        <a href="/onboarding<?= htmlspecialchars(hbHubReturnQuery() === '' ? '?discordForget=1' : hbHubReturnQuery() . '&discordForget=1') ?>">Don't link it</a></span>
+                        <span>Du opretter dig med Discord som <strong><?= htmlspecialchars($onboardingDiscordUser['name'] ?? '') ?></strong>, så du også kan logge ind med den. Dit navn, din bio og dit billede er fra Discord - ret dem, som du vil.
+                        <a href="/onboarding<?= htmlspecialchars(hbHubReturnQuery() === '' ? '?discordForget=1' : hbHubReturnQuery() . '&discordForget=1') ?>">Kobl den ikke til</a></span>
                     </p>
                 <?php elseif ($onboardingHasDiscord): ?>
-                    <p class="userMgmt-or"><span>or</span></p>
+                    <p class="userMgmt-or"><span>eller</span></p>
                     <!-- Belongs to the form below this one, so it doesn't need anything filled in -->
-                    <button type="submit" class="onboarding-btn userMgmt-discord" form="onboarding-discord"><?= hbHubDiscordLogo() ?>Sign up with Discord</button>
+                    <button type="submit" class="onboarding-btn userMgmt-discord" form="onboarding-discord"><?= hbHubDiscordLogo() ?>Opret dig med Discord</button>
                     <?php if ($onboardingDiscordError !== null): ?>
                         <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingDiscordError) ?></p>
                     <?php endif; ?>
@@ -325,27 +325,27 @@ foreach ($onboardingSteps as $index => $step) {
             </section>
 
             <section class="onboarding-step" aria-labelledby="onboarding-q2">
-                <h2 id="onboarding-q2">Which class are you in?</h2>
+                <h2 id="onboarding-q2">Hvilken klasse går du i?</h2>
                 <!-- Radio buttons drawn as tiles; the form sends the same year/class values the dropdowns used to -->
                 <fieldset class="onboarding-choice">
-                    <legend>Year</legend>
+                    <legend>Årgang</legend>
                     <div class="onboarding-tiles onboarding-tiles-year">
                         <?php foreach (HBHUB_CLASS_YEARS as $year): ?>
                             <label class="onboarding-tile">
                                 <input type="radio" name="year" value="<?= $year ?>" required<?= $onboardingValues['year'] === $year ? ' checked' : '' ?>>
-                                <span class="onboarding-tile-face"><?= $year ?>.<span class="onboarding-tile-sub">year</span></span>
+                                <span class="onboarding-tile-face"><?= $year ?>.<span class="onboarding-tile-sub">år</span></span>
                             </label>
                         <?php endforeach; ?>
                         <label class="onboarding-tile">
                             <input type="radio" name="year" value="<?= HBHUB_CLASS_NOT_HTX ?>" required<?= $onboardingValues['year'] === HBHUB_CLASS_NOT_HTX ? ' checked' : '' ?>>
-                            <span class="onboarding-tile-face onboarding-tile-face-text">Not HTX</span>
+                            <span class="onboarding-tile-face onboarding-tile-face-text">Ikke HTX</span>
                         </label>
                     </div>
                 </fieldset>
                 <!-- Only for 1. to 3. year: hidden by onboarding.js until one of them is picked. Not required in the markup,
                      so Not HTX can be sent without JS; the server checks it. -->
                 <fieldset class="onboarding-choice onboarding-reveal" data-class-field>
-                    <legend>Field of study</legend>
+                    <legend>Studieretning</legend>
                     <div class="onboarding-tiles onboarding-tiles-class">
                         <?php foreach (HBHUB_CLASS_FIELDS as $field): ?>
                             <label class="onboarding-tile">
@@ -362,32 +362,32 @@ foreach ($onboardingSteps as $index => $step) {
 
             <?php if ($onboardingAvatarMode !== ONBOARDING_DISABLED): ?>
             <section class="onboarding-step" aria-labelledby="onboarding-q3">
-                <h2 id="onboarding-q3">Upload a picture of yourself!<?php if ($onboardingAvatarMode === ONBOARDING_OPTIONAL): ?> <span class="onboarding-optional">(Optional)</span><?php endif; ?></h2>
+                <h2 id="onboarding-q3">Upload et billede af dig selv!<?php if ($onboardingAvatarMode === ONBOARDING_OPTIONAL): ?> <span class="onboarding-optional">(Valgfrit)</span><?php endif; ?></h2>
                 <div class="onboarding-avatar">
                     <!-- The picture itself opens the file picker too -->
                     <label for="onboarding-avatar" class="onboarding-avatar-frame">
-                        <img class="onboarding-avatar-preview is-placeholder" src="/assets/images/icons/user.png" alt="Your profile picture">
+                        <img class="onboarding-avatar-preview is-placeholder" src="/assets/images/icons/user.png" alt="Dit profilbillede">
                     </label>
                     <div class="onboarding-avatar-actions">
                         <input type="file" id="onboarding-avatar" name="avatar" class="onboarding-file-input"<?= $onboardingAvatarMode === ONBOARDING_REQUIRED ? ' required' : '' ?>
                                accept="<?= implode(',', $onboardingAvatarTypes) ?>" data-max-bytes="<?= $onboardingAvatarMaxBytes ?>" data-max-label="<?= $onboardingAvatarMaxLabel ?>">
-                        <label for="onboarding-avatar" class="onboarding-btn">Choose picture</label>
-                        <button type="button" class="onboarding-btn" data-action="remove-avatar" hidden>Remove</button>
+                        <label for="onboarding-avatar" class="onboarding-btn">Vælg billede</label>
+                        <button type="button" class="onboarding-btn" data-action="remove-avatar" hidden>Fjern</button>
                     </div>
                 </div>
-                <p class="onboarding-hint">PNG, JPEG, GIF or WebP, up to <?= $onboardingAvatarMaxLabel ?>.</p>
+                <p class="onboarding-hint">PNG, JPEG, GIF eller WebP, op til <?= $onboardingAvatarMaxLabel ?>.</p>
                 <p class="onboarding-error" role="alert" data-avatar-error<?= isset($onboardingErrors['avatar']) ? '' : ' hidden' ?>><?= htmlspecialchars($onboardingErrors['avatar'] ?? '') ?></p>
             </section>
             <?php endif; ?>
 
             <?php if ($onboardingDescriptionMode !== ONBOARDING_DISABLED): ?>
             <section class="onboarding-step" aria-labelledby="onboarding-q4">
-                <h2 id="onboarding-q4"><label for="onboarding-description">Describe yourself</label><?php if ($onboardingDescriptionMode === ONBOARDING_OPTIONAL): ?> <span class="onboarding-optional">(Optional)</span><?php endif; ?></h2>
+                <h2 id="onboarding-q4"><label for="onboarding-description">Beskriv dig selv</label><?php if ($onboardingDescriptionMode === ONBOARDING_OPTIONAL): ?> <span class="onboarding-optional">(Valgfrit)</span><?php endif; ?></h2>
                 <textarea id="onboarding-description" name="description" maxlength="<?= $onboardingDescriptionMax ?>" rows="5"
                           <?= $onboardingDescriptionMode === ONBOARDING_REQUIRED ? 'required data-min-length="' . $onboardingDescriptionMin . '"' : '' ?>
                           data-counter="onboarding-description-counter"><?= htmlspecialchars($onboardingValues['description']) ?></textarea>
                 <p class="onboarding-hint">
-                    <span id="onboarding-description-counter"><?= mb_strlen($onboardingValues['description']) ?></span>/<?= $onboardingDescriptionMax ?> characters<?= $onboardingDescriptionMode === ONBOARDING_REQUIRED ? " (at least $onboardingDescriptionMin)" : '' ?>
+                    <span id="onboarding-description-counter"><?= mb_strlen($onboardingValues['description']) ?></span>/<?= $onboardingDescriptionMax ?> tegn<?= $onboardingDescriptionMode === ONBOARDING_REQUIRED ? " (mindst $onboardingDescriptionMin)" : '' ?>
                 </p>
                 <?php if (isset($onboardingErrors['description'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['description']) ?></p>
@@ -396,16 +396,16 @@ foreach ($onboardingSteps as $index => $step) {
             <?php endif; ?>
 
             <section class="onboarding-step" aria-labelledby="onboarding-q5">
-                <h2 id="onboarding-q5">Last but not least, what should your password be?</h2>
+                <h2 id="onboarding-q5">Sidst men ikke mindst: hvad skal din adgangskode være?</h2>
                 <div class="onboarding-field">
-                    <label for="onboarding-password">Password</label>
+                    <label for="onboarding-password">Adgangskode</label>
                     <div class="onboarding-input-wrap">
                         <input type="password" id="onboarding-password" name="password" minlength="<?= $onboardingPasswordMin ?>" maxlength="72" required autocomplete="new-password"
                                aria-describedby="onboarding-password-rules" data-min-length="<?= $onboardingPasswordMin ?>" data-char-types="<?= $onboardingPasswordCharTypes ?>">
                     </div>
                 </div>
                 <div class="onboarding-field onboarding-reveal" data-password-confirm-field>
-                    <label for="onboarding-password-confirm">Repeat password</label>
+                    <label for="onboarding-password-confirm">Gentag adgangskode</label>
                     <div class="onboarding-input-wrap">
                         <input type="password" id="onboarding-password-confirm" name="passwordConfirm" required autocomplete="new-password">
                     </div>
@@ -417,32 +417,32 @@ foreach ($onboardingSteps as $index => $step) {
                 <div id="onboarding-password-rules"<?= $onboardingPasswordMin > 1 || $onboardingPasswordCharTypes > 0 ? '' : ' hidden' ?>>
                     <?php if ($onboardingPasswordMin > 1): ?>
                     <ul class="onboarding-checklist">
-                        <li data-check="length">At least <?= $onboardingPasswordMin ?> characters</li>
+                        <li data-check="length">Mindst <?= $onboardingPasswordMin ?> tegn</li>
                     </ul>
                     <?php endif; ?>
                     <?php if ($onboardingPasswordCharTypes > 0): ?>
-                    <p class="onboarding-hint"><?= $onboardingPasswordCharTypes === 4 ? 'All of these:' : "At least $onboardingPasswordCharTypes of these:" ?></p>
+                    <p class="onboarding-hint"><?= $onboardingPasswordCharTypes === 4 ? 'Alle disse:' : "Mindst $onboardingPasswordCharTypes af disse:" ?></p>
                     <ul class="onboarding-checklist">
-                        <li data-check="lower">Lowercase letter (a-z)</li>
-                        <li data-check="upper">Uppercase letter (A-Z)</li>
-                        <li data-check="number">Number (0-9)</li>
-                        <li data-check="special">Special character (!, ?, # ...)</li>
+                        <li data-check="lower">Lille bogstav (a-z)</li>
+                        <li data-check="upper">Stort bogstav (A-Z)</li>
+                        <li data-check="number">Tal (0-9)</li>
+                        <li data-check="special">Specialtegn (!, ?, # ...)</li>
                     </ul>
                     <?php endif; ?>
                 </div>
                 <?php if (isset($onboardingErrors['password'])): ?>
                     <p class="onboarding-error" role="alert"><?= htmlspecialchars($onboardingErrors['password']) ?></p>
                 <?php endif; ?>
-                <p class="onboarding-hint">By creating an account, you agree to the <a href="/legal/terms" target="_blank">Terms of Service</a> and the <a href="/legal/privacy" target="_blank">Privacy Policy</a>.</p>
+                <p class="onboarding-hint">Ved at oprette en konto accepterer du <a href="/legal/terms" target="_blank">vilkårene</a> og <a href="/legal/privacy" target="_blank">privatlivspolitikken</a>.</p>
             </section>
 
             <div class="onboarding-nav">
-                <button type="button" class="onboarding-btn" data-action="back" hidden>Back</button>
-                <button type="button" class="onboarding-btn onboarding-btn-primary" data-action="next" hidden>Next</button>
-                <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Create account</button>
+                <button type="button" class="onboarding-btn" data-action="back" hidden>Tilbage</button>
+                <button type="button" class="onboarding-btn onboarding-btn-primary" data-action="next" hidden>Næste</button>
+                <button type="submit" class="onboarding-btn onboarding-btn-primary" data-action="submit">Opret konto</button>
             </div>
 
-            <p class="userMgmt-switch">Already have an account? <a href="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Go to login</a></p>
+            <p class="userMgmt-switch">Har du allerede en konto? <a href="/login<?= htmlspecialchars(hbHubReturnQuery()) ?>">Gå til login</a></p>
         </form>
         <?php if ($onboardingHasDiscord && $onboardingDiscordUser === null): ?>
         <form id="onboarding-discord" action="/discord<?= htmlspecialchars(hbHubReturnQuery()) ?>" method="post" hidden>

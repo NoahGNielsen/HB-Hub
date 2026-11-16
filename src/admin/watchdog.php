@@ -1,26 +1,33 @@
 <?php
-// Admin panel's Watchdog: /admin/watchdog, in the admin panel's side menu (adminListsMenuHtml()), with how many 508s
-// there were in the last 24 hours. Everyone but site admins gets a 404, so it doesn't show that the page is here.
+// Admin panel's Watchdog: /admin/watchdog, "Browser errors" in the admin panel's side menu (adminListsMenuHtml()), with
+// how many errors there were in the last 24 hours. Everyone but site admins gets a 404, so it doesn't show that the
+// page is here.
 //
-// The "508 Resource Limit Is Reached" answers browsers got from the site (assets/php/watchdog.php has what the Watchdog
-// is, assets/js/watchdog.js what counts). At the top, how many there were in the last hour, day, week and
-// HBHUB_WATCHDOG_KEEP_DAYS days (and in how many reports, from how many users and IP addresses), and the addresses that
-// answered 508 the most in the last 7 days. Under that every report, newest first, ADMIN_WATCHDOG_SHOWN at a time
-// (?page=): when the first and last of them happened (and when the report got through, if that was later), how many,
-// who (or "Not logged in"), the page they were on, which addresses answered 508 and how often, the IP address, the
-// browser's user agent and a Dev mark when it came from the dev site.
-// Form (action=clear) deletes all of it for good, and goes in the admin log (assets/php/adminLog.php). The rows also go
-// by themselves after HBHUB_WATCHDOG_KEEP_DAYS.
+// The errors people's browsers had on the site (assets/php/watchdog.php has what the Watchdog is and the kinds,
+// assets/js/watchdog.js what counts). At the top, how many there were in the last hour, day, week and
+// HBHUB_WATCHDOG_KEEP_DAYS days, how many of them were 508s (the server was busy), and in how many reports, from how
+// many users and IP addresses; then how many of each kind in the last 7 days, and the most common errors in those days.
+// Under that every report, newest first, ADMIN_WATCHDOG_SHOWN at a time (?page=): when the first and last of them
+// happened (and when the report got through, if that was later), how many, who (or "Not logged in"), the page they were
+// on, which errors (kind/status, address, line, message) and how often, the IP address, the browser's user agent and a
+// Dev mark when it came from the dev site.
+// Form (action=clear) under the list takes every report off the list for good, and goes in the admin log
+// (assets/php/adminLog.php). It only clears the list: the rows stay (watchdogCleared) so the numbers at the top still
+// count them, and go by themselves after HBHUB_WATCHDOG_KEEP_DAYS like the rest.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/watchdog.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 
 const ADMIN_WATCHDOG_SHOWN = 50; // per page
-const ADMIN_WATCHDOG_TOP = 10; // addresses in the "answered 508 the most" list
+const ADMIN_WATCHDOG_TOP = 15; // errors in the "most common" list
 const ADMIN_WATCHDOG_TOP_DAYS = 7;
 // The numbers at the top: label => hours back (the last one is everything that's kept)
 const ADMIN_WATCHDOG_PERIODS = ['Last hour' => 1, 'Last 24 hours' => 24, 'Last 7 days' => 168, 'Last ' . HBHUB_WATCHDOG_KEEP_DAYS . ' days' => HBHUB_WATCHDOG_KEEP_DAYS * 24];
+// Every report's errors as rows, for the SQL below (w is HBHub-Watchdog). An old row's entries have no kind or status:
+// those are 508s (see assets/php/watchdog.php), hence the COALESCEs where it's used
+const ADMIN_WATCHDOG_ERRORS_TABLE = 'JSON_TABLE(w.watchdogErrors, \'$[*]\' COLUMNS (kind varchar(16) PATH \'$.kind\', status int PATH \'$.status\',
+    path varchar(255) PATH \'$.path\', message varchar(400) PATH \'$.message\', line varchar(16) PATH \'$.line\', hits int UNSIGNED PATH \'$.count\')) a';
 
 adminOnly($hbHubUser);
 
@@ -42,30 +49,55 @@ $adminPeriods = [];
 $statement = $db->prepare('SELECT COALESCE(SUM(watchdogCount), 0) AS errors, COUNT(*) AS reports, COUNT(DISTINCT watchdogUserId) AS users,
         COUNT(DISTINCT COALESCE(watchdogIpv4, watchdogIpv6)) AS ips
     FROM `HBHub-Watchdog` WHERE watchdogLastTimestamp > NOW() - INTERVAL ? HOUR');
+$busyStatement = $db->prepare('SELECT COALESCE(SUM(a.hits), 0) FROM `HBHub-Watchdog` w, ' . ADMIN_WATCHDOG_ERRORS_TABLE . '
+    WHERE w.watchdogLastTimestamp > NOW() - INTERVAL ? HOUR AND COALESCE(a.kind, \'http\') = \'http\' AND COALESCE(a.status, ?) = ?');
 foreach (ADMIN_WATCHDOG_PERIODS as $label => $hours) {
     $statement->execute([$hours]);
     $adminPeriods[$label] = $statement->fetch();
+    $busyStatement->execute([$hours, HBHUB_WATCHDOG_BUSY_STATUS, HBHUB_WATCHDOG_BUSY_STATUS]);
+    $adminPeriods[$label]['busy'] = (int) $busyStatement->fetchColumn();
 }
 
-$adminTop = $db->query('SELECT a.path, SUM(a.hits) AS hits
-    FROM `HBHub-Watchdog` w,
-        JSON_TABLE(w.watchdogAddresses, \'$[*]\' COLUMNS (path varchar(255) PATH \'$.path\', hits int UNSIGNED PATH \'$.count\')) a
-    WHERE w.watchdogLastTimestamp > NOW() - INTERVAL ' . ADMIN_WATCHDOG_TOP_DAYS . ' DAY AND a.path IS NOT NULL
-    GROUP BY a.path ORDER BY hits DESC LIMIT ' . ADMIN_WATCHDOG_TOP)->fetchAll();
+// How many of each kind, and the most common errors, in the last ADMIN_WATCHDOG_TOP_DAYS days
+$adminKinds = array_fill_keys(array_keys(HBHUB_WATCHDOG_KINDS), 0);
+foreach ($db->query('SELECT COALESCE(a.kind, \'http\') AS errorKind, SUM(a.hits) AS hits
+    FROM `HBHub-Watchdog` w, ' . ADMIN_WATCHDOG_ERRORS_TABLE . '
+    WHERE w.watchdogLastTimestamp > NOW() - INTERVAL ' . ADMIN_WATCHDOG_TOP_DAYS . ' DAY
+    GROUP BY errorKind')->fetchAll() as $row) {
+    if (isset($adminKinds[$row['errorKind']])) {
+        $adminKinds[$row['errorKind']] = (int) $row['hits'];
+    }
+}
+$adminTop = [];
+foreach ($db->query('SELECT COALESCE(a.kind, \'http\') AS errorKind,
+        CASE WHEN COALESCE(a.kind, \'http\') = \'http\' THEN COALESCE(a.status, ' . HBHUB_WATCHDOG_BUSY_STATUS . ') END AS errorStatus,
+        a.path AS errorPath, a.message AS errorMessage, a.line AS errorLine, SUM(a.hits) AS hits
+    FROM `HBHub-Watchdog` w, ' . ADMIN_WATCHDOG_ERRORS_TABLE . '
+    WHERE w.watchdogLastTimestamp > NOW() - INTERVAL ' . ADMIN_WATCHDOG_TOP_DAYS . ' DAY
+    GROUP BY errorKind, errorStatus, errorPath, errorMessage, errorLine ORDER BY hits DESC LIMIT ' . ADMIN_WATCHDOG_TOP)->fetchAll() as $row) {
+    $error = hbHubWatchdogError(['kind' => $row['errorKind'], 'path' => $row['errorPath'],
+        'status' => $row['errorStatus'] !== null ? (int) $row['errorStatus'] : null, 'message' => $row['errorMessage'],
+        'line' => $row['errorLine'], 'count' => max(1, (int) $row['hits'])]);
+    if ($error !== null) {
+        $adminTop[] = $error;
+    }
+}
 
-$adminTotal = (int) $db->query('SELECT COUNT(*) FROM `HBHub-Watchdog`')->fetchColumn();
+// The list only has the reports nobody has cleared yet (the numbers above count those too)
+$adminTotal = (int) $db->query('SELECT COUNT(*) FROM `HBHub-Watchdog` WHERE watchdogCleared = 0')->fetchColumn();
 $adminPages = max(1, intdiv($adminTotal + ADMIN_WATCHDOG_SHOWN - 1, ADMIN_WATCHDOG_SHOWN));
 $adminPage = min($adminPage, $adminPages);
 $adminReports = $db->query('SELECT w.watchdogId, w.watchdogUserId, u.userName, u.userAvatarAttachmentId, w.watchdogCount, w.watchdogPage,
-        w.watchdogAddresses, w.watchdogIpv4, w.watchdogIpv6, w.watchdogUserAgent, w.watchdogFromDev,
+        w.watchdogErrors, w.watchdogIpv4, w.watchdogIpv6, w.watchdogUserAgent, w.watchdogFromDev,
         w.watchdogFirstTimestamp, w.watchdogLastTimestamp, w.watchdogCreatedTimestamp
     FROM `HBHub-Watchdog` w
     LEFT JOIN `HBHub-Users` u ON u.userId = w.watchdogUserId
+    WHERE w.watchdogCleared = 0
     ORDER BY w.watchdogId DESC
     LIMIT ' . ADMIN_WATCHDOG_SHOWN . ' OFFSET ' . (($adminPage - 1) * ADMIN_WATCHDOG_SHOWN))->fetchAll();
 
 /**
- * A database timestamp with seconds, since 508s come in bursts and the minute alone says little.
+ * A database timestamp with seconds, since errors come in bursts and the minute alone says little.
  */
 function adminWatchdogTime(string $timestamp): string
 {
@@ -73,8 +105,8 @@ function adminWatchdogTime(string $timestamp): string
 }
 
 /**
- * When the first and last 508 of a report happened, as "13/11/2026 14:03:21 – 14:03:40" (the second one only when it's
- * another second, with the date only when it's another day).
+ * When the first and last error of a report happened, as "13/11/2026 14:03:21 – 14:03:40" (the second one only when
+ * it's another second, with the date only when it's another day).
  */
 function adminWatchdogWhen(string $first, string $last): string
 {
@@ -85,6 +117,26 @@ function adminWatchdogWhen(string $first, string $last): string
     }
     return adminWatchdogTime($first) . ' – ' . date(date('Y-m-d', $firstAt) === date('Y-m-d', $lastAt) ? 'H:i:s' : 'd/m/Y H:i:s', $lastAt);
 }
+
+/**
+ * One error as a list item's contents: its kind (or HTTP status) as a tag, the address and line, the message and how
+ * many times. A 508 gets its own colour, since that's the server being busy rather than something broken.
+ *
+ * @param array{kind: string, path: ?string, status: ?int, message: ?string, line: ?string, count: int} $error from hbHubWatchdogError()
+ */
+function adminWatchdogErrorHtml(array $error): string
+{
+    $class = 'settings-status admin-watchdog-kind admin-watchdog-kind-' . $error['kind']
+        . ($error['status'] === HBHUB_WATCHDOG_BUSY_STATUS ? ' admin-watchdog-kind-busy' : '');
+    $html = '<span class="' . $class . '">' . htmlspecialchars(hbHubWatchdogLabel($error)) . '</span> ';
+    if ($error['path'] !== null) {
+        $html .= '<span class="admin-mono">' . htmlspecialchars($error['path'] . ($error['line'] !== null ? ':' . $error['line'] : '')) . '</span> ';
+    }
+    if ($error['message'] !== null) {
+        $html .= '<span class="admin-watchdog-message">' . htmlspecialchars($error['message']) . '</span> ';
+    }
+    return $html . '<span class="admin-small">&times;' . number_format($error['count']) . '</span>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -94,7 +146,7 @@ function adminWatchdogWhen(string $first, string $last): string
     <link rel="stylesheet" href="/assets/css/admin.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/admin.css') ?>">
     <script src="/assets/js/admin.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/admin.js') ?>" defer></script>
     <script src="/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
-    <title>Server busy reports - Admin panel - HB Hub</title>
+    <title>Browser errors - Admin panel - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
@@ -109,23 +161,26 @@ function adminWatchdogWhen(string $first, string $last): string
                 <section class="settings-card" aria-labelledby="admin-watchdog-heading">
                     <div class="settings-card-head">
                         <div>
-                            <h2 id="admin-watchdog-heading">Server busy reports</h2>
+                            <h2 id="admin-watchdog-heading">Browser errors</h2>
                             <p class="settings-intro">
-                                Every time the server answered &ldquo;508 Resource Limit Is Reached&rdquo; (too many PHP requests at once).
-                                Each page counts the 508s it gets and reports them 3 seconds after the first one, trying again every
-                                3 seconds until the report gets through. Kept for <?= HBHUB_WATCHDOG_KEEP_DAYS ?> days.
+                                Every error people's browsers had on the site: answers of 400 or more (508 is &ldquo;Resource Limit
+                                Is Reached&rdquo;, too many PHP requests at once), requests that got no answer, files that didn't
+                                load, uncaught JavaScript errors and promises, and what the Content-Security-Policy blocked.
+                                Each page reports them 3 seconds after the first one, trying again every 3 seconds until the
+                                report gets through. Kept for <?= HBHUB_WATCHDOG_KEEP_DAYS ?> days.
                             </p>
                         </div>
                     </div>
 
                     <div class="admin-table-wrap">
                         <table class="admin-table">
-                            <thead><tr><th scope="col"></th><th scope="col">508s</th><th scope="col">Reports</th><th scope="col">Users</th><th scope="col">IP addresses</th></tr></thead>
+                            <thead><tr><th scope="col"></th><th scope="col">Errors</th><th scope="col" title="508 Resource Limit Is Reached: the server was busy">Of them 508s</th><th scope="col">Reports</th><th scope="col">Users</th><th scope="col">IP addresses</th></tr></thead>
                             <tbody>
                                 <?php foreach ($adminPeriods as $label => $period): ?>
                                     <tr>
                                         <th scope="row"><?= htmlspecialchars($label) ?></th>
                                         <td><?= number_format((int) $period['errors']) ?></td>
+                                        <td><?= number_format($period['busy']) ?></td>
                                         <td><?= number_format((int) $period['reports']) ?></td>
                                         <td><?= number_format((int) $period['users']) ?></td>
                                         <td><?= number_format((int) $period['ips']) ?></td>
@@ -135,20 +190,22 @@ function adminWatchdogWhen(string $first, string $last): string
                         </table>
                     </div>
 
-                    <?php if ($adminTop !== []): ?>
-                        <h3 class="admin-watchdog-subheading">Answered 508 the most, last <?= ADMIN_WATCHDOG_TOP_DAYS ?> days</h3>
-                        <ol class="admin-watchdog-top">
-                            <?php foreach ($adminTop as $address): ?>
-                                <li><span class="admin-mono"><?= htmlspecialchars($address['path']) ?></span> <span class="admin-small">&times;<?= number_format((int) $address['hits']) ?></span></li>
+                    <?php if (array_sum($adminKinds) > 0): ?>
+                        <h3 class="admin-watchdog-subheading">By kind, last <?= ADMIN_WATCHDOG_TOP_DAYS ?> days</h3>
+                        <ul class="admin-watchdog-kinds">
+                            <?php foreach ($adminKinds as $kind => $hits): ?>
+                                <li><span class="settings-status admin-watchdog-kind admin-watchdog-kind-<?= $kind ?>"><?= htmlspecialchars(HBHUB_WATCHDOG_KINDS[$kind]) ?></span> <?= number_format($hits) ?></li>
                             <?php endforeach; ?>
-                        </ol>
+                        </ul>
                     <?php endif; ?>
 
-                    <?php if ($adminTotal > 0): ?>
-                        <form action="/admin/watchdog" method="post" class="admin-watchdog-clear" data-confirm="Clear all the server busy reports? It can't be brought back.">
-                            <input type="hidden" name="action" value="clear">
-                            <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Clear the log</button>
-                        </form>
+                    <?php if ($adminTop !== []): ?>
+                        <h3 class="admin-watchdog-subheading">Most common, last <?= ADMIN_WATCHDOG_TOP_DAYS ?> days</h3>
+                        <ol class="admin-watchdog-top">
+                            <?php foreach ($adminTop as $error): ?>
+                                <li><?= adminWatchdogErrorHtml($error) ?></li>
+                            <?php endforeach; ?>
+                        </ol>
                     <?php endif; ?>
                 </section>
 
@@ -156,12 +213,12 @@ function adminWatchdogWhen(string $first, string $last): string
                     <div class="settings-card-head">
                         <div>
                             <h2 id="admin-list-heading">Reports</h2>
-                            <p class="settings-intro">Who got the 508s, on which page, and which addresses answered with them.</p>
+                            <p class="settings-intro">Who got the errors, on which page, and what they were.</p>
                         </div>
                     </div>
 
                     <?php if ($adminReports === []): ?>
-                        <p class="settings-hint">No 508s have been reported in the last <?= HBHUB_WATCHDOG_KEEP_DAYS ?> days.</p>
+                        <p class="settings-hint">No reports to show (none since the list was last cleared, or in the last <?= HBHUB_WATCHDOG_KEEP_DAYS ?> days).</p>
                     <?php else: ?>
                         <p class="settings-hint admin-list-count">
                             <?= number_format(($adminPage - 1) * ADMIN_WATCHDOG_SHOWN + 1) ?>&ndash;<?= number_format(($adminPage - 1) * ADMIN_WATCHDOG_SHOWN + count($adminReports)) ?>
@@ -169,12 +226,12 @@ function adminWatchdogWhen(string $first, string $last): string
                         </p>
                         <div class="admin-table-wrap">
                             <table class="admin-table admin-list">
-                                <thead><tr><th scope="col">When</th><th scope="col">508s</th><th scope="col">User</th><th scope="col">Page and addresses</th><th scope="col">IP address</th><th scope="col">Browser</th></tr></thead>
+                                <thead><tr><th scope="col">When</th><th scope="col">Errors</th><th scope="col">User</th><th scope="col">Page and errors</th><th scope="col">IP address</th><th scope="col">Browser</th></tr></thead>
                                 <tbody>
                                     <?php foreach ($adminReports as $report): ?>
                                         <?php
-                                        $addresses = json_decode($report['watchdogAddresses'], true);
-                                        $addresses = is_array($addresses) ? $addresses : [];
+                                        $errors = json_decode($report['watchdogErrors'], true);
+                                        $errors = is_array($errors) && array_is_list($errors) ? hbHubWatchdogMergeErrors($errors) : [];
                                         // When it got through, if that was more than a few seconds after the last one (it had to try again)
                                         $lateBy = strtotime($report['watchdogCreatedTimestamp']) - strtotime($report['watchdogLastTimestamp']);
                                         ?>
@@ -206,12 +263,10 @@ function adminWatchdogWhen(string $first, string $last): string
                                                 <?php else: ?>
                                                     <span class="admin-muted">Page not known</span>
                                                 <?php endif; ?>
-                                                <?php if ($addresses !== []): ?>
-                                                    <ul class="admin-watchdog-addresses">
-                                                        <?php foreach ($addresses as $address): ?>
-                                                            <?php if (is_array($address) && is_string($address['path'] ?? null)): ?>
-                                                                <li><span class="admin-mono"><?= htmlspecialchars($address['path']) ?></span> <span class="admin-small">&times;<?= number_format((int) ($address['count'] ?? 0)) ?></span></li>
-                                                            <?php endif; ?>
+                                                <?php if ($errors !== []): ?>
+                                                    <ul class="admin-watchdog-errors">
+                                                        <?php foreach ($errors as $error): ?>
+                                                            <li><?= adminWatchdogErrorHtml($error) ?></li>
                                                         <?php endforeach; ?>
                                                     </ul>
                                                 <?php endif; ?>
@@ -235,6 +290,13 @@ function adminWatchdogWhen(string $first, string $last): string
                                 <a class="settings-btn" href="/admin/watchdog?page=<?= $adminPage + 1 ?>#list" rel="next">Next</a>
                             <?php endif; ?>
                         </nav>
+                    <?php endif; ?>
+
+                    <?php if ($adminTotal > 0): ?>
+                        <form action="/admin/watchdog" method="post" class="admin-watchdog-clear" data-confirm="Clear all the reports from this list? It can't be brought back, but the numbers at the top still count them.">
+                            <input type="hidden" name="action" value="clear">
+                            <button type="submit" class="settings-btn settings-btn-danger settings-btn-small">Clear the reports</button>
+                        </form>
                     <?php endif; ?>
                 </section>
             </div>

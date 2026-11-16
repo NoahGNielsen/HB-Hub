@@ -1,4 +1,4 @@
-/* Slots (gambling/slots/, played by slots.js). Loaded after casino.css. The machine is a cabinet with a marquee on top,
+/* Slots (casino/slots/, played by slots.js). Loaded after casino.css. The machine is a cabinet with a marquee on top,
    the three reels in a window with the paylines drawn over them, their numbers down both sides, and the result
    under it, then the deck with the bet and the Spin button. Each reel shows three symbols of --sl-cell high, which
    shrinks with the window's height so the whole machine, deck and all, fits without scrolling; slots.js measures it,

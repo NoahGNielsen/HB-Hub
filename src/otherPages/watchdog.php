@@ -1,18 +1,24 @@
 <?php
-// Where assets/js/watchdog.js sends how many "508 Resource Limit Is Reached" answers the page got (assets/php/watchdog.php
+// Where assets/js/watchdog.js sends the errors that happened in the browser (assets/php/watchdog.php
 // says what the Watchdog is and what's kept). Open to visitors who aren't logged in too, since every page has the
 // script; who's logged in, the IP address and the user agent come from this request, not from the form.
 //
-// POST /watchdog (form-encoded): action=report, count (how many), page (the path the user was on), addresses (JSON,
-// {"/path": count, ...}), firstAgo and lastAgo (how many milliseconds ago the first and last one happened).
+// POST /watchdog (form-encoded): action=report, count (how many errors), page (the path the user was on), errors (JSON,
+// [{"kind", "path", "status", "message", "line", "count"}, ...], see hbHubWatchdogError()), firstAgo and lastAgo (how
+// many milliseconds ago the first and last one happened). A tab with the older watchdog.js sends addresses (JSON
+// {"/path": count}, all 508s) instead of errors, which is still taken.
 // Answers {"ok": true}. Errors:
 // - 405 {"error": "methodNotAllowed"}: not a POST.
 // - 400 {"error": "badRequest"}: no action=report, or count isn't a whole number above 0. watchdog.js gives up on
 //   that report instead of trying again, since it would never go through.
 // Anything else (a 508 for this request too, mostly) makes watchdog.js try again 3 seconds later.
+// A logged-in user who has turned "Help improve HB Hub" off (hbHubImproveSiteOn()) doesn't get watchdog.js at all, but a
+// report from before they did can still be waiting in their tab: it's answered {"ok": true} too, so the tab lets go of
+// it, but never saved.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/watchdog.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-store');
@@ -39,12 +45,17 @@ if (($_POST['action'] ?? null) !== 'report' || $count === null || $count < 1) {
     exit;
 }
 
+if ($hbHubUser !== null && !hbHubImproveSiteOn(hbHubUserSettings($hbHubUser['userSettings']))) {
+    echo json_encode(['ok' => true]); // turned off in the settings: not saved, see the top
+    exit;
+}
+
 hbHubWatchdogSave(
     hbHubDatabase(),
     $hbHubUser !== null ? (int) $hbHubUser['userId'] : null,
     $count,
     hbHubWatchdogPath($_POST['page'] ?? null),
-    hbHubWatchdogAddresses($_POST['addresses'] ?? null),
+    hbHubWatchdogErrors($_POST['errors'] ?? null, $_POST['addresses'] ?? null),
     watchdogNumber($_POST['firstAgo'] ?? null) ?? 0,
     watchdogNumber($_POST['lastAgo'] ?? null) ?? 0,
 );

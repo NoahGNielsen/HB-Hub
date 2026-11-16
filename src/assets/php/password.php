@@ -22,8 +22,9 @@ function hbHubPasswordPolicy(array $siteConfig): array
 /**
  * Why the password can't be used, or null when it's fine.
  * $what is how the messages refer to it, e.g. "Your password" or "Your new password".
+ * $danish gives the messages in Danish (and $what is ignored), for onboarding, which is a public page and so in Danish.
  */
-function hbHubPasswordError(string $password, string $passwordConfirm, array $policy, string $what = 'Your password'): ?string
+function hbHubPasswordError(string $password, string $passwordConfirm, array $policy, string $what = 'Your password', bool $danish = false): ?string
 {
     $minLength = $policy['minLength'];
     $charTypes = $policy['charTypes'];
@@ -34,6 +35,19 @@ function hbHubPasswordError(string $password, string $passwordConfirm, array $po
     $commonPasswords = file($_SERVER['DOCUMENT_ROOT'] . '/assets/commonPasswords.txt', FILE_IGNORE_NEW_LINES) ?: [];
     $passwordIsCommon = in_array(mb_strtolower($password), array_map(fn ($line) => mb_strtolower(rtrim($line, "\r")), $commonPasswords), true);
 
+    if ($danish) {
+        return match (true) {
+            $password === '' => 'Vælg en adgangskode.',
+            mb_strlen($password) < $minLength => "Din adgangskode skal være på mindst $minLength tegn.",
+            strlen($password) > 72 => 'Din adgangskode er for lang. Hold den på højst 72 tegn.',
+            $passwordCharTypes < $charTypes => $charTypes === 4
+                ? 'Din adgangskode skal have små bogstaver, store bogstaver, tal og specialtegn.'
+                : "Din adgangskode skal have mindst $charTypes af: små bogstaver, store bogstaver, tal og specialtegn.",
+            $passwordIsCommon => 'Den adgangskode er for almindelig. Vælg en anden.',
+            $password !== $passwordConfirm => 'Adgangskoderne er ikke ens.',
+            default => null,
+        };
+    }
     if ($password === '') {
         return 'Please choose a password.';
     } elseif (mb_strlen($password) < $minLength) {

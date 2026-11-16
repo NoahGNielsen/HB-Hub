@@ -1,4 +1,4 @@
-// Side menu on the settings page (otherPages/settings.php) and the admin panel's user and chat pages (admin/user.php,
+// Side menu on the admin panel's user and chat pages (admin/user.php,
 // admin/chat.php): [data-settings-menu] holds links to the cards on the page (#profile, #block, ...). While scrolling,
 // the link to the card at the top of the screen is marked with is-active. On a small screen the menu is a row of links
 // that scrolls sideways (settings.css), so the marked one is scrolled into view there too.

@@ -5,18 +5,18 @@ if (!headers_sent()) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/statusCodePage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/statusCodePage.css') ?>">
-    <title>Page not found - HB Hub</title>
+    <title>Siden blev ikke fundet - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
     <main class="status-page">
         <p class="status-code">404</p>
-        <h1>Page not found</h1>
-        <p class="status-message">The page you're looking for doesn't exist or has been moved.</p>
+        <h1>Siden blev ikke fundet</h1>
+        <p class="status-message">Den side, du leder efter, findes ikke eller er blevet flyttet.</p>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

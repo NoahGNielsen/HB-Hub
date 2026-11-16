@@ -2,10 +2,12 @@
 // Privacy policy: what HB Hub stores about you, why, who can see it, the cookies it sets and how to get it deleted.
 // A .legal-page article (legal.css: a dark hero, then the contents next to the text) under the frontpage's top bar
 // (homeNav.php), so it loads homepage.css too.
-// Open to everyone, like the frontpage. Keep it in step with the code: when a new table, cookie, localStorage key or
-// outside service is added, it belongs here, and HBHUB_PRIVACY_UPDATED gets the date of the change. It's set in
-// assets/php/legalUpdated.php, since the footer needs it too: changing it there shows everyone who agreed to the old
-// policy the "privacy policy updated" box.
+// Open to everyone, like the frontpage, and so in Danish like every public page (the section ids stay English, as
+// other pages link to them: who, what, why, see, services, cookies, keep, rights, changes, watchdog, page-views).
+// Keep it in step with the code: when a new table, cookie, localStorage key or outside service is added, it belongs
+// here, and HBHUB_PRIVACY_UPDATED gets the date of the change. It's set in assets/php/legalUpdated.php, since the
+// footer needs it too: changing it there shows everyone who agreed to the old policy the "privacy policy updated" box.
+// Written in a formal "we" voice and kept short: it says what's kept and why, not every detail of how.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
@@ -13,51 +15,51 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
 // The cookies the site sets: name => [what it's for, how long it's kept]. All of them are needed for the site to work
 // (logging in, the login lock, bans), so the cookie notice (footer.php) only tells you about them, it doesn't ask.
 const HBHUB_PRIVACY_COOKIES = [
-    'hbHubSession' => ['Keeps you logged in. Holds a random id that points at your login.', '30 days, or until you log out'],
-    'hbHubPendingLogin' => ['Remembers that you typed the right password (or logged in with Discord) while you enter your two-factor code.', '5 minutes'],
-    'hbHubDiscordSignup' => ['Set when you come back from Discord after clicking Sign up with Discord. Holds, encrypted so only HB Hub can read it, your Discord id, username, display name, picture\'s id and bio, so the sign-up form can start with them and your new account is linked to that Discord account. Removed once your account is made or you choose not to link it.', '30 minutes'],
-    'hbHubDiscordState' => ['Set when you click Log in with Discord, Sign up with Discord or link your Discord account. Holds a random code, what you started and the page to go back to, so only your browser can finish it when Discord sends you back. Removed as soon as you\'re back.', '10 minutes'],
-    'hbHubDevice' => ['Recognises a browser you have logged in from or are logged in on, so someone guessing your password can\'t lock you out of it. It\'s also how a ghost ban is passed on to a new account used in the same browser, and how site admins see which accounts are used in the same browser. The free games at /play also check whether it\'s there, and send a browser that has logged in before to the login and on to the normal game.', '180 days'],
-    'hbHubBanned' => ['Set when a banned account is used in the browser, so it can\'t just make a new account.', '400 days, or until the account is unbanned and logs in again'],
-    'hbHubToast' => ['A short message for the next page, like "Your password was changed".', '60 seconds'],
+    'hbHubSession' => ['Holder dig logget ind. Indeholder et tilfældigt id, der henviser til dit login.', '30 dage, eller til du logger ud'],
+    'hbHubPendingLogin' => ['Husker, at din adgangskode (eller dit Discord-login) er godkendt, mens du indtaster din totrinskode.', '5 minutter'],
+    'hbHubDiscordSignup' => ['Bruges, når du opretter dig med Discord. Indeholder, krypteret så kun HB Hub kan læse det, dit Discord-id, brugernavn, visningsnavn, billed-id og bio, så formularen kan udfyldes på forhånd, og kontoen kan kobles til Discord. Slettes, når kontoen er oprettet, eller du fravælger koblingen.', '30 minutter'],
+    'hbHubDiscordState' => ['Bruges, når du logger ind, opretter dig eller kobler din konto til med Discord. Indeholder en tilfældig kode, handlingen og den side, du skal tilbage til, så kun din browser kan fuldføre den. Slettes, når du vender tilbage fra Discord.', '10 minutter'],
+    'hbHubDevice' => ['Genkender en browser, du har været logget ind i, så andres forkerte adgangskodeforsøg ikke låser dig ude. Bruges også til at overføre en spøgelsesudelukkelse til nye konti i samme browser, til at vise side-admins, hvilke konti der bruges i samme browser, og til at give de daglige chips én gang per person (se afsnit 3). De gratis spil på /play sender en browser med denne cookie videre til login og det almindelige spil.', '180 dage'],
+    'hbHubBanned' => ['Sættes, når en udelukket konto bruges i browseren, så der ikke blot kan oprettes en ny konto.', '400 dage, eller til kontoen ikke længere er udelukket og logger ind igen'],
+    'hbHubToast' => ['En kort besked til den næste side, fx "Your password was changed".', '60 sekunder'],
 ];
 
 // What the site keeps in your browser's local storage (and IndexedDB). It never leaves your browser, except where the
 // text says so.
 const HBHUB_PRIVACY_LOCAL_STORAGE = [
-    'hbhub-chat-emoji-recent' => 'The emoji you used most recently in the chat, in messages and reactions, so they come first in the emoji picker and when you react.',
-    'hbHubWatchdog' => 'How many times this tab got a "server busy" error (508) and from which addresses on HB Hub, until the report about it has reached the server (see Server busy reports above). Kept in session storage, so it\'s gone when you close the tab, and deleted as soon as the report has gone through.',
-    'hbHubChatListScroll' => 'How far down the chat list you had scrolled, so it\'s still there when you refresh or come back to the chat. Kept in session storage, so it\'s gone when you close the tab.',
-    'hbHubNotifiedMessageId' => 'The last message you got a browser notification or sound for, so you don\'t get it twice.',
-    'hbHubNavPolledAt' => 'When one of your HB Hub tabs last checked for new messages for browser notifications or the sound (just a time), so the tabs you aren\'t looking at don\'t all check at once.',
-    'hbHubChessSound, hbHubMatadorSound, hbHubUnoSound, hbHubMinerSound, hbHubSlotsSound' => 'Whether you turned the game sounds (or the slot machine\'s) on or off.',
-    'hbHubMinerLateKeys' => 'Whether you switched Ore Mining Inc.\'s 1-9 and 0 hot keys to your last ten buildings (with the Long-Range Hot Keys upgrade).',
-    'hbHubMinerAutoBuy' => 'Whether you switched Ore Mining Inc.\'s Auto Buy on or off (with the Auto Buy upgrade).',
-    'hbHubMinerKeysHelp' => 'Whether Ore Mining Inc. has already shown you the popup about the hot keys (after buying the Hot Key Panel upgrade).',
-    'hbHubMinerAutoWarp, hbHubMinerAutoCrunch' => 'Whether you switched Ore Mining Inc.\'s Autopilot and Auto Crunch on or off (with the skills of the same name).',
-    'hbHubMinerAutoWarpTimes, hbHubMinerAutoCrunchTimes' => 'The number you put next to Ore Mining Inc.\'s Autopilot and Auto Crunch switches: how many times as much Dark Matter or Antimatter a Warp Jump or Big Crunch has to give before they make it.',
-    'hbHubMinerRun:<tab id>' => 'While Ore Mining Inc. is open: what you did in the game that isn\'t saved yet, and what a crash report would say (see Casino and games above), updated every second. If the game crashes or is closed before it\'s saved, the next time you open it, what you did is sent with its first save, like a normal save, and then deleted. It\'s deleted when the game is closed with nothing left to save. After a crash, the crash report part stays until you\'ve answered whether it may be sent; it\'s only sent if you say yes.',
-    'hbHubMiner (IndexedDB)' => 'A crash report the game writes if it freezes while you\'re playing (written by a part of the game that keeps running when the rest of it is frozen). It\'s only sent if you say yes the next time you open the game, and deleted either way. If you play without an account, it\'s never sent, just deleted the next time you open the game.',
-    'hbHubSudokuGuest' => 'Only in the free Sudoku at /play/sudoku, played without an account: your game (the puzzle, its answer, the numbers and notes you\'ve put in, the time and hints so far), and your best time and number of wins on each level, so you can close the page and carry on later. It\'s played only in your browser, so none of it is sent to HB Hub, and it never comes over to an account.',
-    'hbHubSudoku' => 'The Sudoku game you\'re playing (with an account): its number, the puzzle, the numbers and notes you\'ve put in, and the time and hints so far, so you can close the page and carry on later. The game itself, its answer and its time are on HB Hub\'s server (see Casino and games above); the numbers you put in are only sent when the board is full, to check it, or with a hint.',
-    'hbHubGuestWordle' => 'If you play Wordle without an account (at /play/wordle): your games of the day, encrypted by HB Hub so they can\'t be read or changed in your browser. It\'s sent with each guess so the server can check it. If you then log in or sign up, it\'s sent once to add today\'s games to your account (only in a language you haven\'t played today), and then deleted. Games from an earlier day are ignored and written over.',
-    'hbHubGuestWordleRandom' => 'If you play Wordle\'s random words without an account: your random word in each language with your guesses, encrypted by HB Hub the same way, sent with each guess so the server can check it. It never comes over to an account, and is deleted when you open Wordle logged in.',
-    'hbHubGuestMiner' => 'If you play Ore Mining Inc. without an account (at /play/ore-mining-inc): your game, encrypted by HB Hub the same way, and a random id for the tab you\'re playing in (so the game only runs in one tab at a time). It\'s sent with each save so the server can check what you did. If you then log in or sign up, it\'s sent once to become your account\'s game (only if the account doesn\'t have one yet), and then deleted.',
-    'hbHubGuestMinerRun:<tab id>' => 'The same as hbHubMinerRun above, when you play Ore Mining Inc. without an account. What you did that isn\'t saved yet is only ever sent with the next save of the game you play without an account, never to an account\'s game.',
-    'hbHubGuestPrompt' => 'How long you\'ve played the free games without an account (just a number of seconds, counted while the page is on screen), so the popup asking you to sign up only shows up now and then.',
-    'hbHubAppPrompt' => 'That the popup about putting HB Hub on your phone\'s home screen has been shown (or that you already opened HB Hub from the home screen), so it only shows up once.',
-    'hbHubCookieNotice' =>'That you clicked away the cookie notice, so it isn\'t shown again.',
-    'hbHubTermsAgreed, hbHubPrivacyAgreed' => 'The dates of the Terms of Service and the Privacy Policy you last agreed to (by clicking away the cookie notice or the "has been updated" box), so that box only shows up when one of them changes again.',
+    'hbhub-chat-emoji-recent' => 'Dine senest brugte emoji, så de vises først i emojivælgeren.',
+    'hbHubWatchdog' => 'Fejl i den åbne fane, indtil rapporten om dem er modtaget af serveren (se Fejlrapporter fra browseren). Gemmes i session storage og slettes, når rapporten er sendt, eller fanen lukkes.',
+    'hbHubChatListScroll' => 'Hvor langt du har scrollet i chatlisten. Gemmes i session storage og slettes, når fanen lukkes.',
+    'hbHubNotifiedMessageId' => 'Den seneste besked, du har fået en notifikation eller lyd for, så du ikke får den to gange.',
+    'hbHubNavPolledAt' => 'Tidspunktet for, hvornår en af dine HB Hub-faner sidst tjekkede for nye beskeder, så baggrundsfaner ikke tjekker samtidig.',
+    'hbHubChessSound, hbHubMatadorSound, hbHubUnoSound, hbHubMinerSound, hbHubSlotsSound' => 'Om lyd er slået til eller fra i spillene.',
+    'hbHubMinerLateKeys' => 'Om Ore Mining Inc.s genvejstaster 1-9 og 0 er skiftet til dine sidste ti bygninger (opgraderingen Long-Range Hot Keys).',
+    'hbHubMinerAutoBuy' => 'Om Ore Mining Inc.s Auto Buy er slået til eller fra.',
+    'hbHubMinerKeysHelp' => 'Om Ore Mining Inc. har vist dig vejledningen til genvejstasterne.',
+    'hbHubMinerAutoWarp, hbHubMinerAutoCrunch' => 'Om Ore Mining Inc.s Autopilot og Auto Crunch er slået til eller fra.',
+    'hbHubMinerAutoWarpTimes, hbHubMinerAutoCrunchTimes' => 'Den grænse, du har angivet for, hvornår Autopilot og Auto Crunch udfører et Warp Jump eller Big Crunch.',
+    'hbHubMinerRun:<tab id>' => 'Mens Ore Mining Inc. er åbent: dine handlinger, der endnu ikke er gemt, og en løbende nedbrudslog, opdateret hvert sekund. Lukker eller går spillet ned før en gemning, sendes handlingerne med den første gemning, næste gang du åbner det, og slettes derefter. Nedbrudsloggen bliver liggende, til du har svaret på, om en nedbrudsrapport må sendes, og sendes kun, hvis du siger ja.',
+    'hbHubMiner (IndexedDB)' => 'En nedbrudsrapport, som spillet skriver, hvis det fryser. Den sendes kun, hvis du siger ja, næste gang du åbner spillet, og slettes under alle omstændigheder. Spiller du uden en konto, sendes den aldrig.',
+    'hbHubSudokuGuest' => 'Kun i den gratis Sudoku på /play/sudoku: dit igangværende spil (opgave, løsning, dine tal og noter, tid og hints) samt dine bedste tider og sejre. Spillet foregår udelukkende i din browser, så intet sendes til HB Hub eller overføres til en konto.',
+    'hbHubSudoku' => 'Dit igangværende Sudoku-spil med en konto (nummer, opgave, dine tal og noter, tid og hints), så du kan fortsætte senere. Dine tal sendes kun til serveren, når brættet er fyldt, eller du beder om et hint.',
+    'hbHubGuestWordle' => 'Dagens Wordle-spil uden en konto, krypteret af HB Hub, så det ikke kan læses eller ændres i browseren. Sendes med hvert gæt, så serveren kan kontrollere det. Logger du ind eller opretter dig, overføres dagens spil én gang til din konto (kun for sprog, du ikke har spillet i dag) og slettes derefter. Spil fra tidligere dage overskrives.',
+    'hbHubGuestWordleRandom' => 'Wordles tilfældige ord uden en konto, med dine gæt, krypteret på samme måde og sendt med hvert gæt. Overføres aldrig til en konto og slettes, når du åbner Wordle logget ind.',
+    'hbHubGuestMiner' => 'Dit Ore Mining Inc.-spil uden en konto, krypteret på samme måde, samt et tilfældigt id for fanen (så spillet kun kører i én fane ad gangen). Sendes med hver gemning, så serveren kan kontrollere det. Logger du ind eller opretter dig, bliver det din kontos spil (kun hvis kontoen ikke har et) og slettes derefter.',
+    'hbHubGuestMinerRun:<tab id>' => 'Det samme som hbHubMinerRun, når du spiller uden en konto. Sendes kun med den næste gemning af gæstespillet, aldrig til en kontos spil.',
+    'hbHubGuestPrompt' => 'Hvor mange sekunder du har spillet de gratis spil uden en konto, så opfordringen til at oprette dig kun vises en gang imellem.',
+    'hbHubAppPrompt' => 'At opfordringen til at føje HB Hub til din hjemmeskærm er vist (eller at du allerede bruger den derfra), så den kun vises én gang.',
+    'hbHubCookieNotice' => 'At du har lukket cookie-beskeden.',
+    'hbHubTermsAgreed, hbHubPrivacyAgreed' => 'Datoerne for de vilkår og den privatlivspolitik, du sidst har accepteret, så du kun får besked, når de ændres igen.',
 ];
 ?>
 <!DOCTYPE html>
-<html lang="en" class="home">
+<html lang="da" class="home">
 <head>
-    <?php $headerHomeNav = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = true; $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
-    <title>Privacy Policy - HB Hub</title>
-    <meta name="description" content="What HB Hub stores about you, why, who can see it, the cookies it uses and how to get your data deleted.">
+    <title>Privatlivspolitik - HB Hub</title>
+    <meta name="description" content="Hvilke oplysninger HB Hub behandler, hvorfor, hvem der har adgang til dem, hvilke cookies vi bruger, og hvordan du får dine data slettet.">
 </head>
 <body class="home-body">
     <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -66,481 +68,370 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
         <article class="legal-page" aria-labelledby="privacy-title">
             <header class="legal-hero">
                 <div class="legal-hero-inner">
-                    <p class="home-kicker legal-kicker">Legal</p>
-                    <h1 id="privacy-title">Privacy Policy</h1>
+                    <p class="home-kicker legal-kicker">Juridisk</p>
+                    <h1 id="privacy-title">Privatlivspolitik</h1>
                     <p class="legal-intro">
-                        HB Hub is a student project, not a company. It only stores what it needs to run the chat, the casino
-                        and the games. There are no ads, nothing is sold, and nothing is used to track you around the web.
-                        This page explains exactly what is stored, in plain words.
+                        HB Hub er et ikke-kommercielt elevprojekt. Vi behandler kun de oplysninger, der er nødvendige for at
+                        drive chatten, casinoet og spillene. Vi viser ingen reklamer, sælger ingen data og sporer dig ikke på
+                        andre hjemmesider. Denne politik beskriver, hvilke oplysninger vi gemmer, hvorfor, hvem der har adgang
+                        til dem, og hvordan du får dem slettet.
                     </p>
-                    <p class="legal-updated">Last updated <?= HBHUB_PRIVACY_UPDATED ?></p>
+                    <p class="legal-updated">Sidst opdateret <?= hbHubLegalDanishDate(HBHUB_PRIVACY_UPDATED) ?></p>
                 </div>
             </header>
 
             <div class="legal-layout">
-                <nav class="legal-toc" aria-label="On this page">
-                    <p class="legal-toc-title" aria-hidden="true">On this page</p>
+                <nav class="legal-toc" aria-label="På denne side">
+                    <p class="legal-toc-title" aria-hidden="true">På denne side</p>
                     <ol>
-                        <li><a href="#who">Who runs HB Hub</a></li>
-                        <li><a href="#what">What is stored</a></li>
-                        <li><a href="#why">Why it's stored</a></li>
-                        <li><a href="#see">Who can see what</a></li>
-                        <li><a href="#services">Outside services</a></li>
-                        <li><a href="#cookies">Cookies and local storage</a></li>
-                        <li><a href="#keep">How long it's kept</a></li>
-                        <li><a href="#rights">Your rights</a></li>
-                        <li><a href="#changes">Changes to this policy</a></li>
+                        <li><a href="#who">Dataansvarlig</a></li>
+                        <li><a href="#what">Hvilke oplysninger vi gemmer</a></li>
+                        <li><a href="#why">Formål og retsgrundlag</a></li>
+                        <li><a href="#see">Hvem har adgang</a></li>
+                        <li><a href="#services">Eksterne tjenester</a></li>
+                        <li><a href="#cookies">Cookies og lokal lagring</a></li>
+                        <li><a href="#keep">Opbevaring og sletning</a></li>
+                        <li><a href="#rights">Dine rettigheder</a></li>
+                        <li><a href="#changes">Ændringer</a></li>
                     </ol>
                 </nav>
 
                 <div class="legal-body">
                     <section id="who" aria-labelledby="privacy-who">
-                        <h2 id="privacy-who">1. Who runs HB Hub</h2>
+                        <h2 id="privacy-who">1. Dataansvarlig</h2>
                         <p>
-                            HB Hub (hbhub.noahgajnielsen.dk) is made and run by Noah Gaj Nedergaard Nielsen in Denmark, who is
-                            responsible for the data stored on it (the "data controller" under the GDPR).
+                            HB Hub (hbhub.noahgajnielsen.dk) drives af Noah Gaj Nedergaard Nielsen, Danmark, som er dataansvarlig
+                            for de oplysninger, der behandles på siden, jf. databeskyttelsesforordningen (GDPR).
                         </p>
                         <p>
-                            Questions about your data, or a request to download or delete it: email
+                            Henvendelser om dine data, herunder anmodninger om indsigt, en kopi eller sletning, sendes til
                             <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.
                         </p>
                     </section>
 
                     <section id="what" aria-labelledby="privacy-what">
-                        <h2 id="privacy-what">2. What is stored</h2>
-                        <h3>Your account</h3>
+                        <h2 id="privacy-what">2. Hvilke oplysninger vi gemmer</h2>
+
+                        <h3>Konto og profil</h3>
                         <ul>
-                            <li>Your name, and if you add them: your profile picture, bio, status (an emoji, a short text and when it clears itself; once it has, it's no longer shown and is written over the next time you save your status or profile), education badge (a kind of education, like "IT and media"), and banner. A banner is either two colors and a direction, or a picture: a banner picture is made smaller and turned into JPEG XL in your own browser before it's sent (so it doesn't keep where a photo was taken), kept as a file on HB Hub's server like a chat attachment, and takes one of your attachment tickets for as long as it's your banner. It never runs out by itself: it's deleted when you change it, go back to colors, delete it from Your attachments in the chat, or delete your account.</li>
-                            <li>Your class: the school year you started 1. year at HTX in and your field of study (X, U, T, Y or Z), or that you don't go to HTX. Your year (or "Graduate" once you're past 3. year) is worked out from that, so it goes up every July 1st without anything being changed. If you're at HTX, you're also a member of your class's group chat (see Messages and chats below).</li>
-                            <li>Your password, but only as a one-way hash. Nobody, not even an admin, can read your password.</li>
-                            <li>The secret behind your two-factor codes, if you turn two-factor login on.</li>
-                            <li>If you link your Discord account (to log in with Discord): its Discord id and its Discord username. The id is only used by HB Hub itself and never shown. The username is shown in your settings and, unless you turn off "Show my Discord username on my profile" in the Discord login card in your settings, on your profile. It's kept up to date: it's saved again every time you log in with Discord, and every night HB Hub's server asks Discord for the current username of each linked Discord id. Nothing else from Discord is kept: no email, no friends or servers, and not the token Discord hands over, which is only used once to ask who you are and then cancelled. Unlinking it in your settings deletes both straight away.</li>
-                            <li>If you sign up with Discord, the sign-up form starts with your Discord display name, profile picture and bio (when Discord shares it). They're only suggestions you can change or remove: what you keep is saved as your own HB Hub name, picture and bio, like anyone else's, and isn't updated when you change them on Discord. The picture is downloaded from Discord by HB Hub's server, so your browser doesn't contact Discord for it.</li>
-                            <li>Your settings, like which chats you've muted, hidden or blocked, whether new messages give you a browser notification or a sound, and whether you've blocked the Casino and Games, or a site admin has blocked them for you.</li>
-                            <li>When you made the account and when you were last on the site (updated at most once a minute).</li>
-                            <li>Failed logins, whether the account is locked or banned, and whether a ban was by an admin or automatic.</li>
-                            <li>Whether, and since when, the account is ghost banned (see Messages and chats below).</li>
+                            <li>Dit brugernavn og, hvis du tilføjer dem, profilbillede, bio, status (emoji, kort tekst og udløbstidspunkt), uddannelsesmærke og banner (to farver og en retning, eller et billede).</li>
+                            <li>Din klasse: det år, du startede på HTX, og din studieretning, eller at du ikke går på HTX. Din årgang beregnes ud fra startåret. Går du på HTX, bliver du automatisk medlem af din klasses gruppechat.</li>
+                            <li>Dine indstillinger, fx hvilke chats du har gjort lydløse, skjult eller blokeret, dine notifikationsvalg, og om Casino og Spil er blokeret (af dig eller af en side-admin).</li>
+                            <li>Hvornår kontoen blev oprettet, og hvornår du sidst var aktiv.</li>
+                            <li>
+                                Kobler du en Discord-konto til: dens Discord-id og brugernavn. Brugernavnet vises i dine indstillinger
+                                og på din profil, medmindre du slår det fra under Discord login i kortet Security. Det opdateres, hver
+                                gang du logger ind med Discord, og hver nat. Vi gemmer ikke din e-mail, dine venner, servere eller
+                                Discords adgangstoken, som kun bruges én gang og derefter annulleres. Fjerner du koblingen, slettes
+                                oplysningerne straks.
+                            </li>
+                            <li>Opretter du dig med Discord, udfyldes formularen på forhånd med dit Discord-visningsnavn, -billede og -bio. Det, du beholder, gemmes som din almindelige HB Hub-profil og opdateres ikke fra Discord bagefter. Billedet hentes af HB Hubs server, ikke af din browser.</li>
+                            <li>Et bannerbillede formindskes og konverteres til JPEG XL i din browser, før det sendes, så oplysninger som et fotos placering fjernes. Det gemmes som en fil på serveren, bruger en af dine billetter til vedhæftede filer og slettes, når du skifter det, fjerner det eller sletter din konto.</li>
                         </ul>
-                        <h3>Banned pictures</h3>
-                        <p>
-                            When an account is banned, a copy of its profile picture, and sometimes its banner picture, is usually
-                            put on a list of banned pictures, together with which account it came from and which admin banned it.
-                            When an admin removes a profile picture or banner picture that breaks the rules, they can put a copy of
-                            it on the list the same way without banning the account. Admins can also add pictures to the list
-                            themselves. When you upload a profile picture or banner picture, or sign up with a profile picture, it's compared with the
-                            list in two ways: a fingerprint of the file (its SHA-256 hash), and a fingerprint of what the picture
-                            looks like, made from a tiny greyscale copy of it, so a resized or slightly cropped copy is found too.
-                            The server can't read a banner picture's JPEG XL file, so your browser sends a small PNG copy of it
-                            (at most 256 pixels wide or tall) along with it for the second check; the admin's browser does the same
-                            when an admin bans a banner picture. The PNG copy is only used for the comparison and never stored.
-                            If it's the same file, or looks almost the same as a banned picture, the account is banned straight
-                            away and keeps the picture, so admins can see why. The fingerprints of banned pictures are stored with
-                            them; the fingerprints of other pictures are only used for the comparison and never stored.
-                        </p>
-                        <h3>IP addresses</h3>
-                        <p>
-                            The IP address you signed up from, and the one you used most recently. Only the latest one is kept,
-                            not a history. IP addresses are also counted briefly when accounts are made, so one place can't make
-                            hundreds of accounts, and kept for 30 days with a server busy report (see
-                            <a href="#watchdog">Server busy reports</a> below).
-                        </p>
-                        <h3>Logins</h3>
-                        <p>
-                            Each login is stored with when it started, when it was last used (updated at most once a minute)
-                            and when it runs out, plus a short name for the browser and system it's on, like "Chrome on
-                            Windows". That name is worked out from what your browser sends (its user agent), and only the
-                            short name is stored, never the rest. It's there so you can see where you're logged in under
-                            Logged in devices on the <a href="/settings#devices">settings page</a>, and log out
-                            any of them, or all of them at once. Browsers you've logged in from are also remembered by a
-                            random token (only a hash of it is stored) and how many wrong passwords they've tried.
-                        </p>
-                        <h3>Messages and chats</h3>
+
+                        <h3>Login og sikkerhed</h3>
                         <ul>
-                            <li>Every message you send, with the time, which chat it's in, what it replies to and any GIF.</li>
-                            <li>
-                                Files and pictures you attach to a message (up to 10 in one), with their name, size and type,
-                                which message and chat they were sent in, and when they were sent and run out. They're kept as files on HB Hub's server, not in the
-                                database. Pictures are turned into JPEG XL in your own browser before they're sent (unless you
-                                tick the box to keep the original), so they never go anywhere else to be converted. A converted
-                                picture doesn't keep the details a camera or phone saves in it, like where a photo was taken.
-                                Videos are turned into WebM (VP9) in your own browser too, so they play in the chat and
-                                take less space, and the converted video doesn't keep details like where it was filmed
-                                either. Only if you tick the box to keep the original, or your browser can't convert it, is
-                                the video sent as it is. Other files are zipped on
-                                the server to take less space. If a site admin has given you more
-                                attachment tickets or taken some away, how many is stored with your account.
-                            </li>
-                            <li>
-                                Reactions you put on messages: which emoji, on which message, and when. Taking a reaction back
-                                deletes it.
-                            </li>
-                            <li>
-                                Messages you pin in a chat: which message, that you pinned it and when, which everyone in the
-                                chat can see. Pinning or unpinning also puts a notice in the chat saying who did it. Unpinning
-                                (by you, a group admin, the other person in a DM, or a site admin) clears who pinned it and
-                                when, but the notices stay like other messages.
-                            </li>
-                            <li>The chats you're in, group names, icons and backgrounds, and nicknames you give people.</li>
-                            <li>
-                                Nicknames in a group: a nickname you give someone in a group (or that someone gives you) is
-                                kept with their membership of that group, and everyone in the group sees it instead of their
-                                username. Giving or taking one away also puts a notice in the chat saying who did it, to whom
-                                and what the nickname is, which stays like other messages. When someone else gives you one,
-                                you also get a notification under the bell saying who, which group and the nickname (not
-                                from a group you muted or someone you blocked). The nickname goes when it's taken
-                                away or when they leave the group or are kicked from it. A nickname you give the other person
-                                in a DM is kept in the chat's settings and only shown to you.
-                            </li>
-                            <li>
-                                While you're typing a message in a chat, the time you last typed is kept with your membership
-                                of it, so the others in the chat see "... is typing". Only the time is stored, never what
-                                you've typed, and it's cleared when you send the message, empty the message box or stop
-                                typing for a few seconds. If you close the page instead, nobody sees it any more after
-                                8 seconds. It isn't saved at all while you're ghost banned or muted in that chat.
-                            </li>
-                            <li>
-                                Deleting a message hides it for everyone in the chat, but the message itself is kept, so site
-                                admins can still look into reports of abuse. Its reactions are hidden with it, and kept the same
-                                way. Attachments in it aren't kept: their files and names are deleted for good.
-                            </li>
-                            <li>Notifications under the bell: what happened, who did it and whether you've seen it. If you're a site admin and a group admin removes you from a group, that notification also keeps how you were in the group (your role, nickname, mute and how far you had read), so you can undo it. Undoing it deletes the notification.</li>
-                            <li>
-                                When someone @mentions you, in a chat or a Chess, Matador or UNO game's chat, you get one of those
-                                notifications, saying who it was and which chat, message or game it was in. Nothing else is
-                                stored for a mention: it's worked out from the message each time it's shown. You don't get one
-                                from a chat you muted or from someone you blocked, and only while you aren't looking at that
-                                chat or game. To know that, the last time you had each chat open in front of you is kept with
-                                your membership of it, and goes when you leave the chat. Deleting the message (by you, a group admin or a site admin) deletes the notifications
-                                about it too.
-                            </li>
-                            <li>
-                                Ghost bans: a site admin can ghost ban an account that breaks the rules, without telling it.
-                                What it does in chats from then on (messages, attachments, edits, reactions, pins, nicknames, and the chats it
-                                starts or adds people to) is stored like anything else, but marked so that only that account
-                                and site admins can see it. People it starts a chat with or adds to a group are stored as
-                                invited, marked the same way, so they never see the chat or get a request or notification about
-                                it, until someone else invites them or they start a chat with that account themselves. The
-                                marks stay when the ghost ban is lifted, so what was hidden stays hidden. They go with the
-                                messages and invites they're on. To stop a ghost ban being dodged with a new account, the
-                                known devices (the hbHubDevice cookie, see <a href="#privacy-cookies">Cookies and local storage</a>) are checked when an account is made
-                                or logged in to: an account at most 3 days old that's used in the same browser as a
-                                ghost-banned account is ghost banned too, by itself, and site admins can see which account
-                                it came from in the admin log. Older accounts aren't affected.
-                            </li>
+                            <li>Din adgangskode, udelukkende som en envejs-hash. Ingen, heller ikke en admin, kan læse den.</li>
+                            <li>Hemmeligheden bag dine totrinskoder, hvis du har slået totrinslogin til.</li>
+                            <li>For hvert login: hvornår det startede, sidst blev brugt og udløber, samt et kort navn for browser og system (fx "Chrome on Windows"), udledt af din browsers user agent. Kun det korte navn gemmes. Du kan se og afslutte dine logins under Logged in devices på <a href="/settings#devices">indstillingssiden</a>.</li>
+                            <li>Browsere, du har logget ind fra, genkendes ud fra en tilfældig token (vi gemmer kun en hash af den) sammen med antallet af forkerte adgangskodeforsøg.</li>
+                            <li>På din konto: den IP-adresse, du oprettede dig fra, og den senest brugte. Der gemmes ingen historik over dine logins' IP-adresser. IP-adresser tælles desuden kortvarigt ved kontooprettelse for at forhindre masseoprettelse af konti.</li>
+                            <li>Din IP-adresse gemmes også i <a href="#watchdog">fejlrapporter fra browseren</a> sammen med din browsers user agent, også når du ikke er logget ind. Rapporterne slettes efter 30 dage, og du kan slå dem fra med <strong>Help improve HB Hub</strong>.</li>
+                            <li>Mislykkede logins, om kontoen er låst eller udelukket (og om udelukkelsen kom fra en admin eller var automatisk), og om og siden hvornår kontoen er spøgelsesudelukket.</li>
                         </ul>
-                        <h3>Casino and games</h3>
+
+                        <h3 id="fingerprint">Browserfingeraftryk</h3>
+                        <p>
+                            Mens du er logget ind, beregner din browser omtrent én gang om dagen et fingeraftryk: en SHA-256-hash af
+                            tekniske egenskaber som grafik- og lydgengivelse, grafikkort, installerede skrifttyper, skærm, tidszone,
+                            sprog, platform, processorkerner og hukommelse. Kun hashen sendes og gemmes, sammen med det korte
+                            browsernavn, din konto, og hvornår den først og sidst blev set. Fingeraftrykket bevares, selvom du rydder
+                            cookies.
+                        </p>
+                        <p>
+                            <strong>Fingeraftrykket bruges kun til at forhindre misbrug</strong>, og kun på disse to måder:
+                        </p>
                         <ul>
-                            <li>Your chip balance and every change to it (bets, payouts, the daily chips, and chips a site admin added or took away, with which admin it was), and the last day you collected the daily chips and how many days in a row that was (your place on the daily calendar). That goes when your account is deleted.</li>
-                            <li>
-                                The rounds you played in the casino games, for example but not limited to Blackjack, Baccarat,
-                                Roulette and Slots (every spin: the bet, where the reels stopped and what it paid), used for the
-                                leaderboards (the casino's home page shows the top of the casino
-                                leaderboard, and how many people are playing at the tables right now, without names). Other
-                                people only see the totals there: rounds, wins,
-                                losses, win %, the biggest win, the chips you've won or lost in each game and in all of them
-                                together, and your chips right now.
-                            </li>
-                            <li>
-                                Roulette is one table that everyone on HB Hub shares. While you have bets on the table,
-                                everyone who has the Roulette page open sees your name, your profile picture, every bet you've
-                                placed and whether you've pressed Ready. After the spin they see what you bet and what you won
-                                or lost on it, until the next round starts. Your bets are kept only until the wheel spins: then
-                                they become your spin in the rounds above (which also notes which round it was, so the spin can
-                                be shown to everyone who played it), and they go when your account is deleted.
-                            </li>
-                            <li>Your Chess and Matador games: seats, moves, saves, results (including when you left a game before it was over, which counts as a loss) and the in-game chat.</li>
-                            <li>
-                                Your UNO games: your seat, the cards in your hand and what you played, invites, and the
-                                in-game chat. Only you see your cards while the game is played; when it's over, everyone in it
-                                sees the cards that were left. All of it goes when everyone has left the game. What's kept is
-                                one line per game for the UNO leaderboard: whether you won, lost or left, the points you
-                                scored, how many cards you had left, how many played and when. Other people only see the
-                                totals there (games, wins, losses, win %, points and best win).
-                            </li>
-                            <li>
-                                Your Wordle games: for each day and language you play, the words you guessed, whether you got
-                                it, and when you started and finished. They make up your stats and streaks, and your spot on
-                                the Wordle leaderboards. Other people only see the totals there (games, wins, win %, average
-                                guesses and streaks), never your guesses.
-                            </li>
-                            <li>
-                                Your Wordle random word: for each language, the last random word you got, your guesses,
-                                whether you got it, and when it was picked and finished. It's written over when you take a
-                                new word, and isn't in your stats, streaks or the leaderboards, so nobody else sees it.
-                                It's deleted with your account.
-                            </li>
-                            <li>
-                                Your Minesweeper games: for each game, the size, whether you won, lost or left it (or it
-                                was stopped because a click on the board came from code instead of you), how long a
-                                win took, the fewest clicks its board could be won in (to catch wins too fast for a person,
-                                which aren't counted), and when you started and finished. While a game is being played, it also has which
-                                squares you've opened (and where the mines are); that's deleted when the game is over. Your
-                                flags stay in your browser. The games make up your spot on the Minesweeper leaderboards,
-                                where other people only see the totals (best and average time, wins, games played and win %).
-                                They're kept until your account is deleted.
-                            </li>
-                            <li>
-                                Your Sudoku games: for each game, the level, whether you solved it (with or without hints,
-                                or too fast for a person, which isn't counted) or left it, how many hints you used, how long
-                                it took, how long it was paused, and when you started and finished. While a game is being
-                                played, it also has the puzzle and its answer, and when the pause it's in started (the game
-                                is paused when you press Pause or leave the page); the puzzle and answer are deleted when
-                                the game is over. The numbers and notes you put in stay in your browser until the board is
-                                full and checked. The games make up your spot on the Sudoku leaderboards, where other people
-                                only see the totals (best and average time, and how many you've solved without a hint).
-                                They're kept until your account is deleted.
-                            </li>
-                            <li>
-                                Your Ore Mining Inc. save: your ore, buildings, upgrades, Dark Matter, Antimatter, Strange Matter, the skills you've learned, achievements, how many
-                                times you've clicked and caught comets, your Star Shards (how many you have and have caught,
-                                and what you bought with them in the Shard Shop: boosts running, skins and click effects, and
-                                the click effect you picked), when you started and last saved, how many saves came
-                                in the last few seconds (so nobody can flood the server with them), and a random id for
-                                the browser tab you're playing in (so the game only runs in one tab at a time). Your game sends
-                                what you did since the last save every 30 seconds, with the time of each purchase and how many
-                                times you clicked each second, so the server can check it. Only the result is kept, not the list
-                                of clicks. To spot auto-clickers, the game page looks at how long you hold each click, the gaps
-                                between clicks and where the pointer is, but that stays in your browser: all it sends is whether
-                                a click looked like an auto-clicker's, and it isn't kept. Other people only see
-                                the totals on the Ore Mining Inc. leaderboard (ore mined, ore per second, Dark Matter, Antimatter,
-                                Strange Matter, Warp Jumps, clicks and achievements), and on its Rising tab, which only lists
-                                players who haven't learned the whole skill tree (so it keeps how many skills you've learned).
-                                The save also keeps how far you are with the day's Starbound Shifts, how many Starbound Parts you've
-                                given from ore that day and in all, how many days you've done every Shift and how many weekly
-                                Anomalies you've finished, the Anomaly you're in and the ones you've saved to carry on later
-                                (each its own game, kept the same way, until you finish it, leave it or throw it away), for each
-                                Anomaly or stack of them you've finished how many times, your best time and the last build you
-                                finished it for, the last Anomaly you went into, when the Afterglow from finishing one runs out,
-                                which Shift you swapped that day, which
-                                Engines' last stages you helped fill, and the asteroid skin, background and click sparks you
-                                picked.
-                            </li>
-                            <li>
-                                Your best time for each Ore Mining Inc. Anomaly (or stack of them) you finish, how many times
-                                you've finished it and when you last did, and the same for each week's weekly Anomaly you finish
-                                in its week. <strong>This is shown to everyone</strong> with an account on the Ore Mining Inc.
-                                leaderboard's Anomaly tabs, and it's what gives the leaderboard titles shown under your name
-                                there ("Gauntlet Runner", "Singularity", or "Forgemaster" and "Engineer" for giving parts to
-                                the Starforge or the Cosmic Engine once the stage with that title is built). Once the
-                                Starforge's Cooling Fins are built, the weeks you were among the 3 fastest at the weekly Anomaly
-                                also show as gold, silver and bronze medals on your profile. It's kept until you delete your
-                                account.
-                            </li>
-                            <li>
-                                The Starbound Parts you give to Ore Mining Inc.'s Project Starbound (the Cosmic Engine, then the
-                                Starforge, then the builds after it), which everyone builds together: how many, whether they came from ore, Strange
-                                Matter, a Starbound Shift or an Anomaly (and which one, and how long it took you), which Engine
-                                and stage they went into, and when (one line per kind for each save). <strong>This is shown to everyone</strong>
-                                with an account: your name and the parts you gave in the Project Starbound view's list of the latest parts and
-                                its top 10, and on the Ore Mining Inc. leaderboard's Project Starbound tabs (with how many came from
-                                each). If you've given parts to a build once its badge stage is built (the Cosmic Engine's
-                                Crew Deck, the Starforge's Forge Floor), your profile shows its badge (Engine Crew, Forge Crew),
-                                and if you gave parts to its last stage before it was finished, that stage's badge too
-                                (Ignition, First Light, and from Build #3 on only for every 10th build, like Lamplighter). Once the Starforge's Alloy Bins are built, the Project Starbound view's Hall of
-                                Engines shows the names of the 3 players who gave the most to each finished build. The builds'
-                                locks count how many different players gave parts or finished certain Anomalies (some only in
-                                under a certain time, or only players who haven't learned the whole skill tree), but without
-                                showing who. When a stage of Project Starbound is finished, everyone
-                                who has made a Warp Jump gets a notification about it (it doesn't say who helped).
-                            </li>
-                            <li>
-                                Ore Mining Inc. crash reports, only if you agree to send one. While the game is open, it notes
-                                down in your browser what it's doing: its saves and how they went, errors, moments it was slow
-                                or froze, which view you're on and which of the game's auto switches are on, how much memory
-                                the page uses, how many elements and animations are on it, its frame rate, how long each part
-                                of the game takes to run, and the last parts it ran. That stays in your browser (see
-                                <a href="#privacy-cookies">Cookies and local storage</a>). If the game freezes or closes
-                                without saving properly while you're playing, the next time you open it, it asks whether it may
-                                send a crash report about it. You can see everything in it before you answer. If you say yes, it's
-                                stored with your account, the time and your browser's user agent (which says which browser
-                                and system you use): what the game noted down, what it was doing when it froze and for how long,
-                                your Ore Mining Inc. save as it was then, your screen size, how many processor cores and how
-                                much memory your device has (as your browser tells, rounded), and the name of its graphics card
-                                (as your browser tells it, some browsers give a general or made-up one). If it crashed more than
-                                once since you last answered, it's still one report, with when and how the older crashes
-                                happened in it too (up to 4 of them). If you say no, nothing is sent
-                                and it's deleted from your browser.
-                            </li>
-                            <li>
-                                A short note from your browser if Ore Mining Inc. crashes. If you're logged in and your browser
-                                does this (Chrome and some others built on it), the game's page asks it to tell HB Hub when the
-                                game's tab crashes, for example by running out of memory. Your browser sends this by itself, without
-                                asking you, so unlike the crash reports above it isn't tied to you. We keep only the reason, when
-                                it happened and your browser's user agent (which says which browser and system you use). We don't
-                                keep your account, your IP address or your save with it, and if your browser sends your login
-                                cookie along, it isn't read. Site admins can see these notes.
-                            </li>
+                            <li>at vise side-admins, hvilke konti der bruges i samme browser, så udelukkede brugere ikke blot kan oprette en ny konto (se <a href="#see">Hvem har adgang</a>),</li>
+                            <li>at forhindre, at nogen henter de daglige chips flere gange med ekstra konti (se <a href="#why">afsnit 3</a>).</li>
                         </ul>
                         <p>
-                            Chips are virtual. HB Hub never asks for, or stores, any payment details. If you buy extra chips
-                            from the owner, the payment and the talk about it happen outside the site's casino (in a chat
-                            message or somewhere else), and a site admin adds the chips you get, which shows up as a change to your balance like any other.
+                            Det bruges aldrig til reklamer, statistik, analyseprofiler eller til at følge dig på andre hjemmesider,
+                            og det deles ikke med nogen.
                         </p>
-                        <h3>Playing without an account</h3>
+                        <p class="legal-note">
+                            <strong>Du kan sige nej til fingeraftryk med Global Privacy Control (GPC).</strong> Slår du GPC til i
+                            din browsers indstillinger eller med en udvidelse, beregnes og sendes der intet fingeraftryk, og
+                            serveren kasserer alt, hvad den
+                            alligevel måtte modtage fra en browser, der sender signalet. Du behøver ikke gøre andet, og siden virker
+                            som normalt. Fingeraftryk, der blev gemt, før du slog det til, slettes 180 dage efter, de sidst blev set;
+                            vil du have dem slettet med det samme, kan du skrive til os (se <a href="#rights">Dine rettigheder</a>).
+                            Dine konti kan stadig kobles sammen via cookien hbHubDevice, som er nødvendig for sidens sikkerhed.
+                            Opretter du din konto med GPC slået til, er <strong>Help improve HB Hub</strong> desuden slået
+                            fra som standard (se <a href="#gpc">Fejlrapporter fra browseren</a>). Det ældre signal "Do Not Track"
+                            respekteres på samme måde.
+                        </p>
+
+                        <h3>Bandlyste billeder</h3>
                         <p>
-                            The free games at <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, Sudoku, and Blackjack,
-                            Baccarat, Roulette and Slots with play chips) can be played without an account. Then nothing about you or your game is
-                            stored on HB Hub's server, except a server busy report if the server is too busy to answer your
-                            browser (see <a href="#watchdog">Server busy reports</a> below). Your game is kept in your own browser instead, encrypted by HB Hub so it
-                            can't be read or changed there, and sent along with each move, so the server can check it with the
-                            same rules as the normal games and send it back. Wordle and Ore Mining Inc. keep it in local storage
-                            (see <a href="#cookies">Cookies and local storage</a>). Sudoku is played only in your browser and
-                            kept in local storage too, without being sent to the server at all; Minesweeper and the casino games only keep it in
-                            the open page, so a Minesweeper board and the play chips start over every time. No cookie is set (they only look at whether the browser
-                            already has the hbHubDevice cookie from logging in before, see <a href="#cookies">Cookies and local
-                            storage</a>), and the free games have no leaderboards, stats or crash reports. The only thing they store on the server is each day's Wordle word, which is
-                            the same for everyone.
+                            Når en konto udelukkes, eller en admin fjerner et billede, der bryder reglerne, kan en kopi af
+                            profilbilledet eller bannerbilledet blive føjet til en liste over bandlyste billeder sammen med, hvilken
+                            konto det kom fra, og hvilken admin der tilføjede det. Admins kan også selv tilføje billeder. Nye profil-
+                            og bannerbilleder sammenlignes med listen ud fra filens hash og et visuelt fingeraftryk, så også
+                            skalerede eller beskårne kopier genkendes. Til bannerbilleder sender din browser en lille PNG-kopi, der
+                            kun bruges til sammenligningen og ikke gemmes. Ved et match udelukkes kontoen automatisk og beholder
+                            billedet, så admins kan se årsagen. Vi gemmer kun fingeraftryk af bandlyste billeder.
+                        </p>
+
+                        <h3>Beskeder og chats</h3>
+                        <ul>
+                            <li>De beskeder, du sender, med tidspunkt, chat, eventuelt svar og eventuel GIF.</li>
+                            <li>Vedhæftede filer (op til 10 pr. besked) med navn, størrelse, type, og hvornår de blev sendt og udløber. De gemmes som filer på serveren. Billeder og videoer konverteres i din browser (til JPEG XL og WebM), medmindre du vælger at beholde originalen, eller din browser ikke kan konvertere videoen; konverterede filer indeholder ikke oplysninger som optagelsessted. Andre filer komprimeres på serveren. Hvis en side-admin har ændret dit antal billetter til vedhæftede filer, gemmes det på din konto.</li>
+                            <li>Reaktioner (emoji, besked og tidspunkt). En reaktion, du fjerner, slettes.</li>
+                            <li>Fastgjorte beskeder: hvem der fastgjorde dem og hvornår, synligt for alle i chatten. Fastgørelse og løsning noteres med en besked i chatten. Når en besked løsnes, slettes oplysningen om, hvem der fastgjorde den.</li>
+                            <li>Dine chats samt gruppenavne, -ikoner og -baggrunde.</li>
+                            <li>Kælenavne: i en gruppe gemmes kælenavnet med personens medlemskab og vises for alle i gruppen. Ændringen noteres med en besked i chatten, og den, der får et kælenavn, får en notifikation (ikke fra lydløse grupper eller blokerede personer). Kælenavnet forsvinder, når det fjernes, eller personen forlader gruppen. I en privat chat er kælenavnet kun synligt for dig.</li>
+                            <li>Mens du skriver, gemmes tidspunktet, så andre ser "... is typing". Selve teksten gemmes aldrig, og tidspunktet ryddes, når du sender, tømmer feltet eller holder op med at skrive. Det gemmes ikke, hvis du er spøgelsesudelukket eller gjort lydløs i chatten.</li>
+                            <li>Slettede beskeder skjules for alle, men deres tekst bevares i 3 dage, så side-admins kan undersøge anmeldelser af misbrug. Derefter slettes teksten permanent; kun en note om, at der var en besked (afsender, tidspunkter og reaktioner), bliver tilbage. Vedhæftede filer i en slettet besked slettes permanent, inklusive deres navne.</li>
+                            <li>Notifikationer: hvad der skete, hvem der gjorde det, og om du har set det. Fjerner en gruppeadmin en side-admin fra en gruppe, gemmer notifikationen side-adminens tidligere medlemskab (rolle, kælenavn, lydløs og læseposition), så det kan fortrydes; notifikationen slettes derefter.</li>
+                            <li>Omtaler (@navn) i chats og i chatten i skak, Matador og UNO giver en notifikation om, hvem og hvor. Du får den ikke fra lydløse chats eller blokerede personer, og kun hvis du ikke har chatten eller spillet åbent; derfor gemmes, hvornår du sidst havde hver chat åben. Slettes beskeden, slettes notifikationerne også.</li>
+                            <li>
+                                Spøgelsesudelukkelse: en side-admin kan spøgelsesudelukke en konto, der bryder reglerne, uden at
+                                kontoen får besked. Kontoens aktivitet i chats gemmes som normalt, men markeres, så kun kontoen selv og
+                                side-admins kan se den. Personer, kontoen inviterer, ser ikke chatten, før en anden inviterer dem, eller
+                                de selv starter en chat med kontoen. Markeringerne bevares, hvis udelukkelsen ophæves. En ny konto (højst
+                                3 dage gammel), der bruges i samme browser som en spøgelsesudelukket konto (cookien hbHubDevice), bliver
+                                selv spøgelsesudelukket, og adminloggen viser, hvilken konto den hænger sammen med.
+                            </li>
+                        </ul>
+
+                        <h3>Casino og spil</h3>
+                        <ul>
+                            <li>Din chipsaldo og alle ændringer af den (indsatser, gevinster, daglige chips og justeringer foretaget af en side-admin, med hvilken admin), samt hvornår du sidst hentede de daglige chips, og hvor mange dage i træk.</li>
+                            <li>Dine runder i casinospillene (bl.a. Blackjack, Baccarat, Roulette og Slots), som bruges til ranglisterne. Andre ser kun dine totaler: runder, sejre, nederlag, sejrsprocent, største gevinst, vundne og tabte chips samt din nuværende saldo. Casinoets forside viser toppen af ranglisten og antallet af aktive spillere uden navne.</li>
+                            <li>Roulette er ét fælles bord. Mens du har indsatser på bordet, kan alle med siden åben se dit navn, dit profilbillede, dine indsatser, og om du er klar. Efter spinnet vises dit resultat, indtil næste runde starter.</li>
+                            <li>Skak og Matador: pladser, træk, gemte spil, resultater (at forlade et spil tæller som et nederlag) og spillets chat.</li>
+                            <li>UNO: din plads, dine kort, dine træk, invitationer og spillets chat. Kun du ser dine kort under spillet; ved spillets afslutning ser deltagerne de resterende kort. Spillet slettes, når alle har forladt det. Til ranglisten gemmes én linje pr. spil (resultat, point, resterende kort, antal spillere og tidspunkt); andre ser kun totaler.</li>
+                            <li>Wordle: dine gæt, resultat og tidspunkter for hver dag og hvert sprog. De udgør din statistik og din plads på ranglisten, hvor andre kun ser totaler, aldrig dine gæt. Det tilfældige ord gemmes separat, overskrives ved hvert nyt ord og vises ikke for andre.</li>
+                            <li>Minesweeper: brætstørrelse, resultat, tid og tidspunkter for hvert spil, samt det mindste antal klik, brættet kunne vindes på, for at opdage sejre, der er for hurtige til et menneske. Spil, hvor et klik kom fra kode i stedet for fra dig, stoppes. Mens et spil er i gang, gemmes også åbnede felter og minernes placering; det slettes, når spillet slutter. Dine flag bliver i din browser.</li>
+                            <li>Sudoku: niveau, resultat (med eller uden hints, eller for hurtigt til at tælle), antal hints, tid, pausetid og tidspunkter. Mens et spil er i gang, gemmes også opgaven og løsningen; de slettes, når spillet slutter. Dine tal og noter bliver i din browser, indtil brættet er udfyldt.</li>
+                            <li>
+                                Ore Mining Inc.: dit gemte spil, dvs. din fremgang (ressourcer, bygninger, opgraderinger, færdigheder,
+                                præstationer, klik, Star Shards og køb i Shard Shop, valgte skins og effekter, Starbound Shifts og
+                                Anomalies, inklusive gemte Anomalies og bedste tider), hvornår du startede og sidst gemte, antallet af
+                                nylige gemninger (for at forhindre overbelastning), og et tilfældigt id for fanen. Hvert 30. sekund sender
+                                spillet dine handlinger siden sidste gemning, så serveren kan kontrollere dem; kun resultatet gemmes.
+                                Spillet registrerer i din browser, hvordan du klikker, for at opdage autoklikkere, men sender kun, om et
+                                klik lignede en autoklikker, og det gemmes ikke. Ranglisten viser kun totaler, og fanen Rising viser kun
+                                spillere, der ikke har lært hele færdighedstræet.
+                            </li>
+                            <li><strong>Synligt for alle med en konto:</strong> dine bedste tider og antal gennemførelser i Ore Mining Inc.s Anomalies (også de ugentlige) og de titler, de giver på ranglisten. Når Starforges Cooling Fins er bygget, vises dine top 3-placeringer i ugentlige Anomalies som medaljer på din profil.</li>
+                            <li><strong>Synligt for alle med en konto:</strong> de Starbound Parts, du bidrager med til Project Starbound: antal, kilde (malm, Strange Matter, et Shift eller en Anomaly og din tid), hvilket byggeri og trin, og hvornår. Dit navn og dine bidrag vises i listen over seneste bidrag, top 10, ranglistens Project Starbound-faner og, når Starforges Alloy Bins er bygget, i Hall of Engines (top 3 pr. færdigt byggeri). Bidrag kan give mærker på din profil. Byggeriernes låse tæller antallet af forskellige spillere uden at vise, hvem de er. Når et trin bliver færdigt, får alle, der har lavet et Warp Jump, en notifikation, der ikke nævner, hvem der hjalp.</li>
+                            <li>
+                                Nedbrudsrapporter fra Ore Mining Inc., kun hvis du accepterer. Mens spillet er åbent, fører det en log i
+                                din browser over bl.a. gemninger, fejl, langsomme perioder, aktiv visning, aktive automatiseringer,
+                                hukommelsesforbrug, billedhastighed og kørselstider. Fryser spillet eller lukkes det uden at gemme,
+                                spørger det næste gang, om en rapport må sendes, også hvis du har slået <strong>Help improve HB Hub</strong>
+                                fra (spørgsmålet gør opmærksom på det). Du kan se hele rapporten, før du svarer. Siger du ja, gemmes den
+                                med din konto, tidspunktet, din browsers user agent, loggen, dit gemte spil på det tidspunkt,
+                                skærmstørrelse, antal processorkerner, afrundet hukommelse og grafikkortets navn, som browseren oplyser
+                                det. Flere nedbrud samles i én rapport (op til 4 tidligere). Siger du nej, sendes intet, og loggen slettes.
+                            </li>
+                            <li>Nedbrudsbeskeder fra browseren: er du logget ind, har du ikke slået <strong>Help improve HB Hub</strong> fra under dine <a href="/settings#improve">indstillinger</a>, og understøtter din browser det (Chrome og visse andre), beder spillet browseren om automatisk at give besked, hvis fanen går ned. Beskeden er ikke knyttet til dig: vi gemmer kun årsagen, tidspunktet og browserens user agent, ikke din konto, IP-adresse eller dit spil, og en medsendt login-cookie læses ikke. Kun side-admins kan se beskederne.</li>
+                        </ul>
+                        <p>
+                            Chips er virtuelle. HB Hub beder aldrig om og gemmer aldrig
+                            betalingsoplysninger. Chips er gratis, og køb af ekstra chips er kun en sjælden undtagelse. Sker det, foregår betalingen uden for siden, og en
+                            side-admin tilføjer chipsene som en almindelig ændring af din saldo.
+                        </p>
+
+                        <h3>Spil uden en konto</h3>
+                        <p>
+                            De gratis spil på <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, Sudoku samt Blackjack,
+                            Baccarat, Roulette og Slots med legechips) kan spilles uden en konto. Der gemmes da intet om dig eller
+                            dit spil på serveren, bortset fra fejlrapporter fra browseren (se
+                            <a href="#watchdog">Fejlrapporter fra browseren</a>). Wordle og Ore Mining Inc. gemmes i stedet
+                            krypteret i din browser og sendes med hvert træk, så serveren kan kontrollere det. Sudoku spilles
+                            udelukkende i din browser, mens Minesweeper og casinospillene kun findes på den åbne side og starter
+                            forfra, når den genindlæses. De gratis spil sætter ingen cookies (de tjekker kun, om cookien hbHubDevice
+                            findes) og har ingen ranglister, statistik eller nedbrudsrapporter.
                         </p>
                         <p>
-                            If you log in or sign up from a free game, your Wordle games of today and your Ore Mining Inc. game
-                            are added to your account, but only where it doesn't have them yet (it never writes over your own
-                            games). From then on they're stored like any account's games (see Casino and games above). Play chips
-                            are never added to an account.
+                            Logger du ind eller opretter dig fra et gratis spil, overføres dagens Wordle-spil og dit Ore Mining
+                            Inc.-spil til din konto, men kun hvis kontoen ikke allerede har dem. Legechips overføres aldrig.
                         </p>
-                        <h3>Feedback</h3>
+
+                        <h3>Feedback og meddelelser</h3>
                         <p>
-                            When you send feedback with the Feedback button in the side bar, what you wrote is stored with your
-                            account, the time, and the address of the page you were on when you pressed the button (only the
-                            page, like <code>/chat/</code>, not which chat or what you searched for), and whether you sent it from the test version of the site. Site admins can also mark it
-                            as done, which stores which admin did it and when. When they mark it as done with a reply, you get
-                            the reply as a notification under the bell (it says "An admin", not which one). The reply is kept in
-                            that notification, like your other notifications, and in the admin log below.
+                            Feedback, du sender via Feedback-knappen, gemmes med din konto, tidspunktet, den side, du var på (kun
+                            stien, fx <code>/chat/</code>), og om den kom fra testversionen. Side-admins kan markere den som
+                            færdig, hvilket gemmer hvem og hvornår, og eventuelt svare. Svaret sendes til dig som en notifikation
+                            fra "An admin" og gemmes i notifikationen og i adminloggen.
                         </p>
-                        <h3>Announcements</h3>
                         <p>
-                            Site admins can send an announcement to everyone, which every account that isn't banned or deleted
-                            gets as a notification under the bell (it says "the admins", not which one). It's kept in your
-                            notifications like any other, with whether you've seen it. The announcement itself is kept with which
-                            admin sent it, when, how many got it and, worked out from the notifications, how many have seen it
-                            (not who). Only site admins can see that. When an admin takes it back, it's deleted, and so is
-                            everyone's notification of it.
+                            Side-admins kan sende meddelelser til alle aktive konti som en notifikation. Meddelelsen gemmes med
+                            afsender, tidspunkt, antal modtagere og antal, der har set den (ikke hvem). Trækkes den tilbage, slettes
+                            den sammen med alle notifikationer om den.
                         </p>
-                        <h3 id="watchdog">Server busy reports</h3>
+
+                        <h3 id="watchdog">Fejlrapporter fra browseren</h3>
                         <p>
-                            HB Hub's server can only handle a few requests at the same time, and when there are too many it
-                            answers some of them with a "server busy" error (508) instead. Every page on HB Hub counts the times
-                            that happens to it, and sends a short report about it to HB Hub's own server a few seconds later
-                            (trying again until it gets through), so the admins can see when and where the server is too busy.
-                            This also happens when you're not logged in. A report holds how many errors there were, when the first
-                            and last of them happened, when the report arrived, the address of the page you were on and of the
-                            ones that gave the error (only the page, like <code>/chat/</code>, not which chat or what you searched
-                            for), your account if you're logged in, your IP address, your browser's user agent (which says which
-                            browser and system you use), and whether it came from the test version of the site. Until it has gone
-                            through, it's kept in your browser (see <a href="#cookies">Cookies and local storage</a>). Only site
-                            admins can see the reports.
+                            Alle sider registrerer fejl i din browser og sender kort efter en rapport til HB Hubs egen server, så
+                            fejl kan findes og rettes. Det sker også, når du ikke er logget ind. Der registreres fejlsvar fra
+                            serveren (fx 404 eller 508 ved overbelastning), forespørgsler uden svar, filer der ikke kan indlæses,
+                            JavaScript-fejl og blokeringer fra sidens sikkerhedsregler (Content-Security-Policy). Fejl fra
+                            browserudvidelser og afbrudte forespørgsler tælles ikke med.
                         </p>
-                        <h3>Admin log</h3>
                         <p>
-                            Everything a site admin does in the admin panel is written to an admin log: which admin it was, when,
-                            what they did, and which account or chat it was about. That includes just opening your account or a
-                            chat you're in, since that shows your messages and personal info, and downloading your data. It also
-                            keeps a few details, like how many chips were added or which message was deleted, but never a
-                            password, a name or what a message said. Before every change, the admin can type why they're doing
-                            it, and that reason is kept with it in the log. When an admin replies to feedback, the reply is kept
-                            there as the reason. When an account is banned automatically for uploading a
-                            banned picture, that goes in the admin log too, with which picture it was, whether it was uploaded as
-                            a banner and whether it happened when signing up. If a site admin changes or removes your status, or
-                            removes your profile picture or banner picture, that's in the admin log too, but not what the status said.
+                            En rapport indeholder antal fejl, tidspunkter, den side du var på, og for hver fejl dens type, antal,
+                            adresse (uden forespørgselsdelen efter <code>?</code>), statuskode og, for JavaScript-fejl og
+                            blokeringer, fejlbeskeden (højst 300 tegn) og kodelinjen. Derudover gemmes din konto (hvis du er logget
+                            ind), din IP-adresse, din browsers user agent, og om rapporten kom fra testversionen. Kun side-admins
+                            kan se rapporterne.
                         </p>
-                        <h3>What isn't stored</h3>
                         <p>
-                            No email address, phone number, real address or date of birth. No analytics profile, no advertising
-                            ids, and no record of which pages you open, apart from the one page you send feedback from, the
-                            views of Ore Mining Inc. in a crash report you agree to send, the pages in a server busy report
-                            (and, for site admins, the admin log above).
+                            Er du logget ind, kan du slå dette fra med <strong>Help improve HB Hub</strong> under dine
+                            <a href="/settings#improve">indstillinger</a>. Indstillingen er slået til som standard, undtagen hvis du
+                            opretter din konto med GPC slået til (se nedenfor). Når indstillingen er slået fra, sendes
+                            ingen fejlrapporter, dine sidevisninger tælles ikke, ventende rapporter kasseres, og Ore Mining Inc.
+                            beder ikke browseren om nedbrudsbeskeder. Spillets egne nedbrudsrapporter spørger stadig først, men et
+                            ja gælder kun den ene rapport; indstillingen forbliver slået fra.
+                        </p>
+                        <p class="legal-note" id="gpc">
+                            <strong>Med Global Privacy Control (GPC) er "Help improve HB Hub" slået fra som standard.</strong> Har
+                            du slået GPC (eller det ældre "Do Not Track") til i din browser, når du opretter din konto, oprettes kontoen med <strong>Help improve HB
+                            Hub</strong> slået fra fra starten, og du får en notifikation om det. Der sendes da ingen fejlrapporter,
+                            og dine sidevisninger tælles ikke, uden at du skal gøre noget. Du kan selv slå indstillingen til igen
+                            under dine <a href="/settings#improve">indstillinger</a>. Signalet tjekkes kun, når kontoen oprettes:
+                            slår du GPC til senere, ændres indstillingen ikke, men du kan altid selv slå den fra. Uanset
+                            hvornår du slår GPC til, beregnes der intet browserfingeraftryk (se
+                            <a href="#fingerprint">Browserfingeraftryk</a>).
+                        </p>
+
+                        <h3 id="page-views">Sidevisninger</h3>
+                        <p>
+                            Vi tæller, hvor mange gange hver side åbnes pr. dag, så vi kan se, hvilke sider der bruges mest. Vi
+                            gemmer kun datoen, sidens sti (uden forespørgselsdelen), antal visninger, og hvor mange af dem der var
+                            uden login; aldrig hvem, IP-adresse, browser eller andet, der kan knyttes til en person. Søgemaskiner og
+                            andre robotter tælles ikke med, og har du slået <strong>Help improve HB Hub</strong> fra, tælles dine
+                            visninger ikke.
+                        </p>
+                        <p>
+                            Åbner du en side fra et link med <code>utm_source</code> i adressen (fx
+                            <code>?utm_source=instagram</code>, som fortæller, hvor linket er delt), tæller vi også visningen pr.
+                            kilde: vi gemmer datoen, kilden, sidens sti, antal visninger, og hvor mange af dem der var uden login. Heller
+                            ikke her gemmes hvem, IP-adresse eller browser. Side-admins kan se tallene i adminpanelet.
+                        </p>
+
+                        <h3 id="admin-log">Adminlog</h3>
+                        <p>
+                            Alt, hvad en side-admin gør i adminpanelet, registreres i en adminlog: hvilken admin, hvornår, hvad og
+                            hvilken konto eller chat det vedrørte. Det gælder også, når en admin blot åbner en konto eller en chat
+                            eller downloader data. Loggen kan indeholde få detaljer (fx antal tilføjede chips eller hvilken besked
+                            der blev slettet) og adminens begrundelse, men aldrig adgangskoder, navne eller beskedindhold. Automatiske
+                            udelukkelser for bandlyste billeder og ændringer af din status eller dine billeder registreres også, dog
+                            ikke statussens tekst.
+                        </p>
+                        <p>
+                            Du kan få vist adminloggens poster, der vedrører dig, ved at skrive til
+                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. For at beskytte admins mod
+                            chikane eller gengældelse for en udelukkelse eller anden moderation kan posterne udleveres
+                            anonymiseret, så det ikke fremgår, hvilken admin der gjorde hvad. Du får stadig at vide, hvad der
+                            blev gjort, hvornår og hvad det vedrørte. Kun i yderste tilfælde, hvor det ikke er nok at
+                            anonymisere, fx hvis der er konkret mistanke om, at oplysningerne vil blive misbrugt, kan en
+                            anmodning afvises helt eller delvist, i det omfang databeskyttelsesreglerne tillader det (GDPR
+                            art. 15, stk. 4, og databeskyttelseslovens § 22). Afviser vi en anmodning, får du at vide hvorfor,
+                            og du kan klage til Datatilsynet (se <a href="#rights">Dine rettigheder</a>).
+                        </p>
+
+                        <h3>Hvad vi ikke gemmer</h3>
+                        <p>
+                            Vi gemmer ingen e-mailadresse, intet telefonnummer, ingen adresse eller fødselsdato. Vi opbygger ingen
+                            analyseprofiler, bruger ingen reklame-id'er og registrerer ikke, hvilke sider du besøger, ud over det,
+                            der er beskrevet ovenfor (siden i feedback, nedbrudsrapporter og fejlrapporter, samt anonyme
+                            sidevisningstal).
                         </p>
                     </section>
 
                     <section id="why" aria-labelledby="privacy-why">
-                        <h2 id="privacy-why">3. Why it's stored</h2>
+                        <h2 id="privacy-why">3. Formål og retsgrundlag</h2>
                         <ul>
-                            <li><strong>To run the site</strong>: your account, messages and games are the site. Without them there's nothing to show you.</li>
-                            <li><strong>To keep it safe</strong>: IP addresses, failed logins and the device cookie stop people from breaking into accounts, spamming sign-ups and dodging bans. The banned pictures list stops a banned person from coming back with a copy of their old profile.</li>
-                            <li><strong>To keep it friendly</strong>: messages are kept so admins can act on bullying or abuse.</li>
-                            <li><strong>To make it better</strong>: feedback, and the page it came from, helps admins find bugs and see what people want. Ore Mining Inc. crash reports, which are only sent if you agree, and the short notes browsers send about crashes, which aren't tied to you, help find out why the game crashed. Server busy reports show when and where the server has too much to do, so it can be fixed.</li>
+                            <li><strong>Levering af tjenesten</strong>: din konto, dine beskeder og dine spil er selve tjenesten.</li>
+                            <li><strong>Sikkerhed</strong>: IP-adresser, mislykkede logins, enhedscookien og browserfingeraftryk forhindrer kontoovertagelse, masseoprettelse af konti og omgåelse af udelukkelser. De samme koblinger sikrer, at de daglige chips gives én gang per person: når én af dine konti har hentet dem, får dine øvrige konti kun 20 % den dag. Det beregnes, når du henter dem, og der gemmes intet nyt om det. Listen over bandlyste billeder forhindrer udelukkede brugere i at vende tilbage med samme profil. Browserfingeraftryk bruges kun til disse formål og kan fravælges med Global Privacy Control (se <a href="#fingerprint">Browserfingeraftryk</a>).</li>
+                            <li><strong>Et trygt fællesskab</strong>: beskeder gemmes, så admins kan gribe ind over for mobning og misbrug.</li>
+                            <li><strong>Forbedring af siden</strong>: feedback, nedbrudsrapporter, fejlrapporter og sidevisningstal bruges til at finde fejl, forstå overbelastning og prioritere udviklingen.</li>
                         </ul>
                         <p>
-                            Under the GDPR, this is "necessary to provide the service you signed up for" and HB Hub's
-                            "legitimate interest" in keeping it secure. Browser notifications are only shown if you allow them
-                            in your browser and turn them on in your settings.
+                            Retsgrundlaget er, at behandlingen er nødvendig for at levere den tjeneste, du har tilmeldt dig
+                            (GDPR art. 6, stk. 1, litra b), samt HB Hubs legitime interesse i at holde siden sikker og velfungerende
+                            (art. 6, stk. 1, litra f). Browsernotifikationer vises kun, hvis du selv tillader dem i din browser og
+                            slår dem til i dine indstillinger.
                         </p>
                     </section>
 
                     <section id="see" aria-labelledby="privacy-see">
-                        <h2 id="privacy-see">4. Who can see what</h2>
+                        <h2 id="privacy-see">4. Hvem har adgang</h2>
                         <ul>
-                            <li><strong>Everyone with an account</strong> can see your profile: your name, profile picture, banner, bio, status, class (like "2.X", "Graduate (X)" or "Not HTX"), education badge, whether you're a site admin, your Discord username if you've linked Discord (unless you've turned that off in your settings), when you were last online and when you joined, and your spot on the leaderboards, and the Starbound Parts you've given to Ore Mining Inc.'s Project Starbound (with a badge on your profile for each build you helped build once its badge stage is built, and one for each build's last stage you helped fill), your Ore Mining Inc. Anomaly best times, your weekly Anomaly medals and your leaderboard title there. People playing without an account see how far Project Starbound is, but not who gave what.</li>
-                            <li><strong>Everyone in your class's group chat</strong> (everyone on HB Hub who started HTX the same year in the same field) can see that you're in it, and the messages you send there. You're put in it automatically when you sign up or change your class, and taken out of your old class's chat when you change it. Nobody is a group admin there, so only site admins can remove anyone or delete messages in it.</li>
-                            <li><strong>People in a chat with you</strong> can see the messages in that chat and who reacted to them with what, and open and download its attachments, except what a ghost-banned account did there, which only it and site admins see. Group owners and admins can delete messages (and with them their attachments) and remove members in their group. When they remove a site admin, the site admin can undo it from their notification: they're put back in the group as they were, and the notice about it in the chat is deleted.</li>
-                            <li><strong>People in a game with you</strong> can see your moves and the game's chat.</li>
+                            <li><strong>Alle med en konto</strong> kan se din profil: navn, profilbillede, banner, bio, status, klasse (fx "2.X", "Graduate (X)" eller "Not HTX"), uddannelsesmærke, om du er side-admin, dit Discord-brugernavn (medmindre du har slået det fra), hvornår du sidst var online og blev medlem, dine placeringer på ranglisterne samt dine bidrag, tider, medaljer, titler og mærker i Ore Mining Inc. Spillere uden konto kan se Project Starbounds fremgang, men ikke hvem der har bidraget.</li>
+                            <li><strong>Din klasses gruppechat</strong> (alle, der startede på HTX samme år på samme studieretning) kan se, at du er medlem, og de beskeder, du sender dér. Du tilføjes automatisk ved oprettelse og klasseskift og fjernes fra din tidligere klasses chat. Chatten har ingen gruppeadmins, så kun side-admins kan fjerne medlemmer eller slette beskeder.</li>
+                            <li><strong>Deltagere i en chat</strong> kan se chattens beskeder og reaktioner og åbne dens vedhæftede filer, bortset fra indhold fra spøgelsesudelukkede konti. Gruppeejere og -admins kan slette beskeder og fjerne medlemmer. Fjerner de en side-admin, kan side-adminen fortryde det via sin notifikation, hvorefter beskeden om det i chatten slettes.</li>
+                            <li><strong>Medspillere</strong> kan se dine træk og spillets chat.</li>
                             <li>
-                                <strong>Site admins</strong> can see everything about an account in the admin panel, including
-                                messages in every chat (also deleted ones), IP addresses and logins, the list of banned
-                                pictures, and all feedback. The admin panel lists the attachments you've sent that are still
-                                kept (their name, size, which chat and how many tickets they take), and your banner picture with them, but doesn't open them,
-                                though the site's owner can reach attachment files on the server. Site admins can delete your
-                                attachments and give you more tickets or take some away. They use it to deal with abuse, bans and
-                                broken accounts, and to improve the site. Feedback, Ore Mining Inc. crash reports and server busy reports are only
-                                ever seen by site admins, never by other users. They can never see your password or your two-factor secret. Everything they do
-                                there, also just looking at your account or a chat you're in, goes in the admin log, which only
-                                site admins can read and nobody can change or delete.
-                                Site admins can also see which accounts have been logged in to from the same browser (the
-                                hbHubDevice cookie, see <a href="#privacy-cookies">Cookies and local storage</a>, never your IP
-                                address), with when each browser was first and last used, and put those accounts side by side on
-                                one page, to deal with one person's extra accounts together, like banning them all at once.
-                                Nothing new is stored for this: it uses the known devices that are already kept for the login.
+                                <strong>Side-admins</strong> kan i adminpanelet se alle oplysninger om en konto, herunder beskeder i
+                                alle chats (også slettede beskeder i 3 dage), IP-adresser, logins, bandlyste billeder, feedback, nedbrudsrapporter,
+                                fejlrapporter og sidevisningstal. Adminpanelet viser oplysninger om dine vedhæftede filer (navn,
+                                størrelse, chat og billetter) og dit bannerbillede, men åbner ikke filerne, selvom sidens ejer har
+                                adgang til dem på serveren. Side-admins kan slette dine vedhæftede filer og ændre dit antal billetter.
+                                De kan se, hvilke konti der er brugt i samme browser (ud fra cookien hbHubDevice eller
+                                browserfingeraftrykket, aldrig ud fra IP-adressen), og håndtere sådanne konti samlet, fx ved at udelukke
+                                dem på én gang. Et fingeraftryk, der deles af mere end 4 konti (fx ens skolecomputere), bruges ikke til
+                                at koble konti sammen, og admins kontrollerer først, at der ikke blot er tale om en delt computer.
+                                Side-admins kan aldrig se din adgangskode eller totrinshemmelighed. Alt, hvad de gør i adminpanelet,
+                                registreres i adminloggen, som kun side-admins kan læse, og som ingen kan ændre eller slette. Du kan
+                                dog anmode om at se de poster, der vedrører dig (se <a href="#admin-log">Adminlog</a>).
                             </li>
                         </ul>
                         <p class="legal-note">
-                            Messages are not end-to-end encrypted. They travel encrypted (HTTPS), but they're stored so the site
-                            can show them, so don't send anything you wouldn't want an admin to read.
+                            Beskeder er ikke end-to-end-krypterede. De sendes krypteret (HTTPS), men gemmes på serveren, så de kan
+                            vises. Send derfor ikke noget, du ikke ønsker, at en admin kan læse.
                         </p>
                     </section>
 
                     <section id="services" aria-labelledby="privacy-services">
-                        <h2 id="privacy-services">5. Outside services</h2>
-                        <p>Your data is never sold or shared for marketing. These services are involved in running the site:</p>
+                        <h2 id="privacy-services">5. Eksterne tjenester</h2>
+                        <p>Dine data sælges aldrig og deles ikke til markedsføring. Følgende tjenester indgår i driften af siden:</p>
                         <ul>
-                            <li><strong>Simply.com</strong> (Denmark) hosts the website, the database and chat attachments. Everything above is stored there, in the EU.</li>
+                            <li><strong>Simply.com</strong> (Danmark) hoster hjemmesiden, databasen og vedhæftede filer. Alle data opbevares i EU.</li>
+                            <li><strong>Giphy</strong> leverer GIF'er. Søgninger sendes via HB Hubs server, så Giphy ikke ved, hvem der søger, og resultaterne gemmes i 15 minutter uden oplysning om, hvem der søgte. Selve GIF'erne hentes direkte fra Giphy, som derfor ser din IP-adresse, når en GIF vises.</li>
+                            <li><strong>GitHub</strong> hoster sidens kildekode og modtager kun det samlede antal medlemmer og beskeder, aldrig oplysninger om enkeltpersoner.</li>
                             <li>
-                                <strong>Giphy</strong> provides the GIFs. Your GIF searches go through HB Hub's server, so Giphy
-                                doesn't learn who searched. To ask Giphy less often, the results of each search are kept on HB
-                                Hub's server for 15 minutes, without who searched for it, and shown to anyone who searches the
-                                same thing in that time. GIFs in the chat load straight from Giphy, which means Giphy sees your
-                                IP address when your browser shows one.
-                            </li>
-                            <li><strong>GitHub</strong> hosts the site's code. It only gets the total number of members and messages, for the counters in the README, never anything about one person.</li>
-                            <li>
-                                <strong>Discord</strong>, only if you log in or sign up with Discord, or link your Discord account. You're
-                                sent to Discord to allow it, so Discord sees that you use HB Hub and your IP address, and
-                                HB Hub gets your Discord id, username, display name and profile picture from Discord (see Your
-                                account above). When you sign up with Discord, HB Hub's server downloads that picture from
-                                Discord, which only tells Discord which picture was asked for. While your Discord account
-                                is linked, HB Hub's server also asks Discord once a night for its current username, which
-                                only tells Discord the Discord id it's asking about. HB Hub never
-                                sends Discord anything else about you, and can't post or read anything on Discord for you.
-                                <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">Discord's privacy policy</a> covers what Discord does.
+                                <strong>Discord</strong>, kun hvis du logger ind, opretter dig eller kobler din konto til med Discord.
+                                Discord ser da, at du bruger HB Hub, og din IP-adresse, og HB Hub modtager dit Discord-id, brugernavn,
+                                visningsnavn og profilbillede (se Konto og profil). Mens kontoen er koblet til, spørger HB Hubs server
+                                hver nat Discord om dit nuværende brugernavn ud fra dit Discord-id. HB Hub sender ikke andre oplysninger
+                                om dig til Discord og kan ikke læse eller skrive noget på Discord på dine vegne.
+                                <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">Discords privatlivspolitik</a> gælder for Discords behandling.
                             </li>
                         </ul>
                     </section>
 
                     <section id="cookies" aria-labelledby="privacy-cookies">
-                        <h2 id="privacy-cookies">6. Cookies and local storage</h2>
+                        <h2 id="privacy-cookies">6. Cookies og lokal lagring</h2>
                         <p>
-                            HB Hub only uses cookies it needs to work. There are no tracking or advertising cookies, so the
-                            small cookie notice only tells you about them: by using the site, you agree to them. All of them
-                            are only sent to HB Hub, over HTTPS, and scripts can't read them.
+                            HB Hub bruger kun cookies, der er nødvendige for, at siden fungerer. Vi bruger ingen sporings- eller
+                            reklamecookies, og cookie-beskeden er derfor kun til orientering. Alle cookies sendes kun til HB Hub,
+                            over HTTPS, og kan ikke læses af scripts.
                         </p>
                         <dl class="legal-cookies">
                             <?php foreach (HBHUB_PRIVACY_COOKIES as $privacyCookie => [$privacyCookieUse, $privacyCookieKept]): ?>
                                 <div>
                                     <dt><code><?= htmlspecialchars($privacyCookie) ?></code></dt>
                                     <dd><?= htmlspecialchars($privacyCookieUse) ?></dd>
-                                    <dd class="legal-cookie-kept">Kept for <?= htmlspecialchars($privacyCookieKept) ?></dd>
+                                    <dd class="legal-cookie-kept">Gemmes i <?= htmlspecialchars($privacyCookieKept) ?></dd>
                                 </div>
                             <?php endforeach; ?>
                         </dl>
-                        <p>A few small things are also saved in your browser's local storage (or session storage or IndexedDB). They never leave your browser, except the Ore Mining Inc. and free games ones where it says so:</p>
+                        <p>Følgende gemmes i din browsers local storage (eller session storage eller IndexedDB). Det forlader ikke din browser, medmindre det fremgår af beskrivelsen:</p>
                         <dl class="legal-cookies">
                             <?php foreach (HBHUB_PRIVACY_LOCAL_STORAGE as $privacyKey => $privacyKeyUse): ?>
                                 <div>
@@ -552,84 +443,76 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                     </section>
 
                     <section id="keep" aria-labelledby="privacy-keep">
-                        <h2 id="privacy-keep">7. How long it's kept</h2>
+                        <h2 id="privacy-keep">7. Opbevaring og sletning</h2>
+                        <p>Som udgangspunkt opbevares dine data, så længe du har en konto. Følgende slettes automatisk (senest natten efter fristen):</p>
+                        <ul>
+                            <li><strong>Logins</strong> efter 30 dage, eller straks når du logger ud.</li>
+                            <li><strong>Kendte browsere</strong> efter 180 dage uden login, og <strong>browserfingeraftryk</strong> 180 dage efter, de sidst blev set.</li>
+                            <li><strong>Vedhæftede filer</strong> efter 90 dage (3 dage for filer over 25 MB), eller tidligere, hvis du sletter dem eller deres besked, en admin sletter beskeden, chatten slettes, eller din konto slettes. Derefter bevares kun en note om antal, størrelse, type og datoer, aldrig filerne eller deres navne.</li>
+                            <li><strong>Teksten i slettede beskeder</strong> 3 dage efter, de blev slettet. Side-admins kan ikke se den derefter.</li>
+                            <li><strong>Nedbrudsrapporter og nedbrudsbeskeder</strong> fra Ore Mining Inc. efter 90 dage. Side-admins kan slette rapporter tidligere.</li>
+                            <li><strong>Fejlrapporter fra browseren</strong> efter 30 dage. Rapporter sendt uden login er ikke knyttet til en konto og slettes kun på denne måde.</li>
+                            <li><strong>Sidevisningstal</strong> (også dem pr. <code>utm_source</code>) efter 90 dage. De er ikke knyttet til nogen og slettes derfor ikke sammen med din konto.</li>
+                            <li><strong>Adminloggen</strong> efter ét år.</li>
+                        </ul>
                         <p>
-                            Your data is kept for as long as you have an account. Logins run out after 30 days, and a browser
-                            stops counting as a known device after 180 days without a login. Logging out a device, or
-                            logging out everywhere, deletes those logins right away.
+                            Du kan til enhver tid <strong>slette din konto</strong> på <a href="/settings">indstillingssiden</a>.
+                            Det sletter straks dit navn, profilbillede, banner, bio, status, uddannelsesmærke, klasse,
+                            indstillinger, adgangskode, totrinshemmelighed, Discord-kobling, IP-adresser, logins, kendte enheder,
+                            browserfingeraftryk, dit Ore Mining Inc.-spil og dine nedbrudsrapporter, dine fejlrapporter, dine
+                            Minesweeper- og Sudoku-spil, dit tilfældige Wordle-ord og dine vedhæftede filer. Dit navn erstattes
+                            med "Deleted User".
                         </p>
                         <p>
-                            <strong>Attachments</strong> are kept for 90 days, or for 3 days when one is bigger than 25 MB, and
-                            then deleted by themselves, at the latest the night after. They're deleted sooner when you delete them (in Your attachments in the
-                            chat, or by deleting their message), when an admin deletes their message, when their chat is deleted,
-                            or when your account is deleted. After that only a note that the message had attachments stays
-                            with it (how many, how big each was, its type and the dates), never the files or their names.
+                            Det, der er nødvendigt for, at andres chats og spil fortsat giver mening, bevares uden kobling til dit
+                            navn og vises som fra "Deleted User": dine beskeder og reaktioner, spilresultater, chiphistorik, dine
+                            bidrag til Project Starbound, din feedback (som gemmes, indtil en side-admin sletter den) og
+                            adminloggens poster om dig.
                         </p>
                         <p>
-                            You can <strong>delete your account</strong> yourself on the <a href="/settings">settings page</a>.
-                            That right away removes your name, profile picture, banner, bio, status, education badge, year, class, settings, password, two-factor
-                            secret, linked Discord account, IP addresses, logins, known devices, your Ore Mining Inc. save and crash reports, your server busy reports, your Minesweeper and Sudoku games, and the files you attached in chats. Your name is replaced
-                            with "Deleted User".
+                            Et bandlyst billede bevares, indtil den konto, det kom fra, ikke længere er udelukket, eller en admin
+                            fjerner det, også hvis kontoen slettes.
                         </p>
                         <p>
-                            Ore Mining Inc. crash reports and the browser notes about crashes are kept for 90 days, and then
-                            deleted by themselves (at the latest the night after). Site admins can delete crash reports sooner.
-                        </p>
-                        <p>
-                            Server busy reports are kept for 30 days, and then deleted by themselves (at the latest the night
-                            after). Site admins can delete them all sooner. Reports sent when you weren't logged in aren't tied to
-                            an account, so they're only deleted that way.
-                        </p>
-                        <p>
-                            The free games you play without an account are only kept in your browser, so HB Hub has nothing to
-                            delete: clearing this site's data in your browser deletes them. A Minesweeper board and the casino
-                            games' play chips are gone as soon as you close or reload the page.
-                        </p>
-                        <p>
-                            What stays is what other people need for their chats and games to make sense: the messages you sent
-                            and your reactions to messages (shown as from "Deleted User"), your game results and chip history,
-                            the Starbound Parts you gave to Ore Mining Inc.'s Project Starbound (which everyone built together, shown
-                            as from "Deleted User" in the game's list of the latest parts, its top 10 and its Starbound Hall), and any feedback you sent. None of it is connected to your
-                            name any more.
-                        </p>
-                        <p>
-                            A picture on the list of banned pictures stays there until the account it came from is unbanned or an
-                            admin takes it off, also if that account is deleted.
-                        </p>
-                        <p>
-                            Feedback is kept until a site admin deletes it. If you delete your account, your feedback stays,
-                            shown as from "Deleted User", like your messages.
-                        </p>
-                        <p>
-                            The admin log is kept for a year, and then deleted by itself (at the latest the night after). If you
-                            delete your account, what's in it about you stays until then, shown as about "Deleted User".
+                            Gratis spil uden en konto gemmes kun i din browser og slettes, når du rydder sidens data. Minesweeper
+                            og legechips forsvinder, når siden lukkes eller genindlæses.
                         </p>
                         <p class="legal-note">
-                            To <strong>completely delete</strong> all your data, messages included, or to <strong>download</strong>
-                            a copy of all of it, email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.
+                            Ønsker du <strong>alle</strong> dine data slettet, herunder beskeder, eller vil du have en
+                            <strong>kopi</strong> af dem, kan du skrive til
+                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.
                         </p>
                     </section>
 
                     <section id="rights" aria-labelledby="privacy-rights">
-                        <h2 id="privacy-rights">8. Your rights</h2>
-                        <p>Under the GDPR you can ask to:</p>
+                        <h2 id="privacy-rights">8. Dine rettigheder</h2>
+                        <p>Efter GDPR har du ret til at:</p>
                         <ul>
-                            <li>see the data HB Hub has about you, and get a copy of it,</li>
-                            <li>have wrong data corrected (most of it you can change yourself in your settings),</li>
-                            <li>have your data deleted,</li>
-                            <li>object to how your data is used, or have it used less.</li>
+                            <li>få indsigt i de oplysninger, vi har om dig, og få en kopi af dem,</li>
+                            <li>få urigtige oplysninger rettet (det meste kan du selv ændre i dine indstillinger),</li>
+                            <li>få dine oplysninger slettet,</li>
+                            <li>gøre indsigelse mod behandlingen eller få den begrænset.</li>
                         </ul>
                         <p>
-                            Email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>, and you'll get an answer
-                            within a month. If you think your data is being handled wrongly, you can complain to the Danish Data
-                            Protection Agency, <a href="https://www.datatilsynet.dk" target="_blank" rel="noopener noreferrer">Datatilsynet</a>.
+                            Browserfingeraftryk kan du selv fravælge når som helst ved at slå Global Privacy Control (GPC) til i din
+                            browser (se <a href="#fingerprint">Browserfingeraftryk</a>). Fejlrapporter og optælling af sidevisninger
+                            kan du slå fra med <strong>Help improve HB Hub</strong> under dine <a href="/settings#improve">indstillinger</a>;
+                            opretter du din konto med GPC slået til, er den slået fra som standard (se
+                            <a href="#gpc">Global Privacy Control</a>).
+                        </p>
+                        <p>
+                            Skriv til <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>; du får svar inden for
+                            en måned. Du kan også klage til
+                            <a href="https://www.datatilsynet.dk" target="_blank" rel="noopener noreferrer">Datatilsynet</a>.
                         </p>
                     </section>
 
                     <section id="changes" aria-labelledby="privacy-changes">
-                        <h2 id="privacy-changes">9. Changes to this policy</h2>
+                        <h2 id="privacy-changes">9. Ændringer</h2>
                         <p>
-                            HB Hub changes as new features are added, and this page tries to changes with it. However, this is a small side project, and i will try to make sure this stays up to date. If you notice it aint, please contract me at admin@noahgajnielsen.dk The date at the top shows when it was last updated.
+                            Politikken opdateres, når HB Hub ændres. Datoen øverst viser, hvornår den sidst blev opdateret, og
+                            ved ændringer får du besked, næste gang du besøger siden. Opdager du en uoverensstemmelse, er du
+                            velkommen til at skrive til <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.
                         </p>
                     </section>
                 </div>

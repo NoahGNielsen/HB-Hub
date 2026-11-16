@@ -10,99 +10,102 @@ $docsTicketMb = HBHUB_CHAT_ATTACHMENT_TICKET_BYTES / 1024 / 1024;
 $docsMaxMb = HBHUB_CHAT_ATTACHMENT_MAX_BYTES / 1024 / 1024;
 
 $docsPath = '/docs/chat/attachments';
-$docsIntro = 'Send photos, documents and anything else in any chat, up to ' . HBHUB_CHAT_ATTACHMENT_FILES_MAX . ' files
-    at a time.';
+$docsIntro = 'Send billeder, dokumenter og alt andet i enhver chat, op til ' . HBHUB_CHAT_ATTACHMENT_FILES_MAX . ' filer
+    ad gangen.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">
-                        <div><dt>Files per message</dt><dd>Up to <?= HBHUB_CHAT_ATTACHMENT_FILES_MAX ?></dd></div>
-                        <div><dt>Size</dt><dd><?= $docsMaxMb ?> MB together</dd></div>
-                        <div><dt>Tickets</dt><dd><?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> &times; <?= $docsTicketMb ?> MB</dd></div>
-                        <div><dt>Kept for</dt><dd><?= HBHUB_CHAT_ATTACHMENT_DAYS ?> days</dd></div>
+                        <div><dt>Filer per besked</dt><dd>Op til <?= HBHUB_CHAT_ATTACHMENT_FILES_MAX ?></dd></div>
+                        <div><dt>Størrelse</dt><dd><?= $docsMaxMb ?> MB tilsammen</dd></div>
+                        <div><dt>Billetter</dt><dd><?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> &times; <?= $docsTicketMb ?> MB</dd></div>
+                        <div><dt>Gemmes i</dt><dd><?= HBHUB_CHAT_ATTACHMENT_DAYS ?> dage</dd></div>
                     </dl>
 
                     <section id="send" aria-labelledby="docs-send">
-                        <h2 id="docs-send">Sending files and pictures</h2>
-                        <p>There are three ways to attach something:</p>
+                        <h2 id="docs-send">At sende filer og billeder</h2>
+                        <p>Der er tre måder at vedhæfte noget på:</p>
                         <ul>
-                            <li>Press the attach button next to the message box and pick the files.</li>
-                            <li>Paste a picture or file with <kbd>Ctrl</kbd> + <kbd>V</kbd>.</li>
-                            <li>Drag files onto the chat and drop them.</li>
+                            <li>Tryk på vedhæft-knappen ved beskedfeltet, og vælg filerne.</li>
+                            <li>Indsæt et billede eller en fil med <kbd>Ctrl</kbd> + <kbd>V</kbd>.</li>
+                            <li>Træk filer ind over chatten, og slip dem.</li>
                         </ul>
                         <p>
-                            They wait as small preview tiles above the message box, so you can take one out again or write a message
-                            to go with them. Then send as normal. Pictures and videos show on their own in the chat, like a GIF,
-                            and several pictures in one message show as a gallery.
+                            De venter som små forhåndsvisninger over beskedfeltet, så du kan tage en ud igen eller skrive en besked
+                            til dem. Send så som normalt. Billeder og videoer bliver vist for sig selv i chatten, ligesom en GIF, og
+                            flere billeder i én besked bliver vist som et galleri.
                         </p>
                         <p>
-                            Videos (MP4, MOV, WebM and MKV) get a player right in the chat, so they can be watched without downloading
-                            them. If your browser can't play one, it shows a card with the video's name instead, which downloads it.
+                            Videoer (MP4, MOV, WebM og MKV) får en afspiller direkte i chatten, så de kan ses uden at blive
+                            downloadet. Kan din browser ikke afspille en, viser den i stedet et kort med videoens navn, som
+                            downloader den.
                         </p>
                         <p>
-                            To see a file's name, type, size, who sent it and when it expires, right-click it and pick
-                            <strong>File info</strong>.
+                            For at se en fils navn, type, størrelse, hvem der sendte den, og hvornår den udløber, højreklikker du
+                            på den og vælger <strong>File info</strong>.
                         </p>
                     </section>
 
                     <section id="smaller" aria-labelledby="docs-smaller">
-                        <h2 id="docs-smaller">Pictures and videos are made smaller</h2>
+                        <h2 id="docs-smaller">Billeder og videoer bliver gjort mindre</h2>
                         <p>
-                            Before a picture is sent, your browser turns it into JPEG XL, a newer kind of picture file that takes
-                            much less space. It doesn't lose any detail, except JPEG photos, which get one that looks the same. Tick
-                            <strong>Keep original pictures</strong> to send them exactly as they are instead. Other files are zipped
-                            on the server and unzipped again when someone downloads them, so you get back the same file.
+                            Før et billede bliver sendt, laver din browser det om til JPEG XL, en nyere slags billedfil, der fylder
+                            meget mindre. Det mister ingen detaljer, bortset fra JPEG-fotos, som får en, der ser ens ud. Sæt flueben
+                            i <strong>Keep original pictures</strong> for i stedet at sende dem præcis, som de er. Andre filer bliver
+                            zippet på serveren og pakket ud igen, når nogen downloader dem, så du får den samme fil tilbage.
                         </p>
                         <p>
-                            Videos are turned into WebM with VP9 before they're sent, so every video plays in the chat and
-                            takes less space (a phone video often takes a lot fewer tickets afterwards). Ones bigger than 1080p
-                            are made 1080p. This happens in your browser, and the tile shows how far it's got; a long video can
-                            take a while, and you can send already, it goes once it's done. Tick <strong>Keep original
-                            videos</strong> to send them exactly as they are instead (an MKV video is then sent as a file to
-                            download, without a player). If your browser can't make WebM videos, the video is sent as it is.
+                            Videoer bliver lavet om til WebM med VP9, før de bliver sendt, så alle videoer kan afspilles i chatten
+                            og fylder mindre (en video fra en telefon tager tit langt færre billetter bagefter). Dem, der er større
+                            end 1080p, bliver gjort til 1080p. Det sker i din browser, og forhåndsvisningen viser, hvor langt den er
+                            nået; en lang video kan tage et stykke tid, og du kan allerede sende, den går af sted, når den er færdig.
+                            Sæt flueben i <strong>Keep original videos</strong> for i stedet at sende dem præcis, som de er (en
+                            MKV-video bliver så sendt som en fil til download, uden afspiller). Kan din browser ikke lave
+                            WebM-videoer, bliver videoen sendt, som den er.
                         </p>
                     </section>
 
                     <section id="viewer" aria-labelledby="docs-viewer">
-                        <h2 id="docs-viewer">The picture viewer</h2>
-                        <p>Click a picture to open it big. In the viewer:</p>
+                        <h2 id="docs-viewer">Billedfremviseren</h2>
+                        <p>Klik på et billede for at åbne det stort. I fremviseren:</p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Key</th><th scope="col">Does</th></tr>
+                                    <tr><th scope="col">Tast</th><th scope="col">Gør</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd></td><td>The previous or next picture in the message</td></tr>
-                                    <tr><td><kbd>+</kbd> <kbd>-</kbd></td><td>Zoom in and out (or <kbd>Ctrl</kbd> + the mouse wheel)</td></tr>
-                                    <tr><td><kbd>0</kbd></td><td>Back to the normal size</td></tr>
-                                    <tr><td><kbd>Esc</kbd></td><td>Close it</td></tr>
+                                    <tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd></td><td>Det forrige eller næste billede i beskeden</td></tr>
+                                    <tr><td><kbd>+</kbd> <kbd>-</kbd></td><td>Zoom ind og ud (eller <kbd>Ctrl</kbd> + musehjulet)</td></tr>
+                                    <tr><td><kbd>0</kbd></td><td>Tilbage til normal størrelse</td></tr>
+                                    <tr><td><kbd>Esc</kbd></td><td>Luk den</td></tr>
                                 </tbody>
                             </table>
                         </div>
-                        <p>The Download button saves the file to your device.</p>
+                        <p>Download-knappen gemmer filen på din enhed.</p>
                     </section>
 
                     <section id="tickets" aria-labelledby="docs-tickets">
-                        <h2 id="docs-tickets">How tickets work</h2>
+                        <h2 id="docs-tickets">Sådan virker billetter</h2>
                         <p>
-                            The server only has so much space, so attachments are paid for with tickets. Everyone has
-                            <strong><?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> tickets</strong>, and site admins have
+                            Serveren har kun så meget plads, så vedhæftede filer bliver betalt med billetter. Alle har
+                            <strong><?= HBHUB_CHAT_ATTACHMENT_TICKETS ?> billetter</strong>, og side-admins har
                             <?= HBHUB_CHAT_ATTACHMENT_TICKETS_ADMIN ?>.
                         </p>
                         <ul>
-                            <li>Every started <?= $docsTicketMb ?> MB of a file takes one ticket. A 1 MB photo takes 1, a 12 MB video takes 3. Each file pays for itself, so three small files take three tickets.</li>
-                            <li>A file keeps its tickets for <?= HBHUB_CHAT_ATTACHMENT_DAYS ?> days. Then it's deleted and the tickets are yours again. A big file, taking more than <?= HBHUB_CHAT_ATTACHMENT_BIG_TICKETS ?> tickets, only stays for <?= HBHUB_CHAT_ATTACHMENT_BIG_DAYS ?> days.</li>
-                            <li>Deleting the message, or just the attachment, gives the tickets back straight away.</li>
-                            <li>A <a href="/docs/account#profile">profile banner</a> picture takes a ticket too, but never runs out: it keeps it until you change the banner or go back to colors.</li>
-                            <li>Site admins can give someone more tickets, or take some away.</li>
+                            <li>Hver påbegyndt <?= $docsTicketMb ?> MB af en fil tager én billet. Et foto på 1 MB tager 1, en video på 12 MB tager 3. Hver fil betaler for sig selv, så tre små filer tager tre billetter.</li>
+                            <li>En fil beholder sine billetter i <?= HBHUB_CHAT_ATTACHMENT_DAYS ?> dage. Så bliver den slettet, og billetterne er dine igen. En stor fil, der tager mere end <?= HBHUB_CHAT_ATTACHMENT_BIG_TICKETS ?> billetter, bliver kun i <?= HBHUB_CHAT_ATTACHMENT_BIG_DAYS ?> dage.</li>
+                            <li>Sletter du beskeden, eller bare den vedhæftede fil, får du billetterne tilbage med det samme.</li>
+                            <li>Et billede til et <a href="/docs/account#profile">profilbanner</a> tager også en billet, men udløber aldrig: det beholder den, til du skifter banner eller går tilbage til farver.</li>
+                            <li>Side-admins kan give nogen flere billetter eller tage nogle væk.</li>
                         </ul>
                         <p>
-                            <strong>Your attachments</strong>, in the attach button's menu, shows what's taking your tickets and when
-                            each one runs out, and deletes any you don't need any more. If you try to send more than you have free
-                            tickets for, it says how many are missing, and <strong>Send now</strong> sends them once enough are free.
+                            <strong>Your attachments</strong>, i vedhæft-knappens menu, viser, hvad der tager dine billetter, og
+                            hvornår hver af dem udløber, og sletter dem, du ikke har brug for længere. Prøver du at sende mere, end du
+                            har ledige billetter til, siger den, hvor mange der mangler, og <strong>Send now</strong> sender dem, når
+                            der er nok ledige.
                         </p>
                         <p class="legal-note">
-                            HB Hub isn't a backup: attachments always disappear in the end, so keep your own copy of anything that
-                            matters. And only send pictures you're allowed to share. Don't post photos of other people without asking.
+                            HB Hub er ikke en backup: vedhæftede filer forsvinder altid til sidst, så gem din egen kopi af alt, der
+                            betyder noget. Og send kun billeder, du har lov til at dele. Læg ikke billeder af andre op uden at spørge.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

@@ -5,13 +5,13 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/games/minesweeper';
-$docsIntro = 'The classic, in its Windows 95 look: open every square without a mine. Play it on the
-    <a href="/games/minesweeper/">Minesweeper</a> page.';
+$docsIntro = 'Klassikeren, i sit Windows 95-udseende: åbn alle felter uden en mine. Spil det på
+    <a href="/games/minesweeper/">Minesweeper</a>-siden.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
 
                     <section id="rules" aria-labelledby="docs-rules">
-                        <h2 id="docs-rules">The rules</h2>
+                        <h2 id="docs-rules">Reglerne</h2>
                         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/minesweeper/rules.php'; ?>
                     </section>
 
@@ -19,41 +19,40 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-tips">Tips</h2>
                         <ul>
                             <li>
-                                A number that already has that many flags around it is done: every other square next to it is
-                                safe to open.
+                                Et tal, der allerede har så mange flag rundt om sig, er færdigt: alle de andre felter ved siden af
+                                det er sikre at åbne.
                             </li>
                             <li>
-                                A number with exactly that many closed squares around it means they're all mines, like a 1
-                                with only one closed square next to it. Start from the numbers with the fewest closed squares
-                                around them.
+                                Et tal med præcis så mange lukkede felter rundt om sig betyder, at de alle er miner, som et 1-tal
+                                med kun ét lukket felt ved siden af. Start fra de tal, der har færrest lukkede felter rundt om sig.
                             </li>
                             <li>
-                                Hard is 30 squares wide. On a phone, the board scrolls sideways.
+                                Hard er 30 felter bred. På en telefon scroller brættet sidelæns.
                             </li>
                         </ul>
                     </section>
 
                     <section id="saving" aria-labelledby="docs-saving">
-                        <h2 id="docs-saving">Leaderboard</h2>
+                        <h2 id="docs-saving">Rangliste</h2>
                         <p>
-                            There's a <a href="/games/minesweeper/leaderboard">Minesweeper leaderboard</a> for each size, of
-                            everyone who has won there: their best and average time, wins, games played and win % (shown
-                            from 5 games). After a win, the page above the board shows your time and your best.
+                            Der er en <a href="/games/minesweeper/leaderboard">Minesweeper-rangliste</a> for hver størrelse, over alle,
+                            der har vundet dér: deres bedste og gennemsnitlige tid, sejre, spillede spil og sejrsprocent (vist fra 5
+                            spil). Efter en sejr viser siden over brættet din tid og din bedste.
                         </p>
                         <p>
-                            The mines are kept on HB Hub's server, not in your browser, and your time is timed there, from
-                            your first click to the one that wins. So the time includes how long each click takes to reach
-                            the server, and peeking at the page's code doesn't give away the mines. A game can't be picked up
-                            again after you close the page: it counts as played, but not won.
+                            Minerne bliver holdt på HB Hubs server, ikke i din browser, og din tid bliver taget dér, fra dit første
+                            klik til det, der vinder. Så tiden tæller med, hvor lang tid hvert klik tager om at nå serveren, og at
+                            kigge i sidens kode afslører ikke minerne. Et spil kan ikke tages op igen, når du har lukket siden: det
+                            tæller som spillet, men ikke vundet.
                         </p>
                         <p>
-                            There's also a simple anticheat against bots that solve the board for you. When you win, the
-                            server works out the fewest clicks the board could be won in, and if you made them faster than
-                            10 a second (well past the world's best players), the win doesn't count: it shows as played,
-                            but not on the leaderboard. Normal fast play is nowhere near it. The game also stops itself
-                            when a click on the board comes from code instead of you (like one typed into the browser's
-                            console, or an auto clicker extension), and that game counts as played, but not won.
+                            Der er også et simpelt anticheat mod bots, der løser brættet for dig. Når du vinder, regner serveren ud,
+                            hvor få klik brættet kunne vindes på, og har du lavet dem hurtigere end 10 i sekundet (langt over verdens
+                            bedste spillere), tæller sejren ikke: den bliver vist som spillet, men ikke på ranglisten. Normalt hurtigt
+                            spil er slet ikke i nærheden. Spillet stopper også sig selv, når et klik på brættet kommer fra kode i
+                            stedet for fra dig (som et skrevet i browserens konsol, eller en autoklikker-udvidelse), og det spil
+                            tæller som spillet, men ikke vundet.
                         </p>
-                        <p>It's a copy of Nick Arocho's Minesweeper (see the <a href="/legal/credits#code">credits</a>).</p>
+                        <p>Det er en kopi af Nick Arochos Minesweeper (se <a href="/legal/credits#code">krediteringerne</a>).</p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

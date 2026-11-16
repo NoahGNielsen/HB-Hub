@@ -5,86 +5,86 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/getting-started';
-$docsIntro = 'HB Hub is the school\'s own place to chat, play games and try your luck in a casino with chips that aren\'t
-    real money. Here\'s how to get in and find your way around.';
+$docsIntro = 'HB Hub er skolens eget sted at chatte, spille spil og prøve lykken i et casino med chips, der ikke er
+    rigtige penge. Sådan kommer du ind og finder rundt.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="sign-up" aria-labelledby="docs-sign-up">
-                        <h2 id="docs-sign-up">Making an account</h2>
-                        <p>Press <strong>Sign up</strong> on the <a href="/">frontpage</a>. It asks you a few questions, one at a time:</p>
+                        <h2 id="docs-sign-up">At oprette en konto</h2>
+                        <p>Tryk på <strong>Opret konto</strong> på <a href="/">forsiden</a>. Den stiller dig et par spørgsmål, ét ad gangen:</p>
                         <ol class="docs-steps">
-                            <li><strong>Choose a username.</strong> The name people see in the chat and on the leaderboards, and what you log in with. It can be your name, a nickname or anything else.</li>
-                            <li><strong>Which year are you in?</strong> 1., 2. or 3. year at HTX, and then your field of study (X, U, T, Y or Z), or Not HTX. It's shown on your profile, and at HTX you're put in your <a href="/docs/chat/groups#class">class chat</a> straight away.</li>
-                            <li><strong>A picture of yourself.</strong> Your profile picture. You can skip it and add one later.</li>
-                            <li><strong>Describe yourself.</strong> A short bio for your profile.</li>
-                            <li><strong>Your password.</strong> The form tells you while you type if it's too weak, or one that's used so often it's easy to guess.</li>
+                            <li><strong>Vælg et brugernavn.</strong> Det navn, folk ser i chatten og på ranglisterne, og det, du logger ind med. Det kan være dit navn, et kælenavn eller hvad som helst andet.</li>
+                            <li><strong>Hvilken klasse går du i?</strong> 1., 2. eller 3. år på HTX, og så din studieretning (X, U, T, Y eller Z), eller Ikke HTX. Det bliver vist på din profil, og på HTX kommer du med det samme med i din <a href="/docs/chat/groups#class">klassechat</a>.</li>
+                            <li><strong>Et billede af dig selv.</strong> Dit profilbillede. Du kan springe det over og tilføje et senere.</li>
+                            <li><strong>Beskriv dig selv.</strong> En kort bio til din profil.</li>
+                            <li><strong>Din adgangskode.</strong> Formularen fortæller dig, mens du skriver, hvis den er for svag, eller hvis den bliver brugt så tit, at den er nem at gætte.</li>
                         </ol>
                         <p>
-                            Names and bios can use the letters of the Latin alphabet (with æ, ø and å), numbers, punctuation and
-                            emoji. By making an account you agree to the <a href="/legal/terms">Terms</a> and the
-                            <a href="/legal/code-of-conduct">Code of Conduct</a>, so give them a read. One account per person.
+                            Navne og bioer kan bruge bogstaverne i det latinske alfabet (med æ, ø og å), tal, tegnsætning og emoji.
+                            Ved at oprette en konto accepterer du <a href="/legal/terms">vilkårene</a> og
+                            <a href="/legal/code-of-conduct">adfærdskodekset</a>, så læs dem igennem. Én konto per person.
                         </p>
                     </section>
 
                     <section id="log-in" aria-labelledby="docs-log-in">
-                        <h2 id="docs-log-in">Logging in</h2>
+                        <h2 id="docs-log-in">At logge ind</h2>
                         <p>
-                            Press <strong>Log in</strong> on the frontpage and type your username and password. If you've turned on
-                            <a href="/docs/two-factor">two-factor login</a>, it asks for the 6-digit code from your authenticator
-                            app too. You stay logged in on that browser until you log out, and you can see and log out every
-                            device you're logged in on from your <a href="/docs/account#devices">settings</a>.
+                            Tryk på <strong>Log ind</strong> på forsiden, og skriv dit brugernavn og din adgangskode. Har du slået
+                            <a href="/docs/two-factor">totrinslogin</a> til, beder den også om den 6-cifrede kode fra din
+                            godkendelsesapp. Du forbliver logget ind i den browser, til du logger ud, og du kan se og logge ud af
+                            alle de enheder, du er logget ind på, under dine <a href="/docs/account#devices">indstillinger</a>.
                         </p>
                         <p>
-                            While you're logged in, the frontpage and the HB Hub logo in the top bar take you straight to the chat.
-                            To see the frontpage anyway, double click the logo while you're on the chat.
+                            Mens du er logget ind, fører forsiden og HB Hub-logoet i topbjælken dig direkte til chatten. Vil du se
+                            forsiden alligevel, så dobbeltklik på logoet, mens du er i chatten.
                         </p>
                         <p>
-                            A few wrong passwords in a row lock the login for a while. That's explained in
-                            <a href="/docs/two-factor#lockout">Two-factor login &amp; security</a>.
+                            Et par forkerte adgangskoder i træk låser login et stykke tid. Det er forklaret i
+                            <a href="/docs/two-factor#lockout">Totrinslogin og sikkerhed</a>.
                         </p>
                     </section>
 
                     <section id="around" aria-labelledby="docs-around">
-                        <h2 id="docs-around">Finding your way around</h2>
-                        <p>Once you're in, every page has the same two bars:</p>
+                        <h2 id="docs-around">At finde rundt</h2>
+                        <p>Når du er inde, har hver side de samme to bjælker:</p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Where</th><th scope="col">What's there</th></tr>
+                                    <tr><th scope="col">Hvor</th><th scope="col">Hvad er der</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>Side bar</td><td><strong>Chat</strong>, <strong>Gambling</strong> (the casino) and <strong>Games</strong>, with a red number on Chat for chats with unread messages. <strong>Feedback</strong> is at the bottom. On a phone it's a bar along the bottom of the screen.</td></tr>
-                                    <tr><td>Top bar</td><td>The <a href="/docs/notifications">notification bell</a>, your chips on casino pages, and your profile picture, which opens your profile.</td></tr>
-                                    <tr><td>Your profile</td><td>Your picture, name, class and bio, as others see them, with the cog that opens your <a href="/docs/account">settings</a>.</td></tr>
+                                    <tr><td>Sidebjælken</td><td><strong>Chat</strong>, <strong>Casino</strong> og <strong>Games</strong>, med et rødt tal på Chat for chats med ulæste beskeder. <strong>Feedback</strong> er nederst. På en telefon er det en bjælke langs bunden af skærmen.</td></tr>
+                                    <tr><td>Topbjælken</td><td><a href="/docs/notifications">Notifikationsklokken</a>, dine chips på casinosiderne og dit profilbillede, som åbner din profil.</td></tr>
+                                    <tr><td>Din profil</td><td>Dit billede, navn, din klasse og bio, som andre ser dem, med tandhjulet, der åbner dine <a href="/docs/account">indstillinger</a>.</td></tr>
                                 </tbody>
                             </table>
                         </div>
-                        <p>The numbers on the side bar and the bell update by themselves every 15 seconds while the page is open.</p>
+                        <p>Tallene på sidebjælken og klokken opdaterer sig selv hvert 15. sekund, mens siden er åben.</p>
                     </section>
 
                     <section id="app" aria-labelledby="docs-app">
-                        <h2 id="docs-app">Putting HB Hub on your phone</h2>
+                        <h2 id="docs-app">HB Hub på din telefon</h2>
                         <p>
-                            HB Hub can be added to your phone's home screen like an app, and then it opens without the browser
-                            bars. Long-press the icon for shortcuts straight to Chat, the Casino and Games.
+                            HB Hub kan lægges på din telefons hjemmeskærm som en app, og så åbner den uden browserens bjælker. Hold
+                            fingeren på ikonet for genveje direkte til Chat, Casino og Games.
                         </p>
                         <ul>
-                            <li><strong>iPhone (Safari):</strong> press the Share button, then <strong>Add to Home Screen</strong>.</li>
-                            <li><strong>Android (Chrome):</strong> open the browser's menu (&vellip;), then <strong>Add to Home screen</strong> or <strong>Install app</strong>.</li>
+                            <li><strong>iPhone (Safari):</strong> tryk på Del-knappen, og så <strong>Føj til hjemmeskærm</strong>.</li>
+                            <li><strong>Android (Chrome):</strong> åbn browserens menu (&vellip;), og så <strong>Føj til startskærm</strong> eller <strong>Installer app</strong>.</li>
                         </ul>
                         <p>
-                            The first time you log in on a phone, HB Hub asks you about this once with a popup (on Android
-                            it can do it for you with one tap). After that it won't ask again in that browser.
+                            Første gang du logger ind på en telefon, spørger HB Hub dig om det én gang med en popup (på Android kan
+                            den gøre det for dig med ét tryk). Derefter spørger den ikke igen i den browser.
                         </p>
                     </section>
 
                     <section id="next" aria-labelledby="docs-next">
-                        <h2 id="docs-next">Where to go next</h2>
+                        <h2 id="docs-next">Hvor du kan gå hen nu</h2>
                         <ul>
-                            <li><a href="/docs/chat/">Chat basics</a>: start a DM or a group and say hi.</li>
-                            <li><a href="/docs/casino/">How the casino works</a>: collect your free chips and pick a table.</li>
-                            <li><a href="/docs/games/">How games work</a>: open a game and invite your friends.</li>
-                            <li><a href="/docs/account">Profile &amp; settings</a>: add a profile picture and make your account safe.</li>
+                            <li><a href="/docs/chat/">Grundlæggende chat</a>: start en privat chat eller en gruppe, og sig hej.</li>
+                            <li><a href="/docs/casino/">Sådan virker casinoet</a>: hent dine gratis chips, og vælg et bord.</li>
+                            <li><a href="/docs/games/">Sådan virker spillene</a>: åbn et spil, og inviter dine venner.</li>
+                            <li><a href="/docs/account">Profil og indstillinger</a>: tilføj et profilbillede, og gør din konto sikker.</li>
                         </ul>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

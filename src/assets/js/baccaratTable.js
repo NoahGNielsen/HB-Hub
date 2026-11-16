@@ -1,4 +1,4 @@
-// A Baccarat table (gambling/baccarat/table.php): draws the table as /gambling/baccarat/play says it is, and sends the
+// A Baccarat table (casino/baccarat/table.php): draws the table as /casino/baccarat/play says it is, and sends the
 // player's bets. Everything is decided on the server - the cards, the payouts, when the shoe is shuffled. This only
 // shows it, and only ever knows the cards that have been turned over.
 //
@@ -144,7 +144,7 @@
             const response = await fetch(API + query, { headers: { Accept: 'application/json' }, ...options });
             const data = await response.json().catch(() => null);
             if (response.status === 404 && data?.error === 'notSeated') {
-                location.assign('/gambling/baccarat/'); // left in another tab, gone too long, or the table is gone
+                location.assign('/casino/baccarat/'); // left in another tab, gone too long, or the table is gone
                 return null;
             }
             if (response.status === 403) {
@@ -711,7 +711,7 @@
         }
         const data = await post('leave');
         if (data?.left) {
-            location.assign('/gambling/baccarat/');
+            location.assign('/casino/baccarat/');
         } else {
             showMessage('Could not leave the table. Please try again.');
         }

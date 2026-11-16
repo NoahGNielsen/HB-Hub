@@ -52,7 +52,7 @@ $navPath = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $navSection = explode('/', trim($navPath, '/'))[0];
 $navItems = [
     'chat'     => ['label' => 'Chat',     'icon' => 'chat.png', 'count' => $navUser !== null ? $navUnreadChats : null],
-    'gambling' => ['label' => 'Gambling', 'icon' => 'dice.png'],
+    'casino'   => ['label' => 'Casino',   'icon' => 'dice.png'],
     'games'    => ['label' => 'Games',    'icon' => 'controler.png'],
 ];
 if ($navIsAdmin) {
@@ -76,7 +76,7 @@ $navFeedbackHref = $navOnFeedback
     </a>
     <div class="nav-top-actions">
         <?php if ($navCasinoChips !== null): ?>
-            <a class="nav-chips" href="/gambling/" title="Your chips">
+            <a class="nav-chips" href="/casino/" title="Your chips">
                 <img class="nav-chips-icon" src="/assets/images/icons/chip.svg" alt="">
                 <span data-casino-chips="<?= (int) $navCasinoChips ?>"><?= number_format($navCasinoChips) ?></span>
                 <span class="nav-visually-hidden">chips</span>

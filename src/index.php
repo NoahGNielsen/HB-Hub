@@ -1,7 +1,9 @@
 <?php
 // The frontpage: what HB Hub is, for visitors, with its own top bar (homeNav.php) instead of the app's nav panel
 // (navPanel.php). Logged in users are sent straight on to the chat, unless the address has ?home (what double clicking
-// the HB Hub logo on the chat page opens, navBrand.js), and then get a way back into the app instead of Log in / Sign up.
+// the HB Hub logo on the chat page opens, navBrand.js), and then get a way back into the app instead of Log ind / Opret
+// konto. Like every public page (the ones you can see without logging in) it's in Danish; the app behind the login is
+// in English.
 $hbHubSessionOptional = true; // the frontpage is open to everyone
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 if ($hbHubUser !== null && !isset($_GET['home'])) {
@@ -34,7 +36,7 @@ try {
 }
 
 /**
- * Kroner the way the Matador board writes them: 8.000
+ * A whole number written the Danish way (and the way the Matador board writes kroner): 8.000
  */
 function homeKroner(int $amount): string
 {
@@ -86,20 +88,22 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" class="home">
+<html lang="da" class="home">
 <head>
     <?php
     $headerHomeNav = true;
-    $headerKeywords = ['HANSENBERG chat', 'HTX klassechat', 'skolechat', 'school chat', 'Matador online', 'UNO online', 'chess online'];
+    $headerLocale = 'da_DK';
+    $headerKeywords = ['HANSENBERG chat', 'HTX klassechat', 'skolechat', 'klassechat', 'Matador online', 'UNO online', 'skak online'];
     include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php';
     ?>
     <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
-    <title>HB Hub - Chat, casino and games for HANSENBERG students</title>
-    <meta name="description" content="HB Hub is the student-made hangout for HANSENBERG Tekniske Gymnasium (HTX): class group chats, DMs, a play-chip casino, and Matador, chess, UNO and Wordle.">
-    <meta property="og:title" content="HB Hub - The whole school, one tab away">
-    <meta property="og:description" content="Group chats with your HTX class, Blackjack with chips that aren't real money, and Matador and chess with your friends from HANSENBERG. All in your browser.">
-    <!-- Tells Google the site's name for search results, and who it's for. A data block, not a script, so the CSP doesn't stop it. -->
-    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "HB Hub", "alternateName": "HBHub", "url": "https://hbhub.noahgajnielsen.dk/", "description": "A student-made chat, casino and games site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark.", "inLanguage": "en", "keywords": "HANSENBERG, HANSENBERG Tekniske Gymnasium, HTX, Kolding, school chat", "audience": {"@type": "EducationalAudience", "educationalRole": "student", "audienceType": "Students at HANSENBERG Tekniske Gymnasium (HTX)"}}</script>
+    <title>HB Hub - Chat, casino og spil for elever på HANSENBERG</title>
+    <meta name="description" content="HB Hub er lavet af en elev til eleverne på HANSENBERG Tekniske Gymnasium (HTX): klassechats, private beskeder, casino med legechips, og Matador, skak, UNO og Wordle.">
+    <meta property="og:title" content="HB Hub - Hele skolen samlet ét sted">
+    <meta property="og:description" content="Chat med din HTX-klasse, spil Blackjack om chips i stedet for penge, og tag et slag Matador eller skak med vennerne fra HANSENBERG. Lige i browseren.">
+    <!-- Tells Google the site's name for search results, who it's for, and which school it's about ("about", so it can
+         tie the site to HANSENBERG when someone searches for the school). A data block, not a script, so the CSP doesn't stop it. -->
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "HB Hub", "alternateName": "HBHub", "url": "https://hbhub.noahgajnielsen.dk/", "description": "En elevlavet chat-, casino- og spilside for elever på HANSENBERG Tekniske Gymnasium (HTX) i Kolding.", "inLanguage": "da", "keywords": "HANSENBERG, HANSENBERG Tekniske Gymnasium, HTX, Kolding, skolechat", "about": {"@type": "HighSchool", "name": "HANSENBERG", "alternateName": "HANSENBERG Tekniske Gymnasium", "url": "https://www.hansenberg.dk/", "address": {"@type": "PostalAddress", "addressLocality": "Kolding", "addressCountry": "DK"}}, "audience": {"@type": "EducationalAudience", "educationalRole": "student", "audienceType": "Elever på HANSENBERG Tekniske Gymnasium (HTX)"}}</script>
 </head>
 <body class="home-body">
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -110,26 +114,26 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
             <div class="home-hero-glow" aria-hidden="true"></div>
             <div class="home-hero-inner">
                 <div class="home-hero-text">
-                    <p class="home-eyebrow">Made for HANSENBERG's students</p>
-                    <h1 id="home-title">The whole school,<br><span class="home-hero-accent">one tab away.</span></h1>
+                    <p class="home-eyebrow">Lavet til eleverne på HANSENBERG</p>
+                    <h1 id="home-title">Hele skolen,<br><span class="home-hero-accent">samlet ét sted.</span></h1>
                     <p class="home-lead">
-                        Group chats with your class, Blackjack,
-                        and Matador with friends who'll never let you forget Rådhuspladsen. The place for all of HANSENBERG's students. All in your browser.
+                        Chat med din klasse, spil Blackjack om chips, og tag et slag Matador med vennerne, der aldrig
+                        glemmer, hvem der ejer Rådhuspladsen. Det hele lige i browseren.
                     </p>
                     <div class="home-hero-actions">
                         <?php if ($homeUser === null): ?>
-                            <a class="home-btn home-btn-primary home-btn-lg" href="/onboarding">Make an account</a>
-                            <a class="home-btn home-btn-glass home-btn-lg" href="/login">I already have one</a>
+                            <a class="home-btn home-btn-primary home-btn-lg" href="/onboarding">Opret konto</a>
+                            <a class="home-btn home-btn-glass home-btn-lg" href="/login">Jeg har allerede en konto</a>
                         <?php else: ?>
-                            <p class="home-welcome">Welcome back, <?= htmlspecialchars($homeUser['userName']) ?>.</p>
-                            <a class="home-btn home-btn-primary home-btn-lg" href="/chat/">Go to your chats</a>
+                            <p class="home-welcome">Velkommen tilbage, <?= htmlspecialchars($homeUser['userName']) ?>.</p>
+                            <a class="home-btn home-btn-primary home-btn-lg" href="/chat/">Videre til dine chats</a>
                         <?php endif; ?>
                     </div>
                 </div>
 
                 <!-- A made-up group chat, with a chip, a card and a die around it -->
                 <div class="home-stage" aria-hidden="true">
-                    <img class="home-float home-float-chip" src="/assets/images/icons/chip.svg" alt="Casino chip">
+                    <img class="home-float home-float-chip" src="/assets/images/icons/chip.svg" alt="Casinochip">
                     <div class="home-float home-float-card">
                         <span class="home-card-corner">A<br>♥</span>
                         <span class="home-card-pip">♥</span>
@@ -142,24 +146,24 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                         <div class="home-chat-head">
                             <span class="home-chat-icon">F</span>
                             <div>
-                                <p class="home-chat-title">Friday crew</p>
-                                <p class="home-chat-sub">4 members</p>
+                                <p class="home-chat-title">Fredagsholdet</p>
+                                <p class="home-chat-sub">4 medlemmer</p>
                             </div>
                         </div>
                         <ul class="home-chat-thread">
                             <li class="home-msg">
                                 <span class="home-msg-avatar home-msg-avatar-a">M</span>
-                                <p><b>Maja</b>Blackjack after the lesson?</p>
+                                <p><b>Maja</b>Blackjack?</p>
                             </li>
                             <li class="home-msg">
                                 <span class="home-msg-avatar home-msg-avatar-b">O</span>
-                                <p><b>Oliver</b>Only if I get my 2,500 chips back</p>
+                                <p><b>Oliver</b>Dealer skal tabe denne gang!</p>
                             </li>
                             <li class="home-msg home-msg-me">
-                                <p>Nah, i call matador instead :)</p>
+                                <p>Nej, lad os tage et slag Matador :)</p>
                             </li>
                             <li class="home-msg home-msg-notice">
-                                <p>Maja invited you to a Matador game</p>
+                                <p>Maja har inviteret dig til Matador</p>
                             </li>
                             <li class="home-msg home-msg-typing">
                                 <span class="home-msg-avatar home-msg-avatar-c">S</span>
@@ -173,61 +177,108 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
             <dl class="home-stats">
                 <?php if ($homeMembers !== null): ?>
                     <div>
-                        <dt>Members</dt>
-                        <dd><?= number_format($homeMembers) ?></dd>
+                        <dt>Medlemmer</dt>
+                        <dd><?= homeKroner($homeMembers) ?></dd>
                     </div>
                     <div>
-                        <dt>Messages sent</dt>
-                        <dd><?= number_format($homeMessages) ?></dd>
+                        <dt>Sendte beskeder</dt>
+                        <dd><?= homeKroner($homeMessages) ?></dd>
                     </div>
                 <?php endif; ?>
                 <div>
-                    <dt>Chips every day</dt>
-                    <dd>Up to <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?></dd>
+                    <dt>Gratis chips om dagen</dt>
+                    <dd>Op til <?= homeKroner(max(HBHUB_CASINO_DAILY_CALENDAR)) ?></dd>
                 </div>
                 <div>
-                    <dt>Teachers involved</dt>
+                    <dt>Lærere</dt>
                     <dd>0</dd>
                 </div>
             </dl>
         </section>
 
+        <!-- About: the part that matches the Danish searches for the school ("hansenberg", "hansenberg elever", "htx
+             kolding chat") and tells Google which school the site is about. It sits right under the hero so it's one of
+             the first things both visitors and search engines read. Says plainly that the school doesn't run it, like
+             the terms do. Laid out like the feature sections below it, with the picture on the left so the sides take
+             turns with Chat. -->
+        <section class="home-feature home-feature-flip home-about" id="om" aria-labelledby="home-about-title">
+            <div class="home-feature-text">
+                <p class="home-kicker"><img src="/assets/images/icons/small/user.png" width="18" height="18" alt="Person-ikon" aria-hidden="true">Om HB Hub</p>
+                <h2 id="home-about-title">Et sted kun for eleverne på HANSENBERG.</h2>
+                <p>
+                    HB Hub er en chat- og spilside for eleverne på HANSENBERG Tekniske Gymnasium (HTX) i Kolding. Din
+                    klasse har sin egen klassechat, og du kan skrive med alle de andre elever på skolen, enten privat
+                    eller i grupper.
+                </p>
+                <p>
+                    HB Hub er lavet og drives af Noah fra 3.U, med lidt hjælp fra August S. fra 3.X. Siden er ikke lavet af
+                    HANSENBERG, og skolen har ingen indflydelse på indholdet.
+                </p>
+            </div>
+            <div class="home-feature-art home-about-art" aria-hidden="true">
+                <!-- A page from a squared notebook with HB Hub's to-do list written by hand (everything ticked off
+                     except the homework), and a polaroid of the student who makes it taped over the corner. The photo
+                     is a real one of the owner (assets/images/home/creator.jpg, cropped and without its EXIF data).
+                     The polaroid is never wider than 250px, so the photo comes in two sizes: creator-small.jpg
+                     (240px) for ordinary screens and creator.jpg (480px) for sharp ones. -->
+                <div class="home-notebook">
+                    <p class="home-notebook-title">HB Hub, to do</p>
+                    <ul class="home-notebook-list">
+                        <li class="is-done">klassechat</li>
+                        <li class="is-done">Blackjack</li>
+                        <li class="is-done">Matador</li>
+                        <li class="is-done">Wordle</li>
+                        <li>lektier</li>
+                    </ul>
+                    <p class="home-notebook-note">lektier i morgen... måske</p>
+                </div>
+                <figure class="home-polaroid">
+                    <img src="/assets/images/home/creator-small.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator-small.jpg') ?>"
+                         srcset="/assets/images/home/creator-small.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator-small.jpg') ?> 1x,
+                                 /assets/images/home/creator.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator.jpg') ?> 2x"
+                         width="240" height="240" alt="Noah, der laver HB Hub" loading="lazy" decoding="async">
+                    <figcaption>Noha - ham der har skabt HB Hub</figcaption>
+                </figure>
+            </div>
+        </section>
+
         <!-- Chat -->
         <section class="home-feature" id="chat" aria-labelledby="home-chat-title">
             <div class="home-feature-text">
-                <p class="home-kicker"><img src="/assets/images/icons/small/chat.png" width="18" height="18" alt="Chat icon" aria-hidden="true">Chat</p>
-                <h2 id="home-chat-title">Every group chat you actually need.</h2>
+                <p class="home-kicker"><img src="/assets/images/icons/small/chat.png" width="18" height="18" alt="Chat-ikon" aria-hidden="true">Chat</p>
+                <h2 id="home-chat-title">Privat, i grupper eller med hele klassen.</h2>
                 <p>
-                    DMs, group chats for the class, the project and the people you sit with at lunch.
-                    Reply, edit, send a GIF, give your friends nicknames, and mute the chat that won't stop.
+                    Skriv privat, eller lav grupper til klassen, projektet og dem, du spiser frokost med. Svar på
+                    beskeder, send GIFs, giv vennerne kælenavne, og sæt den gruppe, der aldrig bliver
+                    stille, på lydløs.
                 </p>
                 <ul class="home-ticks">
-                    <li>Message requests, so strangers ask first</li>
-                    <li>Group owners and admins run their own groups</li>
-                    <li>GIFs, smileys and unread counts</li>
+                    <li>Beskedanmodninger</li>
+                    <li>Ejere og admins bestemmer selv over deres grupper</li>
+                    <li>GIFs, emojis og styr på ulæste beskeder</li>
                 </ul>
-                <a class="home-link" href="/chat/">Open chat <span aria-hidden="true">→</span></a>
+                <a class="home-link" href="/chat/">Gå til chatten <span aria-hidden="true">→</span></a>
             </div>
             <div class="home-feature-art" aria-hidden="true">
                 <ul class="home-inbox">
                     <li>
                         <span class="home-inbox-avatar home-msg-avatar-a">2B</span>
-                        <span class="home-inbox-text"><b>2.B</b>Oliver: sent a GIF</span>
+                        <span class="home-inbox-text"><b>2.B</b>Oliver har sendt en GIF</span>
                         <span class="home-inbox-count">3</span>
                     </li>
                     <li>
                         <span class="home-inbox-avatar home-msg-avatar-b">M</span>
-                        <span class="home-inbox-text"><b>Maja</b>see you at lunch</span>
+                        <span class="home-inbox-text"><b>Maja</b>ses til frokost</span>
                     </li>
                     <li>
-                        <span class="home-inbox-avatar home-msg-avatar-c">P</span>
-                        <span class="home-inbox-text"><b>Physics project</b>Sammy: Who has the slides?</span>
+                        <span class="home-inbox-avatar home-msg-avatar-c">F</span>
+                        <span class="home-inbox-text"><b>Fysikprojekt</b>Sammy: Hvem laver slides?</span>
                         <span class="home-inbox-count">9+</span>
                     </li>
                     <li class="home-inbox-request">
                         <span class="home-inbox-avatar">P</span>
-                        <span class="home-inbox-text"><b>Message request</b>Patrick wants to chat</span>
-                        <span class="home-inbox-actions"><span>Accept</span><span>Block</span></span>
+                        <span class="home-inbox-text"><b>Beskedanmodning</b>Patrick vil gerne skrive med dig</span>
+                        <span class="home-inbox-actions"><span>Accepter</span><span>Bloker</span></span>
                     </li>
                 </ul>
             </div>
@@ -236,21 +287,20 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <!-- Casino -->
         <section class="home-feature home-feature-flip" id="casino" aria-labelledby="home-casino-title">
             <div class="home-feature-text">
-                <p class="home-kicker"><img src="/assets/images/icons/small/dice.png" width="18" height="18" alt="Dice icon" aria-hidden="true">Casino<?php if (!$homeCasinoOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
-                <h2 id="home-casino-title">Chips, not cash.</h2>
+                <p class="home-kicker"><img src="/assets/images/icons/small/dice.png" width="18" height="18" alt="Terning-ikon" aria-hidden="true">Casino<?php if (!$homeCasinoOpen): ?><span class="home-soon">Kommer snart</span><?php endif; ?></p>
+                <h2 id="home-casino-title">Spil om chips, ikke penge.</h2>
                 <p>
-                    Everyone starts with <?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips and can collect
-                    <?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> or more every day, up to
-                    <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?> on a <?= HBHUB_CASINO_DAILY_DAYS ?>-day streak. Lose them all and the only thing
-                    you're out is bragging rights.
+                    Du starter med <?= homeKroner(HBHUB_CASINO_START_CHIPS) ?> chips og kan hente mindst
+                    <?= homeKroner(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> nye hver dag, helt op til
+                    <?= homeKroner(max(HBHUB_CASINO_DAILY_CALENDAR)) ?>, når du har hentet dem <?= HBHUB_CASINO_DAILY_DAYS ?> dage i træk.
                 </p>
                 <ul class="home-ticks">
-                    <li>Play solo, or at a table with friends</li>
-                    <li>Card games and roulette, with the classic rules and bets</li>
-                    <li>Fresh chips every day, more the longer your streak</li>
-                    <li>Leaderboards, if you're that good!</li>
+                    <li>Spil alene eller ved sammen med vennerne</li>
+                    <li>Kortspil og roulette med de klassiske regler</li>
+                    <li>Gratis chips hver dag, og flere jo oftere du henter dem</li>
+                    <li>Ranglister, så alle kan se, hvem der er bedst</li>
                 </ul>
-                <a class="home-link" href="/gambling/">Open the casino <span aria-hidden="true">→</span></a>
+                <a class="home-link" href="/casino/">Gå til casinoet <span aria-hidden="true">→</span></a>
             </div>
             <div class="home-feature-art home-casino-art" aria-hidden="true">
                 <!-- A blackjack table seen from above: the dealer's hand at the top, the table's print in an arc,
@@ -263,8 +313,8 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <svg class="home-felt-print" viewBox="0 0 300 84">
                         <path id="home-felt-arc-big" d="M 6 8 Q 150 92 294 8" fill="none"/>
                         <path id="home-felt-arc-small" d="M 40 34 Q 150 108 260 34" fill="none"/>
-                        <text class="home-felt-print-big"><textPath href="#home-felt-arc-big" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
-                        <text class="home-felt-print-small"><textPath href="#home-felt-arc-small" startOffset="50%" text-anchor="middle">DEALER STANDS ON 17</textPath></text>
+                        <text class="home-felt-print-big"><textPath href="#home-felt-arc-big" startOffset="50%" text-anchor="middle">BLACKJACK BETALER 3 TIL 2</textPath></text>
+                        <text class="home-felt-print-small"><textPath href="#home-felt-arc-small" startOffset="50%" text-anchor="middle">DEALEREN STÅR PÅ 17</textPath></text>
                     </svg>
                     <div class="home-felt-player">
                         <div class="home-hand">
@@ -273,9 +323,9 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                             <span class="home-hand-total">21</span>
                         </div>
                         <div class="home-bet">
-                            <img src="/assets/images/icons/chip.svg" alt="Casino chip">
-                            <img src="/assets/images/icons/chip.svg" alt="Casino chip">
-                            <img src="/assets/images/icons/chip.svg" alt="Casino chip">
+                            <img src="/assets/images/icons/chip.svg" alt="Casinochip">
+                            <img src="/assets/images/icons/chip.svg" alt="Casinochip">
+                            <img src="/assets/images/icons/chip.svg" alt="Casinochip">
                         </div>
                     </div>
                 </div>
@@ -287,15 +337,15 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                      the side bets above them (each pair over its own side, the Tie in between), and a bet on the
                      Banker. The payouts are the table's own (round.php). -->
                 <div class="home-baccarat">
-                    <p class="home-baccarat-spot is-side">P Pair<small><?= HBHUB_BACCARAT_PAYS['playerPair'] ?> to 1</small></p>
-                    <p class="home-baccarat-spot is-side is-tie">Tie<small><?= HBHUB_BACCARAT_PAYS['tie'] ?> to 1</small></p>
-                    <p class="home-baccarat-spot is-side is-banker">B Pair<small><?= HBHUB_BACCARAT_PAYS['bankerPair'] ?> to 1</small></p>
-                    <p class="home-baccarat-spot">Player<small><?= HBHUB_BACCARAT_PAYS['player'] ?> to 1</small></p>
+                    <p class="home-baccarat-spot is-side">P-Pair<small><?= HBHUB_BACCARAT_PAYS['playerPair'] ?> til 1</small></p>
+                    <p class="home-baccarat-spot is-side is-tie">Tie<small><?= HBHUB_BACCARAT_PAYS['tie'] ?> til 1</small></p>
+                    <p class="home-baccarat-spot is-side is-banker">B-Pair<small><?= HBHUB_BACCARAT_PAYS['bankerPair'] ?> til 1</small></p>
+                    <p class="home-baccarat-spot">PLAYER<small><?= HBHUB_BACCARAT_PAYS['player'] ?> til 1</small></p>
                     <p class="home-baccarat-spot is-banker">
-                        Banker<small><?= HBHUB_BACCARAT_PAYS['banker'] ?> to 1<br>with <?= HBHUB_BACCARAT_BANKER_COMMISSION / 10 ?>% cut</small>
+                        Banker<small><?= HBHUB_BACCARAT_PAYS['banker'] ?> til 1<br>minus <?= str_replace('.', ',', (string) (HBHUB_BACCARAT_BANKER_COMMISSION / 10)) ?> %</small>
                         <span class="home-baccarat-chips">
-                            <img src="/assets/images/icons/chip.svg" alt="Casino chip">
-                            <img src="/assets/images/icons/chip.svg" alt="Casino chip">
+                            <img src="/assets/images/icons/chip.svg" alt="Casinochip">
+                            <img src="/assets/images/icons/chip.svg" alt="Casinochip">
                         </span>
                     </p>
                 </div>
@@ -305,20 +355,20 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <!-- Games -->
         <section class="home-feature" id="games" aria-labelledby="home-games-title">
             <div class="home-feature-text">
-                <p class="home-kicker"><img src="/assets/images/icons/small/controler.png" width="18" height="18" alt="Game controller icon" aria-hidden="true">Games<?php if (!$homeGamesOpen): ?><span class="home-soon">Coming soon</span><?php endif; ?></p>
-                <h2 id="home-games-title">Games, without the box.</h2>
+                <p class="home-kicker"><img src="/assets/images/icons/small/controler.png" width="18" height="18" alt="Controller-ikon" aria-hidden="true">Spil<?php if (!$homeGamesOpen): ?><span class="home-soon">Kommer snart</span><?php endif; ?></p>
+                <h2 id="home-games-title">Brætspil, uden at finde æsken frem.</h2>
                 <p>
-                    Classic board and card games to play with your friends, plus a daily puzzle and a game to
-                    sink a free period into. Timers keep things moving, so nobody can stall when they're losing.
+                    Klassiske bræt- og kortspil, du kan spille med vennerne, daglige udfordringer og andre spil til
+                    de lange mellemtimer.
                 </p>
                 <ul class="home-ticks">
-                    <li>Play with friends, or on your own</li>
-                    <li>Saved as you go, so you can finish tomorrow</li>
-                    <li>Public rooms, private with a code, or invite only</li>
-                    <li>Chat with the table while you play</li>
-                    <li>Leaderboards and rematches</li>
+                    <li>Spil med vennerne eller alene</li>
+                    <li>Spillet bliver gemt, så I kan spille videre i morgen</li>
+                    <li>Offentlige rum, eller private</li>
+                    <li>Chat med de andre ved bordet, mens I spiller</li>
+                    <li>Ranglister og revanchekampe</li>
                 </ul>
-                <a class="home-link" href="/games/">Open games <span aria-hidden="true">→</span></a>
+                <a class="home-link" href="/games/">Se spillene <span aria-hidden="true">→</span></a>
             </div>
             <div class="home-feature-art home-games-art" aria-hidden="true">
                 <!-- A chessboard just after Scholar's mate -->
@@ -348,38 +398,38 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
 
         <!-- Safety -->
         <section class="home-safety" id="safety" aria-labelledby="home-safety-title">
-            <p class="home-kicker home-kicker-center">Safety</p>
-            <h2 id="home-safety-title">Fun, with the brakes built in.</h2>
+            <p class="home-kicker home-kicker-center">Sikkerhed</p>
+            <h2 id="home-safety-title">Sjovt, og sikkert.</h2>
             <ul class="home-safety-grid">
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg>
-                    <h3>Two-factor login</h3>
-                    <p>Add a code from any authenticator app, set up by scanning a QR code.</p>
+                    <h3>Totrinslogin</h3>
+                    <p>Log ind med en ekstra kode fra din godkendelsesapp. Du sætter det op ved at scanne en QR-kode.</p>
                 </li>
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                    <h3>Block it during school</h3>
-                    <p>Turn off the Casino and Games from 8 AM to 3 PM, or all the time. Switching it back on has to wait.</p>
+                    <h3>Sluk for det i skoletiden</h3>
+                    <p>Slå Casino og Spil fra mellem kl. 8 og 15, eller helt. Vil du slå det til igen, skal du vente lidt.</p>
                 </li>
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
-                    <h3>Hard to break into</h3>
-                    <p>Strong password rules and a lockout after too many wrong guesses, without locking you out.</p>
+                    <h3>Svær at hacke</h3>
+                    <p>Krav om stærke adgangskoder og en spærring efter for mange forkerte forsøg, uden at du selv bliver låst ude.</p>
                 </li>
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/></svg>
-                    <h3>Passwords stay secret</h3>
-                    <p>Passwords are hashed, never stored in plain text. Nobody can read yours, not even the admins.</p>
+                    <h3>Din adgangskode er kun din</h3>
+                    <p>Adgangskoder bliver hashet og gemmes IKKE som tekst. Ingen kan se din adganskode, heller ikke admins.</p>
                 </li>
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8l-5 4 5 4"/><path d="M16 8l5 4-5 4"/><path d="M13.5 5l-3 14"/></svg>
                     <h3>Open source</h3>
-                    <p>All of the code is public, so you don't have to take our word for it. <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">See for yourself on GitHub</a>.</p>
+                    <p>Al koden er offentlig, så du behøver ikke bare stole på os. <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">Se selv på GitHub</a>.</p>
                 </li>
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
-                    <h3>Your account, your call</h3>
-                    <p>Delete your account and its data from the settings page whenever you want.</p>
+                    <h3>Din konto, dit valg</h3>
+                    <p>Du kan til enhver tid slette din konto og dens data under indstillinger.</p>
                 </li>
             </ul>
         </section>
@@ -387,17 +437,17 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <!-- Last call -->
         <section class="home-cta" aria-labelledby="home-cta-title">
             <?php if ($homeUser === null): ?>
-                <h2 id="home-cta-title">Your class is already in here.</h2>
-                <p>Sign up in under a minute and stop missing the joke.</p>
+                <h2 id="home-cta-title">Din klasse er her allerede.</h2>
+                <p>Det tager under et minut at oprette en konto, og så misser du ikke det næste spil.</p>
                 <div class="home-hero-actions">
-                    <a class="home-btn home-btn-primary home-btn-lg" href="/onboarding">Sign up</a>
-                    <a class="home-btn home-btn-glass home-btn-lg" href="/login">Log in</a>
+                    <a class="home-btn home-btn-primary home-btn-lg" href="/onboarding">Opret konto</a>
+                    <a class="home-btn home-btn-glass home-btn-lg" href="/login">Log ind</a>
                 </div>
             <?php else: ?>
-                <h2 id="home-cta-title">Miss anything?</h2>
-                <p>Probably. Go catch up.</p>
+                <h2 id="home-cta-title">Har du misset noget?</h2>
+                <p>Helt sikkert. Kom ind og se, hvad der er sket.</p>
                 <div class="home-hero-actions">
-                    <a class="home-btn home-btn-primary home-btn-lg" href="/chat/">Open HB Hub</a>
+                    <a class="home-btn home-btn-primary home-btn-lg" href="/chat/">Åbn HB Hub</a>
                 </div>
             <?php endif; ?>
         </section>

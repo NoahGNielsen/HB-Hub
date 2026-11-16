@@ -28,7 +28,7 @@ $casinoWallet = hbHubCasinoStatus($db, $userId);
 $casinoDaily = $casinoWallet['daily'];
 $navCasinoChips = $casinoWallet['chips']; // the chip count in the top bar (navPanel.php)
 
-// The casino leaderboard by chips won or lost, like gambling/leaderboard.php shows it first, and the user's place on it
+// The casino leaderboard by chips won or lost, like casino/leaderboard.php shows it first, and the user's place on it
 $casinoBoard = hbHubCasinoLeaderboardSort(hbHubCasinoLeaderboardRows($db), 'net', true);
 $casinoPlace = null;
 foreach ($casinoBoard as $casinoIndex => $casinoRow) {
@@ -178,7 +178,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
     <main class="casino casino-home">
         <header class="casino-home-hero">
             <!-- Kept faint on purpose: buying chips is there for whoever looks, not something to push -->
-            <a class="casino-pay-link" href="/gambling/buy-chips" aria-label="Buy chips" title="Buy chips">
+            <a class="casino-pay-link" href="/casino/buy-chips" aria-label="Buy chips" title="Buy chips">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <rect x="2" y="5" width="20" height="14" rx="2"/>
@@ -208,7 +208,8 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
 
             <section class="casino-home-daily<?= $casinoDaily['ready'] ? ' is-ready' : '' ?>" aria-labelledby="casino-daily-title"
                      data-casino-daily data-seconds="<?= $casinoDaily['seconds'] ?>" data-amount="<?= $casinoDaily['amount'] ?>"
-                     data-day="<?= $casinoDaily['day'] ?>" data-collected="<?= $casinoDaily['collected'] ?>">
+                     data-day="<?= $casinoDaily['day'] ?>" data-collected="<?= $casinoDaily['collected'] ?>"
+                     data-shared="<?= $casinoDaily['shared'] ? '1' : '0' ?>">
                 <div class="casino-home-daily-head">
                     <h2 id="casino-daily-title">Daily chips</h2>
                     <p class="casino-home-streak" data-casino-streak><?= casinoStreakText($casinoDaily['collected']) ?></p>
@@ -219,6 +220,10 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                 <p class="casino-home-daily-next">
                     <span data-casino-daily-when><?= $casinoDaily['ready'] ? 'Today' : 'Tomorrow' ?></span>:
                     day <span data-casino-daily-day><?= $casinoDaily['day'] ?></span> of <?= HBHUB_CASINO_DAILY_DAYS ?>
+                </p>
+                <?php // When another account used in the same browser already collected today (wallet.php), casino.js shows and hides it ?>
+                <p class="casino-home-daily-shared" data-casino-daily-shared<?= $casinoDaily['shared'] ? '' : ' hidden' ?>>
+                    Another of your accounts already collected today's chips, so this one gets <?= HBHUB_CASINO_DAILY_ALT_PERCENT ?>%.
                 </p>
                 <button type="button" class="casino-btn casino-btn-primary" data-casino-claim<?= $casinoDaily['ready'] ? '' : ' disabled' ?>>Collect daily chips</button>
                 <p class="casino-home-daily-timer" role="timer" data-casino-daily-timer>
@@ -284,7 +289,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
             </div>
             <ul class="casino-home-games">
                 <li>
-                    <a class="casino-home-game casino-home-game-blackjack" href="/gambling/blackjack/">
+                    <a class="casino-home-game casino-home-game-blackjack" href="/casino/blackjack/">
                         <span class="casino-home-game-felt">
                             <?php if ($casinoTables['blackjack']['seat'] !== null): ?>
                                 <span class="casino-home-game-seated">You're at <?= htmlspecialchars($casinoTables['blackjack']['seat']['roomName']) ?></span>
@@ -317,7 +322,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                     </a>
                 </li>
                 <li>
-                    <a class="casino-home-game casino-home-game-baccarat" href="/gambling/baccarat/">
+                    <a class="casino-home-game casino-home-game-baccarat" href="/casino/baccarat/">
                         <span class="casino-home-game-felt">
                             <?php if ($casinoTables['baccarat']['seat'] !== null): ?>
                                 <span class="casino-home-game-seated">You're at <?= htmlspecialchars($casinoTables['baccarat']['seat']['roomName']) ?></span>
@@ -352,7 +357,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                     </a>
                 </li>
                 <li>
-                    <a class="casino-home-game casino-home-game-roulette" href="/gambling/roulette/">
+                    <a class="casino-home-game casino-home-game-roulette" href="/casino/roulette/">
                         <span class="casino-home-game-felt">
                             <!-- The front page's European roulette wheel, the ball resting on 17 -->
                             <span class="casino-home-game-art casino-art-roulette" aria-hidden="true">
@@ -385,7 +390,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                     </a>
                 </li>
                 <li>
-                    <a class="casino-home-game casino-home-game-slots" href="/gambling/slots/">
+                    <a class="casino-home-game casino-home-game-slots" href="/casino/slots/">
                         <span class="casino-home-game-felt">
                             <!-- A slot machine's window, three 7s on the middle line -->
                             <span class="casino-home-game-art casino-art-slots" aria-hidden="true">
@@ -418,7 +423,7 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
             <section class="casino-card casino-home-top" aria-labelledby="casino-top-title">
                 <div class="casino-home-section-head">
                     <h2 id="casino-top-title">Top players</h2>
-                    <a class="casino-btn" href="/gambling/leaderboard">Full leaderboard</a>
+                    <a class="casino-btn" href="/casino/leaderboard">Full leaderboard</a>
                 </div>
                 <?php if ($casinoBoard === []): ?>
                     <p class="casino-hint">Nobody has played in the casino yet. Be the first!</p>
@@ -444,10 +449,10 @@ function casinoTopPlayerHtml(array $row, int $place, int $userId): string
                     <li>Each game has its own leaderboard with wins, losses and win %.</li>
                 </ul>
                 <nav class="casino-home-links" aria-label="More about the casino">
-                    <a href="/gambling/blackjack/leaderboard">Blackjack leaderboard</a>
-                    <a href="/gambling/baccarat/leaderboard">Baccarat leaderboard</a>
-                    <a href="/gambling/roulette/leaderboard">Roulette leaderboard</a>
-                    <a href="/gambling/slots/leaderboard">Slots leaderboard</a>
+                    <a href="/casino/blackjack/leaderboard">Blackjack leaderboard</a>
+                    <a href="/casino/baccarat/leaderboard">Baccarat leaderboard</a>
+                    <a href="/casino/roulette/leaderboard">Roulette leaderboard</a>
+                    <a href="/casino/slots/leaderboard">Slots leaderboard</a>
                     <a href="/docs/casino/">How the casino works</a>
                 </nav>
             </section>

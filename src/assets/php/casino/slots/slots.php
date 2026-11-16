@@ -1,6 +1,6 @@
 <?php
 // Slots: a three-reel slot machine with five paylines, played against the house with the casino's chips. These are the
-// rules; gambling/slots/spin.php plays them (hbHubSlotsSpin()), and every spin is logged in HBHub-SlotSpins, which the
+// rules; casino/slots/spin.php plays them (hbHubSlotsSpin()), and every spin is logged in HBHub-SlotSpins, which the
 // leaderboards and the user's last spins come from.
 //
 // Each reel is a strip of HBHUB_SLOTS_REEL_LENGTH symbols that goes round, and a spin picks where each reel stops

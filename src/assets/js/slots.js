@@ -1,4 +1,4 @@
-// Slots (gambling/slots/): the slot machine. Spin sends the bet to /gambling/slots/spin (data-api, see
+// Slots (casino/slots/): the slot machine. Spin sends the bet to /casino/slots/spin (data-api, see
 // assets/php/casino/slots/slots.php), which picks where each reel stops and pays out; this only shows it. Each reel rolls
 // round its real strip (data-reels) and stops where the server said, the left one first, then the winning lines light up.
 // A reel is rolled by filling its strip with the symbols between where it stands and where it stops (plus a few whole

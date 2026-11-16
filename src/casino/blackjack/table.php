@@ -1,6 +1,6 @@
 <?php
 // A Blackjack table (?room=id). This is just the page around it: blackjackTable.js draws the table and plays it
-// through /gambling/blackjack/play. Only for the table the user sits at - anyone else is sent to the Blackjack page,
+// through /casino/blackjack/play. Only for the table the user sits at - anyone else is sent to the Blackjack page,
 // where tables are joined. At a table for more players there's also its join code, sitting out, and for the host,
 // inviting people (searched for with the chat's /chat/users).
 //
@@ -22,7 +22,7 @@ if ($guestGame === null) {
     $seat = hbHubBlackjackUserSeat($db, $userId);
     $room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubBlackjackRoom($db, $seat['roomId']) : null;
     if ($room === null) {
-        header('Location: /gambling/blackjack/', true, 302);
+        header('Location: /casino/blackjack/', true, 302);
         exit;
     }
 
@@ -57,7 +57,7 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <?php endif; ?>
     <main class="bj" data-blackjack data-room="<?= $room['roomId'] ?>" data-min-bet="<?= $room['roomMinBet'] ?>"
-          data-api="<?= $guestGame !== null ? '/play/blackjack/play' : '/gambling/blackjack/play' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
+          data-api="<?= $guestGame !== null ? '/play/blackjack/play' : '/casino/blackjack/play' ?>"<?= $guestGame !== null ? ' data-guest' : '' ?>>
         <?php if ($guestGame !== null): ?>
             <a class="casino-back" href="/">&larr; HB Hub</a>
         <?php endif; ?>
@@ -143,7 +143,7 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
                     <?php if ($guestGame !== null): ?>
                         You don't have enough chips for this table. Reload the page for a new stack.
                     <?php else: ?>
-                        You don't have enough chips for this table. <a href="/gambling/">Collect your daily chips</a>
+                        You don't have enough chips for this table. <a href="/casino/">Collect your daily chips</a>
                     <?php endif; ?>
                 </p>
             </div>

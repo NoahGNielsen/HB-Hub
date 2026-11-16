@@ -64,7 +64,7 @@ $adminPage = min($adminPage, $adminPages);
 
 $statement = $db->prepare('SELECT l.adminLogAction, l.adminLogData, l.adminLogReason, l.adminLogTimestamp,
         l.adminLogByUserId, bu.userName AS byName, bu.userAvatarAttachmentId AS byAvatarId,
-        l.adminLogUserId, u.userName, l.adminLogChatId, IF(c.chatId IS NULL, NULL, ' . adminChatTitleSql() . ') AS chatTitle
+        l.adminLogUserId, u.userName, u.userId IS NOT NULL AND u.userStatus IS NULL AS userDeleted, l.adminLogChatId, IF(c.chatId IS NULL, NULL, ' . adminChatTitleSql() . ') AS chatTitle
     FROM `HBHub-AdminLog` l
     LEFT JOIN `HBHub-Users` bu ON bu.userId = l.adminLogByUserId
     LEFT JOIN `HBHub-Users` u ON u.userId = l.adminLogUserId
@@ -112,7 +112,7 @@ function adminLogText(array $entry): string
                 : 'Took ' . -$amount . ' attachment ' . ($amount === -1 ? 'ticket' : 'tickets') . ' from {user}')
             . (isset($data['total']) ? ' (' . (int) $data['total'] . ' in all now)' : ''),
         'watchdog.clear' => isset($data['count'])
-            ? 'Cleared the server busy reports (' . number_format((int) $data['count']) . ((int) $data['count'] === 1 ? ' report of 508 errors)' : ' reports of 508 errors)') : null,
+            ? 'Cleared the browser error reports (' . number_format((int) $data['count']) . ((int) $data['count'] === 1 ? ' report)' : ' reports)') : null,
         'chat.background' => !empty($data['reset']) ? 'Reset the background of {chat}' : null,
         'chat.kick' => !empty($data['invite']) ? 'Took back {user}\'s ' . (!empty($data['ghost']) ? 'ghost ' : '') . 'invite to {chat}' : null,
         'feedback.done', 'feedback.new', 'feedback.delete' => isset($data['feedbackId'])
@@ -130,8 +130,17 @@ function adminLogText(array $entry): string
         $text .= ' (as one of the accounts of the person around account #' . (int) $data['personOf'] . ')';
     }
 
+    // A deleted account's name is "Deleted User" now (and the log never keeps names), so it goes by its id instead:
+    // "Banned deleted account #12", and the deletion itself just "Deleted account #12" rather than "Deleted Deleted User's account"
+    $userDeleted = !empty($entry['userDeleted']);
+    if ($userDeleted && $entry['adminLogAction'] === 'user.delete') {
+        $text = str_replace(ADMIN_LOG_ACTIONS['user.delete'], 'Deleted {user}', $text);
+    }
+    $userLabel = $userDeleted
+        ? ($entry['adminLogAction'] === 'user.delete' ? 'account #' : 'deleted account #') . (int) $entry['adminLogUserId']
+        : $entry['userName'];
     $user = $entry['adminLogUserId'] !== null
-        ? adminLogNameLink('/admin/user?user=' . (int) $entry['adminLogUserId'], $entry['userName'])
+        ? adminLogNameLink('/admin/user?user=' . (int) $entry['adminLogUserId'], $userLabel ?? 'user ' . (int) $entry['adminLogUserId'])
         : '<span class="admin-muted">someone</span>';
     $chat = $entry['adminLogChatId'] !== null
         ? adminLogNameLink('/admin/chat?chat=' . (int) $entry['adminLogChatId'], $entry['chatTitle'])

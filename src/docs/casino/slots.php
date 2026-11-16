@@ -6,36 +6,37 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/slots.php';
 
-const DOCS_SLOTS_LINE_NAMES = ['The middle row', 'The top row', 'The bottom row', 'Top left to bottom right', 'Bottom left to top right'];
+const DOCS_SLOTS_LINE_NAMES = ['Den midterste række', 'Den øverste række', 'Den nederste række', 'Øverst til venstre til nederst til højre', 'Nederst til venstre til øverst til højre'];
 
 $docsPath = '/docs/casino/slots';
-$docsIntro = 'A three-reel slot machine with ' . count(HBHUB_SLOTS_LINES) . ' paylines. Pick a bet, spin, and see what
-    lines up. Every spin is your own, so you can play at your own pace at the <a href="/gambling/slots/">slot machine</a>.';
+$docsIntro = 'En spilleautomat med tre hjul og ' . count(HBHUB_SLOTS_LINES) . ' gevinstlinjer. Vælg en indsats, drej, og
+    se, hvad der kommer på linje. Hvert spin er dit eget, så du kan spille i dit eget tempo ved
+    <a href="/casino/slots/">spilleautomaten</a>.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">
-                        <div><dt>Reels</dt><dd>3</dd></div>
-                        <div><dt>Paylines</dt><dd><?= count(HBHUB_SLOTS_LINES) ?></dd></div>
-                        <div><dt>Bets in steps of</dt><dd><?= HBHUB_SLOTS_BET_STEP ?></dd></div>
-                        <div><dt>Best payout</dt><dd><?= HBHUB_SLOTS_PAYS['seven'] ?>&times; a line</dd></div>
+                        <div><dt>Hjul</dt><dd>3</dd></div>
+                        <div><dt>Gevinstlinjer</dt><dd><?= count(HBHUB_SLOTS_LINES) ?></dd></div>
+                        <div><dt>Indsatser i trin af</dt><dd><?= HBHUB_SLOTS_BET_STEP ?></dd></div>
+                        <div><dt>Bedste udbetaling</dt><dd><?= HBHUB_SLOTS_PAYS['seven'] ?>&times; en linje</dd></div>
                     </dl>
 
                     <section id="play" aria-labelledby="docs-play">
-                        <h2 id="docs-play">How to play</h2>
+                        <h2 id="docs-play">Sådan spiller du</h2>
                         <ol class="docs-steps">
-                            <li>Pick a bet with the chips on the machine, under the reels, or move it up and down with <strong>&minus;</strong> and <strong>+</strong>. With fewer than <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips left, the <strong>All in</strong> chip bets every chip you have.</li>
-                            <li>Press <strong>Spin</strong> (or <kbd>Space</kbd>, or pull the lever beside the machine). The bet is taken, and the reels roll and stop one after another from the left. When the first two reels line up two 7s, diamonds or stars, the last one rolls on a little longer and glows, as it could make a big win. That's only for show: where it stops was already picked.</li>
-                            <li>Every winning line draws itself in and is paid, and with more than one, each line gets a turn with what it paid. The bigger the win, the bigger the show: coins, a Big win or Mega win banner, and fireworks and falling 7s for three 7s. Your bet stays the same, so you can spin again straight away (which also clears the show).</li>
+                            <li>Vælg en indsats med chipsene på automaten under hjulene, eller flyt den op og ned med <strong>&minus;</strong> og <strong>+</strong>. Med færre end <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips tilbage satser <strong>All in</strong>-chippen alle dine chips.</li>
+                            <li>Tryk på <strong>Spin</strong> (eller <kbd>Mellemrum</kbd>, eller træk i håndtaget ved siden af automaten). Indsatsen bliver taget, og hjulene ruller og stopper ét efter ét fra venstre. Når de første to hjul har to 7'ere, diamanter eller stjerner på linje, ruller det sidste lidt længere og lyser, da det kan give en stor gevinst. Det er kun for showets skyld: hvor det stopper, var allerede valgt.</li>
+                            <li>Hver vindende linje tegner sig selv og bliver betalt, og er der mere end én, får hver linje sin tur med det, den betalte. Jo større gevinst, jo større show: mønter, et Big win- eller Mega win-banner, og fyrværkeri og faldende 7'ere for tre 7'ere. Din indsats forbliver den samme, så du kan dreje igen med det samme (hvilket også rydder showet).</li>
                         </ol>
-                        <p>Your last spins are listed next to the machine, with what each one won or lost.</p>
-                        <p>The machine has sound effects. The <strong>Sound</strong> button next to the leaderboard link turns them off and on, and your browser remembers which.</p>
+                        <p>Dine seneste spins står ved siden af automaten, med hvad hvert af dem vandt eller tabte.</p>
+                        <p>Automaten har lydeffekter. Knappen <strong>Sound</strong> ved linket til ranglisten slår dem fra og til, og din browser husker, hvad du valgte.</p>
                     </section>
 
                     <section id="lines" aria-labelledby="docs-lines">
-                        <h2 id="docs-lines">The paylines</h2>
+                        <h2 id="docs-lines">Gevinstlinjerne</h2>
                         <p>
-                            Every spin plays all <?= count(HBHUB_SLOTS_LINES) ?> lines, and your bet is split evenly across
-                            them: a bet of 50 is 10 on each line. The lines are numbered down both sides of the machine.
+                            Hvert spin spiller alle <?= count(HBHUB_SLOTS_LINES) ?> linjer, og din indsats bliver delt ligeligt ud
+                            på dem: en indsats på 50 er 10 på hver linje. Linjerne er nummereret ned langs begge sider af automaten.
                         </p>
                         <ol>
                             <?php foreach (DOCS_SLOTS_LINE_NAMES as $docsLineName): ?>
@@ -45,26 +46,26 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     </section>
 
                     <section id="rules" aria-labelledby="docs-rules">
-                        <h2 id="docs-rules">The rules and the pay table</h2>
+                        <h2 id="docs-rules">Reglerne og gevinsttabellen</h2>
                         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/slots/rules.php'; ?>
                         <p>
-                            "Pays" is how many times a line's share of the bet it pays back, the share included, so on a bet of
-                            50 (10 a line) three 7s pay <?= number_format(HBHUB_SLOTS_PAYS['seven'] * 10) ?>.
+                            "Betaler" er, hvor mange gange en linjes andel af indsatsen den betaler tilbage, andelen medregnet, så
+                            med en indsats på 50 (10 per linje) betaler tre 7'ere <?= number_format(HBHUB_SLOTS_PAYS['seven'] * 10, 0, ',', '.') ?>.
                         </p>
                     </section>
 
                     <section id="odds" aria-labelledby="docs-odds">
-                        <h2 id="docs-odds">What the machine pays back</h2>
+                        <h2 id="docs-odds">Hvad automaten betaler tilbage</h2>
                         <p>
-                            Over a long time the slot machine pays back about <?= number_format(hbHubSlotsReturn() * 100, 1) ?>% of
-                            everything bet on it, so the house keeps about <?= number_format((1 - hbHubSlotsReturn()) * 100, 1) ?>%.
-                            Small wins come often, the big ones rarely: three 7s on a line is 1 in
-                            <?= number_format(hbHubSlotsOdds('seven')) ?>. No spin depends on the ones before it, so a machine is
-                            never "due" a win.
+                            Over lang tid betaler spilleautomaten cirka <?= number_format(hbHubSlotsReturn() * 100, 1, ',', '.') ?> %
+                            af alt, der er satset på den, tilbage, så huset beholder cirka
+                            <?= number_format((1 - hbHubSlotsReturn()) * 100, 1, ',', '.') ?> %. Små gevinster kommer tit, de store
+                            sjældent: tre 7'ere på en linje er 1 ud af <?= number_format(hbHubSlotsOdds('seven'), 0, ',', '.') ?>. Intet
+                            spin afhænger af dem før, så en automat "skal" aldrig give en gevinst.
                         </p>
                         <p>
-                            Every spin counts towards the <a href="/gambling/slots/leaderboard">Slots leaderboard</a>, with your
-                            biggest win and how much you've won or lost in total.
+                            Hvert spin tæller med på <a href="/casino/slots/leaderboard">Slots-ranglisten</a>, med din største
+                            gevinst, og hvor meget du har vundet eller tabt i alt.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

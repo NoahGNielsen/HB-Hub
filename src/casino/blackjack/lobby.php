@@ -1,22 +1,22 @@
 <?php
-// The Baccarat lobby's lists, for baccaratLobby.js, which asks every few seconds: /gambling/baccarat/lobby is
+// The Blackjack lobby's lists, for blackjackLobby.js, which asks every few seconds: /casino/blackjack/lobby is
 // {"rooms": the public tables, "invites": the tables the user is invited to, "seat": the room id of the user's own
-// table or null}. Every visit also tidies up a few tables nobody has open anymore (hbHubBaccaratSweep() in room.php).
+// table or null}. Every visit also tidies up a few tables nobody has open anymore (hbHubBlackjackSweep() in room.php).
 // About every 15 seconds navUpdates.js sends the nav bar's request along (?nav=), answered in "nav" too (hbHubNavRide()
 // in assets/php/navUpdates.php).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navUpdates.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/baccarat/room.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/room.php';
 hbHubCasinoJson($hbHubUser); // blocked in settings, or not open yet
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 
-hbHubBaccaratSweep($db);
+hbHubBlackjackSweep($db);
 
 echo json_encode([
-    'rooms' => hbHubBaccaratPublicRooms($db),
-    'invites' => hbHubBaccaratInvitesFor($db, $userId),
-    'seat' => hbHubBaccaratUserSeat($db, $userId)['roomId'] ?? null,
+    'rooms' => hbHubBlackjackPublicRooms($db),
+    'invites' => hbHubBlackjackInvitesFor($db, $userId),
+    'seat' => hbHubBlackjackUserSeat($db, $userId)['roomId'] ?? null,
 ] + array_filter(['nav' => hbHubNavRide($db, $hbHubUser)]), JSON_INVALID_UTF8_SUBSTITUTE);

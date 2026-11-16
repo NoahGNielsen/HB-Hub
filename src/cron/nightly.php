@@ -5,9 +5,11 @@
 //   - every expired chat attachment: its file deleted from disk and its row marked as expired
 //   - casino tables and game rooms nobody has open anymore (a batch of each, like a lobby visit)
 //   - GIF searches cached longer than 15 minutes
+//   - the text of chat messages deleted more than 3 days ago, the rows stay (assets/php/chat.php)
 //   - admin log rows older than a year (assets/php/adminLog.php)
 //   - Ore Mining Inc. crash reports and browser crash notes older than 90 days (assets/php/games/spaceOreMiner/crashReports.php)
 //   - the Watchdog's 508 reports older than 30 days (assets/php/watchdog.php)
+//   - page view counts, and the utm_source ones, older than 90 days (assets/php/pageViews.php)
 //   - linked Discord accounts' usernames, asked from Discord again in case they changed them (assets/php/discord.php).
 //     Skipped without discord_bot_token in hbHubSiteConfig.php.
 // Each job runs on its own, so one failing doesn't stop the rest. It prints one line per job, and errors go to
@@ -34,6 +36,7 @@ if (filter_var($siteConfig['site_maintenance'], FILTER_VALIDATE_BOOLEAN)) {
 }
 
 require_once __DIR__ . '/../assets/php/chatAttachments.php';
+require_once __DIR__ . '/../assets/php/chat.php';
 require_once __DIR__ . '/../assets/php/casino/blackjack/room.php';
 require_once __DIR__ . '/../assets/php/casino/baccarat/room.php';
 require_once __DIR__ . '/../assets/php/games/chess/room.php';
@@ -43,6 +46,7 @@ require_once __DIR__ . '/../assets/php/adminLog.php';
 require_once __DIR__ . '/../assets/php/games/spaceOreMiner/crashReports.php';
 require_once __DIR__ . '/../assets/php/discord.php';
 require_once __DIR__ . '/../assets/php/watchdog.php';
+require_once __DIR__ . '/../assets/php/pageViews.php';
 
 const HBHUB_CRON_ATTACHMENT_ROUNDS = 1000; // the most sweeps of 50 attachments in one night, in case something keeps finding more
 
@@ -93,7 +97,11 @@ hbHubCronRun('GIF cache', static function () use ($db): string {
     return $db->exec('DELETE FROM `HBHub-GifCache` WHERE gifCacheExpiresTimestamp <= UTC_TIMESTAMP()') . ' expired removed';
 });
 
-hbHubCronRun('Admin log', static function () use ($db): string {
+hbHubCronRun('Deleted messages', static function () use ($db): string {
+    return chatDeletedMessagesSweep($db) . ' emptied';
+});
+
+hbHubCronRun('Admin log',static function () use ($db): string {
     return adminLogSweep($db) . ' old rows removed';
 });
 
@@ -107,6 +115,10 @@ hbHubCronRun('Miner browser crash notes', static function () use ($db): string {
 
 hbHubCronRun('Watchdog', static function () use ($db): string {
     return hbHubWatchdogSweep($db) . ' old reports removed';
+});
+
+hbHubCronRun('Page views', function () use ($db) {
+    return hbHubPageViewsSweep($db) . ' old days removed';
 });
 
 hbHubCronRun('Discord names', static function () use ($db, $siteConfig): string {

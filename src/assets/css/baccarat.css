@@ -1,4 +1,4 @@
-/* A Baccarat table (gambling/baccarat/table.php, drawn by baccaratTable.js). Loaded after casino.css, which has the
+/* A Baccarat table (casino/baccarat/table.php, drawn by baccaratTable.js). Loaded after casino.css, which has the
    Player (blue), Banker (red) and Tie (green) colors. */
 .bac {
   --bac-card-w: 64px;

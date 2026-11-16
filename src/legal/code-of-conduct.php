@@ -1,24 +1,25 @@
 <?php
 // Code of conduct: how people are expected to treat each other on HB Hub - in chats, groups, games and the casino -
 // and how to report someone. The Terms of Service (terms.php) hold the actual rules and what admins can do; this page
-// is the friendlier, longer version of their "How to behave" section, with examples.
+// expands on their "Adfærd" section with concrete examples.
 // A .legal-page article (legal.css: a dark hero, then the contents next to the text) under the frontpage's top bar
 // (homeNav.php), so it loads homepage.css too, just like terms.php and privacy.php. Open to everyone, like the
-// frontpage. The site footer (footer.php) links here.
+// frontpage, and so in Danish like every public page. The site footer (footer.php) links here.
 // When an expectation changes, HBHUB_CONDUCT_UPDATED gets the date of the change.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php'; // only for hbHubLegalDanishDate()
 
-const HBHUB_CONDUCT_UPDATED = '14 November 2026';
+const HBHUB_CONDUCT_UPDATED = '15 November 2026';
 ?>
 <!DOCTYPE html>
-<html lang="en" class="home">
+<html lang="da" class="home">
 <head>
-    <?php $headerHomeNav = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = true; $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
-    <title>Code of Conduct - HB Hub</title>
-    <meta name="description" content="How we treat each other on HB Hub: in the chat, in groups, in the games and the casino, and how to report someone who crosses the line.">
+    <title>Adfærdskodeks - HB Hub</title>
+    <meta name="description" content="Retningslinjer for, hvordan vi behandler hinanden på HB Hub i chats, grupper, spil og casinoet, og hvordan du anmelder overtrædelser.">
 </head>
 <body class="home-body">
     <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -27,179 +28,173 @@ const HBHUB_CONDUCT_UPDATED = '14 November 2026';
         <article class="legal-page" aria-labelledby="conduct-title">
             <header class="legal-hero">
                 <div class="legal-hero-inner">
-                    <p class="home-kicker legal-kicker">Legal</p>
-                    <h1 id="conduct-title">Code of Conduct</h1>
+                    <p class="home-kicker legal-kicker">Juridisk</p>
+                    <h1 id="conduct-title">Adfærdskodeks</h1>
                     <p class="legal-intro">
-                        Everyone on HB Hub goes to the same school. You'll see the people you chat with in the hallway tomorrow,
-                        so treat them the way you'd want to be treated there. This page explains what that means in practice.
-                        The rules themselves, and what happens when they're broken, are in the
-                        <a href="/legal/terms">Terms of Service</a>.
+                        Alle på HB Hub går på den samme skole, og du forventes at behandle andre her, som du ville gøre på
+                        skolen. Adfærdskodekset uddyber reglerne i <a href="/legal/terms">vilkårene</a> med konkrete eksempler.
+                        Vilkårene beskriver også, hvad der sker ved overtrædelser.
                     </p>
-                    <p class="legal-updated">Last updated <?= HBHUB_CONDUCT_UPDATED ?></p>
+                    <p class="legal-updated">Sidst opdateret <?= hbHubLegalDanishDate(HBHUB_CONDUCT_UPDATED) ?></p>
                 </div>
             </header>
 
             <div class="legal-layout">
-                <nav class="legal-toc" aria-label="On this page">
-                    <p class="legal-toc-title" aria-hidden="true">On this page</p>
+                <nav class="legal-toc" aria-label="På denne side">
+                    <p class="legal-toc-title" aria-hidden="true">På denne side</p>
                     <ol>
-                        <li><a href="#short">The short version</a></li>
-                        <li><a href="#chat">In the chat</a></li>
-                        <li><a href="#groups">Running a group</a></li>
-                        <li><a href="#privacy">Other people's privacy</a></li>
-                        <li><a href="#profile">Your profile</a></li>
-                        <li><a href="#games">Games and the casino</a></li>
-                        <li><a href="#site">The site itself</a></li>
-                        <li><a href="#report">Reporting someone</a></li>
-                        <li><a href="#admins">What admins do</a></li>
+                        <li><a href="#short">Grundprincipper</a></li>
+                        <li><a href="#chat">Beskeder og chats</a></li>
+                        <li><a href="#groups">Grupper</a></li>
+                        <li><a href="#privacy">Andres privatliv</a></li>
+                        <li><a href="#profile">Din profil</a></li>
+                        <li><a href="#games">Spil og casino</a></li>
+                        <li><a href="#site">Sidens sikkerhed</a></li>
+                        <li><a href="#report">Anmeldelser</a></li>
+                        <li><a href="#admins">Håndhævelse</a></li>
                     </ol>
                 </nav>
 
                 <div class="legal-body">
                     <section id="short" aria-labelledby="conduct-short">
-                        <h2 id="conduct-short">1. The short version</h2>
+                        <h2 id="conduct-short">1. Grundprincipper</h2>
                         <ul>
-                            <li><strong>Be kind.</strong> Joking around is fine. Making someone the joke, when they're not laughing, isn't.</li>
-                            <li><strong>Keep it school-friendly.</strong> If you wouldn't show it in a classroom, don't post it here.</li>
-                            <li><strong>Respect privacy.</strong> What someone tells you in a chat isn't yours to pass on.</li>
-                            <li><strong>Play fair.</strong> Win and lose without cheating, and without being a sore winner or loser.</li>
-                            <li><strong>Speak up.</strong> If something is wrong, tell an admin. You won't get in trouble for reporting.</li>
+                            <li><strong>Vis respekt.</strong> Humor er velkommen, men ikke på andres bekostning.</li>
+                            <li><strong>Hold indholdet passende.</strong> Del kun det, du også ville vise i et klasselokale.</li>
+                            <li><strong>Respektér privatliv.</strong> Det, andre fortæller dig, er ikke dit at dele.</li>
+                            <li><strong>Spil fair.</strong> Ingen snyd, og opfør dig ordentligt, uanset om du vinder eller taber.</li>
+                            <li><strong>Sig til.</strong> Anmeld problemer til en admin. Du kommer aldrig i problemer for at anmelde.</li>
                         </ul>
                     </section>
 
                     <section id="chat" aria-labelledby="conduct-chat">
-                        <h2 id="conduct-chat">2. In the chat</h2>
-                        <p>Not okay, in private chats, groups, game chats, GIFs, reactions and attachments alike:</p>
+                        <h2 id="conduct-chat">2. Beskeder og chats</h2>
+                        <p>Følgende er ikke tilladt i nogen chat, heller ikke i GIF'er, reaktioner og vedhæftede filer:</p>
                         <ul>
-                            <li>bullying, mocking or ganging up on someone, also "just for fun",</li>
-                            <li>threats, or telling someone to hurt themselves,</li>
-                            <li>hate or slurs against anyone, for example because of their race, religion, gender, sexuality or disability,</li>
-                            <li>sexual content, gore, or anything meant to shock,</li>
-                            <li>spamming messages, GIFs, reactions, attachments, @mentions or notifications, or flooding a chat so others can't talk,</li>
-                            <li>scams, fake giveaways, or links to harmful or dodgy sites - links to IP loggers (which find out where someone is the moment they click), URL shorteners that can hide where a link goes, crypto scam and phishing sites, and other known bad sites are blocked, and changing the link to sneak one through is just as bad,</li>
-                            <li>sending viruses or other harmful files, or files that don't belong to you to share (like pirated films, games or music).</li>
+                            <li>mobning, chikane eller at gå flere sammen mod nogen, også selvom det er "for sjov",</li>
+                            <li>trusler eller opfordringer til selvskade,</li>
+                            <li>had eller nedsættende udtryk, fx på grund af race, religion, køn, seksualitet eller handicap,</li>
+                            <li>seksuelt, voldeligt eller chokerende indhold,</li>
+                            <li>spam med beskeder, GIF'er, reaktioner, filer, @omtaler eller notifikationer,</li>
+                            <li>svindel, falske giveaways og links til skadelige sider. Links til IP-loggere, linkforkortere, krypto- og phishingsvindel og andre kendte skadelige sider blokeres, og det er en overtrædelse at forsøge at omgå blokeringen,</li>
+                            <li>virus og andre skadelige filer samt filer, du ikke har ret til at dele, fx piratkopierede film, spil eller musik.</li>
                         </ul>
                         <p>
-                            If someone asks you to stop messaging them, stop. Don't keep contacting someone who has blocked you or
-                            left a chat with you, for example by adding them to a new group.
+                            Beder nogen dig om at stoppe med at skrive til dem, skal du respektere det. Kontakt ikke en person, der
+                            har blokeret dig eller forladt en chat med dig, fx ved at tilføje vedkommende til en ny gruppe.
                         </p>
                         <p class="legal-note">
-                            Deleting a message hides it from the chat, but admins can still see it (see the
-                            <a href="/legal/privacy#see">Privacy Policy</a>), so "I deleted it" doesn't undo a mean message.
-                            Think before you send.
+                            En slettet besked skjules i chatten, men side-admins kan se dens tekst i 3 dage (se
+                            <a href="/legal/privacy#see">privatlivspolitikken</a>). At slette en besked fjerner derfor ikke ansvaret for den.
                         </p>
                     </section>
 
                     <section id="groups" aria-labelledby="conduct-groups">
-                        <h2 id="conduct-groups">3. Running a group</h2>
-                        <p>If you make a group, or are an admin in one, you help keep it a good place to be:</p>
+                        <h2 id="conduct-groups">3. Grupper</h2>
+                        <p>Opretter du en gruppe eller er admin i en, har du et særligt ansvar for, at den er et godt sted at være:</p>
                         <ul>
-                            <li>Pick a group name, icon and background that everyone in it would be fine with.</li>
-                            <li>Don't make groups to talk about, or make fun of, someone who isn't in them.</li>
-                            <li>Removing people is fine, but don't use it to single out or embarrass someone.</li>
-                            <li>Nicknames you give people should be ones they'd be happy to see, especially in a group, where everyone sees them.</li>
+                            <li>Gruppens navn, ikon og baggrund skal være acceptable for alle medlemmer.</li>
+                            <li>Opret ikke grupper for at tale om eller gøre grin med personer, der ikke er med.</li>
+                            <li>Du må fjerne medlemmer, men ikke for at udstille eller ydmyge dem.</li>
+                            <li>Kælenavne skal være nogle, personen selv ville være tilfreds med.</li>
+                            <li>Alle kan fastgøre beskeder. Fastgør kun det, der er nyttigt for hele chatten, aldrig noget, der skal gøre nogen flov.</li>
                         </ul>
                         <p>
-                            Group admins can delete messages in their group and unpin anything pinned in it, but if something
-                            serious happens there, still tell a site admin, so it can be dealt with properly. Anyone can pin a
-                            message for the whole chat to see, so pin what's useful to everyone, not something to embarrass someone.
+                            Gruppeadmins kan slette beskeder og løsne fastgjorte beskeder i deres gruppe. Alvorlige hændelser skal
+                            alligevel anmeldes til en side-admin.
                         </p>
                         <p>
-                            Class chats are different: everyone in your class is put in one automatically, and nobody in it is a
-                            group admin. It's a chat for the whole class, so keep it something everyone in it can be part of, and
-                            tell a site admin if something there needs dealing with.
+                            Klassechats har ingen gruppeadmins, og alle i klassen er automatisk medlemmer. Hold derfor indholdet
+                            relevant for hele klassen, og kontakt en side-admin, hvis der opstår problemer.
                         </p>
                     </section>
 
                     <section id="privacy" aria-labelledby="conduct-privacy">
-                        <h2 id="conduct-privacy">4. Other people's privacy</h2>
+                        <h2 id="conduct-privacy">4. Andres privatliv</h2>
                         <ul>
-                            <li>Don't screenshot or forward someone's messages to embarrass them or spread drama.</li>
-                            <li>Don't post photos or videos of other people without asking them first.</li>
-                            <li>Don't share someone's personal details, like their address, phone number or accounts on other sites.</li>
-                            <li>Don't log in to someone else's account, even if they left it open. Log them out and tell them instead.</li>
+                            <li>Tag ikke skærmbilleder af eller videresend andres beskeder for at udstille dem eller skabe konflikter.</li>
+                            <li>Del ikke billeder eller videoer af andre uden deres tilladelse.</li>
+                            <li>Del ikke andres personlige oplysninger, fx adresse, telefonnummer eller konti på andre sider.</li>
+                            <li>Brug ikke andres konti, heller ikke hvis de står åbne. Log personen ud, og giv vedkommende besked.</li>
                         </ul>
                     </section>
 
                     <section id="profile" aria-labelledby="conduct-profile">
-                        <h2 id="conduct-profile">5. Your profile</h2>
+                        <h2 id="conduct-profile">5. Din profil</h2>
                         <p>
-                            Your name, profile picture, banner, bio and status are seen by everyone on HB Hub, so the same rules apply to them as to
-                            messages. Use a name people from school recognise you by, and don't make your profile look like
-                            someone else's. Names, bios, statuses and the nicknames you give people in chats can only be written
-                            with the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji, so everyone can read
-                            them. The links that are blocked in messages can't be put in a bio, status or nickname either. Pick the class and education badge that are really yours.
+                            Dit navn, profilbillede, banner, din bio og status kan ses af alle på HB Hub, og de samme regler gælder
+                            for dem som for beskeder. Dit navn behøver ikke at være dit rigtige, men efterlign ikke andre, og
+                            angiv din rigtige klasse og dit rigtige uddannelsesmærke. Navne, bioer, statusser og kælenavne må kun
+                            indeholde latinske bogstaver (herunder æ, ø og å), tal, tegnsætning og emoji og må ikke indeholde
+                            blokerede links.
                         </p>
                         <p>
-                            A banned account's profile picture can't be used again, and neither can a profile picture an admin
-                            removed and banned. Uploading it, or a resized or cropped copy of it, also when signing up, bans the
-                            account straight away (also the account it was removed from), so don't use a picture from someone who
-                            has been banned, and don't put back a picture an admin removed.
+                            Profilbilleder fra udelukkede konti og billeder, som en admin har fjernet og bandlyst, kan ikke bruges
+                            igen. Uploades et sådant billede eller en skaleret eller beskåret kopi af det, også ved oprettelse,
+                            udelukkes kontoen straks, og det samme gælder den konto, billedet oprindeligt blev fjernet fra.
                         </p>
                     </section>
 
                     <section id="games" aria-labelledby="conduct-games">
-                        <h2 id="conduct-games">6. Games and the casino</h2>
+                        <h2 id="conduct-games">6. Spil og casino</h2>
                         <ul>
-                            <li>Trash talk should stay friendly. Say "good game" whether you won or lost.</li>
-                            <li>Don't stall a game on purpose, or leave a table just because you're losing. Others are waiting on you.</li>
-                            <li>No cheating, scripts, auto-clickers or teaming up against one player. Found a bug? Report it, don't use it.</li>
-                            <li>Don't spoil the day's Wordle word for others. Share your coloured squares, not the word, until the day is over.</li>
-                            <li>Don't pressure anyone into playing, betting, or giving you their chips.</li>
-                            <li>Chips are just for fun. Never trade them, or game results, with each other for real money or real things. The only way to buy chips is from the owner (see the <a href="/legal/terms#chips">terms</a>).</li>
+                            <li>Hold en venlig tone over for dine medspillere, uanset resultatet.</li>
+                            <li>Træk ikke et spil i langdrag med vilje, og forlad ikke et spil, fordi du er ved at tabe.</li>
+                            <li>Snyd, scripts, autoklikkere og samarbejde mod en enkelt spiller er ikke tilladt. Fejl skal rapporteres, ikke udnyttes.</li>
+                            <li>Afslør ikke dagens Wordle-ord, før dagen er omme. Del gerne dine farvede felter.</li>
+                            <li>Pres ikke andre til at spille, satse eller give dig chips.</li>
+                            <li>Chips og spilresultater må aldrig byttes for rigtige penge eller ting. Chips er gratis; at købe chips hos ejeren er kun en sjælden undtagelse, ikke noget, man forventes at gøre (se <a href="/legal/terms#chips">vilkårene</a>).</li>
                         </ul>
                         <p class="legal-note">
-                            If the casino or games are taking up more of your time than you'd like, especially in class, you can
-                            block them for yourself in your <a href="/settings">settings</a>. If gambling, also with real
-                            money, is starting to feel like a problem for you or a friend,
-                            <a href="https://stopspillet.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a> gives free
-                            and anonymous help.
+                            Du kan blokere casinoet og spillene for dig selv, fx i skoletiden, under <a href="/settings">indstillinger</a>.
+                            Oplever du eller en ven, at spil begynder at blive et problem, også med rigtige penge, tilbyder
+                            <a href="https://stopspillet.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a> gratis og
+                            anonym rådgivning.
                         </p>
                     </section>
 
                     <section id="site" aria-labelledby="conduct-site">
-                        <h2 id="conduct-site">7. The site itself</h2>
+                        <h2 id="conduct-site">7. Sidens sikkerhed</h2>
                         <p>
-                            HB Hub is run by one student in their spare time. Please don't try to break it, overload it, or get
-                            around its security. If you find a security problem, report it privately through
+                            Forsøg ikke at overbelaste siden, få adgang til noget, du ikke har adgang til, eller omgå dens
+                            sikkerhed. Finder du et sikkerhedsproblem, skal du rapportere det privat via
                             <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">GitHub</a>
-                            or by email instead of telling everyone about it, so it can be fixed first. Thank you, that really helps.
+                            eller på e-mail i stedet for at offentliggøre det, så det kan rettes først.
                         </p>
                     </section>
 
                     <section id="report" aria-labelledby="conduct-report">
-                        <h2 id="conduct-report">8. Reporting someone</h2>
+                        <h2 id="conduct-report">8. Anmeldelser</h2>
                         <p>
-                            If someone breaks this code of conduct, or makes you feel unsafe, tell a site admin, use the Feedback
-                            button at the bottom of the side bar (only site admins can read it), or email
-                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. It helps to say who it was, which
-                            chat or game it happened in, and roughly when. Reports are kept private, and the person you report
-                            isn't told who reported them.
+                            Overtræder nogen adfærdskodekset, eller føler du dig utryg, kan du kontakte en side-admin, bruge
+                            Feedback-knappen nederst i sidebjælken (kun side-admins kan læse den) eller skrive til
+                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. Oplys gerne, hvem det drejer sig om,
+                            hvilken chat eller hvilket spil det skete i, og cirka hvornår. Anmeldelser behandles fortroligt, og den
+                            anmeldte får ikke at vide, hvem der har anmeldt.
                         </p>
                         <p>
-                            You don't have to keep reading their messages while it's being looked into: you can mute, hide or
-                            leave the chat from its menu, and Block on a message request stops them from sending you new ones.
+                            Mens sagen undersøges, kan du gøre chatten lydløs, skjule den eller forlade den fra dens menu. Vælger du
+                            Bloker på en beskedanmodning, kan afsenderen ikke sende dig nye.
                         </p>
                         <p class="legal-note">
-                            If something is serious, like threats, someone being in danger, or anything that happens outside HB Hub
-                            too, also talk to a teacher, a parent or another adult you trust. If someone is in immediate danger,
-                            call 112.
+                            Ved alvorlige hændelser, fx trusler, eller hvis det også foregår uden for HB Hub, bør du også tale med en
+                            lærer, en forælder eller en anden voksen, du har tillid til. Er nogen i akut fare, så ring 112.
                         </p>
                     </section>
 
                     <section id="admins" aria-labelledby="conduct-admins">
-                        <h2 id="conduct-admins">9. What admins do</h2>
+                        <h2 id="conduct-admins">9. Håndhævelse</h2>
                         <p>
-                            Admins look at every report and decide what to do based on how serious it is. Often a warning is
-                            enough. Other times messages are deleted, chips are taken away, or an account is banned or ghost
-                            banned (what it does in chats only shows to itself, without being told). The full list is in the
-                            <a href="/legal/terms#moderation">Terms of Service</a>. Admins can also take any of those
-                            actions for any reason, or none, without explaining why.
+                            Admins behandler alle anmeldelser og reagerer ud fra, hvor alvorlig overtrædelsen er. Det kan være en
+                            advarsel, sletning af beskeder, fratagelse af chips, udelukkelse eller spøgelsesudelukkelse (hvor
+                            kontoens aktivitet i chats kun vises for den selv, uden at den får besked). Den fulde liste står i
+                            <a href="/legal/terms#moderation">vilkårene</a>. Admins kan træffe disse afgørelser uden at angive en grund.
                         </p>
                         <p>
-                            This page can't list everything, so admins also act on things that aren't mentioned here but clearly go
-                            against its spirit. Admins follow this code of conduct too. If you think a decision was unfair, email
-                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> and explain why.
+                            Adfærdskodekset kan ikke dække alle situationer, så admins kan også gribe ind over for adfærd, der ikke er
+                            nævnt her, men som tydeligt strider mod dets formål. Admins er selv underlagt adfærdskodekset. Er du
+                            uenig i en afgørelse, kan du skrive til <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>
+                            med en begrundelse.
                         </p>
                     </section>
                 </div>

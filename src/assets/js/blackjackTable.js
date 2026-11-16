@@ -1,4 +1,4 @@
-// A Blackjack table (gambling/blackjack/table.php): draws the table as /gambling/blackjack/play says it is, and sends
+// A Blackjack table (casino/blackjack/table.php): draws the table as /casino/blackjack/play says it is, and sends
 // what the player does at it. Everything is decided on the server - the cards, whose turn it is, the payouts. This only
 // shows it, and only ever knows the cards that are face up.
 //
@@ -124,7 +124,7 @@
             const response = await fetch(API + query, { headers: { Accept: 'application/json' }, ...options });
             const data = await response.json().catch(() => null);
             if (response.status === 404 && data?.error === 'notSeated') {
-                location.assign('/gambling/blackjack/'); // left in another tab, gone too long, or the table is gone
+                location.assign('/casino/blackjack/'); // left in another tab, gone too long, or the table is gone
                 return null;
             }
             if (response.status === 403) {
@@ -674,7 +674,7 @@
         }
         const data = await post('leave');
         if (data?.left) {
-            location.assign('/gambling/blackjack/');
+            location.assign('/casino/blackjack/');
         } else {
             showMessage('Could not leave the table. Please try again.');
         }

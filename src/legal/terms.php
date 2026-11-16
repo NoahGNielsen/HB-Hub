@@ -2,23 +2,32 @@
 // Terms of service: the rules for using HB Hub - accounts, how to behave in the chat, what the chips are (and aren't),
 // fair play in the games, what admins can do about it, and that the site comes as-is.
 // A .legal-page article (legal.css: a dark hero, then the contents next to the text) under the frontpage's top bar
-// (homeNav.php), so it loads homepage.css too, just like privacy.php. Open to everyone, like the frontpage.
-// Sign-up (onboarding.php) links here.
+// (homeNav.php), so it loads homepage.css too, just like privacy.php. Open to everyone, like the frontpage, and so in
+// Danish like every public page. Sign-up (onboarding.php) links here. The section ids stay English, as other pages
+// link to them (#chips, #moderation).
 // When a rule changes, HBHUB_TERMS_UPDATED gets the date of the change. It's set in assets/php/legalUpdated.php, since
 // the footer needs it too: changing it there shows everyone who agreed to the old terms the "terms updated" box.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php'; // only for the start and daily chip amounts
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
+
+/**
+ * A whole number the Danish way: 25.000
+ */
+function termsNumber(int $number): string
+{
+    return number_format($number, 0, ',', '.');
+}
 ?>
 <!DOCTYPE html>
-<html lang="en" class="home">
+<html lang="da" class="home">
 <head>
-    <?php $headerHomeNav = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = true; $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
-    <title>Terms of Service - HB Hub</title>
-    <meta name="description" content="The rules for using HB Hub: your account, how to behave in the chat, what the casino chips are, fair play and what happens if the rules are broken.">
+    <title>Vilkår - HB Hub</title>
+    <meta name="description" content="Vilkårene for brug af HB Hub: din konto, adfærd i chatten, casinoets chips, fair play i spillene og konsekvenserne ved overtrædelser.">
 </head>
 <body class="home-body">
     <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -27,323 +36,324 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php';
         <article class="legal-page" aria-labelledby="terms-title">
             <header class="legal-hero">
                 <div class="legal-hero-inner">
-                    <p class="home-kicker legal-kicker">Legal</p>
-                    <h1 id="terms-title">Terms of Service</h1>
+                    <p class="home-kicker legal-kicker">Juridisk</p>
+                    <h1 id="terms-title">Vilkår</h1>
                     <p class="legal-intro">
-                        HB Hub is a student project, made for fun and for chatting with people from school. These terms are the
-                        house rules. They're short and in plain words, so please read them. By making an account or using the
-                        site, you agree to them.
+                        HB Hub er et ikke-kommercielt elevprojekt med chat, casino og spil for skolens elever. Disse vilkår
+                        gælder for al brug af siden. Ved at oprette en konto eller bruge siden accepterer du dem.
                     </p>
-                    <p class="legal-updated">Last updated <?= HBHUB_TERMS_UPDATED ?></p>
+                    <p class="legal-updated">Sidst opdateret <?= hbHubLegalDanishDate(HBHUB_TERMS_UPDATED) ?></p>
                 </div>
             </header>
 
             <div class="legal-layout">
-                <nav class="legal-toc" aria-label="On this page">
-                    <p class="legal-toc-title" aria-hidden="true">On this page</p>
+                <nav class="legal-toc" aria-label="På denne side">
+                    <p class="legal-toc-title" aria-hidden="true">På denne side</p>
                     <ol>
-                        <li><a href="#about">About these terms</a></li>
-                        <li><a href="#account">Your account</a></li>
-                        <li><a href="#behave">How to behave</a></li>
-                        <li><a href="#content">What you post</a></li>
-                        <li><a href="#chips">The casino and chips</a></li>
-                        <li><a href="#games">Games and fair play</a></li>
-                        <li><a href="#moderation">When the rules are broken</a></li>
-                        <li><a href="#leaving">Leaving HB Hub</a></li>
-                        <li><a href="#asis">The site comes as-is</a></li>
-                        <li><a href="#changes">Changes to these terms</a></li>
-                        <li><a href="#law">Law and contact</a></li>
+                        <li><a href="#about">Om vilkårene</a></li>
+                        <li><a href="#account">Din konto</a></li>
+                        <li><a href="#behave">Adfærd</a></li>
+                        <li><a href="#content">Indhold</a></li>
+                        <li><a href="#chips">Casino og chips</a></li>
+                        <li><a href="#games">Spil og fair play</a></li>
+                        <li><a href="#moderation">Overtrædelser</a></li>
+                        <li><a href="#leaving">Opsigelse</a></li>
+                        <li><a href="#asis">Ansvar</a></li>
+                        <li><a href="#changes">Ændringer</a></li>
+                        <li><a href="#law">Lovvalg og kontakt</a></li>
                     </ol>
                 </nav>
 
                 <div class="legal-body">
                     <section id="about" aria-labelledby="terms-about">
-                        <h2 id="terms-about">1. About these terms</h2>
+                        <h2 id="terms-about">1. Om vilkårene</h2>
                         <p>
-                            HB Hub (hbhub.noahgajnielsen.dk) is made and run by Noah Gaj Nedergaard Nielsen in Denmark. It's not
-                            a company, and it's not run by the school. These terms are an agreement between you and the person
-                            running HB Hub.
+                            HB Hub (hbhub.noahgajnielsen.dk) drives af Noah Gaj Nedergaard Nielsen, Danmark. HB Hub er ikke
+                            en virksomhed og drives ikke af skolen. Vilkårene udgør aftalen mellem dig og den, der driver HB Hub.
                         </p>
                         <p>
-                            How your data is handled is explained separately in the <a href="/legal/privacy">Privacy Policy</a>.
+                            Behandlingen af dine personoplysninger er beskrevet i <a href="/legal/privacy">privatlivspolitikken</a>,
+                            og <a href="/legal/code-of-conduct">adfærdskodekset</a> uddyber reglerne for, hvordan du opfører dig.
                         </p>
                     </section>
 
                     <section id="account" aria-labelledby="terms-account">
-                        <h2 id="terms-account">2. Your account</h2>
+                        <h2 id="terms-account">2. Din konto</h2>
                         <ul>
-                            <li><strong>One account per person.</strong> Don't make extra accounts, for example to get more daily chips or to get around a ban. Admins can see which accounts are used in the same browser, and can treat them as one person (see section 7).</li>
-                            <li><strong>Be yourself.</strong> Use a name people from school will recognise you by, and don't pretend to be someone else.</li>
-                            <li><strong>Your class.</strong> When you sign up you say which year of HTX you're in (1., 2. or 3.) and your field of study, or that you don't go to HTX. Pick your real class. Your year goes up by itself every July 1st, and after 3. year you're shown as a Graduate, with your field of study. At HTX you're put in your class's group chat straight away, with no message request. You can mute or hide it, but not leave it; changing your class in your <a href="/settings">settings</a> moves you to the other class's chat.</li>
-                            <li>Names, bios, statuses and nicknames in chats can only use letters from the Latin alphabet (like a-z, æ, ø and å), numbers, punctuation and emoji. Other alphabets, like Arabic, Chinese or Cyrillic, can't be used in them. A bio, status or nickname can't have a link to one of the blocked sites in it either (see section 3), and a name can't be an email address. A new username has to be at least 3 characters long.</li>
-                            <li><strong>Keep it to yourself.</strong> Don't share your password or let others use your account. You're responsible for what happens on it.</li>
-                            <li>Turning on two-factor login in your <a href="/settings">settings</a> is a good idea. If you think someone else has got into your account, change your password and tell an admin.</li>
-                            <li><strong>Discord login.</strong> You can sign up with your own Discord account, or link it later, to log in with it. Signing up with Discord only fills in your name, bio and picture from Discord to start with: they still have to follow these terms and the Code of Conduct, like anything else you put on your profile. Only link a Discord account that's yours: whoever can get into it can get into your HB Hub account too (except for the two-factor code, if that's on). Unlink it in your settings if you lose it. A linked account's Discord username is shown on your profile (kept up to date with Discord every night) unless you turn that off in your settings.</li>
+                            <li>
+                                <strong>Én konto pr. person.</strong> Du må ikke oprette ekstra konti, fx for at få flere daglige
+                                chips eller for at omgå en udelukkelse. Konti, der bruges i den samme browser, kan genkendes (se
+                                <a href="/legal/privacy">privatlivspolitikken</a>) og behandles som én person (se afsnit 7). Når én
+                                af en persons konti har hentet dagens chips, får de øvrige kun 20 % af deres daglige chips den dag.
+                            </li>
+                            <li><strong>Din identitet.</strong> Du vælger selv dit navn, og det behøver ikke at være dit rigtige, men du må ikke udgive dig for at være en anden.</li>
+                            <li>
+                                <strong>Din klasse.</strong> Angiv din korrekte årgang (1.-3.) og studieretning på HTX, eller at du
+                                ikke går på HTX. Årgangen opdateres automatisk den 1. juli, og efter 3. år vises du som student. Går
+                                du på HTX, bliver du automatisk medlem af din klasses gruppechat. Den kan gøres lydløs eller skjules,
+                                men ikke forlades. Skifter du klasse under <a href="/settings">indstillinger</a>, flyttes du til den
+                                nye klasses chat.
+                            </li>
+                            <li>
+                                <strong>Navne og profiltekster.</strong> Navne, bioer, statusser og kælenavne må kun indeholde
+                                latinske bogstaver (herunder æ, ø og å), tal, tegnsætning og emoji. De må ikke linke til blokerede
+                                sider (se afsnit 3), et navn må ikke være en e-mailadresse, og et brugernavn skal være på mindst 3 tegn.
+                            </li>
+                            <li>
+                                <strong>Sikkerhed.</strong> Du er ansvarlig for alt, der sker på din konto. Del ikke din adgangskode,
+                                og lad ikke andre bruge kontoen. Vi anbefaler, at du slår totrinslogin til under
+                                <a href="/settings">indstillinger</a>. Har du mistanke om, at andre har adgang til din konto, skal du
+                                skifte adgangskode og kontakte en admin.
+                            </li>
+                            <li>
+                                <strong>Login med Discord.</strong> Du kan oprette dig med eller tilkoble en Discord-konto og bruge
+                                den til at logge ind. Tilkobl kun din egen konto: den, der har adgang til den, kan også logge ind på
+                                din HB Hub-konto (dog stadig kun med din totrinskode, hvis den er slået til). Navn, bio og billede,
+                                der hentes fra Discord ved oprettelsen, skal overholde disse vilkår som alt andet på din profil. Dit
+                                Discord-brugernavn vises på din profil og opdateres dagligt, medmindre du slår det fra under
+                                indstillinger. Mister du adgangen til Discord-kontoen, bør du fjerne koblingen.
+                            </li>
                         </ul>
                     </section>
 
                     <section id="behave" aria-labelledby="terms-behave">
-                        <h2 id="terms-behave">3. How to behave</h2>
-                        <p>Treat people on HB Hub the way you would at school. That means no:</p>
+                        <h2 id="terms-behave">3. Adfærd</h2>
+                        <p>Behandl andre på HB Hub, som du ville gøre på skolen. Det er ikke tilladt at:</p>
                         <ul>
-                            <li>bullying, harassment, threats or hate against anyone, for example because of their race, religion, gender, sexuality or disability,</li>
-                            <li>sexual or violent content, or anything else you wouldn't show in a classroom (GIFs and pictures count too),</li>
-                            <li>sharing other people's private information, photos or messages without their permission,</li>
-                            <li>spam, scams, or links to harmful sites (links to IP loggers, URL shorteners that can hide where a link goes, crypto scam and phishing sites, and other sites that are dangerou),</li>
-                            <li>anything illegal, or encouraging others to do something illegal or dangerous,</li>
-                            <li>trying to break into other accounts, overload the site, or get around its security.</li>
+                            <li>mobbe, chikanere, true eller udtrykke had mod andre, fx på grund af race, religion, køn, seksualitet eller handicap,</li>
+                            <li>dele seksuelt eller voldeligt indhold eller andet, der ikke hører hjemme i et klasselokale (herunder GIFs og billeder),</li>
+                            <li>dele andres private oplysninger, billeder eller beskeder uden deres samtykke,</li>
+                            <li>sende spam, svindel eller links til skadelige sider, herunder IP-loggere, linkforkortere, der skjuler destinationen, og krypto- eller phishingsvindel,</li>
+                            <li>gøre noget ulovligt eller opfordre andre til ulovlige eller farlige handlinger,</li>
+                            <li>forsøge at få adgang til andres konti, overbelaste siden eller omgå dens sikkerhed.</li>
                         </ul>
                         <p>
-                            If someone breaks these rules, or makes you feel unsafe, tell an admin or email
+                            Overtrædelser, eller noget der får dig til at føle dig utryg, kan anmeldes til en admin eller på
                             <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.
                         </p>
                     </section>
 
                     <section id="content" aria-labelledby="terms-content">
-                        <h2 id="terms-content">4. What you post</h2>
+                        <h2 id="terms-content">4. Indhold</h2>
                         <p>
-                            What you write and upload (messages, reactions, attachments, profile pictures and banners, group icons and backgrounds) is
-                            still yours. By posting it, you let HB Hub store it and show it to the people it's meant for, which is
-                            needed for the site to work. That includes turning pictures you attach into JPEG XL (without losing
-                            any detail, except JPEG photos, which are made smaller in a way that looks the same), making a banner
-                            picture smaller and turning it into JPEG XL, turning videos into WebM (VP9, made smaller when
-                            they're bigger than 1080p, in a way that looks close to the original), and zipping other files,
-                            so they take less space and can be played in the chat.
+                            Du bevarer rettighederne til det, du lægger op: beskeder, reaktioner, vedhæftede filer, profil- og
+                            bannerbilleder, gruppeikoner og baggrunde. Du giver HB Hub ret til at opbevare og vise indholdet for de
+                            modtagere, det er tiltænkt, og til at komprimere eller konvertere det, så det fylder mindre og kan
+                            vises i chatten (fx billeder til JPEG XL, videoer til WebM og andre filer til zip).
                         </p>
                         <ul>
-                            <li>Only upload pictures and files you're allowed to share. Don't post photos of other people without asking them.</li>
+                            <li>Du er ansvarlig for dit indhold og må kun dele det, du har ret til. Del ikke billeder af andre uden deres samtykke. Admins kan fjerne indhold, der overtræder vilkårene.</li>
                             <li>
-                                Attachments don't stay forever. Everyone has 10 tickets (site admins have 20), and every started 5 MB of an attachment
-                                takes one. A message can have up to 10 attachments, 50 MB together, and each one takes its own
-                                tickets. Site admins can give an account more tickets, or take some away (for example if
-                                attachments are misused). It's deleted after 90 days (3 days when it takes more than 5 tickets), and then the
-                                tickets can be used again. HB Hub isn't a backup, so keep your own copy of anything that matters.
-                                When the server's space for attachments is full, nobody can send new ones until some are deleted.
+                                <strong>Vedhæftede filer er midlertidige.</strong> Hver konto har 10 billetter (side-admins 20), og
+                                en fil bruger én billet pr. påbegyndt 5 MB. En besked kan have op til 10 filer på i alt 50 MB. Filer
+                                slettes efter 90 dage, eller efter 3 dage, hvis de bruger mere end 5 billetter, hvorefter billetterne
+                                frigives. Side-admins kan tildele eller fratage billetter, fx ved misbrug. Er serverens lagerplads
+                                fuld, kan der ikke sendes nye filer, før der er frigjort plads. HB Hub er ikke en backup, så gem selv
+                                en kopi af det, der er vigtigt for dig.
+                            </li>
+                            <li>For at forhindre spam kan du sende højst 10 beskeder pr. 5 sekunder på tværs af alle chats (filer og GIFs medregnet). Beskeder ud over grænsen sendes ikke.</li>
+                            <li>
+                                Beskeder er ikke end-to-end-krypterede. Side-admins kan læse beskeder i alle chats, også private
+                                beskeder og slettede beskeder i 3 dage, fx når de behandler en anmeldelse. Alt, hvad de ser, registreres
+                                i adminloggen (se <a href="/legal/privacy#see">privatlivspolitikken</a>).
                             </li>
                             <li>
-                                To stop spam, you can send up to 10 messages every 5 seconds, in all your chats together
-                                (files and GIFs count as messages). Anything more than that isn't sent.
-                            </li>
-                            <li>You're responsible for what you post. Admins can remove anything that breaks these terms.</li>
-                            <li>
-                                Messages aren't end-to-end encrypted, and admins can read them when they look into a report
-                                (see the <a href="/legal/privacy#see">Privacy Policy</a>). Don't send anything you wouldn't want an admin to see.
-                            </li>
-                            <li>
-                                Feedback you send with the Feedback button goes to the site admins only. They can use your ideas
-                                to change the site, without owing you anything for them. Don't use it to spam, harass or insult anyone,
-                                the same rules apply as in the chat.
+                                Feedback sendt med Feedback-knappen går kun til side-admins, som frit kan bruge dine idéer uden
+                                modydelse. De samme adfærdsregler gælder som i chatten.
                             </li>
                         </ul>
                     </section>
 
                     <section id="chips" aria-labelledby="terms-chips">
-                        <h2 id="terms-chips">5. The casino and chips</h2>
+                        <h2 id="terms-chips">5. Casino og chips</h2>
                         <p>
-                            The casino on HB Hub is a game. You get <?= number_format(HBHUB_CASINO_START_CHIPS) ?> chips when you
-                            start, and <?= number_format(HBHUB_CASINO_DAILY_CALENDAR[0]) ?> to
-                            <?= number_format(max(HBHUB_CASINO_DAILY_CALENDAR)) ?> more every day for free. How many depends on how
-                            many days in a row you collect them: they follow a <?= HBHUB_CASINO_DAILY_DAYS ?>-day calendar on the
-                            casino's home page, and missing a day starts it over at day 1.
+                            Casinoet er et spil med virtuelle chips. Du får <?= termsNumber(HBHUB_CASINO_START_CHIPS) ?> chips ved
+                            start og derefter <?= termsNumber(HBHUB_CASINO_DAILY_CALENDAR[0]) ?>-<?= termsNumber(max(HBHUB_CASINO_DAILY_CALENDAR)) ?>
+                            chips gratis hver dag. Beløbet følger en kalender på <?= HBHUB_CASINO_DAILY_DAYS ?> dage på casinoets
+                            forside og stiger, jo flere dage i træk du henter dem. Springer du en dag over, starter kalenderen forfra.
                         </p>
                         <ul>
-                            <li><strong>Chips are not money.</strong> They can't be swapped back into real money, gift cards or anything else, and nothing you win in the casino can be paid out.</li>
-                            <li>Don't sell, buy or bet chips, accounts or casino results for real money or real things between each other, on HB Hub or anywhere else.</li>
-                            <li>Site admins can add chips to an account or take them away. That's how bought chips are added, and how balances are corrected or reset, for example after a bug, or if chips were got by cheating.</li>
+                            <li><strong>Chips er ikke penge.</strong> De kan ikke veksles til penge, gavekort eller andet, og gevinster i casinoet kan ikke udbetales.</li>
+                            <li>Du må ikke købe, sælge eller spille om chips, konti eller casinoresultater for rigtige penge eller ting, hverken på HB Hub eller andre steder, bortset fra køb direkte hos ejeren, se <a href="#chips-koeb">nedenfor</a>.</li>
+                            <li>Side-admins kan tilføje og fratage chips, fx for at tilføje chips i de sjældne tilfælde, hvor nogen har købt dem, eller rette og nulstille saldoer efter fejl eller snyd.</li>
                         </ul>
-                        <h3>Play chips in the free games</h3>
+                        <h3>Legechips i de gratis spil</h3>
                         <p>
-                            Blackjack, Baccarat, Roulette and Slots can also be tried without an account at <a href="/play">/play</a>,
-                            with play chips. Play chips are even less than chips: they aren't money either, they only last
-                            until you close or reload the page, you get a new stack when you run out, and they never become
-                            chips on an account, also if you sign up or log in.
+                            Blackjack, Baccarat, Roulette og Slots kan prøves uden konto på <a href="/play">/play</a> med legechips.
+                            Legechips har ingen værdi, gælder kun, til siden lukkes eller genindlæses, fornyes, når de slipper op, og
+                            overføres aldrig til en konto.
                         </p>
-                        <h3>Buying extra chips</h3>
+                        <h3 id="chips-koeb">Køb af chips</h3>
                         <p>
-                            Chips are normally free. If you want more, you can buy them from the owner of HB Hub at
-                            <?= number_format(HBHUB_CASINO_CHIPS_PER_KRONE) ?> chips for 1 kr, as described on the
-                            <a href="/gambling/buy-chips">Buy chips</a> page. This is the only way to buy chips.
+                            Chips er gratis, og casinoet er lavet til at blive spillet med de gratis chips. At købe chips er
+                            <strong>ikke en almindelig del af HB Hub</strong>, men en undtagelse, som ejeren kun gør i enkelte
+                            tilfælde. Der findes ingen betaling på siden, og du skal aldrig købe chips for at kunne bruge HB Hub
+                            eller spille i casinoet.
                         </p>
                         <ul>
-                            <li>Bought chips are the same as any other chips. They can be lost in the games, and everything above applies to them too.</li>
                             <li>
-                                <strong>No refunds, for any reason.</strong> If you're banned, delete your account, block
-                                the casino in your settings or an admin blocks it for you, you will not get your money back. The same goes for bought chips
-                                that are lost, corrected or reset.
+                                Ekstra chips kan kun købes direkte fra ejeren af HB Hub til
+                                <?= termsNumber(HBHUB_CASINO_CHIPS_PER_KRONE) ?> chips pr. 1 kr., som beskrevet på siden
+                                <a href="/casino/buy-chips">Buy chips</a>.
+                            </li>
+                            <li>Ejeren bestemmer selv, om et køb kan lade sig gøre, og kan sige nej uden at give en grund. Ingen har krav på at kunne købe chips.</li>
+                            <li>
+                                <strong>Er du under 18 år, kan du aldrig købe chips.</strong> Det er der ingen undtagelser fra.
+                            </li>
+                            <li>Købte chips er almindelige chips. De kan tabes i spillene, og ovenstående regler gælder også for dem.</li>
+                            <li>
+                                <strong>Køb refunderes ikke.</strong> Det gælder også, hvis du bliver udelukket, sletter din konto,
+                                eller casinoet bliver blokeret af dig selv eller en admin, og hvis købte chips tabes, rettes eller
+                                nulstilles.
                             </li>
                         </ul>
                         <p class="legal-note">
-                            If you'd rather not see the casino or games, especially during school hours, you can block them for
-                            yourself in your <a href="/settings">settings</a>. If gambling of any kind, also with real
-                            money, is starting to feel like a problem, you can get free and anonymous help from
+                            Du kan blokere casinoet og spillene for dig selv under <a href="/settings">indstillinger</a>, fx i
+                            skoletiden. Føles spil, også om rigtige penge, som et problem, kan du få gratis og anonym hjælp hos
                             <a href="https://stopspillet.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a>.
                         </p>
                     </section>
 
                     <section id="games" aria-labelledby="terms-games">
-                        <h2 id="terms-games">6. Games and fair play</h2>
+                        <h2 id="terms-games">6. Spil og fair play</h2>
+                        <h3>Generelt</h3>
                         <ul>
-                            <li>Play fair. No cheating, no using scripts or bots, and no teaming up to ruin a game for others.</li>
                             <li>
-                                Found a bug, for example one that gives you free chips? Please report it with the Feedback
-                                button in the side bar, or to <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>, instead of using it. Using
-                                it on purpose counts as cheating.
-                            </li>
-                            <li>Games have timers. If you leave or don't make your move in time, the game carries on without you, and that can cost you the game.</li>
-                            <li>Leaving a Chess, Matador or UNO game while it's being played (or closing it until you're counted as gone) counts as a loss on its leaderboard, unless the host has paused the game (or, in UNO, you're already out of cards while the others play on). In Matador it still counts if you come back.</li>
-                            <li>
-                                Wordle has one English and one Danish word a day, and you get one go at each. A word you start
-                                but don't guess by midnight (Danish time) counts as missed, and ends your streak. Don't spoil
-                                the day's word for others, for example in a group chat, before the day is over.
-                                Random words, picked just for you, can be played as many times as you like once you've
-                                played the day's word in that language, and don't count in stats, streaks or the
-                                leaderboard.
+                                <strong>Spil fair.</strong> Snyd, scripts, bots, autoklikkere, makroer og samarbejde om at ødelægge
+                                et spil for andre er ikke tilladt. Spilresultater registreres og kontrolleres af HB Hubs server, og
+                                resultater, der er opnået hurtigere, end et menneske kan, tæller ikke.
                             </li>
                             <li>
-                                Minesweeper times on the leaderboard are timed by HB Hub's server. A game you leave or start
-                                over counts as played but not won. No bots or scripts that solve the board for you: a win
-                                faster than a person can click (more than 10 of the board's needed clicks a second) isn't
-                                counted, and only shows as played. The same goes for a game where a click on the board
-                                comes from code (like the browser's console) instead of you: it's stopped there.
+                                Finder du en fejl, fx en der giver gratis chips, skal du rapportere den med Feedback-knappen eller på
+                                <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. Bevidst udnyttelse af fejl
+                                regnes som snyd.
+                            </li>
+                            <li>Spil har tidsgrænser. Forlader du et spil eller trækker du ikke i tide, fortsætter spillet uden dig.</li>
+                            <li>
+                                Forlader du et igangværende spil skak, Matador eller UNO (eller er du væk så længe, at du regnes som
+                                udgået), tæller det som et nederlag på ranglisten, medmindre værten har sat spillet på pause, eller du
+                                i UNO allerede har spillet alle dine kort. I Matador tæller nederlaget, selv om du vender tilbage.
+                            </li>
+                            <li>Admins kan fjerne resultater fra ranglisterne og nulstille spil, hvor der er snydt.</li>
+                        </ul>
+                        <h3>Regler for de enkelte spil</h3>
+                        <p>Spillenes fulde regler står i <a href="/docs/games/">hjælpen</a>. Derudover gælder:</p>
+                        <ul>
+                            <li>
+                                <strong>Wordle:</strong> Der er ét dansk og ét engelsk ord om dagen med ét forsøg på hvert. Et
+                                påbegyndt ord, der ikke er gættet inden midnat (dansk tid), tæller som misset og afslutter din stime.
+                                Afslør ikke dagens ord for andre, før dagen er omme. Tilfældige ord tæller ikke med i statistik,
+                                stimer eller rangliste.
                             </li>
                             <li>
-                                Sudoku times on the leaderboard are timed by HB Hub's server, without the time the game was
-                                paused or you were away from the page. Only puzzles solved without a hint count, and starting
-                                a new game ends the one you were playing. No solvers, bots or scripts: a puzzle filled in
-                                faster than a person can (less than a second for each empty square) isn't counted.
+                                <strong>Minesweeper:</strong> Et spil, du forlader eller starter forfra, tæller som spillet, men ikke
+                                vundet. En sejr med mere end 10 nødvendige klik i sekundet tæller ikke, og et spil, hvor klik kommer
+                                fra kode (fx browserens konsol), stoppes.
                             </li>
                             <li>
-                                Ore Mining Inc. saves on HB Hub's server and checks what you do there, so only things that
-                                could really have happened count. Clicks count up to 20 a second, and a game only runs in one
-                                tab at a time. No auto-clickers, macros or scripts: clicks that look like they come from one
-                                only mine 20% of what they would. Admins can reset a save that was cheated
-                                or take it off the leaderboard. If the game crashes or is closed before it's saved, what you
-                                did just before is kept in your browser and saved (and checked the same way) the next time you
-                                open the game in that browser, but that isn't a promise: progress that's never saved can be lost.
+                                <strong>Sudoku:</strong> Tiden måles uden pauser og tid væk fra siden. Kun opgaver løst uden hints
+                                tæller, og et nyt spil afslutter det igangværende. En opgave løst på under et sekund pr. tomt felt
+                                tæller ikke.
                             </li>
                             <li>
-                                Ore Mining Inc.'s Star Shards are only caught in the game, while it's open, and only spent in its
-                                Shard Shop. Like chips, they're not money: they can't be bought, sold, swapped or given to
-                                someone else, and what's in the shop (its items and prices) may change as the game is balanced.
-                                A script or macro that catches them for you counts as cheating, like an auto-clicker.
-                            </li>
-                            <li>
-                                Ore Mining Inc.'s Project Starbound is built by everyone together, one build after the other (the
-                                Cosmic Engine, then the Starforge, then up to 98 more). Starbound Parts you give them (for ore, Strange Matter, Engine
-                                Shifts or finishing Anomalies) can't be taken back, don't move to the next build, and your name
-                                and how many you gave are shown to everyone with an account. Their perks are for every player
-                                and stay once the next build starts. Admins can
-                                change how many parts a stage needs, and the stages, perks and Anomalies (their rules, goals,
-                                parts and Afterglow) may change as the game is balanced, also for an Anomaly you're partway through. Parts
-                                given with a cheated save can be removed.
-                            </li>
-                            <li>
-                                Ore Mining Inc.'s Anomalies are challenge runs inside your game. While you're in one, your own
-                                game mines as if you were away, and leaving one before it's finished loses that run. Where an
-                                Anomaly turns Autopilot and Auto Crunch off, using a script or anything else to do their job
-                                counts as cheating. What you do in an Anomaly doesn't count towards your stats or the
-                                leaderboard, but your best times are shown on the leaderboard's Anomaly tabs, and best times or
-                                titles, medals or locks met by cheating can be removed. Each build's last stage (Ignition,
-                                First Light, ...) has to be filled in time or loses part of what's in it, and nobody can claim back
-                                what's lost that way.
-                            </li>
-                            <li>
-                                The free games at <a href="/play">/play</a> can be played without an account, and these terms
-                                apply there too. Without an account, your Wordle, Ore Mining Inc. and Sudoku games are only kept in your
-                                browser, so clearing the site's data, or using another browser, starts them over, and a
-                                Minesweeper board only lasts until you close or reload the page (and its wins don't go on
-                                the leaderboard; nor do guest Sudoku times, which stay in your browser). If you log in
-                                or sign up from one, today's Wordle games (not random words) and your Ore Mining Inc. game come with you, but only
-                                into an account that doesn't have them yet: your account's own games are never written over.
-                                In a browser that has logged in to HB Hub before, the free games send you to the login and the
-                                normal game instead. Don't use scripts or bots to flood the free games with requests.
+                                <strong>Ore Mining Inc.:</strong> Spillet kører i én fane ad gangen, og højst 20 klik i sekundet
+                                tæller. Klik, der ligner automatisering, giver kun 20 % af det normale udbytte. Fremskridt, der ikke
+                                er nået at blive gemt, forsøges gendannet næste gang, men kan gå tabt. Star Shards har ingen værdi
+                                uden for spillet og kan ikke købes, sælges eller overføres. Starbound Parts givet til Project Starbound
+                                kan ikke tages tilbage, og dit navn og antal dele vises for alle med en konto. Forlader du en Anomaly,
+                                før den er færdig, mister du forsøget, og et byggeris sidste trin mister en del af indholdet, hvis det
+                                ikke fyldes i tide. Butikken, byggerierne, Anomalies og deres fordele kan ændres, efterhånden som
+                                spillet balanceres, og fremskridt, titler og dele opnået ved snyd kan fjernes.
                             </li>
                         </ul>
+                        <h3>Gratis spil uden konto</h3>
+                        <p>
+                            De gratis spil på <a href="/play">/play</a> er også omfattet af disse vilkår. Uden konto gemmes Wordle,
+                            Sudoku og Ore Mining Inc. kun i din browser, og et Minesweeper-bræt kun, til siden lukkes. Gæsters
+                            Minesweeper- og Sudoku-resultater kommer ikke på ranglisten. Opretter du dig eller logger ind fra et
+                            gratis spil, overføres dagens Wordle og dit Ore Mining Inc.-spil til kontoen, men kun hvis kontoen ikke
+                            allerede har dem. Har browseren tidligere været logget ind, sendes du i stedet til login. Spillene må
+                            ikke overbelastes med automatiserede forespørgsler.
+                        </p>
                     </section>
 
                     <section id="moderation" aria-labelledby="terms-moderation">
-                        <h2 id="terms-moderation">7. When the rules are broken</h2>
-                        <p>Depending on how serious it is, admins can:</p>
+                        <h2 id="terms-moderation">7. Overtrædelser</h2>
+                        <p>Afhængigt af overtrædelsens alvor kan admins:</p>
                         <ul>
-                            <li>delete messages, attachments, pictures, banner pictures or groups, and ban a profile picture or banner picture they delete, so it can't be used again,</li>
-                            <li>unpin messages pinned in a chat,</li>
-                            <li>change or remove a name, bio or status,</li>
-                            <li>reset or take away chips, or remove game results from the leaderboards,</li>
-                            <li>take away attachment tickets, so fewer (or no) new attachments can be sent,</li>
-                            <li>block the Casino and Games for the account, all the time. Unlike a block you set yourself, it can't be turned off in your settings, only an admin can lift it,</li>
+                            <li>slette beskeder, vedhæftede filer, billeder og grupper, løsne fastgjorte beskeder og ændre eller fjerne navne, bioer og statusser,</li>
+                            <li>bandlyse slettede profil- og bannerbilleder, så de ikke kan bruges igen,</li>
+                            <li>nulstille eller fratage chips, fjerne resultater fra ranglisterne og fratage billetter til vedhæftede filer,</li>
+                            <li>blokere Casino og Spil for kontoen. En sådan blokering kan kun ophæves af en admin,</li>
                             <li>
-                                ghost ban the account, for a while or for good, without telling the person. The chat keeps
-                                working like normal for them, but what they do in it (messages, attachments, edits, reactions, pins,
-                                nicknames, and the chats they start or add people to) only shows to themselves and site admins. Nobody
-                                else sees it or gets a notification or message request from it. A new account (up to 3 days
-                                old) that's made or used in the same browser is ghost banned too,
+                                spøgelsesudelukke kontoen midlertidigt eller permanent uden at give besked. Chatten virker normalt for
+                                personen, men alt, hvad de gør i den, er kun synligt for dem selv og side-admins. Nye konti (op til 3
+                                dage gamle), der oprettes eller bruges i samme browser, spøgelsesudelukkes også,
                             </li>
-                            <li>ban the account, for a while or for good. A ban also covers the browser it was used in, and usually the account's profile picture, and can cover its banner picture.</li>
-                            <li>do any of the above to all of a person's accounts at once. Accounts that have been logged in to from the same browser are taken to be the same person, and admins check that it isn't just a shared computer first.</li>
+                            <li>udelukke kontoen midlertidigt eller permanent. Udelukkelsen omfatter også den browser, kontoen er brugt i, og som regel kontoens profilbillede og evt. bannerbillede,</li>
+                            <li>
+                                anvende ovenstående på alle en persons konti på én gang. Konti brugt i samme browser regnes som samme
+                                person, efter at admins har kontrolleret, at der ikke blot er tale om en delt computer.
+                            </li>
                         </ul>
                         <p>
-                            Using a banned picture is against the rules too: an account that uploads one as its profile picture or
-                            banner, or signs up with one, is banned straight away, without an admin having to do anything. That
-                            includes edited copies that look almost the same, like a resized or cropped one, and the account the
-                            picture was removed from. Banned pictures are the profile pictures and banner pictures of banned
-                            accounts, profile pictures and banner pictures admins have removed and banned, and other pictures
-                            admins have added. Admins can also change or remove a status that breaks the rules.
+                            Upload eller brug af et bandlyst billede, herunder redigerede kopier som skalerede eller beskårne
+                            versioner, medfører automatisk udelukkelse. Bandlyste billeder omfatter udelukkede kontis profil- og
+                            bannerbilleder samt billeder, som admins har fjernet eller tilføjet til listen.
                         </p>
                         <p>
-                            Admins decide what breaks the rules, also for things these terms don't list.
+                            Admins afgør, hvad der er en overtrædelse, også i tilfælde, som disse vilkår ikke nævner.
                             <strong>
-                                Admins can also ban, ghost ban or delete any account, or do anything else on this list to it,
-                                at any time and for any reason, or for no reason at all, without warning and without
-                                explaining why to the person.
+                                Admins kan når som helst og uden varsel eller begrundelse udelukke, spøgelsesudelukke eller slette
+                                enhver konto eller træffe enhver anden af ovenstående foranstaltninger.
                             </strong>
-                            If you think a decision was wrong, email <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> and explain why.
+                            Mener du, at en afgørelse er forkert, kan du skrive til
+                            <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> med en begrundelse.
                         </p>
                     </section>
 
                     <section id="leaving" aria-labelledby="terms-leaving">
-                        <h2 id="terms-leaving">8. Leaving HB Hub</h2>
+                        <h2 id="terms-leaving">8. Opsigelse</h2>
                         <p>
-                            You can stop using HB Hub whenever you want, and delete your account on the
-                            <a href="/settings">settings page</a>. The <a href="/legal/privacy#keep">Privacy Policy</a>
-                            explains what's removed then, and how to get everything deleted.
+                            Du kan til enhver tid stoppe med at bruge HB Hub og slette din konto under
+                            <a href="/settings">indstillinger</a>. Hvad der slettes, står i
+                            <a href="/legal/privacy#keep">privatlivspolitikken</a>.
                         </p>
                         <p>
-                            HB Hub can also close an account that breaks these terms, or shut down the whole site. If the site
-                            shuts down, there'll be a notice on it beforehand when possible.
+                            HB Hub kan lukke konti, der overtræder vilkårene, eller lukke siden helt. Lukker siden, varsles det så
+                            vidt muligt på siden i forvejen.
                         </p>
                     </section>
 
                     <section id="asis" aria-labelledby="terms-asis">
-                        <h2 id="terms-asis">9. The site comes as-is</h2>
+                        <h2 id="terms-asis">9. Ansvar</h2>
                         <p>
-                            HB Hub is a free side project, run by one student in their spare time. It's still being worked on,
-                            so things can change, break, go down for maintenance, or in the worst case be lost, without warning.
-                            Keep your own copy of anything that's important to you.
+                            HB Hub er et gratis projekt, der drives i fritiden og løbende udvikles. Funktioner kan derfor ændres,
+                            fejle, være utilgængelige eller i værste fald gå tabt uden varsel.
                         </p>
                         <p>
-                            The site is offered as it is, with no promise that it always works or is free of mistakes. As far as
-                            Danish law allows, HB Hub isn't responsible for losses caused by using it, by it being down, or by
-                            what other users post.
+                            Siden leveres, som den er, uden garanti for, at den altid virker eller er fejlfri. I det omfang dansk
+                            ret tillader det, er HB Hub ikke ansvarlig for tab som følge af brug af siden, nedetid eller indhold
+                            lagt op af andre brugere.
                         </p>
                     </section>
 
                     <section id="changes" aria-labelledby="terms-changes">
-                        <h2 id="terms-changes">10. Changes to these terms</h2>
+                        <h2 id="terms-changes">10. Ændringer</h2>
                         <p>
-                            As HB Hub gets new features, these terms may change. The date at the top shows when they last did.
-                            When they change, a box on the site tells you the next time you visit, and if something big changes,
-                            it'll be announced on the site too. If you keep using HB Hub after a change, you agree to the new
-                            terms.
+                            Vilkårene kan ændres, efterhånden som HB Hub udvikler sig. Datoen øverst viser den seneste ændring, og
+                            du får besked på siden, næste gang du besøger den. Fortsætter du med at bruge HB Hub efter en ændring,
+                            accepterer du de nye vilkår.
                         </p>
                     </section>
 
                     <section id="law" aria-labelledby="terms-law">
-                        <h2 id="terms-law">11. Law and contact</h2>
+                        <h2 id="terms-law">11. Lovvalg og kontakt</h2>
                         <p>
-                            These terms follow Danish law. Nothing in them takes away rights you have under the law anyway.
+                            Vilkårene er underlagt dansk ret og begrænser ikke de rettigheder, du har efter gældende lovgivning.
                         </p>
                         <p>
-                            Questions about the terms, a report, or something else? Email
+                            Spørgsmål om vilkårene eller anmeldelser kan sendes til
                             <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>.
                         </p>
                     </section>

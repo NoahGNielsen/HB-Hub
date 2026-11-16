@@ -1,85 +1,103 @@
 <?php
 // Help docs: profile and settings - the profile card, password, logged in devices, logging out and deleting the
-// account. Follows the settings page's cards (otherPages/settings.php). Open to everyone. Built by
+// account. Follows the settings page's four groups of rows, Profile, Preferences, Security and Account (otherPages/settings.php). Open to everyone. Built by
 // assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/account';
-$docsIntro = 'Everything about your account is on the <a href="/settings">settings page</a>: open your profile
-    (your picture in the top bar) and press the cog.';
+$docsIntro = 'Alt om din konto er på <a href="/settings">indstillingssiden</a>: åbn din profil (dit billede i
+    topbjælken), og tryk på tandhjulet. Den er en liste, ligesom indstillingerne på en telefon, i fire grupper: Profile,
+    Preferences, Security og Account. Tryk på en linje for at åbne den. Det, du ændrer, bliver gemt med det samme, så
+    der er ingen gem-knap.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="profile" aria-labelledby="docs-profile">
-                        <h2 id="docs-profile">Your profile</h2>
-                        <p>Your profile is how everyone else sees you. The <strong>Profile</strong> card in settings changes it:</p>
+                        <h2 id="docs-profile">Din profil</h2>
+                        <p>Din profil er sådan, alle andre ser dig. Gruppen <strong>Profile</strong> under indstillinger ændrer den, i <strong>Picture and banner</strong>, <strong>Name, class and bio</strong> og <strong>Status</strong>:</p>
                         <ul>
-                            <li><strong>Picture</strong>: a PNG, JPEG, GIF or WebP. It shows next to your messages, in the chat list and on the leaderboards.</li>
-                            <li><strong>Name</strong>: what everyone sees you as, and what you log in with.</li>
-                            <li><strong>Year and field of study</strong>: 1., 2. or 3. year and X, U, T, Y or Z, or Not HTX, so people know who you are. Your year goes up by itself every July 1st, and after 3. year you're shown as a Graduate. Changing it moves you to the other <a href="/docs/chat/groups#class">class chat</a>.</li>
-                            <li><strong>Banner</strong>: the wide strip along the top of your profile. Pick two colors and which way they go, like a <a href="/docs/chat/groups#look">chat background</a>, or a picture. A picture is made smaller and turned into JPEG XL on your device, and takes one of your <a href="/docs/chat/attachments#tickets">attachment tickets</a> for as long as it's your banner (it never runs out). Going back to colors gives the ticket back.</li>
-                            <li><strong>Education</strong>: a badge for the kind of education you're taking, like 💻 IT and media or 🍳 Food and service.</li>
-                            <li><strong>Status</strong>: an emoji and up to 45 characters on up to two lines, shown next to your profile picture. Like the bio, it only takes the Latin alphabet, numbers, punctuation and emoji. Pick when it clears itself: after 30 minutes, 1 hour, 8 hours, 24 hours (the default) or 7 days, or never. You can also click your status on your own profile to change or clear it there, or click "Click here to add a status!" (only you see that) when you don't have one.</li>
-                            <li><strong>Bio</strong>: a few words about yourself.</li>
+                            <li><strong>Picture</strong>: en PNG, JPEG, GIF eller WebP. Den bliver vist ved dine beskeder, i chatlisten og på ranglisterne.</li>
+                            <li><strong>Name</strong>: det, alle ser dig som, og det, du logger ind med.</li>
+                            <li><strong>Year og field of study</strong>: 1., 2. eller 3. år og X, U, T, Y eller Z, eller Not HTX, så folk ved, hvem du er. Din årgang stiger af sig selv hvert år den 1. juli, og efter 3. år bliver du vist som Graduate. Skifter du, flytter du over i den anden <a href="/docs/chat/groups#class">klassechat</a>.</li>
+                            <li><strong>Banner</strong>: den brede stribe øverst på din profil. Vælg to farver, og hvilken vej de går, ligesom en <a href="/docs/chat/groups#look">chatbaggrund</a>, eller et billede. Et billede bliver gjort mindre og lavet om til JPEG XL på din enhed, og tager en af dine <a href="/docs/chat/attachments#tickets">billetter til vedhæftede filer</a>, så længe det er dit banner (det udløber aldrig). Går du tilbage til farver, får du billetten tilbage.</li>
+                            <li><strong>Education</strong>: et mærke for den slags uddannelse, du tager, som 💻 IT and media eller 🍳 Food and service.</li>
+                            <li><strong>Status</strong>: en emoji og op til 45 tegn på op til to linjer, vist ved dit profilbillede. Ligesom bioen tager den kun det latinske alfabet, tal, tegnsætning og emoji. Vælg, hvornår den rydder sig selv: efter 30 minutter, 1 time, 8 timer, 24 timer (standard) eller 7 dage, eller aldrig. Du kan også klikke på din status på din egen profil for at ændre eller rydde den dér, eller klikke på "Click here to add a status!" (kun du ser det), når du ikke har en.</li>
+                            <li><strong>Bio</strong>: et par ord om dig selv.</li>
                         </ul>
                         <p>
-                            Anyone logged in can open your profile, from the chat, a leaderboard or a game, and message you from it. Clicking a profile picture or banner picture there shows it big. Next to your class and education it shows a Site admin badge for site admins, and whether you're online. Pictures have to follow
-                            the <a href="/legal/code-of-conduct">Code of Conduct</a> like everything else: a profile picture
-                            or banner picture that gets an account banned is banned too, on every account, as a profile picture
-                            and as a banner. Site admins can also remove a status or a banner picture that breaks the rules.
+                            Alle, der er logget ind, kan åbne din profil, fra chatten, en rangliste eller et spil, og skrive til dig
+                            derfra. Klikker man på et profilbillede eller bannerbillede dér, bliver det vist stort. Ved din klasse og
+                            uddannelse viser den et Site admin-mærke for side-admins, og om du er online. Billeder skal følge
+                            <a href="/legal/code-of-conduct">adfærdskodekset</a> ligesom alt andet: et profilbillede eller
+                            bannerbillede, der får en konto udelukket, bliver også bandlyst, på alle konti, både som profilbillede og
+                            som banner. Side-admins kan også fjerne en status eller et bannerbillede, der bryder reglerne.
                         </p>
                     </section>
 
                     <section id="password" aria-labelledby="docs-password">
-                        <h2 id="docs-password">Changing your password</h2>
+                        <h2 id="docs-password">At skifte din adgangskode</h2>
                         <p>
-                            Type your current password, then the new one twice, in the <strong>Password</strong> card. Changing
-                            it logs you out on every other device, so it's also the thing to do if you think someone else knows it.
-                            The rules for a new password are in <a href="/docs/two-factor#passwords">Two-factor login &amp; security</a>.
+                            Skriv din nuværende adgangskode, og så den nye to gange, under <strong>Password</strong> i gruppen <strong>Security</strong>. At skifte
+                            den logger dig ud på alle andre enheder, så det er også det, du skal gøre, hvis du tror, at en anden
+                            kender den. Reglerne for en ny adgangskode står i <a href="/docs/two-factor#passwords">Totrinslogin og sikkerhed</a>.
                         </p>
                     </section>
 
                     <section id="devices" aria-labelledby="docs-devices">
-                        <h2 id="docs-devices">Logged in devices</h2>
+                        <h2 id="docs-devices">Enheder, du er logget ind på</h2>
                         <p>
-                            <strong>Logged in devices</strong> lists every browser you're logged in on, with its browser and
-                            system, when you logged in and when it was last used. Log out any of them with its button. If there's
-                            one you don't recognise, log it out and change your password.
+                            <strong>Logged in devices</strong>, i gruppen <strong>Security</strong>, viser hver browser, du er logget ind i, med dens browser og system,
+                            hvornår du loggede ind, og hvornår den sidst blev brugt. Log ud af hver af dem med dens knap. Er der en,
+                            du ikke kan genkende, så log den ud, og skift din adgangskode.
                         </p>
-                        <p><strong>Log out everywhere</strong> logs you out on every device, the one you're on too.</p>
+                        <p><strong>Log out everywhere</strong>, i gruppen <strong>Account</strong>, logger dig ud på alle enheder, også den, du er på.</p>
                     </section>
 
                     <section id="log-out" aria-labelledby="docs-log-out">
-                        <h2 id="docs-log-out">Logging out</h2>
+                        <h2 id="docs-log-out">At logge ud</h2>
                         <p>
-                            <strong>Log out</strong>, near the bottom of the settings page, logs you out on the device you're on.
-                            You stay logged in everywhere else. On a shared computer, always log out when you're done.
+                            <strong>Log out</strong>, i gruppen <strong>Account</strong> nederst på indstillingssiden, logger dig ud på den enhed, du er på. Du
+                            forbliver logget ind alle andre steder. På en delt computer skal du altid logge ud, når du er færdig.
                         </p>
                     </section>
 
                     <section id="delete" aria-labelledby="docs-delete">
-                        <h2 id="docs-delete">Deleting your account</h2>
+                        <h2 id="docs-delete">At slette din konto</h2>
                         <p>
-                            <strong>Delete account</strong>, at the very bottom, asks for your password and then deletes your
-                            account straight away. This can't be undone.
+                            <strong>Delete account</strong>, helt nederst, beder om din adgangskode og sletter så din konto med det
+                            samme. Det kan ikke fortrydes.
                         </p>
                         <ul>
-                            <li>Your name, picture, banner, bio, status, year, class, settings, logins and the files you attached in chats are deleted, and you're logged out everywhere.</li>
-                            <li>Messages you've sent stay in their chats, from "Deleted User".</li>
-                            <li>Your Ore Mining Inc. save is deleted too, and nobody can log in to the account or find it again.</li>
+                            <li>Dit navn, billede, banner, din bio, status, årgang, klasse, dine indstillinger, logins og de filer, du har vedhæftet i chats, bliver slettet, og du bliver logget ud overalt.</li>
+                            <li>Beskeder, du har sendt, bliver i deres chats, fra "Deleted User".</li>
+                            <li>Dit gemte spil i Ore Mining Inc. bliver også slettet, og ingen kan logge ind på kontoen eller finde den igen.</li>
                         </ul>
                         <p class="legal-note">
-                            Want everything gone, messages too, or a copy of your data first? The
-                            <a href="/legal/privacy">Privacy Policy</a> explains how to ask for that.
+                            Vil du have det hele væk, også beskeder, eller en kopi af dine data først?
+                            <a href="/legal/privacy">Privatlivspolitikken</a> forklarer, hvordan du beder om det.
                         </p>
                     </section>
 
                     <section id="more" aria-labelledby="docs-more">
-                        <h2 id="docs-more">The other settings</h2>
+                        <h2 id="docs-more">De andre indstillinger</h2>
+                        <p>Gruppen <strong>Preferences</strong> har:</p>
                         <ul>
-                            <li><a href="/docs/notifications">Notifications</a>: a browser notification or a sound for new messages.</li>
-                            <li><a href="/docs/self-blocking">Block Gambling and Games</a>: keep yourself away from them during school hours, or all the time.</li>
-                            <li><a href="/docs/two-factor">Two-factor login</a>: a code from your phone on top of your password.</li>
+                            <li><a href="/docs/notifications">Notifikationer</a>: en browsernotifikation eller en lyd ved nye beskeder.</li>
+                            <li><a href="/docs/self-blocking">Bloker Casino og Spil</a>: hold dig selv væk fra dem i skoletiden eller hele tiden.</li>
+                            <li>
+                                <strong>Help improve HB Hub</strong>: om siden må samle statistik om, hvordan den virker for dig, fx
+                                de fejl, der sker i din browser på siden, når serveren har for travlt til at svare, og om dine
+                                sidevisninger tæller med i, hvor mange gange hver side bliver åbnet. Den er slået til, indtil du slår den fra,
+                                medmindre din browser sendte Global Privacy Control (GPC), da du oprettede dig: så er den slået fra fra start, og
+                                du får en notifikation om det. Ore Mining Inc.s
+                                egne nedbrudsrapporter spørger altid først; har du slået den fra, står der i spørgsmålet, at det går
+                                imod indstillingen at sende en. Hvad der bliver samlet, står i
+                                <a href="/legal/privacy#watchdog">privatlivspolitikken</a>.
+                            </li>
                         </ul>
+                        <p>
+                            Gruppen <strong>Security</strong> har, ud over din adgangskode og dine enheder,
+                            <a href="/docs/two-factor">totrinslogin</a> (en kode fra din telefon oven i din adgangskode) og Discord-login.
+                        </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

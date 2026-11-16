@@ -10,7 +10,11 @@
 //
 // The canonical URL is the page's clean path without the query string, so /login?return=%2Fchat (where
 // session.php sends visitors who aren't logged in) counts as /login, and /index as /. Error pages (anything
-// that isn't a 200) are noindex, so they get none.
+// that isn't a 200) are noindex, so they get none. That same path is counted as a page view for the admin panel's
+// Overview (hbHubPageViewCount() in pageViews.php, which decides whether the request counts), except for a logged-in
+// user who has turned "Help improve HB Hub" off.
+//
+// Public pages (in Danish) set $headerLocale = 'da_DK' first for og:locale; the app behind the login is en_GB.
 //
 // Pages under the frontpage's top bar (homeNav.php) instead of the app's nav panel set $headerHomeNav = true before
 // including this, so they don't wait for navPanel.css, which they don't use.
@@ -23,13 +27,27 @@
 // The font (Raleway, assets/fonts/, @font-face in mainStyle.css) is our own copy instead of Google Fonts', so the
 // first paint doesn't wait on two other servers. Its Latin file is preloaded, since the browser would otherwise only
 // find it after mainStyle.css has loaded.
+//
+// The Watchdog's script (watchdog.js) is left out too for a logged-in user who has turned "Help improve HB Hub" off in the
+// settings (hbHubImproveSiteOn() in userSettings.php). Visitors who aren't logged in always have it.
 require_once __DIR__ . '/maintenance.php';
+require_once __DIR__ . '/userSettings.php';
+
+// "Help improve HB Hub" (always on for visitors who aren't logged in): decides both the page view and the Watchdog
+$headerImproveSiteOn = !isset($hbHubUser) || hbHubImproveSiteOn(hbHubUserSettings($hbHubUser['userSettings'] ?? null));
 
 $headerCanonical = null;
 if (http_response_code() === 200) {
     $headerPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
     $headerPath = is_string($headerPath) && str_starts_with($headerPath, '/') ? $headerPath : '/';
-    $headerCanonical = 'https://hbhub.noahgajnielsen.dk' . preg_replace('~(^|/)index$~', '$1', $headerPath);
+    $headerPath = preg_replace('~(^|/)index$~', '$1', $headerPath);
+    $headerCanonical = 'https://hbhub.noahgajnielsen.dk' . $headerPath;
+    // One more view of this page for the admin panel's Overview (only a count per page and day, see pageViews.php),
+    // unless a logged-in user has turned "Help improve HB Hub" off
+    if ($headerImproveSiteOn) {
+        require_once __DIR__ . '/pageViews.php';
+        hbHubPageViewCount($headerPath, isset($hbHubUser));
+    }
 }
 
 $headerKeywords = array_unique([
@@ -53,8 +71,15 @@ $headerKeywords = array_unique([
 <?php if (empty($headerHomeNav)): ?>
 <link rel="stylesheet" href="/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
 <?php endif; ?>
-<!-- The Watchdog counts the 508s the page gets (assets/php/watchdog.php). First of the page's scripts, so every fetch() goes through it. -->
+<?php if ($headerImproveSiteOn): ?>
+<!-- The Watchdog notes the errors the page gets (assets/php/watchdog.php). First of the page's scripts, so every fetch() and error goes through it.
+     Left out when "Help improve HB Hub" is off in the settings (hbHubImproveSiteOn()). -->
 <script src="/assets/js/watchdog.js?v=<?= filemtime(__DIR__ . '/../js/watchdog.js') ?>" defer></script>
+<?php endif; ?>
+<?php if (!empty($hbHubFingerprintDue)): ?>
+<!-- Sends the browser's fingerprint, at most once a day per login (assets/php/fingerprint.php) -->
+<script src="/assets/js/fingerprint.js?v=<?= filemtime(__DIR__ . '/../js/fingerprint.js') ?>" defer></script>
+<?php endif; ?>
 <link rel="terms-of-service" href="https://hbhub.noahgajnielsen.dk/legal/terms">
 <link rel="privacy-policy" href="https://hbhub.noahgajnielsen.dk/legal/privacy">
 
@@ -66,7 +91,7 @@ $headerKeywords = array_unique([
 <meta name="keywords" content="<?= htmlspecialchars(implode(', ', $headerKeywords)) ?>">
 <meta property="og:site_name" content="HB Hub">
 <meta property="og:type" content="website">
-<meta property="og:locale" content="en_GB">
+<meta property="og:locale" content="<?= htmlspecialchars($headerLocale ?? 'en_GB') ?>">
 <meta property="og:image" content="https://hbhub.noahgajnielsen.dk/assets/images/shareImage.png?v=<?= filemtime(__DIR__ . '/../images/shareImage.png') ?>">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">

@@ -7,62 +7,63 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/block.php';
 
 /**
- * An hour of the day the way people say it, like "8 AM" or "3 PM".
+ * An hour of the day the Danish way, like "kl. 8" or "kl. 15".
  */
 function docsHour(int $hour): string
 {
-    return ($hour % 12 === 0 ? 12 : $hour % 12) . ($hour < 12 ? ' AM' : ' PM');
+    return 'kl. ' . $hour;
 }
 
 $docsPath = '/docs/self-blocking';
-$docsIntro = 'Playing too much when you should be in class? Block the Casino and Games for yourself, and HB Hub helps
-    you stick to it.';
+$docsIntro = 'Spiller du for meget, når du burde være i timen? Bloker Casino og Spil for dig selv, så hjælper HB Hub
+    dig med at holde fast i det.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <section id="how" aria-labelledby="docs-how">
-                        <h2 id="docs-how">Turning on a block</h2>
+                        <h2 id="docs-how">At slå en blokering til</h2>
                         <p>
-                            Open the <strong>Block Gambling and Games</strong> card in your
-                            <a href="/settings#block">settings</a> and pick a block. It covers both the
-                            <a href="/docs/casino/">Casino</a> and the <a href="/docs/games/">Games</a>.
+                            Åbn <strong>Gambling and Games</strong> i gruppen <strong>Preferences</strong> under dine
+                            <a href="/settings#block">indstillinger</a>, og vælg en blokering. Den bliver gemt med det samme. Den dækker både
+                            <a href="/docs/casino/">casinoet</a> og <a href="/docs/games/">spillene</a>.
                         </p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Block</th><th scope="col">What it does</th></tr>
+                                    <tr><th scope="col">Blokering</th><th scope="col">Hvad den gør</th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>No block</td><td>Everything is open.</td></tr>
-                                    <tr><td>During school hours</td><td>The Casino and Games are closed from <?= docsHour(HBHUB_BLOCK_SCHOOL_START) ?> to <?= docsHour(HBHUB_BLOCK_SCHOOL_END) ?>, Monday to Friday (Danish time).</td></tr>
-                                    <tr><td>All the time</td><td>The Casino and Games are always closed.</td></tr>
+                                    <tr><td>No block</td><td>Alt er åbent.</td></tr>
+                                    <tr><td>During school hours</td><td>Casino og Spil er lukket fra <?= docsHour(HBHUB_BLOCK_SCHOOL_START) ?> til <?= docsHour(HBHUB_BLOCK_SCHOOL_END) ?>, mandag til fredag (dansk tid).</td></tr>
+                                    <tr><td>All the time</td><td>Casino og Spil er altid lukket.</td></tr>
                                 </tbody>
                             </table>
                         </div>
-                        <p>While a block is on, opening a casino or games page shows a page saying Gambling and Games are blocked instead. The chat always works.</p>
+                        <p>Mens en blokering er slået til, viser en casino- eller spilside i stedet en side, der siger, at Gambling and Games er blokeret. Chatten virker altid.</p>
                     </section>
 
                     <section id="wait" aria-labelledby="docs-wait">
-                        <h2 id="docs-wait">Why turning it off waits</h2>
+                        <h2 id="docs-wait">Hvorfor det venter at slå den fra</h2>
                         <p>
-                            A stricter block starts straight away. Turning one down doesn't, so it can't be switched off in a weak
-                            moment:
+                            En strengere blokering starter med det samme. At skrue ned for en gør ikke, så den ikke kan slås fra i
+                            et svagt øjeblik:
                         </p>
                         <ul>
-                            <li>From <strong>During school hours</strong>, during school hours: it waits until <?= docsHour(HBHUB_BLOCK_SCHOOL_END) ?>.</li>
-                            <li>From <strong>All the time</strong>: it waits <?= HBHUB_BLOCK_ALWAYS_DELAY / 3600 ?> hours.</li>
+                            <li>Fra <strong>During school hours</strong>, i skoletiden: den venter til <?= docsHour(HBHUB_BLOCK_SCHOOL_END) ?>.</li>
+                            <li>Fra <strong>All the time</strong>: den venter <?= HBHUB_BLOCK_ALWAYS_DELAY / 3600 ?> timer.</li>
                         </ul>
-                        <p>The settings page shows when the change kicks in. Until then the stricter block still counts.</p>
+                        <p>Indstillingssiden viser, hvornår ændringen træder i kraft. Indtil da gælder den strengere blokering stadig.</p>
                     </section>
 
                     <section id="admin" aria-labelledby="docs-admin">
-                        <h2 id="docs-admin">A block from an admin</h2>
+                        <h2 id="docs-admin">En blokering fra en admin</h2>
                         <p>
-                            Site admins can also block the Casino and Games for someone. It works like "All the time", on top of your
-                            own block. The settings card then says <strong>Blocked by an admin</strong>, and only an admin can lift it.
+                            Side-admins kan også blokere Casino og Spil for nogen. Det virker som "All the time", oven i din egen
+                            blokering. Under indstillinger står der så <strong>Blocked by an admin</strong>, og kun en admin kan
+                            ophæve den.
                         </p>
                         <p>
-                            Separate from all of this, the whole Casino or Games section can be closed for everyone by the people
-                            running HB Hub. Then it's closed whatever your block says.
+                            Uafhængigt af alt det kan hele Casino- eller Spil-sektionen lukkes for alle af dem, der driver HB Hub.
+                            Så er den lukket, uanset hvad din blokering siger.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

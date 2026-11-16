@@ -106,7 +106,9 @@ function leaderboardPlayer(array $row, array $titles): string
 {
     $rowUserId = (int) $row['userId'];
     $avatarSrc = hbHubAvatarUrl($rowUserId, $row['userAvatarAttachmentId'] !== null ? (int) $row['userAvatarAttachmentId'] : null);
-    $avatar = $avatarSrc !== null ? '<img src="' . htmlspecialchars($avatarSrc) . '" alt="" loading="lazy">'
+    // Queued (pictureQueue.js) rather than a plain src, so a board full of avatars doesn't send them all to PHP at once
+    $avatar = $avatarSrc !== null ? '<img data-queued-picture="' . htmlspecialchars($avatarSrc) . '" alt="">'
+        . '<noscript><img src="' . htmlspecialchars($avatarSrc) . '" alt="" loading="lazy"></noscript>'
         : htmlspecialchars(mb_strtoupper(mb_substr($row['userName'], 0, 1)));
     $title = isset($titles[$rowUserId]) ? '<span class="casino-table-unit miner-board-title">' . htmlspecialchars($titles[$rowUserId]) . '</span>' : '';
     return '<a class="casino-player" href="' . htmlspecialchars(hbHubProfileUrl($rowUserId, $_SERVER['REQUEST_URI'])) . '">'
@@ -218,6 +220,7 @@ function leaderboardSortUrl(string $column, string $sort, string $dir, string $b
 <html lang="en">
 <head>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <script src="/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
     <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <link rel="stylesheet" href="/assets/css/spaceOreMiner.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/spaceOreMiner.css') ?>">

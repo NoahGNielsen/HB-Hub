@@ -24,7 +24,7 @@ const LOGIN_PENDING_MINUTES = 5; // how long there is to enter the code
 function loginCheckDB(string $name, string $password, int $attemptsMax, int $lockoutMinutes, ?bool &$needsTotp = null): ?string
 {
     $needsTotp = false;
-    $wrongMessage = 'Wrong name or password.';
+    $wrongMessage = 'Forkert navn eller adgangskode.';
 
     $db = null;
     try {
@@ -46,12 +46,12 @@ function loginCheckDB(string $name, string $password, int $attemptsMax, int $loc
         // Checked before the password, so guessing can't carry on while locked
         $lockMinutesLeft = hbHubLoginLockMinutesLeft($db, $userId, $lockoutMinutes);
         if ($lockMinutesLeft > 0) {
-            return hbHubLoginLockedMessage($lockMinutesLeft);
+            return hbHubLoginLockedMessage($lockMinutesLeft, true);
         }
 
         if (!password_verify($password, $user['userPasswordHash'])) {
             if (hbHubLoginRecordFailure($db, $userId, $attemptsMax)) {
-                return 'Too many wrong passwords. ' . hbHubLoginLockedMessage($lockoutMinutes);
+                return 'For mange forkerte adgangskoder. ' . hbHubLoginLockedMessage($lockoutMinutes, true);
             }
             return $wrongMessage;
         }
@@ -59,7 +59,7 @@ function loginCheckDB(string $name, string $password, int $attemptsMax, int $loc
         // Only said after the right password, so it doesn't reveal anything about other people's accounts
         if ((int) $user['userStatus'] === LOGIN_STATUS_BANNED) {
             hbHubSetBannedCookie($userId); // so a new account can't be made from this browser instead
-            return 'This account has been banned.';
+            return 'Denne konto er blevet udelukket.';
         }
 
         $db->beginTransaction();
@@ -88,7 +88,7 @@ function loginCheckDB(string $name, string $password, int $attemptsMax, int $loc
             $db->rollBack();
         }
         error_log('Login: could not log in: ' . $e->getMessage());
-        return 'Something went wrong logging you in. Please try again.';
+        return 'Noget gik galt, da du skulle logges ind. Prøv igen.';
     }
 
     hbHubSetSessionCookie($sessionId);
@@ -177,7 +177,7 @@ function loginCheckTotp(mixed $code, int $attemptsMax, int $lockoutMinutes): ?st
 
         if ($user === null) {
             loginCancelPending();
-            return 'That took too long. Please log in again.';
+            return 'Det tog for lang tid. Log ind igen.';
         }
 
         $userId = (int) $user['userId'];
@@ -185,16 +185,16 @@ function loginCheckTotp(mixed $code, int $attemptsMax, int $lockoutMinutes): ?st
         $lockMinutesLeft = hbHubLoginLockMinutesLeft($db, $userId, $lockoutMinutes);
         if ($lockMinutesLeft > 0) {
             loginCancelPending();
-            return hbHubLoginLockedMessage($lockMinutesLeft);
+            return hbHubLoginLockedMessage($lockMinutesLeft, true);
         }
 
         $step = hbHubTotpVerify($user['userTotpSecret'], $code, $user['userTotpLastStep'] !== null ? (int) $user['userTotpLastStep'] : null);
         if ($step === null) {
             if (hbHubLoginRecordFailure($db, $userId, $attemptsMax)) {
                 loginCancelPending();
-                return 'Too many wrong codes. ' . hbHubLoginLockedMessage($lockoutMinutes);
+                return 'For mange forkerte koder. ' . hbHubLoginLockedMessage($lockoutMinutes, true);
             }
-            return 'That code isn\'t right. Please try again.';
+            return 'Koden er forkert. Prøv igen.';
         }
 
         $db->beginTransaction();
@@ -205,7 +205,7 @@ function loginCheckTotp(mixed $code, int $attemptsMax, int $lockoutMinutes): ?st
         $used->execute([$step, $userId, $step]);
         if ($used->rowCount() === 0) {
             $db->rollBack();
-            return 'That code isn\'t right. Please try again.';
+            return 'Koden er forkert. Prøv igen.';
         }
 
         $db->prepare('DELETE FROM `HBHub-Sessions` WHERE sessionId = ?')->execute([$pendingId]);
@@ -217,7 +217,7 @@ function loginCheckTotp(mixed $code, int $attemptsMax, int $lockoutMinutes): ?st
             $db->rollBack();
         }
         error_log('Login: could not check the 2FA code: ' . $e->getMessage());
-        return 'Something went wrong logging you in. Please try again.';
+        return 'Noget gik galt, da du skulle logges ind. Prøv igen.';
     }
 
     loginClearPendingCookie();

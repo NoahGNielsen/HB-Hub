@@ -1,4 +1,4 @@
-/* The game lobbies (gambling/blackjack/, gambling/baccarat/, games/matador/, games/chess/, games/uno/): a header in
+/* The game lobbies (casino/blackjack/, casino/baccarat/, games/matador/, games/chess/, games/uno/): a header in
    the game's own colours, the user's table, the forms to join or open one, the lists of tables (built by
    <game>Lobby.js) and the rules. Loaded after casino.css (and games.css), whose buttons, inputs and dialogs they use.
    Each lobby's <main> has a lobby-<game> class that sets its colours:

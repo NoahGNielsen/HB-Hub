@@ -225,6 +225,7 @@ switch ($adminAction) {
 
 // What the page shows, which is logged: it has all the chat's messages
 adminLogView($db, $adminId, 'chat.view', null, $chatId);
+chatDeletedMessagesSweep($db); // a message deleted over 3 days ago never shows its text here, even before the night's clean-up
 $adminBackground = chatBackground(chatSettings($chat['chatSettings']));
 // The default background starts the picker at the site's orange going right into purple, like in the chat (chat.js)
 [$adminColor1, $adminColor2, $adminAngle] = $adminBackground ?? ['#f2711c', '#6a4bd6', 90];
@@ -559,8 +560,8 @@ $adminFormAction = '/admin/chat?chat=' . $chatId;
                         <div>
                             <h2 id="admin-messages-heading">Messages</h2>
                             <p class="settings-intro">
-                                Everything sent in the chat, newest first, with the notices about changes to it. Deleted messages are still here,
-                                but only shown as deleted in the chat.<?= $adminIsActive ? ' Deleting one here shows it as deleted by a site admin.' : '' ?>
+                                Everything sent in the chat, newest first, with the notices about changes to it. Deleted messages are still here
+                                for <?= HBHUB_CHAT_DELETED_KEEP_DAYS ?> days, but only shown as deleted in the chat; after that their text is removed for good.<?= $adminIsActive ? ' Deleting one here shows it as deleted by a site admin.' : '' ?>
                             </p>
                         </div>
                         <span class="settings-status"><?= number_format((int) $adminMessageCounts['total']) ?></span>

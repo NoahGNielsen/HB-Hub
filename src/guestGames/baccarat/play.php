@@ -1,6 +1,6 @@
 <?php
 // The guest Baccarat table's JSON (/play/baccarat/play), for baccaratTable.js on /play/baccarat - the same as
-// gambling/baccarat/play for a members' solo table, but the table and the play chips come and go as a sealed token,
+// casino/baccarat/play for a members' solo table, but the table and the play chips come and go as a sealed token,
 // kept only in the page (assets/php/casino/baccarat/guest.php). Nothing is stored. POST only, as each request carries
 // the token (none on the page's first: a new table with a new stack of play chips):
 //   action=poll (what's new: the table moves on for the timers that ran out, like the next card being turned over),

@@ -1,7 +1,8 @@
 <?php
 // The top half of every help docs page (src/docs/): the <head>, the frontpage's top bar (homeNav.php), a dark hero
 // with the page's title, and the side menu with every docs page (pages.php). It leaves .docs-body open for the page's
-// own text, which bottom.php closes again. Built like the legal pages (legal.css), with docs.css on top.
+// own text, which bottom.php closes again. Built like the legal pages (legal.css), with docs.css on top. In Danish,
+// like every public page.
 //
 // A page sets these first, after session.php (with $hbHubSessionOptional = true, as the docs are open to everyone):
 // - $docsPath: its path in HBHUB_DOCS_SECTIONS, like '/docs/casino/blackjack'
@@ -12,19 +13,20 @@ $docsPage = hbHubDocsPage($docsPath);
 $docsIsFront = $docsPath === '/docs/';
 ?>
 <!DOCTYPE html>
-<html lang="en" class="home">
+<html lang="da" class="home">
 <head>
     <?php
     $headerHomeNav = true;
-    $headerKeywords = [$docsPage['title'], 'HB Hub help', 'HB Hub docs', 'HB Hub guide'];
+    $headerLocale = 'da_DK';
+    $headerKeywords = [$docsPage['title'], 'HB Hub hjælp', 'HB Hub vejledning', 'HB Hub guide'];
     include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php';
     ?>
     <link rel="stylesheet" href="/assets/css/homepage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/homepage.css') ?>">
     <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <link rel="stylesheet" href="/assets/css/docs.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/docs.css') ?>">
-    <title><?= htmlspecialchars($docsIsFront ? 'Help & docs - HB Hub' : $docsPage['title'] . ' - HB Hub docs') ?></title>
+    <title><?= htmlspecialchars($docsIsFront ? 'Hjælp - HB Hub' : $docsPage['title'] . ' - HB Hub hjælp') ?></title>
     <!-- The summary is short, as it's also a card on the docs' front page, so search engines get who the docs are for too -->
-    <meta name="description" content="<?= htmlspecialchars($docsPage['summary'] . ' From the HB Hub help docs, for students at HANSENBERG (HTX).') ?>">
+    <meta name="description" content="<?= htmlspecialchars($docsPage['summary'] . ' Fra HB Hubs hjælpesider, for elever på HANSENBERG (HTX).') ?>">
 </head>
 <body class="home-body">
     <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
@@ -34,11 +36,11 @@ $docsIsFront = $docsPath === '/docs/';
             <header class="legal-hero">
                 <div class="legal-hero-inner">
                     <?php if ($docsIsFront): ?>
-                        <p class="home-kicker legal-kicker">Docs</p>
+                        <p class="home-kicker legal-kicker">Hjælp</p>
                     <?php else: ?>
                         <!-- Where the page is: the docs, then its section (a link when the section has a page of its own) -->
-                        <nav class="docs-crumbs" aria-label="Breadcrumbs">
-                            <a href="/docs/">Docs</a>
+                        <nav class="docs-crumbs" aria-label="Brødkrummer">
+                            <a href="/docs/">Hjælp</a>
                             <span aria-hidden="true">/</span>
                             <?php $docsSectionHome = array_key_first($docsPage['section']['pages']); ?>
                             <?php if ($docsSectionHome !== '/docs/' && $docsSectionHome !== $docsPath): ?>
@@ -55,7 +57,7 @@ $docsIsFront = $docsPath === '/docs/';
 
             <div class="legal-layout docs-layout">
                 <!-- Every docs page, by section. After the text on small screens (docs.css), so the page starts with what was opened. -->
-                <nav class="docs-nav" aria-label="Docs">
+                <nav class="docs-nav" aria-label="Hjælpesider">
                     <?php foreach (HBHUB_DOCS_SECTIONS as $docsSectionKey => $docsSection): ?>
                         <div class="docs-nav-group">
                             <p class="docs-nav-title" id="docs-nav-<?= htmlspecialchars($docsSectionKey) ?>">

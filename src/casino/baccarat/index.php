@@ -1,26 +1,26 @@
 <?php
-// The Blackjack lobby: join a table by its code, play solo, open a table, the user's invites and the public tables
-// (both kept up to date by blackjackLobby.js), and the rules. A user sits at one table at a time.
+// The Baccarat lobby: join a table by its code, play solo, open a table, the user's invites and the public tables
+// (both kept up to date by baccaratLobby.js), and the rules. A user sits at one Baccarat table at a time.
 // The forms post here (action): joinCode (code), join (room - from the lists), solo, create (name, type, minBet) and
 // leave. Joining or opening a table goes straight to it.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/room.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/baccarat/room.php';
 hbHubCasinoPage($hbHubUser); // blocked in settings, or not open yet
 
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 
 const LOBBY_CREATE_TYPES = [ // what the "Who can join" choices make
-    'public' => HBHUB_BLACKJACK_ROOM_PUBLIC,
-    'code' => HBHUB_BLACKJACK_ROOM_CODE,
-    'invite' => HBHUB_BLACKJACK_ROOM_INVITE,
+    'public' => HBHUB_BACCARAT_ROOM_PUBLIC,
+    'code' => HBHUB_BACCARAT_ROOM_CODE,
+    'invite' => HBHUB_BACCARAT_ROOM_INVITE,
 ];
 
 function lobbyGoToTable(int $roomId): never
 {
-    header('Location: /gambling/blackjack/table?room=' . $roomId, true, 303);
+    header('Location: /casino/baccarat/table?room=' . $roomId, true, 303);
     exit;
 }
 
@@ -30,31 +30,31 @@ function lobbyGoToTable(int $roomId): never
 function lobbyCreate(PDO $db, array $user, string $name, int $type, int $minBet): string
 {
     try {
-        lobbyGoToTable(hbHubBlackjackCreateRoom($db, (int) $user['userId'], $name, $type, $minBet));
+        lobbyGoToTable(hbHubBaccaratCreateRoom($db, (int) $user['userId'], $name, $type, $minBet));
     } catch (PDOException $e) {
-        $seat = hbHubBlackjackUserSeat($db, (int) $user['userId']); // sat down at a table in another tab meanwhile
+        $seat = hbHubBaccaratUserSeat($db, (int) $user['userId']); // sat down at a table in another tab meanwhile
         if ($seat !== null) {
             lobbyGoToTable($seat['roomId']);
         }
-        error_log('Blackjack: could not open a table: ' . $e->getMessage());
+        error_log('Baccarat: could not open a table: ' . $e->getMessage());
         return 'Something went wrong opening a table. Please try again.';
     }
 }
 
 $lobbyErrors = [];
-$lobbyValues = ['name' => '', 'type' => 'public', 'minBet' => HBHUB_BLACKJACK_MIN_BETS[0], 'code' => ''];
+$lobbyValues = ['name' => '', 'type' => 'public', 'minBet' => HBHUB_BACCARAT_MIN_BETS[0], 'code' => ''];
 $action = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? null) : null; // only from the site itself (session.php)
 
 if (in_array($action, ['solo', 'create'], true)) {
-    $seat = hbHubBlackjackUserSeat($db, $userId);
+    $seat = hbHubBaccaratUserSeat($db, $userId);
     if ($seat !== null) {
         lobbyGoToTable($seat['roomId']);
     }
 }
 
 if ($action === 'solo') {
-    $lobbyErrors['solo'] = lobbyCreate($db, $hbHubUser, hbHubBlackjackRoomName(null, $hbHubUser['userName']),
-        HBHUB_BLACKJACK_ROOM_SOLO, HBHUB_BLACKJACK_SOLO_MIN_BET);
+    $lobbyErrors['solo'] = lobbyCreate($db, $hbHubUser, hbHubBaccaratRoomName(null, $hbHubUser['userName']),
+        HBHUB_BACCARAT_ROOM_SOLO, HBHUB_BACCARAT_SOLO_MIN_BET);
 }
 
 if ($action === 'create') {
@@ -64,10 +64,10 @@ if ($action === 'create') {
 
     if (!is_string($lobbyValues['type']) || !isset(LOBBY_CREATE_TYPES[$lobbyValues['type']])) {
         $lobbyErrors['create'] = 'Choose who can join the table.';
-    } elseif (!in_array($lobbyValues['minBet'], HBHUB_BLACKJACK_MIN_BETS, true)) {
+    } elseif (!in_array($lobbyValues['minBet'], HBHUB_BACCARAT_MIN_BETS, true)) {
         $lobbyErrors['create'] = 'Choose a minimum bet.';
     } else {
-        $lobbyErrors['create'] = lobbyCreate($db, $hbHubUser, hbHubBlackjackRoomName($lobbyValues['name'], $hbHubUser['userName']),
+        $lobbyErrors['create'] = lobbyCreate($db, $hbHubUser, hbHubBaccaratRoomName($lobbyValues['name'], $hbHubUser['userName']),
             LOBBY_CREATE_TYPES[$lobbyValues['type']], $lobbyValues['minBet']);
     }
 }
@@ -75,7 +75,7 @@ if ($action === 'create') {
 if ($action === 'join') {
     $roomId = $_POST['room'] ?? null;
     $error = is_string($roomId) && ctype_digit($roomId) && strlen($roomId) <= 10
-        ? hbHubBlackjackJoin($db, $userId, (int) $roomId, false)
+        ? hbHubBaccaratJoin($db, $userId, (int) $roomId, false)
         : 'That table isn\'t there anymore.';
     if ($error === null) {
         lobbyGoToTable((int) $roomId);
@@ -85,14 +85,14 @@ if ($action === 'join') {
 
 if ($action === 'joinCode') {
     $lobbyValues['code'] = is_string($_POST['code'] ?? null) ? mb_substr($_POST['code'], 0, 16) : '';
-    $code = hbHubBlackjackCleanCode($lobbyValues['code']);
-    $roomId = $code !== null ? hbHubBlackjackRoomIdByCode($db, $code) : null;
+    $code = hbHubBaccaratCleanCode($lobbyValues['code']);
+    $roomId = $code !== null ? hbHubBaccaratRoomIdByCode($db, $code) : null;
     if ($code === null) {
         $lobbyErrors['code'] = 'A code is 6 letters and numbers, like K7PX3M.';
     } elseif ($roomId === null) {
         $lobbyErrors['code'] = 'There\'s no table with that code. It may have closed.';
     } else {
-        $error = hbHubBlackjackJoin($db, $userId, $roomId, true);
+        $error = hbHubBaccaratJoin($db, $userId, $roomId, true);
         if ($error === null) {
             lobbyGoToTable($roomId);
         }
@@ -101,14 +101,14 @@ if ($action === 'joinCode') {
 }
 
 if ($action === 'leave') {
-    hbHubBlackjackLeave($db, $userId);
-    header('Location: /gambling/blackjack/', true, 303);
+    hbHubBaccaratLeave($db, $userId);
+    header('Location: /casino/baccarat/', true, 303);
     exit;
 }
 
-hbHubBlackjackSweep($db); // tables everyone has closed, so they don't show (the user's own too, once they've been gone too long)
-$lobbySeat = hbHubBlackjackUserSeat($db, $userId);
-$lobbyRoom = $lobbySeat !== null ? hbHubBlackjackRoom($db, $lobbySeat['roomId']) : null;
+hbHubBaccaratSweep($db); // tables everyone has closed, so they don't show (the user's own too, once they've been gone too long)
+$lobbySeat = hbHubBaccaratUserSeat($db, $userId);
+$lobbyRoom = $lobbySeat !== null ? hbHubBaccaratRoom($db, $lobbySeat['roomId']) : null;
 $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in the top bar (navPanel.php)
 ?>
 <!DOCTYPE html>
@@ -117,34 +117,36 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="/assets/css/lobby.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/lobby.css') ?>">
-    <title>Blackjack - HB Hub</title>
+    <title>Baccarat - HB Hub</title>
     <meta name="robots" content="noindex">
-    <meta name="description" content="Blackjack in the HB Hub casino">
+    <meta name="description" content="Baccarat in the HB Hub casino">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="lobby lobby-blackjack" data-bj-lobby data-seated="<?= $lobbyRoom !== null ? '1' : '0' ?>">
-        <a class="lobby-back" href="/gambling/">&larr; Casino</a>
+    <main class="lobby lobby-baccarat" data-bac-lobby data-seated="<?= $lobbyRoom !== null ? '1' : '0' ?>">
+        <a class="lobby-back" href="/casino/">&larr; Casino</a>
         <header class="lobby-hero">
             <div class="lobby-hero-icon">
+                <!-- The Player's card and the Banker's, in their colours -->
                 <svg viewBox="0 0 64 64" aria-hidden="true">
-                    <rect x="8" y="10" width="30" height="42" rx="5" fill="#fff" opacity="0.55" transform="rotate(-12 23 31)"/>
-                    <rect x="24" y="10" width="30" height="42" rx="5" fill="#fff" transform="rotate(8 39 31)"/>
-                    <path d="M39 20c-4.5 5.2-9 8.4-9 12.6a4.6 4.6 0 0 0 7.6 3.5L36.2 41h5.6l-1.4-4.9A4.6 4.6 0 0 0 48 32.6c0-4.2-4.5-7.4-9-12.6z"
-                          fill="#14231b" transform="rotate(8 39 31)"/>
+                    <rect x="7" y="12" width="28" height="40" rx="5" fill="#fff" transform="rotate(-10 21 32)"/>
+                    <rect x="11" y="16" width="20" height="32" rx="3" fill="#2f6fd6" transform="rotate(-10 21 32)"/>
+                    <rect x="29" y="12" width="28" height="40" rx="5" fill="#fff" transform="rotate(10 43 32)"/>
+                    <rect x="33" y="16" width="20" height="32" rx="3" fill="#d23c3c" transform="rotate(10 43 32)"/>
+                    <circle cx="32" cy="50" r="7" fill="#e8b64c" stroke="#fff" stroke-width="2"/>
                 </svg>
             </div>
             <div class="lobby-hero-text">
-                <h1>Blackjack</h1>
-                <p class="lobby-tagline">Get closer to 21 than the dealer without going over. Play on your own, or with friends at the same table.</p>
+                <h1>Baccarat</h1>
+                <p class="lobby-tagline">Bet on the Player or the Banker, whichever ends closest to 9. Play on your own, or with friends betting on the same hands.</p>
                 <ul class="lobby-facts">
-                    <li>1-<?= HBHUB_BLACKJACK_SEATS ?> players</li>
-                    <li>Min bet <?= number_format(min(HBHUB_BLACKJACK_MIN_BETS)) ?>-<?= number_format(max(HBHUB_BLACKJACK_MIN_BETS)) ?> chips</li>
-                    <li>Blackjack pays 3:2</li>
+                    <li><?= HBHUB_BACCARAT_MIN_PLAYERS ?>-<?= HBHUB_BACCARAT_SEATS ?> players</li>
+                    <li>Min bet <?= number_format(min(HBHUB_BACCARAT_MIN_BETS)) ?>-<?= number_format(max(HBHUB_BACCARAT_MIN_BETS)) ?> chips</li>
+                    <li>Tie pays 8:1</li>
                 </ul>
             </div>
             <div class="lobby-hero-actions">
-                <a class="lobby-hero-btn" href="/gambling/blackjack/leaderboard">Leaderboard</a>
+                <a class="lobby-hero-btn" href="/casino/baccarat/leaderboard">Leaderboard</a>
                 <a class="lobby-hero-btn" href="#rules">Rules</a>
             </div>
         </header>
@@ -165,7 +167,7 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
                     </div>
                 </div>
                 <div class="lobby-actions">
-                    <a class="casino-btn casino-btn-primary" href="/gambling/blackjack/table?room=<?= $lobbyRoom['roomId'] ?>">Back to your table</a>
+                    <a class="casino-btn casino-btn-primary" href="/casino/baccarat/table?room=<?= $lobbyRoom['roomId'] ?>">Back to your table</a>
                     <form method="post">
                         <input type="hidden" name="action" value="leave">
                         <button type="submit" class="casino-btn">Leave it</button>
@@ -214,8 +216,8 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
                         <form method="post" class="lobby-form">
                             <input type="hidden" name="action" value="create">
                             <label class="casino-label" for="lobby-name">Name <span class="casino-optional">(optional)</span></label>
-                            <input type="text" id="lobby-name" name="name" class="casino-input" maxlength="<?= HBHUB_BLACKJACK_ROOM_NAME_MAX ?>"
-                                   placeholder="<?= htmlspecialchars(hbHubBlackjackRoomName(null, $hbHubUser['userName'])) ?>"
+                            <input type="text" id="lobby-name" name="name" class="casino-input" maxlength="<?= HBHUB_BACCARAT_ROOM_NAME_MAX ?>"
+                                   placeholder="<?= htmlspecialchars(hbHubBaccaratRoomName(null, $hbHubUser['userName'])) ?>"
                                    value="<?= htmlspecialchars($lobbyValues['name']) ?>">
 
                             <fieldset class="lobby-choices">
@@ -234,7 +236,7 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
 
                             <fieldset class="lobby-bets">
                                 <legend class="casino-label">Minimum bet in chips</legend>
-                                <?php foreach (HBHUB_BLACKJACK_MIN_BETS as $minBet): ?>
+                                <?php foreach (HBHUB_BACCARAT_MIN_BETS as $minBet): ?>
                                     <label class="lobby-bet">
                                         <input type="radio" name="minBet" value="<?= $minBet ?>"<?= $lobbyValues['minBet'] === $minBet ? ' checked' : '' ?>>
                                         <img src="/assets/images/icons/chip.svg" alt=""><?= number_format($minBet) ?>
@@ -255,20 +257,20 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
                 <section class="lobby-panel lobby-list lobby-invites is-empty" id="invites" aria-labelledby="lobby-invites-title">
                     <div class="lobby-panel-head">
                         <h2 id="lobby-invites-title">Your invites</h2>
-                        <span class="lobby-count" data-bj-invites-count></span>
+                        <span class="lobby-count" data-bac-invites-count></span>
                     </div>
-                    <ul class="lobby-rooms" data-bj-invites></ul>
-                    <p class="lobby-empty" data-bj-invites-empty>Loading…</p>
+                    <ul class="lobby-rooms" data-bac-invites></ul>
+                    <p class="lobby-empty" data-bac-invites-empty>Loading…</p>
                 </section>
 
                 <section class="lobby-panel lobby-list" aria-labelledby="lobby-rooms-title">
                     <div class="lobby-panel-head">
                         <h2 id="lobby-rooms-title">Public tables</h2>
-                        <span class="lobby-count" data-bj-rooms-count></span>
+                        <span class="lobby-count" data-bac-rooms-count></span>
                         <span class="lobby-live" title="This list keeps itself up to date"><span class="lobby-pulse" aria-hidden="true"></span>Live</span>
                     </div>
-                    <ul class="lobby-rooms" data-bj-rooms></ul>
-                    <p class="lobby-empty" data-bj-rooms-empty>Loading…</p>
+                    <ul class="lobby-rooms" data-bac-rooms></ul>
+                    <p class="lobby-empty" data-bac-rooms-empty>Loading…</p>
                 </section>
             </div>
         </div>
@@ -277,10 +279,10 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
             <div class="lobby-panel-head">
                 <h2 id="lobby-rules-title">Rules</h2>
             </div>
-            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/blackjack/rules.php'; ?>
+            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/baccarat/rules.php'; ?>
         </section>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
-    <script src="/assets/js/blackjackLobby.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/blackjackLobby.js') ?>" defer></script>
+    <script src="/assets/js/baccaratLobby.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/baccaratLobby.js') ?>" defer></script>
 </body>
 </html>

@@ -2,9 +2,9 @@
 // Admin panel list of people: /admin/people. Site admins open it from People in the admin panel's side menu
 // (adminListsMenuHtml()). Everyone else gets a 404, so it doesn't show that the page is here.
 //
-// Lists everyone with more than one account: accounts that have logged in from the same browser are taken to be one
-// person (admin.php, adminPersonGroups()). Each row shows their accounts with their status, how many browsers they
-// share and when one of them was last seen, newest account first, and opens the person page (admin/person.php),
+// Lists everyone with more than one account: accounts that have been used in the same browser (by the device cookie or
+// the browser fingerprint) are taken to be one person (admin.php, adminPersonGroups()). Each row shows their accounts
+// with their status, how many browsers and linking fingerprints they share and when one of them was last seen, newest account first, and opens the person page (admin/person.php),
 // where they can all be dealt with at once. A shared computer (like at school) links people too, so the person page
 // shows which devices link which accounts. The pictures load two at a time from pictureQueue.js, like in the other lists.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -57,8 +57,8 @@ if ($peopleIds !== []) {
                         <div>
                             <h2 id="admin-people-heading">People</h2>
                             <p class="settings-intro">
-                                Everyone with more than one account: accounts that have been logged in to from the same browser
-                                count as one person, the newest account first. Open one to see all their accounts together, and
+                                Everyone with more than one account: accounts that have been used in the same browser (known by
+                                its cookie, or by its fingerprint once the cookie is gone) count as one person, the newest account first. Open one to see all their accounts together, and
                                 ban, block or log them out all at once. A shared computer, like one at school, links different
                                 people too, so check the devices on their page first.
                             </p>
@@ -71,7 +71,7 @@ if ($peopleIds !== []) {
                     <?php else: ?>
                         <div class="admin-table-wrap">
                             <table class="admin-table admin-list">
-                                <thead><tr><th scope="col">Accounts</th><th scope="col">Devices</th><th scope="col">Last seen</th><th scope="col"><span class="settings-visually-hidden">Open</span></th></tr></thead>
+                                <thead><tr><th scope="col">Accounts</th><th scope="col">Devices</th><th scope="col">Fingerprints</th><th scope="col">Last seen</th><th scope="col"><span class="settings-visually-hidden">Open</span></th></tr></thead>
                                 <tbody>
                                     <?php foreach ($adminPeople as $person): ?>
                                         <?php
@@ -97,6 +97,7 @@ if ($peopleIds !== []) {
                                                 </ul>
                                             </td>
                                             <td><?= (int) $person['devices'] ?></td>
+                                            <td><?= (int) $person['fingerprints'] ?></td>
                                             <td class="admin-nowrap"><?= adminTime($personLastSeen) ?></td>
                                             <td><a class="settings-btn settings-btn-small" href="/admin/person?user=<?= (int) $person['userIds'][0] ?>">Open</a></td>
                                         </tr>

@@ -17,7 +17,7 @@ const HBHUB_NAV_RIDE_MAX = 200; // characters in ?nav=, which only ever holds a 
  * The nav bar's answer, from the fields navUpdates.js collected on nav:poll:
  * - unread: unread notifications, the number on the bell (notificationBell.js)
  * - unreadChats: chats with unread messages, the number on Chat in the side bar (chatUnread.js)
- * - with wallet=1 (casino pages, casino.js): wallet, the chips and daily chips like /gambling/chips sends them.
+ * - with wallet=1 (casino pages, casino.js): wallet, the chips and daily chips like /casino/chips sends them.
  *   Left out while the user can't use the casino (blocked in settings, or not open to them).
  * - with messages=1 (when browser notifications or the message sound are on, notifications.js): messages, the new
  *   messages to notify about, after the message id in after= (see messageNotifications.php)

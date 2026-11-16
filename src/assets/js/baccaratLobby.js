@@ -1,4 +1,4 @@
-// The Baccarat lobby (gambling/baccarat/): the user's invites and the public tables, from /gambling/baccarat/lobby,
+// The Baccarat lobby (casino/baccarat/): the user's invites and the public tables, from /casino/baccarat/lobby,
 // kept up to date every 5 seconds while the page is in view. Joining is a normal form post to the lobby, which checks
 // everything again and goes to the table. Each table is a row (lobby.css): its name and host, its seats as dots, the
 // minimum bet, whether a hand is being played, and the button.
@@ -25,7 +25,7 @@
         document.dispatchEvent(new CustomEvent('nav:ride', { detail: ride })); // the nav bar's request comes along (navUpdates.js)
         const query = ride.params !== null ? '?' + new URLSearchParams({ nav: ride.params }) : '';
         try {
-            const response = await fetch('/gambling/baccarat/lobby' + query, { headers: { Accept: 'application/json' } });
+            const response = await fetch('/casino/baccarat/lobby' + query, { headers: { Accept: 'application/json' } });
             if (response.status === 403) {
                 location.reload(); // blocked in settings since: the page says so
                 return null;

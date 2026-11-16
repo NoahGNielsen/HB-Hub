@@ -17,6 +17,7 @@
     },
     "notifications": false,
     "notificationSound": false,
+    "improveSite": true,
     "block": {
         "mode": "none",
         "pendingMode": null,

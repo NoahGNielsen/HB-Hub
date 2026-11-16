@@ -155,7 +155,7 @@ $profileBack = hbHubProfileBackLink($_GET['from'] ?? null);
                     <?php if ($profileIsOwn): ?>
                         <!-- Your own status, or a greyed out one to add one. profile.js opens the popup from it; without JS it's
                              a link to the status in settings. -->
-                        <a class="profile-status is-own<?= $profileHasStatus ? '' : ' is-placeholder' ?>" href="/settings#settings-status-text"
+                        <a class="profile-status is-own<?= $profileHasStatus ? '' : ' is-placeholder' ?>" href="/settings#status"
                            aria-label="<?= $profileHasStatus ? 'Change your status' : 'Add a status' ?>" data-status-open>
                             <?php if ($profileHasStatus): ?>
                                 <?php if ($profileStatus['emoji'] !== ''): ?>

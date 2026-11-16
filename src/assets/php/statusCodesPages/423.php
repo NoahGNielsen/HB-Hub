@@ -5,18 +5,18 @@ if (!headers_sent()) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerLocale = 'da_DK'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/statusCodePage.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/statusCodePage.css') ?>">
-    <title>Locked - HB Hub</title>
+    <title>Låst - HB Hub</title>
     <meta name="robots" content="noindex">
 </head>
 <body>
     <main class="status-page">
         <p class="status-code">423</p>
-        <h1>Locked</h1>
-        <p class="status-message">This resource is locked and can't be changed right now. Please try again later.</p>
+        <h1>Låst</h1>
+        <p class="status-message">Det her er låst og kan ikke ændres lige nu. Prøv igen senere.</p>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

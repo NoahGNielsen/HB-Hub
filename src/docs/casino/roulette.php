@@ -8,47 +8,47 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/roulette/roulette.p
 
 // Every bet: [name, what it covers, how many numbers, what it pays]. The chance is worked out from the numbers, out of 37.
 const DOCS_ROULETTE_BETS = [
-    ['Straight', 'One number, 0 too', 1, '35:1'],
-    ['Split', 'Two numbers next to each other', 2, '17:1'],
-    ['Street', 'A row of three numbers, or 0-1-2 and 0-2-3', 3, '11:1'],
-    ['Corner', 'Four numbers that meet at a corner, or 0-1-2-3', 4, '8:1'],
-    ['Line', 'Two rows next to each other: six numbers', 6, '5:1'],
-    ['Dozen', '1-12, 13-24 or 25-36', 12, '2:1'],
-    ['Column', 'One of the three long columns', 12, '2:1'],
-    ['Red or black', 'All 18 numbers of that colour', 18, '1:1'],
-    ['Odd or even', 'All 18 odd or even numbers (not 0)', 18, '1:1'],
-    ['1-18 or 19-36', 'The low or the high half', 18, '1:1'],
+    ['Straight (ét tal)', 'Ét tal, også 0', 1, '35:1'],
+    ['Split (to tal)', 'To tal ved siden af hinanden', 2, '17:1'],
+    ['Street (række)', 'En række på tre tal, eller 0-1-2 og 0-2-3', 3, '11:1'],
+    ['Corner (hjørne)', 'Fire tal, der mødes i et hjørne, eller 0-1-2-3', 4, '8:1'],
+    ['Line (to rækker)', 'To rækker ved siden af hinanden: seks tal', 6, '5:1'],
+    ['Dozen (dusin)', '1-12, 13-24 eller 25-36', 12, '2:1'],
+    ['Column (kolonne)', 'En af de tre lange kolonner', 12, '2:1'],
+    ['Rød eller sort', 'Alle 18 tal i den farve', 18, '1:1'],
+    ['Ulige eller lige', 'Alle 18 ulige eller lige tal (ikke 0)', 18, '1:1'],
+    ['1-18 eller 19-36', 'Den lave eller den høje halvdel', 18, '1:1'],
 ];
 
 $docsPath = '/docs/casino/roulette';
-$docsIntro = 'European roulette with a single green zero. Put your chips anywhere on the table and see where the ball
-    lands. Everyone on HB Hub plays at the same <a href="/gambling/roulette/">Roulette</a> table, so you see each
-    other\'s bets and one ball is spun for all of you.';
+$docsIntro = 'Europæisk roulette med ét grønt nul. Læg dine chips hvor som helst på bordet, og se, hvor kuglen lander.
+    Alle på HB Hub spiller ved det samme <a href="/casino/roulette/">Roulette</a>-bord, så I ser hinandens indsatser, og
+    der bliver drejet én kugle for jer alle.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">
-                        <div><dt>Numbers</dt><dd>0-36</dd></div>
-                        <div><dt>Zeros</dt><dd>1</dd></div>
-                        <div><dt>Bets in steps of</dt><dd><?= HBHUB_ROULETTE_BET_STEP ?></dd></div>
-                        <div><dt>Best payout</dt><dd>35:1</dd></div>
+                        <div><dt>Tal</dt><dd>0-36</dd></div>
+                        <div><dt>Nuller</dt><dd>1</dd></div>
+                        <div><dt>Indsatser i trin af</dt><dd><?= HBHUB_ROULETTE_BET_STEP ?></dd></div>
+                        <div><dt>Bedste udbetaling</dt><dd>35:1</dd></div>
                     </dl>
 
                     <section id="play" aria-labelledby="docs-play">
-                        <h2 id="docs-play">How to play</h2>
+                        <h2 id="docs-play">Sådan spiller du</h2>
                         <ol class="docs-steps">
-                            <li>Pick a chip and click the table where you want to bet. Click again to add more, and right-click a bet to take a chip off. <strong>Undo</strong> takes back the last chip, <strong>Clear</strong> all of them. With fewer than <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips left, the <strong>All in</strong> chip puts every chip you have on the bet you click.</li>
-                            <li>Press <strong>Spin</strong>. The wheel turns and the ball lands on a number.</li>
-                            <li>Winning bets are paid, losing ones are taken. Your bets stay on the table, so you can spin again straight away, or change them first.</li>
+                            <li>Vælg en chip, og klik på bordet, hvor du vil satse. Klik igen for at lægge mere, og højreklik på en indsats for at tage en chip af. <strong>Undo</strong> tager den sidste chip tilbage, <strong>Clear</strong> dem alle. Med færre end <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips tilbage lægger <strong>All in</strong>-chippen alle dine chips på den indsats, du klikker på.</li>
+                            <li>Tryk på <strong>Spin</strong>. Hjulet drejer, og kuglen lander på et tal.</li>
+                            <li>Vindende indsatser bliver betalt, tabende bliver taget. Dine indsatser bliver liggende på bordet, så du kan dreje igen med det samme eller ændre dem først.</li>
                         </ol>
-                        <p>Your last spins are listed above the table, and <kbd>Space</kbd> spins again.</p>
+                        <p>Dine seneste spins står over bordet, og <kbd>Mellemrum</kbd> drejer igen.</p>
                     </section>
 
                     <section id="bets" aria-labelledby="docs-bets">
-                        <h2 id="docs-bets">Every bet</h2>
+                        <h2 id="docs-bets">Alle indsatser</h2>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
-                                    <tr><th scope="col">Bet</th><th scope="col">Covers</th><th scope="col">Pays</th><th scope="col">Hits</th></tr>
+                                    <tr><th scope="col">Indsats</th><th scope="col">Dækker</th><th scope="col">Betaler</th><th scope="col">Rammer</th></tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach (DOCS_ROULETTE_BETS as [$docsBetName, $docsBetCovers, $docsBetNumbers, $docsBetPays]): ?>
@@ -56,33 +56,32 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                             <td><?= htmlspecialchars($docsBetName) ?></td>
                                             <td><?= htmlspecialchars($docsBetCovers) ?></td>
                                             <td><?= $docsBetPays ?></td>
-                                            <td><?= number_format($docsBetNumbers / 37 * 100, 1) ?>%</td>
+                                            <td><?= number_format($docsBetNumbers / 37 * 100, 1, ',', '.') ?> %</td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
                         <p>
-                            The red numbers are <?= implode(', ', HBHUB_ROULETTE_RED) ?>. The other numbers from 1 to 36 are black,
-                            and 0 is green.
+                            De røde tal er <?= implode(', ', HBHUB_ROULETTE_RED) ?>. De andre tal fra 1 til 36 er sorte, og 0 er grønt.
                         </p>
                     </section>
 
                     <section id="rules" aria-labelledby="docs-rules">
-                        <h2 id="docs-rules">The rules</h2>
+                        <h2 id="docs-rules">Reglerne</h2>
                         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/roulette/rules.php'; ?>
                     </section>
 
                     <section id="zero" aria-labelledby="docs-zero">
-                        <h2 id="docs-zero">Why the zero matters</h2>
+                        <h2 id="docs-zero">Hvorfor nullet betyder noget</h2>
                         <p>
-                            Every bet pays as if there were only 36 numbers, but there are 37. That single green 0 is the house's edge:
-                            about 2.7% of everything you bet, whichever bet you pick. No system of bets changes that, and no number is
-                            "due": every spin is as random as the one before.
+                            Hver indsats betaler, som om der kun var 36 tal, men der er 37. Det ene grønne 0 er husets fordel: cirka
+                            2,7 % af alt, hvad du satser, uanset hvilken indsats du vælger. Intet system af indsatser ændrer det, og
+                            intet tal "skal snart komme": hvert spin er lige så tilfældigt som det før.
                         </p>
                         <p>
-                            Every spin counts towards the <a href="/gambling/roulette/leaderboard">Roulette leaderboard</a>, with your
-                            biggest win and how much you've won or lost in total.
+                            Hvert spin tæller med på <a href="/casino/roulette/leaderboard">Roulette-ranglisten</a>, med din største
+                            gevinst, og hvor meget du har vundet eller tabt i alt.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>
