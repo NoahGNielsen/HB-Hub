@@ -62,8 +62,7 @@ CREATE TABLE `HBHub-Announcements` (
 CREATE TABLE `HBHub-Attachments` (
   `attachmentId` int UNSIGNED NOT NULL,
   `attachmentType` varchar(25) NOT NULL,
-  `attachmentKey` char(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Random name of the file on disk, in pictures/ in attachments_path from the config. NULL until the picture is exported from attachmentFile',
-  `attachmentFile` longblob DEFAULT NULL COMMENT 'The picture itself, only for rows from before pictures were kept on disk. New rows leave it NULL',
+  `attachmentKey` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Random name of the file on disk, in pictures/ in attachments_path from the config',
   `attachmentUploadTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Profile pictures and group chat icons, as files on disk (src/assets/php/pictureFiles.php)';
 
@@ -172,8 +171,7 @@ CREATE TABLE `HBHub-BannedAvatars` (
   `bannedAvatarId` int UNSIGNED NOT NULL,
   `bannedAvatarHash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'SHA-256 of the file, as lowercase hex',
   `bannedAvatarType` varchar(25) NOT NULL,
-  `bannedAvatarKey` char(32) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT 'Random name of the copy''s file on disk, in bannedPictures/ in attachments_path from the config, so it can still be seen after the account changes or loses its picture. NULL until it''s exported from bannedAvatarFile',
-  `bannedAvatarFile` longblob DEFAULT NULL COMMENT 'The copy itself, only for rows from before pictures were kept on disk. New rows leave it NULL',
+  `bannedAvatarKey` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Random name of the copy''s file on disk, in bannedPictures/ in attachments_path from the config, so it can still be seen after the account changes or loses its picture',
   `bannedAvatarFingerprints` blob DEFAULT NULL COMMENT '32-byte difference hashes of the picture and crops of it, for similar copies. NULL until worked out, empty when it can''t be read or is too plain',
   `bannedAvatarFromUserId` int UNSIGNED DEFAULT NULL COMMENT 'The banned account it was the picture of, NULL when an admin uploaded it',
   `bannedAvatarAddedByUserId` int UNSIGNED DEFAULT NULL COMMENT 'The site admin who banned the account or uploaded the picture',

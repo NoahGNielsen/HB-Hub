@@ -18,8 +18,7 @@
 //   apart from other plain pictures, so only the exact file bans then.
 // Each row has a copy of the file of its own, so admins can still see it after the account it came from changes or
 // loses its picture. The copy is a file on disk, in bannedPictures/ in the attachments folder (pictureFiles.php), named
-// after the row's bannedAvatarKey; the fingerprints and the hash stay in the database. Rows from before that haven't
-// been exported yet (admin/pictureExport.php) still have theirs in bannedAvatarFile.
+// after the row's bannedAvatarKey; the fingerprints and the hash stay in the database.
 //
 // Pictures get on the list in three ways: a site admin bans an account (admin/user.php copies its current picture),
 // removes and bans an account's picture without banning the account (admin/user.php's "Remove and ban picture", so
@@ -220,7 +219,7 @@ function hbHubBannedAvatarFingerprints(string $file): ?string
 /**
  * Works out bannedAvatarFingerprints for the pictures on the list that don't have them yet: the ones a ban put there
  * (the file was only copied, so the ban doesn't wait on it) and the ones from before fingerprints. They're worked out
- * from the copy on disk, or from bannedAvatarFile for a row that hasn't been exported yet (admin/pictureExport.php).
+ * from the copy on disk.
  * A copy that can't be found gets empty fingerprints, so it only catches the exact file. Nothing happens without GD.
  */
 function hbHubBannedAvatarFillFingerprints(PDO $db): void
@@ -228,11 +227,11 @@ function hbHubBannedAvatarFillFingerprints(PDO $db): void
     if (!function_exists('imagecreatefromstring')) {
         return;
     }
-    $statement = $db->query('SELECT bannedAvatarId, bannedAvatarKey, bannedAvatarFile FROM `HBHub-BannedAvatars` WHERE bannedAvatarFingerprints IS NULL');
+    $statement = $db->query('SELECT bannedAvatarId, bannedAvatarKey FROM `HBHub-BannedAvatars` WHERE bannedAvatarFingerprints IS NULL');
     $update = $db->prepare('UPDATE `HBHub-BannedAvatars` SET bannedAvatarFingerprints = ? WHERE bannedAvatarId = ?');
     foreach ($statement->fetchAll() as $row) {
         $path = hbHubPictureFilePath(HBHUB_PICTURE_FILES_BANNED, $row['bannedAvatarKey']);
-        $file = $path !== null ? @file_get_contents($path) : $row['bannedAvatarFile'];
+        $file = $path !== null ? @file_get_contents($path) : false;
         if (!is_string($file)) {
             error_log('Banned pictures: the file of banned picture ' . (int) $row['bannedAvatarId'] . ' is missing');
         }
@@ -325,43 +324,24 @@ function hbHubBannedAvatarAdd(PDO $db, string $type, string $file, int $adminId)
  * or for "Remove and ban picture" in admin/user.php. Returns the new row's id, or null when they have no picture,
  * it's already on the list, or the copy couldn't be made (logged; the ban itself still goes through).
  * The copy is a file of its own in bannedPictures/ (pictureFiles.php), as the user's own file is deleted when their
- * picture is removed or replaced. The hash is of the file on disk. A picture from before that hasn't been exported yet
- * (admin/pictureExport.php) is copied out of the database instead.
+ * picture is removed or replaced. The hash is of the file on disk.
  * The fingerprints aren't worked out here, so call hbHubBannedAvatarFillFingerprints() once it's committed.
  */
 function hbHubBannedAvatarAddFromUser(PDO $db, int $userId, int $adminId): ?int
 {
-    $statement = $db->prepare('SELECT a.attachmentId, a.attachmentType, a.attachmentKey
+    $statement = $db->prepare('SELECT a.attachmentType, a.attachmentKey
         FROM `HBHub-Users` u JOIN `HBHub-Attachments` a ON a.attachmentId = u.userAvatarAttachmentId
         WHERE u.userId = ?');
     $statement->execute([$userId]);
     $avatar = $statement->fetch();
-    if ($avatar === false) {
+    $path = $avatar !== false ? hbHubPictureFilePath(HBHUB_PICTURE_FILES_PICTURES, $avatar['attachmentKey']) : null;
+    $hash = $path !== null ? hash_file('sha256', $path) : false;
+    if ($hash === false || hbHubBannedAvatarHashIsListed($db, $hash)) {
         return null;
     }
 
     try {
-        $path = hbHubPictureFilePath(HBHUB_PICTURE_FILES_PICTURES, $avatar['attachmentKey']);
-        if ($path !== null) {
-            $hash = hash_file('sha256', $path);
-            if ($hash === false || hbHubBannedAvatarHashIsListed($db, $hash)) {
-                return null;
-            }
-            $key = hbHubPictureFileCopy(HBHUB_PICTURE_FILES_BANNED, $path);
-        } else {
-            // Not exported yet: the picture is still in the database
-            $statement = $db->prepare('SELECT attachmentFile FROM `HBHub-Attachments` WHERE attachmentId = ?');
-            $statement->execute([$avatar['attachmentId']]);
-            $file = $statement->fetchColumn();
-            if (!is_string($file)) {
-                return null;
-            }
-            $hash = hbHubBannedAvatarHash($file);
-            if (hbHubBannedAvatarHashIsListed($db, $hash)) {
-                return null;
-            }
-            $key = hbHubPictureFileSave(HBHUB_PICTURE_FILES_BANNED, $file);
-        }
+        $key = hbHubPictureFileCopy(HBHUB_PICTURE_FILES_BANNED, $path);
     } catch (RuntimeException $e) {
         error_log('Banned pictures: could not copy the picture of user ' . $userId . ': ' . $e->getMessage());
         return null;

@@ -19,9 +19,6 @@
 //
 // Who uses it: the settings page and sign-up (profile pictures), chat.php (group icons), account.php (removing a
 // picture, deleting an account), bannedAvatars.php (the banned copies), and the three scripts that send them.
-//
-// The changeover: rows from before have their picture in attachmentFile / bannedAvatarFile and no key yet, until
-// admin/pictureExport.php has written them out. Until then hbHubPictureFileSend() can send the BLOB instead.
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/chatAttachments.php'; // the folder they're in
 
@@ -51,7 +48,7 @@ function hbHubPictureFilesDir(string $folder): ?string
 }
 
 /**
- * Where the file with $key is, or null when there's no such file (or no key, like a row that hasn't been exported yet).
+ * Where the file with $key is, or null when there's no such file.
  */
 function hbHubPictureFilePath(string $folder, ?string $key): ?string
 {
@@ -107,8 +104,8 @@ function hbHubPictureFileCopy(string $folder, string $fromPath): string
 }
 
 /**
- * Deletes the file with $key straight away. Only for a file that's known to have no row (the export's own failed
- * tries); everything else uses hbHubPictureFileRelease(), which checks first.
+ * Deletes the file with $key straight away. Only for a file that's known to have no row: hbHubPictureFileRelease()
+ * checks that first, and is what everything else calls.
  */
 function hbHubPictureFileDelete(string $folder, ?string $key): void
 {
@@ -181,43 +178,25 @@ function hbHubPictureDelete(PDO $db, int $attachmentId): void
 }
 
 /**
- * Sends a picture and stops, for the scripts that have already checked that the asker may see it and that it's there:
- * $path is its file (hbHubPictureFilePath()), or null during the changeover when it's still only in the database, and
- * then $fromDatabase gets its bytes (null when it's gone after all, which is a 404).
+ * Sends a picture and stops, for the scripts that have already checked that the asker may see it and that its file
+ * is there: $path is that file (hbHubPictureFilePath()).
  *
  * The cache rules are here, the same for all of them: "private" as they're never for everyone, and kept for good
  * ("immutable"), as the page links them with &v=<id>, so a new picture is a new address. $etag is that id's name
- * ('"user-avatar-12"'), and a browser that sends it back gets a 304 without the file being opened or the BLOB loaded.
+ * ('"user-avatar-12"'), and a browser that sends it back gets a 304 without the file being opened.
  * The headers are only set here, after the checks, so a 404 never goes out saying it can be kept for a year.
- *
- * @param ?Closure(): ?string $fromDatabase
  */
-function hbHubPictureFileSend(string $etag, string $type, ?string $path, ?Closure $fromDatabase = null): never
+function hbHubPictureFileSend(string $etag, string $type, string $path): never
 {
-    $isSame = ($_SERVER['HTTP_IF_NONE_MATCH'] ?? null) === $etag;
-    $bytes = null;
-    if (!$isSame && $path === null) {
-        $bytes = $fromDatabase !== null ? $fromDatabase() : null;
-        if (!is_string($bytes)) {
-            http_response_code(404);
-            exit;
-        }
-    }
-
     header('Cache-Control: private, max-age=31536000, immutable');
     header('ETag: ' . $etag);
-    if ($isSame) {
+    if (($_SERVER['HTTP_IF_NONE_MATCH'] ?? null) === $etag) {
         http_response_code(304);
         exit;
     }
 
     header('Content-Type: ' . $type);
-    if ($path !== null) {
-        header('Content-Length: ' . filesize($path));
-        readfile($path);
-        exit;
-    }
-    header('Content-Length: ' . strlen($bytes));
-    echo $bytes;
+    header('Content-Length: ' . filesize($path));
+    readfile($path);
     exit;
 }
