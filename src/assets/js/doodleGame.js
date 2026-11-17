@@ -17,8 +17,7 @@
 // Asks what's new every second while the page is in view, and every 4 seconds while it isn't (so the player doesn't
 // count as away). The whole game only comes back when its version changed.
 //
-// The game's settings (game.settings: the time to draw, and how many drawings a chain has before the last guess) are
-// shown in their dialog, where the host changes them while no game is being played; everyone else only sees them.
+// The game's settings (game.settings: the time to draw) are shown in their dialog, where the host changes them while no game is being played; everyone else only sees them.
 (() => {
     const root = document.querySelector('[data-doodle]');
     if (!root) return;
@@ -478,7 +477,6 @@
     // undo what the host has just clicked)
     function fillSettings() {
         settingsForm.elements.drawSeconds.value = String(game.settings.drawSeconds);
-        settingsForm.elements.drawings.value = String(game.settings.drawings);
     }
 
     function renderSettings() {
@@ -507,7 +505,6 @@
         event.preventDefault(); // it's closed once it's saved, not straight away
         const data = await act('settings', {
             drawSeconds: settingsForm.elements.drawSeconds.value,
-            drawings: settingsForm.elements.drawings.value,
         }, settingsMessage);
         if (data && !data.error) settingsDialog.close();
     });

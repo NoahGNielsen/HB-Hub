@@ -1,7 +1,6 @@
 <?php
 // Help docs: Doodle Chain - how a game goes, the game's own rules (assets/php/games/doodle/rules.php, included as the
-// game shows them) and the host's settings (HBHUB_DOODLE_DRAW_CHOICES and HBHUB_DOODLE_DRAWINGS_CHOICES in game.php).
-// Open to everyone.
+// game shows them) and the host's setting (HBHUB_DOODLE_DRAW_CHOICES in game.php). Open to everyone.
 // Built by assets/php/docs/top.php and bottom.php. Buttons keep the English names the game shows them by.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -14,7 +13,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
                     <dl class="docs-facts">
                         <div><dt>Spillere</dt><dd><?= HBHUB_DOODLE_MIN_PLAYERS ?>-<?= HBHUB_DOODLE_MAX_PLAYERS ?></dd></div>
-                        <div><dt>Runder</dt><dd><?= 2 * HBHUB_DOODLE_DRAWINGS_CHOICES[0] + 1 ?>-<?= 2 * HBHUB_DOODLE_DRAWINGS_CHOICES[array_key_last(HBHUB_DOODLE_DRAWINGS_CHOICES)] + 1 ?></dd></div>
+                        <div><dt>Runder</dt><dd><?= 2 * hbHubDoodleDrawings(HBHUB_DOODLE_MIN_PLAYERS) + 1 ?>-<?= 2 * hbHubDoodleDrawings(HBHUB_DOODLE_MAX_PLAYERS) + 1 ?>, efter antal spillere</dd></div>
                         <div><dt>At skrive</dt><dd><?= HBHUB_DOODLE_WRITE_SECONDS ?> sekunder</dd></div>
                         <div><dt>At tegne</dt><dd><?= implode('-', [HBHUB_DOODLE_DRAW_CHOICES[0], HBHUB_DOODLE_DRAW_CHOICES[count(HBHUB_DOODLE_DRAW_CHOICES) - 1]]) ?> sekunder</dd></div>
                     </dl>
@@ -25,7 +24,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li>Alle skriver en sætning, som en anden skal tegne, fx "en kat på skateboard", og trykker på <strong>Done</strong>.</li>
                             <li>Du får en andens sætning og tegner den. Vælg farve og pennens størrelse under tegningen; <strong>Undo</strong> fjerner den sidste streg, og <strong>Clear</strong> starter forfra.</li>
                             <li>Du får en andens tegning og skriver, hvad du tror, den forestiller.</li>
-                            <li>Sådan fortsætter det, til hver kæde har det antal tegninger, værten har valgt. Den sidste runde er altid et gæt.</li>
+                            <li>Sådan fortsætter det, til hver kæde er færdig. Jo flere I er, jo flere tegninger er der i hver kæde, og den sidste runde er altid et gæt.</li>
                             <li>Værten viser kæderne én del ad gangen med <strong>Show next</strong>. Bagefter kan alle kæder vises igen, og værten kan starte et nyt spil med <strong>New game</strong>.</li>
                         </ol>
                     </section>
@@ -36,25 +35,14 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     </section>
 
                     <section id="settings" aria-labelledby="docs-settings">
-                        <h2 id="docs-settings">Værtens indstillinger</h2>
+                        <h2 id="docs-settings">Værtens indstilling</h2>
                         <p>
-                            Værten ændrer dem med <strong>Game settings</strong> (knappen ved siden af <strong>Start game</strong>,
-                            eller ikonet øverst); alle andre kan se dem samme sted. De kan ændres før et spil og mellem spil, og
-                            nye spillere kan også komme med mellem spil.
+                            Værten vælger tiden til at tegne under <strong>Game settings</strong> (knappen ved siden af
+                            <strong>Start game</strong>, eller ikonet øverst): <?= implode(', ', array_slice(HBHUB_DOODLE_DRAW_CHOICES, 0, -1)) ?>
+                            eller <?= HBHUB_DOODLE_DRAW_CHOICES[count(HBHUB_DOODLE_DRAW_CHOICES) - 1] ?> sekunder
+                            (<?= HBHUB_DOODLE_DEFAULT_SETTINGS['drawSeconds'] ?> som standard). Alle andre kan se den samme sted. Den
+                            kan ændres før et spil og mellem spil, og nye spillere kan også komme med mellem spil.
                         </p>
-                        <ul>
-                            <li>
-                                <strong>Tiden til at tegne:</strong> <?= implode(', ', array_slice(HBHUB_DOODLE_DRAW_CHOICES, 0, -1)) ?>
-                                eller <?= HBHUB_DOODLE_DRAW_CHOICES[count(HBHUB_DOODLE_DRAW_CHOICES) - 1] ?> sekunder
-                                (<?= HBHUB_DOODLE_DEFAULT_SETTINGS['drawSeconds'] ?> som standard).
-                            </li>
-                            <li>
-                                <strong>Tegninger før det sidste gæt:</strong> <?= implode(', ', array_slice(HBHUB_DOODLE_DRAWINGS_CHOICES, 0, -1)) ?>
-                                eller <?= HBHUB_DOODLE_DRAWINGS_CHOICES[array_key_last(HBHUB_DOODLE_DRAWINGS_CHOICES)] ?>
-                                (<?= HBHUB_DOODLE_DEFAULT_SETTINGS['drawings'] ?> som standard). Hver tegning giver to runder mere:
-                                en at tegne og en at gætte.
-                            </li>
-                        </ul>
 
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

@@ -163,18 +163,6 @@ $gameConfig = [
                         </label>
                     <?php endforeach; ?>
                 </fieldset>
-                <fieldset class="casino-choices" data-doodle-settings-fields>
-                    <legend class="casino-label">Drawings before the last guess</legend>
-                    <?php foreach (HBHUB_DOODLE_DRAWINGS_CHOICES as $drawings): ?>
-                        <label class="casino-choice">
-                            <input type="radio" name="drawings" value="<?= $drawings ?>">
-                            <span>
-                                <strong><?= $drawings ?> drawing<?= $drawings === 1 ? '' : 's' ?><?= $drawings === HBHUB_DOODLE_DEFAULT_SETTINGS['drawings'] ? ' (default)' : '' ?></strong>
-                                <span class="casino-hint"><?= 2 * $drawings + 1 ?> rounds: write, then draw and guess <?= $drawings === 1 ? 'once' : $drawings . ' times' ?>.</span>
-                            </span>
-                        </label>
-                    <?php endforeach; ?>
-                </fieldset>
                 <p class="doodle-message" role="alert" data-doodle-settings-message></p>
                 <div class="games-dialog-actions">
                     <button type="button" class="casino-btn" data-doodle-settings-close>Close</button>

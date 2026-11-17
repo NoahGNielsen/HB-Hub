@@ -210,7 +210,7 @@ $lobbyRoom = $lobbySeat !== null ? hbHubDoodleRoom($db, $lobbySeat['roomId']) : 
                                 <?php endforeach; ?>
                             </fieldset>
 
-                            <p class="lobby-hint lobby-form-note">You pick the time to draw and how many drawings there are in the game, and start it once at least <?= HBHUB_DOODLE_MIN_PLAYERS ?> players are in.</p>
+                            <p class="lobby-hint lobby-form-note">You pick the time to draw in the game, and start it once at least <?= HBHUB_DOODLE_MIN_PLAYERS ?> players are in.</p>
                             <button type="submit" class="casino-btn casino-btn-primary lobby-submit">Open game</button>
                             <?php if (isset($lobbyErrors['create'])): ?>
                                 <p class="casino-error" role="alert"><?= htmlspecialchars($lobbyErrors['create']) ?></p>

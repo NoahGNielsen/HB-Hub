@@ -4,11 +4,10 @@
 // The texts and drawings themselves are rows in HBHub-DoodleEntries (room.php), not in the state.
 //
 // How a game goes, for N players (the order they sat in when it started, game.order):
-// - There are N chains, and 2D + 1 steps for the D drawings the host picked (settings.drawings): write, then draw and
-//   guess D times, so a chain always ends with a guess. In step s, the player at place i in the order works on chain
-//   (i + s) % N, so chain c is started by the player at place c, and nobody gets the chain they had the step before.
-//   With fewer players than steps a chain comes round to the same players again (from step N on); with more, it
-//   doesn't reach everyone.
+// - There are N chains, each with D = floor((N - 1) / 2) drawings, so 2D + 1 steps: write, then draw and guess D times.
+//   That's N steps for an odd N and N - 1 for an even one, so a chain always ends with a guess (hbHubDoodleSteps()).
+//   In step s, the player at place i in the order works on chain (i + s) % N, so chain c is started by the player at
+//   place c and passes every player at most once.
 // - Even steps are written, odd steps are drawn: step 0 everyone writes something to draw, step 1 they draw the text
 //   they're handed, step 2 they describe the drawing they're handed, and so on.
 // - A step ends when everyone still in the room is done, or when its time is up (plus HBHUB_DOODLE_LATE_MS for what the
@@ -20,11 +19,11 @@
 // The state:
 //   phase: 'lobby' (waiting for players) | 'playing' | 'reveal'
 //   players: [{seat, userId, name}] who sits in the room, in seat order
-//   settings: {drawSeconds, drawings}
+//   settings: {drawSeconds}
 //   gameCount: games started in the room (the game's number, gameNumber in HBHub-DoodleEntries)
 //   note: a line about the last thing that happened between games ("Alice left."), or null
 //   game: null before the first game, otherwise {number, order: [userId], names: [name] (same places as order),
-//         steps (2 * drawings + 1, fixed when it starts), step, stepEndsMs, done: [userId] (handed in this step), reveal: null | {chain, shown, finished}}
+//         step, stepEndsMs, done: [userId] (handed in this step), reveal: null | {chain, shown, finished}}
 //
 // Drawings are sent and kept as JSON: a list of strokes, each [colour, size, x, y, x, y, ...], with colour and size
 // places in HBHUB_DOODLE_COLOURS and HBHUB_DOODLE_SIZES and the points on a HBHUB_DOODLE_WIDTH x HBHUB_DOODLE_HEIGHT
@@ -34,8 +33,7 @@ const HBHUB_DOODLE_MIN_PLAYERS = 3;
 const HBHUB_DOODLE_MAX_PLAYERS = 10; // seatNumber in HBHub-DoodleSeats
 const HBHUB_DOODLE_WRITE_SECONDS = 45;
 const HBHUB_DOODLE_DRAW_CHOICES = [60, 90, 120]; // the host's choices for the time to draw
-const HBHUB_DOODLE_DRAWINGS_CHOICES = [1, 2, 3, 4]; // the host's choices for how many drawings a chain has before the last guess
-const HBHUB_DOODLE_DEFAULT_SETTINGS = ['drawSeconds' => 90, 'drawings' => 2];
+const HBHUB_DOODLE_DEFAULT_SETTINGS = ['drawSeconds' => 90];
 const HBHUB_DOODLE_LATE_MS = 4000; // a step waits this much past its time for what the pages send at zero
 const HBHUB_DOODLE_TEXT_MAX = 100; // entryText in HBHub-DoodleEntries
 const HBHUB_DOODLE_KIND_TEXT = 1; // entryKind in HBHub-DoodleEntries
@@ -76,7 +74,7 @@ function hbHubDoodleNewPlayer(int $seat, int $userId, string $name): array
 /**
  * The room's settings, with the default for anything missing.
  *
- * @return array{drawSeconds: int, drawings: int}
+ * @return array{drawSeconds: int}
  */
 function hbHubDoodleSettings(array $state): array
 {
@@ -84,33 +82,21 @@ function hbHubDoodleSettings(array $state): array
     if (!in_array($settings['drawSeconds'], HBHUB_DOODLE_DRAW_CHOICES, true)) {
         $settings['drawSeconds'] = HBHUB_DOODLE_DEFAULT_SETTINGS['drawSeconds'];
     }
-    if (!in_array($settings['drawings'], HBHUB_DOODLE_DRAWINGS_CHOICES, true)) {
-        $settings['drawings'] = HBHUB_DOODLE_DEFAULT_SETTINGS['drawings'];
-    }
     return $settings;
 }
 
 /**
- * "90 s to draw, 2 drawings", for the lobby list and under the game's name.
+ * "90 s to draw", for the lobby list and under the game's name.
  */
 function hbHubDoodleSettingsText(array $settings): string
 {
-    return $settings['drawSeconds'] . ' s to draw, ' . $settings['drawings'] . ' drawing' . ($settings['drawings'] === 1 ? '' : 's');
+    return $settings['drawSeconds'] . ' s to draw';
 }
 
 /**
- * A choice from the settings form as a number, or 0 when it isn't one.
+ * The host changes the time to draw, while no game is being played. Returns null when it's changed, otherwise why not.
  */
-function hbHubDoodleSettingNumber(mixed $value): int
-{
-    return is_string($value) && ctype_digit($value) && strlen($value) <= 4 ? (int) $value : 0;
-}
-
-/**
- * The host changes the time to draw and how many drawings there are, while no game is being played. Returns null when
- * they're changed, otherwise why not.
- */
-function hbHubDoodleChangeSettings(array &$state, bool $isHost, mixed $drawSeconds, mixed $drawings): ?string
+function hbHubDoodleChangeSettings(array &$state, bool $isHost, mixed $drawSeconds): ?string
 {
     if (!$isHost) {
         return 'Only the host can change the settings.';
@@ -118,15 +104,11 @@ function hbHubDoodleChangeSettings(array &$state, bool $isHost, mixed $drawSecon
     if ($state['phase'] === 'playing') {
         return 'The settings can\'t be changed while a game is being played.';
     }
-    $seconds = hbHubDoodleSettingNumber($drawSeconds);
+    $seconds = is_string($drawSeconds) && ctype_digit($drawSeconds) ? (int) $drawSeconds : 0;
     if (!in_array($seconds, HBHUB_DOODLE_DRAW_CHOICES, true)) {
         return 'Pick one of the times.';
     }
-    $drawingCount = hbHubDoodleSettingNumber($drawings);
-    if (!in_array($drawingCount, HBHUB_DOODLE_DRAWINGS_CHOICES, true)) {
-        return 'Pick how many drawings there are.';
-    }
-    $state['settings'] = ['drawSeconds' => $seconds, 'drawings' => $drawingCount] + hbHubDoodleSettings($state);
+    $state['settings'] = ['drawSeconds' => $seconds] + hbHubDoodleSettings($state);
     return null;
 }
 
@@ -153,7 +135,6 @@ function hbHubDoodleStart(array &$state, bool $isHost, int $nowMs): ?string
         'number' => $state['gameCount'],
         'order' => array_column($state['players'], 'userId'),
         'names' => array_column($state['players'], 'name'),
-        'steps' => 2 * hbHubDoodleSettings($state)['drawings'] + 1,
         'step' => 0,
         'stepEndsMs' => $nowMs + hbHubDoodleStepSeconds($state, 0) * 1000,
         'done' => [],
@@ -171,11 +152,20 @@ function hbHubDoodleStepKind(int $step): string
 }
 
 /**
- * How many steps the game has, so how long each chain is (a game started before there was a choice: one per player).
+ * How many drawings each chain has for that many players: floor((players - 1) / 2), so 1 for 3 or 4 players, 2 for 5
+ * or 6, 3 for 7 or 8 and so on.
+ */
+function hbHubDoodleDrawings(int $players): int
+{
+    return intdiv($players - 1, 2);
+}
+
+/**
+ * How many steps the game has, so how long each chain is: the first text, then a drawing and a guess per drawing.
  */
 function hbHubDoodleSteps(array $game): int
 {
-    return $game['steps'] ?? count($game['order']);
+    return 2 * hbHubDoodleDrawings(count($game['order'])) + 1;
 }
 
 function hbHubDoodleStepSeconds(array $state, int $step): int
