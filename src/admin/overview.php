@@ -563,7 +563,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
 
                     <?= adminOverviewPanelHtml('admin-overview-errors-heading', 'Browser errors', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 12,
                         adminOverviewChartHtml($adminErrorsPerDay, 'errors', 'Errors in people\'s browsers each day')
-                        . '<p class="admin-panel-foot">Every error the Watchdog noted in someone\'s browser: failed requests, pictures or scripts that didn\'t load, JavaScript errors and what the CSP blocked, by the day the last error in a report happened. Cleared reports still count. Reports are kept for ' . HBHUB_WATCHDOG_KEEP_DAYS . ' days, so the first day can be short. <a href="/admin/watchdog">See them under Browser errors</a>.</p>') ?>
+                        . '<p class="admin-panel-foot">Every error the Watchdog noted. Cleared reports still count. Reports are kept for ' . HBHUB_WATCHDOG_KEEP_DAYS . ' days. <a href="/admin/watchdog">See them under Browser errors</a>.</p>') ?>
 
                     <?php ob_start(); ?>
                     <?php if ($adminSources === []): ?>
