@@ -549,7 +549,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
 
                     <?= adminOverviewPanelHtml('admin-overview-views-heading', 'Page views', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 8,
                         adminOverviewChartHtml($adminViewsPerDay, 'page views', 'Pages opened each day')
-                        . '<p class="admin-panel-foot">Every time a page is opened, including the chat switching to another chat. Reloads after sending something, prefetches, error pages and bots don\'t count. Only a count per page and day is kept, never who, and only for ' . HBHUB_PAGE_VIEWS_KEEP_DAYS . ' days.</p>') ?>
+                        . '<p class="admin-panel-foot">Every page opened, including switching chats. Bots and reloads after sending don\'t count. Kept for ' . HBHUB_PAGE_VIEWS_KEEP_DAYS . ' days.</p>') ?>
                     <?php // Every page of the week, so the list scrolls inside the panel to fit next to the chart ?>
                     <?= adminOverviewPanelHtml('admin-overview-pages-heading', 'Most visited pages', 'Last 7 days', 4,
                         '<div class="admin-rank-scroll" tabindex="0" aria-label="Most visited pages">'
