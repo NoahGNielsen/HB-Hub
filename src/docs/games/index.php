@@ -6,7 +6,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
 $docsPath = '/docs/games/';
-$docsIntro = 'Syv spil, ingen chips nødvendige: tre at spille med venner og fire at spille alene. De ligger alle under
+$docsIntro = 'Otte spil, ingen chips nødvendige: tre at spille med venner og fem at spille alene. De ligger alle under
     <a href="/games/">Games</a> i sidebjælken.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
@@ -24,6 +24,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td><a href="/docs/games/wordle">Wordle</a></td><td>Gæt dagens ord på fem bogstaver, på engelsk og på dansk.</td><td>Kun dig</td></tr>
                                     <tr><td><a href="/docs/games/minesweeper">Minesweeper</a></td><td>Klassikeren: ryd brættet uden at åbne en mine.</td><td>Kun dig</td></tr>
                                     <tr><td><a href="/docs/games/sudoku">Sudoku</a></td><td>Fyld brættet med 1 til 9 i hver række, kolonne og boks, fra Easy til Expert.</td><td>Kun dig</td></tr>
+                                    <tr><td><a href="/docs/games/snake">Snake</a></td><td>Klassikeren: spis æblerne, og bliv længere uden at ramme kanten eller dig selv.</td><td>Kun dig</td></tr>
                                     <tr><td><a href="/docs/games/ore-mining-inc">Ore Mining Inc.</a></td><td>Et clickerspil om at mine asteroider, og siden hele multiverset.</td><td>Kun dig</td></tr>
                                 </tbody>
                             </table>

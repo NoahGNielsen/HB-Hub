@@ -1,0 +1,192 @@
+/* Snake (games/snake/): the game's frame - an olive bar on top with the score, best, speed and pause, and a terracotta
+   frame around the board, whose rounded corners and soft shadow along the top make it look sunk in. The board itself
+   (the checkered sand, the snake and the apple) is drawn on the canvas by assets/js/snake.js. Loaded after casino.css
+   and games.css. The colours are the game's own, so they stay the same in light and dark mode. */
+.snake-frame {
+  margin: 20px 0 24px;
+  overflow: hidden;
+  border-radius: var(--radius, 14px);
+  background: #a5553a;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+}
+
+.snake-bar {
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  background: #5b4a28;
+  color: #fff;
+}
+
+.snake-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.snake-count svg {
+  width: 28px;
+  height: 28px;
+}
+
+.snake-icon-apple {
+  fill: #e04a3c;
+}
+
+.snake-icon-stem {
+  fill: none;
+  stroke: #6b3e1e;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.snake-icon-leaf {
+  fill: #6cb043;
+}
+
+.snake-icon-trophy {
+  fill: #f2c230;
+}
+
+.snake-bar-gap {
+  flex: 1;
+}
+
+.snake-speed select,
+.snake-pause {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.snake-speed select option {
+  background: #5b4a28;
+  color: #fff;
+}
+
+.snake-speed select:disabled,
+.snake-pause:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.snake-speed select:hover:not(:disabled),
+.snake-pause:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.snake-field {
+  padding: clamp(12px, 2.5vw, 26px);
+}
+
+/* The sand: the canvas fills it, 20 by 12 squares */
+.snake-board {
+  position: relative;
+  aspect-ratio: 20 / 12;
+  overflow: hidden;
+  border-radius: clamp(6px, 1.2vw, 12px);
+  background: #ebc464;
+  touch-action: none; /* swipes steer the snake instead of scrolling */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.snake-board canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The shadow along the top and the faint line round the edge, over the canvas */
+.snake-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 10px 14px -8px rgba(110, 50, 15, 0.45),
+    inset 0 0 0 1px rgba(110, 50, 15, 0.15);
+  pointer-events: none;
+}
+
+/* "Ready?", "Paused" and "Game over", over the board. Ready is lighter, so the snake waiting to go shows through */
+.snake-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(60, 30, 12, 0.55);
+  color: #fff;
+  text-align: center;
+}
+
+.snake-cover[hidden] {
+  display: none;
+}
+
+.snake-cover[data-state="ready"] {
+  background: rgba(60, 30, 12, 0.25);
+}
+
+.snake-cover p {
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.snake-cover-title {
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 800;
+}
+
+.snake-cover-text {
+  max-width: 34ch;
+  line-height: 1.4;
+}
+
+/* A little shake when the snake crashes */
+.snake-board.is-hit {
+  animation: snake-hit 0.32s ease;
+}
+
+@keyframes snake-hit {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+@media (max-width: 520px) {
+  .snake-bar {
+    padding: 8px 12px;
+    gap: 6px 14px;
+  }
+
+  .snake-count {
+    font-size: 1.1rem;
+  }
+
+  .snake-count svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .snake-cover-text {
+    font-size: 0.9rem;
+  }
+}

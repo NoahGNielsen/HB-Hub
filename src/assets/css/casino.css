@@ -390,6 +390,37 @@ a.casino-game:hover .casino-game-art {
   fill: #fff;
 }
 
+/* Snake: the game's terracotta and olive, a blue snake with googly eyes and a red apple */
+.casino-game-snake {
+  --game-from: #c0663f;
+  --game-to: #4f3f1f;
+  --game-mark: #e04a3c;
+}
+
+.casino-game-snake .casino-game-art {
+  fill: #5a7de8;
+}
+
+.casino-game-snake .casino-game-art-body {
+  fill: none;
+  stroke: #5a7de8;
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.casino-game-snake .casino-game-art-eye {
+  fill: #fff;
+}
+
+.casino-game-snake .casino-game-art-pupil {
+  fill: #141a3a;
+}
+
+.casino-game-snake .casino-game-art-leaf {
+  fill: #6cb043;
+}
+
 .casino-game-miner {
   --game-from: #3b2a78;
   --game-to: #0d0b26;

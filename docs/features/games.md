@@ -52,6 +52,13 @@
 | **Sudoku** | At `/games/sudoku/`, on Easy, Medium, Hard and Expert. The puzzles are made on the server (`assets/php/games/sudoku/sudoku.php`, `HBHub-SudokuGames`), which keeps the answer, so the browser never has it: each is made new, from a random full board with squares taken out in mirrored pairs as long as it keeps exactly one answer. Easy (about 38 numbers) must be solvable with naked singles only, Medium (about 32) with naked and hidden singles, Hard goes to about 28, and Expert takes out single squares too, as low as it can (usually 22-25), and must need more than singles (the best of 12 boards, about 0.2 s) (`HBHUB_SUDOKU_LEVELS`). Notes (with the number taken out of the notes around a square you fill in), undo, erase, hints, a pad showing how many of each number are left, the same number and the row/column/box lit up, clashes in red, a clock that only runs while the page is on screen, and a pause. `assets/js/sudoku.js` talks to `games/sudoku/move`: `new`, `hint` (the server fills in a square and counts it), `pause`/`resume` (sent with the Pause button and when the page is hidden or shown, so the server's time leaves pauses out like the page's clock) and `solve` (the full board without clashes, checked against the answer). The numbers and notes you put in are kept in `localStorage` (`hbHubSudoku`), by game id. Starting a game ends the one being played as left |
 | **Leaderboard** | One for each level at `/games/sudoku/leaderboard?level=...`: best and average time and the number solved, sortable. Only solves without a hint count (`gameResult` 1); with a hint it's 2 (solved, not ranked). Anticheat: the answer never leaves the server, and a solve faster than `HBHUB_SUDOKU_MIN_MS_PER_SQUARE` (1 s) per empty square ends as "too fast" (`gameResult` 4) instead. Your best ranked time per level shows on the level buttons |
 
+## Snake
+
+| | |
+|---|---|
+| **Snake** | At `/games/snake/`: the classic, on a 20x12 board in a terracotta frame with an olive score bar. Arrow keys or WASD (turns queue up, up to 3), swipes on a phone, `P`/`Esc` to pause (and when the page is hidden), Space/Enter or **Play again** after a crash. Three speeds (Slow 160 ms, Normal 120 ms, Fast 85 ms a step), picked before a game. Drawn on a canvas by `assets/js/snake.js`, gliding between steps; the snake's eyes follow the apple, blink, and turn into Xs when it crashes |
+| **Saving** | Played only in the browser: nothing is sent to the server and there's no leaderboard. The last speed and the best score for each speed are in `localStorage` (`hbHubSnake`) |
+
 ## Ore Mining Inc.
 
 | | |

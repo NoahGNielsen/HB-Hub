@@ -131,6 +131,9 @@
         <loc>https://hbhub.noahgajnielsen.dk/docs/games/sudoku</loc>
     </url>
     <url>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/games/snake</loc>
+    </url>
+    <url>
         <loc>https://hbhub.noahgajnielsen.dk/docs/games/ore-mining-inc</loc>
     </url>
 </urlset>

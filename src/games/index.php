@@ -157,6 +157,26 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     </a>
                 </li>
                 <li>
+                    <a class="casino-game casino-game-snake" href="/games/snake/">
+                        <span class="casino-game-cover">
+                            <span class="casino-game-kicker">Arcade classic</span>
+                            <span class="casino-game-name">Snake</span>
+                            <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
+                                <!-- A blue snake winding up to the right, with its googly eyes, and the apple it's after -->
+                                <path class="casino-game-art-body" d="M8 52H22Q28 52 28 46V30Q28 24 34 24H46"/>
+                                <circle cx="47" cy="24" r="6"/>
+                                <circle class="casino-game-art-eye" cx="47" cy="19.5" r="3.6"/>
+                                <circle class="casino-game-art-eye" cx="47" cy="28.5" r="3.6"/>
+                                <circle class="casino-game-art-pupil" cx="48.4" cy="20.5" r="1.7"/>
+                                <circle class="casino-game-art-pupil" cx="48.4" cy="29.5" r="1.7"/>
+                                <path class="casino-game-art-mark" d="M50 44C52 42 58 42 58 49C58 54 55 58 53 58C52 58 51 57.5 50 57.5C49 57.5 48 58 47 58C45 58 42 54 42 49C42 42 48 42 50 44Z"/>
+                                <path class="casino-game-art-leaf" d="M50.5 42Q52 38 56 38.5Q54.5 42.5 50.5 42Z"/>
+                            </svg>
+                        </span>
+                        <span class="casino-game-text">Eat the apples, grow longer and don't crash into the edge or your own tail. Three speeds, and your best score for each.</span>
+                    </a>
+                </li>
+                <li>
                     <a class="casino-game casino-game-miner" href="/games/ore-mining-inc/">
                         <span class="casino-game-cover">
                             <span class="casino-game-kicker">Clicker game</span>
