@@ -1,0 +1,33 @@
+# Same as ftp-upload.yml, but for the test site: a push to the dev branch syncs src/ to the folder that
+# dev.noahgajnielsen.dk points at. Uses the same FTP login as the live site. No IndexNow ping here, since the test site
+# shouldn't end up in search engines.
+on:
+  push:
+    branches: [ "dev" ]
+name: 🧪 Deploy dev site on push
+permissions:
+  contents: read
+jobs:
+  web-deploy:
+    name: 🎉 Deploy to dev
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@110f9186c050f71550953127052e77650219c287 # v4.4.0
+      with:
+        server: ${{ secrets.FTP_HOST }}
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        protocol: ftps
+        local-dir: src/
+        # The folder on the server that dev.noahgajnielsen.dk is set up to serve (change it if Simply uses another one)
+        server-dir: dev/
+        # The default exclude (**/.git*/**) would also skip src/assets/php/.github/, which has the README shield counters
+        exclude: |
+          **/.git/**
+          **/.gitignore
+          **/.gitattributes
+          **/node_modules/**

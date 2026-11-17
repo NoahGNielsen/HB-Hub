@@ -47,7 +47,8 @@ HB Hub (https://hbhub.noahgajnielsen.dk) is a messaging site for the owner's sch
 ## Deploy
 
 Pushing to `main` deploys: [.github/workflows/ftp-upload.yml](.github/workflows/ftp-upload.yml) syncs `src/` to
-`hbhub/` over FTPS. **The database is not migrated automatically**: the owner runs the `database/migrations/` files by
+`hbhub/` over FTPS. Pushing to `dev` deploys the test site, dev.noahgajnielsen.dk, the same way
+([.github/workflows/ftp-upload-dev.yml](.github/workflows/ftp-upload-dev.yml), to `dev/`). **The database is not migrated automatically**: the owner runs the `database/migrations/` files by
 hand, so tell them when a push needs one run first.
 
 ## Layout
