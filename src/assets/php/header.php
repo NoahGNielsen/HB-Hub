@@ -30,6 +30,8 @@
 //
 // The Watchdog's script (watchdog.js) is left out too for a logged-in user who has turned "Help improve HB Hub" off in the
 // settings (hbHubImproveSiteOn() in userSettings.php). Visitors who aren't logged in always have it.
+//
+// On the test site (dev.noahgajnielsen.dk) every page also gets <meta name="robots" content="noindex, nofollow">.
 require_once __DIR__ . '/maintenance.php';
 require_once __DIR__ . '/userSettings.php';
 
@@ -61,6 +63,10 @@ $headerKeywords = array_unique([
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Dark before mainStyle.css has loaded, so a slow page load doesn't flash white first -->
 <meta name="color-scheme" content="dark">
+<?php if (strtolower(explode(':', $_SERVER['HTTP_HOST'] ?? '')[0]) === 'dev.noahgajnielsen.dk'): ?>
+<!-- The test site (dev branch) stays out of search engines; .htaccess sends the same as an X-Robots-Tag header -->
+<meta name="robots" content="noindex, nofollow">
+<?php endif; ?>
 <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg?v=<?= filemtime(__DIR__ . '/../images/favicon.svg') ?>">
 <link rel="apple-touch-icon" href="/assets/images/appleTouchIcon.png?v=<?= filemtime(__DIR__ . '/../images/appleTouchIcon.png') ?>">
 <link rel="manifest" href="/manifest.json?v=<?= filemtime(__DIR__ . '/../../manifest.json') ?>">

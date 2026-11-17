@@ -85,6 +85,11 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     Header always set X-XSS-Protection "0"
     Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https://*.giphy.com; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self';"
 
+    # The test site (dev.noahgajnielsen.dk, deployed from the dev branch) must never show up in search engines, so
+    # every answer from it (pages, pictures, files, error pages) says noindex, nofollow. header.php adds the same as a
+    # <meta> tag. The real site is untouched, since the check is on the host name.
+    Header always set X-Robots-Tag "noindex, nofollow" "expr=tolower(%{HTTP_HOST}) == 'dev.noahgajnielsen.dk'"
+
     # --------------------------------------------------------------------------
     # SMART CACHING STRATEGY (Fixes Security Scanner & Handles 304 Validation)
     # --------------------------------------------------------------------------
