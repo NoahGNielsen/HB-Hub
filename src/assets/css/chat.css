@@ -1078,35 +1078,60 @@ body:has(> .chat) {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-/* The quote above a reply: who and what it answers */
+/* The quote above a reply: who and what it answers. It's a smaller, faded bubble that the reply's own bubble overlaps
+   at the bottom, so the two read as one thing (the negative margin pulls the bubble up over it, and the bubble sits on
+   top). The extra padding at the bottom is the part that gets covered. Only as wide as what it quotes. */
 .chat-message-reply {
-  max-width: 100%;
-  margin: 0 4px;
-  padding: 4px 10px;
+  max-width: calc(100% - 16px);
+  margin: 0 8px -12px;
+  padding: 5px 12px 15px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  border-left: 3px solid var(--accent);
-  border-radius: 4px 8px 8px 4px;
-  background: color-mix(in srgb, var(--text) 6%, transparent);
+  gap: 1px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
   color: inherit;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
   text-decoration: none;
 }
 
 .chat-message.is-own .chat-message-reply {
-  border-left: none;
-  border-right: 3px solid var(--accent);
-  border-radius: 8px 4px 4px 8px;
   text-align: right;
 }
 
 a.chat-message-reply:hover {
-  background: color-mix(in srgb, var(--text) 11%, transparent);
+  background: color-mix(in srgb, var(--text) 13%, transparent);
+}
+
+.chat-message-reply ~ .chat-message-bubble {
+  position: relative;
+}
+
+/* Big emoji have no bubble to cover the quote with, so it stops short of them instead */
+.chat-message-reply:has(~ .chat-message-bubble.is-emoji) {
+  margin-bottom: 0;
+  padding-bottom: 5px;
 }
 
 .chat-message-reply-sender {
+  font-size: 0.72rem;
   font-weight: 700;
+  opacity: 0.75;
+}
+
+/* A little hooked arrow before the name, pointing back at the bubble below (hidden from screen readers, which already
+   hear "Reply to") */
+.chat-message-reply-sender::before {
+  content: "\21AA\FE0E  ";
+  content: "\21AA\FE0E  " / "";
+  white-space: pre;
+}
+
+.chat-message.is-own .chat-message-reply-sender::before {
+  content: "\21A9\FE0E  ";
+  content: "\21A9\FE0E  " / "";
 }
 
 .chat-message-reply-text,
