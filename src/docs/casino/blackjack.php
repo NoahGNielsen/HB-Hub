@@ -74,4 +74,18 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <a href="/casino/blackjack/leaderboard">Blackjack-ranglisten</a>.
                         </p>
                     </section>
+
+                    <section id="table-fun" aria-labelledby="docs-table-fun">
+                        <h2 id="docs-table-fun">Emotes og drikkepenge</h2>
+                        <p>
+                            Under knapperne ved bordet kan du reagere med
+                            <?= implode(' ', array_column(HBHUB_BLACKJACK_EMOTES, 'symbol')) ?>, som svæver op fra din plads,
+                            så alle ved bordet ser dem (ikke ved et solobord, hvor der ikke er andre).
+                            Med <strong>Tip the dealer</strong> kan du give dealeren
+                            <?= implode(', ', array_slice(HBHUB_BLACKJACK_TIPS, 0, -1)) ?> eller
+                            <?= HBHUB_BLACKJACK_TIPS[count(HBHUB_BLACKJACK_TIPS) - 1] ?> chips. Chippen flyver hen til dealeren,
+                            som siger tak, og bordet tæller, hvor meget dealeren har fået. Det er kun for sjov: chipsene er væk,
+                            giver ingen fordel og tæller ikke på ranglisten.
+                        </p>
+                    </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

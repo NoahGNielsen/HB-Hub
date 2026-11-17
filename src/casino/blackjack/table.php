@@ -2,7 +2,8 @@
 // A Blackjack table (?room=id). This is just the page around it: blackjackTable.js draws the table and plays it
 // through /casino/blackjack/play. Only for the table the user sits at - anyone else is sent to the Blackjack page,
 // where tables are joined. At a table for more players there's also its join code, sitting out, and for the host,
-// inviting people (searched for with the chat's /chat/users).
+// inviting people (searched for with the chat's /chat/users). Members also get the emotes (not at a solo table) and
+// tipping the dealer, with the tip jar's count by the dealer (assets/php/casino/blackjack/social.php).
 //
 // It's also the guest Blackjack at /play/blackjack, a solo table with play chips for visitors without an account:
 // guestGames/blackjack/ sets $guestGame and includes this page (see assets/php/guestGames/guestGames.php). Then it has
@@ -93,6 +94,11 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
         <section class="bj-table" aria-label="The table" data-bj-table>
             <div class="bj-dealer">
                 <p class="bj-label">Dealer <span class="bj-total" data-bj-dealer-total></span></p>
+                <?php if ($guestGame === null): ?>
+                    <p class="bj-tip-jar" data-bj-tip-jar hidden>
+                        <span class="bj-tip-jar-label">Tips</span> <strong data-bj-tip-chips>0</strong>
+                    </p>
+                <?php endif; ?>
                 <div class="bj-cards" data-bj-dealer-cards></div>
                 <p class="bj-note" data-bj-shuffled hidden>A new shoe was shuffled for this hand.</p>
             </div>
@@ -114,6 +120,9 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
             </div>
 
             <ol class="bj-seats" data-bj-seats></ol>
+            <?php if ($guestGame === null): // where emotes float up from the seats and tips fly to the dealer (blackjackTable.js) ?>
+                <div class="bj-social-layer" aria-hidden="true" data-bj-social-layer></div>
+            <?php endif; ?>
         </section>
 
         <section class="bj-controls" aria-label="Your moves">
@@ -180,6 +189,27 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
             <div class="bj-panel" data-bj-panel="wait" hidden>
                 <p class="bj-hint" data-bj-wait></p>
             </div>
+
+            <?php if ($guestGame === null): // emotes (not at a solo table: nobody would see them) and tips, any time ?>
+                <div class="bj-social" data-bj-social>
+                    <?php if (!$tableIsSolo): ?>
+                        <div class="bj-emotes" role="group" aria-label="React" data-bj-emotes
+                             data-bj-emote-gap="<?= HBHUB_BLACKJACK_EMOTE_GAP_MS ?>">
+                            <?php foreach (HBHUB_BLACKJACK_EMOTES as $key => $emote): ?>
+                                <button type="button" class="bj-emote" data-bj-emote="<?= $key ?>"
+                                        aria-label="<?= $emote['label'] ?>" title="<?= $emote['label'] ?>"><?= $emote['symbol'] ?></button>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                    <div class="bj-tips" role="group" aria-label="Tip the dealer">
+                        <span class="bj-tips-label">Tip the dealer</span>
+                        <?php foreach (HBHUB_BLACKJACK_TIPS as $tip): ?>
+                            <button type="button" class="bj-chip bj-chip-small bj-chip-<?= $tip ?>" data-bj-tip="<?= $tip ?>"
+                                    aria-label="Tip <?= $tip ?> chips"><?= $tip ?></button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
         </section>
 
         <details class="bj-rules casino-card">

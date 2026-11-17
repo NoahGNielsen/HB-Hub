@@ -16,6 +16,8 @@
 //                paid out), hands: [{cards, bet, doubled, split, done, result, payout}],
 //                stats: {hits, stands, doubles, splits, autoStands}}], in seat order, the order they take their turns in
 //   turnId       goes up with every turn and every card, so a double click on Hit only counts once
+//   feed, feedId and tips   the emotes and the dealer's tips (social.php). Not in rooms made before them, so read
+//                with a default.
 //
 // Nothing runs in the background. Every request for the table first calls hbHubBlackjackAdvance(), which moves it on
 // for every timer that ran out since. room.php does that with the room locked, so it only happens once.
@@ -27,6 +29,7 @@
 // Every player's part of a round is stored when it's paid out (hbHubBlackjackRecordPlayer()), for the leaderboard.
 require_once __DIR__ . '/cards.php';
 require_once __DIR__ . '/../wallet.php';
+require_once __DIR__ . '/social.php';
 
 const HBHUB_BLACKJACK_GAME = 'blackjack'; // transactionGame in HBHub-CasinoTransactions
 const HBHUB_BLACKJACK_PHASES = ['waiting' => 1, 'betting' => 2, 'insurance' => 3, 'playing' => 4, 'dealer' => 5, 'results' => 6]; // roomPhase
@@ -53,6 +56,9 @@ function hbHubBlackjackNewState(): array
         'betsRoundId' => null,
         'round' => null,
         'turnId' => 0,
+        'feed' => [],
+        'feedId' => 0,
+        'tips' => ['chips' => 0, 'count' => 0],
     ];
 }
 
@@ -783,6 +789,8 @@ function hbHubBlackjackTableView(array $state, array $seats, array $people, int 
         'turn' => $turn !== null ? ['seat' => $round['players'][$turn['player']]['seat'], 'hand' => $turn['hand']] : null,
         'turnId' => $state['turnId'],
         'you' => $you,
+        // The newest emotes and tips, and what the dealer has been tipped (social.php)
+        'social' => hbHubBlackjackSocialView($state, $people, $viewerId, $now),
     ];
 }
 

@@ -431,6 +431,136 @@
   pointer-events: none;
 }
 
+/* Emotes and tips (renderSocial() in blackjackTable.js): drawn on a layer over the table, as the seats are drawn again
+   with every change */
+.bj-social-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2; /* under the win banner */
+  pointer-events: none;
+}
+
+/* An emote floating up from the player who sent it, a little to one side (--drift) */
+.bj-emote-bubble {
+  position: absolute;
+  font-size: 2.1rem;
+  line-height: 1;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35));
+  transform: translate(-50%, -50%);
+  animation: bj-emote-float 2.6s ease-out forwards;
+}
+
+@keyframes bj-emote-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -90%) scale(1.3);
+  }
+  25% {
+    transform: translate(-50%, -110%) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--drift, 0px)), calc(-50% - 110px)) scale(0.9);
+  }
+}
+
+/* A tipped chip on its way to the dealer (moved by blackjackTable.js) */
+.bj-tip-chip {
+  --chip-color: var(--accent);
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 3px dashed rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: var(--chip-color);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35), 0 0 0 2px var(--chip-color);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  transform: translate(-50%, -50%);
+}
+
+/* The dealer's thank-you, over the tip jar */
+.bj-dealer-thanks {
+  position: absolute;
+  max-width: min(280px, 80%);
+  padding: 6px 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(10, 12, 18, 0.85);
+  box-shadow: 0 0 0 2px #e8b931;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: translate(-50%, -160%);
+  animation: bj-thanks 2.6s ease-out forwards;
+}
+
+@keyframes bj-thanks {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -120%) scale(0.6);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, -160%) scale(1.05);
+  }
+  18% {
+    transform: translate(-50%, -160%) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -200%);
+  }
+}
+
+/* What the dealer has been tipped at this table */
+.bj-tip-jar {
+  margin: -2px 0 0;
+  padding: 2px 12px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #e8b931 22%, var(--background));
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.bj-tip-jar-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.bj-tip-jar.is-bump {
+  animation: bj-tip-bump 0.45s cubic-bezier(0.2, 1.8, 0.4, 1);
+}
+
+@keyframes bj-tip-bump {
+  40% {
+    transform: scale(1.25);
+    box-shadow: 0 0 18px rgba(232, 185, 49, 0.8);
+  }
+}
+
 /* Seats */
 .bj-seats {
   width: 100%;
@@ -729,6 +859,68 @@
   gap: 10px;
 }
 
+/* The emotes and the tips, under whatever the player can do now */
+.bj-social {
+  width: 100%;
+  padding-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px 24px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.bj-emotes,
+.bj-tips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bj-emote {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--background);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.2s;
+}
+
+.bj-emote:hover {
+  transform: scale(1.12);
+}
+
+.bj-emote:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Just sent one: the next one has to wait a moment */
+.bj-emote.is-cooling {
+  opacity: 0.45;
+  transform: none;
+  cursor: default;
+}
+
+.bj-tips-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.bj-chip.bj-chip-small {
+  width: 38px;
+  height: 38px;
+  border-width: 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--chip-color);
+  font-size: 0.72rem;
+}
+
 .bj-moves {
   width: 100%;
   max-width: 560px;
@@ -959,8 +1151,15 @@
   .bj-card.is-flip,
   .bj-table.is-tense .bj-dealer .bj-cards,
   .bj-table.is-tense .bj-label .bj-total,
-  .bj-banner {
+  .bj-banner,
+  .bj-emote-bubble,
+  .bj-dealer-thanks,
+  .bj-tip-jar.is-bump {
     animation: none;
+  }
+
+  .bj-emote {
+    transition: none;
   }
 
   .bj-card-cover {

@@ -8,7 +8,8 @@
 //   (a message to show) when it couldn't be done. The actions:
 //     bet (amount), clearBet, insurance (take: 1 or 0), hit, stand, double and split (turn: the turnId the table
 //     showed when it was clicked, so a double click only counts once), sitOut (out: 1 or 0), invite (user: their id,
-//     only for the host) and leave
+//     only for the host), emote (emote: its key, not at a solo table), tip (amount: chips for the dealer) and leave.
+//     Emotes and tips come to everyone else at the table with their next check (social.php), not a request of their own.
 // Answers 404 with {"error": "notSeated"} when the user doesn't sit at that table (anymore).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navUpdates.php';
@@ -52,6 +53,10 @@ $do = match ($action) {
         => hbHubBlackjackSitOut($db, $room, $seats, $userId, ($input['out'] ?? null) === '1', $now),
     'invite' => fn (array &$room, array &$seats, int $now): ?string
         => hbHubBlackjackInvite($db, $room, $seats, $userId, $input['user'] ?? null),
+    'emote' => fn (array &$room, array &$seats, int $now): ?string
+        => hbHubBlackjackEmote($room, $seats, $userId, $input['emote'] ?? null, $now),
+    'tip' => fn (array &$room, array &$seats, int $now): ?string
+        => hbHubBlackjackTip($db, $room, $seats, $userId, $input['amount'] ?? null, $now),
     default => false,
 };
 if ($do === false) {

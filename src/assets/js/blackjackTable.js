@@ -4,7 +4,8 @@
 //
 // Asks what's new every second while the page is in view, and every 4 seconds while it isn't (so the table doesn't count
 // the player as away, which takes 10 seconds without hearing from them). The whole table only comes back when its
-// version changed: something happened, or someone joined, left, went away or came back.
+// version changed: something happened, or someone joined, left, went away or came back. Emotes and tips for the dealer
+// are part of the table too, so they come with those same checks (see "Emotes and tips" below).
 //
 // The guest Blackjack at /play/blackjack (data-guest, see assets/php/guestGames/guestGames.php) is a solo table played
 // the same way through /play/blackjack/play (data-api), but the server keeps nothing: every answer has the table and
@@ -71,6 +72,14 @@
     const leaveButton = find('[data-bj-leave]');
     const leaveDialog = find('[data-bj-leave-dialog]');
     const leaveText = find('[data-bj-leave-text]');
+    // Emotes and tips (members only, so all of these can be missing). See "Emotes and tips" further down.
+    const socialLayer = find('[data-bj-social-layer]');
+    const tipJar = find('[data-bj-tip-jar]');
+    const tipJarChips = find('[data-bj-tip-chips]');
+    const dealerLabel = find('.bj-dealer .bj-label');
+    const emoteGroup = find('[data-bj-emotes]');
+    const emoteButtons = [...root.querySelectorAll('[data-bj-emote]')];
+    const tipButtons = [...root.querySelectorAll('[data-bj-tip]')];
 
     let version = null; // the table's version that's shown
     let revision = -1; // the room's revision in it, to tell older answers from newer ones
@@ -90,6 +99,9 @@
     let celebratedRound = null; // the round whose results' effects have been shown (celebrate()), so they only go off once
     let guestToken = ''; // a guest's table and play chips, sealed by the server (none at first: a new table)
     let guestQueue = Promise.resolve();
+    let shownFeedId = null; // the newest emote or tip that's been shown, null until the first table came (nothing from before is shown)
+    let tipsInFlight = 0; // chips on their way to the dealer, not in the tip jar's count until they land
+    let emotesReadyAt = 0; // Date.now() when the next emote can be sent
 
     const formatChips = (amount) => amount.toLocaleString('en-US');
     const signed = (amount) => (amount > 0 ? '+' : '−') + formatChips(Math.abs(amount));
@@ -221,6 +233,7 @@
         renderDealer();
         renderShoe();
         renderSeats();
+        renderSocial();
         statusText.textContent = statusFor();
         renderControls();
         tickTimer();
@@ -340,6 +353,7 @@
     function seatElement(seat) {
         const item = document.createElement('li');
         item.className = 'bj-seat';
+        item.dataset.bjSeat = seat.seat; // where an emote floats up from, or a tip flies from (renderSocial())
         item.classList.toggle('is-you', seat.isYou);
         item.classList.toggle('is-turn', table.turn?.seat === seat.seat);
         item.classList.toggle('is-away', seat.away || seat.left);
@@ -631,6 +645,135 @@
         }
         context.restore();
     }
+
+    // ---------- Emotes and tips ----------
+    //
+    // Both come with the table (table.social: feed, the newest of them with ids, and tips, what the dealer has had at
+    // this table), so they arrive with the check that runs every second anyway. Each one in the feed is shown once:
+    // an emote floats up from the seat it came from, and a tip is a chip that flies from the seat to the dealer, who
+    // says thanks, and the tip jar counts it when it lands. Drawn on a layer over the table (data-bj-social-layer), as
+    // the seats are drawn again with every change. With reduced motion an emote just shows for a moment, and a tip goes
+    // straight into the jar.
+    const EMOTE_BUBBLE_MS = 2600; // how long an emote is shown, also when there's no animation to end it
+    const TIP_FLIGHT_MS = 950;
+    // HBHUB_BLACKJACK_EMOTE_GAP_MS, and a little more: the server lets ones sooner go, and requests don't take equally long
+    const EMOTE_GAP_MS = Number(emoteGroup?.dataset.bjEmoteGap ?? 0) + 150;
+
+    function renderSocial() {
+        const social = table.social;
+        if (!socialLayer || !social) return;
+        tipButtons.forEach((button) => (button.disabled = isBusy || (chips ?? 0) < Number(button.dataset.bjTip)));
+
+        const newest = social.feed.reduce((max, entry) => Math.max(max, entry.id), shownFeedId ?? 0);
+        if (shownFeedId !== null) {
+            social.feed.filter((entry) => entry.id > shownFeedId).forEach((entry) => {
+                if (entry.kind === 'emote') emoteBubble(entry);
+                else if (entry.kind === 'tip') tipFlight(entry);
+            });
+        }
+        shownFeedId = newest;
+        showTipJar();
+    }
+
+    function showTipJar() {
+        const total = Math.max(0, (table.social?.tips.chips ?? 0) - tipsInFlight);
+        tipJar.hidden = total === 0;
+        tipJarChips.textContent = formatChips(total);
+    }
+
+    // A point on the table (relative to it, as the layer is) at the middle of the element, or null when it isn't shown
+    function pointOn(element) {
+        if (!element) return null;
+        const box = element.getBoundingClientRect();
+        if (box.width === 0 && box.height === 0) return null;
+        const tableBox = tableElement.getBoundingClientRect();
+        return { x: box.left - tableBox.left + box.width / 2, y: box.top - tableBox.top + box.height / 2 };
+    }
+
+    function seatPoint(seatNumber) {
+        const point = pointOn(seatList.querySelector('[data-bj-seat="' + seatNumber + '"] .bj-player'));
+        return point ?? { x: tableElement.clientWidth / 2, y: tableElement.clientHeight - 40 }; // the seat has gone
+    }
+
+    function dealerPoint() {
+        return pointOn(tipJar.hidden ? dealerLabel : tipJar) ?? { x: tableElement.clientWidth / 2, y: 40 };
+    }
+
+    function layerElement(className, text, { x, y }) {
+        const element = document.createElement('span');
+        element.className = className;
+        element.textContent = text;
+        element.style.left = x + 'px';
+        element.style.top = y + 'px';
+        socialLayer.append(element);
+        return element;
+    }
+
+    // Floats up from the player and fades, a little to one side so a few at once don't cover each other
+    function emoteBubble(entry) {
+        if (!entry.emote) return;
+        const bubble = layerElement('bj-emote-bubble', entry.emote, seatPoint(entry.seat));
+        bubble.style.setProperty('--drift', randomBetween(-24, 24).toFixed(0) + 'px');
+        bubble.addEventListener('animationend', () => bubble.remove());
+        setTimeout(() => bubble.remove(), EMOTE_BUBBLE_MS + 200);
+    }
+
+    // A chip that arcs from the player to the dealer, spinning, then lands in the tip jar
+    function tipFlight(entry) {
+        tipsInFlight += entry.amount;
+        const from = seatPoint(entry.seat);
+        const land = () => {
+            tipsInFlight = Math.max(0, tipsInFlight - entry.amount);
+            if (table) showTipJar();
+            thankYou(entry);
+        };
+        if (IS_REDUCED_MOTION) {
+            land();
+            return;
+        }
+
+        const to = dealerPoint();
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const chip = layerElement('bj-tip-chip bj-chip-' + entry.amount, String(entry.amount), from);
+        const at = (share, lift, scale, turn) => ({
+            transform: 'translate(-50%, -50%) translate(' + (dx * share) + 'px, ' + (dy * share - lift) + 'px) scale(' + scale + ') rotate(' + turn + 'deg)',
+        });
+        const flight = chip.animate(
+            [at(0, 0, 0.6, 0), at(0.5, 70, 1.15, 200), at(1, 0, 0.7, 400)],
+            { duration: TIP_FLIGHT_MS, easing: 'cubic-bezier(0.4, 0, 0.5, 1)' },
+        );
+        flight.onfinish = () => {
+            chip.remove();
+            land();
+        };
+    }
+
+    // The dealer says thanks, and the tip jar gives a little bounce and a few sparks
+    function thankYou(entry) {
+        const thanks = layerElement('bj-dealer-thanks', entry.isYou || !entry.name ? 'Thank you! 🙏' : 'Thanks, ' + entry.name + '! 🙏', dealerPoint());
+        thanks.addEventListener('animationend', () => thanks.remove());
+        setTimeout(() => thanks.remove(), EMOTE_BUBBLE_MS + 200);
+
+        tipJar.classList.remove('is-bump');
+        void tipJar.offsetWidth; // so the bounce starts over when tips come one after another
+        tipJar.classList.add('is-bump');
+        if (!tipJar.hidden) sparksAt(centerOf(tipJar), entry.amount >= 100 ? 18 : 8);
+    }
+
+    // Sending one: the emotes wait EMOTE_GAP_MS between them (the server does too), and a tip waits for its answer like
+    // any other move, so a double click can't tip twice by accident
+    emoteButtons.forEach((button) => button.addEventListener('click', async () => {
+        if (Date.now() < emotesReadyAt) return;
+        emotesReadyAt = Date.now() + EMOTE_GAP_MS;
+        emoteButtons.forEach((other) => other.classList.add('is-cooling'));
+        setTimeout(() => emoteButtons.forEach((other) => other.classList.remove('is-cooling')), EMOTE_GAP_MS);
+
+        const data = await post('emote', { emote: button.dataset.bjEmote });
+        if (data?.error) showMessage(data.error);
+        if (data) apply(data);
+    }));
+    tipButtons.forEach((button) => button.addEventListener('click', () => act('tip', { amount: button.dataset.bjTip })));
 
     function playerTag(seat) {
         const tag = document.createElement('div');

@@ -177,6 +177,7 @@ function termsNumber(int $number): string
                         <ul>
                             <li><strong>Chips er ikke penge.</strong> De kan ikke veksles til penge, gavekort eller andet, og gevinster i casinoet kan ikke udbetales.</li>
                             <li>Du må ikke købe, sælge eller spille om chips, konti eller casinoresultater for rigtige penge eller ting, hverken på HB Hub eller andre steder, bortset fra køb direkte hos ejeren, se <a href="#chips-koeb">nedenfor</a>.</li>
+                            <li>Drikkepenge til dealeren i Blackjack er kun for sjov: chipsene går til huset, giver ingen fordel i spillet og kan ikke fås tilbage.</li>
                             <li>Side-admins kan tilføje og fratage chips, fx for at tilføje chips i de sjældne tilfælde, hvor nogen har købt dem, eller rette og nulstille saldoer efter fejl eller snyd.</li>
                         </ul>
                         <h3>Legechips i de gratis spil</h3>
