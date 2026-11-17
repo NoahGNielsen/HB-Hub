@@ -10,7 +10,7 @@
     <li>Viser dealeren et es eller en 10'er, tjekker den først for blackjack. Har dealeren blackjack, slutter hånden med det samme.</li>
     <li>Double down på dine første to kort: fordobl din indsats, og få præcis ét kort mere. Du kan også doble efter en split.</li>
     <li>Split to kort med samme værdi (som en konge og en dame) i to hænder, op til 3 hænder. Splittede esser får ét kort hver, og 21 efter en split betaler 1:1.</li>
-    <li>Forsikring (insurance): viser dealeren et es, kan du satse halvdelen af din indsats på, at dealeren har blackjack. Den betaler 2:1 og bliver gjort op for sig, adskilt fra din hånd.</li>
+    <li>Forsikring (insurance): viser dealeren et es eller en 10'er, kan du satse halvdelen af din indsats på, at dealeren har blackjack. Den betaler 2:1 og bliver gjort op for sig, adskilt fra din hånd.</li>
     <li>
         Indsatser går i trin af 10. Medlemmer med færre end <?= HBHUB_CASINO_ALL_IN_BELOW ?> chips kan i stedet gå
         <strong>all in</strong>: satse alle deres chips, ved ethvert bord. En blackjack på en ulige indsats betaler 3:2,

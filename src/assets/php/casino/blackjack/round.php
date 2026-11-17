@@ -218,7 +218,7 @@ function hbHubBlackjackReturnBet(PDO $db, array &$room, int $userId, int $now): 
 }
 
 /**
- * Takes insurance (half the bet) or says no to it, while the dealer shows an ace. Returns null when it's done,
+ * Takes insurance (half the bet) or says no to it, while the dealer shows an ace or a 10. Returns null when it's done,
  * otherwise why not.
  */
 function hbHubBlackjackInsurance(PDO $db, array &$room, int $userId, bool $take): ?string
@@ -349,7 +349,7 @@ function hbHubBlackjackMoves(array $player, int $handIndex, ?int $chips = null):
 
 /**
  * Deals the next hand to everyone who bet: one card each and one for the dealer, twice (the dealer's second is the
- * hole card). Then insurance when the dealer shows an ace, otherwise the dealer checks for blackjack.
+ * hole card). Then insurance when the dealer shows an ace or a 10, otherwise the dealer checks for blackjack.
  */
 function hbHubBlackjackDeal(PDO $db, array &$room, int $now): void
 {
@@ -403,7 +403,7 @@ function hbHubBlackjackDeal(PDO $db, array &$room, int $now): void
     $db->prepare('UPDATE `HBHub-BlackjackRounds` SET roundDealtTimestamp = UTC_TIMESTAMP() WHERE roundId = ?')
         ->execute([$state['round']['id']]);
 
-    if ($dealer[0][0] === 'A') {
+    if (hbHubBlackjackOffersInsurance($dealer[0])) {
         // Insurance, for everyone who can afford half their bet. Anyone who can't has said no already.
         $state['round']['insurance'] = true;
         foreach ($state['round']['players'] as &$player) {
@@ -416,6 +416,15 @@ function hbHubBlackjackDeal(PDO $db, array &$room, int $now): void
         return;
     }
     hbHubBlackjackPeek($db, $room, $now);
+}
+
+/**
+ * Whether the dealer's face-up card means insurance is offered: an ace or anything worth 10 (10, J, Q, K), the two
+ * cards the dealer can have blackjack with. Used by the guest table (guest.php) too.
+ */
+function hbHubBlackjackOffersInsurance(string $upCard): bool
+{
+    return hbHubBlackjackCardValue($upCard) >= 10;
 }
 
 /**

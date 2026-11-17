@@ -157,7 +157,7 @@ $tableSeats = hbHubBlackjackMaxSeats($room['roomType']);
             </div>
 
             <div class="bj-panel" data-bj-panel="insurance" hidden>
-                <p class="bj-bet-line">The dealer shows an ace. Insurance?</p>
+                <p class="bj-bet-line">The dealer could have blackjack. Insurance?</p>
                 <p class="bj-hint">
                     Costs <strong data-bj-insurance-cost>0</strong> chips (half your bet), and pays 2:1 if the dealer has blackjack.
                     Your hand is played the same either way.

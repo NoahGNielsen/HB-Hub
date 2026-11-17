@@ -428,7 +428,7 @@
             case 'betting':
                 return 'Bets are open.';
             case 'insurance':
-                return 'The dealer shows an ace. Insurance is offered.';
+                return 'The dealer could have blackjack. Insurance is offered.';
             case 'playing': {
                 const seat = turnSeat();
                 if (!seat?.isYou) return (seat?.name || 'A player') + '\'s turn';

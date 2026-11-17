@@ -82,7 +82,7 @@ function hbHubBlackjackGuestBet(array &$state, mixed $amount, int $now): ?string
 
 /**
  * Deals the hand, like hbHubBlackjackDeal(): a card each and one for the dealer, twice. Then insurance when the dealer
- * shows an ace (unless the guest can't afford it), otherwise the dealer checks for blackjack.
+ * shows an ace or a 10 (unless the guest can't afford it), otherwise the dealer checks for blackjack.
  */
 function hbHubBlackjackGuestDeal(array &$state, int $now): void
 {
@@ -122,7 +122,7 @@ function hbHubBlackjackGuestDeal(array &$state, int $now): void
     $state['betsRoundId'] = null;
     $state['turnId']++;
 
-    if ($dealer[0][0] === 'A') {
+    if (hbHubBlackjackOffersInsurance($dealer[0])) {
         $state['round']['insurance'] = true;
         if ($state['chips'] >= intdiv($bet, 2)) {
             hbHubBlackjackSetPhase($state, 'insurance', $now, HBHUB_BLACKJACK_INSURANCE_MS);
