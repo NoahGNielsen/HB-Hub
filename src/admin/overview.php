@@ -15,7 +15,7 @@
 // - Chat: chats, messages, reactions and attachments, and the busiest chats and people of the last 7 days, each with
 //   a bar showing how they compare to the busiest one
 // - Page views: a bar chart of the pages opened each day of the last ADMIN_OVERVIEW_DAYS days, and the
-//   ADMIN_OVERVIEW_TOP_PAGES most visited pages of the last 7 days with how many of their views were guests. These are
+//   every page visited in the last 7 days, the most first (a list that scrolls), with how many of their views were guests. These are
 //   the only numbers that are stored for it: counts per page and day, kept by header.php (assets/php/pageViews.php).
 // - Browser errors: a bar chart of the errors in people's browsers each day of the last ADMIN_OVERVIEW_DAYS days
 //   (HBHub-Watchdog, assets/php/watchdog.php), by the day the last error in a report happened, like admin/watchdog.php
@@ -36,7 +36,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/watchdog.php'; // HBHUB_WA
 
 const ADMIN_OVERVIEW_DAYS = 30; // days in the bar charts
 const ADMIN_OVERVIEW_TOP = 5; // chats and people in the "busiest" lists
-const ADMIN_OVERVIEW_TOP_PAGES = 10; // pages in "Most visited pages"
 const ADMIN_OVERVIEW_TOP_SOURCES = 50; // source and page rows in "Visits from links"
 // The bar charts' drawing area, in SVG units (it's stretched to the card's width)
 const ADMIN_OVERVIEW_CHART_W = 600;
@@ -235,8 +234,8 @@ function adminOverviewBusiestUsers(PDO $db): array
 }
 
 /**
- * The pages opened the most in the last 7 days (today and the 6 days before, as page views are kept per day), the
- * most first, with how many of those views weren't logged in. What counts as a view is in assets/php/pageViews.php.
+ * Every page opened in the last 7 days (today and the 6 days before, as page views are kept per day), the most
+ * first, with how many of those views weren't logged in. What counts as a view is in assets/php/pageViews.php.
  *
  * @return list<array{viewPath: string, views: mixed, guests: mixed}>
  */
@@ -244,7 +243,7 @@ function adminOverviewTopPages(PDO $db): array
 {
     return $db->query('SELECT viewPath, SUM(viewCount) AS views, SUM(viewGuestCount) AS guests FROM `HBHub-PageViews`
         WHERE viewDate > CURDATE() - INTERVAL 7 DAY
-        GROUP BY viewPath ORDER BY views DESC, viewPath LIMIT ' . ADMIN_OVERVIEW_TOP_PAGES)->fetchAll();
+        GROUP BY viewPath ORDER BY views DESC, viewPath')->fetchAll();
 }
 
 /**
@@ -551,7 +550,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                     <?= adminOverviewPanelHtml('admin-overview-views-heading', 'Page views', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 8,
                         adminOverviewChartHtml($adminViewsPerDay, 'page views', 'Pages opened each day')
                         . '<p class="admin-panel-foot">Every time a page is opened, including the chat switching to another chat. Reloads after sending something, prefetches, error pages and bots don\'t count. Only a count per page and day is kept, never who, and only for ' . HBHUB_PAGE_VIEWS_KEEP_DAYS . ' days.</p>') ?>
-                    <?php // The list scrolls inside the panel, so all ADMIN_OVERVIEW_TOP_PAGES fit next to the chart ?>
+                    <?php // Every page of the week, so the list scrolls inside the panel to fit next to the chart ?>
                     <?= adminOverviewPanelHtml('admin-overview-pages-heading', 'Most visited pages', 'Last 7 days', 4,
                         '<div class="admin-rank-scroll" tabindex="0" aria-label="Most visited pages">'
                         . adminOverviewRankHtml($adminTopPages, static function (array $page): string {
