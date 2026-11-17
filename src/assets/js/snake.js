@@ -4,10 +4,12 @@
 //
 // The board is COLS x ROWS squares. The game moves on in steps (one square per step, every SPEEDS[speed] ms), and the
 // drawing glides between them at the screen's frame rate. A step happens when the drawn head reaches the edge of its
-// next square, so during a step the head glides from the edge it came in over, through the middle of its square, to
-// the edge it'll leave by. That way a turn can start the moment it's pressed: the head turns where it is right now and
-// cuts the corner diagonally to the edge it leaves by, instead of first finishing its slide into the next square. The
-// corner stays drawn where it was cut (each part's bx/by), so the body and tail follow the same shortcut.
+// next square, so during a step the head glides from the middle of the edge it came in over, through the middle of its
+// square, to the edge it'll leave by. That way a turn can start the moment it's pressed: before the head reaches the
+// middle, it curves round right away, on a quarter circle that starts where the head is (so the earlier the press, the
+// rounder the corner), instead of first finishing its slide into the next square. Pressed later, the turn waits for the
+// next square and curves round as soon as the head gets there. The body and tail follow the same curves (each part keeps
+// the way it came in, the way it left and its corner's size), so the snake bends smoothly like a tube.
 //
 // Nothing goes to the server. localStorage (hbHubSnake) keeps {"speed": "slow" | "normal" | "fast", "best": {speed: the
 // most apples eaten in one game}}, so the best scores are only in this browser (it's listed in the privacy policy).
@@ -21,10 +23,10 @@
   const ROWS = 12;
   const START_LENGTH = 4;
   const SPEEDS = { slow: 160, normal: 120, fast: 85 }; // ms per step
-  // A turn pressed before the step is this far through turns the head in the square it's in, straight away; later than
-  // that it would have to cut back too sharply, so it waits and turns as soon as the head reaches the next square
-  const TURN_LATE = 0.6;
-  const EATEN_FOR = 0.35; // steps the eaten apple stays drawn, until the snout has reached it
+  // A turn pressed before the step is this far through (the head in the middle of its square) turns the head in the
+  // square it's in, straight away; later than that it has passed the middle, so it turns as soon as it's in the next one
+  const TURN_LATE = 0.5;
+  const EATEN_FOR = 0.3; // steps the eaten apple stays drawn, until the snout has reached it
   const STORAGE_KEY = 'hbHubSnake';
 
   // The colours, picked to match the look of the board in the CSS
@@ -91,17 +93,15 @@
 
   const saved = load();
 
-  // The game. snake[0] is the head; each part is {x, y} in squares, plus {bx, by} if the snake turned there: how far
-  // from the square's middle the corner was cut (between -0.5 and 0.5, along the way it came in).
+  // The game. snake[0] is the head; each part is {x, y, in, out, k}: its square, the way the snake came into it and
+  // left it (DIRECTIONS entries; for the head, `out` is the way it's going to leave), and, where those differ, k: the
+  // radius of the corner, in squares (0.5 is the roundest, 0 a sharp corner).
   let state = 'ready'; // ready | playing | paused | over | won
   let snake = [];
-  let prevTail = null; // where the tail was before the last step, to glide it from there
+  let grew = false; // the snake ate on the last step, so the tail stays put this step
   let dir = DIRECTIONS.right; // the way the head leaves its square (already the new way once it has turned there)
   let turned = false; // the head has turned in the square it's in, so the next turn has to wait for the next square
   let queue = []; // turns pressed but not made yet, so two quick presses both count
-  let headFrom = { x: 0, y: 0 }; // where the drawn head started its current glide, in squares
-  let glideFrom = 0; // how far the step had got when it did (0, or later if it turned partway)
-  let facing = 0; // the angle the head is drawn pointing, in radians; it swings round toward the way it's moving
   let apple = { x: 0, y: 0 };
   let appleBorn = 0; // when the apple appeared, for its pop-in
   let eaten = null; // {x, y, at}: the apple just eaten, still drawn until the head has slid onto it
@@ -120,17 +120,14 @@
     const row = Math.floor(ROWS / 2);
     snake = [];
     for (let i = 0; i < START_LENGTH; i++) {
-      snake.push({ x: START_LENGTH + 1 - i, y: row });
+      snake.push({ x: START_LENGTH + 1 - i, y: row, in: DIRECTIONS.right, out: DIRECTIONS.right });
     }
-    prevTail = { ...snake[snake.length - 1] };
+    grew = false;
     dir = DIRECTIONS.right;
     turned = false;
     queue = [];
     score = 0;
     progress = 0.5; // the head sits in the middle of its square until it starts
-    headFrom = { x: snake[0].x - dir.x * 0.5, y: snake[0].y - dir.y * 0.5 };
-    glideFrom = 0;
-    facing = Math.atan2(dir.y, dir.x);
     eaten = null;
     apple = { x: COLS - 5, y: row };
     appleBorn = performance.now();
@@ -199,24 +196,15 @@
     setState('playing');
   };
 
-  // Where the drawn head is going: the edge of its square it leaves by
-  const headTo = () => ({ x: snake[0].x + dir.x * 0.5, y: snake[0].y + dir.y * 0.5 });
-
-  // Where the drawn head is now, in squares
-  const headAt = () => lerp(headFrom, headTo(), (progress - glideFrom) / (1 - glideFrom));
-
   /**
-   * Turns the head in the square it's in, right now: the corner is cut where the drawn head is, and it glides from
-   * there to the edge it now leaves by.
+   * Turns the head in the square it's in, right now. The corner starts where the drawn head is (it has come `progress`
+   * of the way from the edge), so its radius is however far the head still is from the square's middle.
    */
   const turnNow = (wanted) => {
-    const at = headAt();
     dir = wanted;
     turned = true;
-    headFrom = at;
-    glideFrom = progress;
-    snake[0].bx = at.x - snake[0].x;
-    snake[0].by = at.y - snake[0].y;
+    snake[0].out = wanted;
+    snake[0].k = 0.5 - Math.min(progress, 0.5);
   };
 
   /**
@@ -251,26 +239,36 @@
     }
   };
 
+  // The square the head moves into on the next step
+  const nextSquare = () => ({ x: snake[0].x + dir.x, y: snake[0].y + dir.y });
+
   /**
-   * One step: moves the head one square, eats, grows, dies or wins, then makes the next queued turn in the new square.
+   * Whether the next step crashes, into a wall or the snake itself. The tail moves out of the way that step, unless
+   * the snake is growing, so heading into it is fine.
    */
-  const step = () => {
-    const head = snake[0];
-    const next = { x: head.x + dir.x, y: head.y + dir.y };
+  const blocked = () => {
+    const next = nextSquare();
     const eating = next.x === apple.x && next.y === apple.y;
-    // The tail moves out of the way this step, unless the snake is growing, so heading into it is fine
     const body = eating ? snake : snake.slice(0, -1);
     const hitsWall = next.x < 0 || next.y < 0 || next.x >= COLS || next.y >= ROWS;
-    if (hitsWall || body.some((part) => part.x === next.x && part.y === next.y)) {
+    return hitsWall || body.some((part) => part.x === next.x && part.y === next.y);
+  };
+
+  /**
+   * One step: moves the head one square, eats, grows or wins, then makes the next queued turn in the new square.
+   * (Crashing is checked before this, as soon as the head reaches the middle of its square - see frame().)
+   */
+  const step = () => {
+    if (blocked()) {
       die();
       return;
     }
+    const next = { ...nextSquare(), in: dir, out: dir };
+    const eating = next.x === apple.x && next.y === apple.y;
 
-    prevTail = { ...snake[snake.length - 1] };
     snake.unshift(next);
-    headFrom = { x: next.x - dir.x * 0.5, y: next.y - dir.y * 0.5 };
-    glideFrom = 0;
     turned = false;
+    grew = eating;
     if (eating) {
       score++;
       eaten = { ...apple, at: performance.now() };
@@ -287,7 +285,7 @@
   };
 
   const die = () => {
-    progress = 1; // the snake stops with its head at the edge of what it hit, then bounces back (see frame())
+    progress = 0.5; // the snake stops with its head in the middle of its square, its nose against what it hit
     finish('over');
     if (!reducedMotion.matches) {
       board.classList.remove('is-hit');
@@ -329,8 +327,6 @@
     canvas.height = Math.round((width * ROWS) / COLS);
     size = width / COLS;
   };
-
-  const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
 
   // The middle of a square, in canvas pixels
   const px = (point) => ({ x: (point.x + 0.5) * size, y: (point.y + 0.5) * size });
@@ -401,37 +397,80 @@
     ctx.restore();
   };
 
-  // Where a part's line runs through: the middle of its square, or the cut corner if the snake turned there
-  const bent = (part) => ({ x: part.x + (part.bx || 0), y: part.y + (part.by || 0) });
-
   /**
-   * The points the snake's body runs through: the gliding head, the head's square once the head has passed it (its
-   * middle, or where it turned), every part of the body, and the gliding tail.
+   * The line the snake runs along through one part's square, from the middle of the edge it came in over to the middle
+   * of the edge it leaves by: straight, or round the corner on a quarter circle of radius k, with a straight bit of
+   * 0.5 - k before and after it. Distances along it are in squares. Gives:
+   *   length          how long it is
+   *   at(s)           the point s along it
+   *   angle(s)        the way it's heading there, in radians
+   *   time(t)         how far along the head (or tail) is when the step has got t (0-1) of the way: the straight bit
+   *                   before the corner goes at the usual speed (the head was on it before it turned), and the rest of
+   *                   the line shares out what's left of the step
+   *   points(from, to)  the line between two distances, as points to draw through
    */
-  const snakePoints = () => {
-    const head = snake[0];
-    const points = [headAt()];
-    if (head.bx !== undefined) {
-      points.push(bent(head));
-    } else if (progress >= 0.5) {
-      points.push(head);
+  const squareLine = (part) => {
+    const inD = part.in;
+    const outD = part.out;
+    const k = inD === outD ? 0 : part.k;
+    const before = 0.5 - k;
+    const arc = (Math.PI / 2) * k;
+    const length = before * 2 + arc;
+    // The middle of the corner's circle: k back from the square's middle, and k over toward the way out
+    const centre = { x: part.x - inD.x * k + outD.x * k, y: part.y - inD.y * k + outD.y * k };
+
+    const at = (s) => {
+      if (s <= before) {
+        return { x: part.x + inD.x * (s - 0.5), y: part.y + inD.y * (s - 0.5) };
+      }
+      if (s >= before + arc) {
+        const d = s - before - arc + k;
+        return { x: part.x + outD.x * d, y: part.y + outD.y * d };
+      }
+      const a = (s - before) / k;
+      return {
+        x: centre.x - outD.x * k * Math.cos(a) + inD.x * k * Math.sin(a),
+        y: centre.y - outD.y * k * Math.cos(a) + inD.y * k * Math.sin(a),
+      };
+    };
+
+    const angleIn = Math.atan2(inD.y, inD.x);
+    const turnBy = Math.atan2(inD.x * outD.y - inD.y * outD.x, inD.x * outD.x + inD.y * outD.y); // 0 or +-90 degrees
+    const angle = (s) => {
+      const round = arc ? Math.min(Math.max((s - before) / arc, 0), 1) : (s > before ? 1 : 0);
+      return angleIn + turnBy * round;
+    };
+
+    const time = (t) => (t <= before ? t : before + ((t - before) / (1 - before)) * (length - before));
+
+    // Where the line bends: the ends of the corner, and points along it close enough together to look round
+    const bends = [before];
+    for (let i = 1; i < 8; i++) {
+      bends.push(before + (arc * i) / 8);
     }
-    for (let i = 1; i < snake.length; i++) {
-      points.push(bent(snake[i]));
-    }
-    points.push(lerp(bent(prevTail), bent(snake[snake.length - 1]), Math.min(progress, 1)));
-    return points.map(px);
+    bends.push(before + arc);
+    const points = (from, to) => [at(from), ...bends.filter((s) => s > from && s < to).map(at), at(to)];
+
+    return { length, at, angle, time, points };
   };
 
   /**
-   * Swings the head round toward the way it's gliding (diagonal while it cuts a corner), quickly but not in one jump.
+   * The line the whole snake's body runs along, in canvas pixels from the head to the tail, and the way the head is
+   * facing. The head has come `progress` of the way through its square and the tail has gone that far through its
+   * own (unless the snake just ate, when the tail waits), so the snake stays the same length as it glides.
    */
-  const turnHead = (elapsed) => {
-    const to = headTo();
-    const target = Math.atan2(to.y - headFrom.y, to.x - headFrom.x);
-    const diff = ((target - facing + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-    facing += reducedMotion.matches ? diff : diff * (1 - Math.exp(-elapsed / 35));
-    facing = Math.atan2(Math.sin(facing), Math.cos(facing)); // kept between -pi and pi
+  const snakeLine = () => {
+    const last = snake.length - 1;
+    const tail = squareLine(snake[last]);
+    const points = tail.points(grew ? tail.length : tail.time(progress), tail.length);
+    for (let i = last - 1; i > 0; i--) {
+      const line = squareLine(snake[i]);
+      points.push(...line.points(0, line.length));
+    }
+    const head = squareLine(snake[0]);
+    const s = head.time(progress);
+    points.push(...head.points(0, s));
+    return { points: points.reverse().map(px), facing: head.angle(s) };
   };
 
   const strokeLine = (points, width, colour) => {
@@ -450,7 +489,7 @@
    * two nostrils sticking out ahead and two big googly eyes, looking at the apple. When it's crashed, the eyes are Xs.
    */
   const drawSnake = (now) => {
-    const points = snakePoints();
+    const { points, facing } = snakeLine();
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -579,16 +618,19 @@
     lastFrame = now;
     if (state === 'playing') {
       progress += elapsed / SPEEDS[saved.speed];
-      while (progress >= 1 && state === 'playing') {
-        progress -= 1;
-        step();
+      while (state === 'playing') {
+        if (progress >= TURN_LATE && blocked()) {
+          // Past the middle it can't turn any more in this square, so the crash is certain: it happens right here,
+          // with the head's nose against what it hit, rather than with half the head in the wall
+          die();
+        } else if (progress >= 1) {
+          progress -= 1;
+          step();
+        } else {
+          break;
+        }
       }
-    } else if (state === 'over') {
-      // After a crash the snake bounces back from what it hit, to the middle of its square (or where it turned there)
-      const rest = Math.max(0.5, glideFrom);
-      progress = reducedMotion.matches ? rest : Math.max(rest, progress - elapsed / 90);
     }
-    turnHead(elapsed);
     draw(now);
   };
 
