@@ -587,7 +587,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                             </table>
                         </div>
                     <?php endif; ?>
-                    <p class="admin-panel-foot">Page views from an address with ?utm_source= on it, like <code>/?utm_source=instagram</code>, counted the same way as the page views above. Only the source, the page and a count per day are kept, never who, and only for <?= HBHUB_PAGE_VIEWS_KEEP_DAYS ?> days.</p>
+                    <p class="admin-panel-foot">Page views from an address with ?utm_source= on it, like <code>/?utm_source=instagram</code></p>
                     <?= adminOverviewPanelHtml('admin-overview-sources-heading', 'Visits from links', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 12, ob_get_clean()) ?>
 
                     <?php ob_start(); ?>
@@ -623,7 +623,6 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                             </tfoot>
                         </table>
                     </div>
-                    <p class="admin-panel-foot">House won is what the players lost minus what they won, so red means the players came out ahead. The small + or − under each number is the change from the 7 days before (for chips in wallets and wallets, from a week ago; for daily chips, from the same 24 hours a week ago).</p>
                     <?= adminOverviewPanelHtml('admin-overview-casino-heading', 'Casino', 'Last 7 days', 6, ob_get_clean()) ?>
 
                     <?php ob_start(); ?>
@@ -644,7 +643,6 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                             </tbody>
                         </table>
                     </div>
-                    <p class="admin-panel-foot">Games and players are for the last 7 days. Each player's game counts as one, so a chess game counts twice. Games still going, Minesweeper, Sudoku and Snake games left for a new one, and Snake games stopped by its anticheat aren't counted. For Ore Mining Inc., players are the ones who saved this week. The small + or − under each number is the change from the 7 days before (for ever, from a week ago). Ore Mining Inc.'s players have none, as a save only remembers when it was last saved.</p>
                     <?= adminOverviewPanelHtml('admin-overview-games-heading', 'Games', 'Last 7 days', 6, ob_get_clean()) ?>
                 </div>
             </div>
