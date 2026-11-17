@@ -29,7 +29,8 @@
 // The guest Snake (/play/snake, [data-snake] has data-snake-guest) is the same game without the server: no server
 // game, no reports, the apples from Math.random, and no red line. Its best score at each speed is kept in localStorage
 // instead, as "guestBest" next to the speed ({"speed": ..., "guestBest": {"slow": apples, ...}}), and never comes over
-// to an account.
+// to an account. Each game over asks them to make an account (the guest:prompt event, guestPrompt.js), and while the
+// snake is moving [data-snake] has data-guest-prompt-wait, so the popup's timer never opens it in the middle of a game.
 (() => {
   const root = document.querySelector('[data-snake]');
   if (!root) {
@@ -434,6 +435,8 @@
 
   const setState = (next) => {
     state = next;
+    // The guest's sign-up popup (guestPrompt.js) waits while the snake is moving, so it never crashes it
+    root.toggleAttribute('data-guest-prompt-wait', guest && state === 'playing');
     showCover();
   };
 
@@ -575,6 +578,8 @@
         newBest = true;
         save();
       }
+      // A game just ended is a good moment to ask them to make an account (guestPrompt.js, not too often)
+      document.dispatchEvent(new CustomEvent('guest:prompt'));
     }
     finishing = Boolean(game);
     const sent = report('finish'); // before ranked goes, as it sends ranked's game
