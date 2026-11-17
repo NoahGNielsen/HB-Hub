@@ -11,8 +11,20 @@
 // next square and curves round as soon as the head gets there. The body and tail follow the same curves (each part keeps
 // the way it came in, the way it left and its corner's size), so the snake bends smoothly like a tube.
 //
-// Nothing goes to the server. localStorage (hbHubSnake) keeps {"speed": "slow" | "normal" | "fast", "best": {speed: the
-// most apples eaten in one game}}, so the best scores are only in this browser (it's listed in the privacy policy).
+// The leaderboard: the server plays every game along with this one (assets/php/games/snake/snake.php, which has the
+// anticheat), through games/snake/move. The page comes with the next game (data-snake-game: its id and the first
+// "rolls", which say where the apples go) and the best scores (data-snake-bests, the server's). When the snake starts
+// moving it sends "start" with the speed; then it reports the steps made and the turns since the last report
+// (report(): "12u,15l" - on step 12 it went up), every REPORT_MS, each time it eats, when it's paused or carries on, and
+// with "finish" when it crashes. Each answer brings the rolls for the next apples, and the answer to "finish" has the
+// server's score, the best and the next game. Steps are counted in step(), one per square: a turn is logged with the
+// step it's made on, whichever way it was pressed (at once or queued), which is all the server needs.
+// A game stops counting (unrank()) when the server says so, a request fails, the page runs out of rolls, or a key press
+// or swipe wasn't made by a person (event.isTrusted false: made by code, like from the console - it's ignored, too).
+// Then it's played on as normal, the apples coming from Math.random, and [data-snake-note] says why it won't count.
+//
+// localStorage (hbHubSnake) only keeps {"speed": "slow" | "normal" | "fast"}, the last speed chosen (it's listed in the
+// privacy policy). Older versions kept "best" there too, which is now ignored.
 (() => {
   const root = document.querySelector('[data-snake]');
   if (!root) {
@@ -28,6 +40,25 @@
   const TURN_LATE = 0.5;
   const EATEN_FOR = 0.3; // steps the eaten apple stays drawn, until the snout has reached it
   const STORAGE_KEY = 'hbHubSnake';
+
+  // The server's side (assets/php/games/snake/snake.php: the board and speeds above must match its HBHUB_SNAKE_*)
+  const MOVE_URL = '/games/snake/move';
+  const REPORT_MS = 4000; // how often the game reports while it's going, when it hasn't eaten
+  const MAX_PAUSES = 10; // HBHUB_SNAKE_MAX_PAUSES: one more and the game stops counting
+  const LATE_MS = 1000; // a round that started before its server game came can take it this long after (see gotNext())
+  const FINISHED = 1; // HBHUB_SNAKE_FINISHED, the result of a game that counts (0 is still going)
+  // Why a game doesn't count: the server's results (HBHUB_SNAKE_*) and the page's own reasons
+  const NOT_COUNTED = 'This game doesn\'t count for the leaderboard';
+  const WHY = {
+    2: `${NOT_COUNTED}: a new game was started in another tab.`,
+    3: `${NOT_COUNTED}: a key press or swipe came from code, not from you, so it was ignored.`,
+    4: `${NOT_COUNTED}: it didn't keep time with HB Hub's clock (was the game slowed down or sped up?).`,
+    5: `${NOT_COUNTED}: HB Hub couldn't make the same moves.`,
+    6: `${NOT_COUNTED}: it was paused more than ${MAX_PAUSES} times.`,
+    noGame: `${NOT_COUNTED}: HB Hub couldn't be reached in time when it started.`,
+    connection: `${NOT_COUNTED}: the connection to HB Hub was lost.`,
+    error: `${NOT_COUNTED}: something went wrong on HB Hub.`,
+  };
 
   // The colours, picked to match the look of the board in the CSS
   const COLOUR = {
@@ -65,33 +96,41 @@
   const speedSelect = root.querySelector('[data-snake-speed]');
   const scoreOut = root.querySelector('[data-snake-score]');
   const bestOut = root.querySelector('[data-snake-best]');
+  const note = root.querySelector('[data-snake-note]');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+  const readJson = (text) => {
+    try {
+      return JSON.parse(text || 'null');
+    } catch {
+      return null;
+    }
+  };
+
   /**
-   * The saved speed and best scores. Wrapped in try/catch, as storage can be blocked (private windows etc.), and the
-   * game works without it, it just forgets.
+   * The saved speed. Wrapped in try/catch, as storage can be blocked (private windows etc.), and the game works
+   * without it, it just forgets.
    */
   const load = () => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      return {
-        speed: SPEEDS[saved.speed] ? saved.speed : 'normal',
-        best: { slow: 0, normal: 0, fast: 0, ...(saved.best || {}) },
-      };
+      return { speed: SPEEDS[saved.speed] ? saved.speed : 'normal' };
     } catch {
-      return { speed: 'normal', best: { slow: 0, normal: 0, fast: 0 } };
+      return { speed: 'normal' };
     }
   };
 
   const save = () => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ speed: saved.speed }));
     } catch {
-      // Storage is blocked or full: the best score is just not kept
+      // Storage is blocked or full: the speed is just not kept
     }
   };
 
   const saved = load();
+  // The best score at each speed, from the games on the leaderboard (the server's)
+  const best = { slow: 0, normal: 0, fast: 0, ...(readJson(root.dataset.snakeBests) || {}) };
 
   // The game. snake[0] is the head; each part is {x, y, in, out, k}: its square, the way the snake came into it and
   // left it (DIRECTIONS entries; for the head, `out` is the way it's going to leave), and, where those differ, k: the
@@ -113,8 +152,174 @@
   let nextBlink = performance.now() + 2500; // when the eyes next close, for 140 ms
   let size = 0; // one square, in canvas pixels
 
+  // The leaderboard (see the top)
+  let nextGame = readJson(root.dataset.snakeGame); // the server's game for the next round, {game, rollsFrom, rolls}, or null
+  let ranked = null; // this round's server game while it counts, {game: id, rolls: [index => roll], started}, or null
+  let why = ''; // why this round doesn't count (a key of WHY), or ''
+  let counted = false; // the round that just ended is on the leaderboard (the server said so)
+  let finishing = false; // the answer to "finish" is on its way
+  let fetching = false; // asking for a new game
+  let steps = 0; // squares the snake has moved this round
+  let logged = DIRECTIONS.right; // the way the last step went, so each turn is logged once
+  let turns = []; // the turns since the last report, like "12u"
+  let pauses = 0;
+  let lastReport = 0; // performance.now() of the last report
+  let requests = Promise.resolve(); // the requests go one at a time, in order
+  const LETTER = new Map(Object.entries(DIRECTIONS).map(([name, way]) => [way, name[0]])); // up => 'u', ...
+
+  // The server -----------------------------------------------------------------------------------------------------
+
   /**
-   * A new snake, lying START_LENGTH squares long on the left of the middle row, looking right, and an apple ahead of it.
+   * One request to games/snake/move. Resolves with the answer, or throws an error with .code: the server's error code,
+   * or 'network'.
+   */
+  const post = async (action, fields, keepalive) => {
+    let response;
+    try {
+      response = await fetch(MOVE_URL, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: new URLSearchParams({ action, ...fields }),
+        keepalive, // a pause is often sent as the page is being hidden or closed
+      });
+    } catch {
+      throw Object.assign(new Error('network'), { code: 'network' });
+    }
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data || data.error) {
+      throw Object.assign(new Error('server'), { code: data?.error || 'server' });
+    }
+    return data;
+  };
+
+  // In line after the ones before it, so the server gets the start, the reports and the pauses in the order they happened
+  const send = (action, fields = {}, keepalive = false) => {
+    const request = requests.then(() => post(action, fields, keepalive));
+    requests = request.catch(() => {});
+    return request;
+  };
+
+  // A failed request as a key of WHY: "gameOver" mostly means another tab has made a new game since
+  const failure = (error) => ({ network: 'connection', gameOver: 2 })[error.code] || 'error';
+
+  // The rolls in an answer ({rollsFrom, rolls}) go into the game's list
+  const addRolls = (game, data) => {
+    if (data && Array.isArray(data.rolls)) {
+      data.rolls.forEach((roll, i) => {
+        game.rolls[data.rollsFrom + i] = roll;
+      });
+    }
+  };
+
+  const showNote = () => {
+    note.hidden = !why;
+    note.textContent = why ? WHY[why] : '';
+  };
+
+  /**
+   * This round stops counting for the leaderboard, for `reason` (a key of WHY). It's played on as normal.
+   */
+  const unrank = (game, reason) => {
+    if (!game || ranked !== game) {
+      return;
+    }
+    ranked = null;
+    why = reason in WHY ? reason : 'error';
+    showNote();
+    showScore();
+    showCover();
+  };
+
+  /**
+   * Takes the server's next game for this round, or, when there isn't one (the server couldn't be reached), plays this
+   * round without and asks for one, which this round takes if it's back before the snake starts.
+   */
+  const adopt = () => {
+    ranked = null;
+    why = '';
+    if (nextGame) {
+      ranked = { game: nextGame.game, rolls: [], started: false };
+      addRolls(ranked, nextGame);
+      nextGame = null;
+    } else {
+      why = 'noGame';
+      if (!finishing) {
+        fetchNew(); // otherwise the answer to "finish" brings one (asking twice would throw that one away)
+      }
+    }
+    showNote();
+  };
+
+  /**
+   * The server's next game is here. A round that's waiting takes it. So does one that started without it (Play again
+   * pressed before the answer to the last game came back), while it's still in its first LATE_MS and hasn't eaten: the
+   * server can still make those steps from the turns (they're logged either way, and the first apple is always in the
+   * same place), and they're within the clock's leeway.
+   */
+  const gotNext = (data) => {
+    nextGame = data;
+    if (ranked) {
+      return;
+    }
+    if (state === 'ready') {
+      adopt();
+    } else if (state === 'playing' && why === 'noGame' && score === 0 && steps * SPEEDS[saved.speed] < LATE_MS) {
+      adopt();
+      startOnServer(ranked);
+    }
+  };
+
+  // Tells the server the snake has started moving, which starts its clock
+  const startOnServer = (game) => {
+    game.started = true;
+    lastReport = performance.now();
+    send('start', { game: game.game, speed: saved.speed }).catch((error) => unrank(game, failure(error)));
+  };
+
+  // Asks for the next game, when there isn't one already (or on its way)
+  const fetchNew = () => {
+    if (nextGame || fetching) {
+      return;
+    }
+    fetching = true;
+    send('new')
+      .then(gotNext, () => {})
+      .finally(() => {
+        fetching = false;
+      });
+  };
+
+  /**
+   * Reports how far the snake has got to the server ('tick', 'pause', 'resume' or 'finish'): the steps so far, and the
+   * turns since the last report. Resolves with the answer, or {failed: a key of WHY} when the request failed. When the
+   * server says the game is over (or it failed), anything but 'finish' stops this round counting.
+   */
+  const report = (action, keepalive = false) => {
+    const game = ranked;
+    if (!game || !game.started) {
+      return Promise.resolve({ failed: 'error' });
+    }
+    const fields = { game: game.game, steps, turns: turns.join(',') };
+    turns = [];
+    lastReport = performance.now();
+    return send(action, fields, keepalive).then(
+      (data) => {
+        addRolls(game, data);
+        if (action !== 'finish' && data.result !== 0) {
+          unrank(game, data.result);
+        }
+        return data;
+      },
+      (error) => {
+        unrank(game, failure(error));
+        return { failed: failure(error) };
+      },
+    );
+  };
+
+  /**
+   * A new snake, lying START_LENGTH squares long on the left of the middle row, looking right, and an apple ahead of it
+   * (the server's hbHubSnakeNew() starts the same way). It takes the server's next game, unless it has one already.
    */
   const reset = () => {
     const row = Math.floor(ROWS / 2);
@@ -127,6 +332,14 @@
     turned = false;
     queue = [];
     score = 0;
+    steps = 0;
+    logged = DIRECTIONS.right;
+    turns = [];
+    pauses = 0;
+    counted = false;
+    if (!ranked) {
+      adopt();
+    }
     progress = 0.5; // the head sits in the middle of its square until it starts
     eaten = null;
     apple = { x: COLS - 5, y: row };
@@ -135,7 +348,9 @@
   };
 
   /**
-   * Puts the apple on a random free square. Returns false when there isn't one left (the snake fills the board).
+   * Puts the apple on a free square: free[roll % free.length], the roll being the server's for this apple while the
+   * game counts (hbHubSnakeStep() picks the same one), or a random one. Returns false when there isn't a free square
+   * left (the snake fills the board).
    */
   const placeApple = () => {
     const taken = new Set(snake.map((part) => part.y * COLS + part.x));
@@ -148,27 +363,48 @@
     if (!free.length) {
       return false;
     }
-    const pick = free[Math.floor(Math.random() * free.length)];
+    let roll = Math.floor(Math.random() * 2 ** 28);
+    if (ranked) {
+      // The rolls come ahead of time, but a slow connection can fall behind: then it can't count any more
+      if (ranked.rolls[score - 1] === undefined) {
+        unrank(ranked, 'connection');
+      } else {
+        roll = ranked.rolls[score - 1];
+      }
+    }
+    const pick = free[roll % free.length];
     apple = { x: pick % COLS, y: Math.floor(pick / COLS) };
     appleBorn = performance.now();
     return true;
   };
 
+  // The score, and the best at this speed: the server's, or this round's score once it's more and the round counts
   const showScore = () => {
     scoreOut.textContent = score;
-    bestOut.textContent = Math.max(saved.best[saved.speed], score);
+    bestOut.textContent = Math.max(best[saved.speed], ranked || finishing ? score : 0);
   };
 
   /**
    * Shows the cover over the board for the given state, or hides it while playing.
    */
   const showCover = () => {
-    const best = saved.best[saved.speed];
+    const left = MAX_PAUSES - pauses;
+    let pauseText = '';
+    if (ranked) {
+      pauseText = left > 0
+        ? ` You can pause ${left} more ${left === 1 ? 'time' : 'times'} and keep this game on the leaderboard.`
+        : ' Pause again and this game won\'t count for the leaderboard.';
+    }
+    // The best only once the server has answered, and only for a game that counts
+    let bestText = '';
+    if (counted) {
+      bestText = newBest ? ' That\'s a new best!' : ` Your best is ${best[saved.speed]}.`;
+    }
     const texts = {
       ready: ['Ready?', 'Press an arrow key or WASD, or swipe, to start.', 'Play'],
-      paused: ['Paused', 'Press P or Esc, or the button, to carry on.', 'Carry on'],
-      over: ['Game over', `You ate ${score} ${score === 1 ? 'apple' : 'apples'}.` + (newBest ? ' That\'s a new best!' : ` Your best is ${best}.`), 'Play again'],
-      won: ['You win!', `The snake fills the whole board, with ${score} apples eaten.`, 'Play again'],
+      paused: ['Paused', 'Press P or Esc, or the button, to carry on.' + pauseText, 'Carry on'],
+      over: ['Game over', `You ate ${score} ${score === 1 ? 'apple' : 'apples'}.` + bestText, 'Play again'],
+      won: ['You win!', `The snake fills the whole board, with ${score} apples eaten.` + bestText, 'Play again'],
     };
 
     cover.hidden = state === 'playing';
@@ -187,13 +423,17 @@
   };
 
   /**
-   * Starts moving: from "ready" with the snake as it lies, or after a game over with a new snake.
+   * Starts moving: from "ready" with the snake as it lies, or after a game over with a new snake. A game that counts
+   * tells the server, which starts its clock.
    */
   const start = () => {
     if (state === 'over' || state === 'won') {
       reset();
     }
     setState('playing');
+    if (ranked && !ranked.started) {
+      startOnServer(ranked);
+    }
   };
 
   /**
@@ -265,6 +505,12 @@
     }
     const next = { ...nextSquare(), in: dir, out: dir };
     const eating = next.x === apple.x && next.y === apple.y;
+    // For the server: the step this one is, and the way it goes when that's new (however the turn was made)
+    if (dir !== logged) {
+      turns.push(`${steps}${LETTER.get(dir)}`);
+      logged = dir;
+    }
+    steps++;
 
     snake.unshift(next);
     turned = false;
@@ -282,6 +528,9 @@
     if (queue.length && state === 'playing') {
       turnNow(queue.shift());
     }
+    if (eating && ranked && state === 'playing') {
+      report('tick'); // straight away, for the next apple's roll
+    }
   };
 
   const die = () => {
@@ -295,23 +544,55 @@
   };
 
   /**
-   * Ends the game ('over' or 'won'), saving the score if it's the best at this speed.
+   * Ends the game ('over' or 'won'). A game that counts tells the server, whose answer has the score as it counted it,
+   * the best at this speed, and the next game; until then the cover only has the score.
    */
   const finish = (how) => {
-    newBest = score > saved.best[saved.speed];
-    if (newBest) {
-      saved.best[saved.speed] = score;
-      save();
-    }
+    const game = ranked && ranked.started ? ranked : null;
+    const speed = saved.speed;
+    newBest = false;
+    counted = false;
+    finishing = Boolean(game);
+    const sent = report('finish'); // before ranked goes, as it sends ranked's game
+    ranked = null;
     setState(how);
     showScore();
+    if (!game) {
+      fetchNew();
+      return;
+    }
+
+    sent.then((data) => {
+      finishing = false;
+      if (data.result === FINISHED) {
+        counted = true;
+        best[speed] = data.best;
+        newBest = data.isBest;
+      } else {
+        why = data.failed || (data.result in WHY ? data.result : 'error');
+        showNote();
+      }
+      if (data.next) {
+        gotNext(data.next);
+      } else {
+        fetchNew();
+      }
+      if (state === 'over' || state === 'won') {
+        showCover();
+      }
+      showScore();
+    });
   };
 
+  // Pause, or carry on. Both go to the server, which stops its clock while paused (and counts the pauses).
   const pause = () => {
     if (state === 'playing') {
+      pauses++;
+      report('pause', true);
       setState('paused');
     } else if (state === 'paused') {
       setState('playing');
+      report('resume');
     }
   };
 
@@ -630,6 +911,9 @@
           break;
         }
       }
+      if (state === 'playing' && ranked && now - lastReport >= REPORT_MS) {
+        report('tick');
+      }
     }
     draw(now);
   };
@@ -648,6 +932,20 @@
 
   // Controls --------------------------------------------------------------------------------------------------------
 
+  /**
+   * A key press or swipe that wasn't made by a person (made by code, like from the console): it's ignored, and the
+   * game stops counting (the server ends it as scripted).
+   */
+  const caught = () => {
+    const game = ranked;
+    if (game) {
+      if (game.started) {
+        send('scripted', { game: game.game }).catch(() => {});
+      }
+      unrank(game, 3);
+    }
+  };
+
   document.addEventListener('keydown', (event) => {
     const target = event.target instanceof Element ? event.target : null;
     if (event.ctrlKey || event.metaKey || event.altKey || target?.closest('input, select, textarea, dialog')) {
@@ -655,6 +953,10 @@
     }
 
     const name = KEYS[event.key];
+    if (!event.isTrusted && (name || event.key === 'p' || event.key === 'P' || event.key === 'Escape')) {
+      caught();
+      return;
+    }
     if (name) {
       if (event.key.startsWith('Arrow')) {
         event.preventDefault(); // don't scroll the page
@@ -677,12 +979,16 @@
   // make a few turns
   let swipeFrom = null;
   board.addEventListener('pointerdown', (event) => {
-    if (event.pointerType !== 'mouse') {
+    if (event.pointerType !== 'mouse' && event.isTrusted) {
       swipeFrom = { x: event.clientX, y: event.clientY };
     }
   });
   board.addEventListener('pointermove', (event) => {
     if (!swipeFrom || state === 'paused') {
+      return;
+    }
+    if (!event.isTrusted) {
+      caught();
       return;
     }
     const dx = event.clientX - swipeFrom.x;
@@ -723,11 +1029,11 @@
 
   board.addEventListener('animationend', () => board.classList.remove('is-hit'));
 
-  // Away from the page: pause the game and stop drawing
+  // Away from the page: pause the game (which counts as one of its pauses) and stop drawing
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       if (state === 'playing') {
-        setState('paused');
+        pause();
       }
       stop();
     } else {

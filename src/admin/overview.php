@@ -159,9 +159,10 @@ function adminOverviewCasino(PDO $db, int $weeksAgo = 0): array
 
 /**
  * The games' numbers: games played in the last 7 days, how many played them, and games played ever. Each player's
- * game is one, so a chess game between two people counts as two. Games still being played, and Minesweeper's and
- * Sudoku's left ones, don't count. Ore Mining Inc. has no games, so it's the players who saved in the last 7 days
- * and everyone who has a save (null for the games played).
+ * game is one, so a chess game between two people counts as two. Games still being played, Minesweeper's and
+ * Sudoku's left ones, and Snake's that were left or stopped by its anticheat, don't count. Ore Mining Inc. has no
+ * games, so it's the players who saved in the last 7 days and everyone who has a save (null for
+ * the games played).
  *
  * $weeksAgo 1 gives the 7 days before that, and "ever" as it was a week ago, for the + or - under each number. Ore
  * Mining Inc.'s players are null then, as a save only keeps when it was last saved; its saves a week ago go by when
@@ -181,6 +182,7 @@ function adminOverviewGames(PDO $db, int $weeksAgo = 0): array
         'Wordle' => ['HBHub-WordleGames', 'gameStartTimestamp', 'gameResult <> 0 OR gameDate < CURDATE()'],
         'Minesweeper' => ['HBHub-MinesweeperGames', 'gameEndTimestamp', 'gameResult IN (1, 2)'],
         'Sudoku' => ['HBHub-SudokuGames', 'gameEndTimestamp', 'gameResult IN (1, 2)'],
+        'Snake' => ['HBHub-SnakeGames', 'gameEndTimestamp', 'gameResult = 1'],
     ];
     $games = [];
     foreach ($tables as $name => [$table, $column, $finished]) {
@@ -642,7 +644,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                             </tbody>
                         </table>
                     </div>
-                    <p class="admin-panel-foot">Games and players are for the last 7 days. Each player's game counts as one, so a chess game counts twice. Games still going, and Minesweeper and Sudoku games left for a new one, aren't counted. For Ore Mining Inc., players are the ones who saved this week. The small + or − under each number is the change from the 7 days before (for ever, from a week ago). Ore Mining Inc.'s players have none, as a save only remembers when it was last saved.</p>
+                    <p class="admin-panel-foot">Games and players are for the last 7 days. Each player's game counts as one, so a chess game counts twice. Games still going, Minesweeper, Sudoku and Snake games left for a new one, and Snake games stopped by its anticheat aren't counted. For Ore Mining Inc., players are the ones who saved this week. The small + or − under each number is the change from the 7 days before (for ever, from a week ago). Ore Mining Inc.'s players have none, as a save only remembers when it was last saved.</p>
                     <?= adminOverviewPanelHtml('admin-overview-games-heading', 'Games', 'Last 7 days', 6, ob_get_clean()) ?>
                 </div>
             </div>

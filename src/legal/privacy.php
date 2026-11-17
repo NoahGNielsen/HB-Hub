@@ -42,7 +42,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubMiner (IndexedDB)' => 'En nedbrudsrapport, som spillet skriver, hvis det fryser. Den sendes kun, hvis du siger ja, næste gang du åbner spillet, og slettes under alle omstændigheder. Spiller du uden en konto, sendes den aldrig.',
     'hbHubSudokuGuest' => 'Kun i den gratis Sudoku på /play/sudoku: dit igangværende spil (opgave, løsning, dine tal og noter, tid og hints) samt dine bedste tider og sejre. Spillet foregår udelukkende i din browser, så intet sendes til HB Hub eller overføres til en konto.',
     'hbHubSudoku' => 'Dit igangværende Sudoku-spil med en konto (nummer, opgave, dine tal og noter, tid og hints), så du kan fortsætte senere. Dine tal sendes kun til serveren, når brættet er fyldt, eller du beder om et hint.',
-    'hbHubSnake' => 'Den fart, du sidst valgte i Snake, og din bedste score for hver fart. Snake spilles kun i din browser, så intet om dine spil sendes til HB Hub.',
+    'hbHubSnake' => 'Den fart, du sidst valgte i Snake. Dine spil og bedste scorer gemmes på serveren (se Casino og spil).',
     'hbHubGuestWordle' => 'Dagens Wordle-spil uden en konto, krypteret af HB Hub, så det ikke kan læses eller ændres i browseren. Sendes med hvert gæt, så serveren kan kontrollere det. Logger du ind eller opretter dig, overføres dagens spil én gang til din konto (kun for sprog, du ikke har spillet i dag) og slettes derefter. Spil fra tidligere dage overskrives.',
     'hbHubGuestWordleRandom' => 'Wordles tilfældige ord uden en konto, med dine gæt, krypteret på samme måde og sendt med hvert gæt. Overføres aldrig til en konto og slettes, når du åbner Wordle logget ind.',
     'hbHubGuestMiner' => 'Dit Ore Mining Inc.-spil uden en konto, krypteret på samme måde, samt et tilfældigt id for fanen (så spillet kun kører i én fane ad gangen). Sendes med hver gemning, så serveren kan kontrollere det. Logger du ind eller opretter dig, bliver det din kontos spil (kun hvis kontoen ikke har et) og slettes derefter.',
@@ -216,6 +216,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Wordle: dine gæt, resultat og tidspunkter for hver dag og hvert sprog. De udgør din statistik og din plads på ranglisten, hvor andre kun ser totaler, aldrig dine gæt. Det tilfældige ord gemmes separat, overskrives ved hvert nyt ord og vises ikke for andre.</li>
                             <li>Minesweeper: brætstørrelse, resultat, tid og tidspunkter for hvert spil, samt det mindste antal klik, brættet kunne vindes på, for at opdage sejre, der er for hurtige til et menneske. Spil, hvor et klik kom fra kode i stedet for fra dig, stoppes. Mens et spil er i gang, gemmes også åbnede felter og minernes placering; det slettes, når spillet slutter. Dine flag bliver i din browser.</li>
                             <li>Sudoku: niveau, resultat (med eller uden hints, eller for hurtigt til at tælle), antal hints, tid, pausetid og tidspunkter. Mens et spil er i gang, gemmes også opgaven og løsningen; de slettes, når spillet slutter. Dine tal og noter bliver i din browser, indtil brættet er udfyldt.</li>
+                            <li>Snake: fart, resultat (talt med eller stoppet af anticheat, og hvorfor), æbler spist, antal skridt og pauser, spilletid, pausetid og tidspunkter. Mens du spiller, sender siden dine sving og antal skridt til serveren, som spiller med på sin egen kopi af brættet for at kontrollere scoren og tiden; mens et spil er i gang, gemmes også slangens placering og en tilfældig nøgle til æblerne, som slettes, når spillet slutter. Et tastetryk eller swipe, der kom fra kode i stedet for fra dig, stopper spillet fra at tælle. Andre ser kun dine totaler på ranglisten.</li>
                             <li>
                                 Ore Mining Inc.: dit gemte spil, dvs. din fremgang (ressourcer, bygninger, opgraderinger, færdigheder,
                                 præstationer, klik, Star Shards og køb i Shard Shop, valgte skins og effekter, Starbound Shifts og
@@ -461,7 +462,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             Det sletter straks dit navn, profilbillede, banner, bio, status, uddannelsesmærke, klasse,
                             indstillinger, adgangskode, totrinshemmelighed, Discord-kobling, IP-adresser, logins, kendte enheder,
                             browserfingeraftryk, dit Ore Mining Inc.-spil og dine nedbrudsrapporter, dine fejlrapporter, dine
-                            Minesweeper- og Sudoku-spil, dit tilfældige Wordle-ord og dine vedhæftede filer. Dit navn erstattes
+                            Minesweeper-, Sudoku- og Snake-spil, dit tilfældige Wordle-ord og dine vedhæftede filer. Dit navn erstattes
                             med "Deleted User". Udskifter eller fjerner du dit profilbillede, eller udskiftes eller fjernes en
                             gruppes ikon, slettes den gamle billedfil fra serveren med det samme.
                         </p>

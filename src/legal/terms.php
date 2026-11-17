@@ -258,6 +258,12 @@ function termsNumber(int $number): string
                                 tæller ikke.
                             </li>
                             <li>
+                                <strong>Snake:</strong> Serveren spiller med på sin egen kopi af brættet, og kun de æbler, den selv
+                                tæller, kommer på ranglisten. Et spil tæller kun som spillet, hvis det er sat op eller ned i fart,
+                                hvis serveren ikke kan lave de samme træk, hvis det holdes pause mere end 10 gange, eller hvis et
+                                tastetryk eller swipe kommer fra kode. Et nyt spil afslutter det igangværende.
+                            </li>
+                            <li>
                                 <strong>Ore Mining Inc.:</strong> Spillet kører i én fane ad gangen, og højst 20 klik i sekundet
                                 tæller. Klik, der ligner automatisering, giver kun 20 % af det normale udbytte. Fremskridt, der ikke
                                 er nået at blive gemt, forsøges gendannet næste gang, men kan gå tabt. Star Shards har ingen værdi

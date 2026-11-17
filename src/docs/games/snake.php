@@ -1,6 +1,7 @@
 <?php
 // Help docs: Snake - the rules (assets/php/games/snake/rules.php, included as the game shows them), a few tips, and
-// where the best scores are kept. Open to everyone. Built by assets/php/docs/top.php and bottom.php.
+// the leaderboard and what keeps it fair (assets/php/games/snake/snake.php). Open to everyone. Built by
+// assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
@@ -33,12 +34,27 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         </ul>
                     </section>
 
-                    <section id="saving" aria-labelledby="docs-saving">
-                        <h2 id="docs-saving">Bedste score</h2>
+                    <section id="leaderboard" aria-labelledby="docs-leaderboard">
+                        <h2 id="docs-leaderboard">Rangliste</h2>
                         <p>
-                            Snake spilles helt i din browser, og intet om dine spil bliver sendt til HB Hub. Din bedste score
-                            for hver fart og den fart, du sidst valgte, gemmes kun i din browser, så de er der ikke på en
-                            anden computer eller telefon, og der er ingen rangliste.
+                            Slow, Normal og Fast har hver sin rangliste (<strong>Leaderboard</strong> på Snake-siden) med din
+                            bedste score, dit gennemsnit, alle de æbler, du har spist, og hvor mange spil du har spillet.
+                        </p>
+                        <p>
+                            Spillet kører i din browser, men HB Hub's server spiller med på sin egen kopi af brættet: siden
+                            sender dine sving og antallet af skridt, mens du spiller, og serveren laver de samme træk og tæller
+                            selv æblerne. Den holder også øje med uret, så et spil, der er sat op eller ned i fart, ikke tæller.
+                            Et spil tæller kun som spillet, ikke på ranglisten, hvis
+                        </p>
+                        <ul>
+                            <li>et tastetryk eller swipe kom fra kode i stedet for fra dig (det bliver ignoreret),</li>
+                            <li>skridtene ikke passer med serverens ur, eller serveren ikke kan lave de samme træk,</li>
+                            <li>du holder pause mere end 10 gange,</li>
+                            <li>forbindelsen til HB Hub forsvinder, eller du starter et nyt spil i en anden fane.</li>
+                        </ul>
+                        <p>
+                            Står der en rød linje over brættet, tæller spillet ikke, og linjen siger hvorfor. Du kan stadig
+                            spille det færdigt. Den fart, du sidst valgte, huskes i din browser.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

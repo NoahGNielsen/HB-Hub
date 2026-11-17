@@ -751,6 +751,32 @@ CREATE TABLE `HBHub-SudokuGames` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-SnakeGames`
+--
+
+CREATE TABLE `HBHub-SnakeGames` (
+  `gameId` bigint UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `gameSpeed` tinyint UNSIGNED DEFAULT NULL COMMENT '1 Slow (160 ms a step)\r\n2 Normal (120 ms)\r\n3 Fast (85 ms)\r\nNULL until it starts',
+  `gameSecret` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing, the random secret the apples are placed from (the page only gets the next few). Empty once the game is over',
+  `gameSnake` varchar(480) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing, the server''s copy of the snake: its squares (row * 20 + column) as two hex digits each, head first. Empty once the game is over',
+  `gameDir` char(1) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'The way the last step went: u, d, l or r',
+  `gameApple` tinyint UNSIGNED NOT NULL COMMENT 'The square the apple is on (row * 20 + column), 255 once the snake fills the board',
+  `gameSteps` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Squares the snake has moved, as far as the server has played it',
+  `gameScore` smallint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Apples eaten, as the server counted them',
+  `gamePauses` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How many times it was paused (more than 10 and it doesn''t count)',
+  `gamePausedMs` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How long it has been paused in all, in ms, not counting the pause it''s in now',
+  `gamePausedTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when the pause it''s in now started, NULL while the clock runs',
+  `gameMs` int UNSIGNED DEFAULT NULL COMMENT 'How long it was played, in ms, without its pauses. Set when it ends with a report (not when it''s left or scripted)',
+  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing (or ready to start, while gameStartTimestamp is NULL)\r\n1 Finished (crashed or filled the board: on the leaderboard)\r\n2 Left (started another game first)\r\n3 Scripted (a key press or swipe came from code)\r\n4 Out of time (the steps didn''t keep time with the server''s clock)\r\n5 Bad moves (a step the server''s copy couldn''t make)\r\n6 Too many pauses\r\n3-6 are the anticheat, and only count as played',
+  `gameCreatedTimestamp` datetime(3) NOT NULL COMMENT 'UTC, when it was made (the Snake page was opened, or the last game ended)',
+  `gameStartTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when the snake started moving, NULL until then (a game never started is deleted when the next one is made)',
+  `gameEndTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when it ended, NULL while playing'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Snake: every game played, for the leaderboard (src/assets/php/games/snake/snake.php). Others only see the totals on the leaderboard';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-MinerAnomalyTimes`
 --
 
@@ -1464,6 +1490,14 @@ ALTER TABLE `HBHub-SudokuGames`
   ADD KEY `levelResult` (`gameLevel`,`gameResult`,`userId`,`gameMs`);
 
 --
+-- Indexes for table `HBHub-SnakeGames`
+--
+ALTER TABLE `HBHub-SnakeGames`
+  ADD PRIMARY KEY (`gameId`),
+  ADD KEY `userResult` (`userId`,`gameResult`),
+  ADD KEY `speedUser` (`gameSpeed`,`userId`,`gameResult`,`gameScore`);
+
+--
 -- Indexes for table `HBHub-MinerAnomalyTimes`
 --
 ALTER TABLE `HBHub-MinerAnomalyTimes`
@@ -1769,6 +1803,12 @@ ALTER TABLE `HBHub-MinesweeperGames`
 -- AUTO_INCREMENT for table `HBHub-SudokuGames`
 --
 ALTER TABLE `HBHub-SudokuGames`
+  MODIFY `gameId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-SnakeGames`
+--
+ALTER TABLE `HBHub-SnakeGames`
   MODIFY `gameId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
@@ -2110,6 +2150,12 @@ ALTER TABLE `HBHub-MinesweeperGames`
 --
 ALTER TABLE `HBHub-SudokuGames`
   ADD CONSTRAINT `fk_sudokugames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-SnakeGames`
+--
+ALTER TABLE `HBHub-SnakeGames`
+  ADD CONSTRAINT `fk_snakegames_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-MinerAnomalyTimes`

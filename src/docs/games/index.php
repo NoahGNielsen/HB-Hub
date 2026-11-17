@@ -73,7 +73,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="leaderboards" aria-labelledby="docs-leaderboards">
                         <h2 id="docs-leaderboards">Ranglister</h2>
                         <p>
-                            Alle spil undtagen Sudoku har en rangliste, som der linkes til fra deres side. Klik på en kolonnes
+                            Alle spillene har en rangliste, som der linkes til fra deres side. Klik på en kolonnes
                             overskrift for at sortere efter den. Sejrsprocenten (eller scoren, i skak) tæller først, når du har spillet
                             5 spil, så ét heldigt spil ikke kan komme øverst.
                         </p>

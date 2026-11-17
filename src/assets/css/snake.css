@@ -2,6 +2,16 @@
    frame around the board, whose rounded corners and soft shadow along the top make it look sunk in. The board itself
    (the checkered sand, the snake and the apple) is drawn on the canvas by assets/js/snake.js. Loaded after casino.css
    and games.css. The colours are the game's own, so they stay the same in light and dark mode. */
+
+/* The line above the board when a game doesn't count for the leaderboard (like Minesweeper's result line) */
+.snake-note {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--casino-down) 14%, var(--secondary));
+  font-weight: 600;
+}
+
 .snake-frame {
   margin: 20px 0 24px;
   overflow: hidden;

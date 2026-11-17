@@ -90,6 +90,9 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
 - **Ore Mining Inc.**: the rules are in both `assets/php/games/spaceOreMiner/miner.php` and `assets/js/spaceOreMiner.js`,
   and the server replays every action to check it, so a rule change goes in both and must give exactly the same numbers
   (whole-number checks instead of trusting `**` for roots, etc.).
+- **Snake**: the game runs in `assets/js/snake.js`, but `assets/php/games/snake/snake.php` replays every step for the
+  leaderboard (board size, start position, first apple, speeds, apple placement `free[roll % free.length]`), so a rule
+  change goes in both, or every game ends as "bad moves".
 - **`userSettings` JSON**: always read with a default - older accounts lack newer keys. `defaultUserSettings.json` /
   `defaultChatSettings.json` document the shape; update them when adding a setting.
 - **Notifications**: types are `"section.kind"`; add a section with a file in `assets/php/notificationTypes/` and call

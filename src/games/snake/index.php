@@ -1,12 +1,21 @@
 <?php
 // Snake: steer a snake around a 20x12 board, eat the apples to grow, and don't hit the edge or your own body. A normal
-// Games page (side bar, back link, title, and the rules under it from assets/php/games/snake/rules.php).
-// The whole game runs in the browser (assets/js/snake.js draws it on the data-snake-canvas canvas), and nothing is sent
-// to the server: the chosen speed and your best score for each speed are kept in localStorage (hbHubSnake), so there's
-// no leaderboard. The board's look (the brown frame, the olive bar on top, the checkered sand) is in assets/css/snake.css.
+// Games page (side bar, back link, title, a Leaderboard button, and the rules under it from
+// assets/php/games/snake/rules.php).
+// The game runs in the browser (assets/js/snake.js draws it on the data-snake-canvas canvas), and the server plays
+// along with it for the leaderboard (assets/php/games/snake/snake.php). So opening the page makes the next game on the
+// server: data-snake-game has it ({"game": id, "rollsFrom": 0, "rolls": [...]}), and data-snake-bests the user's best
+// score at each speed ({"slow": apples, ...}). Only the chosen speed is kept in localStorage (hbHubSnake). The line
+// above the board (data-snake-note) says when a game doesn't count for the leaderboard, and why. The board's look (the
+// brown frame, the olive bar on top, the checkered sand) is in assets/css/snake.css.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/snake/snake.php';
 hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
+
+$db = hbHubDatabase();
+$snakeGame = hbHubSnakeNew($db, (int) $hbHubUser['userId']);
+$snakeBests = hbHubSnakeBests($db, (int) $hbHubUser['userId']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,15 +30,19 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="casino games snake" data-snake>
+    <main class="casino games snake" data-snake data-snake-game="<?= htmlspecialchars(json_encode($snakeGame)) ?>"
+          data-snake-bests="<?= htmlspecialchars(json_encode($snakeBests)) ?>">
         <a class="casino-back" href="/games/">&larr; Games</a>
         <div class="casino-title-row">
             <h1>Snake</h1>
+            <a class="casino-btn" href="/games/snake/leaderboard">Leaderboard</a>
         </div>
         <p class="casino-intro">
             Eat the apples to grow longer, and don't crash into the edge or your own tail. Use the arrow keys or WASD, or
-            swipe on the board on a phone.
+            swipe on the board on a phone. Each speed has a leaderboard of the most apples eaten.
         </p>
+
+        <p class="snake-note" data-snake-note aria-live="polite" hidden></p>
 
         <div class="snake-frame">
             <div class="snake-bar">
@@ -42,7 +55,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     <span class="games-visually-hidden">Score:</span>
                     <span data-snake-score>0</span>
                 </span>
-                <span class="snake-count" title="Your best at this speed">
+                <span class="snake-count" title="Your best at this speed, on the leaderboard">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path class="snake-icon-trophy" d="M7 3H17V5H21V8C21 11 19 13 16.5 13.5C15.8 15 14.5 16 13 16.3V19H17V21H7V19H11V16.3C9.5 16 8.2 15 7.5 13.5C5 13 3 11 3 8V5H7ZM5 7V8C5 9.6 6 10.9 7.2 11.4C7.1 10.9 7 10.5 7 10V7ZM19 7H17V10C17 10.5 16.9 10.9 16.8 11.4C18 10.9 19 9.6 19 8Z"/>
                     </svg>
