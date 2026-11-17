@@ -551,14 +551,16 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                     <?= adminOverviewPanelHtml('admin-overview-views-heading', 'Page views', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 8,
                         adminOverviewChartHtml($adminViewsPerDay, 'page views', 'Pages opened each day')
                         . '<p class="admin-panel-foot">Every time a page is opened, including the chat switching to another chat. Reloads after sending something, prefetches, error pages and bots don\'t count. Only a count per page and day is kept, never who, and only for ' . HBHUB_PAGE_VIEWS_KEEP_DAYS . ' days.</p>') ?>
+                    <?php // The list scrolls inside the panel, so all ADMIN_OVERVIEW_TOP_PAGES fit next to the chart ?>
                     <?= adminOverviewPanelHtml('admin-overview-pages-heading', 'Most visited pages', 'Last 7 days', 4,
-                        adminOverviewRankHtml($adminTopPages, static function (array $page): string {
+                        '<div class="admin-rank-scroll" tabindex="0" aria-label="Most visited pages">'
+                        . adminOverviewRankHtml($adminTopPages, static function (array $page): string {
                             $guests = (int) $page['views'] > 0 ? round((int) $page['guests'] / (int) $page['views'] * 100) : 0;
                             // Chat pages are /chat/ whichever chat it was, as the query isn't kept
                             return '<a class="admin-list-link" href="' . htmlspecialchars($page['viewPath']) . '">'
                                 . '<code class="admin-list-name">' . htmlspecialchars($page['viewPath']) . '</code></a>'
                                 . ($guests > 0 ? '<span class="admin-small" title="Not logged in">' . $guests . '% guests</span>' : '');
-                        }, 'views', 'No page views in the last 7 days.')) ?>
+                        }, 'views', 'No page views in the last 7 days.') . '</div>') ?>
 
                     <?= adminOverviewPanelHtml('admin-overview-errors-heading', 'Browser errors', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 12,
                         adminOverviewChartHtml($adminErrorsPerDay, 'errors', 'Errors in people\'s browsers each day')

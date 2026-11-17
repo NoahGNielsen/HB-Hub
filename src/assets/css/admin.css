@@ -1217,6 +1217,14 @@
   counter-increment: admin-rank;
 }
 
+/* A rank list that's longer than its panel ("Most visited pages"): about six rows show, the rest scroll */
+.admin-rank-scroll {
+  max-height: 270px;
+  padding-right: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .admin-rank-row {
   display: flex;
   align-items: center;
