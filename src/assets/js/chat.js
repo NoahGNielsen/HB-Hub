@@ -3727,10 +3727,15 @@ chatPart((signal, isSwap) => {
         // Follows the new messages when already at the bottom, but doesn't pull away from older ones being read
         const isAtBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 48;
         messages.querySelector('[data-messages-empty]')?.remove();
-        // Above an attachment still being sent (the faded message from the attachments part), which stays at the bottom
+        // Above messages still being sent (the faded ones from the message queue and the attachments part), which stay
+        // at the bottom
+        const ownBefore = messages.querySelectorAll('[data-message-own]').length;
         const sending = messages.querySelector('[data-message-sending]');
         if (sending) sending.insertAdjacentHTML('beforebegin', html);
         else messages.insertAdjacentHTML('beforeend', html);
+        // Each of your own that came is the real one of a faded copy the queue already sent, oldest first
+        const ownAdded = messages.querySelectorAll('[data-message-own]').length - ownBefore;
+        [...messages.querySelectorAll('[data-message-sent]')].slice(0, ownAdded).forEach((item) => item.remove());
         chatGroupMessages(messages);
         if (isAtBottom) messages.scrollTop = messages.scrollHeight;
 
@@ -3906,7 +3911,7 @@ function chatStart(isSwap) {
  * Opens the chat page at url in place of the one shown. With body it's posted there instead (a form), and the page is
  * the one the server redirects to. fromHistory: Back or Forward, which already changed the address. replace: the history
  * entry is replaced instead of adding one (it is anyway when it's the same address again, like after sending a message).
- * sent: the message that was just sent, so the box starts empty again - unless more was typed meanwhile, which stays.
+ * sent: the page comes back after a message was sent (the attachments part), so it isn't counted as a page view.
  * Anything typed in the message box stays when the same chat comes back (after muting it, say), like a draft.
  */
 async function chatLoad(url, { body = null, fromHistory = false, replace = false, sent = null } = {}) {
@@ -3919,7 +3924,7 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
     // Counted as a page view for the admin panel's Overview (assets/php/pageViews.php) when someone opened a chat page,
     // not when it's the page coming back after a form, a sent message, or the open chat being gone
     const headers = { Accept: 'text/html' };
-    if (!body && !sent && !replace) headers['X-HBHub-Page-View'] = '1';
+    if (!body && sent === null && !replace) headers['X-HBHub-Page-View'] = '1';
 
     let response;
     let page;
@@ -3931,15 +3936,24 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
         chatRequest = null;
         main.removeAttribute('aria-busy');
         // Offline for a moment. A chat is opened the normal way, which shows the browser's own page for that.
-        // A form isn't sent again, as it may have got there - a message goes back in the box to try again.
+        // A form isn't sent again, as it may have got there.
         if (!body) location.href = url;
-        else if (sent !== null) chatUnsend(main, sent);
         return;
     } finally {
         if (body) chatIsPosting = false;
     }
     chatRequest = null;
+    chatShowPage(response, page, { fromHistory, replace });
+}
 
+/**
+ * Puts the chat page that came back (response, and page parsed from it) in place of the one shown - the second half
+ * of chatLoad, also used by the message queue below for the page after its last message. Anything that isn't the chat
+ * page (logged out, the maintenance page, an error) is opened the normal way instead.
+ * restore: messages that weren't sent after all, which go back in the box in front of anything typed since.
+ */
+function chatShowPage(response, page, { fromHistory = false, replace = false, restore = '' } = {}) {
+    const main = document.querySelector('main.chat');
     const newMain = page.querySelector('main.chat');
     const address = new URL(response.url);
     if (!response.ok || !newMain || address.origin !== location.origin || !/^\/chat\/?$/.test(address.pathname)) {
@@ -3948,17 +3962,15 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
     }
 
     // What carries over: where the chat list was scrolled to, the search, keyboard focus on a chat in the list,
-    // and what's typed in the message box when it's the same chat
+    // and what's typed in the message box when it's the same chat. The box is emptied at Send (chatShowSending), so
+    // what's in it was typed since and stays.
     const list = main.querySelector('.chat-list');
     const search = main.querySelector('#chat-search');
     const textarea = main.querySelector('.chat-composer textarea');
     const chatId = main.querySelector('[data-chat-messages]')?.dataset.chatMessages;
     const focusedChatId = list?.contains(document.activeElement) ? document.activeElement.closest('[data-chat-id]')?.dataset.chatId : undefined;
-    // The box was emptied at Send (chatShowSending), so what's in it now was typed since and stays. Not sent after all
-    // (a blocked link, or sending too fast): the message goes back in, in front of that, to try again.
-    const isRefused = address.searchParams.get('linkBlocked') === '1' || address.searchParams.get('tooFast') === '1';
     const typed = textarea ? textarea.value : '';
-    const draft = isRefused && sent ? (typed === '' ? sent : sent + '\n' + typed) : typed;
+    const draft = restore === '' ? typed : typed === '' ? restore : restore + '\n' + typed;
 
     // Copies of the pictures for browsers without JS. Parsed here they're real <img>s, which would all load at once.
     newMain.querySelectorAll('noscript').forEach((noscript) => noscript.remove());
@@ -3976,11 +3988,13 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
     const newList = newMain.querySelector('.chat-list');
     const newSearch = newMain.querySelector('#chat-search');
     const newTextarea = newMain.querySelector('.chat-composer textarea');
+    const newMessages = newMain.querySelector('[data-chat-messages]');
+    const isSameChat = newMessages?.dataset.chatMessages === chatId;
     if (newList && list) newList.scrollTop = list.scrollTop;
     if (newSearch && search) newSearch.value = search.value;
-    if (newTextarea && draft !== '' && newMain.querySelector('[data-chat-messages]')?.dataset.chatMessages === chatId) {
-        newTextarea.value = draft;
-    }
+    if (newTextarea && draft !== '' && isSameChat) newTextarea.value = draft;
+    // Messages still waiting in the queue keep their faded copies at the bottom (after muting the chat meanwhile, say)
+    if (newMessages && isSameChat) chatQueue.forEach((entry) => entry.item && newMessages.append(entry.item));
 
     chatStart(true);
 
@@ -3995,23 +4009,113 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
 
 /**
  * Sends a form on the chat page with chatLoad. submitter: the button it was sent with, whose name and value go along.
- * For forms sent from the code too (form.submit() would load the page).
+ * For forms sent from the code too (form.submit() would load the page). A message (the composer) goes in the queue below.
  */
 function chatSubmit(form, submitter = null) {
+    if (form.matches('.chat-composer')) {
+        chatQueueMessage(form);
+        return;
+    }
     if (chatIsPosting) return;
     chatIsPosting = true;
     const body = new FormData(form);
     if (submitter?.name) body.append(submitter.name, submitter.value);
-    const sent = form.matches('.chat-composer') ? form.querySelector('textarea').value : null;
-    if (sent !== null) chatShowSending(form, sent);
-    chatLoad(chatFormAction(form), { body, sent });
+    chatLoad(chatFormAction(form), { body });
+}
+
+// The message queue: Send (or Enter) empties the box straight away and the message waits here, shown faded with
+// "Sending…", so several can be written one after another without waiting. They're posted one at a time, in order, so
+// they can't arrive mixed up. The page after the last one is put in (chatShowPage), which takes the faded copies away.
+// If one isn't sent (no connection, sending too fast, a blocked link), it and everything after it come off the screen
+// and go back in the box, one per line, to try again. A double Enter can't send one twice, as the box is empty by then.
+const chatQueue = []; // { url, body (FormData), text, chatId, item (the faded <li>, or null) }, oldest first
+let chatQueueIsRunning = false;
+
+function chatQueueMessage(form) {
+    const body = new FormData(form);
+    const text = form.querySelector('textarea').value;
+    chatQueue.push({ url: chatFormAction(form), body, text, chatId: body.get('chat'), item: chatShowSending(form, text) });
+    if (!chatQueueIsRunning) chatQueueRun();
+}
+
+async function chatQueueRun() {
+    chatQueueIsRunning = true;
+    while (chatQueue.length > 0) {
+        const entry = chatQueue[0];
+        let response;
+        try {
+            response = await fetch(entry.url, { method: 'POST', body: entry.body, headers: { Accept: 'text/html' } });
+        } catch {
+            chatQueueFail(null, null); // offline for a moment: not sent again, as it may have got there
+            break;
+        }
+        const address = new URL(response.url);
+        const isChatPage = response.ok && address.origin === location.origin && /^\/chat\/?$/.test(address.pathname);
+        const isRefused = address.searchParams.get('linkBlocked') === '1' || address.searchParams.get('tooFast') === '1';
+        if (!isChatPage || isRefused) {
+            let page = null;
+            try {
+                page = new DOMParser().parseFromString(await response.text(), 'text/html');
+            } catch {
+                // cut off on the way: the messages still go back in the box
+            }
+            chatQueueFail(response, page);
+            break;
+        }
+
+        // Sent. Its faded copy stays until the real message shows (polling takes it away then, or the page below).
+        chatQueue.shift();
+        if (entry.item) {
+            entry.item.setAttribute('data-message-sent', '');
+            entry.item.querySelector('.chat-message-meta').textContent = 'Sent';
+        }
+        if (chatQueue.length > 0) continue; // the page after the last one is enough
+
+        let page;
+        try {
+            page = new DOMParser().parseFromString(await response.text(), 'text/html');
+        } catch {
+            break; // sent anyway; polling shows it
+        }
+        if (chatQueue.length > 0) continue; // another was written meanwhile
+        // Only when it's still the chat it went to, and no other page is on its way (which replaces this one anyway)
+        const shownChatId = document.querySelector('[data-chat-messages]')?.dataset.chatMessages;
+        if (chatRequest === null && shownChatId === entry.chatId) chatShowPage(response, page);
+    }
+    chatQueueIsRunning = false;
 }
 
 /**
- * A message is on its way: the box empties straight away and the message shows faded at the bottom of the chat with
- * "Sending…" (like the attachments part's), so Send feels instant instead of the text sitting there until the server
- * answers. The page swap in chatLoad takes it away again; if it wasn't sent after all, chatUnsend puts the text back.
- * It has no data-message-id, so polling and the message menu leave it alone, and polling adds new messages above it.
+ * The first message in the queue wasn't sent: it and the ones after it come off the screen and their text goes back in
+ * the box in the order they were written, in front of anything typed since. response and page: what came back (the
+ * chat page with "Link blocked" or "Too fast", or a login page), or null when there's no connection.
+ */
+function chatQueueFail(response, page) {
+    const failed = chatQueue.splice(0);
+    failed.forEach((entry) => entry.item?.remove());
+    const restore = failed.map((entry) => entry.text).filter((text) => text !== '').join('\n');
+    const shownChatId = document.querySelector('[data-chat-messages]')?.dataset.chatMessages;
+    const isSameChat = failed.length > 0 && shownChatId === failed[0].chatId;
+
+    if (response && page && (isSameChat || !response.ok)) {
+        chatShowPage(response, page, { restore: isSameChat ? restore : '' });
+        return;
+    }
+    const messages = document.querySelector('[data-chat-messages]');
+    const empty = messages?.querySelector('[data-messages-empty]');
+    if (empty && !messages.querySelector('[data-message-sending]')) empty.hidden = false;
+    const textarea = document.querySelector('.chat-composer textarea');
+    if (!textarea || restore === '' || !isSameChat) return;
+    const typed = textarea.value;
+    textarea.value = typed === '' ? restore : restore + '\n' + typed;
+    textarea.dispatchEvent(new Event('input', { bubbles: true })); // grows to fit it
+}
+
+/**
+ * A message goes in the queue: the box empties straight away (and the reply bar and GIF with it, so the next message
+ * doesn't take them along), and the message shows faded at the bottom of the chat with "Sending…", like the
+ * attachments part's. It has no data-message-id, so polling and the message menu leave it alone, and polling adds new
+ * messages above it. Returns the faded <li>, or null for a GIF on its own (the GIF popup says it's sending).
  */
 function chatShowSending(form, text) {
     const textarea = form.querySelector('textarea');
@@ -4019,8 +4123,15 @@ function chatShowSending(form, text) {
         textarea.value = '';
         textarea.dispatchEvent(new Event('input', { bubbles: true })); // shrinks back, and stops "is typing"
     }
+    const replyInput = form.querySelector('[data-reply-input]');
+    const replyBar = form.querySelector('[data-reply-bar]');
+    const gifInput = form.querySelector('[data-gif-input]');
+    if (replyInput) replyInput.value = '';
+    if (replyBar) replyBar.hidden = true;
+    if (gifInput) gifInput.value = '';
+
     const messages = document.querySelector('[data-chat-messages]');
-    if (!messages || text.trim() === '') return; // a GIF on its own: the GIF popup says it's sending
+    if (!messages || text.trim() === '') return null;
 
     const item = document.createElement('li');
     item.className = 'chat-message is-own is-sending';
@@ -4041,19 +4152,7 @@ function chatShowSending(form, text) {
     if (empty) empty.hidden = true;
     messages.append(item);
     messages.scrollTop = messages.scrollHeight;
-}
-
-// Not sent after all (no connection): the faded message goes and its text goes back in the box, in front of anything
-// typed since, to try again
-function chatUnsend(main, sent) {
-    main.querySelectorAll('.chat-message.is-sending:not(:has(.chat-attachments))').forEach((item) => item.remove());
-    const empty = main.querySelector('[data-messages-empty]');
-    if (empty && !main.querySelector('[data-message-sending]')) empty.hidden = false;
-    const textarea = main.querySelector('.chat-composer textarea');
-    if (!textarea || !sent) return;
-    const typed = textarea.value;
-    textarea.value = typed === '' ? sent : sent + '\n' + typed;
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    return item;
 }
 
 // Where the form goes. Not form.action, as the chat's forms have an <input name="action">, which that gives instead.
