@@ -339,6 +339,29 @@ a.casino-game:hover .casino-game-art {
   stroke-width: 0.8px;
 }
 
+/* Doodle Chain (games/doodle/): a speech bubble with a pink squiggle, and a yellow pencil */
+.casino-game-doodle {
+  --game-from: #ff5d8f;
+  --game-to: #6a2bb8;
+  --game-mark: #ff5d8f;
+}
+
+.casino-game-doodle .casino-game-art {
+  fill: #fff;
+}
+
+.casino-game-doodle .casino-game-art-pencil {
+  fill: #ffd23f;
+}
+
+.casino-game-doodle .casino-game-art-wood {
+  fill: #f4d9b0;
+}
+
+.casino-game-doodle .casino-game-art-tip {
+  fill: #1d1f24;
+}
+
 .casino-game-wordle {
   --game-from: #3f8f4a;
   --game-to: #6b5d14;

@@ -53,6 +53,7 @@ const HBHUB_DOCS_SECTIONS = [
             '/docs/games/matador' => ['Matador', 'Det danske Matador for 2-4 spillere, med huse, hoteller, handler og Prøv lykken.'],
             '/docs/games/chess' => ['Skak', 'Skak for to spillere, med eller uden ur, remistilbud og revancher.'],
             '/docs/games/uno' => ['UNO', 'Kortspillet for 2-6 spillere, med stabling, at fange folk og officiel pointtælling.'],
+            '/docs/games/doodle' => ['Doodle Chain', 'Skriv, tegn og gæt i en kæde for 3-10 spillere, og se til sidst, hvor galt det gik.'],
             '/docs/games/wordle' => ['Wordle', 'Gæt dagens ord på fem bogstaver på seks forsøg, på engelsk og på dansk.'],
             '/docs/games/minesweeper' => ['Minesweeper', 'Klassikeren i sit Windows 95-udseende: ryd brættet uden at åbne en mine.'],
             '/docs/games/sudoku' => ['Sudoku', 'Fyld brættet, så hver række, kolonne og boks har 1 til 9, på fire niveauer fra Easy til Expert.'],

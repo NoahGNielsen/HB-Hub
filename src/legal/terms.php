@@ -243,6 +243,12 @@ function termsNumber(int $number): string
                         <p>Spillenes fulde regler står i <a href="/docs/games/">hjælpen</a>. Derudover gælder:</p>
                         <ul>
                             <li>
+                                <strong>Doodle Chain:</strong> Når tiden løber ud, bliver det, du har skrevet eller tegnet, sendt
+                                videre, som det er. Det, du laver, vises til sidst for alle i spillet med dit navn ved og slettes,
+                                når værten starter et nyt spil, eller alle har forladt det. Tegninger og tekster skal følge
+                                <a href="/legal/code-of-conduct">retningslinjerne</a>.
+                            </li>
+                            <li>
                                 <strong>Wordle:</strong> Der er ét dansk og ét engelsk ord om dagen med ét forsøg på hvert. Et
                                 påbegyndt ord, der ikke er gættet inden midnat (dansk tid), tæller som misset og afslutter din stime.
                                 Afslør ikke dagens ord for andre, før dagen er omme. Tilfældige ord tæller ikke med i statistik,

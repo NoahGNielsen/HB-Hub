@@ -64,6 +64,14 @@
   --lobby-tint: #f2b705;
 }
 
+.lobby-doodle {
+  --lobby-from: #ff5d8f;
+  --lobby-to: #5a24a0;
+  /* Dotted paper */
+  --lobby-pattern: radial-gradient(rgba(255, 255, 255, 0.14) 1.5px, transparent 1.5px) 0 0 / 18px 18px;
+  --lobby-tint: #ffd23f;
+}
+
 /* The way back to the casino or the games */
 .lobby-back {
   margin-bottom: 14px;

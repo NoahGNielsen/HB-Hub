@@ -97,6 +97,26 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     </a>
                 </li>
                 <li>
+                    <a class="casino-game casino-game-doodle" href="/games/doodle/">
+                        <span class="casino-game-cover">
+                            <span class="casino-game-kicker">3 to 10 players</span>
+                            <span class="casino-game-name">Doodle Chain <span class="casino-game-badge">Beta</span></span>
+                            <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
+                                <!-- A speech bubble with a pink squiggle in it, and a yellow pencil drawing next to it -->
+                                <path d="M8 12h28a4 4 0 0 1 4 4v14a4 4 0 0 1-4 4H20l-8 7v-7H8a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z"/>
+                                <path class="casino-game-art-line" d="M11 24c3-5 6 5 9 0s6 5 9 0" stroke-linecap="round"/>
+                                <g transform="rotate(40 46 42)">
+                                    <rect class="casino-game-art-pencil" x="41" y="22" width="10" height="30" rx="2"/>
+                                    <path class="casino-game-art-wood" d="M41 52h10l-5 9z"/>
+                                    <path class="casino-game-art-tip" d="M44.5 58.5h3L46 61z"/>
+                                    <rect class="casino-game-art-mark" x="41" y="18" width="10" height="5" rx="2"/>
+                                </g>
+                            </svg>
+                        </span>
+                        <span class="casino-game-text">Write something, draw what you're given, guess what the drawing is, and laugh at how far it got from the start.</span>
+                    </a>
+                </li>
+                <li>
                     <a class="casino-game casino-game-wordle" href="/games/wordle/">
                         <span class="casino-game-cover">
                             <span class="casino-game-kicker">A new word daily</span>

@@ -1,0 +1,495 @@
+/* A Doodle Chain game (games/doodle/game.php, drawn by doodleGame.js). Loaded after casino.css and games.css.
+   The stage on the left shows one panel at a time (waiting, the step being played, or the chains at the end), with the
+   players and the rules in a column on the right. The canvases are always 800x600 inside (game.php's
+   HBHUB_DOODLE_WIDTH/HEIGHT) and scaled here to fit, keeping 4:3. They stay white in the dark theme too, as that's the
+   paper the drawings were made on. */
+
+.doodle {
+  --doodle-pink: #ff5d8f;
+  --doodle-yellow: #ffd23f;
+  --doodle-ok: #30a46c;
+  --doodle-warning: #e5484d;
+  max-width: 1280px;
+  margin: 24px auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.doodle [hidden] {
+  display: none !important;
+}
+
+/* ----- The game's name, with the code and Leave game */
+
+.doodle-header {
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doodle-heading {
+  min-width: 0;
+}
+
+.doodle-title {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.doodle-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.doodle-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The join code: a click copies it */
+.doodle-code {
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 2px dashed color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.doodle-code:hover {
+  border-color: var(--doodle-pink);
+}
+
+.doodle-code:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.doodle-code-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.doodle-code-value {
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+}
+
+.doodle-code-copied {
+  color: var(--doodle-ok);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.doodle-code-copied:empty {
+  display: none;
+}
+
+/* ----- The stage and the column on the right */
+
+.doodle-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+  gap: 20px;
+}
+
+.doodle-stage,
+.doodle-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.doodle-panel {
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  background: var(--secondary);
+}
+
+.doodle-panel-title {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.doodle-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  opacity: 0.8;
+}
+
+.doodle-message {
+  margin: 0;
+  color: var(--doodle-warning);
+  font-weight: 600;
+}
+
+.doodle-message:empty {
+  display: none;
+}
+
+/* ----- Waiting for players */
+
+.doodle-host-controls {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.doodle-host-controls .casino-label {
+  margin: 0;
+}
+
+.doodle-select {
+  width: auto;
+}
+
+/* ----- The step being played */
+
+.doodle-turn-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.doodle-step {
+  font-size: 0.85rem;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.doodle-timer {
+  height: 8px;
+  margin: 4px 0 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.doodle-timer-bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--doodle-pink), var(--doodle-yellow));
+  transition: width 0.2s linear;
+}
+
+.doodle-timer.is-low .doodle-timer-bar {
+  background: var(--doodle-warning);
+}
+
+.doodle-prompt {
+  margin-bottom: 14px;
+}
+
+.doodle-prompt-label {
+  margin: 0 0 6px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+/* The text to draw, on a slip of yellow paper */
+.doodle-prompt-text {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--doodle-yellow);
+  color: #1d1f24;
+  font-size: 1.3rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.doodle-write {
+  display: flex;
+  gap: 8px;
+}
+
+.doodle-write .casino-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.doodle-canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  display: block;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+/* What's handed in to describe: not too big, so the box under it stays on screen */
+.doodle-prompt .doodle-canvas {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.doodle-canvas.is-pad {
+  touch-action: none; /* the pen draws instead of scrolling the page */
+  cursor: crosshair;
+}
+
+.doodle-tools {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+}
+
+.doodle-colours,
+.doodle-sizes,
+.doodle-tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.doodle-tool-actions {
+  margin-left: auto;
+}
+
+.doodle-colour,
+.doodle-size {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 50%;
+  background: var(--doodle-colour, transparent);
+  cursor: pointer;
+}
+
+.doodle-size {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--primary, transparent);
+}
+
+.doodle-colour[aria-checked="true"],
+.doodle-size[aria-checked="true"] {
+  border-color: var(--doodle-pink);
+  box-shadow: 0 0 0 2px var(--doodle-pink);
+}
+
+.doodle-colour:focus-visible,
+.doodle-size:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.doodle-size-dot {
+  width: var(--doodle-size);
+  height: var(--doodle-size);
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.doodle-done {
+  margin: 0;
+  padding: 18px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--doodle-ok) 14%, transparent);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ----- The chains at the end: a column of speech bubbles and drawings */
+
+.doodle-chain {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  list-style: none;
+}
+
+.doodle-chain-item {
+  max-width: 640px;
+}
+
+.doodle-chain-by {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.doodle-chain-text {
+  margin: 0;
+  padding: 10px 14px;
+  display: inline-block;
+  border-radius: 14px 14px 14px 4px;
+  background: var(--doodle-yellow);
+  color: #1d1f24;
+  font-size: 1.15rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.doodle-chain-item.is-missing .doodle-chain-by {
+  font-style: italic;
+  font-weight: 400;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .doodle-chain-item:last-child {
+    animation: doodle-pop 0.35s ease-out;
+  }
+}
+
+@keyframes doodle-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+.doodle-reveal-actions {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.doodle-chain-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ----- The players */
+
+.doodle-players {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+
+.doodle-player {
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+}
+
+.doodle-player.is-you {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.doodle-player.is-away {
+  opacity: 0.55;
+}
+
+.doodle-avatar {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 12%, var(--secondary));
+  font-weight: 700;
+}
+
+.doodle-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.doodle-player-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.doodle-player-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.doodle-player-status {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.doodle-player-status:empty {
+  display: none;
+}
+
+.doodle-player-tick {
+  flex: none;
+  color: var(--doodle-ok);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.doodle-rules summary {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* ----- Smaller screens: the column goes under the stage */
+
+@media (max-width: 900px) {
+  .doodle-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .doodle-tool-actions {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .doodle-panel {
+    padding: 14px;
+  }
+
+  .doodle-colour {
+    width: 28px;
+    height: 28px;
+  }
+}

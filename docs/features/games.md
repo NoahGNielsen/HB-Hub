@@ -32,6 +32,18 @@
 | **Leaving** | Leaving a game being played (or having it closed for 60 seconds) takes you out of it and counts as a loss, unless the host has paused the game or you're already out of cards (playing on). Your cards go back into the deck, and the last player left in wins |
 | **Extras** | Official scoring (the winner scores the cards left in everyone else's hands), a log of what happened, an in-game chat with @mentions, a sound when it's your turn, and a leaderboard with wins, win %, points and best win |
 
+## Doodle Chain
+
+| | |
+|---|---|
+| **Doodle Chain** | A draw-and-guess "telephone" game for 3-10 players at `/games/doodle/` (beta). Public or code games (no invites yet), opened and joined like UNO's. The host starts it once 3 are in, and a new one when it's over; new players can join between games. Rules in `assets/php/games/doodle/game.php`, rooms and entries in `room.php` (`HBHub-DoodleRooms`, `HBHub-DoodleSeats`, `HBHub-DoodleEntries`) |
+| **A game** | N players, N chains, N rounds. Round 1 everyone writes a sentence (45 s); then the chains pass on and the rounds alternate drawing what you're handed and describing the drawing you're handed (in round s, the player at place i works on chain (i + s) % N, so each chain passes everyone once). You only ever see the step right before yours. A round ends when everyone still in the room is done or the time is up; at zero the page hands in whatever is there, and the server waits 4 s for it |
+| **Drawing** | An 800x600 canvas (scaled to fit) with 16 colours (white is the rubber), 4 pen sizes, Undo (also Ctrl+Z) and Clear. Drawings are sent as strokes (`[colour, size, x, y, x, y, ...]`), checked and rewritten by the server (`hbHubDoodleCleanDrawing()`), and stored as JSON in `HBHub-DoodleEntries`, never as pictures. The page keeps drawings it has by id and names them in `?have=`, so their strokes aren't sent again |
+| **Missing entries** | Someone who hands in nothing (or leaves) just has nothing in that step: the next player is handed the newest text (to draw) or drawing (to describe) further back in the chain, or is told to make one up |
+| **The reveal** | After the last round the host shows the chains to everyone one entry at a time (**Show next**, **Next chain**, **Finish**), then can show any chain again or start a **New game**, which deletes the last game's texts and drawings |
+| **Settings** | The host picks the time to draw (60, 90 or 120 seconds; 90 by default) before a game or between games |
+| **Leaving** | Leaving (or having the game closed for 60 seconds) never counts against you: the others play on. No leaderboard, chat or sound yet |
+
 ## Wordle
 
 | | |

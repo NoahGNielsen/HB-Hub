@@ -42,6 +42,7 @@ require_once __DIR__ . '/../assets/php/casino/baccarat/room.php';
 require_once __DIR__ . '/../assets/php/games/chess/room.php';
 require_once __DIR__ . '/../assets/php/games/matador/room.php';
 require_once __DIR__ . '/../assets/php/games/uno/room.php';
+require_once __DIR__ . '/../assets/php/games/doodle/room.php';
 require_once __DIR__ . '/../assets/php/adminLog.php';
 require_once __DIR__ . '/../assets/php/games/spaceOreMiner/crashReports.php';
 require_once __DIR__ . '/../assets/php/discord.php';
@@ -90,6 +91,7 @@ hbHubCronRun('Game rooms', static function () use ($db): string {
     hbHubChessSweep($db);
     hbHubMatadorSweep($db);
     hbHubUnoSweep($db);
+    hbHubDoodleSweep($db);
     return 'tidied';
 });
 

@@ -472,6 +472,57 @@ CREATE TABLE `HBHub-DeviceFingerprints` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-DoodleEntries`
+--
+
+CREATE TABLE `HBHub-DoodleEntries` (
+  `entryId` int UNSIGNED NOT NULL,
+  `roomId` int UNSIGNED NOT NULL,
+  `gameNumber` smallint UNSIGNED NOT NULL COMMENT 'Which game in the room (roomState.gameCount when it started)',
+  `chainNumber` tinyint UNSIGNED NOT NULL COMMENT '0-based: the chain, started by the player at that place in the game''s order',
+  `stepNumber` tinyint UNSIGNED NOT NULL COMMENT '0-based step in the chain: even steps are written, odd steps are drawn',
+  `userId` int UNSIGNED NOT NULL COMMENT 'Who wrote or drew it',
+  `entryKind` tinyint UNSIGNED NOT NULL COMMENT '1 Text\r\n2 Drawing',
+  `entryText` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'For a text',
+  `entryDrawing` mediumtext CHARACTER SET ascii COLLATE ascii_bin COMMENT 'For a drawing: the strokes as JSON (src/assets/php/games/doodle/game.php, hbHubDoodleCleanDrawing())',
+  `entryTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='What was written and drawn in Doodle Chain. Deleted when the room''s next game starts or the room is deleted';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-DoodleRooms`
+--
+
+CREATE TABLE `HBHub-DoodleRooms` (
+  `roomId` int UNSIGNED NOT NULL,
+  `roomName` varchar(48) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT '1 Public (listed in the lobby)\r\n3 Code (anyone with the code can join)',
+  `roomCode` char(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'Join code: capital letters and digits, without 0 O 1 I L',
+  `roomHostUserId` int UNSIGNED DEFAULT NULL,
+  `roomPhase` tinyint UNSIGNED NOT NULL DEFAULT '1' COMMENT '1 Waiting for players\r\n2 Being played\r\n3 Showing the chains (the same as in roomState)',
+  `roomRevision` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Goes up on every change, so the game can tell when nothing changed since it last asked',
+  `roomState` json NOT NULL COMMENT 'The game (src/assets/php/games/doodle/game.php). The texts and drawings are in HBHub-DoodleEntries',
+  `roomCreatedTimestamp` datetime NOT NULL COMMENT 'UTC'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `HBHub-DoodleSeats`
+--
+
+CREATE TABLE `HBHub-DoodleSeats` (
+  `roomId` int UNSIGNED NOT NULL,
+  `userId` int UNSIGNED NOT NULL,
+  `seatNumber` tinyint UNSIGNED NOT NULL COMMENT '1-10, the player''s seat in roomState',
+  `seatJoinedTimestamp` datetime NOT NULL COMMENT 'UTC',
+  `seatLastSeenTimestamp` datetime NOT NULL COMMENT 'UTC, kept up to date while the game is open, to tell who is away'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-Feedback`
 --
 
@@ -1352,6 +1403,31 @@ ALTER TABLE `HBHub-DeviceFingerprints`
   ADD KEY `userLastSeen` (`userId`,`fingerprintLastSeenTimestamp`);
 
 --
+-- Indexes for table `HBHub-DoodleEntries`
+--
+ALTER TABLE `HBHub-DoodleEntries`
+  ADD PRIMARY KEY (`entryId`),
+  ADD UNIQUE KEY `roomStep` (`roomId`,`gameNumber`,`chainNumber`,`stepNumber`),
+  ADD KEY `fk_doodleentries_user` (`userId`);
+
+--
+-- Indexes for table `HBHub-DoodleRooms`
+--
+ALTER TABLE `HBHub-DoodleRooms`
+  ADD PRIMARY KEY (`roomId`),
+  ADD UNIQUE KEY `roomCode` (`roomCode`),
+  ADD KEY `typePhase` (`roomType`,`roomPhase`),
+  ADD KEY `fk_doodlerooms_host` (`roomHostUserId`);
+
+--
+-- Indexes for table `HBHub-DoodleSeats`
+--
+ALTER TABLE `HBHub-DoodleSeats`
+  ADD PRIMARY KEY (`roomId`,`seatNumber`),
+  ADD UNIQUE KEY `userId` (`userId`) COMMENT 'One Doodle Chain game at a time',
+  ADD KEY `seatLastSeen` (`seatLastSeenTimestamp`);
+
+--
 -- Indexes for table `HBHub-Feedback`
 --
 ALTER TABLE `HBHub-Feedback`
@@ -1752,6 +1828,18 @@ ALTER TABLE `HBHub-ChessRooms`
   MODIFY `roomId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `HBHub-DoodleEntries`
+--
+ALTER TABLE `HBHub-DoodleEntries`
+  MODIFY `entryId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `HBHub-DoodleRooms`
+--
+ALTER TABLE `HBHub-DoodleRooms`
+  MODIFY `roomId` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-Feedback`
 --
 ALTER TABLE `HBHub-Feedback`
@@ -2046,6 +2134,26 @@ ALTER TABLE `HBHub-ChessSeats`
 --
 ALTER TABLE `HBHub-DeviceFingerprints`
   ADD CONSTRAINT `fk_devicefingerprints_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-DoodleEntries`
+--
+ALTER TABLE `HBHub-DoodleEntries`
+  ADD CONSTRAINT `fk_doodleentries_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-DoodleRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_doodleentries_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-DoodleRooms`
+--
+ALTER TABLE `HBHub-DoodleRooms`
+  ADD CONSTRAINT `fk_doodlerooms_host` FOREIGN KEY (`roomHostUserId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `HBHub-DoodleSeats`
+--
+ALTER TABLE `HBHub-DoodleSeats`
+  ADD CONSTRAINT `fk_doodleseats_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-DoodleRooms` (`roomId`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_doodleseats_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-Feedback`

@@ -21,6 +21,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td><a href="/docs/games/matador">Matador</a></td><td>Det danske brætspil: køb gader, byg hoteller, og gør dine venner fallit.</td><td>2-4</td></tr>
                                     <tr><td><a href="/docs/games/chess">Skak</a></td><td>Skak, med eller uden ur.</td><td>2</td></tr>
                                     <tr><td><a href="/docs/games/uno">UNO</a></td><td>Kortspillet. Bliv af med dine kort først, og glem ikke at sige UNO!</td><td>2-6</td></tr>
+                                    <tr><td><a href="/docs/games/doodle">Doodle Chain</a></td><td>Skriv, tegn og gæt i en kæde, og se, hvor galt det gik.</td><td>3-10</td></tr>
                                     <tr><td><a href="/docs/games/wordle">Wordle</a></td><td>Gæt dagens ord på fem bogstaver, på engelsk og på dansk.</td><td>Kun dig</td></tr>
                                     <tr><td><a href="/docs/games/minesweeper">Minesweeper</a></td><td>Klassikeren: ryd brættet uden at åbne en mine.</td><td>Kun dig</td></tr>
                                     <tr><td><a href="/docs/games/sudoku">Sudoku</a></td><td>Fyld brættet med 1 til 9 i hver række, kolonne og boks, fra Easy til Expert.</td><td>Kun dig</td></tr>
@@ -33,7 +34,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 
                     <section id="rooms" aria-labelledby="docs-rooms">
                         <h2 id="docs-rooms">At åbne et spil</h2>
-                        <p>Matador, skak og UNO spilles i rum. Åbn et, eller gå med i et, på spillets side:</p>
+                        <p>Matador, skak, UNO og Doodle Chain spilles i rum. Åbn et, eller gå med i et, på spillets side:</p>
                         <div class="docs-table-wrap">
                             <table class="docs-table">
                                 <thead>
@@ -42,7 +43,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 <tbody>
                                     <tr><td>Offentligt</td><td>Alle. Det står på spillets side.</td></tr>
                                     <tr><td>Kode</td><td>Alle med dets kode på 6 tegn, skrevet ind på spillets side.</td></tr>
-                                    <tr><td>Kun for inviterede</td><td>Kun dem, værten inviterer. De får en <a href="/docs/notifications">notifikation</a>, og invitationen venter på spillets side.</td></tr>
+                                    <tr><td>Kun for inviterede</td><td>Kun dem, værten inviterer. De får en <a href="/docs/notifications">notifikation</a>, og invitationen venter på spillets side. Findes ikke i Doodle Chain endnu.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -63,10 +64,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="playing" aria-labelledby="docs-playing">
                         <h2 id="docs-playing">Mens du spiller</h2>
                         <ul>
-                            <li><strong>Spilchat:</strong> hvert spil har sin egen chat, med <a href="/docs/chat/mentions">@omtaler</a>. Den følger de samme regler som den normale chat.</li>
+                            <li><strong>Spilchat:</strong> hvert spil i Matador, skak og UNO har sin egen chat, med <a href="/docs/chat/mentions">@omtaler</a>. Den følger de samme regler som den normale chat.</li>
                             <li><strong>Din tur:</strong> i Matador og UNO spiller der en lyd, når det er din tur, så du kan kigge på noget andet, mens du venter.</li>
                             <li><strong>Tidsgrænser:</strong> ture har en tidsgrænse, så ingen kan få spillet til at vente. Hvad der sker, når den løber ud, er forskelligt i hvert spil.</li>
-                            <li><strong>At gå:</strong> i skak og UNO tæller det som et nederlag at forlade et spil, der bliver spillet. I Matador bliver din plads holdt til dig. At holde spillet lukket et stykke tid tæller som at forlade det.</li>
+                            <li><strong>At gå:</strong> i skak og UNO tæller det som et nederlag at forlade et spil, der bliver spillet. I Matador bliver din plads holdt til dig, og i Doodle Chain spiller de andre bare videre uden dig. At holde spillet lukket et stykke tid tæller som at forlade det.</li>
                         </ul>
                     </section>
 

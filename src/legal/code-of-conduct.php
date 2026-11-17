@@ -10,7 +10,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php'; // only for hbHubLegalDanishDate()
 
-const HBHUB_CONDUCT_UPDATED = '15 November 2026';
+const HBHUB_CONDUCT_UPDATED = '17 November 2026';
 ?>
 <!DOCTYPE html>
 <html lang="da" class="home">
@@ -141,6 +141,7 @@ const HBHUB_CONDUCT_UPDATED = '15 November 2026';
                             <li>Hold en venlig tone over for dine medspillere, uanset resultatet.</li>
                             <li>Træk ikke et spil i langdrag med vilje, og forlad ikke et spil, fordi du er ved at tabe.</li>
                             <li>Snyd, scripts, autoklikkere og samarbejde mod en enkelt spiller er ikke tilladt. Fejl skal rapporteres, ikke udnyttes.</li>
+                            <li>Tegninger og tekster i Doodle Chain følger de samme regler som beskeder: ingen grove, krænkende eller seksuelle tegninger, og ingen tegninger, der gør grin med en bestemt person.</li>
                             <li>Afslør ikke dagens Wordle-ord, før dagen er omme. Del gerne dine farvede felter.</li>
                             <li>Pres ikke andre til at spille, satse eller give dig chips.</li>
                             <li>Chips og spilresultater må aldrig byttes for rigtige penge eller ting. Chips er gratis; at købe chips hos ejeren er kun en sjælden undtagelse, ikke noget, man forventes at gøre (se <a href="/legal/terms#chips">vilkårene</a>).</li>

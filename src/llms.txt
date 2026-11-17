@@ -1,6 +1,6 @@
 # HB Hub
 
-> HB Hub is a student-made messaging site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark: class group chats and DMs, a casino with play chips that aren't real money (Blackjack, Baccarat, Roulette, Slots), and games (Matador, chess, UNO, Wordle, Minesweeper, Sudoku, Snake and Ore Mining Inc.). It runs in the browser, in English.
+> HB Hub is a student-made messaging site for students at HANSENBERG Tekniske Gymnasium (HTX) in Kolding, Denmark: class group chats and DMs, a casino with play chips that aren't real money (Blackjack, Baccarat, Roulette, Slots), and games (Matador, chess, UNO, Doodle Chain, Wordle, Minesweeper, Sudoku, Snake and Ore Mining Inc.). It runs in the browser, in English.
 
 Most of the site needs an account; the pages below can be read without one. Casino chips are not money: they can't be swapped for real money or anything else, and nothing won can be paid out. HB Hub is a free student project, made and run by one student, not by the school.
 
@@ -51,6 +51,7 @@ Most of the site needs an account; the pages below can be read without one. Casi
 - [Matador](https://hbhub.noahgajnielsen.dk/docs/games/matador): The Danish Monopoly for 2-4 players, with houses, hotels, trades and Prøv lykken.
 - [Chess](https://hbhub.noahgajnielsen.dk/docs/games/chess): Two-player chess, with or without a clock, draw offers and rematches.
 - [UNO](https://hbhub.noahgajnielsen.dk/docs/games/uno): The card game for 2-6 players, with stacking, catching and official scoring.
+- [Doodle Chain](https://hbhub.noahgajnielsen.dk/docs/games/doodle): Write, draw and guess in a chain for 3-10 players, then see how far it got from the start.
 - [Wordle](https://hbhub.noahgajnielsen.dk/docs/games/wordle): Guess the day's five-letter word in six tries, in English and in Danish.
 - [Minesweeper](https://hbhub.noahgajnielsen.dk/docs/games/minesweeper): The classic in its Windows 95 look: clear the board without opening a mine.
 - [Sudoku](https://hbhub.noahgajnielsen.dk/docs/games/sudoku): Fill the board so every row, column and box has 1 to 9, on four levels from Easy to Expert.
