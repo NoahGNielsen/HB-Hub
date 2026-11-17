@@ -56,5 +56,9 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             Står der en rød linje over brættet, tæller spillet ikke, og linjen siger hvorfor. Du kan stadig
                             spille det færdigt. Den fart, du sidst valgte, huskes i din browser.
                         </p>
+                        <p>
+                            Den <a href="/play/snake">gratis Snake</a>, til at spille uden en konto, bliver kun spillet i din browser
+                            og har ingen rangliste. Din bedste score ved hver fart bliver gemt i din browser.
+                        </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

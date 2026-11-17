@@ -25,6 +25,11 @@
 //
 // localStorage (hbHubSnake) only keeps {"speed": "slow" | "normal" | "fast"}, the last speed chosen (it's listed in the
 // privacy policy). Older versions kept "best" there too, which is now ignored.
+//
+// The guest Snake (/play/snake, [data-snake] has data-snake-guest) is the same game without the server: no server
+// game, no reports, the apples from Math.random, and no red line. Its best score at each speed is kept in localStorage
+// instead, as "guestBest" next to the speed ({"speed": ..., "guestBest": {"slow": apples, ...}}), and never comes over
+// to an account.
 (() => {
   const root = document.querySelector('[data-snake]');
   if (!root) {
@@ -98,6 +103,7 @@
   const bestOut = root.querySelector('[data-snake-best]');
   const note = root.querySelector('[data-snake-note]');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const guest = 'snakeGuest' in root.dataset; // the guest Snake: no server (see the top)
 
   const readJson = (text) => {
     try {
@@ -114,23 +120,28 @@
   const load = () => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      return { speed: SPEEDS[saved.speed] ? saved.speed : 'normal' };
+      const guestBest = {};
+      Object.keys(SPEEDS).forEach((speed) => {
+        const score = saved.guestBest?.[speed];
+        guestBest[speed] = Number.isInteger(score) && score > 0 ? score : 0;
+      });
+      return { speed: SPEEDS[saved.speed] ? saved.speed : 'normal', guestBest };
     } catch {
-      return { speed: 'normal' };
+      return { speed: 'normal', guestBest: {} };
     }
   };
 
   const save = () => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ speed: saved.speed }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(guest ? { speed: saved.speed, guestBest: best } : { speed: saved.speed }));
     } catch {
-      // Storage is blocked or full: the speed is just not kept
+      // Storage is blocked or full: the speed (and a guest's best) is just not kept
     }
   };
 
   const saved = load();
-  // The best score at each speed, from the games on the leaderboard (the server's)
-  const best = { slow: 0, normal: 0, fast: 0, ...(readJson(root.dataset.snakeBests) || {}) };
+  // The best score at each speed, from the games on the leaderboard (the server's), or a guest's from this browser
+  const best = { slow: 0, normal: 0, fast: 0, ...(guest ? saved.guestBest : readJson(root.dataset.snakeBests) || {}) };
 
   // The game. snake[0] is the head; each part is {x, y, in, out, k}: its square, the way the snake came into it and
   // left it (DIRECTIONS entries; for the head, `out` is the way it's going to leave), and, where those differ, k: the
@@ -237,6 +248,9 @@
   const adopt = () => {
     ranked = null;
     why = '';
+    if (guest) {
+      return; // a guest's game is only in the browser
+    }
     if (nextGame) {
       ranked = { game: nextGame.game, rolls: [], started: false };
       addRolls(ranked, nextGame);
@@ -278,7 +292,7 @@
 
   // Asks for the next game, when there isn't one already (or on its way)
   const fetchNew = () => {
-    if (nextGame || fetching) {
+    if (guest || nextGame || fetching) {
       return;
     }
     fetching = true;
@@ -379,9 +393,10 @@
   };
 
   // The score, and the best at this speed: the server's, or this round's score once it's more and the round counts
+  // (a guest's always counts for their own best)
   const showScore = () => {
     scoreOut.textContent = score;
-    bestOut.textContent = Math.max(best[saved.speed], ranked || finishing ? score : 0);
+    bestOut.textContent = Math.max(best[saved.speed], ranked || finishing || guest ? score : 0);
   };
 
   /**
@@ -552,6 +567,15 @@
     const speed = saved.speed;
     newBest = false;
     counted = false;
+    if (guest) {
+      // A guest's best is this browser's own, so it's settled right here
+      counted = true;
+      if (score > best[speed]) {
+        best[speed] = score;
+        newBest = true;
+        save();
+      }
+    }
     finishing = Boolean(game);
     const sent = report('finish'); // before ranked goes, as it sends ranked's game
     ranked = null;

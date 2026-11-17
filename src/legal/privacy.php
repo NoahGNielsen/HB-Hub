@@ -42,7 +42,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubMiner (IndexedDB)' => 'En nedbrudsrapport, som spillet skriver, hvis det fryser. Den sendes kun, hvis du siger ja, næste gang du åbner spillet, og slettes under alle omstændigheder. Spiller du uden en konto, sendes den aldrig.',
     'hbHubSudokuGuest' => 'Kun i den gratis Sudoku på /play/sudoku: dit igangværende spil (opgave, løsning, dine tal og noter, tid og hints) samt dine bedste tider og sejre. Spillet foregår udelukkende i din browser, så intet sendes til HB Hub eller overføres til en konto.',
     'hbHubSudoku' => 'Dit igangværende Sudoku-spil med en konto (nummer, opgave, dine tal og noter, tid og hints), så du kan fortsætte senere. Dine tal sendes kun til serveren, når brættet er fyldt, eller du beder om et hint.',
-    'hbHubSnake' => 'Den fart, du sidst valgte i Snake. Dine spil og bedste scorer gemmes på serveren (se Casino og spil).',
+    'hbHubSnake' => 'Den fart, du sidst valgte i Snake. Dine spil og bedste scorer gemmes på serveren (se Casino og spil). I den gratis Snake på /play/snake gemmes også din bedste score ved hver fart her; det spil foregår udelukkende i din browser, så intet sendes til HB Hub eller overføres til en konto.',
     'hbHubGuestWordle' => 'Dagens Wordle-spil uden en konto, krypteret af HB Hub, så det ikke kan læses eller ændres i browseren. Sendes med hvert gæt, så serveren kan kontrollere det. Logger du ind eller opretter dig, overføres dagens spil én gang til din konto (kun for sprog, du ikke har spillet i dag) og slettes derefter. Spil fra tidligere dage overskrives.',
     'hbHubGuestWordleRandom' => 'Wordles tilfældige ord uden en konto, med dine gæt, krypteret på samme måde og sendt med hvert gæt. Overføres aldrig til en konto og slettes, når du åbner Wordle logget ind.',
     'hbHubGuestMiner' => 'Dit Ore Mining Inc.-spil uden en konto, krypteret på samme måde, samt et tilfældigt id for fanen (så spillet kun kører i én fane ad gangen). Sendes med hver gemning, så serveren kan kontrollere det. Logger du ind eller opretter dig, bliver det din kontos spil (kun hvis kontoen ikke har et) og slettes derefter.',
@@ -249,12 +249,12 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
 
                         <h3>Spil uden en konto</h3>
                         <p>
-                            De gratis spil på <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, Sudoku samt Blackjack,
+                            De gratis spil på <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, Sudoku, Snake samt Blackjack,
                             Baccarat, Roulette og Slots med legechips) kan spilles uden en konto. Der gemmes da intet om dig eller
                             dit spil på serveren, bortset fra fejlrapporter fra browseren (se
                             <a href="#watchdog">Fejlrapporter fra browseren</a>). Wordle og Ore Mining Inc. gemmes i stedet
-                            krypteret i din browser og sendes med hvert træk, så serveren kan kontrollere det. Sudoku spilles
-                            udelukkende i din browser, mens Minesweeper og casinospillene kun findes på den åbne side og starter
+                            krypteret i din browser og sendes med hvert træk, så serveren kan kontrollere det. Sudoku og Snake
+                            spilles udelukkende i din browser, mens Minesweeper og casinospillene kun findes på den åbne side og starter
                             forfra, når den genindlæses. De gratis spil sætter ingen cookies (de tjekker kun, om cookien hbHubDevice
                             findes) og har ingen ranglister, statistik eller nedbrudsrapporter.
                         </p>

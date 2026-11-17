@@ -1,6 +1,6 @@
 <?php
 // The games visitors can play without an account, mostly so search engines have something to find: Wordle,
-// Ore Mining Inc., Minesweeper, Sudoku, and solo Blackjack, Baccarat, Roulette and Slots, at /play (the files are in guestGames/, which is only
+// Ore Mining Inc., Minesweeper, Sudoku, Snake, and solo Blackjack, Baccarat, Roulette and Slots, at /play (the files are in guestGames/, which is only
 // reached through the rewrites in .htaccess). The normal versions (games/, casino/) still need an account, and
 // so does everything else on the site.
 //
@@ -24,6 +24,9 @@
 // - Sudoku has no token: the guest one is a page of its own (guestGames/sudoku/, assets/js/sudokuGuest.js), played
 //   only in the browser with the game and best times in localStorage (hbHubSudokuGuest). The members' Sudoku is made
 //   and checked on the server for its leaderboard, so a guest's times never come over to an account.
+// - Snake has no token either: the members' page plays it only in the browser for a guest (data-snake-guest in
+//   assets/js/snake.js), with no server game, and the best scores in localStorage (hbHubSnake). The members' Snake is
+//   played along with on the server for its leaderboard, so a guest's scores never come over to an account.
 // - The casino games keep theirs in the page only, so the play chips start over every time the page is opened, and
 //   they never come over to an account. A guest who runs out gets a new stack (hbHubGuestCasinoRefill()).
 require_once __DIR__ . '/../games/access.php';
@@ -113,6 +116,24 @@ const HBHUB_GUEST_GAMES = [
         ],
         'docs' => '/docs/games/sudoku',
         'prompt' => 'Opret en gratis konto for at få dine tider på Sudoku-ranglisten, og spil Matador, skak og UNO med venner.',
+    ],
+    'snake' => [
+        'path' => '/play/snake',
+        'game' => '/games/snake/',
+        'section' => 'games',
+        'name' => 'Snake',
+        'title' => 'Gratis Snake online - det klassiske slangespil, uden login | HB Hub',
+        'description' => 'Spil det klassiske Snake gratis i din browser: spis æblerne, bliv længere og undgå kanten og din egen hale. Tre hastigheder, piletaster eller swipe. Ingen konto nødvendig.',
+        'card' => 'Klassikeren: spis æblerne, bliv længere, og undgå kanten og din egen hale.',
+        'genre' => ['Arcade game', 'Snake game'],
+        'keywords' => ['Snake', 'Snake game', 'free Snake', 'Snake online', 'slangespil', 'gratis Snake', 'arcade game'],
+        'languages' => ['en'],
+        'about' => [
+            'Snake er det klassiske slangespil: styr slangen rundt på brættet med piletasterne eller W, A, S og D (eller swipe på en telefon), og spis æblerne. Hvert æble gør slangen et felt længere, og spillet er slut, hvis du rammer kanten eller din egen krop. Brættet er 20 gange 12 felter, og fylder slangen det hele, har du vundet.',
+            'Vælg mellem Slow, Normal og Fast. Det er gratis og kører i din browser på en telefon, tablet eller computer, og din bedste score ved hver hastighed bliver gemt i denne browser. Med en gratis HB Hub-konto kommer dine spil på Normal og Fast på ranglisten.',
+        ],
+        'docs' => '/docs/games/snake',
+        'prompt' => 'Opret en gratis konto for at få dine scorer på Snake-ranglisten, og spil Matador, skak og UNO med venner.',
     ],
     'blackjack' => [
         'path' => '/play/blackjack',

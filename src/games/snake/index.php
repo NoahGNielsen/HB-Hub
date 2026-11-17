@@ -8,38 +8,70 @@
 // score at each speed ({"slow": apples, ...}). Only the chosen speed is kept in localStorage (hbHubSnake). The line
 // above the board (data-snake-note) says when a game doesn't count for the leaderboard, and why. The board's look (the
 // brown frame, the olive bar on top, the checkered sand) is in assets/css/snake.css.
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/snake/snake.php';
-hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
+//
+// It's also the guest Snake at /play/snake, for visitors without an account: guestGames/snake/ sets $guestGame and
+// includes this page (see assets/php/guestGames/guestGames.php). Then it has the frontpage's top bar, the guest bar and
+// the text for search engines, no leaderboard, and no server game: data-snake-guest tells snake.js to play it only in
+// the browser, with the best scores kept in localStorage (hbHubSnake) instead of on the server.
+$guestGame ??= null;
+$snakeGame = null;
+$snakeBests = null;
+if ($guestGame === null) {
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/snake/snake.php';
+    hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
 
-$db = hbHubDatabase();
-$snakeGame = hbHubSnakeNew($db, (int) $hbHubUser['userId']);
-$snakeBests = hbHubSnakeBests($db, (int) $hbHubUser['userId']);
+    $db = hbHubDatabase();
+    $snakeGame = hbHubSnakeNew($db, (int) $hbHubUser['userId']);
+    $snakeBests = hbHubSnakeBests($db, (int) $hbHubUser['userId']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
+    <?php $headerHomeNav = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/header.php'; ?>
     <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <link rel="stylesheet" href="/assets/css/snake.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/snake.css') ?>">
-    <title>Snake - HB Hub</title>
-    <meta name="robots" content="noindex">
-    <meta name="description" content="Play Snake on the HB Hub">
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/head.php'; ?>
+    <?php else: ?>
+        <title>Snake - HB Hub</title>
+        <meta name="robots" content="noindex">
+        <meta name="description" content="Play Snake on the HB Hub">
+    <?php endif; ?>
 </head>
-<body>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
+<body<?= $guestGame !== null ? ' class="home-body"' : '' ?>>
+    <?php if ($guestGame !== null): ?>
+        <?php $homeNavSectionBase = '/'; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
+    <?php else: ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
+    <?php endif; ?>
+    <?php if ($guestGame !== null): ?>
+    <main class="casino games snake" data-snake data-snake-guest>
+    <?php else: ?>
     <main class="casino games snake" data-snake data-snake-game="<?= htmlspecialchars(json_encode($snakeGame)) ?>"
           data-snake-bests="<?= htmlspecialchars(json_encode($snakeBests)) ?>">
-        <a class="casino-back" href="/games/">&larr; Games</a>
+    <?php endif; ?>
+        <?php if ($guestGame !== null): ?>
+            <a class="casino-back" href="/">&larr; HB Hub</a>
+        <?php else: ?>
+            <a class="casino-back" href="/games/">&larr; Games</a>
+        <?php endif; ?>
         <div class="casino-title-row">
             <h1>Snake</h1>
-            <a class="casino-btn" href="/games/snake/leaderboard">Leaderboard</a>
+            <?php if ($guestGame === null): ?>
+                <a class="casino-btn" href="/games/snake/leaderboard">Leaderboard</a>
+            <?php endif; ?>
         </div>
+        <?php if ($guestGame !== null): ?>
+            <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/top.php'; ?>
+        <?php endif; ?>
         <p class="casino-intro">
             Eat the apples to grow longer, and don't crash into the edge or your own tail. Use the arrow keys or WASD, or
-            swipe on the board on a phone. Normal and Fast have a leaderboard of the most apples eaten.
+            swipe on the board on a phone.
+            <?= $guestGame !== null ? 'Make a free account to get your scores on the leaderboard.' : 'Normal and Fast have a leaderboard of the most apples eaten.' ?>
         </p>
 
         <p class="snake-note" data-snake-note aria-live="polite" hidden></p>
@@ -90,7 +122,10 @@ $snakeBests = hbHubSnakeBests($db, (int) $hbHubUser['userId']);
             <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/snake/rules.php'; ?>
         </section>
     </main>
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+    <?php if ($guestGame !== null): ?>
+        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/bottom.php'; ?>
+    <?php endif; ?>
+    <?php $hbHubShowSiteFooter = $guestGame !== null; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
     <script src="/assets/js/snake.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/snake.js') ?>" defer></script>
 </body>
 </html>
