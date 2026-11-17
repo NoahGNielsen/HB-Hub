@@ -28,6 +28,11 @@ Last updated 17/11-26
 - **Automatically make a commit after making changes**, with an appropriate commit message. Existing history uses
   short, lowercase, plain-English messages (`added leaderboard`, `QOL update to matador`).
 - `database/migrations/*` is in `.gitignore`, so migrations are never part of a commit.
+- **The dev site shares the live database with the main site.** Code on `dev` must never break the main site: a
+  migration run for dev hits the live data too, so schema changes have to stay backwards compatible with the code on
+  `main` (add nullable/defaulted columns and new tables; don't rename, drop or change the meaning of columns, tables,
+  JSON keys or stored values that `main` still uses until that code is live). Anything dev writes (game state,
+  settings, chips) is real data that the main site reads.
 - **Simulations and other long runs log live.** Anything that runs for more than a minute or two (balance sims,
   headless-browser scripts, batch jobs) writes its output line by line to a file as it goes, never only at the end, so
   a run that hangs or gets killed still leaves its results and can be checked while it runs. See "Long runs" below.
@@ -48,7 +53,8 @@ HB Hub (https://hbhub.noahgajnielsen.dk) is a messaging site for the owner's sch
 
 Pushing to `main` deploys: [.github/workflows/ftp-upload.yml](.github/workflows/ftp-upload.yml) syncs `src/` to
 `hbhub/` over FTPS. Pushing to `dev` deploys the test site, dev.noahgajnielsen.dk, the same way
-([.github/workflows/ftp-upload-dev.yml](.github/workflows/ftp-upload-dev.yml), to `dev_public/`). **The database is not migrated automatically**: the owner runs the `database/migrations/` files by
+([.github/workflows/ftp-upload-dev.yml](.github/workflows/ftp-upload-dev.yml), to `dev_public/`). The dev site uses
+the **same database** as the main site (see Rules). **The database is not migrated automatically**: the owner runs the `database/migrations/` files by
 hand, so tell them when a push needs one run first.
 
 ## Layout
