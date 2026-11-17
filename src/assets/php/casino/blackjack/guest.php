@@ -261,7 +261,7 @@ function hbHubBlackjackGuestDealerStep(array &$state, int $now): void
         hbHubBlackjackGuestSettle($state, $now);
         return;
     }
-    hbHubBlackjackSetPhase($state, 'dealer', $now, HBHUB_BLACKJACK_DEALER_MS);
+    hbHubBlackjackSetPhase($state, 'dealer', $now, hbHubBlackjackDealerDelay($state['round']));
 }
 
 /**

@@ -101,6 +101,7 @@
 
 /* The table: dealer at the top, what's happening in the middle, the seats along the bottom */
 .bj-table {
+  position: relative; /* for the win banner */
   min-height: 440px;
   padding: 24px 20px 20px;
   box-sizing: border-box;
@@ -289,6 +290,145 @@
     opacity: 0;
     transform: translateY(-24px) scale(0.92);
   }
+}
+
+/* The hole card being turned over (blackjackTable.js): lifted, turned on its side, and the back (.bj-card-cover, laid
+   over the face) drops away at the halfway point, so the face comes round the other side */
+.bj-card.is-flip {
+  z-index: 1;
+  animation: bj-flip 0.9s cubic-bezier(0.45, 0, 0.25, 1) both;
+}
+
+.bj-card-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  border: 3px solid var(--bj-card-face);
+  border-radius: inherit;
+  background: repeating-linear-gradient(45deg, var(--accent) 0 6px, color-mix(in srgb, var(--accent) 70%, #000) 6px 12px);
+  opacity: 0;
+  animation: bj-flip-cover 0.9s both;
+}
+
+@keyframes bj-flip {
+  0% {
+    transform: perspective(600px) translateY(0) rotateY(0deg);
+  }
+  30% {
+    transform: perspective(600px) translateY(-14px) scale(1.08) rotateY(0deg);
+  }
+  65% {
+    transform: perspective(600px) translateY(-14px) scale(1.12) rotateY(90deg);
+  }
+  100% {
+    transform: perspective(600px) translateY(0) rotateY(0deg);
+  }
+}
+
+@keyframes bj-flip-cover {
+  0%,
+  64.9% {
+    opacity: 1;
+  }
+  65%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The dealer's next card is a close one (dealer on 16 against a 20): their cards glow and their total beats like a
+   heart while the table waits for it */
+.bj-table.is-tense .bj-dealer .bj-cards {
+  animation: bj-tense 0.9s ease-in-out infinite;
+}
+
+.bj-table.is-tense .bj-label .bj-total {
+  animation: bj-tense-total 0.9s ease-in-out infinite;
+}
+
+@keyframes bj-tense {
+  50% {
+    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--bj-lose) 75%, transparent));
+  }
+}
+
+@keyframes bj-tense-total {
+  50% {
+    transform: scale(1.12);
+    background: var(--bj-lose);
+    color: #fff;
+  }
+}
+
+/* A big win's banner across the middle of the table (celebrate() in blackjackTable.js) */
+.bj-banner {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  z-index: 3;
+  padding: 14px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border-radius: 20px;
+  background: rgba(10, 12, 18, 0.82);
+  box-shadow: 0 0 0 2px #e8b931, 0 0 40px rgba(232, 185, 49, 0.55);
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: bj-banner-in 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+.bj-banner.is-leaving {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.9);
+  transition: opacity 0.4s, transform 0.4s;
+}
+
+.bj-banner-title {
+  font-size: clamp(1.6rem, 6vw, 2.8rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #fff6cf, #ffd23f 55%, #c98d0a);
+  background-clip: text;
+  color: transparent;
+}
+
+.bj-banner-amount {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #7dffb0;
+  font-variant-numeric: tabular-nums;
+}
+
+.bj-banner.is-five {
+  box-shadow: 0 0 0 3px #ffd23f, 0 0 60px rgba(255, 210, 63, 0.8);
+}
+
+.bj-banner.is-sweep {
+  box-shadow: 0 0 0 2px #7dffb0, 0 0 44px rgba(125, 255, 176, 0.5);
+}
+
+@keyframes bj-banner-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+}
+
+/* The sparks, confetti and fireworks, over the whole window */
+.bj-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 /* Seats */
@@ -815,8 +955,20 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bj-card.is-new {
+  .bj-card.is-new,
+  .bj-card.is-flip,
+  .bj-table.is-tense .bj-dealer .bj-cards,
+  .bj-table.is-tense .bj-label .bj-total,
+  .bj-banner {
     animation: none;
+  }
+
+  .bj-card-cover {
+    display: none;
+  }
+
+  .bj-banner.is-leaving {
+    transition: none;
   }
 
   .bj-timer-bar,

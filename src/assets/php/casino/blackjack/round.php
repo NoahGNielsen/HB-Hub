@@ -37,6 +37,8 @@ const HBHUB_BLACKJACK_BETTING_MS = 15000; // from the first bet, unless everyone
 const HBHUB_BLACKJACK_INSURANCE_MS = 10000;
 const HBHUB_BLACKJACK_TURN_MS = 20000; // for every decision, then the hand stands by itself
 const HBHUB_BLACKJACK_DEALER_MS = 900; // between the dealer's cards
+const HBHUB_BLACKJACK_HOLE_MS = 1500; // before the hole card is turned over, a little longer for the suspense
+const HBHUB_BLACKJACK_DEALER_TENSE_MS = 2200; // before a card that's close, e.g. the dealer on 16 against a 20 (hbHubBlackjackDealerIsTense())
 const HBHUB_BLACKJACK_RESULTS_MS = 5000;
 const HBHUB_BLACKJACK_STEPS_MAX = 200; // hbHubBlackjackAdvance() stops after this many, in case of a bug
 
@@ -473,7 +475,7 @@ function hbHubBlackjackNextTurn(array &$room, int $now): void
     }
 
     $round['turn'] = null;
-    hbHubBlackjackSetPhase($state, 'dealer', $now, HBHUB_BLACKJACK_DEALER_MS);
+    hbHubBlackjackSetPhase($state, 'dealer', $now, hbHubBlackjackDealerDelay($round));
 }
 
 /**
@@ -502,7 +504,45 @@ function hbHubBlackjackDealerStep(PDO $db, array &$room, int $now): void
         hbHubBlackjackSettle($db, $room, $now);
         return;
     }
-    hbHubBlackjackSetPhase($state, 'dealer', $now, HBHUB_BLACKJACK_DEALER_MS);
+    hbHubBlackjackSetPhase($state, 'dealer', $now, hbHubBlackjackDealerDelay($round));
+}
+
+/**
+ * How long the dealer waits before their next step: a little longer before the hole card is turned over, and longer
+ * still before a card that's close (hbHubBlackjackDealerIsTense()). Otherwise HBHUB_BLACKJACK_DEALER_MS.
+ * Used by the guest table too (guest.php).
+ */
+function hbHubBlackjackDealerDelay(array $round): int
+{
+    if (!$round['holeShown']) {
+        return HBHUB_BLACKJACK_HOLE_MS;
+    }
+    return hbHubBlackjackHasLiveHands($round) && hbHubBlackjackDealerIsTense($round) ? HBHUB_BLACKJACK_DEALER_TENSE_MS : HBHUB_BLACKJACK_DEALER_MS;
+}
+
+/**
+ * Whether the dealer's next card is a tense one: they have to take another card, a 10 would bust them (12 to 16),
+ * and a hand still in play beats what they have now. Like the dealer on 16 against a 20: it all comes down to this
+ * card. The table shows it too (dealer.tense in hbHubBlackjackTableView()), so blackjackTable.js can light it up.
+ */
+function hbHubBlackjackDealerIsTense(array $round): bool
+{
+    if (!$round['holeShown'] || !hbHubBlackjackDealerHits($round['dealer'])) {
+        return false;
+    }
+    [$dealerTotal] = hbHubBlackjackTotal($round['dealer']);
+    if ($dealerTotal < 12) {
+        return false; // no card can bust them yet
+    }
+    foreach ($round['players'] as $player) {
+        foreach ($player['hands'] as $hand) {
+            [$total] = hbHubBlackjackTotal($hand['cards']);
+            if ($total <= 21 && $total > $dealerTotal && !hbHubBlackjackIsHandNatural($hand)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /**
@@ -670,6 +710,8 @@ function hbHubBlackjackTableView(array $state, array $seats, array $people, int 
             'total' => $total,
             'soft' => $isSoft,
             'blackjack' => $round['holeShown'] && hbHubBlackjackIsNatural($round['dealer']),
+            // The dealer's next card is a close one (hbHubBlackjackDealerIsTense()), so the table lights up while it waits
+            'tense' => $state['phase'] === 'dealer' && hbHubBlackjackHasLiveHands($round) && hbHubBlackjackDealerIsTense($round),
         ];
     }
 
@@ -728,6 +770,8 @@ function hbHubBlackjackTableView(array $state, array $seats, array $people, int 
         'timer' => $state['deadline'] !== null && $state['phase'] !== 'dealer'
             ? ['left' => max(0, $state['deadline'] - $now), 'total' => $state['timer']]
             : null,
+        // When the dealer's next step is due, so the table can ask for it right then instead of on its next check
+        'dealerStepIn' => $state['phase'] === 'dealer' && $state['deadline'] !== null ? max(0, $state['deadline'] - $now) : null,
         'roundId' => $round['id'] ?? null,
         'settled' => $round['settled'] ?? false,
         'reshuffled' => $round['reshuffled'] ?? false,

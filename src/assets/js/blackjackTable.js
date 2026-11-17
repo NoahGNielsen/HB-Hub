@@ -86,6 +86,8 @@
     let shownCards = {}; // the cards each hand had last time it was drawn, so only new ones are animated
     let shownRound = null;
     let isFirstDraw = true; // nothing is animated when the page opens
+    let dealerStepAt = null; // Date.now() when the dealer's next step is due, so the next check is sent right then
+    let celebratedRound = null; // the round whose results' effects have been shown (celebrate()), so they only go off once
     let guestToken = ''; // a guest's table and play chips, sealed by the server (none at first: a new table)
     let guestQueue = Promise.resolve();
 
@@ -150,6 +152,7 @@
         }
         deadlineAt = table.timer ? Date.now() + table.timer.left : null;
         timerTotal = table.timer?.total ?? 0;
+        dealerStepAt = typeof table.dealerStepIn === 'number' ? Date.now() + table.dealerStepIn : null;
         hasAskedAtDeadline = false;
         if (data.notice) showMessage(data.notice); // a guest who ran out of play chips got a new stack
         render();
@@ -170,7 +173,17 @@
         if (data !== null) apply(data);
 
         isPolling = false;
-        pollTimer = setTimeout(poll, document.visibilityState === 'visible' ? POLL_MS : HIDDEN_POLL_MS);
+        pollTimer = setTimeout(poll, nextPollIn());
+    }
+
+    // While the dealer plays, the next check goes just after their next step is due, so the hole card and every card
+    // after it comes at the pace the server sets (slower when it's close), not whenever the next 1-second check is.
+    function nextPollIn() {
+        if (document.visibilityState !== 'visible') return HIDDEN_POLL_MS;
+        if (table?.phase === 'dealer' && dealerStepAt !== null) {
+            return Math.min(POLL_MS, Math.max(250, dealerStepAt - Date.now() + 80));
+        }
+        return POLL_MS;
     }
 
     function post(action, fields = {}) {
@@ -211,6 +224,10 @@
         statusText.textContent = statusFor();
         renderControls();
         tickTimer();
+        if (table.settled && table.roundId !== celebratedRound) {
+            celebratedRound = table.roundId;
+            if (!isFirstDraw) celebrate(); // not for a hand that was already over when the page opened
+        }
         isFirstDraw = false;
     }
 
@@ -228,6 +245,8 @@
         const dealer = table.dealer;
         renderCards(dealerCards, 'dealer', dealer?.cards ?? []);
         dealerTotal.textContent = dealer ? totalText(dealer.total, dealer.soft, dealer.blackjack) : '';
+        // The dealer's next card is a close one (dealer on 16 against a 20): the table holds its breath (blackjack.css)
+        tableElement.classList.toggle('is-tense', table.phase === 'dealer' && dealer?.tense === true);
         shuffledNote.hidden = !table.reshuffled || ['waiting', 'betting'].includes(table.phase);
         // Before the next hand is dealt, the last one stays on the table, faded
         tableElement.classList.toggle('is-between', ['waiting', 'betting'].includes(table.phase));
@@ -244,16 +263,26 @@
             + (left <= reshuffleAt ? 'It\'s shuffled before the next hand.' : 'It\'s shuffled at ' + reshuffleAt + '.');
     }
 
+    // A card that wasn't there last time is dealt in, and one that was face down (the hole card) is turned over
     function renderCards(container, key, cards) {
         const before = shownCards[key] ?? [];
-        container.replaceChildren(...cards.map((card, i) => cardElement(card, !isFirstDraw && before[i] !== card)));
+        container.replaceChildren(...cards.map((card, i) => {
+            if (isFirstDraw || before[i] === card) return cardElement(card, null);
+            return cardElement(card, before[i] === null && card !== null ? 'flip' : 'new');
+        }));
         shownCards[key] = cards;
     }
 
-    // A face-down card is null: the hole card isn't sent until it's turned over
-    function cardElement(card, isNew) {
+    // A face-down card is null: the hole card isn't sent until it's turned over. animation is 'new' (dealt in),
+    // 'flip' (turned over: the card's back is laid over its face and spins away, see .is-flip in blackjack.css) or null.
+    function cardElement(card, animation) {
         const element = document.createElement('span');
-        element.className = 'bj-card' + (isNew ? ' is-new' : '');
+        element.className = 'bj-card' + (animation ? ' is-' + animation : '');
+        if (animation === 'flip') {
+            const cover = document.createElement('span');
+            cover.className = 'bj-card-cover';
+            element.append(cover);
+        }
         element.setAttribute('role', 'img');
         if (card === null) {
             element.classList.add('is-back');
@@ -353,6 +382,7 @@
     function handElement(seat, hand, h) {
         const element = document.createElement('div');
         element.className = 'bj-hand';
+        element.dataset.bjHand = seat.seat + '-' + h; // where celebrate() sets off a win's sparks
         element.classList.toggle('is-turn', hand.isTurn);
         if (hand.result) element.classList.add('is-' + hand.result);
 
@@ -379,6 +409,227 @@
             element.append(result);
         }
         return element;
+    }
+
+    // ---------- Win effects ----------
+    //
+    // When a hand is paid out, the winners get more the bigger it is:
+    //   a win                every winning hand at the table throws off a few sparks (more for your own)
+    //   a blackjack          yours: a "Blackjack!" banner over the table and a burst of confetti
+    //   21 with 5+ cards     yours: a "Five-card 21!" banner, gold confetti and fireworks
+    //   every split hand won yours: a "Both hands win!" (or "All 3 hands win!") banner and confetti from each hand
+    // Only the biggest one's banner is shown. Sparks, confetti and fireworks are particles on one canvas over the page
+    // (made here, so the guest table gets it too), drawn only while there are any. With reduced motion it's only the
+    // banner, standing still.
+    const IS_REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const CONFETTI = ['#e8b931', '#ff4f6d', '#4fc3f7', '#81e36b', '#ff7ab8', '#b388ff', '#ffffff'];
+    const GOLD = ['#ffd23f', '#ffe48a', '#e8b931', '#fff6cf'];
+    const SPARKS = ['#ffd23f', '#ffffff', '#7dffb0'];
+    const BANNER_MS = 2800;
+    const MAX_PARTICLES = 500;
+    const WIN_RESULTS = ['win', 'blackjack'];
+    let fxCanvas = null;
+    let fxContext = null;
+    let particles = []; // { kind: spark|confetti|ember, x, y, vx, vy (px, px a second), gravity, drag, rotation, spin, size, color, age, life (s) }
+    let fxFrame = 0;
+    let fxLastTime = 0;
+    let fxTimers = [];
+    let banner = null;
+
+    const randomBetween = (low, high) => low + Math.random() * (high - low);
+    const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
+    function celebrate() {
+        fxTimers.forEach(clearTimeout);
+        fxTimers = [];
+        banner?.remove();
+
+        const youSeat = table.seats.find((seat) => seat.isYou && seat.player);
+        table.seats.forEach((seat) => seat.player?.hands.forEach((hand, h) => {
+            if (WIN_RESULTS.includes(hand.result)) sparksAt(handCenter(seat.seat, h), seat === youSeat ? 26 : 12);
+        }));
+        if (!youSeat) return;
+
+        const hands = youSeat.player.hands;
+        const won = hands.filter((hand) => WIN_RESULTS.includes(hand.result));
+        const fiveCard = hands.findIndex((hand) => hand.result === 'win' && hand.total === 21 && hand.cards.length >= 5);
+        const amount = youSeat.player.net > 0 ? '+' + formatChips(youSeat.player.net) + ' chips' : '';
+
+        if (fiveCard !== -1) {
+            showBanner('Five-card 21!', amount, 'is-five');
+            const center = handCenter(youSeat.seat, fiveCard);
+            confettiBurst(center, 120, GOLD);
+            [0, 450, 900].forEach((delay, i) => later(() => fireworkAt(fireworkSpot(i)), delay));
+        } else if (hands.length > 1 && won.length === hands.length) {
+            showBanner(hands.length === 2 ? 'Both hands win!' : 'All ' + hands.length + ' hands win!', amount, 'is-sweep');
+            hands.forEach((hand, h) => later(() => confettiBurst(handCenter(youSeat.seat, h), 70, CONFETTI), h * 250));
+            later(() => fireworkAt(fireworkSpot(1)), 400);
+        } else if (hands.some((hand) => hand.result === 'blackjack')) {
+            showBanner('Blackjack!', amount, 'is-blackjack');
+            confettiBurst(bannerCenter(), 160, CONFETTI);
+        }
+    }
+
+    function later(callback, ms) {
+        fxTimers.push(setTimeout(callback, ms));
+    }
+
+    // The banner across the middle of the table, gone again after BANNER_MS
+    function showBanner(title, amount, className) {
+        banner = document.createElement('div');
+        banner.className = 'bj-banner ' + className;
+        banner.setAttribute('aria-hidden', 'true'); // the status line already says what happened
+        const titleText = document.createElement('span');
+        titleText.className = 'bj-banner-title';
+        titleText.textContent = title;
+        banner.append(titleText);
+        if (amount) {
+            const amountText = document.createElement('span');
+            amountText.className = 'bj-banner-amount';
+            amountText.textContent = amount;
+            banner.append(amountText);
+        }
+        tableElement.append(banner);
+        const shown = banner;
+        later(() => shown.classList.add('is-leaving'), BANNER_MS);
+        later(() => shown.remove(), BANNER_MS + 400);
+    }
+
+    function centerOf(element) {
+        const box = element.getBoundingClientRect();
+        return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+    }
+
+    function handCenter(seatNumber, h) {
+        const element = seatList.querySelector('[data-bj-hand="' + seatNumber + '-' + h + '"] .bj-cards');
+        return element ? centerOf(element) : centerOf(tableElement);
+    }
+
+    const bannerCenter = () => centerOf(banner ?? tableElement);
+
+    // Somewhere over the top half of the table, left, middle or right
+    function fireworkSpot(i) {
+        const box = tableElement.getBoundingClientRect();
+        return { x: box.left + box.width * [0.25, 0.5, 0.75][i % 3] + randomBetween(-30, 30), y: box.top + box.height * randomBetween(0.15, 0.35) };
+    }
+
+    function sparksAt({ x, y }, count) {
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = randomBetween(90, 300);
+            addParticle({
+                kind: 'spark', x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 60,
+                gravity: 260, drag: 1.8, size: randomBetween(3, 7), spin: randomBetween(-6, 6),
+                color: pick(SPARKS), life: randomBetween(0.5, 1.1),
+            });
+        }
+    }
+
+    // Paper strips shot up and out from a point, then fluttering down
+    function confettiBurst({ x, y }, count, colors) {
+        for (let i = 0; i < count; i++) {
+            addParticle({
+                kind: 'confetti', x, y, vx: randomBetween(-480, 480), vy: randomBetween(-760, -220),
+                gravity: 620, drag: 0.9, size: randomBetween(8, 13), spin: randomBetween(-8, 8), flip: randomBetween(6, 14),
+                color: pick(colors), life: randomBetween(2.2, 3.4),
+            });
+        }
+    }
+
+    function fireworkAt({ x, y }) {
+        const color = pick(GOLD.concat(CONFETTI));
+        const count = 46;
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2;
+            const speed = randomBetween(160, 280);
+            addParticle({
+                kind: 'ember', x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                gravity: 180, drag: 1.4, size: randomBetween(2, 3.5), color, life: randomBetween(0.9, 1.4),
+            });
+        }
+    }
+
+    function addParticle(particle) {
+        if (IS_REDUCED_MOTION || particles.length >= MAX_PARTICLES) return;
+        if (!fxCanvas) {
+            fxCanvas = document.createElement('canvas');
+            fxCanvas.className = 'bj-fx';
+            fxCanvas.setAttribute('aria-hidden', 'true');
+            root.append(fxCanvas);
+            fxContext = fxCanvas.getContext('2d');
+        }
+        if (!fxFrame) {
+            sizeCanvas();
+            fxLastTime = performance.now();
+            fxFrame = requestAnimationFrame(fxTick);
+        }
+        particles.push({ rotation: Math.random() * Math.PI * 2, spin: 0, age: 0, ...particle });
+    }
+
+    function sizeCanvas() {
+        const ratio = window.devicePixelRatio || 1;
+        fxCanvas.width = Math.round(window.innerWidth * ratio);
+        fxCanvas.height = Math.round(window.innerHeight * ratio);
+        fxContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    // Moves every particle on by the time since the last frame, draws the ones still going, and stops when they're gone
+    function fxTick(now) {
+        const seconds = Math.min(0.05, Math.max(0, now - fxLastTime) / 1000); // no big jump after the tab was hidden
+        fxLastTime = now;
+        fxContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        particles = particles.filter((particle) => {
+            particle.age += seconds;
+            if (particle.age >= particle.life || particle.y > window.innerHeight + 40) return false;
+            const slow = Math.max(0, 1 - particle.drag * seconds);
+            particle.vx *= slow;
+            particle.vy = particle.vy * slow + particle.gravity * seconds;
+            particle.x += particle.vx * seconds;
+            particle.y += particle.vy * seconds;
+            particle.rotation += particle.spin * seconds;
+            drawParticle(particle, Math.min(1, (particle.life - particle.age) * 3)); // fades out in its last third of a second
+            return true;
+        });
+        fxFrame = particles.length ? requestAnimationFrame(fxTick) : 0;
+        if (!fxFrame) fxContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    }
+
+    function drawParticle(particle, alpha) {
+        const context = fxContext;
+        const size = particle.size;
+        context.save();
+        context.globalAlpha = alpha;
+        context.translate(particle.x, particle.y);
+        context.fillStyle = particle.color;
+        if (particle.kind === 'confetti') {
+            // A strip of paper turning in the air
+            context.rotate(particle.rotation);
+            context.scale(1, Math.cos(particle.age * particle.flip));
+            context.fillRect(-size / 2, -size / 4, size, size / 2);
+        } else if (particle.kind === 'spark') {
+            // A four-pointed twinkle
+            const waist = size * 0.25;
+            context.globalCompositeOperation = 'lighter';
+            context.rotate(particle.rotation);
+            context.beginPath();
+            context.moveTo(0, -size);
+            context.lineTo(waist, -waist);
+            context.lineTo(size, 0);
+            context.lineTo(waist, waist);
+            context.lineTo(0, size);
+            context.lineTo(-waist, waist);
+            context.lineTo(-size, 0);
+            context.lineTo(-waist, -waist);
+            context.closePath();
+            context.fill();
+        } else {
+            // A firework's ember
+            context.globalCompositeOperation = 'lighter';
+            context.beginPath();
+            context.ellipse(0, 0, size, size, 0, 0, Math.PI * 2);
+            context.fill();
+        }
+        context.restore();
     }
 
     function playerTag(seat) {
