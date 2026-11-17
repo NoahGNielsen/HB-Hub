@@ -3931,8 +3931,9 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
         chatRequest = null;
         main.removeAttribute('aria-busy');
         // Offline for a moment. A chat is opened the normal way, which shows the browser's own page for that.
-        // A form isn't sent again, as it may have got there - what was typed is still in the box to try again.
+        // A form isn't sent again, as it may have got there - a message goes back in the box to try again.
         if (!body) location.href = url;
+        else if (sent !== null) chatUnsend(main, sent);
         return;
     } finally {
         if (body) chatIsPosting = false;
@@ -3953,9 +3954,11 @@ async function chatLoad(url, { body = null, fromHistory = false, replace = false
     const textarea = main.querySelector('.chat-composer textarea');
     const chatId = main.querySelector('[data-chat-messages]')?.dataset.chatMessages;
     const focusedChatId = list?.contains(document.activeElement) ? document.activeElement.closest('[data-chat-id]')?.dataset.chatId : undefined;
-    // Not sent after all (a blocked link, or sending too fast): the message stays in the box to try again
+    // The box was emptied at Send (chatShowSending), so what's in it now was typed since and stays. Not sent after all
+    // (a blocked link, or sending too fast): the message goes back in, in front of that, to try again.
     const isRefused = address.searchParams.get('linkBlocked') === '1' || address.searchParams.get('tooFast') === '1';
-    const draft = textarea && (textarea.value !== sent || isRefused) ? textarea.value : '';
+    const typed = textarea ? textarea.value : '';
+    const draft = isRefused && sent ? (typed === '' ? sent : sent + '\n' + typed) : typed;
 
     // Copies of the pictures for browsers without JS. Parsed here they're real <img>s, which would all load at once.
     newMain.querySelectorAll('noscript').forEach((noscript) => noscript.remove());
@@ -4000,7 +4003,57 @@ function chatSubmit(form, submitter = null) {
     const body = new FormData(form);
     if (submitter?.name) body.append(submitter.name, submitter.value);
     const sent = form.matches('.chat-composer') ? form.querySelector('textarea').value : null;
+    if (sent !== null) chatShowSending(form, sent);
     chatLoad(chatFormAction(form), { body, sent });
+}
+
+/**
+ * A message is on its way: the box empties straight away and the message shows faded at the bottom of the chat with
+ * "Sending…" (like the attachments part's), so Send feels instant instead of the text sitting there until the server
+ * answers. The page swap in chatLoad takes it away again; if it wasn't sent after all, chatUnsend puts the text back.
+ * It has no data-message-id, so polling and the message menu leave it alone, and polling adds new messages above it.
+ */
+function chatShowSending(form, text) {
+    const textarea = form.querySelector('textarea');
+    if (text !== '') {
+        textarea.value = '';
+        textarea.dispatchEvent(new Event('input', { bubbles: true })); // shrinks back, and stops "is typing"
+    }
+    const messages = document.querySelector('[data-chat-messages]');
+    if (!messages || text.trim() === '') return; // a GIF on its own: the GIF popup says it's sending
+
+    const item = document.createElement('li');
+    item.className = 'chat-message is-own is-sending';
+    item.setAttribute('data-message-sending', '');
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-message-bubble';
+    const textBox = document.createElement('div');
+    textBox.className = 'chat-message-text';
+    textBox.textContent = text;
+    bubble.append(textBox);
+    const meta = document.createElement('span');
+    meta.className = 'chat-message-meta';
+    meta.setAttribute('role', 'status');
+    meta.textContent = 'Sending…';
+    item.append(bubble, meta);
+
+    const empty = messages.querySelector('[data-messages-empty]');
+    if (empty) empty.hidden = true;
+    messages.append(item);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+// Not sent after all (no connection): the faded message goes and its text goes back in the box, in front of anything
+// typed since, to try again
+function chatUnsend(main, sent) {
+    main.querySelectorAll('.chat-message.is-sending:not(:has(.chat-attachments))').forEach((item) => item.remove());
+    const empty = main.querySelector('[data-messages-empty]');
+    if (empty && !main.querySelector('[data-message-sending]')) empty.hidden = false;
+    const textarea = main.querySelector('.chat-composer textarea');
+    if (!textarea || !sent) return;
+    const typed = textarea.value;
+    textarea.value = typed === '' ? sent : sent + '\n' + typed;
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 // Where the form goes. Not form.action, as the chat's forms have an <input name="action">, which that gives instead.
