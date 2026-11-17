@@ -8,7 +8,7 @@
     <li>Styr slangen med piletasterne eller <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>. På en telefon swiper du på brættet i den retning, den skal dreje. Slangen starter, så snart du trykker en retning.</li>
     <li>Spis æblerne. Hvert æble giver et point og gør slangen et felt længere, og et nyt æble dukker op et tilfældigt sted på brættet, som er 20&times;12 felter.</li>
     <li>Rammer du kanten eller din egen krop, er spillet slut. Slangen kan ikke vende direkte om.</li>
-    <li>Vælg <strong>Slow</strong>, <strong>Normal</strong> eller <strong>Fast</strong> i bjælken over brættet, før du starter. Hver fart har sin egen rangliste over flest æbler i ét spil, og din bedste score for farten står ved pokalen.</li>
+    <li>Vælg <strong>Slow</strong>, <strong>Normal</strong> eller <strong>Fast</strong> i bjælken over brættet, før du starter. Normal og Fast har hver sin rangliste over flest æbler i ét spil (Slow har ingen), og din bedste score for farten står ved pokalen.</li>
     <li>Tryk <kbd>P</kbd> eller <kbd>Esc</kbd> for pause. Spillet går også selv på pause, når du skifter væk fra siden. Du kan holde pause op til 10 gange i et spil; holder du flere, tæller spillet ikke på ranglisten. Når spillet er slut, starter <kbd>Mellemrum</kbd>, <kbd>Enter</kbd> eller <strong>Play again</strong> et nyt.</li>
     <li>Fylder slangen hele brættet, har du vundet.</li>
 </ul>

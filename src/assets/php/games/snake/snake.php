@@ -43,10 +43,12 @@ const HBHUB_SNAKE_COLS = 20; // the board, as COLS, ROWS and START_LENGTH in ass
 const HBHUB_SNAKE_ROWS = 12;
 const HBHUB_SNAKE_START_LENGTH = 4;
 
-const HBHUB_SNAKE_SPEEDS = [ // gameSpeed in HBHub-SnakeGames => the speed; ms a step, as SPEEDS in snake.js
-    1 => ['key' => 'slow', 'name' => 'Slow', 'ms' => 160],
-    2 => ['key' => 'normal', 'name' => 'Normal', 'ms' => 120],
-    3 => ['key' => 'fast', 'name' => 'Fast', 'ms' => 85],
+// gameSpeed in HBHub-SnakeGames => the speed; ms a step, as SPEEDS in snake.js. 'leaderboard' is whether it has a tab
+// on the leaderboard: Slow doesn't (its games are still saved, and still your best at the speed, just not ranked)
+const HBHUB_SNAKE_SPEEDS = [
+    1 => ['key' => 'slow', 'name' => 'Slow', 'ms' => 160, 'leaderboard' => false],
+    2 => ['key' => 'normal', 'name' => 'Normal', 'ms' => 120, 'leaderboard' => true],
+    3 => ['key' => 'fast', 'name' => 'Fast', 'ms' => 85, 'leaderboard' => true],
 ];
 
 const HBHUB_SNAKE_PLAYING = 0; // gameResult in HBHub-SnakeGames (ready to start too, while gameStartTimestamp is NULL)

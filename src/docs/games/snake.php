@@ -37,7 +37,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="leaderboard" aria-labelledby="docs-leaderboard">
                         <h2 id="docs-leaderboard">Rangliste</h2>
                         <p>
-                            Slow, Normal og Fast har hver sin rangliste (<strong>Leaderboard</strong> på Snake-siden) med din
+                            Normal og Fast har hver sin rangliste (Slow har ingen) (<strong>Leaderboard</strong> på Snake-siden) med din
                             bedste score, dit gennemsnit, alle de æbler, du har spist, og hvor mange spil du har spillet.
                         </p>
                         <p>

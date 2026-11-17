@@ -1,5 +1,6 @@
 <?php
-// Snake leaderboard, one for each speed (?speed=slow, normal or fast, as tabs), from HBHub-SnakeGames: the most apples
+// Snake leaderboard, one for Normal and one for Fast (?speed=normal or fast, as tabs; Slow has none, see 'leaderboard'
+// in HBHUB_SNAKE_SPEEDS), from HBHub-SnakeGames: the most apples
 // eaten in one game, the average, all the apples eaten, and games played. The scores are the server's own (it plays
 // every game along with the page, see assets/php/games/snake/snake.php), and only games that count are in the best,
 // the average and the apples: a game the anticheat stopped (scripted, out of time with the clock, moves the server
@@ -25,7 +26,8 @@ const LEADERBOARD_COLUMNS = [ // sort => [heading, which way it sorts first]
 $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 
-$speeds = hbHubSnakeSpeedKeys(); // 'slow' => 1, ...
+// The speeds with a leaderboard: 'normal' => 2, 'fast' => 3 (?speed=slow shows Normal)
+$speeds = array_filter(hbHubSnakeSpeedKeys(), static fn(int $speed): bool => HBHUB_SNAKE_SPEEDS[$speed]['leaderboard']);
 $speedKey = is_string($_GET['speed'] ?? null) && isset($speeds[$_GET['speed']]) ? $_GET['speed'] : 'normal';
 $speed = $speeds[$speedKey];
 $speedName = HBHUB_SNAKE_SPEEDS[$speed]['name'];
@@ -93,7 +95,7 @@ function leaderboardSortUrl(string $speedKey, string $column, string $sort, stri
     <link rel="stylesheet" href="/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
     <title>Snake leaderboard - HB Hub</title>
     <meta name="robots" content="noindex">
-    <meta name="description" content="The best Snake players on the HB Hub, at Slow, Normal and Fast">
+    <meta name="description" content="The best Snake players on the HB Hub, at Normal and Fast">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
@@ -101,14 +103,14 @@ function leaderboardSortUrl(string $speedKey, string $column, string $sort, stri
         <a class="casino-back" href="/games/snake/">&larr; Snake</a>
         <h1>Snake leaderboard</h1>
         <p class="casino-intro">
-            Slow, Normal and Fast have a leaderboard each: the most apples eaten in one game. HB Hub's server plays every
+            Normal and Fast have a leaderboard each (Slow doesn't): the most apples eaten in one game. HB Hub's server plays every
             game along with you, so a score only counts when it can make the same moves in the same time. A game that's
             sped up or slowed down, steered by code, or paused more than <?= HBHUB_SNAKE_MAX_PAUSES ?> times only counts
             as played, like one you leave.
         </p>
 
         <nav class="casino-board-links" aria-label="Speed">
-            <?php foreach (HBHUB_SNAKE_SPEEDS as $info): ?>
+            <?php foreach (HBHUB_SNAKE_SPEEDS as $info): if (!$info['leaderboard']) { continue; } ?>
                 <a class="casino-btn<?= $info['key'] === $speedKey ? ' casino-btn-primary' : '' ?>"
                    href="?<?= htmlspecialchars(http_build_query(['speed' => $info['key'], 'sort' => $sort, 'dir' => $dir])) ?>"<?= $info['key'] === $speedKey ? ' aria-current="page"' : '' ?>><?= $info['name'] ?></a>
             <?php endforeach; ?>

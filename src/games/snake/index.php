@@ -39,7 +39,7 @@ $snakeBests = hbHubSnakeBests($db, (int) $hbHubUser['userId']);
         </div>
         <p class="casino-intro">
             Eat the apples to grow longer, and don't crash into the edge or your own tail. Use the arrow keys or WASD, or
-            swipe on the board on a phone. Each speed has a leaderboard of the most apples eaten.
+            swipe on the board on a phone. Normal and Fast have a leaderboard of the most apples eaten.
         </p>
 
         <p class="snake-note" data-snake-note aria-live="polite" hidden></p>
@@ -55,7 +55,7 @@ $snakeBests = hbHubSnakeBests($db, (int) $hbHubUser['userId']);
                     <span class="games-visually-hidden">Score:</span>
                     <span data-snake-score>0</span>
                 </span>
-                <span class="snake-count" title="Your best at this speed, on the leaderboard">
+                <span class="snake-count" title="Your best at this speed">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path class="snake-icon-trophy" d="M7 3H17V5H21V8C21 11 19 13 16.5 13.5C15.8 15 14.5 16 13 16.3V19H17V21H7V19H11V16.3C9.5 16 8.2 15 7.5 13.5C5 13 3 11 3 8V5H7ZM5 7V8C5 9.6 6 10.9 7.2 11.4C7.1 10.9 7 10.5 7 10V7ZM19 7H17V10C17 10.5 16.9 10.9 16.8 11.4C18 10.9 19 9.6 19 8Z"/>
                     </svg>
