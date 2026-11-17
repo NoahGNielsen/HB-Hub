@@ -346,7 +346,11 @@ a.casino-game:hover .casino-game-art {
   --game-mark: #ff5d8f;
 }
 
+/* A bit bigger than the others: the name wraps and has the Beta badge, so this cover is taller and the
+   usual 112px drawing looked small in it */
 .casino-game-doodle .casino-game-art {
+  width: 136px;
+  height: 136px;
   fill: #fff;
 }
 
