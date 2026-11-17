@@ -56,7 +56,7 @@
 
 | | |
 |---|---|
-| **Snake** | At `/games/snake/`: the classic, on a 20x12 board in a terracotta frame with an olive score bar. Arrow keys or WASD (turns queue up, up to 3), swipes on a phone, `P`/`Esc` to pause (and when the page is hidden), Space/Enter or **Play again** after a crash. Three speeds (Slow 160 ms, Normal 120 ms, Fast 85 ms a step), picked before a game. Drawn on a canvas by `assets/js/snake.js`, gliding between steps; the snake's eyes follow the apple, blink, and turn into Xs when it crashes |
+| **Snake** | At `/games/snake/`: the classic, on a 20x12 board in a terracotta frame with an olive score bar. Arrow keys or WASD (turns queue up, up to 3), swipes on a phone, `P`/`Esc` to pause (and when the page is hidden), Space/Enter or **Play again** after a crash. Three speeds (Slow 160 ms, Normal 120 ms, Fast 85 ms a step), picked before a game. Drawn on a canvas by `assets/js/snake.js`, gliding between steps. A turn starts the moment it's pressed: the head turns where it is and cuts the corner diagonally (a press late in a step turns as soon as it reaches the next square), and it bounces back a little after a crash; the snake's eyes follow the apple, blink, and turn into Xs when it crashes |
 | **Saving** | Played only in the browser: nothing is sent to the server and there's no leaderboard. The last speed and the best score for each speed are in `localStorage` (`hbHubSnake`) |
 
 ## Ore Mining Inc.
