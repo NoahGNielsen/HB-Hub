@@ -24,7 +24,7 @@ jobs:
         protocol: ftps
         local-dir: src/
         # The folder on the server that dev.noahgajnielsen.dk is set up to serve (change it if Simply uses another one)
-        server-dir: dev/
+        server-dir: dev_public/
         # The default exclude (**/.git*/**) would also skip src/assets/php/.github/, which has the README shield counters
         exclude: |
           **/.git/**
