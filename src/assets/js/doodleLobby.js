@@ -1,6 +1,6 @@
 // The Doodle Chain lobby (games/doodle/): the public games, from /games/doodle/lobby, kept up to date every 5 seconds
 // while the page is in view. Joining is a normal form post to the lobby, which checks everything again and goes to the
-// game. Each game is a row (lobby.css): its name and host, its seats as dots, the time to draw, and the button.
+// game. Each game is a row (lobby.css): its name and host, its seats as dots, its settings (the time to draw and the number of drawings), and the button.
 (() => {
     const root = document.querySelector('[data-doodle-lobby]');
     if (!root) return;

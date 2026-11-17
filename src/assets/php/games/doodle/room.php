@@ -563,7 +563,7 @@ function hbHubDoodleView(PDO $db, array $room, array $seats, array $people, int 
         $view['turn'] = [
             'game' => $game['number'],
             'step' => $game['step'],
-            'steps' => count($game['order']),
+            'steps' => hbHubDoodleSteps($game),
             'kind' => hbHubDoodleStepKind($game['step']),
             'timeLeftMs' => max(0, $game['stepEndsMs'] - $nowMs),
             'timeTotalMs' => hbHubDoodleStepSeconds($state, $game['step']) * 1000,
@@ -581,6 +581,7 @@ function hbHubDoodleView(PDO $db, array $room, array $seats, array $people, int 
         $view['reveal'] = [
             'chain' => $reveal['chain'],
             'chains' => count($game['order']),
+            'steps' => hbHubDoodleSteps($game),
             'shown' => $reveal['shown'],
             'finished' => $reveal['finished'],
             'startedBy' => $game['names'],

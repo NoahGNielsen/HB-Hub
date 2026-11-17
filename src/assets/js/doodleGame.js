@@ -1,7 +1,7 @@
 // A Doodle Chain game (games/doodle/game.php): shows the game as /games/doodle/play says it is, and sends what the
 // player hands in. Everything is decided on the server - whose chain the player has, when a step ends, what's shown at
 // the end. The page shows one of three things in the stage, by game.phase:
-// - 'lobby': who's in, and for the host the time to draw and Start game.
+// - 'lobby': who's in, and for the host Start game and Game settings.
 // - 'playing' (game.turn): the step's timer, what the player is handed (game.turn.prompt: a text to draw, or a drawing
 //   to describe; null in the first step or when there's nothing), and a box to write in or the canvas to draw on. Done
 //   hands it in; when the timer runs out, whatever is there is handed in by itself (the server waits a few seconds for
@@ -16,6 +16,9 @@
 //
 // Asks what's new every second while the page is in view, and every 4 seconds while it isn't (so the player doesn't
 // count as away). The whole game only comes back when its version changed.
+//
+// The game's settings (game.settings: the time to draw, and how many drawings a chain has before the last guess) are
+// shown in their dialog, where the host changes them while no game is being played; everyone else only sees them.
 (() => {
     const root = document.querySelector('[data-doodle]');
     if (!root) return;
@@ -39,7 +42,6 @@
     const waitingTitle = waiting.querySelector('.doodle-panel-title');
     const waitingText = find('[data-doodle-waiting-text]');
     const hostControls = find('[data-doodle-host-controls]');
-    const drawSecondsSelect = find('[data-doodle-draw-seconds]');
     const startButton = find('[data-doodle-start]');
     const turnPanel = find('[data-doodle-turn]');
     const turnTitle = find('[data-doodle-turn-title]');
@@ -141,20 +143,20 @@
         return request({ method: 'POST', body: new URLSearchParams({ room: roomId, action, have: haveList(), ...fields }) });
     }
 
-    // Does something in the game, and shows its error (if any)
-    async function act(action, fields = {}) {
+    // Does something in the game, and shows its error (if any) in shownIn: the stage's message, or the settings dialog's
+    async function act(action, fields = {}, shownIn = message) {
         if (isBusy) return null;
         isBusy = true;
-        message.textContent = '';
+        shownIn.textContent = '';
         render();
 
         const data = await post(action, fields);
         isBusy = false;
         if (data === null) {
-            message.textContent = 'Something went wrong. Please try again.';
+            shownIn.textContent = 'Something went wrong. Please try again.';
             version = null; // so the next check gets the whole game
         } else {
-            if (data.error) message.textContent = data.error;
+            if (data.error) shownIn.textContent = data.error;
             apply(data);
         }
         render();
@@ -392,6 +394,7 @@
         renderWaiting();
         renderTurn();
         renderReveal();
+        if (settingsDialog.open) renderSettings();
         const isMyTurn = game.phase === 'playing' && game.turn.inGame && !game.turn.done;
         document.title = (isMyTurn ? '● Your turn - ' : '') + baseTitle;
     }
@@ -457,14 +460,57 @@
         waitingText.textContent = lines.join(' ');
 
         hostControls.hidden = !game.isHost;
-        drawSecondsSelect.value = String(game.settings.drawSeconds);
-        drawSecondsSelect.disabled = isBusy;
         startButton.textContent = isFinished ? 'New game' : 'Start game';
         startButton.disabled = isBusy || missing > 0;
     }
 
-    drawSecondsSelect.addEventListener('change', () => act('settings', { drawSeconds: drawSecondsSelect.value }));
     startButton.addEventListener('click', () => act('start'));
+
+    // ----- The game's settings: the host changes them while no game is being played, everyone else only sees them
+
+    const settingsDialog = find('[data-doodle-settings-dialog]');
+    const settingsForm = find('[data-doodle-settings-form]');
+    const settingsMessage = find('[data-doodle-settings-message]');
+    const settingsSave = find('[data-doodle-settings-save]');
+    const canChangeSettings = () => game.isHost && game.phase !== 'playing';
+
+    // The choices are only filled in from the game when it opens, or while they can't be changed (so a poll doesn't
+    // undo what the host has just clicked)
+    function fillSettings() {
+        settingsForm.elements.drawSeconds.value = String(game.settings.drawSeconds);
+        settingsForm.elements.drawings.value = String(game.settings.drawings);
+    }
+
+    function renderSettings() {
+        const canChange = canChangeSettings();
+        if (!canChange) fillSettings();
+        settingsForm.querySelectorAll('[data-doodle-settings-fields]').forEach((fields) => (fields.disabled = !canChange));
+        settingsSave.hidden = !canChange;
+        settingsSave.disabled = isBusy;
+        find('[data-doodle-settings-text]').textContent = canChange
+            ? 'Choose how the next game is played.'
+            : game.phase === 'playing' ? 'A game is being played, so these can\'t be changed until it\'s over.'
+            : 'Only the host can change these.';
+    }
+
+    function openSettings() {
+        if (game === null) return;
+        settingsMessage.textContent = '';
+        fillSettings();
+        renderSettings();
+        settingsDialog.showModal();
+    }
+
+    root.querySelectorAll('[data-doodle-settings]').forEach((opener) => opener.addEventListener('click', openSettings));
+    find('[data-doodle-settings-close]').addEventListener('click', () => settingsDialog.close());
+    settingsForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); // it's closed once it's saved, not straight away
+        const data = await act('settings', {
+            drawSeconds: settingsForm.elements.drawSeconds.value,
+            drawings: settingsForm.elements.drawings.value,
+        }, settingsMessage);
+        if (data && !data.error) settingsDialog.close();
+    });
 
     function renderTurn() {
         const turn = game.phase === 'playing' ? game.turn : null;
@@ -485,7 +531,9 @@
 
         const isWrite = turn.kind === 'write';
         stepText.textContent = 'Round ' + (turn.step + 1) + ' of ' + turn.steps;
-        turnTitle.textContent = turn.step === 0 ? 'Write something to draw' : isWrite ? 'What is this?' : 'Draw this';
+        turnTitle.textContent = turn.step === 0 ? 'Write something to draw'
+            : !isWrite ? 'Draw this'
+            : turn.step === turn.steps - 1 ? 'Last guess: what is this?' : 'What is this?';
 
         const isWorking = turn.inGame && !turn.done;
         doneText.hidden = isWorking;
@@ -551,7 +599,7 @@
             return;
         }
         if (!reveal.finished) {
-            const isLastInChain = reveal.shown >= reveal.chains;
+            const isLastInChain = reveal.shown >= reveal.steps;
             const isLastChain = reveal.chain >= reveal.chains - 1;
             revealActions.append(button(isLastInChain ? (isLastChain ? 'Finish' : 'Next chain') : 'Show next', () => act('next'), true));
             return;

@@ -14,8 +14,13 @@
         de tror, den forestiller, og sådan bliver det ved: skriv, tegn, skriv, tegn.
     </li>
     <li>
-        Hver kæde kommer forbi alle spillere én gang, så der er lige så mange runder som spillere. Du ser kun det, du lige har
-        fået, aldrig det, der kom før.
+        Værten vælger, hvor mange tegninger der er i hver kæde før det sidste gæt (<?= implode(', ', array_slice(HBHUB_DOODLE_DRAWINGS_CHOICES, 0, -1)) ?>
+        eller <?= HBHUB_DOODLE_DRAWINGS_CHOICES[array_key_last(HBHUB_DOODLE_DRAWINGS_CHOICES)] ?>, <?= HBHUB_DOODLE_DEFAULT_SETTINGS['drawings'] ?> som
+        standard). Med 2 tegninger er der 5 runder: skriv, tegn, gæt, tegn, gæt. En kæde slutter altid med et gæt.
+    </li>
+    <li>
+        Hver kæde går videre til en ny spiller hver runde. Er der flere runder end spillere, kommer kæden forbi de samme igen,
+        også den, der startede den. Du ser kun det, du lige har fået, aldrig det, der kom før.
     </li>
     <li>
         Tryk på <strong>Done</strong>, når du er færdig. Runden slutter, når alle er færdige, eller tiden er gået. Når tiden

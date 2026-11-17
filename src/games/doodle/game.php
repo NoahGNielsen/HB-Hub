@@ -56,6 +56,14 @@ $gameConfig = [
                     <strong class="doodle-code-value"><?= htmlspecialchars($room['roomCode']) ?></strong>
                     <span class="doodle-code-copied" data-doodle-code-copied aria-live="polite"></span>
                 </button>
+                <!-- Drawn in currentColor, so it follows the theme -->
+                <button type="button" class="casino-btn doodle-icon-btn" aria-label="Game settings" title="Game settings"
+                        aria-haspopup="dialog" data-doodle-settings>
+                    <svg class="doodle-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/>
+                        <path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/>
+                    </svg>
+                </button>
                 <button type="button" class="casino-btn" data-doodle-leave>Leave game</button>
             </div>
         </div>
@@ -69,13 +77,8 @@ $gameConfig = [
                     <h2 class="doodle-panel-title">Waiting for players</h2>
                     <p class="doodle-hint" data-doodle-waiting-text></p>
                     <div class="doodle-host-controls" data-doodle-host-controls hidden>
-                        <label class="casino-label" for="doodle-draw-seconds">Time to draw</label>
-                        <select id="doodle-draw-seconds" class="casino-input doodle-select" data-doodle-draw-seconds>
-                            <?php foreach (HBHUB_DOODLE_DRAW_CHOICES as $seconds): ?>
-                                <option value="<?= $seconds ?>"><?= $seconds ?> seconds<?= $seconds === HBHUB_DOODLE_DEFAULT_SETTINGS['drawSeconds'] ? ' (default)' : '' ?></option>
-                            <?php endforeach; ?>
-                        </select>
                         <button type="button" class="casino-btn casino-btn-primary" data-doodle-start>Start game</button>
+                        <button type="button" class="casino-btn" aria-haspopup="dialog" data-doodle-settings>Game settings</button>
                     </div>
                 </div>
 
@@ -144,6 +147,41 @@ $gameConfig = [
                 </details>
             </aside>
         </div>
+
+        <!-- The game's settings: the host changes them while no game is being played, everyone else (and the host
+             during a game) only sees them. doodleGame.js fills in the choices from the game and sends them as "settings". -->
+        <dialog class="games-dialog doodle-settings" aria-labelledby="doodle-settings-title" data-doodle-settings-dialog>
+            <form method="dialog" data-doodle-settings-form>
+                <h2 id="doodle-settings-title">Game settings</h2>
+                <p class="doodle-hint" data-doodle-settings-text></p>
+                <fieldset class="casino-choices" data-doodle-settings-fields>
+                    <legend class="casino-label">Time to draw</legend>
+                    <?php foreach (HBHUB_DOODLE_DRAW_CHOICES as $seconds): ?>
+                        <label class="casino-choice">
+                            <input type="radio" name="drawSeconds" value="<?= $seconds ?>">
+                            <span><strong><?= $seconds ?> seconds<?= $seconds === HBHUB_DOODLE_DEFAULT_SETTINGS['drawSeconds'] ? ' (default)' : '' ?></strong></span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
+                <fieldset class="casino-choices" data-doodle-settings-fields>
+                    <legend class="casino-label">Drawings before the last guess</legend>
+                    <?php foreach (HBHUB_DOODLE_DRAWINGS_CHOICES as $drawings): ?>
+                        <label class="casino-choice">
+                            <input type="radio" name="drawings" value="<?= $drawings ?>">
+                            <span>
+                                <strong><?= $drawings ?> drawing<?= $drawings === 1 ? '' : 's' ?><?= $drawings === HBHUB_DOODLE_DEFAULT_SETTINGS['drawings'] ? ' (default)' : '' ?></strong>
+                                <span class="casino-hint"><?= 2 * $drawings + 1 ?> rounds: write, then draw and guess <?= $drawings === 1 ? 'once' : $drawings . ' times' ?>.</span>
+                            </span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
+                <p class="doodle-message" role="alert" data-doodle-settings-message></p>
+                <div class="games-dialog-actions">
+                    <button type="button" class="casino-btn" data-doodle-settings-close>Close</button>
+                    <button type="submit" class="casino-btn casino-btn-primary" value="save" data-doodle-settings-save>Save</button>
+                </div>
+            </form>
+        </dialog>
 
         <dialog class="games-dialog" aria-labelledby="doodle-confirm-title" data-doodle-confirm>
             <h2 id="doodle-confirm-title" data-doodle-confirm-title></h2>

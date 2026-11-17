@@ -11,7 +11,7 @@
 //       step that's written, drawing - the strokes' JSON, game.php - in one that's drawn), room.php's hbHubDoodleHandIn()
 //     start, for the host once enough players are in, also for a new game
 //     next (the next entry of the chain being shown) and show (chain: once all have been shown), for the host
-//     settings (drawSeconds), for the host while no game is being played
+//     settings (drawSeconds, drawings), for the host while no game is being played
 //     leave
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -58,7 +58,8 @@ $do = match ($action) {
     'start' => static fn (array &$room): ?string => hbHubDoodleStartGame($db, $room, $userId),
     'next' => static fn (array &$room): ?string => hbHubDoodleRevealNext($room['state'], $isHost($room)),
     'show' => static fn (array &$room): ?string => hbHubDoodleShowChain($room['state'], $isHost($room), $input['chain'] ?? null),
-    'settings' => static fn (array &$room): ?string => hbHubDoodleChangeSettings($room['state'], $isHost($room), $input['drawSeconds'] ?? null),
+    'settings' => static fn (array &$room): ?string => hbHubDoodleChangeSettings($room['state'], $isHost($room),
+        $input['drawSeconds'] ?? null, $input['drawings'] ?? null),
     default => false,
 };
 if ($do === false) {
