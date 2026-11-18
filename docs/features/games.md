@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Matador** | The Danish Monopoly for 2-4 players. Games can be public, joined with a 6-character code, or invite-only |
+| **Matador** | The Danish Monopoly for 2-4 players. Games can be public or joined with a 6-character code, and the host can invite people |
 | **Editions** | The host picks the board and Prøv lykken cards in the room's settings before the game starts: Classic (the original Danish board, the default), HTX (the school's own, for now a copy of Classic) or Kaos (Classic with every field but the corners in a random place when the game starts; a Prøv lykken has a 25 % chance of being the Kaos card, which mixes them up again, properties keeping their houses and mortgage, and then hands everyone's properties to a random player and, drawn separately, everyone's money to a random player (keeping your own can happen); open trade offers are taken back). Each edition is a file in `src/assets/php/games/matador/editions/` |
 | **House rules** | One dice (a 6 gives another roll), no auctions: a property nobody buys stays with the bank. Get out of jail by paying, using a "benådet" card or rolling a 6. Taxes and Prøv lykken payments go into Parkering's account, and whoever lands on Parkering gets it (a room setting, on by default). The host can also let players build houses and hotels on any street they own, without the whole colour, or build with the whole colour but not evenly (both off by default) |
 | **Full game** | Houses and hotels, mortgages, Prøv lykken cards, the income tax choice, and trading properties, money and cards with the other players at any time |
@@ -17,14 +17,14 @@
 
 | | |
 |---|---|
-| **Chess** | Two-player chess with every rule: castling, en passant, promotion (only to a piece your opponent has taken from you; until then a pawn waits on the last rank, and the choice pops up the moment one is taken), and draws by stalemate, repetition, the 50-move rule and too few pieces. Public, code or invite-only games, with or without a clock (3+2 up to 30 minutes), set in the game's settings. The host starts the game once someone has joined |
+| **Chess** | Two-player chess with every rule: castling, en passant, promotion (only to a piece your opponent has taken from you; until then a pawn waits on the last rank, and the choice pops up the moment one is taken), and draws by stalemate, repetition, the 50-move rule and too few pieces. Public or code games (the host can invite people), with or without a clock (3+2 up to 30 minutes), set in the game's settings. The host starts the game once someone has joined |
 | **Chess extras** | Draw offers, resigning, aborting before both have moved, claiming the win when your opponent has gone, leaving losing the game (unless the host has paused it; if both players are gone too long it's a loss for both), the host pausing the game (and the clocks), rematches with swapped colours, arrows and highlighted squares drawn with the right mouse button (like chess.com), an in-game chat and a leaderboard |
 
 ## UNO
 
 | | |
 |---|---|
-| **UNO** | The card game for 2-6 players, with the full 108-card deck: numbers, Skip, Reverse, Draw Two, Wild and Wild Draw Four (which can be played at any time). Public, code or invite-only games. The host starts the game once someone has joined, and a new one when it's over; new players can join between games |
+| **UNO** | The card game for 2-6 players, with the full 108-card deck: numbers, Skip, Reverse, Draw Two, Wild and Wild Draw Four (which can be played at any time). Public or code games (the host can invite people). The host starts the game once someone has joined, and a new one when it's over; new players can join between games |
 | **Several cards at once** | Cards with the same number or symbol can be played together, any colour: click the one that fits, then the others in the order you want, and press Play. The last one decides the colour, and every card counts (two Skips skip two players, two Draw Twos make 4). Not for wild cards or a card just drawn |
 | **Calling UNO** | Press UNO! when you play your second-to-last card. Forget, and anyone can catch you before the next player moves: you draw 2 |
 | **Settings** | The host picks the time for a turn (15, 30 or 60 seconds), stacking (off, same card only - a Draw Two on a Draw Two, a Wild Draw Four on a Wild Draw Four, to pass them all on - or any draw card, where a Wild Draw Four can also go on a Draw Two and the other way round; any draw card by default) drawing until you can play (off by default: you draw one card) and playing on after a win (on by default: the others go on for 2nd, 3rd and so on until one is left; off ends the game at the first win), in the game's settings |

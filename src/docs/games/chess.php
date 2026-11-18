@@ -20,7 +20,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="start" aria-labelledby="docs-start">
                         <h2 id="docs-start">At starte et spil</h2>
                         <ol class="docs-steps">
-                            <li>Åbn et spil på skaksiden: offentligt, med en kode eller kun for inviterede (se <a href="/docs/games/#rooms">At åbne et spil</a>).</li>
+                            <li>Åbn et spil på skaksiden: offentligt eller med en kode (se <a href="/docs/games/#rooms">At åbne et spil</a>).</li>
                             <li>Vælg uret, og hvem der spiller hvid (dig, dem eller tilfældigt), i spillets indstillinger.</li>
                             <li>Når nogen er kommet med, trykker du start. Hvid trækker først.</li>
                         </ol>

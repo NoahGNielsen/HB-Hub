@@ -87,8 +87,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="tables" aria-labelledby="docs-tables">
                         <h2 id="docs-tables">Borde og rangliste</h2>
                         <p>
-                            Tryk på <strong>Play solo</strong> for et bord for dig selv, åbn et for andre (offentligt, med en kode
-                            eller kun for inviterede), eller gå med ved et fra lobbyen. Mere i
+                            Tryk på <strong>Play solo</strong> for et bord for dig selv, åbn et for andre (offentligt eller med en
+                            kode), eller gå med ved et fra lobbyen. Mere i
                             <a href="/docs/casino/#tables">Sådan virker casinoet</a>. Hver hånd tæller med på
                             <a href="/casino/baccarat/leaderboard">Baccarat-ranglisten</a>.
                         </p>

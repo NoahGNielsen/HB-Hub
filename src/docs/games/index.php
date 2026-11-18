@@ -1,5 +1,5 @@
 <?php
-// Help docs: how games work - the multiplayer games' rooms (public, code and invite-only, like
+// Help docs: how games work - the multiplayer games' rooms (public and code, plus invites, like
 // games/matador/room.php), what the host can do, game chats, leaving, and the leaderboards; and the two you play on
 // your own. Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
@@ -43,10 +43,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 <tbody>
                                     <tr><td>Offentligt</td><td>Alle. Det står på spillets side.</td></tr>
                                     <tr><td>Kode</td><td>Alle med dets kode på 6 tegn, skrevet ind på spillets side.</td></tr>
-                                    <tr><td>Kun for inviterede</td><td>Kun dem, værten inviterer. De får en <a href="/docs/notifications">notifikation</a>, og invitationen venter på spillets side. Findes ikke i Doodle Chain endnu.</td></tr>
                                 </tbody>
                             </table>
                         </div>
+                        <p>Værten kan også invitere folk. De får en <a href="/docs/notifications">notifikation</a>, og invitationen venter på spillets side (ikke i Doodle Chain endnu).</p>
                         <p>Hvert spil har en kode, uanset hvilken slags det er, så du altid kan sende den til en ven. Koder springer bogstaver over, der ligner hinanden, som 0 og O.</p>
                     </section>
 

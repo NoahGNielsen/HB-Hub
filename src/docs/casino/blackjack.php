@@ -67,8 +67,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="tables" aria-labelledby="docs-tables">
                         <h2 id="docs-tables">Borde og rangliste</h2>
                         <p>
-                            Tryk på <strong>Play solo</strong> for et bord for dig selv, eller åbn et for andre: offentligt, med en kode
-                            eller kun for inviterede, med en mindsteindsats på <?= implode(', ', array_slice(HBHUB_BLACKJACK_MIN_BETS, 0, -1)) ?> eller
+                            Tryk på <strong>Play solo</strong> for et bord for dig selv, eller åbn et for andre: offentligt eller med en
+                            kode, med en mindsteindsats på <?= implode(', ', array_slice(HBHUB_BLACKJACK_MIN_BETS, 0, -1)) ?> eller
                             <?= HBHUB_BLACKJACK_MIN_BETS[count(HBHUB_BLACKJACK_MIN_BETS) - 1] ?> chips. Mere i
                             <a href="/docs/casino/#tables">Sådan virker casinoet</a>. Hver hånd tæller med på
                             <a href="/casino/blackjack/leaderboard">Blackjack-ranglisten</a>.
