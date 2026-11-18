@@ -1255,8 +1255,8 @@ $settingsDeviceCount = count($settingsDevices);
                             <span class="settings-item-text">
                                 <span class="settings-label">Error reports</span>
                                 <span class="settings-hint" id="settings-error-reports-hint">
-                                    Sends a short report to site admins when something on a page goes wrong, like an error or a
-                                    picture that won't load.
+                                    Sends a short report to site admins when something on a page goes wrong, like an error.
+                                    This helps us make a site that runs without errors.
                                 </span>
                             </span>
                             <input type="checkbox" class="settings-switch" name="errorReports" value="1"<?= $settingsErrorReportsOn ? ' checked' : '' ?>
