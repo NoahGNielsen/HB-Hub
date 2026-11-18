@@ -1361,8 +1361,8 @@
   opacity: 1;
 }
 
-/* "Help improve HB Hub": each level's colour (adminImproveHtml() in admin.php), the same as a dot in the users list
-   and a user's page as it is for its slice in the Overview's pie chart */
+/* "Help improve HB Hub": each level's colour (adminImproveHtml() in admin.php), the same as a dot on a user's page
+   as it is for its slice in the Overview's pie chart */
 .admin-improve-all {
   --admin-improve-color: var(--settings-on);
 }

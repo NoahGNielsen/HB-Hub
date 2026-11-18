@@ -10,7 +10,6 @@
 // column heading), and ?page= goes through it ADMIN_LIST_SHOWN at a time. The side menu (adminListsMenuHtml()) switches between the two,
 // and goes to the other lists, People, Banned pictures and Feedback, which are their own pages (admin/people.php,
 // admin/banned.php, admin/feedback.php).
-// The users list also shows what each one has on under "Help improve HB Hub" in their settings (adminImproveHtml()).
 // The pictures in the lists are loaded by pictureQueue.js two at a time (data-queued-picture), as each one is a PHP request.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/admin.php';
@@ -117,7 +116,7 @@ function adminUserList(PDO $db, string $search, int $page, int $lockoutMinutes, 
 
     // statusRank is adminUserStatus() as a number, to sort by: the same checks in the same order
     $isLocked = 'COALESCE(userAccountLockedTimestamp + INTERVAL ? MINUTE > NOW(), 0)';
-    $statement = $db->prepare('SELECT userId, userName, userAvatarAttachmentId, userStatus, userRole, userSettings, userCreatedTimestamp,
+    $statement = $db->prepare('SELECT userId, userName, userAvatarAttachmentId, userStatus, userRole, userCreatedTimestamp,
             userLastSeenTimestamp, userGhostBannedTimestamp, ' . $isLocked . ' AS isLocked,
             ' . adminUserOnlineSql() . ' AS isOnline,
             CASE
@@ -262,8 +261,7 @@ $adminNoun = $adminList === 'users' ? 'users' : 'chats';
                             <?php if ($adminList === 'users'): ?>
                                 <table class="admin-table admin-list">
                                     <thead><tr><?= $adminSortHeading('User', 'name') . $adminSortHeading('Status', 'status')
-                                        . $adminSortHeading('Joined', 'joined') . $adminSortHeading('Last seen', 'seen') ?>
-                                        <th scope="col" title="What they have on under Help improve HB Hub in their settings">Help improve</th></tr></thead>
+                                        . $adminSortHeading('Joined', 'joined') . $adminSortHeading('Last seen', 'seen') ?></tr></thead>
                                     <tbody>
                                         <?php foreach ($adminRows as $user): ?>
                                             <?php $listUserId = (int) $user['userId']; ?>
@@ -279,11 +277,7 @@ $adminNoun = $adminList === 'users' ? 'users' : 'chats';
                                                 </td>
                                                 <td><?= adminStatusHtml(adminUserStatus($user)) ?></td>
                                                 <td class="admin-nowrap"><?= adminTime($user['userCreatedTimestamp']) ?></td>
-                                                <td class="admin-nowrap"><?= adminTime($user['userLastSeenTimestamp']) ?></td>
-                                                <?php // A deleted account has no settings left to show ?>
-                                                <td class="admin-nowrap"><?= $user['userStatus'] === null ? '<span class="admin-muted">&ndash;</span>'
-                                                    : adminImproveHtml(hbHubImproveLevel(hbHubUserSettings($user['userSettings']))) ?></td>
-                                            </tr>
+                                                <td class="admin-nowrap"><?= adminTime($user['userLastSeenTimestamp']) ?></td>                                            </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>

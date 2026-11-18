@@ -55,7 +55,7 @@ function hbHubUsageStatsOn(array $settings): bool
 }
 
 /**
- * Both "Help improve HB Hub" switches as one word, for the admin panel (the users list, a user's page and the
+ * Both "Help improve HB Hub" switches as one word, for the admin panel (a user's page and the
  * Overview's pie chart): 'all' (both on), 'errors' (only Error reports) or 'none' (both off). 'stats' (only Anonymous
  * usage statistics) can't happen any more, as that switch depends on Error reports, but the admin panel still knows it.
  */
