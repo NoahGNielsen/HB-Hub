@@ -82,7 +82,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div>
                     <dt>Skrifttyper</dt>
-                    <dd>4</dd>
+                    <dd>5</dd>
                 </div>
             </dl>
         </section>
