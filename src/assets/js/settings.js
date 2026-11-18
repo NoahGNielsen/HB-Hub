@@ -238,6 +238,8 @@
             if (row?.textContent !== 'Blocked by an admin') setSummary('block', checkedLabel(form, 'block'));
         } else if (action === 'improveSite') {
             setSummary('improve', form.elements.improveSite.checked ? 'On' : 'Off');
+        } else if (action === 'keepOriginal') {
+            setSummary('attachments', form.elements.chatKeepOriginal.checked ? 'Can keep originals' : 'Always converted');
         }
     };
     for (const form of document.querySelectorAll('form[data-autosave]')) {

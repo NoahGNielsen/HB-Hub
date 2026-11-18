@@ -19,6 +19,7 @@
     "notifications": false,
     "notificationSound": false,
     "improveSite": true,
+    "chatKeepOriginal": false,
     "block": {
         "mode": "none",
         "pendingMode": null,

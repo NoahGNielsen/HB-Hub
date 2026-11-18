@@ -2586,9 +2586,10 @@ if ($isPoll) {
                          each with a preview, its name, how big it is in tickets and a × to take it out, and a + tile to add
                          more. Under them how much they come to, the box to keep pictures as they are instead of turning them
                          into JPEG XL (not ticked to begin with, only there when a picture would be), the same for videos
-                         instead of turning them into WebM, and Remove all. At Send they leave the tray for the faded
-                         message in the chat, which says how far the upload has got. -->
-                    <div class="chat-tray" hidden data-attach-tray>
+                         instead of turning them into WebM, and Remove all. The two Keep boxes only show for users who
+                         turned on "Option to keep originals" in the settings (data-attach-keep-option). At Send they
+                         leave the tray for the faded message in the chat, which says how far the upload has got. -->
+                    <div class="chat-tray" hidden data-attach-tray<?= hbHubChatKeepOriginalOn($userSettings) ? ' data-attach-keep-option' : '' ?>>
                         <ul class="chat-tray-list" aria-label="Attachments to send" data-attach-list></ul>
                         <div class="chat-tray-footer">
                             <span class="chat-tray-status" role="status" data-attach-status></span>

@@ -49,8 +49,11 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         <h2 id="docs-smaller">Billeder og videoer bliver gjort mindre</h2>
                         <p>
                             Før et billede bliver sendt, laver din browser det om til JPEG XL, en nyere slags billedfil, der fylder
-                            meget mindre. Det mister ingen detaljer, bortset fra JPEG-fotos, som får en, der ser ens ud. Sæt flueben
-                            i <strong>Keep original pictures</strong> for i stedet at sende dem præcis, som de er. Andre filer bliver
+                            meget mindre. Det mister ingen detaljer, bortset fra JPEG-fotos, som får en, der ser ens ud. Vil du kunne
+                            sende billeder og videoer præcis, som de er, så slå <strong>Option to keep originals</strong> til under
+                            <strong>Attachments</strong> i dine <a href="/settings#attachments">indstillinger</a>. Så får du felterne
+                            <strong>Keep original pictures</strong> og <strong>Keep original videos</strong> under de filer, du er ved
+                            at sende. Sæt flueben i <strong>Keep original pictures</strong> for at sende billederne, som de er. Andre filer bliver
                             zippet på serveren og pakket ud igen, når nogen downloader dem, så du får den samme fil tilbage.
                         </p>
                         <p>
@@ -63,7 +66,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             og fylder mindre (en video fra en telefon tager tit langt færre billetter bagefter). Dem, der er større
                             end 1080p, bliver gjort til 1080p. Det sker i din browser, og forhåndsvisningen viser, hvor langt den er
                             nået; en lang video kan tage et stykke tid, og du kan allerede sende, den går af sted, når den er færdig.
-                            Sæt flueben i <strong>Keep original videos</strong> for i stedet at sende dem præcis, som de er (en
+                            Har du slået muligheden til (se ovenfor), kan du sætte flueben i <strong>Keep original videos</strong> for i stedet at sende dem præcis, som de er (en
                             MKV-video bliver så sendt som en fil til download, uden afspiller). Kan din browser ikke lave
                             WebM-videoer, bliver videoen sendt, som den er.
                         </p>

@@ -2395,6 +2395,7 @@ chatPart((signal) => {
     const keep = tray.querySelector('[data-attach-keep]');
     const keepVideoLabel = tray.querySelector('[data-attach-keep-video-label]');
     const keepVideo = tray.querySelector('[data-attach-keep-video]');
+    const keepOption = tray.hasAttribute('data-attach-keep-option'); // the boxes are off in the settings unless turned on
     const clearButton = tray.querySelector('[data-attach-clear]');
     const replyBar = composer.querySelector('[data-reply-bar]');
     const fileItem = document.querySelector('[data-attach-file]'); // not there while attachments can't be sent
@@ -2664,9 +2665,9 @@ chatPart((signal) => {
         // Without text they can still be sent, so the message box stops insisting on some
         textarea.required = !hasJobs;
         composer.toggleAttribute('data-has-attachment', hasJobs);
-        keepLabel.hidden = !jobs.some((job) => job.kind === 'convert');
+        keepLabel.hidden = !keepOption || !jobs.some((job) => job.kind === 'convert');
         keep.disabled = isSending;
-        keepVideoLabel.hidden = !jobs.some((job) => job.kind === 'video');
+        keepVideoLabel.hidden = !keepOption || !jobs.some((job) => job.kind === 'video');
         keepVideo.disabled = isSending;
         clearButton.disabled = isSending;
         addTile.hidden = jobs.length >= maxFiles || isSending;

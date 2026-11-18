@@ -30,6 +30,16 @@ function hbHubImproveSiteOn(array $settings): bool
 }
 
 /**
+ * Whether the chat's attachment tray shows the "Keep original pictures" and "Keep original videos" boxes for the user
+ * (chatKeepOriginal, the Attachments card in the settings). Off unless they've turned it on, so pictures and videos
+ * are always converted to JPEG XL and WebM for everyone else.
+ */
+function hbHubChatKeepOriginalOn(array $settings): bool
+{
+    return ($settings['chatKeepOriginal'] ?? false) === true;
+}
+
+/**
  * Whether the user muted the chat right now, so it doesn't send them notifications (chatMuted in their settings,
  * keyed by chatId). A mute with a Unix time in chatMutedUntil ends then, one without lasts until they unmute it.
  */

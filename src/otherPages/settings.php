@@ -17,6 +17,8 @@
 // - Gambling and Games (#block): blocking them, during school hours or all the time (assets/php/block.php)
 // - Help improve HB Hub (#improve): whether the site may gather statistics about how it works for them (improveSite,
 //   on by default; hbHubImproveSiteOn() in assets/php/userSettings.php says what it turns off)
+// - Attachments (#attachments): whether the chat's attachment tray has the "Keep original pictures/videos" boxes
+//   (chatKeepOriginal, off by default, so pictures and videos are always converted unless it's turned on)
 // Security
 // - Password (#password): a new one, after entering the current one. Logs out every other session.
 // - Two-factor login (#totp): a code from an authenticator app when logging in (assets/php/totp.php)
@@ -29,7 +31,7 @@
 // - Delete account (#delete): after entering the password
 // The password and 2FA codes typed in to confirm a change count towards the login lock (assets/php/loginLimit.php).
 //
-// Saving: the forms that are plain settings (profile, notifications, block, improveSite, discordProfile) have
+// Saving: the forms that are plain settings (profile, notifications, block, improveSite, keepOriginal, discordProfile) have
 // data-autosave, and settings.js sends them by themselves as they're changed, with Accept: application/json. Those get
 // a JSON answer instead of a redirect: {"ok": true, ...} (with what the page needs to show the new state, see
 // settingsRedirect()), 422 {"error": "invalid", "errors": {field: message}} when something on the form isn't right
@@ -561,6 +563,15 @@ if ($settingsAction === 'improveSite') {
     settingsRedirect('settings', 'improve');
 }
 
+if ($settingsAction === 'keepOriginal') {
+    $keepOriginalOn = ($_POST['chatKeepOriginal'] ?? null) === '1';
+    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($keepOriginalOn): array {
+        $settings['chatKeepOriginal'] = $keepOriginalOn;
+        return $settings;
+    });
+    settingsRedirect('settings', 'attachments');
+}
+
 if ($settingsAction === 'block') {
     $blockMode = $_POST['block'] ?? null;
     if (!hbHubBlockIsMode($blockMode)) {
@@ -620,6 +631,7 @@ $settingsAvatarSrc = hbHubAvatarUrl($userId, $settingsAvatarId);
 $settingsNotificationsOn = ($savedSettings['notifications'] ?? false) === true;
 $settingsNotificationSoundOn = ($savedSettings['notificationSound'] ?? false) === true;
 $settingsImproveSiteOn = hbHubImproveSiteOn($savedSettings);
+$settingsKeepOriginalOn = hbHubChatKeepOriginalOn($savedSettings);
 $navMessageSound = true; // messageSound.js, so ticking the sound box plays it (navPanel.php)
 $settingsBlock = hbHubBlockSettings($savedSettings);
 $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
@@ -689,6 +701,7 @@ function settingsIcon(string $name): string
         'notifications' => '<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
         'block' => '<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/>',
         'improve' => '<path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/>',
+        'attachments' => '<path d="M20 11.5l-8 8a5 5 0 0 1-7-7l8.5-8.5a3.5 3.5 0 0 1 5 5L10 17.5a2 2 0 0 1-3-3l7.5-7.5"/>',
         'password' => '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14.5 8.5l2 2"/>',
         'totp' => '<path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
         'devices' => '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/>',
@@ -789,6 +802,7 @@ $settingsDeviceCount = count($settingsDevices);
                     <?= settingsRow('notifications', 'notifications', 'Notifications', $settingsNotificationsSummary, 'notifications') ?>
                     <?= settingsRow('block', 'block', 'Gambling and Games', $settingsBlockSummary, 'block') ?>
                     <?= settingsRow('improve', 'improve', 'Help improve HB Hub', $settingsImproveSiteOn ? 'On' : 'Off', 'improve') ?>
+                    <?= settingsRow('attachments', 'attachments', 'Attachments', $settingsKeepOriginalOn ? 'Can keep originals' : 'Always converted', 'attachments') ?>
                 </ul>
 
                 <h2 class="settings-list-heading">Security</h2>
@@ -1239,6 +1253,27 @@ $settingsDeviceCount = count($settingsDevices);
                         </span>
                         <input type="checkbox" class="settings-switch" name="improveSite" value="1"<?= $settingsImproveSiteOn ? ' checked' : '' ?>
                                aria-describedby="settings-improve-hint">
+                    </label>
+                    <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
+                </form>
+            </section>
+
+            <!-- Attachments (chatKeepOriginal, hbHubChatKeepOriginalOn() in assets/php/userSettings.php) -->
+            <section class="settings-card settings-panel" id="attachments" aria-labelledby="settings-attachments-heading" data-settings-panel>
+                <?= settingsPanelHead('attachments', 'Attachments', 'For files you send in the chat.', true) ?>
+                <form action="/settings#attachments" method="post" data-autosave>
+                    <input type="hidden" name="action" value="keepOriginal">
+                    <label class="settings-checkbox settings-line">
+                        <span class="settings-item-text">
+                            <span class="settings-label">Option to keep originals</span>
+                            <span class="settings-hint" id="settings-keep-original-hint">
+                                Pictures are turned into JPEG XL and videos into WebM before they're sent, so they take up
+                                less. Turn this on to get the "Keep original pictures" and "Keep original videos" boxes
+                                under the attachments you're about to send, to send them exactly as they are instead.
+                            </span>
+                        </span>
+                        <input type="checkbox" class="settings-switch" name="chatKeepOriginal" value="1"<?= $settingsKeepOriginalOn ? ' checked' : '' ?>
+                               aria-describedby="settings-keep-original-hint">
                     </label>
                     <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
                 </form>

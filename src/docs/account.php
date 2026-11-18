@@ -94,6 +94,11 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 imod indstillingen at sende en. Hvad der bliver samlet, står i
                                 <a href="/legal/privacy#watchdog">privatlivspolitikken</a>.
                             </li>
+                            <li>
+                                <strong>Attachments</strong>: slå <strong>Option to keep originals</strong> til for at kunne sende
+                                billeder og videoer i chatten, præcis som de er, i stedet for at de bliver
+                                <a href="/docs/chat/attachments#smaller">gjort mindre</a>. Den er slået fra, indtil du slår den til.
+                            </li>
                         </ul>
                         <p>
                             Gruppen <strong>Security</strong> har, ud over din adgangskode og dine enheder,
