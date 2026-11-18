@@ -2395,7 +2395,9 @@ chatPart((signal) => {
     const keep = tray.querySelector('[data-attach-keep]');
     const keepVideoLabel = tray.querySelector('[data-attach-keep-video-label]');
     const keepVideo = tray.querySelector('[data-attach-keep-video]');
-    const keepOption = tray.hasAttribute('data-attach-keep-option'); // the boxes are off in the settings unless turned on
+    // "Option to keep originals" in the settings, off unless turned on. Without it the Keep boxes are hidden and the
+    // tiles and the line under them never mention converting: a file still being converted just says "Uploading…"
+    const keepOption = tray.hasAttribute('data-attach-keep-option');
     const clearButton = tray.querySelector('[data-attach-clear]');
     const replyBar = composer.querySelector('[data-reply-bar]');
     const fileItem = document.querySelector('[data-attach-file]'); // not there while attachments can't be sent
@@ -2600,14 +2602,21 @@ chatPart((signal) => {
             info.textContent = 'Checking…';
         } else if (isWaiting(job)) {
             const percent = job.kind === 'video' && job.progress > 0 ? ` ${Math.floor(job.progress * 100)}%` : '';
-            info.textContent = isBusy ? `Converting…${percent}` : 'Waiting to convert';
-            details.push(job.kind === 'video'
-                ? 'Being turned into a WebM video (VP9), so it plays in the chat and takes less space.'
-                : 'Being turned into JPEG XL, which makes it smaller without losing anything.');
+            // Without the keep option the conversion isn't mentioned at all: it's just uploading
+            if (!keepOption) {
+                info.textContent = `Uploading…${percent}`;
+            } else {
+                info.textContent = isBusy ? `Converting…${percent}` : 'Waiting to convert';
+                details.push(job.kind === 'video'
+                    ? 'Being turned into a WebM video (VP9), so it plays in the chat and takes less space.'
+                    : 'Being turned into JPEG XL, which makes it smaller without losing anything.');
+            }
         } else {
             const format = job.kind === 'video' ? 'WebM' : 'JXL';
-            info.textContent = sizeLabel(file.size) + (file === job.result ? ` · ${format}` : '');
-            if (file === job.result) {
+            info.textContent = sizeLabel(file.size) + (keepOption && file === job.result ? ` · ${format}` : '');
+            if (!keepOption) {
+                details.push(sizeLabel(file.size));
+            } else if (file === job.result) {
                 details.push(`${job.kind === 'video' ? 'WebM (VP9)' : 'JPEG XL'}, ${sizeLabel(file.size)} (was ${sizeLabel(job.file.size)})`);
             } else {
                 details.push(sizeLabel(file.size));
@@ -2615,8 +2624,8 @@ chatPart((signal) => {
             // The server zips other files first, so they may take fewer
             details.push(job.kind === 'file' ? `Up to ${ticketsLabel(tickets)}` : ticketsLabel(tickets));
             if (tickets > 5) details.push('Kept for 3 days, as it takes more than 5 tickets');
-            if (job.kind === 'video' && !job.keeps.videos && job.failed) details.push(job.failed);
-            if (job.kind === 'convert' && !job.keeps.pictures) {
+            if (keepOption && job.kind === 'video' && !job.keeps.videos && job.failed) details.push(job.failed);
+            if (keepOption && job.kind === 'convert' && !job.keeps.pictures) {
                 if (job.failed) details.push(job.failed);
                 else if (file !== job.result) details.push("Sent as it is, as JPEG XL wasn't smaller");
             }
@@ -2640,7 +2649,9 @@ chatPart((signal) => {
         } else {
             isError = false;
             const parts = [`${jobs.length} ${jobs.length === 1 ? 'attachment' : 'attachments'}`];
-            if (waiting > 0) {
+            if (waiting > 0 && !keepOption) {
+                parts.push("uploading… You can send already, they go once it's done");
+            } else if (waiting > 0) {
                 const videos = jobs.filter((job) => isWaiting(job) && job.kind === 'video').length;
                 const pictures = waiting - videos;
                 const what = [];
