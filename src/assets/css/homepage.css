@@ -1610,7 +1610,7 @@ html.home {
   justify-content: center;
 }
 
-/* The small print under the last call: what the * on the hero's numbers means. Pulled up into the last call's
+/* The small print under the last call: what the * and ** on the hero's numbers mean. Pulled up into the last call's
    bottom margin so it sits just under it. */
 .home-footnote {
   max-width: 720px;
@@ -1621,6 +1621,10 @@ html.home {
   line-height: 1.5;
   text-align: center;
   opacity: 0.6;
+}
+
+.home-footnote p {
+  margin: 0 0 6px;
 }
 
 /* The black PNG icons turn white for the dark background */

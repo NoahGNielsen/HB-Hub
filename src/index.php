@@ -221,7 +221,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 <?php endif; ?>
                 <?php if ($homeGames !== null): ?>
                     <div>
-                        <dt>Spillede spil*</dt>
+                        <dt>Spillede spil**</dt>
                         <dd><?= homeRoundedCount($homeGames) ?></dd>
                     </div>
                 <?php endif; ?>
@@ -488,16 +488,22 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
             <?php endif; ?>
         </section>
 
-        <!-- What the * on the hero's numbers means: how they're rounded (homeRoundedCount()) and what counts as a
-             game played ($homeGames). Only there when at least one of those numbers is shown. -->
+        <!-- What the * and ** on the hero's numbers mean: * how the messages are rounded (homeRoundedCount()), ** the
+             same rounding plus what counts as a game played ($homeGames). Each is only there when its number is shown. -->
         <?php if ($homeMessages !== null || $homeGames !== null): ?>
-            <p class="home-footnote">
-                * Sendte beskeder og spillede spil er rundet ned til nærmeste hundrede, når der er over 100.
-                Spillede spil er alle spil og casinospil, der er spillet færdige, lagt sammen. Et spil med flere
-                spillere tæller som ét spil, i Blackjack og Baccarat tæller hver runde, og i Roulette og Slots hvert
-                spin. Spil, der blev forladt eller stadig er i gang, tæller ikke med, og det gør Ore Mining Inc. heller
-                ikke, da det ikke er delt op i spil.
-            </p>
+            <div class="home-footnote">
+                <?php if ($homeMessages !== null): ?>
+                    <p>* Rundet ned til nærmeste hundrede, når der er over 100.</p>
+                <?php endif; ?>
+                <?php if ($homeGames !== null): ?>
+                    <p>
+                        ** Rundet ned til nærmeste hundrede, når der er over 100. Alle spil og casinospil, der er spillet
+                        færdige, lagt sammen. Et spil med flere spillere tæller som ét spil, i Blackjack og Baccarat
+                        tæller hver runde, og i Roulette og Slots hvert spin. Spil, der blev forladt eller stadig er i
+                        gang, tæller ikke med, og det gør Ore Mining Inc. heller ikke, da det ikke er delt op i spil.
+                    </p>
+                <?php endif; ?>
+            </div>
         <?php endif; ?>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
