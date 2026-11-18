@@ -1078,60 +1078,49 @@ body:has(> .chat) {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-/* The quote above a reply: who and what it answers. It's a smaller, faded bubble that the reply's own bubble overlaps
-   at the bottom, so the two read as one thing (the negative margin pulls the bubble up over it, and the bubble sits on
-   top). The extra padding at the bottom is the part that gets covered. Only as wide as what it quotes. */
+/* The quote above a reply: who and what it answers, on one small line - a hooked arrow, the name, then as much of the
+   text as fits. A faded pill, capped in width so a long message doesn't make it wider than the reply under it, and kept
+   just above the bubble without touching it. */
 .chat-message-reply {
-  max-width: calc(100% - 16px);
-  margin: 0 8px -12px;
-  padding: 5px 12px 15px;
+  max-width: min(100%, 280px);
+  margin: 0 4px;
+  padding: 3px 11px;
   box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  gap: 1px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--text) 8%, transparent);
+  align-items: baseline;
+  gap: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
   color: inherit;
   font-size: 0.78rem;
-  line-height: 1.35;
+  line-height: 1.4;
   text-decoration: none;
 }
 
-.chat-message.is-own .chat-message-reply {
-  text-align: right;
-}
-
 a.chat-message-reply:hover {
-  background: color-mix(in srgb, var(--text) 13%, transparent);
-}
-
-.chat-message-reply ~ .chat-message-bubble {
-  position: relative;
-}
-
-/* Big emoji have no bubble to cover the quote with, so it stops short of them instead */
-.chat-message-reply:has(~ .chat-message-bubble.is-emoji) {
-  margin-bottom: 0;
-  padding-bottom: 5px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
 }
 
 .chat-message-reply-sender {
-  font-size: 0.72rem;
+  flex: none;
   font-weight: 700;
-  opacity: 0.75;
 }
 
-/* A little hooked arrow before the name, pointing back at the bubble below (hidden from screen readers, which already
-   hear "Reply to") */
-.chat-message-reply-sender::before {
-  content: "\21AA\FE0E  ";
-  content: "\21AA\FE0E  " / "";
-  white-space: pre;
+/* The arrow is only to look at - screen readers already hear "Reply to" */
+.chat-message-reply::before {
+  content: "\21AA\FE0E";
+  content: "\21AA\FE0E" / "";
+  flex: none;
+  opacity: 0.6;
 }
 
-.chat-message.is-own .chat-message-reply-sender::before {
-  content: "\21A9\FE0E  ";
-  content: "\21A9\FE0E  " / "";
+.chat-message.is-own .chat-message-reply::before {
+  content: "\21A9\FE0E";
+  content: "\21A9\FE0E" / "";
+}
+
+.chat-message-reply-text {
+  min-width: 0;
 }
 
 .chat-message-reply-text,
@@ -1139,7 +1128,7 @@ a.chat-message-reply:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0.8;
+  opacity: 0.75;
 }
 
 .chat-message-reply-text.is-deleted {
