@@ -19,6 +19,9 @@ function hbHubUserSettings(?string $json): array
  *
  * They used to be one switch, improveSite. An account that turned that off and hasn't touched the new switches since
  * still has both off: each one falls back to improveSite when it isn't saved yet.
+ *
+ * Anonymous usage statistics depends on Error reports: it only counts as on while Error reports is on too
+ * (hbHubUsageStatsOn()), and the settings page greys it out while Error reports is off.
  */
 function hbHubImproveSettingOn(array $settings, string $key): bool
 {
@@ -44,10 +47,23 @@ function hbHubErrorReportsOn(array $settings): bool
 /**
  * Whether the user's visits count towards the anonymous usage statistics (usageStats): while it's off, header.php
  * doesn't count their page views (pageViews.php). Anything new that counts how people use the site has to check this too.
+ * Always off while Error reports is off, whatever usageStats says: it depends on that switch.
  */
 function hbHubUsageStatsOn(array $settings): bool
 {
-    return hbHubImproveSettingOn($settings, 'usageStats');
+    return hbHubErrorReportsOn($settings) && hbHubImproveSettingOn($settings, 'usageStats');
+}
+
+/**
+ * Both "Help improve HB Hub" switches as one word, for the admin panel (the users list, a user's page and the
+ * Overview's pie chart): 'all' (both on), 'errors' (only Error reports) or 'none' (both off). 'stats' (only Anonymous
+ * usage statistics) can't happen any more, as that switch depends on Error reports, but the admin panel still knows it.
+ */
+function hbHubImproveLevel(array $settings): string
+{
+    $errors = hbHubErrorReportsOn($settings);
+    $stats = hbHubUsageStatsOn($settings);
+    return $errors ? ($stats ? 'all' : 'errors') : ($stats ? 'stats' : 'none');
 }
 
 /**

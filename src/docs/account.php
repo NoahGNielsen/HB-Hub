@@ -98,7 +98,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             Gruppen <strong>Account</strong> har, ud over at logge ud og slette kontoen, <strong>Help improve HB Hub</strong>
                             med to indstillinger: <strong>Error reports</strong> (om din browser må sende en kort rapport, når noget går
                             galt på en side, fx en fejl eller et billede, der ikke vil hente) og <strong>Anonymous usage statistics</strong>
-                            (om dine sidevisninger tæller med i, hvor mange gange hver side bliver åbnet). Begge er slået til, indtil du
+                            (om dine sidevisninger tæller med i, hvor mange gange hver side bliver åbnet). Den sidste kan kun slås til,
+                            når <strong>Error reports</strong> er slået til; ellers er den grå og slået fra. Begge er slået til, indtil du
                             slår dem fra, medmindre din browser sendte Global Privacy Control (GPC), da du oprettede dig: så er de slået fra
                             fra start, og du får en notifikation om det. Ore Mining Inc.s
                             egne nedbrudsrapporter spørger altid først; har du slået <strong>Error reports</strong> fra, står der i

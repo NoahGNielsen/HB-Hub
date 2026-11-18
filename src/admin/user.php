@@ -821,6 +821,7 @@ $adminMessageCounts = $statement->fetch();
                             <div><dt>Ghost banned</dt><dd><?= adminTime($target['userGhostBannedTimestamp']) ?></dd></div>
                         <?php endif; ?>
                         <div><dt>Class</dt><dd><?= $adminClass !== null ? htmlspecialchars($adminClass['label']) : '–' ?></dd></div>
+                        <div><dt>Help improve HB Hub</dt><dd><?= $targetIsDeleted ? '–' : adminImproveHtml(hbHubImproveLevel($adminSettingsSaved)) ?></dd></div>
                         <div><dt>Two-factor login</dt><dd><?= $target['totpIsOn'] ? 'On' : 'Off' ?></dd></div>
                         <div><dt>Wrong passwords in a row</dt><dd><?= (int) $target['userFailedLoginCount'] ?></dd></div>
                         <div><dt>Last locked</dt><dd><?= adminTime($target['userAccountLockedTimestamp']) ?><?= $target['isLocked'] ? ' (still locked)' : '' ?></dd></div>

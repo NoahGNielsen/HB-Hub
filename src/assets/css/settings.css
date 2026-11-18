@@ -482,6 +482,16 @@
   outline-offset: 2px;
 }
 
+/* A switch that can't be used right now (Anonymous usage statistics while Error reports is off): the whole line greyed out */
+.settings-checkbox:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settings-checkbox input:disabled {
+  cursor: not-allowed;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .settings input,
   .settings-checkbox input.settings-switch,

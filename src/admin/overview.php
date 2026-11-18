@@ -20,6 +20,8 @@
 // - Browser errors: a bar chart of the errors in people's browsers each day of the last ADMIN_OVERVIEW_DAYS days
 //   (HBHub-Watchdog, assets/php/watchdog.php), by the day the last error in a report happened, like admin/watchdog.php
 //   counts them, cleared reports and the dev site's included
+// - Help improve HB Hub: a pie chart of how many accounts have everything, only error reports or nothing on under
+//   "Help improve HB Hub" in their settings (and only statistics, when anyone has that), next to Browser errors
 // - Visits from links: the pages opened from an address with ?utm_source= in the last ADMIN_OVERVIEW_DAYS days, per
 //   source and page, with how many were guests and the last day it happened (counts in HBHub-PageSources, same file)
 // - Casino: the chips in everyone's wallets, and each game's rounds, players, chips bet and what the house won or
@@ -277,6 +279,63 @@ function adminOverviewSources(PDO $db): array
 }
 
 /**
+ * How many accounts have what on under "Help improve HB Hub" in their settings: everything, only error reports,
+ * nothing, or only statistics (hbHubImproveLevel(), keys in ADMIN_IMPROVE_LEVELS' order). Accounts count like the
+ * Accounts number at the top: not deleted ones or the HB Hub System account. Each account's settings are read in PHP,
+ * as the switches fall back to the old improveSite one when they aren't saved yet (userSettings.php).
+ *
+ * @return array<string, int> level => accounts
+ */
+function adminOverviewImprove(PDO $db): array
+{
+    $levels = array_fill_keys(array_keys(ADMIN_IMPROVE_LEVELS), 0);
+    $statement = $db->query('SELECT userSettings FROM `HBHub-Users` WHERE userStatus IS NOT NULL AND userId <> 0');
+    foreach ($statement->fetchAll(PDO::FETCH_COLUMN) as $json) {
+        $levels[hbHubImproveLevel(hbHubUserSettings($json))]++;
+    }
+    return $levels;
+}
+
+/**
+ * A pie chart of $levels (from adminOverviewImprove()) with a legend of each slice's share and count next to it. Each
+ * slice is a circle whose stroke is as wide as the pie, dashed to only draw its part (pathLength 100 makes the dash
+ * the percent), so there's no maths with arcs. Only statistics is left out when nobody has it, so the pie normally
+ * has the three slices. A <title> on each slice gives a tooltip; colours are classes in admin.css.
+ *
+ * @param array<string, int> $levels
+ */
+function adminOverviewPieHtml(array $levels): string
+{
+    $total = array_sum($levels);
+    if ($total === 0) {
+        return '<p class="admin-empty">There are no accounts yet.</p>';
+    }
+    if ($levels['stats'] === 0) {
+        unset($levels['stats']);
+    }
+
+    $svg = '<svg class="admin-pie-svg" viewBox="0 0 40 40" role="img" aria-label="Share of accounts by what they have on under Help improve HB Hub">';
+    $legend = '';
+    $start = 0.0;
+    foreach ($levels as $level => $count) {
+        $percent = $count / $total * 100;
+        $label = ADMIN_IMPROVE_LEVELS[$level];
+        $shown = number_format(round($percent)) . '%';
+        if ($count > 0) {
+            $svg .= '<circle class="admin-pie-slice admin-improve-' . $level . '" cx="20" cy="20" r="10" pathLength="100"'
+                . ' stroke-dasharray="' . round($percent, 3) . ' 100" stroke-dashoffset="' . round(-$start, 3) . '" transform="rotate(-90 20 20)">'
+                . '<title>' . htmlspecialchars($label . ': ' . $shown . ' (' . number_format($count) . ' accounts)') . '</title></circle>';
+        }
+        $legend .= '<li><span class="admin-improve admin-improve-' . $level . '">' . htmlspecialchars($label) . '</span>'
+            . '<span class="admin-pie-value">' . $shown . ' <span class="admin-small">' . number_format($count) . '</span></span></li>';
+        $start += $percent;
+    }
+    $svg .= '</svg>';
+
+    return '<div class="admin-pie">' . $svg . '<ul class="admin-pie-legend">' . $legend . '</ul></div>';
+}
+
+/**
  * A bar chart of $days (from adminOverviewPerDay()), one bar per day with its top corners rounded, as HTML: the
  * total and today's number as its caption, the highest number over the chart, the first, middle and last dates under it, a tooltip per day (an SVG <title> on a
  * column as tall as the chart, so it's easy to point at), and the numbers as a table under "Show as a table".
@@ -447,6 +506,7 @@ $adminViewsPerDay = adminOverviewPerDay($db, 'SELECT viewDate, SUM(viewCount) FR
     WHERE viewDate >= ? GROUP BY viewDate');
 $adminErrorsPerDay = adminOverviewPerDay($db, 'SELECT DATE(watchdogLastTimestamp) AS day, SUM(watchdogCount) FROM `HBHub-Watchdog`
     WHERE watchdogLastTimestamp >= ? GROUP BY day');
+$adminImprove = adminOverviewImprove($db);
 $adminTopPages = adminOverviewTopPages($db);
 $adminSources = adminOverviewSources($db);
 $adminCasino = adminOverviewCasino($db);
@@ -577,9 +637,12 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                                 . ($guests > 0 ? '<span class="admin-small" title="Not logged in">' . $guests . '% guests</span>' : '');
                         }, 'views', 'No page views in the last 7 days.') . '</div>') ?>
 
-                    <?= adminOverviewPanelHtml('admin-overview-errors-heading', 'Browser errors', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 12,
+                    <?= adminOverviewPanelHtml('admin-overview-errors-heading', 'Browser errors', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 8,
                         adminOverviewChartHtml($adminErrorsPerDay, 'errors', 'Errors in people\'s browsers each day')
                         . '<p class="admin-panel-foot">Every error the Watchdog noted. Cleared reports still count. Reports are kept for ' . HBHUB_WATCHDOG_KEEP_DAYS . ' days. <a href="/admin/watchdog">See them under Browser errors</a>.</p>') ?>
+                    <?= adminOverviewPanelHtml('admin-overview-improve-heading', 'Help improve HB Hub', 'Accounts', 4,
+                        adminOverviewPieHtml($adminImprove)
+                        . '<p class="admin-panel-foot">What the ' . number_format(array_sum($adminImprove)) . ' accounts have on in their settings: Error reports, Anonymous usage statistics, both or neither. Accounts made with Global Privacy Control start with neither.</p>') ?>
 
                     <?php ob_start(); ?>
                     <?php if ($adminSources === []): ?>

@@ -27,7 +27,7 @@
 // Account
 // - Help improve HB Hub (#improve): two switches, Error reports (errorReports) and Anonymous usage statistics
 //   (usageStats), both on by default; hbHubErrorReportsOn() and hbHubUsageStatsOn() in assets/php/userSettings.php say
-//   what each turns off
+//   what each turns off. Usage statistics depends on Error reports: it's greyed out and saved off while that's off
 // - Log out: only this device. Log out everywhere: every device, this one too. Both straight from their rows.
 // - Delete account (#delete): after entering the password
 // The password and 2FA codes typed in to confirm a change count towards the login lock (assets/php/loginLimit.php).
@@ -557,7 +557,8 @@ if ($settingsAction === 'notifications') {
 
 if ($settingsAction === 'improve') {
     $errorReportsOn = ($_POST['errorReports'] ?? null) === '1';
-    $usageStatsOn = ($_POST['usageStats'] ?? null) === '1';
+    // Anonymous usage statistics depends on Error reports (hbHubUsageStatsOn()), so it's saved off along with it
+    $usageStatsOn = $errorReportsOn && ($_POST['usageStats'] ?? null) === '1';
     hbHubChangeUserSettings($db, $userId, function (array $settings) use ($errorReportsOn, $usageStatsOn): array {
         $settings['errorReports'] = $errorReportsOn;
         $settings['usageStats'] = $usageStatsOn;
@@ -752,8 +753,7 @@ $settingsNotificationsSummary = match (true) {
 $settingsImproveSummary = match (true) {
     $settingsErrorReportsOn && $settingsUsageStatsOn => 'Error reports and statistics',
     $settingsErrorReportsOn => 'Error reports',
-    $settingsUsageStatsOn => 'Statistics',
-    default => 'Off',
+    default => 'Off', // usage statistics is never on by itself (hbHubUsageStatsOn())
 };
 $settingsBlockSummary = $settingsBlockIsAdmin ? 'Blocked by an admin' : HBHUB_BLOCK_MODES[$settingsBlock['pendingMode'] ?? $settingsBlock['mode']];
 $settingsDeviceCount = count($settingsDevices);
@@ -1260,7 +1260,7 @@ $settingsDeviceCount = count($settingsDevices);
                                 </span>
                             </span>
                             <input type="checkbox" class="settings-switch" name="errorReports" value="1"<?= $settingsErrorReportsOn ? ' checked' : '' ?>
-                                   aria-describedby="settings-error-reports-hint">
+                                   aria-describedby="settings-error-reports-hint" data-error-reports>
                         </label>
                     </div>
                     <div class="settings-group">
@@ -1269,10 +1269,12 @@ $settingsDeviceCount = count($settingsDevices);
                                 <span class="settings-label">Anonymous usage statistics</span>
                                 <span class="settings-hint" id="settings-usage-stats-hint">
                                     Share anonymous statistics about how you use the site, you are never identified and stay anonymous. This helps us make a better site!
+                                    Needs Error reports to be on.
                                 </span>
                             </span>
-                            <input type="checkbox" class="settings-switch" name="usageStats" value="1"<?= $settingsUsageStatsOn ? ' checked' : '' ?>
-                                   aria-describedby="settings-usage-stats-hint">
+                            <?php // Greyed out while Error reports is off (settings.js keeps it so as that switch changes) ?>
+                            <input type="checkbox" class="settings-switch" name="usageStats" value="1"<?= $settingsUsageStatsOn ? ' checked' : '' ?><?= $settingsErrorReportsOn ? '' : ' disabled' ?>
+                                   aria-describedby="settings-usage-stats-hint" data-usage-stats>
                         </label>
                     </div>
                     <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
