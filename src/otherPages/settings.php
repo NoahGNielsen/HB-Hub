@@ -1268,7 +1268,7 @@ $settingsDeviceCount = count($settingsDevices);
                             <span class="settings-item-text">
                                 <span class="settings-label">Anonymous usage statistics</span>
                                 <span class="settings-hint" id="settings-usage-stats-hint">
-                                    Counts the pages you open towards how often each page is visited. Only the number, never who.
+                                    Share anonymous statistics about how you use the site, you are never identified and stay anonymous. This helps us make a better site!
                                 </span>
                             </span>
                             <input type="checkbox" class="settings-switch" name="usageStats" value="1"<?= $settingsUsageStatsOn ? ' checked' : '' ?>
