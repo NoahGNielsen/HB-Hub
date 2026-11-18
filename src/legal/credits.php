@@ -244,7 +244,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
             <p class="credits-fineprint">HB Hubs Wordle er en kopi af Wordle af Josh Wardle. "Wordle" er et varemærke tilhørende The New York Times Company, som intet har med HB Hub at gøre.</p>
         </section>
 
-        <!-- Fonts: the copies in assets/fonts/ (from Google Fonts, each with its license next to it: OFL-*.txt), and Minesweeper's two,
+        <!-- Fonts: the copies in assets/fonts/ (from Google Fonts, Raleway's static weights via Fontsource, each with its license next to it: OFL-*.txt), and Minesweeper's two,
              which came with its code (assets/minesweeper/css/) -->
         <section class="credits-section" id="fonts" aria-labelledby="credits-fonts-title">
             <p class="home-kicker credits-kicker">Skrifttyper</p>

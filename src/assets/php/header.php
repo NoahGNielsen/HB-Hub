@@ -25,8 +25,8 @@
 // the tag, but Bing and the smaller search engines still read it; the descriptions do most of the work.
 //
 // The font (Raleway, assets/fonts/, @font-face in mainStyle.css) is our own copy instead of Google Fonts', so the
-// first paint doesn't wait on two other servers. Its Latin file is preloaded, since the browser would otherwise only
-// find it after mainStyle.css has loaded.
+// first paint doesn't wait on two other servers. Its upright Latin 700 file (the most used weight) is preloaded, since
+// the browser would otherwise only find it after mainStyle.css has loaded.
 //
 // The Watchdog's script (watchdog.js) is left out too for a logged-in user who has turned "Help improve HB Hub" off in the
 // settings (hbHubImproveSiteOn() in userSettings.php). Visitors who aren't logged in always have it.
@@ -72,7 +72,7 @@ $headerKeywords = array_unique([
 <link rel="manifest" href="/manifest.json?v=<?= filemtime(__DIR__ . '/../../manifest.json') ?>">
 <meta name="apple-mobile-web-app-title" content="HB Hub">
 <meta name="theme-color" content="#161a21">
-<link rel="preload" href="/assets/fonts/raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/raleway-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/css/mainStyle.css?v=<?= filemtime(__DIR__ . '/../css/mainStyle.css') ?>">
 <?php if (empty($headerHomeNav)): ?>
 <link rel="stylesheet" href="/assets/css/navPanel.css?v=<?= filemtime(__DIR__ . '/../css/navPanel.css') ?>">
