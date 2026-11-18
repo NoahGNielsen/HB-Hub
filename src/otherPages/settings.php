@@ -25,13 +25,14 @@
 // - Logged in devices (#devices): every session (HBHub-Sessions) with its browser and system and when it was last used,
 //   and a button to log out each of the others
 // Account
-// - Help improve HB Hub (#improve): whether the site may gather statistics about how it works for them (improveSite,
-//   on by default; hbHubImproveSiteOn() in assets/php/userSettings.php says what it turns off)
+// - Help improve HB Hub (#improve): two switches, Error reports (errorReports) and Anonymous usage statistics
+//   (usageStats), both on by default; hbHubErrorReportsOn() and hbHubUsageStatsOn() in assets/php/userSettings.php say
+//   what each turns off
 // - Log out: only this device. Log out everywhere: every device, this one too. Both straight from their rows.
 // - Delete account (#delete): after entering the password
 // The password and 2FA codes typed in to confirm a change count towards the login lock (assets/php/loginLimit.php).
 //
-// Saving: the forms that are plain settings (profile, notifications, block, improveSite, keepOriginal, discordProfile) have
+// Saving: the forms that are plain settings (profile, notifications, block, improve, keepOriginal, discordProfile) have
 // data-autosave, and settings.js sends them by themselves as they're changed, with Accept: application/json. Those get
 // a JSON answer instead of a redirect: {"ok": true, ...} (with what the page needs to show the new state, see
 // settingsRedirect()), 422 {"error": "invalid", "errors": {field: message}} when something on the form isn't right
@@ -554,10 +555,13 @@ if ($settingsAction === 'notifications') {
     settingsRedirect('settings', 'notifications');
 }
 
-if ($settingsAction === 'improveSite') {
-    $improveSiteOn = ($_POST['improveSite'] ?? null) === '1';
-    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($improveSiteOn): array {
-        $settings['improveSite'] = $improveSiteOn;
+if ($settingsAction === 'improve') {
+    $errorReportsOn = ($_POST['errorReports'] ?? null) === '1';
+    $usageStatsOn = ($_POST['usageStats'] ?? null) === '1';
+    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($errorReportsOn, $usageStatsOn): array {
+        $settings['errorReports'] = $errorReportsOn;
+        $settings['usageStats'] = $usageStatsOn;
+        unset($settings['improveSite']); // the old single switch, only read while these two aren't saved
         return $settings;
     });
     settingsRedirect('settings', 'improve');
@@ -630,7 +634,8 @@ if ($settingsAction !== null && settingsWantsJson()) {
 $settingsAvatarSrc = hbHubAvatarUrl($userId, $settingsAvatarId);
 $settingsNotificationsOn = ($savedSettings['notifications'] ?? false) === true;
 $settingsNotificationSoundOn = ($savedSettings['notificationSound'] ?? false) === true;
-$settingsImproveSiteOn = hbHubImproveSiteOn($savedSettings);
+$settingsErrorReportsOn = hbHubErrorReportsOn($savedSettings);
+$settingsUsageStatsOn = hbHubUsageStatsOn($savedSettings);
 $settingsKeepOriginalOn = hbHubChatKeepOriginalOn($savedSettings);
 $navMessageSound = true; // messageSound.js, so ticking the sound box plays it (navPanel.php)
 $settingsBlock = hbHubBlockSettings($savedSettings);
@@ -744,6 +749,12 @@ $settingsNotificationsSummary = match (true) {
     $settingsNotificationSoundOn => 'Sound',
     default => 'Off',
 };
+$settingsImproveSummary = match (true) {
+    $settingsErrorReportsOn && $settingsUsageStatsOn => 'Error reports and statistics',
+    $settingsErrorReportsOn => 'Error reports',
+    $settingsUsageStatsOn => 'Statistics',
+    default => 'Off',
+};
 $settingsBlockSummary = $settingsBlockIsAdmin ? 'Blocked by an admin' : HBHUB_BLOCK_MODES[$settingsBlock['pendingMode'] ?? $settingsBlock['mode']];
 $settingsDeviceCount = count($settingsDevices);
 ?>
@@ -816,7 +827,7 @@ $settingsDeviceCount = count($settingsDevices);
 
                 <h2 class="settings-list-heading">Account</h2>
                 <ul class="settings-list">
-                    <?= settingsRow('improve', 'improve', 'Help improve HB Hub', $settingsImproveSiteOn ? 'On' : 'Off', 'improve') ?>
+                    <?= settingsRow('improve', 'improve', 'Help improve HB Hub', $settingsImproveSummary, 'improve') ?>
                     <li>
                         <form action="/settings" method="post">
                             <input type="hidden" name="action" value="logout">
@@ -1234,26 +1245,36 @@ $settingsDeviceCount = count($settingsDevices);
                 </form>
             </section>
 
-            <!-- Help improve HB Hub (hbHubImproveSiteOn() in assets/php/userSettings.php) -->
+            <!-- Help improve HB Hub (hbHubErrorReportsOn() and hbHubUsageStatsOn() in assets/php/userSettings.php) -->
             <section class="settings-card settings-panel" id="improve" aria-labelledby="settings-improve-heading" data-settings-panel>
                 <?= settingsPanelHead('improve', 'Help improve HB Hub', null, true) ?>
                 <form action="/settings#improve" method="post" data-autosave>
-                    <input type="hidden" name="action" value="improveSite">
-                    <label class="settings-checkbox settings-line">
-                        <span class="settings-item-text">
-                            <span class="settings-label">Share usage statistics and error reports</span>
-                            <span class="settings-hint" id="settings-improve-hint">
-                                Counts the pages you open towards how many times each page is visited a day (only the
-                                number, never who). Sends a short report when something goes wrong on a page: requests that
-                                fail or get no answer, pictures or scripts that don't load, and JavaScript errors (which page
-                                you were on, what went wrong, your browser). In Chrome, it also lets the browser tell us if
-                                Ore Mining Inc.'s tab crashes. Only site admins can see any of it. Ore Mining Inc.'s own
-                                crash reports always ask you first, whatever you choose here.
+                    <input type="hidden" name="action" value="improve">
+                    <div class="settings-group">
+                        <label class="settings-checkbox settings-line">
+                            <span class="settings-item-text">
+                                <span class="settings-label">Error reports</span>
+                                <span class="settings-hint" id="settings-error-reports-hint">
+                                    Sends a short report to site admins when something on a page goes wrong, like an error or a
+                                    picture that won't load.
+                                </span>
                             </span>
-                        </span>
-                        <input type="checkbox" class="settings-switch" name="improveSite" value="1"<?= $settingsImproveSiteOn ? ' checked' : '' ?>
-                               aria-describedby="settings-improve-hint">
-                    </label>
+                            <input type="checkbox" class="settings-switch" name="errorReports" value="1"<?= $settingsErrorReportsOn ? ' checked' : '' ?>
+                                   aria-describedby="settings-error-reports-hint">
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-checkbox settings-line">
+                            <span class="settings-item-text">
+                                <span class="settings-label">Anonymous usage statistics</span>
+                                <span class="settings-hint" id="settings-usage-stats-hint">
+                                    Counts the pages you open towards how often each page is visited. Only the number, never who.
+                                </span>
+                            </span>
+                            <input type="checkbox" class="settings-switch" name="usageStats" value="1"<?= $settingsUsageStatsOn ? ' checked' : '' ?>
+                                   aria-describedby="settings-usage-stats-hint">
+                        </label>
+                    </div>
                     <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
                 </form>
             </section>

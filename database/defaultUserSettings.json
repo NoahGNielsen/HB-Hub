@@ -18,7 +18,8 @@
     },
     "notifications": false,
     "notificationSound": false,
-    "improveSite": true,
+    "errorReports": true,
+    "usageStats": true,
     "chatKeepOriginal": false,
     "block": {
         "mode": "none",

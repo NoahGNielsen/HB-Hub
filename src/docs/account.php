@@ -95,14 +95,14 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <a href="/docs/two-factor">totrinslogin</a> (en kode fra din telefon oven i din adgangskode) og Discord-login.
                         </p>
                         <p>
-                            Gruppen <strong>Account</strong> har, ud over at logge ud og slette kontoen, <strong>Help improve HB Hub</strong>:
-                            om siden må samle statistik om, hvordan den virker for dig, fx
-                            de fejl, der sker i din browser på siden, når serveren har for travlt til at svare, og om dine
-                            sidevisninger tæller med i, hvor mange gange hver side bliver åbnet. Den er slået til, indtil du slår den fra,
-                            medmindre din browser sendte Global Privacy Control (GPC), da du oprettede dig: så er den slået fra fra start, og
-                            du får en notifikation om det. Ore Mining Inc.s
-                            egne nedbrudsrapporter spørger altid først; har du slået den fra, står der i spørgsmålet, at det går
-                            imod indstillingen at sende en. Hvad der bliver samlet, står i
+                            Gruppen <strong>Account</strong> har, ud over at logge ud og slette kontoen, <strong>Help improve HB Hub</strong>
+                            med to indstillinger: <strong>Error reports</strong> (om din browser må sende en kort rapport, når noget går
+                            galt på en side, fx en fejl eller et billede, der ikke vil hente) og <strong>Anonymous usage statistics</strong>
+                            (om dine sidevisninger tæller med i, hvor mange gange hver side bliver åbnet). Begge er slået til, indtil du
+                            slår dem fra, medmindre din browser sendte Global Privacy Control (GPC), da du oprettede dig: så er de slået fra
+                            fra start, og du får en notifikation om det. Ore Mining Inc.s
+                            egne nedbrudsrapporter spørger altid først; har du slået <strong>Error reports</strong> fra, står der i
+                            spørgsmålet, at det går imod indstillingen at sende en. Hvad der bliver samlet, står i
                             <a href="/legal/privacy#watchdog">privatlivspolitikken</a>.
                         </p>
                     </section>

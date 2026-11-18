@@ -12,21 +12,42 @@ function hbHubUserSettings(?string $json): array
 }
 
 /**
- * Whether the user lets HB Hub gather statistics about how the site works for them (improveSite, the "Help improve HB
- * Hub" card in the settings). On unless they've turned it off, so accounts from before the setting have it on, like
- * visitors who aren't logged in. An account made with a browser that sends Do Not Track starts with it off
- * (onboardingSaveToDB.php). While it's off:
+ * The "Help improve HB Hub" card in the settings has two switches: Error reports (errorReports,
+ * hbHubErrorReportsOn()) and Anonymous usage statistics (usageStats, hbHubUsageStatsOn()). Both are on unless they've
+ * been turned off, so accounts from before the settings have them on, like visitors who aren't logged in. An account
+ * made with a browser that sends Global Privacy Control or Do Not Track starts with both off (onboardingSaveToDB.php).
+ *
+ * They used to be one switch, improveSite. An account that turned that off and hasn't touched the new switches since
+ * still has both off: each one falls back to improveSite when it isn't saved yet.
+ */
+function hbHubImproveSettingOn(array $settings, string $key): bool
+{
+    $value = $settings[$key] ?? $settings['improveSite'] ?? true;
+    return $value !== false;
+}
+
+/**
+ * Whether the user lets the browser send error reports (errorReports). While it's off:
  * - The Watchdog's browser error reports (assets/js/watchdog.js) aren't sent: header.php leaves the script out, and
  *   /watchdog (otherPages/watchdog.php) throws away any that were still waiting in the tab from before.
  * - Ore Mining Inc. doesn't ask Chrome to tell us when its tab crashes (the Reporting-Endpoints header in
  *   games/spaceOreMiner/index.php, see games/spaceOreMiner/browserCrash.php).
  * - Ore Mining Inc.'s own crash reports still ask after a crash, since they're only ever sent when the player says
  *   yes, but the popup warns that sending one goes against this setting (for that report only; the setting stays off).
- * Anything new that gathers statistics about how people use the site has to check this too.
+ * Anything new that reports errors from the user's browser has to check this too.
  */
-function hbHubImproveSiteOn(array $settings): bool
+function hbHubErrorReportsOn(array $settings): bool
 {
-    return ($settings['improveSite'] ?? true) !== false;
+    return hbHubImproveSettingOn($settings, 'errorReports');
+}
+
+/**
+ * Whether the user's visits count towards the anonymous usage statistics (usageStats): while it's off, header.php
+ * doesn't count their page views (pageViews.php). Anything new that counts how people use the site has to check this too.
+ */
+function hbHubUsageStatsOn(array $settings): bool
+{
+    return hbHubImproveSettingOn($settings, 'usageStats');
 }
 
 /**

@@ -236,8 +236,10 @@
             // An admin's block stays what the row says, whatever is picked
             const row = document.querySelector('[data-summary="block"]');
             if (row?.textContent !== 'Blocked by an admin') setSummary('block', checkedLabel(form, 'block'));
-        } else if (action === 'improveSite') {
-            setSummary('improve', form.elements.improveSite.checked ? 'On' : 'Off');
+        } else if (action === 'improve') {
+            const errors = form.elements.errorReports.checked;
+            const stats = form.elements.usageStats.checked;
+            setSummary('improve', errors && stats ? 'Error reports and statistics' : errors ? 'Error reports' : stats ? 'Statistics' : 'Off');
         } else if (action === 'keepOriginal') {
             setSummary('attachments', form.elements.chatKeepOriginal.checked ? 'Can keep originals' : 'Always converted');
         }

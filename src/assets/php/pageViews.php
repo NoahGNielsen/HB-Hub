@@ -1,7 +1,7 @@
 <?php
 // Page views: how many times each page was opened each day, for "Page views" and "Most visited pages" on the admin
 // panel's Overview (admin/overview.php). header.php calls hbHubPageViewCount() on every page it's in, but not for a
-// logged-in user who has turned "Help improve HB Hub" off in the settings (hbHubImproveSiteOn()).
+// logged-in user who has turned "Anonymous usage statistics" off in the settings (hbHubUsageStatsOn()).
 //
 // Only counts are kept, one row per page and day in HBHub-PageViews (viewDate, viewPath, viewCount, viewGuestCount):
 // never who it was, their IP or their browser. viewGuestCount is the part of viewCount that wasn't logged in. The path

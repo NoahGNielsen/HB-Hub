@@ -137,7 +137,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>For hvert login: hvornår det startede, sidst blev brugt og udløber, samt et kort navn for browser og system (fx "Chrome on Windows"), udledt af din browsers user agent. Kun det korte navn gemmes. Du kan se og afslutte dine logins under Logged in devices på <a href="/settings#devices">indstillingssiden</a>.</li>
                             <li>Browsere, du har logget ind fra, genkendes ud fra en tilfældig token (vi gemmer kun en hash af den) sammen med antallet af forkerte adgangskodeforsøg.</li>
                             <li>På din konto: den IP-adresse, du oprettede dig fra, og den senest brugte. Der gemmes ingen historik over dine logins' IP-adresser. IP-adresser tælles desuden kortvarigt ved kontooprettelse for at forhindre masseoprettelse af konti.</li>
-                            <li>Din IP-adresse gemmes også i <a href="#watchdog">fejlrapporter fra browseren</a> sammen med din browsers user agent, også når du ikke er logget ind. Rapporterne slettes efter 30 dage, og du kan slå dem fra med <strong>Help improve HB Hub</strong>.</li>
+                            <li>Din IP-adresse gemmes også i <a href="#watchdog">fejlrapporter fra browseren</a> sammen med din browsers user agent, også når du ikke er logget ind. Rapporterne slettes efter 30 dage, og du kan slå dem fra med <strong>Error reports</strong>.</li>
                             <li>Mislykkede logins, om kontoen er låst eller udelukket (og om udelukkelsen kom fra en admin eller var automatisk), og om og siden hvornår kontoen er spøgelsesudelukket.</li>
                         </ul>
 
@@ -168,8 +168,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             som normalt. Fingeraftryk, der blev gemt, før du slog det til, slettes 180 dage efter, de sidst blev set;
                             vil du have dem slettet med det samme, kan du skrive til os (se <a href="#rights">Dine rettigheder</a>).
                             Dine konti kan stadig kobles sammen via cookien hbHubDevice, som er nødvendig for sidens sikkerhed.
-                            Opretter du din konto med GPC slået til, er <strong>Help improve HB Hub</strong> desuden slået
-                            fra som standard (se <a href="#gpc">Fejlrapporter fra browseren</a>). Det ældre signal "Do Not Track"
+                            Opretter du din konto med GPC slået til, er <strong>Error reports</strong> og
+                            <strong>Anonymous usage statistics</strong> desuden slået fra som standard (se <a href="#gpc">Fejlrapporter fra browseren</a>). Det ældre signal "Do Not Track"
                             respekteres på samme måde.
                         </p>
 
@@ -235,13 +235,13 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 Nedbrudsrapporter fra Ore Mining Inc., kun hvis du accepterer. Mens spillet er åbent, fører det en log i
                                 din browser over bl.a. gemninger, fejl, langsomme perioder, aktiv visning, aktive automatiseringer,
                                 hukommelsesforbrug, billedhastighed og kørselstider. Fryser spillet eller lukkes det uden at gemme,
-                                spørger det næste gang, om en rapport må sendes, også hvis du har slået <strong>Help improve HB Hub</strong>
+                                spørger det næste gang, om en rapport må sendes, også hvis du har slået <strong>Error reports</strong>
                                 fra (spørgsmålet gør opmærksom på det). Du kan se hele rapporten, før du svarer. Siger du ja, gemmes den
                                 med din konto, tidspunktet, din browsers user agent, loggen, dit gemte spil på det tidspunkt,
                                 skærmstørrelse, antal processorkerner, afrundet hukommelse og grafikkortets navn, som browseren oplyser
                                 det. Flere nedbrud samles i én rapport (op til 4 tidligere). Siger du nej, sendes intet, og loggen slettes.
                             </li>
-                            <li>Nedbrudsbeskeder fra browseren: er du logget ind, har du ikke slået <strong>Help improve HB Hub</strong> fra under dine <a href="/settings#improve">indstillinger</a>, og understøtter din browser det (Chrome og visse andre), beder spillet browseren om automatisk at give besked, hvis fanen går ned. Beskeden er ikke knyttet til dig: vi gemmer kun årsagen, tidspunktet og browserens user agent, ikke din konto, IP-adresse eller dit spil, og en medsendt login-cookie læses ikke. Kun side-admins kan se beskederne.</li>
+                            <li>Nedbrudsbeskeder fra browseren: er du logget ind, har du ikke slået <strong>Error reports</strong> fra under dine <a href="/settings#improve">indstillinger</a>, og understøtter din browser det (Chrome og visse andre), beder spillet browseren om automatisk at give besked, hvis fanen går ned. Beskeden er ikke knyttet til dig: vi gemmer kun årsagen, tidspunktet og browserens user agent, ikke din konto, IP-adresse eller dit spil, og en medsendt login-cookie læses ikke. Kun side-admins kan se beskederne.</li>
                         </ul>
                         <p>
                             Chips er virtuelle. HB Hub beder aldrig om og gemmer aldrig
@@ -294,20 +294,22 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             kan se rapporterne.
                         </p>
                         <p>
-                            Er du logget ind, kan du slå dette fra med <strong>Help improve HB Hub</strong> under dine
+                            Er du logget ind, kan du slå dette fra med <strong>Error reports</strong> under dine
                             <a href="/settings#improve">indstillinger</a>. Indstillingen er slået til som standard, undtagen hvis du
                             opretter din konto med GPC slået til (se nedenfor). Når indstillingen er slået fra, sendes
-                            ingen fejlrapporter, dine sidevisninger tælles ikke, ventende rapporter kasseres, og Ore Mining Inc.
-                            beder ikke browseren om nedbrudsbeskeder. Spillets egne nedbrudsrapporter spørger stadig først, men et
+                            ingen fejlrapporter, ventende rapporter kasseres, og Ore Mining Inc.
+                            beder ikke browseren om nedbrudsbeskeder. Optællingen af dine sidevisninger har sin egen indstilling,
+                            <strong>Anonymous usage statistics</strong> (se <a href="#page-views">Sidevisninger</a>). Spillets egne nedbrudsrapporter spørger stadig først, men et
                             ja gælder kun den ene rapport; indstillingen forbliver slået fra.
                         </p>
                         <p class="legal-note" id="gpc">
-                            <strong>Med Global Privacy Control (GPC) er "Help improve HB Hub" slået fra som standard.</strong> Har
-                            du slået GPC (eller det ældre "Do Not Track") til i din browser, når du opretter din konto, oprettes kontoen med <strong>Help improve HB
-                            Hub</strong> slået fra fra starten, og du får en notifikation om det. Der sendes da ingen fejlrapporter,
-                            og dine sidevisninger tælles ikke, uden at du skal gøre noget. Du kan selv slå indstillingen til igen
+                            <strong>Med Global Privacy Control (GPC) er fejlrapporter og optælling af sidevisninger slået fra som standard.</strong> Har
+                            du slået GPC (eller det ældre "Do Not Track") til i din browser, når du opretter din konto, oprettes kontoen med
+                            <strong>Error reports</strong> og <strong>Anonymous usage statistics</strong> slået fra fra starten, og du får en
+                            notifikation om det. Der sendes da ingen fejlrapporter,
+                            og dine sidevisninger tælles ikke, uden at du skal gøre noget. Du kan selv slå indstillingerne til igen
                             under dine <a href="/settings#improve">indstillinger</a>. Signalet tjekkes kun, når kontoen oprettes:
-                            slår du GPC til senere, ændres indstillingen ikke, men du kan altid selv slå den fra. Uanset
+                            slår du GPC til senere, ændres indstillingerne ikke, men du kan altid selv slå dem fra. Uanset
                             hvornår du slår GPC til, beregnes der intet browserfingeraftryk (se
                             <a href="#fingerprint">Browserfingeraftryk</a>).
                         </p>
@@ -317,8 +319,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             Vi tæller, hvor mange gange hver side åbnes pr. dag, så vi kan se, hvilke sider der bruges mest. Vi
                             gemmer kun datoen, sidens sti (uden forespørgselsdelen), antal visninger, og hvor mange af dem der var
                             uden login; aldrig hvem, IP-adresse, browser eller andet, der kan knyttes til en person. Søgemaskiner og
-                            andre robotter tælles ikke med, og har du slået <strong>Help improve HB Hub</strong> fra, tælles dine
-                            visninger ikke.
+                            andre robotter tælles ikke med, og har du slået <strong>Anonymous usage statistics</strong> fra under dine
+                            <a href="/settings#improve">indstillinger</a>, tælles dine visninger ikke.
                         </p>
                         <p>
                             Åbner du en side fra et link med <code>utm_source</code> i adressen (fx
@@ -501,8 +503,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             Browserfingeraftryk kan du selv fravælge når som helst ved at slå Global Privacy Control (GPC) til i din
                             browser (se <a href="#fingerprint">Browserfingeraftryk</a>). Fejlrapporter og optælling af sidevisninger
-                            kan du slå fra med <strong>Help improve HB Hub</strong> under dine <a href="/settings#improve">indstillinger</a>;
-                            opretter du din konto med GPC slået til, er den slået fra som standard (se
+                            kan du slå fra med <strong>Error reports</strong> og <strong>Anonymous usage statistics</strong> under dine
+                            <a href="/settings#improve">indstillinger</a>; opretter du din konto med GPC slået til, er de slået fra som standard (se
                             <a href="#gpc">Global Privacy Control</a>).
                         </p>
                         <p>

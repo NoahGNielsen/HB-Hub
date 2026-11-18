@@ -4,7 +4,7 @@
 // login page with the browser marked, like a banned account's (session.php).
 // When a ghost-banned account is known in the browser (loginLimit.php), the new account is quietly ghost banned too.
 // A new account at HTX is put in its class chat (schoolClass.php).
-// Signing up with a browser that sends Global Privacy Control (or Do Not Track) makes the account with "Help improve HB Hub" off, and tells them
+// Signing up with a browser that sends Global Privacy Control (or Do Not Track) makes the account with error reports and usage statistics off, and tells them
 // so with a notification (settings.doNotTrack in notificationTypes/settings.php).
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/session.php';
@@ -32,12 +32,13 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
 {
     [$ipv4, $ipv6] = hbHubClientIp();
 
-    // Same shape as database/defaultUserSettings.json. Do Not Track turns "Help improve HB Hub" off from the start
-    // (hbHubImproveSiteOn() in userSettings.php), so not even the first page after signing up is counted.
+    // Same shape as database/defaultUserSettings.json. Do Not Track turns both "Help improve HB Hub" switches off from
+    // the start (userSettings.php), so not even the first page after signing up is counted.
     $doNotTrack = hbHubSignupDoNotTrack();
     $settings = hbHubClassSetSettings([], $values['year'], $values['class']);
     if ($doNotTrack) {
-        $settings['improveSite'] = false;
+        $settings['errorReports'] = false;
+        $settings['usageStats'] = false;
     }
     $settings = json_encode($settings);
 
@@ -123,7 +124,7 @@ function onboardingSaveToDB(array $values, string $password, ?string $avatarBlob
         error_log('Onboarding: could not put the account in its class chat: ' . $e->getMessage());
     }
 
-    // Tell them we turned "Help improve HB Hub" off and why. The setting is already saved, so it's only the note if this fails.
+    // Tell them we turned error reports and usage statistics off and why. The setting is already saved, so it's only the note if this fails.
     if ($doNotTrack) {
         try {
             hbHubNotify($db, $userId, 'settings.doNotTrack');
