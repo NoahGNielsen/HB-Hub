@@ -1104,8 +1104,8 @@ body:has(> .chat) {
 
 /* The arrow is only to look at - the line itself says it's a reply */
 .chat-message-reply-label::before {
-  content: "\21A9\FE0E";
-  content: "\21A9\FE0E" / "";
+  content: "\21AA\FE0E";
+  content: "\21AA\FE0E" / "";
   margin-right: 5px;
 }
 
