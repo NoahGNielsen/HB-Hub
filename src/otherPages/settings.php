@@ -15,8 +15,6 @@
 // - Notifications (#notifications): a browser notification and/or a sound for new messages while the site is open
 //   (assets/js/notifications.js, assets/js/messageSound.js)
 // - Gambling and Games (#block): blocking them, during school hours or all the time (assets/php/block.php)
-// - Help improve HB Hub (#improve): whether the site may gather statistics about how it works for them (improveSite,
-//   on by default; hbHubImproveSiteOn() in assets/php/userSettings.php says what it turns off)
 // - Attachments (#attachments): whether the chat's attachment tray has the "Keep original pictures/videos" boxes
 //   (chatKeepOriginal, off by default, so pictures and videos are always converted unless it's turned on)
 // Security
@@ -27,6 +25,8 @@
 // - Logged in devices (#devices): every session (HBHub-Sessions) with its browser and system and when it was last used,
 //   and a button to log out each of the others
 // Account
+// - Help improve HB Hub (#improve): whether the site may gather statistics about how it works for them (improveSite,
+//   on by default; hbHubImproveSiteOn() in assets/php/userSettings.php says what it turns off)
 // - Log out: only this device. Log out everywhere: every device, this one too. Both straight from their rows.
 // - Delete account (#delete): after entering the password
 // The password and 2FA codes typed in to confirm a change count towards the login lock (assets/php/loginLimit.php).
@@ -801,7 +801,6 @@ $settingsDeviceCount = count($settingsDevices);
                 <ul class="settings-list">
                     <?= settingsRow('notifications', 'notifications', 'Notifications', $settingsNotificationsSummary, 'notifications') ?>
                     <?= settingsRow('block', 'block', 'Gambling and Games', $settingsBlockSummary, 'block') ?>
-                    <?= settingsRow('improve', 'improve', 'Help improve HB Hub', $settingsImproveSiteOn ? 'On' : 'Off', 'improve') ?>
                     <?= settingsRow('attachments', 'attachments', 'Attachments', $settingsKeepOriginalOn ? 'Can keep originals' : 'Always converted', 'attachments') ?>
                 </ul>
 
@@ -817,6 +816,7 @@ $settingsDeviceCount = count($settingsDevices);
 
                 <h2 class="settings-list-heading">Account</h2>
                 <ul class="settings-list">
+                    <?= settingsRow('improve', 'improve', 'Help improve HB Hub', $settingsImproveSiteOn ? 'On' : 'Off', 'improve') ?>
                     <li>
                         <form action="/settings" method="post">
                             <input type="hidden" name="action" value="logout">
