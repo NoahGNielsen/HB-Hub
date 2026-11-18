@@ -642,7 +642,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                         . '<p class="admin-panel-foot">Every error the Watchdog noted. Cleared reports still count. Reports are kept for ' . HBHUB_WATCHDOG_KEEP_DAYS . ' days. <a href="/admin/watchdog">See them under Browser errors</a>.</p>') ?>
                     <?= adminOverviewPanelHtml('admin-overview-improve-heading', 'Help improve HB Hub', 'Accounts', 4,
                         adminOverviewPieHtml($adminImprove)
-                        . '<p class="admin-panel-foot">What the ' . number_format(array_sum($adminImprove)) . ' accounts have on in their settings: Error reports, Anonymous usage statistics, both or neither. Accounts made with Global Privacy Control start with neither.</p>') ?>
+                        . '<p class="admin-panel-foot">What the ' . number_format(array_sum($adminImprove)) . ' accounts have turned on. Global Privacy Control starts with neither.</p>') ?>
 
                     <?php ob_start(); ?>
                     <?php if ($adminSources === []): ?>
