@@ -2521,7 +2521,7 @@ if ($isPoll) {
                         <?php endif; ?>
                         <button type="button" class="chat-icon-btn chat-members-btn" aria-label="Members (<?= count($openChatMembers) ?>)"
                                 title="Members" aria-haspopup="dialog" data-members-open>
-                            <img src="/assets/images/icons/user.png" alt="">
+                            <img src="/assets/images/icons/members.svg" alt="">
                         </button>
                     <?php endif; ?>
                 </header>

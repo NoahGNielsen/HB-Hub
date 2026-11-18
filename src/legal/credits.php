@@ -23,7 +23,7 @@ const HBHUB_CREDITS_ICONS = [
         'href' => 'https://www.flaticon.com/free-icons/notification', 'title' => 'notification icons', 'text' => 'Notification icons created by Magnific - Flaticon', 'by' => 'Magnific'],
     ['file' => 'no-notification.png', 'name' => 'Ingen notifikationer', 'use' => 'Klokken, når der er stille',
         'href' => 'https://www.flaticon.com/free-icons/notification', 'title' => 'notification icons', 'text' => 'Notification icons created by JessHG - Flaticon', 'by' => 'JessHG'],
-    ['file' => 'user.png', 'name' => 'Bruger', 'use' => 'Chatmedlemmer, og et manglende profilbillede',
+    ['file' => 'user.png', 'name' => 'Bruger', 'use' => 'Et manglende profilbillede',
         'href' => 'https://www.flaticon.com/free-icons/user', 'title' => 'user icons', 'text' => 'User icons created by Magnific - Flaticon', 'by' => 'Magnific'],
     ['file' => 'settings.png', 'name' => 'Indstillinger', 'use' => 'Tandhjulet ved dit navn i chatten og på din egen profil',
         'href' => 'https://www.flaticon.com/free-icons/settings', 'title' => 'settings icons', 'text' => 'Settings icons created by Pixel Perfect - Flaticon', 'by' => 'Pixel Perfect'],
