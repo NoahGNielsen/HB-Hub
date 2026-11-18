@@ -1188,14 +1188,18 @@ chatPart((signal) => {
         iconSave.disabled = false;
     });
 
-    // Change background: the preview shows the gradient as the colors and direction are picked.
-    // A chat with the default background starts out at the site's orange going right into purple.
+    // Change background: the preview shows the gradient as the colors and direction are picked, and each color's hex
+    // code is shown next to its swatch. A chat with the default background starts out at the site's orange going right
+    // into purple.
     const backgroundForm = backgroundDialog.querySelector('form');
     const backgroundPreview = backgroundDialog.querySelector('[data-background-preview]');
 
     function showBackgroundPreview() {
         const { color1, color2, angle } = backgroundForm.elements;
         chatShowBackground(backgroundPreview, `${color1.value} ${color2.value} ${angle.value}`);
+        for (const value of backgroundDialog.querySelectorAll('[data-background-value]')) {
+            value.textContent = backgroundForm.elements[value.dataset.backgroundValue].value.toUpperCase();
+        }
     }
 
     function openBackground() {

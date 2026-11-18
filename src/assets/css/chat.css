@@ -2966,86 +2966,171 @@ a.chat-member:focus-visible {
   color: #fff;
 }
 
+/* The colors on the left and the compass on the right, like Choose gradient for the profile banner (settings.css) */
 .chat-background-colors {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.chat-background-colors input {
-  width: 100%;
-  height: 44px;
+.chat-background-swatches {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* A color: the round swatch (the color input itself) with its name and hex code */
+.chat-swatch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: 12px;
+  background: var(--background);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.chat-swatch:hover,
+.chat-swatch:has(input:focus-visible) {
+  border-color: var(--accent);
+}
+
+.chat-swatch input[type="color"] {
+  flex: none;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: none;
-  border-radius: 10px;
+  border-radius: 50%;
   background: none;
   cursor: pointer;
 }
 
-.chat-background-colors input::-webkit-color-swatch-wrapper {
+.chat-swatch input[type="color"]:focus-visible {
+  outline: none;
+}
+
+.chat-swatch input[type="color"]::-webkit-color-swatch-wrapper {
   padding: 0;
 }
 
-.chat-background-colors input::-webkit-color-swatch {
-  border: 2px solid color-mix(in srgb, var(--text) 15%, transparent);
-  border-radius: 10px;
+.chat-swatch input[type="color"]::-webkit-color-swatch {
+  border: 2px solid color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 50%;
 }
 
-.chat-background-colors input::-moz-color-swatch {
-  border: 2px solid color-mix(in srgb, var(--text) 15%, transparent);
-  border-radius: 10px;
+.chat-swatch input[type="color"]::-moz-color-swatch {
+  border: 2px solid color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 50%;
 }
 
-.chat-background-colors input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.chat-swatch-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
 }
 
+.chat-swatch-name {
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.chat-swatch-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* The direction: the eight arrows as a compass, with a dot in the middle */
 .chat-background-directions {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 38px);
+  grid-template-rows: repeat(3, 38px);
+  gap: 4px;
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
 }
 
-.chat-background-directions legend {
-  margin-bottom: 6px;
-  padding: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.chat-background-directions label {
+.chat-direction {
   position: relative; /* keeps the hidden radio inside it */
   cursor: pointer;
 }
 
+.chat-direction-a315 { grid-area: 1 / 1; }
+.chat-direction-a0 { grid-area: 1 / 2; }
+.chat-direction-a45 { grid-area: 1 / 3; }
+.chat-direction-a270 { grid-area: 2 / 1; }
+.chat-direction-a90 { grid-area: 2 / 3; }
+.chat-direction-a225 { grid-area: 3 / 1; }
+.chat-direction-a180 { grid-area: 3 / 2; }
+.chat-direction-a135 { grid-area: 3 / 3; }
+
+.chat-direction-dot {
+  grid-area: 2 / 2;
+  place-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 25%, transparent);
+}
+
 /* The radio itself is hidden, the arrow is the button */
-.chat-background-arrow {
-  width: 40px;
-  height: 40px;
+.chat-direction-arrow {
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
   border-radius: 10px;
   background: var(--background);
-  font-size: 1.2rem;
-  line-height: 1;
+  color: color-mix(in srgb, var(--text) 75%, transparent);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.chat-background-directions label:hover .chat-background-arrow {
+/* One arrow drawn pointing up, turned to each direction */
+.chat-direction-arrow svg {
+  display: block;
+}
+
+.chat-direction-a45 svg { transform: rotate(45deg); }
+.chat-direction-a90 svg { transform: rotate(90deg); }
+.chat-direction-a135 svg { transform: rotate(135deg); }
+.chat-direction-a180 svg { transform: rotate(180deg); }
+.chat-direction-a225 svg { transform: rotate(225deg); }
+.chat-direction-a270 svg { transform: rotate(270deg); }
+.chat-direction-a315 svg { transform: rotate(315deg); }
+
+.chat-direction:hover .chat-direction-arrow {
   background: color-mix(in srgb, var(--accent) 20%, var(--background));
+  color: var(--text);
 }
 
-.chat-background-directions input:checked + .chat-background-arrow {
+.chat-direction input:checked + .chat-direction-arrow {
   background: var(--accent);
   color: #fff;
 }
 
-.chat-background-directions input:focus-visible + .chat-background-arrow {
+.chat-direction input:focus-visible + .chat-direction-arrow {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Narrow phones: the compass goes under the colors */
+@media (max-width: 420px) {
+  .chat-background-colors {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chat-background-directions {
+    align-self: center;
+  }
 }
 
 /* GIF picker: the results in columns, each GIF at its own height, in order across the rows.

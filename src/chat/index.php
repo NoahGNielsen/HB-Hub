@@ -3280,27 +3280,34 @@ if ($isPoll) {
                     <span class="chat-message-bubble is-own">Looks good!</span>
                 </div>
 
+                <!-- The two colors with their hex codes (kept up to date by chat.js) on the left, and the direction as a
+                     compass on the right - the same picker as Choose gradient for the profile banner (settings.php) -->
                 <div class="chat-background-colors">
-                    <div class="chat-new-group">
-                        <label for="chat-background-color1">From</label>
-                        <input type="color" id="chat-background-color1" name="color1">
+                    <div class="chat-background-swatches">
+                        <?php foreach (['color1' => 'From', 'color2' => 'To'] as $colorName => $colorLabel): ?>
+                            <label class="chat-swatch" for="chat-background-<?= $colorName ?>">
+                                <input type="color" id="chat-background-<?= $colorName ?>" name="<?= $colorName ?>">
+                                <span class="chat-swatch-text">
+                                    <span class="chat-swatch-name"><?= $colorLabel ?></span>
+                                    <span class="chat-swatch-value" data-background-value="<?= $colorName ?>"></span>
+                                </span>
+                            </label>
+                        <?php endforeach; ?>
                     </div>
-                    <div class="chat-new-group">
-                        <label for="chat-background-color2">To</label>
-                        <input type="color" id="chat-background-color2" name="color2">
-                    </div>
+                    <fieldset class="chat-background-directions">
+                        <legend class="chat-visually-hidden">Direction</legend>
+                        <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [, $label]): ?>
+                            <label class="chat-direction chat-direction-a<?= $angle ?>" title="<?= $label ?>">
+                                <input type="radio" class="chat-visually-hidden" name="angle" value="<?= $angle ?>">
+                                <span class="chat-direction-arrow" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </span>
+                                <span class="chat-visually-hidden"><?= $label ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                        <span class="chat-direction-dot" aria-hidden="true"></span>
+                    </fieldset>
                 </div>
-
-                <fieldset class="chat-background-directions">
-                    <legend>Direction</legend>
-                    <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [$arrow, $label]): ?>
-                        <label title="<?= $label ?>">
-                            <input type="radio" class="chat-visually-hidden" name="angle" value="<?= $angle ?>">
-                            <span class="chat-background-arrow" aria-hidden="true"><?= $arrow ?></span>
-                            <span class="chat-visually-hidden"><?= $label ?></span>
-                        </label>
-                    <?php endforeach; ?>
-                </fieldset>
 
                 <footer class="chat-new-footer chat-dialog-footer">
                     <button type="submit" class="chat-btn is-danger chat-icon-remove" name="remove" value="1" data-background-remove>Reset</button>
