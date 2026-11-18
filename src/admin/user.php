@@ -329,6 +329,11 @@ if (($_GET['export'] ?? null) === '1') {
     $games['matador']['save'] = adminExportRows($db, 'SELECT saveName, saveSummary, saveRoomId, saveTimestamp
         FROM `HBHub-MatadorSaves` WHERE userId = ?', $one, ['saveSummary'])[0] ?? null;
     $games['uno']['results'] = adminExportRows($db, 'SELECT * FROM `HBHub-UnoResults` WHERE userId = ? ORDER BY resultId DESC', $one);
+    $games['doodle'] = [
+        'seats' => adminExportRows($db, 'SELECT s.*, r.roomName FROM `HBHub-DoodleSeats` s
+            LEFT JOIN `HBHub-DoodleRooms` r ON r.roomId = s.roomId WHERE s.userId = ?', $one),
+        'results' => adminExportRows($db, 'SELECT * FROM `HBHub-DoodleResults` WHERE userId = ? ORDER BY resultId DESC', $one),
+    ];
     $games['wordle'] = adminExportRows($db, 'SELECT gameLanguage, gameDate, gameGuesses, gameResult, gameStartTimestamp, gameEndTimestamp
         FROM `HBHub-WordleGames` WHERE userId = ? ORDER BY gameDate DESC, gameLanguage', $one);
     $games['wordleRandom'] = adminExportRows($db, 'SELECT gameLanguage, gameWord, gameGuesses, gameResult, gameStartTimestamp, gameEndTimestamp

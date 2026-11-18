@@ -13,12 +13,16 @@
 // Everything that changes a game goes through hbHubDoodlePlay(), which locks the room's row first, so only one request
 // at a time moves a game on. hbHubDoodleSweep() tidies up rooms nobody has open anymore.
 //
+// When a game's last step ends, everyone who was dealt in gets a row in HBHub-DoodleResults (results.php), which the
+// admin panel counts.
+//
 // The texts and drawings never go into roomState: each is a row in HBHub-DoodleEntries, so the state stays small. A
 // player is only ever sent what they're handed in the step being played (hbHubDoodlePrompt()), and everyone the
 // entries the host has shown so far (hbHubDoodleView()).
 require_once __DIR__ . '/../../database.php';
 require_once __DIR__ . '/../../userAvatar.php';
 require_once __DIR__ . '/game.php';
+require_once __DIR__ . '/results.php';
 
 const HBHUB_DOODLE_ROOM_PUBLIC = 1; // roomType
 const HBHUB_DOODLE_ROOM_CODE = 3; // the same numbers as UNO's, so invite-only games can be 2 later
@@ -233,6 +237,9 @@ function hbHubDoodlePlay(PDO $db, int $roomId, ?callable $action = null): ?array
             if ($action !== null) {
                 $result = $action($room, $seats);
                 hbHubDoodleAdvance($room['state'], array_column($seats, 'userId'), hbHubDoodleNowMs());
+            }
+            if ($before[0]['phase'] === 'playing' && $room['state']['phase'] === 'reveal') {
+                hbHubDoodleRecordResults($db, $room, array_column($seats, 'userId')); // the game just ended
             }
 
             if ($seats === []) {

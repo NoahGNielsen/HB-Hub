@@ -43,6 +43,7 @@
 | **The reveal** | After the last round the host shows the chains to everyone one entry at a time (**Show next**, **Next chain**, **Finish**), then can show any chain again or start a **New game**, which deletes the last game's texts and drawings |
 | **Settings** | In a **Game settings** dialog (the icon at the top, or the button next to **Start game**), like UNO's: the host picks the time to draw (60, 90 or 120 seconds; 90 by default) before a game or between games. Everyone else, and the host during a game, only sees them |
 | **Leaving** | Leaving (or having the game closed for 60 seconds) never counts against you: the others play on. No leaderboard, chat or sound yet |
+| **Results** | When the last round ends, everyone dealt in gets a row in `HBHub-DoodleResults` (`results.php`: still in the room or left, texts and drawings handed in, players, when). Only the admin overview's Games panel (which counts those still in the room) and the data export use it |
 
 ## Wordle
 
