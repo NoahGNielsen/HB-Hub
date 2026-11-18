@@ -51,9 +51,8 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 <div class="home-hero-text">
                     <h1 id="credits-title">Lavet på skolen,<br><span class="home-hero-accent">med lidt hjælp.</span></h1>
                     <p class="home-lead">
-                        HB Hub er bygget på skolen, men ikke alt på siden er lavet her. Her er de ikoner,
-                        kodebiblioteker, lister, ordbøger og skrifttyper fra andre, som siden bruger, og hvem der
-                        lavede dem. Tak!
+                        HB Hub bruger ikoner, kodebiblioteker, lister, ordbøger og skrifttyper, som andre har lavet
+                        og delt gratis. Her er de alle sammen, og hvem der lavede dem. Tak!
                     </p>
                 </div>
 
