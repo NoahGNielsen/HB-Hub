@@ -157,8 +157,13 @@ function adminOverviewCasino(PDO $db, int $weeksAgo = 0): array
 }
 
 /**
- * The games' numbers: games played in the last 7 days, how many played them, and games played ever. Each player's
- * game is one, so a chess game between two people counts as two. Games still being played, Minesweeper's and
+ * The games' numbers: games played in the last 7 days, how many played them, and games played ever. A game is one
+ * however many played it, so three people in one UNO game is 1 game and 3 players. The multiplayer games' tables have
+ * a row per player and no game id, so their rows are grouped by the room and the second the game ended (every
+ * player's row is stored by the same request, with the same UTC_TIMESTAMP()); a room that's gone counts as room 0, so
+ * two such games ending in the very same second would count as one. Matador's players who left mid-game get their row
+ * when they leave, so only the rows from the game's end make up its games, while the leavers still count as players.
+ * Games still being played, Minesweeper's and
  * Sudoku's left ones, Doodle Chain's players who left before the chains were shown, and Snake's that were left or
  * stopped by its anticheat, don't count. Ore Mining Inc. has no
  * games, so it's the players who saved in the last 7 days and everyone who has a save (null for
@@ -174,23 +179,32 @@ function adminOverviewGames(PDO $db, int $weeksAgo = 0): array
 {
     $from = 'UTC_TIMESTAMP() - INTERVAL ' . (7 * ($weeksAgo + 1)) . ' DAY';
     $to = 'UTC_TIMESTAMP() - INTERVAL ' . (7 * $weeksAgo) . ' DAY';
-    // name => [table, timestamp column, WHERE for a finished game]
+    // One game in the multiplayer games' tables: its room and the second it ended (see above)
+    $gameKey = "CONCAT_WS(',', COALESCE(roomId, 0), roomType, resultTimestamp)";
+    // name => [table, timestamp column, WHERE for a finished game, what makes rows one game (null: every row is a
+    // game of its own), WHERE for the rows that make up the games (null: all of them)]
     $tables = [
-        'Chess' => ['HBHub-ChessResults', 'resultTimestamp', '1'],
-        'Matador' => ['HBHub-MatadorResults', 'resultTimestamp', '1'],
-        'UNO' => ['HBHub-UnoResults', 'resultTimestamp', '1'],
-        'Doodle Chain' => ['HBHub-DoodleResults', 'resultTimestamp', 'playerLeft = 0'],
-        'Wordle' => ['HBHub-WordleGames', 'gameStartTimestamp', 'gameResult <> 0 OR gameDate < CURDATE()'],
-        'Minesweeper' => ['HBHub-MinesweeperGames', 'gameEndTimestamp', 'gameResult IN (1, 2)'],
-        'Sudoku' => ['HBHub-SudokuGames', 'gameEndTimestamp', 'gameResult IN (1, 2)'],
-        'Snake' => ['HBHub-SnakeGames', 'gameEndTimestamp', 'gameResult = 1'],
+        'Chess' => ['HBHub-ChessResults', 'resultTimestamp', '1', $gameKey, null],
+        'Matador' => ['HBHub-MatadorResults', 'resultTimestamp', '1', $gameKey, 'playerLeft = 0'],
+        'UNO' => ['HBHub-UnoResults', 'resultTimestamp', '1', $gameKey, null],
+        'Doodle Chain' => ['HBHub-DoodleResults', 'resultTimestamp', 'playerLeft = 0', $gameKey, null],
+        'Wordle' => ['HBHub-WordleGames', 'gameStartTimestamp', 'gameResult <> 0 OR gameDate < CURDATE()', null, null],
+        'Minesweeper' => ['HBHub-MinesweeperGames', 'gameEndTimestamp', 'gameResult IN (1, 2)', null, null],
+        'Sudoku' => ['HBHub-SudokuGames', 'gameEndTimestamp', 'gameResult IN (1, 2)', null, null],
+        'Snake' => ['HBHub-SnakeGames', 'gameEndTimestamp', 'gameResult = 1', null, null],
     ];
     $games = [];
-    foreach ($tables as $name => [$table, $column, $finished]) {
+    foreach ($tables as $name => [$table, $column, $finished, $key, $gameRows]) {
         $inWeek = $column . ' >= ' . $from . ($weeksAgo > 0 ? ' AND ' . $column . ' < ' . $to : '');
-        [$week, $players, $ever] = $db->query('SELECT COALESCE(SUM(' . $inWeek . '), 0),
+        $inEver = $weeksAgo > 0 ? $column . ' < ' . $to : '1';
+        // The games among the rows WHERE $when: each row, or each different game
+        $countGames = static fn(string $when): string => $key === null
+            ? 'COALESCE(SUM(' . $when . '), 0)'
+            : 'COUNT(DISTINCT CASE WHEN (' . $when . ')' . ($gameRows !== null ? ' AND (' . $gameRows . ')' : '')
+                . ' THEN ' . $key . ' END)';
+        [$week, $players, $ever] = $db->query('SELECT ' . $countGames($inWeek) . ',
                 COUNT(DISTINCT CASE WHEN ' . $inWeek . ' THEN userId END),
-                ' . ($weeksAgo > 0 ? 'COALESCE(SUM(' . $column . ' < ' . $to . '), 0)' : 'COUNT(*)') . '
+                ' . $countGames($inEver) . '
             FROM `' . $table . '` WHERE (' . $finished . ')')->fetch(PDO::FETCH_NUM);
         $games[$name] = ['week' => (int) $week, 'players' => (int) $players, 'ever' => (int) $ever];
     }
