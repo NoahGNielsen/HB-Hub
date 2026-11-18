@@ -7,8 +7,10 @@
 // next square, so during a step the head glides from the middle of the edge it came in over, through the middle of its
 // square, to the edge it'll leave by. That way a turn can start the moment it's pressed: before the head reaches the
 // middle, it curves round right away, on a quarter circle that starts where the head is (so the earlier the press, the
-// rounder the corner), instead of first finishing its slide into the next square. Pressed later, the turn waits for the
-// next square and curves round as soon as the head gets there. The body and tail follow the same curves (each part keeps
+// rounder the corner), instead of first finishing its slide into the next square. Pressed after the middle but before
+// TURN_LATE (85% of the way), it still turns in this square: the corner is sharp, in the middle, and the head darts back
+// to it and round, catching up by the end of the step. Pressed later than that, the turn waits for the next square and
+// curves round as soon as the head gets there. The body and tail follow the same curves (each part keeps
 // the way it came in, the way it left and its corner's size), so the snake bends smoothly like a tube.
 //
 // The leaderboard: the server plays every game along with this one (assets/php/games/snake/snake.php, which has the
@@ -41,9 +43,9 @@
   const ROWS = 12;
   const START_LENGTH = 4;
   const SPEEDS = { slow: 160, normal: 120, fast: 85 }; // ms per step
-  // A turn pressed before the step is this far through (the head in the middle of its square) turns the head in the
-  // square it's in, straight away; later than that it has passed the middle, so it turns as soon as it's in the next one
-  const TURN_LATE = 0.5;
+  // A turn pressed before the step is this far through turns the head in the square it's in, straight away (past the
+  // middle, on a sharp corner it darts back to - see turnNow()); later than that it turns as soon as it's in the next one
+  const TURN_LATE = 0.85;
   const EATEN_FOR = 0.3; // steps the eaten apple stays drawn, until the snout has reached it
   const STORAGE_KEY = 'hbHubSnake';
 
@@ -456,13 +458,16 @@
 
   /**
    * Turns the head in the square it's in, right now. The corner starts where the drawn head is (it has come `progress`
-   * of the way from the edge), so its radius is however far the head still is from the square's middle.
+   * of the way from the edge), so its radius is however far the head still is from the square's middle. When the head
+   * has already passed the middle, the corner is sharp, in the middle, and `late` keeps how far the step had got, so
+   * the head goes on from the middle and makes up the distance by the end of the step (see squareLine()'s time()).
    */
   const turnNow = (wanted) => {
     dir = wanted;
     turned = true;
     snake[0].out = wanted;
     snake[0].k = 0.5 - Math.min(progress, 0.5);
+    snake[0].late = progress > 0.5 ? progress : null;
   };
 
   /**
@@ -716,7 +721,9 @@
    *   angle(s)        the way it's heading there, in radians
    *   time(t)         how far along the head (or tail) is when the step has got t (0-1) of the way: the straight bit
    *                   before the corner goes at the usual speed (the head was on it before it turned), and the rest of
-   *                   the line shares out what's left of the step
+   *                   the line shares out what's left of the step. After a late turn (part.late, made past the middle)
+   *                   the head is put back to the corner in the middle and the rest shares out what's left after
+   *                   part.late; the tail does the same when it gets there, so the snake keeps its length
    *   points(from, to)  the line between two distances, as points to draw through
    */
   const squareLine = (part) => {
@@ -751,7 +758,8 @@
       return angleIn + turnBy * round;
     };
 
-    const time = (t) => (t <= before ? t : before + ((t - before) / (1 - before)) * (length - before));
+    const from = inD === outD || part.late == null ? before : part.late; // how far the step is when it starts the corner
+    const time = (t) => (t <= from ? Math.min(t, before) : before + ((t - from) / (1 - from)) * (length - before));
 
     // Where the line bends: the ends of the corner, and points along it close enough together to look round
     const bends = [before];
@@ -930,8 +938,8 @@
       progress += elapsed / SPEEDS[saved.speed];
       while (state === 'playing') {
         if (progress >= TURN_LATE && blocked()) {
-          // Past the middle it can't turn any more in this square, so the crash is certain: it happens right here,
-          // with the head's nose against what it hit, rather than with half the head in the wall
+          // Too late to turn any more in this square, so the crash is certain: it happens right here (die() puts the
+          // head back in the middle, its nose against what it hit) rather than with half the head in the wall
           die();
         } else if (progress >= 1) {
           progress -= 1;
