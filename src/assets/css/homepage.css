@@ -1610,6 +1610,19 @@ html.home {
   justify-content: center;
 }
 
+/* The small print under the last call: what the * on the hero's numbers means. Pulled up into the last call's
+   bottom margin so it sits just under it. */
+.home-footnote {
+  max-width: 720px;
+  margin: -64px auto 48px;
+  padding: 0 var(--home-gutter);
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  text-align: center;
+  opacity: 0.6;
+}
+
 /* The black PNG icons turn white for the dark background */
 .home-kicker img {
   filter: invert(1);
