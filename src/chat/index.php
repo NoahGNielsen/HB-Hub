@@ -1901,18 +1901,28 @@ function chatDeletedLabel(mixed $deletedByAdmin): string
 }
 
 /**
- * The quote above a reply: who and what it answers, on one line.
+ * The quote above a reply: a small line saying who it answers ("Replied to Alice", "You replied to Alice"), then a
+ * faded bubble with the start of the original, two lines at most (chat.css cuts it off).
  * A link to the original, unless it's gone, so it can be scrolled to. When the original isn't loaded yet
  * (only the newest messages are at first), chat.js loads back to it first (data-reply-id).
  */
 function chatReplyHtml(array $openChat, int $userId, array $message): string
 {
+    $replierId = (int) $message['userId'];
+    $isOwn = $replierId === $userId;
     if ($message['replyId'] === null) {
-        $sender = '';
+        $to = 'a message';
         $text = '<span class="chat-message-reply-text is-deleted">Original message is gone</span>';
     } else {
-        $sender = '<span class="chat-message-reply-sender">'
-            . htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['replyUserId'], $message['replySenderName'])) . '</span>';
+        // Who it answers, as the line reads: "you", "yourself"/"themselves" for their own message, or the name
+        $replyUserId = (int) $message['replyUserId'];
+        if ($replyUserId === $replierId) {
+            $to = $isOwn ? 'yourself' : 'themselves';
+        } elseif ($replyUserId === $userId) {
+            $to = 'you';
+        } else {
+            $to = '<strong>' . htmlspecialchars(chatSenderName($openChat, $userId, $replyUserId, $message['replySenderName'])) . '</strong>';
+        }
         if ($message['replyDeletedTimestamp'] !== null) {
             $text = '<span class="chat-message-reply-text is-deleted">' . chatDeletedLabel($message['replyDeletedByAdmin']) . '</span>';
         } elseif ($message['replyContent'] === null) {
@@ -1920,19 +1930,20 @@ function chatReplyHtml(array $openChat, int $userId, array $message): string
         } elseif (chatGifId($message['replyContent']) !== null) {
             $text = '<span class="chat-message-reply-text is-deleted">GIF</span>';
         } else {
-            // Shortened here too, so a long message isn't sent twice. Without its formatting, it's only one line.
+            // Shortened here too, so a long message isn't sent twice. Without its formatting, and with line breaks
+            // turned into spaces, so the two lines it gets are filled.
             $content = chatFormatPlain($message['replyContent']);
             $content = preg_replace('~\s+~u', ' ', $content) ?? $content;
             $text = '<span class="chat-message-reply-text">' . htmlspecialchars(mb_substr($content, 0, 150)) . '</span>';
         }
     }
 
-    $label = '<span class="chat-visually-hidden">Reply to </span>';
+    $label = '<span class="chat-message-reply-label">' . ($isOwn ? 'You replied' : 'Replied') . ' to ' . $to . '</span>';
     if ($message['replyId'] === null) {
-        return '<span class="chat-message-reply">' . $label . $sender . $text . '</span>';
+        return '<span class="chat-message-reply">' . $label . $text . '</span>';
     }
     return '<a class="chat-message-reply" href="#message-' . (int) $message['replyId'] . '" data-reply-link data-reply-id="'
-        . (int) $message['replyId'] . '">' . $label . $sender . $text . '</a>';
+        . (int) $message['replyId'] . '">' . $label . $text . '</a>';
 }
 
 /**

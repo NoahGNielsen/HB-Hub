@@ -1078,52 +1078,60 @@ body:has(> .chat) {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-/* The quote above a reply: who and what it answers, on one small line - a hooked arrow, the name, then as much of the
-   text as fits. A faded pill, capped in width so a long message doesn't make it wider than the reply under it, and kept
-   just above the bubble without touching it. */
+/* The quote above a reply (chatReplyHtml() in chat/index.php): a small, dim line saying who it answers, with a hooked
+   arrow, then a faded bubble with the start of the original - two lines at most, cut off with "…". Narrower than a
+   message, and on the same side as the reply. */
 .chat-message-reply {
-  max-width: min(100%, 280px);
-  margin: 0 4px;
-  padding: 3px 11px;
-  box-sizing: border-box;
+  max-width: min(100%, 340px);
+  margin: 2px 4px 0;
   display: flex;
-  align-items: baseline;
-  gap: 6px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text) 7%, transparent);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
   color: inherit;
-  font-size: 0.78rem;
-  line-height: 1.4;
   text-decoration: none;
 }
 
-a.chat-message-reply:hover {
-  background: color-mix(in srgb, var(--text) 12%, transparent);
+.chat-message.is-own .chat-message-reply {
+  align-items: flex-end;
 }
 
-.chat-message-reply-sender {
-  flex: none;
-  font-weight: 700;
+.chat-message-reply-label {
+  margin: 0 6px;
+  font-size: 0.75rem;
+  opacity: 0.65;
 }
 
-/* The arrow is only to look at - screen readers already hear "Reply to" */
-.chat-message-reply::before {
-  content: "\21AA\FE0E";
-  content: "\21AA\FE0E" / "";
-  flex: none;
-  opacity: 0.6;
-}
-
-.chat-message.is-own .chat-message-reply::before {
+/* The arrow is only to look at - the line itself says it's a reply */
+.chat-message-reply-label::before {
   content: "\21A9\FE0E";
   content: "\21A9\FE0E" / "";
 }
 
 .chat-message-reply-text {
-  min-width: 0;
+  max-width: 100%;
+  /* The space around the text is a see-through border rather than padding, as the cut-off only hides what spills past
+     the padding - padding would show the top of a third line */
+  border: solid transparent;
+  border-width: 7px 12px;
+  box-sizing: border-box;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-.chat-message-reply-text,
+a.chat-message-reply:hover .chat-message-reply-text {
+  background: color-mix(in srgb, var(--text) 11%, transparent);
+}
+
 .chat-composer-reply-preview {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1238,6 +1246,7 @@ a.chat-message-reply:hover {
 
 /* A chat with its own background (Change background, the gradient is set by chat.js): what sits right on it,
    outside the bubbles, gets a backing so it stays readable on any colors */
+.chat-messages.has-background .chat-message-reply-label,
 .chat-messages.has-background .chat-message-sender,
 .chat-messages.has-background .chat-message-meta,
 .chat-messages.has-background .chat-messages-empty,
@@ -1248,6 +1257,7 @@ a.chat-message-reply:hover {
   background: color-mix(in srgb, var(--secondary) 85%, transparent);
 }
 
+.chat-messages.has-background .chat-message-reply-label,
 .chat-messages.has-background .chat-message-meta,
 .chat-messages.has-background .chat-messages-empty,
 .chat-messages.has-background .chat-messages-older {
@@ -1255,11 +1265,12 @@ a.chat-message-reply:hover {
   color: color-mix(in srgb, var(--text) 70%, var(--secondary));
 }
 
-.chat-messages.has-background .chat-message-reply {
+.chat-messages.has-background .chat-message-reply-text {
   background: color-mix(in srgb, var(--secondary) 85%, transparent);
+  color: color-mix(in srgb, var(--text) 65%, var(--secondary));
 }
 
-.chat-messages.has-background a.chat-message-reply:hover {
+.chat-messages.has-background a.chat-message-reply:hover .chat-message-reply-text {
   background: var(--secondary);
 }
 
