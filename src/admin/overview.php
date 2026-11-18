@@ -159,8 +159,7 @@ function adminOverviewCasino(PDO $db, int $weeksAgo = 0): array
 /**
  * The games' numbers: games played in the last 7 days, how many played them, and games played ever. Each player's
  * game is one, so a chess game between two people counts as two. Games still being played, Minesweeper's and
- * Sudoku's left ones, Doodle Chain's players who left before the chains were shown, and Snake's that were left or
- * stopped by its anticheat, don't count. Ore Mining Inc. has no
+ * Sudoku's left ones, and Snake's that were left or stopped by its anticheat, don't count. Ore Mining Inc. has no
  * games, so it's the players who saved in the last 7 days and everyone who has a save (null for
  * the games played).
  *
@@ -179,7 +178,6 @@ function adminOverviewGames(PDO $db, int $weeksAgo = 0): array
         'Chess' => ['HBHub-ChessResults', 'resultTimestamp', '1'],
         'Matador' => ['HBHub-MatadorResults', 'resultTimestamp', '1'],
         'UNO' => ['HBHub-UnoResults', 'resultTimestamp', '1'],
-        'Doodle Chain' => ['HBHub-DoodleResults', 'resultTimestamp', 'playerLeft = 0'],
         'Wordle' => ['HBHub-WordleGames', 'gameStartTimestamp', 'gameResult <> 0 OR gameDate < CURDATE()'],
         'Minesweeper' => ['HBHub-MinesweeperGames', 'gameEndTimestamp', 'gameResult IN (1, 2)'],
         'Sudoku' => ['HBHub-SudokuGames', 'gameEndTimestamp', 'gameResult IN (1, 2)'],
@@ -551,7 +549,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
 
                     <?= adminOverviewPanelHtml('admin-overview-views-heading', 'Page views', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 8,
                         adminOverviewChartHtml($adminViewsPerDay, 'page views', 'Pages opened each day')
-                        . '<p class="admin-panel-foot">Every page opened, including switching chats. Bots and reloads after sending don\'t count. Kept for ' . HBHUB_PAGE_VIEWS_KEEP_DAYS . ' days.</p>') ?>
+                        . '<p class="admin-panel-foot">Every time a page is opened, including the chat switching to another chat. Reloads after sending something, prefetches, error pages and bots don\'t count. Only a count per page and day is kept, and only for ' . HBHUB_PAGE_VIEWS_KEEP_DAYS . ' days.</p>') ?>
                     <?php // Every page of the week, so the list scrolls inside the panel to fit next to the chart ?>
                     <?= adminOverviewPanelHtml('admin-overview-pages-heading', 'Most visited pages', 'Last 7 days', 4,
                         '<div class="admin-rank-scroll" tabindex="0" aria-label="Most visited pages">'
