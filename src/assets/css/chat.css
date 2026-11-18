@@ -1106,6 +1106,7 @@ body:has(> .chat) {
 .chat-message-reply-label::before {
   content: "\21A9\FE0E";
   content: "\21A9\FE0E" / "";
+  margin-right: 5px;
 }
 
 .chat-message-reply-text {
