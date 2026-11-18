@@ -159,7 +159,8 @@ function adminOverviewCasino(PDO $db, int $weeksAgo = 0): array
 /**
  * The games' numbers: games played in the last 7 days, how many played them, and games played ever. Each player's
  * game is one, so a chess game between two people counts as two. Games still being played, Minesweeper's and
- * Sudoku's left ones, and Snake's that were left or stopped by its anticheat, don't count. Ore Mining Inc. has no
+ * Sudoku's left ones, Doodle Chain's players who left before the chains were shown, and Snake's that were left or
+ * stopped by its anticheat, don't count. Ore Mining Inc. has no
  * games, so it's the players who saved in the last 7 days and everyone who has a save (null for
  * the games played).
  *
@@ -178,6 +179,7 @@ function adminOverviewGames(PDO $db, int $weeksAgo = 0): array
         'Chess' => ['HBHub-ChessResults', 'resultTimestamp', '1'],
         'Matador' => ['HBHub-MatadorResults', 'resultTimestamp', '1'],
         'UNO' => ['HBHub-UnoResults', 'resultTimestamp', '1'],
+        'Doodle Chain' => ['HBHub-DoodleResults', 'resultTimestamp', 'playerLeft = 0'],
         'Wordle' => ['HBHub-WordleGames', 'gameStartTimestamp', 'gameResult <> 0 OR gameDate < CURDATE()'],
         'Minesweeper' => ['HBHub-MinesweeperGames', 'gameEndTimestamp', 'gameResult IN (1, 2)'],
         'Sudoku' => ['HBHub-SudokuGames', 'gameEndTimestamp', 'gameResult IN (1, 2)'],
