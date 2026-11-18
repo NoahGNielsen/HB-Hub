@@ -299,7 +299,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             opretter din konto med GPC slået til (se nedenfor). Når indstillingen er slået fra, sendes
                             ingen fejlrapporter, ventende rapporter kasseres, og Ore Mining Inc.
                             beder ikke browseren om nedbrudsbeskeder. Optællingen af dine sidevisninger har sin egen indstilling,
-                            <strong>Anonymous usage statistics</strong> (se <a href="#page-views">Sidevisninger</a>). Spillets egne nedbrudsrapporter spørger stadig først, men et
+                            <strong>Anonymous usage statistics</strong> (se <a href="#page-views">Sidevisninger</a>), men den kan
+                            kun være slået til, når <strong>Error reports</strong> også er, så slår du fejlrapporter fra, tælles dine
+                            sidevisninger heller ikke. Spillets egne nedbrudsrapporter spørger stadig først, men et
                             ja gælder kun den ene rapport; indstillingen forbliver slået fra.
                         </p>
                         <p class="legal-note" id="gpc">
@@ -319,8 +321,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             Vi tæller, hvor mange gange hver side åbnes pr. dag, så vi kan se, hvilke sider der bruges mest. Vi
                             gemmer kun datoen, sidens sti (uden forespørgselsdelen), antal visninger, og hvor mange af dem der var
                             uden login; aldrig hvem, IP-adresse, browser eller andet, der kan knyttes til en person. Søgemaskiner og
-                            andre robotter tælles ikke med, og har du slået <strong>Anonymous usage statistics</strong> fra under dine
-                            <a href="/settings#improve">indstillinger</a>, tælles dine visninger ikke.
+                            andre robotter tælles ikke med, og har du slået <strong>Anonymous usage statistics</strong> eller
+                            <strong>Error reports</strong> fra under dine <a href="/settings#improve">indstillinger</a>, tælles dine
+                            visninger ikke (statistikken kan kun være slået til sammen med fejlrapporterne).
                         </p>
                         <p>
                             Åbner du en side fra et link med <code>utm_source</code> i adressen (fx
