@@ -493,14 +493,13 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
         <?php if ($homeMessages !== null || $homeGames !== null): ?>
             <div class="home-footnote">
                 <?php if ($homeMessages !== null): ?>
-                    <p>* Rundet ned til nærmeste hundrede, når der er over 100.</p>
+                    <p>* Rundet ned til nærmeste hundrede.</p>
                 <?php endif; ?>
                 <?php if ($homeGames !== null): ?>
                     <p>
-                        ** Rundet ned til nærmeste hundrede, når der er over 100. Alle spil og casinospil, der er spillet
-                        færdige, lagt sammen. Et spil med flere spillere tæller som ét spil, i Blackjack og Baccarat
-                        tæller hver runde, og i Roulette og Slots hvert spin. Spil, der blev forladt eller stadig er i
-                        gang, tæller ikke med, og det gør Ore Mining Inc. heller ikke, da det ikke er delt op i spil.
+                        ** Rundet ned til nærmeste hundrede. Tæller alle færdigspillede spil. Et spil med flere
+                        spillere tæller som ét. I Blackjack og Baccarat tæller hver runde, i Roulette og Slots
+                        hvert spin. Forladte spil, spil i gang og Ore Mining Inc. tæller ikke med.
                     </p>
                 <?php endif; ?>
             </div>
