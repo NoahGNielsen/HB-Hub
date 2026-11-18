@@ -43,6 +43,15 @@ function homeKroner(int $amount): string
     return number_format($amount, 0, ',', '.');
 }
 
+/**
+ * The message count rounded down to the nearest hundred with a plus after it (1.847 becomes "1.800+"), so the
+ * frontpage doesn't need to be exact. Under 100 it's shown as it is, since "0+" would say nothing.
+ */
+function homeRoundedCount(int $amount): string
+{
+    return $amount < 100 ? homeKroner($amount) : homeKroner(intdiv($amount, 100) * 100) . '+';
+}
+
 // The section icons next to Chat, Casino and Games are 48 x 48 copies (icons/small/) of the 192 x 192 ones the rest of
 // the site uses, as they're only shown at 18 px. (The rest are 192 x 192, down from Flaticon's 512 x 512, as nothing
 // shows them bigger than 56 px: still sharp on a 3x phone screen, at a third of the bytes.)
@@ -182,7 +191,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     </div>
                     <div>
                         <dt>Sendte beskeder</dt>
-                        <dd><?= homeKroner($homeMessages) ?></dd>
+                        <dd><?= homeRoundedCount($homeMessages) ?></dd>
                     </div>
                 <?php endif; ?>
                 <div>
