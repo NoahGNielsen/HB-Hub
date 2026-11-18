@@ -1582,29 +1582,10 @@ a.chat-message-reply:hover .chat-message-reply-text {
 }
 
 .chat-tray[hidden],
-.chat-tray-progress[hidden],
 .chat-tray-add-item[hidden],
 .chat-tray-ticket[hidden],
 .chat-tray-keep[hidden] {
   display: none;
-}
-
-.chat-tray-progress {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
-}
-
-.chat-tray-progress-fill {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.2s ease;
 }
 
 .chat-tray-list {
@@ -3474,7 +3455,6 @@ a.chat-member:focus-visible {
     animation: none;
   }
 
-  .chat-tray-progress-fill,
   .chat-attachment-gallery .chat-attachment-image {
     transition: none;
   }

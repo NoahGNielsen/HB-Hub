@@ -2225,6 +2225,140 @@ chatPart((signal) => {
     });
 });
 
+// Attachments on their way. At Send the attachments part below hands the files over here and empties the tray, and
+// they're shown faded in the chat with "Sending…" while their pictures and videos finish converting. That lives out
+// here rather than in the part, as sending a normal message meanwhile swaps in a new <main> (which stops the parts),
+// and the conversions and the faded message have to carry on through that. Messages written meanwhile don't wait for
+// them: they go through the message queue (at the bottom) straight away, so they arrive first. Once an upload's files
+// are ready, it joins the end of that queue, so it's sent in order with anything still on its way.
+// A job (one file) is { file, name, kind, ready, keeps, result, failed, progress, serverError, url, previewFailed, tile,
+// onChange } - see the part below. keeps: { pictures, videos }, the "Keep original" boxes for it (as they were at Send
+// once it's sent). onChange is called when its conversion gets further or is done.
+const chatUploads = []; // { chatId, jobs, message, reply, item, meta }, oldest first, until their files are converted
+let chatTrayJobs = []; // the files in the shown composer's tray, which convert after the ones already sent
+let chatConverting = null; // the picture or video being converted: { job, promise }, the rest wait their turn
+// What the attachments part on the shown page lets an upload that failed do: restore(upload, { error, file,
+// ticketsNeeded }) puts its files and text back in the tray to try again. null between a swap and the next part.
+let chatTray = null;
+const chatConvertJxl = chatJxlWorker();
+const chatConvertVideo = chatWorker('data-video-worker');
+
+// Still to be turned into JPEG XL or WebM before it can go (being converted now, or waiting its turn)
+function chatJobIsWaiting(job) {
+    const isConverted = (job.kind === 'video' && !job.keeps.videos) || (job.kind === 'convert' && !job.keeps.pictures);
+    return isConverted && !job.result && !job.failed;
+}
+
+// What's sent: a video's WebM when there is one and the originals aren't kept (bigger or not, so videos play in the
+// chat), a picture's JPEG XL when there is one, it's smaller and the originals aren't kept, otherwise the file itself
+function chatJobToSend(job) {
+    if (job.kind === 'video') return job.keeps.videos ? job.file : job.result ?? job.file;
+    return job.kind === 'convert' && !job.keeps.pictures && job.result && job.result.size < job.file.size ? job.result : job.file;
+}
+
+function chatJobUploadName(job) {
+    if (chatJobToSend(job) !== job.result) return job.file.name || 'picture.png';
+    const base = (job.file.name || (job.kind === 'video' ? 'video' : 'picture')).replace(/\.[^.]*$/, '');
+    return base + (job.kind === 'video' ? '.webm' : '.jxl');
+}
+
+// The next picture or video waiting to be converted, one at a time so they don't fight over the computer. The ones
+// already sent go first, then the tray's. A video says how far it's got as it goes (they can take a while).
+function chatConvertNext() {
+    if (chatConverting) return;
+    const job = [...chatUploads.flatMap((upload) => upload.jobs), ...chatTrayJobs].find(chatJobIsWaiting);
+    if (!job) return;
+    const isVideo = job.kind === 'video';
+    const onProgress = (progress) => {
+        job.progress = progress;
+        if (chatConverting?.job === job) job.onChange?.();
+    };
+    const run = isVideo ? chatConvertVideo.run('encode', { file: job.file }, [], onProgress) : chatConvertJxl.run('encode', { file: job.file });
+    const promise = run
+        .then(({ buffer }) => {
+            job.result = new Blob([buffer], { type: isVideo ? 'video/webm' : 'image/jxl' });
+        })
+        .catch((error) => {
+            if (error.name === 'AbortError') return;
+            job.failed = error.message === 'noEncoder'
+                ? "Sent as it is, as this browser can't make WebM videos"
+                : "Sent as it is, as it couldn't be converted";
+        })
+        .finally(() => {
+            if (chatConverting?.job !== job) return; // stopped (taken out, or Keep ticked) and moved on from already
+            chatConverting = null;
+            chatConvertNext();
+            job.onChange?.();
+        });
+    chatConverting = { job, promise };
+}
+
+// Stops the conversion on its way (its promise settles with an AbortError, which is left quiet)
+function chatConvertStop() {
+    if (!chatConverting) return;
+    const { job } = chatConverting;
+    chatConverting = null;
+    job.progress = 0;
+    if (job.kind === 'video') chatConvertVideo.cancel();
+    else chatConvertJxl.cancel();
+}
+
+// An upload whose files are all ready joins the message queue (and nothing happens while some are still converting)
+function chatUploadCheck(upload) {
+    if (!chatUploads.includes(upload) || upload.jobs.some((job) => job.kind === null || chatJobIsWaiting(job))) return;
+    chatUploads.splice(chatUploads.indexOf(upload), 1);
+    const body = new FormData();
+    body.set('action', 'upload');
+    body.set('chat', upload.chatId);
+    body.set('message', upload.message);
+    body.set('reply', upload.reply);
+    upload.jobs.forEach((job) => {
+        body.append('files[]', chatJobToSend(job), chatJobUploadName(job));
+        body.append('converted[]', chatJobToSend(job) === job.result ? '1' : '0');
+    });
+    chatQueue.push({ url: '/chat/', body, text: upload.message, chatId: upload.chatId, item: upload.item, upload });
+    if (!chatQueueIsRunning) chatQueueRun();
+}
+
+// Posts an upload from the message queue (action=upload, answered as JSON), with how far it's got on its faded
+// message. XMLHttpRequest rather than fetch, as only it says how far an upload has got. Says whether it was sent.
+async function chatUploadSend(entry) {
+    const { upload } = entry;
+    const { status, data } = await new Promise((resolve) => {
+        const request = new XMLHttpRequest();
+        request.open('POST', entry.url);
+        request.setRequestHeader('Accept', 'application/json');
+        request.responseType = 'json';
+        request.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) upload.meta.textContent = `Sending… ${Math.round(event.loaded / event.total * 100)}%`;
+        });
+        request.addEventListener('load', () => resolve({ status: request.status, data: request.response ?? {} }));
+        request.addEventListener('error', () => resolve({ status: 0, data: { error: 'offline' } }));
+        request.send(entry.body);
+    });
+    if (status === 200 && data.chatId) {
+        // Its faded copy stays until the real message shows, like the queue's
+        upload.item.setAttribute('data-message-sent', '');
+        upload.meta.textContent = 'Sent';
+        upload.jobs.forEach((job) => job.url && URL.revokeObjectURL(job.url));
+        return true;
+    }
+    chatUploadFail(upload, { error: data.error ?? 'failed', file: data.file ?? null, ticketsNeeded: data.ticketsNeeded ?? null });
+    return false;
+}
+
+// An upload that wasn't sent comes off the screen, and its files and text go back in the tray to try again when its
+// chat is still the one open (otherwise they're let go of). details: what the server said ({ error, file,
+// ticketsNeeded }), or {} when it's just because a message before it failed.
+function chatUploadFail(upload, details = {}) {
+    upload.item.remove();
+    const messages = document.querySelector('[data-chat-messages]');
+    const empty = messages?.querySelector('[data-messages-empty]');
+    if (empty && !messages.querySelector('[data-message-sending]')) empty.hidden = false;
+    if (chatTray && messages?.dataset.chatMessages === upload.chatId) chatTray.restore(upload, details);
+    else upload.jobs.forEach((job) => job.url && URL.revokeObjectURL(job.url));
+}
+
 // Attachments: Files in the Attach menu (or pasting files into the message box, or dropping them anywhere on the open
 // chat) picks files and pictures to send, up to data-attach-max-files in one message. They wait as tiles in a tray above
 // the message box until Send, and go with whatever is typed, as one message. Each tile shows the picture (or the file's
@@ -2237,10 +2371,11 @@ chatPart((signal) => {
 // animation. Videos (MP4, MOV, WebM, MKV) are turned into WebM + VP9 by the video worker (chatVideoWorker.js), in the
 // same queue, unless "Keep original videos" is ticked (its own box, whatever "Keep original pictures" says); only when
 // this browser can't do that is the original sent anyway. Anything else is zipped by the server.
-// All of them go to the chat page in one upload (action=upload with files[] and converted[], answered as JSON), and then
-// the chat is loaded again with the message in it (chatLoad, at the bottom). From Send until then, the message is shown
-// faded at the bottom of the chat with "Sending…", so it's clear Send worked while pictures are still being converted and
-// uploaded, and the bar along the top of the tray fills up as they go.
+// Send doesn't wait for the conversions: the tray empties straight away and the message is shown faded at the bottom of
+// the chat with "Sending…" (and then how far the upload has got) while they finish, so new messages and attachments can
+// be sent meanwhile - those go first (Attachments on their way, above). Then all its files go to the chat page in one
+// upload (action=upload with files[] and converted[], answered as JSON), and the chat is loaded again with the message
+// in it. When it can't be sent, the files and the text come back in the tray with what went wrong.
 // Attachments are paid for with tickets. When the files need more than the user has free, the server says so, and the
 // Your attachments popup opens with how many they need, so attachments can be deleted to make room and the files sent.
 // The popup can also be opened from the Attach menu, and lists the attachments still taking tickets (/chat/attachments).
@@ -2253,7 +2388,6 @@ chatPart((signal) => {
 
     const textarea = composer.querySelector('textarea');
     const replyInput = composer.querySelector('[data-reply-input]');
-    const sendButton = composer.querySelector('.chat-send-btn');
     const tray = composer.querySelector('[data-attach-tray]');
     const list = tray.querySelector('[data-attach-list]');
     const status = tray.querySelector('[data-attach-status]');
@@ -2262,16 +2396,15 @@ chatPart((signal) => {
     const keepVideoLabel = tray.querySelector('[data-attach-keep-video-label]');
     const keepVideo = tray.querySelector('[data-attach-keep-video]');
     const clearButton = tray.querySelector('[data-attach-clear]');
-    const progress = tray.querySelector('[data-attach-progress]');
-    const progressFill = tray.querySelector('[data-attach-progress-fill]');
+    const replyBar = composer.querySelector('[data-reply-bar]');
     const fileItem = document.querySelector('[data-attach-file]'); // not there while attachments can't be sent
     const dropZone = document.querySelector('[data-attach-drop]'); // nor is this
     const maxBytes = Number(composer.dataset.attachMaxBytes); // all of a message's files together
     const maxFiles = Number(composer.dataset.attachMaxFiles);
     const ticketBytes = Number(composer.dataset.ticketBytes);
     const maxMb = maxBytes / 1024 / 1024;
-    const jxl = chatJxlWorker();
-    const video = chatWorker('data-video-worker');
+    const isWaiting = chatJobIsWaiting;
+    const toSend = chatJobToSend;
     // What went wrong with one file: short on its tile, and the rest of a sentence about it under the tiles.
     // The keys are the server's error codes too, which say which file with file (its place in files[]).
     const FILE_ERRORS = {
@@ -2292,24 +2425,27 @@ chatPart((signal) => {
         disabled: 'Attachments are turned off for now.',
         busy: 'Lots of attachments are being sent right now. Try again in a moment.',
         tooFast: "You're sending messages too fast. Wait a moment and try again.",
+        offline: "Couldn't send them. Check your connection and try again.",
     };
 
-    // The files waiting to be sent, in the order they're shown and sent: { file, name, kind, ready, result, failed,
-    // progress, serverError, url, previewFailed, tile }
+    // The files waiting to be sent, in the order they're shown and sent: { file, name, kind, ready, keeps, result,
+    // failed, progress, serverError, url, previewFailed, tile, onChange }
     // kind is null until ready (the promise of working it out) says: 'convert' (a picture to turn into JPEG XL),
-    // 'image' (a picture sent as it is), 'video' (a video to turn into WebM + VP9) or 'file'. result is the JPEG XL or
-    // WebM once made, kept so unticking "Keep original pictures/videos" again doesn't make it twice, and failed says why
-    // there isn't one when it couldn't be made. progress is how far a video's conversion has got, 0 to 1.
-    // serverError is what the server said was wrong with it (a FILE_ERRORS key). url is the picture for its preview.
+    // 'image' (a picture sent as it is), 'video' (a video to turn into WebM + VP9) or 'file'. keeps follows the "Keep
+    // original" boxes. result is the JPEG XL or WebM once made, kept so unticking "Keep original pictures/videos" again
+    // doesn't make it twice, and failed says why there isn't one when it couldn't be made. progress is how far a video's
+    // conversion has got, 0 to 1. serverError is what the server said was wrong with it (a FILE_ERRORS key). url is the
+    // picture for its preview. The conversions themselves are done out of the part (chatConvertNext above).
     let jobs = [];
-    let converting = null; // the picture or video being converted: { job, promise }, the rest wait their turn
+    chatTrayJobs = jobs;
     let notice = null; // a note under the tiles until something changes: { text, isError }
-    let isSending = false; // from Send until the answer, waiting for conversions included
-    let isUploading = false; // only while the files are on their way, when they can't be taken back any more
-    let uploadText = ''; // "Sending… 40%"
-    let sendToken = 0; // which Send is going on, so one called off by taking a file out stops where it is
-    let sending = null; // the faded message shown while it's being sent: { item, meta }
-    let sendingText = null; // the message typed with them, taken out of the box at Send so a new one can be typed meanwhile
+    let isSending = false; // for the moment between Send and the files leaving the tray (working out what they are)
+
+    // jobs is replaced rather than changed in places, and chatConvertNext has to see the same list
+    function setJobs(list) {
+        jobs = list;
+        chatTrayJobs = list;
+    }
 
     // The + tile at the end of the row, for adding more
     const addTile = document.createElement('li');
@@ -2371,25 +2507,6 @@ chatPart((signal) => {
         return isImage ? 'image' : 'file';
     }
 
-    // Still to be turned into JPEG XL or WebM before it can go (being converted now, or waiting its turn)
-    function isWaiting(job) {
-        const isConverted = (job.kind === 'video' && !keepVideo.checked) || (job.kind === 'convert' && !keep.checked);
-        return isConverted && !job.result && !job.failed;
-    }
-
-    // What's sent: a video's WebM when there is one and the originals aren't kept (bigger or not, so videos play in the
-    // chat), a picture's JPEG XL when there is one, it's smaller and the originals aren't kept, otherwise the file itself
-    function toSend(job) {
-        if (job.kind === 'video') return keepVideo.checked ? job.file : job.result ?? job.file;
-        return job.kind === 'convert' && !keep.checked && job.result && job.result.size < job.file.size ? job.result : job.file;
-    }
-
-    function uploadName(job) {
-        if (toSend(job) !== job.result) return job.file.name || 'picture.png';
-        const base = (job.file.name || (job.kind === 'video' ? 'video' : 'picture')).replace(/\.[^.]*$/, '');
-        return base + (job.kind === 'video' ? '.webm' : '.jxl');
-    }
-
     // Why it can't be sent (a FILE_ERRORS key), or null. One that's too big may still fit once it's converted.
     function problem(job) {
         if (job.serverError) return job.serverError;
@@ -2397,52 +2514,14 @@ chatPart((signal) => {
         return job.kind !== null && !isWaiting(job) && toSend(job).size > maxBytes ? 'tooBig' : null;
     }
 
-    // The next picture or video waiting to be converted, one at a time so they don't fight over the computer.
-    // A video says how far it's got on its tile as it goes (they can take a while).
-    function convertNext() {
-        if (converting) return;
-        const job = jobs.find(isWaiting);
-        if (!job) return;
-        const isVideo = job.kind === 'video';
-        const onProgress = (progress) => {
-            job.progress = progress;
-            if (converting?.job === job) renderTile(job);
-        };
-        const run = isVideo ? video.run('encode', { file: job.file }, [], onProgress) : jxl.run('encode', { file: job.file });
-        const promise = run
-            .then(({ buffer }) => {
-                job.result = new Blob([buffer], { type: isVideo ? 'video/webm' : 'image/jxl' });
-            })
-            .catch((error) => {
-                if (error.name === 'AbortError') return;
-                job.failed = error.message === 'noEncoder'
-                    ? "Sent as it is, as this browser can't make WebM videos"
-                    : "Sent as it is, as it couldn't be converted";
-            })
-            .finally(() => {
-                if (converting?.job !== job) return; // stopped (taken out, or Keep ticked) and moved on from already
-                converting = null;
-                convertNext();
-                render();
-            });
-        converting = { job, promise };
-    }
-
-    function stopConverting() {
-        if (!converting) return;
-        const { job } = converting;
-        converting = null;
-        job.progress = 0;
-        // The promise above settles with an AbortError, which is left quiet
-        if (job.kind === 'video') video.cancel();
-        else jxl.cancel();
-    }
-
-    // A conversion on its way stops when another chat opens, and the previews' pictures are let go of
+    // When another chat opens (or the page comes back after a message), the tray's files go: a conversion of one of
+    // them stops, and the previews' pictures are let go of. Ones already sent carry on.
     signal.addEventListener('abort', () => {
-        jxl.cancel();
-        video.cancel();
+        chatTray = null;
+        if (chatConverting && jobs.includes(chatConverting.job)) chatConvertStop();
         jobs.forEach((job) => job.url && URL.revokeObjectURL(job.url));
+        setJobs([]);
+        chatConvertNext(); // the sent ones' turn, if one was stopped
     });
 
     function element(tag, className, text = null) {
@@ -2482,9 +2561,9 @@ chatPart((signal) => {
     }
 
     // A picture's tile shows the picture itself, straight from the user's device. One this browser can't show
-    // (JPEG XL in most, say) keeps its document.
+    // (JPEG XL in most, say) keeps its document. A file back from a failed upload has its url already.
     function showPreview(job) {
-        job.url = URL.createObjectURL(job.file);
+        job.url ??= URL.createObjectURL(job.file);
         const image = document.createElement('img');
         image.alt = '';
         image.addEventListener('load', () => {
@@ -2500,10 +2579,10 @@ chatPart((signal) => {
     function renderTile(job) {
         const { item, ticket, info, remove } = job.tile;
         const error = problem(job);
-        const isBusy = job.kind === null || converting?.job === job;
+        const isBusy = job.kind === null || chatConverting?.job === job;
         item.classList.toggle('is-error', error !== null);
         item.classList.toggle('is-busy', isBusy);
-        remove.disabled = isUploading;
+        remove.disabled = isSending;
 
         const file = toSend(job);
         const tickets = ticketsFor(file.size);
@@ -2535,8 +2614,8 @@ chatPart((signal) => {
             // The server zips other files first, so they may take fewer
             details.push(job.kind === 'file' ? `Up to ${ticketsLabel(tickets)}` : ticketsLabel(tickets));
             if (tickets > 5) details.push('Kept for 3 days, as it takes more than 5 tickets');
-            if (job.kind === 'video' && !keepVideo.checked && job.failed) details.push(job.failed);
-            if (job.kind === 'convert' && !keep.checked) {
+            if (job.kind === 'video' && !job.keeps.videos && job.failed) details.push(job.failed);
+            if (job.kind === 'convert' && !job.keeps.pictures) {
                 if (job.failed) details.push(job.failed);
                 else if (file !== job.result) details.push("Sent as it is, as JPEG XL wasn't smaller");
             }
@@ -2551,10 +2630,7 @@ chatPart((signal) => {
         const totalBytes = jobs.reduce((sum, job) => sum + toSend(job).size, 0);
         let text;
         let isError = true;
-        if (isUploading) {
-            text = uploadText;
-            isError = false;
-        } else if (bad) {
+        if (bad) {
             text = `${bad.name} ${FILE_ERRORS[problem(bad)].text}, so it can't be sent.${jobs.length > 1 ? ' Take it out to send the rest.' : ''}`;
         } else if (notice?.isError) {
             text = notice.text;
@@ -2589,13 +2665,11 @@ chatPart((signal) => {
         textarea.required = !hasJobs;
         composer.toggleAttribute('data-has-attachment', hasJobs);
         keepLabel.hidden = !jobs.some((job) => job.kind === 'convert');
-        keep.disabled = isUploading;
+        keep.disabled = isSending;
         keepVideoLabel.hidden = !jobs.some((job) => job.kind === 'video');
-        keepVideo.disabled = isUploading;
-        clearButton.disabled = isUploading;
+        keepVideo.disabled = isSending;
+        clearButton.disabled = isSending;
         addTile.hidden = jobs.length >= maxFiles || isSending;
-        progress.hidden = !isUploading;
-        if (!isUploading) progressFill.style.transform = 'scaleX(0)';
         jobs.forEach(renderTile);
         renderStatus();
     }
@@ -2609,8 +2683,9 @@ chatPart((signal) => {
             : null;
         files.slice(0, room).forEach((file) => {
             const job = {
-                file, name: file.name || 'Pasted picture', kind: null, ready: null, result: null, failed: null,
-                progress: 0, serverError: null, url: null, previewFailed: false, tile: null,
+                file, name: file.name || 'Pasted picture', kind: null, ready: null,
+                keeps: { pictures: keep.checked, videos: keepVideo.checked }, result: null, failed: null,
+                progress: 0, serverError: null, url: null, previewFailed: false, tile: null, onChange: render,
             };
             jobs.push(job);
             makeTile(job);
@@ -2619,7 +2694,7 @@ chatPart((signal) => {
                 job.kind = kind;
                 if (!jobs.includes(job)) return; // taken out in the meantime
                 if (kind === 'convert' || kind === 'image') showPreview(job);
-                convertNext();
+                chatConvertNext();
                 render();
             });
         });
@@ -2628,14 +2703,13 @@ chatPart((signal) => {
     }
 
     function removeJob(job) {
-        if (isUploading || !jobs.includes(job)) return;
-        if (isSending) cancelSend(); // the faded message was made with it in
-        if (converting?.job === job) stopConverting();
-        jobs = jobs.filter((other) => other !== job);
+        if (isSending || !jobs.includes(job)) return;
+        if (chatConverting?.job === job) chatConvertStop();
+        setJobs(jobs.filter((other) => other !== job));
         if (job.url) URL.revokeObjectURL(job.url);
         job.tile.item.remove();
         notice = null;
-        convertNext();
+        chatConvertNext();
         render();
     }
 
@@ -2700,14 +2774,17 @@ chatPart((signal) => {
 
     // Keeping the original pictures stops a picture's conversion on its way (a video's goes on), and keeping the
     // original videos a video's. Unticking one again uses the JPEG XLs or WebMs already made, and goes on making the rest.
-    const onKeepChange = (box, kind) => () => {
+    // Only the tray's files follow the boxes: ones already sent go the way they were sent.
+    const onKeepChange = (box, kind, key) => () => {
         notice = null;
-        if (box.checked && converting?.job.kind === kind) stopConverting();
-        convertNext(); // the other kind still goes on
+        jobs.forEach((job) => { job.keeps[key] = box.checked; });
+        const current = chatConverting?.job;
+        if (box.checked && current?.kind === kind && jobs.includes(current)) chatConvertStop();
+        chatConvertNext(); // the other kind still goes on
         render();
     };
-    keep.addEventListener('change', onKeepChange(keep, 'convert'));
-    keepVideo.addEventListener('change', onKeepChange(keepVideo, 'video'));
+    keep.addEventListener('change', onKeepChange(keep, 'convert', 'pictures'));
+    keepVideo.addEventListener('change', onKeepChange(keepVideo, 'video', 'videos'));
 
     // A file card like the server's (chatAttachmentsHtml in chat/index.php), without the download
     function fileCard(job) {
@@ -2732,14 +2809,14 @@ chatPart((signal) => {
     // The message as it'll look, faded at the bottom of the chat until the page reloads with the real one: the pictures
     // (or file cards, also for pictures the browser can't show), and the text as typed. It has no data-message-id, so
     // polling and the message menu leave it alone, and polling adds new messages above it (addMessages below).
-    // text: the message as it was when Send was pressed (the box may hold the next one by now).
-    function showSending(text) {
+    // text: the message sent with them, and sent: their jobs. Gives back { item, meta }.
+    function showSending(text, sent) {
         const item = element('li', 'chat-message is-own is-sending');
         item.setAttribute('data-message-sending', '');
         const bubble = element('div', 'chat-message-bubble has-attachment');
         const box = element('div', 'chat-attachments');
-        const pictures = jobs.filter((job) => job.url && !job.previewFailed);
-        const files = jobs.filter((job) => !pictures.includes(job));
+        const pictures = sent.filter((job) => job.url && !job.previewFailed);
+        const files = sent.filter((job) => !pictures.includes(job));
 
         if (pictures.length === 1) {
             box.append(pictureFigure(pictures[0]));
@@ -2763,23 +2840,11 @@ chatPart((signal) => {
         if (empty) empty.hidden = true;
         messages.append(item);
         messages.scrollTop = messages.scrollHeight;
-        sending = { item, meta };
+        return { item, meta };
     }
 
-    // Taken away again when they weren't sent after all (an error, not enough tickets, or a file taken out while waiting)
-    function hideSending() {
-        if (!sending) return;
-        sending.item.remove();
-        sending = null;
-        const empty = messages.querySelector('[data-messages-empty]');
-        if (empty) empty.hidden = false;
-    }
-
-    // Not sent after all: the message goes back in the box to try again, in front of anything typed since
-    function restoreText() {
-        if (sendingText === null) return;
-        const text = sendingText;
-        sendingText = null;
+    // Puts text back in the box, in front of anything typed since (a message that wasn't sent after all)
+    function restoreText(text) {
         if (text === '') return;
         const typed = textarea.value;
         const joined = typed === '' ? text : text + '\n' + typed;
@@ -2788,107 +2853,69 @@ chatPart((signal) => {
         textarea.dispatchEvent(new Event('input', { bubbles: true })); // grows to fit it
     }
 
-    function finishSending() {
-        hideSending();
-        restoreText();
-        isSending = false;
-        isUploading = false;
-        sendButton.disabled = false;
-        render();
-    }
-
-    // Taking a file out while Send waits for conversions calls that Send off - Send again sends the rest
-    function cancelSend() {
-        sendToken++;
-        finishSending();
-    }
-
-    // XMLHttpRequest rather than fetch, as only it says how far an upload has got
-    function upload(body) {
-        return new Promise((resolve, reject) => {
-            const request = new XMLHttpRequest();
-            request.open('POST', '/chat/');
-            request.setRequestHeader('Accept', 'application/json');
-            request.responseType = 'json';
-            request.upload.addEventListener('progress', (event) => {
-                if (!event.lengthComputable) return;
-                const done = event.loaded / event.total;
-                uploadText = `Sending… ${Math.round(done * 100)}%`;
-                status.textContent = uploadText;
-                progressFill.style.transform = `scaleX(${done})`;
-                if (sending) sending.meta.textContent = uploadText;
-            });
-            request.addEventListener('load', () => resolve({ status: request.status, data: request.response ?? {} }));
-            request.addEventListener('error', reject);
-            request.send(body);
-        });
-    }
-
+    // Send: once it's known what each file is (a moment), they leave the tray for a faded message in the chat, and the
+    // box empties like after a normal message, so whatever is typed next is a message of its own. The conversions still
+    // going on finish out of the part, and the upload goes from there (Attachments on their way, above).
     async function send() {
         if (isSending || jobs.length === 0) return;
         if (jobs.some((job) => problem(job) !== null)) return; // the tray says what's wrong
-        const token = ++sendToken;
-        const isCurrent = () => token === sendToken && !signal.aborted;
         isSending = true;
-        sendButton.disabled = true;
         notice = null;
-        // The text goes with them as it is now, and the box empties straight away like after a normal message, so
-        // whatever is typed while the pictures convert is the next message rather than added to this one
+        render();
+        await Promise.all(jobs.map((job) => job.ready));
+        isSending = false;
+        if (signal.aborted) return;
+        const isTooBig = !jobs.some(isWaiting) && jobs.reduce((sum, job) => sum + toSend(job).size, 0) > maxBytes;
+        if (jobs.some((job) => problem(job) !== null) || isTooBig) {
+            render(); // the tray says what's wrong
+            return;
+        }
+
         const message = textarea.value;
         const reply = replyInput.value;
-        sendingText = message;
         if (message !== '') {
             textarea.value = '';
             textarea.dispatchEvent(new Event('input', { bubbles: true })); // shrinks back, and stops "is typing"
         }
+        replyInput.value = '';
+        if (replyBar) replyBar.hidden = true;
+
+        const sent = jobs;
+        setJobs([]);
+        sent.forEach((job) => {
+            job.tile.item.remove();
+            job.tile = null;
+        });
+        const { item, meta } = showSending(message, sent);
+        const upload = { chatId: composer.elements.chat.value, jobs: sent, message, reply, item, meta };
+        sent.forEach((job) => { job.onChange = () => chatUploadCheck(upload); });
+        chatUploads.push(upload);
         render();
-        let isSent = false;
-        try {
-            // They only go once it's known which pictures to convert, and the conversions are done.
-            // Ticking "Keep original pictures" or "Keep original videos" meanwhile stops waiting and sends those originals.
-            await Promise.all(jobs.map((job) => job.ready));
-            if (!isCurrent()) return;
-            showSending(message);
-            convertNext();
-            while (converting) await converting.promise;
-            if (!isCurrent()) return;
-            const totalBytes = jobs.reduce((sum, job) => sum + toSend(job).size, 0);
-            if (jobs.some((job) => problem(job) !== null) || totalBytes > maxBytes) return; // the tray says what's wrong
-
-            const sent = [...jobs];
-            const body = new FormData();
-            body.set('action', 'upload');
-            body.set('chat', composer.elements.chat.value);
-            body.set('message', message);
-            body.set('reply', reply);
-            sent.forEach((job) => {
-                body.append('files[]', toSend(job), uploadName(job));
-                body.append('converted[]', toSend(job) === job.result ? '1' : '0');
-            });
-
-            isUploading = true;
-            uploadText = 'Sending…';
-            render(); // × and the box can't be used any more
-            const { status: httpStatus, data } = await upload(body);
-            if (httpStatus === 200 && data.chatId) {
-                isSent = true;
-                // Sent, but another chat was opened in the meantime - that one stays
-                if (!signal.aborted) chatLoad('/chat/?chat=' + data.chatId, { sent: body.get('message') });
-                return;
-            }
-            if (data.error === 'notEnoughTickets') {
-                openTickets(data.ticketsNeeded);
-                return;
-            }
-            const job = Number.isInteger(data.file) ? sent[data.file] : null;
-            if (job) job.serverError = data.error in FILE_ERRORS ? data.error : 'uploadFailed';
-            else notice = { text: ERRORS[data.error] ?? "Couldn't send them. Try again.", isError: true };
-        } catch {
-            notice = { text: "Couldn't send them. Check your connection and try again.", isError: true };
-        } finally {
-            if (!isSent && token === sendToken) finishSending();
-        }
+        chatConvertNext();
+        chatUploadCheck(upload); // nothing left to convert: it goes straight away
     }
+
+    // An upload that wasn't sent comes back in the tray, in front of anything added since, with what went wrong
+    // (chatUploadFail above). error is the server's error code, file which of them it was about, and ticketsNeeded how
+    // many they need when there weren't enough.
+    chatTray = {
+        restore(upload, { error = null, file = null, ticketsNeeded = null }) {
+            const first = list.firstChild;
+            upload.jobs.forEach((job) => {
+                job.onChange = render;
+                makeTile(job);
+                list.insertBefore(job.tile.item, first);
+                if (job.url && !job.previewFailed) showPreview(job);
+            });
+            setJobs([...upload.jobs, ...jobs]);
+            if (error === 'notEnoughTickets') openTickets(ticketsNeeded);
+            else if (Number.isInteger(file) && upload.jobs[file]) upload.jobs[file].serverError = error in FILE_ERRORS ? error : 'uploadFailed';
+            else if (error) notice = { text: ERRORS[error] ?? "Couldn't send them. Try again.", isError: true };
+            restoreText(upload.message);
+            chatConvertNext();
+            render();
+        },
+    };
 
     // With attachments waiting, Send (or Enter) sends them this way instead of the normal form post
     composer.addEventListener('submit', (event) => {
@@ -3997,8 +4024,14 @@ function chatShowPage(response, page, { fromHistory = false, replace = false, re
     if (newList && list) newList.scrollTop = list.scrollTop;
     if (newSearch && search) newSearch.value = search.value;
     if (newTextarea && draft !== '' && isSameChat) newTextarea.value = draft;
-    // Messages still waiting in the queue keep their faded copies at the bottom (after muting the chat meanwhile, say)
-    if (newMessages && isSameChat) chatQueue.forEach((entry) => entry.item && newMessages.append(entry.item));
+    // Messages still waiting in the queue, and attachments still converting, keep their faded copies at the bottom of
+    // their chat (after sending another message or muting the chat meanwhile, say, or coming back to it)
+    if (newMessages) {
+        const waiting = [...chatUploads, ...chatQueue].filter((entry) => entry.item && entry.chatId === newMessages.dataset.chatMessages);
+        waiting.forEach((entry) => newMessages.append(entry.item));
+        const empty = newMessages.querySelector('[data-messages-empty]');
+        if (empty && waiting.length > 0) empty.hidden = true;
+    }
 
     chatStart(true);
 
@@ -4032,7 +4065,9 @@ function chatSubmit(form, submitter = null) {
 // they can't arrive mixed up. The page after the last one is put in (chatShowPage), which takes the faded copies away.
 // If one isn't sent (no connection, sending too fast, a blocked link), it and everything after it come off the screen
 // and go back in the box, one per line, to try again. A double Enter can't send one twice, as the box is empty by then.
-const chatQueue = []; // { url, body (FormData), text, chatId, item (the faded <li>, or null) }, oldest first
+// Attachments join it too once their files are ready (chatUploadCheck): those entries have upload, and are posted by
+// chatUploadSend instead. One that fails goes back in the tray on its own, and the messages after it still go.
+const chatQueue = []; // { url, body (FormData), text, chatId, item (the faded <li>, or null), upload? }, oldest first
 let chatQueueIsRunning = false;
 
 function chatQueueMessage(form) {
@@ -4046,6 +4081,15 @@ async function chatQueueRun() {
     chatQueueIsRunning = true;
     while (chatQueue.length > 0) {
         const entry = chatQueue[0];
+        if (entry.upload) {
+            const isSent = await chatUploadSend(entry);
+            chatQueue.shift();
+            if (!isSent || chatQueue.length > 0) continue; // the page after the last one is enough
+            // The chat with it in, when it's still the one open and no other page is on its way
+            const shownChatId = document.querySelector('[data-chat-messages]')?.dataset.chatMessages;
+            if (chatRequest === null && shownChatId === entry.chatId) chatLoad('/chat/?chat=' + entry.chatId, { sent: entry.text });
+            continue;
+        }
         let response;
         try {
             response = await fetch(entry.url, { method: 'POST', body: entry.body, headers: { Accept: 'text/html' } });
@@ -4095,7 +4139,14 @@ async function chatQueueRun() {
  * chat page with "Link blocked" or "Too fast", or a login page), or null when there's no connection.
  */
 function chatQueueFail(response, page) {
-    const failed = chatQueue.splice(0);
+    const entries = chatQueue.splice(0);
+    chatQueueFailMessages(entries.filter((entry) => !entry.upload), response, page);
+    // Attachments that were waiting behind it go back in the tray, after the page above is in (which replaces the tray)
+    entries.filter((entry) => entry.upload).forEach((entry) => chatUploadFail(entry.upload));
+}
+
+// The text messages of chatQueueFail
+function chatQueueFailMessages(failed, response, page) {
     failed.forEach((entry) => entry.item?.remove());
     const restore = failed.map((entry) => entry.text).filter((text) => text !== '').join('\n');
     const shownChatId = document.querySelector('[data-chat-messages]')?.dataset.chatMessages;

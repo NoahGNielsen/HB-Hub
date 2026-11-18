@@ -2586,10 +2586,9 @@ if ($isPoll) {
                          each with a preview, its name, how big it is in tickets and a × to take it out, and a + tile to add
                          more. Under them how much they come to, the box to keep pictures as they are instead of turning them
                          into JPEG XL (not ticked to begin with, only there when a picture would be), the same for videos
-                         instead of turning them into WebM, and Remove all.
-                         The bar along the top fills up while they're on their way. -->
+                         instead of turning them into WebM, and Remove all. At Send they leave the tray for the faded
+                         message in the chat, which says how far the upload has got. -->
                     <div class="chat-tray" hidden data-attach-tray>
-                        <div class="chat-tray-progress" hidden data-attach-progress><span class="chat-tray-progress-fill" data-attach-progress-fill></span></div>
                         <ul class="chat-tray-list" aria-label="Attachments to send" data-attach-list></ul>
                         <div class="chat-tray-footer">
                             <span class="chat-tray-status" role="status" data-attach-status></span>

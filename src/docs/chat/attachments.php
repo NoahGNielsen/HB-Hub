@@ -54,6 +54,11 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             zippet på serveren og pakket ud igen, når nogen downloader dem, så du får den samme fil tilbage.
                         </p>
                         <p>
+                            Du behøver ikke vente på, at de bliver lavet om: trykker du på <strong>Send</strong>, ryger beskeden op i
+                            chatten med "Sending…" og bliver sendt, så snart filerne er klar. Imens kan du skrive og sende andre
+                            beskeder, som så bliver sendt først.
+                        </p>
+                        <p>
                             Videoer bliver lavet om til WebM med VP9, før de bliver sendt, så alle videoer kan afspilles i chatten
                             og fylder mindre (en video fra en telefon tager tit langt færre billetter bagefter). Dem, der er større
                             end 1080p, bliver gjort til 1080p. Det sker i din browser, og forhåndsvisningen viser, hvor langt den er
