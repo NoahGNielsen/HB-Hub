@@ -236,8 +236,12 @@
             // An admin's block stays what the row says, whatever is picked
             const row = document.querySelector('[data-summary="block"]');
             if (row?.textContent !== 'Blocked by an admin') setSummary('block', checkedLabel(form, 'block'));
-        } else if (action === 'improveSite') {
-            setSummary('improve', form.elements.improveSite.checked ? 'On' : 'Off');
+        } else if (action === 'improve') {
+            const errors = form.elements.errorReports.checked;
+            const stats = errors && form.elements.usageStats.checked;
+            setSummary('improve', stats ? 'Error reports and statistics' : errors ? 'Error reports' : 'Off');
+        } else if (action === 'keepOriginal') {
+            setSummary('attachments', form.elements.chatKeepOriginal.checked ? 'Can keep originals' : 'Always converted');
         }
     };
     for (const form of document.querySelectorAll('form[data-autosave]')) {
@@ -252,6 +256,16 @@
         if (!ok) return;
         blockPending.textContent = answer.notice ?? '';
         blockPending.hidden = !answer.notice;
+    });
+
+    // Help improve HB Hub: Anonymous usage statistics depends on Error reports, so it's greyed out (and turned off)
+    // while that's off, the same as settings.php draws it. Runs before the autosave sends, which waits a tick.
+    const errorReports = document.querySelector('[data-error-reports]');
+    const usageStats = document.querySelector('[data-usage-stats]');
+    errorReports?.addEventListener('change', () => {
+        if (!usageStats) return;
+        usageStats.disabled = !errorReports.checked;
+        if (!errorReports.checked) usageStats.checked = false;
     });
 
     // ---------- Profile ----------

@@ -1078,43 +1078,66 @@ body:has(> .chat) {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-/* The quote above a reply: who and what it answers */
+/* The quote above a reply (chatReplyHtml() in chat/index.php): a small, dim line saying who it answers, with a hooked
+   arrow, then a faded bubble with the start of the original - two lines at most, cut off with "…". Narrower than a
+   message, and on the same side as the reply. */
 .chat-message-reply {
-  max-width: 100%;
-  margin: 0 4px;
-  padding: 4px 10px;
-  box-sizing: border-box;
+  max-width: min(100%, 340px);
+  margin: 2px 4px 0;
   display: flex;
   flex-direction: column;
-  border-left: 3px solid var(--accent);
-  border-radius: 4px 8px 8px 4px;
-  background: color-mix(in srgb, var(--text) 6%, transparent);
+  align-items: flex-start;
+  gap: 3px;
   color: inherit;
-  font-size: 0.8rem;
   text-decoration: none;
 }
 
 .chat-message.is-own .chat-message-reply {
-  border-left: none;
-  border-right: 3px solid var(--accent);
-  border-radius: 8px 4px 4px 8px;
-  text-align: right;
+  align-items: flex-end;
 }
 
-a.chat-message-reply:hover {
+.chat-message-reply-label {
+  margin: 0 6px;
+  font-size: 0.75rem;
+  opacity: 0.65;
+}
+
+/* The arrow is only to look at - the line itself says it's a reply */
+.chat-message-reply-label::before {
+  content: "\21AA\FE0E";
+  content: "\21AA\FE0E" / "";
+  margin-right: 5px;
+}
+
+.chat-message-reply-text {
+  max-width: 100%;
+  /* The space around the text is a see-through border rather than padding, as the cut-off only hides what spills past
+     the padding - padding would show the top of a third line */
+  border: solid transparent;
+  border-width: 7px 12px;
+  box-sizing: border-box;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+a.chat-message-reply:hover .chat-message-reply-text {
   background: color-mix(in srgb, var(--text) 11%, transparent);
 }
 
-.chat-message-reply-sender {
-  font-weight: 700;
-}
-
-.chat-message-reply-text,
 .chat-composer-reply-preview {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0.8;
+  opacity: 0.75;
 }
 
 .chat-message-reply-text.is-deleted {
@@ -1224,6 +1247,7 @@ a.chat-message-reply:hover {
 
 /* A chat with its own background (Change background, the gradient is set by chat.js): what sits right on it,
    outside the bubbles, gets a backing so it stays readable on any colors */
+.chat-messages.has-background .chat-message-reply-label,
 .chat-messages.has-background .chat-message-sender,
 .chat-messages.has-background .chat-message-meta,
 .chat-messages.has-background .chat-messages-empty,
@@ -1234,6 +1258,7 @@ a.chat-message-reply:hover {
   background: color-mix(in srgb, var(--secondary) 85%, transparent);
 }
 
+.chat-messages.has-background .chat-message-reply-label,
 .chat-messages.has-background .chat-message-meta,
 .chat-messages.has-background .chat-messages-empty,
 .chat-messages.has-background .chat-messages-older {
@@ -1241,11 +1266,12 @@ a.chat-message-reply:hover {
   color: color-mix(in srgb, var(--text) 70%, var(--secondary));
 }
 
-.chat-messages.has-background .chat-message-reply {
+.chat-messages.has-background .chat-message-reply-text {
   background: color-mix(in srgb, var(--secondary) 85%, transparent);
+  color: color-mix(in srgb, var(--text) 65%, var(--secondary));
 }
 
-.chat-messages.has-background a.chat-message-reply:hover {
+.chat-messages.has-background a.chat-message-reply:hover .chat-message-reply-text {
   background: var(--secondary);
 }
 
@@ -1556,29 +1582,10 @@ a.chat-message-reply:hover {
 }
 
 .chat-tray[hidden],
-.chat-tray-progress[hidden],
 .chat-tray-add-item[hidden],
 .chat-tray-ticket[hidden],
 .chat-tray-keep[hidden] {
   display: none;
-}
-
-.chat-tray-progress {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
-}
-
-.chat-tray-progress-fill {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.2s ease;
 }
 
 .chat-tray-list {
@@ -2940,86 +2947,171 @@ a.chat-member:focus-visible {
   color: #fff;
 }
 
+/* The colors on the left and the compass on the right, like Choose gradient for the profile banner (settings.css) */
 .chat-background-colors {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.chat-background-colors input {
-  width: 100%;
-  height: 44px;
+.chat-background-swatches {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* A color: the round swatch (the color input itself) with its name and hex code */
+.chat-swatch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: 12px;
+  background: var(--background);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.chat-swatch:hover,
+.chat-swatch:has(input:focus-visible) {
+  border-color: var(--accent);
+}
+
+.chat-swatch input[type="color"] {
+  flex: none;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: none;
-  border-radius: 10px;
+  border-radius: 50%;
   background: none;
   cursor: pointer;
 }
 
-.chat-background-colors input::-webkit-color-swatch-wrapper {
+.chat-swatch input[type="color"]:focus-visible {
+  outline: none;
+}
+
+.chat-swatch input[type="color"]::-webkit-color-swatch-wrapper {
   padding: 0;
 }
 
-.chat-background-colors input::-webkit-color-swatch {
-  border: 2px solid color-mix(in srgb, var(--text) 15%, transparent);
-  border-radius: 10px;
+.chat-swatch input[type="color"]::-webkit-color-swatch {
+  border: 2px solid color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 50%;
 }
 
-.chat-background-colors input::-moz-color-swatch {
-  border: 2px solid color-mix(in srgb, var(--text) 15%, transparent);
-  border-radius: 10px;
+.chat-swatch input[type="color"]::-moz-color-swatch {
+  border: 2px solid color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 50%;
 }
 
-.chat-background-colors input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.chat-swatch-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
 }
 
+.chat-swatch-name {
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.chat-swatch-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* The direction: the eight arrows as a compass, with a dot in the middle */
 .chat-background-directions {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 38px);
+  grid-template-rows: repeat(3, 38px);
+  gap: 4px;
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
 }
 
-.chat-background-directions legend {
-  margin-bottom: 6px;
-  padding: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.chat-background-directions label {
+.chat-direction {
   position: relative; /* keeps the hidden radio inside it */
   cursor: pointer;
 }
 
+.chat-direction-a315 { grid-area: 1 / 1; }
+.chat-direction-a0 { grid-area: 1 / 2; }
+.chat-direction-a45 { grid-area: 1 / 3; }
+.chat-direction-a270 { grid-area: 2 / 1; }
+.chat-direction-a90 { grid-area: 2 / 3; }
+.chat-direction-a225 { grid-area: 3 / 1; }
+.chat-direction-a180 { grid-area: 3 / 2; }
+.chat-direction-a135 { grid-area: 3 / 3; }
+
+.chat-direction-dot {
+  grid-area: 2 / 2;
+  place-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 25%, transparent);
+}
+
 /* The radio itself is hidden, the arrow is the button */
-.chat-background-arrow {
-  width: 40px;
-  height: 40px;
+.chat-direction-arrow {
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
   border-radius: 10px;
   background: var(--background);
-  font-size: 1.2rem;
-  line-height: 1;
+  color: color-mix(in srgb, var(--text) 75%, transparent);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.chat-background-directions label:hover .chat-background-arrow {
+/* One arrow drawn pointing up, turned to each direction */
+.chat-direction-arrow svg {
+  display: block;
+}
+
+.chat-direction-a45 svg { transform: rotate(45deg); }
+.chat-direction-a90 svg { transform: rotate(90deg); }
+.chat-direction-a135 svg { transform: rotate(135deg); }
+.chat-direction-a180 svg { transform: rotate(180deg); }
+.chat-direction-a225 svg { transform: rotate(225deg); }
+.chat-direction-a270 svg { transform: rotate(270deg); }
+.chat-direction-a315 svg { transform: rotate(315deg); }
+
+.chat-direction:hover .chat-direction-arrow {
   background: color-mix(in srgb, var(--accent) 20%, var(--background));
+  color: var(--text);
 }
 
-.chat-background-directions input:checked + .chat-background-arrow {
+.chat-direction input:checked + .chat-direction-arrow {
   background: var(--accent);
   color: #fff;
 }
 
-.chat-background-directions input:focus-visible + .chat-background-arrow {
+.chat-direction input:focus-visible + .chat-direction-arrow {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Narrow phones: the compass goes under the colors */
+@media (max-width: 420px) {
+  .chat-background-colors {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chat-background-directions {
+    align-self: center;
+  }
 }
 
 /* GIF picker: the results in columns, each GIF at its own height, in order across the rows.
@@ -3363,7 +3455,6 @@ a.chat-member:focus-visible {
     animation: none;
   }
 
-  .chat-tray-progress-fill,
   .chat-attachment-gallery .chat-attachment-image {
     transition: none;
   }

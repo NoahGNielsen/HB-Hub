@@ -6,7 +6,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/database.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
 
-const HBHUB_GIF_SEARCH_LIMIT = 25;
+const HBHUB_GIF_SEARCH_LIMIT = 75; // GIFs per search, still one Giphy request (beta keys may cap it at 50)
 const HBHUB_GIF_RATING = 'r'; // Giphy's content rating: g, pg, pg-13 or r
 
 $apiKey = hbHubGiphyApiKey(require dirname($_SERVER['DOCUMENT_ROOT']) . '/hbHubSiteConfig.php');

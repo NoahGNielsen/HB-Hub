@@ -39,8 +39,8 @@ $hbHubFingerprintDue = false;
 /**
  * Whether the browser asks sites not to track it: Global Privacy Control, sent as the header Sec-GPC: 1 (the legal
  * pages talk about this one), or the older "Do Not Track", sent as DNT: 1 - either counts.
- * Such a browser is never fingerprinted (assets/php/fingerprint.php), and signing up with it turns "Help improve
- * HB Hub" off (onboardingSaveToDB.php). The device cookie (loginLimit.php) is still used for it: that's our own
+ * Such a browser is never fingerprinted (assets/php/fingerprint.php), and signing up with it turns "Error reports"
+ * and "Anonymous usage statistics" off (onboardingSaveToDB.php). The device cookie (loginLimit.php) is still used for it: that's our own
  * cookie, not tracking across sites.
  */
 function hbHubSessionDoNotTrack(): bool

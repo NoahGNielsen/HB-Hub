@@ -15,8 +15,8 @@
 // - Notifications (#notifications): a browser notification and/or a sound for new messages while the site is open
 //   (assets/js/notifications.js, assets/js/messageSound.js)
 // - Gambling and Games (#block): blocking them, during school hours or all the time (assets/php/block.php)
-// - Help improve HB Hub (#improve): whether the site may gather statistics about how it works for them (improveSite,
-//   on by default; hbHubImproveSiteOn() in assets/php/userSettings.php says what it turns off)
+// - Attachments (#attachments): whether the chat's attachment tray has the "Keep original pictures/videos" boxes
+//   (chatKeepOriginal, off by default, so pictures and videos are always converted unless it's turned on)
 // Security
 // - Password (#password): a new one, after entering the current one. Logs out every other session.
 // - Two-factor login (#totp): a code from an authenticator app when logging in (assets/php/totp.php)
@@ -25,11 +25,14 @@
 // - Logged in devices (#devices): every session (HBHub-Sessions) with its browser and system and when it was last used,
 //   and a button to log out each of the others
 // Account
+// - Help improve HB Hub (#improve): two switches, Error reports (errorReports) and Anonymous usage statistics
+//   (usageStats), both on by default; hbHubErrorReportsOn() and hbHubUsageStatsOn() in assets/php/userSettings.php say
+//   what each turns off. Usage statistics depends on Error reports: it's greyed out and saved off while that's off
 // - Log out: only this device. Log out everywhere: every device, this one too. Both straight from their rows.
 // - Delete account (#delete): after entering the password
 // The password and 2FA codes typed in to confirm a change count towards the login lock (assets/php/loginLimit.php).
 //
-// Saving: the forms that are plain settings (profile, notifications, block, improveSite, discordProfile) have
+// Saving: the forms that are plain settings (profile, notifications, block, improve, keepOriginal, discordProfile) have
 // data-autosave, and settings.js sends them by themselves as they're changed, with Accept: application/json. Those get
 // a JSON answer instead of a redirect: {"ok": true, ...} (with what the page needs to show the new state, see
 // settingsRedirect()), 422 {"error": "invalid", "errors": {field: message}} when something on the form isn't right
@@ -552,13 +555,26 @@ if ($settingsAction === 'notifications') {
     settingsRedirect('settings', 'notifications');
 }
 
-if ($settingsAction === 'improveSite') {
-    $improveSiteOn = ($_POST['improveSite'] ?? null) === '1';
-    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($improveSiteOn): array {
-        $settings['improveSite'] = $improveSiteOn;
+if ($settingsAction === 'improve') {
+    $errorReportsOn = ($_POST['errorReports'] ?? null) === '1';
+    // Anonymous usage statistics depends on Error reports (hbHubUsageStatsOn()), so it's saved off along with it
+    $usageStatsOn = $errorReportsOn && ($_POST['usageStats'] ?? null) === '1';
+    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($errorReportsOn, $usageStatsOn): array {
+        $settings['errorReports'] = $errorReportsOn;
+        $settings['usageStats'] = $usageStatsOn;
+        unset($settings['improveSite']); // the old single switch, only read while these two aren't saved
         return $settings;
     });
     settingsRedirect('settings', 'improve');
+}
+
+if ($settingsAction === 'keepOriginal') {
+    $keepOriginalOn = ($_POST['chatKeepOriginal'] ?? null) === '1';
+    hbHubChangeUserSettings($db, $userId, function (array $settings) use ($keepOriginalOn): array {
+        $settings['chatKeepOriginal'] = $keepOriginalOn;
+        return $settings;
+    });
+    settingsRedirect('settings', 'attachments');
 }
 
 if ($settingsAction === 'block') {
@@ -619,7 +635,9 @@ if ($settingsAction !== null && settingsWantsJson()) {
 $settingsAvatarSrc = hbHubAvatarUrl($userId, $settingsAvatarId);
 $settingsNotificationsOn = ($savedSettings['notifications'] ?? false) === true;
 $settingsNotificationSoundOn = ($savedSettings['notificationSound'] ?? false) === true;
-$settingsImproveSiteOn = hbHubImproveSiteOn($savedSettings);
+$settingsErrorReportsOn = hbHubErrorReportsOn($savedSettings);
+$settingsUsageStatsOn = hbHubUsageStatsOn($savedSettings);
+$settingsKeepOriginalOn = hbHubChatKeepOriginalOn($savedSettings);
 $navMessageSound = true; // messageSound.js, so ticking the sound box plays it (navPanel.php)
 $settingsBlock = hbHubBlockSettings($savedSettings);
 $settingsBlockIsActive = hbHubBlockIsActive($settingsBlock);
@@ -689,6 +707,7 @@ function settingsIcon(string $name): string
         'notifications' => '<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
         'block' => '<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/>',
         'improve' => '<path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/>',
+        'attachments' => '<path d="M20 11.5l-8 8a5 5 0 0 1-7-7l8.5-8.5a3.5 3.5 0 0 1 5 5L10 17.5a2 2 0 0 1-3-3l7.5-7.5"/>',
         'password' => '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14.5 8.5l2 2"/>',
         'totp' => '<path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
         'devices' => '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/>',
@@ -730,6 +749,11 @@ $settingsNotificationsSummary = match (true) {
     $settingsNotificationsOn => 'Notifications',
     $settingsNotificationSoundOn => 'Sound',
     default => 'Off',
+};
+$settingsImproveSummary = match (true) {
+    $settingsErrorReportsOn && $settingsUsageStatsOn => 'Error reports and statistics',
+    $settingsErrorReportsOn => 'Error reports',
+    default => 'Off', // usage statistics is never on by itself (hbHubUsageStatsOn())
 };
 $settingsBlockSummary = $settingsBlockIsAdmin ? 'Blocked by an admin' : HBHUB_BLOCK_MODES[$settingsBlock['pendingMode'] ?? $settingsBlock['mode']];
 $settingsDeviceCount = count($settingsDevices);
@@ -788,7 +812,7 @@ $settingsDeviceCount = count($settingsDevices);
                 <ul class="settings-list">
                     <?= settingsRow('notifications', 'notifications', 'Notifications', $settingsNotificationsSummary, 'notifications') ?>
                     <?= settingsRow('block', 'block', 'Gambling and Games', $settingsBlockSummary, 'block') ?>
-                    <?= settingsRow('improve', 'improve', 'Help improve HB Hub', $settingsImproveSiteOn ? 'On' : 'Off', 'improve') ?>
+                    <?= settingsRow('attachments', 'attachments', 'Attachments', $settingsKeepOriginalOn ? 'Can keep originals' : 'Always converted', 'attachments') ?>
                 </ul>
 
                 <h2 class="settings-list-heading">Security</h2>
@@ -803,6 +827,7 @@ $settingsDeviceCount = count($settingsDevices);
 
                 <h2 class="settings-list-heading">Account</h2>
                 <ul class="settings-list">
+                    <?= settingsRow('improve', 'improve', 'Help improve HB Hub', $settingsImproveSummary, 'improve') ?>
                     <li>
                         <form action="/settings" method="post">
                             <input type="hidden" name="action" value="logout">
@@ -1220,25 +1245,58 @@ $settingsDeviceCount = count($settingsDevices);
                 </form>
             </section>
 
-            <!-- Help improve HB Hub (hbHubImproveSiteOn() in assets/php/userSettings.php) -->
+            <!-- Help improve HB Hub (hbHubErrorReportsOn() and hbHubUsageStatsOn() in assets/php/userSettings.php) -->
             <section class="settings-card settings-panel" id="improve" aria-labelledby="settings-improve-heading" data-settings-panel>
                 <?= settingsPanelHead('improve', 'Help improve HB Hub', null, true) ?>
                 <form action="/settings#improve" method="post" data-autosave>
-                    <input type="hidden" name="action" value="improveSite">
+                    <input type="hidden" name="action" value="improve">
+                    <div class="settings-group">
+                        <label class="settings-checkbox settings-line">
+                            <span class="settings-item-text">
+                                <span class="settings-label">Error reports</span>
+                                <span class="settings-hint" id="settings-error-reports-hint">
+                                    Sends a short report to site admins when something on a page goes wrong, like an error.
+                                    This helps us make a site that runs without errors.
+                                </span>
+                            </span>
+                            <input type="checkbox" class="settings-switch" name="errorReports" value="1"<?= $settingsErrorReportsOn ? ' checked' : '' ?>
+                                   aria-describedby="settings-error-reports-hint" data-error-reports>
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-checkbox settings-line">
+                            <span class="settings-item-text">
+                                <span class="settings-label">Anonymous usage statistics</span>
+                                <span class="settings-hint" id="settings-usage-stats-hint">
+                                    Share anonymous statistics about how you use the site, you are never identified and stay anonymous. This helps us make a better site!
+                                    Needs Error reports to be on.
+                                </span>
+                            </span>
+                            <?php // Greyed out while Error reports is off (settings.js keeps it so as that switch changes) ?>
+                            <input type="checkbox" class="settings-switch" name="usageStats" value="1"<?= $settingsUsageStatsOn ? ' checked' : '' ?><?= $settingsErrorReportsOn ? '' : ' disabled' ?>
+                                   aria-describedby="settings-usage-stats-hint" data-usage-stats>
+                        </label>
+                    </div>
+                    <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
+                </form>
+            </section>
+
+            <!-- Attachments (chatKeepOriginal, hbHubChatKeepOriginalOn() in assets/php/userSettings.php) -->
+            <section class="settings-card settings-panel" id="attachments" aria-labelledby="settings-attachments-heading" data-settings-panel>
+                <?= settingsPanelHead('attachments', 'Attachments', 'For files you send in the chat.', true) ?>
+                <form action="/settings#attachments" method="post" data-autosave>
+                    <input type="hidden" name="action" value="keepOriginal">
                     <label class="settings-checkbox settings-line">
                         <span class="settings-item-text">
-                            <span class="settings-label">Share usage statistics and error reports</span>
-                            <span class="settings-hint" id="settings-improve-hint">
-                                Counts the pages you open towards how many times each page is visited a day (only the
-                                number, never who). Sends a short report when something goes wrong on a page: requests that
-                                fail or get no answer, pictures or scripts that don't load, and JavaScript errors (which page
-                                you were on, what went wrong, your browser). In Chrome, it also lets the browser tell us if
-                                Ore Mining Inc.'s tab crashes. Only site admins can see any of it. Ore Mining Inc.'s own
-                                crash reports always ask you first, whatever you choose here.
+                            <span class="settings-label">Option to keep originals</span>
+                            <span class="settings-hint" id="settings-keep-original-hint">
+                                Pictures are turned into JPEG XL and videos into WebM before they're sent, so they take up
+                                less. Turn this on to get the "Keep original pictures" and "Keep original videos" boxes
+                                under the attachments you're about to send, to send them exactly as they are instead.
                             </span>
                         </span>
-                        <input type="checkbox" class="settings-switch" name="improveSite" value="1"<?= $settingsImproveSiteOn ? ' checked' : '' ?>
-                               aria-describedby="settings-improve-hint">
+                        <input type="checkbox" class="settings-switch" name="chatKeepOriginal" value="1"<?= $settingsKeepOriginalOn ? ' checked' : '' ?>
+                               aria-describedby="settings-keep-original-hint">
                     </label>
                     <noscript><div class="settings-actions"><button type="submit" class="settings-btn settings-btn-primary">Save</button></div></noscript>
                 </form>

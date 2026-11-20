@@ -15,7 +15,6 @@ $userId = (int) $hbHubUser['userId'];
 const LOBBY_CREATE_TYPES = [ // what the "Who can join" choices make
     'public' => HBHUB_BACCARAT_ROOM_PUBLIC,
     'code' => HBHUB_BACCARAT_ROOM_CODE,
-    'invite' => HBHUB_BACCARAT_ROOM_INVITE,
 ];
 
 function lobbyGoToTable(int $roomId): never
@@ -225,7 +224,6 @@ $navCasinoChips = hbHubCasinoWallet($db, $userId)['chips']; // the chip count in
                                 <?php foreach ([
                                     'public' => ['Public', 'Listed here, so anyone can join.'],
                                     'code' => ['With the code', 'Not listed. Anyone you give the code to can join.'],
-                                    'invite' => ['Invite-only', 'Not listed. Only people you invite can join.'],
                                 ] as $value => [$label, $hint]): ?>
                                     <label class="lobby-option">
                                         <input type="radio" name="type" value="<?= $value ?>"<?= $lobbyValues['type'] === $value ? ' checked' : '' ?>>

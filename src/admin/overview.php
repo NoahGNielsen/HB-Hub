@@ -20,6 +20,8 @@
 // - Browser errors: a bar chart of the errors in people's browsers each day of the last ADMIN_OVERVIEW_DAYS days
 //   (HBHub-Watchdog, assets/php/watchdog.php), by the day the last error in a report happened, like admin/watchdog.php
 //   counts them, cleared reports and the dev site's included
+// - Help improve HB Hub: a pie chart of how many accounts have everything, only error reports or nothing on under
+//   "Help improve HB Hub" in their settings (and only statistics, when anyone has that), next to Browser errors
 // - Visits from links: the pages opened from an address with ?utm_source= in the last ADMIN_OVERVIEW_DAYS days, per
 //   source and page, with how many were guests and the last day it happened (counts in HBHub-PageSources, same file)
 // - Casino: the chips in everyone's wallets, and each game's rounds, players, chips bet and what the house won or
@@ -157,9 +159,15 @@ function adminOverviewCasino(PDO $db, int $weeksAgo = 0): array
 }
 
 /**
- * The games' numbers: games played in the last 7 days, how many played them, and games played ever. Each player's
- * game is one, so a chess game between two people counts as two. Games still being played, Minesweeper's and
- * Sudoku's left ones, and Snake's that were left or stopped by its anticheat, don't count. Ore Mining Inc. has no
+ * The games' numbers: games played in the last 7 days, how many played them, and games played ever. A game is one
+ * however many played it, so three people in one UNO game is 1 game and 3 players. The multiplayer games' tables have
+ * a row per player and no game id, so their rows are grouped by the room and the second the game ended (every
+ * player's row is stored by the same request, with the same UTC_TIMESTAMP()); a room that's gone counts as room 0, so
+ * two such games ending in the very same second would count as one. Matador's players who left mid-game get their row
+ * when they leave, so only the rows from the game's end make up its games, while the leavers still count as players.
+ * Games still being played, Minesweeper's and
+ * Sudoku's left ones, Doodle Chain's players who left before the chains were shown, and Snake's that were left or
+ * stopped by its anticheat, don't count. Ore Mining Inc. has no
  * games, so it's the players who saved in the last 7 days and everyone who has a save (null for
  * the games played).
  *
@@ -173,22 +181,32 @@ function adminOverviewGames(PDO $db, int $weeksAgo = 0): array
 {
     $from = 'UTC_TIMESTAMP() - INTERVAL ' . (7 * ($weeksAgo + 1)) . ' DAY';
     $to = 'UTC_TIMESTAMP() - INTERVAL ' . (7 * $weeksAgo) . ' DAY';
-    // name => [table, timestamp column, WHERE for a finished game]
+    // One game in the multiplayer games' tables: its room and the second it ended (see above)
+    $gameKey = "CONCAT_WS(',', COALESCE(roomId, 0), roomType, resultTimestamp)";
+    // name => [table, timestamp column, WHERE for a finished game, what makes rows one game (null: every row is a
+    // game of its own), WHERE for the rows that make up the games (null: all of them)]
     $tables = [
-        'Chess' => ['HBHub-ChessResults', 'resultTimestamp', '1'],
-        'Matador' => ['HBHub-MatadorResults', 'resultTimestamp', '1'],
-        'UNO' => ['HBHub-UnoResults', 'resultTimestamp', '1'],
-        'Wordle' => ['HBHub-WordleGames', 'gameStartTimestamp', 'gameResult <> 0 OR gameDate < CURDATE()'],
-        'Minesweeper' => ['HBHub-MinesweeperGames', 'gameEndTimestamp', 'gameResult IN (1, 2)'],
-        'Sudoku' => ['HBHub-SudokuGames', 'gameEndTimestamp', 'gameResult IN (1, 2)'],
-        'Snake' => ['HBHub-SnakeGames', 'gameEndTimestamp', 'gameResult = 1'],
+        'Chess' => ['HBHub-ChessResults', 'resultTimestamp', '1', $gameKey, null],
+        'Matador' => ['HBHub-MatadorResults', 'resultTimestamp', '1', $gameKey, 'playerLeft = 0'],
+        'UNO' => ['HBHub-UnoResults', 'resultTimestamp', '1', $gameKey, null],
+        'Doodle Chain' => ['HBHub-DoodleResults', 'resultTimestamp', 'playerLeft = 0', $gameKey, null],
+        'Wordle' => ['HBHub-WordleGames', 'gameStartTimestamp', 'gameResult <> 0 OR gameDate < CURDATE()', null, null],
+        'Minesweeper' => ['HBHub-MinesweeperGames', 'gameEndTimestamp', 'gameResult IN (1, 2)', null, null],
+        'Sudoku' => ['HBHub-SudokuGames', 'gameEndTimestamp', 'gameResult IN (1, 2)', null, null],
+        'Snake' => ['HBHub-SnakeGames', 'gameEndTimestamp', 'gameResult = 1', null, null],
     ];
     $games = [];
-    foreach ($tables as $name => [$table, $column, $finished]) {
+    foreach ($tables as $name => [$table, $column, $finished, $key, $gameRows]) {
         $inWeek = $column . ' >= ' . $from . ($weeksAgo > 0 ? ' AND ' . $column . ' < ' . $to : '');
-        [$week, $players, $ever] = $db->query('SELECT COALESCE(SUM(' . $inWeek . '), 0),
+        $inEver = $weeksAgo > 0 ? $column . ' < ' . $to : '1';
+        // The games among the rows WHERE $when: each row, or each different game
+        $countGames = static fn(string $when): string => $key === null
+            ? 'COALESCE(SUM(' . $when . '), 0)'
+            : 'COUNT(DISTINCT CASE WHEN (' . $when . ')' . ($gameRows !== null ? ' AND (' . $gameRows . ')' : '')
+                . ' THEN ' . $key . ' END)';
+        [$week, $players, $ever] = $db->query('SELECT ' . $countGames($inWeek) . ',
                 COUNT(DISTINCT CASE WHEN ' . $inWeek . ' THEN userId END),
-                ' . ($weeksAgo > 0 ? 'COALESCE(SUM(' . $column . ' < ' . $to . '), 0)' : 'COUNT(*)') . '
+                ' . $countGames($inEver) . '
             FROM `' . $table . '` WHERE (' . $finished . ')')->fetch(PDO::FETCH_NUM);
         $games[$name] = ['week' => (int) $week, 'players' => (int) $players, 'ever' => (int) $ever];
     }
@@ -258,6 +276,63 @@ function adminOverviewSources(PDO $db): array
     return $db->query('SELECT viewSource, viewPath, SUM(viewCount) AS views, SUM(viewGuestCount) AS guests, MAX(viewDate) AS lastDay
         FROM `HBHub-PageSources` WHERE viewDate > CURDATE() - INTERVAL ' . ADMIN_OVERVIEW_DAYS . ' DAY
         GROUP BY viewSource, viewPath ORDER BY views DESC, lastDay DESC, viewSource, viewPath LIMIT ' . ADMIN_OVERVIEW_TOP_SOURCES)->fetchAll();
+}
+
+/**
+ * How many accounts have what on under "Help improve HB Hub" in their settings: everything, only error reports,
+ * nothing, or only statistics (hbHubImproveLevel(), keys in ADMIN_IMPROVE_LEVELS' order). Accounts count like the
+ * Accounts number at the top: not deleted ones or the HB Hub System account. Each account's settings are read in PHP,
+ * as the switches fall back to the old improveSite one when they aren't saved yet (userSettings.php).
+ *
+ * @return array<string, int> level => accounts
+ */
+function adminOverviewImprove(PDO $db): array
+{
+    $levels = array_fill_keys(array_keys(ADMIN_IMPROVE_LEVELS), 0);
+    $statement = $db->query('SELECT userSettings FROM `HBHub-Users` WHERE userStatus IS NOT NULL AND userId <> 0');
+    foreach ($statement->fetchAll(PDO::FETCH_COLUMN) as $json) {
+        $levels[hbHubImproveLevel(hbHubUserSettings($json))]++;
+    }
+    return $levels;
+}
+
+/**
+ * A pie chart of $levels (from adminOverviewImprove()) with a legend of each slice's share and count next to it. Each
+ * slice is a circle whose stroke is as wide as the pie, dashed to only draw its part (pathLength 100 makes the dash
+ * the percent), so there's no maths with arcs. Only statistics is left out when nobody has it, so the pie normally
+ * has the three slices. A <title> on each slice gives a tooltip; colours are classes in admin.css.
+ *
+ * @param array<string, int> $levels
+ */
+function adminOverviewPieHtml(array $levels): string
+{
+    $total = array_sum($levels);
+    if ($total === 0) {
+        return '<p class="admin-empty">There are no accounts yet.</p>';
+    }
+    if ($levels['stats'] === 0) {
+        unset($levels['stats']);
+    }
+
+    $svg = '<svg class="admin-pie-svg" viewBox="0 0 40 40" role="img" aria-label="Share of accounts by what they have on under Help improve HB Hub">';
+    $legend = '';
+    $start = 0.0;
+    foreach ($levels as $level => $count) {
+        $percent = $count / $total * 100;
+        $label = ADMIN_IMPROVE_LEVELS[$level];
+        $shown = number_format(round($percent)) . '%';
+        if ($count > 0) {
+            $svg .= '<circle class="admin-pie-slice admin-improve-' . $level . '" cx="20" cy="20" r="10" pathLength="100"'
+                . ' stroke-dasharray="' . round($percent, 3) . ' 100" stroke-dashoffset="' . round(-$start, 3) . '" transform="rotate(-90 20 20)">'
+                . '<title>' . htmlspecialchars($label . ': ' . $shown . ' (' . number_format($count) . ' accounts)') . '</title></circle>';
+        }
+        $legend .= '<li><span class="admin-improve admin-improve-' . $level . '">' . htmlspecialchars($label) . '</span>'
+            . '<span class="admin-pie-value">' . $shown . ' <span class="admin-small">' . number_format($count) . '</span></span></li>';
+        $start += $percent;
+    }
+    $svg .= '</svg>';
+
+    return '<div class="admin-pie">' . $svg . '<ul class="admin-pie-legend">' . $legend . '</ul></div>';
 }
 
 /**
@@ -431,6 +506,7 @@ $adminViewsPerDay = adminOverviewPerDay($db, 'SELECT viewDate, SUM(viewCount) FR
     WHERE viewDate >= ? GROUP BY viewDate');
 $adminErrorsPerDay = adminOverviewPerDay($db, 'SELECT DATE(watchdogLastTimestamp) AS day, SUM(watchdogCount) FROM `HBHub-Watchdog`
     WHERE watchdogLastTimestamp >= ? GROUP BY day');
+$adminImprove = adminOverviewImprove($db);
 $adminTopPages = adminOverviewTopPages($db);
 $adminSources = adminOverviewSources($db);
 $adminCasino = adminOverviewCasino($db);
@@ -549,7 +625,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
 
                     <?= adminOverviewPanelHtml('admin-overview-views-heading', 'Page views', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 8,
                         adminOverviewChartHtml($adminViewsPerDay, 'page views', 'Pages opened each day')
-                        . '<p class="admin-panel-foot">Every time a page is opened, including the chat switching to another chat. Reloads after sending something, prefetches, error pages and bots don\'t count. Only a count per page and day is kept, never who, and only for ' . HBHUB_PAGE_VIEWS_KEEP_DAYS . ' days.</p>') ?>
+                        . '<p class="admin-panel-foot">Every time a page is opened, including the chat switching to another chat. Reloads after sending something, prefetches, error pages and bots don\'t count. Only a count per page and day is kept, and only for ' . HBHUB_PAGE_VIEWS_KEEP_DAYS . ' days.</p>') ?>
                     <?php // Every page of the week, so the list scrolls inside the panel to fit next to the chart ?>
                     <?= adminOverviewPanelHtml('admin-overview-pages-heading', 'Most visited pages', 'Last 7 days', 4,
                         '<div class="admin-rank-scroll" tabindex="0" aria-label="Most visited pages">'
@@ -561,9 +637,12 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                                 . ($guests > 0 ? '<span class="admin-small" title="Not logged in">' . $guests . '% guests</span>' : '');
                         }, 'views', 'No page views in the last 7 days.') . '</div>') ?>
 
-                    <?= adminOverviewPanelHtml('admin-overview-errors-heading', 'Browser errors', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 12,
+                    <?= adminOverviewPanelHtml('admin-overview-errors-heading', 'Browser errors', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 8,
                         adminOverviewChartHtml($adminErrorsPerDay, 'errors', 'Errors in people\'s browsers each day')
-                        . '<p class="admin-panel-foot">Every error the Watchdog noted in someone\'s browser: failed requests, pictures or scripts that didn\'t load, JavaScript errors and what the CSP blocked, by the day the last error in a report happened. Cleared reports still count. Reports are kept for ' . HBHUB_WATCHDOG_KEEP_DAYS . ' days, so the first day can be short. <a href="/admin/watchdog">See them under Browser errors</a>.</p>') ?>
+                        . '<p class="admin-panel-foot">Every error the Watchdog noted. Cleared reports still count. Reports are kept for ' . HBHUB_WATCHDOG_KEEP_DAYS . ' days. <a href="/admin/watchdog">See them under Browser errors</a>.</p>') ?>
+                    <?= adminOverviewPanelHtml('admin-overview-improve-heading', 'Help improve HB Hub', 'Accounts', 4,
+                        adminOverviewPieHtml($adminImprove)
+                        . '<p class="admin-panel-foot">What the ' . number_format(array_sum($adminImprove)) . ' accounts have turned on. Global Privacy Control starts with neither.</p>') ?>
 
                     <?php ob_start(); ?>
                     <?php if ($adminSources === []): ?>
@@ -587,7 +666,7 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                             </table>
                         </div>
                     <?php endif; ?>
-                    <p class="admin-panel-foot">Page views from an address with ?utm_source= on it, like <code>/?utm_source=instagram</code>, counted the same way as the page views above. Only the source, the page and a count per day are kept, never who, and only for <?= HBHUB_PAGE_VIEWS_KEEP_DAYS ?> days.</p>
+                    <p class="admin-panel-foot">Page views from an address with ?utm_source= on it, like <code>/?utm_source=instagram</code></p>
                     <?= adminOverviewPanelHtml('admin-overview-sources-heading', 'Visits from links', 'Last ' . ADMIN_OVERVIEW_DAYS . ' days', 12, ob_get_clean()) ?>
 
                     <?php ob_start(); ?>
@@ -623,7 +702,6 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                             </tfoot>
                         </table>
                     </div>
-                    <p class="admin-panel-foot">House won is what the players lost minus what they won, so red means the players came out ahead. The small + or − under each number is the change from the 7 days before (for chips in wallets and wallets, from a week ago; for daily chips, from the same 24 hours a week ago).</p>
                     <?= adminOverviewPanelHtml('admin-overview-casino-heading', 'Casino', 'Last 7 days', 6, ob_get_clean()) ?>
 
                     <?php ob_start(); ?>
@@ -644,7 +722,6 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                             </tbody>
                         </table>
                     </div>
-                    <p class="admin-panel-foot">Games and players are for the last 7 days. Each player's game counts as one, so a chess game counts twice. Games still going, Minesweeper, Sudoku and Snake games left for a new one, and Snake games stopped by its anticheat aren't counted. For Ore Mining Inc., players are the ones who saved this week. The small + or − under each number is the change from the 7 days before (for ever, from a week ago). Ore Mining Inc.'s players have none, as a save only remembers when it was last saved.</p>
                     <?= adminOverviewPanelHtml('admin-overview-games-heading', 'Games', 'Last 7 days', 6, ob_get_clean()) ?>
                 </div>
             </div>

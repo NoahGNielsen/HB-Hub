@@ -277,8 +277,7 @@ $adminNoun = $adminList === 'users' ? 'users' : 'chats';
                                                 </td>
                                                 <td><?= adminStatusHtml(adminUserStatus($user)) ?></td>
                                                 <td class="admin-nowrap"><?= adminTime($user['userCreatedTimestamp']) ?></td>
-                                                <td class="admin-nowrap"><?= adminTime($user['userLastSeenTimestamp']) ?></td>
-                                            </tr>
+                                                <td class="admin-nowrap"><?= adminTime($user['userLastSeenTimestamp']) ?></td>                                            </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>

@@ -9,6 +9,7 @@
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/chat.php';
 require_once __DIR__ . '/adminLog.php';
+require_once __DIR__ . '/userSettings.php';
 
 const ADMIN_ROLE_ADMIN = 2; // userRole in HBHub-Users
 const ADMIN_CHAT_ROLES = [1 => 'Member', 2 => 'Group admin', 3 => 'Group owner']; // memberRole in HBHub-ChatMembers
@@ -17,6 +18,15 @@ const ADMIN_MESSAGE_DELETED_LABELS = [0 => 'Deleted by the user', 1 => 'Deleted 
 const ADMIN_MESSAGE_DELETED_BY_SITE_ADMIN = 2;
 const ADMIN_MESSAGES_SHOWN = 50; // per page
 const ADMIN_MENU_DANGER = 'Danger zone'; // the group of a side menu whose links are red (ban, delete)
+// The "Help improve HB Hub" switches as one (hbHubImproveLevel() in userSettings.php) => what the admin panel calls it,
+// in the order the Overview's pie chart goes round. Only statistics is last, as the settings can't end up like that any
+// more (Anonymous usage statistics depends on Error reports), so the pie chart leaves it out when nobody has it.
+const ADMIN_IMPROVE_LEVELS = [
+    'all' => 'Everything',
+    'errors' => 'Only error reports',
+    'none' => 'Nothing',
+    'stats' => 'Only statistics',
+];
 
 /**
  * Shows the 404 page and stops.
@@ -281,6 +291,18 @@ function adminStatusHtml(string $status): string
         default => ' admin-status-deleted',
     };
     return '<span class="settings-status' . $class . '">' . htmlspecialchars($status) . '</span>';
+}
+
+/**
+ * What a user has on under "Help improve HB Hub" in their settings, as a coloured dot and a word: $level is
+ * hbHubImproveLevel()'s. The dot has the same colour as its slice in the Overview's pie chart (admin.css), and
+ * hovering says which switch is which.
+ */
+function adminImproveHtml(string $level): string
+{
+    return '<span class="admin-improve admin-improve-' . $level . '" title="Error reports: '
+        . (in_array($level, ['all', 'errors'], true) ? 'on' : 'off') . ', anonymous usage statistics: '
+        . (in_array($level, ['all', 'stats'], true) ? 'on' : 'off') . '">' . htmlspecialchars(ADMIN_IMPROVE_LEVELS[$level]) . '</span>';
 }
 
 /**

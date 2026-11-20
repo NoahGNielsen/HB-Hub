@@ -97,6 +97,7 @@ function adminLogText(array $entry): string
             ? 'Removed {user}\'s profile picture and banned it as picture #' . (int) $data['pictureId'] : null,
         'user.bannerBan' => isset($data['pictureId'])
             ? 'Removed {user}\'s banner picture and banned it as picture #' . (int) $data['pictureId'] : null,
+        'user.export' => !empty($data['adminLog']) ? 'Downloaded all of {user}\'s data, with the admin log (anonymised)' : null,
         'user.bio' => !empty($data['removed']) ? 'Removed {user}\'s bio' : null,
         'user.status' => !empty($data['removed']) ? 'Removed {user}\'s status' : null,
         'user.block' => is_string($data['mode'] ?? null) && isset(HBHUB_BLOCK_MODES[$data['mode']])

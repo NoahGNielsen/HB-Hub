@@ -12,7 +12,7 @@ $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/legalUpdated.php'; // only for hbHubLegalDanishDate()
 
-const HBHUB_DO_NOT_SELL_UPDATED = '16 November 2026';
+const HBHUB_DO_NOT_SELL_UPDATED = '18 November 2026';
 
 // Global Privacy Control: browsers with it turned on send "Sec-GPC: 1" on every request
 $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
@@ -85,7 +85,7 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                             <li>deler dem ikke til reklamer (der er ingen reklamer eller reklame-id'er på siden),</li>
                             <li>sporer dig ikke på tværs af hjemmesider (der er ingen sporingspixels, analyseprofiler eller sporingscookies),</li>
                             <li>bruger kun browserfingeraftryk til at forhindre misbrug, aldrig til reklamer eller sporing, og du kan fravælge det med Global Privacy Control (se <a href="#gpc">afsnit 4</a>),</li>
-                            <li>slår <strong>Help improve HB Hub</strong> (fejlrapporter og optælling af sidevisninger) fra som standard, hvis du opretter din konto med Global Privacy Control slået til i din browser (se <a href="/legal/privacy#gpc">privatlivspolitikken</a>),</li>
+                            <li>slår <strong>Error reports</strong> og <strong>Anonymous usage statistics</strong> (fejlrapporter og optælling af sidevisninger) fra som standard, hvis du opretter din konto med Global Privacy Control slået til i din browser (se <a href="/legal/privacy#gpc">privatlivspolitikken</a>),</li>
                             <li>giver ikke dine beskeder, din profil eller din spilhistorik til andre virksomheder til deres egne formål.</li>
                         </ul>
                         <p>
@@ -124,7 +124,7 @@ $doNotSellHasGpc = trim($_SERVER['HTTP_SEC_GPC'] ?? '') === '1';
                             ikke at sælge eller dele dine data. Da intet sælges eller deles, er der ikke noget at stoppe, men HB Hub
                             behandler signalet som et nej til sporing: Sender din browser det, beregnes der intet browserfingeraftryk
                             (se <a href="/legal/privacy#fingerprint">privatlivspolitikken</a>), og opretter du din konto med det slået
-                            til, er <strong>Help improve HB Hub</strong> slået fra fra starten (se
+                            til, er <strong>Error reports</strong> og <strong>Anonymous usage statistics</strong> slået fra fra starten (se
                             <a href="/legal/privacy#gpc">privatlivspolitikken</a>). Resten af siden fungerer ens, uanset om det er
                             slået til. Det ældre signal "Do Not Track" respekteres på samme måde.
                             <?php if (!$doNotSellHasGpc): ?>

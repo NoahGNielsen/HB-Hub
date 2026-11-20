@@ -1901,18 +1901,28 @@ function chatDeletedLabel(mixed $deletedByAdmin): string
 }
 
 /**
- * The quote above a reply: who and what it answers, on one line.
+ * The quote above a reply: a small line saying who it answers ("Replied to Alice", "You replied to Alice"), then a
+ * faded bubble with the start of the original, two lines at most (chat.css cuts it off).
  * A link to the original, unless it's gone, so it can be scrolled to. When the original isn't loaded yet
  * (only the newest messages are at first), chat.js loads back to it first (data-reply-id).
  */
 function chatReplyHtml(array $openChat, int $userId, array $message): string
 {
+    $replierId = (int) $message['userId'];
+    $isOwn = $replierId === $userId;
     if ($message['replyId'] === null) {
-        $sender = '';
+        $to = 'a message';
         $text = '<span class="chat-message-reply-text is-deleted">Original message is gone</span>';
     } else {
-        $sender = '<span class="chat-message-reply-sender">'
-            . htmlspecialchars(chatSenderName($openChat, $userId, (int) $message['replyUserId'], $message['replySenderName'])) . '</span>';
+        // Who it answers, as the line reads: "you", "yourself"/"themselves" for their own message, or the name
+        $replyUserId = (int) $message['replyUserId'];
+        if ($replyUserId === $replierId) {
+            $to = $isOwn ? 'yourself' : 'themselves';
+        } elseif ($replyUserId === $userId) {
+            $to = 'you';
+        } else {
+            $to = '<strong>' . htmlspecialchars(chatSenderName($openChat, $userId, $replyUserId, $message['replySenderName'])) . '</strong>';
+        }
         if ($message['replyDeletedTimestamp'] !== null) {
             $text = '<span class="chat-message-reply-text is-deleted">' . chatDeletedLabel($message['replyDeletedByAdmin']) . '</span>';
         } elseif ($message['replyContent'] === null) {
@@ -1920,19 +1930,20 @@ function chatReplyHtml(array $openChat, int $userId, array $message): string
         } elseif (chatGifId($message['replyContent']) !== null) {
             $text = '<span class="chat-message-reply-text is-deleted">GIF</span>';
         } else {
-            // Shortened here too, so a long message isn't sent twice. Without its formatting, it's only one line.
+            // Shortened here too, so a long message isn't sent twice. Without its formatting, and with line breaks
+            // turned into spaces, so the two lines it gets are filled.
             $content = chatFormatPlain($message['replyContent']);
             $content = preg_replace('~\s+~u', ' ', $content) ?? $content;
             $text = '<span class="chat-message-reply-text">' . htmlspecialchars(mb_substr($content, 0, 150)) . '</span>';
         }
     }
 
-    $label = '<span class="chat-visually-hidden">Reply to </span>';
+    $label = '<span class="chat-message-reply-label">' . ($isOwn ? 'You replied' : 'Replied') . ' to ' . $to . '</span>';
     if ($message['replyId'] === null) {
-        return '<span class="chat-message-reply">' . $label . $sender . $text . '</span>';
+        return '<span class="chat-message-reply">' . $label . $text . '</span>';
     }
     return '<a class="chat-message-reply" href="#message-' . (int) $message['replyId'] . '" data-reply-link data-reply-id="'
-        . (int) $message['replyId'] . '">' . $label . $sender . $text . '</a>';
+        . (int) $message['replyId'] . '">' . $label . $text . '</a>';
 }
 
 /**
@@ -2510,7 +2521,7 @@ if ($isPoll) {
                         <?php endif; ?>
                         <button type="button" class="chat-icon-btn chat-members-btn" aria-label="Members (<?= count($openChatMembers) ?>)"
                                 title="Members" aria-haspopup="dialog" data-members-open>
-                            <img src="/assets/images/icons/user.png" alt="">
+                            <img src="/assets/images/icons/members.svg" alt="">
                         </button>
                     <?php endif; ?>
                 </header>
@@ -2575,10 +2586,10 @@ if ($isPoll) {
                          each with a preview, its name, how big it is in tickets and a × to take it out, and a + tile to add
                          more. Under them how much they come to, the box to keep pictures as they are instead of turning them
                          into JPEG XL (not ticked to begin with, only there when a picture would be), the same for videos
-                         instead of turning them into WebM, and Remove all.
-                         The bar along the top fills up while they're on their way. -->
-                    <div class="chat-tray" hidden data-attach-tray>
-                        <div class="chat-tray-progress" hidden data-attach-progress><span class="chat-tray-progress-fill" data-attach-progress-fill></span></div>
+                         instead of turning them into WebM, and Remove all. The two Keep boxes only show for users who
+                         turned on "Option to keep originals" in the settings (data-attach-keep-option). At Send they
+                         leave the tray for the faded message in the chat, which says how far the upload has got. -->
+                    <div class="chat-tray" hidden data-attach-tray<?= hbHubChatKeepOriginalOn($userSettings) ? ' data-attach-keep-option' : '' ?>>
                         <ul class="chat-tray-list" aria-label="Attachments to send" data-attach-list></ul>
                         <div class="chat-tray-footer">
                             <span class="chat-tray-status" role="status" data-attach-status></span>
@@ -3269,27 +3280,34 @@ if ($isPoll) {
                     <span class="chat-message-bubble is-own">Looks good!</span>
                 </div>
 
+                <!-- The two colors with their hex codes (kept up to date by chat.js) on the left, and the direction as a
+                     compass on the right - the same picker as Choose gradient for the profile banner (settings.php) -->
                 <div class="chat-background-colors">
-                    <div class="chat-new-group">
-                        <label for="chat-background-color1">From</label>
-                        <input type="color" id="chat-background-color1" name="color1">
+                    <div class="chat-background-swatches">
+                        <?php foreach (['color1' => 'From', 'color2' => 'To'] as $colorName => $colorLabel): ?>
+                            <label class="chat-swatch" for="chat-background-<?= $colorName ?>">
+                                <input type="color" id="chat-background-<?= $colorName ?>" name="<?= $colorName ?>">
+                                <span class="chat-swatch-text">
+                                    <span class="chat-swatch-name"><?= $colorLabel ?></span>
+                                    <span class="chat-swatch-value" data-background-value="<?= $colorName ?>"></span>
+                                </span>
+                            </label>
+                        <?php endforeach; ?>
                     </div>
-                    <div class="chat-new-group">
-                        <label for="chat-background-color2">To</label>
-                        <input type="color" id="chat-background-color2" name="color2">
-                    </div>
+                    <fieldset class="chat-background-directions">
+                        <legend class="chat-visually-hidden">Direction</legend>
+                        <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [, $label]): ?>
+                            <label class="chat-direction chat-direction-a<?= $angle ?>" title="<?= $label ?>">
+                                <input type="radio" class="chat-visually-hidden" name="angle" value="<?= $angle ?>">
+                                <span class="chat-direction-arrow" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </span>
+                                <span class="chat-visually-hidden"><?= $label ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                        <span class="chat-direction-dot" aria-hidden="true"></span>
+                    </fieldset>
                 </div>
-
-                <fieldset class="chat-background-directions">
-                    <legend>Direction</legend>
-                    <?php foreach (HBHUB_CHAT_BACKGROUND_DIRECTIONS as $angle => [$arrow, $label]): ?>
-                        <label title="<?= $label ?>">
-                            <input type="radio" class="chat-visually-hidden" name="angle" value="<?= $angle ?>">
-                            <span class="chat-background-arrow" aria-hidden="true"><?= $arrow ?></span>
-                            <span class="chat-visually-hidden"><?= $label ?></span>
-                        </label>
-                    <?php endforeach; ?>
-                </fieldset>
 
                 <footer class="chat-new-footer chat-dialog-footer">
                     <button type="submit" class="chat-btn is-danger chat-icon-remove" name="remove" value="1" data-background-remove>Reset</button>

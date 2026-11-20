@@ -1,6 +1,6 @@
 <?php
 // Help docs: how the casino works - the chip wallet (assets/php/casino/wallet.php: the start and daily chips, the 3-hour
-// bonus and when a casino day starts), the tables (public, code, invite-only and solo, like casino/blackjack/room.php), the
+// bonus and when a casino day starts), the tables (public, code and solo, plus invites, like casino/blackjack/room.php), the
 // leaderboards, and what chips are (the terms' "The casino and chips"). Open to everyone. Built by
 // assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
@@ -97,11 +97,14 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 <tbody>
                                     <tr><td>Offentligt</td><td>Alle. Det står i spillets lobby.</td></tr>
                                     <tr><td>Kode</td><td>Alle med dets kode på 6 tegn. Skriv den under <strong>Join a table</strong> på spillets side.</td></tr>
-                                    <tr><td>Kun for inviterede</td><td>Kun dem, værten inviterer. De får en <a href="/docs/notifications">notifikation</a>, og den bliver vist under <strong>Your invites</strong> på spillets side.</td></tr>
                                     <tr><td>Alene</td><td>Kun dig og dealeren.</td></tr>
                                 </tbody>
                             </table>
                         </div>
+                        <p>
+                            Værten kan også invitere folk til bordet. De får en <a href="/docs/notifications">notifikation</a>, og
+                            bordet bliver vist under <strong>Your invites</strong> på spillets side.
+                        </p>
                         <p>
                             Værten vælger bordets navn og dets mindsteindsats (10, 50, 100 eller 500 chips). Alle spillere spiller mod
                             huset, aldrig mod hinanden. Du kan gå med ved et bord midt i en hånd, og du får kort fra den næste.

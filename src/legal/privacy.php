@@ -137,7 +137,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>For hvert login: hvornår det startede, sidst blev brugt og udløber, samt et kort navn for browser og system (fx "Chrome on Windows"), udledt af din browsers user agent. Kun det korte navn gemmes. Du kan se og afslutte dine logins under Logged in devices på <a href="/settings#devices">indstillingssiden</a>.</li>
                             <li>Browsere, du har logget ind fra, genkendes ud fra en tilfældig token (vi gemmer kun en hash af den) sammen med antallet af forkerte adgangskodeforsøg.</li>
                             <li>På din konto: den IP-adresse, du oprettede dig fra, og den senest brugte. Der gemmes ingen historik over dine logins' IP-adresser. IP-adresser tælles desuden kortvarigt ved kontooprettelse for at forhindre masseoprettelse af konti.</li>
-                            <li>Din IP-adresse gemmes også i <a href="#watchdog">fejlrapporter fra browseren</a> sammen med din browsers user agent, også når du ikke er logget ind. Rapporterne slettes efter 30 dage, og du kan slå dem fra med <strong>Help improve HB Hub</strong>.</li>
+                            <li>Din IP-adresse gemmes også i <a href="#watchdog">fejlrapporter fra browseren</a> sammen med din browsers user agent, også når du ikke er logget ind. Rapporterne slettes efter 30 dage, og du kan slå dem fra med <strong>Error reports</strong>.</li>
                             <li>Mislykkede logins, om kontoen er låst eller udelukket (og om udelukkelsen kom fra en admin eller var automatisk), og om og siden hvornår kontoen er spøgelsesudelukket.</li>
                         </ul>
 
@@ -168,8 +168,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             som normalt. Fingeraftryk, der blev gemt, før du slog det til, slettes 180 dage efter, de sidst blev set;
                             vil du have dem slettet med det samme, kan du skrive til os (se <a href="#rights">Dine rettigheder</a>).
                             Dine konti kan stadig kobles sammen via cookien hbHubDevice, som er nødvendig for sidens sikkerhed.
-                            Opretter du din konto med GPC slået til, er <strong>Help improve HB Hub</strong> desuden slået
-                            fra som standard (se <a href="#gpc">Fejlrapporter fra browseren</a>). Det ældre signal "Do Not Track"
+                            Opretter du din konto med GPC slået til, er <strong>Error reports</strong> og
+                            <strong>Anonymous usage statistics</strong> desuden slået fra som standard (se <a href="#gpc">Fejlrapporter fra browseren</a>). Det ældre signal "Do Not Track"
                             respekteres på samme måde.
                         </p>
 
@@ -214,7 +214,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Roulette er ét fælles bord. Mens du har indsatser på bordet, kan alle med siden åben se dit navn, dit profilbillede, dine indsatser, og om du er klar. Efter spinnet vises dit resultat, indtil næste runde starter.</li>
                             <li>Skak og Matador: pladser, træk, gemte spil, resultater (at forlade et spil tæller som et nederlag) og spillets chat.</li>
                             <li>UNO: din plads, dine kort, dine træk, invitationer og spillets chat. Kun du ser dine kort under spillet; ved spillets afslutning ser deltagerne de resterende kort. Spillet slettes, når alle har forladt det. Til ranglisten gemmes én linje pr. spil (resultat, point, resterende kort, antal spillere og tidspunkt); andre ser kun totaler.</li>
-                            <li>Doodle Chain: din plads, og de tekster og tegninger, du afleverer (tegninger gemmes som stregerne, ikke som billeder), med hvem der lavede dem og hvornår. Under spillet ser kun den næste i kæden det, du har lavet; til sidst ser alle i spillet hele kæderne med dit navn ved. De slettes, når værten starter et nyt spil, eller når alle har forladt spillet. Der gemmes ingen resultater eller rangliste.</li>
+                            <li>Doodle Chain: din plads, og de tekster og tegninger, du afleverer (tegninger gemmes som stregerne, ikke som billeder), med hvem der lavede dem og hvornår. Under spillet ser kun den næste i kæden det, du har lavet; til sidst ser alle i spillet hele kæderne med dit navn ved. De slettes, når værten starter et nyt spil, eller når alle har forladt spillet. Når et spil slutter, gemmes én linje pr. spiller (om du stadig var med til sidst, hvor mange tekster og tegninger du afleverede, antal spillere og tidspunkt), så side-admins kan se, hvor meget spillet bliver brugt; den slettes med din konto. Der er ingen rangliste.</li>
                             <li>Wordle: dine gæt, resultat og tidspunkter for hver dag og hvert sprog. De udgør din statistik og din plads på ranglisten, hvor andre kun ser totaler, aldrig dine gæt. Det tilfældige ord gemmes separat, overskrives ved hvert nyt ord og vises ikke for andre.</li>
                             <li>Minesweeper: brætstørrelse, resultat, tid og tidspunkter for hvert spil, samt det mindste antal klik, brættet kunne vindes på, for at opdage sejre, der er for hurtige til et menneske. Spil, hvor et klik kom fra kode i stedet for fra dig, stoppes. Mens et spil er i gang, gemmes også åbnede felter og minernes placering; det slettes, når spillet slutter. Dine flag bliver i din browser.</li>
                             <li>Sudoku: niveau, resultat (med eller uden hints, eller for hurtigt til at tælle), antal hints, tid, pausetid og tidspunkter. Mens et spil er i gang, gemmes også opgaven og løsningen; de slettes, når spillet slutter. Dine tal og noter bliver i din browser, indtil brættet er udfyldt.</li>
@@ -235,13 +235,13 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 Nedbrudsrapporter fra Ore Mining Inc., kun hvis du accepterer. Mens spillet er åbent, fører det en log i
                                 din browser over bl.a. gemninger, fejl, langsomme perioder, aktiv visning, aktive automatiseringer,
                                 hukommelsesforbrug, billedhastighed og kørselstider. Fryser spillet eller lukkes det uden at gemme,
-                                spørger det næste gang, om en rapport må sendes, også hvis du har slået <strong>Help improve HB Hub</strong>
+                                spørger det næste gang, om en rapport må sendes, også hvis du har slået <strong>Error reports</strong>
                                 fra (spørgsmålet gør opmærksom på det). Du kan se hele rapporten, før du svarer. Siger du ja, gemmes den
                                 med din konto, tidspunktet, din browsers user agent, loggen, dit gemte spil på det tidspunkt,
                                 skærmstørrelse, antal processorkerner, afrundet hukommelse og grafikkortets navn, som browseren oplyser
                                 det. Flere nedbrud samles i én rapport (op til 4 tidligere). Siger du nej, sendes intet, og loggen slettes.
                             </li>
-                            <li>Nedbrudsbeskeder fra browseren: er du logget ind, har du ikke slået <strong>Help improve HB Hub</strong> fra under dine <a href="/settings#improve">indstillinger</a>, og understøtter din browser det (Chrome og visse andre), beder spillet browseren om automatisk at give besked, hvis fanen går ned. Beskeden er ikke knyttet til dig: vi gemmer kun årsagen, tidspunktet og browserens user agent, ikke din konto, IP-adresse eller dit spil, og en medsendt login-cookie læses ikke. Kun side-admins kan se beskederne.</li>
+                            <li>Nedbrudsbeskeder fra browseren: er du logget ind, har du ikke slået <strong>Error reports</strong> fra under dine <a href="/settings#improve">indstillinger</a>, og understøtter din browser det (Chrome og visse andre), beder spillet browseren om automatisk at give besked, hvis fanen går ned. Beskeden er ikke knyttet til dig: vi gemmer kun årsagen, tidspunktet og browserens user agent, ikke din konto, IP-adresse eller dit spil, og en medsendt login-cookie læses ikke. Kun side-admins kan se beskederne.</li>
                         </ul>
                         <p>
                             Chips er virtuelle. HB Hub beder aldrig om og gemmer aldrig
@@ -294,20 +294,24 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             kan se rapporterne.
                         </p>
                         <p>
-                            Er du logget ind, kan du slå dette fra med <strong>Help improve HB Hub</strong> under dine
+                            Er du logget ind, kan du slå dette fra med <strong>Error reports</strong> under dine
                             <a href="/settings#improve">indstillinger</a>. Indstillingen er slået til som standard, undtagen hvis du
                             opretter din konto med GPC slået til (se nedenfor). Når indstillingen er slået fra, sendes
-                            ingen fejlrapporter, dine sidevisninger tælles ikke, ventende rapporter kasseres, og Ore Mining Inc.
-                            beder ikke browseren om nedbrudsbeskeder. Spillets egne nedbrudsrapporter spørger stadig først, men et
+                            ingen fejlrapporter, ventende rapporter kasseres, og Ore Mining Inc.
+                            beder ikke browseren om nedbrudsbeskeder. Optællingen af dine sidevisninger har sin egen indstilling,
+                            <strong>Anonymous usage statistics</strong> (se <a href="#page-views">Sidevisninger</a>), men den kan
+                            kun være slået til, når <strong>Error reports</strong> også er, så slår du fejlrapporter fra, tælles dine
+                            sidevisninger heller ikke. Spillets egne nedbrudsrapporter spørger stadig først, men et
                             ja gælder kun den ene rapport; indstillingen forbliver slået fra.
                         </p>
                         <p class="legal-note" id="gpc">
-                            <strong>Med Global Privacy Control (GPC) er "Help improve HB Hub" slået fra som standard.</strong> Har
-                            du slået GPC (eller det ældre "Do Not Track") til i din browser, når du opretter din konto, oprettes kontoen med <strong>Help improve HB
-                            Hub</strong> slået fra fra starten, og du får en notifikation om det. Der sendes da ingen fejlrapporter,
-                            og dine sidevisninger tælles ikke, uden at du skal gøre noget. Du kan selv slå indstillingen til igen
+                            <strong>Med Global Privacy Control (GPC) er fejlrapporter og optælling af sidevisninger slået fra som standard.</strong> Har
+                            du slået GPC (eller det ældre "Do Not Track") til i din browser, når du opretter din konto, oprettes kontoen med
+                            <strong>Error reports</strong> og <strong>Anonymous usage statistics</strong> slået fra fra starten, og du får en
+                            notifikation om det. Der sendes da ingen fejlrapporter,
+                            og dine sidevisninger tælles ikke, uden at du skal gøre noget. Du kan selv slå indstillingerne til igen
                             under dine <a href="/settings#improve">indstillinger</a>. Signalet tjekkes kun, når kontoen oprettes:
-                            slår du GPC til senere, ændres indstillingen ikke, men du kan altid selv slå den fra. Uanset
+                            slår du GPC til senere, ændres indstillingerne ikke, men du kan altid selv slå dem fra. Uanset
                             hvornår du slår GPC til, beregnes der intet browserfingeraftryk (se
                             <a href="#fingerprint">Browserfingeraftryk</a>).
                         </p>
@@ -317,8 +321,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             Vi tæller, hvor mange gange hver side åbnes pr. dag, så vi kan se, hvilke sider der bruges mest. Vi
                             gemmer kun datoen, sidens sti (uden forespørgselsdelen), antal visninger, og hvor mange af dem der var
                             uden login; aldrig hvem, IP-adresse, browser eller andet, der kan knyttes til en person. Søgemaskiner og
-                            andre robotter tælles ikke med, og har du slået <strong>Help improve HB Hub</strong> fra, tælles dine
-                            visninger ikke.
+                            andre robotter tælles ikke med, og har du slået <strong>Anonymous usage statistics</strong> eller
+                            <strong>Error reports</strong> fra under dine <a href="/settings#improve">indstillinger</a>, tælles dine
+                            visninger ikke (statistikken kan kun være slået til sammen med fejlrapporterne).
                         </p>
                         <p>
                             Åbner du en side fra et link med <code>utm_source</code> i adressen (fx
@@ -383,7 +388,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>
                                 <strong>Side-admins</strong> kan i adminpanelet se alle oplysninger om en konto, herunder beskeder i
                                 alle chats (også slettede beskeder i 3 dage), IP-adresser, logins, bandlyste billeder, feedback, nedbrudsrapporter,
-                                fejlrapporter og sidevisningstal. Adminpanelet viser oplysninger om dine vedhæftede filer (navn,
+                                fejlrapporter og sidevisningstal. De kan også se, om du har slået <strong>Error reports</strong>
+                                og <strong>Anonymous usage statistics</strong> til, og hvor stor en andel af alle konti der har det. Adminpanelet viser oplysninger om dine vedhæftede filer (navn,
                                 størrelse, chat og billetter) og dit bannerbillede, men åbner ikke filerne, selvom sidens ejer har
                                 adgang til dem på serveren. Side-admins kan slette dine vedhæftede filer og ændre dit antal billetter.
                                 De kan se, hvilke konti der er brugt i samme browser (ud fra cookien hbHubDevice eller
@@ -501,8 +507,8 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             Browserfingeraftryk kan du selv fravælge når som helst ved at slå Global Privacy Control (GPC) til i din
                             browser (se <a href="#fingerprint">Browserfingeraftryk</a>). Fejlrapporter og optælling af sidevisninger
-                            kan du slå fra med <strong>Help improve HB Hub</strong> under dine <a href="/settings#improve">indstillinger</a>;
-                            opretter du din konto med GPC slået til, er den slået fra som standard (se
+                            kan du slå fra med <strong>Error reports</strong> og <strong>Anonymous usage statistics</strong> under dine
+                            <a href="/settings#improve">indstillinger</a>; opretter du din konto med GPC slået til, er de slået fra som standard (se
                             <a href="#gpc">Global Privacy Control</a>).
                         </p>
                         <p>

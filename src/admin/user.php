@@ -6,7 +6,8 @@
 //
 // Shows what there is about the user: their account, sessions (their logins), messages in every chat, chats and casino
 // chips, and ?export=1 downloads everything the site has about them as JSON (games, reactions, feedback and the rest
-// too, see the export below). The actions are one form per card, like the settings page:
+// too, see the export below), picked from a small menu where the admin can tick to take the admin log along,
+// anonymised (&adminLog=1). The actions are one form per card, like the settings page:
 // ghost ban or lift it (what they do in chats only shows to themselves, see the top of assets/php/chat.php),
 // ban or unban, change the name, bio or status (or remove them), remove the picture or the banner picture (or remove
 // and ban it), set the gambling block (straight away, without the wait),
@@ -264,11 +265,42 @@ function adminExportRows(PDO $db, string $sql, array $params, array $json = []):
     }, $statement->fetchAll());
 }
 
+/**
+ * For the export, when the admin ticked "Admin log" in the download menu: the admin log's rows about $userId, newest
+ * first, anonymised so it doesn't show which admin did what (privacy.php, "Adminlog"). Each row says what was done
+ * (the action and its text from ADMIN_LOG_ACTIONS), when, the chat it was in and the details, and "by" is only "An
+ * admin" or "Automatic" (user.autoban, user.autoGhostBan). Left out: the admin's id, the reason they typed (it can name
+ * them or whoever reported it) and fromUserId in the details (another account, maybe someone else's).
+ */
+function adminExportLog(PDO $db, int $userId): array
+{
+    $statement = $db->prepare('SELECT adminLogByUserId, adminLogAction, adminLogChatId, adminLogData, adminLogTimestamp
+        FROM `HBHub-AdminLog` WHERE adminLogUserId = ? ORDER BY adminLogId DESC');
+    $statement->execute([$userId]);
+    return array_map(function (array $row): array {
+        $data = $row['adminLogData'] !== null ? json_decode($row['adminLogData'], true) : null;
+        if (is_array($data)) {
+            unset($data['fromUserId']);
+        }
+        $text = ADMIN_LOG_ACTIONS[$row['adminLogAction']] ?? $row['adminLogAction'];
+        return [
+            'by' => $row['adminLogByUserId'] !== null ? 'An admin' : 'Automatic',
+            'action' => $row['adminLogAction'],
+            'text' => str_replace(['{user}', '{chat}'], ['this user', $row['adminLogChatId'] !== null ? 'chat ' . $row['adminLogChatId'] : 'a chat'], $text),
+            'chatId' => $row['adminLogChatId'] !== null ? (int) $row['adminLogChatId'] : null,
+            'details' => is_array($data) && $data !== [] ? $data : null,
+            'timestamp' => $row['adminLogTimestamp'],
+        ];
+    }, $statement->fetchAll());
+}
+
 // ?export=1: everything there is about the user as a JSON file, for a "send me my data" email (privacy.php). Every
 // table with something about them is here. Left out on purpose: the password hash and 2FA secret, session ids and the
-// device cookie's hash (they'd log you in), the files themselves (attachments, pictures), the admin log (the admins'
-// own notes) and anything that would give away a game in progress (Minesweeper's mines, a Sudoku game's answer, a saved Matador game's card
-// order). When a new table stores something about users, add it here too.
+// device cookie's hash (they'd log you in), the files themselves (attachments, pictures) and anything that would give
+// away a game in progress (Minesweeper's mines, a Sudoku game's answer, a saved Matador game's card order). When a new
+// table stores something about users, add it here too.
+// The admin log's rows about them only come along when the admin ticks it in the download menu (&adminLog=1), and
+// then anonymised (adminExportLog()), like privacy.php says they're handed out.
 if (($_GET['export'] ?? null) === '1') {
     $exportUser = $target;
     unset($exportUser['isLocked'], $exportUser['isOnline']);
@@ -329,6 +361,11 @@ if (($_GET['export'] ?? null) === '1') {
     $games['matador']['save'] = adminExportRows($db, 'SELECT saveName, saveSummary, saveRoomId, saveTimestamp
         FROM `HBHub-MatadorSaves` WHERE userId = ?', $one, ['saveSummary'])[0] ?? null;
     $games['uno']['results'] = adminExportRows($db, 'SELECT * FROM `HBHub-UnoResults` WHERE userId = ? ORDER BY resultId DESC', $one);
+    $games['doodle'] = [
+        'seats' => adminExportRows($db, 'SELECT s.*, r.roomName FROM `HBHub-DoodleSeats` s
+            LEFT JOIN `HBHub-DoodleRooms` r ON r.roomId = s.roomId WHERE s.userId = ?', $one),
+        'results' => adminExportRows($db, 'SELECT * FROM `HBHub-DoodleResults` WHERE userId = ? ORDER BY resultId DESC', $one),
+    ];
     $games['wordle'] = adminExportRows($db, 'SELECT gameLanguage, gameDate, gameGuesses, gameResult, gameStartTimestamp, gameEndTimestamp
         FROM `HBHub-WordleGames` WHERE userId = ? ORDER BY gameDate DESC, gameLanguage', $one);
     $games['wordleRandom'] = adminExportRows($db, 'SELECT gameLanguage, gameWord, gameGuesses, gameResult, gameStartTimestamp, gameEndTimestamp
@@ -354,7 +391,10 @@ if (($_GET['export'] ?? null) === '1') {
             FROM `HBHub-MinerCrashReports` WHERE crashReportUserId = ? ORDER BY crashReportId DESC', $one, ['crashReportData']),
     ];
 
-    adminLog($db, $adminId, 'user.export', $targetId);
+    $exportWithLog = ($_GET['adminLog'] ?? null) === '1';
+    $exportLog = $exportWithLog ? ['adminLog' => adminExportLog($db, $targetId)] : [];
+
+    adminLog($db, $adminId, 'user.export', $targetId, null, $exportWithLog ? ['adminLog' => true] : null);
     header('Content-Type: application/json; charset=utf-8');
     header('Content-Disposition: attachment; filename="hbhub-user-' . $targetId . '.json"');
     header('Cache-Control: no-store');
@@ -386,7 +426,7 @@ if (($_GET['export'] ?? null) === '1') {
             FROM `HBHub-Watchdog` WHERE watchdogUserId = ? ORDER BY watchdogId DESC', $one, ['watchdogErrors']),
         'bannedPictures' => adminExportRows($db, 'SELECT bannedAvatarHash, bannedAvatarType, bannedAvatarMatchCount, bannedAvatarLastMatchTimestamp, bannedAvatarCreatedTimestamp
             FROM `HBHub-BannedAvatars` WHERE bannedAvatarFromUserId = ? ORDER BY bannedAvatarId DESC', $one),
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+    ] + $exportLog, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 
@@ -791,7 +831,22 @@ $adminMessageCounts = $statement->fetch();
                                 <?php if (!$targetIsDeleted && !$targetIsBanned): ?>
                                     <a class="settings-btn settings-btn-small" href="<?= htmlspecialchars(hbHubProfileUrl($targetId)) ?>">View profile</a>
                                 <?php endif; ?>
-                                <a class="settings-btn settings-btn-small" href="/admin/user?user=<?= $targetId ?>&amp;export=1" download>Download all data (JSON)</a>
+                                <!-- Download all data: a menu with what to take along (the admin log, anonymised), then the download -->
+                                <details class="admin-export">
+                                    <summary class="settings-btn settings-btn-small">Download all data (JSON)</summary>
+                                    <form class="admin-export-menu" method="get" action="/admin/user">
+                                        <input type="hidden" name="user" value="<?= $targetId ?>">
+                                        <input type="hidden" name="export" value="1">
+                                        <label class="settings-checkbox">
+                                            <input type="checkbox" name="adminLog" value="1" aria-describedby="admin-export-log-hint">
+                                            <span>Include the admin log (anonymised)</span>
+                                        </label>
+                                        <p class="settings-hint" id="admin-export-log-hint">
+                                            What admins have done to them and when, without who did it or the reason.
+                                        </p>
+                                        <button type="submit" class="settings-btn settings-btn-small">Download</button>
+                                    </form>
+                                </details>
                                 <a class="settings-btn settings-btn-small" href="/admin/log?user=<?= $targetId ?>">Admin log</a>
                                 <!-- Every account used in the same browsers as this one -->
                                 <a class="settings-btn settings-btn-small" href="/admin/person?user=<?= $targetId ?>">Person<?= count($adminPersonIds) > 1
@@ -816,6 +871,7 @@ $adminMessageCounts = $statement->fetch();
                             <div><dt>Ghost banned</dt><dd><?= adminTime($target['userGhostBannedTimestamp']) ?></dd></div>
                         <?php endif; ?>
                         <div><dt>Class</dt><dd><?= $adminClass !== null ? htmlspecialchars($adminClass['label']) : '–' ?></dd></div>
+                        <div><dt>Help improve HB Hub</dt><dd><?= $targetIsDeleted ? '–' : adminImproveHtml(hbHubImproveLevel($adminSettingsSaved)) ?></dd></div>
                         <div><dt>Two-factor login</dt><dd><?= $target['totpIsOn'] ? 'On' : 'Off' ?></dd></div>
                         <div><dt>Wrong passwords in a row</dt><dd><?= (int) $target['userFailedLoginCount'] ?></dd></div>
                         <div><dt>Last locked</dt><dd><?= adminTime($target['userAccountLockedTimestamp']) ?><?= $target['isLocked'] ? ' (still locked)' : '' ?></dd></div>

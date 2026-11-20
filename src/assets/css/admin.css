@@ -50,6 +50,44 @@
   gap: 8px;
 }
 
+/* Download all data: a button that opens a small menu under it with what to take along */
+.admin-export {
+  position: relative;
+}
+
+.admin-export > summary {
+  display: block;
+  list-style: none;
+}
+
+.admin-export > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-export > summary::after {
+  content: " \25BE"; /* ▾ */
+}
+
+.admin-export[open] > summary::after {
+  content: " \25B4"; /* ▴ */
+}
+
+.admin-export-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid var(--settings-line);
+  border-radius: 10px;
+  background: var(--secondary);
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 25%, transparent);
+}
+
 .settings-status.admin-status-banned,
 .settings-status.admin-status-deleted {
   background: var(--settings-danger);
@@ -1321,6 +1359,88 @@
 .admin-delta.is-down {
   color: var(--settings-danger);
   opacity: 1;
+}
+
+/* "Help improve HB Hub": each level's colour (adminImproveHtml() in admin.php), the same as a dot on a user's page
+   as it is for its slice in the Overview's pie chart */
+.admin-improve-all {
+  --admin-improve-color: var(--settings-on);
+}
+
+.admin-improve-errors {
+  --admin-improve-color: var(--accent);
+}
+
+.admin-improve-none {
+  --admin-improve-color: color-mix(in srgb, var(--text) 35%, transparent);
+}
+
+.admin-improve-stats {
+  --admin-improve-color: #4a8fe0;
+}
+
+.admin-improve {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-improve::before {
+  content: "";
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--admin-improve-color);
+}
+
+/* The pie chart and its legend side by side, the legend under it when the panel gets narrow */
+.admin-pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px 20px;
+}
+
+.admin-pie-svg {
+  flex: none;
+  width: 140px;
+  height: 140px;
+}
+
+.admin-pie-slice {
+  fill: none;
+  stroke: var(--admin-improve-color);
+  stroke-width: 20;
+}
+
+.admin-pie-slice:hover {
+  opacity: 0.8;
+}
+
+.admin-pie-legend {
+  display: flex;
+  flex: 1 1 150px;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  font-size: 0.88rem;
+  list-style: none;
+}
+
+.admin-pie-legend li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-pie-value {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* Narrower: two headline numbers a row, the panels in two columns (the full-width ones stay full width) */

@@ -491,6 +491,23 @@ CREATE TABLE `HBHub-DoodleEntries` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-DoodleResults`
+--
+
+CREATE TABLE `HBHub-DoodleResults` (
+  `resultId` bigint UNSIGNED NOT NULL,
+  `roomId` int UNSIGNED DEFAULT NULL COMMENT 'The room it was played in, NULL once the room is gone',
+  `roomType` tinyint UNSIGNED NOT NULL COMMENT 'The room''s type then: 1 Public, 3 Code',
+  `userId` int UNSIGNED NOT NULL,
+  `playerLeft` tinyint UNSIGNED NOT NULL COMMENT '0 Still in the room when the chains were shown\r\n1 Left before the game was over',
+  `playerEntries` tinyint UNSIGNED NOT NULL COMMENT 'Texts and drawings they handed in in the game',
+  `gamePlayers` tinyint UNSIGNED NOT NULL COMMENT 'How many were dealt in (3-10)',
+  `resultTimestamp` datetime NOT NULL COMMENT 'UTC, when the game ended'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Doodle Chain games played, one row per player per game (src/assets/php/games/doodle/results.php), for the admin panel';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-DoodleRooms`
 --
 
@@ -1420,6 +1437,15 @@ ALTER TABLE `HBHub-DoodleRooms`
   ADD KEY `fk_doodlerooms_host` (`roomHostUserId`);
 
 --
+-- Indexes for table `HBHub-DoodleResults`
+--
+ALTER TABLE `HBHub-DoodleResults`
+  ADD PRIMARY KEY (`resultId`),
+  ADD KEY `userId` (`userId`),
+  ADD KEY `resultTimestamp` (`resultTimestamp`),
+  ADD KEY `fk_doodleresults_room` (`roomId`);
+
+--
 -- Indexes for table `HBHub-DoodleSeats`
 --
 ALTER TABLE `HBHub-DoodleSeats`
@@ -1834,6 +1860,12 @@ ALTER TABLE `HBHub-DoodleEntries`
   MODIFY `entryId` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `HBHub-DoodleResults`
+--
+ALTER TABLE `HBHub-DoodleResults`
+  MODIFY `resultId` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `HBHub-DoodleRooms`
 --
 ALTER TABLE `HBHub-DoodleRooms`
@@ -2141,6 +2173,13 @@ ALTER TABLE `HBHub-DeviceFingerprints`
 ALTER TABLE `HBHub-DoodleEntries`
   ADD CONSTRAINT `fk_doodleentries_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-DoodleRooms` (`roomId`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_doodleentries_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `HBHub-DoodleResults`
+--
+ALTER TABLE `HBHub-DoodleResults`
+  ADD CONSTRAINT `fk_doodleresults_room` FOREIGN KEY (`roomId`) REFERENCES `HBHub-DoodleRooms` (`roomId`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_doodleresults_user` FOREIGN KEY (`userId`) REFERENCES `HBHub-Users` (`userId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `HBHub-DoodleRooms`

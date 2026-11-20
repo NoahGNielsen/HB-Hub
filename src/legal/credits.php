@@ -23,7 +23,7 @@ const HBHUB_CREDITS_ICONS = [
         'href' => 'https://www.flaticon.com/free-icons/notification', 'title' => 'notification icons', 'text' => 'Notification icons created by Magnific - Flaticon', 'by' => 'Magnific'],
     ['file' => 'no-notification.png', 'name' => 'Ingen notifikationer', 'use' => 'Klokken, når der er stille',
         'href' => 'https://www.flaticon.com/free-icons/notification', 'title' => 'notification icons', 'text' => 'Notification icons created by JessHG - Flaticon', 'by' => 'JessHG'],
-    ['file' => 'user.png', 'name' => 'Bruger', 'use' => 'Chatmedlemmer, og et manglende profilbillede',
+    ['file' => 'user.png', 'name' => 'Bruger', 'use' => 'Person-ikonet på forsiden og pladsholderen til profilbilledet under oprettelsen',
         'href' => 'https://www.flaticon.com/free-icons/user', 'title' => 'user icons', 'text' => 'User icons created by Magnific - Flaticon', 'by' => 'Magnific'],
     ['file' => 'settings.png', 'name' => 'Indstillinger', 'use' => 'Tandhjulet ved dit navn i chatten og på din egen profil',
         'href' => 'https://www.flaticon.com/free-icons/settings', 'title' => 'settings icons', 'text' => 'Settings icons created by Pixel Perfect - Flaticon', 'by' => 'Pixel Perfect'],
@@ -51,8 +51,8 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 <div class="home-hero-text">
                     <h1 id="credits-title">Lavet på skolen,<br><span class="home-hero-accent">med lidt hjælp.</span></h1>
                     <p class="home-lead">
-                        HB Hub er skrevet i hånden, men ikke alt på den er tegnet i hånden.
-                        Det her er dem, hvis gratis ikoner og kode den er bygget med. Tak!
+                        HB Hub bruger ikoner, kodebiblioteker, lister, ordbøger og skrifttyper, som andre har lavet
+                        og delt gratis. Her er de alle sammen, og hvem der lavede dem. Tak!
                     </p>
                 </div>
 
@@ -82,7 +82,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
                 <div>
                     <dt>Skrifttyper</dt>
-                    <dd>4</dd>
+                    <dd>5</dd>
                 </div>
             </dl>
         </section>
@@ -244,7 +244,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
             <p class="credits-fineprint">HB Hubs Wordle er en kopi af Wordle af Josh Wardle. "Wordle" er et varemærke tilhørende The New York Times Company, som intet har med HB Hub at gøre.</p>
         </section>
 
-        <!-- Fonts: the copies in assets/fonts/ (from Google Fonts, each with its license next to it: OFL-*.txt), and Minesweeper's two,
+        <!-- Fonts: the copies in assets/fonts/ (from Google Fonts, Raleway's static weights via Fontsource, each with its license next to it: OFL-*.txt), and Minesweeper's two,
              which came with its code (assets/minesweeper/css/) -->
         <section class="credits-section" id="fonts" aria-labelledby="credits-fonts-title">
             <p class="home-kicker credits-kicker">Skrifttyper</p>

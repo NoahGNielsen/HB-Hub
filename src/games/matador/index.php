@@ -15,7 +15,6 @@ $userId = (int) $hbHubUser['userId'];
 const LOBBY_CREATE_TYPES = [ // what the "Who can join" choices make
     'public' => HBHUB_MATADOR_ROOM_PUBLIC,
     'code' => HBHUB_MATADOR_ROOM_CODE,
-    'invite' => HBHUB_MATADOR_ROOM_INVITE,
 ];
 
 function lobbyGoToGame(int $roomId): never
@@ -283,7 +282,6 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
                                 <?php foreach ([
                                     'public' => ['Public', 'Listed here, so anyone can join.'],
                                     'code' => ['With the code', 'Not listed. Anyone you give the code to can join.'],
-                                    'invite' => ['Invite-only', 'Not listed. Only people you invite can join.'],
                                 ] as $value => [$label, $hint]): ?>
                                     <label class="lobby-option">
                                         <input type="radio" name="type" value="<?= $value ?>"<?= $lobbyValues['type'] === $value ? ' checked' : '' ?>>
