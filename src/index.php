@@ -252,22 +252,10 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 </p>
             </div>
             <div class="home-feature-art home-about-art" aria-hidden="true">
-                <!-- A page from a squared notebook with HB Hub's to-do list written by hand (everything ticked off
-                     except the homework), and a polaroid of the student who makes it taped over the corner. The photo
-                     is a real one of the owner (assets/images/home/creator.jpg, cropped and without its EXIF data).
-                     The polaroid is never wider than 250px, so the photo comes in two sizes: creator-small.jpg
-                     (240px) for ordinary screens and creator.jpg (480px) for sharp ones. -->
-                <div class="home-notebook">
-                    <p class="home-notebook-title">HB Hub, to do</p>
-                    <ul class="home-notebook-list">
-                        <li class="is-done">klassechat</li>
-                        <li class="is-done">Blackjack</li>
-                        <li class="is-done">Matador</li>
-                        <li class="is-done">Wordle</li>
-                        <li>lektier</li>
-                    </ul>
-                    <p class="home-notebook-note">lektier i morgen... måske</p>
-                </div>
+                <!-- A polaroid of the student who makes HB Hub, held on by a strip of tape. The photo is a real one
+                     of the owner (assets/images/home/creator.jpg, cropped and without its EXIF data). The polaroid is
+                     never wider than 250px, so the photo comes in two sizes: creator-small.jpg (240px) for ordinary
+                     screens and creator.jpg (480px) for sharp ones. -->
                 <figure class="home-polaroid">
                     <img src="/assets/images/home/creator-small.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator-small.jpg') ?>"
                          srcset="/assets/images/home/creator-small.jpg?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/images/home/creator-small.jpg') ?> 1x,
