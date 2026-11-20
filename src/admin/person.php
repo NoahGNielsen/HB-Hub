@@ -4,7 +4,8 @@
 // Site admins open it from Person at the top of a user's admin panel, or from the list of people (admin/people.php).
 // Everyone else gets a 404, so it doesn't show that the page is here.
 //
-// Shows what there is about them together: the accounts with their status, chips and messages, the devices (browsers,
+// Shows what there is about them together: the accounts with their status, chips and messages and whether each is
+// linked to the others by the device cookie, the fingerprint or both, the devices (browsers,
 // by cookie) and fingerprints (assets/php/fingerprint.php) that link the accounts, and every account's sessions. The actions are one form per card, like on a user's page:
 // the gambling block and the admin block, logging out everywhere, ghost ban or lift it, ban or unban (with or without
 // their pictures) and delete. Each form has a tick box for every account it can change, all ticked to begin with,
@@ -208,6 +209,33 @@ foreach ($statement->fetchAll() as $row) {
     unset($fingerprint);
 }
 
+// How each account is linked to the others, for the Linked by column: userId => ['cookie' => [the other accounts it
+// shares a browser cookie with], 'fingerprint' => [the ones it shares a fingerprint with]]. Only fingerprints that
+// link (seen with at most HBHUB_FINGERPRINT_SHARED_MAX accounts) count, like in adminPersonGroups().
+$personLinks = array_fill_keys(array_keys($personAccounts), ['cookie' => [], 'fingerprint' => []]);
+$personLinkAdd = function (string $kind, array $userIds) use (&$personLinks): void {
+    foreach ($userIds as $userId) {
+        foreach ($userIds as $otherId) {
+            if ($otherId !== $userId && isset($personLinks[$userId]) && !in_array($otherId, $personLinks[$userId][$kind], true)) {
+                $personLinks[$userId][$kind][] = $otherId;
+            }
+        }
+    }
+};
+foreach ($personDevices as $device) {
+    $personLinkAdd('cookie', $device['userIds']);
+}
+foreach ($personFingerprints as $fingerprint) {
+    if ($fingerprint['accounts'] <= HBHUB_FINGERPRINT_SHARED_MAX) {
+        $personLinkAdd('fingerprint', $fingerprint['userIds']);
+    }
+}
+foreach ($personLinks as &$links) {
+    sort($links['cookie']);
+    sort($links['fingerprint']);
+}
+unset($links);
+
 // Every account's sessions, newest first. The ids are left out: they'd log you in as the user.
 $statement = $db->prepare('SELECT userId, sessionDevice, sessionGenerated, sessionLastSeen, sessionValidUntil, sessionTotpPending, sessionValidUntil > NOW() AS isValid
     FROM `HBHub-Sessions` WHERE userId IN (' . $personPlaceholders . ') ORDER BY sessionGenerated DESC');
@@ -336,7 +364,8 @@ function personNamesHtml(array $userIds, array $accounts): string
                             <h2 id="person-accounts-heading">Accounts</h2>
                             <p class="settings-intro">
                                 Every account that's been used in the same browser as another one of them (by its cookie or its
-                                fingerprint), the oldest first. Open one for
+                                fingerprint), the oldest first. Linked by says which of the two ties each one to the
+                                others, and to which of them. Open one for
                                 everything about it, like its messages, chats, attachments and chip history.
                             </p>
                         </div>
@@ -344,7 +373,7 @@ function personNamesHtml(array $userIds, array $accounts): string
                     </div>
                     <div class="admin-table-wrap">
                         <table class="admin-table">
-                            <thead><tr><th scope="col">User</th><th scope="col">Status</th><th scope="col">Joined</th><th scope="col">Last seen</th><th scope="col">Last IP</th>
+                            <thead><tr><th scope="col">User</th><th scope="col">Linked by</th><th scope="col">Status</th><th scope="col">Joined</th><th scope="col">Last seen</th><th scope="col">Last IP</th>
                                 <th scope="col">Chips</th><th scope="col">Messages</th><th scope="col">Gambling block</th><th scope="col">2FA</th></tr></thead>
                             <tbody>
                                 <?php foreach ($personAccounts as $userId => $account): ?>
@@ -357,6 +386,17 @@ function personNamesHtml(array $userIds, array $accounts): string
                                             <a class="admin-link" href="/admin/user?user=<?= $userId ?>"><?= htmlspecialchars($account['userName']) ?></a>
                                             <?php if ((int) $account['userRole'] === ADMIN_ROLE_ADMIN): ?>
                                                 <span class="admin-small">Site admin</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($personLinks[$userId]['cookie'] === [] && $personLinks[$userId]['fingerprint'] === []): ?>
+                                                <span class="admin-muted">–</span>
+                                            <?php endif; ?>
+                                            <?php if ($personLinks[$userId]['cookie'] !== []): ?>
+                                                <div>Cookie <span class="admin-small">with <?= personNamesHtml($personLinks[$userId]['cookie'], $personAccounts) ?></span></div>
+                                            <?php endif; ?>
+                                            <?php if ($personLinks[$userId]['fingerprint'] !== []): ?>
+                                                <div>Fingerprint <span class="admin-small">with <?= personNamesHtml($personLinks[$userId]['fingerprint'], $personAccounts) ?></span></div>
                                             <?php endif; ?>
                                         </td>
                                         <td><?= adminStatusHtml(adminUserStatus($account)) ?></td>
