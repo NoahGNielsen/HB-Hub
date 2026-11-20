@@ -1350,10 +1350,9 @@ html.home {
 }
 
 /* ---------- About (in Danish) ----------
-   Sits right under the hero and uses the feature sections' layout (.home-feature). The picture is a page from a
-   squared notebook with HB Hub's to-do list in handwriting, and a polaroid of the student who makes it taped on top
-   of its corner. Like the casino picture, the pieces are placed by hand inside a box of fixed height. The paper and
-   the photo are real-world things, so they keep their own light colours on the dark page. */
+   Sits right under the hero and uses the feature sections' layout (.home-feature). The picture is a polaroid of
+   the student who makes it, taped up in the middle of a box of fixed height. The photo is a real-world thing, so it
+   keeps its own light colours on the dark page. */
 .home-about a {
   color: var(--accent);
   text-underline-offset: 2px;
@@ -1375,11 +1374,12 @@ html.home {
 /* The polaroid: a white frame with the photo and a handwritten caption, held on by a strip of tape */
 .home-polaroid {
   position: absolute;
-  top: 0;
+  top: 40px;
+  left: 0;
   right: 0;
-  width: 46%;
-  max-width: 250px;
-  margin: 0;
+  width: 250px;
+  max-width: 70%;
+  margin: 0 auto;
   padding: 12px 12px 0;
   box-sizing: border-box;
   background: #fdfdfb;
@@ -1419,7 +1419,7 @@ html.home {
   text-align: center;
 }
 
-/* Hovering the picture straightens the page and the photo just a touch (kept small, so it doesn't jump about) */
+/* Hovering the picture straightens the photo just a touch (kept small, so it doesn't jump about) */
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .home-about-art:hover .home-polaroid {
     transform: rotate(4deg) translateY(-2px);
@@ -1428,13 +1428,12 @@ html.home {
 
 @media (max-width: 600px) {
   .home-about-art {
-    height: 380px;
+    height: 340px;
   }
 
   .home-polaroid {
-    top: auto;
-    bottom: 0;
-    width: 48%;
+    top: 30px;
+    width: 220px;
     padding: 8px 8px 0;
   }
 
