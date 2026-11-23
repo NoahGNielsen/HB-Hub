@@ -5,6 +5,10 @@
 // Each field button has data-field (where it is) and data-base (its number in the edition's file): in Kaos the fields
 // are in the game's layout order (board.php), and matadorGame.js moves the buttons when the layout changes.
 // The mt-r-*, mt-c-* and mt-side-* classes come from gameFieldPlace(), which matadorGame.js's fieldPlace() copies.
+// With ?watch=code instead it's the game in spectator mode (assets/php/games/spectators.php): the same page for someone
+// watching, with data-watch on <main> (the code) and the chat left out. Only while its host lets people watch, and the
+// user isn't in a Matador game themselves (they're sent back to the Matador page, which says why); someone watching
+// their own game is sent to it.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/matador/room.php';
@@ -14,10 +18,22 @@ $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 
 $seat = hbHubMatadorUserSeat($db, $userId);
-$room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubMatadorRoom($db, $seat['roomId']) : null;
-if ($room === null) {
-    header('Location: /games/matador/', true, 302);
-    exit;
+$isWatching = isset($_GET['watch']);
+if ($isWatching) {
+    $room = hbHubMatadorWatchedRoom($db, $_GET['watch']);
+    if ($room !== null && $seat !== null && $seat['roomId'] === $room['roomId']) {
+        header('Location: /games/matador/game?room=' . $room['roomId'], true, 302);
+        exit;
+    }
+    if ($room === null || $seat !== null) {
+        hbHubGamesWatchRefused('/games/matador/', $room !== null ? 'seated' : 'gone');
+    }
+} else {
+    $room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubMatadorRoom($db, $seat['roomId']) : null;
+    if ($room === null) {
+        header('Location: /games/matador/', true, 302);
+        exit;
+    }
 }
 
 /**
@@ -103,7 +119,7 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="mt" data-matador data-room="<?= $room['roomId'] ?>" data-turn-seconds="<?= HBHUB_MATADOR_TURN_SECONDS ?>"
           data-trade-seconds="<?= HBHUB_MATADOR_TRADE_SECONDS ?>" data-edition="<?= htmlspecialchars($gameEdition) ?>"
-          data-layout="<?= $gameLayout !== null ? implode(',', $gameLayout) : '' ?>">
+          data-layout="<?= $gameLayout !== null ? implode(',', $gameLayout) : '' ?>"<?= $isWatching ? ' data-watch="' . htmlspecialchars($room['roomCode']) . '"' : '' ?>>
         <!-- The board on the left; the game's name and buttons, then the panels and the rules, on the right -->
         <div class="mt-layout">
             <div class="mt-header">
@@ -113,6 +129,7 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
                         <?= $gameTypeName ?> &middot; <?= htmlspecialchars(HBHUB_MATADOR_EDITIONS[$gameEdition]['name']) ?> edition &middot; <span data-mt-player-count>1</span>/<?= HBHUB_MATADOR_MAX_PLAYERS ?> players
                         <span data-mt-round></span>
                         <span data-mt-saved></span>
+                        <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spectatorNote.php'; ?>
                     </p>
                 </div>
                 <div class="mt-header-actions">
@@ -160,7 +177,8 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
                             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>
                         </svg>
                     </button>
-                    <button type="button" class="casino-btn mt-icon-btn" aria-label="Leave game" title="Leave game" data-mt-leave>
+                    <button type="button" class="casino-btn mt-icon-btn" aria-label="<?= $isWatching ? 'Stop watching' : 'Leave game' ?>"
+                            title="<?= $isWatching ? 'Stop watching' : 'Leave game' ?>" data-mt-leave>
                         <svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>
                         </svg>
@@ -276,7 +294,7 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
                     <p class="mt-hint" data-mt-bank></p>
                 </section>
 
-                <section class="mt-panel" aria-labelledby="mt-chat-title">
+                <section class="mt-panel" aria-labelledby="mt-chat-title"<?= $isWatching ? ' hidden' : '' ?>>
                     <h2 class="mt-panel-title" id="mt-chat-title">Chat</h2>
                     <ol class="mt-chat" aria-live="polite" data-mt-chat></ol>
                     <p class="mt-hint" data-mt-chat-empty>Nothing written yet. Say hi!</p>
@@ -456,6 +474,7 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
                         </label>
                     <?php endforeach; ?>
                 </fieldset>
+                <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spectatorSetting.php'; ?>
                 <p class="mt-message" role="alert" data-mt-settings-message></p>
                 <div class="games-dialog-actions">
                     <button type="button" class="casino-btn" data-mt-settings-close>Close</button>

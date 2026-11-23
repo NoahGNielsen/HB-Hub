@@ -18,6 +18,12 @@
 // count as away). The whole game only comes back when its version changed.
 //
 // The game's settings (game.settings: the time to draw) are shown in their dialog, where the host changes them while no game is being played; everyone else only sees them.
+//
+// Spectator mode (assets/php/games/spectators.php): the host turns it on and off in the settings dialog (the
+// "spectators" action, sent as soon as they pick one, also during a game). With data-watch on the page (the room's
+// code) it's someone watching: it asks with ?watch=code instead of ?room=id, never sends anything, and goes back to
+// the Doodle Chain page once the game can't be watched anymore. The server hands them nothing (game.turn.inGame is
+// false), so they see who's done while it's played, and the chains as the host shows them.
 (() => {
     const root = document.querySelector('[data-doodle]');
     if (!root) return;
@@ -31,6 +37,8 @@
     const CACHE_MAX = 40; // drawings kept, and named in ?have= (HBHUB_DOODLE_HAVE_MAX)
     const config = JSON.parse(root.dataset.config);
     const roomId = root.dataset.room;
+    const watchCode = root.dataset.watch ?? null; // only while watching
+    const isWatching = watchCode !== null;
     const baseTitle = document.title;
 
     const find = (selector) => root.querySelector(selector);
@@ -94,6 +102,10 @@
                 location.assign('/games/doodle/'); // left in another tab, or gone too long
                 return null;
             }
+            if (response.status === 404 && data?.error === 'notWatchable') {
+                location.assign('/games/doodle/?watch=gone'); // the game is over, or spectators were turned off
+                return null;
+            }
             if (response.status === 403) {
                 location.reload(); // blocked in settings since: the page says so
                 return null;
@@ -124,7 +136,7 @@
         isPolling = true;
         clearTimeout(pollTimer);
 
-        const query = new URLSearchParams({ room: roomId });
+        const query = new URLSearchParams(isWatching ? { watch: watchCode } : { room: roomId });
         if (version !== null) query.set('v', version);
         if (cache.size > 0) query.set('have', haveList());
         const ride = { params: null };
@@ -138,7 +150,9 @@
         pollTimer = setTimeout(poll, document.visibilityState === 'visible' ? POLL_MS : HIDDEN_POLL_MS);
     }
 
-    function post(action, fields = {}) {
+    // Someone watching can't do anything in the game, so nothing is sent for them
+    async function post(action, fields = {}) {
+        if (isWatching) return null;
         return request({ method: 'POST', body: new URLSearchParams({ room: roomId, action, have: haveList(), ...fields }) });
     }
 
@@ -393,6 +407,7 @@
         renderWaiting();
         renderTurn();
         renderReveal();
+        renderSpectators();
         if (settingsDialog.open) renderSettings();
         const isMyTurn = game.phase === 'playing' && game.turn.inGame && !game.turn.done;
         document.title = (isMyTurn ? '● Your turn - ' : '') + baseTitle;
@@ -453,8 +468,9 @@
         const missing = game.minPlayers - count;
         waitingTitle.textContent = isFinished ? 'Play again?' : 'Waiting for players';
         const lines = [count + ' of ' + game.maxPlayers + ' players.'];
-        if (missing > 0) lines.push('You need ' + missing + ' more to start. Give your friends the code at the top.');
+        if (missing > 0) lines.push(isWatching ? 'It needs ' + missing + ' more to start.' : 'You need ' + missing + ' more to start. Give your friends the code at the top.');
         if (!game.isHost) lines.push('The host starts the game.');
+        if (isWatching) lines.push('You\'re watching.');
         if (game.note) lines.unshift(game.note);
         waitingText.textContent = lines.join(' ');
 
@@ -509,6 +525,22 @@
         if (data && !data.error) settingsDialog.close();
     });
 
+    // ----- Spectator mode: the note in the header, and the choice in the settings, which the host changes at any time.
+    // Picking one sends it straight away (it isn't saved with the other settings).
+
+    const spectatorNote = find('[data-spectators-note]');
+    const spectatorFields = find('[data-spectators]');
+
+    function renderSpectators() {
+        spectatorNote.hidden = !(isWatching || game.spectators);
+        spectatorFields.disabled = !game.isHost || isBusy;
+        if (!isBusy) settingsForm.elements.spectators.value = game.spectators ? 'on' : 'off';
+    }
+
+    spectatorFields.addEventListener('change', (event) => {
+        if (event.target.name === 'spectators') act('spectators', { spectators: event.target.value }, settingsMessage);
+    });
+
     function renderTurn() {
         const turn = game.phase === 'playing' ? game.turn : null;
         turnPanel.hidden = turn === null;
@@ -528,13 +560,18 @@
 
         const isWrite = turn.kind === 'write';
         stepText.textContent = 'Round ' + (turn.step + 1) + ' of ' + turn.steps;
-        turnTitle.textContent = turn.step === 0 ? 'Write something to draw'
+        turnTitle.textContent = isWatching ? (turn.step === 0 ? 'Everyone is writing something to draw'
+                : !isWrite ? 'Everyone is drawing' : 'Everyone is guessing what the drawings are')
+            : turn.step === 0 ? 'Write something to draw'
             : !isWrite ? 'Draw this'
             : turn.step === turn.steps - 1 ? 'Last guess: what is this?' : 'What is this?';
 
         const isWorking = turn.inGame && !turn.done;
         doneText.hidden = isWorking;
-        if (!turn.inGame) {
+        if (isWatching) {
+            doneText.textContent = 'You\'re watching. The chains are shown once everyone is done (' + turn.doneCount + ' of '
+                + turn.playingCount + ' done so far).';
+        } else if (!turn.inGame) {
             doneText.textContent = 'You joined after this game started, so you\'re watching. You\'ll be in the next one.';
         } else if (turn.done) {
             doneText.textContent = 'Handed in! Waiting for the others (' + turn.doneCount + ' of ' + turn.playingCount + ' done)…';
@@ -683,6 +720,10 @@
     // ----- Leaving: the others play on, so it's only asked during a game the player is in
 
     leaveButton.addEventListener('click', async () => {
+        if (isWatching) {
+            location.assign('/games/doodle/'); // just stops watching
+            return;
+        }
         if (game?.phase === 'playing' && game.turn.inGame
             && !await confirmDialog('Leave the game?', 'The others play on without you.', 'Leave')) {
             return;

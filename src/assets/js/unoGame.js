@@ -22,6 +22,11 @@
 // The game's settings (game.settings) are shown in their dialog, where the host changes them while no game is being
 // played. A ping is played when it becomes the player's turn, and for the host when someone joins, unless they turned
 // the sound off (remembered in this browser).
+//
+// Spectator mode (assets/php/games/spectators.php): the host turns it on and off in the settings dialog (the
+// "spectators" action, sent as soon as they pick one). With data-watch on the page (the room's code) it's someone
+// watching: it asks with ?watch=code instead of ?room=id, never sends anything, and goes back to the UNO page once the
+// game can't be watched anymore. The server sends them the game as nobody in it sees it: no hand, "you" is null.
 (() => {
     const root = document.querySelector('[data-uno]');
     if (!root) return;
@@ -36,6 +41,8 @@
     const VALUE_ORDER = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'S', 'R', 'D', 'W', 'F'];
     const SYMBOLS = { S: '⊘', R: '⇄', D: '+2', W: '', F: '+4' }; // what's on a card that isn't a number
     const roomId = root.dataset.room;
+    const watchCode = root.dataset.watch ?? null; // only while watching
+    const isWatching = watchCode !== null;
     const baseTitle = document.title;
 
     const find = (selector) => root.querySelector(selector);
@@ -125,6 +132,10 @@
                 location.assign('/games/uno/'); // left in another tab, or gone too long
                 return null;
             }
+            if (response.status === 404 && data?.error === 'notWatchable') {
+                location.assign('/games/uno/?watch=gone'); // the game is over, or spectators were turned off
+                return null;
+            }
             if (response.status === 403) {
                 location.reload(); // blocked in settings since: the page says so
                 return null;
@@ -155,7 +166,7 @@
         isPolling = true;
         clearTimeout(pollTimer);
 
-        const query = new URLSearchParams({ room: roomId });
+        const query = new URLSearchParams(isWatching ? { watch: watchCode } : { room: roomId });
         if (version !== null) query.set('v', version);
         const ride = { params: null };
         document.dispatchEvent(new CustomEvent('nav:ride', { detail: ride })); // the nav bar's request comes along (navUpdates.js)
@@ -168,7 +179,9 @@
         pollTimer = setTimeout(poll, document.visibilityState === 'visible' ? POLL_MS : HIDDEN_POLL_MS);
     }
 
-    function post(action, fields = {}) {
+    // Someone watching can't do anything in the game, so nothing is sent for them
+    async function post(action, fields = {}) {
+        if (isWatching) return null;
         return request({ method: 'POST', body: new URLSearchParams({ room: roomId, action, ...fields }) });
     }
 
@@ -201,6 +214,7 @@
         renderStatus();
         renderLog();
         renderChat();
+        renderSpectators();
         if (settingsDialog.open) renderSettings();
         document.title = (isMyTurn() ? '● Your turn - ' : '') + baseTitle;
 
@@ -619,7 +633,8 @@
                 button('Game settings', openSettings),
             ),
         ] : []);
-        const joinText = game.seated.length < game.maxPlayers
+        const joinText = isWatching ? paragraph('You\'re watching, so you can\'t play, and the players\' chat isn\'t shown.')
+            : game.seated.length < game.maxPlayers
             ? paragraph('Give people the code ' + code + (game.room.type === 'public' ? ', or they can find the game on the UNO page.' : '.'))
             : paragraph('The game is full.');
 
@@ -653,7 +668,7 @@
         let status = isPaused() ? 'The game is paused.'
             : isMyTurn() ? (current.penalty > 0 ? 'Your turn. Stack or draw ' + current.penalty + ' cards!' : 'Your turn!')
             : 'Waiting for ' + nameAt(current.turn.seat) + '.';
-        if (you === null) status = 'You\'re watching: you left this game. ' + status;
+        if (you === null) status = (isWatching ? 'You\'re watching. ' : 'You\'re watching: you left this game. ') + status;
         const place = myPlace();
         if (place !== null) {
             status = (place === 1 ? 'You won!' : 'You came ' + ordinal(place) + '.') + ' ' + status;
@@ -941,6 +956,22 @@
         if (data && !data.error) settingsDialog.close();
     });
 
+    // ----- Spectator mode: the note in the header, and the choice in the settings, which the host changes at any time.
+    // Picking one sends it straight away (it isn't saved with the other settings).
+
+    const spectatorNote = find('[data-spectators-note]');
+    const spectatorFields = find('[data-spectators]');
+
+    function renderSpectators() {
+        spectatorNote.hidden = !(isWatching || game.spectators);
+        spectatorFields.disabled = !game.isHost || isBusy;
+        if (!isBusy) settingsForm.elements.spectators.value = game.spectators ? 'on' : 'off';
+    }
+
+    spectatorFields.addEventListener('change', (event) => {
+        if (event.target.name === 'spectators') act('spectators', { spectators: event.target.value }, settingsMessage);
+    });
+
     // ----- Confirming
 
     const confirmBox = find('[data-uno-confirm]');
@@ -1052,6 +1083,10 @@
     // of cards (play on)
 
     leaveButton.addEventListener('click', async () => {
+        if (isWatching) {
+            location.assign('/games/uno/'); // just stops watching
+            return;
+        }
         if (isPlaying() && state().you !== null && myPlace() === null
             && !await confirmDialog('Leave the game?', isPaused()
                 ? 'The game is paused, so leaving doesn\'t count as a loss. The others play on without you.'

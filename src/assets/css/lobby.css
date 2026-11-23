@@ -648,6 +648,11 @@
   margin: 0;
 }
 
+/* A game to watch has its Watch link (or button) straight in the row (lobbyWatch.js) */
+.lobby-room > .casino-btn {
+  grid-area: button;
+}
+
 .lobby-room .casino-btn {
   min-width: 92px;
 }

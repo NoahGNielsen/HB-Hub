@@ -19,8 +19,14 @@
 // The texts and drawings never go into roomState: each is a row in HBHub-DoodleEntries, so the state stays small. A
 // player is only ever sent what they're handed in the step being played (hbHubDoodlePrompt()), and everyone the
 // entries the host has shown so far (hbHubDoodleView()).
+//
+// While the host has spectator mode on (../spectators.php), anyone with the code who isn't in a Doodle Chain game
+// themselves can watch the game (hbHubDoodleWatchedRoom()), and public games being played are listed for it
+// (hbHubDoodleWatchRooms()). Someone watching is handed nothing, so they see the same as the players see of each
+// other: who's done, and the chains as the host shows them.
 require_once __DIR__ . '/../../database.php';
 require_once __DIR__ . '/../../userAvatar.php';
+require_once __DIR__ . '/../spectators.php';
 require_once __DIR__ . '/game.php';
 require_once __DIR__ . '/results.php';
 
@@ -43,6 +49,7 @@ const HBHUB_DOODLE_GRACE_SECONDS = 60; // and after this long the player has lef
 const HBHUB_DOODLE_SEEN_EVERY = 2; // seconds between updates of seatLastSeenTimestamp
 const HBHUB_DOODLE_SWEEP_ROOMS = 10; // the most rooms hbHubDoodleSweep() tidies at once
 const HBHUB_DOODLE_LOBBY_ROOMS = 50; // the most public games in the lobby
+const HBHUB_DOODLE_LOBBY_WATCH = 20; // the most games to watch in the lobby
 const HBHUB_DOODLE_HAVE_MAX = 40; // the most entry ids a page can say it already has (?have=)
 
 /**
@@ -165,6 +172,41 @@ function hbHubDoodleRoomIdByCode(PDO $db, string $code): ?int
     $statement->execute([$code]);
     $roomId = $statement->fetchColumn();
     return $roomId !== false ? (int) $roomId : null;
+}
+
+/**
+ * The room with the code (as typed in or sent) when it can be watched: it's there and spectator mode is on. Null
+ * otherwise. Whether the user may watch it (they aren't in a Doodle Chain game themselves) is up to the caller.
+ */
+function hbHubDoodleWatchedRoom(PDO $db, mixed $code): ?array
+{
+    $code = hbHubDoodleCleanCode($code);
+    $roomId = $code !== null ? hbHubDoodleRoomIdByCode($db, $code) : null;
+    $room = $roomId !== null ? hbHubDoodleRoom($db, $roomId) : null;
+    return $room !== null && hbHubGamesSpectatorsOn($room['state']) ? $room : null;
+}
+
+/**
+ * The public games being played (or having their chains shown) that can be watched, for the lobby: the newest first.
+ * The code is what the watch link needs (a public game can be joined by anyone anyway, so its code isn't a secret).
+ *
+ * @return list<array{code: string, name: string, players: list<string>, tags: list<string>}> (tags: the settings)
+ */
+function hbHubDoodleWatchRooms(PDO $db): array
+{
+    $statement = $db->prepare('SELECT roomCode, roomName, roomState->\'$.players[*].name\' AS players, roomState->>\'$.settings\' AS settings
+        FROM `HBHub-DoodleRooms`
+        WHERE roomType = ? AND roomPhase <> ? AND roomState->>\'$.spectators\' = \'true\'
+        ORDER BY roomId DESC
+        LIMIT ' . HBHUB_DOODLE_LOBBY_WATCH);
+    $statement->execute([HBHUB_DOODLE_ROOM_PUBLIC, HBHUB_DOODLE_PHASES['lobby']]);
+
+    return array_map(static fn (array $room): array => [
+        'code' => $room['roomCode'],
+        'name' => $room['roomName'],
+        'players' => array_values(array_filter(json_decode($room['players'] ?? 'null', true) ?? [], 'is_string')),
+        'tags' => [hbHubDoodleSettingsText(hbHubDoodleSettings(['settings' => json_decode($room['settings'] ?? 'null', true) ?? []]))],
+    ], $statement->fetchAll());
 }
 
 /**

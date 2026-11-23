@@ -94,6 +94,8 @@
 
     function show(data) {
         isSeated = data.seat !== null;
+        // The games to watch are drawn by lobbyWatch.js
+        document.dispatchEvent(new CustomEvent('lobby:watch', { detail: { rooms: data.watch ?? [], isSeated } }));
 
         roomList.replaceChildren(...data.rooms.map((room) => roomItem({ ...room, seat: null },
             room.host ? ['Host: ' + room.host] : [],

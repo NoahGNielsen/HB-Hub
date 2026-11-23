@@ -83,6 +83,8 @@
 
     function show(data) {
         isSeated = data.seat !== null;
+        // The games to watch are drawn by lobbyWatch.js
+        document.dispatchEvent(new CustomEvent('lobby:watch', { detail: { rooms: data.watch ?? [], isSeated } }));
         roomList.replaceChildren(...data.rooms.map(roomItem));
         roomsEmpty.textContent = 'No public games waiting for players right now. Open one, and it shows up here for everyone.';
         roomsEmpty.hidden = data.rooms.length > 0;

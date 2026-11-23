@@ -237,6 +237,11 @@ function termsNumber(int $number): string
                                 udgået), tæller det som et nederlag på ranglisten, medmindre værten har sat spillet på pause, eller du
                                 i UNO allerede har spillet alle dine kort. I Matador tæller nederlaget, selv om du vender tilbage.
                             </li>
+                            <li>
+                                I skak, Matador, UNO og Doodle Chain kan værten slå tilskuere til. Så kan alle med spillets kode (og
+                                ved offentlige spil alle) se spillet uden at spille med. Tilskuere kan ikke gøre noget i spillet eller
+                                læse dets chat, og du kan ikke se med, mens du selv er med i et spil af samme slags.
+                            </li>
                             <li>Admins kan fjerne resultater fra ranglisterne og nulstille spil, hvor der er snydt.</li>
                         </ul>
                         <h3>Regler for de enkelte spil</h3>

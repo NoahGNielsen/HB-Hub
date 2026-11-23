@@ -28,6 +28,12 @@
 // without the rest of its colour. buildUnevenly (houses don't have to go up evenly) only changes what the server
 // allows, so it's only in the dialog here. With parkingPot, what's in Parkering's account (game.pot) is shown on its field. Keyboard shortcuts in the player's turn: Enter or Space rolls, Enter buys the property they landed
 // on (after asking) and Backspace leaves it with the bank, and Enter ends the turn.
+//
+// Spectator mode (assets/php/games/spectators.php): the host turns it on and off in the settings dialog (the
+// "spectators" action, sent as soon as they pick one, also during the game). With data-watch on the page (the room's
+// code) it's someone watching: it asks with ?watch=code instead of ?room=id, never sends anything, and goes back to
+// the Matador page once the game can't be watched anymore. The server sends them the game as nobody in it sees it:
+// "you" is null, so there are no moves, trades or properties of their own.
 (() => {
     const root = document.querySelector('[data-matador]');
     if (!root) return;
@@ -42,6 +48,8 @@
     const TRADE_SECONDS = Number(root.dataset.tradeSeconds);
     const TIMER_LOW_SECONDS = 10; // the timer turns red from here
     const roomId = root.dataset.room;
+    const watchCode = root.dataset.watch ?? null; // only while watching
+    const isWatching = watchCode !== null;
     const baseTitle = document.title;
     const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
     const KINDS = { street: 'Title deed', ferry: 'Ferry', brewery: 'Brewery' };
@@ -187,6 +195,10 @@
                 location.assign('/games/matador/'); // left in another tab, or gone too long
                 return null;
             }
+            if (response.status === 404 && data?.error === 'notWatchable') {
+                location.assign('/games/matador/?watch=gone'); // the game is over, or spectators were turned off
+                return null;
+            }
             if (response.status === 403) {
                 location.reload(); // blocked in settings since: the page says so
                 return null;
@@ -224,7 +236,7 @@
         isPolling = true;
         clearTimeout(pollTimer);
 
-        const query = new URLSearchParams({ room: roomId });
+        const query = new URLSearchParams(isWatching ? { watch: watchCode } : { room: roomId });
         if (version !== null) query.set('v', version);
         const ride = { params: null };
         document.dispatchEvent(new CustomEvent('nav:ride', { detail: ride })); // the nav bar's request comes along (navUpdates.js)
@@ -237,7 +249,9 @@
         pollTimer = setTimeout(poll, document.visibilityState === 'visible' ? POLL_MS : HIDDEN_POLL_MS);
     }
 
-    function post(action, fields = {}) {
+    // Someone watching can't do anything in the game, so nothing is sent for them
+    async function post(action, fields = {}) {
+        if (isWatching) return null;
         return request({ method: 'POST', body: new URLSearchParams({ room: roomId, action, ...fields }) });
     }
 
@@ -274,6 +288,7 @@
         renderOffers();
         renderLog();
         renderChat();
+        renderSpectators();
         if (deedField !== null) renderDeed();
         if (settingsDialog.open) renderSettings();
         document.title = (isMyTurn() ? '● Your turn - ' : '') + baseTitle;
@@ -713,7 +728,8 @@
             : pending?.type === 'debt' ? name + ' owes ' + kr(pending.amount) + ' and is raising the money.'
             : game.turn.step === 'roll' ? name + ' is about to roll.'
             : name + ' can build or trade before ending their turn.';
-        return [paragraph(text), paragraph('You can trade at any time, and build and mortgage in your own turn (click your properties on the board).', 'mt-hint')];
+        return [paragraph(text), paragraph(isWatching ? 'You\'re watching, so you can\'t play, and the players\' chat isn\'t shown.'
+            : 'You can trade at any time, and build and mortgage in your own turn (click your properties on the board).', 'mt-hint')];
     }
 
     async function confirmBankruptcy(to) {
@@ -1390,6 +1406,22 @@
         if (data && !data.error) settingsDialog.close();
     });
 
+    // ----- Spectator mode: the note in the header, and the choice in the settings, which the host changes at any time.
+    // Picking one sends it straight away (it isn't saved with the other settings).
+
+    const spectatorNote = find('[data-spectators-note]');
+    const spectatorFields = find('[data-spectators]');
+
+    function renderSpectators() {
+        spectatorNote.hidden = !(isWatching || game.spectators);
+        spectatorFields.disabled = !game.isHost || isBusy;
+        if (!isBusy) settingsForm.elements.spectators.value = game.spectators ? 'on' : 'off';
+    }
+
+    spectatorFields.addEventListener('change', (event) => {
+        if (event.target.name === 'spectators') act('spectators', { spectators: event.target.value }, settingsMessage);
+    });
+
     // ----- Inviting, and giving an empty seat to someone: find people with the chat's user search
 
     const inviteDialog = find('[data-mt-invite-dialog]');
@@ -1497,6 +1529,10 @@
     // ----- Leaving, and pausing and saving and stopping (the host)
 
     async function leave() {
+        if (isWatching) {
+            location.assign('/games/matador/'); // just stops watching
+            return;
+        }
         const data = await post('leave');
         if (data?.left) {
             location.assign('/games/matador/');
@@ -1507,7 +1543,7 @@
 
     leaveButton.addEventListener('click', async () => {
         const you = game ? me() : null;
-        const keepsSeat = game !== null && (isPlaying() || game.phase === 'resume') && you && !you.bankrupt;
+        const keepsSeat = !isWatching && game !== null && (isPlaying() || game.phase === 'resume') && you && !you.bankrupt;
         if (keepsSeat) {
             // Leaving a game being played counts as a loss, unless the host has paused it (results.php)
             const countsAsLoss = isPlaying() && !isPaused();

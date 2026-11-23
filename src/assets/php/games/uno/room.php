@@ -12,12 +12,16 @@
 // loss (results.php), unless the host has paused it. A player whose game hasn't checked in for HBHUB_UNO_GRACE_SECONDS leaves on their own; until then
 // the turn timer plays their turns for them.
 //
+// While the host has spectator mode on (../spectators.php), anyone with the code who isn't in an UNO game themselves
+// can watch the game (hbHubUnoWatchedRoom()), and public games being played are listed for it (hbHubUnoWatchRooms()).
+//
 // Everything that changes a game goes through hbHubUnoPlay(), which locks the room's row first, so only one request at
 // a time moves a game on, whatever the players click at the same time. hbHubUnoSweep() tidies up rooms nobody has open
 // anymore.
 require_once __DIR__ . '/../../database.php';
 require_once __DIR__ . '/../../notifications.php';
 require_once __DIR__ . '/../../userAvatar.php';
+require_once __DIR__ . '/../spectators.php';
 require_once __DIR__ . '/game.php';
 require_once __DIR__ . '/chat.php';
 require_once __DIR__ . '/results.php';
@@ -45,6 +49,7 @@ const HBHUB_UNO_SEEN_EVERY = 2; // seconds between updates of seatLastSeenTimest
 const HBHUB_UNO_SWEEP_ROOMS = 10; // the most rooms hbHubUnoSweep() tidies at once
 const HBHUB_UNO_LOBBY_ROOMS = 50; // the most public games in the lobby
 const HBHUB_UNO_LOBBY_INVITES = 20;
+const HBHUB_UNO_LOBBY_WATCH = 20; // the most games to watch in the lobby
 const HBHUB_UNO_STATUS_BANNED = 4; // userStatus in HBHub-Users
 
 /**
@@ -178,6 +183,18 @@ function hbHubUnoRoomIdByCode(PDO $db, string $code): ?int
     $statement->execute([$code]);
     $roomId = $statement->fetchColumn();
     return $roomId !== false ? (int) $roomId : null;
+}
+
+/**
+ * The room with the code (as typed in or sent) when it can be watched: it's there and spectator mode is on. Null
+ * otherwise. Whether the user may watch it (they aren't in an UNO game themselves) is up to the caller.
+ */
+function hbHubUnoWatchedRoom(PDO $db, mixed $code): ?array
+{
+    $code = hbHubUnoCleanCode($code);
+    $roomId = $code !== null ? hbHubUnoRoomIdByCode($db, $code) : null;
+    $room = $roomId !== null ? hbHubUnoRoom($db, $roomId) : null;
+    return $room !== null && hbHubGamesSpectatorsOn($room['state']) ? $room : null;
 }
 
 /**
@@ -573,4 +590,27 @@ function hbHubUnoPeople(PDO $db, array $userIds): array
         ];
     }
     return $people;
+}
+
+/**
+ * The public games being played that can be watched, for the lobby: the newest first. The code is what the watch link
+ * needs (a public game can be joined by anyone anyway, so its code isn't a secret).
+ *
+ * @return list<array{code: string, name: string, players: list<string>, tags: list<string>}> (tags: the settings)
+ */
+function hbHubUnoWatchRooms(PDO $db): array
+{
+    $statement = $db->prepare('SELECT roomCode, roomName, roomState->\'$.players[*].name\' AS players, roomState->>\'$.settings\' AS settings
+        FROM `HBHub-UnoRooms`
+        WHERE roomType = ? AND roomPhase = ? AND roomState->>\'$.spectators\' = \'true\'
+        ORDER BY roomId DESC
+        LIMIT ' . HBHUB_UNO_LOBBY_WATCH);
+    $statement->execute([HBHUB_UNO_ROOM_PUBLIC, HBHUB_UNO_PHASES['playing']]);
+
+    return array_map(static fn (array $room): array => [
+        'code' => $room['roomCode'],
+        'name' => $room['roomName'],
+        'players' => array_values(array_filter(json_decode($room['players'] ?? 'null', true) ?? [], 'is_string')),
+        'tags' => [hbHubUnoSettingsText(hbHubUnoSettings(['settings' => json_decode($room['settings'] ?? 'null', true) ?? []]))],
+    ], $statement->fetchAll());
 }

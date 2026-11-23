@@ -3,6 +3,8 @@
 // doodleLobby.js), and the rules. A user is in one Doodle Chain game at a time.
 // The forms post here (action): joinCode (code), join (room - from the list), create (name, type) and leave. Joining
 // or opening a game goes straight to it, where the host picks the settings.
+// Spectator mode (assets/php/games/spectators.php): joinCode with "watch" (the Watch button) watches the game instead,
+// and the games to watch are listed too (lobbyWatch.php). ?watch= says why the user was sent back from watching.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/doodle/room.php';
@@ -22,7 +24,8 @@ function lobbyGoToGame(int $roomId): never
     exit;
 }
 
-$lobbyErrors = [];
+$lobbyErrors = array_filter(['list' => hbHubGamesWatchNotice($_GET['watch'] ?? null)]); // sent back from watching
+$lobbyWatchUrl = '/games/doodle/game'; // for lobbyWatch.php
 $lobbyValues = ['name' => '', 'type' => 'public', 'code' => ''];
 $action = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? null) : null; // only from the site itself (session.php)
 
@@ -67,10 +70,17 @@ if ($action === 'joinCode') {
     $lobbyValues['code'] = is_string($_POST['code'] ?? null) ? mb_substr($_POST['code'], 0, 16) : '';
     $code = hbHubDoodleCleanCode($lobbyValues['code']);
     $roomId = $code !== null ? hbHubDoodleRoomIdByCode($db, $code) : null;
+    $isWatch = isset($_POST['watch']); // the Watch button
+    if ($isWatch && $roomId !== null && hbHubDoodleWatchedRoom($db, $code) !== null) {
+        header('Location: /games/doodle/game?watch=' . $code, true, 303); // the game page checks the rest
+        exit;
+    }
     if ($code === null) {
         $lobbyErrors['code'] = 'A code is 6 letters and numbers, like K7PX3M.';
     } elseif ($roomId === null) {
         $lobbyErrors['code'] = 'There\'s no game with that code. It may have ended.';
+    } elseif ($isWatch) {
+        $lobbyErrors['code'] = 'That game can\'t be watched: its host hasn\'t turned on spectator mode.';
     } else {
         $error = hbHubDoodleJoin($db, $userId, $hbHubUser['userName'], $roomId, true);
         if ($error === null) {
@@ -176,12 +186,13 @@ $lobbyRoom = $lobbySeat !== null ? hbHubDoodleRoom($db, $lobbySeat['roomId']) : 
                                        autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7PX3M"
                                        value="<?= htmlspecialchars($lobbyValues['code']) ?>"<?= isset($lobbyErrors['code']) ? ' aria-describedby="lobby-code-error"' : '' ?>>
                                 <button type="submit" class="casino-btn casino-btn-primary">Join</button>
+                                <button type="submit" class="casino-btn" name="watch" value="1">Watch</button>
                             </div>
                             <?php if (isset($lobbyErrors['code'])): ?>
                                 <p class="casino-error" id="lobby-code-error" role="alert"><?= htmlspecialchars($lobbyErrors['code']) ?></p>
                             <?php endif; ?>
                         </form>
-                        <p class="lobby-hint lobby-form-note">Or pick one of the public games.</p>
+                        <p class="lobby-hint lobby-form-note">Or pick one of the public games. Watch looks on without playing, if the game's host lets people.</p>
                     </fieldset>
                 </section>
 
@@ -230,6 +241,8 @@ $lobbyRoom = $lobbySeat !== null ? hbHubDoodleRoom($db, $lobbySeat['roomId']) : 
                     <ul class="lobby-rooms" data-doodle-rooms></ul>
                     <p class="lobby-empty" data-doodle-rooms-empty>Loading…</p>
                 </section>
+
+                <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/lobbyWatch.php'; ?>
             </div>
         </div>
 
@@ -241,6 +254,7 @@ $lobbyRoom = $lobbySeat !== null ? hbHubDoodleRoom($db, $lobbySeat['roomId']) : 
         </section>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+    <script src="/assets/js/lobbyWatch.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/lobbyWatch.js') ?>" defer></script>
     <script src="/assets/js/doodleLobby.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/doodleLobby.js') ?>" defer></script>
 </body>
 </html>

@@ -4,6 +4,10 @@
 // /games/doodle/play. Only for the game the user is in - anyone else is sent to the Doodle Chain page, where games are
 // joined. The drawing tools' colours and sizes come from game.php's constants (data-config), so the page and the server
 // agree on them.
+// With ?watch=code instead it's the game in spectator mode (assets/php/games/spectators.php): the same page for someone
+// watching, with data-watch on <main> (the code). Only while its host lets people watch, and the user isn't in a
+// Doodle Chain game themselves (they're sent back to the Doodle Chain page, which says why); someone watching their
+// own game is sent to it.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/doodle/room.php';
@@ -13,10 +17,22 @@ $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 
 $seat = hbHubDoodleUserSeat($db, $userId);
-$room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubDoodleRoom($db, $seat['roomId']) : null;
-if ($room === null) {
-    header('Location: /games/doodle/', true, 302);
-    exit;
+$isWatching = isset($_GET['watch']);
+if ($isWatching) {
+    $room = hbHubDoodleWatchedRoom($db, $_GET['watch']);
+    if ($room !== null && $seat !== null && $seat['roomId'] === $room['roomId']) {
+        header('Location: /games/doodle/game?room=' . $room['roomId'], true, 302);
+        exit;
+    }
+    if ($room === null || $seat !== null) {
+        hbHubGamesWatchRefused('/games/doodle/', $room !== null ? 'seated' : 'gone');
+    }
+} else {
+    $room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubDoodleRoom($db, $seat['roomId']) : null;
+    if ($room === null) {
+        header('Location: /games/doodle/', true, 302);
+        exit;
+    }
 }
 
 $gameConfig = [
@@ -43,11 +59,12 @@ $gameConfig = [
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="doodle" data-doodle data-room="<?= $room['roomId'] ?>"
-          data-config="<?= htmlspecialchars(json_encode($gameConfig, JSON_THROW_ON_ERROR)) ?>">
+          data-config="<?= htmlspecialchars(json_encode($gameConfig, JSON_THROW_ON_ERROR)) ?>"<?= $isWatching ? ' data-watch="' . htmlspecialchars($room['roomCode']) . '"' : '' ?>>
         <div class="doodle-header">
             <div class="doodle-heading">
                 <h1 class="doodle-title"><?= htmlspecialchars($room['roomName']) ?></h1>
-                <p class="doodle-meta"><?= HBHUB_DOODLE_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game' ?> &middot; <span data-doodle-settings-name></span></p>
+                <p class="doodle-meta"><?= HBHUB_DOODLE_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game' ?> &middot; <span data-doodle-settings-name></span><?php
+                    include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spectatorNote.php'; ?></p>
             </div>
             <div class="doodle-header-actions">
                 <button type="button" class="doodle-code" data-doodle-code="<?= htmlspecialchars($room['roomCode']) ?>"
@@ -64,7 +81,7 @@ $gameConfig = [
                         <path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/>
                     </svg>
                 </button>
-                <button type="button" class="casino-btn" data-doodle-leave>Leave game</button>
+                <button type="button" class="casino-btn" data-doodle-leave><?= $isWatching ? 'Stop watching' : 'Leave game' ?></button>
             </div>
         </div>
 
@@ -163,6 +180,7 @@ $gameConfig = [
                         </label>
                     <?php endforeach; ?>
                 </fieldset>
+                <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spectatorSetting.php'; ?>
                 <p class="doodle-message" role="alert" data-doodle-settings-message></p>
                 <div class="games-dialog-actions">
                     <button type="button" class="casino-btn" data-doodle-settings-close>Close</button>

@@ -1,6 +1,7 @@
 <?php
 // Help docs: how games work - the multiplayer games' rooms (public and code, plus invites, like
-// games/matador/room.php), what the host can do, game chats, leaving, and the leaderboards; and the two you play on
+// games/matador/room.php), what the host can do, watching a game (spectator mode, assets/php/games/spectators.php),
+// game chats, leaving, and the leaderboards; and the two you play on
 // your own. Open to everyone. Built by assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -57,7 +58,28 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li>vælger spillets indstillinger (som uret i skak, eller tidsgrænsen og stabling i UNO),</li>
                             <li>inviterer folk og starter spillet, når nok er kommet med,</li>
                             <li>kan sætte spillet på pause, hvilket stopper urene, til de fortsætter,</li>
+                            <li>kan slå tilskuere til og fra (se <a href="#watch">At se med</a>),</li>
                             <li>og kan i Matador give en tom plads til en anden, eller gemme spillet for at spille det færdigt en anden dag.</li>
+                        </ul>
+                    </section>
+
+                    <section id="watch" aria-labelledby="docs-watch">
+                        <h2 id="docs-watch">At se med</h2>
+                        <p>
+                            I Matador, skak, UNO og Doodle Chain kan værten slå <strong>Spectator mode</strong> til i spillets
+                            indstillinger, når som helst, også midt i et spil. Den er slået fra, indtil værten slår den til, og
+                            der står <strong>Spectators can watch</strong> under spillets navn, mens den er slået til.
+                        </p>
+                        <ul>
+                            <li>Skriv spillets kode på spillets side, og tryk <strong>Watch</strong> i stedet for <strong>Join</strong>.</li>
+                            <li>Offentlige spil, der er i gang, står også under <strong>Games to watch</strong> på spillets side.</li>
+                            <li>
+                                Du ser det samme som spillerne ser af hinanden: brættet, trækkene, hvor mange kort hver har, og i
+                                Doodle Chain kæderne, når værten viser dem. Du ser ikke nogens kort på hånden, spillets chat eller
+                                det, der bliver tegnet og skrevet i Doodle Chain, før det bliver vist.
+                            </li>
+                            <li>Du kan ikke spille med, mens du ser med, og du kan ikke se med, mens du selv er med i et spil af samme slags.</li>
+                            <li>Slår værten tilskuere fra, eller slutter spillet, kommer du tilbage til spillets side. Tryk <strong>Stop watching</strong> for at gå selv.</li>
                         </ul>
                     </section>
 

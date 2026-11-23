@@ -12,8 +12,14 @@
 //     start, for the host once enough players are in, also for a new game
 //     next (the next entry of the chain being shown) and show (chain: once all have been shown), for the host
 //     settings (drawSeconds), for the host while no game is being played
+//     spectators (on or off), for the host at any time (spectator mode, assets/php/games/spectators.php)
 //     leave
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore).
+//
+// Someone watching the game (spectator mode) asks GET ?watch=code&v=version&have=... instead, and gets the game the
+// same way, as nobody in it sees it (HBHUB_GAMES_SPECTATOR_ID: no prompt to draw or write from, so they only see the
+// chains once the host shows them), with "watching": true. They can't post anything. Answers 404 with
+// {"error": "notWatchable"} when it can't be watched (anymore), or when they're in a Doodle Chain game themselves.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navUpdates.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
@@ -32,13 +38,22 @@ if (!$isPost && $_SERVER['REQUEST_METHOD'] !== 'GET') {
 $input = $isPost ? $_POST : $_GET;
 
 $seat = hbHubDoodleUserSeat($db, $userId);
-if ($seat === null || ($input['room'] ?? null) !== (string) $seat['roomId']) {
+$isWatching = !$isPost && isset($input['watch']);
+if ($isWatching) {
+    $watched = $seat === null ? hbHubDoodleWatchedRoom($db, $input['watch']) : null;
+    if ($watched === null) {
+        hbHubGamesNotWatchable();
+    }
+    $roomId = $watched['roomId'];
+} elseif ($seat === null || ($input['room'] ?? null) !== (string) $seat['roomId']) {
     http_response_code(404);
     echo json_encode(['error' => 'notSeated']);
     exit;
+} else {
+    $roomId = $seat['roomId'];
+    hbHubDoodleTouchSeat($db, $userId);
 }
-$roomId = $seat['roomId'];
-hbHubDoodleTouchSeat($db, $userId);
+$viewerId = $isWatching ? HBHUB_GAMES_SPECTATOR_ID : $userId; // who the game is shown as
 
 $action = $isPost ? ($input['action'] ?? '') : null;
 if ($action === 'leave') {
@@ -59,6 +74,7 @@ $do = match ($action) {
     'next' => static fn (array &$room): ?string => hbHubDoodleRevealNext($room['state'], $isHost($room)),
     'show' => static fn (array &$room): ?string => hbHubDoodleShowChain($room['state'], $isHost($room), $input['chain'] ?? null),
     'settings' => static fn (array &$room): ?string => hbHubDoodleChangeSettings($room['state'], $isHost($room), $input['drawSeconds'] ?? null),
+    'spectators' => static fn (array &$room): ?string => hbHubGamesSetSpectators($room['state'], $isHost($room), $input['spectators'] ?? null),
     default => false,
 };
 if ($do === false) {
@@ -78,7 +94,10 @@ if ($do === null) {
     }
 }
 $played ??= hbHubDoodlePlay($db, $roomId, $do);
-if ($played === null || !empty($played[0]['isDeleted']) || !hbHubDoodleSeated($played[1], $userId)) {
+if ($isWatching && ($played === null || !empty($played[0]['isDeleted']) || !hbHubGamesSpectatorsOn($played[0]['state']))) {
+    hbHubGamesNotWatchable(); // the game is gone, or the host has just turned spectators off
+}
+if (!$isWatching && ($played === null || !empty($played[0]['isDeleted']) || !hbHubDoodleSeated($played[1], $userId))) {
     http_response_code(404);
     echo json_encode(['error' => 'notSeated']); // taken out of the game (gone too long)
     exit;
@@ -111,7 +130,8 @@ $response = [
             'type' => HBHUB_DOODLE_ROOM_TYPES[$room['roomType']] ?? 'public',
         ],
     ] + hbHubDoodleView($db, $room, $seats, hbHubDoodlePeople($db, array_column($room['state']['players'], 'userId')),
-        $userId, $have, hbHubDoodleNowMs()),
+        $viewerId, $have, hbHubDoodleNowMs())
+        + ['spectators' => hbHubGamesSpectatorsOn($room['state']), 'watching' => $isWatching],
 ];
 if (is_string($error)) {
     $response['error'] = $error;

@@ -69,6 +69,7 @@ function hbHubGamesWatchRefused(string $lobbyUrl, string $why): never
 function hbHubGamesNotWatchable(): never
 {
     http_response_code(404);
+    header('X-HBHub-Expected: 1'); // a normal answer, not an error for the Watchdog to count (watchdog.js)
     echo json_encode(['error' => 'notWatchable']);
     exit;
 }

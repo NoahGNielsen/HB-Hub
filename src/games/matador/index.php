@@ -4,6 +4,8 @@
 // game at a time.
 // The forms post here (action): joinCode (code), join (room - from the lists), create (name, type), continue,
 // deleteSave and leave. Joining, opening or continuing a game goes straight to it.
+// Spectator mode (assets/php/games/spectators.php): joinCode with "watch" (the Watch button) watches the game instead,
+// and the games to watch are listed too (lobbyWatch.php). ?watch= says why the user was sent back from watching.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/matador/room.php';
@@ -37,8 +39,9 @@ function lobbyAgo(int $minutes): string
     return $amount === 0 ? 'just now' : $amount . ' ' . $unit . ($amount === 1 ? '' : 's') . ' ago';
 }
 
-$lobbyErrors = [];
+$lobbyErrors = array_filter(['list' => hbHubGamesWatchNotice($_GET['watch'] ?? null)]); // sent back from watching
 $lobbyValues = ['name' => '', 'type' => 'public', 'code' => ''];
+$lobbyWatchUrl = '/games/matador/game'; // for lobbyWatch.php
 $action = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? null) : null; // only from the site itself (session.php)
 
 if (in_array($action, ['create', 'continue'], true)) {
@@ -105,10 +108,17 @@ if ($action === 'joinCode') {
     $lobbyValues['code'] = is_string($_POST['code'] ?? null) ? mb_substr($_POST['code'], 0, 16) : '';
     $code = hbHubMatadorCleanCode($lobbyValues['code']);
     $roomId = $code !== null ? hbHubMatadorRoomIdByCode($db, $code) : null;
+    $isWatch = isset($_POST['watch']); // the Watch button
+    if ($isWatch && $roomId !== null && hbHubMatadorWatchedRoom($db, $code) !== null) {
+        header('Location: /games/matador/game?watch=' . $code, true, 303); // the game page checks the rest
+        exit;
+    }
     if ($code === null) {
         $lobbyErrors['code'] = 'A code is 6 letters and numbers, like K7PX3M.';
     } elseif ($roomId === null) {
         $lobbyErrors['code'] = 'There\'s no game with that code. It may have ended.';
+    } elseif ($isWatch) {
+        $lobbyErrors['code'] = 'That game can\'t be watched: its host hasn\'t turned on spectator mode.';
     } else {
         $error = hbHubMatadorJoin($db, $userId, $hbHubUser['userName'], $roomId, true);
         if ($error === null) {
@@ -256,12 +266,13 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
                                        autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7PX3M"
                                        value="<?= htmlspecialchars($lobbyValues['code']) ?>"<?= isset($lobbyErrors['code']) ? ' aria-describedby="lobby-code-error"' : '' ?>>
                                 <button type="submit" class="casino-btn casino-btn-primary">Join</button>
+                                <button type="submit" class="casino-btn" name="watch" value="1">Watch</button>
                             </div>
                             <?php if (isset($lobbyErrors['code'])): ?>
                                 <p class="casino-error" id="lobby-code-error" role="alert"><?= htmlspecialchars($lobbyErrors['code']) ?></p>
                             <?php endif; ?>
                         </form>
-                        <p class="lobby-hint lobby-form-note">Or pick a public game or one of your invites.</p>
+                        <p class="lobby-hint lobby-form-note">Or pick a public game or one of your invites. Watch looks on without playing, if the game's host lets people.</p>
                     </fieldset>
                 </section>
 
@@ -325,6 +336,8 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
                     <ul class="lobby-rooms" data-mt-rooms></ul>
                     <p class="lobby-empty" data-mt-rooms-empty>Loading…</p>
                 </section>
+
+                <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/lobbyWatch.php'; ?>
             </div>
         </div>
 
@@ -354,6 +367,7 @@ $lobbyStopped = ($_GET['stopped'] ?? null) === '1';
         </dialog>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
+    <script src="/assets/js/lobbyWatch.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/lobbyWatch.js') ?>" defer></script>
     <script src="/assets/js/matadorLobby.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/matadorLobby.js') ?>" defer></script>
 </body>
 </html>

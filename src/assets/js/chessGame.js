@@ -28,6 +28,12 @@
 // and clicked on a square it colours the square in. Shift, Ctrl and Alt pick other colours, and drawing the same one
 // again takes it away. Only the player sees them (they're never sent anywhere), and they go away with a left click on
 // the board or when a move is played.
+//
+// Spectator mode (assets/php/games/spectators.php): the host turns it on and off in the settings dialog (the
+// "spectators" action, sent as soon as they pick one). With data-watch on the page (the room's code) it's someone
+// watching: it asks with ?watch=code instead of ?room=id, never sends anything, and goes back to the chess page once
+// the game can't be watched anymore. The server sends them the game as nobody in it sees it, so there are no legal
+// moves, and "you" is null.
 (() => {
     const root = document.querySelector('[data-chess]');
     if (!root) return;
@@ -46,6 +52,8 @@
     const PROMOTIONS = ['q', 'r', 'b', 'n'];
     const SVG = 'http://www.w3.org/2000/svg';
     const roomId = root.dataset.room;
+    const watchCode = root.dataset.watch ?? null; // only while watching
+    const isWatching = watchCode !== null;
     const baseTitle = document.title;
 
     const find = (selector) => root.querySelector(selector);
@@ -122,6 +130,10 @@
                 location.assign('/games/chess/'); // left in another tab, or gone too long
                 return null;
             }
+            if (response.status === 404 && data?.error === 'notWatchable') {
+                location.assign('/games/chess/?watch=gone'); // the game is over, or spectators were turned off
+                return null;
+            }
             if (response.status === 403) {
                 location.reload(); // blocked in settings since: the page says so
                 return null;
@@ -155,7 +167,7 @@
         isPolling = true;
         clearTimeout(pollTimer);
 
-        const query = new URLSearchParams({ room: roomId });
+        const query = new URLSearchParams(isWatching ? { watch: watchCode } : { room: roomId });
         if (version !== null) query.set('v', version);
         const ride = { params: null };
         document.dispatchEvent(new CustomEvent('nav:ride', { detail: ride })); // the nav bar's request comes along (navUpdates.js)
@@ -168,7 +180,9 @@
         pollTimer = setTimeout(poll, document.visibilityState === 'visible' ? POLL_MS : HIDDEN_POLL_MS);
     }
 
-    function post(action, fields = {}) {
+    // Someone watching can't do anything in the game, so nothing is sent for them
+    async function post(action, fields = {}) {
+        if (isWatching) return null;
         return request({ method: 'POST', body: new URLSearchParams({ room: roomId, action, ...fields }) });
     }
 
@@ -200,6 +214,7 @@
         renderStatus();
         renderMoves();
         renderChat();
+        renderSpectators();
         if (settingsDialog.open) renderSettings();
         document.title = (isMyMove() ? '● Your move - ' : '') + baseTitle;
         boardView.classList.toggle('is-my-turn', isMyMove()); // the board glows (chess.css)
@@ -570,6 +585,7 @@
         const state = game.game;
         const isHost = game.isHost;
         const code = codeButton.dataset.chCode;
+        if (isWatching && game.phase !== 'ended') return watchingStatus(); // an ended game reads the same for everyone
 
         if (game.phase === 'lobby') {
             const lines = [];
@@ -677,6 +693,29 @@
                 }),
             ));
         }
+        return [status, list];
+    }
+
+    // The status for someone watching, who has no buttons: who's to move, or what the room waits for
+    function watchingStatus() {
+        const state = game.game;
+        if (game.phase === 'lobby') {
+            const host = game.seated.find((person) => person.isHost) ?? null;
+            return [
+                [
+                    game.note,
+                    state?.result ? 'Last game: ' + resultText(state.result) : null,
+                    game.seated.length >= 2 ? 'Waiting for ' + (host?.name ?? 'the host') + ' to start the game.' : 'Waiting for someone to join.',
+                ].filter(Boolean).join(' '),
+                [paragraph('You\'re watching. Settings: ' + settingsText() + '.')],
+            ];
+        }
+
+        const mover = playerOf(state.turn);
+        const status = isPaused() ? 'The game is paused.'
+            : mover.name + ' (' + COLOUR_NAMES[state.turn] + ') to move' + (state.check !== null ? ', in check.' : '.');
+        const list = [paragraph('You\'re watching, so you can\'t move, and the players\' chat isn\'t shown.')];
+        if (state.drawOffer !== null) list.push(paragraph(playerOf(state.drawOffer).name + ' offers a draw.'));
         return [status, list];
     }
 
@@ -1058,6 +1097,22 @@
 
     settingsButton.addEventListener('click', openSettings);
     find('[data-ch-settings-close]').addEventListener('click', () => settingsDialog.close());
+
+    // ----- Spectator mode: the note in the header, and the choice in the settings, which the host changes at any time.
+    // Picking one sends it straight away (it isn't saved with the other settings).
+
+    const spectatorNote = find('[data-spectators-note]');
+    const spectatorFields = find('[data-spectators]');
+
+    function renderSpectators() {
+        spectatorNote.hidden = !(isWatching || game.spectators);
+        spectatorFields.disabled = !game.isHost || isBusy;
+        if (!isBusy) settingsForm.elements.spectators.value = game.spectators ? 'on' : 'off';
+    }
+
+    spectatorFields.addEventListener('change', (event) => {
+        if (event.target.name === 'spectators') act('spectators', { spectators: event.target.value }, settingsMessage);
+    });
     settingsForm.addEventListener('submit', async (event) => {
         event.preventDefault(); // it's closed once it's saved, not straight away
         const data = await act('settings', {
@@ -1186,6 +1241,10 @@
     // counting, while the host has paused it)
 
     leaveButton.addEventListener('click', async () => {
+        if (isWatching) {
+            location.assign('/games/chess/'); // just stops watching
+            return;
+        }
         if (isPlaying() && game.you !== null) {
             const ok = game.game.canAbort
                 ? await confirmDialog('Leave the game?', 'Nobody has lost yet, so the game is just aborted.', 'Leave')

@@ -2,6 +2,10 @@
 // An UNO game (?room=id). The page is only the frame: unoGame.js draws the table, the players and the user's cards, and
 // plays the game through /games/uno/play. Only for the game the user is in - anyone else is sent to the UNO page, where
 // games are joined.
+// With ?watch=code instead it's the game in spectator mode (assets/php/games/spectators.php): the same page for someone
+// watching, with data-watch on <main> (the code) and the chat left out. Only while its host lets people watch, and the
+// user isn't in an UNO game themselves (they're sent back to the UNO page, which says why); someone watching their
+// own game is sent to it.
 // The cards are drawn by uno.css from the card's colour and what's on it (no pictures).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
@@ -12,10 +16,22 @@ $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 
 $seat = hbHubUnoUserSeat($db, $userId);
-$room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubUnoRoom($db, $seat['roomId']) : null;
-if ($room === null) {
-    header('Location: /games/uno/', true, 302);
-    exit;
+$isWatching = isset($_GET['watch']);
+if ($isWatching) {
+    $room = hbHubUnoWatchedRoom($db, $_GET['watch']);
+    if ($room !== null && $seat !== null && $seat['roomId'] === $room['roomId']) {
+        header('Location: /games/uno/game?room=' . $room['roomId'], true, 302);
+        exit;
+    }
+    if ($room === null || $seat !== null) {
+        hbHubGamesWatchRefused('/games/uno/', $room !== null ? 'seated' : 'gone');
+    }
+} else {
+    $room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubUnoRoom($db, $seat['roomId']) : null;
+    if ($room === null) {
+        header('Location: /games/uno/', true, 302);
+        exit;
+    }
 }
 
 $gameTypeName = HBHUB_UNO_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
@@ -35,12 +51,13 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="uno" data-uno data-room="<?= $room['roomId'] ?>">
+    <main class="uno" data-uno data-room="<?= $room['roomId'] ?>"<?= $isWatching ? ' data-watch="' . htmlspecialchars($room['roomCode']) . '"' : '' ?>>
         <div class="uno-layout">
             <div class="uno-header">
                 <div class="uno-heading">
                     <h1 class="uno-title"><?= htmlspecialchars($room['roomName']) ?></h1>
-                    <p class="uno-meta"><?= $gameTypeName ?> &middot; <span data-uno-settings-name><?= $gameSettingsText ?></span></p>
+                    <p class="uno-meta"><?= $gameTypeName ?> &middot; <span data-uno-settings-name><?= $gameSettingsText ?></span><?php
+                        include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spectatorNote.php'; ?></p>
                 </div>
                 <div class="uno-header-actions">
                     <button type="button" class="uno-code" data-uno-code="<?= htmlspecialchars($room['roomCode']) ?>"
@@ -81,7 +98,8 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
                             <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>
                         </svg>
                     </button>
-                    <button type="button" class="casino-btn uno-icon-btn" aria-label="Leave game" title="Leave game" data-uno-leave>
+                    <button type="button" class="casino-btn uno-icon-btn" aria-label="<?= $isWatching ? 'Stop watching' : 'Leave game' ?>"
+                            title="<?= $isWatching ? 'Stop watching' : 'Leave game' ?>" data-uno-leave>
                         <svg class="uno-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>
                         </svg>
@@ -134,7 +152,7 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
                     <p class="uno-hint" data-uno-log-empty>Nothing yet.</p>
                 </section>
 
-                <section class="uno-panel" aria-labelledby="uno-chat-title">
+                <section class="uno-panel" aria-labelledby="uno-chat-title"<?= $isWatching ? ' hidden' : '' ?>>
                     <h2 class="uno-panel-title" id="uno-chat-title">Chat</h2>
                     <ol class="uno-chat" aria-live="polite" data-uno-chat></ol>
                     <p class="uno-hint" data-uno-chat-empty>Nothing written yet. Say hi!</p>
@@ -219,6 +237,7 @@ $gameSettingsText = hbHubUnoSettingsText(hbHubUnoSettings($room['state']));
                         </label>
                     <?php endforeach; ?>
                 </fieldset>
+                <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spectatorSetting.php'; ?>
                 <p class="uno-message" role="alert" data-uno-settings-message></p>
                 <div class="games-dialog-actions">
                     <button type="button" class="casino-btn" data-uno-settings-close>Close</button>

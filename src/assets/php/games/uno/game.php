@@ -21,6 +21,7 @@
 //     are still there, new ones can join, and the host can start a new game)
 //   settings: the room's settings, {turnSeconds, stacking, stackMixing, drawUntil, playOn}. Always read through
 //     hbHubUnoSettings()
+//   spectators: true while the host lets people watch (spectator mode, ../spectators.php). Missing means off
 //   players: who sits in the room, [{seat: 1-6, userId, name}], in seat order
 //   games: how many games have been started in the room
 //   note: something to tell the players left waiting (like "Alice left."), or null

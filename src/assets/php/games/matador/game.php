@@ -19,6 +19,7 @@
 //
 // The state:
 //   phase       'lobby' (waiting for players), 'resume' (a saved game waiting for its players), 'playing' or 'ended'
+//   spectators  true while the host lets people watch (spectator mode, ../spectators.php). Missing means off
 //   settings    the room's settings: edition (a key of HBHUB_MATADOR_EDITIONS), dice (1 or 2), jailRent ('yes', 'no'
 //               or 'bank'), parkingPot, buildAnyStreet and buildUnevenly (true or false). Missing in games from before
 //               them (edition too: those are Classic), so always read through hbHubMatadorSettings()

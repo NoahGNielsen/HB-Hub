@@ -22,7 +22,13 @@
 //   The game has the chat's newest messages in "chat", each with the seat of who wrote it (null when they have none) and
 //   the text cut up into its @mentions in "parts" (hbHubMentionParts()), and who can be mentioned in "chatMentions"
 //   (for mentions.js).
+//     spectators (on or off), for the host at any time (spectator mode, assets/php/games/spectators.php)
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore), or "stopped" when it's gone.
+//
+// Someone watching the game (spectator mode) asks GET ?watch=code&v=version instead, and gets the game the same way, as
+// nobody in it sees it (HBHUB_GAMES_SPECTATOR_ID), with "watching": true, an empty chat and a version that leaves the
+// chat out. They can't post anything. Answers 404 with {"error": "notWatchable"} when it can't be watched (anymore),
+// or when they're in a Matador game themselves.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navUpdates.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
@@ -35,7 +41,12 @@ $isPost = $_SERVER['REQUEST_METHOD'] === 'POST';
 $input = $isPost ? $_POST : $_GET;
 
 $seat = hbHubMatadorUserSeat($db, $userId);
-if ($seat === null || ($input['room'] ?? null) !== (string) $seat['roomId']) {
+$isWatching = !$isPost && isset($input['watch']);
+$watched = $isWatching && $seat === null ? hbHubMatadorWatchedRoom($db, $input['watch']) : null;
+if ($isWatching && $watched === null) {
+    hbHubGamesNotWatchable();
+}
+if (!$isWatching && ($seat === null || ($input['room'] ?? null) !== (string) $seat['roomId'])) {
     // A game that's gone while the user was in it was stopped by its host (their seat went with it). One the user left
     // or was taken out of is still there, or was only deleted after they'd gone.
     $askedFor = $input['room'] ?? null;
@@ -46,8 +57,13 @@ if ($seat === null || ($input['room'] ?? null) !== (string) $seat['roomId']) {
     echo json_encode(['error' => $isGone ? 'stopped' : 'notSeated']);
     exit;
 }
-$roomId = $seat['roomId'];
-hbHubMatadorTouchSeat($db, $userId);
+if ($isWatching) {
+    $roomId = $watched['roomId'];
+} else {
+    $roomId = $seat['roomId'];
+    hbHubMatadorTouchSeat($db, $userId);
+}
+$viewerId = $isWatching ? HBHUB_GAMES_SPECTATOR_ID : $userId; // who the game is shown as
 
 $action = $isPost ? ($input['action'] ?? '') : null;
 if ($action === 'leave') {
@@ -143,6 +159,8 @@ $do = match ($action) {
     'pause', 'resume' => static fn (array &$room): ?string => hbHubMatadorPause($room, $userId, $action === 'pause'),
     'settings' => static fn (array &$room): ?string => hbHubMatadorChangeSettings($room, $userId, $input['edition'] ?? null,
         $input['dice'] ?? null, $input['jailRent'] ?? null, $input['parkingPot'] ?? null, $input['building'] ?? null),
+    'spectators' => static fn (array &$room): ?string => hbHubGamesSetSpectators($room['state'], $room['roomHostUserId'] === $userId,
+        $input['spectators'] ?? null),
     default => false,
 };
 if ($do === false) {
@@ -161,13 +179,16 @@ if ($do === null) {
     }
 }
 $played ??= hbHubMatadorPlay($db, $roomId, $do);
+if ($isWatching && ($played === null || !empty($played[0]['isDeleted']) || !hbHubGamesSpectatorsOn($played[0]['state']))) {
+    hbHubGamesNotWatchable(); // the game is gone, or the host has just turned spectators off
+}
 if ($played === null || !empty($played[0]['isDeleted'])) {
     http_response_code(404);
     header('X-HBHub-Expected: 1'); // a normal answer, not an error for the Watchdog to count (watchdog.js)
     echo json_encode(['error' => 'stopped']); // the host saved and stopped it
     exit;
 }
-if (!hbHubMatadorSeated($played[1], $userId)) {
+if (!$isWatching && !hbHubMatadorSeated($played[1], $userId)) {
     http_response_code(404);
     header('X-HBHub-Expected: 1'); // a normal answer, not an error for the Watchdog to count (watchdog.js)
     echo json_encode(['error' => 'notSeated']); // taken out of the game (gone too long)
@@ -176,7 +197,7 @@ if (!hbHubMatadorSeated($played[1], $userId)) {
 [$room, $seats, $error] = $played;
 $error ??= $chatError;
 
-$version = hbHubMatadorVersion($room, $seats, hbHubMatadorLastChatId($db, $roomId));
+$version = hbHubMatadorVersion($room, $seats, $isWatching ? 0 : hbHubMatadorLastChatId($db, $roomId));
 $nav = hbHubNavRide($db, $hbHubUser); // the nav bar's numbers, when navUpdates.js sent its request along (?nav=)
 if (!$isPost && ($input['v'] ?? null) === $version) {
     echo json_encode(['v' => $version, 'same' => true] + ($nav !== null ? ['nav' => $nav] : []), JSON_INVALID_UTF8_SUBSTITUTE);
@@ -201,23 +222,26 @@ foreach ($state['players'] as $player) {
     }
 }
 // The chat's @mentions (assets/php/mentions.php) are of the players in the room. Being back in the game means the user
-// has seen any they were sent a notification about.
-$chatPeople = hbHubMatadorChatPeople($db, $roomId, $userId);
-$chatMentions = hbHubMentionLookup($chatPeople);
-hbHubMarkNotificationsReadAbout($db, $userId, 'games.matadorMention', ['roomId' => $roomId]);
-$chat = array_map(static fn (array $message): array => [
-    'id' => $message['id'],
-    'seat' => $chatSeats[$message['userId']] ?? null,
-    'name' => $message['name'],
-    'text' => $message['text'],
-    'parts' => hbHubMentionParts($message['text'], $chatMentions),
-    'time' => $message['time'],
-    'isYou' => $message['userId'] === $userId,
-], hbHubMatadorChat($db, $roomId));
+// has seen any they were sent a notification about. The chat is only the players', so watchers don't get it.
+$chat = [];
 $chatNames = [];
-foreach ($chatPeople as $person) {
-    if (!$person['isYou']) {
-        $chatNames[] = ['name' => $person['name'], 'userName' => $person['name']];
+if (!$isWatching) {
+    $chatPeople = hbHubMatadorChatPeople($db, $roomId, $userId);
+    $chatMentions = hbHubMentionLookup($chatPeople);
+    hbHubMarkNotificationsReadAbout($db, $userId, 'games.matadorMention', ['roomId' => $roomId]);
+    $chat = array_map(static fn (array $message): array => [
+        'id' => $message['id'],
+        'seat' => $chatSeats[$message['userId']] ?? null,
+        'name' => $message['name'],
+        'text' => $message['text'],
+        'parts' => hbHubMentionParts($message['text'], $chatMentions),
+        'time' => $message['time'],
+        'isYou' => $message['userId'] === $userId,
+    ], hbHubMatadorChat($db, $roomId));
+    foreach ($chatPeople as $person) {
+        if (!$person['isYou']) {
+            $chatNames[] = ['name' => $person['name'], 'userName' => $person['name']];
+        }
     }
 }
 
@@ -231,10 +255,10 @@ $response = [
             'type' => HBHUB_MATADOR_ROOM_TYPES[$room['roomType']] ?? 'public',
             'players' => count($seats),
             'owner' => $room['roomOwnerUserId'] !== null ? ($people[$room['roomOwnerUserId']]['name'] ?? null) : null,
-            'isOwner' => $room['roomOwnerUserId'] === $userId,
+            'isOwner' => $room['roomOwnerUserId'] === $viewerId,
         ],
-    ] + hbHubMatadorView($state, $people, $away, $userId, $room['roomHostUserId'])
-        + ['chat' => $chat, 'chatMentions' => $chatNames],
+    ] + hbHubMatadorView($state, $people, $away, $viewerId, $room['roomHostUserId'])
+        + ['chat' => $chat, 'chatMentions' => $chatNames, 'spectators' => hbHubGamesSpectatorsOn($state), 'watching' => $isWatching],
 ];
 if (is_string($error)) {
     $response['error'] = $error;

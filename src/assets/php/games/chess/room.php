@@ -13,12 +13,16 @@
 // hasn't checked in for HBHUB_CHESS_CLAIM_SECONDS can be beaten by the other one (game.php's hbHubChessClaim()), and
 // after HBHUB_CHESS_PLAYING_GRACE_SECONDS they leave on their own. The one left waits for a new player in the same room.
 //
+// While the host has spectator mode on (../spectators.php), anyone with the code who isn't in a chess game themselves
+// can watch the game (hbHubChessWatchedRoom()), and public games being played are listed for it (hbHubChessWatchRooms()).
+//
 // Everything that changes a game goes through hbHubChessPlay(), which locks the room's row first, so only one request
 // at a time moves a game on, whatever the players click at the same time. hbHubChessSweep() tidies up rooms nobody has
 // open anymore.
 require_once __DIR__ . '/../../database.php';
 require_once __DIR__ . '/../../notifications.php';
 require_once __DIR__ . '/../../userAvatar.php';
+require_once __DIR__ . '/../spectators.php';
 require_once __DIR__ . '/game.php';
 require_once __DIR__ . '/chat.php';
 require_once __DIR__ . '/results.php';
@@ -48,6 +52,7 @@ const HBHUB_CHESS_SEEN_EVERY = 2; // seconds between updates of seatLastSeenTime
 const HBHUB_CHESS_SWEEP_ROOMS = 10; // the most rooms hbHubChessSweep() tidies at once
 const HBHUB_CHESS_LOBBY_ROOMS = 50; // the most public games in the lobby
 const HBHUB_CHESS_LOBBY_INVITES = 20;
+const HBHUB_CHESS_LOBBY_WATCH = 20; // the most games to watch in the lobby
 const HBHUB_CHESS_STATUS_BANNED = 4; // userStatus in HBHub-Users
 
 /**
@@ -181,6 +186,18 @@ function hbHubChessRoomIdByCode(PDO $db, string $code): ?int
     $statement->execute([$code]);
     $roomId = $statement->fetchColumn();
     return $roomId !== false ? (int) $roomId : null;
+}
+
+/**
+ * The room with the code (as typed in or sent) when it can be watched: it's there and spectator mode is on. Null
+ * otherwise. Whether the user may watch it (they aren't in a chess game themselves) is up to the caller.
+ */
+function hbHubChessWatchedRoom(PDO $db, mixed $code): ?array
+{
+    $code = hbHubChessCleanCode($code);
+    $roomId = $code !== null ? hbHubChessRoomIdByCode($db, $code) : null;
+    $room = $roomId !== null ? hbHubChessRoom($db, $roomId) : null;
+    return $room !== null && hbHubGamesSpectatorsOn($room['state']) ? $room : null;
 }
 
 /**
@@ -597,4 +614,28 @@ function hbHubChessPeople(PDO $db, array $userIds): array
         ];
     }
     return $people;
+}
+
+/**
+ * The public games being played that can be watched, for the lobby: the newest first. The code is what the watch link
+ * needs (a public game can be joined by anyone anyway, so its code isn't a secret).
+ *
+ * @return list<array{code: string, name: string, players: list<string>, tags: list<string>}> (tags: the clock)
+ */
+function hbHubChessWatchRooms(PDO $db): array
+{
+    $statement = $db->prepare('SELECT roomCode, roomName, roomState->>\'$.clock\' AS clock,
+            roomState->>\'$.game.white.name\' AS white, roomState->>\'$.game.black.name\' AS black
+        FROM `HBHub-ChessRooms`
+        WHERE roomType = ? AND roomPhase <> ? AND roomState->>\'$.spectators\' = \'true\'
+        ORDER BY roomId DESC
+        LIMIT ' . HBHUB_CHESS_LOBBY_WATCH);
+    $statement->execute([HBHUB_CHESS_ROOM_PUBLIC, HBHUB_CHESS_PHASES['lobby']]);
+
+    return array_map(static fn (array $room): array => [
+        'code' => $room['roomCode'],
+        'name' => $room['roomName'],
+        'players' => array_values(array_filter([$room['white'], $room['black']], 'is_string')),
+        'tags' => array_values(array_filter([HBHUB_CHESS_CLOCK_NAMES[$room['clock']] ?? null])),
+    ], $statement->fetchAll());
 }

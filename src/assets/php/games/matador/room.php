@@ -11,9 +11,14 @@
 // at a time moves a game on, whatever the players click at the same time. That's also where players who haven't been
 // seen for the grace period leave (their seat is kept for them), and an empty room is deleted. hbHubMatadorSweep() does
 // the same for games nobody has open anymore.
+//
+// While the host has spectator mode on (../spectators.php), anyone with the code who isn't in a Matador game
+// themselves can watch the game (hbHubMatadorWatchedRoom()), and public games being played are listed for it
+// (hbHubMatadorWatchRooms()).
 require_once __DIR__ . '/../../database.php';
 require_once __DIR__ . '/../../notifications.php';
 require_once __DIR__ . '/../../userAvatar.php';
+require_once __DIR__ . '/../spectators.php';
 require_once __DIR__ . '/game.php';
 require_once __DIR__ . '/save.php';
 require_once __DIR__ . '/chat.php';
@@ -42,6 +47,7 @@ const HBHUB_MATADOR_SEEN_EVERY = 2; // seconds between updates of seatLastSeenTi
 const HBHUB_MATADOR_SWEEP_ROOMS = 10; // the most rooms hbHubMatadorSweep() tidies at once
 const HBHUB_MATADOR_LOBBY_ROOMS = 50; // the most public games in the lobby
 const HBHUB_MATADOR_LOBBY_INVITES = 20;
+const HBHUB_MATADOR_LOBBY_WATCH = 20; // the most games to watch in the lobby
 const HBHUB_MATADOR_STATUS_BANNED = 4; // userStatus in HBHub-Users
 
 /**
@@ -184,6 +190,44 @@ function hbHubMatadorRoomIdByCode(PDO $db, string $code): ?int
     $statement->execute([$code]);
     $roomId = $statement->fetchColumn();
     return $roomId !== false ? (int) $roomId : null;
+}
+
+/**
+ * The room with the code (as typed in or sent) when it can be watched: it's there and spectator mode is on. Null
+ * otherwise. Whether the user may watch it (they aren't in a Matador game themselves) is up to the caller.
+ */
+function hbHubMatadorWatchedRoom(PDO $db, mixed $code): ?array
+{
+    $code = hbHubMatadorCleanCode($code);
+    $roomId = $code !== null ? hbHubMatadorRoomIdByCode($db, $code) : null;
+    $room = $roomId !== null ? hbHubMatadorRoom($db, $roomId) : null;
+    return $room !== null && hbHubGamesSpectatorsOn($room['state']) ? $room : null;
+}
+
+/**
+ * The public games being played that can be watched, for the lobby: the newest first. The code is what the watch link
+ * needs (a public game can be joined by anyone anyway, so its code isn't a secret).
+ *
+ * @return list<array{code: string, name: string, players: list<string>, tags: list<string>}> (tags: the edition)
+ */
+function hbHubMatadorWatchRooms(PDO $db): array
+{
+    $statement = $db->prepare('SELECT roomCode, roomName, roomState->\'$.players[*].name\' AS players, roomState->>\'$.settings\' AS settings
+        FROM `HBHub-MatadorRooms`
+        WHERE roomType = ? AND roomPhase = ? AND roomState->>\'$.spectators\' = \'true\'
+        ORDER BY roomId DESC
+        LIMIT ' . HBHUB_MATADOR_LOBBY_WATCH);
+    $statement->execute([HBHUB_MATADOR_ROOM_PUBLIC, HBHUB_MATADOR_PHASES['playing']]);
+
+    return array_map(static function (array $room): array {
+        $settings = hbHubMatadorSettings(['settings' => json_decode($room['settings'] ?? 'null', true) ?? []]);
+        return [
+            'code' => $room['roomCode'],
+            'name' => $room['roomName'],
+            'players' => array_values(array_filter(json_decode($room['players'] ?? 'null', true) ?? [], 'is_string')),
+            'tags' => [HBHUB_MATADOR_EDITIONS[$settings['edition']]['name'] . ' edition'],
+        ];
+    }, $statement->fetchAll());
 }
 
 /**

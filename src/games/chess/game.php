@@ -2,6 +2,10 @@
 // A chess game (?room=id). The page is only the frame: chessGame.js draws the board, the players and their clocks, and
 // plays the game through /games/chess/play. Only for the game the user is in - anyone else is sent to the chess page,
 // where games are joined.
+// With ?watch=code instead it's the game in spectator mode (assets/php/games/spectators.php): the same page for someone
+// watching, with data-watch on <main> (the code) and the chat left out. Only while its host lets people watch, and the
+// user isn't in a chess game themselves (they're sent back to the chess page, which says why); someone watching their
+// own game is sent to it.
 // The pieces are letters from the Noto Sans Symbols 2 font (assets/fonts/, only those 12), drawn by chess.css.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
@@ -12,10 +16,22 @@ $db = hbHubDatabase();
 $userId = (int) $hbHubUser['userId'];
 
 $seat = hbHubChessUserSeat($db, $userId);
-$room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubChessRoom($db, $seat['roomId']) : null;
-if ($room === null) {
-    header('Location: /games/chess/', true, 302);
-    exit;
+$isWatching = isset($_GET['watch']);
+if ($isWatching) {
+    $room = hbHubChessWatchedRoom($db, $_GET['watch']);
+    if ($room !== null && $seat !== null && $seat['roomId'] === $room['roomId']) {
+        header('Location: /games/chess/game?room=' . $room['roomId'], true, 302);
+        exit;
+    }
+    if ($room === null || $seat !== null) {
+        hbHubGamesWatchRefused('/games/chess/', $room !== null ? 'seated' : 'gone');
+    }
+} else {
+    $room = $seat !== null && ($_GET['room'] ?? null) === (string) $seat['roomId'] ? hbHubChessRoom($db, $seat['roomId']) : null;
+    if ($room === null) {
+        header('Location: /games/chess/', true, 302);
+        exit;
+    }
 }
 
 $gameTypeName = HBHUB_CHESS_ROOM_TYPE_NAMES[$room['roomType']] ?? 'Game';
@@ -35,12 +51,13 @@ $gameClockName = HBHUB_CHESS_CLOCK_NAMES[$room['state']['clock']] ?? '';
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
-    <main class="ch" data-chess data-room="<?= $room['roomId'] ?>">
+    <main class="ch" data-chess data-room="<?= $room['roomId'] ?>"<?= $isWatching ? ' data-watch="' . htmlspecialchars($room['roomCode']) . '"' : '' ?>>
         <div class="ch-layout">
             <div class="ch-header">
                 <div class="ch-heading">
                     <h1 class="ch-title"><?= htmlspecialchars($room['roomName']) ?></h1>
-                    <p class="ch-meta"><?= $gameTypeName ?> &middot; <span data-ch-clock-name><?= $gameClockName ?></span></p>
+                    <p class="ch-meta"><?= $gameTypeName ?> &middot; <span data-ch-clock-name><?= $gameClockName ?></span><?php
+                        include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spectatorNote.php'; ?></p>
                 </div>
                 <div class="ch-header-actions">
                     <button type="button" class="ch-code" data-ch-code="<?= htmlspecialchars($room['roomCode']) ?>"
@@ -86,7 +103,8 @@ $gameClockName = HBHUB_CHESS_CLOCK_NAMES[$room['state']['clock']] ?? '';
                             <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>
                         </svg>
                     </button>
-                    <button type="button" class="casino-btn ch-icon-btn" aria-label="Leave game" title="Leave game" data-ch-leave>
+                    <button type="button" class="casino-btn ch-icon-btn" aria-label="<?= $isWatching ? 'Stop watching' : 'Leave game' ?>"
+                            title="<?= $isWatching ? 'Stop watching' : 'Leave game' ?>" data-ch-leave>
                         <svg class="ch-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>
                         </svg>
@@ -128,7 +146,7 @@ $gameClockName = HBHUB_CHESS_CLOCK_NAMES[$room['state']['clock']] ?? '';
                     <p class="ch-hint" data-ch-moves-empty>No moves yet.</p>
                 </section>
 
-                <section class="ch-panel" aria-labelledby="ch-chat-title">
+                <section class="ch-panel" aria-labelledby="ch-chat-title"<?= $isWatching ? ' hidden' : '' ?>>
                     <h2 class="ch-panel-title" id="ch-chat-title">Chat</h2>
                     <ol class="ch-chat" aria-live="polite" data-ch-chat></ol>
                     <p class="ch-hint" data-ch-chat-empty>Nothing written yet. Say hi!</p>
@@ -185,6 +203,7 @@ $gameClockName = HBHUB_CHESS_CLOCK_NAMES[$room['state']['clock']] ?? '';
                         </label>
                     <?php endforeach; ?>
                 </fieldset>
+                <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/spectatorSetting.php'; ?>
                 <p class="ch-message" role="alert" data-ch-settings-message></p>
                 <div class="games-dialog-actions">
                     <button type="button" class="casino-btn" data-ch-settings-close>Close</button>

@@ -16,10 +16,16 @@
 //     pause and resume, for the host while a game is being played (game.php's hbHubUnoPause())
 //     settings (turnSeconds, stacking: off, same or mixed, and drawUntil and playOn: on or off), for the host while no game
 //       is being played (game.php's hbHubUnoChangeSettings())
+//     spectators (on or off), for the host at any time (spectator mode, assets/php/games/spectators.php)
 //     chat (text) writes in the game's chat (chat.php), and leave
 //   The game has the chat's newest messages in "chat", with isYou on the user's own and the text cut up into its
 //   @mentions in "parts" (hbHubMentionParts()), and who can be mentioned in "chatMentions" (for mentions.js).
 // Answers 404 with {"error": "notSeated"} when the user isn't in that game (anymore).
+//
+// Someone watching the game (spectator mode) asks GET ?watch=code&v=version instead, and gets the game the same way, as
+// nobody in it sees it (HBHUB_GAMES_SPECTATOR_ID: no hand, only how many cards each player has), with "watching":
+// true, an empty chat and a version that leaves the chat out. They can't post anything. Answers 404 with
+// {"error": "notWatchable"} when it can't be watched (anymore), or when they're in an UNO game themselves.
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navUpdates.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
@@ -32,13 +38,22 @@ $isPost = $_SERVER['REQUEST_METHOD'] === 'POST';
 $input = $isPost ? $_POST : $_GET;
 
 $seat = hbHubUnoUserSeat($db, $userId);
-if ($seat === null || ($input['room'] ?? null) !== (string) $seat['roomId']) {
+$isWatching = !$isPost && isset($input['watch']);
+if ($isWatching) {
+    $watched = $seat === null ? hbHubUnoWatchedRoom($db, $input['watch']) : null;
+    if ($watched === null) {
+        hbHubGamesNotWatchable();
+    }
+    $roomId = $watched['roomId'];
+} elseif ($seat === null || ($input['room'] ?? null) !== (string) $seat['roomId']) {
     http_response_code(404);
     echo json_encode(['error' => 'notSeated']);
     exit;
+} else {
+    $roomId = $seat['roomId'];
+    hbHubUnoTouchSeat($db, $userId);
 }
-$roomId = $seat['roomId'];
-hbHubUnoTouchSeat($db, $userId);
+$viewerId = $isWatching ? HBHUB_GAMES_SPECTATOR_ID : $userId; // who the game is shown as
 
 $action = $isPost ? ($input['action'] ?? '') : null;
 if ($action === 'leave') {
@@ -85,6 +100,8 @@ $do = match ($action) {
     'start' => static fn (array &$room): ?string => hbHubUnoStart($room['state'], $room['roomHostUserId'] === $userId, hbHubUnoNowMs()),
     'settings' => static fn (array &$room): ?string => hbHubUnoChangeSettings($room['state'], $room['roomHostUserId'] === $userId,
         $input['turnSeconds'] ?? null, $input['stacking'] ?? null, $input['drawUntil'] ?? null, $input['playOn'] ?? null),
+    'spectators' => static fn (array &$room): ?string => hbHubGamesSetSpectators($room['state'], $room['roomHostUserId'] === $userId,
+        $input['spectators'] ?? null),
     default => false,
 };
 if ($do === false) {
@@ -104,7 +121,10 @@ if ($do === null) {
     }
 }
 $played ??= hbHubUnoPlay($db, $roomId, $do);
-if ($played === null || !empty($played[0]['isDeleted']) || !hbHubUnoSeated($played[1], $userId)) {
+if ($isWatching && ($played === null || !empty($played[0]['isDeleted']) || !hbHubGamesSpectatorsOn($played[0]['state']))) {
+    hbHubGamesNotWatchable(); // the game is gone, or the host has just turned spectators off
+}
+if (!$isWatching && ($played === null || !empty($played[0]['isDeleted']) || !hbHubUnoSeated($played[1], $userId))) {
     http_response_code(404);
     echo json_encode(['error' => 'notSeated']); // taken out of the game (gone too long)
     exit;
@@ -112,7 +132,7 @@ if ($played === null || !empty($played[0]['isDeleted']) || !hbHubUnoSeated($play
 [$room, $seats, $error] = $played;
 $error ??= $chatError;
 
-$version = hbHubUnoVersion($room, $seats, hbHubUnoLastChatId($db, $roomId));
+$version = hbHubUnoVersion($room, $seats, $isWatching ? 0 : hbHubUnoLastChatId($db, $roomId));
 $nav = hbHubNavRide($db, $hbHubUser); // the nav bar's numbers, when navUpdates.js sent its request along (?nav=)
 if (!$isPost && ($input['v'] ?? null) === $version) {
     echo json_encode(['v' => $version, 'same' => true] + ($nav !== null ? ['nav' => $nav] : []), JSON_INVALID_UTF8_SUBSTITUTE);
@@ -126,22 +146,25 @@ $people = hbHubUnoPeople($db, [
 ]);
 
 // The chat's @mentions (assets/php/mentions.php) are of the players in the room. Being back in the game means the user
-// has seen any they were sent a notification about.
-$chatPeople = hbHubUnoChatPeople($db, $roomId, $userId);
-$chatMentions = hbHubMentionLookup($chatPeople);
-hbHubMarkNotificationsReadAbout($db, $userId, 'games.unoMention', ['roomId' => $roomId]);
-$chat = array_map(static fn (array $message): array => [
-    'id' => $message['id'],
-    'name' => $message['name'],
-    'text' => $message['text'],
-    'parts' => hbHubMentionParts($message['text'], $chatMentions),
-    'time' => $message['time'],
-    'isYou' => $message['userId'] === $userId,
-], hbHubUnoChat($db, $roomId));
+// has seen any they were sent a notification about. The chat is only the players', so watchers don't get it.
+$chat = [];
 $chatNames = [];
-foreach ($chatPeople as $person) {
-    if (!$person['isYou']) {
-        $chatNames[] = ['name' => $person['name'], 'userName' => $person['name']];
+if (!$isWatching) {
+    $chatPeople = hbHubUnoChatPeople($db, $roomId, $userId);
+    $chatMentions = hbHubMentionLookup($chatPeople);
+    hbHubMarkNotificationsReadAbout($db, $userId, 'games.unoMention', ['roomId' => $roomId]);
+    $chat = array_map(static fn (array $message): array => [
+        'id' => $message['id'],
+        'name' => $message['name'],
+        'text' => $message['text'],
+        'parts' => hbHubMentionParts($message['text'], $chatMentions),
+        'time' => $message['time'],
+        'isYou' => $message['userId'] === $userId,
+    ], hbHubUnoChat($db, $roomId));
+    foreach ($chatPeople as $person) {
+        if (!$person['isYou']) {
+            $chatNames[] = ['name' => $person['name'], 'userName' => $person['name']];
+        }
     }
 }
 
@@ -154,8 +177,8 @@ $response = [
             'code' => $room['roomCode'],
             'type' => HBHUB_UNO_ROOM_TYPES[$room['roomType']] ?? 'public',
         ],
-    ] + hbHubUnoView($state, $people, $seats, $userId, $room['roomHostUserId'], hbHubUnoNowMs())
-        + ['chat' => $chat, 'chatMentions' => $chatNames],
+    ] + hbHubUnoView($state, $people, $seats, $viewerId, $room['roomHostUserId'], hbHubUnoNowMs())
+        + ['chat' => $chat, 'chatMentions' => $chatNames, 'spectators' => hbHubGamesSpectatorsOn($state), 'watching' => $isWatching],
 ];
 if (is_string($error)) {
     $response['error'] = $error;
