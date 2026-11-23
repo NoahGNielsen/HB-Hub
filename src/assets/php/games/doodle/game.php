@@ -4,10 +4,11 @@
 // The texts and drawings themselves are rows in HBHub-DoodleEntries (room.php), not in the state.
 //
 // How a game goes, for N players (the order they sat in when it started, game.order):
-// - There are N chains, each with D = floor((N - 1) / 2) drawings, so 2D + 1 steps: write, then draw and guess D times.
-//   That's N steps for an odd N and N - 1 for an even one, so a chain always ends with a guess (hbHubDoodleSteps()).
-//   In step s, the player at place i in the order works on chain (i + s) % N, so chain c is started by the player at
-//   place c and passes every player at most once.
+// - There are N chains, each with D = floor((N - 1) / 2) drawings but never fewer than HBHUB_DOODLE_MIN_DRAWINGS (2),
+//   so 2D + 1 steps: write, then draw and guess D times. That's N steps for an odd N and N - 1 for an even one (5 for 3
+//   or 4 players), so a chain always ends with a guess (hbHubDoodleSteps()). In step s, the player at place i in the
+//   order works on chain (i + s) % N, so chain c is started by the player at place c and passes every player once
+//   before it comes round to anyone again - which only happens with 3 or 4 players, where the chain is longer than N.
 // - Even steps are written, odd steps are drawn: step 0 everyone writes something to draw, step 1 they draw the text
 //   they're handed, step 2 they describe the drawing they're handed, and so on.
 // - A step ends when everyone still in the room is done, or when its time is up (plus HBHUB_DOODLE_LATE_MS for what the
@@ -32,6 +33,7 @@
 
 const HBHUB_DOODLE_MIN_PLAYERS = 3;
 const HBHUB_DOODLE_MAX_PLAYERS = 10; // seatNumber in HBHub-DoodleSeats
+const HBHUB_DOODLE_MIN_DRAWINGS = 2; // drawings per chain however few play, so 3 or 4 players still get two
 const HBHUB_DOODLE_WRITE_SECONDS = 45;
 const HBHUB_DOODLE_DRAW_CHOICES = [60, 90, 120]; // the host's choices for the time to draw
 const HBHUB_DOODLE_DEFAULT_SETTINGS = ['drawSeconds' => 90];
@@ -153,12 +155,12 @@ function hbHubDoodleStepKind(int $step): string
 }
 
 /**
- * How many drawings each chain has for that many players: floor((players - 1) / 2), so 1 for 3 or 4 players, 2 for 5
- * or 6, 3 for 7 or 8 and so on.
+ * How many drawings each chain has for that many players: floor((players - 1) / 2), but at least
+ * HBHUB_DOODLE_MIN_DRAWINGS, so 2 for 3 to 6 players, 3 for 7 or 8 and 4 for 9 or 10.
  */
 function hbHubDoodleDrawings(int $players): int
 {
-    return intdiv($players - 1, 2);
+    return max(HBHUB_DOODLE_MIN_DRAWINGS, intdiv($players - 1, 2));
 }
 
 /**
