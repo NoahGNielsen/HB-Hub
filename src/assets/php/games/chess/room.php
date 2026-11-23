@@ -624,7 +624,7 @@ function hbHubChessPeople(PDO $db, array $userIds): array
  */
 function hbHubChessWatchRooms(PDO $db): array
 {
-    $statement = $db->prepare('SELECT roomCode, roomName, roomState->>\'$.clock\' AS clock,
+    $statement = $db->prepare('SELECT roomId, roomCode, roomName, roomState->>\'$.clock\' AS clock,
             roomState->>\'$.game.white.name\' AS white, roomState->>\'$.game.black.name\' AS black
         FROM `HBHub-ChessRooms`
         WHERE roomType = ? AND roomPhase <> ? AND roomState->>\'$.spectators\' = \'true\'
