@@ -1,13 +1,12 @@
 <?php
 // Blockfall: HB Hub's falling-block puzzle. Stack the pieces in a 10x20 well, clear full lines, and don't let it fill
-// to the top, in Enduro, Rush (60 seconds) or Sprint (20 lines). A normal Games page (side bar, back link, title, a
+// to the top. It gets faster every 10 lines. A normal Games page (side bar, back link, title, a
 // Leaderboard button, and the rules under it from assets/php/games/blockfall/rules.php).
 // The game runs in the browser (assets/js/blockfall.js draws it on the data-blockfall-canvas canvas, with the hold and
 // next pieces on their own small canvases), and the server plays along with it for the leaderboard
 // (assets/php/games/blockfall/blockfall.php). So opening the page makes the next game on the server: data-blockfall-game
-// has it ({"game": id, "piecesFrom": 0, "pieces": "TIOS..."}), and data-blockfall-bests the user's best in each mode
-// ({"enduro": score, "rush": score, "sprint": ticks or null}). Only the chosen mode is kept in localStorage
-// (hbHubBlockfall). The line above the well (data-blockfall-note) says when a game doesn't count, and why. The buttons
+// has it ({"game": id, "piecesFrom": 0, "pieces": "TIOS..."}), and data-blockfall-best-score the user's best score.
+// The line above the well (data-blockfall-note) says when a game doesn't count, and why. The buttons
 // under the well (data-blockfall-pad) are for phones and tablets; assets/css/blockfall.css only shows them there.
 //
 // It's also the guest Blockfall at /play/blockfall: guestGames/blockfall/ sets $guestGame and includes this page (see
@@ -15,7 +14,7 @@
 // engines, no leaderboard and no server game: data-blockfall-guest tells blockfall.js to play it only in the browser.
 $guestGame ??= null;
 $blockfallGame = null;
-$blockfallBests = null;
+$blockfallBest = null;
 if ($guestGame === null) {
     require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
     require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/games/access.php';
@@ -24,7 +23,7 @@ if ($guestGame === null) {
 
     $db = hbHubDatabase();
     $blockfallGame = hbHubBlockfallNew($db, (int) $hbHubUser['userId']);
-    $blockfallBests = hbHubBlockfallBests($db, (int) $hbHubUser['userId']);
+    $blockfallBest = hbHubBlockfallBest($db, (int) $hbHubUser['userId']);
 }
 
 // The buttons for phones: input letter (see blockfall.php) => [label, what it does]
@@ -63,7 +62,7 @@ $blockfallPad = [
     <main class="casino games blockfall" data-blockfall data-blockfall-guest>
     <?php else: ?>
     <main class="casino games blockfall" data-blockfall data-blockfall-game="<?= htmlspecialchars(json_encode($blockfallGame)) ?>"
-          data-blockfall-bests="<?= htmlspecialchars(json_encode($blockfallBests)) ?>">
+          data-blockfall-best-score="<?= $blockfallBest ?>">
     <?php endif; ?>
         <?php if ($guestGame !== null): ?>
             <a class="casino-back" href="/">&larr; HB Hub</a>
@@ -82,7 +81,7 @@ $blockfallPad = [
         <p class="casino-intro">
             Stack the falling pieces, fill whole lines to clear them, and don't let the well fill up to the top. Move with
             the arrow keys, turn with Up, X or Z, drop with Space and hold a piece with C, or use the buttons on a phone.
-            <?= $guestGame !== null ? 'Make a free account to get your scores on the leaderboard.' : 'Every mode has a leaderboard.' ?>
+            <?= $guestGame !== null ? 'Make a free account to get your scores on the leaderboard.' : 'Your best score goes on the leaderboard.' ?>
         </p>
 
         <p class="blockfall-note" data-blockfall-note aria-live="polite" hidden></p>
@@ -93,16 +92,8 @@ $blockfallPad = [
                 <span class="blockfall-stat"><span class="blockfall-stat-name">Lines</span> <span data-blockfall-lines>0</span></span>
                 <span class="blockfall-stat"><span class="blockfall-stat-name">Level</span> <span data-blockfall-level>1</span></span>
                 <span class="blockfall-stat"><span class="blockfall-stat-name">Time</span> <span data-blockfall-time>0:00</span></span>
-                <span class="blockfall-stat" title="Your best in this mode"><span class="blockfall-stat-name">Best</span> <span data-blockfall-best>0</span></span>
+                <span class="blockfall-stat" title="Your best score"><span class="blockfall-stat-name">Best</span> <span data-blockfall-best>0</span></span>
                 <span class="blockfall-bar-gap"></span>
-                <label class="blockfall-mode">
-                    <span class="games-visually-hidden">Mode</span>
-                    <select data-blockfall-mode>
-                        <option value="enduro" selected>Enduro</option>
-                        <option value="rush">Rush</option>
-                        <option value="sprint">Sprint</option>
-                    </select>
-                </label>
                 <button type="button" class="blockfall-pause" data-blockfall-pause aria-keyshortcuts="P Escape" disabled>Pause</button>
             </div>
             <div class="blockfall-field">

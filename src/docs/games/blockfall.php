@@ -1,6 +1,6 @@
 <?php
 // Help docs: Blockfall - the rules (assets/php/games/blockfall/rules.php, included as the game shows them), a few tips,
-// and the leaderboards and what keeps them fair (assets/php/games/blockfall/blockfall.php). Open to everyone. Built by
+// and the leaderboard and what keeps it fair (assets/php/games/blockfall/blockfall.php). Open to everyone. Built by
 // assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
@@ -39,12 +39,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     </section>
 
                     <section id="leaderboard" aria-labelledby="docs-leaderboard">
-                        <h2 id="docs-leaderboard">Ranglister</h2>
+                        <h2 id="docs-leaderboard">Ranglisten</h2>
                         <p>
-                            Hver mode har sin egen rangliste (<strong>Leaderboard</strong> på Blockfall-siden). Enduro og Rush
-                            viser din bedste score, dit gennemsnit, alle de linjer, du har ryddet, og hvor mange spil du har
-                            spillet. Sprint viser din hurtigste tid for 20 linjer, din gennemsnitlige tid, hvor mange sprint du
-                            har gennemført, og hvor mange du har spillet.
+                            Ranglisten (<strong>Leaderboard</strong> på Blockfall-siden) viser din bedste score, dit
+                            gennemsnit, alle de linjer, du har ryddet, og hvor mange spil du har spillet.
                         </p>
                         <p>
                             Spillet kører i din browser, men HB Hub's server spiller med på sin egen kopi af brønden: siden
@@ -60,11 +58,11 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                         </ul>
                         <p>
                             Står der en rød linje over brønden, tæller spillet ikke, og linjen siger hvorfor. Du kan stadig
-                            spille det færdigt. Den mode, du sidst valgte, huskes i din browser.
+                            spille det færdigt.
                         </p>
                         <p>
                             Den <a href="/play/blockfall">gratis Blockfall</a>, til at spille uden en konto, bliver kun spillet
-                            i din browser og har ingen rangliste. Din bedste score og tid i hver mode bliver gemt i din browser.
+                            i din browser og har ingen rangliste. Din bedste score bliver gemt i din browser.
                         </p>
                     </section>
 <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/bottom.php'; ?>

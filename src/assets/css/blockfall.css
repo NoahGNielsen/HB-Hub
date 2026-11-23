@@ -1,4 +1,4 @@
-/* Blockfall (games/blockfall/): the game's frame - a violet bar on top with the score, lines, level, time, best, mode
+/* Blockfall (games/blockfall/): the game's frame - a violet bar on top with the score, lines, level, time, best
    and pause, and a deep indigo frame with the hold piece on the left of the well and the next three on the right. The
    well and the pieces are drawn on the canvases by assets/js/blockfall.js. Under the well are the buttons for phones and
    tablets, only shown on a touch screen. Loaded after casino.css and games.css. The colours are the game's own, so they
@@ -52,7 +52,6 @@
   flex: 1;
 }
 
-.blockfall-mode select,
 .blockfall-pause {
   padding: 6px 10px;
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -64,18 +63,11 @@
   cursor: pointer;
 }
 
-.blockfall-mode select option {
-  background: #3d3480;
-  color: #fff;
-}
-
-.blockfall-mode select:disabled,
 .blockfall-pause:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-.blockfall-mode select:hover:not(:disabled),
 .blockfall-pause:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
 }

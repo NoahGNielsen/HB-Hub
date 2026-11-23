@@ -1,6 +1,6 @@
 // Blockfall (games/blockfall/): the whole game, in the browser. HB Hub's falling-block puzzle, built on the ideas in
-// larprad's tetris on GitHub (the modes, the speeds, a hold slot and a preview; credited on the credits page). Loaded
-// by games/blockfall/index.php, which has the bar (score, lines, level, time, best, mode, pause), the well's
+// larprad's tetris on GitHub (the speeds, a hold slot and a preview; credited on the credits page). Loaded
+// by games/blockfall/index.php, which has the bar (score, lines, level, time, best, pause), the well's
 // [data-blockfall-canvas], the hold and next pieces' canvases, the cover over the well ([data-blockfall-cover], for
 // "ready", "paused" and "game over") and the buttons for phones ([data-blockfall-pad]).
 //
@@ -15,16 +15,16 @@
 // soft drop) are made at the start of a tick, before the tick itself, just as the server makes a tick's inputs first.
 //
 // The leaderboard (as Snake's, see snake.js): the page comes with the next game (data-blockfall-game: its id and the
-// first pieces) and the bests (data-blockfall-bests). When the first piece comes in it sends "start" with the mode;
+// first pieces) and the best score (data-blockfall-best-score). When the first piece comes in it sends "start";
 // then it reports the ticks played and the inputs since the last report, every REPORT_MS, sooner when it's running low
 // on pieces, when it's paused or carries on, and with "finish" when it's over. Each answer brings the next pieces, and
 // the answer to "finish" has the best and the next game. A game stops counting (unrank()) when the server says so, a
 // request fails, the page runs out of pieces, or a key press or tap wasn't made by a person (event.isTrusted false).
 // Then it's played on as normal, the pieces coming from Math.random, and [data-blockfall-note] says why.
 //
-// localStorage (hbHubBlockfall) only keeps {"mode": "enduro" | "rush" | "sprint"}, the last mode (in the privacy
-// policy). The guest Blockfall (/play/blockfall, data-blockfall-guest) has no server game: its pieces come from
-// Math.random and its bests are kept there too, as "guestBest" ({"enduro": score, "rush": score, "sprint": ticks}).
+// The guest Blockfall (/play/blockfall, data-blockfall-guest) has no server game: its pieces come from Math.random and
+// its best score is kept in localStorage (hbHubBlockfall, in the privacy policy) as {"guestBest": score}. Members' pages
+// don't use localStorage.
 (() => {
   const root = document.querySelector('[data-blockfall]');
   if (!root) {
@@ -54,11 +54,8 @@
     L: [[2, 0], [0, 1], [1, 1], [2, 1]],
   };
   const BAG = 'IOTSZJL';
-  const MODES = {
-    enduro: { speed: 3, linesPerLevel: 10, ticks: 0, goal: 0, board: 'score' },
-    rush: { speed: 6, linesPerLevel: 5, ticks: 6000, goal: 0, board: 'score' },
-    sprint: { speed: 6, linesPerLevel: 5, ticks: 0, goal: 20, board: 'time' },
-  };
+  const START_SPEED = 3;
+  const LINES_PER_LEVEL = 10;
 
   // The page's own (not rules: how held keys repeat into inputs)
   const DAS = 16; // ticks a move key is held before it repeats
@@ -115,7 +112,6 @@
   const coverText = root.querySelector('[data-blockfall-cover-text]');
   const playButton = root.querySelector('[data-blockfall-play]');
   const pauseButton = root.querySelector('[data-blockfall-pause]');
-  const modeSelect = root.querySelector('[data-blockfall-mode]');
   const scoreOut = root.querySelector('[data-blockfall-score]');
   const linesOut = root.querySelector('[data-blockfall-lines]');
   const levelOut = root.querySelector('[data-blockfall-level]');
@@ -137,31 +133,27 @@
 
   // Storage (in try/catch: it can be blocked, and the game works without it) ----------------------------------------
 
-  const load = () => {
+  // A guest's best score (0 before one). It used to be {"enduro": score, ...}, from when there were three modes.
+  const loadGuestBest = () => {
     try {
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      const guestBest = {};
-      Object.keys(MODES).forEach((key) => {
-        const value = stored.guestBest?.[key];
-        guestBest[key] = Number.isInteger(value) && value > 0 ? value : (MODES[key].board === 'time' ? null : 0);
-      });
-      return { mode: MODES[stored.mode] ? stored.mode : 'enduro', guestBest };
+      const value = stored.guestBest?.enduro ?? stored.guestBest;
+      return Number.isInteger(value) && value > 0 ? value : 0;
     } catch {
-      return { mode: 'enduro', guestBest: {} };
+      return 0;
     }
   };
 
-  const save = () => {
+  const saveGuestBest = () => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(guest ? { mode: saved.mode, guestBest: best } : { mode: saved.mode }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ guestBest: best }));
     } catch {
-      // Blocked or full: the mode (and a guest's bests) just isn't kept
+      // Blocked or full: the best just isn't kept
     }
   };
 
-  const saved = load();
-  // The best in each mode: a score, or for Sprint the ticks for 20 lines (null before one). The server's, or a guest's
-  const best = { enduro: 0, rush: 0, sprint: null, ...(guest ? saved.guestBest : readJson(root.dataset.blockfallBests) || {}) };
+  // The best score: the server's, or a guest's
+  let best = guest ? loadGuestBest() : Number(root.dataset.blockfallBestScore) || 0;
 
   // Rules (the same as blockfall.php's, function by function) --------------------------------------------------------
 
@@ -183,9 +175,9 @@
 
   const resting = (g) => !fits(g, g.piece, g.rot, g.x, g.y + 1);
 
-  const level = (g, mode) => 1 + Math.floor(g.lines / mode.linesPerLevel);
+  const level = (g) => 1 + Math.floor(g.lines / LINES_PER_LEVEL);
 
-  const gravity = (g, mode) => GRAVITY[Math.min(mode.speed + level(g, mode) - 1, GRAVITY.length) - 1];
+  const gravity = (g) => GRAVITY[Math.min(START_SPEED + level(g) - 1, GRAVITY.length) - 1];
 
   const spawn = (g, piece) => {
     g.piece = piece;
@@ -227,7 +219,7 @@
     }
   };
 
-  const lock = (g, mode) => {
+  const lock = (g) => {
     let hiddenOnly = true;
     CELLS[g.piece][g.rot].forEach(([cx, cy]) => {
       const row = g.y + cy;
@@ -246,7 +238,7 @@
       }
     }
     const cleared = clearedRows.length;
-    const points = LINE_POINTS[cleared] * level(g, mode);
+    const points = LINE_POINTS[cleared] * level(g);
     if (cleared > 0) {
       g.board = [...Array(COLS * cleared).fill('.'), ...kept];
       g.score += points;
@@ -256,14 +248,12 @@
 
     if (cleared === 0 && hiddenOnly) {
       g.over = 'top';
-    } else if (mode.goal > 0 && g.lines >= mode.goal) {
-      g.over = 'done';
     } else {
       draw(g);
     }
   };
 
-  const input = (g, letter, mode) => {
+  const input = (g, letter) => {
     if (g.over) {
       return;
     }
@@ -302,7 +292,7 @@
         rows++;
       }
       g.score += 2 * rows;
-      lock(g, mode);
+      lock(g);
     } else if (letter === 'H') {
       if (!g.canHold) {
         return;
@@ -319,27 +309,24 @@
     }
   };
 
-  const advance = (g, mode) => {
+  const advance = (g) => {
     if (g.over) {
       return;
     }
     g.gravity++;
-    if (g.gravity >= gravity(g, mode)) {
+    if (g.gravity >= gravity(g)) {
       g.gravity = 0;
       down(g);
     }
     if (resting(g)) {
       g.lock++;
       if (g.lock >= LOCK_TICKS) {
-        lock(g, mode);
+        lock(g);
       }
     } else {
       g.lock = 0;
     }
     g.ticks++;
-    if (mode.ticks > 0 && g.ticks >= mode.ticks && !g.over) {
-      g.over = 'time';
-    }
   };
 
   // An empty well, before its first piece (hbHubBlockfallFresh() without the draw, which start() makes)
@@ -372,8 +359,6 @@
   let pauses = 0;
   let lastReport = 0;
   let requests = Promise.resolve();
-
-  const mode = () => MODES[saved.mode];
 
   /**
    * A shuffled bag of the seven pieces, for when the server's don't count (a guest, or a game that stopped counting).
@@ -566,25 +551,24 @@
       ranked.started = true;
       lastReport = performance.now();
       const game = ranked;
-      send('start', { game: game.game, mode: saved.mode }).catch((error) => unrank(game, failure(error)));
+      send('start', { game: game.game }).catch((error) => unrank(game, failure(error)));
     }
   };
 
   /**
-   * The game is over (topped out, Rush's minute is up, or Sprint's 20 lines are cleared). A game that counts tells the
-   * server, whose answer has the best in the mode and the next game.
+   * The game is over (topped out). A game that counts tells the server, whose answer has the best score and the next
+   * game.
    */
   const finish = () => {
     const game = ranked && ranked.started ? ranked : null;
-    const modeKey = saved.mode;
     newBest = false;
     counted = false;
     if (guest) {
       counted = true;
-      if (isBetter(modeKey, best[modeKey])) {
-        best[modeKey] = mode().board === 'time' ? g.ticks : g.score;
+      if (g.score > best) {
+        best = g.score;
         newBest = true;
-        save();
+        saveGuestBest();
       }
       document.dispatchEvent(new CustomEvent('guest:prompt'));
     }
@@ -608,7 +592,7 @@
       finishing = false;
       if (data.result === FINISHED) {
         counted = true;
-        best[modeKey] = data.best;
+        best = data.best;
         newBest = data.isBest;
       } else {
         why = data.failed || (data.result in WHY ? data.result : 'error');
@@ -624,14 +608,6 @@
       }
       showStats();
     });
-  };
-
-  // Whether this round beats `previous` in the mode: a higher score, or Sprint's 20 lines in fewer ticks
-  const isBetter = (modeKey, previous) => {
-    if (MODES[modeKey].board === 'time') {
-      return g.over === 'done' && (previous === null || g.ticks < previous);
-    }
-    return g.score > 0 && g.score > previous;
   };
 
   const pause = () => {
@@ -656,7 +632,7 @@
     if (ranked) {
       inputs.push(`${g.ticks}${letter}`);
     }
-    input(g, letter, mode());
+    input(g, letter);
     if (g.over) {
       finish();
     }
@@ -679,7 +655,7 @@
       }
     }
     if (state === 'playing') {
-      advance(g, mode());
+      advance(g);
       if (g.over) {
         finish();
       }
@@ -750,31 +726,15 @@
 
   // Showing it -------------------------------------------------------------------------------------------------------
 
-  // ms as "1:05.42" (with hundredths, for Sprint) or "1:05"
-  const formatTime = (ms, hundredths) => {
+  // ms as "1:05"
+  const formatTime = (ms) => {
     const whole = Math.max(0, ms);
     const minutes = Math.floor(whole / 60000);
     const seconds = Math.floor((whole % 60000) / 1000);
-    const text = `${minutes}:${String(seconds).padStart(2, '0')}`;
-    return hundredths ? `${text}.${String(Math.floor((whole % 1000) / 10)).padStart(2, '0')}` : text;
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
   };
 
-  const bestText = (modeKey) => {
-    const value = best[modeKey];
-    if (MODES[modeKey].board === 'time') {
-      return value === null ? '-' : formatTime(value * TICK_MS, true);
-    }
-    return Number(value || 0).toLocaleString('en');
-  };
-
-  // Rush counts down from its minute, Sprint shows hundredths, Enduro just the time
-  const timeText = () => {
-    const m = mode();
-    if (m.ticks > 0) {
-      return formatTime(Math.ceil(((m.ticks - g.ticks) * TICK_MS) / 1000) * 1000, false);
-    }
-    return formatTime(g.ticks * TICK_MS, m.board === 'time');
-  };
+  const bestText = () => Number(best || 0).toLocaleString('en');
 
   // Only what has changed is written, as this runs every frame
   const write = (out, text) => {
@@ -786,10 +746,10 @@
 
   const showStats = () => {
     write(scoreOut, g.score.toLocaleString('en'));
-    write(linesOut, mode().goal ? `${Math.min(g.lines, mode().goal)}/${mode().goal}` : g.lines);
-    write(levelOut, level(g, mode()));
-    write(timeOut, timeText());
-    write(bestOut, bestText(saved.mode));
+    write(linesOut, g.lines);
+    write(levelOut, level(g));
+    write(timeOut, formatTime(g.ticks * TICK_MS));
+    write(bestOut, bestText());
   };
 
   const showCover = () => {
@@ -800,32 +760,17 @@
         ? ` You can pause ${left} more ${left === 1 ? 'time' : 'times'} and keep this game on the leaderboard.`
         : ' Pause again and this game won\'t count for the leaderboard.';
     }
-    const m = mode();
-    const aims = {
-      enduro: 'Keep going until the blocks reach the top. It gets faster every 10 lines.',
-      rush: 'Score as much as you can in 60 seconds.',
-      sprint: `Clear ${m.goal} lines as fast as you can.`,
-    };
-    let title = 'Game over';
-    let result = `You scored ${g.score.toLocaleString('en')} with ${g.lines} ${g.lines === 1 ? 'line' : 'lines'}.`;
-    if (g.over === 'time') {
-      title = 'Time\'s up!';
-    } else if (g.over === 'done') {
-      title = `${m.goal} lines!`;
-      result = `You cleared ${m.goal} lines in ${formatTime(g.ticks * TICK_MS, true)}.`;
-    } else if (m.board === 'time') {
-      result = `You cleared ${g.lines} of ${m.goal} lines.`;
-    }
+    const result = `You scored ${g.score.toLocaleString('en')} with ${g.lines} ${g.lines === 1 ? 'line' : 'lines'}.`;
     let bestLine = '';
     if (counted && newBest) {
       bestLine = ' That\'s a new best!';
-    } else if (counted && best[saved.mode] !== null) {
-      bestLine = ` Your best is ${bestText(saved.mode)}.`; // (a Sprint before one has reached the 20 lines has none)
+    } else if (counted) {
+      bestLine = ` Your best is ${bestText()}.`;
     }
     const texts = {
-      ready: ['Ready?', `${aims[saved.mode]} Press Space or Enter, or the button, to start.`, 'Play'],
+      ready: ['Ready?', `Keep going until the blocks reach the top. It gets faster every ${LINES_PER_LEVEL} lines. Press Space or Enter, or the button, to start.`, 'Play'],
       paused: ['Paused', 'Press P or Esc, or the button, to carry on.' + pauseText, 'Carry on'],
-      over: [title, result + bestLine, 'Play again'],
+      over: ['Game over', result + bestLine, 'Play again'],
     };
 
     cover.hidden = state === 'playing';
@@ -835,7 +780,6 @@
     }
     pauseButton.disabled = state !== 'playing' && state !== 'paused';
     pauseButton.textContent = state === 'paused' ? 'Carry on' : 'Pause';
-    modeSelect.disabled = state === 'playing' || state === 'paused';
   };
 
   const setState = (next) => {
@@ -1112,19 +1056,6 @@
 
   pauseButton.addEventListener('click', pause);
 
-  modeSelect.addEventListener('change', () => {
-    if (MODES[modeSelect.value]) {
-      saved.mode = modeSelect.value;
-      save();
-      if (state === 'over') {
-        reset();
-        setState('ready');
-      }
-      showStats();
-      showCover();
-    }
-  });
-
   well.addEventListener('animationend', () => well.classList.remove('is-hit'));
   callout.addEventListener('animationend', () => callout.classList.remove('is-shown'));
 
@@ -1147,7 +1078,6 @@
     render(performance.now());
   }).observe(canvas);
 
-  modeSelect.value = saved.mode;
   reset();
   resize();
   showCover();

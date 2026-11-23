@@ -1,8 +1,7 @@
 <?php
 // Blockfall's games, kept on the server so the leaderboard can trust them. Blockfall is HB Hub's falling-block puzzle
 // (the genre, with its own name and look), built on the ideas in larprad's tetris on GitHub (credited on the credits
-// page): a 10x20 well, the seven four-square pieces, a hold slot, and three modes - Enduro (go on until you top out),
-// Rush (score as much as you can in 60 seconds) and Sprint (clear 20 lines as fast as you can).
+// page): a 10x20 well, the seven four-square pieces and a hold slot. You go on until you top out, faster every 10 lines.
 //
 // Like Snake, the game runs in the browser (assets/js/blockfall.js, it has to answer a key press straight away), and
 // the server plays every game along with it on its own copy of the well. The score, lines and time on the leaderboard
@@ -18,8 +17,8 @@
 //   piece locks without a single square below the hidden rows (and no lines cleared).
 // - The pieces come in bags of seven: each bag has every piece once, shuffled with the game's secret (hbHubBlockfallBag()).
 // - Gravity drops the piece a row every HBHUB_BLOCKFALL_GRAVITY[speed - 1] ticks (the speeds from larprad's game, in
-//   ticks). The speed is the mode's starting speed plus the level - 1, at most 15, and the level goes up every
-//   'linesPerLevel' lines.
+//   ticks). The speed is HBHUB_BLOCKFALL_START_SPEED plus the level - 1, at most 15, and the level goes up every
+//   HBHUB_BLOCKFALL_LINES_PER_LEVEL lines.
 // - A piece that can't fall any further locks after HBHUB_BLOCKFALL_LOCK_TICKS ticks there. Moving or turning it while
 //   it rests starts that over again, up to HBHUB_BLOCKFALL_MAX_RESETS times, until it reaches a row lower than it has
 //   been before (which gives it all its resets back).
@@ -33,7 +32,7 @@
 // - The Blockfall page makes the next game when it's opened (hbHubBlockfallNew()), and the answer to each finished game
 //   makes the one after it: a row in HBHub-BlockfallGames with a secret (gameSecret) that decides the pieces. The page
 //   gets the first HBHUB_BLOCKFALL_PIECES_AHEAD of them.
-// - When the first piece comes in, the page says so with the mode (hbHubBlockfallStart()), which starts the server's
+// - When the first piece comes in, the page says so (hbHubBlockfallStart()), which starts the server's
 //   clock and puts the first piece in its well.
 // - While it's played, the page reports (hbHubBlockfallReport()): how many ticks it has played, and the inputs since the
 //   last report ("120L,120+,131F": on tick 120 it moved left and turned, on 131 it hard dropped). It does that every
@@ -46,7 +45,7 @@
 // - The pieces: the page only ever knows the next HBHUB_BLOCKFALL_PIECES_AHEAD, so a game can't be played through at
 //   its own pace before the clock starts.
 // - The speed: every report checks the ticks against the server's clock without the pauses, with the same leeway as
-//   Snake. A slowed down game (more time to think) or a sped up one (Sprint times) ends as "out of time". It's checked
+//   Snake. A slowed down game (more time to think) or a sped up one ends as "out of time". It's checked
 //   before the ticks are played, so a report of a huge number of ticks can't keep the server busy.
 // - Pauses: timed by the server, at most HBHUB_BLOCKFALL_MAX_PAUSES of them.
 // - Bots: a key press or a tap on the buttons made by code isn't "trusted" in the browser, so the page ignores it and
@@ -85,19 +84,16 @@ const HBHUB_BLOCKFALL_SHAPES = [
 ];
 const HBHUB_BLOCKFALL_BAG = 'IOTSZJL'; // the order a bag is shuffled from
 
-// gameMode in HBHub-BlockfallGames => the mode, as MODES in blockfall.js. 'speed' is the speed it starts at,
-// 'ticks' the time limit (0: none) and 'goal' the lines that end it (0: none). 'board' is what its leaderboard ranks
-// by: the score (most first) or the time (fastest first, only games that reached the goal)
-const HBHUB_BLOCKFALL_MODES = [
-    1 => ['key' => 'enduro', 'name' => 'Enduro', 'speed' => 3, 'linesPerLevel' => 10, 'ticks' => 0, 'goal' => 0, 'board' => 'score'],
-    2 => ['key' => 'rush', 'name' => 'Rush', 'speed' => 6, 'linesPerLevel' => 5, 'ticks' => 6000, 'goal' => 0, 'board' => 'score'],
-    3 => ['key' => 'sprint', 'name' => 'Sprint', 'speed' => 6, 'linesPerLevel' => 5, 'ticks' => 0, 'goal' => 20, 'board' => 'time'],
-];
+const HBHUB_BLOCKFALL_START_SPEED = 3; // the speed a game starts at
+const HBHUB_BLOCKFALL_LINES_PER_LEVEL = 10;
 
 // The server's side ---------------------------------------------------------------------------------------------------
 
 const HBHUB_BLOCKFALL_PLAYING = 0; // gameResult in HBHub-BlockfallGames (ready to start too, while gameStartTimestamp is NULL)
-const HBHUB_BLOCKFALL_FINISHED = 1; // topped out, out of time in Rush, or 20 lines in Sprint: counts
+const HBHUB_BLOCKFALL_FINISHED = 1; // topped out: counts
+// gameMode in HBHub-BlockfallGames. There's only the one mode now: the games of the old Rush (2) and Sprint (3) modes
+// are kept, but left out of the leaderboard and the bests
+const HBHUB_BLOCKFALL_MODE_ENDURO = 1;
 const HBHUB_BLOCKFALL_LEFT = 2; // another game was started first
 const HBHUB_BLOCKFALL_SCRIPTED = 3; // a key press or tap came from code
 const HBHUB_BLOCKFALL_OUT_OF_TIME = 4; // the ticks didn't keep time with the server's clock
@@ -114,20 +110,6 @@ const HBHUB_BLOCKFALL_MAX_INPUTS = 5000; // inputs in one report
 
 // The ms from the start to now, or to the start of the pause it's in (as Snake's)
 const HBHUB_BLOCKFALL_ELAPSED_SQL = 'TIMESTAMPDIFF(MICROSECOND, gameStartTimestamp, COALESCE(gamePausedTimestamp, UTC_TIMESTAMP(3))) DIV 1000 AS elapsedMs';
-
-/**
- * The mode's key ('enduro', ...) => its gameMode number.
- *
- * @return array<string, int>
- */
-function hbHubBlockfallModeKeys(): array
-{
-    $keys = [];
-    foreach (HBHUB_BLOCKFALL_MODES as $number => $mode) {
-        $keys[$mode['key']] = $number;
-    }
-    return $keys;
-}
 
 // The pieces ------------------------------------------------------------------------------------------------------
 
@@ -219,15 +201,15 @@ function hbHubBlockfallResting(array $state): bool
     return !hbHubBlockfallFits($state, $state['piece'], $state['rot'], $state['x'], $state['y'] + 1);
 }
 
-function hbHubBlockfallLevel(array $state, array $mode): int
+function hbHubBlockfallLevel(array $state): int
 {
-    return 1 + intdiv($state['lines'], $mode['linesPerLevel']);
+    return 1 + intdiv($state['lines'], HBHUB_BLOCKFALL_LINES_PER_LEVEL);
 }
 
 // The ticks a row at the level the game's on
-function hbHubBlockfallGravity(array $state, array $mode): int
+function hbHubBlockfallGravity(array $state): int
 {
-    return HBHUB_BLOCKFALL_GRAVITY[min($mode['speed'] + hbHubBlockfallLevel($state, $mode) - 1, count(HBHUB_BLOCKFALL_GRAVITY)) - 1];
+    return HBHUB_BLOCKFALL_GRAVITY[min(HBHUB_BLOCKFALL_START_SPEED + hbHubBlockfallLevel($state) - 1, count(HBHUB_BLOCKFALL_GRAVITY)) - 1];
 }
 
 /**
@@ -285,7 +267,7 @@ function hbHubBlockfallMoved(array &$state): void
 /**
  * The piece locks where it is: full lines are cleared and scored, and the next piece comes in (unless that ends the game).
  */
-function hbHubBlockfallLock(array &$state, string $secret, array $mode): void
+function hbHubBlockfallLock(array &$state, string $secret): void
 {
     $hiddenOnly = true;
     foreach (hbHubBlockfallCells($state['piece'], $state['rot']) as [$cx, $cy]) {
@@ -305,14 +287,12 @@ function hbHubBlockfallLock(array &$state, string $secret, array $mode): void
     }
     if ($cleared > 0) {
         $state['board'] = str_repeat('.', HBHUB_BLOCKFALL_COLS * $cleared) . implode('', $kept);
-        $state['score'] += HBHUB_BLOCKFALL_LINE_POINTS[$cleared] * hbHubBlockfallLevel($state, $mode);
+        $state['score'] += HBHUB_BLOCKFALL_LINE_POINTS[$cleared] * hbHubBlockfallLevel($state);
         $state['lines'] += $cleared;
     }
 
     if ($cleared === 0 && $hiddenOnly) {
         $state['over'] = 'top';
-    } elseif ($mode['goal'] > 0 && $state['lines'] >= $mode['goal']) {
-        $state['over'] = 'done';
     } else {
         hbHubBlockfallDraw($state, $secret);
     }
@@ -321,7 +301,7 @@ function hbHubBlockfallLock(array &$state, string $secret, array $mode): void
 /**
  * One input (see the top), on the piece in play. Nothing happens once the game is over.
  */
-function hbHubBlockfallInput(array &$state, string $input, string $secret, array $mode): void
+function hbHubBlockfallInput(array &$state, string $input, string $secret): void
 {
     if ($state['over'] !== '') {
         return;
@@ -367,7 +347,7 @@ function hbHubBlockfallInput(array &$state, string $input, string $secret, array
                 $rows++;
             }
             $state['score'] += 2 * $rows;
-            hbHubBlockfallLock($state, $secret, $mode);
+            hbHubBlockfallLock($state, $secret);
             break;
         case 'H':
             if (!$state['canHold']) {
@@ -387,30 +367,27 @@ function hbHubBlockfallInput(array &$state, string $input, string $secret, array
 }
 
 /**
- * One tick: gravity, the lock delay, then the clock (Rush ends when it runs out).
+ * One tick: gravity, the lock delay, then the clock.
  */
-function hbHubBlockfallAdvance(array &$state, string $secret, array $mode): void
+function hbHubBlockfallAdvance(array &$state, string $secret): void
 {
     if ($state['over'] !== '') {
         return;
     }
     $state['gravity']++;
-    if ($state['gravity'] >= hbHubBlockfallGravity($state, $mode)) {
+    if ($state['gravity'] >= hbHubBlockfallGravity($state)) {
         $state['gravity'] = 0;
         hbHubBlockfallDown($state);
     }
     if (hbHubBlockfallResting($state)) {
         $state['lock']++;
         if ($state['lock'] >= HBHUB_BLOCKFALL_LOCK_TICKS) {
-            hbHubBlockfallLock($state, $secret, $mode);
+            hbHubBlockfallLock($state, $secret);
         }
     } else {
         $state['lock'] = 0;
     }
     $state['ticks']++;
-    if ($mode['ticks'] > 0 && $state['ticks'] >= $mode['ticks'] && $state['over'] === '') {
-        $state['over'] = 'time';
-    }
 }
 
 /**
@@ -484,12 +461,12 @@ function hbHubBlockfallNew(PDO $db, int $userId): array
     try {
         $db->prepare('DELETE FROM `HBHub-BlockfallGames` WHERE userId = ? AND gameResult = ? AND gameStartTimestamp IS NULL')
             ->execute([$userId, HBHUB_BLOCKFALL_PLAYING]);
-        $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = \'\', gameSecret = \'\', gamePausedTimestamp = NULL,
+        $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = HBHUB_BLOCKFALL_LINES_PER_LEVEL\', gameSecret = \'\', gamePausedTimestamp = NULL,
                 gameEndTimestamp = UTC_TIMESTAMP(3)
             WHERE userId = ? AND gameResult = ?')
             ->execute([HBHUB_BLOCKFALL_LEFT, $userId, HBHUB_BLOCKFALL_PLAYING]);
         $db->prepare('INSERT INTO `HBHub-BlockfallGames` (userId, gameSecret, gameState, gameResult, gameCreatedTimestamp)
-            VALUES (?, ?, \'\', ?, UTC_TIMESTAMP(3))')
+            VALUES (?, ?, HBHUB_BLOCKFALL_LINES_PER_LEVEL\', ?, UTC_TIMESTAMP(3))')
             ->execute([$userId, $secret, HBHUB_BLOCKFALL_PLAYING]);
         $gameId = (int) $db->lastInsertId();
         $db->commit();
@@ -501,16 +478,11 @@ function hbHubBlockfallNew(PDO $db, int $userId): array
 }
 
 /**
- * Starts the clock on the user's game $gameId in $modeKey ('enduro', 'rush' or 'sprint'), with the first piece in its
- * well. Returns ['game' => id], or 'badRequest' (no such mode), 'notFound' (not the user's game) or 'gameOver'
- * (started already, or over, like when another tab made a new one).
+ * Starts the clock on the user's game $gameId, with the first piece in its well. Returns ['game' => id], or 'notFound'
+ * (not the user's game) or 'gameOver' (started already, or over, like when another tab made a new one).
  */
-function hbHubBlockfallStart(PDO $db, int $userId, int $gameId, mixed $modeKey): array|string
+function hbHubBlockfallStart(PDO $db, int $userId, int $gameId): array|string
 {
-    $mode = is_string($modeKey) ? (hbHubBlockfallModeKeys()[$modeKey] ?? null) : null;
-    if ($mode === null) {
-        return 'badRequest';
-    }
     $db->beginTransaction();
     try {
         $statement = $db->prepare('SELECT gameSecret, gameResult, gameStartTimestamp IS NOT NULL AS isStarted
@@ -524,7 +496,7 @@ function hbHubBlockfallStart(PDO $db, int $userId, int $gameId, mixed $modeKey):
         $state = hbHubBlockfallFresh($game['gameSecret']);
         $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameMode = ?, gameState = ?, gamePieces = ?, gameStartTimestamp = UTC_TIMESTAMP(3)
             WHERE gameId = ?')
-            ->execute([$mode, json_encode($state), $state['drawn'], $gameId]);
+            ->execute([HBHUB_BLOCKFALL_MODE_ENDURO, json_encode($state), $state['drawn'], $gameId]);
         $db->commit();
     } catch (Throwable $e) {
         $db->rollBack();
@@ -542,7 +514,7 @@ function hbHubBlockfallStart(PDO $db, int $userId, int $gameId, mixed $modeKey):
  * - 'finish': the game is over on the page, so it has to be over on the server's copy too, at the same tick.
  * Returns ['game' => id, 'result' => HBHUB_BLOCKFALL_*, 'score', 'lines', 'ticks' (the server's)] and, while it's still
  * being played, the pieces the page doesn't have yet ('piecesFrom', 'pieces'). A finished game also has 'best' (the
- * user's best in the mode, this one included: a score, or ticks in Sprint, null before one) and 'isBest'.
+ * user's best score, this one included) and 'isBest'.
  * Errors: 'badRequest', 'notFound' and 'gameOver', as Snake's.
  */
 function hbHubBlockfallReport(PDO $db, int $userId, int $gameId, mixed $action, mixed $ticks, mixed $inputs): array|string
@@ -554,7 +526,7 @@ function hbHubBlockfallReport(PDO $db, int $userId, int $gameId, mixed $action, 
 
     $db->beginTransaction();
     try {
-        $statement = $db->prepare('SELECT gameMode, gameSecret, gameState, gamePauses, gamePausedMs,
+        $statement = $db->prepare('SELECT gameSecret, gameState, gamePauses, gamePausedMs,
                 gamePausedTimestamp IS NOT NULL AS isPaused, gameResult, gameStartTimestamp IS NOT NULL AS isStarted,
                 ' . HBHUB_BLOCKFALL_ELAPSED_SQL . '
             FROM `HBHub-BlockfallGames` WHERE gameId = ? AND userId = ? FOR UPDATE');
@@ -566,7 +538,6 @@ function hbHubBlockfallReport(PDO $db, int $userId, int $gameId, mixed $action, 
         }
 
         $secret = $game['gameSecret'];
-        $mode = HBHUB_BLOCKFALL_MODES[(int) $game['gameMode']];
         $state = json_decode($game['gameState'], true);
         $drawnBefore = $state['drawn'];
         $playedMs = max(0, (int) $game['elapsedMs'] - (int) $game['gamePausedMs']);
@@ -582,12 +553,12 @@ function hbHubBlockfallReport(PDO $db, int $userId, int $gameId, mixed $action, 
         } else {
             while ($state['over'] === '' && $state['ticks'] <= $ticks) {
                 foreach ($inputList[$state['ticks']] ?? [] as $input) {
-                    hbHubBlockfallInput($state, $input, $secret, $mode);
+                    hbHubBlockfallInput($state, $input, $secret);
                 }
                 if ($state['ticks'] === $ticks) {
                     break; // the inputs on the tick the page is on are made, the tick itself isn't yet
                 }
-                hbHubBlockfallAdvance($state, $secret, $mode);
+                hbHubBlockfallAdvance($state, $secret);
             }
             // Over on the server's copy: it has to be at the tick the page got to, and the page has to say it's over
             // (a 'tick' sent just as it ended is fine, the 'finish' is on its way). Over on the page but not here: bad
@@ -609,17 +580,17 @@ function hbHubBlockfallReport(PDO $db, int $userId, int $gameId, mixed $action, 
         if ($result === HBHUB_BLOCKFALL_PLAYING) {
             $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameState = ?, gameTicks = ?, gameScore = ?, gameLines = ?, gamePieces = ?,
                     gamePauses = ?,
-                    gamePausedMs = IF(? = \'resume\' AND gamePausedTimestamp IS NOT NULL,
+                    gamePausedMs = IF(? = HBHUB_BLOCKFALL_LINES_PER_LEVELresume\' AND gamePausedTimestamp IS NOT NULL,
                         gamePausedMs + GREATEST(0, TIMESTAMPDIFF(MICROSECOND, gamePausedTimestamp, UTC_TIMESTAMP(3)) DIV 1000), gamePausedMs),
-                    gamePausedTimestamp = CASE ? WHEN \'pause\' THEN COALESCE(gamePausedTimestamp, UTC_TIMESTAMP(3))
-                        WHEN \'resume\' THEN NULL ELSE gamePausedTimestamp END
+                    gamePausedTimestamp = CASE ? WHEN HBHUB_BLOCKFALL_LINES_PER_LEVELpause\' THEN COALESCE(gamePausedTimestamp, UTC_TIMESTAMP(3))
+                        WHEN HBHUB_BLOCKFALL_LINES_PER_LEVELresume\' THEN NULL ELSE gamePausedTimestamp END
                 WHERE gameId = ?')
                 ->execute([json_encode($state), $state['ticks'], $state['score'], $state['lines'], $state['drawn'], $pauses,
                     $action, $action, $gameId]);
         } else {
             // Over: only the result, the numbers and the time are kept. A game that doesn't count keeps what the server
             // got to, for the admins, but the leaderboard leaves it out.
-            $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = \'\', gameSecret = \'\', gameTicks = ?, gameScore = ?,
+            $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = HBHUB_BLOCKFALL_LINES_PER_LEVEL\', gameSecret = \'\', gameTicks = ?, gameScore = ?,
                     gameLines = ?, gamePieces = ?, gamePauses = ?, gameMs = ?, gamePausedTimestamp = NULL, gameEndTimestamp = UTC_TIMESTAMP(3)
                 WHERE gameId = ?')
                 ->execute([$result, $state['ticks'], $state['score'], $state['lines'], $state['drawn'], $pauses, $playedMs, $gameId]);
@@ -635,34 +606,24 @@ function hbHubBlockfallReport(PDO $db, int $userId, int $gameId, mixed $action, 
         $view += hbHubBlockfallPieces($secret, $drawnBefore + HBHUB_BLOCKFALL_PIECES_AHEAD, $state['drawn'] + HBHUB_BLOCKFALL_PIECES_AHEAD);
     }
     if ($result === HBHUB_BLOCKFALL_FINISHED) {
-        $view['best'] = hbHubBlockfallBests($db, $userId)[$mode['key']];
-        $view['isBest'] = hbHubBlockfallIsBest($db, $userId, $gameId, (int) $game['gameMode'], $state, $view['best']);
+        $view['best'] = hbHubBlockfallBest($db, $userId);
+        $view['isBest'] = hbHubBlockfallIsBest($db, $userId, $gameId, $state, $view['best']);
     }
     return $view;
 }
 
 /**
- * Whether the finished game $gameId is the user's new best in its mode: it's their best now, and no game before it
- * was as good (so it beats it, rather than tying it). A Sprint that didn't reach the goal, or a score of 0, never is.
+ * Whether the finished game $gameId is the user's new best: it's their best now, and no game before it was as good
+ * (so it beats it, rather than tying it). A score of 0 never is.
  */
-function hbHubBlockfallIsBest(PDO $db, int $userId, int $gameId, int $modeNumber, array $state, ?int $best): bool
+function hbHubBlockfallIsBest(PDO $db, int $userId, int $gameId, array $state, int $best): bool
 {
-    $mode = HBHUB_BLOCKFALL_MODES[$modeNumber];
-    if ($mode['board'] === 'time') {
-        if ($state['lines'] < $mode['goal'] || $best !== $state['ticks']) {
-            return false;
-        }
-        $statement = $db->prepare('SELECT 1 FROM `HBHub-BlockfallGames`
-            WHERE userId = ? AND gameMode = ? AND gameResult = ? AND gameLines >= ? AND gameTicks <= ? AND gameId <> ? LIMIT 1');
-        $statement->execute([$userId, $modeNumber, HBHUB_BLOCKFALL_FINISHED, $mode['goal'], $state['ticks'], $gameId]);
-    } else {
-        if ($state['score'] === 0 || $best !== $state['score']) {
-            return false;
-        }
-        $statement = $db->prepare('SELECT 1 FROM `HBHub-BlockfallGames`
-            WHERE userId = ? AND gameMode = ? AND gameResult = ? AND gameScore >= ? AND gameId <> ? LIMIT 1');
-        $statement->execute([$userId, $modeNumber, HBHUB_BLOCKFALL_FINISHED, $state['score'], $gameId]);
+    if ($state['score'] === 0 || $best !== $state['score']) {
+        return false;
     }
+    $statement = $db->prepare('SELECT 1 FROM `HBHub-BlockfallGames`
+        WHERE userId = ? AND gameMode = ? AND gameResult = ? AND gameScore >= ? AND gameId <> ? LIMIT 1');
+    $statement->execute([$userId, HBHUB_BLOCKFALL_MODE_ENDURO, HBHUB_BLOCKFALL_FINISHED, $state['score'], $gameId]);
     return $statement->fetchColumn() === false;
 }
 
@@ -672,7 +633,7 @@ function hbHubBlockfallIsBest(PDO $db, int $userId, int $gameId, int $modeNumber
  */
 function hbHubBlockfallScripted(PDO $db, int $userId, int $gameId): array|string
 {
-    $statement = $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = \'\', gameSecret = \'\', gamePausedTimestamp = NULL,
+    $statement = $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = HBHUB_BLOCKFALL_LINES_PER_LEVEL\', gameSecret = \'\', gamePausedTimestamp = NULL,
             gameEndTimestamp = UTC_TIMESTAMP(3)
         WHERE gameId = ? AND userId = ? AND gameResult = ?');
     $statement->execute([HBHUB_BLOCKFALL_SCRIPTED, $gameId, $userId, HBHUB_BLOCKFALL_PLAYING]);
@@ -685,25 +646,12 @@ function hbHubBlockfallScripted(PDO $db, int $userId, int $gameId): array|string
 }
 
 /**
- * The user's best in each mode, from the games that count: ['enduro' => score, 'rush' => score, 'sprint' => ticks for
- * 20 lines]. 0 (or null for Sprint) before their first.
- *
- * @return array<string, ?int>
+ * The user's best score, from the games that count. 0 before their first.
  */
-function hbHubBlockfallBests(PDO $db, int $userId): array
+function hbHubBlockfallBest(PDO $db, int $userId): int
 {
-    $bests = [];
-    foreach (HBHUB_BLOCKFALL_MODES as $mode) {
-        $bests[$mode['key']] = $mode['board'] === 'time' ? null : 0;
-    }
-    $statement = $db->prepare('SELECT gameMode, MAX(gameScore), MIN(IF(gameLines >= ?, gameTicks, NULL))
-        FROM `HBHub-BlockfallGames` WHERE userId = ? AND gameResult = ? GROUP BY gameMode');
-    $statement->execute([HBHUB_BLOCKFALL_MODES[3]['goal'], $userId, HBHUB_BLOCKFALL_FINISHED]);
-    foreach ($statement->fetchAll(PDO::FETCH_NUM) as [$modeNumber, $score, $ticks]) {
-        $mode = HBHUB_BLOCKFALL_MODES[(int) $modeNumber] ?? null;
-        if ($mode !== null) {
-            $bests[$mode['key']] = $mode['board'] === 'time' ? ($ticks !== null ? (int) $ticks : null) : (int) $score;
-        }
-    }
-    return $bests;
+    $statement = $db->prepare('SELECT COALESCE(MAX(gameScore), 0) FROM `HBHub-BlockfallGames`
+        WHERE userId = ? AND gameMode = ? AND gameResult = ?');
+    $statement->execute([$userId, HBHUB_BLOCKFALL_MODE_ENDURO, HBHUB_BLOCKFALL_FINISHED]);
+    return (int) $statement->fetchColumn();
 }

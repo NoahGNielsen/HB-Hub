@@ -58,7 +58,7 @@ const HBHUB_DOCS_SECTIONS = [
             '/docs/games/minesweeper' => ['Minesweeper', 'Klassikeren i sit Windows 95-udseende: ryd brættet uden at åbne en mine.'],
             '/docs/games/sudoku' => ['Sudoku', 'Fyld brættet, så hver række, kolonne og boks har 1 til 9, på fire niveauer fra Easy til Expert.'],
             '/docs/games/snake' => ['Snake', 'Styr slangen hen til æblerne, og bliv længere uden at ramme kanten eller dig selv.'],
-            '/docs/games/blockfall' => ['Blockfall', 'Stabl de faldende brikker, ryd hele linjer, og lad ikke brønden blive fuld, i tre modes.'],
+            '/docs/games/blockfall' => ['Blockfall', 'Stabl de faldende brikker, ryd hele linjer, og lad ikke brønden blive fuld.'],
             '/docs/games/ore-mining-inc' => ['Ore Mining Inc.', 'Et clickerspil: min en asteroide, byg et mineselskab og prestige på tværs af multiverset.'],
         ],
     ],

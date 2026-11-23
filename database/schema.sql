@@ -285,10 +285,10 @@ CREATE TABLE `HBHub-BlackjackSeats` (
 CREATE TABLE `HBHub-BlockfallGames` (
   `gameId` bigint UNSIGNED NOT NULL,
   `userId` int UNSIGNED NOT NULL,
-  `gameMode` tinyint UNSIGNED DEFAULT NULL COMMENT '1 Enduro (until it tops out)\r\n2 Rush (60 seconds)\r\n3 Sprint (20 lines)\r\nNULL until it starts',
+  `gameMode` tinyint UNSIGNED DEFAULT NULL COMMENT '1 Enduro (until it tops out), the only mode now\r\n2 Rush (60 seconds) and 3 Sprint (20 lines): old modes, no longer played or on the leaderboard\r\nNULL until it starts',
   `gameSecret` char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing, the random secret the pieces are shuffled from (the page only gets the next few). Empty once the game is over',
   `gameState` varchar(600) CHARACTER SET ascii COLLATE ascii_bin NOT NULL COMMENT 'While playing (once started), the server''s copy of the game as JSON: the well, the piece in play, the hold and the counters (see blockfall.php). Empty otherwise',
-  `gameTicks` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Ticks of 10 ms played, as far as the server has played it (a Sprint''s time)',
+  `gameTicks` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Ticks of 10 ms played, as far as the server has played it',
   `gameScore` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Points, as the server counted them',
   `gameLines` mediumint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Lines cleared, as the server counted them',
   `gamePieces` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Pieces that have come in',
@@ -296,7 +296,7 @@ CREATE TABLE `HBHub-BlockfallGames` (
   `gamePausedMs` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How long it has been paused in all, in ms, not counting the pause it''s in now',
   `gamePausedTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when the pause it''s in now started, NULL while the clock runs',
   `gameMs` int UNSIGNED DEFAULT NULL COMMENT 'How long it was played, in ms, without its pauses. Set when it ends with a report (not when it''s left or scripted)',
-  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing (or ready to start, while gameStartTimestamp is NULL)\r\n1 Finished (topped out, Rush''s time up or Sprint''s 20 lines: counts; a Sprint only on its leaderboard with gameLines >= 20)\r\n2 Left (started another game first)\r\n3 Scripted (a key press or tap came from code)\r\n4 Out of time (the ticks didn''t keep time with the server''s clock)\r\n5 Bad moves (the server''s copy couldn''t play the same game)\r\n6 Too many pauses\r\n3-6 are the anticheat, and only count as played',
+  `gameResult` tinyint UNSIGNED NOT NULL COMMENT '0 Playing (or ready to start, while gameStartTimestamp is NULL)\r\n1 Finished (topped out, or in the old Rush and Sprint modes their time up or 20 lines): counts\r\n2 Left (started another game first)\r\n3 Scripted (a key press or tap came from code)\r\n4 Out of time (the ticks didn''t keep time with the server''s clock)\r\n5 Bad moves (the server''s copy couldn''t play the same game)\r\n6 Too many pauses\r\n3-6 are the anticheat, and only count as played',
   `gameCreatedTimestamp` datetime(3) NOT NULL COMMENT 'UTC, when it was made (the Blockfall page was opened, or the last game ended)',
   `gameStartTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when the first piece came in, NULL until then (a game never started is deleted when the next one is made)',
   `gameEndTimestamp` datetime(3) DEFAULT NULL COMMENT 'UTC, when it ended, NULL while playing'

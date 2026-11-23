@@ -216,7 +216,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                                 <rect class="is-violet" x="54" y="40" width="9" height="11" rx="3"/>
                             </svg>
                         </span>
-                        <span class="casino-game-text">Stack the falling pieces and clear whole lines before the well fills up. Endless Enduro, a 60-second Rush or a 20-line Sprint, each with a leaderboard.</span>
+                        <span class="casino-game-text">Stack the falling pieces and clear whole lines before the well fills up. It gets faster as you go, and your best score goes on the leaderboard.</span>
                     </a>
                 </li>
                 <li>
