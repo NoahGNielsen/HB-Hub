@@ -471,7 +471,9 @@
             if (newPicture) newPicture.hidden = type !== 'picture' || !picked;
             if (current) current.hidden = type !== 'picture' || picked !== null;
             const gifSrc = bannerGif.value ? gifUrl(bannerGif.value) : '';
-            if (type === 'gif' && gifPicture.getAttribute('src') !== gifSrc) gifPicture.src = gifSrc;
+            // Without a GIF the src goes altogether: src = '' would point at this page and count as a picture that failed
+            if (type === 'gif' && !gifSrc) gifPicture.removeAttribute('src');
+            else if (type === 'gif' && gifPicture.getAttribute('src') !== gifSrc) gifPicture.src = gifSrc;
             gifPicture.hidden = type !== 'gif' || !gifSrc;
             preview.style.backgroundImage = type === 'colors' ? gradient() : '';
             mini.style.backgroundImage = gradient();

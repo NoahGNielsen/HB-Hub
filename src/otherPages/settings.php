@@ -790,7 +790,8 @@ $settingsDeviceCount = count($settingsDevices);
 
             <a class="settings-me" href="/profile">
                 <span class="settings-me-avatar" aria-hidden="true">
-                    <img src="<?= htmlspecialchars($settingsAvatarSrc ?? '') ?>" alt="" data-avatar-picture<?= $settingsAvatarSrc === null ? ' hidden' : '' ?>>
+                    <?php // No src at all without a picture: an empty src="" is this page's own address, which "fails" as a picture ?>
+                    <img<?= $settingsAvatarSrc !== null ? ' src="' . htmlspecialchars($settingsAvatarSrc) . '"' : '' ?> alt="" data-avatar-picture<?= $settingsAvatarSrc === null ? ' hidden' : '' ?>>
                     <span data-avatar-initial<?= $settingsAvatarSrc !== null ? ' hidden' : '' ?>><?= $settingsInitial ?></span>
                 </span>
                 <span class="settings-me-text">
@@ -884,7 +885,7 @@ $settingsDeviceCount = count($settingsDevices);
                                     <img class="settings-banner-picture" src="<?= htmlspecialchars(hbHubProfileBannerUrl($userId, $settingsBannerId)) ?>" alt=""
                                          data-banner-current data-jxl data-jxl-worker="<?= $settingsJxlWorker ?>">
                                 <?php endif; ?>
-                                <img class="settings-banner-picture" src="<?= $settingsBannerGif !== null ? htmlspecialchars(hbHubProfileBannerGifUrl($settingsBannerGif)) : '' ?>" alt=""
+                                <img class="settings-banner-picture"<?= $settingsBannerGif !== null ? ' src="' . htmlspecialchars(hbHubProfileBannerGifUrl($settingsBannerGif)) . '"' : '' ?> alt=""
                                      data-banner-gif-picture<?= $settingsValues['bannerType'] !== 'gif' ? ' hidden' : '' ?>>
                             </div>
                             <button type="button" class="settings-banner-edit" data-banner-open hidden>
@@ -893,7 +894,7 @@ $settingsDeviceCount = count($settingsDevices);
                             </button>
                             <div class="settings-look-who" aria-hidden="true">
                                 <div class="settings-look-avatar">
-                                    <img class="settings-avatar-preview" src="<?= htmlspecialchars($settingsAvatarSrc ?? '') ?>" alt="" data-avatar-picture<?= $settingsAvatarSrc === null ? ' hidden' : '' ?>>
+                                    <img class="settings-avatar-preview"<?= $settingsAvatarSrc !== null ? ' src="' . htmlspecialchars($settingsAvatarSrc) . '"' : '' ?> alt="" data-avatar-picture<?= $settingsAvatarSrc === null ? ' hidden' : '' ?>>
                                     <span class="settings-avatar-preview settings-avatar-initial" data-avatar-initial<?= $settingsAvatarSrc !== null ? ' hidden' : '' ?>><?= $settingsInitial ?></span>
                                 </div>
                                 <div class="settings-look-text">

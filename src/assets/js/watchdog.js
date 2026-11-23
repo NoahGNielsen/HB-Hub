@@ -291,12 +291,26 @@
         note('script', { path, message: (event.error?.name && !message.includes(event.error.name) ? event.error.name + ': ' : '') + message, line });
     });
 
+    // What a promise was rejected with that isn't an Error or a string, as text. JSON alone says "{}" for most of them
+    // (an Event, a DOMException in some browsers, a class's object), which tells nothing, so it starts with what it is:
+    // "Event (error on img)", "Object {}", "XMLHttpRequest {}". Anything JSON can't do is String() instead.
+    const describe = (reason) => {
+        if (reason === null || typeof reason !== 'object') return String(reason);
+        if (typeof Event === 'function' && reason instanceof Event) {
+            const target = reason.target instanceof Element ? ' on ' + reason.target.tagName.toLowerCase() : '';
+            return (reason.constructor?.name || 'Event') + ' (' + reason.type + target + ')';
+        }
+        let json;
+        try { json = JSON.stringify(reason); } catch { json = String(reason); }
+        return (reason.constructor?.name || 'Object') + ' ' + json;
+    };
+
     // A rejected promise nobody caught
     window.addEventListener('unhandledrejection', (event) => {
         const reason = event.reason;
         if (reason?.name === 'AbortError' || isExtension(reason?.stack)) return;
         const message = messageOf(reason instanceof Error ? reason.name + ': ' + reason.message
-            : typeof reason === 'string' ? reason : (() => { try { return JSON.stringify(reason); } catch { return String(reason); } })());
+            : typeof reason === 'string' ? reason : describe(reason));
         const [path, line] = whereOf(reason?.stack);
         note('promise', { path, message, line });
     });

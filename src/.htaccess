@@ -151,6 +151,11 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     RewriteRule ^gambling(/.*)?$ /casino$1 [R=301,L]
     RewriteRule ^gambling(/.*)?$ casino$1 [L]
 
+    # /favicon.ico: browsers that can't use favicon.svg (older Safari, a picture or JSON opened on its own) ask for it
+    # anyway. There isn't one, and each 404 ran the PHP error page, so they get the app icon instead (a PNG, which every
+    # browser takes at that address too)
+    RewriteRule ^favicon\.ico$ assets/images/appIcon192.png [L]
+
     # 1. ALLOW ACCESS TO .well-known (Required for SSL certificates like Let's Encrypt)
     RewriteRule ^\.well-known/ - [L]
 
