@@ -119,7 +119,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                 <li>
                     <a class="casino-game casino-game-wordle" href="/games/wordle/">
                         <span class="casino-game-cover">
-                            <span class="casino-game-kicker">A new word daily</span>
+                            <span class="casino-game-kicker">Word puzzle</span>
                             <span class="casino-game-name">Wordle</span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
                                 <rect class="casino-game-art-mark" x="6" y="12" width="15" height="15" rx="3"/>
@@ -136,7 +136,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                 <li>
                     <a class="casino-game casino-game-minesweeper" href="/games/minesweeper/">
                         <span class="casino-game-cover">
-                            <span class="casino-game-kicker">Bomb? BOOM!</span>
+                            <span class="casino-game-kicker">Logic puzzle</span>
                             <span class="casino-game-name">Minesweeper</span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
                                 <!-- A mine with its eight spikes and a shine on it, and a red flag on its stand next to it -->
@@ -159,7 +159,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                 <li>
                     <a class="casino-game casino-game-sudoku" href="/games/sudoku/">
                         <span class="casino-game-cover">
-                            <span class="casino-game-kicker">Four levels</span>
+                            <span class="casino-game-kicker">Number puzzle</span>
                             <span class="casino-game-name">Sudoku</span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
                                 <!-- A 3x3 box of a Sudoku board, with a few numbers in it and the picked square in the middle -->
@@ -199,7 +199,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                 <li>
                     <a class="casino-game casino-game-blockfall" href="/games/tetris/">
                         <span class="casino-game-cover">
-                            <span class="casino-game-kicker">Puzzle classic</span>
+                            <span class="casino-game-kicker">Arcade classic</span>
                             <span class="casino-game-name">Tetris</span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
                                 <!-- A stack of rounded blocks with one line nearly full, and a piece falling into the gap -->
