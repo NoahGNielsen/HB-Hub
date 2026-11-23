@@ -197,10 +197,10 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     </a>
                 </li>
                 <li>
-                    <a class="casino-game casino-game-blockfall" href="/games/blockfall/">
+                    <a class="casino-game casino-game-blockfall" href="/games/tetris/">
                         <span class="casino-game-cover">
                             <span class="casino-game-kicker">Puzzle classic</span>
-                            <span class="casino-game-name">Blockfall</span>
+                            <span class="casino-game-name">Tetris</span>
                             <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
                                 <!-- A stack of rounded blocks with one line nearly full, and a piece falling into the gap -->
                                 <rect class="is-coral" x="20" y="4" width="11" height="11" rx="3"/>

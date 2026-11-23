@@ -43,7 +43,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
     'hbHubSudokuGuest' => 'Kun i den gratis Sudoku på /play/sudoku: dit igangværende spil (opgave, løsning, dine tal og noter, tid og hints) samt dine bedste tider og sejre. Spillet foregår udelukkende i din browser, så intet sendes til HB Hub eller overføres til en konto.',
     'hbHubSudoku' => 'Dit igangværende Sudoku-spil med en konto (nummer, opgave, dine tal og noter, tid og hints), så du kan fortsætte senere. Dine tal sendes kun til serveren, når brættet er fyldt, eller du beder om et hint.',
     'hbHubSnake' => 'Den fart, du sidst valgte i Snake. Dine spil og bedste scorer gemmes på serveren (se Casino og spil). I den gratis Snake på /play/snake gemmes også din bedste score ved hver fart her; det spil foregår udelukkende i din browser, så intet sendes til HB Hub eller overføres til en konto.',
-    'hbHubBlockfall' => 'Din bedste score i den gratis Blockfall på /play/blockfall. Når du er logget ind, bruges den ikke: dine spil og din bedste score gemmes på serveren (se Casino og spil). Den gratis Blockfall foregår udelukkende i din browser, så intet sendes til HB Hub eller overføres til en konto.',
+    'hbHubBlockfall' => 'Din bedste score i den gratis Blockfall på /play/tetris. Når du er logget ind, bruges den ikke: dine spil og din bedste score gemmes på serveren (se Casino og spil). Den gratis Tetris foregår udelukkende i din browser, så intet sendes til HB Hub eller overføres til en konto.',
     'hbHubGuestWordle' => 'Dagens Wordle-spil uden en konto, krypteret af HB Hub, så det ikke kan læses eller ændres i browseren. Sendes med hvert gæt, så serveren kan kontrollere det. Logger du ind eller opretter dig, overføres dagens spil én gang til din konto (kun for sprog, du ikke har spillet i dag) og slettes derefter. Spil fra tidligere dage overskrives.',
     'hbHubGuestWordleRandom' => 'Wordles tilfældige ord uden en konto, med dine gæt, krypteret på samme måde og sendt med hvert gæt. Overføres aldrig til en konto og slettes, når du åbner Wordle logget ind.',
     'hbHubGuestMiner' => 'Dit Ore Mining Inc.-spil uden en konto, krypteret på samme måde, samt et tilfældigt id for fanen (så spillet kun kører i én fane ad gangen). Sendes med hver gemning, så serveren kan kontrollere det. Logger du ind eller opretter dig, bliver det din kontos spil (kun hvis kontoen ikke har et) og slettes derefter.',
@@ -221,7 +221,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             <li>Minesweeper: brætstørrelse, resultat, tid og tidspunkter for hvert spil, samt det mindste antal klik, brættet kunne vindes på, for at opdage sejre, der er for hurtige til et menneske. Spil, hvor et klik kom fra kode i stedet for fra dig, stoppes. Mens et spil er i gang, gemmes også åbnede felter og minernes placering; det slettes, når spillet slutter. Dine flag bliver i din browser.</li>
                             <li>Sudoku: niveau, resultat (med eller uden hints, eller for hurtigt til at tælle), antal hints, tid, pausetid og tidspunkter. Mens et spil er i gang, gemmes også opgaven og løsningen; de slettes, når spillet slutter. Dine tal og noter bliver i din browser, indtil brættet er udfyldt.</li>
                             <li>Snake: fart, resultat (talt med eller stoppet af anticheat, og hvorfor), æbler spist, antal skridt og pauser, spilletid, pausetid og tidspunkter. Mens du spiller, sender siden dine sving og antal skridt til serveren, som spiller med på sin egen kopi af brættet for at kontrollere scoren og tiden; mens et spil er i gang, gemmes også slangens placering og en tilfældig nøgle til æblerne, som slettes, når spillet slutter. Et tastetryk eller swipe, der kom fra kode i stedet for fra dig, stopper spillet fra at tælle. Andre ser kun dine totaler på ranglisten.</li>
-                            <li>Blockfall: mode (fra de gamle modes Rush og Sprint), resultat (talt med eller stoppet af anticheat, og hvorfor), point, linjer, antal brikker, spillets tid, antal pauser, spilletid, pausetid og tidspunkter. Mens du spiller, sender siden dine tastetryk og hvor langt spillet er nået til serveren, som spiller med på sin egen kopi af brønden for at kontrollere point, linjer og tid; mens et spil er i gang, gemmes også serverens kopi af brønden og en tilfældig nøgle til brikkerne, som slettes, når spillet slutter. Et tastetryk eller tryk på en knap, der kom fra kode i stedet for fra dig, stopper spillet fra at tælle. Andre ser kun dine totaler på ranglisten.</li>
+                            <li>Tetris: mode (fra de gamle modes Rush og Sprint), resultat (talt med eller stoppet af anticheat, og hvorfor), point, linjer, antal brikker, spillets tid, antal pauser, spilletid, pausetid og tidspunkter. Mens du spiller, sender siden dine tastetryk og hvor langt spillet er nået til serveren, som spiller med på sin egen kopi af brønden for at kontrollere point, linjer og tid; mens et spil er i gang, gemmes også serverens kopi af brønden og en tilfældig nøgle til brikkerne, som slettes, når spillet slutter. Et tastetryk eller tryk på en knap, der kom fra kode i stedet for fra dig, stopper spillet fra at tælle. Andre ser kun dine totaler på ranglisten.</li>
                             <li>
                                 Ore Mining Inc.: dit gemte spil, dvs. din fremgang (ressourcer, bygninger, opgraderinger, færdigheder,
                                 præstationer, klik, Star Shards og køb i Shard Shop, valgte skins og effekter, Starbound Shifts og
@@ -254,11 +254,11 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
 
                         <h3>Spil uden en konto</h3>
                         <p>
-                            De gratis spil på <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, Sudoku, Snake, Blockfall samt Blackjack,
+                            De gratis spil på <a href="/play">/play</a> (Wordle, Ore Mining Inc., Minesweeper, Sudoku, Snake, Tetris samt Blackjack,
                             Baccarat, Roulette og Slots med legechips) kan spilles uden en konto. Der gemmes da intet om dig eller
                             dit spil på serveren, bortset fra fejlrapporter fra browseren (se
                             <a href="#watchdog">Fejlrapporter fra browseren</a>). Wordle og Ore Mining Inc. gemmes i stedet
-                            krypteret i din browser og sendes med hvert træk, så serveren kan kontrollere det. Sudoku, Snake og Blockfall
+                            krypteret i din browser og sendes med hvert træk, så serveren kan kontrollere det. Sudoku, Snake og Tetris
                             spilles udelukkende i din browser, mens Minesweeper og casinospillene kun findes på den åbne side og starter
                             forfra, når den genindlæses. De gratis spil sætter ingen cookies (de tjekker kun, om cookien hbHubDevice
                             findes) og har ingen ranglister, statistik eller nedbrudsrapporter.
@@ -475,7 +475,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                             Det sletter straks dit navn, profilbillede, banner, bio, status, uddannelsesmærke, klasse,
                             indstillinger, adgangskode, totrinshemmelighed, Discord-kobling, IP-adresser, logins, kendte enheder,
                             browserfingeraftryk, dit Ore Mining Inc.-spil og dine nedbrudsrapporter, dine fejlrapporter, dine
-                            Minesweeper-, Sudoku-, Snake- og Blockfall-spil, dit tilfældige Wordle-ord og dine vedhæftede filer. Dit navn erstattes
+                            Minesweeper-, Sudoku-, Snake- og Tetris-spil, dit tilfældige Wordle-ord og dine vedhæftede filer. Dit navn erstattes
                             med "Deleted User". Udskifter eller fjerner du dit profilbillede, eller udskiftes eller fjernes en
                             gruppes ikon, slettes den gamle billedfil fra serveren med det samme.
                         </p>

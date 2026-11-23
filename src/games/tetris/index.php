@@ -47,7 +47,7 @@ $blockfallPad = [
     <?php if ($guestGame !== null): ?>
         <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/guestGames/head.php'; ?>
     <?php else: ?>
-        <title>Blockfall - HB Hub</title>
+        <title>Tetris - HB Hub</title>
         <meta name="robots" content="noindex">
         <meta name="description" content="Play Blockfall, the falling-block puzzle, on the HB Hub">
     <?php endif; ?>
@@ -70,7 +70,7 @@ $blockfallPad = [
             <a class="casino-back" href="/games/">&larr; Games</a>
         <?php endif; ?>
         <div class="casino-title-row">
-            <h1>Blockfall</h1>
+            <h1>Tetris</h1>
             <?php if ($guestGame === null): ?>
                 <a class="casino-btn" href="/games/blockfall/leaderboard">Leaderboard</a>
             <?php endif; ?>

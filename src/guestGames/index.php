@@ -75,10 +75,10 @@ $playStructuredData = json_encode([
             <section class="guest-hub-text" aria-labelledby="guest-hub-account">
                 <h2 id="guest-hub-account">Vil du beholde dine fremskridt?</h2>
                 <p>
-                    Som gæst bliver dine spil af Wordle, Ore Mining Inc. og Sudoku og dine bedste scorer i Snake og Blockfall gemt i din
+                    Som gæst bliver dine spil af Wordle, Ore Mining Inc. og Sudoku og dine bedste scorer i Snake og Tetris gemt i din
                     browser, og Minesweeper og casinoets legechips starter forfra hver gang. Opret en gratis HB Hub-konto for at
                     beholde din Wordle-stime og statistik, gemme dit mineselskab på HB Hub, få dine tider i Minesweeper og Sudoku
-                    og dine scorer i Snake og Blockfall på ranglisten, få dine egne
+                    og dine scorer i Snake og Tetris på ranglisten, få dine egne
                     chips hver dag, spille ved borde med venner og komme på ranglisterne. Det, du har spillet som gæst i
                     Wordle og Ore Mining Inc., kommer med dig.
                 </p>

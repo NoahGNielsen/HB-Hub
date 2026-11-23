@@ -276,7 +276,7 @@ function termsNumber(int $number): string
                                 tastetryk eller swipe kommer fra kode. Et nyt spil afslutter det igangværende.
                             </li>
                             <li>
-                                <strong>Blockfall:</strong> Serveren bestemmer brikkerne og spiller med på sin egen kopi af
+                                <strong>Tetris:</strong> Serveren bestemmer brikkerne og spiller med på sin egen kopi af
                                 brønden, og kun de point, linjer og tider, den selv tæller, kommer på ranglisterne. Et spil
                                 tæller kun som spillet, hvis det er sat op eller ned i fart, hvis serveren ikke kan spille det
                                 samme spil, hvis det holdes pause mere end 10 gange, eller hvis et tastetryk eller tryk på en
