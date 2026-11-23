@@ -101,8 +101,7 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
   change goes in both, or every game ends as "bad moves".
 - **Blockfall** (the falling-block puzzle) is built the same way: the rules are in both `assets/js/blockfall.js` and
   `assets/php/games/blockfall/blockfall.php` ("Rules" part, function by function, whole numbers only, 10 ms ticks), and
-  the server replays every input. A rule change goes in both. Its name is Blockfall: Tetris is a trademark, so the
-  game itself never uses that name (only the credits do, for larprad's repo it's built on).
+  the server replays every input. A rule change goes in both.
 - **`userSettings` JSON**: always read with a default - older accounts lack newer keys. `defaultUserSettings.json` /
   `defaultChatSettings.json` document the shape; update them when adding a setting.
 - **Notifications**: types are `"section.kind"`; add a section with a file in `assets/php/notificationTypes/` and call
