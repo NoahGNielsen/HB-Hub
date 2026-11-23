@@ -50,7 +50,7 @@ $counts = 'g.gameResult = ' . HBHUB_BLOCKFALL_FINISHED . ($mode['goal'] > 0 ? ' 
 $statement = $db->prepare("SELECT g.userId, u.userName, u.userAvatarAttachmentId, COUNT(*) AS played,
         SUM($counts) AS counted, MAX(IF($counts, g.gameScore, NULL)) AS bestScore, AVG(IF($counts, g.gameScore, NULL)) AS averageScore,
         MIN(IF($counts, g.gameTicks, NULL)) AS bestTicks, AVG(IF($counts, g.gameTicks, NULL)) AS averageTicks,
-        SUM(IF($counts, g.gameLines, 0)) AS lines
+        SUM(IF($counts, g.gameLines, 0)) AS totalLines
     FROM `HBHub-BlockfallGames` g
     JOIN `HBHub-Users` u ON u.userId = g.userId
     WHERE g.gameMode = ? AND g.gameStartTimestamp IS NOT NULL AND u.userStatus IS NOT NULL AND u.userStatus <> ?
@@ -68,7 +68,7 @@ foreach ($statement->fetchAll() as $row) {
         // Sprint's in ms (ticks of HBHUB_BLOCKFALL_TICK_MS)
         'best' => $byTime ? (int) $row['bestTicks'] * HBHUB_BLOCKFALL_TICK_MS : (int) $row['bestScore'],
         'average' => $byTime ? (float) $row['averageTicks'] * HBHUB_BLOCKFALL_TICK_MS : (float) $row['averageScore'],
-        'lines' => (int) $row['lines'],
+        'lines' => (int) $row['totalLines'], // not "lines": that's a reserved word in MySQL
         'cleared' => (int) $row['counted'],
         'played' => (int) $row['played'],
     ];
