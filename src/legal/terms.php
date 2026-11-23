@@ -276,6 +276,13 @@ function termsNumber(int $number): string
                                 tastetryk eller swipe kommer fra kode. Et nyt spil afslutter det igangværende.
                             </li>
                             <li>
+                                <strong>Blockfall:</strong> Serveren bestemmer brikkerne og spiller med på sin egen kopi af
+                                brønden, og kun de point, linjer og tider, den selv tæller, kommer på ranglisterne. Et spil
+                                tæller kun som spillet, hvis det er sat op eller ned i fart, hvis serveren ikke kan spille det
+                                samme spil, hvis det holdes pause mere end 10 gange, eller hvis et tastetryk eller tryk på en
+                                knap kommer fra kode. Et nyt spil afslutter det igangværende.
+                            </li>
+                            <li>
                                 <strong>Ore Mining Inc.:</strong> Spillet kører i én fane ad gangen, og højst 20 klik i sekundet
                                 tæller. Klik, der ligner automatisering, giver kun 20 % af det normale udbytte. Fremskridt, der ikke
                                 er nået at blive gemt, forsøges gendannet næste gang, men kan gå tabt. Star Shards har ingen værdi
@@ -290,7 +297,7 @@ function termsNumber(int $number): string
                         <p>
                             De gratis spil på <a href="/play">/play</a> er også omfattet af disse vilkår. Uden konto gemmes Wordle,
                             Sudoku og Ore Mining Inc. kun i din browser, og et Minesweeper-bræt kun, til siden lukkes. Gæsters
-                            Minesweeper- og Sudoku-resultater kommer ikke på ranglisten. Opretter du dig eller logger ind fra et
+                            Minesweeper-, Sudoku-, Snake- og Blockfall-resultater kommer ikke på ranglisten. Opretter du dig eller logger ind fra et
                             gratis spil, overføres dagens Wordle og dit Ore Mining Inc.-spil til kontoen, men kun hvis kontoen ikke
                             allerede har dem. Har browseren tidligere været logget ind, sendes du i stedet til login. Spillene må
                             ikke overbelastes med automatiserede forespørgsler.

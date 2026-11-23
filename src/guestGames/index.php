@@ -38,7 +38,7 @@ $playStructuredData = json_encode([
     <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <link rel="stylesheet" href="/assets/css/guestGames.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/guestGames.css') ?>">
     <title>Gratis onlinespil - uden login | HB Hub</title>
-    <meta name="description" content="Gratis browserspil fra HB Hub på HANSENBERG: Wordle på dansk og engelsk, et idle clicker-spil, Minesweeper, Sudoku, Snake, og Blackjack, Baccarat, Roulette og Slots med legechips. Uden login.">
+    <meta name="description" content="Gratis browserspil fra HB Hub på HANSENBERG: Wordle på dansk og engelsk, et idle clicker-spil, Minesweeper, Sudoku, Snake, Blockfall, og Blackjack, Baccarat, Roulette og Slots med legechips. Uden login.">
     <script type="application/ld+json"><?= $playStructuredData ?></script>
 </head>
 <body class="home-body">
@@ -75,10 +75,10 @@ $playStructuredData = json_encode([
             <section class="guest-hub-text" aria-labelledby="guest-hub-account">
                 <h2 id="guest-hub-account">Vil du beholde dine fremskridt?</h2>
                 <p>
-                    Som gæst bliver dine spil af Wordle, Ore Mining Inc. og Sudoku og dine bedste scorer i Snake gemt i din
+                    Som gæst bliver dine spil af Wordle, Ore Mining Inc. og Sudoku og dine bedste scorer i Snake og Blockfall gemt i din
                     browser, og Minesweeper og casinoets legechips starter forfra hver gang. Opret en gratis HB Hub-konto for at
                     beholde din Wordle-stime og statistik, gemme dit mineselskab på HB Hub, få dine tider i Minesweeper og Sudoku
-                    og dine scorer i Snake på ranglisten, få dine egne
+                    og dine scorer i Snake og Blockfall på ranglisten, få dine egne
                     chips hver dag, spille ved borde med venner og komme på ranglisterne. Det, du har spillet som gæst i
                     Wordle og Ore Mining Inc., kommer med dig.
                 </p>

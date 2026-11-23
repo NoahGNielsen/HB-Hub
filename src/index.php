@@ -52,6 +52,7 @@ try {
           + (SELECT COUNT(*) FROM `HBHub-MinesweeperGames` WHERE gameResult IN (1, 2))
           + (SELECT COUNT(*) FROM `HBHub-SudokuGames` WHERE gameResult IN (1, 2))
           + (SELECT COUNT(*) FROM `HBHub-SnakeGames` WHERE gameResult = 1)
+          + (SELECT COUNT(*) FROM `HBHub-BlockfallGames` WHERE gameResult = 1)
           + (SELECT COUNT(DISTINCT roundId) FROM `HBHub-BlackjackPlayerRounds`)
           + (SELECT COUNT(DISTINCT roundId) FROM `HBHub-BaccaratPlayerRounds`)
           + (SELECT COUNT(*) FROM `HBHub-RouletteSpins`)

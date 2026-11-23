@@ -1,0 +1,277 @@
+/* Blockfall (games/blockfall/): the game's frame - a violet bar on top with the score, lines, level, time, best, mode
+   and pause, and a deep indigo frame with the hold piece on the left of the well and the next three on the right. The
+   well and the pieces are drawn on the canvases by assets/js/blockfall.js. Under the well are the buttons for phones and
+   tablets, only shown on a touch screen. Loaded after casino.css and games.css. The colours are the game's own, so they
+   stay the same in light and dark mode. */
+
+/* The line above the well when a game doesn't count for the leaderboard (like Snake's) */
+.blockfall-note {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--casino-down) 14%, var(--secondary));
+  font-weight: 600;
+}
+
+.blockfall-frame {
+  margin: 20px 0 24px;
+  overflow: hidden;
+  border-radius: var(--radius, 14px);
+  background: linear-gradient(180deg, #2a2560, #16132f);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  color: #fff;
+}
+
+.blockfall-bar {
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  background: #3d3480;
+}
+
+.blockfall-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.blockfall-stat-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.blockfall-bar-gap {
+  flex: 1;
+}
+
+.blockfall-mode select,
+.blockfall-pause {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.blockfall-mode select option {
+  background: #3d3480;
+  color: #fff;
+}
+
+.blockfall-mode select:disabled,
+.blockfall-pause:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.blockfall-mode select:hover:not(:disabled),
+.blockfall-pause:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* The hold piece, the well and the next pieces side by side. The well is as tall as the screen leaves room for */
+.blockfall-field {
+  padding: clamp(10px, 2.5vw, 24px);
+  display: grid;
+  grid-template-columns: minmax(44px, 96px) auto minmax(44px, 96px);
+  justify-content: center;
+  align-items: start;
+  gap: clamp(8px, 2vw, 20px);
+}
+
+.blockfall-side {
+  min-width: 0;
+}
+
+.blockfall-side-name {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.blockfall-hold,
+.blockfall-next {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.blockfall-hold {
+  aspect-ratio: 4 / 3;
+}
+
+.blockfall-next {
+  aspect-ratio: 4 / 9;
+}
+
+.blockfall-well {
+  position: relative;
+  width: clamp(170px, calc((100svh - 240px) / 2), 340px);
+  aspect-ratio: 1 / 2;
+  overflow: hidden;
+  border-radius: clamp(6px, 1.2vw, 12px);
+  background: #1b1838;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 4px rgba(0, 0, 0, 0.25);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.blockfall-well canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* "Double +300" over the well when lines clear: it rises and fades */
+.blockfall-callout {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30%;
+  margin: 0;
+  text-align: center;
+  font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+  font-weight: 800;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.blockfall-callout.is-shown {
+  animation: blockfall-callout 0.9s ease-out;
+}
+
+@keyframes blockfall-callout {
+  0% { opacity: 0; transform: translateY(10px) scale(0.9); }
+  15% { opacity: 1; transform: translateY(0) scale(1.05); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-24px); }
+}
+
+/* "Ready?", "Paused" and "Game over", over the well */
+.blockfall-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(14, 11, 36, 0.72);
+  text-align: center;
+}
+
+.blockfall-cover[hidden] {
+  display: none;
+}
+
+.blockfall-cover p {
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.blockfall-cover-title {
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  font-weight: 800;
+}
+
+.blockfall-cover-text {
+  max-width: 26ch;
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+/* A little shake when the well tops out */
+.blockfall-well.is-hit {
+  animation: blockfall-hit 0.32s ease;
+}
+
+@keyframes blockfall-hit {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+/* The buttons for phones: Hold and the turns and hard drop on top, left, soft drop and right under them. Only on a
+   touch screen (a computer has the keys) */
+.blockfall-pad {
+  display: none;
+  padding: 0 clamp(10px, 2.5vw, 24px) clamp(12px, 2.5vw, 24px);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  max-width: 420px;
+  margin: 0 auto;
+  touch-action: none; /* no double-tap zoom or scrolling while playing */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .blockfall-pad {
+    display: grid;
+  }
+
+  .blockfall-well {
+    width: clamp(150px, calc((100svh - 360px) / 2), 340px);
+  }
+}
+
+.blockfall-key {
+  min-height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font: inherit;
+  font-size: 1.4rem;
+  font-weight: 700;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.blockfall-key:active {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.blockfall-key[data-blockfall-key="H"] {
+  font-size: 0.95rem;
+}
+
+/* The second row: left, then soft drop across the middle two, then right */
+.blockfall-key[data-blockfall-key="D"] {
+  grid-column: span 2;
+}
+
+@media (max-width: 520px) {
+  .blockfall-bar {
+    padding: 8px 12px;
+    gap: 6px 12px;
+  }
+
+  .blockfall-stat {
+    font-size: 1rem;
+  }
+
+  .blockfall-cover-text {
+    font-size: 0.85rem;
+  }
+}

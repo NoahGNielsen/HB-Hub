@@ -448,6 +448,19 @@ a.casino-game:hover .casino-game-art {
   fill: #6cb043;
 }
 
+/* Blockfall: the game's night indigo, and its rounded blocks in their colours (as COLOUR in blockfall.js) */
+.casino-game-blockfall {
+  --game-from: #4a3f9c;
+  --game-to: #16132f;
+  --game-mark: #ffd166;
+}
+
+.casino-game-blockfall .casino-game-art .is-coral { fill: #ff6b6b; }
+.casino-game-blockfall .casino-game-art .is-sky { fill: #4ea8de; }
+.casino-game-blockfall .casino-game-art .is-sun { fill: #ffd166; }
+.casino-game-blockfall .casino-game-art .is-mint { fill: #06d6a0; }
+.casino-game-blockfall .casino-game-art .is-violet { fill: #9b5de5; }
+
 .casino-game-miner {
   --game-from: #3b2a78;
   --game-to: #0d0b26;

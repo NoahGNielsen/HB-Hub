@@ -197,6 +197,29 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     </a>
                 </li>
                 <li>
+                    <a class="casino-game casino-game-blockfall" href="/games/blockfall/">
+                        <span class="casino-game-cover">
+                            <span class="casino-game-kicker">Puzzle classic</span>
+                            <span class="casino-game-name">Blockfall</span>
+                            <svg class="casino-game-art" viewBox="0 0 64 64" aria-hidden="true">
+                                <!-- A stack of rounded blocks with one line nearly full, and a piece falling into the gap -->
+                                <rect class="is-coral" x="20" y="4" width="11" height="11" rx="3"/>
+                                <rect class="is-coral" x="20" y="16" width="11" height="11" rx="3"/>
+                                <rect class="is-coral" x="32" y="16" width="11" height="11" rx="3"/>
+                                <rect class="is-sky" x="6" y="40" width="11" height="11" rx="3"/>
+                                <rect class="is-sky" x="6" y="52" width="11" height="11" rx="3"/>
+                                <rect class="is-sky" x="18" y="52" width="11" height="11" rx="3"/>
+                                <rect class="is-sun" x="42" y="40" width="11" height="11" rx="3"/>
+                                <rect class="is-sun" x="42" y="52" width="11" height="11" rx="3"/>
+                                <rect class="is-mint" x="30" y="52" width="11" height="11" rx="3"/>
+                                <rect class="is-mint" x="54" y="52" width="9" height="11" rx="3"/>
+                                <rect class="is-violet" x="54" y="40" width="9" height="11" rx="3"/>
+                            </svg>
+                        </span>
+                        <span class="casino-game-text">Stack the falling pieces and clear whole lines before the well fills up. Endless Enduro, a 60-second Rush or a 20-line Sprint, each with a leaderboard.</span>
+                    </a>
+                </li>
+                <li>
                     <a class="casino-game casino-game-miner" href="/games/ore-mining-inc/">
                         <span class="casino-game-cover">
                             <span class="casino-game-kicker">Clicker game</span>

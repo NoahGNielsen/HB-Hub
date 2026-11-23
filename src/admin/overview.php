@@ -166,8 +166,8 @@ function adminOverviewCasino(PDO $db, int $weeksAgo = 0): array
  * two such games ending in the very same second would count as one. Matador's players who left mid-game get their row
  * when they leave, so only the rows from the game's end make up its games, while the leavers still count as players.
  * Games still being played, Minesweeper's and
- * Sudoku's left ones, Doodle Chain's players who left before the chains were shown, and Snake's that were left or
- * stopped by its anticheat, don't count. Ore Mining Inc. has no
+ * Sudoku's left ones, Doodle Chain's players who left before the chains were shown, and Snake's and Blockfall's that were
+ * left or stopped by their anticheat, don't count. Ore Mining Inc. has no
  * games, so it's the players who saved in the last 7 days and everyone who has a save (null for
  * the games played).
  *
@@ -194,6 +194,7 @@ function adminOverviewGames(PDO $db, int $weeksAgo = 0): array
         'Minesweeper' => ['HBHub-MinesweeperGames', 'gameEndTimestamp', 'gameResult IN (1, 2)', null, null],
         'Sudoku' => ['HBHub-SudokuGames', 'gameEndTimestamp', 'gameResult IN (1, 2)', null, null],
         'Snake' => ['HBHub-SnakeGames', 'gameEndTimestamp', 'gameResult = 1', null, null],
+        'Blockfall' => ['HBHub-BlockfallGames', 'gameEndTimestamp', 'gameResult = 1', null, null],
     ];
     $games = [];
     foreach ($tables as $name => [$table, $column, $finished, $key, $gameRows]) {

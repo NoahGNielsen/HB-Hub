@@ -133,6 +133,7 @@ function hbHubDeleteAccount(PDO $db, int $userId): void
         $db->prepare('DELETE FROM `HBHub-MinesweeperGames` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-SudokuGames` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-SnakeGames` WHERE userId = ?')->execute([$userId]);
+        $db->prepare('DELETE FROM `HBHub-BlockfallGames` WHERE userId = ?')->execute([$userId]);
         $db->prepare('DELETE FROM `HBHub-WordleRandomGames` WHERE userId = ?')->execute([$userId]);
         if ($avatarId !== null) {
             hbHubPictureDelete($db, (int) $avatarId); // its file is deleted once this is committed

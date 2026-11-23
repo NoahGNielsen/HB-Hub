@@ -5,7 +5,8 @@
 // A game can also ask for it at a good moment (a Wordle that's just been finished) with
 //     document.dispatchEvent(new CustomEvent('guest:prompt'));
 // which shows it unless it was shown less than SOON_S seconds ago. It never opens over another popup, or while
-// anything on the page has data-guest-prompt-wait (a Snake that's moving, which it would crash): then it waits.
+// anything on the page has data-guest-prompt-wait (a Snake that's moving or a Blockfall game going, which it would
+// crash): then it waits.
 (() => {
     const dialog = document.querySelector('[data-guest-prompt]');
     if (!dialog) return;

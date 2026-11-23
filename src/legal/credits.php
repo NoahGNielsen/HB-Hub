@@ -176,8 +176,28 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <p class="credits-license">Ingen licens angivet</p>
                 </div>
             </div>
+            <div class="credits-library">
+                <!-- A corner of Blockfall's well: a piece above a gap, which drops into it on hover -->
+                <div class="credits-blocks" aria-hidden="true">
+                    <i></i><i class="is-coral is-falling"></i><i></i><i></i>
+                    <i></i><i class="is-coral is-falling"></i><i></i><i></i>
+                    <i class="is-sky"></i><i></i><i class="is-sun"></i><i class="is-sun"></i>
+                    <i class="is-sky"></i><i></i><i class="is-mint"></i><i class="is-mint"></i>
+                </div>
+                <div class="credits-library-text">
+                    <h3><a href="https://github.com/larprad/tetris" target="_blank" rel="noopener noreferrer">tetris</a></h3>
+                    <p>
+                        Af larprad. <a href="/games/blockfall/">Blockfall</a> i Spil-sektionen er bygget på idéerne i det:
+                        en brønd på 10 gange 20, en brik på hold og den næste i forvejen, de tre modes Enduro, Rush og Sprint
+                        og hastighederne for hvert level. Koden er skrevet på ny til HB Hub, med sit eget udseende, og
+                        brikkerne og pointene bliver holdt på HB Hubs server, til ranglisterne.
+                    </p>
+                    <p class="credits-license">ISC-licens (angivet i package.json)</p>
+                </div>
+            </div>
             <p class="credits-fineprint">"QR Code" er et registreret varemærke tilhørende DENSO WAVE INCORPORATED.</p>
             <p class="credits-fineprint">HB Hub har intet med Microsoft at gøre. Windows er et varemærke tilhørende Microsoft Corporation.</p>
+            <p class="credits-fineprint">HB Hub har intet med The Tetris Company at gøre. Tetris er et registreret varemærke tilhørende The Tetris Company, LLC.</p>
         </section>
 
         <!-- Lists: where most of the blocked links in assets/urlBlacklist.txt come from (the IP loggers are picked by hand) -->
