@@ -328,9 +328,13 @@
         // a sourceFile for isExtension() to catch. If our own code ever linked an outside font, its stylesheet would still
         // show up here as style-src.
         if (directive === 'font-src' && isAddress && /^https?:\/\//i.test(blocked ?? '')) return;
+        // The site has no inline styles or scripts, so a blocked one was put there by something else. The CSP has
+        // 'report-sample', so the browser gives its first 40 characters (event.sample), which usually says what did it
+        // (".darkreader ...", a translator's class names)
+        const sample = typeof event.sample === 'string' && event.sample.trim() !== '' ? ': ' + event.sample : '';
         note('csp', {
             path: blocked ?? addressOf(event.sourceFile),
-            message: messageOf(directive + (!isAddress && event.blockedURI ? ' (' + event.blockedURI + ')' : '')),
+            message: messageOf(directive + (!isAddress && event.blockedURI ? ' (' + event.blockedURI + ')' : '') + sample),
             line: event.lineNumber ? event.lineNumber + ':' + (event.columnNumber || 0) : null,
         });
     });

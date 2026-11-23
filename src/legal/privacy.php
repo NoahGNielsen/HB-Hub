@@ -289,7 +289,9 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             En rapport indeholder antal fejl, tidspunkter, den side du var på, og for hver fejl dens type, antal,
                             adresse (uden forespørgselsdelen efter <code>?</code>), statuskode og, for JavaScript-fejl og
-                            blokeringer, fejlbeskeden (højst 300 tegn) og kodelinjen. Derudover gemmes din konto (hvis du er logget
+                            blokeringer, fejlbeskeden (højst 300 tegn) og kodelinjen. Blokerer sikkerhedsreglerne kode eller
+                            styling, som noget andet har lagt ind på siden (typisk en browserudvidelse), gemmes også de første
+                            40 tegn af den, som browseren sender med. Derudover gemmes din konto (hvis du er logget
                             ind), din IP-adresse, din browsers user agent, og om rapporten kom fra testversionen. Kun side-admins
                             kan se rapporterne.
                         </p>
