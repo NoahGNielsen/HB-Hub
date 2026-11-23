@@ -2,6 +2,7 @@
 // GIF search for the GIF picker: /chat/gifs?q=cats returns matching GIFs from Giphy as JSON, an empty q the trending ones.
 // Asked through here, so the API key never reaches the browser. 404 when GIFs are turned off in hbHubSiteConfig.php.
 // A search asked in the last 15 minutes (by anyone) is answered from `HBHub-GifCache` without asking Giphy again.
+// Each request that does go to Giphy is counted per hour for the admin panel's Overview (hbHubGiphyCallCount()).
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/database.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
@@ -39,6 +40,8 @@ curl_setopt_array($curl, [
 ]);
 $body = curl_exec($curl);
 $status = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+// Counted for the admin Overview's chart whatever Giphy answered, as a failed call can count towards its limit too
+hbHubGiphyCallCount($db, $status === 429);
 $response = is_string($body) ? json_decode($body, true) : null;
 
 // A wrong key (401/403) or too many searches this hour (429) end up here too

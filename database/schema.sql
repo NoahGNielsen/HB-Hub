@@ -595,6 +595,18 @@ CREATE TABLE `HBHub-GifCache` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `HBHub-GiphyCalls`
+--
+
+CREATE TABLE `HBHub-GiphyCalls` (
+  `giphyCallHour` datetime NOT NULL COMMENT 'The start of the hour, by the database''s own clock (NOW()). Deleted after HBHUB_GIPHY_CALLS_KEEP_DAYS',
+  `giphyCallCount` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Requests sent to Giphy that hour (searches and trending, not the ones answered from HBHub-GifCache)',
+  `giphyCallLimitedCount` int UNSIGNED NOT NULL DEFAULT 0 COMMENT 'How many of giphyCallCount Giphy answered with 429 (too many calls)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Requests to Giphy''s API per hour, only counts and never who or what (src/assets/php/giphy.php), for the admin panel''s Overview';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `HBHub-LoginDevices`
 --
 
@@ -1501,6 +1513,12 @@ ALTER TABLE `HBHub-Feedback`
 ALTER TABLE `HBHub-GifCache`
   ADD PRIMARY KEY (`gifCacheKey`),
   ADD KEY `gifCacheExpires` (`gifCacheExpiresTimestamp`);
+
+--
+-- Indexes for table `HBHub-GiphyCalls`
+--
+ALTER TABLE `HBHub-GiphyCalls`
+  ADD PRIMARY KEY (`giphyCallHour`);
 
 --
 -- Indexes for table `HBHub-LoginDevices`

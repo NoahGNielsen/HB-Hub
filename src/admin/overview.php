@@ -22,6 +22,8 @@
 //   counts them, cleared reports and the dev site's included
 // - Help improve HB Hub: a pie chart of how many accounts have everything, only error reports or nothing on under
 //   "Help improve HB Hub" in their settings (and only statistics, when anyone has that), next to Browser errors
+// - Giphy API calls: a thin bar per hour of the last 7 days of the requests the GIF picker sent to Giphy
+//   (HBHub-GiphyCalls, assets/php/giphy.php), the hours that hit Giphy's hourly limit in red
 // - Visits from links: the pages opened from an address with ?utm_source= in the last ADMIN_OVERVIEW_DAYS days, per
 //   source and page, with how many were guests and the last day it happened (counts in HBHub-PageSources, same file)
 // - Casino: the chips in everyone's wallets, and each game's rounds, players, chips bet and what the house won or
@@ -36,7 +38,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userAvatar.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/pageViews.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/watchdog.php'; // HBHUB_WATCHDOG_KEEP_DAYS
 
+require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/giphy.php';
+
 const ADMIN_OVERVIEW_DAYS = 30; // days in the bar charts
+const ADMIN_OVERVIEW_GIPHY_HOURS = 7 * 24; // hours in the Giphy API calls chart
 const ADMIN_OVERVIEW_TOP = 5; // chats and people in the "busiest" lists
 const ADMIN_OVERVIEW_TOP_SOURCES = 50; // source and page rows in "Visits from links"
 // The bar charts' drawing area, in SVG units (it's stretched to the card's width)
@@ -397,6 +402,108 @@ function adminOverviewChartHtml(array $days, string $noun, string $label): strin
 }
 
 /**
+ * The requests sent to Giphy in each of the last ADMIN_OVERVIEW_GIPHY_HOURS hours, this hour last, by the database's
+ * own clock (HBHub-GiphyCalls, counted by hbHubGiphyCallCount()). Hours with none are 0, and so is everything when
+ * the table isn't there yet.
+ *
+ * @return array<string, array{calls: int, limited: int}> 'Y-m-d H:00:00' => its numbers, oldest first
+ */
+function adminOverviewGiphyPerHour(PDO $db): array
+{
+    // The hours are stepped through as wall-clock times (in UTC, which has no summer time to skip or repeat an hour),
+    // to match the hours the database stored by NOW()
+    $utc = new DateTimeZone('UTC');
+    $now = new DateTimeImmutable($db->query('SELECT DATE_FORMAT(NOW(), \'%Y-%m-%d %H:00:00\')')->fetchColumn(), $utc);
+    $first = $now->modify('-' . (ADMIN_OVERVIEW_GIPHY_HOURS - 1) . ' hours');
+    $hours = [];
+    for ($hour = $first; $hour <= $now; $hour = $hour->modify('+1 hour')) {
+        $hours[$hour->format('Y-m-d H:00:00')] = ['calls' => 0, 'limited' => 0];
+    }
+
+    try {
+        $statement = $db->prepare('SELECT giphyCallHour, giphyCallCount, giphyCallLimitedCount FROM `HBHub-GiphyCalls` WHERE giphyCallHour >= ?');
+        $statement->execute([$first->format('Y-m-d H:00:00')]);
+        foreach ($statement->fetchAll(PDO::FETCH_NUM) as [$hour, $calls, $limited]) {
+            if (isset($hours[$hour])) {
+                $hours[$hour] = ['calls' => (int) $calls, 'limited' => (int) $limited];
+            }
+        }
+    } catch (PDOException) {
+        // The migration that adds the table hasn't been run yet
+    }
+    return $hours;
+}
+
+/**
+ * The Giphy API calls chart: a thin bar per hour of $hours (from adminOverviewGiphyPerHour()), red for the hours that
+ * hit Giphy's limit ($limit calls, or Giphy turned one away with a 429), a dashed red line at the limit when a bar
+ * reaches it, and a faint line at each midnight. Built like adminOverviewChartHtml() (a tooltip per hour, the numbers
+ * under "Show as a table", but only the hours that had calls, as 168 rows of mostly 0 says nothing).
+ *
+ * @param array<string, array{calls: int, limited: int}> $hours
+ */
+function adminOverviewGiphyChartHtml(array $hours, int $limit): string
+{
+    $calls = array_column($hours, 'calls');
+    $max = max(1, ...$calls);
+    $count = count($hours);
+    $slot = ADMIN_OVERVIEW_CHART_W / $count;
+    $barW = $slot * 0.5; // narrow, with as much space between them
+    $times = array_keys($hours);
+    $isHit = static fn(array $hour): bool => $hour['calls'] >= $limit || $hour['limited'] > 0;
+    $hitHours = count(array_filter($hours, $isHit));
+
+    $svg = '<svg class="admin-chart-svg" viewBox="0 0 ' . ADMIN_OVERVIEW_CHART_W . ' ' . ADMIN_OVERVIEW_CHART_H . '" preserveAspectRatio="none" role="img" aria-label="Requests to Giphy each hour">'
+        . '<line class="admin-chart-grid" x1="0" y1="0.5" x2="' . ADMIN_OVERVIEW_CHART_W . '" y2="0.5"/>'
+        . '<line class="admin-chart-grid" x1="0" y1="' . ADMIN_OVERVIEW_CHART_H / 2 . '" x2="' . ADMIN_OVERVIEW_CHART_W . '" y2="' . ADMIN_OVERVIEW_CHART_H / 2 . '"/>';
+    $i = 0;
+    foreach ($hours as $time => $hour) {
+        $start = strtotime($time);
+        if ($i > 0 && date('H', $start) === '00') {
+            $svg .= '<line class="admin-chart-midnight" x1="' . round($i * $slot, 2) . '" y1="0" x2="' . round($i * $slot, 2) . '" y2="' . ADMIN_OVERVIEW_CHART_H . '"/>';
+        }
+        $tip = date('D d/m H:00', $start) . '–' . date('H:00', $start + 3600) . ': ' . number_format($hour['calls']) . ' ' . ($hour['calls'] === 1 ? 'call' : 'calls')
+            . ($isHit($hour) ? ' – hit the limit' . ($hour['limited'] > 0 ? ', ' . number_format($hour['limited']) . ' turned away' : '') : '');
+        $svg .= '<g class="admin-chart-day' . ($i === $count - 1 ? ' is-today' : '') . '"><title>' . htmlspecialchars($tip) . '</title>'
+            . '<rect class="admin-chart-hit" x="' . round($i * $slot, 2) . '" y="0" width="' . round($slot, 2) . '" height="' . ADMIN_OVERVIEW_CHART_H . '"/>';
+        if ($hour['calls'] > 0) {
+            $h = $hour['calls'] / $max * ADMIN_OVERVIEW_CHART_H;
+            $svg .= '<rect class="admin-chart-bar' . ($isHit($hour) ? ' is-limit' : '') . '" x="' . round($i * $slot + ($slot - $barW) / 2, 2)
+                . '" y="' . round(ADMIN_OVERVIEW_CHART_H - $h, 2) . '" width="' . round($barW, 2) . '" height="' . round($h, 2) . '"/>';
+        }
+        $svg .= '</g>';
+        $i++;
+    }
+    if ($max >= $limit) {
+        $y = round(ADMIN_OVERVIEW_CHART_H - $limit / $max * ADMIN_OVERVIEW_CHART_H, 2);
+        $svg .= '<line class="admin-chart-limit" x1="0" y1="' . $y . '" x2="' . ADMIN_OVERVIEW_CHART_W . '" y2="' . $y . '"><title>The limit: ' . number_format($limit) . ' calls an hour</title></line>';
+    }
+    $svg .= '<line class="admin-chart-axis" x1="0" y1="' . (ADMIN_OVERVIEW_CHART_H - 0.5) . '" x2="' . ADMIN_OVERVIEW_CHART_W . '" y2="' . (ADMIN_OVERVIEW_CHART_H - 0.5) . '"/></svg>';
+
+    $rows = '';
+    foreach (array_reverse($hours, true) as $time => $hour) {
+        if ($hour['calls'] > 0) {
+            $start = strtotime($time);
+            $rows .= '<tr' . ($isHit($hour) ? ' class="admin-chart-hot"' : '') . '><td class="admin-nowrap">' . date('D d/m H:00', $start) . '–' . date('H:00', $start + 3600) . '</td>'
+                . '<td>' . number_format($hour['calls']) . '</td><td>' . number_format($hour['limited']) . '</td></tr>';
+        }
+    }
+    $table = $rows === '' ? '' : '<details class="admin-chart-table"><summary class="admin-small">Show as a table</summary><div class="admin-table-wrap"><table class="admin-table">'
+        . '<thead><tr><th scope="col">Hour</th><th scope="col">Calls</th><th scope="col" title="Answered with 429, too many calls">Turned away</th></tr></thead><tbody>' . $rows . '</tbody></table></div></details>';
+
+    return '<figure class="admin-chart"><figcaption class="admin-chart-title"><span class="admin-chart-total">' . number_format(array_sum($calls)) . '</span>'
+        . ' <span class="admin-small">in ' . intdiv($count, 24) . ' days &middot; ' . number_format(end($calls)) . ' this hour &middot; busiest hour ' . number_format(max($calls))
+        . ' &middot; limit ' . number_format($limit) . ' an hour</span>'
+        . ($hitHours > 0 ? ' <span class="admin-small admin-chart-hot">&middot; ' . $hitHours . ' ' . ($hitHours === 1 ? 'hour' : 'hours') . ' hit it</span>' : '')
+        . '<span class="admin-visually-hidden">: Requests to Giphy each hour</span></figcaption>'
+        . '<div class="admin-chart-plot"><span class="admin-chart-max admin-small">' . number_format($max) . '</span>'
+        . '<span class="admin-chart-mid admin-small">' . number_format($max / 2, $max % 2 === 0 ? 0 : 1) . '</span>' . $svg . '</div>'
+        . '<div class="admin-chart-dates admin-small"><span>' . date('D d/m H:00', strtotime($times[0])) . '</span><span>'
+        . date('D d/m H:00', strtotime($times[intdiv($count, 2)])) . '</span><span>Now</span></div>'
+        . $table . '</figure>';
+}
+
+/**
  * One headline number: what it is over it, the number big, and a line about it under it. $trend is extra HTML for the
  * end of that line, like adminOverviewTrendHtml()'s up or down. $live puts a pulsing green dot by the label.
  */
@@ -507,6 +614,8 @@ $adminViewsPerDay = adminOverviewPerDay($db, 'SELECT viewDate, SUM(viewCount) FR
     WHERE viewDate >= ? GROUP BY viewDate');
 $adminErrorsPerDay = adminOverviewPerDay($db, 'SELECT DATE(watchdogLastTimestamp) AS day, SUM(watchdogCount) FROM `HBHub-Watchdog`
     WHERE watchdogLastTimestamp >= ? GROUP BY day');
+$adminGiphyPerHour = adminOverviewGiphyPerHour($db);
+$adminGiphyLimit = hbHubGiphyHourlyLimit($siteConfig);
 $adminImprove = adminOverviewImprove($db);
 $adminTopPages = adminOverviewTopPages($db);
 $adminSources = adminOverviewSources($db);
@@ -644,6 +753,11 @@ $adminActivePercent = $adminTotals['accounts'] > 0 ? round($adminTotals['seenDay
                     <?= adminOverviewPanelHtml('admin-overview-improve-heading', 'Help improve HB Hub', 'Accounts', 4,
                         adminOverviewPieHtml($adminImprove)
                         . '<p class="admin-panel-foot">What the ' . number_format(array_sum($adminImprove)) . ' accounts have turned on. Global Privacy Control starts with neither.</p>') ?>
+
+                    <?= adminOverviewPanelHtml('admin-overview-giphy-heading', 'Giphy API calls', 'Last 7 days, per hour', 12,
+                        adminOverviewGiphyChartHtml($adminGiphyPerHour, $adminGiphyLimit)
+                        . '<p class="admin-panel-foot">Every GIF search (and trending) the GIF picker sent to Giphy. Searches answered from the 15-minute cache don\'t count. Red hours hit the limit of ' . number_format($adminGiphyLimit) . ' calls an hour (<code>giphy_hourly_limit</code> in the config) or had a call turned away by Giphy.'
+                        . (hbHubGiphyApiKey($siteConfig) === null ? ' <strong>GIFs are turned off in the config.</strong>' : '') . '</p>') ?>
 
                     <?php ob_start(); ?>
                     <?php if ($adminSources === []): ?>

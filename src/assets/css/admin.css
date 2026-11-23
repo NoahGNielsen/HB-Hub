@@ -1219,6 +1219,30 @@
   fill: color-mix(in srgb, var(--text) 6%, transparent);
 }
 
+/* Giphy API calls: an hour that hit Giphy's limit is red, and so is the limit's dashed line */
+.admin-chart-day .admin-chart-bar.is-limit {
+  fill: var(--settings-danger);
+}
+
+.admin-chart-limit {
+  stroke: var(--settings-danger);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+
+/* The line between two days in the hourly chart */
+.admin-chart-midnight {
+  stroke: var(--settings-line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.admin-chart-hot {
+  color: var(--settings-danger);
+  font-weight: 700;
+}
+
 .admin-chart-dates {
   display: flex;
   justify-content: space-between;
