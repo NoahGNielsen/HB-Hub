@@ -3183,32 +3183,40 @@ function chatEmojiWhenIdle(fn) {
 // The browser is slow to measure each emoji the first time it meets one after the page loads (~0.6 ms each, so most of
 // a second for the whole picker), and quick after that, even in another picker or after swapping chats. So, a few at a
 // time while it has nothing else to do, they're measured in a hidden box (.chat-emoji-warm, chat.css) in the picker's
-// font, and the first open is quick too. Once per page load.
-let chatEmojiWarmed = false;
+// font, and putting them in the picker is quick too. Once per page load; the promise is kept, and resolves when all are done.
+let chatEmojiWarm = null;
 function chatEmojiWarmUp(emoji) {
-    if (chatEmojiWarmed) return;
-    chatEmojiWarmed = true;
-    const box = document.createElement('div');
-    box.className = 'chat-emoji-warm';
-    box.setAttribute('aria-hidden', 'true');
-    document.body.append(box);
-    let next = 0;
-    const step = (deadline) => {
-        do {
-            box.textContent = emoji.slice(next, next += 10).join(' ');
-            void box.offsetWidth; // measures them
-        } while (next < emoji.length && deadline.timeRemaining() > 5);
-        if (next < emoji.length) chatEmojiWhenIdle(step);
-        else box.remove();
-    };
-    chatEmojiWhenIdle(step);
+    if (chatEmojiWarm) return chatEmojiWarm;
+    chatEmojiWarm = new Promise((resolve) => {
+        const box = document.createElement('div');
+        box.className = 'chat-emoji-warm';
+        box.setAttribute('aria-hidden', 'true');
+        document.body.append(box);
+        let next = 0;
+        const step = (deadline) => {
+            do {
+                box.textContent = emoji.slice(next, next += 10).join(' ');
+                void box.offsetWidth; // measures them
+            } while (next < emoji.length && deadline.timeRemaining() > 5);
+            if (next < emoji.length) {
+                chatEmojiWhenIdle(step);
+            } else {
+                box.remove();
+                resolve();
+            }
+        };
+        chatEmojiWhenIdle(step);
+    });
+    return chatEmojiWarm;
 }
 
 // An emoji picker (the message box's and Add reaction's): category tabs along the top, and below them the emoji by
-// category, with the recently used ones first. The categories are put in once (when the browser has a moment after the
-// page loads, or on the first open if that's sooner) and kept, and render() on each open only redoes Recently used when
-// it changed, so the recent ones are up to date (but don't move around while picking). onPick(emoji) is called when one
-// is picked, and onClose(returnFocus) when Escape or Tab should close it. The arrow keys, Home and End move through the emoji.
+// category, with the recently used ones first. Closed, it's see-through but still laid out and drawn (chat.css), so
+// everything is put in ahead: once the warm-up above is done, the categories, Recently used and the tabs go in (or on
+// the first open if that's sooner), and opening it only has to show it. render() on each open only redoes Recently used
+// when it changed, so the recent ones are up to date (but don't move around while picking). show(isOpen) opens and
+// closes it, and isOpen() says which it is. onPick(emoji) is called when one is picked, and onClose(returnFocus) when
+// Escape or Tab should close it. The arrow keys, Home and End move through the emoji.
 function chatEmojiPicker(picker, { onPick, onClose }) {
     const tabs = picker.querySelector('[data-emoji-tabs]');
     const list = picker.querySelector('[data-emoji-list]');
@@ -3237,13 +3245,17 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
         }
         list.append(chatEmojiCategoriesMade.cloneNode(true));
     }
-    chatEmojiWhenIdle(build);
-    chatEmojiWarmUp(categories.flatMap(([, , emoji]) => emoji.split(' ')));
-
-    // Recently used and the tabs, made again only when the recent ones changed since the last open
-    let shownRecent = null;
-    function render() {
+    // Not before the warm-up is done, as laying them all out unmeasured would freeze the page for most of a second.
+    // A picker that's gone by then (swapped out with its chat) is left alone.
+    chatEmojiWarmUp(categories.flatMap(([, , emoji]) => emoji.split(' '))).then(() => chatEmojiWhenIdle(() => {
+        if (!picker.isConnected) return;
         build();
+        refresh();
+    }));
+
+    // Recently used and the tabs, made again only when the recent ones changed since they were last made
+    let shownRecent = null;
+    function refresh() {
         const recent = chatRecentEmoji();
         if (recent.join(' ') !== shownRecent) {
             shownRecent = recent.join(' ');
@@ -3271,11 +3283,23 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
                 return tab;
             }));
         }
+    }
 
+    // On each open: up to date, at the top, with focus on the first emoji
+    function render() {
+        build();
+        refresh();
         list.scrollTop = 0;
         markCurrentTab();
         setActive(list.querySelector('[data-emoji]'));
     }
+
+    // Opens or closes it. Closed it's inert as well as see-through, so it can't be clicked, tabbed to or read out.
+    function show(isOpen) {
+        picker.classList.toggle('is-open', isOpen);
+        picker.inert = !isOpen;
+    }
+    const isOpen = () => picker.classList.contains('is-open');
 
     // Only one emoji is a Tab stop, and the arrow keys move between them
     let active = null;
@@ -3355,7 +3379,7 @@ function chatEmojiPicker(picker, { onPick, onClose }) {
         if (next) setActive(next);
     });
 
-    return { render };
+    return { render, show, isOpen };
 }
 
 // Emoji picker: the smiley left of GIF opens a popup above it with the emoji by category, and the recently used ones first.
@@ -3380,16 +3404,16 @@ chatPart((signal) => {
     }
 
     function setOpen(isOpen, returnFocus) {
-        picker.hidden = !isOpen;
+        emojiPicker.show(isOpen);
         button.setAttribute('aria-expanded', String(isOpen));
         if (isOpen) emojiPicker.render();
         else if (returnFocus) button.focus();
     }
 
-    button.addEventListener('click', () => setOpen(picker.hidden, true));
+    button.addEventListener('click', () => setOpen(!emojiPicker.isOpen(), true));
 
     document.addEventListener('pointerdown', (event) => {
-        if (!picker.hidden && !picker.contains(event.target) && !button.contains(event.target)) setOpen(false, false);
+        if (emojiPicker.isOpen() && !picker.contains(event.target) && !button.contains(event.target)) setOpen(false, false);
     }, { signal });
 });
 
@@ -3463,15 +3487,15 @@ chatPart((signal) => {
     });
 
     function close(returnFocus) {
-        if (picker.hidden) return;
-        picker.hidden = true;
+        if (!emojiPicker.isOpen()) return;
+        emojiPicker.show(false);
         if (returnFocus) pickerFor.focus({ preventScroll: true }); // back on the message, as the menu is gone
     }
 
     messages.addEventListener('chat:react-more', (event) => {
         const { item, x, y } = event.detail;
         pickerFor = item;
-        picker.hidden = false;
+        emojiPicker.show(true);
         // Its size is set in chat.css, so it's in place before render() scrolls to the first emoji
         const { width, height } = picker.getBoundingClientRect();
         picker.style.left = Math.max(8, Math.min(x, window.innerWidth - width - 8)) + 'px';

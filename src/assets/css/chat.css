@@ -1427,16 +1427,28 @@ a.chat-message-reply:hover .chat-message-reply-text {
   background: var(--background);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
   transform-origin: bottom right;
+}
+
+/* Closed, it's still there, only see-through and out of reach (chat.js makes it inert too): it was display: none, and
+   then the browser laid out and drew the ~1,200 emoji only when it was opened, which took most of two seconds. Now
+   that's done ahead, while it's closed, and opening it only makes it visible. will-change keeps the browser drawing it
+   even at opacity 0 (it skips drawing see-through things otherwise). Not with hidden, as .chat [hidden] is display: none. */
+.chat-emoji-picker:not(.is-open) {
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.chat-emoji-picker.is-open {
   animation: chat-menu-in 0.12s ease;
 }
 
-.chat-emoji-picker[hidden] {
-  display: none;
-}
-
-/* Add reaction (+ in the message menu): the same picker, opened where the menu was (chat.js sets left and top) */
+/* Add reaction (+ in the message menu): the same picker, opened where the menu was (chat.js sets left and top). Until
+   it's first opened it waits in the top left corner, on screen so it gets drawn ahead. */
 .chat-emoji-picker.chat-reaction-picker {
   position: fixed;
+  top: 8px;
+  left: 8px;
   bottom: auto;
   right: auto;
   transform-origin: top left;
@@ -3448,7 +3460,7 @@ a.chat-member:focus-visible {
   .chat-link-warning[open],
   .chat-dialog[open],
   .chat-menu,
-  .chat-emoji-picker,
+  .chat-emoji-picker.is-open,
   .chat-drop,
   .chat-tray-item,
   .chat-tray-item.is-busy .chat-tray-preview::after {

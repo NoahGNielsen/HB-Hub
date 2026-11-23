@@ -2643,7 +2643,7 @@ if ($isPoll) {
                                 aria-haspopup="dialog" aria-expanded="false" aria-controls="chat-emoji-picker" data-emoji-open>
                             <img src="/assets/images/icons/smiley.svg" alt="">
                         </button>
-                        <div class="chat-emoji-picker" id="chat-emoji-picker" role="dialog" aria-label="Emoji" hidden data-emoji-picker>
+                        <div class="chat-emoji-picker" id="chat-emoji-picker" role="dialog" aria-label="Emoji" inert data-emoji-picker>
                             <div class="chat-emoji-tabs" role="toolbar" aria-label="Emoji categories" data-emoji-tabs></div>
                             <div class="chat-emoji-list" data-emoji-list></div>
                         </div>
@@ -2771,7 +2771,7 @@ if ($isPoll) {
 
             <!-- Add reaction (chat.js): + in the message menu opens it where the menu was, with every emoji like the emoji
                  picker. Picking one reacts with it. Not inside .chat-emoji, so it's there on phones too. -->
-            <div class="chat-emoji-picker chat-reaction-picker" role="dialog" aria-label="Add reaction" hidden data-reaction-picker>
+            <div class="chat-emoji-picker chat-reaction-picker" role="dialog" aria-label="Add reaction" inert data-reaction-picker>
                 <div class="chat-emoji-tabs" role="toolbar" aria-label="Emoji categories" data-emoji-tabs></div>
                 <div class="chat-emoji-list" data-emoji-list></div>
             </div>
