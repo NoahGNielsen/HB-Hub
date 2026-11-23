@@ -461,12 +461,12 @@ function hbHubBlockfallNew(PDO $db, int $userId): array
     try {
         $db->prepare('DELETE FROM `HBHub-BlockfallGames` WHERE userId = ? AND gameResult = ? AND gameStartTimestamp IS NULL')
             ->execute([$userId, HBHUB_BLOCKFALL_PLAYING]);
-        $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = HBHUB_BLOCKFALL_LINES_PER_LEVEL\', gameSecret = \'\', gamePausedTimestamp = NULL,
+        $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = \'\', gameSecret = \'\', gamePausedTimestamp = NULL,
                 gameEndTimestamp = UTC_TIMESTAMP(3)
             WHERE userId = ? AND gameResult = ?')
             ->execute([HBHUB_BLOCKFALL_LEFT, $userId, HBHUB_BLOCKFALL_PLAYING]);
         $db->prepare('INSERT INTO `HBHub-BlockfallGames` (userId, gameSecret, gameState, gameResult, gameCreatedTimestamp)
-            VALUES (?, ?, HBHUB_BLOCKFALL_LINES_PER_LEVEL\', ?, UTC_TIMESTAMP(3))')
+            VALUES (?, ?, \'\', ?, UTC_TIMESTAMP(3))')
             ->execute([$userId, $secret, HBHUB_BLOCKFALL_PLAYING]);
         $gameId = (int) $db->lastInsertId();
         $db->commit();
@@ -580,17 +580,17 @@ function hbHubBlockfallReport(PDO $db, int $userId, int $gameId, mixed $action, 
         if ($result === HBHUB_BLOCKFALL_PLAYING) {
             $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameState = ?, gameTicks = ?, gameScore = ?, gameLines = ?, gamePieces = ?,
                     gamePauses = ?,
-                    gamePausedMs = IF(? = HBHUB_BLOCKFALL_LINES_PER_LEVELresume\' AND gamePausedTimestamp IS NOT NULL,
+                    gamePausedMs = IF(? = \'resume\' AND gamePausedTimestamp IS NOT NULL,
                         gamePausedMs + GREATEST(0, TIMESTAMPDIFF(MICROSECOND, gamePausedTimestamp, UTC_TIMESTAMP(3)) DIV 1000), gamePausedMs),
-                    gamePausedTimestamp = CASE ? WHEN HBHUB_BLOCKFALL_LINES_PER_LEVELpause\' THEN COALESCE(gamePausedTimestamp, UTC_TIMESTAMP(3))
-                        WHEN HBHUB_BLOCKFALL_LINES_PER_LEVELresume\' THEN NULL ELSE gamePausedTimestamp END
+                    gamePausedTimestamp = CASE ? WHEN \'pause\' THEN COALESCE(gamePausedTimestamp, UTC_TIMESTAMP(3))
+                        WHEN \'resume\' THEN NULL ELSE gamePausedTimestamp END
                 WHERE gameId = ?')
                 ->execute([json_encode($state), $state['ticks'], $state['score'], $state['lines'], $state['drawn'], $pauses,
                     $action, $action, $gameId]);
         } else {
             // Over: only the result, the numbers and the time are kept. A game that doesn't count keeps what the server
             // got to, for the admins, but the leaderboard leaves it out.
-            $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = HBHUB_BLOCKFALL_LINES_PER_LEVEL\', gameSecret = \'\', gameTicks = ?, gameScore = ?,
+            $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = \'\', gameSecret = \'\', gameTicks = ?, gameScore = ?,
                     gameLines = ?, gamePieces = ?, gamePauses = ?, gameMs = ?, gamePausedTimestamp = NULL, gameEndTimestamp = UTC_TIMESTAMP(3)
                 WHERE gameId = ?')
                 ->execute([$result, $state['ticks'], $state['score'], $state['lines'], $state['drawn'], $pauses, $playedMs, $gameId]);
@@ -633,7 +633,7 @@ function hbHubBlockfallIsBest(PDO $db, int $userId, int $gameId, array $state, i
  */
 function hbHubBlockfallScripted(PDO $db, int $userId, int $gameId): array|string
 {
-    $statement = $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = HBHUB_BLOCKFALL_LINES_PER_LEVEL\', gameSecret = \'\', gamePausedTimestamp = NULL,
+    $statement = $db->prepare('UPDATE `HBHub-BlockfallGames` SET gameResult = ?, gameState = \'\', gameSecret = \'\', gamePausedTimestamp = NULL,
             gameEndTimestamp = UTC_TIMESTAMP(3)
         WHERE gameId = ? AND userId = ? AND gameResult = ?');
     $statement->execute([HBHUB_BLOCKFALL_SCRIPTED, $gameId, $userId, HBHUB_BLOCKFALL_PLAYING]);
