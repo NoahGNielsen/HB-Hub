@@ -1,5 +1,5 @@
 <?php
-// Blockfall leaderboard, from HBHub-BlockfallGames: ranked by score, with the best, the average, all the lines cleared,
+// Tetris leaderboard, from HBHub-BlockfallGames: ranked by score, with the best, the average, all the lines cleared,
 // and games played. The numbers are the server's own (it plays every game along with the page, see
 // assets/php/games/blockfall/blockfall.php), and only games that count are in them: one the anticheat stopped, or one
 // that was left, only counts as played. Sorted by any column with ?sort=column&dir=asc|desc, which the headings link
@@ -85,15 +85,15 @@ function leaderboardSortUrl(array $columns, string $column, string $sort, string
     <script src="/assets/js/pictureQueue.js?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/pictureQueue.js') ?>" defer></script>
     <link rel="stylesheet" href="/assets/css/casino.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/casino.css') ?>">
     <link rel="stylesheet" href="/assets/css/games.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/games.css') ?>">
-    <title>Blockfall leaderboard - HB Hub</title>
+    <title>Tetris leaderboard - HB Hub</title>
     <meta name="robots" content="noindex">
-    <meta name="description" content="The best Blockfall players on the HB Hub">
+    <meta name="description" content="The best Tetris players on the HB Hub">
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/navPanel.php'; ?>
     <main class="casino casino-leaderboard games">
-        <a class="casino-back" href="/games/blockfall/">&larr; Blockfall</a>
-        <h1>Blockfall leaderboard</h1>
+        <a class="casino-back" href="/games/tetris/">&larr; Tetris</a>
+        <h1>Tetris leaderboard</h1>
         <p class="casino-intro">
             Players are ranked by their best score in one game. HB Hub's server plays every game along with you, so a
             game only counts when it can play the same game in the same time. A game that's sped up or slowed down, played by code, or paused more than
@@ -102,7 +102,7 @@ function leaderboardSortUrl(array $columns, string $column, string $sort, string
 
         <section class="casino-card casino-board" aria-label="Leaderboard">
             <?php if ($rows === []): ?>
-                <p class="casino-hint">Nobody has played Blockfall yet. <a href="/games/blockfall/">Be the first!</a></p>
+                <p class="casino-hint">Nobody has played Tetris yet. <a href="/games/tetris/">Be the first!</a></p>
             <?php else: ?>
                 <div class="casino-table-wrap">
                     <table class="casino-table">

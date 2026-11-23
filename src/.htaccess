@@ -144,6 +144,15 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     RewriteRule ^games/space-ore-miner(/.*)?$ /games/ore-mining-inc$1 [R=301,L]
     RewriteRule ^docs/games/space-ore-miner$ /docs/games/ore-mining-inc [R=301,L]
 
+    # Tetris used to be called Blockfall, at /games/blockfall/, /play/blockfall and /docs/games/blockfall, so old links
+    # and bookmarks still work. GET/HEAD only, as above: a game opened before the rename still sends its moves to
+    # games/blockfall/move until the page is reloaded, so that is quietly rewritten to the new folder instead.
+    RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+    RewriteRule ^games/blockfall(/.*)?$ /games/tetris$1 [R=301,L]
+    RewriteRule ^games/blockfall/(.*)$ games/tetris/$1 [L]
+    RewriteRule ^docs/games/blockfall$ /docs/games/tetris [R=301,L]
+    RewriteRule ^play/blockfall/?$ /play/tetris [R=301,L]
+
     # The casino used to live at /gambling/, so old links and bookmarks are sent on to /casino/. GET/HEAD only, as
     # above: a table opened before the move still posts to the old address until it's reloaded, so that's quietly
     # rewritten to the casino/ folder instead.
@@ -209,12 +218,12 @@ ErrorDocument 504 /assets/php/statusCodesPages/504.php
     # like the games' addresses with a slash below.
     RewriteRule ^play$ guestGames/index.php [L]
     RewriteRule ^play/$ /play [R=301,L]
-    RewriteRule ^play/(wordle|minesweeper|sudoku|snake|blockfall|blackjack|baccarat|roulette|slots)$ guestGames/$1/index.php [L]
+    RewriteRule ^play/(wordle|minesweeper|sudoku|snake|tetris|blackjack|baccarat|roulette|slots)$ guestGames/$1/index.php [L]
     RewriteRule ^play/(wordle|minesweeper|blackjack|baccarat|roulette|slots)/(guess|frame|move|play|spin)$ guestGames/$1/$2.php [L]
     RewriteRule ^play/ore-mining-inc$ guestGames/spaceOreMiner/index.php [L]
     RewriteRule ^play/ore-mining-inc/save$ guestGames/spaceOreMiner/save.php [L]
     # With a slash at the end (or Ore Mining Inc.'s old name), to the one address each page has
-    RewriteRule ^play/(wordle|minesweeper|sudoku|snake|blockfall|blackjack|baccarat|roulette|slots|ore-mining-inc)/$ /play/$1 [R=301,L]
+    RewriteRule ^play/(wordle|minesweeper|sudoku|snake|tetris|blackjack|baccarat|roulette|slots|ore-mining-inc)/$ /play/$1 [R=301,L]
     RewriteRule ^play/(?:space-ore-miner|spaceOreMiner)/?$ /play/ore-mining-inc [R=301,L]
 
     # B. Serve .html if the clean URL matches a .html file

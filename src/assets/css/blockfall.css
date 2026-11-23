@@ -1,4 +1,4 @@
-/* Blockfall (games/blockfall/): the game's frame - a violet bar on top with the score, lines, level, time, best
+/* Tetris (games/tetris/): the game's frame - a violet bar on top with the score, lines, level, time, best
    and pause, and a deep indigo frame with the hold piece on the left of the well and the next three on the right. The
    well and the pieces are drawn on the canvases by assets/js/blockfall.js. Under the well are the buttons for phones and
    tablets, only shown on a touch screen. Loaded after casino.css and games.css. The colours are the game's own, so they

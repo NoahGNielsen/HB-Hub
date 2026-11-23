@@ -1,6 +1,6 @@
 <?php
-// The rules of Blockfall as played here, shown on the Blockfall page (games/blockfall/) and in its help docs
-// (docs/games/blockfall.php). In Danish, like the docs (a public page), also on the game. The game is
+// The rules of Tetris as played here, shown on the Tetris page (games/tetris/) and in its help docs
+// (docs/games/tetris.php). In Danish, like the docs (a public page), also on the game. The game is
 // assets/js/blockfall.js and the server's side assets/php/games/blockfall/blockfall.php (START_SPEED, LINES_PER_LEVEL,
 // LINE_POINTS and the pauses are in both), so change them together.
 ?>

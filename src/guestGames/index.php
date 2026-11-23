@@ -38,7 +38,7 @@ $playStructuredData = json_encode([
     <link rel="stylesheet" href="/assets/css/legal.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/legal.css') ?>">
     <link rel="stylesheet" href="/assets/css/guestGames.css?v=<?= filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/guestGames.css') ?>">
     <title>Gratis onlinespil - uden login | HB Hub</title>
-    <meta name="description" content="Gratis browserspil fra HB Hub på HANSENBERG: Wordle på dansk og engelsk, et idle clicker-spil, Minesweeper, Sudoku, Snake, Blockfall, og Blackjack, Baccarat, Roulette og Slots med legechips. Uden login.">
+    <meta name="description" content="Gratis browserspil fra HB Hub på HANSENBERG: Wordle på dansk og engelsk, et idle clicker-spil, Minesweeper, Sudoku, Snake, Tetris, og Blackjack, Baccarat, Roulette og Slots med legechips. Uden login.">
     <script type="application/ld+json"><?= $playStructuredData ?></script>
 </head>
 <body class="home-body">

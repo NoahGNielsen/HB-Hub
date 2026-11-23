@@ -1,13 +1,13 @@
 <?php
-// Help docs: Blockfall - the rules (assets/php/games/blockfall/rules.php, included as the game shows them), a few tips,
+// Help docs: Tetris - the rules (assets/php/games/blockfall/rules.php, included as the game shows them), a few tips,
 // and the leaderboard and what keeps it fair (assets/php/games/blockfall/blockfall.php). Open to everyone. Built by
 // assets/php/docs/top.php and bottom.php.
 $hbHubSessionOptional = true;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 
-$docsPath = '/docs/games/blockfall';
+$docsPath = '/docs/games/tetris';
 $docsIntro = 'Puslespillet med faldende brikker: stabl dem, ryd hele linjer, og lad ikke brønden blive fuld. Spil det på
-    <a href="/games/blockfall/">Blockfall</a>-siden.';
+    <a href="/games/tetris/">Tetris</a>-siden.';
 include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
 ?>
 
@@ -41,7 +41,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="leaderboard" aria-labelledby="docs-leaderboard">
                         <h2 id="docs-leaderboard">Ranglisten</h2>
                         <p>
-                            Ranglisten (<strong>Leaderboard</strong> på Blockfall-siden) viser din bedste score, dit
+                            Ranglisten (<strong>Leaderboard</strong> på Tetris-siden) viser din bedste score, dit
                             gennemsnit, alle de linjer, du har ryddet, og hvor mange spil du har spillet.
                         </p>
                         <p>
@@ -61,7 +61,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             spille det færdigt.
                         </p>
                         <p>
-                            Den <a href="/play/blockfall">gratis Blockfall</a>, til at spille uden en konto, bliver kun spillet
+                            Den <a href="/play/tetris">gratis Tetris</a>, til at spille uden en konto, bliver kun spillet
                             i din browser og har ingen rangliste. Din bedste score bliver gemt i din browser.
                         </p>
                     </section>

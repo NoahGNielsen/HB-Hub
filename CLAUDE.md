@@ -40,7 +40,7 @@ Last updated 17/11-26
 ## What this is
 
 HB Hub (https://hbhub.noahgajnielsen.dk) is a messaging site for the owner's school, with a virtual-chip casino
-(Blackjack, Baccarat, Roulette, Slots) and games (Matador, chess, UNO, Doodle Chain, Wordle, Minesweeper, Sudoku, Snake, Blockfall, Ore Mining Inc.). The feature list is in
+(Blackjack, Baccarat, Roulette, Slots) and games (Matador, chess, UNO, Doodle Chain, Wordle, Minesweeper, Sudoku, Snake, Tetris, Ore Mining Inc.). The feature list is in
 [docs/features/](docs/features/index.md); keep it up to date when a feature changes.
 
 - **PHP 8.4 + PDO + MySQL 8.4.** No framework, no Composer packages, no build step.
@@ -99,7 +99,7 @@ database/                schema.sql, defaultUserSettings.json, defaultChatSettin
 - **Snake**: the game runs in `assets/js/snake.js`, but `assets/php/games/snake/snake.php` replays every step for the
   leaderboard (board size, start position, first apple, speeds, apple placement `free[roll % free.length]`), so a rule
   change goes in both, or every game ends as "bad moves".
-- **Blockfall** (the falling-block puzzle) is built the same way: the rules are in both `assets/js/blockfall.js` and
+- **Tetris** (the falling-block puzzle; its pages are at `games/tetris/`, but its JS, CSS, PHP library and `HBHub-BlockfallGames` table still carry its old name, Blockfall) is built the same way: the rules are in both `assets/js/blockfall.js` and
   `assets/php/games/blockfall/blockfall.php` ("Rules" part, function by function, whole numbers only, 10 ms ticks), and
   the server replays every input. A rule change goes in both.
 - **`userSettings` JSON**: always read with a default - older accounts lack newer keys. `defaultUserSettings.json` /

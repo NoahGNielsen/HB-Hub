@@ -27,7 +27,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td><a href="/docs/games/minesweeper">Minesweeper</a></td><td>Klassikeren: ryd brættet uden at åbne en mine.</td><td>Kun dig</td></tr>
                                     <tr><td><a href="/docs/games/sudoku">Sudoku</a></td><td>Fyld brættet med 1 til 9 i hver række, kolonne og boks, fra Easy til Expert.</td><td>Kun dig</td></tr>
                                     <tr><td><a href="/docs/games/snake">Snake</a></td><td>Klassikeren: spis æblerne, og bliv længere uden at ramme kanten eller dig selv.</td><td>Kun dig</td></tr>
-                                    <tr><td><a href="/docs/games/blockfall">Blockfall</a></td><td>Puslespillet med faldende brikker: ryd hele linjer, før brønden bliver fuld.</td><td>Kun dig</td></tr>
+                                    <tr><td><a href="/docs/games/tetris">Tetris</a></td><td>Puslespillet med faldende brikker: ryd hele linjer, før brønden bliver fuld.</td><td>Kun dig</td></tr>
                                     <tr><td><a href="/docs/games/ore-mining-inc">Ore Mining Inc.</a></td><td>Et clickerspil om at mine asteroider, og siden hele multiverset.</td><td>Kun dig</td></tr>
                                 </tbody>
                             </table>

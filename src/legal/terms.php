@@ -297,7 +297,7 @@ function termsNumber(int $number): string
                         <p>
                             De gratis spil på <a href="/play">/play</a> er også omfattet af disse vilkår. Uden konto gemmes Wordle,
                             Sudoku og Ore Mining Inc. kun i din browser, og et Minesweeper-bræt kun, til siden lukkes. Gæsters
-                            Minesweeper-, Sudoku-, Snake- og Blockfall-resultater kommer ikke på ranglisten. Opretter du dig eller logger ind fra et
+                            Minesweeper-, Sudoku-, Snake- og Tetris-resultater kommer ikke på ranglisten. Opretter du dig eller logger ind fra et
                             gratis spil, overføres dagens Wordle og dit Ore Mining Inc.-spil til kontoen, men kun hvis kontoen ikke
                             allerede har dem. Har browseren tidligere været logget ind, sendes du i stedet til login. Spillene må
                             ikke overbelastes med automatiserede forespørgsler.

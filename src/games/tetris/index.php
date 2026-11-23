@@ -1,5 +1,5 @@
 <?php
-// Blockfall: HB Hub's falling-block puzzle. Stack the pieces in a 10x20 well, clear full lines, and don't let it fill
+// Tetris: HB Hub's falling-block puzzle. Stack the pieces in a 10x20 well, clear full lines, and don't let it fill
 // to the top. It gets faster every 10 lines. A normal Games page (side bar, back link, title, a
 // Leaderboard button, and the rules under it from assets/php/games/blockfall/rules.php).
 // The game runs in the browser (assets/js/blockfall.js draws it on the data-blockfall-canvas canvas, with the hold and
@@ -9,7 +9,7 @@
 // The line above the well (data-blockfall-note) says when a game doesn't count, and why. The buttons
 // under the well (data-blockfall-pad) are for phones and tablets; assets/css/blockfall.css only shows them there.
 //
-// It's also the guest Blockfall at /play/blockfall: guestGames/blockfall/ sets $guestGame and includes this page (see
+// It's also the guest Tetris at /play/tetris: guestGames/tetris/ sets $guestGame and includes this page (see
 // assets/php/guestGames/guestGames.php). Then it has the frontpage's top bar, the guest bar and the text for search
 // engines, no leaderboard and no server game: data-blockfall-guest tells blockfall.js to play it only in the browser.
 $guestGame ??= null;
@@ -49,7 +49,7 @@ $blockfallPad = [
     <?php else: ?>
         <title>Tetris - HB Hub</title>
         <meta name="robots" content="noindex">
-        <meta name="description" content="Play Blockfall, the falling-block puzzle, on the HB Hub">
+        <meta name="description" content="Play Tetris, the falling-block puzzle, on the HB Hub">
     <?php endif; ?>
 </head>
 <body<?= $guestGame !== null ? ' class="home-body"' : '' ?>>
@@ -72,7 +72,7 @@ $blockfallPad = [
         <div class="casino-title-row">
             <h1>Tetris</h1>
             <?php if ($guestGame === null): ?>
-                <a class="casino-btn" href="/games/blockfall/leaderboard">Leaderboard</a>
+                <a class="casino-btn" href="/games/tetris/leaderboard">Leaderboard</a>
             <?php endif; ?>
         </div>
         <?php if ($guestGame !== null): ?>
@@ -102,7 +102,7 @@ $blockfallPad = [
                     <canvas class="blockfall-hold" data-blockfall-hold role="img" aria-label="The piece on hold"></canvas>
                 </div>
                 <div class="blockfall-well" data-blockfall-well>
-                    <canvas data-blockfall-canvas role="img" aria-label="Blockfall well"></canvas>
+                    <canvas data-blockfall-canvas role="img" aria-label="Tetris well"></canvas>
                     <p class="blockfall-callout" data-blockfall-callout aria-hidden="true"></p>
                     <div class="blockfall-cover" data-blockfall-cover data-state="ready">
                         <p class="blockfall-cover-title" data-blockfall-cover-title>Ready?</p>

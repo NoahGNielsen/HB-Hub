@@ -197,7 +197,7 @@ hbHubGamesPage($hbHubUser); // blocked in settings, or not open yet
                     </a>
                 </li>
                 <li>
-                    <a class="casino-game casino-game-blockfall" href="/games/blockfall/">
+                    <a class="casino-game casino-game-blockfall" href="/games/tetris/">
                         <span class="casino-game-cover">
                             <span class="casino-game-kicker">Puzzle classic</span>
                             <span class="casino-game-name">Tetris</span>

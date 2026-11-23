@@ -177,7 +177,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 </div>
             </div>
             <div class="credits-library">
-                <!-- A corner of Blockfall's well: a piece above a gap, which drops into it on hover -->
+                <!-- A corner of Tetris' well: a piece above a gap, which drops into it on hover -->
                 <div class="credits-blocks" aria-hidden="true">
                     <i></i><i class="is-coral is-falling"></i><i></i><i></i>
                     <i></i><i class="is-coral is-falling"></i><i></i><i></i>
@@ -187,7 +187,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                 <div class="credits-library-text">
                     <h3><a href="https://github.com/larprad/tetris" target="_blank" rel="noopener noreferrer">tetris</a></h3>
                     <p>
-                        Af larprad. <a href="/games/blockfall/">Blockfall</a> i Spil-sektionen er bygget på idéerne i det:
+                        Af larprad. <a href="/games/tetris/">Tetris</a> i Spil-sektionen er bygget på idéerne i det:
                         en brønd på 10 gange 20, en brik på hold og den næste i forvejen
                         og hastighederne for hvert level. Koden er skrevet på ny til HB Hub, med sit eget udseende, og
                         brikkerne og pointene bliver holdt på HB Hubs server, til ranglisterne.

@@ -1,6 +1,6 @@
-// Blockfall (games/blockfall/): the whole game, in the browser. HB Hub's falling-block puzzle, built on the ideas in
+// Tetris (games/tetris/): the whole game, in the browser. HB Hub's falling-block puzzle, built on the ideas in
 // larprad's tetris on GitHub (the speeds, a hold slot and a preview; credited on the credits page). Loaded
-// by games/blockfall/index.php, which has the bar (score, lines, level, time, best, pause), the well's
+// by games/tetris/index.php, which has the bar (score, lines, level, time, best, pause), the well's
 // [data-blockfall-canvas], the hold and next pieces' canvases, the cover over the well ([data-blockfall-cover], for
 // "ready", "paused" and "game over") and the buttons for phones ([data-blockfall-pad]).
 //
@@ -22,7 +22,7 @@
 // request fails, the page runs out of pieces, or a key press or tap wasn't made by a person (event.isTrusted false).
 // Then it's played on as normal, the pieces coming from Math.random, and [data-blockfall-note] says why.
 //
-// The guest Blockfall (/play/blockfall, data-blockfall-guest) has no server game: its pieces come from Math.random and
+// The guest Tetris (/play/tetris, data-blockfall-guest) has no server game: its pieces come from Math.random and
 // its best score is kept in localStorage (hbHubBlockfall, in the privacy policy) as {"guestBest": score}. Members' pages
 // don't use localStorage.
 (() => {
@@ -64,7 +64,7 @@
   const STORAGE_KEY = 'hbHubBlockfall';
 
   // The server's side (blockfall.php)
-  const MOVE_URL = '/games/blockfall/move';
+  const MOVE_URL = '/games/tetris/move';
   const REPORT_MS = 4000;
   const LOW_PIECES = 16; // fewer pieces than this left ahead and it reports straight away (at most once a second)
   const MAX_PAUSES = 10; // HBHUB_BLOCKFALL_MAX_PAUSES

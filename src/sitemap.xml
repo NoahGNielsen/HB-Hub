@@ -23,7 +23,7 @@
         <loc>https://hbhub.noahgajnielsen.dk/play/snake</loc>
     </url>
     <url>
-        <loc>https://hbhub.noahgajnielsen.dk/play/blockfall</loc>
+        <loc>https://hbhub.noahgajnielsen.dk/play/tetris</loc>
     </url>
     <url>
         <loc>https://hbhub.noahgajnielsen.dk/play/blackjack</loc>
@@ -143,7 +143,7 @@
         <loc>https://hbhub.noahgajnielsen.dk/docs/games/snake</loc>
     </url>
     <url>
-        <loc>https://hbhub.noahgajnielsen.dk/docs/games/blockfall</loc>
+        <loc>https://hbhub.noahgajnielsen.dk/docs/games/tetris</loc>
     </url>
     <url>
         <loc>https://hbhub.noahgajnielsen.dk/docs/games/ore-mining-inc</loc>

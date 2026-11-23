@@ -1,5 +1,5 @@
 <?php
-// Blockfall's games, kept on the server so the leaderboard can trust them. Blockfall is HB Hub's falling-block puzzle
+// Tetris's games, kept on the server so the leaderboard can trust them. Tetris is HB Hub's falling-block puzzle
 // (the genre, with its own name and look), built on the ideas in larprad's tetris on GitHub (credited on the credits
 // page): a 10x20 well, the seven four-square pieces and a hold slot. You go on until you top out, faster every 10 lines.
 //
@@ -28,8 +28,8 @@
 //   at once), + turns clockwise, - anticlockwise, H holds (swaps with the hold slot, once per piece).
 // - Lines: 100, 300, 500 or 800 points for 1-4 at once, times the level the piece locked on.
 //
-// How a game goes (games/blockfall/move, the JSON):
-// - The Blockfall page makes the next game when it's opened (hbHubBlockfallNew()), and the answer to each finished game
+// How a game goes (games/tetris/move, the JSON):
+// - The Tetris page makes the next game when it's opened (hbHubBlockfallNew()), and the answer to each finished game
 //   makes the one after it: a row in HBHub-BlockfallGames with a secret (gameSecret) that decides the pieces. The page
 //   gets the first HBHUB_BLOCKFALL_PIECES_AHEAD of them.
 // - When the first piece comes in, the page says so (hbHubBlockfallStart()), which starts the server's
@@ -54,7 +54,7 @@
 //
 // Only started games count as played; making the next one deletes a game never started and ends one still going (as
 // left). gameState and gameSecret are emptied once a game is over.
-// Used by games/blockfall/move, games/blockfall/index (the next game, and the bests) and games/blockfall/leaderboard.
+// Used by games/tetris/move, games/tetris/index (the next game, and the bests) and games/tetris/leaderboard.
 require_once __DIR__ . '/../../database.php';
 
 // The rules (as the constants at the top of assets/js/blockfall.js) -------------------------------------------------

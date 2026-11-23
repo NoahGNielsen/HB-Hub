@@ -1,6 +1,6 @@
 <?php
 // The games visitors can play without an account, mostly so search engines have something to find: Wordle,
-// Ore Mining Inc., Minesweeper, Sudoku, Snake, Blockfall, and solo Blackjack, Baccarat, Roulette and Slots, at /play (the files are in guestGames/, which is only
+// Ore Mining Inc., Minesweeper, Sudoku, Snake, Tetris, and solo Blackjack, Baccarat, Roulette and Slots, at /play (the files are in guestGames/, which is only
 // reached through the rewrites in .htaccess). The normal versions (games/, casino/) still need an account, and
 // so does everything else on the site.
 //
@@ -27,7 +27,7 @@
 // - Snake has no token either: the members' page plays it only in the browser for a guest (data-snake-guest in
 //   assets/js/snake.js), with no server game, and the best scores in localStorage (hbHubSnake). The members' Snake is
 //   played along with on the server for its leaderboard, so a guest's scores never come over to an account.
-// - Blockfall is the same as Snake: the members' page with data-blockfall-guest (assets/js/blockfall.js), the pieces
+// - Tetris is the same as Snake: the members' page with data-blockfall-guest (assets/js/blockfall.js), the pieces
 //   from Math.random, and the bests in localStorage (hbHubBlockfall), never brought over to an account.
 // - The casino games keep theirs in the page only, so the play chips start over every time the page is opened, and
 //   they never come over to an account. A guest who runs out gets a new stack (hbHubGuestCasinoRefill()).
@@ -137,23 +137,23 @@ const HBHUB_GUEST_GAMES = [
         'docs' => '/docs/games/snake',
         'prompt' => 'Opret en gratis konto for at få dine scorer på Snake-ranglisten, og spil Matador, skak og UNO med venner.',
     ],
-    'blockfall' => [
-        'path' => '/play/blockfall',
-        'game' => '/games/blockfall/',
+    'tetris' => [
+        'path' => '/play/tetris',
+        'game' => '/games/tetris/',
         'section' => 'games',
-        'name' => 'Blockfall',
-        'title' => 'Gratis Blockfall online - puslespillet med faldende brikker, uden login | HB Hub',
-        'description' => 'Spil Blockfall gratis i din browser: stabl de faldende brikker, ryd hele linjer, og hold brønden fri, mens det går hurtigere og hurtigere. Ingen konto nødvendig.',
+        'name' => 'Tetris',
+        'title' => 'Gratis Tetris online - puslespillet med faldende brikker, uden login | HB Hub',
+        'description' => 'Spil Tetris gratis i din browser: stabl de faldende brikker, ryd hele linjer, og hold brønden fri, mens det går hurtigere og hurtigere. Ingen konto nødvendig.',
         'card' => 'Stabl de faldende brikker, ryd hele linjer, og lad ikke brønden blive fuld.',
         'genre' => ['Puzzle', 'Falling block puzzle'],
-        'keywords' => ['Blockfall', 'falling block puzzle', 'block puzzle', 'blokspil', 'gratis puslespil', 'puzzle game', 'arcade game'],
+        'keywords' => ['Tetris', 'falling block puzzle', 'block puzzle', 'blokspil', 'gratis puslespil', 'puzzle game', 'arcade game'],
         'languages' => ['en'],
         'about' => [
-            'Blockfall er HB Hubs puslespil med faldende brikker: syv slags brikker på fire felter falder en ad gangen ned i en brønd, der er 10 felter bred og 20 høj. Flyt og drej dem med tastaturet (eller knapperne på en telefon), så de danner hele vandrette linjer. En hel linje forsvinder og giver point, og jo flere linjer på én gang, jo flere point. Spillet er slut, når der ikke er plads til den næste brik i toppen.',
+            'Tetris er HB Hubs puslespil med faldende brikker: syv slags brikker på fire felter falder en ad gangen ned i en brønd, der er 10 felter bred og 20 høj. Flyt og drej dem med tastaturet (eller knapperne på en telefon), så de danner hele vandrette linjer. En hel linje forsvinder og giver point, og jo flere linjer på én gang, jo flere point. Spillet er slut, når der ikke er plads til den næste brik i toppen.',
             'Det går hurtigere for hver 10 linjer, til brønden er fuld. Læg en brik til side med Hold, og se de næste tre. Det er gratis og kører i din browser, og din bedste score bliver gemt i denne browser. Med en gratis HB Hub-konto kommer dine spil på ranglisten.',
         ],
-        'docs' => '/docs/games/blockfall',
-        'prompt' => 'Opret en gratis konto for at få dine scorer på Blockfall-ranglisten, og spil Matador, skak og UNO med venner.',
+        'docs' => '/docs/games/tetris',
+        'prompt' => 'Opret en gratis konto for at få dine scorer på Tetris-ranglisten, og spil Matador, skak og UNO med venner.',
     ],
     'blackjack' => [
         'path' => '/play/blackjack',

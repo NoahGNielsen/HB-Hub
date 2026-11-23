@@ -1,5 +1,5 @@
 <?php
-// Blockfall's JSON, for the game on the page (assets/js/blockfall.js). POST only, with action= (and game=, the id, for
+// Tetris's JSON, for the game on the page (assets/js/blockfall.js). POST only, with action= (and game=, the id, for
 // all but new). The rules and the anticheat are in assets/php/games/blockfall/blockfall.php.
 //   new: the next game, ready to start: {"game": id, "piecesFrom": 0, "pieces": "TIOS..."} (the page usually has one
 //     already, from the page itself or the answer to the last game).
