@@ -31,7 +31,7 @@
 // How a game goes (games/tetris/move, the JSON):
 // - The Tetris page makes the next game when it's opened (hbHubBlockfallNew()), and the answer to each finished game
 //   makes the one after it: a row in HBHub-BlockfallGames with a secret (gameSecret) that decides the pieces. The page
-//   gets the first HBHUB_BLOCKFALL_PIECES_AHEAD of them.
+//   gets the first HBHUB_BLOCKFALL_PIECES_AHEAD + 1 of them (the one the start draws, and PIECES_AHEAD after it).
 // - When the first piece comes in, the page says so (hbHubBlockfallStart()), which starts the server's
 //   clock and puts the first piece in its well.
 // - While it's played, the page reports (hbHubBlockfallReport()): how many ticks it has played, and the inputs since the
@@ -474,7 +474,10 @@ function hbHubBlockfallNew(PDO $db, int $userId): array
         $db->rollBack();
         throw $e;
     }
-    return ['game' => $gameId] + hbHubBlockfallPieces($secret, 0, HBHUB_BLOCKFALL_PIECES_AHEAD);
+    // One more than PIECES_AHEAD: the start draws piece 0, and each report sends on from drawn + PIECES_AHEAD, so with
+    // only 0 to PIECES_AHEAD - 1 here, piece number PIECES_AHEAD was never sent and every game that got that far
+    // stopped counting ("the connection was lost")
+    return ['game' => $gameId] + hbHubBlockfallPieces($secret, 0, 1 + HBHUB_BLOCKFALL_PIECES_AHEAD);
 }
 
 /**
