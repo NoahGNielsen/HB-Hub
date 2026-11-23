@@ -207,19 +207,31 @@ $gameLayout = $room['state']['layout'] ?? null; // Kaos: which field is where (n
                                 <?php if (isset($info['group']) && is_int($info['group'])): ?>
                                     <span class="mt-field-colour" aria-hidden="true"></span>
                                 <?php endif; ?>
-                                <?= gameFieldArt($info['type']) ?>
-                                <span class="mt-field-name"><?= htmlspecialchars($info['name']) ?></span>
-                                <?php if ($isProperty): ?>
-                                    <span class="mt-field-price"><?= number_format($info['price']) ?> kr</span>
-                                <?php elseif ($info['type'] === 'incomeTax'): ?>
-                                    <span class="mt-field-price">10 % or <?= number_format(HBHUB_MATADOR_TAX_FIXED) ?> kr</span>
-                                <?php elseif ($info['type'] === 'extraTax'): ?>
-                                    <span class="mt-field-price"><?= number_format($info['amount']) ?> kr</span>
-                                <?php elseif ($info['type'] === 'parking'): ?>
-                                    <span class="mt-field-price" data-mt-pot hidden></span>
+                                <?php if ($info['type'] === 'jail'): ?>
+                                    <?php // As on the real board: the cell in the inner corner, and "På besøg" in an L along
+                                          // the outer edges, where a piece that has only landed here stands (matadorGame.js) ?>
+                                    <span class="mt-jail-cell">
+                                        <?= gameFieldArt($info['type']) ?>
+                                        <span class="mt-field-name"><?= htmlspecialchars($info['name']) ?></span>
+                                        <span class="mt-field-tokens" data-mt-tokens></span>
+                                    </span>
+                                    <span class="mt-jail-visit" aria-hidden="true">På besøg</span>
+                                    <span class="mt-field-tokens is-visit" data-mt-visit-tokens></span>
+                                <?php else: ?>
+                                    <?= gameFieldArt($info['type']) ?>
+                                    <span class="mt-field-name"><?= htmlspecialchars($info['name']) ?></span>
+                                    <?php if ($isProperty): ?>
+                                        <span class="mt-field-price"><?= number_format($info['price']) ?> kr</span>
+                                    <?php elseif ($info['type'] === 'incomeTax'): ?>
+                                        <span class="mt-field-price">10 % or <?= number_format(HBHUB_MATADOR_TAX_FIXED) ?> kr</span>
+                                    <?php elseif ($info['type'] === 'extraTax'): ?>
+                                        <span class="mt-field-price"><?= number_format($info['amount']) ?> kr</span>
+                                    <?php elseif ($info['type'] === 'parking'): ?>
+                                        <span class="mt-field-price" data-mt-pot hidden></span>
+                                    <?php endif; ?>
+                                    <span class="mt-field-tokens" data-mt-tokens></span>
                                 <?php endif; ?>
                                 <span class="mt-field-houses" data-mt-houses></span>
-                                <span class="mt-field-tokens" data-mt-tokens></span>
                             </button>
                         <?php endforeach; ?>
     

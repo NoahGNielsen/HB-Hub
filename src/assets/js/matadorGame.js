@@ -108,6 +108,7 @@
         rent: element.dataset.rent ? element.dataset.rent.split(',').map(Number) : [],
         houses: element.querySelector('[data-mt-houses]'),
         tokens: element.querySelector('[data-mt-tokens]'),
+        visitTokens: element.querySelector('[data-mt-visit-tokens]'), // Fængsel's "På besøg" strip (null on the rest)
     }));
     const FIELDS = []; // by where they are on the board (data-field), which is what the game's numbers mean
     const GROUP_FIELDS = {}; // the field numbers in each group
@@ -363,7 +364,14 @@
         }
         if (field.type === 'parking' && game.pot !== null) parts.push(kr(game.pot) + ' in its account');
         const here = game.players.filter((player) => !player.bankrupt && game.phase !== 'lobby' && player.position === number);
-        if (here.length > 0) parts.push('here: ' + here.map((player) => player.name).join(', '));
+        if (field.type === 'jail') {
+            const jailed = here.filter((player) => player.inJail);
+            const visiting = here.filter((player) => !player.inJail);
+            if (jailed.length > 0) parts.push('in jail: ' + jailed.map((player) => player.name).join(', '));
+            if (visiting.length > 0) parts.push('på besøg: ' + visiting.map((player) => player.name).join(', '));
+        } else if (here.length > 0) {
+            parts.push('here: ' + here.map((player) => player.name).join(', '));
+        }
         return parts.join(', ');
     }
 
@@ -395,13 +403,20 @@
         drawPieces(game.players.filter((other) => !other.bankrupt));
     }
 
+    // On Fængsel, a piece that's in jail goes in the cell, and one that has only landed there (or is walking past) on
+    // the "På besøg" strip round it
     function drawPieces(pieces) {
-        FIELDS.forEach((field) => field.tokens.replaceChildren());
+        FIELDS.forEach((field) => {
+            field.tokens.replaceChildren();
+            field.visitTokens?.replaceChildren();
+        });
         for (const player of pieces) {
             const piece = document.createElement('span');
             piece.className = 'mt-token mt-seat-' + player.seat + (player.seat === game.turn?.seat ? ' is-turn' : '') + (player.here ? '' : ' is-empty');
-            piece.title = player.name;
-            FIELDS[shownAt[player.seat] ?? player.position].tokens.append(piece);
+            const field = FIELDS[shownAt[player.seat] ?? player.position];
+            const visiting = field.visitTokens && !player.inJail;
+            piece.title = player.name + (field.visitTokens ? (visiting ? ' (på besøg)' : ' (in jail)') : '');
+            (visiting ? field.visitTokens : field.tokens).append(piece);
         }
     }
 

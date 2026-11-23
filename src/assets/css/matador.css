@@ -316,6 +316,69 @@
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
+/* Fængsel (bottom left; corners stay put in Kaos): as on the real board, the cell sits in the inner corner and the
+   "På besøg" strip runs in an L along the outer edges - the text up the left side, the visitors' pieces along the
+   bottom. A piece that's in jail stands in the cell (matadorGame.js's drawPieces()). */
+.mt-field.mt-type-jail {
+  --mt-visit: 27%; /* how thick the strip is */
+  padding: 0;
+  background: color-mix(in srgb, var(--mt-g2) 26%, var(--mt-field));
+}
+
+.mt-jail-cell {
+  position: absolute;
+  inset: 0 0 var(--mt-visit) var(--mt-visit);
+  padding: 2px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  background: var(--mt-field);
+  box-shadow: -1px 1px 0 var(--mt-line);
+}
+
+.mt-jail-cell .mt-field-art {
+  width: 4.6cqi;
+  height: 4.6cqi;
+}
+
+.mt-jail-cell .mt-field-name {
+  font-size: 0.85em;
+}
+
+.mt-jail-visit {
+  position: absolute;
+  inset: 0 auto var(--mt-visit) 0;
+  width: var(--mt-visit);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg); /* reads bottom to top */
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text);
+  opacity: 0.8;
+}
+
+.mt-field-tokens.is-visit {
+  inset: auto 2px 0 2px;
+  height: var(--mt-visit);
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0;
+}
+
+/* Four pieces don't quite fit side by side on a small board, so they overlap a little */
+.mt-field-tokens.is-visit .mt-token + .mt-token {
+  margin-left: -0.35cqi;
+}
+
 .mt-type-chance .mt-field-name {
   color: var(--accent);
 }

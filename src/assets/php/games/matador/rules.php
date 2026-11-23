@@ -58,7 +58,8 @@ $rulesExtraTax = array_values(array_filter($rulesFields, static fn (array $info)
         De fængsles sender dig i fængsel. For at komme ud betaler du <?= hbHubMatadorKr(HBHUB_MATADOR_BAIL) ?>, før du slår,
         bruger et "benådet"-kort eller slår en 6'er (to ens med 2 terninger). Efter <?= HBHUB_MATADOR_JAIL_TRIES ?> forsøg
         betaler du og rykker det, du slog. Om du stadig får leje, mens du sidder i fængsel, er en indstilling i rummet: ja
-        (standard), nej, eller den bliver betalt til banken i stedet.
+        (standard), nej, eller den bliver betalt til banken i stedet. Lander du bare på Fængsel, er du på besøg: din brik
+        står på "På besøg"-kanten uden for cellen, og der sker ingenting.
     </li>
     <li>Prøv lykken: træk et kort, og gør, hvad det siger. "Benådet"-kortene bliver gemt, til de bliver brugt eller byttet væk.</li>
     <li>
