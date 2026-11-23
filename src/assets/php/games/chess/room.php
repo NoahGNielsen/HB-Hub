@@ -633,6 +633,7 @@ function hbHubChessWatchRooms(PDO $db): array
     $statement->execute([HBHUB_CHESS_ROOM_PUBLIC, HBHUB_CHESS_PHASES['lobby']]);
 
     return array_map(static fn (array $room): array => [
+        'id' => (int) $room['roomId'],
         'code' => $room['roomCode'],
         'name' => $room['roomName'],
         'players' => array_values(array_filter([$room['white'], $room['black']], 'is_string')),

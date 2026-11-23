@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **The setting** | **Spectator mode** (off by default) in the **Game settings** of Matador, chess, UNO and Doodle Chain. Only the host changes it, at any time (also mid-game), and it's sent the moment they pick on or off. Stored as `spectators` in the room's `roomState` (missing = off), set by the `spectators` action of each game's `play.php` (`assets/php/games/spectators.php`). While it's on, the game says **Spectators can watch** under its name |
-| **Watching** | `/games/<game>/game?watch=CODE`: from the **Watch** button next to **Join** in the lobby (with the code), or **Games to watch** in the lobby (public games being played with it on, `lobbyWatch.php` + `lobbyWatch.js`). Not while you're in a game of the same kind (being away from it could lose it); someone watching their own game is sent to it |
+| **Watching** | `/games/<game>/game?watch=CODE`: from the **Watch** button next to **Join** in the lobby (with the code), or **Games to watch** in the lobby (public games being played with it on, `lobbyWatch.php` + `lobbyWatch.js`). Not while you're in a game of the same kind (being away from it could lose it); someone watching their own game is sent to it. In **Games to watch** the button says **In a game** (off) while you sit in another game, and **Your game** on your own |
 | **What watchers see** | The game's own view built for nobody in it (`HBHUB_GAMES_SPECTATOR_ID` = 0): what the players see of each other, never hands, Doodle prompts or the card order. No chat, no buttons, and nothing is posted. **Stop watching** goes back to the lobby, and so does turning it off or the game ending (`notWatchable`). Nothing about watchers is stored, so there's no watcher count |
 
 ## Matador

@@ -212,7 +212,7 @@ function hbHubMatadorWatchedRoom(PDO $db, mixed $code): ?array
  */
 function hbHubMatadorWatchRooms(PDO $db): array
 {
-    $statement = $db->prepare('SELECT roomCode, roomName, roomState->\'$.players[*].name\' AS players, roomState->>\'$.settings\' AS settings
+    $statement = $db->prepare('SELECT roomId, roomCode, roomName, roomState->\'$.players[*].name\' AS players, roomState->>\'$.settings\' AS settings
         FROM `HBHub-MatadorRooms`
         WHERE roomType = ? AND roomPhase = ? AND roomState->>\'$.spectators\' = \'true\'
         ORDER BY roomId DESC
@@ -222,6 +222,7 @@ function hbHubMatadorWatchRooms(PDO $db): array
     return array_map(static function (array $room): array {
         $settings = hbHubMatadorSettings(['settings' => json_decode($room['settings'] ?? 'null', true) ?? []]);
         return [
+            'id' => (int) $room['roomId'],
             'code' => $room['roomCode'],
             'name' => $room['roomName'],
             'players' => array_values(array_filter(json_decode($room['players'] ?? 'null', true) ?? [], 'is_string')),

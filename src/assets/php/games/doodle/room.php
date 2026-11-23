@@ -194,7 +194,7 @@ function hbHubDoodleWatchedRoom(PDO $db, mixed $code): ?array
  */
 function hbHubDoodleWatchRooms(PDO $db): array
 {
-    $statement = $db->prepare('SELECT roomCode, roomName, roomState->\'$.players[*].name\' AS players, roomState->>\'$.settings\' AS settings
+    $statement = $db->prepare('SELECT roomId, roomCode, roomName, roomState->\'$.players[*].name\' AS players, roomState->>\'$.settings\' AS settings
         FROM `HBHub-DoodleRooms`
         WHERE roomType = ? AND roomPhase <> ? AND roomState->>\'$.spectators\' = \'true\'
         ORDER BY roomId DESC
@@ -202,6 +202,7 @@ function hbHubDoodleWatchRooms(PDO $db): array
     $statement->execute([HBHUB_DOODLE_ROOM_PUBLIC, HBHUB_DOODLE_PHASES['lobby']]);
 
     return array_map(static fn (array $room): array => [
+        'id' => (int) $room['roomId'],
         'code' => $room['roomCode'],
         'name' => $room['roomName'],
         'players' => array_values(array_filter(json_decode($room['players'] ?? 'null', true) ?? [], 'is_string')),

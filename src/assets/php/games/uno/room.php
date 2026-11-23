@@ -600,7 +600,7 @@ function hbHubUnoPeople(PDO $db, array $userIds): array
  */
 function hbHubUnoWatchRooms(PDO $db): array
 {
-    $statement = $db->prepare('SELECT roomCode, roomName, roomState->\'$.players[*].name\' AS players, roomState->>\'$.settings\' AS settings
+    $statement = $db->prepare('SELECT roomId, roomCode, roomName, roomState->\'$.players[*].name\' AS players, roomState->>\'$.settings\' AS settings
         FROM `HBHub-UnoRooms`
         WHERE roomType = ? AND roomPhase = ? AND roomState->>\'$.spectators\' = \'true\'
         ORDER BY roomId DESC
@@ -608,6 +608,7 @@ function hbHubUnoWatchRooms(PDO $db): array
     $statement->execute([HBHUB_UNO_ROOM_PUBLIC, HBHUB_UNO_PHASES['playing']]);
 
     return array_map(static fn (array $room): array => [
+        'id' => (int) $room['roomId'],
         'code' => $room['roomCode'],
         'name' => $room['roomName'],
         'players' => array_values(array_filter(json_decode($room['players'] ?? 'null', true) ?? [], 'is_string')),
