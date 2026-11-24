@@ -8,8 +8,8 @@
 <fieldset class="casino-choices" data-spectators>
     <legend class="casino-label">Spectator mode</legend>
     <?php foreach ([
-        'off' => ['Off (default)', 'Only the players can see the game.'],
-        'on' => ['On', 'Anyone with the code can watch, without playing or reading the chat. A public game is also listed for watching in the lobby while it\'s played. Changes straight away, also during a game.'],
+        'off' => ['Off', 'Only the players can see the game.'],
+        'on' => ['On (default)','Anyone with the code can watch, without playing or reading the chat. A public game is also listed for watching in the lobby while it\'s played. Changes straight away, also during a game.'],
     ] as $value => [$label, $hint]): ?>
         <label class="casino-choice">
             <input type="radio" name="spectators" value="<?= $value ?>">

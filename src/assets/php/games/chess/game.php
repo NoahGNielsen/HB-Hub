@@ -12,7 +12,7 @@
 //   colour: the colour the host plays: "random", "white" or "black"
 //   (clock and colour are the room's settings: the host changes them while no game is being played,
 //   hbHubChessChangeSettings())
-//   spectators: true while the host lets people watch (spectator mode, ../spectators.php). Missing means off
+//   spectators: true while the host lets people watch (spectator mode, ../spectators.php). On in a new room; missing (older rooms) means off
 //   players: who sits in the room, [{seat: 1 or 2, userId, name}]
 //   games: how many games have been started in the room
 //   note: something to tell the player left waiting (like "Alice left."), or null
@@ -77,6 +77,7 @@ function hbHubChessNewState(): array
         'games' => 0,
         'note' => null,
         'game' => null,
+        'spectators' => true, // spectator mode starts on (../spectators.php)
     ];
 }
 

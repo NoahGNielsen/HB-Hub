@@ -67,8 +67,8 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                     <section id="watch" aria-labelledby="docs-watch">
                         <h2 id="docs-watch">At se med</h2>
                         <p>
-                            I Matador, skak, UNO og Doodle Chain kan værten slå <strong>Spectator mode</strong> til i spillets
-                            indstillinger, når som helst, også midt i et spil. Den er slået fra, indtil værten slår den til, og
+                            I Matador, skak, UNO og Doodle Chain kan værten slå <strong>Spectator mode</strong> til og fra i spillets
+                            indstillinger, når som helst, også midt i et spil. Den er slået til i et nyt spil, indtil værten slår den fra, og
                             der står <strong>Spectators can watch</strong> under spillets navn, mens den er slået til.
                         </p>
                         <ul>

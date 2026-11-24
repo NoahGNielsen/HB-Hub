@@ -21,7 +21,7 @@
 //   phase: 'lobby' (waiting for players) | 'playing' | 'reveal'
 //   players: [{seat, userId, name}] who sits in the room, in seat order
 //   settings: {drawSeconds}
-//   spectators: true while the host lets people watch (spectator mode, ../spectators.php). Missing means off
+//   spectators: true while the host lets people watch (spectator mode, ../spectators.php). On in a new room; missing (older rooms) means off
 //   gameCount: games started in the room (the game's number, gameNumber in HBHub-DoodleEntries)
 //   note: a line about the last thing that happened between games ("Alice left."), or null
 //   game: null before the first game, otherwise {number, order: [userId], names: [name] (same places as order),
@@ -66,6 +66,7 @@ function hbHubDoodleNewState(): array
         'gameCount' => 0,
         'note' => null,
         'game' => null,
+        'spectators' => true, // spectator mode starts on (../spectators.php)
     ];
 }
 

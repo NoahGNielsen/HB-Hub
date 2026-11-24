@@ -1,8 +1,9 @@
 <?php
 // Spectator mode for the multiplayer games (chess, UNO, Matador and Doodle Chain): watching a game without playing in it.
 //
-// It's a room setting, "spectators" in the room's state (roomState), true or false. It's off in every new room, and in
-// rooms from before there was such a setting (hence hbHubGamesSpectatorsOn() reads it with a default). The host turns it
+// It's a room setting, "spectators" in the room's state (roomState), true or false. It's on in every new room (each game's
+// NewState()), but off in rooms from before it started on, which don't have it (hence hbHubGamesSpectatorsOn() reads
+// it with a default of off). The host turns it
 // on and off in the game's settings, whenever they want, with the "spectators" action of the game's play.php
 // (hbHubGamesSetSpectators()).
 //

@@ -3,8 +3,8 @@
 // legal/privacy.php) because two places need each of them: the page shows it as "Last updated ...", and footer.php
 // hands it to cornerBoxes.js, which shows the "has been updated" box to anyone who agreed to an older version.
 // Change the date whenever that page changes.
-const HBHUB_TERMS_UPDATED = '23 November 2026';
-const HBHUB_PRIVACY_UPDATED = '23 November 2026';
+const HBHUB_TERMS_UPDATED = '24 November 2026';
+const HBHUB_PRIVACY_UPDATED = '24 November 2026';
 
 /**
  * A date written like the constants above ("19 October 2026"), the Danish way ("19. oktober 2026"), for the legal

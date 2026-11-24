@@ -238,7 +238,7 @@ function termsNumber(int $number): string
                                 i UNO allerede har spillet alle dine kort. I Matador tæller nederlaget, selv om du vender tilbage.
                             </li>
                             <li>
-                                I skak, Matador, UNO og Doodle Chain kan værten slå tilskuere til. Så kan alle med spillets kode (og
+                                I skak, Matador, UNO og Doodle Chain er tilskuere slået til i et nyt spil, og værten kan slå dem fra. Mens de er slået til, kan alle med spillets kode (og
                                 ved offentlige spil alle) se spillet uden at spille med. Tilskuere kan ikke gøre noget i spillet eller
                                 læse dets chat, og du kan ikke se med, mens du selv er med i et spil af samme slags.
                             </li>
