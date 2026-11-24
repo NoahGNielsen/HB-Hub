@@ -33,7 +33,9 @@
 // "spectators" action, sent as soon as they pick one). With data-watch on the page (the room's code) it's someone
 // watching: it asks with ?watch=code instead of ?room=id, never sends anything, and goes back to the chess page once
 // the game can't be watched anymore. The server sends them the game as nobody in it sees it, so there are no legal
-// moves, and "you" is null. Each move slides across the board for them, so it's easier to follow (slideLastMove()).
+// moves, and "you" is null.
+//
+// Moves slide across the board (slideLastMove()): the opponent's for a player, and every move for someone watching.
 (() => {
     const root = document.querySelector('[data-chess]');
     if (!root) return;
@@ -309,12 +311,13 @@
                 + (selected === name ? ', picked up' : '') + (targets.includes(name) ? ', you can move here' : ''));
         }
         renderDrawings();
-        if (isWatching) slideLastMove();
+        slideLastMove();
     }
 
-    // ----- Someone watching sees each move slide across the board, instead of the piece just turning up on its new
-    // square. Only when the game went exactly one move on since it was last drawn (not when the page opens, or after a
-    // few moves came in at once while it was out of view), and not when motion is turned down.
+    // ----- Each move slides across the board, instead of the piece just turning up on its new square: the opponent's
+    // for a player (their own is already where they dragged or clicked it), and every move for someone watching. Only
+    // when the game went exactly one move on since it was last drawn (not when the page opens, or after a few moves
+    // came in at once while it was out of view), and not when motion is turned down.
 
     const SLIDE_MS = 250;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -326,6 +329,7 @@
         slidPly = ply;
         const lastMove = game.game?.lastMove ?? null;
         if (!isNext || lastMove === null || reducedMotion.matches) return;
+        if (game.you !== null && other(game.game.turn) === game.you) return; // the player's own move
         const [from, to] = lastMove;
         if (from === to) return; // a pawn waiting on the last rank became a piece where it stands
         slide(from, to);
