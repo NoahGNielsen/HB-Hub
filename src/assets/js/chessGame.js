@@ -33,7 +33,7 @@
 // "spectators" action, sent as soon as they pick one). With data-watch on the page (the room's code) it's someone
 // watching: it asks with ?watch=code instead of ?room=id, never sends anything, and goes back to the chess page once
 // the game can't be watched anymore. The server sends them the game as nobody in it sees it, so there are no legal
-// moves, and "you" is null.
+// moves, and "you" is null. Each move slides across the board for them, so it's easier to follow (slideLastMove()).
 (() => {
     const root = document.querySelector('[data-chess]');
     if (!root) return;
@@ -309,6 +309,46 @@
                 + (selected === name ? ', picked up' : '') + (targets.includes(name) ? ', you can move here' : ''));
         }
         renderDrawings();
+        if (isWatching) slideLastMove();
+    }
+
+    // ----- Someone watching sees each move slide across the board, instead of the piece just turning up on its new
+    // square. Only when the game went exactly one move on since it was last drawn (not when the page opens, or after a
+    // few moves came in at once while it was out of view), and not when motion is turned down.
+
+    const SLIDE_MS = 250;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let slidPly = null; // the move the board was last drawn at
+
+    function slideLastMove() {
+        const ply = game.game?.ply ?? null;
+        const isNext = slidPly !== null && ply === slidPly + 1;
+        slidPly = ply;
+        const lastMove = game.game?.lastMove ?? null;
+        if (!isNext || lastMove === null || reducedMotion.matches) return;
+        const [from, to] = lastMove;
+        if (from === to) return; // a pawn waiting on the last rank became a piece where it stands
+        slide(from, to);
+        // Castling: the king went two squares, so the rook jumped over it from its corner
+        if (pieceAt(to).toLowerCase() === 'k' && Math.abs(FILES.indexOf(to[0]) - FILES.indexOf(from[0])) === 2) {
+            const isKingside = to[0] === 'g';
+            slide((isKingside ? 'h' : 'a') + to[1], (isKingside ? 'f' : 'd') + to[1]);
+        }
+    }
+
+    // Moves the piece now on `to` so it starts where `from` is on screen and glides home (the board may be turned around,
+    // so it's measured rather than worked out)
+    function slide(from, to) {
+        const piece = squares[to].piece;
+        const start = squares[from].element.getBoundingClientRect();
+        const end = squares[to].element.getBoundingClientRect();
+        const dx = start.left - end.left;
+        const dy = start.top - end.top;
+        piece.getAnimations().forEach((animation) => animation.cancel());
+        piece.animate([
+            { transform: `translate(${dx}px, ${dy}px)`, zIndex: 2 },
+            { transform: 'translate(0, 0)', zIndex: 2 },
+        ], { duration: SLIDE_MS, easing: 'ease-out' });
     }
 
     // ----- Drawing on the board with the right mouse button: arrows, and squares coloured in. An SVG on top of the
