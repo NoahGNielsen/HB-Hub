@@ -360,6 +360,15 @@ body {
   color: var(--text);
 }
 
+/* Raleway's default numbers are old-style: they bob up and down like lowercase letters (a 3 or 9 hangs below the
+   line, a 1 is x-height) and look smaller than the text around them. "lnum" swaps in its lining numbers, which all
+   stand on the line at capital-letter height. It's set as a font feature rather than font-variant-numeric because
+   that one gets reset by any rule that says only `tabular-nums` or uses the `font:` shorthand, while this is
+   inherited by everything and adds to tabular-nums instead of replacing it */
+html {
+  font-feature-settings: "lnum" 1;
+}
+
 /* Site footer (assets/php/footer.php) - pushed to the bottom of the screen when the page is short */
 body:has(> .site-footer) {
   display: flex;
