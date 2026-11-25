@@ -16,17 +16,26 @@
 //   row 2 (the top of the visible well), turned the way HBHUB_BLOCKFALL_SHAPES has it, and the game is over when it doesn't fit there, or when a
 //   piece locks without a single square below the hidden rows (and no lines cleared).
 // - The pieces come in bags of seven: each bag has every piece once, shuffled with the game's secret (hbHubBlockfallBag()).
-// - Gravity drops the piece a row every HBHUB_BLOCKFALL_GRAVITY[speed - 1] ticks (the speeds from larprad's game, in
-//   ticks). The speed is HBHUB_BLOCKFALL_START_SPEED plus the level - 1, at most 15, and the level goes up every
-//   HBHUB_BLOCKFALL_LINES_PER_LEVEL lines.
-// - A piece that can't fall any further locks after HBHUB_BLOCKFALL_LOCK_TICKS ticks there. Moving or turning it while
-//   it rests starts that over again, up to HBHUB_BLOCKFALL_MAX_RESETS times, until it reaches a row lower than it has
-//   been before (which gives it all its resets back).
+// - Gravity drops the piece a row every HBHUB_BLOCKFALL_GRAVITY[level - 1] ticks (the last one for every level after
+//   it), and the level goes up every HBHUB_BLOCKFALL_LINES_PER_LEVEL lines. From level 21 it's 0: the piece drops all
+//   the way down on every tick ("20G").
+// - A piece that can't fall any further locks after hbHubBlockfallLockTicks() ticks there: HBHUB_BLOCKFALL_LOCK_TICKS
+//   up to level HBHUB_BLOCKFALL_LOCK_FROM, then HBHUB_BLOCKFALL_LOCK_STEP fewer each level, down to
+//   HBHUB_BLOCKFALL_LOCK_MIN. Moving or turning it while it rests starts that over again, up to
+//   HBHUB_BLOCKFALL_MAX_RESETS times, until it reaches a row lower than it has been before (which gives it all its
+//   resets back).
 // - Turning tries the piece where it is first, then each of HBHUB_BLOCKFALL_KICKS in turn (one or two squares to the
 //   side, or one up), and takes the first that fits. The O piece doesn't turn.
 // - Inputs (one letter each): L / R move a square, D soft drops a row (1 point), F hard drops (2 points a row, and locks
 //   at once), + turns clockwise, - anticlockwise, H holds (swaps with the hold slot, once per piece).
 // - Lines: 100, 300, 500 or 800 points for 1-4 at once, times the level the piece locked on.
+// - Spins (every piece but O, so T, S, Z, I, J and L): a piece whose last move was a turn (it hasn't fallen or moved
+//   since: 'spun'), and that locks where it can't move left, right or up, is a spin. It scores
+//   HBHUB_BLOCKFALL_SPIN_POINTS for its lines instead (a spin with no lines too), times the level.
+// - Back-to-back: a quad or a spin with lines is a "hard" clear. A hard clear straight after another one (any other
+//   line clear in between breaks it, a piece with no lines doesn't) scores half as much again ('b2b' counts them).
+// - A full clear (nothing at all left in the well once the lines go) adds HBHUB_BLOCKFALL_FULL_CLEAR_POINTS for the
+//   lines it cleared, times the level, on top (and not part of the back-to-back's half).
 //
 // How a game goes (games/tetris/move, the JSON):
 // - The Tetris page makes the next game when it's opened (hbHubBlockfallNew()), and the answer to each finished game
@@ -66,9 +75,15 @@ const HBHUB_BLOCKFALL_TICK_MS = 10;
 const HBHUB_BLOCKFALL_SPAWN_X = 3;
 const HBHUB_BLOCKFALL_SPAWN_Y = 2; // the top of the visible well, so a new piece is always all in view
 const HBHUB_BLOCKFALL_LOCK_TICKS = 50; // half a second
+const HBHUB_BLOCKFALL_LOCK_FROM = 20; // the last level with the whole lock delay
+const HBHUB_BLOCKFALL_LOCK_STEP = 3; // ticks less for each level after it
+const HBHUB_BLOCKFALL_LOCK_MIN = 25;
 const HBHUB_BLOCKFALL_MAX_RESETS = 15;
-const HBHUB_BLOCKFALL_GRAVITY = [236, 146, 92, 59, 39, 26, 18, 12, 9, 6, 5, 4, 3, 2, 2]; // ticks a row at speed 1-15
+// Ticks a row at level 1-21, and the last for every level after it. 0 is all the way down at once, on every tick
+const HBHUB_BLOCKFALL_GRAVITY = [92, 74, 59, 47, 39, 32, 26, 21, 18, 15, 12, 10, 9, 7, 6, 5, 4, 3, 2, 1, 0];
 const HBHUB_BLOCKFALL_LINE_POINTS = [0, 100, 300, 500, 800];
+const HBHUB_BLOCKFALL_SPIN_POINTS = [100, 800, 1200, 1600, 2600]; // a spin with 0-4 lines
+const HBHUB_BLOCKFALL_FULL_CLEAR_POINTS = [0, 800, 1200, 1800, 2000]; // on top, for a full clear with 1-4 lines
 const HBHUB_BLOCKFALL_KICKS = [[0, 0], [-1, 0], [1, 0], [0, -1], [-1, -1], [1, -1], [-2, 0], [2, 0]]; // [x, y], y down
 
 // Each piece's squares the way it comes in, [x, y] in its box (4x4 for I and O, 3x3 for the rest). Turned clockwise
@@ -84,7 +99,6 @@ const HBHUB_BLOCKFALL_SHAPES = [
 ];
 const HBHUB_BLOCKFALL_BAG = 'IOTSZJL'; // the order a bag is shuffled from
 
-const HBHUB_BLOCKFALL_START_SPEED = 3; // the speed a game starts at
 const HBHUB_BLOCKFALL_LINES_PER_LEVEL = 10;
 
 // The server's side ---------------------------------------------------------------------------------------------------
@@ -206,10 +220,25 @@ function hbHubBlockfallLevel(array $state): int
     return 1 + intdiv($state['lines'], HBHUB_BLOCKFALL_LINES_PER_LEVEL);
 }
 
-// The ticks a row at the level the game's on
+// The ticks a row at the level the game's on (0: all the way down on every tick)
 function hbHubBlockfallGravity(array $state): int
 {
-    return HBHUB_BLOCKFALL_GRAVITY[min(HBHUB_BLOCKFALL_START_SPEED + hbHubBlockfallLevel($state) - 1, count(HBHUB_BLOCKFALL_GRAVITY)) - 1];
+    return HBHUB_BLOCKFALL_GRAVITY[min(hbHubBlockfallLevel($state), count(HBHUB_BLOCKFALL_GRAVITY)) - 1];
+}
+
+// The ticks a resting piece waits before it locks, at the level the game's on
+function hbHubBlockfallLockTicks(array $state): int
+{
+    $past = max(0, hbHubBlockfallLevel($state) - HBHUB_BLOCKFALL_LOCK_FROM);
+    return max(HBHUB_BLOCKFALL_LOCK_MIN, HBHUB_BLOCKFALL_LOCK_TICKS - HBHUB_BLOCKFALL_LOCK_STEP * $past);
+}
+
+// Whether the piece in play is stuck: it can't move left, right or up (a spin, when a turn got it there)
+function hbHubBlockfallImmobile(array $state): bool
+{
+    return !hbHubBlockfallFits($state, $state['piece'], $state['rot'], $state['x'] - 1, $state['y'])
+        && !hbHubBlockfallFits($state, $state['piece'], $state['rot'], $state['x'] + 1, $state['y'])
+        && !hbHubBlockfallFits($state, $state['piece'], $state['rot'], $state['x'], $state['y'] - 1);
 }
 
 /**
@@ -226,6 +255,7 @@ function hbHubBlockfallSpawn(array &$state, string $piece): void
     $state['resets'] = 0;
     $state['lowest'] = HBHUB_BLOCKFALL_SPAWN_Y;
     $state['canHold'] = true;
+    $state['spun'] = false;
     if (!hbHubBlockfallFits($state, $piece, 0, $state['x'], $state['y'])) {
         $state['over'] = 'top';
     }
@@ -240,7 +270,8 @@ function hbHubBlockfallDraw(array &$state, string $secret): void
 }
 
 /**
- * Moves the piece down a row if it can. A row lower than it has been gives it all its lock resets back.
+ * Moves the piece down a row if it can. A row lower than it has been gives it all its lock resets back, and falling
+ * means its last move isn't a turn any more.
  */
 function hbHubBlockfallDown(array &$state): bool
 {
@@ -248,6 +279,7 @@ function hbHubBlockfallDown(array &$state): bool
         return false;
     }
     $state['y']++;
+    $state['spun'] = false;
     if ($state['y'] > $state['lowest']) {
         $state['lowest'] = $state['y'];
         $state['resets'] = 0;
@@ -265,10 +297,12 @@ function hbHubBlockfallMoved(array &$state): void
 }
 
 /**
- * The piece locks where it is: full lines are cleared and scored, and the next piece comes in (unless that ends the game).
+ * The piece locks where it is: full lines are cleared and scored (with spins, back-to-back and full clears, see the
+ * top), and the next piece comes in (unless that ends the game).
  */
 function hbHubBlockfallLock(array &$state, string $secret): void
 {
+    $spin = ($state['spun'] ?? false) && hbHubBlockfallImmobile($state);
     $hiddenOnly = true;
     foreach (hbHubBlockfallCells($state['piece'], $state['rot']) as [$cx, $cy]) {
         $row = $state['y'] + $cy;
@@ -285,11 +319,21 @@ function hbHubBlockfallLock(array &$state, string $secret): void
             $cleared++;
         }
     }
+    $level = hbHubBlockfallLevel($state);
+    $points = ($spin ? HBHUB_BLOCKFALL_SPIN_POINTS : HBHUB_BLOCKFALL_LINE_POINTS)[$cleared] * $level;
     if ($cleared > 0) {
         $state['board'] = str_repeat('.', HBHUB_BLOCKFALL_COLS * $cleared) . implode('', $kept);
-        $state['score'] += HBHUB_BLOCKFALL_LINE_POINTS[$cleared] * hbHubBlockfallLevel($state);
+        $hard = $cleared === 4 || $spin;
+        if ($hard && ($state['b2b'] ?? 0) > 0) {
+            $points = intdiv($points * 3, 2);
+        }
+        $state['b2b'] = $hard ? ($state['b2b'] ?? 0) + 1 : 0;
+        if ($state['board'] === str_repeat('.', HBHUB_BLOCKFALL_COLS * HBHUB_BLOCKFALL_ROWS)) {
+            $points += HBHUB_BLOCKFALL_FULL_CLEAR_POINTS[$cleared] * $level;
+        }
         $state['lines'] += $cleared;
     }
+    $state['score'] += $points;
 
     if ($cleared === 0 && $hiddenOnly) {
         $state['over'] = 'top';
@@ -312,6 +356,7 @@ function hbHubBlockfallInput(array &$state, string $input, string $secret): void
             $dx = $input === 'L' ? -1 : 1;
             if (hbHubBlockfallFits($state, $state['piece'], $state['rot'], $state['x'] + $dx, $state['y'])) {
                 $state['x'] += $dx;
+                $state['spun'] = false;
                 hbHubBlockfallMoved($state);
             }
             break;
@@ -326,6 +371,7 @@ function hbHubBlockfallInput(array &$state, string $input, string $secret): void
                     $state['rot'] = $rot;
                     $state['x'] += $dx;
                     $state['y'] += $dy;
+                    $state['spun'] = true;
                     if ($state['y'] > $state['lowest']) {
                         $state['lowest'] = $state['y'];
                         $state['resets'] = 0;
@@ -367,7 +413,7 @@ function hbHubBlockfallInput(array &$state, string $input, string $secret): void
 }
 
 /**
- * One tick: gravity, the lock delay, then the clock.
+ * One tick: gravity (all the way down when it's 0), the lock delay, then the clock.
  */
 function hbHubBlockfallAdvance(array &$state, string $secret): void
 {
@@ -375,13 +421,19 @@ function hbHubBlockfallAdvance(array &$state, string $secret): void
         return;
     }
     $state['gravity']++;
-    if ($state['gravity'] >= hbHubBlockfallGravity($state)) {
+    $every = hbHubBlockfallGravity($state);
+    if ($every === 0) {
+        $state['gravity'] = 0;
+        while (hbHubBlockfallDown($state)) {
+            // falls until it rests
+        }
+    } elseif ($state['gravity'] >= $every) {
         $state['gravity'] = 0;
         hbHubBlockfallDown($state);
     }
     if (hbHubBlockfallResting($state)) {
         $state['lock']++;
-        if ($state['lock'] >= HBHUB_BLOCKFALL_LOCK_TICKS) {
+        if ($state['lock'] >= hbHubBlockfallLockTicks($state)) {
             hbHubBlockfallLock($state, $secret);
         }
     } else {
@@ -399,6 +451,7 @@ function hbHubBlockfallFresh(string $secret): array
         'board' => str_repeat('.', HBHUB_BLOCKFALL_COLS * HBHUB_BLOCKFALL_ROWS),
         'piece' => '', 'rot' => 0, 'x' => 0, 'y' => 0, 'hold' => '', 'canHold' => true, 'drawn' => 0,
         'gravity' => 0, 'lock' => 0, 'resets' => 0, 'lowest' => 0, 'ticks' => 0, 'score' => 0, 'lines' => 0, 'over' => '',
+        'spun' => false, 'b2b' => 0,
     ];
     hbHubBlockfallDraw($state, $secret);
     return $state;

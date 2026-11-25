@@ -1,5 +1,5 @@
 // Tetris (games/tetris/): the whole game, in the browser. HB Hub's falling-block puzzle, built on the ideas in
-// larprad's tetris on GitHub (the speeds, a hold slot and a preview; credited on the credits page). Loaded
+// larprad's tetris on GitHub (the speeds, with more levels put in between, a hold slot and a preview; credited on the credits page). Loaded
 // by games/tetris/index.php, which has the bar (score, lines, level, time, best, pause), the well's
 // [data-blockfall-canvas], the hold and next pieces' canvases, the cover over the well ([data-blockfall-cover], for
 // "ready", "paused" and "game over") and the buttons for phones ([data-blockfall-pad]).
@@ -40,9 +40,14 @@
   const SPAWN_X = 3;
   const SPAWN_Y = 2;
   const LOCK_TICKS = 50;
+  const LOCK_FROM = 20;
+  const LOCK_STEP = 3;
+  const LOCK_MIN = 25;
   const MAX_RESETS = 15;
-  const GRAVITY = [236, 146, 92, 59, 39, 26, 18, 12, 9, 6, 5, 4, 3, 2, 2]; // ticks a row at speed 1-15
+  const GRAVITY = [92, 74, 59, 47, 39, 32, 26, 21, 18, 15, 12, 10, 9, 7, 6, 5, 4, 3, 2, 1, 0]; // ticks a row at level 1-21+ (0: all the way)
   const LINE_POINTS = [0, 100, 300, 500, 800];
+  const SPIN_POINTS = [100, 800, 1200, 1600, 2600];
+  const FULL_CLEAR_POINTS = [0, 800, 1200, 1800, 2000];
   const KICKS = [[0, 0], [-1, 0], [1, 0], [0, -1], [-1, -1], [1, -1], [-2, 0], [2, 0]];
   const SHAPES = {
     I: [[0, 1], [1, 1], [2, 1], [3, 1]],
@@ -54,7 +59,6 @@
     L: [[2, 0], [0, 1], [1, 1], [2, 1]],
   };
   const BAG = 'IOTSZJL';
-  const START_SPEED = 3;
   const LINES_PER_LEVEL = 10;
 
   // The page's own (not rules: how held keys repeat into inputs)
@@ -177,7 +181,13 @@
 
   const level = (g) => 1 + Math.floor(g.lines / LINES_PER_LEVEL);
 
-  const gravity = (g) => GRAVITY[Math.min(START_SPEED + level(g) - 1, GRAVITY.length) - 1];
+  const gravity = (g) => GRAVITY[Math.min(level(g), GRAVITY.length) - 1];
+
+  const lockTicks = (g) => Math.max(LOCK_MIN, LOCK_TICKS - LOCK_STEP * Math.max(0, level(g) - LOCK_FROM));
+
+  const immobile = (g) => !fits(g, g.piece, g.rot, g.x - 1, g.y)
+    && !fits(g, g.piece, g.rot, g.x + 1, g.y)
+    && !fits(g, g.piece, g.rot, g.x, g.y - 1);
 
   const spawn = (g, piece) => {
     g.piece = piece;
@@ -189,6 +199,7 @@
     g.resets = 0;
     g.lowest = SPAWN_Y;
     g.canHold = true;
+    g.spun = false;
     if (!fits(g, piece, 0, g.x, g.y)) {
       g.over = 'top';
     }
@@ -205,6 +216,7 @@
       return false;
     }
     g.y++;
+    g.spun = false;
     if (g.y > g.lowest) {
       g.lowest = g.y;
       g.resets = 0;
@@ -220,6 +232,7 @@
   };
 
   const lock = (g) => {
+    const spin = g.spun && immobile(g);
     let hiddenOnly = true;
     CELLS[g.piece][g.rot].forEach(([cx, cy]) => {
       const row = g.y + cy;
@@ -238,13 +251,27 @@
       }
     }
     const cleared = clearedRows.length;
-    const points = LINE_POINTS[cleared] * level(g);
+    const lvl = level(g);
+    let points = (spin ? SPIN_POINTS : LINE_POINTS)[cleared] * lvl;
+    let backToBack = false;
+    let fullClear = false;
     if (cleared > 0) {
       g.board = [...Array(COLS * cleared).fill('.'), ...kept];
-      g.score += points;
+      const hard = cleared === 4 || spin;
+      backToBack = hard && g.b2b > 0;
+      if (backToBack) {
+        points = Math.floor((points * 3) / 2);
+      }
+      g.b2b = hard ? g.b2b + 1 : 0;
+      fullClear = g.board.every((cell) => cell === '.');
+      if (fullClear) {
+        points += FULL_CLEAR_POINTS[cleared] * lvl;
+      }
       g.lines += cleared;
     }
-    onLock(clearedRows, points); // the page's own: the flash and the callout, nothing to do with the rules
+    g.score += points;
+    // The page's own: the flash and the callout, nothing to do with the rules
+    onLock(clearedRows, points, spin ? g.piece : '', backToBack, fullClear);
 
     if (cleared === 0 && hiddenOnly) {
       g.over = 'top';
@@ -261,6 +288,7 @@
       const dx = letter === 'L' ? -1 : 1;
       if (fits(g, g.piece, g.rot, g.x + dx, g.y)) {
         g.x += dx;
+        g.spun = false;
         moved(g);
       }
     } else if (letter === '+' || letter === '-') {
@@ -273,6 +301,7 @@
           g.rot = rot;
           g.x += dx;
           g.y += dy;
+          g.spun = true;
           if (g.y > g.lowest) {
             g.lowest = g.y;
             g.resets = 0;
@@ -314,13 +343,19 @@
       return;
     }
     g.gravity++;
-    if (g.gravity >= gravity(g)) {
+    const every = gravity(g);
+    if (every === 0) {
+      g.gravity = 0;
+      while (down(g)) {
+        // falls until it rests
+      }
+    } else if (g.gravity >= every) {
       g.gravity = 0;
       down(g);
     }
     if (resting(g)) {
       g.lock++;
-      if (g.lock >= LOCK_TICKS) {
+      if (g.lock >= lockTicks(g)) {
         lock(g);
       }
     } else {
@@ -334,6 +369,7 @@
     board: Array(COLS * ROWS).fill('.'),
     piece: '', rot: 0, x: 0, y: 0, hold: '', canHold: true, drawn: 0,
     gravity: 0, lock: 0, resets: 0, lowest: 0, ticks: 0, score: 0, lines: 0, over: '',
+    spun: false, b2b: 0,
   });
 
   // The game on the page -----------------------------------------------------------------------------------------------
@@ -662,13 +698,19 @@
     }
   };
 
-  // Lines cleared: they flash, and the callout over the well says how many and what they scored
-  const onLock = (rows, points) => {
-    if (!rows.length) {
+  /**
+   * Lines cleared (or a spin): they flash, and the callout over the well says what it was and what it scored, like
+   * "Back-to-back Z-spin Double +1,800". `spin` is the piece that spun ('' for none).
+   */
+  const onLock = (rows, points, spin, backToBack, fullClear) => {
+    if (!rows.length && !spin) {
       return;
     }
-    flash = { rows: rows.map((row) => row - HIDDEN), at: performance.now() };
-    callout.textContent = `${CLEAR_NAMES[rows.length]} +${points.toLocaleString('en')}`;
+    if (rows.length) {
+      flash = { rows: rows.map((row) => row - HIDDEN), at: performance.now() };
+    }
+    const name = [backToBack && 'Back-to-back', spin && `${spin}-spin`, CLEAR_NAMES[rows.length]].filter(Boolean).join(' ');
+    callout.textContent = `${name} +${points.toLocaleString('en')}${fullClear ? '\nFull clear!' : ''}`;
     callout.classList.remove('is-shown');
     void callout.offsetWidth;
     callout.classList.add('is-shown');
@@ -885,7 +927,7 @@
     if (g.piece && !g.over && state !== 'ready') {
       drawGhost(size);
       // The lock delay shows as the piece dimming a little as it's about to lock
-      const fading = resting(g) && !reducedMotion.matches ? 1 - (g.lock / LOCK_TICKS) * 0.35 : 1;
+      const fading = resting(g) && !reducedMotion.matches ? 1 - (g.lock / lockTicks(g)) * 0.35 : 1;
       CELLS[g.piece][g.rot].forEach(([cx, cy]) => {
         if (g.y + cy >= HIDDEN) {
           drawTile(ctx, g.x + cx, g.y + cy - HIDDEN, size, g.piece, fading);

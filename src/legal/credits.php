@@ -189,7 +189,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <p>
                         Af larprad. <a href="/games/tetris/">Tetris</a> i Spil-sektionen er bygget på idéerne i det:
                         en brønd på 10 gange 20, en brik på hold og den næste i forvejen
-                        og hastighederne for hvert level. Koden er skrevet på ny til HB Hub, med sit eget udseende, og
+                        og hastighederne (HB Hub har lagt flere levels ind imellem og efter dem). Koden er skrevet på ny til HB Hub, med sit eget udseende, og
                         brikkerne og pointene bliver holdt på HB Hubs server, til ranglisterne.
                     </p>
                     <p class="credits-license">ISC-licens (angivet i package.json)</p>

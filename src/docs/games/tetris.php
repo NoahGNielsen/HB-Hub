@@ -32,6 +32,10 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                 gange dit level, mere end fire enkelte linjer.
                             </li>
                             <li>
+                                Lav svære linjer i træk (fire på én gang eller spins), så får du back-to-back-bonus. En
+                                almindelig linje imellem bryder rækken, men en brik uden linjer gør ikke.
+                            </li>
+                            <li>
                                 Drejer du en brik ind mod væggen eller en anden brik, skubber spillet den et felt til siden eller
                                 op, hvis der er plads, så den kan nå at komme på plads.
                             </li>
