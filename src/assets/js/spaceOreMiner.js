@@ -1310,6 +1310,12 @@
     const keysDialog = root.querySelector('[data-miner-keys-dialog]');
     const soundButton = root.querySelector('[data-miner-sound]');
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    let isDrawnInSoftware = false; // no graphics card to draw with, so the animations are stopped too (see drawLess())
+
+    // Whether to keep things still: the player asked for less motion, or the computer can't keep up with it
+    function isMotionReduced() {
+        return reduceMotion.matches || isDrawnInSoftware;
+    }
 
     // The asteroid changes as more is mined in a run, at this much ore mined this run: plain grey rock, iron, gold,
     // crystal, glowing alien core, molten, amethyst, neutron star, black hole core, nebula heart
@@ -3184,7 +3190,7 @@
         number.style.setProperty('--y', y + 'px');
         number.addEventListener('animationend', () => number.remove());
         field.append(number);
-        if (reduceMotion.matches) return;
+        if (isMotionReduced()) return;
 
         // The click effect bought in the Shard Shop: something else instead of rock (BIT_LOOKS), and/or a ring going out
         const effect = saveState.effect ?? null;
@@ -4064,7 +4070,7 @@
                 engineNews = engineName + ' news: the ' + name + ' is finished. ' + perk.text;
             }
             // The rocket that was just done lifts off, if anyone's watching
-            if (next.number > engine.number && root.dataset.view === 'starbound' && !reduceMotion.matches) {
+            if (next.number > engine.number && root.dataset.view === 'starbound' && !isMotionReduced()) {
                 rocketLaunch = { number: engine.number, until: performance.now() + ROCKET_LAUNCH_MS };
             }
             if (next.number > engine.number && ENGINES[next.number]) {
@@ -4535,7 +4541,7 @@
             part.open = true;
             stagesFolded[part.dataset.minerEngineSection] = false;
         }
-        item.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'center' });
+        item.scrollIntoView({ behavior: isMotionReduced() ? 'auto' : 'smooth', block: 'center' });
         item.classList.remove('is-flash');
         void item.offsetWidth; // so the animation starts over
         item.classList.add('is-flash');
@@ -5380,6 +5386,34 @@
         }
     }
 
+    // The "graphics cards" that are really the processor drawing everything itself: Windows without a driver for the
+    // real card (Microsoft Basic Render Driver), and Chrome's and Linux's own software ones. Crash report #39 came from
+    // one: every frame took ~40 ms to draw, 4 fps, and then a 4.3 s freeze while drawing.
+    const SOFTWARE_GPU = /Basic Render Driver|SwiftShader|llvmpipe|softpipe|Software Adapter/i;
+
+    // On such a computer, plays it the way prefers-reduced-motion does (no endless animations, bits or swoops): the
+    // stylesheet's @media (prefers-reduced-motion: reduce) blocks are switched to always apply, and isMotionReduced()
+    // says yes. Only once, for the rest of the page's life.
+    function drawLess() {
+        if (isDrawnInSoftware || gpu === null || !SOFTWARE_GPU.test(gpu)) return;
+        isDrawnInSoftware = true;
+        const loosen = (rules) => {
+            for (const rule of rules) {
+                if (rule instanceof CSSMediaRule && rule.conditionText.includes('prefers-reduced-motion')) rule.media.mediaText = 'all';
+                else if (rule.cssRules) loosen(rule.cssRules);
+            }
+        };
+        for (const sheet of document.styleSheets) {
+            if (!sheet.href?.includes('/spaceOreMiner.css')) continue;
+            try {
+                loosen(sheet.cssRules);
+            } catch {
+                // can't be read (shouldn't happen, it's our own): it just stays as it was
+            }
+        }
+        note('No graphics card to draw with (' + gpu + '), so the animations are off');
+    }
+
     function beat() {
         step('beat');
         const now = Date.now();
@@ -5401,7 +5435,10 @@
         framesSinceBeat = 0;
         lastBeatAt = now;
         wasVisible = isVisible;
-        if (gpu === undefined) gpu = graphicsCard();
+        if (gpu === undefined) {
+            gpu = graphicsCard();
+            drawLess();
+        }
         noteSlowFrames();
         if (now - lastSampleAt >= SAMPLE_MS) {
             lastSampleAt = now;
@@ -5441,6 +5478,7 @@
             [lateKeys && state && hasDark(state, 'lateKeys'), 'Late-game keys'],
             [isSoundOn, 'Sound'],
             [reduceMotion.matches, 'Reduced motion'],
+            [isDrawnInSoftware, 'Drawn without a graphics card'],
         ];
         return {
             kind: 'closed',
