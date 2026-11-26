@@ -385,10 +385,15 @@
   position: relative;
 }
 
+/* Both layers are drawn from the outer edge (border-box), so the ring sits centred and doesn't tile into the
+   border; closest-side makes the percentages part of the radius. The hues are evened out (pure #00f next to #0ff
+   gave a dark band and a bright blob), and a thin dark line sets the picked colour off from the ring. */
 .doodle-colour.is-custom {
   border-color: transparent;
-  background: radial-gradient(circle, var(--doodle-colour) 0 52%, transparent 54%),
-    conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  background:
+    radial-gradient(closest-side, var(--doodle-colour) 0 60%, rgba(0, 0, 0, 0.35) 61% 66%, transparent 67%) border-box,
+    conic-gradient(hsl(0 80% 60%), hsl(60 85% 58%), hsl(120 65% 52%), hsl(180 70% 52%), hsl(240 75% 66%),
+      hsl(300 70% 62%), hsl(360 80% 60%)) border-box;
 }
 
 /* The browser's colour picker it opens: there to anchor the picker, never seen */
