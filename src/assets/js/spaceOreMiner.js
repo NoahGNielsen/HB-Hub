@@ -1563,15 +1563,22 @@
         clearTimeout(saveSoonTimer);
         // No more than the server replays in one save (it drops the rest): what's over goes with the next one. A lot can
         // pile up while a save is on its way (1600 Warp Jumps in crash report #32)
-        const batch = pending.slice(0, CONFIG.maxActions);
-        pending = pending.slice(CONFIG.maxActions);
+        // The recovered actions count towards that too, and more of them than that go in parts, one claim each, the
+        // page's own actions only with the last (moreRecovered in hbHubMinerReplay()): 1637 of 3637 used to be thrown
+        // away (crash report #40)
+        const recovering = claim ? recovered.slice(0, CONFIG.maxActions) : [];
+        const moreRecovered = recovered.length > recovering.length && claim;
+        const room = moreRecovered ? 0 : CONFIG.maxActions - recovering.length;
+        const batch = pending.slice(0, room);
+        pending = pending.slice(room);
         inflight = batch;
         const sentAt = Date.now();
         lastSentAt = sentAt;
         const body = new URLSearchParams({ action: 'sync', tab: TAB, actions: JSON.stringify(batch) });
         if (claim) body.set('claim', '1');
         if (root.dataset.view === 'starbound') body.set('engine', '1'); // its top contributors and latest parts
-        if (claim && recovered.length > 0) body.set('recovered', JSON.stringify(recovered));
+        if (recovering.length > 0) body.set('recovered', JSON.stringify(recovering));
+        if (moreRecovered) body.set('more', '1');
         const guestToken = guestSave()?.token ?? '';
         if (IS_GUEST) body.set('token', guestToken);
         else if (claim && guestToken !== '') body.set('guest', guestToken); // brought over to the account, see the top
@@ -1579,7 +1586,8 @@
         // one, which still gets there as long as the page isn't closed
         if (body.toString().length > KEEPALIVE_BYTES) keepalive = false;
         writeRun(); // so a crash while it's on its way still has the batch
-        note((claim ? 'Loading the save' : 'Saving') + ': ' + batch.length + ' actions' + (claim && recovered.length > 0 ? ', ' + recovered.length + ' recovered' : '')
+        note((claim ? 'Loading the save' : 'Saving') + ': ' + batch.length + ' actions'
+            + (recovering.length > 0 ? ', ' + recovering.length + ' recovered' + (moreRecovered ? ' (more to come)' : '') : '')
             + (keepalive ? ' (hidden or closing)' : ''));
         step(was);
 
@@ -1617,9 +1625,13 @@
             lastSavedAt = Date.now();
             saveFailed = false;
             note('Saved in ' + (lastSavedAt - sentAt) + ' ms');
-            if (claim) {
+            if (moreRecovered) { // the next part, once this one's finished (isSending)
+                recoveredCount += data.recovered ?? 0;
+                recovered = recovered.slice(recovering.length);
+                setTimeout(() => save({ claim: true }), 0);
+            } else if (claim) {
                 step('save: start');
-                finishRecovery(data.recovered ?? 0);
+                finishRecovery(recoveredCount + (data.recovered ?? 0));
                 start();
             }
             if (data.offline && data.offline.ms > CONFIG.onlineMs) {
@@ -5507,8 +5519,9 @@
     // since)}: written every second (beat()), when a save is sent or answered, and when the page is hidden or closed,
     // and taken away once the page is closed with nothing left to save. A page that crashes, freezes until the browser
     // closes it, or is closed before its last save got there leaves it behind, and the next page of the game sends those
-    // actions with its first save (recovered, see hbHubMinerSync()). Only the ones newer than the save count there, so
-    // the ones that did get there aren't counted twice. Then they're taken away, except from a page that crashed
+    // actions with its first save (recovered, see hbHubMinerSync()), or its first few when there are more than one save
+    // takes (see save()). Only the ones newer than the save count there, so the ones that did get there aren't counted
+    // twice. Then they're taken away, except from a page that crashed
     // (isCrash()), which stays (without its actions) until the player has answered about its crash report.
 
     const RUN_KEY = IS_GUEST ? 'hbHubGuestMinerRun:' : 'hbHubMinerRun:'; // a guest's never end up in an account's game
@@ -5517,7 +5530,9 @@
     let inflight = []; // the last save's actions while it's on its way
     let isClosed = false; // the page was closed (or the game opened somewhere else): it ended properly
     const leftovers = readRuns(); // what other pages of the game left behind: [{key, report, actions}]
-    let recovered = leftovers.flatMap((run) => run.actions).sort((a, b) => a.at - b.at);
+    let recovered = leftovers.flatMap((run) => run.actions).sort((a, b) => a.at - b.at); // what's still to send
+    const recoveredTotal = recovered.length;
+    let recoveredCount = 0; // how many counted in the parts sent so far, when there are too many for one save
 
     function readRuns() {
         const runs = [];
@@ -5563,7 +5578,7 @@
 
     // After the first save, with how many of the recovered actions counted
     function finishRecovery(count) {
-        if (recovered.length > 0) note('Recovered ' + count + ' of ' + recovered.length + ' actions from before');
+        if (recoveredTotal > 0) note('Recovered ' + count + ' of ' + recoveredTotal + ' actions from before');
         if (count > 0) {
             toast('orePile', 'The game didn\'t close properly last time, but what you did just before has been saved now.', 'is-welcome', 9000);
         }

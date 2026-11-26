@@ -3571,6 +3571,8 @@ function hbHubMinerCheckAchievements(array &$state): void
  * (the page that opens next finds them in the browser and sends them with its first save, see "Crash recovery" in
  * spaceOreMiner.js). Some of them may have been saved after all, but those all happened before the save's time, so
  * only the ones after it count, played before $actions.
+ * $moreRecovered: $recovered is only the first HBHUB_MINER_MAX_ACTIONS of them and the page sends the rest next (see
+ * hbHubMinerReplay()).
  * $guestState: a game played as a guest at /play/ore-mining-inc (opened from its token by the caller), to bring over
  * to the account after logging in or signing up from there. It only becomes the save when the user has none yet, so
  * it never writes over one; the answer's 'guest' then says 'imported', or 'kept' when the user's own save was kept.
@@ -3578,7 +3580,7 @@ function hbHubMinerCheckAchievements(array &$state): void
  * far it is (hbHubMinerEngineSummary(), with the top contributors and the latest parts given when $engineDetails).
  */
 function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $actions, array $recovered = [], ?array $guestState = null,
-    bool $engineDetails = false): array|string
+    bool $engineDetails = false, bool $moreRecovered = false): array|string
 {
     $db->beginTransaction();
     try {
@@ -3607,7 +3609,7 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
         }
 
         $state = hbHubMinerNormalize(json_decode($row['saveState'], true, 64, JSON_THROW_ON_ERROR), $now);
-        $replay = hbHubMinerReplay($state, $actions, $recovered, $now, true);
+        $replay = hbHubMinerReplay($state, $actions, $recovered, $now, true, $moreRecovered);
 
         // The parts given go into the Engine, locked so two saves can't both finish the same stage (always after the
         // save's row, so they can't wait on each other), and the save gets the perks of every stage done so far
@@ -3659,11 +3661,19 @@ function hbHubMinerSync(PDO $db, int $userId, string $tab, bool $claim, array $a
  * row). $actions and $recovered are as hbHubMinerSync() takes them. $canGive: a member, who can give parts to the
  * Engine (guests can't). Returns 'offline' (null, or ['ms' => away for, 'ore' => mined meanwhile]), 'recovered' (how
  * many of $recovered counted) and 'given' (what was given to the Engine, [source, parts] each, see hbHubMinerApply()).
+ * $moreRecovered: a page that found more recovered actions than one save replays (3637 after three minutes of failed
+ * saves in crash report #40, when the rest used to be thrown away) sends them HBHUB_MINER_MAX_ACTIONS at a time. Until
+ * the last part, only $recovered is played ($actions waits) and the game stops at the last of them instead of going on
+ * to $now, so the next part still comes after the save's time and counts.
  *
  * @return array{offline: ?array{ms: int, ore: float}, recovered: int, given: list<array{0: int, 1: int, 2?: string, 3?: int, 4?: ?int}>}
  */
-function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $now, bool $canGive = false): array
+function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $now, bool $canGive = false,
+    bool $moreRecovered = false): array
 {
+    if ($moreRecovered) {
+        $actions = [];
+    }
     $given = $canGive ? [] : null;
     $since = min(hbHubMinerGame($state)['tick'], $now); // in an Anomaly, its game's time is the one that moves
     $fullUntil = $since + HBHUB_MINER_ONLINE_MS;
@@ -3694,7 +3704,9 @@ function hbHubMinerReplay(array &$state, array $actions, array $recovered, int $
             }
         }
     }
-    $offlineOre += hbHubMinerAdvanceGame($state, $now, $fullUntil, $given);
+    if (!$moreRecovered) {
+        $offlineOre += hbHubMinerAdvanceGame($state, $now, $fullUntil, $given);
+    }
     hbHubMinerCheckAchievements($state); // the player's own game only: what's done in an Anomaly stays in there
 
     return [

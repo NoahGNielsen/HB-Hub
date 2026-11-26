@@ -4,7 +4,8 @@
 //   over from any other tab) and actions (a JSON list of what the player did since the last save, each with "at", the
 //   time in Unix ms; see hbHubMinerApply() and hbHubMinerSync() in assets/php/games/spaceOreMiner/miner.php), and on
 //   the first save, recovered (the same kind of list: what a page of the game that crashed or was closed never got to
-//   save; only what's newer than the save counts), and guest (the token of a game played as a guest at
+//   save; only what's newer than the save counts; more=1 when there are more of them than one save replays, so this is
+//   only the first part, see hbHubMinerReplay()), and guest (the token of a game played as a guest at
 //   /play/ore-mining-inc, which the page finds in the browser after logging in or signing up from there), and
 //   engine=1 while the Engine view is open (for its top contributors and latest parts given).
 // Plays the actions on the saved game and answers with {"state": the save, "now": the server's time in Unix ms,
@@ -43,7 +44,7 @@ if (($_POST['action'] ?? null) !== 'sync' || !is_string($tab) || !preg_match(HBH
 $claim = ($_POST['claim'] ?? null) === '1';
 $guestState = $claim ? hbHubGuestOpen('miner', $_POST['guest'] ?? null)['state'] ?? null : null;
 $result = hbHubMinerSync(hbHubDatabase(), (int) $hbHubUser['userId'], $tab, $claim, $actions, $recovered,
-    is_array($guestState) ? $guestState : null, ($_POST['engine'] ?? null) === '1');
+    is_array($guestState) ? $guestState : null, ($_POST['engine'] ?? null) === '1', $claim && ($_POST['more'] ?? null) === '1');
 if ($result === 'otherTab') {
     http_response_code(409);
     echo json_encode(['error' => 'otherTab']);
