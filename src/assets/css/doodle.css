@@ -336,9 +336,18 @@
   gap: 6px;
 }
 
-/* The tool list gets a row of its own above the colours */
-.doodle-tool-list {
+/* The tools and the pen sizes get a row of their own above the colours, with a thin line and some room between them */
+.doodle-tool-row {
   flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+}
+
+.doodle-sizes {
+  padding-left: 28px;
+  border-left: 1px solid color-mix(in srgb, var(--text) 20%, transparent);
 }
 
 .doodle-tool-actions {
