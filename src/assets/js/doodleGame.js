@@ -357,7 +357,8 @@
         const box = (points) => points.map((value, index) => index % 2 === 0 ? clampX(left + value * width) : clampY(top + value * height));
 
         if (kind === 'rectangle') return box([0, 0, 1, 0, 1, 1, 0, 1, 0, 0]);
-        if (kind === 'triangle') return box([0.5, 0, 1, 1, 0, 1, 0.5, 0]);
+        // dragged downwards it points up; dragged upwards it's turned upside down and points down
+        if (kind === 'triangle') return box(y1 < y0 ? [0.5, 1, 1, 0, 0, 0, 0.5, 1] : [0.5, 0, 1, 1, 0, 1, 0.5, 0]);
         if (kind === 'star') return box(STAR);
         // circle: enough points round it that it looks round, but not more than needed
         const count = Math.max(16, Math.min(120, Math.round((width + height) * Math.PI / 12)));
