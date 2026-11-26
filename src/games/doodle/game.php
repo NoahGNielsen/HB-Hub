@@ -39,7 +39,9 @@ $gameConfig = [
     'width' => HBHUB_DOODLE_WIDTH,
     'height' => HBHUB_DOODLE_HEIGHT,
     'colours' => HBHUB_DOODLE_COLOURS,
+    'customColour' => HBHUB_DOODLE_CUSTOM_COLOUR,
     'sizes' => HBHUB_DOODLE_SIZES,
+    'sizeFill' => HBHUB_DOODLE_SIZE_FILL,
     'textMax' => HBHUB_DOODLE_TEXT_MAX,
     'maxStrokes' => HBHUB_DOODLE_MAX_STROKES,
     'maxNumbers' => HBHUB_DOODLE_MAX_NUMBERS,
@@ -128,7 +130,32 @@ $gameConfig = [
                         <canvas class="doodle-canvas is-pad" width="<?= HBHUB_DOODLE_WIDTH ?>" height="<?= HBHUB_DOODLE_HEIGHT ?>"
                                 aria-label="Drawing area" data-doodle-pad></canvas>
                         <div class="doodle-tools">
+                            <!-- The tools (doodleGame.js's TOOLS): drawn in currentColor, so they follow the theme -->
+                            <div class="doodle-tool-list" role="radiogroup" aria-label="Tool" data-doodle-tools>
+                                <button type="button" class="doodle-tool" role="radio" aria-checked="true" aria-label="Pen" title="Pen (P)" data-doodle-tool="pen">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-5L16 4l4 4L9 19z M14 6l4 4"/></svg>
+                                </button>
+                                <button type="button" class="doodle-tool" role="radio" aria-checked="false" aria-label="Line" title="Line (L) - hold Shift for straight angles" data-doodle-tool="line">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5"/></svg>
+                                </button>
+                                <button type="button" class="doodle-tool" role="radio" aria-checked="false" aria-label="Circle" title="Circle (C) - hold Shift for a round one" data-doodle-tool="circle">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>
+                                </button>
+                                <button type="button" class="doodle-tool" role="radio" aria-checked="false" aria-label="Rectangle" title="Rectangle (R) - hold Shift for a square" data-doodle-tool="rectangle">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12"/></svg>
+                                </button>
+                                <button type="button" class="doodle-tool" role="radio" aria-checked="false" aria-label="Triangle" title="Triangle (T)" data-doodle-tool="triangle">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4L21 20H3z"/></svg>
+                                </button>
+                                <button type="button" class="doodle-tool" role="radio" aria-checked="false" aria-label="Star" title="Star (S)" data-doodle-tool="star">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.9 6.4.6-4.8 4.3 1.4 6.3L12 16.8l-5.6 3.3 1.4-6.3L3 9.5l6.4-.6z"/></svg>
+                                </button>
+                                <button type="button" class="doodle-tool" role="radio" aria-checked="false" aria-label="Fill" title="Fill (F)" data-doodle-tool="fill">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3l8 8-7 7-8-8z M4 10h14 M20 15c0 0 2 3 2 4a2 2 0 0 1-4 0c0-1 2-4 2-4z"/></svg>
+                                </button>
+                            </div>
                             <div class="doodle-colours" role="radiogroup" aria-label="Colour" data-doodle-colours></div>
+                            <input type="color" class="doodle-colour-input" value="#2e86de" tabindex="-1" aria-hidden="true" data-doodle-colour-input>
                             <div class="doodle-sizes" role="radiogroup" aria-label="Pen size" data-doodle-sizes></div>
                             <div class="doodle-tool-actions">
                                 <button type="button" class="casino-btn" data-doodle-undo>Undo</button>

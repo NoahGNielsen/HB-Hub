@@ -27,9 +27,15 @@
 //   game: null before the first game, otherwise {number, order: [userId], names: [name] (same places as order),
 //         step, stepEndsMs, done: [userId] (handed in this step), reveal: null | {chain, shown, finished}}
 //
-// Drawings are sent and kept as JSON: a list of strokes, each [colour, size, x, y, x, y, ...], with colour and size
-// places in HBHUB_DOODLE_COLOURS and HBHUB_DOODLE_SIZES and the points on a HBHUB_DOODLE_WIDTH x HBHUB_DOODLE_HEIGHT
-// canvas. A stroke with one point is a dot. doodleGame.js draws and sends them the same way.
+// Drawings are sent and kept as JSON: a list of strokes, each [colour, size, x, y, x, y, ...], with the points on a
+// HBHUB_DOODLE_WIDTH x HBHUB_DOODLE_HEIGHT canvas. A stroke with one point is a dot. doodleGame.js draws and sends them
+// the same way.
+// - colour is a place in HBHUB_DOODLE_COLOURS, or a colour the player picked themselves:
+//   HBHUB_DOODLE_CUSTOM_COLOUR + 0xRRGGBB.
+// - size is a place in HBHUB_DOODLE_SIZES, or HBHUB_DOODLE_SIZE_FILL for the fill tool: [colour, FILL, x, y] fills the
+//   area round that point with the colour, on the drawing as it is at that stroke (the page does the filling).
+// The shape tools (line, circle, rectangle, triangle, star) only exist in the page: a shape is sent as an ordinary
+// stroke through its corners (a circle through many points round it), so it needs nothing here.
 
 const HBHUB_DOODLE_MIN_PLAYERS = 3;
 const HBHUB_DOODLE_MAX_PLAYERS = 10; // seatNumber in HBHub-DoodleSeats
@@ -47,7 +53,9 @@ const HBHUB_DOODLE_COLOURS = [
     '#000000', '#7f7f7f', '#c3c3c3', '#ffffff', '#88001b', '#ec1c24', '#ff7f27', '#ffca18',
     '#fff200', '#0ed145', '#1c7c3c', '#00a8f3', '#3f48cc', '#8c3fbe', '#ffaec8', '#b97a56',
 ];
+const HBHUB_DOODLE_CUSTOM_COLOUR = 0x1000000; // a stroke's colour from here up is this + 0xRRGGBB, not a place in the list
 const HBHUB_DOODLE_SIZES = [3, 8, 16, 32]; // line widths, in canvas pixels
+const HBHUB_DOODLE_SIZE_FILL = 100; // a stroke's size when it's a fill, [colour, 100, x, y]
 const HBHUB_DOODLE_MAX_STROKES = 3000;
 const HBHUB_DOODLE_MAX_NUMBERS = 120000; // all the numbers in a drawing together
 const HBHUB_DOODLE_MAX_BYTES = 500000; // a drawing's JSON as sent
@@ -295,10 +303,17 @@ function hbHubDoodleCleanDrawing(mixed $drawing): ?string
         if ($numbers > HBHUB_DOODLE_MAX_NUMBERS) {
             return null;
         }
+        [$colour, $size] = $stroke;
+        if (is_int($colour) && $colour >= count(HBHUB_DOODLE_COLOURS) && $colour < HBHUB_DOODLE_CUSTOM_COLOUR) {
+            return null; // between the list's places and the player's own colours there's nothing
+        }
+        if ($size === HBHUB_DOODLE_SIZE_FILL && count($stroke) !== 4) {
+            return null; // a fill is one point
+        }
         foreach ($stroke as $index => $number) {
             $max = match (true) {
-                $index === 0 => count(HBHUB_DOODLE_COLOURS) - 1,
-                $index === 1 => count(HBHUB_DOODLE_SIZES) - 1,
+                $index === 0 => HBHUB_DOODLE_CUSTOM_COLOUR + 0xFFFFFF,
+                $index === 1 => $number === HBHUB_DOODLE_SIZE_FILL ? HBHUB_DOODLE_SIZE_FILL : count(HBHUB_DOODLE_SIZES) - 1,
                 $index % 2 === 0 => HBHUB_DOODLE_WIDTH,
                 default => HBHUB_DOODLE_HEIGHT,
             };

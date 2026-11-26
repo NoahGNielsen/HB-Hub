@@ -278,6 +278,10 @@
   cursor: crosshair;
 }
 
+.doodle-canvas.is-pad[data-tool="fill"] {
+  cursor: cell;
+}
+
 .doodle-tools {
   margin-top: 12px;
   display: flex;
@@ -286,6 +290,7 @@
   gap: 12px 18px;
 }
 
+.doodle-tool-list,
 .doodle-colours,
 .doodle-sizes,
 .doodle-tool-actions {
@@ -295,8 +300,72 @@
   gap: 6px;
 }
 
+/* The tool list gets a row of its own above the colours */
+.doodle-tool-list {
+  flex-basis: 100%;
+}
+
 .doodle-tool-actions {
   margin-left: auto;
+}
+
+/* Pen, shapes and fill: icons drawn in currentColor */
+.doodle-tool {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 8px;
+  background: var(--primary, transparent);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.doodle-tool svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.doodle-tool[aria-checked="true"] {
+  border-color: var(--doodle-pink);
+  box-shadow: 0 0 0 2px var(--doodle-pink);
+}
+
+.doodle-tool:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The player's own colour: the colour picked inside a rainbow ring */
+.doodle-colours {
+  position: relative;
+}
+
+.doodle-colour.is-custom {
+  border-color: transparent;
+  background: radial-gradient(circle, var(--doodle-colour) 0 52%, transparent 54%),
+    conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+}
+
+/* The browser's colour picker it opens: there to anchor the picker, never seen */
+.doodle-colour-input {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .doodle-colour,

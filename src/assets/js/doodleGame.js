@@ -9,10 +9,13 @@
 // - 'reveal' (game.reveal): the chain being shown, as far as the host has shown it, with the host's Next button. Once
 //   every chain has been shown the host can show any of them again, or start a new game.
 //
-// Drawings are lists of strokes, [colour, size, x, y, x, y, ...], with colour and size places in config.colours and
-// config.sizes and the points on a config.width x config.height canvas - the same as the server checks them
-// (assets/php/games/doodle/game.php). The canvas is drawn at that size and scaled by CSS. Drawings already loaded are
-// kept by entry id (cache) and named in ?have=, so the server doesn't send their strokes again.
+// Drawings are lists of strokes, [colour, size, x, y, x, y, ...], with the points on a config.width x config.height
+// canvas - the same as the server checks them (assets/php/games/doodle/game.php). colour is a place in config.colours or
+// config.customColour + 0xRRGGBB (the colour picker); size is a place in config.sizes, or config.sizeFill for a fill
+// ([colour, sizeFill, x, y]: a flood fill from that point, done here on the drawing as it is at that stroke). The shape
+// tools (line, circle, rectangle, triangle, star) are dragged out like in Paint and handed in as ordinary strokes
+// through their corners. The canvas is drawn at that size and scaled by CSS. Drawings already loaded are kept by entry
+// id (cache) and named in ?have=, so the server doesn't send their strokes again.
 //
 // Asks what's new every second while the page is in view, and every 4 seconds while it isn't (so the player doesn't
 // count as away). The whole game only comes back when its version changed.
@@ -34,6 +37,7 @@
     const TICK_MS = 200;
     const TIMER_LOW_MS = 10000; // the timer turns red from here
     const MIN_MOVE = 2; // canvas pixels the pen has to move before another point is added
+    const FILL_TOLERANCE = 96; // how far (red + green + blue) a pixel can be from the one clicked and still be filled
     const CACHE_MAX = 40; // drawings kept, and named in ?have= (HBHUB_DOODLE_HAVE_MAX)
     const config = JSON.parse(root.dataset.config);
     const roomId = root.dataset.room;
@@ -198,14 +202,89 @@
         return cache.get(entry.id) ?? [];
     }
 
+    // A stroke's colour as CSS: a place in config.colours, or config.customColour + 0xRRGGBB
+    function colourCss(value) {
+        if (value >= config.customColour) return '#' + (value - config.customColour).toString(16).padStart(6, '0');
+        return config.colours[value] ?? '#000';
+    }
+
     function styleFor(context, stroke) {
-        context.strokeStyle = context.fillStyle = config.colours[stroke[0]] ?? '#000';
+        context.strokeStyle = context.fillStyle = colourCss(stroke[0]);
         context.lineWidth = config.sizes[stroke[1]] ?? 3;
         context.lineCap = 'round';
         context.lineJoin = 'round';
     }
 
+    /**
+     * The fill tool: paints the area round the stroke's point that has (about) the colour the point has, the way Paint's
+     * bucket does. Lines are smoothed at their edges, so "about" (FILL_TOLERANCE) and one pixel more all round, so no
+     * light seam is left along the lines. Done on the canvas as drawn so far, so a drawing comes out the same everywhere.
+     * Returns whether anything changed (filling with the colour that's already there does nothing).
+     */
+    function floodFill(context, stroke) {
+        const { width, height } = context.canvas;
+        const startX = Math.min(width - 1, stroke[2]);
+        const startY = Math.min(height - 1, stroke[3]);
+        const image = context.getImageData(0, 0, width, height);
+        const data = image.data;
+        const hex = parseInt(colourCss(stroke[0]).slice(1), 16);
+        const [r, g, b] = [hex >> 16, (hex >> 8) & 255, hex & 255];
+        const start = (startY * width + startX) * 4;
+        const [startR, startG, startB] = [data[start], data[start + 1], data[start + 2]];
+        if (startR === r && startG === g && startB === b) return false;
+        const matches = (pixel) => Math.abs(data[pixel * 4] - startR) + Math.abs(data[pixel * 4 + 1] - startG)
+            + Math.abs(data[pixel * 4 + 2] - startB) <= FILL_TOLERANCE;
+
+        // Scanline fill: run left and right along a row, and note where the rows above and below start to match
+        const filled = new Uint8Array(width * height);
+        const stack = [startX, startY];
+        while (stack.length > 0) {
+            const y = stack.pop();
+            let x = stack.pop();
+            let pixel = y * width + x;
+            if (filled[pixel] || !matches(pixel)) continue;
+            while (x > 0 && !filled[pixel - 1] && matches(pixel - 1)) {
+                x--;
+                pixel--;
+            }
+            let isUpOpen = false;
+            let isDownOpen = false;
+            for (; x < width && !filled[pixel] && matches(pixel); x++, pixel++) {
+                filled[pixel] = 1;
+                if (y > 0) {
+                    const isOpen = !filled[pixel - width] && matches(pixel - width);
+                    if (isOpen && !isUpOpen) stack.push(x, y - 1);
+                    isUpOpen = isOpen;
+                }
+                if (y < height - 1) {
+                    const isOpen = !filled[pixel + width] && matches(pixel + width);
+                    if (isOpen && !isDownOpen) stack.push(x, y + 1);
+                    isDownOpen = isOpen;
+                }
+            }
+        }
+
+        // Paint what's filled and the pixels right next to it (the smoothed edges of the lines round it)
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const pixel = y * width + x;
+                if (!(filled[pixel] || (x > 0 && filled[pixel - 1]) || (x < width - 1 && filled[pixel + 1])
+                    || (y > 0 && filled[pixel - width]) || (y < height - 1 && filled[pixel + width]))) continue;
+                data[pixel * 4] = r;
+                data[pixel * 4 + 1] = g;
+                data[pixel * 4 + 2] = b;
+                data[pixel * 4 + 3] = 255;
+            }
+        }
+        context.putImageData(image, 0, 0);
+        return true;
+    }
+
     function drawStroke(context, stroke) {
+        if (stroke[1] === config.sizeFill) {
+            floodFill(context, stroke);
+            return;
+        }
         styleFor(context, stroke);
         if (stroke.length === 4) {
             context.beginPath();
@@ -237,16 +316,75 @@
         return canvas;
     }
 
+    // ----- The shapes
+    // Each is dragged out from one corner (or a line's start) to the other, and turned into the points of an ordinary
+    // stroke. Shift keeps it even: lines at every 45 degrees, round circles, squares, and a star that isn't squashed.
+    // Everything stays inside the box dragged out, so inside the canvas.
+
+    const STAR = (() => { // a five-pointed star's corners, point up, scaled to fit a 0..1 x 0..1 box
+        const points = [];
+        for (let i = 0; i <= 10; i++) {
+            const angle = -Math.PI / 2 + i * Math.PI / 5;
+            const radius = i % 2 === 0 ? 1 : 0.382;
+            points.push(Math.cos(angle) * radius, Math.sin(angle) * radius);
+        }
+        const [left, top, width, height] = [-Math.cos(Math.PI / 10), -1, 2 * Math.cos(Math.PI / 10), 1 + Math.sin(3 * Math.PI / 10)];
+        return points.map((value, index) => index % 2 === 0 ? (value - left) / width : (value - top) / height);
+    })();
+    const STAR_ASPECT = 2 * Math.cos(Math.PI / 10) / (1 + Math.sin(3 * Math.PI / 10)); // its width / height
+
+    function shapePoints(kind, x0, y0, x1, y1, isEven) {
+        const clampX = (x) => Math.min(config.width, Math.max(0, Math.round(x)));
+        const clampY = (y) => Math.min(config.height, Math.max(0, Math.round(y)));
+        if (kind === 'line') {
+            if (isEven) {
+                const angle = Math.round(Math.atan2(y1 - y0, x1 - x0) / (Math.PI / 4)) * (Math.PI / 4);
+                const length = Math.hypot(x1 - x0, y1 - y0);
+                [x1, y1] = [x0 + Math.cos(angle) * length, y0 + Math.sin(angle) * length];
+            }
+            return [x0, y0, clampX(x1), clampY(y1)];
+        }
+
+        let width = Math.abs(x1 - x0);
+        let height = Math.abs(y1 - y0);
+        if (isEven) {
+            const aspect = kind === 'star' ? STAR_ASPECT : 1;
+            if (width > height * aspect) width = height * aspect;
+            else height = width / aspect;
+        }
+        const left = x1 < x0 ? x0 - width : x0;
+        const top = y1 < y0 ? y0 - height : y0;
+        const box = (points) => points.map((value, index) => index % 2 === 0 ? clampX(left + value * width) : clampY(top + value * height));
+
+        if (kind === 'rectangle') return box([0, 0, 1, 0, 1, 1, 0, 1, 0, 0]);
+        if (kind === 'triangle') return box([0.5, 0, 1, 1, 0, 1, 0.5, 0]);
+        if (kind === 'star') return box(STAR);
+        // circle: enough points round it that it looks round, but not more than needed
+        const count = Math.max(16, Math.min(120, Math.round((width + height) * Math.PI / 12)));
+        const points = [];
+        for (let i = 0; i <= count; i++) {
+            const angle = i / count * Math.PI * 2;
+            points.push(0.5 + Math.cos(angle) / 2, 0.5 + Math.sin(angle) / 2);
+        }
+        return box(points);
+    }
+
     // ----- The drawing pad
 
     let strokes = [];
-    let current = null; // the stroke being drawn
+    let current = null; // the stroke being drawn with the pen
+    let shape = null; // the shape being dragged out: {kind, x, y, pointer: the last pointer event}
     let numbers = 0; // all the numbers in strokes, to stay under config.maxNumbers
     let colour = 0;
     let size = 1;
-    const padContext = pad.getContext('2d');
+    let tool = 'pen'; // pen, line, circle, rectangle, triangle, star or fill (data-doodle-tool)
+    const padContext = pad.getContext('2d', { willReadFrequently: true }); // the fill tool reads the pixels
+    const shapeBase = document.createElement('canvas'); // the pad as it was before the shape being dragged out
+    shapeBase.width = config.width;
+    shapeBase.height = config.height;
 
     const canDraw = () => game?.phase === 'playing' && game.turn?.kind === 'draw' && game.turn.inGame && !game.turn.done && !isBusy;
+    const hasRoom = (count) => strokes.length < config.maxStrokes && numbers + count <= config.maxNumbers;
 
     function pointFrom(event) {
         const rect = pad.getBoundingClientRect();
@@ -258,6 +396,7 @@
     function resetPad() {
         strokes = [];
         current = null;
+        shape = null;
         numbers = 0;
         drawAll(pad, strokes);
         renderPadButtons();
@@ -270,18 +409,49 @@
         drawDone.disabled = isEmpty || !canDraw();
     }
 
-    pad.addEventListener('pointerdown', (event) => {
-        if (!canDraw() || event.button > 0 || strokes.length >= config.maxStrokes || numbers + 4 > config.maxNumbers) return;
-        event.preventDefault();
-        pad.setPointerCapture(event.pointerId);
-        current = [colour, size, ...pointFrom(event)];
-        strokes.push(current);
-        numbers += 4;
-        drawStroke(padContext, current);
+    function addStroke(stroke) {
+        strokes.push(stroke);
+        numbers += stroke.length;
         renderPadButtons();
+    }
+
+    // The shape being dragged out, from where it started to the pointer, as a stroke
+    function shapeStroke() {
+        const [x, y] = pointFrom(shape.pointer);
+        return [colour, size, ...shapePoints(shape.kind, shape.x, shape.y, x, y, shape.pointer.shiftKey)];
+    }
+
+    function drawShape() {
+        padContext.drawImage(shapeBase, 0, 0);
+        drawStroke(padContext, shapeStroke());
+    }
+
+    pad.addEventListener('pointerdown', (event) => {
+        if (!canDraw() || event.button > 0 || !hasRoom(4)) return;
+        event.preventDefault();
+        const [x, y] = pointFrom(event);
+        if (tool === 'fill') {
+            const stroke = [colour, config.sizeFill, x, y];
+            if (floodFill(padContext, stroke)) addStroke(stroke);
+            return;
+        }
+        pad.setPointerCapture(event.pointerId);
+        if (tool === 'pen') {
+            current = [colour, size, x, y];
+            drawStroke(padContext, current);
+            addStroke(current);
+            return;
+        }
+        shapeBase.getContext('2d').drawImage(pad, 0, 0);
+        shape = { kind: tool, x, y, pointer: event };
     });
 
     pad.addEventListener('pointermove', (event) => {
+        if (shape !== null) {
+            shape.pointer = event;
+            drawShape();
+            return;
+        }
         if (current === null) return;
         const coalesced = event.getCoalescedEvents?.() ?? []; // the points between frames, for smoother lines (can be empty)
         for (const each of coalesced.length > 0 ? coalesced : [event]) {
@@ -299,7 +469,24 @@
         }
     });
 
-    const endStroke = () => (current = null);
+    // Letting go: the pen's stroke is already in, a shape goes in if it's big enough to see (a click without dragging
+    // leaves nothing) and fits under the limits
+    function endStroke(event) {
+        current = null;
+        if (shape === null) return;
+        shape.pointer = event;
+        const stroke = shapeStroke();
+        const [x, y] = pointFrom(event);
+        const isBigEnough = Math.max(Math.abs(x - shape.x), Math.abs(y - shape.y)) >= MIN_MOVE;
+        if (event.type === 'pointerup' && isBigEnough && hasRoom(stroke.length)) {
+            drawShape();
+            addStroke(stroke);
+        } else {
+            padContext.drawImage(shapeBase, 0, 0);
+        }
+        shape = null;
+    }
+
     pad.addEventListener('pointerup', endStroke);
     pad.addEventListener('pointercancel', endStroke);
 
@@ -307,15 +494,51 @@
         const stroke = strokes.pop();
         if (stroke) numbers -= stroke.length;
         current = null;
+        shape = null;
         drawAll(pad, strokes);
         renderPadButtons();
     }
 
     undoButton.addEventListener('click', undo);
+
+    // ----- The tools
+
+    const toolList = find('[data-doodle-tools]');
+    const TOOL_KEYS = { p: 'pen', l: 'line', c: 'circle', r: 'rectangle', t: 'triangle', s: 'star', f: 'fill' };
+
+    function pickTool(name) {
+        tool = name;
+        pad.dataset.tool = name;
+        for (const button of toolList.querySelectorAll('[data-doodle-tool]')) {
+            button.setAttribute('aria-checked', String(button.dataset.doodleTool === name));
+        }
+    }
+
+    toolList.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-doodle-tool]');
+        if (button) pickTool(button.dataset.doodleTool);
+    });
+
     document.addEventListener('keydown', (event) => {
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && canDraw() && !drawArea.hidden) {
+        if (!canDraw() || drawArea.hidden) return;
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
             event.preventDefault();
             undo();
+            return;
+        }
+        if (event.key === 'Shift' && shape !== null) { // Shift pressed in the middle of dragging out a shape
+            shape.pointer = { clientX: shape.pointer.clientX, clientY: shape.pointer.clientY, shiftKey: true };
+            drawShape();
+            return;
+        }
+        const isTyping = event.target.closest?.('input, textarea, select, [contenteditable]');
+        const name = TOOL_KEYS[event.key.toLowerCase()];
+        if (name && !isTyping && !event.ctrlKey && !event.metaKey && !event.altKey) pickTool(name);
+    });
+    document.addEventListener('keyup', (event) => {
+        if (event.key === 'Shift' && shape !== null) {
+            shape.pointer = { clientX: shape.pointer.clientX, clientY: shape.pointer.clientY, shiftKey: false };
+            drawShape();
         }
     });
 
@@ -333,7 +556,7 @@
         button.setAttribute('aria-label', label);
         button.title = label;
         button.addEventListener('click', () => {
-            for (const other of list.children) other.setAttribute('aria-checked', 'false');
+            for (const other of list.querySelectorAll('[role="radio"]')) other.setAttribute('aria-checked', 'false');
             button.setAttribute('aria-checked', 'true');
             onPick();
         });
@@ -346,6 +569,26 @@
             () => (colour = index));
         button.style.setProperty('--doodle-colour', hex);
     });
+
+    // The player's own colour: the last swatch opens the browser's colour picker (the hidden <input type="color">),
+    // and shows the colour picked in the middle of a rainbow ring
+    const colourInput = find('[data-doodle-colour-input]');
+    const customValue = () => config.customColour + parseInt(colourInput.value.slice(1), 16);
+    const customButton = toolButton(colourList, 'doodle-colour is-custom', false, 'Pick your own colour', () => {
+        colour = customValue();
+        try {
+            colourInput.showPicker();
+        } catch {
+            colourInput.click(); // browsers without showPicker() on colour inputs
+        }
+    });
+    customButton.style.setProperty('--doodle-colour', colourInput.value);
+    colourList.append(colourInput); // next to the swatch, so the browser opens the picker there
+    colourInput.addEventListener('input', () => {
+        customButton.style.setProperty('--doodle-colour', colourInput.value);
+        if (customButton.getAttribute('aria-checked') === 'true') colour = customValue();
+    });
+
     config.sizes.forEach((width, index) => {
         const button = toolButton(sizeList, 'doodle-size', index === size, 'Pen size ' + width, () => (size = index));
         const dot = document.createElement('span');
