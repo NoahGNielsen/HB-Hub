@@ -370,10 +370,14 @@
     }
 
     // ----- The drawing pad
+    // The mouse (or finger, or pen) and the keyboard draw through the same three steps, in canvas pixels: press(x, y),
+    // moveTo(x, y) and release(isKept). With the keyboard the arrow keys move a cursor of the pad's own (a page can't
+    // move the real mouse pointer) and Space is the mouse button: held down it draws, let go it stops.
 
     let strokes = [];
     let current = null; // the stroke being drawn with the pen
-    let shape = null; // the shape being dragged out: {kind, x, y, pointer: the last pointer event}
+    let shape = null; // the shape being dragged out: {kind, x, y (where it started), endX, endY (where it's dragged to)}
+    let isShiftDown = false; // keeps shapes even
     let numbers = 0; // all the numbers in strokes, to stay under config.maxNumbers
     let colour = 0;
     let size = 1;
@@ -415,10 +419,9 @@
         renderPadButtons();
     }
 
-    // The shape being dragged out, from where it started to the pointer, as a stroke
+    // The shape being dragged out, as a stroke
     function shapeStroke() {
-        const [x, y] = pointFrom(shape.pointer);
-        return [colour, size, ...shapePoints(shape.kind, shape.x, shape.y, x, y, shape.pointer.shiftKey)];
+        return [colour, size, ...shapePoints(shape.kind, shape.x, shape.y, shape.endX, shape.endY, isShiftDown)];
     }
 
     function drawShape() {
@@ -426,59 +429,56 @@
         drawStroke(padContext, shapeStroke());
     }
 
-    pad.addEventListener('pointerdown', (event) => {
-        if (!canDraw() || event.button > 0 || !hasRoom(4)) return;
-        event.preventDefault();
-        const [x, y] = pointFrom(event);
+    /**
+     * The button goes down at a point: the pen starts a stroke, a shape starts being dragged out, and the fill tool
+     * fills right away. Returns whether something is now being drawn (so moving and letting go matter).
+     */
+    function press(x, y) {
+        if (!canDraw() || !hasRoom(4)) return false;
         if (tool === 'fill') {
             const stroke = [colour, config.sizeFill, x, y];
             if (floodFill(padContext, stroke)) addStroke(stroke);
-            return;
+            return false;
         }
-        pad.setPointerCapture(event.pointerId);
         if (tool === 'pen') {
             current = [colour, size, x, y];
             drawStroke(padContext, current);
             addStroke(current);
-            return;
+            return true;
         }
         shapeBase.getContext('2d').drawImage(pad, 0, 0);
-        shape = { kind: tool, x, y, pointer: event };
-    });
+        shape = { kind: tool, x, y, endX: x, endY: y };
+        return true;
+    }
 
-    pad.addEventListener('pointermove', (event) => {
+    // While the button is down: the pen adds a point (once it's MIN_MOVE away from the last), a shape follows
+    function moveTo(x, y) {
         if (shape !== null) {
-            shape.pointer = event;
+            [shape.endX, shape.endY] = [x, y];
             drawShape();
             return;
         }
         if (current === null) return;
-        const coalesced = event.getCoalescedEvents?.() ?? []; // the points between frames, for smoother lines (can be empty)
-        for (const each of coalesced.length > 0 ? coalesced : [event]) {
-            const [x, y] = pointFrom(each);
-            const lastX = current[current.length - 2];
-            const lastY = current[current.length - 1];
-            if (Math.hypot(x - lastX, y - lastY) < MIN_MOVE || numbers + 2 > config.maxNumbers) continue;
-            current.push(x, y);
-            numbers += 2;
-            styleFor(padContext, current);
-            padContext.beginPath();
-            padContext.moveTo(lastX, lastY);
-            padContext.lineTo(x, y);
-            padContext.stroke();
-        }
-    });
+        const lastX = current[current.length - 2];
+        const lastY = current[current.length - 1];
+        if (Math.hypot(x - lastX, y - lastY) < MIN_MOVE || numbers + 2 > config.maxNumbers) return;
+        current.push(x, y);
+        numbers += 2;
+        styleFor(padContext, current);
+        padContext.beginPath();
+        padContext.moveTo(lastX, lastY);
+        padContext.lineTo(x, y);
+        padContext.stroke();
+    }
 
-    // Letting go: the pen's stroke is already in, a shape goes in if it's big enough to see (a click without dragging
-    // leaves nothing) and fits under the limits
-    function endStroke(event) {
+    // Letting go: the pen's stroke is already in, a shape goes in if it's kept (not a cancelled pointer), big enough to
+    // see (pressing without moving leaves nothing) and fits under the limits
+    function release(isKept) {
         current = null;
         if (shape === null) return;
-        shape.pointer = event;
         const stroke = shapeStroke();
-        const [x, y] = pointFrom(event);
-        const isBigEnough = Math.max(Math.abs(x - shape.x), Math.abs(y - shape.y)) >= MIN_MOVE;
-        if (event.type === 'pointerup' && isBigEnough && hasRoom(stroke.length)) {
+        const isBigEnough = Math.max(Math.abs(shape.endX - shape.x), Math.abs(shape.endY - shape.y)) >= MIN_MOVE;
+        if (isKept && isBigEnough && hasRoom(stroke.length)) {
             drawShape();
             addStroke(stroke);
         } else {
@@ -487,14 +487,169 @@
         shape = null;
     }
 
-    pad.addEventListener('pointerup', endStroke);
-    pad.addEventListener('pointercancel', endStroke);
+    // ----- With the mouse, a finger or a pen
+
+    let isPointerDrawing = false;
+
+    pad.addEventListener('pointerdown', (event) => {
+        if (!canDraw() || event.button > 0 || isKeyDrawing) return;
+        event.preventDefault();
+        isShiftDown = event.shiftKey;
+        const [x, y] = pointFrom(event);
+        placeCursor(x, y, false);
+        isPointerDrawing = press(x, y);
+        if (isPointerDrawing) pad.setPointerCapture(event.pointerId);
+    });
+
+    pad.addEventListener('pointermove', (event) => {
+        if (isKeyDrawing) return;
+        if (!isPointerDrawing) { // just moving over the pad: the keyboard carries on from here
+            placeCursor(...pointFrom(event), false);
+            return;
+        }
+        isShiftDown = event.shiftKey;
+        const coalesced = event.getCoalescedEvents?.() ?? []; // the points between frames, for smoother lines (can be empty)
+        for (const each of coalesced.length > 0 ? coalesced : [event]) moveTo(...pointFrom(each));
+        placeCursor(...pointFrom(event), false);
+    });
+
+    const endPointer = (event) => {
+        if (!isPointerDrawing) return;
+        isPointerDrawing = false;
+        moveTo(...pointFrom(event));
+        release(event.type === 'pointerup');
+    };
+    pad.addEventListener('pointerup', endPointer);
+    pad.addEventListener('pointercancel', endPointer);
+
+    // ----- With the keyboard
+    // The arrow keys move the cursor (data-doodle-cursor, a ring the size of the pen): a tap moves it KEY_TAP pixels,
+    // held down it starts gliding after KEY_HOLD_MS and speeds up. Several arrows at once go diagonally.
+
+    const KEY_TAP = 2; // canvas pixels a tap moves the cursor
+    const KEY_HOLD_MS = 150; // held this long, it starts gliding
+    const KEY_SPEED = 150; // canvas pixels a second to begin with...
+    const KEY_SPEED_MAX = 600; // ...up to this, KEY_SPEED_UP faster every second it's held
+    const KEY_SPEED_UP = 450;
+    const ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    const cursor = find('[data-doodle-cursor]');
+    let cursorX = config.width / 2;
+    let cursorY = config.height / 2;
+    let isKeyDrawing = false;
+    const heldArrows = new Set();
+    let glideStart = 0; // when the arrows started being held
+    let glideLast = 0; // the last frame that moved the cursor
+    let glideFrame = null;
+
+    // Moves the cursor to a point, and shows it there (when the keyboard moves it) or hides it (when the mouse does)
+    function placeCursor(x, y, isShown) {
+        cursorX = Math.min(config.width, Math.max(0, x));
+        cursorY = Math.min(config.height, Math.max(0, y));
+        cursor.hidden = !isShown;
+        if (!isShown) return;
+        cursor.style.setProperty('--doodle-cursor-x', cursorX / config.width * 100 + '%');
+        cursor.style.setProperty('--doodle-cursor-y', cursorY / config.height * 100 + '%');
+        const width = tool === 'fill' ? 0 : config.sizes[size];
+        cursor.style.setProperty('--doodle-cursor-size', width / config.width * 100 + '%');
+    }
+
+    function moveCursor(dx, dy) {
+        placeCursor(cursorX + dx, cursorY + dy, true);
+        if (isKeyDrawing) moveTo(Math.round(cursorX), Math.round(cursorY));
+    }
+
+    function arrowDirection() {
+        let dx = 0;
+        let dy = 0;
+        for (const key of heldArrows) {
+            dx += ARROWS[key][0];
+            dy += ARROWS[key][1];
+        }
+        const length = Math.hypot(dx, dy);
+        return length === 0 ? [0, 0] : [dx / length, dy / length];
+    }
+
+    function glide(now) {
+        glideFrame = null;
+        if (heldArrows.size === 0) return;
+        if (now - glideStart >= KEY_HOLD_MS) {
+            const speed = Math.min(KEY_SPEED_MAX, KEY_SPEED + (now - glideStart - KEY_HOLD_MS) / 1000 * KEY_SPEED_UP);
+            const distance = speed * Math.min(100, now - glideLast) / 1000; // a frame late after a stall doesn't jump
+            const [dx, dy] = arrowDirection();
+            moveCursor(dx * distance, dy * distance);
+        }
+        glideLast = now;
+        glideFrame = requestAnimationFrame(glide);
+    }
+
+    function stopKeys() {
+        heldArrows.clear();
+        if (isKeyDrawing) {
+            isKeyDrawing = false;
+            release(true);
+        }
+    }
+
+    // Keys meant for something else: typing, and the buttons of a dialog (the "Clear the drawing?" one)
+    const isKeyForElse = (event) => !!event.target.closest?.('input:not([type="color"]), textarea, select, [contenteditable], dialog');
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Shift') {
+            isShiftDown = true;
+            if (shape !== null) drawShape(); // Shift pressed in the middle of dragging out a shape
+        }
+        if (!canDraw() || drawArea.hidden) return;
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+            event.preventDefault();
+            undo();
+            return;
+        }
+        if (isKeyForElse(event) || event.ctrlKey || event.metaKey || event.altKey) return;
+
+        if (ARROWS[event.key]) {
+            event.preventDefault(); // instead of scrolling the page
+            if (heldArrows.has(event.key)) return; // the key repeating - glide() moves it smoothly instead
+            if (heldArrows.size === 0) glideStart = glideLast = performance.now();
+            heldArrows.add(event.key);
+            const [dx, dy] = ARROWS[event.key];
+            moveCursor(dx * KEY_TAP, dy * KEY_TAP);
+            glideFrame ??= requestAnimationFrame(glide);
+            return;
+        }
+        if (event.key === ' ') {
+            event.preventDefault(); // not scrolling, nor clicking the button that has the focus
+            if (event.repeat || isKeyDrawing || isPointerDrawing) return;
+            placeCursor(cursorX, cursorY, true);
+            isKeyDrawing = press(Math.round(cursorX), Math.round(cursorY));
+            return;
+        }
+        const name = TOOL_KEYS[event.key.toLowerCase()];
+        if (name) pickTool(name);
+    });
+
+    document.addEventListener('keyup', (event) => {
+        if (event.key === 'Shift') {
+            isShiftDown = false;
+            if (shape !== null) drawShape();
+        }
+        if (ARROWS[event.key]) heldArrows.delete(event.key);
+        if (event.key === ' ' && isKeyDrawing) {
+            event.preventDefault();
+            isKeyDrawing = false;
+            release(true);
+        } else if (event.key === ' ' && !drawArea.hidden && !isKeyForElse(event)) {
+            event.preventDefault(); // a button with the focus would be clicked as Space comes up
+        }
+    });
+    window.addEventListener('blur', stopKeys); // the keys coming up in another window never reach the page
 
     function undo() {
         const stroke = strokes.pop();
         if (stroke) numbers -= stroke.length;
         current = null;
         shape = null;
+        isKeyDrawing = false;
+        isPointerDrawing = false;
         drawAll(pad, strokes);
         renderPadButtons();
     }
@@ -512,34 +667,12 @@
         for (const button of toolList.querySelectorAll('[data-doodle-tool]')) {
             button.setAttribute('aria-checked', String(button.dataset.doodleTool === name));
         }
+        if (!cursor.hidden) placeCursor(cursorX, cursorY, true); // the ring's size follows the tool
     }
 
     toolList.addEventListener('click', (event) => {
         const button = event.target.closest('[data-doodle-tool]');
         if (button) pickTool(button.dataset.doodleTool);
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (!canDraw() || drawArea.hidden) return;
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
-            event.preventDefault();
-            undo();
-            return;
-        }
-        if (event.key === 'Shift' && shape !== null) { // Shift pressed in the middle of dragging out a shape
-            shape.pointer = { clientX: shape.pointer.clientX, clientY: shape.pointer.clientY, shiftKey: true };
-            drawShape();
-            return;
-        }
-        const isTyping = event.target.closest?.('input, textarea, select, [contenteditable]');
-        const name = TOOL_KEYS[event.key.toLowerCase()];
-        if (name && !isTyping && !event.ctrlKey && !event.metaKey && !event.altKey) pickTool(name);
-    });
-    document.addEventListener('keyup', (event) => {
-        if (event.key === 'Shift' && shape !== null) {
-            shape.pointer = { clientX: shape.pointer.clientX, clientY: shape.pointer.clientY, shiftKey: false };
-            drawShape();
-        }
     });
 
     clearButton.addEventListener('click', async () => {
@@ -590,7 +723,10 @@
     });
 
     config.sizes.forEach((width, index) => {
-        const button = toolButton(sizeList, 'doodle-size', index === size, 'Pen size ' + width, () => (size = index));
+        const button = toolButton(sizeList, 'doodle-size', index === size, 'Pen size ' + width, () => {
+            size = index;
+            if (!cursor.hidden) placeCursor(cursorX, cursorY, true); // the ring's size follows the pen
+        });
         const dot = document.createElement('span');
         dot.className = 'doodle-size-dot';
         dot.style.setProperty('--doodle-size', Math.max(4, Math.min(28, width)) + 'px');

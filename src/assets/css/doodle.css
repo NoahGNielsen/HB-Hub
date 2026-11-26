@@ -282,6 +282,42 @@
   cursor: cell;
 }
 
+/* The pad and the keyboard's cursor over it (doodleGame.js sets where it is and how big, in % of the pad) */
+.doodle-pad-wrap {
+  position: relative;
+}
+
+.doodle-cursor {
+  position: absolute;
+  left: var(--doodle-cursor-x, 50%);
+  top: var(--doodle-cursor-y, 50%);
+  width: max(12px, var(--doodle-cursor-size, 0%));
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid #000;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px #fff, inset 0 0 0 1px #fff;
+  pointer-events: none;
+}
+
+.doodle-cursor[hidden] {
+  display: none;
+}
+
+.doodle-keys-hint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+/* Touch screens have no arrow keys to speak of */
+@media (hover: none) {
+  .doodle-keys-hint {
+    display: none;
+  }
+}
+
 .doodle-tools {
   margin-top: 12px;
   display: flex;

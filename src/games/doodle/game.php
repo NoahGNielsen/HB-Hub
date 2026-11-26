@@ -127,10 +127,14 @@ $gameConfig = [
                     </form>
 
                     <div class="doodle-draw" data-doodle-draw hidden>
-                        <canvas class="doodle-canvas is-pad" width="<?= HBHUB_DOODLE_WIDTH ?>" height="<?= HBHUB_DOODLE_HEIGHT ?>"
-                                aria-label="Drawing area" data-doodle-pad></canvas>
+                        <div class="doodle-pad-wrap">
+                            <canvas class="doodle-canvas is-pad" width="<?= HBHUB_DOODLE_WIDTH ?>" height="<?= HBHUB_DOODLE_HEIGHT ?>"
+                                    aria-label="Drawing area. Arrow keys move, hold Space to draw" data-doodle-pad></canvas>
+                            <!-- The keyboard's cursor: moved with the arrow keys, Space draws (doodleGame.js) -->
+                            <span class="doodle-cursor" aria-hidden="true" data-doodle-cursor hidden></span>
+                        </div>
                         <div class="doodle-tools">
-                            <!-- The tools (doodleGame.js's TOOLS): drawn in currentColor, so they follow the theme -->
+                            <!-- The tools (doodleGame.js's TOOL_KEYS): drawn in currentColor, so they follow the theme -->
                             <div class="doodle-tool-list" role="radiogroup" aria-label="Tool" data-doodle-tools>
                                 <button type="button" class="doodle-tool" role="radio" aria-checked="true" aria-label="Pen" title="Pen (P)" data-doodle-tool="pen">
                                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-5L16 4l4 4L9 19z M14 6l4 4"/></svg>
@@ -162,6 +166,7 @@ $gameConfig = [
                                 <button type="button" class="casino-btn" data-doodle-clear>Clear</button>
                                 <button type="button" class="casino-btn casino-btn-primary" data-doodle-draw-done>Done</button>
                             </div>
+                            <p class="doodle-keys-hint">Keyboard: the arrow keys move, hold Space to draw. Shift keeps shapes even.</p>
                         </div>
                     </div>
 
