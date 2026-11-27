@@ -19,7 +19,8 @@ if (!empty($hbHubShowSiteFooter)):
         <a href="https://github.com/NoahGNielsen/HB-Hub?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">GitHub</a>
         <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Rapportér et sikkerhedsproblem</a>
     </nav>
-    <p class="site-footer-copyright">&copy; <?= (int) date('Y') > $footerYear ? $footerYear . '&ndash;' . date('Y') : $footerYear ?> Noah Gaj Nedergaard Nielsen</p>
+    <?php // The copyright line links to the owner's own site ?>
+    <p class="site-footer-copyright"><a href="https://noahgajnielsen.dk?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">&copy; <?= (int) date('Y') > $footerYear ? $footerYear . '&ndash;' . date('Y') : $footerYear ?> Noah Gaj Nedergaard Nielsen</a></p>
 </footer>
 <?php endif;
 

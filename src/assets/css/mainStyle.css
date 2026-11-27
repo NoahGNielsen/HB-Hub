@@ -411,6 +411,21 @@ body:has(> .site-footer) {
   opacity: 0.6;
 }
 
+/* The copyright line is a link to noahgajnielsen.dk, but looks like plain text until hovered, like the links next to it */
+.site-footer-copyright a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-footer-copyright:has(a:hover, a:focus-visible) {
+  opacity: 1;
+}
+
+.site-footer-copyright a:hover,
+.site-footer-copyright a:focus-visible {
+  color: var(--accent);
+}
+
 /* Gambling and Games while the user has them blocked (assets/php/blockedPage.php) */
 .blocked {
   max-width: 520px;
