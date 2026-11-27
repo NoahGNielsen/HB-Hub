@@ -7,7 +7,10 @@
 $hbHubSessionOptional = true; // the frontpage is open to everyone
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 if ($hbHubUser !== null && !isset($_GET['home'])) {
-    header('Location: /chat/', true, 302);
+    // A ?utm_source= goes along to the chat, so a visit from a tagged link (like the one on noahgajnielsen.dk) is
+    // still counted under "Visits from links" (pageViews.php) when the visitor is already logged in
+    $utmSource = $_GET['utm_source'] ?? null;
+    header('Location: /chat/' . (is_string($utmSource) && $utmSource !== '' ? '?' . http_build_query(['utm_source' => $utmSource]) : ''), true, 302);
     exit;
 }
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
