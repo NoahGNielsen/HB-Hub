@@ -269,5 +269,5 @@ function chatFormatMentionedUserIds(string $content, array $mentions): array
 function chatFormatLink(string $url, string $inner): string
 {
     return '<a class="chat-message-link" href="' . htmlspecialchars($url) . '" title="' . htmlspecialchars($url)
-        . '" target="_blank" rel="noopener noreferrer nofollow ugc" data-chat-link>' . $inner . '</a>';
+        . '" target="_blank" rel="noopener nofollow ugc" data-chat-link>' . $inner . '</a>';
 }

@@ -3333,7 +3333,7 @@ if ($isPoll) {
 
                 <footer class="chat-new-footer">
                     <button type="button" class="chat-btn" data-link-warning-close>Stay here</button>
-                    <a class="chat-new-btn" href="#" target="_blank" rel="noopener noreferrer nofollow" data-link-warning-open>Open link</a>
+                    <a class="chat-new-btn" href="#" target="_blank" rel="noopener nofollow ugc" data-link-warning-open>Open link</a>
                 </footer>
             </div>
         </dialog>
