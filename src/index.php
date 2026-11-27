@@ -31,61 +31,12 @@ $homeUser = $hbHubUser ?? null;
 $homeCasinoOpen = (int) ($siteConfig['casino_access'] ?? 2) === 1;
 $homeGamesOpen = (int) ($siteConfig['games_access'] ?? 2) === 1;
 
-// The same numbers as the README badges (assets/php/github/), left out when the database can't be reached. Members
-// leave out deleted (userStatus NULL) and banned accounts; messages count deleted ones too, since they were still sent.
-$homeMembers = null;
-$homeMessages = null;
-try {
-    $homeDb = hbHubDatabase();
-    $homeStatement = $homeDb->prepare('SELECT COUNT(*) FROM `HBHub-Users` WHERE userStatus IS NOT NULL AND userStatus <> ?');
-    $homeStatement->execute([HBHUB_SESSION_STATUS_BANNED]);
-    $homeMembers = (int) $homeStatement->fetchColumn();
-    $homeMessages = (int) $homeDb->query('SELECT COUNT(*) FROM `HBHub-Messages` WHERE messageEvent = 0')->fetchColumn();
-} catch (PDOException $e) {
-    error_log('Frontpage: could not count members and messages: ' . $e->getMessage());
-}
-
-// Every game and casino round ever played, added together. Counted the way the admin panel's games and casino panels
-// count them (adminOverviewGames() and adminOverviewCasino() in admin/overview.php): a multiplayer game is one game
-// however many played it (its rows grouped by the room and the second it ended), and games that were left or are
-// still going don't count. Blackjack and Baccarat count rounds, Roulette and Slots spins. Ore Mining Inc. has no
-// games, so it isn't in it. Left out on its own when a table can't be read.
-$homeGames = null;
-try {
-    $homeGameKey = "CONCAT_WS(',', COALESCE(roomId, 0), roomType, resultTimestamp)";
-    $homeGames = (int) $homeDb->query('SELECT
-            (SELECT COUNT(DISTINCT ' . $homeGameKey . ') FROM `HBHub-ChessResults`)
-          + (SELECT COUNT(DISTINCT ' . $homeGameKey . ') FROM `HBHub-MatadorResults` WHERE playerLeft = 0)
-          + (SELECT COUNT(DISTINCT ' . $homeGameKey . ') FROM `HBHub-UnoResults`)
-          + (SELECT COUNT(DISTINCT ' . $homeGameKey . ') FROM `HBHub-DoodleResults` WHERE playerLeft = 0)
-          + (SELECT COUNT(*) FROM `HBHub-WordleGames` WHERE gameResult <> 0 OR gameDate < CURDATE())
-          + (SELECT COUNT(*) FROM `HBHub-MinesweeperGames` WHERE gameResult IN (1, 2))
-          + (SELECT COUNT(*) FROM `HBHub-SudokuGames` WHERE gameResult IN (1, 2))
-          + (SELECT COUNT(*) FROM `HBHub-SnakeGames` WHERE gameResult = 1)
-          + (SELECT COUNT(*) FROM `HBHub-BlockfallGames` WHERE gameResult = 1)
-          + (SELECT COUNT(DISTINCT roundId) FROM `HBHub-BlackjackPlayerRounds`)
-          + (SELECT COUNT(DISTINCT roundId) FROM `HBHub-BaccaratPlayerRounds`)
-          + (SELECT COUNT(*) FROM `HBHub-RouletteSpins`)
-          + (SELECT COUNT(*) FROM `HBHub-SlotSpins`)')->fetchColumn();
-} catch (Throwable $e) {
-    error_log('Frontpage: could not count games played: ' . $e->getMessage());
-}
-
 /**
  * A whole number written the Danish way (and the way the Matador board writes kroner): 8.000
  */
 function homeKroner(int $amount): string
 {
     return number_format($amount, 0, ',', '.');
-}
-
-/**
- * A count (messages sent, games played) rounded down to the nearest hundred with a plus after it (1.847 becomes
- * "1.800+"), so the frontpage doesn't need to be exact. Under 100 it's shown as it is, since "0+" would say nothing.
- */
-function homeRoundedCount(int $amount): string
-{
-    return $amount < 100 ? homeKroner($amount) : homeKroner(intdiv($amount, 100) * 100) . '+';
 }
 
 // The section icons next to Chat, Casino and Games are 48 x 48 copies (icons/small/) of the 192 x 192 ones the rest of
@@ -217,24 +168,6 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     </div>
                 </div>
             </div>
-
-            <!-- The live numbers as one big statement along the bottom of the hero, the numbers at full size and the
-                 words between them smaller, instead of a row of boxes (.home-stats, which the casino lobby and
-                 credits still use). Each part is left out on its own when its count couldn't be read, and the whole
-                 line when neither could. -->
-            <?php if ($homeMembers !== null || $homeGames !== null): ?>
-                <p class="home-tally">
-                    <?php if ($homeMembers !== null): ?>
-                        <b><?= homeKroner($homeMembers) ?></b> medlemmer har sendt
-                        <b><?= homeRoundedCount($homeMessages) ?></b> beskeder*<?= $homeGames !== null ? ' og spillet' : '.' ?>
-                    <?php else: ?>
-                        Medlemmerne har spillet
-                    <?php endif; ?>
-                    <?php if ($homeGames !== null): ?>
-                        <b><?= homeRoundedCount($homeGames) ?></b> spil**.
-                    <?php endif; ?>
-                </p>
-            <?php endif; ?>
         </section>
 
         <!-- About: the part that matches the Danish searches for the school ("hansenberg", "hansenberg elever", "htx
@@ -482,23 +415,6 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 </div>
             <?php endif; ?>
         </section>
-
-        <!-- What the * and ** on the hero's numbers mean: * how the messages are rounded (homeRoundedCount()), ** the
-             same rounding plus what counts as a game played ($homeGames). Each is only there when its number is shown. -->
-        <?php if ($homeMessages !== null || $homeGames !== null): ?>
-            <div class="home-footnote">
-                <?php if ($homeMessages !== null): ?>
-                    <p>* Rundet ned til nærmeste hundrede.</p>
-                <?php endif; ?>
-                <?php if ($homeGames !== null): ?>
-                    <p>
-                        ** Rundet ned til nærmeste hundrede. Tæller alle færdigspillede spil. Et spil med flere
-                        spillere tæller som ét. I Blackjack og Baccarat tæller hver runde, i Roulette og Slots
-                        hvert spin. Forladte spil, spil i gang og Ore Mining Inc. tæller ikke med.
-                    </p>
-                <?php endif; ?>
-            </div>
-        <?php endif; ?>
     </main>
     <?php $hbHubShowSiteFooter = true; include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/footer.php'; ?>
 </body>

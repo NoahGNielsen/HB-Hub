@@ -251,6 +251,7 @@ html.home {
 /* The frontpage's own hero: no orange glow (that's credits.php's), only the dotted paper, so the group chat is the one
    thing up here that catches the eye */
 .home-front-hero {
+  padding-bottom: 96px; /* the shared hero has none, as its bottom is usually a row of numbers */
   background: var(--home-dark);
 }
 
@@ -558,30 +559,6 @@ html.home {
 
 .home-stats div:last-child dd {
   color: var(--accent);
-}
-
-/* The frontpage's live numbers: one big statement along the bottom of the hero, with no box or line around it. The
-   numbers are as big and heavy as the old stat boxes' were, and the words between them smaller and dimmed, so the
-   numbers are what's read first. */
-.home-tally {
-  position: relative;
-  margin: 64px 0 0;
-  padding: 0 0 64px;
-  color: color-mix(in srgb, var(--home-dark-text) 65%, transparent);
-  font-size: clamp(1.2rem, 2.2vw, 1.6rem);
-  font-weight: 600;
-  line-height: 1.35;
-  letter-spacing: -0.01em;
-  text-wrap: balance; /* when it has to wrap, two even lines instead of one number left alone on the second */
-}
-
-.home-tally b {
-  color: var(--home-dark-text);
-  font-size: 1.6em;
-  font-weight: 850;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 /* ---------- Feature sections ---------- */
@@ -1473,23 +1450,6 @@ html.home {
   justify-content: center;
 }
 
-/* The small print under the last call: what the * and ** on the hero's numbers mean. Pulled up into the last call's
-   bottom margin so it sits just under it. */
-.home-footnote {
-  max-width: 720px;
-  margin: -64px auto 48px;
-  padding: 0 var(--home-gutter);
-  color: var(--text);
-  font-size: 0.8rem;
-  line-height: 1.5;
-  text-align: center;
-  opacity: 0.6;
-}
-
-.home-footnote p {
-  margin: 0 0 6px;
-}
-
 /* The black PNG icons turn white for the dark background */
 .home-kicker img {
   filter: invert(1);
@@ -1815,11 +1775,6 @@ html.home {
 
   .home-safety-list {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .home-tally {
-    margin-top: 48px;
-    padding-bottom: 48px;
   }
 
   .home-cta {
