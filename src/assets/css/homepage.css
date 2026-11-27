@@ -560,31 +560,28 @@ html.home {
   color: var(--accent);
 }
 
-/* The frontpage's live numbers: one sentence along the bottom of the hero, the numbers in bold white and the rest
-   dimmed, with the teachers' 0 in orange as the punchline */
+/* The frontpage's live numbers: one big statement along the bottom of the hero, with no box or line around it. The
+   numbers are as big and heavy as the old stat boxes' were, and the words between them smaller and dimmed, so the
+   numbers are what's read first. */
 .home-tally {
   position: relative;
-  margin: 56px 0 0;
-  padding: 24px 0 30px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 64px 0 0;
+  padding: 0 0 64px;
   color: color-mix(in srgb, var(--home-dark-text) 65%, transparent);
-  font-size: 1.15rem;
-  line-height: 1.5;
+  font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  text-wrap: balance; /* when it has to wrap, two even lines instead of one number left alone on the second */
 }
 
 .home-tally b {
   color: var(--home-dark-text);
-  font-weight: 800;
+  font-size: 1.6em;
+  font-weight: 850;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
-}
-
-.home-tally-teachers {
-  margin-left: 0.4em;
   white-space: nowrap;
-}
-
-.home-tally-teachers b {
-  color: var(--accent);
 }
 
 /* ---------- Feature sections ---------- */
@@ -1821,8 +1818,8 @@ html.home {
   }
 
   .home-tally {
-    margin-top: 40px;
-    font-size: 1.05rem;
+    margin-top: 48px;
+    padding-bottom: 48px;
   }
 
   .home-cta {

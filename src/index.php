@@ -218,21 +218,23 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 </div>
             </div>
 
-            <!-- The live numbers, written as one sentence along the bottom of the hero instead of a row of boxes
-                 (.home-stats, which the casino lobby and credits still use). Each part is left out on its own when
-                 its count couldn't be read; the teachers are always there. -->
-            <p class="home-tally">
-                <?php if ($homeMembers !== null): ?>
-                    <b><?= homeKroner($homeMembers) ?></b> medlemmer har sendt
-                    <b><?= homeRoundedCount($homeMessages) ?></b> beskeder*<?= $homeGames !== null ? ' og spillet' : '.' ?>
-                <?php elseif ($homeGames !== null): ?>
-                    Medlemmerne har spillet
-                <?php endif; ?>
-                <?php if ($homeGames !== null): ?>
-                    <b><?= homeRoundedCount($homeGames) ?></b> spil**.
-                <?php endif; ?>
-                <span class="home-tally-teachers">Lærere: <b>0</b>.</span>
-            </p>
+            <!-- The live numbers as one big statement along the bottom of the hero, the numbers at full size and the
+                 words between them smaller, instead of a row of boxes (.home-stats, which the casino lobby and
+                 credits still use). Each part is left out on its own when its count couldn't be read, and the whole
+                 line when neither could. -->
+            <?php if ($homeMembers !== null || $homeGames !== null): ?>
+                <p class="home-tally">
+                    <?php if ($homeMembers !== null): ?>
+                        <b><?= homeKroner($homeMembers) ?></b> medlemmer har sendt
+                        <b><?= homeRoundedCount($homeMessages) ?></b> beskeder*<?= $homeGames !== null ? ' og spillet' : '.' ?>
+                    <?php else: ?>
+                        Medlemmerne har spillet
+                    <?php endif; ?>
+                    <?php if ($homeGames !== null): ?>
+                        <b><?= homeRoundedCount($homeGames) ?></b> spil**.
+                    <?php endif; ?>
+                </p>
+            <?php endif; ?>
         </section>
 
         <!-- About: the part that matches the Danish searches for the school ("hansenberg", "hansenberg elever", "htx
