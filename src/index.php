@@ -154,16 +154,15 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/homeNav.php'; ?>
 
     <main>
-        <!-- Hero: always dark, like the app's bars -->
-        <section class="home-hero" aria-labelledby="home-title">
-            <div class="home-hero-glow" aria-hidden="true"></div>
+        <!-- Hero: always dark, like the app's bars. "home-front-hero" takes the shared hero's orange glow away
+             (credits.php keeps it), so the only thing moving up here is the group chat. -->
+        <section class="home-hero home-front-hero" aria-labelledby="home-title">
             <div class="home-hero-inner">
                 <div class="home-hero-text">
-                    <p class="home-eyebrow">Lavet til eleverne på HANSENBERG</p>
-                    <h1 id="home-title">Hele skolen,<br><span class="home-hero-accent">samlet ét sted.</span></h1>
+                    <h1 id="home-title">Hele skolen,<br>samlet ét sted.</h1>
                     <p class="home-lead">
-                        Chat med din klasse, spil Blackjack om chips, og tag et slag Matador med vennerne, der aldrig
-                        glemmer, hvem der ejer Rådhuspladsen. Det hele lige i browseren.
+                        Chat med din klasse på HANSENBERG, spil Blackjack om chips, og tag et slag Matador med
+                        vennerne, der aldrig glemmer, hvem der ejer Rådhuspladsen. Det hele lige i browseren.
                     </p>
                     <div class="home-hero-actions">
                         <?php if ($homeUser === null): ?>
@@ -219,28 +218,21 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 </div>
             </div>
 
-            <dl class="home-stats">
+            <!-- The live numbers, written as one sentence along the bottom of the hero instead of a row of boxes
+                 (.home-stats, which the casino lobby and credits still use). Each part is left out on its own when
+                 its count couldn't be read; the teachers are always there. -->
+            <p class="home-tally">
                 <?php if ($homeMembers !== null): ?>
-                    <div>
-                        <dt>Medlemmer</dt>
-                        <dd><?= homeKroner($homeMembers) ?></dd>
-                    </div>
-                    <div>
-                        <dt>Sendte beskeder*</dt>
-                        <dd><?= homeRoundedCount($homeMessages) ?></dd>
-                    </div>
+                    <b><?= homeKroner($homeMembers) ?></b> medlemmer har sendt
+                    <b><?= homeRoundedCount($homeMessages) ?></b> beskeder*<?= $homeGames !== null ? ' og spillet' : '.' ?>
+                <?php elseif ($homeGames !== null): ?>
+                    Medlemmerne har spillet
                 <?php endif; ?>
                 <?php if ($homeGames !== null): ?>
-                    <div>
-                        <dt>Spillede spil**</dt>
-                        <dd><?= homeRoundedCount($homeGames) ?></dd>
-                    </div>
+                    <b><?= homeRoundedCount($homeGames) ?></b> spil**.
                 <?php endif; ?>
-                <div>
-                    <dt>Lærere</dt>
-                    <dd>0</dd>
-                </div>
-            </dl>
+                <span class="home-tally-teachers">Lærere: <b>0</b>.</span>
+            </p>
         </section>
 
         <!-- About: the part that matches the Danish searches for the school ("hansenberg", "hansenberg elever", "htx
@@ -292,7 +284,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <li>Ejere og admins bestemmer selv over deres grupper</li>
                     <li>GIFs, emojis og styr på ulæste beskeder</li>
                 </ul>
-                <a class="home-link" href="/chat/">Gå til chatten <span aria-hidden="true">→</span></a>
+                <a class="home-link" href="/chat/">Gå til chatten</a>
             </div>
             <div class="home-feature-art" aria-hidden="true">
                 <ul class="home-inbox">
@@ -335,7 +327,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <li>Gratis chips hver dag, og flere jo oftere du henter dem</li>
                     <li>Ranglister, så alle kan se, hvem der er bedst</li>
                 </ul>
-                <a class="home-link" href="/casino/">Gå til casinoet <span aria-hidden="true">→</span></a>
+                <a class="home-link" href="/casino/">Gå til casinoet</a>
             </div>
             <div class="home-feature-art home-casino-art" aria-hidden="true">
                 <!-- A blackjack table seen from above: the dealer's hand at the top, the table's print in an arc,
@@ -403,7 +395,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                     <li>Chat med de andre ved bordet, mens I spiller</li>
                     <li>Ranglister og revanchekampe</li>
                 </ul>
-                <a class="home-link" href="/games/">Se spillene <span aria-hidden="true">→</span></a>
+                <a class="home-link" href="/games/">Se spillene</a>
             </div>
             <div class="home-feature-art home-games-art" aria-hidden="true">
                 <!-- A chessboard just after Scholar's mate -->
@@ -433,9 +425,11 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
 
         <!-- Safety -->
         <section class="home-safety" id="safety" aria-labelledby="home-safety-title">
-            <p class="home-kicker home-kicker-center">Sikkerhed</p>
-            <h2 id="home-safety-title">Sjovt, og sikkert.</h2>
-            <ul class="home-safety-grid">
+            <div class="home-safety-intro">
+                <h2 id="home-safety-title">Sjovt, og sikkert.</h2>
+                <p>Din konto er godt beskyttet, og du bestemmer selv, hvornår du vil spille.</p>
+            </div>
+            <ul class="home-safety-list">
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg>
                     <h3>Totrinslogin</h3>

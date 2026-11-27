@@ -248,27 +248,10 @@ html.home {
   gap: 48px;
 }
 
-.home-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 20px;
-  padding: 6px 14px 6px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  font-size: 0.85rem;
-  font-weight: 600;
-  opacity: 0.9;
-}
-
-.home-eyebrow::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #2fa36b;
-  box-shadow: 0 0 0 4px rgba(47, 163, 107, 0.2);
+/* The frontpage's own hero: no orange glow (that's credits.php's), only the dotted paper, so the group chat is the one
+   thing up here that catches the eye */
+.home-front-hero {
+  background: var(--home-dark);
 }
 
 .home-hero h1 {
@@ -577,6 +560,33 @@ html.home {
   color: var(--accent);
 }
 
+/* The frontpage's live numbers: one sentence along the bottom of the hero, the numbers in bold white and the rest
+   dimmed, with the teachers' 0 in orange as the punchline */
+.home-tally {
+  position: relative;
+  margin: 56px 0 0;
+  padding: 24px 0 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: color-mix(in srgb, var(--home-dark-text) 65%, transparent);
+  font-size: 1.15rem;
+  line-height: 1.5;
+}
+
+.home-tally b {
+  color: var(--home-dark-text);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-tally-teachers {
+  margin-left: 0.4em;
+  white-space: nowrap;
+}
+
+.home-tally-teachers b {
+  color: var(--accent);
+}
+
 /* ---------- Feature sections ---------- */
 .home-feature {
   max-width: var(--home-max);
@@ -610,6 +620,16 @@ html.home {
 .home-kicker img {
   width: 18px;
   height: 18px;
+}
+
+/* On the frontpage the section names (the same words as the top bar's links) are plain orange words with their icon,
+   not pills in capitals; the legal pages and docs keep the pill */
+.home-feature .home-kicker {
+  padding: 0;
+  background: none;
+  font-size: 1rem;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .home-soon {
@@ -677,19 +697,18 @@ html.home {
   transform: rotate(45deg);
 }
 
+/* "Gå til chatten" and the others: an underlined link that thickens on hover */
 .home-link {
   color: var(--accent);
   font-weight: 700;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: text-decoration-thickness 0.15s ease;
 }
 
-.home-link span {
-  display: inline-block;
-  transition: transform 0.15s ease;
-}
-
-.home-link:hover span {
-  transform: translateX(4px);
+.home-link:hover {
+  text-decoration-thickness: 2px;
 }
 
 .home-feature-art {
@@ -1267,64 +1286,54 @@ html.home {
   text-align: center;
 }
 
-/* ---------- Safety ---------- */
+/* ---------- Safety ----------
+   The heading and a line about it on the left, the six points as a plain list on the right in two columns, each one
+   an orange line icon with a short heading, split from the next by a thin line. No cards: they're facts to read,
+   not things to click. */
 .home-safety {
   max-width: var(--home-max);
   margin: 0 auto;
   padding: 128px var(--home-gutter) 0;
-  text-align: center;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 64px;
 }
 
-.home-kicker-center {
-  padding-left: 14px;
+.home-safety-intro {
+  position: sticky;
+  top: 112px; /* under the top bar, while the list scrolls past */
 }
 
-.home-safety-grid {
-  margin: 40px 0 0;
+.home-safety-intro p {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.65;
+  opacity: 0.8;
+}
+
+.home-safety-list {
+  margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 48px;
   list-style: none;
-  text-align: left;
 }
 
-/* The hover lift uses "translate", not "transform": the scroll-in animation further down owns transform, and an
-   animation always wins over a plain style, so a transform hover would snap instead of easing. */
-.home-safety-grid li {
-  padding: 26px 22px;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  background: var(--secondary);
-  transition:
-    translate 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.35s ease,
-    border-color 0.35s ease;
+.home-safety-list li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  column-gap: 14px;
+  padding: 24px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.home-safety-grid svg {
-  transition: scale 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@media (hover: hover) {
-  .home-safety-grid li:hover {
-    translate: 0 -6px;
-    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-    box-shadow: 0 16px 32px -16px rgba(0, 0, 0, 0.45);
-  }
-
-  .home-safety-grid li:hover svg {
-    scale: 1.08;
-  }
-}
-
-.home-safety-grid svg {
-  width: 44px;
-  height: 44px;
-  padding: 10px;
-  box-sizing: border-box;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+.home-safety-list svg {
+  grid-row: span 2;
+  width: 24px;
+  height: 24px;
   fill: none;
   stroke: var(--accent);
   stroke-width: 2;
@@ -1332,19 +1341,20 @@ html.home {
   stroke-linejoin: round;
 }
 
-.home-safety-grid h3 {
-  margin: 16px 0 8px;
+.home-safety-list h3 {
+  margin: 1px 0 6px;
   font-size: 1.1rem;
+  line-height: 1.3;
 }
 
-.home-safety-grid p {
+.home-safety-list p {
   margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.55;
+  font-size: 0.95rem;
+  line-height: 1.6;
   opacity: 0.75;
 }
 
-.home-safety-grid a {
+.home-safety-list a {
   color: var(--accent);
   text-underline-offset: 2px;
 }
@@ -1444,32 +1454,16 @@ html.home {
 }
 
 /* ---------- Last call ---------- */
+/* No box or glow around it: a thin line across the page sets it off from the safety list, and the heading and the
+   buttons do the rest */
 .home-cta {
-  position: relative;
   max-width: var(--home-max);
   margin: 128px auto 96px;
-  padding: 72px 24px;
+  padding: 96px var(--home-gutter) 48px;
   box-sizing: border-box;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08); /* shows its edge when the page is dark too */
-  border-radius: 28px;
-  background:
-    radial-gradient(55% 90% at 50% 0%, rgba(240, 112, 31, 0.22), transparent 70%),
-    linear-gradient(180deg, var(--home-dark-raised), var(--home-dark));
-  box-shadow: 0 32px 64px -32px rgba(0, 0, 0, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--home-dark-text);
   text-align: center;
-}
-
-/* A thin lit edge along the top, where the glow comes from */
-.home-cta::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 15%;
-  right: 15%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
 }
 
 .home-cta p {
@@ -1538,19 +1532,11 @@ html.home {
   }
 }
 
-/* Sections slide in as they're scrolled to, and the top bar turns solid. Only where the browser can tie
-   animations to scrolling - everywhere else it all just shows. */
+/* The top bar turns solid as the page is scrolled. Only where the browser can tie animations to scrolling -
+   everywhere else it's see-through all the way. The sections themselves don't slide in: the hero's group chat is the
+   page's one moving moment. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .home-feature-text,
-    .home-feature-art,
-    .home-safety-grid li,
-    .home-cta {
-      animation: home-reveal linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 60%;
-    }
-
     .home-nav {
       animation: home-nav-solid linear both;
       animation-timeline: scroll(root);
@@ -1571,12 +1557,6 @@ html.home {
   .home-float-card,
   .home-float-die {
     rotate: var(--home-tilt);
-  }
-
-  .home-safety-grid li,
-  .home-safety-grid svg {
-    translate: none !important;
-    scale: none !important;
   }
 }
 
@@ -1610,13 +1590,16 @@ html.home {
     margin: 0 auto;
   }
 
-  .home-safety-grid {
-    grid-template-columns: repeat(2, 1fr);
+  /* The heading goes above the list, and stops following it down */
+  .home-safety {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    padding-top: 104px;
   }
 
-  .home-cta {
-    margin-left: var(--home-gutter);
-    margin-right: var(--home-gutter);
+  .home-safety-intro {
+    position: static;
+    max-width: 34em;
   }
 }
 
@@ -1833,11 +1816,17 @@ html.home {
   .home-deed:nth-child(3),
   .home-deeds:hover .home-deed:nth-child(3) { transform: translateX(54px) translateY(16px) rotate(10deg); }
 
-  .home-safety-grid {
-    grid-template-columns: 1fr;
+  .home-safety-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-tally {
+    margin-top: 40px;
+    font-size: 1.05rem;
   }
 
   .home-cta {
-    padding: 56px 20px;
+    margin-top: 96px;
+    padding-top: 72px;
   }
 }
