@@ -21,7 +21,7 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                             stadig ikke kan komme ind.
                         </p>
                         <ol class="docs-steps">
-                            <li>Installer en godkendelsesapp på din telefon, som <a href="https://proton.me/authenticator" target="_blank" rel="noopener">Proton Authenticator</a>, <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener">Google Authenticator</a>, <a href="https://2fas.com/" target="_blank" rel="noopener">2FAS</a> eller den adgangskodeapp, der er indbygget i din telefon.</li>
+                            <li>Installer en godkendelsesapp på din telefon, som <a href="https://proton.me/authenticator?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener">Proton Authenticator</a>, <a href="https://support.google.com/accounts/answer/1066447?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener">Google Authenticator</a>, <a href="https://2fas.com/?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener">2FAS</a> eller den adgangskodeapp, der er indbygget i din telefon.</li>
                             <li>Åbn <strong>Two-factor login</strong> i gruppen <strong>Security</strong> under dine <a href="/settings#totp">indstillinger</a>, og tryk på <strong>Set up</strong>.</li>
                             <li>Scan QR-koden med appen. På selve telefonen kan du bruge <strong>Open it in your app</strong> i stedet, eller skrive nøglen under koden.</li>
                             <li>Skriv den 6-cifrede kode, appen viser, for at slå det til. Fra nu af beder login om en kode efter din adgangskode.</li>
@@ -81,7 +81,7 @@ $docsLockoutMinutes = (int) ($siteConfig['login_attempts_lockout_time'] ?? 15);
                         </ol>
                         <p>
                             Har du fundet et sikkerhedsproblem i selve HB Hub? Rapportér det privat med
-                            <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">Rapportér et sikkerhedsproblem</a>
+                            <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Rapportér et sikkerhedsproblem</a>
                             i stedet for at fortælle alle om det.
                         </p>
                     </section>

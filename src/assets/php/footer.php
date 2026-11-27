@@ -16,8 +16,8 @@ if (!empty($hbHubShowSiteFooter)):
         <a href="/legal/code-of-conduct">Adfærdskodeks</a>
         <a href="/legal/do-not-sell-or-share-my-personal-information">Sælg eller del ikke mine data</a>
         <a href="/legal/credits">Krediteringer</a>
-        <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">Rapportér et sikkerhedsproblem</a>
+        <a href="https://github.com/NoahGNielsen/HB-Hub?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Rapportér et sikkerhedsproblem</a>
     </nav>
     <p class="site-footer-copyright">&copy; <?= (int) date('Y') > $footerYear ? $footerYear . '&ndash;' . date('Y') : $footerYear ?> Noah Gaj Nedergaard Nielsen</p>
 </footer>

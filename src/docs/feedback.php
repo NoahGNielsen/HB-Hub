@@ -48,12 +48,12 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                                     <tr><td>Anmelde nogen</td><td>Feedback-knappen, en side-admin eller <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>. Se <a href="/docs/chat/safety#report">At anmelde nogen</a>.</td></tr>
                                     <tr><td>Komme ind på din konto igen</td><td>Skriv til <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a> uden for HB Hub, eller spørg en side-admin på skolen.</td></tr>
                                     <tr><td>Spørge om dine data</td><td>Se <a href="/legal/privacy">privatlivspolitikken</a>.</td></tr>
-                                    <tr><td>Rapportere et sikkerhedsproblem</td><td>Privat, med <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">Rapportér et sikkerhedsproblem</a>. Fortæl det ikke til andre, før det er rettet.</td></tr>
+                                    <tr><td>Rapportere et sikkerhedsproblem</td><td>Privat, med <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Rapportér et sikkerhedsproblem</a>. Fortæl det ikke til andre, før det er rettet.</td></tr>
                                 </tbody>
                             </table>
                         </div>
                         <p>
-                            HB Hub er open source: koden ligger på <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">GitHub</a>,
+                            HB Hub er open source: koden ligger på <a href="https://github.com/NoahGNielsen/HB-Hub?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">GitHub</a>,
                             hvis du er nysgerrig efter, hvordan noget virker.
                         </p>
                     </section>

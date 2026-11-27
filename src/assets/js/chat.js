@@ -624,8 +624,37 @@ chatPart(() => {
         if (event.button === 1) warn(event);
     });
 
-    // The link opens itself (target="_blank"), the popup just gets out of the way
-    openLink.addEventListener('click', () => dialog.close());
+    /**
+     * The address with utm_source=hbhub.noahgajnielsen.dk added, so the site at the other end can see the visit came
+     * from here. Only for http(s) links to other sites, and only once (a link that already says where it's from keeps
+     * that). It goes on in front of the #part, and the rest of the address is left exactly as it was sent.
+     */
+    function withUtm(href) {
+        let parsed;
+        try {
+            parsed = new URL(href);
+        } catch {
+            return href;
+        }
+        if (!/^https?:$/.test(parsed.protocol) || parsed.hostname === location.hostname) return href;
+        if (parsed.searchParams.has('utm_source')) return href;
+        const hashAt = href.indexOf('#');
+        const base = hashAt === -1 ? href : href.slice(0, hashAt);
+        const hash = hashAt === -1 ? '' : href.slice(hashAt);
+        return base + (parsed.search ? '&' : (base.endsWith('?') ? '' : '?')) + 'utm_source=hbhub.noahgajnielsen.dk' + hash;
+    }
+
+    // The utm_source only goes on once Open link is picked (a click, Enter, or a middle click for a new tab), so the
+    // popup shows the link as it was sent. The link then opens itself (target="_blank"), the popup just gets out of the way
+    openLink.addEventListener('click', () => {
+        openLink.href = withUtm(url.textContent);
+        dialog.close();
+    });
+    openLink.addEventListener('auxclick', (event) => {
+        if (event.button !== 1) return;
+        openLink.href = withUtm(url.textContent);
+        dialog.close();
+    });
 
     dialog.querySelectorAll('[data-link-warning-close]').forEach((button) => {
         button.addEventListener('click', () => dialog.close());

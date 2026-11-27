@@ -224,8 +224,8 @@ function buildTable() {
     </td>
   <tr>
     <td class="menu" id="folder-bar" colspan="${size}">
-      <div id="folder1"><a href="https://github.com/nickarocho/minesweeper/blob/master/readme.md" target="_blank" rel="noopener noreferrer">Read Me </a></div>
-      <div id="folder2"><a href="https://github.com/nickarocho/minesweeper" target="_blank" rel="noopener noreferrer">Source Code</a></div>
+      <div id="folder1"><a href="https://github.com/nickarocho/minesweeper/blob/master/readme.md?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Read Me </a></div>
+      <div id="folder2"><a href="https://github.com/nickarocho/minesweeper?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Source Code</a></div>
     </td>
   </tr>
   </tr>

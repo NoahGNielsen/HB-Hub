@@ -16,7 +16,7 @@ include $_SERVER['DOCUMENT_ROOT'] . '/assets/php/docs/top.php';
                             <li>Klik på en GIF for at sende den med det samme.</li>
                         </ol>
                         <p>
-                            GIF'erne kommer fra <a href="https://giphy.com" target="_blank" rel="noopener noreferrer">Giphy</a>. Din
+                            GIF'erne kommer fra <a href="https://giphy.com?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Giphy</a>. Din
                             søgning går gennem HB Hubs server, men selve GIF'erne bliver hentet fra Giphy, hvilket betyder, at Giphy
                             kan se din IP-adresse. Mere om det i <a href="/legal/privacy">privatlivspolitikken</a>. GIFs tæller med i
                             <a href="/docs/chat/safety#spam">spamgrænsen</a> ligesom alle andre beskeder og skal også følge

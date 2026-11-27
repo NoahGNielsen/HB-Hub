@@ -425,9 +425,15 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                                 visningsnavn og profilbillede (se Konto og profil). Mens kontoen er koblet til, spørger HB Hubs server
                                 hver nat Discord om dit nuværende brugernavn ud fra dit Discord-id. HB Hub sender ikke andre oplysninger
                                 om dig til Discord og kan ikke læse eller skrive noget på Discord på dine vegne.
-                                <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">Discords privatlivspolitik</a> gælder for Discords behandling.
+                                <a href="https://discord.com/privacy?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Discords privatlivspolitik</a> gælder for Discords behandling.
                             </li>
                         </ul>
+                        <p>
+                            Links til andre sider, også dem, der sendes i chatten, får <code>utm_source=hbhub.noahgajnielsen.dk</code>
+                            sat på, så siden i den anden ende kan se, at besøget kom fra HB Hub. For links i chatten sker det først,
+                            når du har trykket <strong>Open link</strong>. Der sendes intet om, hvem du er, eller hvor på HB Hub
+                            du trykkede.
+                        </p>
                     </section>
 
                     <section id="cookies" aria-labelledby="privacy-cookies">
@@ -519,7 +525,7 @@ const HBHUB_PRIVACY_LOCAL_STORAGE = [
                         <p>
                             Skriv til <a href="mailto:admin@noahgajnielsen.dk">admin@noahgajnielsen.dk</a>; du får svar inden for
                             en måned. Du kan også klage til
-                            <a href="https://www.datatilsynet.dk" target="_blank" rel="noopener noreferrer">Datatilsynet</a>.
+                            <a href="https://www.datatilsynet.dk?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Datatilsynet</a>.
                         </p>
                     </section>
 

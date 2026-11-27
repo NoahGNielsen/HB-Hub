@@ -98,7 +98,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                         <span class="credits-card-icon"><img src="/assets/images/icons/<?= htmlspecialchars($creditsIcon['file']) ?>" alt="<?= htmlspecialchars($creditsIcon['name']) ?>-ikon" aria-hidden="true" width="28" height="28"></span>
                         <h3><?= htmlspecialchars($creditsIcon['name']) ?></h3>
                         <p class="credits-card-use"><?= htmlspecialchars($creditsIcon['use']) ?></p>
-                        <p class="credits-card-by"><a  target="_blank" rel="noopener noreferrer" href="<?= htmlspecialchars($creditsIcon['href']) ?>" title="<?= htmlspecialchars($creditsIcon['title']) ?>"><?= htmlspecialchars($creditsIcon['text']) ?></a></p>
+                        <p class="credits-card-by"><a  target="_blank" rel="noopener noreferrer" href="<?= htmlspecialchars($creditsIcon['href'] . '?utm_source=hbhub.noahgajnielsen.dk') ?>" title="<?= htmlspecialchars($creditsIcon['title']) ?>"><?= htmlspecialchars($creditsIcon['text']) ?></a></p>
                     </li>
                 <?php endforeach; ?>
             </ul>
@@ -123,7 +123,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <?php endforeach; ?>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener noreferrer">QR Code Generator for JavaScript</a></h3>
+                    <h3><a href="https://github.com/kazuhikoarase/qrcode-generator?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">QR Code Generator for JavaScript</a></h3>
                     <p>Af Kazuhiko Arase. Tegner den QR-kode, du scanner for at sætte totrinslogin op.</p>
                     <p class="credits-license">MIT-licens</p>
                 </div>
@@ -135,7 +135,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-jxl-bar"></span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/jamsinclair/jSquash" target="_blank" rel="noopener noreferrer">jSquash</a> med <a href="https://github.com/libjxl/libjxl" target="_blank" rel="noopener noreferrer">libjxl</a></h3>
+                    <h3><a href="https://github.com/jamsinclair/jSquash?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">jSquash</a> med <a href="https://github.com/libjxl/libjxl?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">libjxl</a></h3>
                     <p>
                         jSquash af Jamie Sinclair (bygget på Googles Squoosh) kører libjxl, JPEG XL-projektets encoder og
                         decoder, i din browser. Den laver billeder, du vedhæfter i chatten, om til JPEG XL og viser
@@ -151,7 +151,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-jxl-bar"></span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/Vanilagy/mediabunny" target="_blank" rel="noopener noreferrer">Mediabunny</a></h3>
+                    <h3><a href="https://github.com/Vanilagy/mediabunny?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Mediabunny</a></h3>
                     <p>
                         Af Vanilagy og bidragydere. Læser videoer, du vedhæfter i chatten, og laver dem, med din browsers
                         egne codecs, om til WebM med VP9, før de bliver sendt.
@@ -167,7 +167,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <i class="is-open">1</i><i>1</i><i>1</i>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/nickarocho/minesweeper" target="_blank" rel="noopener noreferrer">Minesweeper</a></h3>
+                    <h3><a href="https://github.com/nickarocho/minesweeper?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Minesweeper</a></h3>
                     <p>
                         Af Nick Arocho. Hele <a href="/games/minesweeper/">Minesweeper</a>-spillet i Spil-sektionen,
                         med Windows 95-udseende, billeder og skrifttyper, og nogle ændringer til HB Hub: et par små rettelser, og minerne
@@ -185,7 +185,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <i class="is-sky"></i><i></i><i class="is-mint"></i><i class="is-mint"></i>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/larprad/tetris" target="_blank" rel="noopener noreferrer">tetris</a></h3>
+                    <h3><a href="https://github.com/larprad/tetris?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">tetris</a></h3>
                     <p>
                         Af larprad. <a href="/games/tetris/">Tetris</a> i Spil-sektionen er bygget på idéerne i det:
                         en brønd på 10 gange 20, en brik på hold og den næste i forvejen
@@ -213,7 +213,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-short-link">bit.ly/hb</span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/PeterDaveHello/url-shorteners" target="_blank" rel="noopener noreferrer">url-shorteners</a></h3>
+                    <h3><a href="https://github.com/PeterDaveHello/url-shorteners?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">url-shorteners</a></h3>
                     <p>Af Peter Dave Hello. Linkforkortere, som kan skjule, hvor et link i virkeligheden fører hen.</p>
                     <p class="credits-license">CC BY-SA 4.0-licens</p>
                 </div>
@@ -225,7 +225,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-scam-stamp">Blokeret</span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/CryptoScamDB/blacklist" target="_blank" rel="noopener noreferrer">CryptoScamDB blacklist</a></h3>
+                    <h3><a href="https://github.com/CryptoScamDB/blacklist?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">CryptoScamDB blacklist</a></h3>
                     <p>Af CryptoScamDB. Kryptosvindel- og phishingsider, lavet om fra dens YAML til en almindelig liste over domæner.</p>
                 </div>
             </div>
@@ -242,7 +242,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-words-row"><i>w</i><i class="is-present">o</i><i>r</i><i class="is-correct">d</i><i>s</i></span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/dolph/dictionary" target="_blank" rel="noopener noreferrer">ENABLE</a></h3>
+                    <h3><a href="https://github.com/dolph/dictionary?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">ENABLE</a></h3>
                     <p>Enhanced North American Benchmark Lexicon, en ordliste lavet til ordspil. Dens ord på fem bogstaver er de engelske ord, Wordle godtager.</p>
                     <p class="credits-license">Offentlig ejendom (public domain)</p>
                 </div>
@@ -252,7 +252,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-words-row"><i class="is-correct">b</i><i>j</i><i class="is-present">ø</i><i>r</i><i>n</i></span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://www.stavekontrolden.dk" target="_blank" rel="noopener noreferrer">Stavekontrolden</a></h3>
+                    <h3><a href="https://www.stavekontrolden.dk?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Stavekontrolden</a></h3>
                     <p>
                         Den danske ordbog fra Foreningen for frit tilgængelige sprogværktøjer, bygget på data fra Det
                         Danske Sprog- og Litteraturselskab. Alle bøjninger af dens ord på fem bogstaver (som "huset" og "spist")
@@ -277,7 +277,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-font-weights">100 &ndash; 900</span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/impallari/Raleway" target="_blank" rel="noopener noreferrer">Raleway</a></h3>
+                    <h3><a href="https://github.com/impallari/Raleway?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Raleway</a></h3>
                     <p>
                         Af Matt McInerney, Pablo Impallari og Rodrigo Fuenzalida. Den skrifttype, næsten alt på HB Hub er
                         skrevet med, fra den tyndeste vægt til den tungeste.
@@ -292,7 +292,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-font-weights">♔♕♖♗♘♙</span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/notofonts/symbols" target="_blank" rel="noopener noreferrer">Noto Sans Symbols 2</a></h3>
+                    <h3><a href="https://github.com/notofonts/symbols?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Noto Sans Symbols 2</a></h3>
                     <p>Af Noto Project Authors, for Google. Kun dens 12 skaktegn, som er brikkerne i skak og på forsidens bræt.</p>
                     <p class="credits-license">SIL Open Font License 1.1</p>
                 </div>
@@ -304,7 +304,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-font-weights">æ ø å</span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://github.com/googlefonts/caveat" target="_blank" rel="noopener noreferrer">Caveat</a></h3>
+                    <h3><a href="https://github.com/googlefonts/caveat?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Caveat</a></h3>
                     <p>Af Pablo Impallari. Håndskriften i kladdehæftet og på polaroidet på forsiden.</p>
                     <p class="credits-license">SIL Open Font License 1.1</p>
                 </div>
@@ -316,7 +316,7 @@ $creditsDesigners = count(array_unique(array_column(HBHUB_CREDITS_ICONS, 'by')))
                     <span class="credits-font-weights">1 2 3</span>
                 </div>
                 <div class="credits-library-text">
-                    <h3><a href="https://www.zone38.net/font/" target="_blank" rel="noopener noreferrer">Press Start</a></h3>
+                    <h3><a href="https://www.zone38.net/font/?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Press Start</a></h3>
                     <p>Af codeman38, med bogstaver fra gamle Namco-arkadespil. Tallene på Minesweepers bræt.</p>
                 </div>
             </div>

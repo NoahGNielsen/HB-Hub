@@ -449,7 +449,7 @@ for ($homeIndex = 0; $homeIndex < 64; $homeIndex++) {
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8l-5 4 5 4"/><path d="M16 8l5 4-5 4"/><path d="M13.5 5l-3 14"/></svg>
                     <h3>Open source</h3>
-                    <p>Al koden er offentlig, så du behøver ikke bare stole på os. <a href="https://github.com/NoahGNielsen/HB-Hub" target="_blank" rel="noopener noreferrer">Se selv på GitHub</a>.</p>
+                    <p>Al koden er offentlig, så du behøver ikke bare stole på os. <a href="https://github.com/NoahGNielsen/HB-Hub?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">Se selv på GitHub</a>.</p>
                 </li>
                 <li>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>

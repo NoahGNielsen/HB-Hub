@@ -72,7 +72,7 @@ $buyChipsSellerId = $statement->fetchColumn();
 
         <p class="casino-hint">
             If gambling, also with real money, is starting to feel like a problem,
-            <a href="https://stopspillet.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a> gives free and
+            <a href="https://stopspillet.dk?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a> gives free and
             anonymous help.
         </p>
     </main>

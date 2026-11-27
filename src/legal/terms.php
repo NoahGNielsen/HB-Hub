@@ -213,7 +213,7 @@ function termsNumber(int $number): string
                         <p class="legal-note">
                             Du kan blokere casinoet og spillene for dig selv under <a href="/settings">indstillinger</a>, fx i
                             skoletiden. Føles spil, også om rigtige penge, som et problem, kan du få gratis og anonym hjælp hos
-                            <a href="https://stopspillet.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a>.
+                            <a href="https://stopspillet.dk?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a>.
                         </p>
                     </section>
 

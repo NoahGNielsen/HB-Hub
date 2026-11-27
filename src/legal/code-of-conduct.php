@@ -149,7 +149,7 @@ const HBHUB_CONDUCT_UPDATED = '17 November 2026';
                         <p class="legal-note">
                             Du kan blokere casinoet og spillene for dig selv, fx i skoletiden, under <a href="/settings">indstillinger</a>.
                             Oplever du eller en ven, at spil begynder at blive et problem, også med rigtige penge, tilbyder
-                            <a href="https://stopspillet.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a> gratis og
+                            <a href="https://stopspillet.dk?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">StopSpillet</a> gratis og
                             anonym rådgivning.
                         </p>
                     </section>
@@ -159,7 +159,7 @@ const HBHUB_CONDUCT_UPDATED = '17 November 2026';
                         <p>
                             Forsøg ikke at overbelaste siden, få adgang til noget, du ikke har adgang til, eller omgå dens
                             sikkerhed. Finder du et sikkerhedsproblem, skal du rapportere det privat via
-                            <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new" target="_blank" rel="noopener noreferrer">GitHub</a>
+                            <a href="https://github.com/NoahGNielsen/HB-Hub/security/advisories/new?utm_source=hbhub.noahgajnielsen.dk" target="_blank" rel="noopener noreferrer">GitHub</a>
                             eller på e-mail i stedet for at offentliggøre det, så det kan rettes først.
                         </p>
                     </section>
