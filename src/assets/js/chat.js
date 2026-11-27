@@ -607,11 +607,13 @@ chatPart(() => {
     const url = dialog.querySelector('[data-link-warning-url]');
     const openLink = dialog.querySelector('[data-link-warning-open]');
     const stay = dialog.querySelector('.chat-btn[data-link-warning-close]');
+    let warnedHref = '';
 
     function warn(event) {
         const link = event.target.closest('[data-chat-link]');
         if (!link) return;
         event.preventDefault();
+        warnedHref = link.href;
         url.textContent = link.href;
         openLink.href = link.href;
         dialog.showModal();
@@ -647,12 +649,12 @@ chatPart(() => {
     // The utm_source only goes on once Open link is picked (a click, Enter, or a middle click for a new tab), so the
     // popup shows the link as it was sent. The link then opens itself (target="_blank"), the popup just gets out of the way
     openLink.addEventListener('click', () => {
-        openLink.href = withUtm(url.textContent);
+        openLink.href = withUtm(warnedHref);
         dialog.close();
     });
     openLink.addEventListener('auxclick', (event) => {
         if (event.button !== 1) return;
-        openLink.href = withUtm(url.textContent);
+        openLink.href = withUtm(warnedHref);
         dialog.close();
     });
 
