@@ -7,10 +7,17 @@
 $hbHubSessionOptional = true; // the frontpage is open to everyone
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/session.php';
 if ($hbHubUser !== null && !isset($_GET['home'])) {
-    // A ?utm_source= goes along to the chat, so a visit from a tagged link (like the one on noahgajnielsen.dk) is
-    // still counted under "Visits from links" (pageViews.php) when the visitor is already logged in
-    $utmSource = $_GET['utm_source'] ?? null;
-    header('Location: /chat/' . (is_string($utmSource) && $utmSource !== '' ? '?' . http_build_query(['utm_source' => $utmSource]) : ''), true, 302);
+    // A visit from a tagged link (?utm_source=, like the one on noahgajnielsen.dk) is counted here, before the
+    // redirect, as header.php never runs for it: as a view of / and under "Visits from links" (pageViews.php), unless
+    // the user has turned "Anonymous usage statistics" off, the same check header.php does
+    if (isset($_GET['utm_source'])) {
+        require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/userSettings.php';
+        if (hbHubUsageStatsOn(hbHubUserSettings($hbHubUser['userSettings'] ?? null))) {
+            require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/pageViews.php';
+            hbHubPageViewCount('/', true);
+        }
+    }
+    header('Location: /chat/', true, 302);
     exit;
 }
 require_once $_SERVER['DOCUMENT_ROOT'] . '/assets/php/casino/wallet.php';
